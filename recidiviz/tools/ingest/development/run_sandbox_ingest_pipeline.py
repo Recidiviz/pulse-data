@@ -47,7 +47,6 @@ import logging
 from datetime import datetime
 from typing import List, Tuple
 
-from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct import direct_ingest_regions
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_collector import (
@@ -69,12 +68,10 @@ from recidiviz.ingest.direct.views.direct_ingest_view_query_builder_collector im
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
-from recidiviz.pipelines.ingest.pipeline_parameters import (
-    INGEST_PIPELINE_NAME,
-    IngestPipelineParameters,
-)
+from recidiviz.pipelines.ingest.pipeline_parameters import IngestPipelineParameters
+from recidiviz.pipelines.pipeline_names import INGEST_PIPELINE_NAME
 from recidiviz.tools.calculator.create_or_update_dataflow_sandbox import (
-    create_or_update_ingest_output_sandbox,
+    create_or_update_dataflow_sandbox,
 )
 from recidiviz.tools.postgres.cloudsql_proxy_control import cloudsql_proxy_control
 from recidiviz.tools.utils.run_sandbox_dataflow_pipeline_utils import (
@@ -220,12 +217,11 @@ def run_sandbox_ingest_pipeline(
         f"[{params.ingest_view_results_output}] and [{params.output}] - continue?"
     )
 
-    bq_client = BigQueryClientImpl()
-    create_or_update_ingest_output_sandbox(
-        bq_client,
-        StateCode(params.state_code),
-        DirectIngestInstance(params.ingest_instance),
-        output_sandbox_prefix,
+    create_or_update_dataflow_sandbox(
+        sandbox_dataset_prefix=output_sandbox_prefix,
+        datasets_to_create=["ingest"],
+        state_code_filter=StateCode(params.state_code),
+        ingest_instance=DirectIngestInstance(params.ingest_instance),
         allow_overwrite=True,
     )
 

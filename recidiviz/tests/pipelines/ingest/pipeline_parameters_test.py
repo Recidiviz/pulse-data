@@ -19,14 +19,14 @@ import json
 import unittest
 from unittest.mock import MagicMock, patch
 
-from recidiviz.airflow.dags.utils.dag_orchestration_utils import (
-    get_ingest_pipeline_enabled_state_and_instance_pairs,
-)
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.pipelines.ingest.pipeline_parameters import IngestPipelineParameters
 from recidiviz.pipelines.ingest.pipeline_utils import (
     DEFAULT_PIPELINE_REGIONS_BY_STATE_CODE,
+)
+from recidiviz.pipelines.ingest.state.gating import (
+    get_ingest_pipeline_enabled_state_and_instance_pairs,
 )
 from recidiviz.pipelines.ingest.state.pipeline import StateIngestPipeline
 from recidiviz.tools.utils.run_sandbox_dataflow_pipeline_utils import (

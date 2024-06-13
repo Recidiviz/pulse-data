@@ -328,10 +328,6 @@ jobs:
           echo ${{ secrets.github_token }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
       - name: Pull emulator Docker image
         run: pipenv run python -m recidiviz.tests.utils.big_query_emulator_control pull_image
-      - name: Write source table JSON
-        run: |
-          pipenv run python -m recidiviz.tools.deploy.generate_emulator_table_schema_json \
-          --project-id ${{ matrix.project == 'production' && 'recidiviz-123' || 'recidiviz-staging' }}
       - name: Load view graph to emulator
         run: pipenv run pytest -s "recidiviz/tests/big_query/view_graph_validation_test.py::${{matrix.project == 'production' && 'ProductionViewGraphTest' || 'StagingViewGraphTest'}}"
       - name: Remove the emulator docker container

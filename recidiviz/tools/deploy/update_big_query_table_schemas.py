@@ -20,9 +20,13 @@ Update BigQuery table schemas during deployment
 import argparse
 import logging
 import os
+from pprint import pprint
 from typing import Any, Dict, List, Optional, Tuple
 
-from recidiviz.big_query.big_query_client import BQ_CLIENT_MAX_POOL_SIZE, BigQueryClient
+from recidiviz.big_query.big_query_client import (
+    BQ_CLIENT_MAX_POOL_SIZE,
+    BigQueryClientImpl,
+)
 from recidiviz.big_query.constants import TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS
 from recidiviz.calculator.query.state.dataset_config import STATE_BASE_DATASET
 from recidiviz.persistence.database.bq_refresh.big_query_table_manager import (
@@ -33,19 +37,26 @@ from recidiviz.persistence.database.bq_refresh.cloud_sql_to_bq_refresh_config im
 )
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.schema_utils import get_all_table_classes_in_schema
+from recidiviz.pipelines.ingest.state.gating import (
+    get_ingest_pipeline_enabled_state_and_instance_pairs,
+)
 from recidiviz.source_tables.collect_all_source_table_configs import (
     build_source_table_repository_for_collected_schemata,
 )
-from recidiviz.source_tables.source_table_config import RawDataSourceTableLabel
+from recidiviz.source_tables.ingest_pipeline_output_table_collector import (
+    build_ingest_view_source_table_configs,
+)
+from recidiviz.source_tables.source_table_config import (
+    DataflowPipelineSourceTableLabel,
+    RawDataSourceTableLabel,
+    UnionedStateAgnosticSourceTableLabel,
+)
 from recidiviz.source_tables.source_table_repository import SourceTableRepository
 from recidiviz.source_tables.source_table_update_manager import (
     SourceTableCollectionUpdateConfig,
     SourceTableUpdateManager,
 )
 from recidiviz.tools.deploy.logging import get_deploy_logs_dir, redirect_logging_to_file
-from recidiviz.tools.deploy.update_dataflow_output_table_manager_schemas import (
-    update_dataflow_output_schemas,
-)
 from recidiviz.tools.utils.script_helpers import (
     interactive_loop_until_tasks_succeed,
     interactive_prompt_retry_on_exception,
@@ -129,12 +140,14 @@ def update_cloud_sql_bq_refresh_output_schemas(
 
 def update_all_source_table_schemas(
     source_table_repository: SourceTableRepository,
-    client: BigQueryClient | None = None,
+    update_manager: SourceTableUpdateManager | None = None,
+    *,
+    dry_run: bool = True,
 ) -> None:
-    update_manager = SourceTableUpdateManager(client=client)
+    """Given a repository of source tables, update BigQuery to match"""
+    if not update_manager:
+        update_manager = SourceTableUpdateManager(client=BigQueryClientImpl())
 
-    # TODO(#30353): Add ingest view output table configs to this list
-    # TODO(#30354): Add dataflow output table configs to this list
     # TODO(#30355): Add cloud sql refresh output configs to this list
     # TODO(#30356): Add static yaml tables to this list
     update_configs = [
@@ -147,16 +160,64 @@ def update_all_source_table_schemas(
         )
     ]
 
+    update_configs.extend(
+        SourceTableCollectionUpdateConfig(
+            source_table_collection=source_table_collection,
+            allow_field_deletions=False,
+        )
+        for source_table_collection in source_table_repository.collections_labelled_with(
+            DataflowPipelineSourceTableLabel
+        )
+    )
+
+    update_configs.extend(
+        SourceTableCollectionUpdateConfig(
+            source_table_collection=source_table_collection,
+            allow_field_deletions=False,
+        )
+        for source_table_collection in source_table_repository.collections_labelled_with(
+            UnionedStateAgnosticSourceTableLabel
+        )
+    )
+
+    # TODO(#30495): These will not need to be added separately once ingest views define
+    #  their schemas in the YAML mappings definitions and we can collect these ingest
+    #  view tables with all the other source tables.
+    logging.info("Building source table configs for ingest views...")
+    update_configs.extend(
+        SourceTableCollectionUpdateConfig(
+            source_table_collection=source_table_collection,
+            allow_field_deletions=True,
+            recreate_on_update_error=True,
+        )
+        for source_table_collection in build_ingest_view_source_table_configs(
+            bq_client=update_manager.client,
+            state_instance_pairs=get_ingest_pipeline_enabled_state_and_instance_pairs(),
+        )
+    )
+
+    def _retry_fn() -> None:
+        if dry_run:
+            results = update_manager.dry_run(
+                update_configs=update_configs,
+                log_file=os.path.join(
+                    get_deploy_logs_dir(), "update_all_source_table_schemas.log"
+                ),
+            )
+            pprint(results)
+        else:
+            update_manager.update_async(
+                update_configs=update_configs,
+                log_file=os.path.join(
+                    get_deploy_logs_dir(), "update_all_source_table_schemas.log"
+                ),
+            )
+
     interactive_prompt_retry_on_exception(
         input_text="Exception encountered when updating source table schemas - retry?",
         accepted_response_override="yes",
         exit_on_cancel=True,
-        fn=lambda: update_manager.update_async(
-            update_configs=update_configs,
-            log_file=os.path.join(
-                get_deploy_logs_dir(), "update_all_source_table_schemas.log"
-            ),
-        ),
+        fn=_retry_fn,
     )
 
 
@@ -168,10 +229,18 @@ if __name__ == "__main__":
         choices=[GCP_PROJECT_STAGING, GCP_PROJECT_PRODUCTION],
         required=True,
     )
-    project_id = parser.parse_args().project_id
-    with local_project_id_override(project_id):
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+    )
+    args, _ = parser.parse_known_args()
+    with local_project_id_override(args.project_id):
         repository = build_source_table_repository_for_collected_schemata()
 
-        update_all_source_table_schemas(source_table_repository=repository)
-        update_cloud_sql_bq_refresh_output_schemas()
-        update_dataflow_output_schemas()
+        update_all_source_table_schemas(
+            source_table_repository=repository,
+            dry_run=args.dry_run,
+        )
+
+        if not args.dry_run:
+            update_cloud_sql_bq_refresh_output_schemas()

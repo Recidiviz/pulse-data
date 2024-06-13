@@ -80,8 +80,8 @@ from recidiviz.persistence.entity.entity_utils import (
 )
 from recidiviz.pipelines.base_pipeline import BasePipeline
 from recidiviz.pipelines.ingest.dataset_config import state_dataset_for_state_code
-from recidiviz.pipelines.ingest.state.generate_ingest_view_results import (
-    ADDITIONAL_SCHEMA_COLUMNS,
+from recidiviz.pipelines.ingest.state.constants import (
+    INGEST_VIEW_RESULTS_SCHEMA_COLUMNS,
 )
 from recidiviz.pipelines.ingest.state.generate_primary_keys import (
     generate_primary_key,
@@ -220,7 +220,7 @@ class BaseStateIngestPipelineTestCase(unittest.TestCase):
             )
         )
         for row in rows:
-            for column in ADDITIONAL_SCHEMA_COLUMNS:
+            for column in INGEST_VIEW_RESULTS_SCHEMA_COLUMNS:
                 if column.name in row:
                     row.pop(column.name)
         return (

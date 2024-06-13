@@ -18,20 +18,20 @@
 import unittest
 from unittest.mock import patch
 
-from recidiviz.airflow.dags.utils.dag_orchestration_utils import (
-    get_raw_data_dag_enabled_state_and_instance_pairs,
-    get_raw_data_dag_enabled_states,
-)
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.pipelines.ingest.state.gating import (
+    get_ingest_pipeline_enabled_state_and_instance_pairs,
+)
 
 
-class TestIngestDagOrchestrationUtils(unittest.TestCase):
+class TestIngestDagGating(unittest.TestCase):
     """Tests for ingest dag orchestration utils."""
 
     def setUp(self) -> None:
         self.get_existing_states_patcher = patch(
-            "recidiviz.airflow.dags.utils.dag_orchestration_utils.get_direct_ingest_states_existing_in_env",
+            "recidiviz.pipelines.ingest.state.gating."
+            "get_direct_ingest_states_existing_in_env",
             return_value={
                 # Has views, environment=production, has env variables in mappings
                 StateCode.US_DD,
@@ -48,8 +48,8 @@ class TestIngestDagOrchestrationUtils(unittest.TestCase):
     def tearDown(self) -> None:
         self.get_existing_states_patcher.stop()
 
-    def test_get_raw_data_dag_enabled_state_and_instance_pairs(self) -> None:
-        result = get_raw_data_dag_enabled_state_and_instance_pairs()
+    def test_get_ingest_pipeline_enabled_state_and_instance_pairs(self) -> None:
+        result = get_ingest_pipeline_enabled_state_and_instance_pairs()
 
         self.assertSetEqual(
             set(result),
@@ -62,18 +62,5 @@ class TestIngestDagOrchestrationUtils(unittest.TestCase):
                 (StateCode.US_YY, DirectIngestInstance.SECONDARY),
                 (StateCode.US_WW, DirectIngestInstance.PRIMARY),
                 (StateCode.US_WW, DirectIngestInstance.SECONDARY),
-            },
-        )
-
-    def test_get_raw_data_dag_enabled_states(self) -> None:
-        result = get_raw_data_dag_enabled_states()
-
-        self.assertSetEqual(
-            set(result),
-            {
-                StateCode.US_DD,
-                StateCode.US_XX,
-                StateCode.US_YY,
-                StateCode.US_WW,
             },
         )

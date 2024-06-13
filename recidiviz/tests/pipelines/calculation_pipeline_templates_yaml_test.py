@@ -20,9 +20,6 @@ from collections import defaultdict
 from typing import Dict, List, Set
 from unittest.mock import Mock, patch
 
-from recidiviz.airflow.dags.utils.dag_orchestration_utils import (
-    get_ingest_pipeline_enabled_state_and_instance_pairs,
-)
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
     get_direct_ingest_states_launched_in_env,
@@ -32,6 +29,9 @@ from recidiviz.pipelines.config_paths import PIPELINE_CONFIG_YAML_PATH
 from recidiviz.pipelines.dataflow_orchestration_utils import (
     get_metric_pipeline_enabled_states,
     get_normalization_pipeline_enabled_states,
+)
+from recidiviz.pipelines.ingest.state.gating import (
+    get_ingest_pipeline_enabled_state_and_instance_pairs,
 )
 from recidiviz.pipelines.metrics.pipeline_parameters import MetricsPipelineParameters
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION

@@ -33,13 +33,11 @@ from recidiviz.airflow.dags.utils.dataflow_pipeline_group import (
 from recidiviz.airflow.dags.utils.environment import get_project_id
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
-from recidiviz.pipelines.ingest.pipeline_parameters import (
-    INGEST_PIPELINE_NAME,
-    IngestPipelineParameters,
-)
+from recidiviz.pipelines.ingest.pipeline_parameters import IngestPipelineParameters
 from recidiviz.pipelines.ingest.pipeline_utils import (
     DEFAULT_PIPELINE_REGIONS_BY_STATE_CODE,
 )
+from recidiviz.pipelines.pipeline_names import INGEST_PIPELINE_NAME
 from recidiviz.utils.types import assert_type
 
 

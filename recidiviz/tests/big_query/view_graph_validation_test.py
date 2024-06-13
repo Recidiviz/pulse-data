@@ -30,21 +30,18 @@ from recidiviz.big_query.view_update_manager import (
 from recidiviz.ingest.views.dataset_config import (
     VIEWS_DATASET as INGEST_METADATA_VIEWS_DATASET,
 )
+from recidiviz.source_tables.collect_all_source_table_configs import (
+    build_source_table_repository_for_collected_schemata,
+)
+from recidiviz.source_tables.source_table_config import SourceTableCollection
 from recidiviz.tests.big_query.big_query_emulator_test_case import (
     BigQueryEmulatorTestCase,
 )
 from recidiviz.tools.deploy.deploy_test_empty_views import (
     DEFAULT_TEMPORARY_TABLE_EXPIRATION,
 )
-from recidiviz.tools.deploy.generate_emulator_table_schema_json import (
-    SOURCE_TABLES_JSON_PATH,
-    write_emulator_source_tables_json,
-)
-from recidiviz.utils.environment import (
-    GCP_PROJECT_PRODUCTION,
-    GCP_PROJECT_STAGING,
-    in_ci,
-)
+from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
+from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.validation.views.view_config import (
     CROSS_PROJECT_VALIDATION_VIEW_BUILDERS,
 )
@@ -128,15 +125,18 @@ class BaseViewGraphTest(BigQueryEmulatorTestCase):
     wipe_emulator_data_on_teardown = False
 
     @classmethod
-    def get_input_schema_json_path(cls) -> str:
-        if not cls.project_id:
-            raise ValueError("project_id must be set")
+    def get_source_tables(cls) -> list[SourceTableCollection]:
+        if cls.project_id is None:
+            raise ValueError(
+                "Must specify project id when running the view graph validation test"
+            )
 
-        # Source table JSON is built prior to test run in CI
-        if in_ci():
-            return SOURCE_TABLES_JSON_PATH
+        # The view graph validation test uses all source tables
+        # When debugging failures, it may be easier to filter this list of collections down to just the failing set
+        with local_project_id_override(cls.project_id):
+            repository = build_source_table_repository_for_collected_schemata()
 
-        return write_emulator_source_tables_json(cls.project_id)
+        return repository.source_table_collections
 
     def run_view_graph_test(self) -> None:
         view_builders_to_update = [

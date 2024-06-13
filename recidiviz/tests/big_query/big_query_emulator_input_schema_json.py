@@ -17,7 +17,6 @@
 """
 Generates a JSON file that can be used to seed the emulator with source tables
 """
-import argparse
 import json
 import logging
 import os
@@ -27,14 +26,12 @@ import attr
 from google.cloud.bigquery import SchemaField
 from more_itertools import one
 
-from recidiviz.source_tables.collect_all_source_table_configs import (
-    build_source_table_repository_for_collected_schemata,
-)
+from recidiviz.source_tables.source_table_config import SourceTableCollection
 from recidiviz.tests.test_setup_utils import BQ_EMULATOR_PROJECT_ID
-from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
-from recidiviz.utils.metadata import local_project_id_override
 
-SOURCE_TABLES_FIXTURES_DIR = os.path.join(os.path.dirname(__file__), "fixtures")
+SOURCE_TABLES_FIXTURES_DIR = os.path.join(
+    os.path.dirname(__file__), "../../tools/deploy/fixtures"
+)
 SOURCE_TABLES_FIXTURE_FILE_NAME = "emulator_source_tables.json"
 SOURCE_TABLES_JSON_PATH = os.path.join(
     SOURCE_TABLES_FIXTURES_DIR, SOURCE_TABLES_FIXTURE_FILE_NAME
@@ -108,12 +105,24 @@ def build_column_from_schema_field(schema_field: SchemaField) -> ColumnJSON:
     )
 
 
-def _update_with_all_source_table_schemas(project_json: ProjectJSON) -> None:
+def _update_with_all_source_table_schemas(
+    project_json: ProjectJSON,
+    source_table_collections: list[SourceTableCollection],
+) -> None:
+    """Given a set of source table collections, add their corresponding datasets and tables to a ProjectJSON instance"""
     logging.getLogger().setLevel(logging.INFO)
     logging.info("Getting source table schemas configs...")
 
-    generator = build_source_table_repository_for_collected_schemata()
-    for address, table in generator.source_tables.items():
+    for source_table_collection in source_table_collections:
+        project_json.add_dataset(source_table_collection.dataset_id)
+
+    source_tables_by_address = {
+        address: source_table_config
+        for source_table_collection in source_table_collections
+        for address, source_table_config in source_table_collection.source_tables_by_address.items()
+    }
+
+    for address, table in source_tables_by_address.items():
         columns = [
             build_column_from_schema_field(column) for column in table.schema_fields
         ]
@@ -137,29 +146,23 @@ def _update_with_all_source_table_schemas(project_json: ProjectJSON) -> None:
         )
 
 
-def write_emulator_source_tables_json(project_id: str) -> str:
+def write_emulator_source_tables_json(
+    source_table_collections: list[SourceTableCollection], file_name: str
+) -> str:
+    """Given a set of source table collections, generate an emulator-compatible json input schema and write it to
+    disk"""
     project_json = ProjectJSON(id=BQ_EMULATOR_PROJECT_ID, datasets=[])
-    with local_project_id_override(project_id):
-        _update_with_all_source_table_schemas(project_json)
-
-        if not os.path.exists(SOURCE_TABLES_FIXTURES_DIR):
-            os.mkdir(SOURCE_TABLES_FIXTURES_DIR)
-
-        with open(SOURCE_TABLES_JSON_PATH, "w", encoding="utf-8") as f:
-            f.write(json.dumps({"projects": [attr.asdict(project_json)]}))
-
-        logging.info("Wrote source table output to %s!", SOURCE_TABLES_JSON_PATH)
-
-    return SOURCE_TABLES_JSON_PATH
-
-
-if __name__ == "__main__":
-    logging.getLogger().setLevel(logging.INFO)
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "--project-id",
-        choices=[GCP_PROJECT_STAGING, GCP_PROJECT_PRODUCTION],
-        required=True,
+    _update_with_all_source_table_schemas(
+        project_json, source_table_collections=source_table_collections
     )
-    known_args, _ = parser.parse_known_args()
-    write_emulator_source_tables_json(known_args.project_id)
+
+    source_table_file = os.path.join(SOURCE_TABLES_FIXTURES_DIR, file_name)
+    if not os.path.exists(SOURCE_TABLES_FIXTURES_DIR):
+        os.mkdir(SOURCE_TABLES_FIXTURES_DIR)
+
+    with open(source_table_file, "w", encoding="utf-8") as f:
+        f.write(json.dumps({"projects": [attr.asdict(project_json)]}))
+
+    logging.info("Wrote source table output to %s!", source_table_file)
+
+    return str(source_table_file)

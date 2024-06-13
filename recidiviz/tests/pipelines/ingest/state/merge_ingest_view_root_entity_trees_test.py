@@ -45,8 +45,8 @@ from recidiviz.persistence.entity.state.entities import (
     StatePersonExternalId,
 )
 from recidiviz.pipelines.ingest.state import pipeline
-from recidiviz.pipelines.ingest.state.generate_ingest_view_results import (
-    ADDITIONAL_SCHEMA_COLUMNS,
+from recidiviz.pipelines.ingest.state.constants import (
+    INGEST_VIEW_RESULTS_SCHEMA_COLUMNS,
 )
 from recidiviz.tests.pipelines.ingest.state.test_case import StateIngestPipelineTestCase
 
@@ -79,7 +79,7 @@ class TestMergeIngestViewRootEntityTrees(StateIngestPipelineTestCase):
         results: List[Tuple[float, Entity]] = []
         for row in rows:
             upper_bound_date = parser.isoparse(row[UPPER_BOUND_DATETIME_COL_NAME])
-            for column in ADDITIONAL_SCHEMA_COLUMNS:
+            for column in INGEST_VIEW_RESULTS_SCHEMA_COLUMNS:
                 row.pop(column.name)
             results.append(
                 (

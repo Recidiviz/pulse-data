@@ -19,6 +19,7 @@ from typing import List, Set
 
 import attr
 
+from recidiviz.pipelines.pipeline_names import SUPPLEMENTAL_PIPELINE_NAME
 from recidiviz.pipelines.pipeline_parameters import PipelineParameters
 from recidiviz.pipelines.supplemental.dataset_config import SUPPLEMENTAL_DATA_DATASET
 
@@ -33,7 +34,7 @@ class SupplementalPipelineParameters(PipelineParameters):
 
     @property
     def flex_template_name(self) -> str:
-        return "supplemental"
+        return SUPPLEMENTAL_PIPELINE_NAME
 
     def _get_base_job_name(self) -> str:
         return self._to_job_name_friendly(self.pipeline[: -len("_supplemental")])

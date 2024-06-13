@@ -278,6 +278,14 @@ class BigQueryAddressOverrides:
                     f"[{dataset_to_override}]: {conflicting_overrides}."
                 )
 
+    @classmethod
+    def empty(cls) -> "BigQueryAddressOverrides":
+        return BigQueryAddressOverrides(
+            full_dataset_overrides={},
+            address_overrides={},
+            create_key=_internal_only_create_key,
+        )
+
     @staticmethod
     def format_sandbox_dataset(prefix: str, dataset_id: str) -> str:
         return f"{prefix}_{dataset_id}"

@@ -30,8 +30,6 @@ from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestIns
 from recidiviz.pipelines.ingest.dataset_config import state_dataset_for_state_code
 from recidiviz.pipelines.pipeline_parameters import PipelineParameters
 
-INGEST_PIPELINE_NAME = "ingest"
-
 
 @attr.define(kw_only=True)
 class IngestPipelineParameters(PipelineParameters):

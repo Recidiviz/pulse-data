@@ -145,11 +145,78 @@ class DataflowPipelineSourceTableLabel(SourceTableLabel[str]):
         return self.pipeline_name
 
 
+# TODO(#27373): Once we've refactored the Dataflow pipelines to read directly from
+#  previous pipelines' state-specific outputs and converted the `state` and
+#  `normalized_state` datasets to materialized view outputs, we should no longer have
+#  any more of these source tables
+@attr.define
+class NormalizedStateAgnosticEntitySourceTableLabel(SourceTableLabel[bool]):
+    """Label for source tables in the `normalized_state` dataset"""
+
+    # TODO(#29517): We should be able to remove this once the combined
+    #  ingest/normalization pipeline outputs ALL entities to its us_xx_normalized_state
+    #  dataset.
+    source_is_normalization_pipeline: bool = attr.ib(validator=attr_validators.is_bool)
+
+    @property
+    def value(self) -> bool:
+        return self.source_is_normalization_pipeline
+
+
+@attr.define
+class NormalizedStateSpecificEntitySourceTableLabel(SourceTableLabel[StateCode]):
+    """Label for source tables in a state-specific us_xx_normalized_state dataset"""
+
+    state_code: StateCode = attr.ib(validator=attr.validators.instance_of(StateCode))
+
+    @property
+    def value(self) -> StateCode:
+        return self.state_code
+
+
+@attr.define
+class IngestPipelineEntitySourceTableLabel(
+    SourceTableLabel[tuple[StateCode, DirectIngestInstance]]
+):
+    """Label for source tables output by an ingest pipeline into a state-specific
+    `us_xx_state*` dataset.
+    """
+
+    state_code: StateCode = attr.ib(validator=attr.validators.instance_of(StateCode))
+    ingest_instance: DirectIngestInstance = attr.ib(
+        validator=attr.validators.instance_of(DirectIngestInstance)
+    )
+
+    @property
+    def value(self) -> tuple[StateCode, DirectIngestInstance]:
+        return self.state_code, self.ingest_instance
+
+
+@attr.define
+class IngestViewOutputSourceTableLabel(
+    SourceTableLabel[tuple[StateCode, DirectIngestInstance]]
+):
+    """Label for source tables output by an ingest pipeline that contain the results of
+    ingest view queries.
+    """
+
+    state_code: StateCode = attr.ib(validator=attr.validators.instance_of(StateCode))
+    ingest_instance: DirectIngestInstance = attr.ib(
+        validator=attr.validators.instance_of(DirectIngestInstance)
+    )
+
+    @property
+    def value(self) -> tuple[StateCode, DirectIngestInstance]:
+        return self.state_code, self.ingest_instance
+
+
 @attr.define
 class RawDataSourceTableLabel(SourceTableLabel[tuple[StateCode, DirectIngestInstance]]):
-    state_code: StateCode = attr.ib(validator=attr.validators.in_(options=StateCode))
+    """Tables in state-specific us_xx_raw_data datasets."""
+
+    state_code: StateCode = attr.ib(validator=attr.validators.instance_of(StateCode))
     ingest_instance: DirectIngestInstance = attr.ib(
-        validator=attr.validators.in_(options=DirectIngestInstance)
+        validator=attr.validators.instance_of(DirectIngestInstance)
     )
 
     @property
@@ -159,11 +226,30 @@ class RawDataSourceTableLabel(SourceTableLabel[tuple[StateCode, DirectIngestInst
 
 @attr.define
 class SchemaTypeSourceTableLabel(SourceTableLabel[SchemaType]):
+    """Tables whose schemas are defined by the schema with the given schema_type."""
+
     schema_type: SchemaType = attr.ib(validator=attr.validators.instance_of(SchemaType))
 
     @property
     def value(self) -> SchemaType:
         return self.schema_type
+
+
+# TODO(#27373): Once we've refactored the Dataflow pipelines to read directly from
+#  previous pipelines' state-specific outputs and converted the `state` and
+#  `normalized_state` datasets to materialized view outputs, we should no longer have
+#  any more of these state tables
+@attr.define
+class UnionedStateAgnosticSourceTableLabel(SourceTableLabel[str]):
+    """Source tables that are built by unioning a collection of state-specific pipeline
+    outputs into a single state-agnostic table.
+    """
+
+    dataset_id: str
+
+    @property
+    def value(self) -> str:
+        return self.dataset_id
 
 
 @attr.s(auto_attribs=True)
@@ -219,6 +305,15 @@ class SourceTableCollection:
         return any(
             src_label.value == label.value
             for src_label in self.labels
+            if isinstance(src_label, type(label))
+        )
+
+    def has_any_label(self, labels: list[SourceTableLabel]) -> bool:
+        """Returns True if the collection has any of the provided labels."""
+        return any(
+            src_label.value == label.value
+            for src_label in self.labels
+            for label in labels
             if isinstance(src_label, type(label))
         )
 

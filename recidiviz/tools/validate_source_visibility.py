@@ -273,6 +273,7 @@ def main() -> int:
         "recidiviz.pipelines.metrics.pipeline_parameters",
         "recidiviz.pipelines.normalization.pipeline_parameters",
         "recidiviz.pipelines.normalization.dataset_config",
+        "recidiviz.pipelines.pipeline_names",
         "recidiviz.pipelines.pipeline_parameters",
         "recidiviz.pipelines.supplemental.pipeline_parameters",
         "recidiviz.pipelines.supplemental.dataset_config",
