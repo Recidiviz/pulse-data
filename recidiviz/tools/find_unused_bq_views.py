@@ -124,9 +124,6 @@ from recidiviz.calculator.query.state.views.sessions.compartment_level_2_super_s
 from recidiviz.calculator.query.state.views.sessions.parole_board_hearing_decisions import (
     PAROLE_BOARD_HEARING_DECISIONS_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.sessions.person_caseload_location_sessions import (
-    PERSON_CASELOAD_LOCATION_SESSIONS_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.sessions.us_nd.us_nd_raw_lsir_assessments import (
     US_ND_RAW_LSIR_ASSESSMENTS_VIEW_BUILDER,
 )
@@ -318,9 +315,6 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
     ),
     SUPERVISION_OFFICERS_ARCHIVE_VIEW_BUILDER.address: (
         "Will be referenced to support Outliers analytics work (see #27576) (Alexa Batino 2/14/24)"
-    ),
-    PERSON_CASELOAD_LOCATION_SESSIONS_VIEW_BUILDER.address: (
-        "Will be referenced by custom_aggregated_metrics_lookml_generator (see #28113) (Ben Packer 3/18/24)"
     ),
     CLIENTS_MILESTONES_SIDE_PANEL_OPENED_VIEW_BUILDER.address: (
         "Will be referenced to support Workflows milestones_funnel work (see #28875) (Michelle Orden 4/11/24)"
