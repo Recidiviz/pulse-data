@@ -59,7 +59,7 @@ from recidiviz.tests.big_query.big_query_emulator_test_case import (
     BigQueryEmulatorTestCase,
 )
 from recidiviz.tests.big_query.big_query_test_helper import (
-    check_for_ctes_with_no_comments,
+    get_undocumented_ctes,
     query_view,
 )
 from recidiviz.tests.ingest.direct.fixture_util import (
@@ -370,20 +370,43 @@ class IngestViewEmulatorQueryTestCase(BigQueryEmulatorTestCase):
         query_run_dt: datetime.datetime,
         region_code: str,
     ) -> None:
+        """Throws if the view has CTEs that are not properly documented with a comment,
+        or if CTEs that are now documented are still listed in the exemptions list.
+        """
         state_code = StateCode(region_code.upper())
-        if (
-            ingest_view.ingest_view_name
-            # TODO(#5508) Have region/state code be enum
-            in THESE_INGEST_VIEWS_HAVE_UNDOCUMENTED_CTES.get(state_code, {})
-        ):
-            return None
         query = ingest_view.build_query(
             config=DirectIngestViewQueryBuilder.QueryStructureConfig(
                 raw_data_source_instance=DirectIngestInstance.PRIMARY,
                 raw_data_datetime_upper_bound=query_run_dt,
             )
         )
-        return check_for_ctes_with_no_comments(query, ingest_view.ingest_view_name)
+        undocumented_ctes = get_undocumented_ctes(query)
+        ingest_view_name = ingest_view.ingest_view_name
+
+        # TODO(#5508) Have region/state code be enum
+        view_exemptions = THESE_INGEST_VIEWS_HAVE_UNDOCUMENTED_CTES.get(state_code, {})
+        allowed_undocumented_ctes = set(view_exemptions.get(ingest_view_name, []))
+
+        unexpected_undocumented_ctes = undocumented_ctes - allowed_undocumented_ctes
+        if unexpected_undocumented_ctes:
+            undocumented_ctes_str = ", ".join(unexpected_undocumented_ctes)
+            raise ValueError(
+                f"Query {ingest_view_name} has undocumented CTEs: "
+                f"{undocumented_ctes_str}"
+            )
+        exempt_ctes_that_are_documented = allowed_undocumented_ctes - undocumented_ctes
+        if exempt_ctes_that_are_documented:
+            raise ValueError(
+                f"Found CTEs for query {ingest_view_name} that are now "
+                f"documented: {sorted(exempt_ctes_that_are_documented)}. Please remove "
+                f"these from the THESE_INGEST_VIEWS_HAVE_UNDOCUMENTED_CTES list."
+            )
+        if ingest_view_name in view_exemptions:
+            if not view_exemptions[ingest_view_name]:
+                raise ValueError(
+                    f"Query {ingest_view_name} has all CTEs documented - please remove "
+                    f"its empty entry from THESE_INGEST_VIEWS_HAVE_UNDOCUMENTED_CTES."
+                )
 
     def compare_results_to_fixture(
         self, results: pd.DataFrame, expected_output_fixture_path: str
