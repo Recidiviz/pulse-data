@@ -17,9 +17,12 @@
 """This criteria view builder defines spans of time where clients do not have a supervision level
 raw text value involving a sex offense as tracked by our `sessions` dataset.
 """
+from google.cloud import bigquery
+
 from recidiviz.calculator.query.sessions_query_fragments import aggregate_adjacent_spans
 from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
 from recidiviz.common.constants.states import StateCode
+from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
@@ -52,6 +55,7 @@ SELECT
         end_date,
         FALSE AS meets_criteria,
     TO_JSON(STRUCT(TRUE AS supervision_level_is_so)) AS reason,
+    TRUE AS supervision_level_is_so,
     FROM ({aggregate_adjacent_spans(table_name='so_spans')})
 """
 
@@ -63,6 +67,13 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
         sessions_dataset=SESSIONS_DATASET,
         meets_criteria_default=True,
         state_code=StateCode.US_IX,
+        reasons_fields=[
+            ReasonsField(
+                name="supervision_level_is_so",
+                type=bigquery.enums.SqlTypeNames.BOOLEAN,
+                description="#TODO(#29059): Add reasons field description",
+            ),
+        ],
     )
 )
 

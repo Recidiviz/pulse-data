@@ -89,12 +89,13 @@ def date_within_time_span(
                                           date_part = date_part)},
       {create_sub_sessions_with_attributes('critical_date_has_passed_spans')}
     SELECT
-      state_code,
-      person_id,
-      start_date,
-      end_date,
-      LOGICAL_AND(critical_date_has_passed) AS meets_criteria,
-      TO_JSON(STRUCT(MAX(critical_date) AS {critical_date_column})) AS reason,
+        state_code,
+        person_id,
+        start_date,
+        end_date,
+        LOGICAL_AND(critical_date_has_passed) AS meets_criteria,
+        TO_JSON(STRUCT(MAX(critical_date) AS {critical_date_column})) AS reason,
+        MAX(critical_date) AS {critical_date_column}
     FROM sub_sessions_with_attributes
     GROUP BY 1,2,3,4
     """
@@ -158,6 +159,9 @@ SELECT
     TO_JSON(STRUCT(start_date AS latest_detainer_start_date,
         DetainerTypeDesc AS latest_detainer_type,
         DetainerStatusDesc AS latest_detainer_status)) AS reason,
+    start_date AS latest_detainer_start_date,
+    DetainerTypeDesc AS latest_detainer_type,
+    DetainerStatusDesc AS latest_detainer_status,
 FROM
     sub_sessions_with_attributes
 QUALIFY ROW_NUMBER() OVER(PARTITION BY state_code, person_id, start_date, end_date ORDER BY start_date DESC)=1

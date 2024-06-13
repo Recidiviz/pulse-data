@@ -16,9 +16,11 @@
 # =============================================================================
 """
 Defines a criteria span view that shows spans of time during which
-someone in ID is in a Community Reentry Center facility or in Pocatello 
+someone in ID is in a Community Reentry Center facility or in Pocatello
 Women's Correctional Center Unit 1
 """
+from google.cloud import bigquery
+
 from recidiviz.calculator.query.sessions_query_fragments import (
     aggregate_adjacent_spans,
     create_sub_sessions_with_attributes,
@@ -28,6 +30,7 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.dataset_config import (
     task_eligibility_criteria_state_specific_dataset,
 )
+from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
@@ -92,7 +95,9 @@ SELECT
     start_date,
     end_date,
     TRUE AS meets_criteria,
-    TO_JSON(STRUCT(start_date AS crc_start_date, ANY_VALUE(facility_name) AS facility_name)) AS reason
+    TO_JSON(STRUCT(start_date AS crc_start_date, ANY_VALUE(facility_name) AS facility_name)) AS reason,
+    start_date AS crc_start_date,
+    ANY_VALUE(facility_name) AS facility_name,
 FROM sub_sessions_with_attributes
 GROUP BY 1,2,3,4
 """
@@ -106,6 +111,18 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = StateSpecificTaskCr
     task_eligibility_criteria_us_ix_dataset=task_eligibility_criteria_state_specific_dataset(
         StateCode.US_IX
     ),
+    reasons_fields=[
+        ReasonsField(
+            name="crc_start_date",
+            type=bigquery.enums.SqlTypeNames.DATE,
+            description="#TODO(#29059): Add reasons field description",
+        ),
+        ReasonsField(
+            name="facility_name",
+            type=bigquery.enums.SqlTypeNames.STRING,
+            description="#TODO(#29059): Add reasons field description",
+        ),
+    ],
 )
 
 if __name__ == "__main__":

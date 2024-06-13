@@ -15,12 +15,15 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ============================================================================
 """
-Defines a criteria span view that shows spans of time during which someone is 
+Defines a criteria span view that shows spans of time during which someone is
 incarcerated within 18 months of their earliest possible release date (EPRD) AND 15 years
 of their full term completion date (FTCD).
 """
+from google.cloud import bigquery
+
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.dataset_config import TASK_ELIGIBILITY_CRITERIA_GENERAL
+from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
@@ -66,12 +69,20 @@ _JSON_CONTENT = f"""MIN(full_term_completion_date) AS full_term_completion_date,
                    '{_CRITERIA_NAME}' AS criteria_name"""
 
 _QUERY_TEMPLATE = f"""
+WITH combined_query AS (
 {combining_several_criteria_into_one(
         select_statements_for_criteria_lst=[_CRITERIA_QUERY_1,
                                              _CRITERIA_QUERY_2],
         meets_criteria="LOGICAL_AND(meets_criteria AND num_criteria>=2)",
         json_content=_JSON_CONTENT,
     )}
+)
+SELECT
+    *,
+    JSON_EXTRACT(reason, "$.full_term_completion_date") AS full_term_completion_date,
+    JSON_EXTRACT(reason, "$.min_term_completion_date") AS min_term_completion_date,
+FROM
+    combined_query
 """
 
 VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
@@ -81,6 +92,18 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
         criteria_spans_query_template=_QUERY_TEMPLATE,
         description=_DESCRIPTION,
         task_eligibility_criteria_general=TASK_ELIGIBILITY_CRITERIA_GENERAL,
+        reasons_fields=[
+            ReasonsField(
+                name="full_term_completion_date",
+                type=bigquery.enums.SqlTypeNames.DATE,
+                description="#TODO(#29059): Add reasons field description",
+            ),
+            ReasonsField(
+                name="min_term_completion_date",
+                type=bigquery.enums.SqlTypeNames.DATE,
+                description="#TODO(#29059): Add reasons field description",
+            ),
+        ],
     )
 )
 

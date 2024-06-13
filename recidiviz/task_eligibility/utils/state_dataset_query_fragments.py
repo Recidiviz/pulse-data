@@ -155,6 +155,7 @@ def x_time_from_ineligible_offense(
     date_interval: int,
     additional_where_clause: str = "",
     start_date_column: str = "effective_date",
+    statute_date_name: str = "most_recent_statute_date",
 ) -> str:
     """
     Generate a BigQuery SQL query to identify time spans where individuals
@@ -198,14 +199,19 @@ def x_time_from_ineligible_offense(
 {create_sub_sessions_with_attributes('ineligible_sentences')}
 
 SELECT 
-  state_code, 
-  person_id,
-  start_date, 
-  end_date,
-  FALSE AS meets_criteria,
-  TO_JSON(STRUCT(ARRAY_AGG(DISTINCT statute) AS ineligible_offenses,
-                 ARRAY_AGG(DISTINCT description) AS ineligible_offenses_descriptions,
-                 MAX({start_date_column}) AS most_recent_statute_date)) AS reason,
+    state_code, 
+    person_id,
+    start_date, 
+    end_date,
+    FALSE AS meets_criteria,
+    TO_JSON(STRUCT(
+        ARRAY_AGG(DISTINCT statute) AS ineligible_offenses,
+        ARRAY_AGG(DISTINCT description) AS ineligible_offenses_descriptions,
+        MAX({start_date_column}) AS {statute_date_name}
+    )) AS reason,
+    ARRAY_AGG(DISTINCT statute) AS ineligible_offenses,
+    ARRAY_AGG(DISTINCT description) AS ineligible_offenses_descriptions,
+    MAX({start_date_column}) AS {statute_date_name},
 FROM sub_sessions_with_attributes
 GROUP BY 1,2,3,4,5"""
 

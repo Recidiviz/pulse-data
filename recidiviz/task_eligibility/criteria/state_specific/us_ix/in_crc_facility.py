@@ -18,8 +18,11 @@
 Defines a criteria span view that shows spans of time during which
 someone in ID is in a Community Reentry Center facility
 """
+from google.cloud import bigquery
+
 from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
 from recidiviz.common.constants.states import StateCode
+from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
@@ -38,7 +41,9 @@ someone in ID is in a Community Reentry Center facility
 """
 
 _ADDITIONAL_COLUMNS = """TRUE AS meets_criteria,
-    TO_JSON(STRUCT(start_date AS crc_start_date, facility_name AS facility_name)) AS reason,"""
+    TO_JSON(STRUCT(start_date AS crc_start_date, facility_name AS facility_name)) AS reason,
+    start_date AS crc_start_date,
+    facility_name"""
 
 _QUERY_TEMPLATE = ix_crc_facilities_in_location_sessions(
     crc_facilities_list=IX_CRC_FACILITIES, additional_columns=_ADDITIONAL_COLUMNS
@@ -51,6 +56,18 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
         criteria_spans_query_template=_QUERY_TEMPLATE,
         description=_DESCRIPTION,
         sessions_dataset=SESSIONS_DATASET,
+        reasons_fields=[
+            ReasonsField(
+                name="crc_start_date",
+                type=bigquery.enums.SqlTypeNames.DATE,
+                description="#TODO(#29059): Add reasons field description",
+            ),
+            ReasonsField(
+                name="facility_name",
+                type=bigquery.enums.SqlTypeNames.STRING,
+                description="#TODO(#29059): Add reasons field description",
+            ),
+        ],
     )
 )
 

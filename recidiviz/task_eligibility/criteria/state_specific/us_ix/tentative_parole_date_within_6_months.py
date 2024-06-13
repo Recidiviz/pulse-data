@@ -18,8 +18,11 @@
 Defines a criteria span view that shows spans of time during which
 someone is within 1 year of their tentative parole date.
 """
+from google.cloud import bigquery
+
 from recidiviz.calculator.query.state.dataset_config import ANALYST_VIEWS_DATASET
 from recidiviz.common.constants.states import StateCode
+from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
@@ -47,6 +50,13 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
         description=_DESCRIPTION,
         analyst_dataset=ANALYST_VIEWS_DATASET,
         state_code=StateCode.US_IX,
+        reasons_fields=[
+            ReasonsField(
+                name="tentative_parole_date",
+                type=bigquery.enums.SqlTypeNames.DATE,
+                description="#TODO(#29059): Add reasons field description",
+            ),
+        ],
     )
 )
 

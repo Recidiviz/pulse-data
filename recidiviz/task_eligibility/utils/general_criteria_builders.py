@@ -57,10 +57,14 @@ def get_ineligible_offense_type_criteria(
     compartment_level_1: str,
     description: str,
     where_clause: str = "",
+    additional_json_fields: Optional[List[str]] = None,
 ) -> StateAgnosticTaskCriteriaBigQueryViewBuilder:
     """Returns a state-agnostic criteria view builder indicating the spans of time when a person is
     serving a sentence of a particular type.
     """
+    additional_json_fields_str = ""
+    if additional_json_fields:
+        additional_json_fields_str = ", " + ", ".join(additional_json_fields)
     criteria_query = f"""
     SELECT
         span.state_code,
@@ -68,8 +72,8 @@ def get_ineligible_offense_type_criteria(
         span.start_date,
         span.end_date,
         FALSE AS meets_criteria,
-        TO_JSON(STRUCT(ARRAY_AGG(DISTINCT statute) AS ineligible_offenses)) AS reason,
-        ARRAY_AGG(DISTINCT statute) AS ineligible_offenses,
+        TO_JSON(STRUCT(ARRAY_AGG(DISTINCT statute) AS ineligible_offenses{additional_json_fields_str})) AS reason,
+        ARRAY_AGG(DISTINCT statute) AS ineligible_offenses{additional_json_fields_str}
     {join_sentence_spans_to_compartment_sessions(compartment_level_1_to_overlap=compartment_level_1)}
     {where_clause}
     GROUP BY 1,2,3,4,5

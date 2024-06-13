@@ -19,12 +19,14 @@ Defines a criteria span view that shows spans of time during which
 someone in ID  has been in a Community Reentry Center facility or
 PWCC Unit 1 for 60 days.
 """
+from google.cloud import bigquery
 
 from recidiviz.calculator.query.sessions_query_fragments import aggregate_adjacent_spans
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.dataset_config import (
     task_eligibility_criteria_state_specific_dataset,
 )
+from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
@@ -71,6 +73,7 @@ SELECT
     cd.critical_date_has_passed AS meets_criteria,
     TO_JSON(STRUCT(
         cd.critical_date AS sixty_days_in_crc_facility_date)) AS reason,
+    cd.critical_date AS sixty_days_in_crc_facility_date,
 FROM critical_date_has_passed_spans cd
 """
 
@@ -82,6 +85,13 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = StateSpecificTaskCr
     task_eligibility_criteria_us_ix_dataset=task_eligibility_criteria_state_specific_dataset(
         StateCode.US_IX
     ),
+    reasons_fields=[
+        ReasonsField(
+            name="sixty_days_in_crc_facility_date",
+            type=bigquery.enums.SqlTypeNames.DATE,
+            description="#TODO(#29059): Add reasons field description",
+        ),
+    ],
 )
 
 if __name__ == "__main__":

@@ -18,6 +18,8 @@
 which there are no active no contact orders
 """
 
+from google.cloud import bigquery
+
 from recidiviz.calculator.query.bq_utils import nonnull_end_date_clause
 from recidiviz.calculator.query.sessions_query_fragments import (
     create_sub_sessions_with_attributes,
@@ -26,6 +28,7 @@ from recidiviz.calculator.query.state.dataset_config import NORMALIZED_STATE_DAT
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.dataset_config import raw_latest_views_dataset_for_region
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
@@ -70,6 +73,7 @@ SELECT
     end_date,
     NOT active_nco AS meets_criteria,
     TO_JSON(STRUCT(LOGICAL_OR(active_nco) AS active_nco)) AS reason,
+    LOGICAL_OR(active_nco) AS active_nco,
 FROM sub_sessions_with_attributes
 GROUP BY 1,2,3,4,5
 """
@@ -85,6 +89,13 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
             instance=DirectIngestInstance.PRIMARY,
         ),
         meets_criteria_default=True,
+        reasons_fields=[
+            ReasonsField(
+                name="active_nco",
+                type=bigquery.enums.SqlTypeNames.BOOLEAN,
+                description="#TODO(#29059): Add reasons field description",
+            ),
+        ],
     )
 )
 

@@ -15,11 +15,14 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ============================================================================
 """
-This file creates a spans of time where a person is ineligible if they have an IX eluding 
+This file creates a spans of time where a person is ineligible if they have an IX eluding
 police offense within the last 10 years.
 """
+from google.cloud import bigquery
+
 from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
 from recidiviz.common.constants.states import StateCode
+from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
@@ -48,7 +51,9 @@ _QUERY_TEMPLATE = f"""WITH {x_time_from_ineligible_offense(statutes_list = _INEL
                                                               date_part='YEAR',
                                                               date_interval=10,
                                                               additional_where_clause = _WHERE_CLAUSE,
-                                                              start_date_column='date_imposed')}
+                                                              start_date_column='date_imposed',
+                                                              statute_date_name="most_recent_eluding_police_date"
+                                                           )}
 """
 
 VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
@@ -59,6 +64,23 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
         description=_DESCRIPTION,
         sessions_dataset=SESSIONS_DATASET,
         meets_criteria_default=True,
+        reasons_fields=[
+            ReasonsField(
+                name="ineligible_offenses",
+                type=bigquery.enums.SqlTypeNames.RECORD,
+                description="#TODO(#29059): Add reasons field description",
+            ),
+            ReasonsField(
+                name="ineligible_offenses_descriptions",
+                type=bigquery.enums.SqlTypeNames.RECORD,
+                description="#TODO(#29059): Add reasons field description",
+            ),
+            ReasonsField(
+                name="most_recent_eluding_police_date",
+                type=bigquery.enums.SqlTypeNames.DATE,
+                description="#TODO(#29059): Add reasons field description",
+            ),
+        ],
     )
 )
 

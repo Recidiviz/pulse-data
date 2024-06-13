@@ -16,14 +16,17 @@
 # ============================================================================
 """
 Defines a criteria span view that shows spans of time during which
-someone has not been involved with absconsion, escape, or eluding police 
+someone has not been involved with absconsion, escape, or eluding police
 in the previous 10 years.
 """
+from google.cloud import bigquery
+
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.dataset_config import (
     TASK_ELIGIBILITY_CRITERIA_GENERAL,
     task_eligibility_criteria_state_specific_dataset,
 )
+from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
@@ -63,7 +66,7 @@ _CRITERIA_QUERY_2 = f"""
         * EXCEPT (reason),
         NULL AS most_recent_absconded_date,
         NULL AS most_recent_escape_date,
-        {extract_object_from_json(object_column = 'most_recent_statute_date', 
+        {extract_object_from_json(object_column = 'most_recent_eluding_police_date', 
                                   object_type = 'DATE')} AS most_recent_eluding_police_date,
     FROM `{{project_id}}.{{task_eligibility_criteria_us_ix}}.no_eluding_police_offense_within_10_years_materialized`
 """
@@ -72,7 +75,7 @@ _CRITERIA_QUERY_3 = f"""
     SELECT 
         * EXCEPT (reason),
         NULL AS most_recent_absconded_date,
-        {extract_object_from_json(object_column = 'most_recent_statute_date', 
+        {extract_object_from_json(object_column = 'most_recent_escape_date', 
                                   object_type = 'DATE')} AS most_recent_escape_date,
         NULL AS most_recent_eluding_police_date,
     FROM `{{project_id}}.{{task_eligibility_criteria_us_ix}}.no_escape_offense_within_10_years_materialized`
@@ -83,6 +86,7 @@ _JSON_CONTENT = """MAX(most_recent_escape_date) AS most_recent_escape_date,
                    MAX(most_recent_absconded_date) AS most_recent_absconded_date"""
 
 _QUERY_TEMPLATE = f"""
+WITH combined_query AS (
 {combining_several_criteria_into_one(
         select_statements_for_criteria_lst=[_CRITERIA_QUERY_1,
                                             _CRITERIA_QUERY_2,
@@ -90,6 +94,14 @@ _QUERY_TEMPLATE = f"""
         meets_criteria="LOGICAL_AND(num_criteria<3)",
         json_content=_JSON_CONTENT,
     )}
+)
+SELECT
+    *,
+    JSON_EXTRACT(reason, "$.most_recent_absconded_date") AS most_recent_absconded_date,
+    JSON_EXTRACT(reason, "$.most_recent_eluding_police_date") AS most_recent_eluding_police_date,
+    JSON_EXTRACT(reason, "$.most_recent_escape_date") AS most_recent_escape_date,
+FROM
+    combined_query
 """
 
 VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = StateSpecificTaskCriteriaBigQueryViewBuilder(
@@ -102,6 +114,23 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = StateSpecificTaskCr
         StateCode.US_IX
     ),
     meets_criteria_default=True,
+    reasons_fields=[
+        ReasonsField(
+            name="most_recent_absconded_date",
+            type=bigquery.enums.SqlTypeNames.DATE,
+            description="#TODO(#29059): Add reasons field description",
+        ),
+        ReasonsField(
+            name="most_recent_eluding_police_date",
+            type=bigquery.enums.SqlTypeNames.RECORD,
+            description="#TODO(#29059): Add reasons field description",
+        ),
+        ReasonsField(
+            name="most_recent_escape_date",
+            type=bigquery.enums.SqlTypeNames.RECORD,
+            description="#TODO(#29059): Add reasons field description",
+        ),
+    ],
 )
 
 if __name__ == "__main__":

@@ -17,9 +17,12 @@
 """Defines a criteria span view that shows spans of time during which someone is past
 their parole/dual supervision early discharge date, computed using US_ID specific logic.
 """
+from google.cloud import bigquery
+
 from recidiviz.calculator.query.bq_utils import nonnull_end_date_clause
 from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
 from recidiviz.common.constants.states import StateCode
+from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
@@ -112,6 +115,8 @@ SELECT
         sup_type.supervision_type AS sentence_type,
         cd.critical_date AS eligible_date
     )) AS reason,
+    sup_type.supervision_type AS sentence_type,
+    cd.critical_date AS eligible_date,
 FROM critical_date_has_passed_spans cd
 LEFT JOIN parole_starts sup_type
     ON sup_type.state_code = cd.state_code
@@ -131,6 +136,18 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
         criteria_spans_query_template=_QUERY_TEMPLATE,
         state_code=StateCode.US_IX,
         sessions_dataset=SESSIONS_DATASET,
+        reasons_fields=[
+            ReasonsField(
+                name="sentence_type",
+                type=bigquery.enums.SqlTypeNames.STRING,
+                description="#TODO(#29059): Add reasons field description",
+            ),
+            ReasonsField(
+                name="eligible_date",
+                type=bigquery.enums.SqlTypeNames.DATE,
+                description="#TODO(#29059): Add reasons field description",
+            ),
+        ],
     )
 )
 

@@ -16,19 +16,22 @@
 # ============================================================================
 """
 Shows the spans of time during which someone in ID is eligible time-wise
-for a transfer to a Community Reentry Center (CRC) for work-release. 
+for a transfer to a Community Reentry Center (CRC) for work-release.
 For this to be true, the person must have one of the following three conditions:
     1. Tentative Parole Date (TPD) within seven (18) months OR
-        Full Term Release Date (FTRD) within seven (18) months 
+        Full Term Release Date (FTRD) within seven (18) months
     2. Early Release Date (EPRD) within 18 months AND
         Full Term Release Date (FTRD) within 15 years
     3. Life sentence AND
         Tentative Parole Date (TPD) within 1 year
 """
+from google.cloud import bigquery
+
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.dataset_config import (
     task_eligibility_criteria_state_specific_dataset,
 )
+from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
@@ -73,6 +76,7 @@ _CRITERIA_QUERY_3 = """
 _JSON_CONTENT = """ARRAY_AGG(reason) AS reasons"""
 
 _QUERY_TEMPLATE = f"""
+WITH combined_query AS (
 {combining_several_criteria_into_one(
         select_statements_for_criteria_lst=[_CRITERIA_QUERY_1,
                                              _CRITERIA_QUERY_2,
@@ -80,6 +84,22 @@ _QUERY_TEMPLATE = f"""
         meets_criteria="LOGICAL_OR(meets_criteria)",
         json_content=_JSON_CONTENT,
     )}
+)
+SELECT
+    state_code,
+    person_id,
+    start_date,
+    end_date,
+    meets_criteria,
+    ANY_VALUE(reason) AS reason,
+    ANY_VALUE(JSON_EXTRACT(reason_unnest, "$.full_term_completion_date")) AS full_term_completion_date,
+    ANY_VALUE(JSON_EXTRACT(reason_unnest, "$.min_term_completion_date")) AS min_term_completion_date,
+    ANY_VALUE(JSON_EXTRACT(reason_unnest, "$.tentative_parole_date")) AS tentative_parole_date,
+FROM
+    combined_query,
+    UNNEST(JSON_EXTRACT_ARRAY(JSON_EXTRACT(reason, "$."), "$.reasons")) AS reason_unnest
+GROUP BY
+    1, 2, 3, 4, 5
 """
 
 VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = StateSpecificTaskCriteriaBigQueryViewBuilder(
@@ -90,6 +110,23 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = StateSpecificTaskCr
     task_eligibility_criteria_us_ix=task_eligibility_criteria_state_specific_dataset(
         StateCode.US_IX
     ),
+    reasons_fields=[
+        ReasonsField(
+            name="full_term_completion_date",
+            type=bigquery.enums.SqlTypeNames.DATE,
+            description="#TODO(#29059): Add reasons field description",
+        ),
+        ReasonsField(
+            name="min_term_completion_date",
+            type=bigquery.enums.SqlTypeNames.DATE,
+            description="#TODO(#29059): Add reasons field description",
+        ),
+        ReasonsField(
+            name="tentative_parole_date",
+            type=bigquery.enums.SqlTypeNames.DATE,
+            description="#TODO(#29059): Add reasons field description",
+        ),
+    ],
 )
 
 if __name__ == "__main__":
