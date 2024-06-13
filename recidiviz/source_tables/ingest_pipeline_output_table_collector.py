@@ -57,7 +57,6 @@ from recidiviz.source_tables.source_table_config import (
     DataflowPipelineSourceTableLabel,
     IngestPipelineEntitySourceTableLabel,
     IngestViewOutputSourceTableLabel,
-    SchemaTypeSourceTableLabel,
     SourceTableCollection,
 )
 
@@ -75,7 +74,6 @@ def build_ingest_pipeline_output_source_table_collections() -> list[
         SourceTableCollection(
             dataset_id=state_dataset_for_state_code(state_code, ingest_instance),
             labels=[
-                SchemaTypeSourceTableLabel(SchemaType.STATE),
                 DataflowPipelineSourceTableLabel(INGEST_PIPELINE_NAME),
                 IngestPipelineEntitySourceTableLabel(
                     state_code=state_code, ingest_instance=ingest_instance

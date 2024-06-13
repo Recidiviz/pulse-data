@@ -31,7 +31,6 @@ from recidiviz.source_tables.normalization_pipeline_output_table_collector impor
 )
 from recidiviz.source_tables.source_table_config import (
     NormalizedStateAgnosticEntitySourceTableLabel,
-    SchemaTypeSourceTableLabel,
     SourceTableCollection,
     UnionedStateAgnosticSourceTableLabel,
 )
@@ -44,7 +43,6 @@ def build_unioned_state_source_table_collection() -> SourceTableCollection:
     state_agnostic_collection = SourceTableCollection(
         dataset_id=STATE_BASE_DATASET,
         labels=[
-            SchemaTypeSourceTableLabel(SchemaType.STATE),
             UnionedStateAgnosticSourceTableLabel(STATE_BASE_DATASET),
         ],
     )
