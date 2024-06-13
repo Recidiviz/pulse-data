@@ -29,6 +29,7 @@ from sqlalchemy.dialects import postgresql
 
 from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
 from recidiviz.big_query.big_query_view import BigQueryView, BigQueryViewBuilder
+from recidiviz.big_query.constants import BQ_TABLE_COLUMN_DESCRIPTION_MAX_LENGTH
 from recidiviz.common.attr_utils import (
     is_bool,
     is_date,
@@ -209,6 +210,23 @@ def _remove_non_printable_characters(column_name: str) -> str:
             repr(column_name),
         )
     return fixed_column
+
+
+def format_description_for_big_query(description: Optional[str]) -> str:
+    """If |description| is longer than BQ allows, truncate down to size with suffix
+    indicating it is truncated. THe full versions of the description should be in
+    Gitbook.
+    """
+    if not description:
+        return ""
+
+    if len(description) > BQ_TABLE_COLUMN_DESCRIPTION_MAX_LENGTH:
+        truncated_str = " ... (truncated)"
+        description = (
+            description[: BQ_TABLE_COLUMN_DESCRIPTION_MAX_LENGTH - len(truncated_str)]
+            + truncated_str
+        )
+    return description
 
 
 def transform_dict_to_bigquery_row(data_point: Dict[str, Any]) -> bigquery.table.Row:

@@ -16,16 +16,39 @@
 # =============================================================================
 """Constants used by the direct ingest system."""
 
+from google.cloud.bigquery import SchemaField
+from google.cloud.bigquery.enums import SqlTypeNames
+
 # Recidiviz-managed raw data columns
 FILE_ID_COL_NAME = "file_id"
 FILE_ID_COL_DESCRIPTION = "The ID of the file this row was extracted from"
+FILE_ID_COLUMN = SchemaField(
+    name=FILE_ID_COL_NAME,
+    field_type=SqlTypeNames.INTEGER.value,
+    mode="REQUIRED",
+    description=FILE_ID_COL_DESCRIPTION,
+)
+
 IS_DELETED_COL_NAME = "is_deleted"
 IS_DELETED_COL_DESCRIPTION = (
     "Whether this row is inferred deleted via omission from more recent files"
 )
+IS_DELETED_COLUMN = SchemaField(
+    name=IS_DELETED_COL_NAME,
+    field_type=SqlTypeNames.BOOLEAN.value,
+    mode="REQUIRED",
+    description=IS_DELETED_COL_DESCRIPTION,
+)
+
 UPDATE_DATETIME_COL_NAME = "update_datetime"
 UPDATE_DATETIME_COL_DESCRIPTION = (
     "The timestamp of the file this row was extracted from"
+)
+UPDATE_DATETIME_COLUMN = SchemaField(
+    name=UPDATE_DATETIME_COL_NAME,
+    field_type=SqlTypeNames.DATETIME.value,
+    mode="REQUIRED",
+    description=UPDATE_DATETIME_COL_DESCRIPTION,
 )
 
 # Recidiviz-managed ingest view results columns

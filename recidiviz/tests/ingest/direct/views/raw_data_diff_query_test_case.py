@@ -30,8 +30,10 @@ from recidiviz.ingest.direct.dataset_config import (
     raw_tables_dataset_for_region,
 )
 from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager import (
-    DirectIngestRawFileImportManager,
     get_region_raw_file_config,
+)
+from recidiviz.ingest.direct.raw_data.direct_ingest_raw_table_schema_builder import (
+    RawDataTableBigQuerySchemaBuilder,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.direct.views.raw_data_diff_query_builder import (
@@ -93,13 +95,18 @@ class RawDataDiffEmulatorQueryTestCase(BigQueryEmulatorTestCase):
         file_tag: str,
         fixture_type: RawDataDiffFixtureType,
         new_file_id: Optional[int] = None,
+        include_recidiviz_managed_fields: bool = True,
     ) -> None:
         """Create a mock raw data BigQuery table from a raw data fixture."""
         raw_data_df = self._get_raw_data_from_fixture(
             fixture_directory_name, fixture_type
         )
         self._load_mock_raw_table_to_bq(
-            file_tag, fixture_type, raw_data_df, new_file_id
+            file_tag,
+            fixture_type,
+            raw_data_df,
+            new_file_id,
+            include_recidiviz_managed_fields=include_recidiviz_managed_fields,
         )
 
     def _get_raw_data_from_fixture(
@@ -120,6 +127,7 @@ class RawDataDiffEmulatorQueryTestCase(BigQueryEmulatorTestCase):
         fixture_type: RawDataDiffFixtureType,
         mock_data: pd.DataFrame,
         new_file_id: Optional[int] = None,
+        include_recidiviz_managed_fields: bool = True,
     ) -> None:
         """Load mock raw table to associated dataset on BQ."""
         dataset_id = (
@@ -148,9 +156,9 @@ class RawDataDiffEmulatorQueryTestCase(BigQueryEmulatorTestCase):
         )
         self.create_mock_table(
             address=address,
-            schema=DirectIngestRawFileImportManager.create_raw_table_schema_from_columns(
+            schema=RawDataTableBigQuerySchemaBuilder.build_bq_schmea_for_config(
                 raw_file_config=region_config.raw_file_configs[file_tag],
-                columns=mock_data.columns.values,
+                include_recidiviz_managed_fields=include_recidiviz_managed_fields,
             ),
         )
         self.load_rows_into_table(address, mock_data.to_dict("records"))
@@ -168,7 +176,11 @@ class RawDataDiffEmulatorQueryTestCase(BigQueryEmulatorTestCase):
             RawDataDiffFixtureType.EXISTING,
         )
         self._create_mock_raw_bq_table_from_fixture(
-            fixture_directory_name, file_tag, RawDataDiffFixtureType.NEW, new_file_id
+            fixture_directory_name,
+            file_tag,
+            RawDataDiffFixtureType.NEW,
+            new_file_id,
+            include_recidiviz_managed_fields=False,
         )
 
     def run_diff_query_and_validate_output(

@@ -22,8 +22,8 @@ import attr
 import mock
 from mock import patch
 
-from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager import (
-    DirectIngestRawFileImportManager,
+from recidiviz.ingest.direct.raw_data.direct_ingest_raw_table_schema_builder import (
+    RawDataTableBigQuerySchemaBuilder,
 )
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRawFileConfig,
@@ -109,7 +109,7 @@ class RawTableQueryBuilderTest(BigQueryEmulatorTestCase):
         self.bq_client.create_dataset_if_necessary(
             dataset_ref=self.bq_client.dataset_ref_for_id(dataset_id)
         )
-        schema_fields = DirectIngestRawFileImportManager.create_raw_table_schema(
+        schema_fields = RawDataTableBigQuerySchemaBuilder.build_bq_schmea_for_config(
             raw_file_config=raw_file_config,
         )
         self.bq_client.create_table_with_schema(

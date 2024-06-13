@@ -45,8 +45,8 @@ from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_collector impo
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_compiler_delegate import (
     StateSchemaIngestViewManifestCompilerDelegate,
 )
-from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager import (
-    DirectIngestRawFileImportManager,
+from recidiviz.ingest.direct.raw_data.direct_ingest_raw_table_schema_builder import (
+    RawDataTableBigQuerySchemaBuilder,
 )
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRegionRawFileConfig,
@@ -562,7 +562,7 @@ class StateIngestPipelineTestCase(
             table_id=raw_table_dependency_config.raw_file_config.file_tag,
         )
 
-        schema = DirectIngestRawFileImportManager.create_raw_table_schema(
+        schema = RawDataTableBigQuerySchemaBuilder.build_bq_schmea_for_config(
             raw_file_config=raw_table_dependency_config.raw_file_config
         )
         self.create_mock_table(table_address, schema)

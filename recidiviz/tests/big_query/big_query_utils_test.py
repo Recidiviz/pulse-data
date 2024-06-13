@@ -18,12 +18,14 @@
 import unittest
 
 from recidiviz.big_query.big_query_utils import (
+    format_description_for_big_query,
     is_big_query_valid_delimiter,
     is_big_query_valid_encoding,
     is_big_query_valid_line_terminator,
     normalize_column_name_for_bq,
     to_big_query_valid_encoding,
 )
+from recidiviz.big_query.constants import BQ_TABLE_COLUMN_DESCRIPTION_MAX_LENGTH
 
 
 class BigQueryUtilsTest(unittest.TestCase):
@@ -100,3 +102,20 @@ class BigQueryUtilsTest(unittest.TestCase):
             ("||", "latin-1"),
         ]:
             assert is_big_query_valid_delimiter(invalid_delimiter, encoding) is False
+
+    def test_format_description_for_big_query_empty(self) -> None:
+        assert format_description_for_big_query(None) == ""
+        assert format_description_for_big_query("") == ""
+        assert format_description_for_big_query("a") == "a"
+
+    def test_format_description_for_big_query_too_long(self) -> None:
+        for length in range(
+            BQ_TABLE_COLUMN_DESCRIPTION_MAX_LENGTH,
+            BQ_TABLE_COLUMN_DESCRIPTION_MAX_LENGTH + 2,
+        ):
+            description = format_description_for_big_query("?" * length)
+            assert len(description) == BQ_TABLE_COLUMN_DESCRIPTION_MAX_LENGTH
+            if length > BQ_TABLE_COLUMN_DESCRIPTION_MAX_LENGTH:
+                assert description.endswith("(truncated)")
+            else:
+                assert description == "?" * length
