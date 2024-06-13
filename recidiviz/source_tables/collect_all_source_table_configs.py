@@ -19,7 +19,6 @@ import glob
 import os.path
 from itertools import groupby
 
-from recidiviz.calculator.query.state.dataset_config import STATE_BASE_DATASET
 from recidiviz.ingest.direct.dataset_config import (
     raw_data_pruning_new_raw_data_dataset,
     raw_data_pruning_raw_data_diff_results_dataset,
@@ -41,7 +40,6 @@ from recidiviz.persistence.database.bq_refresh.cloud_sql_to_bq_refresh_config im
     CloudSqlToBQConfig,
 )
 from recidiviz.persistence.database.schema_type import SchemaType
-from recidiviz.persistence.database.schema_utils import get_all_table_classes_in_schema
 from recidiviz.source_tables.dataflow_output_table_collector import (
     get_dataflow_output_source_table_collections,
 )
@@ -146,19 +144,6 @@ def _collect_cloudsql_mirror_source_table_collections() -> list[SourceTableColle
                     export_config.schema_type, table
                 ),
             )
-
-    state_collection = SourceTableCollection(
-        labels=[SchemaTypeSourceTableLabel(SchemaType.STATE)],
-        dataset_id=STATE_BASE_DATASET,
-    )
-    results.append(state_collection)
-
-    for table in list(get_all_table_classes_in_schema(SchemaType.STATE)):
-        state_collection.add_source_table(
-            table_id=table.name,
-            description=f"State entity schema for {table.name}",
-            schema_fields=bq_schema_for_sqlalchemy_table(SchemaType.STATE, table),
-        )
 
     return results
 

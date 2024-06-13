@@ -63,3 +63,20 @@ class CollectAllSourceTableConfigsTest(unittest.TestCase):
                     {schema_field.name for schema_field in table.schema_fields},
                     msg=f"Expected table {table.address} to have state_code column; actual was {table.schema_fields}",
                 )
+
+    def test_no_duplicate_addresses_across_collections(self) -> None:
+        source_table_repository = build_source_table_repository_for_collected_schemata()
+        visited_addresses = set()
+        duplicate_addresses = set()
+
+        for collection in source_table_repository.source_table_collections:
+            for source_table_config in collection.source_tables:
+                address = source_table_config.address
+                if address in visited_addresses:
+                    duplicate_addresses.add(address.to_str())
+                visited_addresses.add(address)
+
+        if duplicate_addresses:
+            raise ValueError(
+                f"Expected no duplicate addresses across source table collections; found: {duplicate_addresses}"
+            )

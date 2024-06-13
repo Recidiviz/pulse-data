@@ -21,6 +21,7 @@ import pytest
 
 from recidiviz.big_query.big_query_client import BigQueryClient
 from recidiviz.source_tables.collect_all_source_table_configs import (
+    build_source_table_repository_for_collected_schemata,
     collect_raw_data_source_table_collections,
 )
 from recidiviz.source_tables.dataflow_output_table_collector import (
@@ -33,6 +34,7 @@ from recidiviz.tests.big_query.big_query_emulator_test_case import (
     BigQueryEmulatorTestCase,
 )
 from recidiviz.tools.deploy.update_big_query_table_schemas import (
+    build_source_table_collection_update_configs,
     update_all_source_table_schemas,
 )
 
@@ -82,3 +84,26 @@ class UpdateBigQueryTableSchemasTest(BigQueryEmulatorTestCase):
             build_bq_snapshot(bq_client=self.bq_client),
             name="test_create_dataflow_output_source_tables_matches_snapshot.json",
         )
+
+    def test_no_overlapping_addresses(self) -> None:
+        source_table_repository = build_source_table_repository_for_collected_schemata()
+        update_configs = build_source_table_collection_update_configs(
+            source_table_repository=source_table_repository,
+            bq_client=self.bq_client,
+        )
+        visited_addresses = set()
+        duplicate_addresses = set()
+
+        for update_config in update_configs:
+            for (
+                source_table_config
+            ) in update_config.source_table_collection.source_tables:
+                address = source_table_config.address
+                if address in visited_addresses:
+                    duplicate_addresses.add(address.to_str())
+                visited_addresses.add(address)
+
+        if duplicate_addresses:
+            raise ValueError(
+                f"Expected no duplicate addresses across source table collections; found: {duplicate_addresses}"
+            )
