@@ -50,6 +50,7 @@ from more_itertools import one, peekable
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_view import BigQueryView
+from recidiviz.big_query.constants import BQ_TABLE_COLUMN_DESCRIPTION_MAX_LENGTH
 from recidiviz.big_query.export.export_query_config import ExportQueryConfig
 from recidiviz.common.constants.states import StateCode
 from recidiviz.common.retry_predicate import ssl_error_retry_predicate
@@ -69,9 +70,6 @@ _clients_by_project_id_by_region: Dict[str, Dict[str, bigquery.Client]] = defaul
 
 BQ_CLIENT_MAX_POOL_CONNECTIONS = 128
 BQ_CLIENT_MAX_POOL_SIZE = 128
-
-# Maximum length for any column description on any column.
-BQ_TABLE_COLUMN_DESCRIPTION_MAX_LENGTH = 1024
 
 DEFAULT_VANTA_DATASET_OWNER = "joshua"
 

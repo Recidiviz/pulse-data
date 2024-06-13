@@ -201,7 +201,10 @@ def import_raw_files_to_bq_sandbox(
         logging.info("Running file with tag [%s]", parts.file_tag)
 
         # Update the schema if this is the first file with this tag.
-        if parts.file_tag not in seen_tags:
+        # if we are allowing incomplete configs, we cannot update the raw data table
+        # schema as we do not know before reading the raw data file what the rows
+        # will be
+        if parts.file_tag not in seen_tags and not allow_incomplete_configs:
             update_raw_data_table_schema(
                 state_code=state_code,
                 instance=DirectIngestInstance.PRIMARY,

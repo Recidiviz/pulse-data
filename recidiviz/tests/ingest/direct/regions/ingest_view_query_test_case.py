@@ -35,10 +35,12 @@ from recidiviz.ingest.direct.dataset_config import raw_tables_dataset_for_region
 from recidiviz.ingest.direct.direct_ingest_regions import get_direct_ingest_region
 from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager import (
     DirectIngestRawFileConfig,
-    DirectIngestRawFileImportManager,
     augment_raw_data_df_with_metadata_columns,
     check_found_columns_are_subset_of_config,
     get_region_raw_file_config,
+)
+from recidiviz.ingest.direct.raw_data.direct_ingest_raw_table_schema_builder import (
+    RawDataTableBigQuerySchemaBuilder,
 )
 from recidiviz.ingest.direct.types.direct_ingest_constants import (
     IS_DELETED_COL_NAME,
@@ -187,9 +189,8 @@ class IngestViewEmulatorQueryTestCase(BigQueryEmulatorTestCase):
         region_config = get_region_raw_file_config(region_code)
         self.create_mock_table(
             address=address,
-            schema=DirectIngestRawFileImportManager.create_raw_table_schema_from_columns(
+            schema=RawDataTableBigQuerySchemaBuilder.build_bq_schmea_for_config(
                 raw_file_config=region_config.raw_file_configs[file_tag],
-                columns=mock_data.columns.values,
             ),
             check_exists=False,
             create_dataset=False,

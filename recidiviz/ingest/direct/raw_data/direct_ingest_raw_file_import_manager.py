@@ -29,10 +29,7 @@ from google.cloud import bigquery
 from more_itertools import one
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
-from recidiviz.big_query.big_query_client import (
-    BQ_TABLE_COLUMN_DESCRIPTION_MAX_LENGTH,
-    BigQueryClient,
-)
+from recidiviz.big_query.big_query_client import BigQueryClient
 from recidiviz.big_query.big_query_utils import normalize_column_name_for_bq
 from recidiviz.cloud_storage.gcsfs_csv_reader import (
     GcsfsCsvReader,
@@ -63,16 +60,16 @@ from recidiviz.ingest.direct.gcs.filename_parts import filename_parts_from_path
 from recidiviz.ingest.direct.raw_data.direct_ingest_raw_table_migration_collector import (
     DirectIngestRawTableMigrationCollector,
 )
+from recidiviz.ingest.direct.raw_data.direct_ingest_raw_table_schema_builder import (
+    RawDataTableBigQuerySchemaBuilder,
+)
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRawFileConfig,
     DirectIngestRegionRawFileConfig,
 )
 from recidiviz.ingest.direct.types.direct_ingest_constants import (
-    FILE_ID_COL_DESCRIPTION,
     FILE_ID_COL_NAME,
-    IS_DELETED_COL_DESCRIPTION,
     IS_DELETED_COL_NAME,
-    UPDATE_DATETIME_COL_DESCRIPTION,
     UPDATE_DATETIME_COL_NAME,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
@@ -427,7 +424,7 @@ class DirectIngestRawFileImportManager:
                     destination_address.dataset_id
                 ),
                 destination_table_id=destination_address.table_id,
-                destination_table_schema=self.create_raw_table_schema_from_columns(
+                destination_table_schema=RawDataTableBigQuerySchemaBuilder.build_bq_schema_from_columns(
                     raw_file_config=self.region_raw_file_config.raw_file_configs[
                         file_tag
                     ],
@@ -568,64 +565,6 @@ class DirectIngestRawFileImportManager:
             temp_raw_data_diff_table_address.dataset_id,
             temp_raw_data_diff_table_address.table_id,
         )
-
-    @classmethod
-    def create_raw_table_schema(
-        cls, *, raw_file_config: DirectIngestRawFileConfig
-    ) -> List[bigquery.SchemaField]:
-        return cls.create_raw_table_schema_from_columns(
-            raw_file_config=raw_file_config,
-            columns=[column.name for column in raw_file_config.columns]
-            + [
-                FILE_ID_COL_NAME,
-                UPDATE_DATETIME_COL_NAME,
-                IS_DELETED_COL_NAME,
-            ],
-        )
-
-    @staticmethod
-    def create_raw_table_schema_from_columns(
-        *,
-        raw_file_config: DirectIngestRawFileConfig,
-        columns: Iterable[str],
-    ) -> List[bigquery.SchemaField]:
-        """Creates schema for use in `to_gbq` based on the provided columns."""
-        schema = []
-        for name in columns:
-            if name == FILE_ID_COL_NAME:
-                mode = "REQUIRED"
-                typ_str = bigquery.enums.SqlTypeNames.INTEGER.value
-                description = FILE_ID_COL_DESCRIPTION
-            elif name == UPDATE_DATETIME_COL_NAME:
-                mode = "REQUIRED"
-                typ_str = bigquery.enums.SqlTypeNames.DATETIME.value
-                description = UPDATE_DATETIME_COL_DESCRIPTION
-            elif name == IS_DELETED_COL_NAME:
-                mode = "REQUIRED"
-                typ_str = bigquery.enums.SqlTypeNames.BOOLEAN.value
-                description = IS_DELETED_COL_DESCRIPTION
-            else:
-                typ_str = bigquery.enums.SqlTypeNames.STRING.value
-                mode = "NULLABLE"
-                description = raw_file_config.get_column_info(name).description or ""
-
-            if len(description) > BQ_TABLE_COLUMN_DESCRIPTION_MAX_LENGTH:
-                # If the description is longer than BQ allows, truncate down to size,
-                # with suffix indicating it is truncated. The full versions of the
-                # descriptions will be uploaded in Gitbook documentation.
-                truncated_str = " ... (truncated)"
-                description = (
-                    description[
-                        : BQ_TABLE_COLUMN_DESCRIPTION_MAX_LENGTH - len(truncated_str)
-                    ]
-                    + truncated_str
-                )
-            schema.append(
-                bigquery.SchemaField(
-                    name=name, field_type=typ_str, mode=mode, description=description
-                )
-            )
-        return schema
 
 
 class DirectIngestRawDataSplittingGcsfsCsvReaderDelegate(

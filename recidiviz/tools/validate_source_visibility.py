@@ -217,6 +217,7 @@ def main() -> int:
                     "recidiviz.big_query.big_query_query_builder",
                     "recidiviz.big_query.big_query_utils",
                     "recidiviz.big_query.big_query_view",
+                    "recidiviz.big_query.constants",
                     "recidiviz.calculator",
                     # TODO(#8118): Remove this dependency once IP pre-processing no
                     #  longer relies on ingest mappings
@@ -232,6 +233,7 @@ def main() -> int:
                     "recidiviz.big_query.big_query_query_builder",
                     "recidiviz.big_query.big_query_utils",
                     "recidiviz.big_query.big_query_view",
+                    "recidiviz.big_query.constants",
                     "recidiviz.calculator",
                     "recidiviz.ingest.direct.types.direct_ingest_instance",
                     "recidiviz.ingest.direct.dataset_config",

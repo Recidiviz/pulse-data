@@ -25,8 +25,10 @@ from recidiviz.ingest.direct.dataset_config import (
     raw_tables_dataset_for_region,
 )
 from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager import (
-    DirectIngestRawFileImportManager,
     get_region_raw_file_config,
+)
+from recidiviz.ingest.direct.raw_data_table_schema_utils import (
+    RawDataTableBigQuerySchemaBuilder,
 )
 from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
     get_direct_ingest_states_existing_in_env,
@@ -109,7 +111,7 @@ def collect_raw_data_source_table_collections() -> list[SourceTableCollection]:
                 raw_data_collection.add_source_table(
                     raw_file_tag,
                     description=f"Raw data file for {raw_file_tag}",
-                    schema_fields=DirectIngestRawFileImportManager.create_raw_table_schema(
+                    schema_fields=RawDataTableBigQuerySchemaBuilder.build_bq_schmea_for_config(
                         raw_file_config=region_config.raw_file_configs[raw_file_tag],
                     ),
                     clustering_fields=[FILE_ID_COL_NAME],
