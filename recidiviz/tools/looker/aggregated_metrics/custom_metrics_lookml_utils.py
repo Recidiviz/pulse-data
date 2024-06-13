@@ -1174,7 +1174,7 @@ def generate_assignments_with_attributes_and_time_periods_view(
         ParameterLookMLViewField(
             field_name="period_interval_param",
             parameters=[
-                LookMLFieldParameter.label("Period"),
+                LookMLFieldParameter.label("Period Interval"),
                 LookMLFieldParameter.description(
                     "For setting the date unit of intervals at which a new period is generated"
                 ),
