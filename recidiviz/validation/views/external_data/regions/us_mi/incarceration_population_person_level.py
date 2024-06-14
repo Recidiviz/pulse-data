@@ -240,6 +240,10 @@ DATES_WITH_AVAILABLE_DATA = [
     date(2024, 3, 20),
     date(2024, 3, 25),
     date(2024, 4, 3),
+    date(2024, 4, 10),
+    date(2024, 4, 17),
+    date(2024, 4, 25),
+    date(2024, 4, 30),
 ]
 
 
