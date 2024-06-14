@@ -24,11 +24,11 @@ Steps:
 
 Usage: 
 
-docker exec pulse-data-control_panel_backend-1 pipenv run python -m recidiviz.justice_counts.jobs.overwrite_metric_settings --project-id="justice-counts-local"
+docker exec pulse-data-control_panel_backend-1 pipenv run python -m recidiviz.justice_counts.jobs.metric_settings_overwrite --project-id="justice-counts-local"
 
-pipenv run python -m recidiviz.justice_counts.jobs.overwrite_metric_settings --project-id="justice-counts-staging"
+pipenv run python -m recidiviz.justice_counts.jobs.metric_settings_overwrite --project-id="justice-counts-staging"
 
-pipenv run python -m recidiviz.justice_counts.jobs.overwrite_metric_settings --project-id="justice-counts-production"
+pipenv run python -m recidiviz.justice_counts.jobs.metric_settings_overwrite --project-id="justice-counts-production"
 
 """
 import argparse

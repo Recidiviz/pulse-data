@@ -30,15 +30,15 @@ interfaces, which remove all null value entries from the MetricInterface.
 
 Local Usage:
 
-docker exec pulse-data-control_panel_backend-1 pipenv run python -m recidiviz.justice_counts.jobs.agency_metrics_serialization_test \
+docker exec pulse-data-control_panel_backend-1 pipenv run python -m recidiviz.justice_counts.jobs.metric_settings_serialization_test \
   --project-id="justice-counts-local"
 
 Staging or Production Usage:
 
-pipenv run python -m recidiviz.justice_counts.jobs.agency_metrics_serialization_test \
+pipenv run python -m recidiviz.justice_counts.jobs.metric_settings_serialization_test \
   --project-id="justice-counts-staging"
 
-pipenv run python -m recidiviz.justice_counts.jobs.agency_metrics_serialization_test \
+pipenv run python -m recidiviz.justice_counts.jobs.metric_settings_serialization_test \
   --project-id="justice-counts-production"
 
 Note: This script is a READ-ONLY script and is therefore safe to run in production.
