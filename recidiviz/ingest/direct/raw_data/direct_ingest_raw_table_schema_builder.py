@@ -18,16 +18,39 @@
 from typing import Dict, List
 
 from google.cloud import bigquery
+from google.cloud.bigquery import SchemaField
+from google.cloud.bigquery.enums import SqlTypeNames
 
 from recidiviz.big_query.big_query_utils import format_description_for_big_query
 from recidiviz.ingest.direct.raw_data.raw_file_configs import DirectIngestRawFileConfig
 from recidiviz.ingest.direct.types.direct_ingest_constants import (
+    FILE_ID_COL_DESCRIPTION,
     FILE_ID_COL_NAME,
-    FILE_ID_COLUMN,
+    IS_DELETED_COL_DESCRIPTION,
     IS_DELETED_COL_NAME,
-    IS_DELETED_COLUMN,
+    UPDATE_DATETIME_COL_DESCRIPTION,
     UPDATE_DATETIME_COL_NAME,
-    UPDATE_DATETIME_COLUMN,
+)
+
+FILE_ID_COLUMN = SchemaField(
+    name=FILE_ID_COL_NAME,
+    field_type=SqlTypeNames.INTEGER.value,
+    mode="REQUIRED",
+    description=FILE_ID_COL_DESCRIPTION,
+)
+
+IS_DELETED_COLUMN = SchemaField(
+    name=IS_DELETED_COL_NAME,
+    field_type=SqlTypeNames.BOOLEAN.value,
+    mode="REQUIRED",
+    description=IS_DELETED_COL_DESCRIPTION,
+)
+
+UPDATE_DATETIME_COLUMN = SchemaField(
+    name=UPDATE_DATETIME_COL_NAME,
+    field_type=SqlTypeNames.DATETIME.value,
+    mode="REQUIRED",
+    description=UPDATE_DATETIME_COL_DESCRIPTION,
 )
 
 
