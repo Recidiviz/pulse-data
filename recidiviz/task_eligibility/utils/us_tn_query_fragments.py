@@ -252,7 +252,6 @@ def us_tn_classification_forms(
     -- This CTE only keeps guilty disciplinaries, for Q6 and Q7 info
     guilty_disciplinaries AS (
         SELECT
-            DISTINCT
             person_id,
             event_date,
             incident_class,
@@ -305,7 +304,9 @@ def us_tn_classification_forms(
             SELECT *
             FROM guilty_disciplinaries
             WHERE event_date >= DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL 6 MONTH)
-            QUALIFY ROW_NUMBER() OVER(PARTITION BY person_id ORDER BY event_date DESC) <= 2
+            -- This surfaces disciplinaries on the 2 most recent dates in the last 6 months.
+            -- If there are multiple disciplinaries the 2 most recent dates, we will surface those
+            QUALIFY RANK() OVER(PARTITION BY person_id ORDER BY event_date DESC) <= 2
         )
         GROUP BY 1
     ),
@@ -458,6 +459,27 @@ def us_tn_classification_forms(
             USING(person_id, state_code)
         WHERE IncompatibleRemovedDate IS NULL
         AND (facility_id IS NOT NULL OR IncompatibleType = 'S')
+   ), 
+   prea AS (
+        SELECT OffenderID, 
+                STRUCT(
+                    screening_date AS latest_prea_screening_date,
+                    COALESCE(victim_finding_level, 'missing') != COALESCE(previous_victim_finding,'missing') AS victim_finding_level_changed,
+                    COALESCE(aggressor_finding_level, 'missing') != COALESCE(previous_aggressor_finding,'missing') AS aggressor_finding_level_changed,
+                    victim_finding_level,
+                    aggressor_finding_level
+                    ) AS form_information_latest_prea_screening_results,
+        FROM (
+            SELECT
+                OffenderID,
+                CAST(ScreeningDate AS DATE) AS screening_date,
+                VictimFindingLevel AS victim_finding_level,
+                AggressorFindingLevel AS aggressor_finding_level,
+                LAG(VictimFindingLevel) OVER(PARTITION BY OffenderID ORDER BY CAST(ScreeningDate AS DATE) ASC) AS previous_victim_finding,
+                LAG(AggressorFindingLevel) OVER(PARTITION BY OffenderID ORDER BY CAST(ScreeningDate AS DATE) ASC) AS previous_aggressor_finding,
+            FROM `{{project_id}}.{{us_tn_raw_data_up_to_date_dataset}}.PREAScreeningResults_latest`
+        )
+        QUALIFY ROW_NUMBER() OVER(PARTITION BY OffenderID ORDER BY screening_date DESC) = 1
    )
     SELECT tes.state_code,
            tes.reasons,
@@ -555,16 +577,7 @@ def us_tn_classification_forms(
         AND latest_vantage.latest_row = 1
     LEFT JOIN active_vantage_recommendations
         ON pei.external_id = active_vantage_recommendations.OffenderID
-    LEFT JOIN (
-        SELECT OffenderID, 
-                STRUCT(
-                    CAST(ScreeningDate AS DATE) AS latest_prea_screening_date,
-                    VictimFindingLevel AS victim_finding_level,
-                    AggressorFindingLevel AS aggressor_finding_level
-                    ) AS form_information_latest_prea_screening_results,
-        FROM `{{project_id}}.{{us_tn_raw_data_up_to_date_dataset}}.PREAScreeningResults_latest`
-        QUALIFY ROW_NUMBER() OVER(PARTITION BY OffenderID ORDER BY CAST(ScreeningDate AS DATE) DESC) = 1
-    ) prea
+    LEFT JOIN prea
         ON pei.external_id = prea.OffenderID
     {where_clause}
     """
