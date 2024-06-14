@@ -70,13 +70,12 @@ US_TN_CAF_Q6_QUERY_TEMPLATE = f"""
     ),
     critical_dates AS (
       SELECT
-        DISTINCT
         state_code,
         person_id,
         incident_date AS critical_date,
         incident_date,
         CAST(NULL AS DATE) AS session_start_date,
-        1 AS disciplinary,
+        COUNT(*) AS disciplinary,
       FROM 
             `{{project_id}}.{{analyst_dataset}}.incarceration_incidents_preprocessed_materialized` dis
         WHERE
@@ -84,6 +83,7 @@ US_TN_CAF_Q6_QUERY_TEMPLATE = f"""
             AND disposition = 'GU' 
             AND incident_details NOT LIKE "%VERBAL WARNING%"
             AND incident_class IS NOT NULL
+      GROUP BY 1,2,3,4,5
       
       UNION DISTINCT 
          
@@ -136,16 +136,16 @@ US_TN_CAF_Q6_QUERY_TEMPLATE = f"""
           span_end AS end_date,
           session_start_date,
           -- Disciplinaries should only count against someone for 6 months. After that, we still need the 12 and 18
-          -- month boundaries but we don't want those spans to have disciplinary = 1 
-          CASE WHEN DATE_DIFF(
-                        span_end,
-                        critical_date,
-                        MONTH
-                    ) > 6 
-                    AND disciplinary = 1
-                    THEN 0 
-                    ELSE disciplinary
-                    END AS disciplinary,
+          -- month boundaries but we don't want those spans to have disciplinary count
+          IF(
+            DATE_DIFF(
+                span_end,
+                critical_date,
+                MONTH
+            ) > 6,
+            0,
+            disciplinary
+        ) AS disciplinary,
         FROM
             determine_span_ends
         
