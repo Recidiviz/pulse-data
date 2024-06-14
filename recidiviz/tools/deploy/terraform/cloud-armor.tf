@@ -51,7 +51,7 @@ locals {
       {
         action      = "deny(403)"
         priority    = "1004"
-        expression  = "evaluatePreconfiguredWaf('rce-v33-stable', {'sensitivity': 1, 'opt_out_rule_ids': ['owasp-crs-v030301-id932200-rce']})"
+        expression  = "evaluatePreconfiguredWaf('rce-v33-stable', {'sensitivity': 1, 'opt_out_rule_ids': ['owasp-crs-v030301-id932200-rce', 'owasp-crs-v030301-id932110-rce']})"
         description = "Remote code execution"
       },
       {
