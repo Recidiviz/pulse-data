@@ -11,6 +11,8 @@ columns:
     description: |-
       This is a unique identifier assigned to a particular offender in the TOMIS system or a current, valid OBSCID ID number.
     is_pii: True
+    field_type: person_external_id
+    external_id_type: US_TN_DOC
   - name: AssignmentDateTime
     description: |-
       The date on which an assignment is made. This is the time an offender is assigned to a new cell.  [Combines two TOMIS columns for date assigned and time assigned]

@@ -13,6 +13,8 @@ columns:
     is_pii: True
     description: |-
       TODO(#11323): fill out description once received.
+    field_type: person_external_id
+    external_id_type: US_TN_DOC
   - name: ContactNoteDate
     field_type: datetime
     description: |-

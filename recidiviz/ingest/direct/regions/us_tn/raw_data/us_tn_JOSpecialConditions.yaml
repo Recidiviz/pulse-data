@@ -16,6 +16,8 @@ columns:
     is_pii: True
     description: |-
       This is a unique identifier assigned to a particular person in the TOMIS system or a current, valid OBSCID ID number.
+    field_type: person_external_id
+    external_id_type: US_TN_DOC
   - name: ConvictionCounty
     description: |-
       The county in which a person  is convicted.  This element is used in identifying a particular sentence.

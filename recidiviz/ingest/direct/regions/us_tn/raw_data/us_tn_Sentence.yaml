@@ -14,6 +14,8 @@ columns:
     is_pii: True
     description: |-
       This is a unique identifier assigned to a particular person in the TOMIS system or a current, valid OBSCID ID number.
+    field_type: person_external_id
+    external_id_type: US_TN_DOC
   - name: ConvictionCounty
     description: |-
       The county in which a person  is convicted.  This element is used in identifying a particular sentence.
@@ -265,3 +267,57 @@ columns:
   - name: LastUpdateDate
     description: |-
       This element will be associated with each record in each DB2 table in TOMIS.  It is the timestamp of the last time this record was updated.
+
+table_relationships:
+  - foreign_table: Diversion
+    join_logic:
+      - Diversion.OffenderID = Sentence.OffenderID
+      - Diversion.CaseNumber = Sentence.CaseNumber
+  - foreign_table: ISCRelatedSentence
+    join_logic:
+      - ISCRelatedSentence.OffenderID = Sentence.OffenderID
+      - ISCRelatedSentence.CaseNumber = Sentence.CaseNumber
+  - foreign_table: ISCSentence
+    join_logic:
+      - ISCSentence.OffenderID = Sentence.OffenderID
+      - ISCSentence.CaseNumber = Sentence.CaseNumber
+  - foreign_table: JOCharge
+    join_logic:
+      - JOCharge.OffenderID = Sentence.OffenderID
+      - JOCharge.CaseNumber = Sentence.CaseNumber
+      - JOCharge.ConvictionCounty = Sentence.ConvictionCounty
+      - JOCharge.CaseYear = Sentence.CaseYear
+      - JOCharge.CountNumber = Sentence.CountNumber
+  - foreign_table: JOIdentification
+    join_logic:
+      - JOIdentification.OffenderID = Sentence.OffenderID
+      - JOIdentification.CaseNumber = Sentence.CaseNumber
+  - foreign_table: JOMiscellaneous
+    join_logic:
+      - JOMiscellaneous.OffenderID = Sentence.OffenderID
+      - JOMiscellaneous.CaseNumber = Sentence.CaseNumber
+  - foreign_table: JOSentence
+    join_logic:
+      - JOSentence.OffenderID = Sentence.OffenderID
+      - JOSentence.CaseNumber = Sentence.CaseNumber
+      - JOSentence.ConvictionCounty = Sentence.ConvictionCounty
+      - JOSentence.CaseYear = Sentence.CaseYear
+      - JOSentence.CountNumber = Sentence.CountNumber
+  - foreign_table: JOSpecialConditions
+    join_logic:
+      - JOSpecialConditions.OffenderID = Sentence.OffenderID
+      - JOSpecialConditions.CaseNumber = Sentence.CaseNumber
+  - foreign_table: OffenderStatute
+    join_logic:
+      - OffenderStatute.Offense = Sentence.CaseNumber
+  - foreign_table: SentenceAction
+    join_logic:
+      - SentenceAction.OffenderID = Sentence.OffenderID
+      - SentenceAction.CaseNumber = Sentence.CaseNumber
+  - foreign_table: SentenceMiscellaneous
+    join_logic:
+      - SentenceMiscellaneous.OffenderID = Sentence.OffenderID
+      - SentenceMiscellaneous.CaseNumber = Sentence.CaseNumber
+      - SentenceMiscellaneous.ConvictionCounty = Sentence.ConvictionCounty
+      - SentenceMiscellaneous.CaseYear = Sentence.CaseYear
+      - SentenceMiscellaneous.CountNumber = Sentence.CountNumber
