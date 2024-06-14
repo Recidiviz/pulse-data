@@ -19,7 +19,10 @@
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.sessions_query_fragments import aggregate_adjacent_spans
-from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
+from recidiviz.calculator.query.state.dataset_config import (
+    ANALYST_VIEWS_DATASET,
+    SESSIONS_DATASET,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -39,6 +42,18 @@ HOUSING_UNIT_TYPE_SESSIONS_QUERY_TEMPLATE = f"""
         end_date_exclusive,
     FROM `{{project_id}}.{{sessions_dataset}}.compartment_sub_sessions_materialized`
     WHERE compartment_level_1 IN ('INCARCERATION','INCARCERATION_OUT_OF_STATE')
+    AND state_code != 'US_TN'
+
+    UNION ALL
+
+    SELECT 
+        state_code,
+        person_id,
+        housing_unit_type,
+        start_date,
+        end_date_exclusive
+    -- TODO(#30674): Change name here to `us_tn_segregation_stays` once original is deprecated
+    FROM `{{project_id}}.{{analyst_dataset}}.us_tn_segregation_stays_v2_materialized` 
     )
     ,
     sessionized_cte AS
@@ -59,6 +74,7 @@ HOUSING_UNIT_TYPE_SESSIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_query_template=HOUSING_UNIT_TYPE_SESSIONS_QUERY_TEMPLATE,
     description=HOUSING_UNIT_TYPE_SESSIONS_VIEW_DESCRIPTION,
     sessions_dataset=SESSIONS_DATASET,
+    analyst_dataset=ANALYST_VIEWS_DATASET,
     clustering_fields=["state_code", "person_id"],
     should_materialize=True,
 )

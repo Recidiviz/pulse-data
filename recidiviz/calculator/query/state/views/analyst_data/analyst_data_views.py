@@ -255,8 +255,14 @@ from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_recommended
 from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_relevant_contact_codes import (
     US_TN_RELEVANT_CONTACT_CODES_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_segregation_lists import (
+    US_TN_SEGREGATION_LISTS_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_segregation_stays import (
     US_TN_SEGREGATION_STAYS_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_segregation_stays_v2 import (
+    US_TN_SEGREGATION_STAYS_VIEW_BUILDER_V2,
 )
 from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_sentence_logic import (
     US_TN_SENTENCE_LOGIC_VIEW_BUILDER,
@@ -356,6 +362,8 @@ ANALYST_DATA_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     US_TN_MAX_STAYS_VIEW_BUILDER,
     US_TN_SEGREGATION_STAYS_VIEW_BUILDER,
     US_TN_CUSTODY_LEVEL_SESSIONS_PREPROCESSED_VIEW_BUILDER,
+    US_TN_SEGREGATION_STAYS_VIEW_BUILDER_V2,
+    US_TN_SEGREGATION_LISTS_VIEW_BUILDER,
     WORKFLOWS_PERSON_IMPACT_FUNNEL_STATUS_SESSIONS_VIEW_BUILDER,
     US_TN_CELLBED_ASSIGNMENT_RAW_VIEW_BUILDER,
     US_AZ_ACTION_QUEUE_VIEW_BUILDER,
