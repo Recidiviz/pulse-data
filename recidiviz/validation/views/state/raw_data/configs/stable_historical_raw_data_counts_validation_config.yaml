@@ -20,6 +20,11 @@ PERMANENT:
       exclusion_reason:
         Small reference file that is updated infrequently -- small changes in file size
         cauase large % changes
+  US_MI:
+    - file_tag: RECIDIVIZ_REFERENCE_offense_exclusion_list
+      exclusion_reason:
+        Small reference file that is updated infrequently -- small changes in file size
+        cauase large % changes
 DATE_RANGE:
   US_MO:
     - file_tag: LBAKRDTA_TAK237
