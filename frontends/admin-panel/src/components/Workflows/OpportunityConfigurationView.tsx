@@ -53,6 +53,17 @@ const OpportunityConfigurationSettings = ({
         <Form.Item label="Dynamic Eligibility Text">
           <span className="ant-form-text">{config.dynamicEligibilityText}</span>
         </Form.Item>
+        <Form.Item label="Eligibility Date Text">
+          <span className="ant-form-text">{config.eligibilityDateText}</span>
+        </Form.Item>
+        <Form.Item label="Hide Denial Revert?">
+          <span className="ant-form-text">
+            {JSON.stringify(config.hideDenialRevert)}
+          </span>
+        </Form.Item>
+        <Form.Item label="Tooltip Eligibility Text">
+          <span className="ant-form-text">{config.tooltipEligibilityText}</span>
+        </Form.Item>
         <Form.Item label="Call To Action">
           <span className="ant-form-text">{config.callToAction}</span>
         </Form.Item>
@@ -91,6 +102,16 @@ const OpportunityConfigurationSettings = ({
         <Form.Item label="Alert?">
           <span className="ant-form-text">
             {JSON.stringify(config.isAlert)}
+          </span>
+        </Form.Item>
+        <Form.Item label="Tab Groups">
+          <span className="ant-form-text">
+            {JSON.stringify(config.tabGroups)}
+          </span>
+        </Form.Item>
+        <Form.Item label="Compare By">
+          <span className="ant-form-text">
+            {JSON.stringify(config.compareBy)}
           </span>
         </Form.Item>
       </Form>

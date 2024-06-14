@@ -56,12 +56,25 @@ export const babyOpportunityConfigurationSchema = z.object({
   snooze: nullishAsUndefined(snoozeConfigurationSchema),
   denialReasons: z.record(z.string()),
   denialText: nullishAsUndefined(z.string()),
-  initialHeader: z.string(),
+  initialHeader: nullishAsUndefined(z.string()),
   eligibleCriteriaCopy: criteriaCopySchema,
   ineligibleCriteriaCopy: criteriaCopySchema,
   sidebarComponents: z.array(z.string()),
   methodologyUrl: z.string(),
   isAlert: z.boolean(),
+  eligibilityDateText: nullishAsUndefined(z.string()),
+  hideDenialRevert: z.boolean(),
+  tooltipEligibilityText: nullishAsUndefined(z.string()),
+  tabGroups: nullishAsUndefined(z.record(z.string().array())),
+  compareBy: nullishAsUndefined(
+    z.array(
+      z.object({
+        field: z.string(),
+        sortDirection: z.string().optional(),
+        undefinedBehavior: z.string().optional(),
+      })
+    )
+  ),
 
   description: z.string(),
 });

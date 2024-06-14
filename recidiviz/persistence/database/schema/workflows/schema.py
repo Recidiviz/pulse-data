@@ -106,7 +106,7 @@ class OpportunityConfiguration(WorkflowsBase):
     is_alert = Column(Boolean, nullable=False)
 
     # Header shown while in the null search state
-    initial_header = Column(String, nullable=False)
+    initial_header = Column(String, nullable=True)
 
     # Map from code to description for denial reasons
     denial_reasons = Column(JSONB, nullable=False, server_default="{}")
@@ -117,6 +117,15 @@ class OpportunityConfiguration(WorkflowsBase):
 
     # Text shown when results are found
     dynamic_eligibility_text = Column(String, nullable=False)
+
+    # Custom text for the eligibility date
+    eligibility_date_text = Column(String, nullable=True)
+
+    # Should the denial undo option be hidden?
+    hide_denial_revert = Column(Boolean, nullable=False, server_default="false")
+
+    # Custom text for the eligibility tooltip
+    tooltip_eligibility_text = Column(String, nullable=True)
 
     # CTA text shown on the opportunity results page
     call_to_action = Column(String, nullable=False)
@@ -129,3 +138,9 @@ class OpportunityConfiguration(WorkflowsBase):
 
     # Sidebar components to display
     sidebar_components = Column(ARRAY(String), nullable=False, server_default="{}")
+
+    # Configuration blob for eligibility tab groups
+    tab_groups = Column(JSONB, nullable=True)
+
+    # Configuration blob for person sorting
+    compare_by = Column(JSONB, nullable=True)

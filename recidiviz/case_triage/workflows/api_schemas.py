@@ -185,15 +185,23 @@ class WorkflowsConfigSchema(CamelCaseSchema):
         text = fields.Str()
         tooltip = fields.Str(required=False)
 
+    class SortParamSchema(CamelCaseSchema):
+        field = fields.Str()
+        sortDirection = fields.Str(required=False)
+        undefinedBehavior = fields.Str(required=False)
+
     state_code = fields.Str()
     display_name = fields.Str()
     feature_variant = fields.Str(required=False)
     dynamic_eligibility_text = fields.Str()
+    eligibility_date_text = fields.Str(required=False)
+    hide_denial_revert = fields.Bool()
+    tooltip_eligibility_text = fields.Str(required=False)
     call_to_action = fields.Str()
     snooze = fields.Nested(SnoozeConfigSchema(), required=False)
     denial_reasons = fields.Dict(fields.Str(), fields.Str())
     denial_text = fields.Str(required=False)
-    initial_header = fields.Str()
+    initial_header = fields.Str(required=False)
     eligible_criteria_copy = fields.Dict(
         fields.Str(), fields.Nested(CriteriaCopySchema())
     )
@@ -203,6 +211,8 @@ class WorkflowsConfigSchema(CamelCaseSchema):
     sidebar_components = fields.List(fields.Str())
     methodology_url = fields.Str()
     is_alert = fields.Bool()
+    tab_groups = fields.Dict(fields.Str(), fields.List(fields.Str()), required=False)
+    compare_by = fields.List(fields.Nested(SortParamSchema()), required=False)
 
 
 class WorkflowsFullConfigSchema(WorkflowsConfigSchema):

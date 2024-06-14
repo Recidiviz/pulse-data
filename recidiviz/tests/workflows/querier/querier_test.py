@@ -62,10 +62,13 @@ def load_model_fixture(
                     in {
                         "snooze",
                         "is_alert",
+                        "hide_denial_revert",
                         "eligible_criteria_copy",
                         "ineligible_criteria_copy",
                         "sidebar_components",
                         "denial_reasons",
+                        "tab_groups",
+                        "compare_by",
                     }
                     and v != ""
                 ):
@@ -102,6 +105,11 @@ def make_add_config_arguments(
         "is_alert": False,
         "denial_text": "denial_text",
         "sidebar_components": ["sidebarComponent"],
+        "eligibility_date_text": "eligibility date",
+        "hide_denial_revert": True,
+        "tooltip_eligibility_text": "tooltip",
+        "tab_groups": None,
+        "compare_by": None,
     }
 
 

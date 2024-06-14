@@ -1843,6 +1843,11 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
                 ineligible_criteria_copy={},
                 denial_reasons={"DENY": "Denied"},
                 sidebar_components=["someComponent", "someOtherComponent"],
+                eligibility_date_text=None,
+                hide_denial_revert=True,
+                tooltip_eligibility_text="eligible",
+                tab_groups=None,
+                compare_by=None,
             )
         }
 

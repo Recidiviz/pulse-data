@@ -136,15 +136,20 @@ class OpportunityConfigurationsAPI(MethodView):
             display_name=body_args["display_name"],
             methodology_url=body_args["methodology_url"],
             is_alert=body_args["is_alert"],
-            initial_header=body_args["initial_header"],
+            initial_header=body_args.get("initial_header"),
             denial_reasons=body_args["denial_reasons"],
             eligible_criteria_copy=body_args["eligible_criteria_copy"],
             ineligible_criteria_copy=body_args["ineligible_criteria_copy"],
             dynamic_eligibility_text=body_args["dynamic_eligibility_text"],
+            eligibility_date_text=body_args.get("eligibility_date_text"),
+            hide_denial_revert=body_args["hide_denial_revert"],
+            tooltip_eligibility_text=body_args.get("tooltip_eligibility_text"),
             call_to_action=body_args["call_to_action"],
             denial_text=body_args.get("denial_text"),
             snooze=body_args.get("snooze"),
             sidebar_components=body_args["sidebar_components"],
+            tab_groups=body_args.get("tab_groups"),
+            compare_by=body_args.get("compare_by"),
         )
         return new_config_id
 
