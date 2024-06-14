@@ -4,6 +4,9 @@ file_description: |-
   This table holds profile information about a person involved in MDOC that is linked
   to a given booking.
 data_classification: source
+# Setting this file to always historical  = False because this sometimes come in truncated for some unexpected reason
+# TODO(#30687) Remove this (aka set back to True) when raw data import is blocked when a transfer of this file comes in smaller than previous transfers
+always_historical_export: False
 primary_key_cols:
   - offender_id
   - offender_number
