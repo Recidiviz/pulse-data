@@ -37,7 +37,7 @@ locations in AZ that can be associated with a person or staff member.
 US_AZ_LOCATION_METADATA_QUERY_TEMPLATE = f"""
 SELECT 
   'US_AZ' AS state_code, 
-  LOCATION_NAME AS location_external_id,
+  UPPER(LOCATION_NAME) AS location_external_id,
   LOCATION_NAME AS location_name,
   'SUPERVISION_LOCATION' AS location_type,
   TO_JSON(
@@ -62,7 +62,7 @@ UNION ALL
 
 SELECT 
   'US_AZ' AS state_code,
-  PRISON_NAME AS location_external_id,
+  UPPER(PRISON_NAME) AS location_external_id,
   PRISON_NAME AS location_name,
   'STATE_PRISON' AS location_type,
   TO_JSON(
