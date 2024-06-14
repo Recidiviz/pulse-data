@@ -23,7 +23,6 @@ input_columns:
   - VIOLENCE_FLAG
   - CONTROLLING_OFFENSE_FLAG
   - SEX_OFFENSE_FLAG
-  - ADC_NUMBER
 unused_columns: [COUNTY_ID, ARS_ID]
 variables:
   - violent_bool:
@@ -44,9 +43,6 @@ output:
       - StatePersonExternalId:
           external_id: PERSON_ID
           id_type: $literal("US_AZ_PERSON_ID")
-      - StatePersonExternalId:
-          external_id: ADC_NUMBER
-          id_type: $literal("US_AZ_ADC_NUMBER")
     sentences:
       - StateSentence:
           external_id: OFFENSE_ID

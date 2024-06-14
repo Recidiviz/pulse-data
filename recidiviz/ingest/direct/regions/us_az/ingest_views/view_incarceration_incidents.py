@@ -16,16 +16,13 @@
 # =============================================================================
 """Query containing information about incarceration incidents and outcomes."""
 
-from recidiviz.ingest.direct.regions.us_az.ingest_views.query_fragments import (
-    ADC_NUMBER_TO_PERSON_ID_CTE,
-)
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
     DirectIngestViewQueryBuilder,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-VIEW_QUERY_TEMPLATE = f"""
+VIEW_QUERY_TEMPLATE = """
 WITH traffic_preprocessed AS (
   SELECT 
     DOC_ID, 
@@ -36,7 +33,7 @@ WITH traffic_preprocessed AS (
             PARTITION BY DOC_ID 
             ORDER BY CAST(MOVEMENT_DATE AS DATETIME)) 
         AS NEXT_MOVEMENT_DATE
-  FROM {{AZ_DOC_INMATE_TRAFFIC_HISTORY}} traffic
+  FROM {AZ_DOC_INMATE_TRAFFIC_HISTORY} traffic
 ),
 base AS (
 SELECT 
@@ -62,14 +59,14 @@ SELECT
     -- promptness.
     MIN(hearing.HEARING_DTM) OVER (PARTITION BY STAFF_REVIEW_ID) AS FIRST_HEARING_DTM,
     sanction.COMMENTS AS penalty_free_text_description
-FROM {{AZ_DOC_DSC_STAFF_REVIEW}} review
-LEFT JOIN {{AZ_DOC_DSC_PENALTY}} penalty
+FROM {AZ_DOC_DSC_STAFF_REVIEW} review
+LEFT JOIN {AZ_DOC_DSC_PENALTY} penalty
 USING(STAFF_REVIEW_ID)
-LEFT JOIN {{AZ_DOC_DSC_SCHED_HRNG_HIST}} hearing
+LEFT JOIN {AZ_DOC_DSC_SCHED_HRNG_HIST} hearing
 USING(STAFF_REVIEW_ID)
-LEFT JOIN {{AZ_DOC_DSC_SANCTION}} sanction
+LEFT JOIN {AZ_DOC_DSC_SANCTION} sanction
 USING(STAFF_REVIEW_ID)
-LEFT JOIN {{DOC_EPISODE}} doc_ep
+LEFT JOIN {DOC_EPISODE} doc_ep
 USING(DOC_ID)
 LEFT JOIN traffic_preprocessed
 ON(traffic_preprocessed.DOC_ID = review.DOC_ID 
@@ -94,20 +91,17 @@ SELECT
     FIRST_HEARING_DTM,
     penalty_free_text_description
 FROM base
-LEFT JOIN {{LOOKUPS}} loc_lookup
+LEFT JOIN {LOOKUPS} loc_lookup
 ON(GENERAL_LOCATION_ID = loc_lookup.LOOKUP_ID)
-LEFT JOIN {{LOOKUPS}} penalty_type_lookup
+LEFT JOIN {LOOKUPS} penalty_type_lookup
 ON(PENALTY_TYPE_ID = penalty_type_lookup.LOOKUP_ID)
-LEFT JOIN {{AZ_DOC_DSC_RULE_VIOLATION}} rule_violation
+LEFT JOIN {AZ_DOC_DSC_RULE_VIOLATION} rule_violation
 ON(STATE_VIOLATION_ID = RULE_VIOLATION_ID)
-LEFT JOIN {{LOOKUPS}} prison_lookup
+LEFT JOIN {LOOKUPS} prison_lookup
 ON(PRISON_ID = prison_lookup.LOOKUP_ID)
-),
-{ADC_NUMBER_TO_PERSON_ID_CTE}
+)
 SELECT * 
 FROM code_lookup
-LEFT JOIN adc_number_to_person_id_cte
-USING(PERSON_ID)
 -- Only the case in 13 rows as of 4/4/24 due to mismatched DOC_IDs between DOC_EPISODE
 -- and AZ_DOC_DSC_STAFF_REVIEW.
 WHERE PERSON_ID IS NOT NULL

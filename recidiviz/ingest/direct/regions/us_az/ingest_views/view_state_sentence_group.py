@@ -28,22 +28,19 @@ We define a "sentence group" in this case as a single commitment. Many offenses 
 be associated with a single commitment, each having their own sentencing requirements.
 There is one controlling offense that determines the final release dates for a given 
 sentence group."""
-from recidiviz.ingest.direct.regions.us_az.ingest_views.query_fragments import (
-    ADC_NUMBER_TO_PERSON_ID_CTE,
-)
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
     DirectIngestViewQueryBuilder,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-VIEW_QUERY_TEMPLATE = f"""
+VIEW_QUERY_TEMPLATE = """
 WITH base AS (
 SELECT DISTINCT
     -- sentence group external ID is COMMITMENT_ID-DOC_ID
     off.COMMITMENT_ID,
     doc.DOC_ID,
-    doc.PERSON_ID AS person_id,
+    doc.PERSON_ID,
     off.UPDT_DTM AS group_update_datetime,
     -- See view description for explanation of datetime field hierarchy.
     COALESCE(
@@ -62,25 +59,23 @@ SELECT DISTINCT
         NULLIF(EXPIRATION_DTM_ML, 'NULL'), 
         NULLIF(EXPIRATION_DTM, 'NULL')) AS SentenceExpirationDate, -- SED
 FROM 
-    {{AZ_DOC_SC_OFFENSE@ALL}} AS off
+    {AZ_DOC_SC_OFFENSE@ALL} AS off
 LEFT JOIN 
-    {{AZ_DOC_SC_EPISODE}} AS sc_episode 
+    {AZ_DOC_SC_EPISODE} AS sc_episode 
 ON 
     off.OFFENSE_ID = sc_episode.FINAL_OFFENSE_ID
 LEFT JOIN 
-    {{DOC_EPISODE}} AS doc 
+    {DOC_EPISODE} AS doc 
 ON 
     sc_episode.DOC_ID = doc.DOC_ID
 WHERE 
     doc.PERSON_ID IS NOT NULL
 AND 
     off.OFFENSE_ID = sc_episode.FINAL_OFFENSE_ID
-),{ADC_NUMBER_TO_PERSON_ID_CTE}
+)
 
 SELECT *
 FROM base
-LEFT JOIN adc_number_to_person_id_cte
-USING(PERSON_ID)
 -- This is only the case for 68 offenses that do not have any listed release dates.
 WHERE group_update_datetime IS NOT NULL
 """
