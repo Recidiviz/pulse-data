@@ -10,7 +10,6 @@ input_columns:
   - person_id
   - county_code
   - jail_credit_days
-  - ADC_NUMBER
 unused_columns: []
 variables:
   - life_bool:
@@ -31,9 +30,6 @@ output:
       - StatePersonExternalId:
           external_id: person_id
           id_type: $literal("US_AZ_PERSON_ID")
-      - StatePersonExternalId:
-          external_id: ADC_NUMBER
-          id_type: $literal("US_AZ_ADC_NUMBER")
     sentence_groups:
       - StateSentenceGroup:
           external_id: sentence_group_external_id

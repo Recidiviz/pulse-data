@@ -18,9 +18,14 @@ output:
       - StatePersonExternalId:
           external_id: PERSON_ID
           id_type: $literal("US_AZ_PERSON_ID")
-      - StatePersonExternalId:
-          external_id: ADC_NUMBER
-          id_type: $literal("US_AZ_ADC_NUMBER")
+      # TODO(#30383): Find out why there is not always an ADC_NUMBER attached to a PERSON_ID
+      - $conditional:
+          - $if:
+              $not_null: ADC_NUMBER
+            $then:
+              StatePersonExternalId:
+                external_id: ADC_NUMBER
+                id_type: $literal("US_AZ_ADC_NUMBER")
     current_address: full_address
     full_name:
       $person_name:

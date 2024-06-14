@@ -16,16 +16,13 @@
 # =============================================================================
 """Query containing charge information."""
 
-from recidiviz.ingest.direct.regions.us_az.ingest_views.query_fragments import (
-    ADC_NUMBER_TO_PERSON_ID_CTE,
-)
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
     DirectIngestViewQueryBuilder,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-VIEW_QUERY_TEMPLATE = f"""
+VIEW_QUERY_TEMPLATE = """
 WITH commitments AS (
   SELECT DISTINCT 
     episode.PERSON_ID,
@@ -40,12 +37,12 @@ WITH commitments AS (
     offense.OFFENSE_NUMBER,
     offense.OFFENSE_ID,
     (offense.OFFENSE_ID = sc_episode.FINAL_OFFENSE_ID) AS CONTROLLING_OFFENSE_FLAG
-  FROM {{AZ_DOC_SC_COMMITMENT}} commitment
-  JOIN {{AZ_DOC_SC_OFFENSE}} offense
+  FROM {AZ_DOC_SC_COMMITMENT} commitment
+  JOIN {AZ_DOC_SC_OFFENSE} offense
   USING(COMMITMENT_ID)
-  LEFT JOIN {{AZ_DOC_SC_EPISODE}} sc_episode 
+  LEFT JOIN {AZ_DOC_SC_EPISODE} sc_episode 
   USING(SC_EPISODE_ID)
-  LEFT JOIN {{DOC_EPISODE}} episode
+  LEFT JOIN {DOC_EPISODE} episode
   USING(DOC_ID)
 ),
 charges AS (
@@ -65,16 +62,14 @@ charges AS (
       WHEN ars.TRNSTN_PGM_RLS_INELIG_FLAG='Y' THEN 'ELIGIBLE FOR TPR'
     END AS TRNSTN_PGM_RLS_INELIG_FLAG
   FROM commitments
-  LEFT JOIN {{AZ_DOC_SC_ARS_CODE}} ars
+  LEFT JOIN {AZ_DOC_SC_ARS_CODE} ars
   USING(ARS_ID)
-  LEFT JOIN {{LOOKUPS}} COUNTY_LU
+  LEFT JOIN {LOOKUPS} COUNTY_LU
   ON(COUNTY_ID = COUNTY_LU.LOOKUP_ID)
-),{ADC_NUMBER_TO_PERSON_ID_CTE}
+)
 
 SELECT *
 FROM charges
-LEFT JOIN adc_number_to_person_id_cte
-USING(PERSON_ID)
 -- There are a small number of SC_EPISODE_IDs that have populated DOC_ID values in AZ_DOC_SC_EPISODE,
 -- but no corresponding row for that DOC_ID in DOC_EPISODE. This leads to a small number
 -- of NULL PERSON_ID values in these results that need to be excluded.

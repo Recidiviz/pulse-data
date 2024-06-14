@@ -16,16 +16,13 @@
 # =============================================================================
 """Query containing incarceration period information."""
 
-from recidiviz.ingest.direct.regions.us_az.ingest_views.query_fragments import (
-    ADC_NUMBER_TO_PERSON_ID_CTE,
-)
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
     DirectIngestViewQueryBuilder,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-VIEW_QUERY_TEMPLATE = f"""
+VIEW_QUERY_TEMPLATE = """
 WITH 
 -- This CTE results in one row per movement in the base movements table, with certain 
 -- relevant fields attached, as well as the person's overall PERSON_ID.
@@ -42,8 +39,8 @@ SELECT DISTINCT
   traffic.LOCATOR_CODE_ID, 
   traffic.DESTINATION_COURT_ID, 
   traffic.DESTINATION_HOSPITAL_ID, 
-FROM {{AZ_DOC_INMATE_TRAFFIC_HISTORY}} traffic
-LEFT JOIN {{DOC_EPISODE}} ep
+FROM {AZ_DOC_INMATE_TRAFFIC_HISTORY} traffic
+LEFT JOIN {DOC_EPISODE} ep
 USING (DOC_ID)
 WHERE traffic.MOVEMENT_DATE IS NOT NULL
 AND MOVEMENT_CODE_ID IS NOT NULL
@@ -63,11 +60,11 @@ base_with_descriptions AS (
       WHEN mvmt_codes.IN_OUT_CUSTODY = '5358' THEN 'OUT'
     END AS IN_OUT_CUSTODY
   FROM base 
-  LEFT JOIN {{AZ_DOC_MOVEMENT_CODES}} mvmt_codes
+  LEFT JOIN {AZ_DOC_MOVEMENT_CODES} mvmt_codes
   USING(MOVEMENT_CODE_ID) 
-  LEFT JOIN {{LOOKUPS}} prison_lookup
+  LEFT JOIN {LOOKUPS} prison_lookup
   ON(PRISON_ID = prison_lookup.LOOKUP_ID)
-  LEFT JOIN {{LOOKUPS}} unit_lookup
+  LEFT JOIN {LOOKUPS} unit_lookup
   ON(UNIT_ID = unit_lookup.LOOKUP_ID)
   LEFT JOIN LOOKUPS_generated_view action_lookup
   -- This field establishes what the right course of action is regarding the period as a 
@@ -99,7 +96,7 @@ locations_preprocessed AS (
     LAG(CAST(CREATE_DTM AS DATETIME)) OVER (PARTITION BY LOCATOR_CODE_ID ORDER BY CAST(CREATE_DTM AS DATETIME)) AS PREV_CREATE_DTM,
     LEAD(CAST(CREATE_DTM AS DATETIME)) OVER (PARTITION BY LOCATOR_CODE_ID ORDER BY CAST(CREATE_DTM AS DATETIME)) AS NEXT_CREATE_DTM, 
     CAST(UPDT_DTM AS DATETIME) AS UPDT_DTM,
-    FROM {{AZ_DOC_LOCATOR_CODE}}
+    FROM {AZ_DOC_LOCATOR_CODE}
 ),
 -- This CTE joins the base CTE to the location CTE, resulting in one row per movement, 
 -- with relevant locations attached.
@@ -135,10 +132,10 @@ custody_level AS (
       ELSE CAST(NULL AS STRING)
     END AS CUSTODY_LEVEL,
   FROM base_with_locations 
-  LEFT JOIN {{LOOKUPS}} custody_lookup 
+  LEFT JOIN {LOOKUPS} custody_lookup 
   ON(CUSTODY_LEVEL_ID = custody_lookup.LOOKUP_ID
   AND custody_lookup.LOOKUP_CATEGORY='CU_LEVEL')
-  LEFT JOIN {{LOOKUPS}} current_use_lookup 
+  LEFT JOIN {LOOKUPS} current_use_lookup 
   ON(CURRENT_USE_ID = current_use_lookup.LOOKUP_ID
   AND current_use_lookup.LOOKUP_CATEGORY = 'CURRENT_USE')
 ),
@@ -165,9 +162,9 @@ locations_decoded AS (
     TRIM(jail_lookup.DESCRIPTION, 'Court in ') AS county_jail_location, 
     TRIM(hospital_lookup.DESCRIPTION, 'Court in ') AS hospital_location,
   FROM custody_level
-  LEFT JOIN {{LOOKUPS}} jail_lookup
+  LEFT JOIN {LOOKUPS} jail_lookup
   ON(DESTINATION_COURT_ID = jail_lookup.LOOKUP_ID)
-  LEFT JOIN {{LOOKUPS}} hospital_lookup
+  LEFT JOIN {LOOKUPS} hospital_lookup
   ON(DESTINATION_HOSPITAL_ID = hospital_lookup.LOOKUP_ID)
 ),
 -- This CTE results in one row per person, incarceration stint, and set of key characteristics
@@ -209,11 +206,10 @@ WINDOW person_window AS (
   -- deterministically sort movements on days when people are logged as being in many
   -- places at once.
   ORIGIN_LOC_DESC, facility, hospital_location, county_jail_location)
-),{ADC_NUMBER_TO_PERSON_ID_CTE}
+)
 
 SELECT 
   PERSON_ID,
-  ADC_NUMBER,
   DOC_ID,
   admission_date,
   admission_reason,
@@ -228,8 +224,6 @@ SELECT
     PARTITION BY PERSON_ID, DOC_ID 
     ORDER BY admission_date, action_ranking, MOVEMENT_DIRECTION DESC) AS period_seq
 FROM periods
-LEFT JOIN adc_number_to_person_id_cte
-USING(PERSON_ID)
 WHERE DOC_ID IS NOT NULL AND PERSON_ID IS NOT NULL
 -- only keep zero-day periods if they are overall period admissions or releases, to preserve
 -- admission and release reasons
