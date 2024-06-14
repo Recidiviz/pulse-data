@@ -10,6 +10,10 @@ columns:
     is_pii: True
     description: |-
       This is a unique identifier assigned to a particular person. This database element will be displayed on screen and reports as either TOMIS-ID or STAFF-ID depending on the functional requirements.
+    # TODO(#30596): Add in functionality for this to be StaffID or OffenderID (in the same column).
+    # Picking person_external_id for now because we had to pick one.
+    field_type: person_external_id
+    external_id_type: US_TN_DOC
   - name: AddressLine1
     is_pii: True
     description: |-

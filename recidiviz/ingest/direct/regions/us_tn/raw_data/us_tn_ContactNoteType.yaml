@@ -12,6 +12,8 @@ columns:
     is_pii: True
     description: |-
       This is a unique identifier assigned to a particular person in the TOMIS system or a current, valid OBSCID ID number.
+    field_type: person_external_id
+    external_id_type: US_TN_DOC
   - name: ContactNoteDateTime
     description: |-
       This is the date a contact note is recorded for a person. This table contains one occurrence for each contact note tracked by the system for each person.  [Combination of DB2 columns DTE_CNTCT_NOTE and TME_CNTCT_NOTE]
@@ -26,6 +28,11 @@ columns:
   - name: LastUpdateDateTime
     description: |-
       This element will be associated with each record in each DB2 table in TOMIS.  It is the timestamp of the last time this record was updated.
+
+table_relationships:
+  - foreign_table: Violations
+    join_logic:
+      - Violations.OffenderID = ContactNoteType.OffenderID
 # Increase raw data import chunk size by 10x from default. Verified that this still only
 # uses 877 MB per chunk, well under the 16 GB memory limit per VM.
 import_chunk_size_rows: 2500000

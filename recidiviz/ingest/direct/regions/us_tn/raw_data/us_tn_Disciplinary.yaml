@@ -11,6 +11,8 @@ columns:
     is_pii: True
     description: |-
       This is a unique identifier assigned to a particular offender in the TOMIS system or a current, valid OBSCID ID number.
+    field_type: person_external_id
+    external_id_type: US_TN_DOC
   - name: IncidentID
     description: |-
       The unique identifier for an incident.
@@ -113,3 +115,12 @@ columns:
     field_type: datetime
     description: |-
       This element will be associated with each record in each DB2 table in TOMIS. It is the timestamp of the last time this record was updated.
+
+table_relationships:
+  - foreign_table: DisciplinarySentence
+    join_logic:
+      - DisciplinarySentence.OffenderID = Disciplinary.OffenderID
+      - DisciplinarySentence.IncidentID = Disciplinary.IncidentID
+  - foreign_table: Incident
+    join_logic:
+      - Incident.IncidentID = Disciplinary.IncidentID

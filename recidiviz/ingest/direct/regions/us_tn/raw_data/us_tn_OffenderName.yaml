@@ -6,11 +6,15 @@ data_classification: source
 primary_key_cols:
   - OffenderID
   - SequenceNumber
+is_primary_person_table: True
 columns:
   - name: OffenderID
     is_pii: True
     description: |-
       This is a unique identifier assigned to a particular person in the TOMIS system or a current, valid OBSCID ID number.
+    field_type: person_external_id
+    external_id_type: US_TN_DOC
+    is_primary_for_external_id_type: True
   - name: SequenceNumber
     description: |-
       This is a number used to distinguish the sequence of name codes accessed on a Soundex table.
@@ -77,3 +81,8 @@ columns:
     field_type: datetime
     description: |-
       This element will be associated with each record in each DB2 table in TOMIS.  It is the timestamp of the last time this record was updated.
+
+table_relationships:
+  - foreign_table: Address
+    join_logic:
+      - Address.PersonID = OffenderName.OffenderID
