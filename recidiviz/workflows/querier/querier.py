@@ -253,15 +253,20 @@ class WorkflowsQuerier:
         display_name: str,
         methodology_url: str,
         is_alert: bool,
-        initial_header: str,
+        initial_header: Optional[str],
         denial_reasons: Dict[str, Any],
         eligible_criteria_copy: Dict[str, Any],
         ineligible_criteria_copy: Dict[str, Any],
         dynamic_eligibility_text: str,
+        eligibility_date_text: Optional[str],
+        hide_denial_revert: bool,
+        tooltip_eligibility_text: Optional[str],
         call_to_action: str,
         denial_text: Optional[str],
         snooze: Optional[Dict[str, Any]],
         sidebar_components: List[str],
+        tab_groups: Optional[Dict[str, List[str]]],
+        compare_by: Optional[List[Any]],
     ) -> int:
         """
         Given an opportunity type and a config, adds that config to the database,
@@ -287,10 +292,15 @@ class WorkflowsQuerier:
                     eligible_criteria_copy=eligible_criteria_copy,
                     ineligible_criteria_copy=ineligible_criteria_copy,
                     dynamic_eligibility_text=dynamic_eligibility_text,
+                    eligibility_date_text=eligibility_date_text,
+                    hide_denial_revert=hide_denial_revert,
+                    tooltip_eligibility_text=tooltip_eligibility_text,
                     call_to_action=call_to_action,
                     denial_text=denial_text,
                     snooze=snooze,
                     sidebar_components=sidebar_components,
+                    tab_groups=tab_groups,
+                    compare_by=compare_by,
                 )
                 .returning(OpportunityConfiguration.id)
             )

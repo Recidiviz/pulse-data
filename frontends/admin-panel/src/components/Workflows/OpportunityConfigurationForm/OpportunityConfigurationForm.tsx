@@ -18,6 +18,7 @@
 import { Button, Checkbox, Form, Input } from "antd";
 import { observer } from "mobx-react-lite";
 import { useHistory } from "react-router";
+import { z } from "zod";
 
 import { babyOpportunityConfigurationSchema } from "../../../WorkflowsStore/models/OpportunityConfiguration";
 import OpportunityConfigurationPresenter from "../../../WorkflowsStore/presenters/OpportunityConfigurationPresenter";
@@ -27,6 +28,16 @@ import { CriteriaCopy } from "./CriteriaCopy";
 import { MultiEntry } from "./MultiEntry";
 import { SidebarComponents } from "./SidebarComponents";
 import { SnoozeInput } from "./SnoozeInput";
+
+const OPTIONAL_FIELDS: (keyof z.input<
+  typeof babyOpportunityConfigurationSchema
+>)[] = [
+  "featureVariant",
+  "initialHeader",
+  "denialText",
+  "eligibilityDateText",
+  "tooltipEligibilityText",
+];
 
 const OpportunityConfigurationForm = ({
   presenter,
@@ -44,6 +55,7 @@ const OpportunityConfigurationForm = ({
     ineligibleCriteriaCopy:
       template && Object.entries(template.ineligibleCriteriaCopy),
     isAlert: !!template?.isAlert,
+    hideDenialRevert: !!template?.hideDenialRevert,
   };
 
   return (
@@ -51,10 +63,12 @@ const OpportunityConfigurationForm = ({
       onFinish={async (values) => {
         const config = babyOpportunityConfigurationSchema.parse({
           ...values,
-          featureVariant: values.featureVariant?.length
-            ? values.featureVariant
-            : undefined,
-          denialText: values.denialText?.length ? values.denialText : undefined,
+          ...Object.fromEntries(
+            OPTIONAL_FIELDS.map((f) => [
+              f,
+              values[f]?.length ? values.f : undefined,
+            ])
+          ),
           denialReasons: Object.fromEntries(values.denialReasons ?? []),
           eligibleCriteriaCopy: Object.fromEntries(
             values.eligibleCriteriaCopy ?? []
@@ -90,6 +104,19 @@ const OpportunityConfigurationForm = ({
       >
         <Input />
       </Form.Item>
+      <Form.Item label="Eligibility Date Text" name="eligibilityDateText">
+        <Input />
+      </Form.Item>
+      <Form.Item label="Tooltip Eligibility Text" name="tooltipEligibilityText">
+        <Input />
+      </Form.Item>
+      <Form.Item
+        label="Hide Denial Revert?"
+        name="hideDenialRevert"
+        valuePropName="checked"
+      >
+        <Checkbox />
+      </Form.Item>
       <Form.Item
         label="Call To Action"
         name="callToAction"
@@ -123,11 +150,7 @@ const OpportunityConfigurationForm = ({
       <Form.Item label="Denial Text" name="denialText">
         <Input />
       </Form.Item>
-      <Form.Item
-        label="Initial Header"
-        name="initialHeader"
-        rules={[{ required: true }]}
-      >
+      <Form.Item label="Initial Header" name="initialHeader">
         <Input />
       </Form.Item>
       <CriteriaCopy

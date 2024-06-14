@@ -69,16 +69,21 @@ class OpportunityConfig:
     opportunity_type: str = attr.ib()
     display_name: str = attr.ib()
     methodology_url: str = attr.ib()
-    initial_header: str = attr.ib()
+    initial_header: Optional[str] = attr.ib()
     denial_reasons: Dict[str, str] = attr.ib()
     eligible_criteria_copy: Dict[str, Any] = attr.ib()
     ineligible_criteria_copy: Dict[str, Any] = attr.ib()
     dynamic_eligibility_text: str = attr.ib()
+    eligibility_date_text: Optional[str] = attr.ib()
+    hide_denial_revert: bool = attr.ib()
+    tooltip_eligibility_text: Optional[str] = attr.ib()
     call_to_action: str = attr.ib()
     snooze: Dict[str, Any] | None = attr.ib()
     is_alert: bool = attr.ib()
     sidebar_components: List[str] = attr.ib()
     denial_text: Optional[str] = attr.ib()
+    tab_groups: Optional[Dict[str, List[str]]] = attr.ib()
+    compare_by: Optional[List[Any]] = attr.ib()
 
     def to_dict(self) -> Dict[str, Any]:
         return cattrs.unstructure(self)
@@ -97,11 +102,16 @@ class OpportunityConfig:
             eligible_criteria_copy=full_config.eligible_criteria_copy,
             ineligible_criteria_copy=full_config.ineligible_criteria_copy,
             dynamic_eligibility_text=full_config.dynamic_eligibility_text,
+            eligibility_date_text=full_config.eligibility_date_text,
+            hide_denial_revert=full_config.hide_denial_revert,
+            tooltip_eligibility_text=full_config.tooltip_eligibility_text,
             call_to_action=full_config.call_to_action,
             snooze=full_config.snooze,
             is_alert=full_config.is_alert,
             denial_text=full_config.denial_text,
             sidebar_components=full_config.sidebar_components,
+            tab_groups=full_config.tab_groups,
+            compare_by=full_config.compare_by,
         )
 
 
@@ -135,11 +145,16 @@ class FullOpportunityConfig(OpportunityConfig):
             ineligible_criteria_copy=config.ineligible_criteria_copy,
             dynamic_eligibility_text=config.dynamic_eligibility_text,
             call_to_action=config.call_to_action,
+            eligibility_date_text=config.eligibility_date_text,
+            hide_denial_revert=config.hide_denial_revert,
+            tooltip_eligibility_text=config.tooltip_eligibility_text,
             snooze=config.snooze,
             feature_variant=config.feature_variant,
             is_alert=config.is_alert,
             denial_text=config.denial_text,
             sidebar_components=config.sidebar_components,
+            tab_groups=config.tab_groups,
+            compare_by=config.compare_by,
         )
 
 
@@ -167,9 +182,14 @@ class OpportunityConfigResponse(OpportunityInfo, OpportunityConfig):
             eligible_criteria_copy=config.eligible_criteria_copy,
             ineligible_criteria_copy=config.ineligible_criteria_copy,
             dynamic_eligibility_text=config.dynamic_eligibility_text,
+            eligibility_date_text=config.eligibility_date_text,
+            hide_denial_revert=config.hide_denial_revert,
+            tooltip_eligibility_text=config.tooltip_eligibility_text,
             call_to_action=config.call_to_action,
             snooze=config.snooze,
             is_alert=config.is_alert,
             denial_text=config.denial_text,
             sidebar_components=config.sidebar_components,
+            tab_groups=config.tab_groups,
+            compare_by=config.compare_by,
         )

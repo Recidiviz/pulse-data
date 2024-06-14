@@ -46,12 +46,7 @@ export const CriteriaCopy = ({
         >
           <Input placeholder="Text" />
         </Form.Item>
-        <Form.Item
-          {...field}
-          noStyle
-          name={[name, 1, "tooltip"]}
-          rules={[{ required: true, message: "'tooltip' is required" }]}
-        >
+        <Form.Item {...field} noStyle name={[name, 1, "tooltip"]}>
           <Input placeholder="Tooltip" />
         </Form.Item>
       </>
