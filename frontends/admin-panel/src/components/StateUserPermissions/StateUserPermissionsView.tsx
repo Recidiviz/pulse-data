@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
-import { Button, message, PageHeader, Space, Spin, Table } from "antd";
+import { Button, message, PageHeader, Space, Spin, Table, Tooltip } from "antd";
 import * as React from "react";
 import { useEffect, useState } from "react";
 
@@ -80,12 +80,17 @@ const StateUserPermissionsView = (): JSX.Element => {
   const [selectedRows, setSelectedRows] = useState<
     StateUserPermissionsResponse[]
   >([]);
+  const [selectedStates, setSelectedStates] = useState<string[]>([]);
   const onSelectChange = (
     newSelectedRowKeys: React.Key[],
     newSelectedRows: StateUserPermissionsResponse[]
   ) => {
     setSelectedRowKeys(newSelectedRowKeys);
     setSelectedRows(newSelectedRows);
+    const stateCodes = newSelectedRows
+      .map((d) => d.stateCode)
+      .filter((v, i, a) => a.indexOf(v) === i);
+    setSelectedStates(stateCodes);
   };
   const rowSelection = {
     selectedRowKeys,
@@ -259,14 +264,22 @@ const StateUserPermissionsView = (): JSX.Element => {
           stateRoleData={stateRoleData}
           userData={data}
         />
-        <Button
-          disabled={selectedRowKeys.length < 1}
-          onClick={() => {
-            setEditVisible(true);
-          }}
+        <Tooltip
+          title={
+            selectedStates.length > 1
+              ? "If editing multiple users at the same time, they must be from the same state"
+              : ""
+          }
         >
-          Edit User(s)
-        </Button>
+          <Button
+            disabled={selectedStates.length !== 1}
+            onClick={() => {
+              setEditVisible(true);
+            }}
+          >
+            Edit User(s)
+          </Button>
+        </Tooltip>
         <Button
           onClick={() => {
             setUploadRosterVisible(true);
