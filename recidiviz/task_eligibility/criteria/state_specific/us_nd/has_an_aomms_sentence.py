@@ -18,16 +18,19 @@
 """Defines a criteria view that shows spans of time for which residents are serving an
 Armed Offender Minimum Mandatory Sentence (AOMMS).
 """
+from google.cloud import bigquery
+
 from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.dataset_config import raw_latest_views_dataset_for_region
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
+from recidiviz.task_eligibility.utils.us_nd_query_fragments import reformat_ids
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
-from recidiviz.task_eligibility.utils.us_nd_query_fragments import reformat_ids
 
 _CRITERIA_NAME = "US_ND_HAS_AN_AOMMS_SENTENCE"
 
@@ -66,6 +69,7 @@ SELECT
     span.end_date,
     FALSE AS meets_criteria,
     TO_JSON(STRUCT('Minimum Mandatory Sentence' AS ineligible_offenses)) AS reason,
+    'Minimum Mandatory Sentence' AS ineligible_offenses,
 FROM `{{project_id}}.{{sessions_dataset}}.sentence_spans_materialized` span,
 UNNEST (sentences_preprocessed_id_array_actual_completion) AS sentences_preprocessed_id
 INNER JOIN connect_charge_to_sentence sent
@@ -94,6 +98,13 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
         ),
         sessions_dataset=SESSIONS_DATASET,
         meets_criteria_default=False,
+        reasons_fields=[
+            ReasonsField(
+                name="ineligible_offenses",
+                type=bigquery.enums.SqlTypeNames.STRING,
+                description="#TODO(#29059): Add reasons field description",
+            ),
+        ],
     )
 )
 

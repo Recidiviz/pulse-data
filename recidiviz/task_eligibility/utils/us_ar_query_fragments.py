@@ -48,5 +48,6 @@ def no_incarceration_sanctions_within_n_months(n: int) -> str:
         end_date,
         event_count = 0 as meets_criteria,
         TO_JSON(STRUCT(event_dates)) AS reason,
+        event_dates,
     FROM event_count_spans
     """

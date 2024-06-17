@@ -15,8 +15,10 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ============================================================================
 """Describes the spans of time during which someone is not serving ineligible offenses for SAI"""
+from google.cloud import bigquery
 
 from recidiviz.common.constants.states import StateCode
+from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
@@ -34,12 +36,19 @@ _DESCRIPTION = """Describes the spans of time during which
 _REASON_QUERY = (
     """TO_JSON(STRUCT(['placeholder1', 'placeholder2'] AS ineligible_offenses))"""
 )
+_REASONS_FIELDS = [
+    ReasonsField(
+        name="ineligible_offenses",
+        type=bigquery.enums.SqlTypeNames.RECORD,
+        description="#TODO(#29059): Add reasons field description",
+    ),
+]
 
 VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
     state_specific_placeholder_criteria_view_builder(
         criteria_name=_CRITERIA_NAME,
         description=_DESCRIPTION,
-        reason_query=_REASON_QUERY,
+        reasons_fields=_REASONS_FIELDS,
         state_code=StateCode.US_MI,
     )
 )

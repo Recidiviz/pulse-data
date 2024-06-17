@@ -18,8 +18,10 @@
     -has a special probation or special parole case
     -has had at least one year of successful supervision with no medium or high level sanctions
 """
+from google.cloud import bigquery
 
 from recidiviz.common.constants.states import StateCode
+from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
@@ -35,15 +37,30 @@ _DESCRIPTION = """Describes spans of time during which a candidate
     -has a special probation or special parole case
     -has had at least one year of successful supervision with no medium or high level sanctions
 """
-_REASON_QUERY = """TO_JSON(STRUCT(False AS is_special_case,
-                                  '9999-99-99' AS eligible_date,
-                                  False AS no_medium_sanctions_in_last_year))"""
+
+_REASONS_FIELDS = [
+    ReasonsField(
+        name="is_special_case",
+        type=bigquery.enums.SqlTypeNames.BOOL,
+        description="#TODO(#29059): Add reasons field description",
+    ),
+    ReasonsField(
+        name="eligible_date",
+        type=bigquery.enums.SqlTypeNames.DATE,
+        description="#TODO(#29059): Add reasons field description",
+    ),
+    ReasonsField(
+        name="no_medium_sanctions_in_last_year",
+        type=bigquery.enums.SqlTypeNames.BOOL,
+        description="#TODO(#29059): Add reasons field description",
+    ),
+]
 
 VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
     state_specific_placeholder_criteria_view_builder(
         criteria_name=_CRITERIA_NAME,
         description=_DESCRIPTION,
-        reason_query=_REASON_QUERY,
+        reasons_fields=_REASONS_FIELDS,
         state_code=StateCode.US_PA,
     )
 )

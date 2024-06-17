@@ -15,7 +15,9 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ============================================================================
 """Describes spans of time where a candidate has no current or prior violent sexual convictions"""
+from google.cloud import bigquery
 
+from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateAgnosticTaskCriteriaBigQueryViewBuilder,
 )
@@ -29,13 +31,19 @@ _CRITERIA_NAME = "NO_VIOLENT_SEXUAL_OFFENSES"
 
 _DESCRIPTION = """Describes spans of time where a candidate has no current or prior violent sexual convictions"""
 
-_REASON_QUERY = """TO_JSON(STRUCT(False AS any_assaultive_sexual_conviction))"""
+_REASONS_FIELDS = [
+    ReasonsField(
+        name="any_assaultive_sexual_conviction",
+        type=bigquery.enums.SqlTypeNames.BOOL,
+        description="#TODO(#29059): Add reasons field description",
+    ),
+]
 
 VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
     state_agnostic_placeholder_criteria_view_builder(
         criteria_name=_CRITERIA_NAME,
         description=_DESCRIPTION,
-        reason_query=_REASON_QUERY,
+        reasons_fields=_REASONS_FIELDS,
     )
 )
 
