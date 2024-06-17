@@ -161,7 +161,13 @@ supervising_officer_assignments_cte AS (
         SupervisionAssignmentTypeDesc,
         CAST(sa.StartDate AS DATETIME) AS StartDate,
         CAST(IFNULL(sa.EndDate, '9999-12-31') AS DATETIME) AS EndDate,
-        EmployeeId,
+        -- Avoids using the employee Unknown/None
+        CASE 
+            WHEN TO_HEX(SHA256(EmployeeId)) =
+                "8b75ec30ea0d0fedcfce5224ef7733db7dbc574a1806aa664014eb6350f5a00c"
+                THEN NULL
+            ELSE EmployeeId
+        END AS EmployeeId,
         StaffId,
         EmployeeTypeName,
         FirstName,
