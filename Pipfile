@@ -115,7 +115,8 @@ docker-stubs = "*"
 [packages]
 callee = "*"
 "html5lib" = "*"
-numpy = "*"
+# TODO(#30733): Remove the <2.0.0 pin
+numpy = "<2.0.0"
 us = "*"
 dateparser = "*"
 # TODO(#19995): Remove the <2.0.0 pin
