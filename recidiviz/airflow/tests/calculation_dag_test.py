@@ -812,7 +812,7 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
                     "ingest_instance": "PRIMARY",
                 },
                 expected_failure_ids=[
-                    r".*us_yy_dataflow.us-yy-ingest-primary.run_pipeline",
+                    r".*us_yy_dataflow.us-yy-ingest.run_pipeline",
                     r".*us_yy_dataflow.write_upper_bounds",
                     r".*us_yy_dataflow.write_ingest_job_completion",
                     r".*ingest.branch_end",

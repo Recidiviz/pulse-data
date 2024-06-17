@@ -117,7 +117,7 @@ class TestSingleIngestPipelineGroup(unittest.TestCase):
 
         test_dag = _create_test_single_ingest_pipeline_group_dag(StateCode.US_XX)
 
-        task_group_id = "us_xx_dataflow.us-xx-ingest-primary"
+        task_group_id = "us_xx_dataflow.us-xx-ingest"
         dataflow_pipeline_task = test_dag.get_task(f"{task_group_id}.run_pipeline")
 
         if not isinstance(
@@ -132,7 +132,7 @@ class TestSingleIngestPipelineGroup(unittest.TestCase):
         """Tests that dataflow_pipeline get the expected arguments."""
 
         test_dag = _create_test_single_ingest_pipeline_group_dag(StateCode.US_XX)
-        task_group_id = "us_xx_dataflow.us-xx-ingest-primary"
+        task_group_id = "us_xx_dataflow.us-xx-ingest"
         task: RecidivizDataflowFlexTemplateOperator = test_dag.get_task(  # type: ignore
             f"{task_group_id}.run_pipeline"
         )
@@ -225,7 +225,7 @@ class TestSingleIngestPipelineGroupIntegration(AirflowIntegrationTest):
                     r".*get_watermarks",
                     r".*check_for_valid_watermarks",
                     r".*verify_raw_data_flashing_not_in_progress",
-                    r"us_xx_dataflow\.us-xx-ingest-primary.*",
+                    r"us_xx_dataflow\.us-xx-ingest.*",
                     r".*write_ingest_job_completion",
                     r".*write_upper_bounds",
                     _DOWNSTREAM_TASK_ID,
@@ -256,7 +256,7 @@ class TestSingleIngestPipelineGroupIntegration(AirflowIntegrationTest):
                 expected_failure_ids=[
                     r".*check_for_valid_watermarks",
                     r".*verify_raw_data_flashing_not_in_progress",
-                    r"us_xx_dataflow\.us-xx-ingest-primary.*",
+                    r"us_xx_dataflow\.us-xx-ingest.*",
                     r".*write_ingest_job_completion",
                     r".*write_upper_bounds",
                     _DOWNSTREAM_TASK_ID,
@@ -284,7 +284,7 @@ class TestSingleIngestPipelineGroupIntegration(AirflowIntegrationTest):
                 session,
                 expected_failure_ids=[
                     r".*verify_raw_data_flashing_not_in_progress",
-                    r"us_xx_dataflow\.us-xx-ingest-primary.*",
+                    r"us_xx_dataflow\.us-xx-ingest.*",
                     r".*write_ingest_job_completion",
                     r".*write_upper_bounds",
                     _DOWNSTREAM_TASK_ID,
@@ -325,7 +325,7 @@ class TestSingleIngestPipelineGroupIntegration(AirflowIntegrationTest):
                 test_dag,
                 session,
                 expected_failure_ids=[
-                    r"us_xx_dataflow\.us-xx-ingest-primary\.run_pipeline",
+                    r"us_xx_dataflow\.us-xx-ingest\.run_pipeline",
                     r".*write_ingest_job_completion",
                     r".*write_upper_bounds",
                     _DOWNSTREAM_TASK_ID,

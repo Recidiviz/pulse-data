@@ -125,7 +125,7 @@ class StateIngestPipeline(BasePipeline[IngestPipelineParameters]):
     def run_pipeline(self, p: Pipeline) -> None:
         field_index = CoreEntityFieldIndex()
         raw_data_source_instance = DirectIngestInstance(
-            self.pipeline_parameters.ingest_instance
+            self.pipeline_parameters.raw_data_source_instance
         )
         state_code = StateCode(self.pipeline_parameters.state_code.upper())
         raw_data_upper_bound_dates = self.pipeline_parameters.raw_data_upper_bound_dates

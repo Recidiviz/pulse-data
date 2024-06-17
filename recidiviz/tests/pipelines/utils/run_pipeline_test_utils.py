@@ -239,12 +239,6 @@ def default_arg_list_for_pipeline(
     elif issubclass(pipeline, SupplementalDatasetPipeline):
         pass
     elif issubclass(pipeline, StateIngestPipeline):
-        pipeline_args.extend(
-            [
-                "--ingest_instance",
-                "SECONDARY",
-            ]
-        )
         if ingest_view_results_only := additional_pipeline_args.get(
             "ingest_view_results_only"
         ):

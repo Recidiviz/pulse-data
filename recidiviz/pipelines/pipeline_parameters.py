@@ -131,7 +131,13 @@ class PipelineParameters:
                 f"Expected output dataset overrides when "
                 f"[{self.output_sandbox_prefix}] is set."
             )
-        return overrides.get_dataset(default_dataset_id)
+        override_dataset = overrides.get_dataset(default_dataset_id)
+        if override_dataset == default_dataset_id:
+            raise ValueError(
+                f"Expected sandbox override to be set for default dataset "
+                f"[{default_dataset_id}]"
+            )
+        return override_dataset
 
     # Args used for job configuration
     region: str = attr.ib(validator=attr_validators.is_str)

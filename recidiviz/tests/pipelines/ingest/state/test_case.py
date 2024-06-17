@@ -135,7 +135,7 @@ class BaseStateIngestPipelineTestCase(unittest.TestCase):
 
     @classmethod
     def ingest_instance(cls) -> DirectIngestInstance:
-        return DirectIngestInstance.SECONDARY
+        return DirectIngestInstance.PRIMARY
 
     @classmethod
     def ingest_view_manifest_collector(cls) -> IngestViewManifestCollector:

@@ -32,7 +32,6 @@ from recidiviz.airflow.dags.utils.dataflow_pipeline_group import (
 )
 from recidiviz.airflow.dags.utils.environment import get_project_id
 from recidiviz.common.constants.states import StateCode
-from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.pipelines.ingest.pipeline_parameters import IngestPipelineParameters
 from recidiviz.pipelines.ingest.pipeline_utils import (
     DEFAULT_PIPELINE_REGIONS_BY_STATE_CODE,
@@ -51,11 +50,9 @@ class IngestDataflowPipelineTaskGroupDelegate(
     def __init__(
         self,
         state_code: StateCode,
-        default_ingest_instance: DirectIngestInstance,
         max_update_datetimes_operator: CloudSqlQueryOperator,
     ) -> None:
         self._state_code = state_code
-        self._default_ingest_instance = default_ingest_instance
         self._max_update_datetimes_operator = max_update_datetimes_operator
 
     def get_default_parameters(self) -> IngestPipelineParameters:
@@ -66,7 +63,6 @@ class IngestDataflowPipelineTaskGroupDelegate(
             pipeline=INGEST_PIPELINE_NAME,
             state_code=self._state_code.value,
             region=DEFAULT_PIPELINE_REGIONS_BY_STATE_CODE[self._state_code],
-            ingest_instance=self._default_ingest_instance.value,
         )
 
     def get_input_operators(self) -> List[BaseOperator]:
@@ -76,8 +72,6 @@ class IngestDataflowPipelineTaskGroupDelegate(
         self, dag_run: DagRun, upstream_task_outputs: UpstreamTaskOutputs
     ) -> Dict[str, Any]:
         ingest_instance = get_ingest_instance(dag_run)
-        if not ingest_instance:
-            ingest_instance = self._default_ingest_instance.value
 
         max_update_datetimes = assert_type(
             upstream_task_outputs.get_output_for_operator(
@@ -86,7 +80,10 @@ class IngestDataflowPipelineTaskGroupDelegate(
             dict,
         )
 
-        return {
+        args = {
             "raw_data_upper_bound_dates_json": json.dumps(max_update_datetimes),
-            "ingest_instance": ingest_instance,
         }
+        if ingest_instance:
+            args["raw_data_source_instance"] = ingest_instance
+
+        return args
