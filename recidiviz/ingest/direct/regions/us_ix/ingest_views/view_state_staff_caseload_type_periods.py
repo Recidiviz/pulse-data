@@ -48,6 +48,7 @@ VIEW_QUERY_TEMPLATE = f""",
             EmployeeId,
             et.EmployeeTypeName,
             update_datetime AS start_date,
+            StaffId,
             LAG(et.EmployeeTypeName) OVER (PARTITION BY EmployeeId ORDER BY update_datetime) as prev_EmployeeTypeName
         FROM {{ref_Employee@ALL}} ee
         LEFT JOIN {{ref_EmployeeType}} et ON ee.EmployeeTypeId = et.EmployeeTypeId
@@ -59,7 +60,7 @@ VIEW_QUERY_TEMPLATE = f""",
             EmployeeTypeName,
             start_date,
             LEAD(start_date) OVER (PARTITION BY EmployeeId ORDER BY start_date) as end_date,
-            TO_HEX(SHA256(EmployeeId)) as hashedId
+            StaffId
         FROM all_employee_periods  
         WHERE EmployeeTypeName <> prev_EmployeeTypeName OR prev_EmployeeTypeName IS NULL
     ),
@@ -181,7 +182,10 @@ VIEW_QUERY_TEMPLATE = f""",
             SELECT 
                 *
             FROM transitional_periods
-            WHERE EmployeeTypeName in ("Business Operations Manager") OR TO_HEX(SHA256(officer_EmployeeId)) = "f826ecc1611f62c4707ad52da9883fc15f69a1cddda43250c364fc2457ba4b06")
+            WHERE EmployeeTypeName in ("Business Operations Manager") 
+            OR LOWER(StaffId) LIKE "%bench%"
+            OR TO_HEX(SHA256(officer_EmployeeId)) = 
+            "f826ecc1611f62c4707ad52da9883fc15f69a1cddda43250c364fc2457ba4b06")
     ),
     general_caseload_periods AS (
         SELECT *, 'GENERAL' AS caseload_type
