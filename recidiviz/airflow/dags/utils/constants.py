@@ -25,4 +25,4 @@ DATAFLOW_OPERATOR_TASK_ID = "run_pipeline"
 
 # Task id for the check that runs before ingest pipelines to make sure we aren't
 # running with stale / missing raw data.
-SHOULD_RUN_BASED_ON_WATERMARKS_TASK_ID = "should_run_based_on_watermarks"
+CHECK_FOR_VALID_WATERMARKS_TASK_ID = "check_for_valid_watermarks"

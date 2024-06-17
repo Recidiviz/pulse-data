@@ -156,7 +156,7 @@ class TestGetAlertingServiceFromTask(unittest.TestCase):
                     dag_id=get_calculation_dag_id(_PROJECT_ID),
                     task_id=(
                         "ingest.us_nd_dataflow.initialize_dataflow_pipeline."
-                        "should_run_based_on_watermarks"
+                        "check_for_valid_watermarks"
                     ),
                 )
             ),
