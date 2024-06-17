@@ -9,48 +9,96 @@ primary_key_cols:
 columns:
   - name: Cis_900_Employee_1_Id
     is_pii: True
+    description: Employee ID of the first employee.
   - name: Cis_900_Employee_2_Id
     is_pii: True
+    description: Employee ID of the second employee.
   - name: Cis_908_Ccs_Location_Id
+    description: Location ID.
   - name: Cis_912_Unit_Id
+    description: Unit ID.
   - name: Cis_913_Pod_Id
+    description: Pod Id.
   - name: Cis_9907_Facility_Note_Cd
+    description: Facility note code.
   - name: Cis_9907_Location_Type_Cd
+    description: Location type code.
   - name: Cis_9907_Prea_Finding_Cd
+    description: Prea finding code.
   - name: Cis_9907_Prea_Location_Type_Cd
+    description: Prea location type code.
   - name: Complete_Ind
+    description: Indicates whether or not it is complete.
   - name: Created_By_Tx
     is_pii: True
+    description: |-
+      TODO(#30541): Fill in with information from ME
   - name: Created_On_Date
+    description: Date the record was created on.
   - name: Crim_Inv_Tx
     is_pii: True
+    description: |-
+      TODO(#30541): Fill in with information from ME
   - name: Evidence_Tx
     is_pii: True
+    description: |-
+      TODO(#30541): Fill in with information from ME
   - name: Facility_End_Date
+    description: |-
+      TODO(#30541): Fill in with information from ME
   - name: Final_Finding_Ind
+    description: |-
+      TODO(#30541): Fill in with information from ME
   - name: Finding_Reasons_Tx
     is_pii: True
+    description: |-
+      TODO(#30541): Fill in with information from ME
   - name: Incident_Date
+    description: Date the incident occured.
   - name: Incident_Designation_Tx
     is_pii: True
+    description: |-
+      TODO(#30541): Fill in with information from ME
   - name: Incident_Id
     description: The primary key for this table.
   - name: Location_Tx
     is_pii: True
+    description: |-
+      TODO(#30541): Fill in with information from ME
   - name: Logical_Delete_Ind
+    description: |-
+      TODO(#30541): Fill in with information from ME
   - name: Modified_By_Tx
     is_pii: True
+    description: |-
+      TODO(#30541): Fill in with information from ME
   - name: Modified_On_Date
+    description: Date the record was modified on.
   - name: Pbs_Ind
+    description: |-
+      TODO(#30541): Fill in with information from ME
   - name: Reason_For_Change_Officer_Tx
     is_pii: True
+    description: |-
+      TODO(#30541): Fill in with information from ME
   - name: Reason_For_Change_Reviewer_Tx
     is_pii: True
+    description: |-
+      TODO(#30541): Fill in with information from ME
   - name: Recommendation_Tx
     is_pii: True
+    description: |-
+      TODO(#30541): Fill in with information from ME
   - name: Resolution_Tx
     is_pii: True
+    description: |-
+      TODO(#30541): Fill in with information from ME
   - name: Summary_Tx
     is_pii: True
+    description: |-
+      TODO(#30541): Fill in with information from ME
   - name: Summary_Tx_Has_Confidential_Info_Ind
+    description: |-
+      TODO(#30541): Fill in with information from ME
   - name: Year_Num
+    description: Year number.

@@ -9,13 +9,23 @@ columns:
   - name: Cis_460_Incident_Id
     description: The incident ID associated with this row.
   - name: Cis_460_Year_Id
+    description: The year ID.
   - name: Cis_9909_Code_Type_Cd
+    description: The code type code.
   - name: Created_By_Tx
     is_pii: True
+    description: |-
+      TODO(#30541): Fill in with information from ME
   - name: Created_On_Date
+    description: Date the record was created on.
   - name: Inc_Cd_Rsn_Id
     description: The primary key for this table.
   - name: Logical_Delete_Ind
+    description: |-
+      TODO(#30541): Fill in with information from ME
   - name: Modified_By_Tx
     is_pii: True
+    description: |-
+      TODO(#30541): Fill in with information from ME
   - name: Modified_On_Date
+    description: Date the record was modified on.
