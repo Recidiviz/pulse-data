@@ -20,7 +20,6 @@ from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state.dataset_config import (
     DATAFLOW_METRICS_MATERIALIZED_DATASET,
     SESSIONS_DATASET,
-    STATIC_REFERENCE_TABLES_DATASET,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -87,8 +86,12 @@ US_CO_INCARCERATION_POPULATION_METRICS_PREPROCESSED_QUERY_TEMPLATE = """
         pop.prioritized_race_or_ethnicity,
         pop.gender,
     FROM incarceration_population_cte pop
-    --- TODO(#14601): Replace with common facility reference table
-    LEFT JOIN `{project_id}.{static_reference_dataset}.state_community_correction_facilities` facilities
+    LEFT JOIN (
+      --- TODO(#14601): Replace with common facility reference table
+      SELECT DISTINCT facility,  state_code, "COMMUNITY_CORRECTIONS" as facility_type,
+      FROM `{project_id}.normalized_state.state_incarceration_period`
+      WHERE state_code = "US_CO" AND housing_unit LIKE '%COMMUNITY%' AND facility != 'ISP-INMATE'
+    ) facilities
         ON pop.facility = facilities.facility AND pop.state_code = facilities.state_code
         AND pop.compartment_level_1 = 'INCARCERATION'
 """
@@ -99,7 +102,6 @@ US_CO_INCARCERATION_POPULATION_METRICS_PREPROCESSED_VIEW_BUILDER = SimpleBigQuer
     view_query_template=US_CO_INCARCERATION_POPULATION_METRICS_PREPROCESSED_QUERY_TEMPLATE,
     description=US_CO_INCARCERATION_POPULATION_METRICS_PREPROCESSED_VIEW_DESCRIPTION,
     materialized_metrics_dataset=DATAFLOW_METRICS_MATERIALIZED_DATASET,
-    static_reference_dataset=STATIC_REFERENCE_TABLES_DATASET,
     should_materialize=True,
 )
 
