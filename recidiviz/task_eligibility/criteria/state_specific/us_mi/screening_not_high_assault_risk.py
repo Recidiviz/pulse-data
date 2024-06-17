@@ -16,8 +16,10 @@
 # ============================================================================
 """Describes spans of time during which a candidate does not have a high
     assault risk according to their most recent Assaultive Risk Screening"""
+from google.cloud import bigquery
 
 from recidiviz.common.constants.states import StateCode
+from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
@@ -32,13 +34,19 @@ _CRITERIA_NAME = "US_MI_SCREENING_NOT_HIGH_ASSAULT_RISK"
 _DESCRIPTION = """Describes spans of time during which a candidate does not have a high
     assault risk according to their most recent Assaultive Risk Screening"""
 
-_REASON_QUERY = """TO_JSON(STRUCT('placeholder' AS most_recent_assault_risk))"""
+_REASONS_FIELDS = [
+    ReasonsField(
+        name="most_recent_assault_risk",
+        type=bigquery.enums.SqlTypeNames.STRING,
+        description="#TODO(#29059): Add reasons field description",
+    ),
+]
 
 VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
     state_specific_placeholder_criteria_view_builder(
         criteria_name=_CRITERIA_NAME,
         description=_DESCRIPTION,
-        reason_query=_REASON_QUERY,
+        reasons_fields=_REASONS_FIELDS,
         state_code=StateCode.US_MI,
     )
 )

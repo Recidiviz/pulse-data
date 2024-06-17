@@ -21,8 +21,10 @@
     2. non-life sentence for violent case: must serve 5 years on supervision
     3. non-life sentence for non-violent case: must serve 3 years on supervision
 """
+from google.cloud import bigquery
 
 from recidiviz.common.constants.states import StateCode
+from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
@@ -42,16 +44,29 @@ _DESCRIPTION = """Describes spans of time during which a candidate is potentiall
     3. non-life sentence for non-violent case: must serve 3 years on supervision
 """
 
-
-_REASON_QUERY = """TO_JSON(STRUCT(False AS is_life_sentence,
-                                  False AS is_violent_case,
-                                  '9999-99-99' AS eligible_date))"""
+_REASONS_FIELDS = [
+    ReasonsField(
+        name="is_life_sentence",
+        type=bigquery.enums.SqlTypeNames.BOOL,
+        description="#TODO(#29059): Add reasons field description",
+    ),
+    ReasonsField(
+        name="is_violent_case",
+        type=bigquery.enums.SqlTypeNames.BOOL,
+        description="#TODO(#29059): Add reasons field description",
+    ),
+    ReasonsField(
+        name="eligible_date",
+        type=bigquery.enums.SqlTypeNames.DATE,
+        description="#TODO(#29059): Add reasons field description",
+    ),
+]
 
 VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
     state_specific_placeholder_criteria_view_builder(
         criteria_name=_CRITERIA_NAME,
         description=_DESCRIPTION,
-        reason_query=_REASON_QUERY,
+        reasons_fields=_REASONS_FIELDS,
         state_code=StateCode.US_PA,
     )
 )

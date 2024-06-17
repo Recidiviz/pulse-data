@@ -17,11 +17,13 @@
 """ Defines a criteria span view that shows spans of time during which
 someone meets either the time served OR the special cases criteria
 for special circumstances supervision """
+from google.cloud import bigquery
 
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.dataset_config import (
     task_eligibility_criteria_state_specific_dataset,
 )
+from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
@@ -62,12 +64,20 @@ _JSON_CONTENT = f"""MIN(time_served_eligible_date) AS time_served_eligible_date,
                    '{_CRITERIA_NAME}' AS criteria_name"""
 
 _QUERY_TEMPLATE = f"""
+WITH combined_query AS (
 {combining_several_criteria_into_one(
         select_statements_for_criteria_lst=[_CRITERIA_QUERY_1,
                                              _CRITERIA_QUERY_2],
         meets_criteria="LOGICAL_OR(meets_criteria)",
         json_content=_JSON_CONTENT,
     )}
+)
+SELECT
+    *,
+    JSON_EXTRACT(reason, "$.time_served_eligible_date") AS time_served_eligible_date,
+    JSON_EXTRACT(reason, "$.special_case_eligible_date") AS special_case_eligible_date,
+FROM
+    combined_query
 """
 
 VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = StateSpecificTaskCriteriaBigQueryViewBuilder(
@@ -78,6 +88,18 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = StateSpecificTaskCr
     task_eligibility_criteria_us_pa=task_eligibility_criteria_state_specific_dataset(
         StateCode.US_PA
     ),
+    reasons_fields=[
+        ReasonsField(
+            name="time_served_eligible_date",
+            type=bigquery.enums.SqlTypeNames.DATE,
+            description="#TODO(#29059): Add reasons field description",
+        ),
+        ReasonsField(
+            name="special_case_eligible_date",
+            type=bigquery.enums.SqlTypeNames.DATE,
+            description="#TODO(#29059): Add reasons field description",
+        ),
+    ],
 )
 
 if __name__ == "__main__":

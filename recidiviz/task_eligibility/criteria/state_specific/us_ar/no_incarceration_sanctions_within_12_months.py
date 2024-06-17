@@ -16,7 +16,10 @@
 # ============================================================================
 """Spans of time when someone hasn't had an incarceration sanction in the past 12 months
 """
+from google.cloud import bigquery
+
 from recidiviz.common.constants.states import StateCode
+from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
@@ -37,6 +40,13 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
         state_code=StateCode.US_AR,
         criteria_spans_query_template=no_incarceration_sanctions_within_n_months(12),
         meets_criteria_default=True,
+        reasons_fields=[
+            ReasonsField(
+                name="event_dates",
+                type=bigquery.enums.StandardSqlTypeNames.ARRAY,
+                description="#TODO(#29059): Add reasons field description",
+            ),
+        ],
     )
 )
 

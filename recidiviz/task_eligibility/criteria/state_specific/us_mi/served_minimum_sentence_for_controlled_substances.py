@@ -17,8 +17,10 @@
 """Describes spans of time during which a statutory minimum for a controlled substances
  charge has been served according to the SAI policy
 """
+from google.cloud import bigquery
 
 from recidiviz.common.constants.states import StateCode
+from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
@@ -34,13 +36,19 @@ _DESCRIPTION = """Describes spans of time during which a statutory minimum
  for a controlled substances charge has been served according to the SAI policy
 """
 
-_REASON_QUERY = """TO_JSON(STRUCT('9999-99-99' AS eligible_date))"""
+_REASONS_FIELDS = [
+    ReasonsField(
+        name="eligible_date",
+        type=bigquery.enums.SqlTypeNames.DATE,
+        description="#TODO(#29059): Add reasons field description",
+    ),
+]
 
 VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
     state_specific_placeholder_criteria_view_builder(
         criteria_name=_CRITERIA_NAME,
         description=_DESCRIPTION,
-        reason_query=_REASON_QUERY,
+        reasons_fields=_REASONS_FIELDS,
         state_code=StateCode.US_MI,
     )
 )

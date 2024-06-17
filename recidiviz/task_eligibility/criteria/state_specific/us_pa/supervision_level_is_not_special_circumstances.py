@@ -16,8 +16,10 @@
 # ============================================================================
 """Describes spans of time during which a candidate is not already on
     special circumstances supervision """
+from google.cloud import bigquery
 
 from recidiviz.common.constants.states import StateCode
+from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
@@ -32,15 +34,24 @@ _CRITERIA_NAME = "US_PA_SUPERVISION_LEVEL_IS_NOT_SPECIAL_CIRCUMSTANCES"
 _DESCRIPTION = """Describes spans of time during which a candidate is not already on
     special circumstances supervision """
 
-
-_REASON_QUERY = """TO_JSON(STRUCT('9999-99-99' AS spc_start_date,
-                                'placeholder' AS supervision_level))"""
+_REASONS_FIELDS = [
+    ReasonsField(
+        name="spc_start_date",
+        type=bigquery.enums.SqlTypeNames.DATE,
+        description="#TODO(#29059): Add reasons field description",
+    ),
+    ReasonsField(
+        name="supervision_level",
+        type=bigquery.enums.SqlTypeNames.STRING,
+        description="#TODO(#29059): Add reasons field description",
+    ),
+]
 
 VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
     state_specific_placeholder_criteria_view_builder(
         criteria_name=_CRITERIA_NAME,
         description=_DESCRIPTION,
-        reason_query=_REASON_QUERY,
+        reasons_fields=_REASONS_FIELDS,
         state_code=StateCode.US_PA,
     )
 )

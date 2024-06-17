@@ -16,8 +16,10 @@
 # ============================================================================
 """Describes the spans of time when a resident is serving a sentence
     with a minimum length that is eligible for SAI"""
+from google.cloud import bigquery
 
 from recidiviz.common.constants.states import StateCode
+from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
@@ -32,16 +34,34 @@ _CRITERIA_NAME = "US_MI_MINIMUM_SENTENCE_LENGTH_ELIGIBLE_FOR_SAI"
 _DESCRIPTION = """Describes the spans of time when a resident is serving a sentence
     with a minimum length that is eligible for SAI"""
 
-_REASON_QUERY = """TO_JSON(STRUCT(False AS is_indeterminate_sentence,
-                                  1 AS min_sentence,
-                                  False AS is_breaking_and_entering,
-                                  False AS is_firearm_felony))"""
+_REASONS_FIELDS = [
+    ReasonsField(
+        name="is_indeterminate_sentence",
+        type=bigquery.enums.SqlTypeNames.BOOL,
+        description="#TODO(#29059): Add reasons field description",
+    ),
+    ReasonsField(
+        name="min_sentence",
+        type=bigquery.enums.SqlTypeNames.INT64,
+        description="#TODO(#29059): Add reasons field description",
+    ),
+    ReasonsField(
+        name="is_breaking_and_entering",
+        type=bigquery.enums.SqlTypeNames.BOOL,
+        description="#TODO(#29059): Add reasons field description",
+    ),
+    ReasonsField(
+        name="is_firearm_felony",
+        type=bigquery.enums.SqlTypeNames.BOOL,
+        description="#TODO(#29059): Add reasons field description",
+    ),
+]
 
 VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
     state_specific_placeholder_criteria_view_builder(
         criteria_name=_CRITERIA_NAME,
         description=_DESCRIPTION,
-        reason_query=_REASON_QUERY,
+        reasons_fields=_REASONS_FIELDS,
         state_code=StateCode.US_MI,
     )
 )
