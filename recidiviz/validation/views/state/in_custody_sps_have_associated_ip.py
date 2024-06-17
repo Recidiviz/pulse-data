@@ -31,9 +31,10 @@ IN_CUSTODY_SPS_HAVE_ASSOCIATED_IP_VIEW_NAME = "in_custody_sps_have_associated_ip
 
 IN_CUSTODY_SPS_HAVE_ASSOCIATED_IP_DESCRIPTION = """
 Validation view that returns one row for every supervision_level=IN_CUSTODY 
-supervision period whose time span is not fully covered by incarceration periods. When
+supervision period whose time span is not fully covered by incarceration periods. Because we are checking
+for spans of time, we do not include zero-day supervision periods in this validation. When
 this validation fails, it indicates that incarceration periods are missing information
-about time we know someone spent in custody.
+about non-zero day time period we know someone spent in custody.
 """
 
 IN_CUSTODY_SPS_HAVE_ASSOCIATED_IP_QUERY_TEMPLATE = f"""
@@ -46,7 +47,9 @@ ip_spans AS ({aggregate_adjacent_spans("ips")}),
 in_custody_sps AS (
   SELECT *
   FROM `{{project_id}}.normalized_state.state_supervision_period`
-  WHERE supervision_level = 'IN_CUSTODY'
+  WHERE supervision_level = 'IN_CUSTODY' and start_date != termination_date  
+  # Since we use spans of time to assess that all IN_CUSTODY SPs are reflected in IPs, we do not include any 
+  # zero-day supervision periods in the validation
 )
 SELECT sp.state_code AS region_code, sp.*
 FROM in_custody_sps sp
