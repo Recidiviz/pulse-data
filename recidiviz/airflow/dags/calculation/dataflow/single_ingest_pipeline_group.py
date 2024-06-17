@@ -49,9 +49,7 @@ from recidiviz.airflow.dags.operators.recidiviz_kubernetes_pod_operator import (
     build_kubernetes_pod_task,
 )
 from recidiviz.airflow.dags.utils.cloud_sql import cloud_sql_conn_id_for_schema_type
-from recidiviz.airflow.dags.utils.constants import (
-    SHOULD_RUN_BASED_ON_WATERMARKS_TASK_ID,
-)
+from recidiviz.airflow.dags.utils.constants import CHECK_FOR_VALID_WATERMARKS_TASK_ID
 from recidiviz.airflow.dags.utils.dataflow_pipeline_group import (
     build_dataflow_pipeline_task_group,
 )
@@ -98,28 +96,26 @@ def handle_ingest_pipeline_should_run_in_dag_check(
     return True
 
 
-@task.short_circuit(
-    task_id=SHOULD_RUN_BASED_ON_WATERMARKS_TASK_ID,
-    ignore_downstream_trigger_rules=False
-    # allows skipping of downstream tasks until trigger rule prevents it (like ALL_DONE)
+@task(
+    task_id=CHECK_FOR_VALID_WATERMARKS_TASK_ID,
 )
-def _should_run_based_on_watermarks(
+def _check_for_valid_watermarks(
     watermarks: Dict[str, str], max_update_datetimes: Dict[str, str]
 ) -> bool:
     for raw_file_tag, watermark_for_file in watermarks.items():
         if raw_file_tag not in max_update_datetimes:
             raise ValueError(
-                f"Watermark file_tag '{raw_file_tag}' not found in max update datetimes: {max_update_datetimes.keys()}"
+                f"Watermark file_tag '{raw_file_tag}' not found in "
+                f"max_update_datetimes: {max_update_datetimes.keys()}"
             )
 
         if watermark_for_file > max_update_datetimes[raw_file_tag]:
-            logging.error(
-                "Raw file %s has older data than the last time the ingest pipeline was run. Current max update_datetime: %s. Last ingest pipeline run update_datetime: %s.",
-                raw_file_tag,
-                max_update_datetimes[raw_file_tag],
-                watermark_for_file,
+            raise ValueError(
+                f"Raw file {raw_file_tag} has older data than the last time the ingest "
+                f"pipeline was run. Current max update_datetime: "
+                f"{max_update_datetimes[raw_file_tag]}. Last ingest pipeline run "
+                f"update_datetime: {watermark_for_file}.",
             )
-            return False
 
     return True
 
@@ -171,7 +167,7 @@ def _initialize_dataflow_pipeline(
             ),
         )
 
-        should_run_based_on_watermarks = _should_run_based_on_watermarks(
+        check_for_valid_watermarks = _check_for_valid_watermarks(
             watermarks=get_watermarks.output,  # type: ignore[arg-type]
             max_update_datetimes=get_max_update_datetimes.output,  # type: ignore[arg-type]
         )
@@ -179,7 +175,7 @@ def _initialize_dataflow_pipeline(
         (
             check_ingest_pipeline_should_run_in_dag
             >> [get_max_update_datetimes, get_watermarks]
-            >> should_run_based_on_watermarks
+            >> check_for_valid_watermarks
             >> _verify_raw_data_flashing_not_in_progress(state_code)
         )
 

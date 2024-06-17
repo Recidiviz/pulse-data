@@ -30,7 +30,7 @@ from airflow.utils.state import DagRunState
 from sqlalchemy.orm import Session
 
 from recidiviz.airflow.dags.calculation.dataflow.single_ingest_pipeline_group import (
-    _should_run_based_on_watermarks,
+    _check_for_valid_watermarks,
     create_single_ingest_pipeline_group,
 )
 from recidiviz.airflow.dags.operators.recidiviz_dataflow_operator import (
@@ -223,7 +223,7 @@ class TestSingleIngestPipelineGroupIntegration(AirflowIntegrationTest):
                 expected_skipped_ids=[
                     r".*get_max_update_datetimes",
                     r".*get_watermarks",
-                    r".*should_run_based_on_watermarks",
+                    r".*check_for_valid_watermarks",
                     r".*verify_raw_data_flashing_not_in_progress",
                     r"us_xx_dataflow\.us-xx-ingest-primary.*",
                     r".*write_ingest_job_completion",
@@ -234,14 +234,14 @@ class TestSingleIngestPipelineGroupIntegration(AirflowIntegrationTest):
             self.assertEqual(DagRunState.SUCCESS, result.dag_run_state)
 
     @patch(
-        "recidiviz.airflow.dags.calculation.dataflow.single_ingest_pipeline_group._should_run_based_on_watermarks"
+        "recidiviz.airflow.dags.calculation.dataflow.single_ingest_pipeline_group._check_for_valid_watermarks"
     )
-    def test_initialize_dataflow_pipeline_short_circuits_when_watermark_datetime_greater_than_max_update_datetime(
+    def test_initialize_dataflow_pipeline_fails_when_watermark_datetime_greater_than_max_update_datetime(
         self,
-        mock_should_run_based_on_watermarks: MagicMock,
+        mock_check_for_valid_watermarks: MagicMock,
     ) -> None:
-        mock_should_run_based_on_watermarks.side_effect = (
-            lambda watermarks, max_update_datetimes: _should_run_based_on_watermarks(
+        mock_check_for_valid_watermarks.side_effect = (
+            lambda watermarks, max_update_datetimes: _check_for_valid_watermarks(
                 watermarks={"test_file_tag": "2023-01-26 00:00:0.000000+00"},
                 max_update_datetimes={"test_file_tag": "2023-01-25 00:00:0.000000+00"},
             )
@@ -253,7 +253,8 @@ class TestSingleIngestPipelineGroupIntegration(AirflowIntegrationTest):
             result = self.run_dag_test(
                 test_dag,
                 session,
-                expected_skipped_ids=[
+                expected_failure_ids=[
+                    r".*check_for_valid_watermarks",
                     r".*verify_raw_data_flashing_not_in_progress",
                     r"us_xx_dataflow\.us-xx-ingest-primary.*",
                     r".*write_ingest_job_completion",
@@ -261,7 +262,7 @@ class TestSingleIngestPipelineGroupIntegration(AirflowIntegrationTest):
                     _DOWNSTREAM_TASK_ID,
                 ],
             )
-            self.assertEqual(DagRunState.SUCCESS, result.dag_run_state)
+            self.assertEqual(DagRunState.FAILED, result.dag_run_state)
 
     @patch(
         "recidiviz.airflow.dags.calculation.dataflow.single_ingest_pipeline_group._verify_raw_data_flashing_not_in_progress"
@@ -292,14 +293,14 @@ class TestSingleIngestPipelineGroupIntegration(AirflowIntegrationTest):
             self.assertEqual(DagRunState.FAILED, result.dag_run_state)
 
     @patch(
-        "recidiviz.airflow.dags.calculation.dataflow.single_ingest_pipeline_group._should_run_based_on_watermarks"
+        "recidiviz.airflow.dags.calculation.dataflow.single_ingest_pipeline_group._check_for_valid_watermarks"
     )
     def test_initialize_dataflow_pipeline_when_watermark_datetime_less_than_max_update_datetime(
         self,
-        mock_should_run_based_on_watermarks: MagicMock,
+        mock_check_for_valid_watermarks: MagicMock,
     ) -> None:
-        mock_should_run_based_on_watermarks.side_effect = (
-            lambda watermarks, max_update_datetimes: _should_run_based_on_watermarks(
+        mock_check_for_valid_watermarks.side_effect = (
+            lambda watermarks, max_update_datetimes: _check_for_valid_watermarks(
                 watermarks={"test_file_tag": "2023-01-24 00:00:0.000000+00"},
                 max_update_datetimes={"test_file_tag": "2023-01-25 00:00:0.000000+00"},
             )
