@@ -54,7 +54,6 @@ from recidiviz.airflow.dags.utils.dataflow_pipeline_group import (
     build_dataflow_pipeline_task_group,
 )
 from recidiviz.common.constants.states import StateCode
-from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.persistence.database.schema_type import SchemaType
 
 # Need a disable pointless statement because Python views the chaining operator ('>>')
@@ -200,7 +199,6 @@ def create_single_ingest_pipeline_group(state_code: StateCode) -> TaskGroup:
         dataflow_pipeline_group, run_pipeline = build_dataflow_pipeline_task_group(
             delegate=IngestDataflowPipelineTaskGroupDelegate(
                 state_code=state_code,
-                default_ingest_instance=DirectIngestInstance.PRIMARY,
                 max_update_datetimes_operator=get_max_update_datetimes,
             )
         )

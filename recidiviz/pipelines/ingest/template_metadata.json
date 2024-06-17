@@ -35,9 +35,9 @@
         "isOptional": true
       },
       {
-        "name": "ingest_instance",
-        "label": "Ingest instance",
-        "helpText": "Ingest instance that the pipeline is running for.",
+        "name": "raw_data_source_instance",
+        "label": "Raw data source instance",
+        "helpText": "The raw data instance to read data from. Defaults to PRIMARY. Must have a output_sandbox_prefix set if this value is SECONDARY.",
         "regexes": ["PRIMARY|SECONDARY"],
         "isOptional": true
       },

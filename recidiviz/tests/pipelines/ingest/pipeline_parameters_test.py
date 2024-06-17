@@ -49,7 +49,7 @@ class TestIngestPipelineParameters(unittest.TestCase):
         expected_parameters = {
             "state_code": "US_OZ",
             "pipeline": "test_pipeline_name",
-            "ingest_instance": "PRIMARY",
+            "raw_data_source_instance": "PRIMARY",
             "raw_data_upper_bound_dates_json": '{"TEST_RAW_DATA":"2020-01-01T00:00:00.000000","TEST_RAW_DATA_2":"2020-01-01T00:00:00.00000"}',
             "ingest_view_results_only": "False",
         }
@@ -57,7 +57,7 @@ class TestIngestPipelineParameters(unittest.TestCase):
         self.assertEqual(expected_parameters, pipeline_parameters.template_parameters)
 
         self.assertEqual(pipeline_parameters.region, "us-west1")
-        self.assertEqual(pipeline_parameters.job_name, "us-oz-ingest-primary")
+        self.assertEqual(pipeline_parameters.job_name, "us-oz-ingest")
         self.assertEqual(
             pipeline_parameters.service_account_email,
             "direct-ingest-state-us-oz-df@recidiviz-456.iam.gserviceaccount.com",
@@ -77,14 +77,16 @@ class TestIngestPipelineParameters(unittest.TestCase):
             state_code="US_OZ",
             pipeline="test_pipeline_name",
             region="us-west1",
-            ingest_instance=DirectIngestInstance.SECONDARY.value,
+            raw_data_source_instance=DirectIngestInstance.SECONDARY.value,
             raw_data_upper_bound_dates_json='{"TEST_RAW_DATA":"2020-01-01T00:00:00.000000","TEST_RAW_DATA_2":"2020-01-01T00:00:00.00000"}',
+            output_sandbox_prefix="my_prefix",
         )
 
         expected_parameters = {
             "state_code": "US_OZ",
             "pipeline": "test_pipeline_name",
-            "ingest_instance": "SECONDARY",
+            "output_sandbox_prefix": "my_prefix",
+            "raw_data_source_instance": "SECONDARY",
             "raw_data_upper_bound_dates_json": '{"TEST_RAW_DATA":"2020-01-01T00:00:00.000000","TEST_RAW_DATA_2":"2020-01-01T00:00:00.00000"}',
             "ingest_view_results_only": "False",
         }
@@ -92,7 +94,7 @@ class TestIngestPipelineParameters(unittest.TestCase):
         self.assertEqual(expected_parameters, pipeline_parameters.template_parameters)
 
         self.assertEqual(pipeline_parameters.region, "us-west1")
-        self.assertEqual(pipeline_parameters.job_name, "us-oz-ingest-secondary")
+        self.assertEqual(pipeline_parameters.job_name, "my-prefix-us-oz-ingest-test")
         self.assertEqual(
             pipeline_parameters.service_account_email,
             "direct-ingest-state-us-oz-df@recidiviz-456.iam.gserviceaccount.com",
@@ -102,11 +104,11 @@ class TestIngestPipelineParameters(unittest.TestCase):
             "us_oz_raw_data_secondary", pipeline_parameters.raw_data_table_input
         )
         self.assertEqual(
-            "us_oz_dataflow_ingest_view_results_secondary",
+            "my_prefix_us_oz_dataflow_ingest_view_results_primary",
             pipeline_parameters.ingest_view_results_output,
         )
-        self.assertEqual("us_oz_state_secondary", pipeline_parameters.output)
-        self.assertFalse(pipeline_parameters.is_sandbox_pipeline)
+        self.assertEqual("my_prefix_us_oz_state_primary", pipeline_parameters.output)
+        self.assertTrue(pipeline_parameters.is_sandbox_pipeline)
 
     def test_creation_valid_service_account_email(self) -> None:
         pipeline_parameters = IngestPipelineParameters(
@@ -170,7 +172,7 @@ class TestIngestPipelineParameters(unittest.TestCase):
         expected_parameters = {
             "state_code": "US_OZ",
             "pipeline": "test_pipeline_name",
-            "ingest_instance": "PRIMARY",
+            "raw_data_source_instance": "PRIMARY",
             "raw_data_upper_bound_dates_json": '{"TEST_RAW_DATA":"2020-01-01T00:00:00.000000"}',
             "ingest_view_results_only": "False",
             "output_sandbox_prefix": "my_prefix",
@@ -179,9 +181,7 @@ class TestIngestPipelineParameters(unittest.TestCase):
         }
 
         self.assertEqual(expected_parameters, pipeline_parameters.template_parameters)
-        self.assertEqual(
-            pipeline_parameters.job_name, "my-prefix-us-oz-ingest-primary-test"
-        )
+        self.assertEqual(pipeline_parameters.job_name, "my-prefix-us-oz-ingest-test")
 
         self.assertEqual(
             "some_other_raw_data_table", pipeline_parameters.raw_data_table_input
@@ -202,7 +202,7 @@ class TestIngestPipelineParameters(unittest.TestCase):
             state_code="US_OZ",
             pipeline="test_pipeline_name",
             region="us-west1",
-            ingest_instance="SECONDARY",
+            raw_data_source_instance="SECONDARY",
             input_dataset_overrides_json=input_overrides_json,
             output_sandbox_prefix="my_prefix",
             sandbox_username="annag",
@@ -212,7 +212,7 @@ class TestIngestPipelineParameters(unittest.TestCase):
         expected_parameters = {
             "state_code": "US_OZ",
             "pipeline": "test_pipeline_name",
-            "ingest_instance": "SECONDARY",
+            "raw_data_source_instance": "SECONDARY",
             "raw_data_upper_bound_dates_json": '{"TEST_RAW_DATA":"2020-01-01T00:00:00.000000"}',
             "ingest_view_results_only": "False",
             "output_sandbox_prefix": "my_prefix",
@@ -221,18 +221,16 @@ class TestIngestPipelineParameters(unittest.TestCase):
         }
 
         self.assertEqual(expected_parameters, pipeline_parameters.template_parameters)
-        self.assertEqual(
-            pipeline_parameters.job_name, "my-prefix-us-oz-ingest-secondary-test"
-        )
+        self.assertEqual(pipeline_parameters.job_name, "my-prefix-us-oz-ingest-test")
 
         self.assertEqual(
             "some_other_raw_data_table", pipeline_parameters.raw_data_table_input
         )
         self.assertEqual(
-            "my_prefix_us_oz_dataflow_ingest_view_results_secondary",
+            "my_prefix_us_oz_dataflow_ingest_view_results_primary",
             pipeline_parameters.ingest_view_results_output,
         )
-        self.assertEqual("my_prefix_us_oz_state_secondary", pipeline_parameters.output)
+        self.assertEqual("my_prefix_us_oz_state_primary", pipeline_parameters.output)
         self.assertTrue(pipeline_parameters.is_sandbox_pipeline)
 
     def test_ingest_view_results_only(self) -> None:
@@ -250,7 +248,7 @@ class TestIngestPipelineParameters(unittest.TestCase):
         expected_parameters = {
             "state_code": "US_OZ",
             "pipeline": "test_pipeline_name",
-            "ingest_instance": "PRIMARY",
+            "raw_data_source_instance": "PRIMARY",
             "raw_data_upper_bound_dates_json": '{"TEST_RAW_DATA":"2020-01-01T00:00:00.000000"}',
             "ingest_view_results_only": "True",
             "output_sandbox_prefix": "my_prefix",
@@ -297,7 +295,7 @@ class TestIngestPipelineParameters(unittest.TestCase):
         expected_parameters = {
             "state_code": "US_OZ",
             "pipeline": "test_pipeline_name",
-            "ingest_instance": "PRIMARY",
+            "raw_data_source_instance": "PRIMARY",
             "raw_data_upper_bound_dates_json": '{"TEST_RAW_DATA":"2020-01-01T00:00:00.000000"}',
             "ingest_view_results_only": "False",
             "ingest_views_to_run": "view1 view2",
@@ -328,6 +326,21 @@ class TestIngestPipelineParameters(unittest.TestCase):
                 region="us-west1",
                 raw_data_upper_bound_dates_json='{"TEST_RAW_DATA":"2020-01-01T00:00:00.000000"}',
                 ingest_views_to_run="view1 view2",
+            )
+
+    def test_secondary_raw_data_source_instance_no_prefix_set(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            r"This sandbox pipeline must define an output_sandbox_prefix. "
+            r"Found non-default values for these fields\: \{'raw_data_source_instance'\}",
+        ):
+            _ = IngestPipelineParameters(
+                project="recidiviz-456",
+                state_code="US_OZ",
+                pipeline="test_pipeline_name",
+                raw_data_source_instance=DirectIngestInstance.SECONDARY.value,
+                region="us-west1",
+                raw_data_upper_bound_dates_json='{"TEST_RAW_DATA":"2020-01-01T00:00:00.000000"}',
             )
 
     @patch(

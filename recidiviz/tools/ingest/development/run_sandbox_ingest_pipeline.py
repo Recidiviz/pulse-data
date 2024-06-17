@@ -22,7 +22,7 @@ Usage:
         --project PROJECT_ID \
         --state_code US_XX \
         --output_sandbox_prefix output_sandbox_prefix \
-        [--ingest_instance INSTANCE] \
+        [--raw_data_source_instance INSTANCE] \
         [--skip_build True/False] 
 
 Examples:
@@ -35,7 +35,7 @@ Examples:
         --project recidiviz-staging \
         --state_code US_CA \
         --output_sandbox_prefix my_prefix \
-        --ingest_instance SECONDARY \
+        --raw_data_source_instance SECONDARY \
         --ingest_view_results_only True \
         --skip_build True \
         --ingest_views_to_run "person staff" \
@@ -103,7 +103,7 @@ def parse_run_arguments() -> Tuple[argparse.Namespace, List[str]]:
     )
 
     parser.add_argument(
-        "--ingest_instance",
+        "--raw_data_source_instance",
         help="The ingest instance data is from",
         type=DirectIngestInstance,
         choices=list(DirectIngestInstance),
@@ -128,7 +128,7 @@ def parse_run_arguments() -> Tuple[argparse.Namespace, List[str]]:
 def get_extra_pipeline_parameter_args(
     project: str,
     state_code: StateCode,
-    ingest_instance: DirectIngestInstance,
+    raw_data_source_instance: DirectIngestInstance,
 ) -> List[str]:
     """Returns additional pipeline command-line args that can be inferred from the
     state code, instance and sandbox prefix.
@@ -162,7 +162,7 @@ def get_extra_pipeline_parameter_args(
         SQLAlchemyDatabaseKey.for_schema(SchemaType.OPERATIONS)
     ) as session:
         raw_file_metadata_manager = DirectIngestRawFileMetadataManager(
-            state_code.value, ingest_instance
+            state_code.value, raw_data_source_instance
         )
         raw_data_max_upper_bounds = raw_file_metadata_manager.get_max_update_datetimes(
             session
@@ -190,6 +190,8 @@ def get_extra_pipeline_parameter_args(
         project,
         "--state_code",
         state_code.value,
+        "--raw_data_source_instance",
+        raw_data_source_instance.value,
         "--raw_data_upper_bound_dates_json",
         raw_data_upper_bound_dates_json,
         "--sandbox_username",
@@ -219,7 +221,7 @@ def run_sandbox_ingest_pipeline(
         sandbox_dataset_prefix=output_sandbox_prefix,
         datasets_to_create=["ingest"],
         state_code_filter=StateCode(params.state_code),
-        ingest_instance=DirectIngestInstance(params.ingest_instance),
+        ingest_instance=DirectIngestInstance(params.raw_data_source_instance),
         allow_overwrite=True,
     )
 
@@ -234,12 +236,24 @@ def main() -> None:
     remaining_args += get_extra_pipeline_parameter_args(
         known_args.project,
         known_args.state_code,
-        known_args.ingest_instance,
+        known_args.raw_data_source_instance,
     )
 
     params = IngestPipelineParameters.parse_from_args(
         remaining_args, sandbox_pipeline=True
     )
+    if params.state_code != known_args.state_code.value:
+        raise ValueError(
+            f"Generated params state_code [{params.state_code}] does not match the "
+            f"input state_code [{known_args.state_code.value}]."
+        )
+    if params.raw_data_source_instance != known_args.raw_data_source_instance.value:
+        raise ValueError(
+            f"Generated params raw_data_source_instance "
+            f"[{params.raw_data_source_instance}] does not match the input "
+            f"raw_data_source_instance [{known_args.raw_data_source_instance.value}]."
+        )
+
     with local_project_id_override(params.project):
         run_sandbox_ingest_pipeline(params, skip_build=known_args.skip_build)
 
