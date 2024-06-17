@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """A CloudSQLQueryGenerator for releasing raw data resource locks"""
-from typing import Any, Dict, List
+from typing import Any, Dict, List, NamedTuple
 
 from airflow.providers.postgres.hooks.postgres import PostgresHook
 from airflow.utils.context import Context
@@ -45,6 +45,8 @@ WHERE region_code = '{region_code}'
 AND raw_data_source_instance = '{raw_data_instance}' 
 AND lock_id in ({lock_ids})
 RETURNING lock_id, released;"""
+
+ReleasedLocks = NamedTuple("ReleasedLocks", [("lock_id", int), ("released", bool)])
 
 
 class ReleaseRawDataResourceLockSqlQueryGenerator(
@@ -85,13 +87,13 @@ class ReleaseRawDataResourceLockSqlQueryGenerator(
                 f"Could not find all locks with the ids provided: {locks_to_release}"
             )
 
-        if not all(not lock[1] for lock in existing_locks):
+        if not all(not lock.released for lock in existing_locks):
             raise DirectIngestRawDataResourceLockAlreadyReleasedError(
                 f"Lock has already been released: {existing_locks}"
             )
 
         # update the released col to be True
-        updated_locks = postgres_hook.get_records(
+        updated_locks: List[ReleasedLocks] = postgres_hook.get_records(
             self.set_locks_as_released_by_ids_sql_query(locks_to_release)
         )
 
@@ -100,7 +102,10 @@ class ReleaseRawDataResourceLockSqlQueryGenerator(
                 f"Updated the wrong number of locks; tried to update {len(locks_to_release)}, but updated {len(updated_locks)}"
             )
 
-        return [{"lock_id": lock[0], "released": lock[1]} for lock in updated_locks]
+        return [
+            {"lock_id": lock.lock_id, "released": lock.released}
+            for lock in updated_locks
+        ]
 
     @staticmethod
     def _locks_ids_as_str(lock: List[Dict[str, Any]]) -> str:

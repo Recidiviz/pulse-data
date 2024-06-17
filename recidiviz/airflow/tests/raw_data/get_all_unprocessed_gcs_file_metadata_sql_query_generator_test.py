@@ -29,6 +29,7 @@ from recidiviz.airflow.dags.operators.cloud_sql_query_operator import (
 from recidiviz.airflow.dags.raw_data.get_all_unprocessed_gcs_file_metadata_sql_query_generator import (
     GetAllUnprocessedGCSFileMetadataSqlQueryGenerator,
 )
+from recidiviz.airflow.dags.raw_data.types import GCSMetadataRow
 from recidiviz.airflow.tests.test_utils import CloudSqlQueryGeneratorUnitTest
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.persistence.database.schema.operations.schema import OperationsBase
@@ -66,8 +67,8 @@ class TestGetAllUnprocessedGCSFileMetadataSqlQueryGenerator(
     def test_none_pre_registered(self) -> None:
         normalized_fns = [
             "testing/unprocessed_2024-01-25T16:35:33:617135_raw_test_file_tag.csv",
-            "testing/processed_2024-01-25T16:35:33:617135_raw_test_file_tag-1.csv",
-            "testing/subdirs_get_processed_too/unprocessed_2024-01-25T16:35:33:617135_raw_test_file_tag.csv",
+            "testing/unprocessed_2024-01-25T16:35:33:617135_raw_test_file_tag-1.csv",
+            "testing/unprocessed_2024-01-25T16:35:33:617135_raw_test_file_tag-2.csv",
         ]
 
         self.mock_operator.xcom_pull.return_value = normalized_fns
@@ -99,12 +100,12 @@ class TestGetAllUnprocessedGCSFileMetadataSqlQueryGenerator(
     def test_some_pre_registered(self) -> None:
         normalized_fns_batch_1 = [
             "testing/unprocessed_2024-01-25T16:35:33:617135_raw_test_file_tag.csv",
-            "testing/processed_2024-01-25T16:35:33:617135_raw_test_file_tag_with_suffix-1.csv",
+            "testing/unprocessed_2024-01-26T16:35:33:617135_raw_test_file_tag_with_suffix-1.csv",
         ]
 
         normalized_fns_batch_2 = [
             *normalized_fns_batch_1,
-            "testing/subdirs_get_processed_too/unprocessed_2024-01-25T16:35:33:617135_raw_test_file_tag.csv",
+            "testing/unprocessed_2024-01-27T16:35:33:617135_raw_test_file_tag.csv",
         ]
 
         self.mock_operator.xcom_pull.return_value = normalized_fns_batch_1
@@ -130,8 +131,8 @@ class TestGetAllUnprocessedGCSFileMetadataSqlQueryGenerator(
     def test_all_preregistered(self) -> None:
         normalized_fns = [
             "testing/unprocessed_2024-01-25T16:35:33:617135_raw_test_file_tag.csv",
-            "testing/processed_2024-01-25T16:35:33:617135_raw_test_file_tag_with_suffix-1.csv",
-            "testing/subdirs_get_processed_too/unprocessed_2024-01-25T16:35:33:617135_raw_test_file_tag.csv",
+            "testing/unprocessed_2024-01-26T16:35:33:617135_raw_test_file_tag_with_suffix-1.csv",
+            "testing/unprocessed_2024-01-27T16:35:33:617135_raw_test_file_tag.csv",
         ]
 
         self.mock_operator.xcom_pull.return_value = normalized_fns
@@ -154,8 +155,8 @@ class TestGetAllUnprocessedGCSFileMetadataSqlQueryGenerator(
     def test_idempotent(self) -> None:
         normalized_fns = [
             "testing/unprocessed_2024-01-25T16:35:33:617135_raw_test_file_tag.csv",
-            "testing/processed_2024-01-25T16:35:33:617135_raw_test_file_tag_with_suffix-1.csv",
-            "testing/subdirs_get_processed_too/unprocessed_2024-01-25T16:35:33:617135_raw_test_file_tag.csv",
+            "testing/unprocessed_2024-01-26T16:35:33:617135_raw_test_file_tag_with_suffix-1.csv",
+            "testing/unprocessed_2024-01-27T16:35:33:617135_raw_test_file_tag.csv",
         ]
         self.mock_operator.xcom_pull.return_value = normalized_fns
 
@@ -173,3 +174,28 @@ class TestGetAllUnprocessedGCSFileMetadataSqlQueryGenerator(
             "SELECT * FROM direct_ingest_raw_gcs_file_metadata"
         )
         assert len(results) == 3
+
+    def test_with_bq_file_ids(self) -> None:
+        normalized_fns = [
+            "testing/unprocessed_2024-01-25T16:35:33:617135_raw_test_file_tag.csv",
+            "testing/unprocessed_2024-01-26T16:35:33:617135_raw_test_file_tag_with_suffix-1.csv",
+            "testing/unprocessed_2024-01-27T16:35:33:617135_raw_test_file_tag.csv",
+        ]
+        self.mock_operator.xcom_pull.return_value = normalized_fns
+
+        mock_postgres = create_autospec(PostgresHook)
+        mock_postgres.get_records.return_value = [
+            GCSMetadataRow(
+                gcs_file_id=i, file_id=i, normalized_file_name=fn.split("/")[-1]
+            )
+            for i, fn in enumerate(normalized_fns)
+        ]
+
+        results = self.generator.execute_postgres_query(
+            self.mock_operator, mock_postgres, self.mock_context
+        )
+
+        for i, result in enumerate(results):
+            assert result[0] == i
+            assert result[1] == i
+            assert result[2] == normalized_fns[i]
