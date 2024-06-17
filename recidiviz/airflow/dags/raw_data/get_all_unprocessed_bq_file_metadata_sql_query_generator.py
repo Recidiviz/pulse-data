@@ -20,7 +20,7 @@ import datetime
 from collections import defaultdict
 from itertools import groupby
 from types import ModuleType
-from typing import Dict, Iterator, List, Optional, Tuple
+from typing import Dict, Iterator, List, NamedTuple, Optional, Tuple
 
 from airflow.providers.postgres.hooks.postgres import PostgresHook
 from airflow.utils.context import Context
@@ -48,6 +48,9 @@ ADD_ROWS = """
 INSERT INTO direct_ingest_raw_big_query_file_metadata (region_code, raw_data_instance, file_tag, update_datetime, is_invalidated) 
 VALUES {values}
 RETURNING file_id;"""
+
+
+NewBQMetdata = NamedTuple("NewBQMetdata", [("file_id", int)])
 
 
 UPDATE_GCS_FILES_WITH_FILE_ID = """
@@ -127,6 +130,7 @@ class GetAllUnprocessedBQFileMetadataSqlQueryGenerator(
             postgres_hook, bq_unregistered_gcs_metadata
         )
 
+        # --- format and write in a form xcom likes ------------------------------------
         already_bq_registered_bq_metadata = [
             RawBigQueryFileMetadataSummary.from_gcs_files(list(conceptual_file_group))
             for _, conceptual_file_group in groupby(
@@ -179,7 +183,7 @@ class GetAllUnprocessedBQFileMetadataSqlQueryGenerator(
         if not unregistered_recognized_bq_metadata:
             return []
 
-        bq_file_ids = postgres_hook.get_records(
+        bq_file_ids: List[NewBQMetdata] = postgres_hook.get_records(
             self._register_new_conceptual_files_sql_query(
                 unregistered_recognized_bq_metadata
             )
@@ -190,7 +194,7 @@ class GetAllUnprocessedBQFileMetadataSqlQueryGenerator(
         # here we assume bq_file_ids is returned in the order that we inserted the values
         registered_bq_metadata: List[RawBigQueryFileMetadataSummary] = []
         for i, metadata in enumerate(unregistered_recognized_bq_metadata):
-            metadata.file_id = bq_file_ids[i][0]
+            metadata.file_id = bq_file_ids[i].file_id
             registered_bq_metadata.append(metadata)
 
         postgres_hook.get_records(

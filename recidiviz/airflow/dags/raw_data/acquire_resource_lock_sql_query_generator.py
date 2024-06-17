@@ -105,8 +105,10 @@ class AcquireRawDataResourceLockSqlQueryGenerator(
 
         return [
             {
-                "lock_id": lock[0],
-                "lock_resource": DirectIngestRawDataResourceLockResource(lock[1]).value,
+                "lock_id": lock.lock_id,
+                "lock_resource": DirectIngestRawDataResourceLockResource(
+                    lock.lock_resource
+                ).value,
             }
             for lock in add_result
         ]

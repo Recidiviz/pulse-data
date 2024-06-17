@@ -38,12 +38,24 @@ class CloudSqlQueryGenerator(Generic[Output]):
         postgres_hook: PostgresHook,
         context: Context,
     ) -> Output:
-        """Executes a customized postgres query and returns a specified output."""
+        """Executes a customized postgres query and returns a specified output.
+
+        The return types for calls to PostgresHook can depend on the parameters used to
+        build the psycopg2 connection, which are specified in the |cloud_sql_conn_id|
+        attribute of CloudSqlQueryOperator.
+
+        For example, the operations connecion string,
+        `airflow-connections-operations_postgres_conn_id`, specifies a `NamedTupleCursor`,
+        meaning results returned by get_records() or run() calls to the PostgresHook
+        will return NamedTuples. For more details, see go/airflow-docs.
+        """
 
 
 class CloudSqlQueryOperator(BaseOperator, Generic[Output]):
-    """Custom operator that connects to a CloudSQL Postgres database and returns the
-    output from a query against that database."""
+    """Custom operator that uses |cloud_sql_conn_id| to configure a connection to a CloudSQL
+    Postgres database and returns the output from a query against that database run by
+    |query_generator|.
+    """
 
     def __init__(
         self,
