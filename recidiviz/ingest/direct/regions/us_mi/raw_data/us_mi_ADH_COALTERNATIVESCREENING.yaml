@@ -60,3 +60,6 @@ columns:
   - name: FkPtMaster
   - name: OldRecId
   - name: IsQa
+  - name: FkCoRfAlternativeScreeningStatus
+  - name: FkCoRfScreeningQuestionSet
+  - name: FkShRfCodeScreeningOverride
