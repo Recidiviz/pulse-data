@@ -20,6 +20,7 @@ import os
 from typing import Dict, List, Optional
 
 from recidiviz.cloud_sql.gcs_import_to_cloud_sql import (
+    get_non_identity_columns_from_model,
     parse_exported_json_row_from_bigquery,
 )
 from recidiviz.persistence.database.schema.insights.schema import InsightsBase
@@ -34,10 +35,13 @@ def load_model_from_json_fixture(
         os.path.dirname(insights_json_fixtures.__file__), filename
     )
     results = []
+    model_columns = get_non_identity_columns_from_model(model)
     with open(fixture_path, "r", encoding="UTF-8") as fixture_file:
         for row in fixture_file:
             json_obj = json.loads(row)
-            flattened_json = parse_exported_json_row_from_bigquery(json_obj, model)
+            flattened_json = parse_exported_json_row_from_bigquery(
+                json_obj, model, model_columns
+            )
             results.append(flattened_json)
 
     return results

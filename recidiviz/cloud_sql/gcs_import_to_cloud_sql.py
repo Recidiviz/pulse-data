@@ -24,8 +24,9 @@ from typing import Any, Dict, List, Optional
 import attr
 from google.api_core import retry
 from googleapiclient import errors
-from sqlalchemy import Table, create_mock_engine
+from sqlalchemy import Identity, Table, create_mock_engine
 from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.inspection import inspect
 from sqlalchemy.orm import declarative_base
 from sqlalchemy.sql.ddl import (
     CreateIndex,
@@ -289,11 +290,26 @@ def import_gcs_csv_to_cloud_sql(
             session.execute(query)
 
 
+def get_non_identity_columns_from_model(model: SQLAlchemyModelType) -> List[str]:
+    # Get all columns so we can provide None values for missing attributes in the exported JSON,
+    # but skip columns with a server_default value of Identity, which correspond to autoincremented
+    # columns and would not have been exported.
+    return [
+        column.name
+        for column in inspect(model).c
+        if not isinstance(column.server_default, Identity)
+    ]
+
+
 def parse_exported_json_row_from_bigquery(
-    data: Any, model: SQLAlchemyModelType
+    data: Dict[str, Any],
+    model: SQLAlchemyModelType,
+    columns: List[str],
 ) -> Dict[str, Any]:
     result: Dict[str, Any] = {}
-    for key, value in data.items():
+    for key in columns:
+        value = data.get(key)
+
         if value is None:
             result[key] = None
         elif isinstance(model.__table__.c[key].type, JSONB):
@@ -318,34 +334,25 @@ def _import_gcs_json_to_cloud_sql(
     reads each line to add new entities to the specified destination table.
     """
     gcsfs = GcsfsFactory.build()
-    added_entities = 0
+    model_columns = get_non_identity_columns_from_model(model)
     with gcsfs.open(gcs_uri) as f, SessionFactory.using_database(
         database_key=database_key
     ) as session:
-        for line in f:
-            try:
-                json_entity = json.loads(line)
-                flattened_json_entity = parse_exported_json_row_from_bigquery(
-                    json_entity, model
-                )
-                session.execute(
-                    destination_table.insert().values(**flattened_json_entity)
-                )
-                added_entities += 1
-            except Exception as e:
-                # TODO(#29761): Consider counting number of failed rows and alerting based on threshold of failed row
-                logging.error(
-                    "Added %s entities before encountering exception: %s",
-                    added_entities,
-                    str(e),
-                )
-                raise e
+        entities = [
+            parse_exported_json_row_from_bigquery(json.loads(row), model, model_columns)
+            for row in f.readlines()
+        ]
 
-            session.commit()
+        # Note that in the 2.0 version of SQLAlchemy, when doing an ORM bulk insert "the keys should
+        # match the ORM mapped attribute name and not the actual database column name"
+        # (https://docs.sqlalchemy.org/en/20/orm/queryguide/dml.html#orm-bulk-insert-statements)
+        # whereas in 1.4 we want the actual column name. At the time of writing, we don't appear to
+        # do any ORM column -> new column name mappings so the distinction is moot.
+        session.execute(destination_table.insert(), entities)
+        session.commit()
 
     logging.info(
-        "Added %s entities in import to %s",
-        added_entities,
+        "Successfully imported data to %s",
         destination_table.name,
     )
 
