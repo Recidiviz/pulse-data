@@ -370,7 +370,7 @@ LEFT JOIN previous_ad_seg_stays p
 LEFT JOIN `{{project_id}}.{{sessions_dataset}}.housing_unit_type_sessions_materialized` h
     ON h.person_id = tes.person_id 
     AND CURRENT_DATE('US/Eastern') BETWEEN h.start_date AND {nonnull_end_date_exclusive_clause('h.end_date_exclusive')}
-LEFT JOIN `{{project_id}}.{{sessions_dataset}}.housing_unit_type_collapsed_solitary_sessions_materialized` hc
+LEFT JOIN `{{project_id}}.{{sessions_dataset}}.housing_unit_type_non_protective_custody_solitary_sessions_materialized` hc
     ON hc.person_id = tes.person_id 
     AND CURRENT_DATE('US/Eastern') BETWEEN hc.start_date AND {nonnull_end_date_exclusive_clause('hc.end_date_exclusive')}
 LEFT JOIN reasons_for_eligibility e

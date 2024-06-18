@@ -40,7 +40,7 @@ _QUERY_TEMPLATE = """
                 start_date AS solitary_start_date
             )) AS reason,
             start_date AS solitary_start_date,
-        FROM `{project_id}.{sessions_dataset}.housing_unit_type_collapsed_solitary_sessions_materialized` hu
+        FROM `{project_id}.{sessions_dataset}.housing_unit_type_non_protective_custody_solitary_sessions_materialized` hu
         WHERE hu.housing_unit_type_collapsed_solitary = 'SOLITARY_CONFINEMENT'
 """
 

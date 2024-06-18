@@ -42,7 +42,6 @@ US_TN_SEGREGATION_LISTS_QUERY_TEMPLATE = f"""
           e.external_id,
           JSON_EXTRACT_SCALAR(full_name,'$.given_names') AS first_name,
           JSON_EXTRACT_SCALAR(full_name,'$.surname') AS last_name,
-        --TODO(#30673): Rerun the query in this ticket once #30654 is completed to ensure we are counting protective custody properly 
         FROM `{{project_id}}.sessions.housing_unit_type_collapsed_solitary_sessions_materialized`
         LEFT JOIN `{{project_id}}.normalized_state.state_person`
         USING(person_id, state_code)
