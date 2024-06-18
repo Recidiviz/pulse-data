@@ -54,6 +54,7 @@ from recidiviz.cloud_sql.gcs_import_to_cloud_sql import (
     ModelSQL,
     _recreate_table,
     build_temporary_sqlalchemy_table,
+    get_non_identity_columns_from_model,
     parse_exported_json_row_from_bigquery,
 )
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
@@ -110,18 +111,14 @@ def _reset_insights_table(
         logging.info("Recreating table %s", temporary_table.name)
         _recreate_table(database_key, temporary_table_model_sql)
 
+    model_columns = get_non_identity_columns_from_model(model)
     with SessionFactory.using_database(database_key) as session:
-        for row in file:
-            try:
-                json_entity = json.loads(row)
-                flattened_json_entity = parse_exported_json_row_from_bigquery(
-                    json_entity, model
-                )
-                session.execute(
-                    temporary_table.insert().values(**flattened_json_entity)
-                )
-            except Exception as e:
-                raise e
+        entities = [
+            parse_exported_json_row_from_bigquery(json.loads(row), model, model_columns)
+            for row in file.readlines()
+        ]
+
+        session.execute(temporary_table.insert(), entities)
         session.commit()
 
     logging.info(
