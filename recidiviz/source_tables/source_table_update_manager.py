@@ -20,6 +20,7 @@ import logging
 from typing import Any
 
 import attr
+from google.cloud import bigquery
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_client import (
@@ -27,7 +28,10 @@ from recidiviz.big_query.big_query_client import (
     BigQueryClient,
     BigQueryClientImpl,
 )
-from recidiviz.source_tables.source_table_config import SourceTableCollection
+from recidiviz.source_tables.source_table_config import (
+    SourceTableCollection,
+    SourceTableConfig,
+)
 from recidiviz.tools.deploy.logging import redirect_logging_to_file
 from recidiviz.utils.future_executor import map_fn_with_progress_bar_results
 
@@ -55,6 +59,18 @@ class SourceTableDryRunResult(enum.StrEnum):
     UPDATE_SCHEMA_TYPE_CHANGES = "update_schema_field_type_changes"
     UPDATE_SCHEMA_WITH_ADDITIONS = "update_schema_with_additions"
     UPDATE_SCHEMA_WITH_DELETIONS = "update_schema_with_deletions"
+
+
+def _validate_clustering_fields_match(
+    current_table: bigquery.Table, source_table_config: SourceTableConfig
+) -> bool:
+    if (
+        not current_table.clustering_fields
+        and not source_table_config.clustering_fields
+    ):
+        return True
+
+    return current_table.clustering_fields == source_table_config.clustering_fields
 
 
 class SourceTableUpdateManager:
@@ -85,7 +101,7 @@ class SourceTableUpdateManager:
                 dataset_ref, source_table_config.address.table_id
             )
 
-            if current_table.clustering_fields != source_table_config.clustering_fields:
+            if _validate_clustering_fields_match(current_table, source_table_config):
                 return (
                     source_table_config.address,
                     SourceTableDryRunResult.MISMATCH_CLUSTERING_FIELDS,
@@ -182,9 +198,9 @@ class SourceTableUpdateManager:
                     dataset_ref, source_table_config.address.table_id
                 )
                 try:
-                    if (
-                        current_table.clustering_fields or []
-                    ) != source_table_config.clustering_fields:
+                    if not _validate_clustering_fields_match(
+                        current_table, source_table_config
+                    ):
                         raise ValueError(
                             f"Existing table: {source_table_config.address} "
                             f"has clustering fields {current_table.clustering_fields} that do "
@@ -229,9 +245,10 @@ class SourceTableUpdateManager:
                 "Failed to update schema for `%s`",
                 source_table_config.address.to_str(),
             )
+            #  pylint: disable=raise-missing-from
             raise SourceTableFailedToUpdateError(
-                f"Failed to update schema for `{source_table_config.address.to_str()}`."
-            ) from e
+                f"Failed to update schema for `{source_table_config.address.to_str()}`: {e}"
+            )
 
     def _create_dataset_if_necessary(
         self, update_config: SourceTableCollectionUpdateConfig
