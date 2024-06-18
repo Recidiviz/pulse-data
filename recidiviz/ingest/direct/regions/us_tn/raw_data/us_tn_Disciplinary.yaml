@@ -117,6 +117,9 @@ columns:
       This element will be associated with each record in each DB2 table in TOMIS. It is the timestamp of the last time this record was updated.
 
 table_relationships:
+  - foreign_table: OffenderName
+    join_logic:
+      - OffenderName.OffenderID = Disciplinary.OffenderID
   - foreign_table: DisciplinarySentence
     join_logic:
       - DisciplinarySentence.OffenderID = Disciplinary.OffenderID
