@@ -18,6 +18,7 @@
 from typing import Any
 from unittest.mock import patch
 
+import attr
 from google.cloud import bigquery
 from google.cloud.bigquery import SchemaField
 from more_itertools import one
@@ -144,6 +145,86 @@ class TestSourceTableUpdateManager(BigQueryEmulatorTestCase):
                     allow_field_deletions=False,
                 )
             )
+
+    def test_clustering_fields_changed_raises(self) -> None:
+        table_address = BigQueryAddress(
+            dataset_id="test_dataset", table_id="test_table"
+        )
+
+        table_config = SourceTableConfig(
+            address=table_address,
+            schema_fields=[
+                bigquery.SchemaField("name", "STRING"),
+            ],
+            description="Raw data table",
+            clustering_fields=["name"],
+        )
+        with_clustering = SourceTableCollection(
+            dataset_id="test_dataset",
+            source_tables_by_address={table_address: table_config},
+        )
+        self.source_table_update_manager.update(
+            update_config=SourceTableCollectionUpdateConfig(
+                source_table_collection=with_clustering,
+                allow_field_deletions=False,
+            )
+        )
+
+        with self.assertRaisesRegex(
+            SourceTableFailedToUpdateError, "has clustering fields.+that do not match"
+        ):
+            self.source_table_update_manager.update(
+                SourceTableCollectionUpdateConfig(
+                    source_table_collection=SourceTableCollection(
+                        dataset_id="test_dataset",
+                        source_tables_by_address={
+                            table_address: attr.evolve(
+                                table_config,
+                                clustering_fields=None,
+                            )
+                        },
+                    ),
+                    allow_field_deletions=False,
+                )
+            )
+
+    def test_clustering_fields_null(self) -> None:
+        """If a table's clustering_fields changes between empty / null but remains unset, no error is raised"""
+        table_address = BigQueryAddress(
+            dataset_id="test_dataset", table_id="test_table"
+        )
+
+        table_config = SourceTableConfig(
+            address=table_address,
+            schema_fields=[
+                bigquery.SchemaField("name", "STRING"),
+            ],
+            description="Raw data table",
+            clustering_fields=None,
+        )
+        collection = SourceTableCollection(
+            dataset_id="test_dataset",
+            source_tables_by_address={table_address: table_config},
+        )
+        self.source_table_update_manager.update(
+            update_config=SourceTableCollectionUpdateConfig(
+                source_table_collection=collection,
+                allow_field_deletions=False,
+            )
+        )
+
+        # Assert no errors
+        self.source_table_update_manager.update(
+            SourceTableCollectionUpdateConfig(
+                source_table_collection=SourceTableCollection(
+                    dataset_id="test_dataset",
+                    source_tables_by_address={
+                        table_address: attr.evolve(table_config, clustering_fields=[])
+                    },
+                ),
+                allow_field_deletions=False,
+            )
+        )
 
 
 class TestSourceTableUpdateManagerRecreateOnError(BigQueryEmulatorTestCase):
