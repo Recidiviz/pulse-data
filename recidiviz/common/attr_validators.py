@@ -140,6 +140,33 @@ def is_valid_email(_instance: Any, _attribute: attr.Attribute, value: str) -> No
         raise ValueError(f"Email has a suspicious username {local_part}")
 
 
+def assert_appear_together(instance: Any, field_1: str, field_2: str) -> None:
+    """
+    Assert that two fields either both appear (are non-None) or both do not appear (are None).
+    Additionally, ensure that both fields exist as attributes on the instance.
+    Must be called from "__attrs_post_init__" which executes after the instance has been fully initialized
+
+    """
+    if not hasattr(instance, field_1):
+        raise ValueError(
+            f"{field_1} is currently not an attribute of {type(instance)}. "
+            f"Fields '{field_1}' and '{field_2}' should both be attributes of {type(instance)}"
+        )
+    if not hasattr(instance, field_2):
+        raise ValueError(
+            f"{field_2} is currently not an attribute of {type(instance)}. "
+            f"Fields '{field_1}' and '{field_2}' should both be attributes of {type(instance)}"
+        )
+
+    value_1 = getattr(instance, field_1)
+    value_2 = getattr(instance, field_2)
+    if (value_1 is None) != (value_2 is None):
+        raise ValueError(
+            f"Fields of {type(instance)}: '{field_1}' and '{field_2}' must both be set or both be None. "
+            f"Current values: {field_1}={value_1}, {field_2}={value_2}"
+        )
+
+
 # String field validators
 is_str = attr.validators.instance_of(str)
 is_opt_str = is_opt(str)
