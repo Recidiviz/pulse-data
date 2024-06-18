@@ -71,7 +71,7 @@ class TestGenerateIngestViewResults(StateIngestPipelineTestCase):
                 ).isoformat(),
                 "table2": datetime.fromisoformat("2022-07-04:00:00:00").isoformat(),
             },
-            raw_data_source_instance=self.ingest_instance(),
+            raw_data_source_instance=self.raw_data_source_instance(),
         )
         assert_that(
             output,

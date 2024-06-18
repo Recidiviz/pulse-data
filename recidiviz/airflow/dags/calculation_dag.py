@@ -138,7 +138,6 @@ def execute_update_state() -> RecidivizKubernetesPodOperator:
         container_name="update_state",
         arguments=[
             "--entrypoint=UpdateStateEntrypoint",
-            INGEST_INSTANCE_JINJA_ARG,
             SANDBOX_PREFIX_JINJA_ARG,
         ],
         trigger_rule=TriggerRule.ALL_DONE,

@@ -30,7 +30,7 @@ Usage:
     python -m recidiviz.tools.ingest.testing.validate_state_dataset \
         --output_sandbox_prefix my_prefix \
         --state_code_filter US_CA \
-        --sandbox_state_dataset another_prefix_us_ca_state_primary
+        --sandbox_state_dataset another_prefix_us_ca_state
 
 """
 import argparse

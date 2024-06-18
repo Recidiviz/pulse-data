@@ -24,14 +24,14 @@ from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_client import BQ_CLIENT_MAX_POOL_SIZE, BigQueryClient
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct import direct_ingest_regions
-from recidiviz.ingest.direct.dataset_config import (
-    ingest_view_materialization_results_dataset,
-)
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_collector import (
     IngestViewManifestCollector,
 )
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_compiler_delegate import (
     StateSchemaIngestViewManifestCompilerDelegate,
+)
+from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
+    get_direct_ingest_states_existing_in_env,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
@@ -45,12 +45,12 @@ from recidiviz.persistence.database.bq_refresh.big_query_table_manager import (
 )
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.schema_utils import get_all_table_classes_in_schema
-from recidiviz.pipelines.ingest.dataset_config import state_dataset_for_state_code
+from recidiviz.pipelines.ingest.dataset_config import (
+    ingest_view_materialization_results_dataset,
+    state_dataset_for_state_code,
+)
 from recidiviz.pipelines.ingest.state.constants import (
     INGEST_VIEW_RESULTS_SCHEMA_COLUMNS,
-)
-from recidiviz.pipelines.ingest.state.gating import (
-    get_ingest_pipeline_enabled_state_and_instance_pairs,
 )
 from recidiviz.pipelines.pipeline_names import INGEST_PIPELINE_NAME
 from recidiviz.source_tables.source_table_config import (
@@ -72,17 +72,13 @@ def build_ingest_pipeline_output_source_table_collections() -> list[
     """
     state_specific_collections: list[SourceTableCollection] = [
         SourceTableCollection(
-            dataset_id=state_dataset_for_state_code(state_code, ingest_instance),
+            dataset_id=state_dataset_for_state_code(state_code),
             labels=[
                 DataflowPipelineSourceTableLabel(INGEST_PIPELINE_NAME),
-                IngestPipelineEntitySourceTableLabel(
-                    state_code=state_code, ingest_instance=ingest_instance
-                ),
+                IngestPipelineEntitySourceTableLabel(state_code=state_code),
             ],
         )
-        for state_code, ingest_instance in (
-            get_ingest_pipeline_enabled_state_and_instance_pairs()
-        )
+        for state_code in get_direct_ingest_states_existing_in_env()
     ]
     for table in list(get_all_table_classes_in_schema(SchemaType.STATE)):
         table_id = table.name
@@ -112,21 +108,17 @@ def _get_ingest_view_builders(
 
 
 def _build_ingest_view_source_table_collections(
-    state_instance_pairs: list[tuple[StateCode, DirectIngestInstance]]
+    state_codes: list[StateCode],
 ) -> dict[str, SourceTableCollection]:
     dataset_to_source_table_collection: dict[str, SourceTableCollection] = {}
 
-    for state_code, ingest_instance in state_instance_pairs:
-        dataset_id = ingest_view_materialization_results_dataset(
-            state_code, ingest_instance
-        )
+    for state_code in state_codes:
+        dataset_id = ingest_view_materialization_results_dataset(state_code)
         source_table_collection = SourceTableCollection(
             dataset_id=dataset_id,
             labels=[
                 DataflowPipelineSourceTableLabel(pipeline_name=INGEST_PIPELINE_NAME),
-                IngestViewOutputSourceTableLabel(
-                    state_code=state_code, ingest_instance=ingest_instance
-                ),
+                IngestViewOutputSourceTableLabel(state_code=state_code),
             ],
         )
         dataset_to_source_table_collection[dataset_id] = source_table_collection
@@ -139,20 +131,18 @@ def _build_ingest_view_source_table_collections(
 #  include BigQuery column types.
 def build_ingest_view_source_table_configs(
     bq_client: BigQueryClient,
-    state_instance_pairs: list[tuple[StateCode, DirectIngestInstance]],
+    state_codes: list[StateCode],
 ) -> list[SourceTableCollection]:
     """Builds SourceTableCollections for ingest views by submitting their queries to
     BigQuery and using the response schema to hydrate the SourceTableConfigs.
     """
     address_to_query: dict[BigQueryAddress, str] = {}
     dataset_to_source_table_collection = _build_ingest_view_source_table_collections(
-        state_instance_pairs
+        state_codes
     )
 
-    for state_code, ingest_instance in state_instance_pairs:
-        dataset_id = ingest_view_materialization_results_dataset(
-            state_code, ingest_instance
-        )
+    for state_code in state_codes:
+        dataset_id = ingest_view_materialization_results_dataset(state_code)
         ingest_view_builders = _get_ingest_view_builders(state_code)
 
         for ingest_view_builder in ingest_view_builders:
@@ -161,7 +151,10 @@ def build_ingest_view_source_table_configs(
             )
             address_to_query[address] = ingest_view_builder.build_query(
                 DirectIngestViewQueryBuilder.QueryStructureConfig(
-                    raw_data_source_instance=ingest_instance,
+                    # We default to PRIMARY here because we want to build the source
+                    # table definitions for our standard, deployed ingest view results
+                    # source tables.
+                    raw_data_source_instance=DirectIngestInstance.PRIMARY,
                     raw_data_datetime_upper_bound=datetime.datetime.now(),
                     limit_zero=True,
                 )

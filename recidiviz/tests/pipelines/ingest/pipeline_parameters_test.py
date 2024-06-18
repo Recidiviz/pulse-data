@@ -20,13 +20,13 @@ import unittest
 from unittest.mock import MagicMock, patch
 
 from recidiviz.common.constants.states import StateCode
+from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
+    get_direct_ingest_states_existing_in_env,
+)
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.pipelines.ingest.pipeline_parameters import IngestPipelineParameters
 from recidiviz.pipelines.ingest.pipeline_utils import (
     DEFAULT_PIPELINE_REGIONS_BY_STATE_CODE,
-)
-from recidiviz.pipelines.ingest.state.gating import (
-    get_ingest_pipeline_enabled_state_and_instance_pairs,
 )
 from recidiviz.pipelines.ingest.state.pipeline import StateIngestPipeline
 from recidiviz.tools.utils.run_sandbox_dataflow_pipeline_utils import (
@@ -65,10 +65,10 @@ class TestIngestPipelineParameters(unittest.TestCase):
 
         self.assertEqual("us_oz_raw_data", pipeline_parameters.raw_data_table_input)
         self.assertEqual(
-            "us_oz_dataflow_ingest_view_results_primary",
+            "us_oz_ingest_view_results",
             pipeline_parameters.ingest_view_results_output,
         )
-        self.assertEqual("us_oz_state_primary", pipeline_parameters.output)
+        self.assertEqual("us_oz_state", pipeline_parameters.output)
         self.assertFalse(pipeline_parameters.is_sandbox_pipeline)
 
     def test_creation_all_fields_secondary(self) -> None:
@@ -104,10 +104,10 @@ class TestIngestPipelineParameters(unittest.TestCase):
             "us_oz_raw_data_secondary", pipeline_parameters.raw_data_table_input
         )
         self.assertEqual(
-            "my_prefix_us_oz_dataflow_ingest_view_results_primary",
+            "my_prefix_us_oz_ingest_view_results",
             pipeline_parameters.ingest_view_results_output,
         )
-        self.assertEqual("my_prefix_us_oz_state_primary", pipeline_parameters.output)
+        self.assertEqual("my_prefix_us_oz_state", pipeline_parameters.output)
         self.assertTrue(pipeline_parameters.is_sandbox_pipeline)
 
     def test_creation_valid_service_account_email(self) -> None:
@@ -187,10 +187,10 @@ class TestIngestPipelineParameters(unittest.TestCase):
             "some_other_raw_data_table", pipeline_parameters.raw_data_table_input
         )
         self.assertEqual(
-            "my_prefix_us_oz_dataflow_ingest_view_results_primary",
+            "my_prefix_us_oz_ingest_view_results",
             pipeline_parameters.ingest_view_results_output,
         )
-        self.assertEqual("my_prefix_us_oz_state_primary", pipeline_parameters.output)
+        self.assertEqual("my_prefix_us_oz_state", pipeline_parameters.output)
         self.assertTrue(pipeline_parameters.is_sandbox_pipeline)
 
     def test_parameters_with_sandbox_prefix_secondary(self) -> None:
@@ -227,10 +227,10 @@ class TestIngestPipelineParameters(unittest.TestCase):
             "some_other_raw_data_table", pipeline_parameters.raw_data_table_input
         )
         self.assertEqual(
-            "my_prefix_us_oz_dataflow_ingest_view_results_primary",
+            "my_prefix_us_oz_ingest_view_results",
             pipeline_parameters.ingest_view_results_output,
         )
-        self.assertEqual("my_prefix_us_oz_state_primary", pipeline_parameters.output)
+        self.assertEqual("my_prefix_us_oz_state", pipeline_parameters.output)
         self.assertTrue(pipeline_parameters.is_sandbox_pipeline)
 
     def test_ingest_view_results_only(self) -> None:
@@ -259,10 +259,10 @@ class TestIngestPipelineParameters(unittest.TestCase):
 
         self.assertEqual("us_oz_raw_data", pipeline_parameters.raw_data_table_input)
         self.assertEqual(
-            "my_prefix_us_oz_dataflow_ingest_view_results_primary",
+            "my_prefix_us_oz_ingest_view_results",
             pipeline_parameters.ingest_view_results_output,
         )
-        self.assertEqual("my_prefix_us_oz_state_primary", pipeline_parameters.output)
+        self.assertEqual("my_prefix_us_oz_state", pipeline_parameters.output)
         self.assertTrue(pipeline_parameters.is_sandbox_pipeline)
 
     def test_ingest_view_results_only_no_prefix_set(self) -> None:
@@ -307,10 +307,10 @@ class TestIngestPipelineParameters(unittest.TestCase):
 
         self.assertEqual("us_oz_raw_data", pipeline_parameters.raw_data_table_input)
         self.assertEqual(
-            "my_prefix_us_oz_dataflow_ingest_view_results_primary",
+            "my_prefix_us_oz_ingest_view_results",
             pipeline_parameters.ingest_view_results_output,
         )
-        self.assertEqual("my_prefix_us_oz_state_primary", pipeline_parameters.output)
+        self.assertEqual("my_prefix_us_oz_state", pipeline_parameters.output)
         self.assertTrue(pipeline_parameters.is_sandbox_pipeline)
 
     def test_ingest_views_to_run_no_prefix_set(self) -> None:
@@ -396,15 +396,11 @@ class TestIngestPipelineParameters(unittest.TestCase):
         )
 
     def test_default_ingest_pipeline_regions_by_state_code_filled_out(self) -> None:
-        pipeline_enabled_states = {
-            state_code
-            for state_code, _instance in get_ingest_pipeline_enabled_state_and_instance_pairs()
-        }
-
+        existing_states = set(get_direct_ingest_states_existing_in_env())
         states_with_regions = set(DEFAULT_PIPELINE_REGIONS_BY_STATE_CODE.keys())
-        states_missing_regions = pipeline_enabled_states - states_with_regions
+        states_missing_regions = existing_states - states_with_regions
         if states_missing_regions:
             self.fail(
                 f"Missing a region in DEFAULT_INGEST_PIPELINE_REGIONS_BY_STATE_CODE "
-                f"for these ingest pipeline enabled states: {states_missing_regions}."
+                f"for these states: {states_missing_regions}."
             )

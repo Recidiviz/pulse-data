@@ -98,8 +98,8 @@ class TestNormalizationPipelineParameters(unittest.TestCase):
     )
     def test_check_for_valid_input_dataset_overrides(self) -> None:
         input_dataset_overrides_json = json.dumps(
-            # The normalization pipelines read from state, not us_xx_state_primary
-            {"us_xx_state_primary": "some_completely_different_dataset"}
+            # The normalization pipelines read from state, not us_xx_state
+            {"us_xx_state": "some_completely_different_dataset"}
         )
         pipeline_parameters = NormalizationPipelineParameters(
             project="recidiviz-456",
@@ -113,7 +113,7 @@ class TestNormalizationPipelineParameters(unittest.TestCase):
         )
         with self.assertRaisesRegex(
             ValueError,
-            r"Found original dataset \[us_xx_state_primary\] in overrides which is not "
+            r"Found original dataset \[us_xx_state\] in overrides which is not "
             r"a dataset this pipeline reads from. Datasets you can override: "
             r"\['state'\].",
         ):

@@ -22,12 +22,12 @@ import attr
 
 from recidiviz.common import attr_validators
 from recidiviz.common.constants.states import StateCode
-from recidiviz.ingest.direct.dataset_config import (
-    ingest_view_materialization_results_dataset,
-    raw_tables_dataset_for_region,
-)
+from recidiviz.ingest.direct.dataset_config import raw_tables_dataset_for_region
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
-from recidiviz.pipelines.ingest.dataset_config import state_dataset_for_state_code
+from recidiviz.pipelines.ingest.dataset_config import (
+    ingest_view_materialization_results_dataset,
+    state_dataset_for_state_code,
+)
 from recidiviz.pipelines.pipeline_parameters import PipelineParameters
 
 
@@ -51,21 +51,15 @@ class IngestPipelineParameters(PipelineParameters):
     @property
     def ingest_view_results_output(self) -> str:
         return self.get_output_dataset(
-            # TODO(#29517): Rename this dataset so it doesn't have `primary`/`secondary`
-            #  suffix.
             default_dataset_id=ingest_view_materialization_results_dataset(
-                StateCode(self.state_code), DirectIngestInstance.PRIMARY
+                StateCode(self.state_code)
             )
         )
 
     @property
     def output(self) -> str:
         return self.get_output_dataset(
-            # TODO(#29517): Rename this dataset so it doesn't have `primary`/`secondary`
-            #  suffix.
-            default_dataset_id=state_dataset_for_state_code(
-                StateCode(self.state_code), DirectIngestInstance.PRIMARY
-            )
+            default_dataset_id=state_dataset_for_state_code(StateCode(self.state_code))
         )
 
     ingest_view_results_only: bool = attr.ib(

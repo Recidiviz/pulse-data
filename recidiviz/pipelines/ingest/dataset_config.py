@@ -18,14 +18,21 @@
 from typing import Optional
 
 from recidiviz.common.constants.states import StateCode
-from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+
+
+def ingest_view_materialization_results_dataset(
+    state_code: StateCode, sandbox_dataset_prefix: Optional[str] = None
+) -> str:
+    """Returns the dataset of the ingest view results Dataflow tables for this state's
+    ingest pipeline.
+    """
+    dataset_prefix = f"{sandbox_dataset_prefix}_" if sandbox_dataset_prefix else ""
+    return f"{dataset_prefix}{state_code.value.lower()}_ingest_view_results"
 
 
 def state_dataset_for_state_code(
-    state_code: StateCode,
-    instance: DirectIngestInstance,
-    sandbox_dataset_prefix: Optional[str] = None,
+    state_code: StateCode, sandbox_dataset_prefix: Optional[str] = None
 ) -> str:
     """Where the output of the state-specific ingest pipelines is stored."""
     dataset_prefix = f"{sandbox_dataset_prefix}_" if sandbox_dataset_prefix else ""
-    return f"{dataset_prefix}{state_code.value.lower()}_state_{instance.value.lower()}"
+    return f"{dataset_prefix}{state_code.value.lower()}_state"

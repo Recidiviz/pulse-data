@@ -57,10 +57,7 @@ from recidiviz.big_query.big_query_client import (
 from recidiviz.big_query.constants import TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct import direct_ingest_regions
-from recidiviz.ingest.direct.dataset_config import (
-    ingest_view_materialization_results_dataset,
-    raw_tables_dataset_for_region,
-)
+from recidiviz.ingest.direct.dataset_config import raw_tables_dataset_for_region
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_collector import (
     IngestViewManifestCollector,
 )
@@ -77,6 +74,9 @@ from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
 )
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder_collector import (
     DirectIngestViewQueryBuilderCollector,
+)
+from recidiviz.pipelines.ingest.dataset_config import (
+    ingest_view_materialization_results_dataset,
 )
 from recidiviz.utils import metadata
 from recidiviz.utils.context import on_exit
@@ -239,18 +239,14 @@ def _materialize_twice_and_return_num_different_rows(
 
 
 def verify_ingest_view_determinism(
-    bq_client: BigQueryClient,
-    state_code: StateCode,
-    ingest_instance: DirectIngestInstance,
+    bq_client: BigQueryClient, state_code: StateCode
 ) -> IngestViewDeterminismResult:
     """Verifies that each of this state's ingest views are deterministic."""
     region = direct_ingest_regions.get_direct_ingest_region(state_code.value)
     dataset_prefix = f"stability_{str(uuid.uuid4())[:6]}"
 
     temp_results_dataset_id = ingest_view_materialization_results_dataset(
-        state_code=state_code,
-        instance=ingest_instance,
-        sandbox_dataset_prefix=dataset_prefix,
+        state_code=state_code, sandbox_dataset_prefix=dataset_prefix
     )
     bq_client.create_dataset_if_necessary(
         bq_client.dataset_ref_for_id(temp_results_dataset_id),
@@ -334,11 +330,7 @@ def main(
 
     determinism_result = None
     if CheckCategory.INGEST_VIEW in categories:
-        determinism_result = verify_ingest_view_determinism(
-            bq_client,
-            state_code,
-            ingest_instance=ingest_instance,
-        )
+        determinism_result = verify_ingest_view_determinism(bq_client, state_code)
 
     any_failures = False
 

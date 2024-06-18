@@ -36,26 +36,17 @@ from recidiviz.utils.environment import gcp_only
 LOCK_WAIT_SLEEP_MAXIMUM_TIMEOUT = 60 * 60 * 4  # 4 hours
 
 
+# TODO(#29515): Delete this endpoint when we move the `state` dataset refresh into the
+#  view graph.
 @gcp_only
-def execute_state_dataset_refresh(
-    ingest_instance: DirectIngestInstance,
-    sandbox_prefix: Optional[str],
-) -> None:
-    """Unions all the `us_xx_state_primary` or `us_xx_state_secondary` datasets into
-    a single output `state` dataset. Results are written to a sandbox version of `state`
-    if a |sandbox_prefix| is provided.
-
-    If the instance is SECONDARY a sandbox_prefix must be provided.
+def execute_state_dataset_refresh(sandbox_prefix: Optional[str]) -> None:
+    """Unions all the `us_xx_state` datasets into a single output `state` dataset.
+    Results are written to a sandbox version of `state` if a |sandbox_prefix| is
+    provided.
     """
-    if ingest_instance == DirectIngestInstance.SECONDARY and not sandbox_prefix:
-        raise ValueError(
-            "Refresh can only proceed for secondary databases into a sandbox."
-        )
-
     start = datetime.datetime.now()
 
     combine_ingest_sources_into_single_state_dataset(
-        ingest_instance=ingest_instance,
         tables=list(get_all_table_classes_in_schema(SchemaType.STATE)),
         output_sandbox_prefix=sandbox_prefix,
     )
@@ -65,7 +56,7 @@ def execute_state_dataset_refresh(
     success_persister = RefreshBQDatasetSuccessPersister(bq_client=BigQueryClientImpl())
     success_persister.record_success_in_bq(
         schema_type=SchemaType.STATE,
-        direct_ingest_instance=ingest_instance,
+        direct_ingest_instance=DirectIngestInstance.PRIMARY,
         dataset_override_prefix=sandbox_prefix,
         runtime_sec=runtime_sec,
     )
@@ -80,16 +71,6 @@ class UpdateStateEntrypoint(EntrypointInterface):
         parser = argparse.ArgumentParser()
 
         parser.add_argument(
-            "--ingest_instance",
-            help=(
-                "The ingest instance for the specified state dataset update. Determines whether we read from "
-                "us_xx_primary or us_xx_secondary datasets."
-            ),
-            type=DirectIngestInstance,
-            choices=list(DirectIngestInstance),
-            required=True,
-        )
-        parser.add_argument(
             "--sandbox_prefix",
             help="The sandbox prefix for the update output dataset.",
             type=str,
@@ -99,7 +80,4 @@ class UpdateStateEntrypoint(EntrypointInterface):
 
     @staticmethod
     def run_entrypoint(args: argparse.Namespace) -> None:
-        execute_state_dataset_refresh(
-            ingest_instance=args.ingest_instance,
-            sandbox_prefix=args.sandbox_prefix,
-        )
+        execute_state_dataset_refresh(sandbox_prefix=args.sandbox_prefix)

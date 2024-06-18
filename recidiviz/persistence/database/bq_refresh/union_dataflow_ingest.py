@@ -40,7 +40,6 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
     get_direct_ingest_states_existing_in_env,
 )
-from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.persistence.database.bq_refresh.big_query_table_manager import (
     bq_schema_for_sqlalchemy_table,
 )
@@ -50,9 +49,7 @@ from recidiviz.utils import metadata
 
 
 def _view_builder_for_table(
-    table: Table,
-    ingest_instance: DirectIngestInstance,
-    states: List[StateCode],
+    table: Table, states: List[StateCode]
 ) -> BigQueryViewBuilder:
     """Creates a view builder for the given state table that combines per state output
     from legacy ingest and ingest pipelines into a single view."""
@@ -63,7 +60,7 @@ def _view_builder_for_table(
     dataflow_addresses = [
         ProjectSpecificBigQueryAddress(
             project_id=metadata.project_id(),
-            dataset_id=state_dataset_for_state_code(state_code, ingest_instance),
+            dataset_id=state_dataset_for_state_code(state_code),
             table_id=table.name,
         )
         for state_code in states
@@ -91,24 +88,16 @@ def _view_builder_for_table(
     )
 
 
+# TODO(#29515): Delete this function when we move the `state` dataset refresh into the
+#  view graph.
 def combine_ingest_sources_into_single_state_dataset(
-    ingest_instance: DirectIngestInstance,
-    tables: List[Table],
-    output_sandbox_prefix: Optional[str] = None,
+    tables: List[Table], output_sandbox_prefix: Optional[str] = None
 ) -> None:
     """Creates the `state` views for all tables, combining output from each individual
     ingest pipeline.
     """
-    if ingest_instance == DirectIngestInstance.SECONDARY and not output_sandbox_prefix:
-        raise ValueError(
-            "Refresh can only proceed for secondary databases into a sandbox."
-        )
-
     states = get_direct_ingest_states_existing_in_env()
-    view_builders = [
-        _view_builder_for_table(table, ingest_instance=ingest_instance, states=states)
-        for table in tables
-    ]
+    view_builders = [_view_builder_for_table(table, states=states) for table in tables]
 
     address_overrides = None
     if output_sandbox_prefix:
@@ -125,7 +114,7 @@ def combine_ingest_sources_into_single_state_dataset(
 
     create_managed_dataset_and_deploy_views_for_view_builders(
         view_source_table_datasets={
-            state_dataset_for_state_code(state, ingest_instance) for state in states
+            state_dataset_for_state_code(state) for state in states
         },
         view_builders_to_update=view_builders,
         address_overrides=address_overrides,
