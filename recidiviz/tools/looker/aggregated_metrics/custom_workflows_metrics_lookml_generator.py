@@ -153,11 +153,12 @@ def main(
             if unit_of_observation_type == MetricUnitOfObservationType.PERSON_ID:
                 generate_person_assignments_with_attributes_view(
                     view_name=view_name,
-                    time_dependent_person_attribute_query="SELECT * FROM sessions.person_caseload_location_sessions",
+                    # Renaming caseload and location allows them to be properly parsed as Dynamic Attributes in Looker
+                    time_dependent_person_attribute_query="SELECT *, caseload_id as workflows_caseload, location_id as workflows_location FROM sessions.person_caseload_location_sessions",
                     time_dependent_person_attribute_fields=[
                         "compartment_level_1",
-                        "caseload_id",
-                        "location_id",
+                        "workflows_caseload",
+                        "workflows_location",
                     ],
                 ).write(output_subdirectory, source_script_path=__file__)
 
