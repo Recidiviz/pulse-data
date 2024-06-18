@@ -20,9 +20,12 @@
 import datetime
 import inspect
 from enum import Enum
-from typing import Any, Callable, Optional, Type, Union
+from typing import Any, ForwardRef, Optional, Type, get_args, get_origin
 
 import attr
+from more_itertools import one
+
+from recidiviz.utils.types import non_optional
 
 
 def is_forward_ref(attribute: attr.Attribute) -> bool:
@@ -31,14 +34,8 @@ def is_forward_ref(attribute: attr.Attribute) -> bool:
     if not isinstance(attribute, attr.Attribute):
         raise TypeError(f"Unexpected type [{type(attribute)}]")
 
-    attr_type = attribute.type
-    if not attr_type:
-        return False
-
-    if _is_union(attr_type):
-        return _is_forward_ref_in_union(attr_type)
-
-    return _is_forward_ref(attr_type)
+    non_optional_type = get_non_optional_type(non_optional(attribute.type))
+    return isinstance(non_optional_type, (ForwardRef, str))
 
 
 def is_flat_field(attribute: attr.Attribute) -> bool:
@@ -57,14 +54,7 @@ def is_bool(attribute: attr.Attribute) -> bool:
     if not isinstance(attribute, attr.Attribute):
         raise TypeError(f"Unexpected type [{type(attribute)}]")
 
-    attr_type = attribute.type
-    if not attr_type:
-        return False
-
-    if _is_union(attr_type):
-        return _is_type_is_union(attr_type, _is_bool)
-
-    return _is_bool(attr_type)
+    return get_non_optional_type(non_optional(attribute.type)) is bool
 
 
 def is_enum(attribute: attr.Attribute) -> bool:
@@ -73,14 +63,8 @@ def is_enum(attribute: attr.Attribute) -> bool:
     if not isinstance(attribute, attr.Attribute):
         raise TypeError(f"Unexpected type [{type(attribute)}]")
 
-    attr_type = attribute.type
-    if not attr_type:
-        return False
-
-    if _is_union(attr_type):
-        return _extract_mappable_enum_from_union(attr_type) is not None
-
-    return _is_enum_cls(attr_type)
+    non_optional_type = get_non_optional_type(non_optional(attribute.type))
+    return inspect.isclass(non_optional_type) and issubclass(non_optional_type, Enum)
 
 
 def is_non_optional_enum(attribute: attr.Attribute) -> bool:
@@ -90,11 +74,12 @@ def is_non_optional_enum(attribute: attr.Attribute) -> bool:
     if not isinstance(attribute, attr.Attribute):
         raise TypeError(f"Unexpected type [{type(attribute)}]")
 
-    attr_type = attribute.type
-    if not attr_type:
+    attr_type = non_optional(attribute.type)
+    if is_optional_type(attr_type):
         return False
-
-    return _is_enum_cls(attr_type)
+    return inspect.isclass(attr_type) and issubclass(
+        get_non_optional_type(non_optional(attribute.type)), Enum
+    )
 
 
 def is_datetime(attribute: attr.Attribute) -> bool:
@@ -103,14 +88,10 @@ def is_datetime(attribute: attr.Attribute) -> bool:
     if not isinstance(attribute, attr.Attribute):
         raise TypeError(f"Unexpected type [{type(attribute)}]")
 
-    attr_type = attribute.type
-    if not attr_type:
-        return False
-
-    if _is_union(attr_type):
-        return _is_type_is_union(attr_type, _is_datetime_cls)
-
-    return _is_datetime_cls(attr_type)
+    non_optional_type = get_non_optional_type(non_optional(attribute.type))
+    return inspect.isclass(non_optional_type) and issubclass(
+        non_optional_type, datetime.datetime
+    )
 
 
 def is_date(attribute: attr.Attribute) -> bool:
@@ -120,14 +101,10 @@ def is_date(attribute: attr.Attribute) -> bool:
     if not isinstance(attribute, attr.Attribute):
         raise TypeError(f"Unexpected type [{type(attribute)}]")
 
-    attr_type = attribute.type
-    if not attr_type:
-        return False
-
-    if _is_union(attr_type):
-        return _is_type_is_union(attr_type, _is_date_cls)
-
-    return _is_date_cls(attr_type)
+    non_optional_type = get_non_optional_type(non_optional(attribute.type))
+    return inspect.isclass(non_optional_type) and issubclass(
+        non_optional_type, datetime.date
+    )
 
 
 def is_float(attribute: attr.Attribute) -> bool:
@@ -136,14 +113,7 @@ def is_float(attribute: attr.Attribute) -> bool:
     if not isinstance(attribute, attr.Attribute):
         raise TypeError(f"Unexpected type [{type(attribute)}]")
 
-    attr_type = attribute.type
-    if not attr_type:
-        return False
-
-    if _is_union(attr_type):
-        return _is_type_is_union(attr_type, _is_float)
-
-    return _is_float(attr_type)
+    return get_non_optional_type(non_optional(attribute.type)) is float
 
 
 def is_list(attribute: attr.Attribute) -> bool:
@@ -152,14 +122,12 @@ def is_list(attribute: attr.Attribute) -> bool:
     if not isinstance(attribute, attr.Attribute):
         raise TypeError(f"Unexpected type [{type(attribute)}]")
 
-    attr_type = attribute.type
-    if not attr_type:
-        return False
+    non_optional_type = get_non_optional_type(non_optional(attribute.type))
+    return is_list_type(non_optional_type)
 
-    if _is_union(attr_type):
-        return _is_type_is_union(attr_type, _is_list)
 
-    return _is_list(attr_type)
+def is_list_type(attr_type: Type) -> bool:
+    return get_origin(attr_type) is list
 
 
 def is_str(attribute: attr.Attribute) -> bool:
@@ -168,14 +136,7 @@ def is_str(attribute: attr.Attribute) -> bool:
     if not isinstance(attribute, attr.Attribute):
         raise TypeError(f"Unexpected type [{type(attribute)}]")
 
-    attr_type = attribute.type
-    if not attr_type:
-        return False
-
-    if _is_union(attr_type):
-        return _is_type_is_union(attr_type, _is_str)
-
-    return _is_str(attr_type)
+    return get_non_optional_type(non_optional(attribute.type)) is str
 
 
 def is_int(attribute: attr.Attribute) -> bool:
@@ -183,140 +144,48 @@ def is_int(attribute: attr.Attribute) -> bool:
 
     if not isinstance(attribute, attr.Attribute):
         raise TypeError(f"Unexpected type [{type(attribute)}]")
-
-    attr_type = attribute.type
-    if not attr_type:
-        return False
-
-    if _is_union(attr_type):
-        return _is_type_is_union(attr_type, _is_int)
-
-    return _is_int(attr_type)
-
-
-def _is_list(attr_type: Type) -> bool:
-    return hasattr(attr_type, "__origin__") and attr_type.__origin__ is list
-
-
-def _is_str(attr_type: Type) -> bool:
-    return attr_type == str
-
-
-def _is_int(attr_type: Type) -> bool:
-    return attr_type == int
-
-
-def _is_float(attr_type: Type) -> bool:
-    return attr_type == float
-
-
-def _is_bool(attr_type: Type) -> bool:
-    return attr_type == bool
+    return get_non_optional_type(non_optional(attribute.type)) is int
 
 
 def get_enum_cls(attribute: attr.Attribute) -> Optional[Type[Enum]]:
-    """Return the MappableEnum cls from the provided type attribute,
-    or None if the type can't be a MappableEnum.
+    """Return the Enum cls from the provided type attribute,
+    or None if the type isn't a Enum.
     """
 
     if not isinstance(attribute, attr.Attribute):
         raise TypeError(f"Unexpected type [{type(attribute)}]")
 
-    attr_type = attribute.type
-    if not attr_type:
-        raise ValueError(f"Unexpected None type for attribute [{attribute}]")
-
-    if _is_enum_cls(attr_type):
-        return attribute.type
-
-    if _is_union(attr_type):
-        return _extract_mappable_enum_from_union(attr_type)
-
+    non_optional_type = get_non_optional_type(non_optional(attribute.type))
+    if inspect.isclass(non_optional_type) and issubclass(non_optional_type, Enum):
+        return non_optional_type
     return None
 
 
-def _is_union(attr_type: Type) -> bool:
-    return hasattr(attr_type, "__origin__") and attr_type.__origin__ is Union
-
-
-def _is_enum_cls(attr_type: Type) -> bool:
-    return inspect.isclass(attr_type) and issubclass(attr_type, Enum)
-
-
-def _is_datetime_cls(attr_type: Type) -> bool:
-    return inspect.isclass(attr_type) and issubclass(attr_type, datetime.datetime)
-
-
-def _is_date_cls(attr_type: Type) -> bool:
-    return inspect.isclass(attr_type) and issubclass(attr_type, datetime.date)
-
-
-def _is_forward_ref_in_union(union: Type[Union[Any, None]]) -> bool:
-    for type_in_union in union.__args__:  # type: ignore
-        if _is_forward_ref(type_in_union):
-            return True
-
-    return False
-
-
-def _is_forward_ref(attr_type: Type) -> bool:
-    return hasattr(attr_type, "__forward_arg__")
-
-
-def _extract_mappable_enum_from_union(
-    union: Type[Union[Any, None]]
-) -> Optional[Type[Enum]]:
-    """Extracts a MappableEnum from a Union.
-
-    This method throws an Error if multiple Enums exist and returns None if
-    no Enums exist.
-    """
-    result = set()
-    for type_in_union in union.__args__:  # type: ignore
-        if _is_enum_cls(type_in_union):
-            result.add(type_in_union)
-
-    if not result:
-        return None
-
-    if len(result) == 1:
-        return next(iter(result))
-
-    raise TypeError(
-        f"Can't extract Enum from a union containing multiple Enums: " f"{union}"
-    )
-
-
-def _is_type_is_union(
-    union: Type[Union[Any, None]], type_check_func: Callable[[Type], bool]
-) -> bool:
-    """Looks for the presence of a single type in the Union. Looks for type where the type_check_func returns True.
-    Returns whether exactly one is present."""
-
-    # raise ValueError(f'{union}, {type(union)}')
-    result = set()
-    for type_in_union in union.__args__:  # type: ignore
-        if type_check_func(type_in_union):
-            result.add(type_in_union)
-
-    if not result:
+def is_optional_type(t: Type) -> bool:
+    type_args = get_args(t)
+    if len(type_args) == 1:
         return False
-
-    if len(result) == 1:
-        return True
-
-    raise TypeError(f"Union contains multiple dates: {union}")
+    return type(None) in get_args(t)
 
 
-def _get_type_name_from_type(attr_type: Type) -> str:
-    if _is_forward_ref(attr_type):
-        return attr_type.__forward_arg__
-    if hasattr(attr_type, "__name__"):
-        return attr_type.__name__
-    if hasattr(attr_type, "_name"):
-        # This is the way to access the inner type on a List class
-        return attr_type._name  # pylint: disable=protected-access
-    raise ValueError(f"Cannot parse type name for type: {attr_type}")
+def get_inner_type_from_optional_type(optional_type: Type) -> Type:
+    if not is_optional_type(optional_type):
+        raise ValueError(f"Expected list type, found [{optional_type}]")
+
+    return one(t for t in get_args(optional_type) if t is not type(None))
+
+
+def get_non_optional_type(maybe_optional_type: Type) -> Type:
+    if is_optional_type(maybe_optional_type):
+        return get_inner_type_from_optional_type(maybe_optional_type)
+    return maybe_optional_type
+
+
+def get_inner_type_from_list_type(list_type: Type) -> Type:
+    if not is_list_type(list_type):
+        raise ValueError(f"Expected list type, found [{list_type}]")
+
+    return one(t for t in get_args(list_type))
 
 
 def get_non_flat_attribute_class_name(attribute: attr.Attribute) -> Optional[str]:
@@ -340,21 +209,18 @@ def get_non_flat_attribute_class_name(attribute: attr.Attribute) -> Optional[str
     attr_type: Type[Any] = attribute.type
 
     while True:
-        if _is_forward_ref(attr_type):
+        if isinstance(attr_type, ForwardRef):
             return attr_type.__forward_arg__
-        if _is_list(attr_type):
-            attr_type = attr_type.__args__[0]  # type: ignore
+        if isinstance(attr_type, str):
+            # For some forward references the inner type will just be the string class
+            # name.
+            return attr_type
+        if is_list_type(attr_type):
+            attr_type = get_inner_type_from_list_type(attr_type)
             continue
 
-        if _is_union(attr_type):
-            inner_types = [
-                t
-                for t in attr_type.__args__
-                if _get_type_name_from_type(t) not in {"NoneType"}
-            ]
-            if len(inner_types) > 1:
-                raise ValueError(f"Multiple nonnull types found: {inner_types}")
-            attr_type = inner_types[0]
+        if is_optional_type(attr_type):
+            attr_type = get_inner_type_from_optional_type(attr_type)
             continue
 
         break
