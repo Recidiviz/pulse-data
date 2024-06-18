@@ -626,7 +626,7 @@ class EventDistinctUnitCountMetric(PeriodEventAggregatedMetric):
         return f"""
             COUNT(DISTINCT IF(
                 {self.get_metric_conditions_string()},
-                {self.unit_of_observation.get_primary_key_columns_query_string(prefix="events")},
+                CONCAT({self.unit_of_observation.get_primary_key_columns_query_string(prefix="events")}),
                 NULL
             )) AS {self.name}
         """
