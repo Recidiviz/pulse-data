@@ -68,7 +68,7 @@ def build_source_table_collection_update_configs(
     update_configs.extend(
         SourceTableCollectionUpdateConfig(
             source_table_collection=source_table_collection,
-            allow_field_deletions=False,
+            allow_field_deletions=True,
         )
         for source_table_collection in source_table_repository.collections_labelled_with(
             DataflowPipelineSourceTableLabel
@@ -78,7 +78,7 @@ def build_source_table_collection_update_configs(
     update_configs.extend(
         SourceTableCollectionUpdateConfig(
             source_table_collection=source_table_collection,
-            allow_field_deletions=False,
+            allow_field_deletions=True,
         )
         for source_table_collection in source_table_repository.collections_labelled_with(
             UnionedStateAgnosticSourceTableLabel
