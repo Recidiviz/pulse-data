@@ -81,6 +81,12 @@ from recidiviz.calculator.query.state.views.analyst_data.session_cohort_reincarc
 from recidiviz.calculator.query.state.views.analyst_data.supervision_clients_to_officers_ratio_quarterly import (
     SUPERVISION_CLIENTS_TO_OFFICERS_RATIO_QUARTERLY_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.analyst_data.us_ar.us_ar_ovg_events_preprocessed import (
+    US_AR_OVG_EVENTS_PREPROCESSED_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.analyst_data.us_ar.us_ar_ovg_timeline import (
+    US_AR_OVG_TIMELINE_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.analyst_data.us_az.us_az_action_queue import (
     US_AZ_ACTION_QUEUE_VIEW_BUILDER,
 )
@@ -372,4 +378,6 @@ ANALYST_DATA_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     CUSTODY_CLASSIFICATION_ASSESSMENT_DATES_VIEW_BUILDER,
     NUMBER_MONTHS_BETWEEN_CUSTODY_DOWNGRADE_AND_ASSESSMENT_DUE_VIEW_BUILDER,
     WORKFLOWS_USER_CASELOAD_ACCESS_SESSIONS_VIEW_BUILDER,
+    US_AR_OVG_TIMELINE_VIEW_BUILDER,
+    US_AR_OVG_EVENTS_PREPROCESSED_VIEW_BUILDER,
 ]
