@@ -175,39 +175,29 @@ class NormalizedStateSpecificEntitySourceTableLabel(SourceTableLabel[StateCode])
 
 
 @attr.define
-class IngestPipelineEntitySourceTableLabel(
-    SourceTableLabel[tuple[StateCode, DirectIngestInstance]]
-):
+class IngestPipelineEntitySourceTableLabel(SourceTableLabel[StateCode]):
     """Label for source tables output by an ingest pipeline into a state-specific
-    `us_xx_state*` dataset.
+    `us_xx_state` dataset.
     """
 
     state_code: StateCode = attr.ib(validator=attr.validators.instance_of(StateCode))
-    ingest_instance: DirectIngestInstance = attr.ib(
-        validator=attr.validators.instance_of(DirectIngestInstance)
-    )
 
     @property
-    def value(self) -> tuple[StateCode, DirectIngestInstance]:
-        return self.state_code, self.ingest_instance
+    def value(self) -> StateCode:
+        return self.state_code
 
 
 @attr.define
-class IngestViewOutputSourceTableLabel(
-    SourceTableLabel[tuple[StateCode, DirectIngestInstance]]
-):
+class IngestViewOutputSourceTableLabel(SourceTableLabel[StateCode]):
     """Label for source tables output by an ingest pipeline that contain the results of
     ingest view queries.
     """
 
     state_code: StateCode = attr.ib(validator=attr.validators.instance_of(StateCode))
-    ingest_instance: DirectIngestInstance = attr.ib(
-        validator=attr.validators.instance_of(DirectIngestInstance)
-    )
 
     @property
-    def value(self) -> tuple[StateCode, DirectIngestInstance]:
-        return self.state_code, self.ingest_instance
+    def value(self) -> StateCode:
+        return self.state_code
 
 
 @attr.define

@@ -565,7 +565,6 @@ class TestCalculationPipelineDag(AirflowIntegrationTest):
             task.arguments[4:],
             [
                 "--entrypoint=UpdateStateEntrypoint",
-                "--ingest_instance=PRIMARY",
             ],
         )
 

@@ -47,7 +47,7 @@ Examples:
         --type normalization \
         --project recidiviz-staging \
         --output_sandbox_prefix username \
-        --input_dataset_overrides_json '{"us_xx_state_primary": "my_sandbox_us_xx_state_primary"}' \
+        --input_dataset_overrides_json '{"us_xx_state": "my_sandbox_us_xx_state"}' \
         --state_code US_XX
 
     python -m recidiviz.tools.calculator.run_sandbox_calculation_pipeline \

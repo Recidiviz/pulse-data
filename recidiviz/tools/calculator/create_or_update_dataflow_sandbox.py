@@ -122,7 +122,6 @@ def create_or_update_dataflow_sandbox(
     datasets_to_create: List[str],
     allow_overwrite: bool,
     state_code_filter: StateCode | None = None,
-    ingest_instance: DirectIngestInstance = DirectIngestInstance.PRIMARY,
 ) -> None:
     """Creates or updates a sandbox for all the pipeline types, prefixing the dataset
     name with the given prefix. Creates one dataset per state_code that has
@@ -139,8 +138,8 @@ def create_or_update_dataflow_sandbox(
 
         # Filter down to relevant ingest pipeline collections based on filters
         if pipeline == INGEST_PIPELINE_NAME:
-            state_instance_pairs = [
-                (state_code, ingest_instance)
+            state_codes = [
+                state_code
                 for state_code in get_direct_ingest_states_existing_in_env()
                 if (not state_code_filter or state_code == state_code_filter)
             ]
@@ -150,7 +149,7 @@ def create_or_update_dataflow_sandbox(
             collections_to_create.extend(
                 build_ingest_view_source_table_configs(
                     bq_client=BigQueryClientImpl(),
-                    state_instance_pairs=state_instance_pairs,
+                    state_codes=state_codes,
                 )
             )
 
@@ -159,10 +158,8 @@ def create_or_update_dataflow_sandbox(
                 for c in pipeline_collections
                 if c.has_any_label(
                     [
-                        IngestPipelineEntitySourceTableLabel(
-                            state_code=state_code, ingest_instance=ingest_instance
-                        )
-                        for state_code, ingest_instance in state_instance_pairs
+                        IngestPipelineEntitySourceTableLabel(state_code=state_code)
+                        for state_code in state_codes
                     ]
                 )
             ]
@@ -255,5 +252,4 @@ if __name__ == "__main__":
             args.datasets_to_create,
             args.allow_overwrite,
             args.state_code,
-            args.ingest_instance,
         )

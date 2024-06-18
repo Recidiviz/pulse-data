@@ -220,9 +220,8 @@ def run_sandbox_ingest_pipeline(
     create_or_update_dataflow_sandbox(
         sandbox_dataset_prefix=output_sandbox_prefix,
         datasets_to_create=["ingest"],
-        state_code_filter=StateCode(params.state_code),
-        ingest_instance=DirectIngestInstance(params.raw_data_source_instance),
         allow_overwrite=True,
+        state_code_filter=StateCode(params.state_code),
     )
 
     run_sandbox_dataflow_pipeline(params, skip_build)

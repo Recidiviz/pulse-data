@@ -26,9 +26,6 @@ from google.cloud import dataflow_v1beta3
 
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.common.constants.states import StateCode
-from recidiviz.ingest.direct.dataset_config import (
-    ingest_view_materialization_results_dataset,
-)
 from recidiviz.ingest.direct.metadata.direct_ingest_dataflow_job_manager import (
     DirectIngestDataflowJobManager,
 )
@@ -42,7 +39,10 @@ from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
     get_direct_ingest_states_launched_in_env,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
-from recidiviz.pipelines.ingest.dataset_config import state_dataset_for_state_code
+from recidiviz.pipelines.ingest.dataset_config import (
+    ingest_view_materialization_results_dataset,
+    state_dataset_for_state_code,
+)
 from recidiviz.pipelines.ingest.pipeline_utils import (
     DEFAULT_PIPELINE_REGIONS_BY_STATE_CODE,
 )
@@ -195,19 +195,13 @@ def get_raw_data_tags_not_meeting_watermark(
     return stale_file_tags
 
 
-def get_latest_run_ingest_view_results(
-    state_code: StateCode, ingest_instance: DirectIngestInstance
-) -> Dict[str, int]:
+def get_latest_run_ingest_view_results(state_code: StateCode) -> Dict[str, int]:
     bq_client = BigQueryClientImpl()
     return bq_client.get_row_counts_for_tables(
-        ingest_view_materialization_results_dataset(state_code, ingest_instance)
+        ingest_view_materialization_results_dataset(state_code)
     )
 
 
-def get_latest_run_state_results(
-    state_code: StateCode, ingest_instance: DirectIngestInstance
-) -> Dict[str, int]:
+def get_latest_run_state_results(state_code: StateCode) -> Dict[str, int]:
     bq_client = BigQueryClientImpl()
-    return bq_client.get_row_counts_for_tables(
-        state_dataset_for_state_code(state_code, ingest_instance)
-    )
+    return bq_client.get_row_counts_for_tables(state_dataset_for_state_code(state_code))

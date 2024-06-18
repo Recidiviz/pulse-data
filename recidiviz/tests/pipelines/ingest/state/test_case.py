@@ -31,10 +31,7 @@ from mock import patch
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_utils import schema_for_sqlalchemy_table
 from recidiviz.common.constants.states import StateCode
-from recidiviz.ingest.direct.dataset_config import (
-    ingest_view_materialization_results_dataset,
-    raw_tables_dataset_for_region,
-)
+from recidiviz.ingest.direct.dataset_config import raw_tables_dataset_for_region
 from recidiviz.ingest.direct.direct_ingest_regions import DirectIngestRegion
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_contents_context import (
     IngestViewContentsContextImpl,
@@ -79,7 +76,10 @@ from recidiviz.persistence.entity.entity_utils import (
     get_all_entity_associations_from_tree,
 )
 from recidiviz.pipelines.base_pipeline import BasePipeline
-from recidiviz.pipelines.ingest.dataset_config import state_dataset_for_state_code
+from recidiviz.pipelines.ingest.dataset_config import (
+    ingest_view_materialization_results_dataset,
+    state_dataset_for_state_code,
+)
 from recidiviz.pipelines.ingest.state.constants import (
     INGEST_VIEW_RESULTS_SCHEMA_COLUMNS,
 )
@@ -134,7 +134,7 @@ class BaseStateIngestPipelineTestCase(unittest.TestCase):
         )
 
     @classmethod
-    def ingest_instance(cls) -> DirectIngestInstance:
+    def raw_data_source_instance(cls) -> DirectIngestInstance:
         return DirectIngestInstance.PRIMARY
 
     @classmethod
@@ -158,17 +158,13 @@ class BaseStateIngestPipelineTestCase(unittest.TestCase):
     @classmethod
     def expected_ingest_view_dataset(cls) -> str:
         return ingest_view_materialization_results_dataset(
-            cls.region_code(),
-            cls.ingest_instance(),
-            DEFAULT_TEST_PIPELINE_OUTPUT_SANDBOX_PREFIX,
+            cls.region_code(), DEFAULT_TEST_PIPELINE_OUTPUT_SANDBOX_PREFIX
         )
 
     @classmethod
     def expected_state_dataset(cls) -> str:
         return state_dataset_for_state_code(
-            cls.region_code(),
-            cls.ingest_instance(),
-            DEFAULT_TEST_PIPELINE_OUTPUT_SANDBOX_PREFIX,
+            cls.region_code(), DEFAULT_TEST_PIPELINE_OUTPUT_SANDBOX_PREFIX
         )
 
     def setUp(self) -> None:
@@ -486,7 +482,7 @@ class StateIngestPipelineTestCase(
     def setUp(self) -> None:
         super().setUp()
         self.raw_data_tables_dataset = raw_tables_dataset_for_region(
-            self.region_code(), self.ingest_instance()
+            self.region_code(), self.raw_data_source_instance()
         )
         self.direct_ingest_raw_file_config = DirectIngestRegionRawFileConfig(
             region_code=self.region_code().value, region_module=fake_regions

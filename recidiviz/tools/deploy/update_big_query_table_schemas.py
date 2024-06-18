@@ -23,8 +23,8 @@ import os
 from pprint import pprint
 
 from recidiviz.big_query.big_query_client import BigQueryClient, BigQueryClientImpl
-from recidiviz.pipelines.ingest.state.gating import (
-    get_ingest_pipeline_enabled_state_and_instance_pairs,
+from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
+    get_direct_ingest_states_existing_in_env,
 )
 from recidiviz.source_tables.collect_all_source_table_configs import (
     build_source_table_repository_for_collected_schemata,
@@ -107,7 +107,7 @@ def build_source_table_collection_update_configs(
         )
         for source_table_collection in build_ingest_view_source_table_configs(
             bq_client=bq_client,
-            state_instance_pairs=get_ingest_pipeline_enabled_state_and_instance_pairs(),
+            state_codes=get_direct_ingest_states_existing_in_env(),
         )
     )
 

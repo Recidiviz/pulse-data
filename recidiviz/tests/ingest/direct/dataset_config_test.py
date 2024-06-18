@@ -19,12 +19,14 @@ import unittest
 
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.dataset_config import (
-    ingest_view_materialization_results_dataset,
     raw_latest_views_dataset_for_region,
     raw_tables_dataset_for_region,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
-from recidiviz.pipelines.ingest.dataset_config import state_dataset_for_state_code
+from recidiviz.pipelines.ingest.dataset_config import (
+    ingest_view_materialization_results_dataset,
+    state_dataset_for_state_code,
+)
 
 
 class TestDatasetConfig(unittest.TestCase):
@@ -64,34 +66,18 @@ class TestDatasetConfig(unittest.TestCase):
 
     def test_ingest_view_materialization_results_dataset_primary(self) -> None:
         self.assertEqual(
-            "us_xx_dataflow_ingest_view_results_primary",
-            ingest_view_materialization_results_dataset(
-                state_code=StateCode.US_XX, instance=DirectIngestInstance.PRIMARY
-            ),
-        )
-
-    def test_ingest_view_materialization_results_dataset_secondary(
-        self,
-    ) -> None:
-        self.assertEqual(
-            "us_xx_dataflow_ingest_view_results_secondary",
-            ingest_view_materialization_results_dataset(
-                state_code=StateCode.US_XX, instance=DirectIngestInstance.SECONDARY
-            ),
+            "us_xx_ingest_view_results",
+            ingest_view_materialization_results_dataset(state_code=StateCode.US_XX),
         )
 
     def test_state_dataset_for_state_code(
         self,
     ) -> None:
         self.assertEqual(
-            "us_xx_state_secondary",
-            state_dataset_for_state_code(
-                state_code=StateCode.US_XX, instance=DirectIngestInstance.SECONDARY
-            ),
+            "us_xx_state",
+            state_dataset_for_state_code(state_code=StateCode.US_XX),
         )
         self.assertEqual(
-            "us_yy_state_primary",
-            state_dataset_for_state_code(
-                state_code=StateCode.US_YY, instance=DirectIngestInstance.PRIMARY
-            ),
+            "us_yy_state",
+            state_dataset_for_state_code(state_code=StateCode.US_YY),
         )

@@ -24,14 +24,10 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
     get_direct_ingest_states_launched_in_env,
 )
-from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.pipelines.config_paths import PIPELINE_CONFIG_YAML_PATH
 from recidiviz.pipelines.dataflow_orchestration_utils import (
     get_metric_pipeline_enabled_states,
     get_normalization_pipeline_enabled_states,
-)
-from recidiviz.pipelines.ingest.state.gating import (
-    get_ingest_pipeline_enabled_state_and_instance_pairs,
 )
 from recidiviz.pipelines.metrics.pipeline_parameters import MetricsPipelineParameters
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION
@@ -87,22 +83,3 @@ class TestConfiguredPipelines(unittest.TestCase):
             "does not have `environment: production` set in the `manifest.yaml`. "
             "Either set it to production or set `staging_only: True` on the pipeline.",
         )
-
-    @patch(
-        "recidiviz.utils.environment.get_gcp_environment",
-        Mock(return_value="staging"),
-    )
-    def test_ingest_in_dataflow_pipeline_parity(self) -> None:
-        states_launched_in_env = get_direct_ingest_states_launched_in_env()
-        pairs_with_pipelines_enabled = (
-            get_ingest_pipeline_enabled_state_and_instance_pairs()
-        )
-
-        for state_code, ingest_instance in pairs_with_pipelines_enabled:
-            self.assertIn(state_code, states_launched_in_env)
-
-        for state_code in states_launched_in_env:
-            for ingest_instance in DirectIngestInstance:
-                self.assertIn(
-                    (state_code, ingest_instance), pairs_with_pipelines_enabled
-                )

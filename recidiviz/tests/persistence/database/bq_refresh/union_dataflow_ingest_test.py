@@ -30,7 +30,6 @@ from recidiviz.big_query.big_query_view import BigQueryView, SimpleBigQueryViewB
 from recidiviz.big_query.constants import TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS
 from recidiviz.calculator.query.state.dataset_config import STATE_BASE_DATASET
 from recidiviz.common.constants.states import StateCode
-from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.persistence.database.bq_refresh import union_dataflow_ingest
 from recidiviz.view_registry.datasets import VIEW_SOURCE_TABLE_DATASETS
 
@@ -137,8 +136,7 @@ class UnionDataflowIngestTest(unittest.TestCase):
     def test_combine_ingest_sources(self) -> None:
         # Act
         union_dataflow_ingest.combine_ingest_sources_into_single_state_dataset(
-            ingest_instance=DirectIngestInstance.PRIMARY,
-            tables=_ALL_SCHEMA_TABLES,
+            tables=_ALL_SCHEMA_TABLES
         )
 
         # Assert
@@ -147,16 +145,16 @@ class UnionDataflowIngestTest(unittest.TestCase):
             view_id="fake_person_view",
             description="",
             view_query_template="SELECT state_code, person_id, full_name, entity_id\n"
-            "FROM `test-project.us_dd_state_primary.fake_person`\n"
+            "FROM `test-project.us_dd_state.fake_person`\n"
             "UNION ALL\n"
             "SELECT state_code, person_id, full_name, entity_id\n"
-            "FROM `test-project.us_ww_state_primary.fake_person`\n"
+            "FROM `test-project.us_ww_state.fake_person`\n"
             "UNION ALL\n"
             "SELECT state_code, person_id, full_name, entity_id\n"
-            "FROM `test-project.us_xx_state_primary.fake_person`\n"
+            "FROM `test-project.us_xx_state.fake_person`\n"
             "UNION ALL\n"
             "SELECT state_code, person_id, full_name, entity_id\n"
-            "FROM `test-project.us_yy_state_primary.fake_person`\n",
+            "FROM `test-project.us_yy_state.fake_person`\n",
             should_materialize=True,
             materialized_address_override=BigQueryAddress(
                 dataset_id="state", table_id="fake_person"
@@ -167,16 +165,16 @@ class UnionDataflowIngestTest(unittest.TestCase):
             view_id="fake_entity_view",
             description="",
             view_query_template="SELECT state_code, entity_id, name\n"
-            "FROM `test-project.us_dd_state_primary.fake_entity`\n"
+            "FROM `test-project.us_dd_state.fake_entity`\n"
             "UNION ALL\n"
             "SELECT state_code, entity_id, name\n"
-            "FROM `test-project.us_ww_state_primary.fake_entity`\n"
+            "FROM `test-project.us_ww_state.fake_entity`\n"
             "UNION ALL\n"
             "SELECT state_code, entity_id, name\n"
-            "FROM `test-project.us_xx_state_primary.fake_entity`\n"
+            "FROM `test-project.us_xx_state.fake_entity`\n"
             "UNION ALL\n"
             "SELECT state_code, entity_id, name\n"
-            "FROM `test-project.us_yy_state_primary.fake_entity`\n",
+            "FROM `test-project.us_yy_state.fake_entity`\n",
             should_materialize=True,
             materialized_address_override=BigQueryAddress(
                 dataset_id="state", table_id="fake_entity"
@@ -187,16 +185,16 @@ class UnionDataflowIngestTest(unittest.TestCase):
             view_id="state_entity_association_view",
             description="",
             view_query_template="SELECT entity_id, another_entity_id, state_code\n"
-            "FROM `test-project.us_dd_state_primary.state_entity_association`\n"
+            "FROM `test-project.us_dd_state.state_entity_association`\n"
             "UNION ALL\n"
             "SELECT entity_id, another_entity_id, state_code\n"
-            "FROM `test-project.us_ww_state_primary.state_entity_association`\n"
+            "FROM `test-project.us_ww_state.state_entity_association`\n"
             "UNION ALL\n"
             "SELECT entity_id, another_entity_id, state_code\n"
-            "FROM `test-project.us_xx_state_primary.state_entity_association`\n"
+            "FROM `test-project.us_xx_state.state_entity_association`\n"
             "UNION ALL\n"
             "SELECT entity_id, another_entity_id, state_code\n"
-            "FROM `test-project.us_yy_state_primary.state_entity_association`\n",
+            "FROM `test-project.us_yy_state.state_entity_association`\n",
             should_materialize=True,
             materialized_address_override=BigQueryAddress(
                 dataset_id="state", table_id="state_entity_association"
@@ -260,23 +258,10 @@ class UnionDataflowIngestTest(unittest.TestCase):
             association_table_materialize_call_args[1]["view"], association_table_view
         )
 
-    def test_combine_ingest_sources_secondary_no_sandbox(self) -> None:
-        # Act
-        with self.assertRaisesRegex(
-            ValueError,
-            "Refresh can only proceed for secondary databases into a sandbox.",
-        ):
-            union_dataflow_ingest.combine_ingest_sources_into_single_state_dataset(
-                ingest_instance=DirectIngestInstance.SECONDARY,
-                tables=_ALL_SCHEMA_TABLES,
-            )
-
-    def test_combine_ingest_sources_secondary_sandbox(self) -> None:
+    def test_combine_ingest_sources_sandbox(self) -> None:
         # Act
         union_dataflow_ingest.combine_ingest_sources_into_single_state_dataset(
-            ingest_instance=DirectIngestInstance.SECONDARY,
-            tables=_ALL_SCHEMA_TABLES,
-            output_sandbox_prefix="foo",
+            tables=_ALL_SCHEMA_TABLES, output_sandbox_prefix="foo"
         )
 
         # Assert
@@ -285,16 +270,16 @@ class UnionDataflowIngestTest(unittest.TestCase):
             view_id="fake_person_view",
             description="",
             view_query_template="SELECT state_code, person_id, full_name, entity_id\n"
-            "FROM `test-project.us_dd_state_secondary.fake_person`\n"
+            "FROM `test-project.us_dd_state.fake_person`\n"
             "UNION ALL\n"
             "SELECT state_code, person_id, full_name, entity_id\n"
-            "FROM `test-project.us_ww_state_secondary.fake_person`\n"
+            "FROM `test-project.us_ww_state.fake_person`\n"
             "UNION ALL\n"
             "SELECT state_code, person_id, full_name, entity_id\n"
-            "FROM `test-project.us_xx_state_secondary.fake_person`\n"
+            "FROM `test-project.us_xx_state.fake_person`\n"
             "UNION ALL\n"
             "SELECT state_code, person_id, full_name, entity_id\n"
-            "FROM `test-project.us_yy_state_secondary.fake_person`\n",
+            "FROM `test-project.us_yy_state.fake_person`\n",
             should_materialize=True,
             materialized_address_override=BigQueryAddress(
                 dataset_id="foo_state", table_id="fake_person"
@@ -305,16 +290,16 @@ class UnionDataflowIngestTest(unittest.TestCase):
             view_id="fake_entity_view",
             description="",
             view_query_template="SELECT state_code, entity_id, name\n"
-            "FROM `test-project.us_dd_state_secondary.fake_entity`\n"
+            "FROM `test-project.us_dd_state.fake_entity`\n"
             "UNION ALL\n"
             "SELECT state_code, entity_id, name\n"
-            "FROM `test-project.us_ww_state_secondary.fake_entity`\n"
+            "FROM `test-project.us_ww_state.fake_entity`\n"
             "UNION ALL\n"
             "SELECT state_code, entity_id, name\n"
-            "FROM `test-project.us_xx_state_secondary.fake_entity`\n"
+            "FROM `test-project.us_xx_state.fake_entity`\n"
             "UNION ALL\n"
             "SELECT state_code, entity_id, name\n"
-            "FROM `test-project.us_yy_state_secondary.fake_entity`\n",
+            "FROM `test-project.us_yy_state.fake_entity`\n",
             should_materialize=True,
             materialized_address_override=BigQueryAddress(
                 dataset_id="foo_state", table_id="fake_entity"
@@ -325,16 +310,16 @@ class UnionDataflowIngestTest(unittest.TestCase):
             view_id="state_entity_association_view",
             description="",
             view_query_template="SELECT entity_id, another_entity_id, state_code\n"
-            "FROM `test-project.us_dd_state_secondary.state_entity_association`\n"
+            "FROM `test-project.us_dd_state.state_entity_association`\n"
             "UNION ALL\n"
             "SELECT entity_id, another_entity_id, state_code\n"
-            "FROM `test-project.us_ww_state_secondary.state_entity_association`\n"
+            "FROM `test-project.us_ww_state.state_entity_association`\n"
             "UNION ALL\n"
             "SELECT entity_id, another_entity_id, state_code\n"
-            "FROM `test-project.us_xx_state_secondary.state_entity_association`\n"
+            "FROM `test-project.us_xx_state.state_entity_association`\n"
             "UNION ALL\n"
             "SELECT entity_id, another_entity_id, state_code\n"
-            "FROM `test-project.us_yy_state_secondary.state_entity_association`\n",
+            "FROM `test-project.us_yy_state.state_entity_association`\n",
             should_materialize=True,
             materialized_address_override=BigQueryAddress(
                 dataset_id="state", table_id="state_entity_association"

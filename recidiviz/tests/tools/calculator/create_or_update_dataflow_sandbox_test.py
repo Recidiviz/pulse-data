@@ -89,8 +89,8 @@ class CreateOrUpdateDataflowSandboxTest(BigQueryEmulatorTestCase):
         create_or_update_dataflow_sandbox(
             sandbox_dataset_prefix="sandboxed",
             datasets_to_create=[NORMALIZATION_PIPELINE_NAME],
-            state_code_filter=StateCode.US_XX,
             allow_overwrite=False,
+            state_code_filter=StateCode.US_XX,
         )
 
         self.assertListEqual(
@@ -104,8 +104,8 @@ class CreateOrUpdateDataflowSandboxTest(BigQueryEmulatorTestCase):
             create_or_update_dataflow_sandbox(
                 sandbox_dataset_prefix="sandboxed",
                 datasets_to_create=[NORMALIZATION_PIPELINE_NAME],
-                state_code_filter=StateCode.US_XX,
                 allow_overwrite=False,
+                state_code_filter=StateCode.US_XX,
             )
 
     @patch(
@@ -132,8 +132,8 @@ class CreateOrUpdateDataflowSandboxTest(BigQueryEmulatorTestCase):
             create_or_update_dataflow_sandbox(
                 sandbox_dataset_prefix="sandboxed",
                 datasets_to_create=[NORMALIZATION_PIPELINE_NAME],
-                state_code_filter=StateCode.US_XX,
                 allow_overwrite=False,
+                state_code_filter=StateCode.US_XX,
             )
 
     # TODO(#30495): Write a test for creating an ingest sandbox once we don't have to

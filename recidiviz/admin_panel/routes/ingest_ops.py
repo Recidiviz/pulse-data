@@ -45,9 +45,6 @@ from recidiviz.common.constants.operations.direct_ingest_instance_status import 
     DirectIngestStatus,
 )
 from recidiviz.common.constants.states import StateCode
-from recidiviz.ingest.direct.dataset_config import (
-    ingest_view_materialization_results_dataset,
-)
 from recidiviz.ingest.direct.direct_ingest_regions import get_direct_ingest_region
 from recidiviz.ingest.direct.gating import is_raw_data_import_dag_enabled
 from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
@@ -73,7 +70,10 @@ from recidiviz.ingest.flash_database_tools import (
     delete_contents_of_raw_data_tables,
     delete_tables_in_pruning_datasets,
 )
-from recidiviz.pipelines.ingest.dataset_config import state_dataset_for_state_code
+from recidiviz.pipelines.ingest.dataset_config import (
+    ingest_view_materialization_results_dataset,
+    state_dataset_for_state_code,
+)
 from recidiviz.utils.trigger_dag_helpers import trigger_calculation_dag_pubsub
 from recidiviz.utils.types import assert_type
 
@@ -359,23 +359,24 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
             HTTPStatus.OK,
         )
 
+    # TODO(#30695): Actually rip SECONDARY instance dataflow info out of the admin panel
+    #  and remove the instance_str arg from this endpoint.
     @bp.route(
         "/api/ingest_operations/get_dataflow_job_additional_metadata_by_instance/<state_code_str>/<instance_str>"
     )
     def _get_dataflow_job_additional_metadata_by_instance(
         state_code_str: str,
-        instance_str: str,
+        instance_str: str,  # pylint: disable=unused-argument
     ) -> Tuple[Response, HTTPStatus]:
         try:
             state_code = StateCode(state_code_str)
-            instance = DirectIngestInstance(instance_str)
         except ValueError:
             return (jsonify("Invalid input data"), HTTPStatus.BAD_REQUEST)
 
         ingest_view_results_dataset = ingest_view_materialization_results_dataset(
-            state_code, instance
+            state_code
         )
-        state_results_dataset = state_dataset_for_state_code(state_code, instance)
+        state_results_dataset = state_dataset_for_state_code(state_code)
 
         return (
             jsonify(
@@ -736,37 +737,39 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
             HTTPStatus.OK,
         )
 
+    # TODO(#30695): Actually rip SECONDARY instance dataflow info out of the admin panel
+    #  and remove the instance_str arg from this endpoint.
     @bp.route(
         "/api/ingest_operations/get_latest_run_ingest_view_results/<state_code_str>/<instance_str>"
     )
     def _get_latest_run_ingest_view_results(
         state_code_str: str,
-        instance_str: str,
+        instance_str: str,  # pylint: disable=unused-argument
     ) -> Tuple[Response, HTTPStatus]:
         try:
             state_code = StateCode(state_code_str)
-            instance = DirectIngestInstance(instance_str)
         except ValueError:
             return (jsonify("Invalid input data"), HTTPStatus.BAD_REQUEST)
 
-        ingest_view_results = get_latest_run_ingest_view_results(state_code, instance)
+        ingest_view_results = get_latest_run_ingest_view_results(state_code)
 
         return (jsonify(ingest_view_results), HTTPStatus.OK)
 
+    # TODO(#30695): Actually rip SECONDARY instance dataflow info out of the admin panel
+    #  and remove the instance_str arg from this endpoint.
     @bp.route(
         "/api/ingest_operations/get_latest_run_state_results/<state_code_str>/<instance_str>"
     )
     def _get_latest_run_state_results(
         state_code_str: str,
-        instance_str: str,
+        instance_str: str,  # pylint: disable=unused-argument
     ) -> Tuple[Response, HTTPStatus]:
         try:
             state_code = StateCode(state_code_str)
-            instance = DirectIngestInstance(instance_str)
         except ValueError:
             return (jsonify("Invalid input data"), HTTPStatus.BAD_REQUEST)
 
-        ingest_view_results = get_latest_run_state_results(state_code, instance)
+        ingest_view_results = get_latest_run_state_results(state_code)
 
         return (jsonify(ingest_view_results), HTTPStatus.OK)
 

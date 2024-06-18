@@ -82,10 +82,7 @@ class TestExecuteStateDatasetRefresh(unittest.TestCase):
             mock_record_success
         )
 
-        update_state_dataset.execute_state_dataset_refresh(
-            ingest_instance=DirectIngestInstance.PRIMARY,
-            sandbox_prefix=None,
-        )
+        update_state_dataset.execute_state_dataset_refresh(sandbox_prefix=None)
 
         self.mock_combine.assert_called_once()
         self.mock_refresh_bq_dataset_persister.record_success_in_bq.assert_called_once()
@@ -93,10 +90,7 @@ class TestExecuteStateDatasetRefresh(unittest.TestCase):
     def test_execute_state_dataset_refresh_combine_fails(self) -> None:
         self.mock_combine.side_effect = Exception("Fail")
         with self.assertRaisesRegex(Exception, "Fail"):
-            update_state_dataset.execute_state_dataset_refresh(
-                ingest_instance=DirectIngestInstance.PRIMARY,
-                sandbox_prefix=None,
-            )
+            update_state_dataset.execute_state_dataset_refresh(sandbox_prefix=None)
 
         self.mock_combine.assert_called_once()
         self.mock_refresh_bq_dataset_persister.record_success_in_bq.assert_not_called()
@@ -106,23 +100,7 @@ class TestExecuteStateDatasetRefresh(unittest.TestCase):
             Exception("Fail")
         )
         with self.assertRaisesRegex(Exception, "Fail"):
-            update_state_dataset.execute_state_dataset_refresh(
-                ingest_instance=DirectIngestInstance.PRIMARY,
-                sandbox_prefix=None,
-            )
+            update_state_dataset.execute_state_dataset_refresh(sandbox_prefix=None)
 
         self.mock_combine.assert_called_once()
         self.mock_refresh_bq_dataset_persister.record_success_in_bq.assert_called_once()
-
-    def test_execute_state_dataset_refresh_secondary_no_sandbox(self) -> None:
-        with self.assertRaisesRegex(
-            ValueError,
-            "Refresh can only proceed for secondary databases into a sandbox.",
-        ):
-            update_state_dataset.execute_state_dataset_refresh(
-                ingest_instance=DirectIngestInstance.SECONDARY,
-                sandbox_prefix=None,
-            )
-
-        self.mock_combine.assert_not_called()
-        self.mock_refresh_bq_dataset_persister.record_success_in_bq.assert_not_called()

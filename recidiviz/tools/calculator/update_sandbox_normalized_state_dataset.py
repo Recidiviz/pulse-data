@@ -41,7 +41,7 @@ Ex.
 python -m recidiviz.tools.calculator.update_sandbox_normalized_state_dataset \
     --project_id recidiviz-staging \
     --state_code US_XX \
-    --input_state_dataset us_xx_state_primary \
+    --input_state_dataset us_xx_state \
     --input_normalized_state_dataset my_prefix_us_xx_normalized_state \
     --output_sandbox_prefix my_prefix
 """
