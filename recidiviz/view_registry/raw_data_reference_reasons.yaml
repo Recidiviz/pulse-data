@@ -13,6 +13,9 @@ US_AR:
   INMATEPROFILE:
     workflows_views.us_ar_resident_metadata: |-
       Used to pull in resident metadata.
+  INTERVENTOFFENSE:
+    analyst_data.us_ar_ovg_events_preprocessed: |-
+      Source for preprocessed data used in us_ar_ovg_timeline.
   ORGANIZATIONPROF:
     reference_views.us_ar_location_metadata: |-
       Used to pull in location reference data.
@@ -22,6 +25,13 @@ US_AR:
   RELATEDPARTY:
     reference_views.us_ar_location_metadata: |-
       Used to pull in location reference data.
+  SUPVINCENTIVE:
+    analyst_data.us_ar_ovg_events_preprocessed: |-
+      Source for preprocessed data used in us_ar_ovg_timeline.
+  SUPVINTERVENTION:
+    analyst_data.us_ar_ovg_events_preprocessed: |-
+      Source for preprocessed data used in us_ar_ovg_timeline.
+
 US_AZ:
   AZ_AQ_CATEGORY:
     analyst_data.us_az_action_queue: |-

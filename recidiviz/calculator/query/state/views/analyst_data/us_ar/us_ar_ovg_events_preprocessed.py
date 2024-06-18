@@ -44,13 +44,12 @@ supervision_sessions AS (
   SELECT
     pei.external_id AS OFFENDERID,
     s.*
-  FROM `{{project_id}}.{{sessions_dataset}}.compartment_level_1_super_sessions` s
+  FROM `{{project_id}}.{{sessions_dataset}}.compartment_level_0_super_sessions_materialized` s
   LEFT JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
   USING(person_id)
   WHERE
     s.state_code = 'US_AR' AND
-    pei.state_code = 'US_AR' AND
-    s.compartment_level_1 = 'SUPERVISION'
+    pei.state_code = 'US_AR'
 ),
 preprocessed_interventions AS (
   SELECT
@@ -60,17 +59,17 @@ preprocessed_interventions AS (
     io.INTERVENTDATETIME,
     io.OVGADJUSTMENTRSN IS NOT NULL AS is_adjusted,
     io.DATELASTUPDATE,
-    ss.compartment_level_2_start AS supervision_type,
     ss.start_date AS super_session_start,
     ss.end_date AS super_session_end,
     CASE
       WHEN OFFENSEVIOLATIONLEVEL = '0' THEN 0
       WHEN OFFENSEVIOLATIONLEVEL = '1' THEN 5
       WHEN OFFENSEVIOLATIONLEVEL = '2' THEN 15
-      WHEN OFFENSEVIOLATIONLEVEL in ('3','4') AND ss.compartment_level_2_start = 'PAROLE' THEN 40
-      WHEN OFFENSEVIOLATIONLEVEL in ('3','4') AND ss.compartment_level_2_start = 'PROBATION' THEN 60
+      WHEN OFFENSEVIOLATIONLEVEL in ('3','4') THEN 40
       ELSE NULL
-    END AS points
+    END AS points,
+    PPOFFICE AS supervision_office,
+    ROW_NUMBER() OVER (PARTITION BY pei.person_id,INTERVENTIONDATE ORDER BY INTERVENTDATETIME,OFFENSESEQ) AS event_sub_id
   FROM (
     SELECT
       *,
@@ -78,49 +77,57 @@ preprocessed_interventions AS (
     FROM `{{project_id}}.{{us_ar_raw_data_up_to_date_dataset}}.INTERVENTOFFENSE_latest`
   ) io
   LEFT JOIN `{{project_id}}.{{us_ar_raw_data_up_to_date_dataset}}.SUPVINTERVENTION_latest` si
-  USING(OFFENDERID,INTERVENTIONDATE,INTERVENTIONTIME)
+    USING(OFFENDERID,INTERVENTIONDATE,INTERVENTIONTIME)
   LEFT JOIN supervision_sessions ss
-  ON io.OFFENDERID = ss.OFFENDERID AND
-    io.INTERVENTDATETIME BETWEEN ss.start_date AND {nonnull_end_date_clause('ss.end_date')}
+    ON io.OFFENDERID = ss.OFFENDERID AND
+        DATE(io.INTERVENTDATETIME) BETWEEN ss.start_date AND {nonnull_end_date_clause('ss.end_date')}
   LEFT JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
-  ON io.OFFENDERID = pei.external_id AND pei.state_code='US_AR'
+    ON io.OFFENDERID = pei.external_id AND pei.state_code='US_AR'
   WHERE si.INTERVENTIONSTATUS = 'A' AND io.OFFENSEVIOLATIONLEVEL != '0'
 ),
 violations AS (
   -- Cleaned violation response data, including only approved responses with a non-zero
   -- point value.
-  SELECT
-    person_id,
-    points,
-    'US_AR' AS state_code,
-    INTERVENTDATETIME AS start_date,
-    -- Violations are given an adjustment date if they're marked as adjusted (is_adjusted = TRUE)
-    -- and the adjustment occurs before the points from the violation would naturally decay.
-    CASE
-      WHEN is_adjusted AND DATE_DIFF(DATETIME(DATELASTUPDATE),INTERVENTDATETIME,YEAR) < 1
-      THEN DATETIME(DATELASTUPDATE)
-      ELSE CAST(NULL AS DATETIME)
-    END AS adjustment_date,
-    -- Outside of adjustments, violations are 'active' until they decay after a year OR
-    -- until the OVG period ends, whichever comes first.
-    CASE
-      WHEN super_session_end IS NULL
-      THEN DATETIME_ADD(INTERVENTDATETIME, INTERVAL 1 YEAR)
-      ELSE LEAST(
-        DATETIME_ADD(INTERVENTDATETIME,INTERVAL 1 YEAR),
-        CAST(super_session_end AS DATETIME)
-      ) END AS end_date,
-    /*
-    Violations are grouped into interventions, and the ID for a given intervention is
-    used here to identify distinct violation events (which can contain multiple violations).
-    Because violations only incur points based on the most severe non-adjusted violation
-    within an intervention group, this ID will be used to group violations and identify
-    which violation is 'controlling' at each point in time.
-    */
-    CAST(RANK() OVER (PARTITION BY OFFENDERID ORDER BY INTERVENTDATETIME) AS STRING) AS event_id,
-    super_session_start,
-    super_session_end
-  FROM preprocessed_interventions
+  SELECT *
+  FROM (
+    SELECT
+      person_id,
+      'US_AR' AS state_code,
+      INTERVENTDATETIME AS start_date,
+      -- Violations are given an adjustment date if they're marked as adjusted (is_adjusted = TRUE)
+      -- and the adjustment occurs before the points from the violation would naturally decay.
+      CASE
+        WHEN is_adjusted AND DATE_DIFF(DATETIME(DATELASTUPDATE),INTERVENTDATETIME,DAY) < 365
+        THEN DATETIME(DATELASTUPDATE)
+        ELSE CAST(NULL AS DATETIME)
+      END AS adjustment_date,
+      -- Outside of adjustments, violations are 'active' until they decay after a year OR
+      -- until the OVG period ends, whichever comes first.
+      CASE
+        WHEN super_session_end IS NULL
+        THEN DATETIME_ADD(INTERVENTDATETIME, INTERVAL 1 YEAR)
+        ELSE LEAST(
+          DATETIME_ADD(INTERVENTDATETIME,INTERVAL 1 YEAR),
+          CAST(super_session_end AS DATETIME)
+        ) END AS end_date,
+      /*
+      Violations are grouped into interventions, and the ID for a given intervention is
+      used here to identify distinct violation events (which can contain multiple violations).
+      Because violations only incur points based on the most severe non-adjusted violation
+      within an intervention group, this ID will be used to group violations and identify
+      which violation is 'controlling' at each point in time.
+
+      Note that the event IDs (and therefore violation groups) are determined using dates,
+      not datetimes. This means that only the most severe violation on a given day will count.
+      */
+      CAST(RANK() OVER (PARTITION BY OFFENDERID ORDER BY CAST(INTERVENTDATETIME AS DATE)) AS STRING) AS event_id,
+      points,
+      super_session_start,
+      super_session_end,
+      supervision_office,
+      event_sub_id,
+    FROM preprocessed_interventions
+  )
 ),
 incentives AS (
   /*
@@ -130,7 +137,6 @@ incentives AS (
   */
   SELECT
     pei.person_id,
-    -1 * CAST(INCENTIVEWEIGHT AS INT64) AS points,
     'US_AR' AS state_code,
     CAST(INCENTIVESTATUSDATE AS DATETIME) AS start_date,
     CAST(NULL AS DATETIME) AS adjustment_date,
@@ -140,8 +146,10 @@ incentives AS (
       ELSE CAST(ss.end_date AS DATETIME)
     END AS end_date,
     'INCENTIVE' AS event_id,
+    -1 * CAST(INCENTIVEWEIGHT AS INT64) AS points,
     ss.start_date AS super_session_start,
-    ss.end_date AS super_session_end
+    ss.end_date AS super_session_end,
+    PPOFFICE AS supervision_office,    
   FROM `{{project_id}}.{{us_ar_raw_data_up_to_date_dataset}}.SUPVINCENTIVE_latest` si
   LEFT JOIN supervision_sessions ss
   ON si.OFFENDERID = ss.OFFENDERID AND (
@@ -157,7 +165,9 @@ incentives AS (
 SELECT *
 FROM violations
 UNION ALL
-SELECT *
+SELECT 
+  *,
+  CAST(NULL AS INT64) AS event_sub_id
 FROM incentives
 """
 US_AR_OVG_EVENTS_PREPROCESSED_VIEW_BUILDER = SimpleBigQueryViewBuilder(
