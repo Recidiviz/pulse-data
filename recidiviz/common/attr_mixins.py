@@ -29,6 +29,7 @@ from recidiviz.common.attr_utils import (
     is_date,
     is_datetime,
     is_enum,
+    is_float,
     is_forward_ref,
     is_int,
     is_list,
@@ -53,7 +54,7 @@ class BuildableAttrFieldType(Enum):
     DATETIME = "DATETIME"
     STRING = "STRING"
     INTEGER = "INTEGER"
-    OTHER = "OTHER"
+    FLOAT = "FLOAT"
 
 
 @attr.s(kw_only=True, frozen=True)
@@ -242,6 +243,13 @@ def _map_attr_to_type_for_class(
                 enum_cls=None,
                 referenced_cls_name=None,
             )
+        elif is_float(attribute):
+            attr_field_types[field_name] = CachedAttributeInfo(
+                attribute=attribute,
+                field_type=BuildableAttrFieldType.FLOAT,
+                enum_cls=None,
+                referenced_cls_name=None,
+            )
         elif is_bool(attribute):
             attr_field_types[field_name] = CachedAttributeInfo(
                 attribute=attribute,
@@ -250,11 +258,9 @@ def _map_attr_to_type_for_class(
                 referenced_cls_name=None,
             )
         else:
-            attr_field_types[field_name] = CachedAttributeInfo(
-                attribute=attribute,
-                field_type=BuildableAttrFieldType.OTHER,
-                enum_cls=None,
-                referenced_cls_name=None,
+            raise ValueError(
+                f"Unable to determine BuildableAttrFieldType for field [{field_name}] on cls [{cls}]. "
+                f"Attribute type: {attribute.type}"
             )
 
     return attr_field_types

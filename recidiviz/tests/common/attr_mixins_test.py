@@ -71,6 +71,8 @@ class FakeBuildableAttrDeluxe(BuildableAttr):
     date_field: Optional[date] = attr.ib(default=None)
     datetime_field: Optional[datetime] = attr.ib(default=None)
     boolean_field: Optional[bool] = attr.ib(default=None)
+    int_field: Optional[int] = attr.ib(default=None)
+    float_field: Optional[float] = attr.ib(default=None)
     field_list: List[str] = attr.ib(factory=list)
     field_forward_ref: Optional["FakeBuildableAttr"] = attr.ib(default=None)
 
@@ -429,6 +431,20 @@ class CachedClassStructureReferenceTests(unittest.TestCase):
                     enum_cls=None,
                     referenced_cls_name=None,
                 )
+            elif "int" in attribute.name:
+                expected_attr_field_type_ref[name] = CachedAttributeInfo(
+                    attribute=attribute,
+                    field_type=BuildableAttrFieldType.INTEGER,
+                    enum_cls=None,
+                    referenced_cls_name=None,
+                )
+            elif "float" in attribute.name:
+                expected_attr_field_type_ref[name] = CachedAttributeInfo(
+                    attribute=attribute,
+                    field_type=BuildableAttrFieldType.FLOAT,
+                    enum_cls=None,
+                    referenced_cls_name=None,
+                )
             elif "forward_ref" in attribute.name:
                 expected_attr_field_type_ref[name] = CachedAttributeInfo(
                     attribute=attribute,
@@ -451,12 +467,7 @@ class CachedClassStructureReferenceTests(unittest.TestCase):
                     referenced_cls_name=None,
                 )
             else:
-                expected_attr_field_type_ref[name] = CachedAttributeInfo(
-                    attribute=attribute,
-                    field_type=BuildableAttrFieldType.OTHER,
-                    enum_cls=None,
-                    referenced_cls_name=None,
-                )
+                raise ValueError(f"Unexpected attribute [{attribute.name}]")
 
         attr_field_type_ref = attribute_field_type_reference_for_class(
             FakeBuildableAttrDeluxe
