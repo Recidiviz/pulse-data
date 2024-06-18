@@ -28,13 +28,11 @@ import pytz
 from recidiviz.big_query.big_query_query_builder import BigQueryQueryBuilder
 from recidiviz.big_query.big_query_utils import datetime_clause
 from recidiviz.ingest.direct import regions
-from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager import (
-    get_region_raw_file_config,
-)
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRawFileConfig,
     DirectIngestRegionRawFileConfig,
     RawTableColumnInfo,
+    get_region_raw_file_config,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.direct.views.direct_ingest_latest_view_collector import (

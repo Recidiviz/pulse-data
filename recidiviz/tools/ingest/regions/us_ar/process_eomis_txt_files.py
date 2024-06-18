@@ -52,15 +52,13 @@ import pandas as pd
 
 import recidiviz.tools.justice_counts.google_drive as gd
 from recidiviz.common.constants.states import StateCode
-from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager import (
-    get_region_raw_file_config,
-)
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     ColumnEnumValueInfo,
     DirectIngestRawFileConfig,
     RawDataClassification,
     RawTableColumnFieldType,
     RawTableColumnInfo,
+    get_region_raw_file_config,
 )
 from recidiviz.tools.ingest.development.create_ingest_config_skeleton import (
     create_ingest_config_skeleton,

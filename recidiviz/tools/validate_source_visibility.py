@@ -204,7 +204,12 @@ def main() -> int:
             raise ValueError(f"No file associated with {pipeline}.")
         valid_prefixes = {
             "recidiviz.big_query.address_overrides",
+            "recidiviz.big_query.big_query_address",
+            "recidiviz.big_query.big_query_query_builder",
             "recidiviz.big_query.big_query_query_provider",
+            "recidiviz.big_query.big_query_utils",
+            "recidiviz.big_query.big_query_view",
+            "recidiviz.big_query.constants",
             "recidiviz.pipelines",
             "recidiviz.cloud_storage",
             "recidiviz.common",
@@ -218,23 +223,24 @@ def main() -> int:
                     "recidiviz.big_query.big_query_utils",
                     "recidiviz.big_query.big_query_view",
                     "recidiviz.big_query.constants",
-                    "recidiviz.calculator",
+                    "recidiviz.calculator.query.state.dataset_config",
                     # TODO(#8118): Remove this dependency once IP pre-processing no
                     #  longer relies on ingest mappings
                     "recidiviz.ingest.direct",
                     "recidiviz.persistence",
                 }
             )
+            if "normalization" in pipeline.__name__:
+                valid_prefixes = valid_prefixes.union(
+                    {
+                        "recidiviz.calculator.query.state.views.reference",
+                    }
+                )
 
         if "us_ix_case_note" in pipeline.__name__:
             valid_prefixes = valid_prefixes.union(
                 {
-                    "recidiviz.big_query.big_query_address",
-                    "recidiviz.big_query.big_query_query_builder",
-                    "recidiviz.big_query.big_query_utils",
-                    "recidiviz.big_query.big_query_view",
-                    "recidiviz.big_query.constants",
-                    "recidiviz.calculator",
+                    "recidiviz.calculator.query.state.dataset_config",
                     "recidiviz.ingest.direct.types.direct_ingest_instance",
                     "recidiviz.ingest.direct.dataset_config",
                     "recidiviz.persistence",
@@ -243,10 +249,9 @@ def main() -> int:
         if "ingest" in pipeline.__name__:
             valid_prefixes = valid_prefixes.union(
                 {
+                    "recidiviz.big_query.big_query_view_collector",
                     "recidiviz.ingest",
                     "recidiviz.persistence",
-                    "recidiviz.big_query",
-                    "recidiviz.metrics.metric_big_query_view",
                 }
             )
         success &= check_dependencies_for_entrypoint(

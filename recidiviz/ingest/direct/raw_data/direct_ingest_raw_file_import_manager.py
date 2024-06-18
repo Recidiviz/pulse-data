@@ -19,7 +19,6 @@ import csv
 import datetime
 import logging
 import os
-from types import ModuleType
 from typing import Any, Dict, Iterable, List, Optional, Tuple
 
 import pandas as pd
@@ -43,7 +42,6 @@ from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath, GcsfsFilePath
 from recidiviz.common.constants.encoding import UTF_8
 from recidiviz.common.constants.states import StateCode
 from recidiviz.common.retry_predicate import google_api_retry_predicate
-from recidiviz.ingest.direct import regions as direct_ingest_regions_module
 from recidiviz.ingest.direct.dataset_config import (
     raw_data_pruning_new_raw_data_dataset,
     raw_data_pruning_raw_data_diff_results_dataset,
@@ -690,22 +688,3 @@ def augment_raw_data_df_with_metadata_columns(
     raw_data_df[IS_DELETED_COL_NAME] = False
 
     return raw_data_df
-
-
-_RAW_TABLE_CONFIGS_BY_STATE = {}
-
-
-# TODO(#28239) move somewhere else, maybe direct_ingest_regions or raw_file_config_utils
-def get_region_raw_file_config(
-    region_code: str, region_module: Optional[ModuleType] = None
-) -> DirectIngestRegionRawFileConfig:
-    region_code_lower = region_code.lower()
-    if not region_module:
-        region_module = direct_ingest_regions_module
-
-    if region_code_lower not in _RAW_TABLE_CONFIGS_BY_STATE:
-        _RAW_TABLE_CONFIGS_BY_STATE[
-            region_code_lower
-        ] = DirectIngestRegionRawFileConfig(region_code_lower, region_module)
-
-    return _RAW_TABLE_CONFIGS_BY_STATE[region_code_lower]
