@@ -48,11 +48,6 @@ module "static_reference_tables" {
   description = "This dataset contains (static) reference tables."
 }
 
-# Link reference_views
-data "google_bigquery_dataset" "reference_views" {
-  dataset_id = "reference_views"
-}
-
 # Actually create the scheduled queries
 # `experiments` is a log of tracked experiments (e.g. product rollouts) with 
 # details about each. The source data is located in a Google Sheet.
@@ -134,7 +129,7 @@ resource "google_bigquery_data_transfer_config" "product_roster_archive" {
   data_source_id         = "scheduled_query"
   schedule               = "every day 03:00" # In UTC, gives us end of day in US
   service_account_name   = google_service_account.bigquery_scheduled_queries.email
-  destination_dataset_id = data.google_bigquery_dataset.reference_views.dataset_id
+  destination_dataset_id = module.export_archives_dataset.dataset_id
 
   params = {
     destination_table_name_template = "product_roster_archive"
