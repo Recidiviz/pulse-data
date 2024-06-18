@@ -379,3 +379,113 @@ class TestEmailValidator(unittest.TestCase):
             ValueError, f"Email has a suspicious username {email_value.split('@',1)[0]}"
         ):
             self._TestClass(my_email="tex@example.com", my_opt_email=email_value)
+
+
+@attr.s
+class _ProperTestEntity:
+    """
+    Used in TestAssertAppearTogether
+    """
+
+    def __attrs_post_init__(self) -> None:
+
+        attr_validators.assert_appear_together(
+            instance=self, field_1="first_field", field_2="second_field"
+        )
+
+    first_field: Optional[str] = attr.ib(
+        default=None,
+        validator=[
+            attr_validators.is_opt_str,
+        ],
+    )
+
+    second_field: Optional[str] = attr.ib(
+        default=None,
+        validator=[
+            attr_validators.is_opt_str,
+        ],
+    )
+
+
+@attr.s
+class _ImproperTestEntity1:
+    """
+    Used in TestAssertAppearTogether
+    """
+
+    def __attrs_post_init__(self) -> None:
+        attr_validators.assert_appear_together(
+            instance=self, field_1="first_field", field_2="second_field"
+        )
+
+    first_field: Optional[str] = attr.ib(
+        default=None,
+        validator=[
+            attr_validators.is_opt_str,
+        ],
+    )
+
+
+@attr.s
+class _ImproperTestEntity2:
+    """
+    Used in TestAssertAppearTogether
+    """
+
+    def __attrs_post_init__(self) -> None:
+        attr_validators.assert_appear_together(
+            instance=self, field_1="first_field", field_2="second_field"
+        )
+
+    second_field: Optional[str] = attr.ib(
+        default=None,
+        validator=[
+            attr_validators.is_opt_str,
+        ],
+    )
+
+
+class TestAssertAppearTogether(unittest.TestCase):
+    """
+    Tests for assert_appear_together validator.
+    """
+
+    def test_first_field_none(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            f"Fields of {_ProperTestEntity}: 'first_field' and 'second_field' must both be set or both be None. "
+            "Current values: first_field=None, second_field=value2",
+        ):
+            _ProperTestEntity(second_field="value2")
+
+    def test_second_field_none(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            f"Fields of {_ProperTestEntity}: 'first_field' and 'second_field' must both be set or both be None. "
+            "Current values: first_field=value1, second_field=None",
+        ):
+            _ProperTestEntity(first_field="value1")
+
+    def test_field2_attributes(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            f"second_field is currently not an attribute of {_ImproperTestEntity1}. "
+            f"Fields 'first_field' and 'second_field' should both be attributes of {_ImproperTestEntity1}",
+        ):
+            _ImproperTestEntity1(first_field="value1")
+
+    def test_field1_attribute(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            f"first_field is currently not an attribute of {_ImproperTestEntity2}. "
+            f"Fields 'first_field' and 'second_field' should both be attributes of {_ImproperTestEntity2}",
+        ):
+            _ImproperTestEntity2(second_field="value2")
+
+    def test_valid_field_values(self) -> None:
+        # These don't crash
+        _ = _ProperTestEntity()  # both fields are none
+        _ = _ProperTestEntity(
+            first_field="value1", second_field="value2"
+        )  # both fields are non null
