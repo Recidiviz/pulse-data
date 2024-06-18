@@ -7,7 +7,6 @@ data_classification: source
 update_cadence: IRREGULAR
 primary_key_cols:
   - county
-  - full_name
 columns:
   - name: county
     description: County name
@@ -15,7 +14,7 @@ columns:
     is_pii: True
     description: Full name of the state's attorney for this county.
   - name: attorney_type
-    description: Type of attorney (State's Attorney or Assistant State's Attorney)
+    description: Type of attorney (Always State's Attorney)
   - name: address_line_1
     is_pii: True
     description: First line of address (Street Number/PO Box)
