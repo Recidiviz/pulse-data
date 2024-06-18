@@ -96,6 +96,9 @@ from recidiviz.calculator.query.state.views.sessions.housing_unit_raw_text_sessi
 from recidiviz.calculator.query.state.views.sessions.housing_unit_type_collapsed_solitary_sessions import (
     HOUSING_UNIT_TYPE_COLLAPSED_SOLITARY_SESSIONS_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.sessions.housing_unit_type_non_protective_custody_solitary_sessions import (
+    HOUSING_UNIT_TYPE_NON_PROTECTIVE_CUSTODY_SOLITARY_SESSIONS_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.sessions.housing_unit_type_sessions import (
     HOUSING_UNIT_TYPE_SESSIONS_VIEW_BUILDER,
 )
@@ -400,4 +403,5 @@ SESSIONS_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     WORK_RELEASE_SESSIONS_VIEW_BUILDER,
     PERSON_CASELOAD_LOCATION_SESSIONS_VIEW_BUILDER,
     LOCATION_TYPE_SESSIONS_VIEW_BUILDER,
+    HOUSING_UNIT_TYPE_NON_PROTECTIVE_CUSTODY_SOLITARY_SESSIONS_VIEW_BUILDER,
 ]

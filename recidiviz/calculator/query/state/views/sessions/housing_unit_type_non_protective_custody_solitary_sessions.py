@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Sessionized view of each individual that is incarcerated. Session defined as continuous period of time at a given
- housing unit type, using Recidiviz schema mappings. Collapses over all solitary confinement types."""
+ housing unit type, using Recidiviz schema mappings. Collapses over all solitary confinement types, excluding protective custody."""
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.sessions_query_fragments import aggregate_adjacent_spans
@@ -23,24 +23,24 @@ from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-HOUSING_UNIT_TYPE_COLLAPSED_SOLITARY_SESSIONS_VIEW_NAME = (
-    "housing_unit_type_collapsed_solitary_sessions"
+HOUSING_UNIT_TYPE_NON_PROTECTIVE_CUSTODY_SOLITARY_SESSIONS_VIEW_NAME = (
+    "housing_unit_type_non_protective_custody_solitary_sessions"
 )
 
-HOUSING_UNIT_TYPE_COLLAPSED_SOLITARY_SESSIONS_VIEW_DESCRIPTION = """Sessionized view of each individual that is incarcerated. Session
+HOUSING_UNIT_TYPE_NON_PROTECTIVE_CUSTODY_SOLITARY_SESSIONS_VIEW_DESCRIPTION = """Sessionized view of each individual that is incarcerated. Session
 defined as continuous period of time at a given housing unit type, using Recidiviz schema mappings. Collapses over all 
-solitary confinement types."""
+solitary confinement types, excluding protective custody."""
 
-HOUSING_UNIT_TYPE_COLLAPSED_SOLITARY_SESSIONS_QUERY_TEMPLATE = f"""
+HOUSING_UNIT_TYPE_NON_PROTECTIVE_CUSTODY_SOLITARY_SESSIONS_QUERY_TEMPLATE = f"""
     WITH housing_unit_type_collapsed_solitary_spans AS (
         SELECT
-            * EXCEPT (housing_unit_type_collapsed_solitary),
+            * EXCEPT (housing_unit_type),
             IF(
-                housing_unit_type_collapsed_solitary = 'SOLITARY_CONFINEMENT' OR housing_unit_type_collapsed_solitary= 'PROTECTIVE_CUSTODY',
+                CONTAINS_SUBSTR(housing_unit_type, 'SOLITARY_CONFINEMENT'),
                 'SOLITARY_CONFINEMENT',
-                housing_unit_type_collapsed_solitary
+                housing_unit_type
             ) AS housing_unit_type_collapsed_solitary,
-        FROM `{{project_id}}.{{sessions_dataset}}.housing_unit_type_non_protective_custody_solitary_sessions_materialized`
+        FROM `{{project_id}}.{{sessions_dataset}}.housing_unit_type_sessions_materialized`
     )
     {aggregate_adjacent_spans(
         table_name="housing_unit_type_collapsed_solitary_spans",
@@ -49,11 +49,11 @@ HOUSING_UNIT_TYPE_COLLAPSED_SOLITARY_SESSIONS_QUERY_TEMPLATE = f"""
     )}
 """
 
-HOUSING_UNIT_TYPE_COLLAPSED_SOLITARY_SESSIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
+HOUSING_UNIT_TYPE_NON_PROTECTIVE_CUSTODY_SOLITARY_SESSIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=SESSIONS_DATASET,
-    view_id=HOUSING_UNIT_TYPE_COLLAPSED_SOLITARY_SESSIONS_VIEW_NAME,
-    view_query_template=HOUSING_UNIT_TYPE_COLLAPSED_SOLITARY_SESSIONS_QUERY_TEMPLATE,
-    description=HOUSING_UNIT_TYPE_COLLAPSED_SOLITARY_SESSIONS_VIEW_DESCRIPTION,
+    view_id=HOUSING_UNIT_TYPE_NON_PROTECTIVE_CUSTODY_SOLITARY_SESSIONS_VIEW_NAME,
+    view_query_template=HOUSING_UNIT_TYPE_NON_PROTECTIVE_CUSTODY_SOLITARY_SESSIONS_QUERY_TEMPLATE,
+    description=HOUSING_UNIT_TYPE_NON_PROTECTIVE_CUSTODY_SOLITARY_SESSIONS_VIEW_DESCRIPTION,
     sessions_dataset=SESSIONS_DATASET,
     clustering_fields=["state_code", "person_id"],
     should_materialize=True,
@@ -61,4 +61,4 @@ HOUSING_UNIT_TYPE_COLLAPSED_SOLITARY_SESSIONS_VIEW_BUILDER = SimpleBigQueryViewB
 
 if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
-        HOUSING_UNIT_TYPE_COLLAPSED_SOLITARY_SESSIONS_VIEW_BUILDER.build_and_print()
+        HOUSING_UNIT_TYPE_NON_PROTECTIVE_CUSTODY_SOLITARY_SESSIONS_VIEW_BUILDER.build_and_print()

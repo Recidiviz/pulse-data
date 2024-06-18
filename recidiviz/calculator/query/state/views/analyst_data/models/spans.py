@@ -181,7 +181,7 @@ WHERE
         "confinement housing types are collapsed.",
         sql_source="""SELECT *
 FROM
-    `{project_id}.sessions.housing_unit_type_collapsed_solitary_sessions_materialized`
+    `{project_id}.sessions.housing_unit_type_non_protective_custody_solitary_sessions_materialized`
 WHERE
     housing_unit_type_collapsed_solitary IS NOT NULL""",
         attribute_cols=["housing_unit_type_collapsed_solitary"],

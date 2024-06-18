@@ -36,7 +36,7 @@ SELECT
     state_code,
     person_id,
     end_date_exclusive AS completion_event_date
-FROM `{project_id}.{sessions_dataset}.housing_unit_type_collapsed_solitary_sessions_materialized` 
+FROM `{project_id}.{sessions_dataset}.housing_unit_type_non_protective_custody_solitary_sessions_materialized` 
 WHERE housing_unit_type_collapsed_solitary LIKE "%SOLITARY%"
 AND end_date_exclusive IS NOT NULL
 """
