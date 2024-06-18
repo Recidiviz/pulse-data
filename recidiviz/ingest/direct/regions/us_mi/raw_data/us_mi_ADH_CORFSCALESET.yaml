@@ -65,3 +65,4 @@ columns:
   - name: IsOpioidUsedForRecSupLvl
   - name: IsOpioidUsedForSubUseScale
   - name: FkCoSyCourtSummary
+  - name: SupervisionLevelOutput

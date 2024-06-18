@@ -72,3 +72,4 @@ columns:
   - name: UserPhoneNumber
     is_pii: True
   - name: MeetingLink
+  - name: FkShRfCodeEmployeeType
