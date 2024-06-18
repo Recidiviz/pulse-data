@@ -28,6 +28,7 @@ from recidiviz.common import attr_validators
 from recidiviz.common.constants.csv import DEFAULT_CSV_LINE_TERMINATOR
 from recidiviz.common.constants.encoding import COMMON_RAW_FILE_ENCODINGS
 from recidiviz.ingest.direct import regions
+from recidiviz.ingest.direct import regions as direct_ingest_regions_module
 from recidiviz.ingest.direct.raw_data.raw_table_relationship_info import (
     RawTableRelationshipInfo,
 )
@@ -1035,3 +1036,21 @@ class DirectIngestRegionRawFileConfig:
             for config in self.raw_file_configs.values()
             if config.has_regularly_updated_data()
         ]
+
+
+_RAW_TABLE_CONFIGS_BY_STATE = {}
+
+
+def get_region_raw_file_config(
+    region_code: str, region_module: Optional[ModuleType] = None
+) -> DirectIngestRegionRawFileConfig:
+    region_code_lower = region_code.lower()
+    if not region_module:
+        region_module = direct_ingest_regions_module
+
+    if region_code_lower not in _RAW_TABLE_CONFIGS_BY_STATE:
+        _RAW_TABLE_CONFIGS_BY_STATE[
+            region_code_lower
+        ] = DirectIngestRegionRawFileConfig(region_code_lower, region_module)
+
+    return _RAW_TABLE_CONFIGS_BY_STATE[region_code_lower]

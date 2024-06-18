@@ -24,9 +24,7 @@ from recidiviz.ingest.direct.dataset_config import (
     raw_data_pruning_raw_data_diff_results_dataset,
     raw_tables_dataset_for_region,
 )
-from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager import (
-    get_region_raw_file_config,
-)
+from recidiviz.ingest.direct.raw_data.raw_file_configs import get_region_raw_file_config
 from recidiviz.ingest.direct.raw_data_table_schema_utils import (
     RawDataTableBigQuerySchemaBuilder,
 )

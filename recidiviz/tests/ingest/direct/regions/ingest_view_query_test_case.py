@@ -37,11 +37,11 @@ from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager impo
     DirectIngestRawFileConfig,
     augment_raw_data_df_with_metadata_columns,
     check_found_columns_are_subset_of_config,
-    get_region_raw_file_config,
 )
 from recidiviz.ingest.direct.raw_data.direct_ingest_raw_table_schema_builder import (
     RawDataTableBigQuerySchemaBuilder,
 )
+from recidiviz.ingest.direct.raw_data.raw_file_configs import get_region_raw_file_config
 from recidiviz.ingest.direct.types.direct_ingest_constants import (
     IS_DELETED_COL_NAME,
     UPDATE_DATETIME_COL_NAME,

@@ -40,13 +40,11 @@ from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.common.constants import states
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.dataset_config import raw_tables_dataset_for_region
-from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager import (
-    get_region_raw_file_config,
-)
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     ColumnEnumValueInfo,
     DirectIngestRawFileConfig,
     RawTableColumnInfo,
+    get_region_raw_file_config,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.tools.docs.utils import PLACEHOLDER_TO_DO_STRING
