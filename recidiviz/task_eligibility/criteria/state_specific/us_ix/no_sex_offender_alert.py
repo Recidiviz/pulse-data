@@ -72,10 +72,10 @@ SELECT
     start_date,
     end_date,
     False AS meets_criteria,
-    TO_JSON(STRUCT(STRING_AGG(DISTINCT alert_description) AS latest_alert_descriptions,
-                   STRING_AGG(DISTINCT alert_id) AS latest_alert_ids)) AS reason,
-    STRING_AGG(DISTINCT alert_description) AS latest_alert_descriptions,
-    STRING_AGG(DISTINCT alert_id) AS latest_alert_ids
+    TO_JSON(STRUCT(STRING_AGG(DISTINCT alert_description ORDER BY alert_description) AS latest_alert_descriptions,
+                   STRING_AGG(DISTINCT alert_id ORDER BY alert_id) AS latest_alert_ids)) AS reason,
+    STRING_AGG(DISTINCT alert_description ORDER BY alert_description) AS latest_alert_descriptions,
+    STRING_AGG(DISTINCT alert_id ORDER BY alert_id) AS latest_alert_ids
 FROM sub_sessions_with_attributes
 WHERE start_date < {nonnull_end_date_clause('end_date')}
 GROUP BY 1,2,3,4"""

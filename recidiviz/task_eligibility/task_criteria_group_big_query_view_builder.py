@@ -20,6 +20,7 @@ inputted criteria span views.
 
 import abc
 from collections import defaultdict
+from functools import cached_property
 from textwrap import indent
 from typing import List, Optional, Union
 
@@ -200,7 +201,7 @@ GROUP BY 1, 2, 3, 4
                     StateAgnosticTaskCriteriaBigQueryViewBuilder,
                 ),
             )
-            else criteria.as_criteria_view_builder()
+            else criteria.as_criteria_view_builder
             for criteria in self.sub_criteria_list
         ]
 
@@ -248,6 +249,7 @@ GROUP BY 1, 2, 3, 4
 Combines the following criteria queries using {self.boolean_logic_description} logic:
 {sub_criteria_descriptions_str}"""
 
+    @cached_property
     def as_criteria_view_builder(self) -> TaskCriteriaBigQueryViewBuilder:
         """Returns a TaskCriteriaBigQueryViewBuilder that represents the
         aggregation of the task criteria group.
@@ -272,16 +274,16 @@ Combines the following criteria queries using {self.boolean_logic_description} l
 
     @property
     def table_for_query(self) -> BigQueryAddress:
-        return self.as_criteria_view_builder().table_for_query
+        return self.as_criteria_view_builder.table_for_query
 
     @property
     def materialized_address(self) -> Optional[BigQueryAddress]:
-        return self.as_criteria_view_builder().materialized_address
+        return self.as_criteria_view_builder.materialized_address
 
     @property
     def address(self) -> BigQueryAddress:
         """The (dataset_id, table_id) address for this view"""
-        return self.as_criteria_view_builder().address
+        return self.as_criteria_view_builder.address
 
     @property
     def dataset_id(self) -> str:
@@ -384,6 +386,7 @@ class InvertedTaskCriteriaBigQueryViewBuilder:
             f"{self.sub_criteria.criteria_name} criteria is not met, and vice versa."
         )
 
+    @cached_property
     def as_criteria_view_builder(self) -> TaskCriteriaBigQueryViewBuilder:
         """Returns a TaskCriteriaBigQueryViewBuilder that represents the
         aggregation of the task criteria group.
@@ -396,6 +399,7 @@ class InvertedTaskCriteriaBigQueryViewBuilder:
                 state_code=sub_criteria.state_code,
                 criteria_spans_query_template=self.get_query_template(),
                 meets_criteria_default=self.meets_criteria_default,
+                reasons_fields=self.sub_criteria.reasons_fields,
             )
 
         return StateAgnosticTaskCriteriaBigQueryViewBuilder(
@@ -403,20 +407,21 @@ class InvertedTaskCriteriaBigQueryViewBuilder:
             description=self.description,
             criteria_spans_query_template=self.get_query_template(),
             meets_criteria_default=self.meets_criteria_default,
+            reasons_fields=self.sub_criteria.reasons_fields,
         )
 
     @property
     def table_for_query(self) -> BigQueryAddress:
-        return self.as_criteria_view_builder().table_for_query
+        return self.as_criteria_view_builder.table_for_query
 
     @property
     def materialized_address(self) -> Optional[BigQueryAddress]:
-        return self.as_criteria_view_builder().materialized_address
+        return self.as_criteria_view_builder.materialized_address
 
     @property
     def address(self) -> BigQueryAddress:
         """The (dataset_id, table_id) address for this view"""
-        return self.as_criteria_view_builder().address
+        return self.as_criteria_view_builder.address
 
     @property
     def dataset_id(self) -> str:
@@ -425,6 +430,21 @@ class InvertedTaskCriteriaBigQueryViewBuilder:
     def get_query_template(self) -> str:
         """Returns a query template that inverts the meets criteria values."""
         sub_criteria = self._sub_criteria_as_view_builder()
+
+        # TODO(#29664): Remove this if-check once reasons_fields is non-optional
+        if sub_criteria.reasons_fields is not None:
+            reason_columns = (
+                "\n    "
+                + ",\n    ".join(
+                    [
+                        f'{extract_object_from_json(reason.name, reason.type.value, "reason_v2")} AS {reason.name}'
+                        for reason in sub_criteria.reasons_fields
+                    ]
+                )
+                + ","
+            )
+        else:
+            reason_columns = ""
         return f"""
 SELECT
     state_code,
@@ -432,10 +452,9 @@ SELECT
     start_date,
     end_date,
     NOT meets_criteria AS meets_criteria,
-    reason,
-    reason_v2,
+    reason,{reason_columns}
 FROM
-    {sub_criteria.table_for_query.to_str()}
+    `{{project_id}}.{sub_criteria.table_for_query.to_str()}`
 """
 
     def _sub_criteria_as_view_builder(self) -> TaskCriteriaBigQueryViewBuilder:
@@ -448,7 +467,7 @@ FROM
         ):
             return self.sub_criteria
         if isinstance(self.sub_criteria, TaskCriteriaGroupBigQueryViewBuilder):
-            return self.sub_criteria.as_criteria_view_builder()
+            return self.sub_criteria.as_criteria_view_builder
 
         raise TypeError(
             f"Inverted sub_criteria is not of a supported type: "

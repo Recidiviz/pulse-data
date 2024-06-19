@@ -75,7 +75,7 @@ class TaskCriteriaBigQueryViewCollector(
         for tes_builder in tes_view_builders.collect_view_builders():
             # recursively get ALL descendant group or inverter view builders
             complex_criteria_builders = [
-                b.as_criteria_view_builder()
+                b.as_criteria_view_builder
                 for b in tes_builder.all_descendant_criteria_builders()
                 if isinstance(
                     b,
@@ -87,4 +87,4 @@ class TaskCriteriaBigQueryViewCollector(
             ]
             view_builders.extend(complex_criteria_builders)
 
-        return view_builders
+        return list(set(view_builders))

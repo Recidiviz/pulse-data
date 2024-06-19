@@ -405,21 +405,27 @@ GROUP BY 1, 2, 3, 4
     def test_inverted_criteria_state_specific_criteria_name(self) -> None:
         """Checks inverted state-specific criteria"""
         criteria = InvertedTaskCriteriaBigQueryViewBuilder(
-            sub_criteria=CRITERIA_3_STATE_SPECIFIC
+            sub_criteria=CRITERIA_5_STATE_SPECIFIC
         )
-        self.assertEqual(criteria.criteria_name, "US_HI_NOT_CRITERIA_3")
+        self.assertEqual(criteria.criteria_name, "US_KY_NOT_CRITERIA_5")
 
-        self.assertEqual(StateCode.US_HI, criteria.state_code)
+        self.assertEqual(StateCode.US_KY, criteria.state_code)
 
         self.assertEqual(
             criteria.table_for_query,
             BigQueryAddress(
-                dataset_id="task_eligibility_criteria_us_hi",
-                table_id="not_criteria_3_materialized",
+                dataset_id="task_eligibility_criteria_us_ky",
+                table_id="not_criteria_5_materialized",
             ),
         )
 
         self.assertEqual(criteria.meets_criteria_default, False)
+
+        # Check that the reasons fields are the same between the inverted criteria view builder and the sub-criteria
+        self.assertEqual(
+            criteria.as_criteria_view_builder.reasons_fields,
+            criteria.sub_criteria.reasons_fields,
+        )
 
         # Check that query template is correct
         expected_query_template = """
@@ -430,9 +436,10 @@ SELECT
     end_date,
     NOT meets_criteria AS meets_criteria,
     reason,
-    reason_v2,
+    SAFE_CAST(JSON_VALUE(reason_v2, '$.fees_owed') AS FLOAT) AS fees_owed,
+    SAFE_CAST(JSON_VALUE(reason_v2, '$.offense_type') AS STRING) AS offense_type,
 FROM
-    task_eligibility_criteria_us_hi.criteria_3_materialized
+    `{project_id}.task_eligibility_criteria_us_ky.criteria_5_materialized`
 """
         self.assertEqual(expected_query_template, criteria.get_query_template())
 
@@ -455,6 +462,12 @@ FROM
 
         self.assertEqual(criteria.meets_criteria_default, True)
 
+        # Check that the reasons fields are the same between the inverted criteria view builder and the sub-criteria
+        self.assertEqual(
+            criteria.as_criteria_view_builder.reasons_fields,
+            criteria.sub_criteria.reasons_fields,
+        )
+
         # Check that query template is correct
         expected_query_template = """
 SELECT
@@ -464,9 +477,9 @@ SELECT
     end_date,
     NOT meets_criteria AS meets_criteria,
     reason,
-    reason_v2,
+    SAFE_CAST(JSON_VALUE(reason_v2, '$.fees_owed') AS FLOAT64) AS fees_owed,
 FROM
-    task_eligibility_criteria_general.another_state_agnostic_criteria_materialized
+    `{project_id}.task_eligibility_criteria_general.another_state_agnostic_criteria_materialized`
 """
         self.assertEqual(expected_query_template, criteria.get_query_template())
 

@@ -33,13 +33,16 @@ from recidiviz.task_eligibility.criteria.general import (
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_ix import (
     crc_resident_worker_time_based_criteria,
+    in_crc_facility,
     no_absconsion_escape_and_eluding_police_offenses_within_10_years,
     no_detainers_for_xcrc_and_crc,
-    not_in_crc_facility,
     no_sex_offender_alert,
 )
 from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
+)
+from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder import (
+    InvertedTaskCriteriaBigQueryViewBuilder,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -48,6 +51,10 @@ _DESCRIPTION = """
 Shows the spans of time during which someone in ID is eligible
 for a transfer to a Community Reentry Center (CRC) as a resident worker.
 """
+
+US_IX_NOT_IN_CRC_FACILITY_VIEW_BUILDER = InvertedTaskCriteriaBigQueryViewBuilder(
+    sub_criteria=in_crc_facility.VIEW_BUILDER,
+)
 
 VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     state_code=StateCode.US_IX,
@@ -59,7 +66,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         no_detainers_for_xcrc_and_crc.VIEW_BUILDER,
         not_serving_for_sexual_offense.VIEW_BUILDER,
         no_absconsion_escape_and_eluding_police_offenses_within_10_years.VIEW_BUILDER,
-        not_in_crc_facility.VIEW_BUILDER,
+        US_IX_NOT_IN_CRC_FACILITY_VIEW_BUILDER,
         crc_resident_worker_time_based_criteria.VIEW_BUILDER,
         not_in_treatment_in_prison.VIEW_BUILDER,
         no_sex_offender_alert.VIEW_BUILDER,
