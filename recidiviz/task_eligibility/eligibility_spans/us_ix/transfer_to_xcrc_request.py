@@ -27,20 +27,25 @@ from recidiviz.task_eligibility.completion_events.general import (
 )
 from recidiviz.task_eligibility.criteria.general import (
     custody_level_is_minimum,
+    incarceration_within_6_months_of_full_term_completion_date,
+    incarceration_within_6_months_of_parole_eligibility_date,
     not_serving_for_sexual_offense,
     not_serving_for_violent_offense,
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_ix import (
     in_crc_facility_or_pwcc_unit_1,
     in_crc_facility_or_pwcc_unit_1_for_60_days,
-    incarceration_within_6_months_of_ftcd_or_ped_or_tpd,
     no_absconsion_escape_and_eluding_police_offenses_within_10_years,
     no_class_a_or_b_dor_for_6_months,
     no_detainers_for_xcrc_and_crc,
     no_sex_offender_alert,
+    tentative_parole_date_within_6_months,
 )
 from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
+)
+from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder import (
+    OrTaskCriteriaGroup,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -58,7 +63,15 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     criteria_spans_view_builders=[
         in_crc_facility_or_pwcc_unit_1.VIEW_BUILDER,
         in_crc_facility_or_pwcc_unit_1_for_60_days.VIEW_BUILDER,
-        incarceration_within_6_months_of_ftcd_or_ped_or_tpd.VIEW_BUILDER,
+        OrTaskCriteriaGroup(
+            criteria_name="US_IX_INCARCERATION_WITHIN_6_MONTHS_OF_FTCD_OR_PED_OR_TPD",
+            sub_criteria_list=[
+                incarceration_within_6_months_of_full_term_completion_date.VIEW_BUILDER,
+                incarceration_within_6_months_of_parole_eligibility_date.VIEW_BUILDER,
+                tentative_parole_date_within_6_months.VIEW_BUILDER,
+            ],
+            allowed_duplicate_reasons_keys=[],
+        ),
         custody_level_is_minimum.VIEW_BUILDER,
         no_class_a_or_b_dor_for_6_months.VIEW_BUILDER,
         no_detainers_for_xcrc_and_crc.VIEW_BUILDER,

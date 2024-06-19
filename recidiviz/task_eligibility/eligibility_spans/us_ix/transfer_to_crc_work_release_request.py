@@ -35,8 +35,10 @@ from recidiviz.task_eligibility.criteria.state_specific.us_ix import (
     crc_work_release_time_based_criteria,
     no_absconsion_escape_and_eluding_police_offenses_within_10_years,
     no_detainers_for_xcrc_and_crc,
-    not_in_crc_facility,
     no_sex_offender_alert,
+)
+from recidiviz.task_eligibility.eligibility_spans.us_ix.transfer_to_crc_resident_worker_request import (
+    US_IX_NOT_IN_CRC_FACILITY_VIEW_BUILDER,
 )
 from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
@@ -60,7 +62,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         not_serving_for_sexual_offense.VIEW_BUILDER,
         no_absconsion_escape_and_eluding_police_offenses_within_10_years.VIEW_BUILDER,
         # TODO(#24043) - remove this criteria and add one where we only filter out those already on wr
-        not_in_crc_facility.VIEW_BUILDER,
+        US_IX_NOT_IN_CRC_FACILITY_VIEW_BUILDER,
         crc_work_release_time_based_criteria.VIEW_BUILDER,
         not_in_treatment_in_prison.VIEW_BUILDER,
         no_sex_offender_alert.VIEW_BUILDER,
