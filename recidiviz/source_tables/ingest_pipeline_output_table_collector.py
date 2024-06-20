@@ -86,6 +86,8 @@ def build_ingest_pipeline_output_source_table_collections() -> list[
         for collection in state_specific_collections:
             collection.add_source_table(table_id=table_id, schema_fields=schema_fields)
 
+    # TODO(#29517): Add source tables for normalized output from ingest pipelines.
+
     return state_specific_collections
 
 

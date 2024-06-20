@@ -37,6 +37,7 @@ Examples:
         --output_sandbox_prefix my_prefix \
         --raw_data_source_instance SECONDARY \
         --ingest_view_results_only True \
+        --run_normalization_override True \
         --skip_build True \
         --ingest_views_to_run "person staff" \
         --service_account_email something@recidiviz-staging.iam.gserviceaccount.com 
@@ -202,6 +203,9 @@ def get_extra_pipeline_parameter_args(
 def run_sandbox_ingest_pipeline(
     params: IngestPipelineParameters, skip_build: bool
 ) -> None:
+    """Creates appropriate sandbox datasets then runs the sandbox pipeline with the
+    given parameters.
+    """
     output_sandbox_prefix = params.output_sandbox_prefix
     if not output_sandbox_prefix:
         raise ValueError("Must specify an --output_sandbox_prefix")
@@ -211,15 +215,24 @@ def run_sandbox_ingest_pipeline(
         params.raw_data_upper_bound_dates_json,
     )
 
-    prompt_for_confirmation(
-        f"Starting ingest pipeline [{params.job_name}] for [{params.state_code}] in "
-        f"[{params.project}] which will output to datasets "
-        f"[{params.ingest_view_results_output}] and [{params.output}] - continue?"
-    )
+    if params.run_normalization:
+        prompt_for_confirmation(
+            f"Starting ingest pipeline [{params.job_name}] for [{params.state_code}] in "
+            f"[{params.project}] which will output to datasets "
+            f"[{params.ingest_view_results_output}], "
+            f"[{params.pre_normalization_output}] and [{params.normalized_output}] - "
+            f"continue?"
+        )
+    else:
+        prompt_for_confirmation(
+            f"Starting ingest pipeline [{params.job_name}] for [{params.state_code}] in "
+            f"[{params.project}] which will output to datasets "
+            f"[{params.ingest_view_results_output}] and [{params.pre_normalization_output}] - continue?"
+        )
 
     create_or_update_dataflow_sandbox(
         sandbox_dataset_prefix=output_sandbox_prefix,
-        datasets_to_create=["ingest"],
+        pipelines=[INGEST_PIPELINE_NAME],
         allow_overwrite=True,
         state_code_filter=StateCode(params.state_code),
     )

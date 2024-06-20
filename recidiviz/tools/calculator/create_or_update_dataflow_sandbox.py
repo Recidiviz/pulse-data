@@ -119,19 +119,19 @@ def create_or_update_source_table_collections(
 
 def create_or_update_dataflow_sandbox(
     sandbox_dataset_prefix: str,
-    datasets_to_create: List[str],
+    pipelines: List[str],
     allow_overwrite: bool,
     state_code_filter: StateCode | None = None,
 ) -> None:
-    """Creates or updates a sandbox for all the pipeline types, prefixing the dataset
-    name with the given prefix. Creates one dataset per state_code that has
+    """Creates or updates a sandbox for all the pipelines specified, prefixing the
+    dataset name with the given prefix. Creates one dataset per state_code that has
     calculation pipelines regularly scheduled."""
     dataflow_source_tables = SourceTableRepository(
         source_table_collections=get_dataflow_output_source_table_collections()
     )
     collections_to_create: list[SourceTableCollection] = []
 
-    for pipeline in datasets_to_create:
+    for pipeline in pipelines:
         pipeline_collections = dataflow_source_tables.get_collections(
             labels=[DataflowPipelineSourceTableLabel(pipeline_name=pipeline)]
         )

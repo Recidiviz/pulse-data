@@ -40,7 +40,7 @@ class CreateOrUpdateDataflowSandboxTest(BigQueryEmulatorTestCase):
     def test_create_supplemental(self) -> None:
         create_or_update_dataflow_sandbox(
             sandbox_dataset_prefix="sandboxed",
-            datasets_to_create=[SUPPLEMENTAL_PIPELINE_NAME],
+            pipelines=[SUPPLEMENTAL_PIPELINE_NAME],
             allow_overwrite=False,
         )
 
@@ -54,14 +54,14 @@ class CreateOrUpdateDataflowSandboxTest(BigQueryEmulatorTestCase):
         ):
             create_or_update_dataflow_sandbox(
                 sandbox_dataset_prefix="sandboxed",
-                datasets_to_create=[SUPPLEMENTAL_PIPELINE_NAME],
+                pipelines=[SUPPLEMENTAL_PIPELINE_NAME],
                 allow_overwrite=False,
             )
 
     def test_create_metrics(self) -> None:
         create_or_update_dataflow_sandbox(
             sandbox_dataset_prefix="sandboxed",
-            datasets_to_create=[METRICS_PIPELINE_NAME],
+            pipelines=[METRICS_PIPELINE_NAME],
             allow_overwrite=False,
         )
 
@@ -75,7 +75,7 @@ class CreateOrUpdateDataflowSandboxTest(BigQueryEmulatorTestCase):
         ):
             create_or_update_dataflow_sandbox(
                 sandbox_dataset_prefix="sandboxed",
-                datasets_to_create=[METRICS_PIPELINE_NAME],
+                pipelines=[METRICS_PIPELINE_NAME],
                 allow_overwrite=False,
             )
 
@@ -88,7 +88,7 @@ class CreateOrUpdateDataflowSandboxTest(BigQueryEmulatorTestCase):
     ) -> None:
         create_or_update_dataflow_sandbox(
             sandbox_dataset_prefix="sandboxed",
-            datasets_to_create=[NORMALIZATION_PIPELINE_NAME],
+            pipelines=[NORMALIZATION_PIPELINE_NAME],
             allow_overwrite=False,
             state_code_filter=StateCode.US_XX,
         )
@@ -103,7 +103,7 @@ class CreateOrUpdateDataflowSandboxTest(BigQueryEmulatorTestCase):
         ):
             create_or_update_dataflow_sandbox(
                 sandbox_dataset_prefix="sandboxed",
-                datasets_to_create=[NORMALIZATION_PIPELINE_NAME],
+                pipelines=[NORMALIZATION_PIPELINE_NAME],
                 allow_overwrite=False,
                 state_code_filter=StateCode.US_XX,
             )
@@ -117,7 +117,7 @@ class CreateOrUpdateDataflowSandboxTest(BigQueryEmulatorTestCase):
     ) -> None:
         create_or_update_dataflow_sandbox(
             sandbox_dataset_prefix="sandboxed",
-            datasets_to_create=[NORMALIZATION_PIPELINE_NAME],
+            pipelines=[NORMALIZATION_PIPELINE_NAME],
             allow_overwrite=False,
         )
 
@@ -131,7 +131,7 @@ class CreateOrUpdateDataflowSandboxTest(BigQueryEmulatorTestCase):
         ):
             create_or_update_dataflow_sandbox(
                 sandbox_dataset_prefix="sandboxed",
-                datasets_to_create=[NORMALIZATION_PIPELINE_NAME],
+                pipelines=[NORMALIZATION_PIPELINE_NAME],
                 allow_overwrite=False,
                 state_code_filter=StateCode.US_XX,
             )
