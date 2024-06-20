@@ -15,8 +15,19 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Contains US_CA implementation of the StateSpecificIncarcerationNormalizationDelegate."""
+from typing import List
+
+from recidiviz.common.constants.state.state_shared_enums import StateCustodialAuthority
+from recidiviz.common.constants.states import StateCode
+from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
 from recidiviz.pipelines.normalization.utils.normalization_managers.incarceration_period_normalization_manager import (
     StateSpecificIncarcerationNormalizationDelegate,
+)
+from recidiviz.pipelines.utils.entity_normalization.normalized_supervision_period_index import (
+    NormalizedSupervisionPeriodIndex,
+)
+from recidiviz.pipelines.utils.incarceration_period_utils import (
+    infer_incarceration_periods_from_in_custody_sps,
 )
 
 
@@ -24,3 +35,20 @@ class UsCaIncarcerationNormalizationDelegate(
     StateSpecificIncarcerationNormalizationDelegate
 ):
     """US_CA implementation of the StateSpecificIncarcerationNormalizationDelegate."""
+
+    def infer_additional_periods(
+        self,
+        person_id: int,
+        incarceration_periods: List[StateIncarcerationPeriod],
+        supervision_period_index: NormalizedSupervisionPeriodIndex,
+    ) -> List[StateIncarcerationPeriod]:
+        # Infer a temporary custody incarceration period if supervision level is IN_CUSTODY
+        all_incarceration_periods = infer_incarceration_periods_from_in_custody_sps(
+            person_id=person_id,
+            state_code=StateCode.US_CA,
+            incarceration_periods=incarceration_periods,
+            supervision_period_index=supervision_period_index,
+            temp_custody_custodial_authority=StateCustodialAuthority.INTERNAL_UNKNOWN,
+        )
+
+        return all_incarceration_periods
