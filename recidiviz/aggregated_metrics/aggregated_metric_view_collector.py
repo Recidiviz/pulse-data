@@ -394,6 +394,8 @@ UNIT_OF_ANALYSIS_TYPES_BY_POPULATION_TYPE: Dict[
         MetricUnitOfAnalysisType.STATE_CODE,
     ],
     MetricPopulationType.JUSTICE_INVOLVED: [
+        MetricUnitOfAnalysisType.WORKFLOWS_CASELOAD,
+        MetricUnitOfAnalysisType.WORKFLOWS_LOCATION,
         MetricUnitOfAnalysisType.STATE_CODE,
     ],
 }
