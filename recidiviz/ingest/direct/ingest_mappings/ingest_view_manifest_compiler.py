@@ -18,7 +18,7 @@
 manifest file for this ingest view.
 """
 import os
-from typing import Callable, Dict, Iterator, List, Optional, Set, Type, Union
+from typing import Callable, Dict, Iterable, List, Optional, Set, Type, Union
 
 import attr
 from more_itertools import one
@@ -74,7 +74,7 @@ class IngestViewManifest:
     def parse_contents(
         self,
         *,
-        contents_iterator: Iterator[Dict[str, str]],
+        contents_iterator: Iterable[Dict[str, str]],
         context: IngestViewContentsContext,
         result_callable: Optional[
             Callable[[int, Dict[str, str], Union[Entity, Exception]], None]
