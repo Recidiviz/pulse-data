@@ -280,7 +280,7 @@ class SourceTableUpdateManager:
                 for update_config in update_configs
             }
 
-            map_fn_with_progress_bar_results(
+            _, exceptions = map_fn_with_progress_bar_results(
                 fn=self._create_dataset_if_necessary,
                 kwargs_list=[
                     {"update_config": update_config}
@@ -290,8 +290,12 @@ class SourceTableUpdateManager:
                 timeout=60 * 10,  # 3 minutes
                 progress_bar_message="Creating datasets if necessary...",
             )
+            if exceptions:
+                raise ValueError(
+                    f"Failed to create datasets, encountered the following exceptions: {exceptions}"
+                )
 
-            return map_fn_with_progress_bar_results(
+            successes, exceptions = map_fn_with_progress_bar_results(
                 fn=self._update_table,
                 kwargs_list=[
                     {
@@ -305,3 +309,10 @@ class SourceTableUpdateManager:
                 timeout=60 * 10,  # 10 minutes
                 progress_bar_message="Updating table schemas...",
             )
+
+            if exceptions:
+                raise ValueError(
+                    f"Failed to update table schemas, encountered the following exceptions: {exceptions}"
+                )
+
+            return successes, exceptions
