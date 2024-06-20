@@ -64,8 +64,12 @@ US_ND_ELITE_BOOKING = "US_ND_ELITE_BOOKING"
 US_ND_SID = "US_ND_SID"
 # ND Supervision Officer ID - tracks employees of ND P&P
 US_ND_DOCSTARS_OFFICER = "US_ND_DOCSTARS_OFFICER"
+# ND Emails of DOCSTAR IDs
+US_ND_DOCSTARS_EMAIL = "US_ND_DOCSTARS_EMAIL"
+
 # ND Elite Employee ID - tracks employees who work in facilities
 US_ND_ELITE_OFFICER = "US_ND_ELITE_OFFICER"
+
 
 # OR ID_NUMBER
 US_OR_ID = "US_OR_ID"

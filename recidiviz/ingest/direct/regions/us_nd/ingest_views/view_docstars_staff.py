@@ -65,9 +65,10 @@ FROM (
     FROM {docstars_officers}
     ) sub
 WHERE recency_rank = 1
-)
+),
 -- Choose the most recent available version of the officer's name, in case it has been
 -- changed in the nightly raw data but not yet in the manual roster.
+latest_names AS (
 SELECT DISTINCT
     OFFICER,
     -- If staff_from_directory.RecDate is NULL, result of comparison will be unknown and 
@@ -88,6 +89,14 @@ SELECT DISTINCT
 FROM staff_from_directory
 FULL OUTER JOIN staff_from_docstars 
 USING(OFFICER)
+)
+-- Cleaning up LastNames with ' -IC/OS' which were added to indicate specialized caseloads
+SELECT 
+  OFFICER, 
+  IF(LastName LIKE '% -%', SPLIT(LastName, ' -')[SAFE_OFFSET(0)], LastName) AS LastName,
+  FirstName,
+  EMAIL
+FROM latest_names
 """
 
 VIEW_BUILDER = DirectIngestViewQueryBuilder(

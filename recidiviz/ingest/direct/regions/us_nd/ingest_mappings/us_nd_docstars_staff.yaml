@@ -12,6 +12,13 @@ output:
       - StateStaffExternalId:
           external_id: OFFICER
           id_type: $literal("US_ND_DOCSTARS_OFFICER")
+      - $conditional:
+          - $if:
+              $not_null: EMAIL
+            $then:
+              StateStaffExternalId:
+                external_id: EMAIL
+                id_type: $literal("US_ND_DOCSTARS_EMAIL")
     full_name:
       $person_name:
         $given_names: FirstName
