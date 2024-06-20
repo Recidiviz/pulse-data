@@ -22,7 +22,12 @@ import unittest
 from typing import no_type_check
 
 from recidiviz.persistence.entity import base_entity
-from recidiviz.persistence.entity.base_entity import Entity, EnumEntity, entity_graph_eq
+from recidiviz.persistence.entity.base_entity import (
+    Entity,
+    EnumEntity,
+    UniqueConstraint,
+    entity_graph_eq,
+)
 from recidiviz.persistence.entity.entity_utils import get_all_entity_classes_in_module
 from recidiviz.persistence.entity.state import entities
 from recidiviz.persistence.entity.state import entities as state_entities
@@ -87,3 +92,19 @@ class TestEntityGraphEq(unittest.TestCase):
         self.assertTrue(entity_graph_eq(None, None))
         self.assertFalse(entity_graph_eq(person_1, None))
         self.assertFalse(entity_graph_eq(None, person_2))
+
+
+class TestUniqueConstraint(unittest.TestCase):
+    """Tests for UniqueConstraint"""
+
+    def test_unique_constraint_hashable(self) -> None:
+        """Tests that UniqueConstraint can be added to a set for comparison."""
+        constraints_1 = {
+            UniqueConstraint(name="constraint_1", fields=["field_1", "field_2"])
+        }
+
+        constraints_2 = {
+            UniqueConstraint(name="constraint_1", fields=["field_1", "field_2"])
+        }
+
+        self.assertEqual(constraints_1, constraints_2)

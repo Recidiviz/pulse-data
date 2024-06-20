@@ -28,10 +28,18 @@ from recidiviz.persistence.entity.core_entity import CoreEntity
 from recidiviz.utils import environment
 
 
+def _list_to_tuple_converter(list_of_strings: list[str]) -> tuple[str, ...]:
+    return tuple(list_of_strings)
+
+
 @attr.define(frozen=True)
 class UniqueConstraint:
     name: str
-    fields: List[str]
+    fields: tuple[str, ...] = attr.ib(
+        # Convert to an immutable tuple but expect a list as input (nicer, less
+        # error-prone syntax).
+        converter=_list_to_tuple_converter
+    )
 
 
 @attr.s(eq=False)
