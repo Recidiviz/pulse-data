@@ -92,3 +92,9 @@ IngestCheckRawDataFlashingEntrypoint:
     limits:
       cpu: 250m
       memory: 500Mi
+
+RawDataChunkNormalizationEntrypoint:
+  default_resources:
+    limits:
+      cpu: 1000m
+      memory: 2Gi

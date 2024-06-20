@@ -100,7 +100,7 @@ class RequiresPreImportNormalizationFileChunk:
 
 
 @attr.define
-class RequiresPreImportNormalizationFileChunks:
+class RequiresPreImportNormalizationFile:
     """Encapsulates the path, the headers, the chunk boundaries for the file
     and the type of normalization required for the CSV to conform to
     BigQuery's load job standards."""
@@ -125,9 +125,9 @@ class RequiresPreImportNormalizationFileChunks:
         )
 
     @staticmethod
-    def deserialize(json_str: str) -> "RequiresPreImportNormalizationFileChunks":
+    def deserialize(json_str: str) -> "RequiresPreImportNormalizationFile":
         data = json.loads(json_str)
-        return RequiresPreImportNormalizationFileChunks(
+        return RequiresPreImportNormalizationFile(
             path=data["path"],
             normalization_type=PreImportNormalizationType(data["normalization_type"]),
             chunk_boundaries=[
@@ -136,6 +136,23 @@ class RequiresPreImportNormalizationFileChunks:
             ],
             headers=data["headers"],
         )
+
+    def to_file_chunks(
+        self,
+    ) -> List[RequiresPreImportNormalizationFileChunk]:
+        """
+        Extract individual RequiresPreImportNormalizationFileChunk objects from list of CSVBoundary objects.
+        """
+        individual_chunks = []
+        for chunk_boundary in self.chunk_boundaries:
+            chunk = RequiresPreImportNormalizationFileChunk(
+                path=self.path,
+                normalization_type=self.normalization_type,
+                chunk_boundary=chunk_boundary,
+                headers=self.headers,
+            )
+            individual_chunks.append(chunk)
+        return individual_chunks
 
 
 @attr.define
