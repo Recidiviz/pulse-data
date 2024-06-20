@@ -208,7 +208,7 @@ def update_status_helper(
             }
             if error_code:
                 doc_update["error_code"] = error_code
-                error_message = get_jii_texting_error_message(error_code)
+                error_message = get_jii_texting_error_message(str(error_code))
                 doc_update["errors"] = [error_message]
             firestore_client.set_document(
                 doc.reference.path,

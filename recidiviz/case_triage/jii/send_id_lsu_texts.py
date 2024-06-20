@@ -251,17 +251,11 @@ def send_id_lsu_texts(
 
     # Store current_batch_id in Firestore db
     if dry_run is False:
-        firestore_batch_id_path = f"batch_ids/{current_batch_id}"
-        logging.info(
-            "Storing batch_id %s in Firestore",
-            current_batch_id,
-        )
-        firestore_client.set_document(
-            document_path=firestore_batch_id_path,
-            data={
-                "message_type": message_type.upper(),
-                "redelivery": redeliver_failed_messages,
-            },
+        store_batch_id(
+            firestore_client=firestore_client,
+            current_batch_id=current_batch_id,
+            message_type=message_type,
+            redeliver_failed_messages=redeliver_failed_messages,
         )
 
     query = f"SELECT * FROM {bigquery_view}"
@@ -272,7 +266,7 @@ def send_id_lsu_texts(
     (
         initial_text_document_ids,
         eligibility_text_document_ids_to_text_timestamp,
-    ) = _get_initial_and_eligibility_doc_ids(firestore_client=firestore_client)
+    ) = get_initial_and_eligibility_doc_ids(firestore_client=firestore_client)
 
     logging.info(
         "%s individuals have already received initial/welcome texts.",
@@ -289,15 +283,7 @@ def send_id_lsu_texts(
     logging.info("Document ids of individuals who have received eligibility texts: ")
     logging.info(eligibility_text_document_ids_to_text_timestamp.keys())
 
-    # Get all document_ids for individuals who have opted-out
-    twilio_ref = firestore_client.get_collection(collection_path="twilio_messages")
-    doc_query = twilio_ref.where(
-        filter=FieldFilter("opt_out_type", "in", OPT_OUT_KEY_WORDS)
-    )
-    opt_out_document_ids = {jii_doc.id for jii_doc in doc_query.stream()}
-    logging.info("%s individuals have opted-out of texts.", len(opt_out_document_ids))
-    logging.info("Document ids of individuals who have opted-out: ")
-    logging.info(opt_out_document_ids)
+    opt_out_document_ids = get_opt_out_document_ids(firestore_client=firestore_client)
 
     # Generate the dictionary that maps external ids to phone numbers to text strings
     logging.info("Generate dictionary of external ids to phone numbers to text strings")
@@ -319,7 +305,7 @@ def send_id_lsu_texts(
     state_code = StateCode.US_ID.value.lower()
 
     if previous_batch_id is not None:
-        external_ids_to_retry = _update_statuses_from_previous_batch(
+        external_ids_to_retry = update_statuses_from_previous_batch(
             twilio_client=twilio_client,
             firestore_client=firestore_client,
             previous_batch_id=previous_batch_id,
@@ -337,7 +323,7 @@ def send_id_lsu_texts(
             document_id = f"{state_code}_{external_id}"
             logging.info("document_id: %s", document_id)
 
-            attempt_to_send_text = _attempt_to_send_text(
+            attempt_to_send_text_bool = attempt_to_send_text(
                 previous_batch_id=previous_batch_id,
                 redeliver_failed_messages=redeliver_failed_messages,
                 document_id=document_id,
@@ -348,7 +334,7 @@ def send_id_lsu_texts(
                 eligibility_text_document_ids_to_text_timestamp=eligibility_text_document_ids_to_text_timestamp,
                 resend_eligibility_texts=resend_eligibility_texts,
             )
-            if attempt_to_send_text is False:
+            if attempt_to_send_text_bool is False:
                 continue
 
             logging.info(
@@ -436,14 +422,53 @@ def send_id_lsu_texts(
                 )
 
 
-def _attempt_to_send_text(
+def get_opt_out_document_ids(firestore_client: FirestoreClientImpl) -> set[str]:
+    """Get all document ids of jii level documents associated with individuals that
+    have opted out of text messages.
+    """
+    twilio_ref = firestore_client.get_collection(collection_path="twilio_messages")
+    doc_query = twilio_ref.where(
+        filter=FieldFilter("opt_out_type", "in", OPT_OUT_KEY_WORDS)
+    )
+    opt_out_document_ids = {jii_doc.id for jii_doc in doc_query.stream()}
+    logging.info("%s individuals have opted-out of texts.", len(opt_out_document_ids))
+    logging.info("Document ids of individuals who have opted-out: ")
+    logging.info(opt_out_document_ids)
+    return opt_out_document_ids
+
+
+def store_batch_id(
+    firestore_client: FirestoreClientImpl,
+    current_batch_id: str,
+    message_type: str,
+    redeliver_failed_messages: bool,
+) -> None:
+    """
+    Store the batch_id of the current launch in the Firestore database.
+    The batch_id will be stored as a document in the batch_ids collection.
+    """
+    firestore_batch_id_path = f"batch_ids/{current_batch_id}"
+    logging.info(
+        "Storing batch_id %s in Firestore",
+        current_batch_id,
+    )
+    firestore_client.set_document(
+        document_path=firestore_batch_id_path,
+        data={
+            "message_type": message_type.upper(),
+            "redelivery": redeliver_failed_messages,
+        },
+    )
+
+
+def attempt_to_send_text(
     redeliver_failed_messages: bool,
     document_id: str,
     external_ids_to_retry: set,
     opt_out_document_ids: set,
     message_type: str,
     initial_text_document_ids: set,
-    eligibility_text_document_ids_to_text_timestamp: Dict[str, str],
+    eligibility_text_document_ids_to_text_timestamp: Dict[str, datetime.datetime],
     resend_eligibility_texts: bool,
     previous_batch_id: Optional[str] = None,
 ) -> bool:
@@ -521,7 +546,7 @@ def _attempt_to_send_text(
     return True
 
 
-def _get_initial_and_eligibility_doc_ids(
+def get_initial_and_eligibility_doc_ids(
     firestore_client: FirestoreClientImpl,
 ) -> Tuple[set, Dict]:
     """Get all document_ids for individuals who already received a text (initial or eligibility).
@@ -558,7 +583,7 @@ def _get_initial_and_eligibility_doc_ids(
     return initial_text_document_ids, eligibility_text_document_ids_to_text_timestamp
 
 
-def _update_statuses_from_previous_batch(
+def update_statuses_from_previous_batch(
     twilio_client: TwilioClient,
     firestore_client: FirestoreClientImpl,
     previous_batch_id: str,
