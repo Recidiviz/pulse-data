@@ -24,6 +24,7 @@ import attr
 import pytz
 
 from recidiviz.common import attr_validators
+from recidiviz.common.attr_validators import is_list_of
 
 
 class AttrValidatorsTest(unittest.TestCase):
@@ -489,3 +490,52 @@ class TestAssertAppearTogether(unittest.TestCase):
         _ = _ProperTestEntity(
             first_field="value1", second_field="value2"
         )  # both fields are non null
+
+
+class TestIsListOfValidator(unittest.TestCase):
+    """Tests for the is_list_of() validator."""
+
+    @attr.define
+    class TestClass:
+        list_of_str_field: List[str] = attr.ib(validator=is_list_of(str))
+        list_of_class_field: List[_ProperTestEntity] = attr.ib(
+            validator=is_list_of(_ProperTestEntity)
+        )
+
+    def test_list_of_validator_correct_values(self) -> None:
+        _ = self.TestClass(
+            list_of_str_field=["a", "b"], list_of_class_field=[_ProperTestEntity()]
+        )
+
+    def test_list_of_validator_empty_lists(self) -> None:
+        _ = self.TestClass(list_of_str_field=[], list_of_class_field=[])
+
+    def test_list_of_validator_bad_types(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            re.escape(
+                "Found item in list type field [list_of_str_field] on class "
+                "[<class 'recidiviz.tests.common.attr_validators_test.TestIsListOfValidator.TestClass'>] "
+                "which is not the expected type [<class 'str'>]: <class 'int'>",
+            ),
+        ):
+            _ = self.TestClass(
+                list_of_str_field=[1],  # type: ignore[list-item]
+                list_of_class_field=[],
+            )
+
+    def test_list_of_validator_none_type(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            re.escape(
+                "Found item in list type field [list_of_class_field] on class "
+                "[<class 'recidiviz.tests.common.attr_validators_test.TestIsListOfValidator.TestClass'>] "
+                "which is not the expected type "
+                "[<class 'recidiviz.tests.common.attr_validators_test._ProperTestEntity'>]: "
+                "<class 'NoneType'>",
+            ),
+        ):
+            _ = self.TestClass(
+                list_of_str_field=[],
+                list_of_class_field=[None],  # type: ignore[list-item]
+            )
