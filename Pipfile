@@ -113,6 +113,7 @@ docker = "*"
 docker-stubs = "*"
 
 [packages]
+annotated-types="*"
 callee = "*"
 "html5lib" = "*"
 # TODO(#30733): Remove the <2.0.0 pin
