@@ -231,7 +231,8 @@ def infer_incarceration_periods_from_in_custody_sps(
     PFI of 'TEMPORARY_CUSTODY' during this time. Given the use of the CriticalRangesBuilder, the IP created will not
     overlap with any current IPs. The release_date for the new inferred IP will either be NULL (if the period is still
     open), the same as the end_date of the IN_CUSTODY SP (if there is not an overlapping IP at any point in the span),
-    or the admission_date of the next IP that starts while the IN_CUSTODY SP is ongoing."""
+    or the admission_date of the next IP that starts while the IN_CUSTODY SP is ongoing.
+    """
 
     critical_range_builder = CriticalRangesBuilder(
         [*incarceration_periods, *supervision_period_index.sorted_supervision_periods]
