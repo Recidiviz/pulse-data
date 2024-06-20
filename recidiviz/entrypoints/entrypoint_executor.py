@@ -47,6 +47,9 @@ from recidiviz.entrypoints.monitoring.report_metric_export_timeliness import (
 from recidiviz.entrypoints.normalization.update_normalized_state_dataset import (
     UpdateNormalizedStateEntrypoint,
 )
+from recidiviz.entrypoints.raw_data.normalize_raw_file_chunks import (
+    RawDataChunkNormalizationEntrypoint,
+)
 from recidiviz.entrypoints.validation.validate import ValidationEntrypoint
 from recidiviz.entrypoints.view_update.update_all_managed_views import (
     UpdateAllManagedViewsEntrypoint,
@@ -65,6 +68,7 @@ ENTRYPOINTS: Set[Type[EntrypointInterface]] = {
     BigQueryRefreshEntrypoint,
     MetricViewExportEntrypoint,
     MetricExportTimelinessEntrypoint,
+    RawDataChunkNormalizationEntrypoint,
     UpdateNormalizedStateEntrypoint,
     UpdateStateEntrypoint,
     ValidationEntrypoint,

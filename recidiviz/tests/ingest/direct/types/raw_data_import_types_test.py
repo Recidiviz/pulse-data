@@ -32,8 +32,8 @@ from recidiviz.ingest.direct.raw_data.raw_file_configs import (
 from recidiviz.ingest.direct.types.raw_data_import_types import (
     NormalizedCsvChunkResult,
     PreImportNormalizationType,
+    RequiresPreImportNormalizationFile,
     RequiresPreImportNormalizationFileChunk,
-    RequiresPreImportNormalizationFileChunks,
 )
 
 
@@ -173,7 +173,7 @@ class TestSerialization(unittest.TestCase):
             CsvChunkBoundary(start_inclusive=0, end_exclusive=100, chunk_num=0),
             CsvChunkBoundary(start_inclusive=100, end_exclusive=200, chunk_num=1),
         ]
-        original = RequiresPreImportNormalizationFileChunks(
+        original = RequiresPreImportNormalizationFile(
             path="path/to/file.csv",
             normalization_type=PreImportNormalizationType.ENCODING_DELIMITER_AND_TERMINATOR_UPDATE,
             chunk_boundaries=chunk_boundaries,
@@ -181,7 +181,7 @@ class TestSerialization(unittest.TestCase):
         )
 
         serialized = original.serialize()
-        deserialized = RequiresPreImportNormalizationFileChunks.deserialize(serialized)
+        deserialized = RequiresPreImportNormalizationFile.deserialize(serialized)
 
         self.assertEqual(original.path, deserialized.path)
         self.assertEqual(original.headers, deserialized.headers)

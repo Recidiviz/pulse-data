@@ -21,10 +21,21 @@ import heapq
 from typing import List, Tuple
 
 from airflow.decorators import task
+from more_itertools import distribute
 
+from recidiviz.airflow.dags.operators.recidiviz_kubernetes_pod_operator import (
+    ENTRYPOINT_ARGUMENTS,
+)
 from recidiviz.cloud_storage.gcs_file_system import GCSFileSystem
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
+from recidiviz.entrypoints.raw_data.normalize_raw_file_chunks import (
+    FILE_CHUNK_LIST_DELIMITER,
+)
+from recidiviz.ingest.direct.types.raw_data_import_types import (
+    RequiresPreImportNormalizationFile,
+    RequiresPreImportNormalizationFileChunk,
+)
 
 MAX_THREADS = 16  # TODO(#29946) determine reasonable default
 
@@ -81,3 +92,58 @@ def _get_files_with_sizes_concurrently(
 
 def _get_file_size(fs: GCSFileSystem, file_path: str) -> int:
     return fs.get_file_size(GcsfsFilePath.from_absolute_path(file_path)) or 0
+
+
+@task
+def generate_chunk_processing_pod_arguments(
+    file_chunks: List[List[str]], num_batches: int
+) -> List[List[str]]:
+    return [
+        [
+            *ENTRYPOINT_ARGUMENTS,
+            "--entrypoint=RawDataChunkProcessingEntrypoint",
+            f"--file_chunks={FILE_CHUNK_LIST_DELIMITER.join(batch)}",
+        ]
+        for batch in _divide_file_chunks_into_batches(file_chunks, num_batches)
+    ]
+
+
+def _divide_file_chunks_into_batches(
+    file_chunking_results: List[List[str]], num_batches: int
+) -> List[List[str]]:
+    # Each file chunking task returns a list of serialized file chunks
+    # So we need to flatten the result list and deserialize each chunk
+    deserialized_chunks = [
+        RequiresPreImportNormalizationFile.deserialize(chunk)
+        for chunk_list in file_chunking_results
+        for chunk in chunk_list
+    ]
+    batches = create_chunk_batches(deserialized_chunks, num_batches)
+    serialized_batches = [[chunk.serialize() for chunk in batch] for batch in batches]
+
+    return serialized_batches
+
+
+def create_chunk_batches(
+    file_chunks: List[RequiresPreImportNormalizationFile], num_batches: int
+) -> List[List[RequiresPreImportNormalizationFileChunk]]:
+    """Distribute file chunks into a specified number of batches in a round-robin fashion.
+
+    This function takes a list of file chunks, each potentially containing multiple chunk boundaries,
+    and distributes these chunks into the specified number of batches. If the number of batches
+    exceeds the number of chunks, the number of batches is reduced to match the number of chunks.
+    """
+    all_chunks = _create_individual_chunk_objects_list(file_chunks)
+    num_batches = min(len(all_chunks), num_batches)
+
+    batches = distribute(num_batches, all_chunks)
+    return [list(batch) for batch in batches]
+
+
+def _create_individual_chunk_objects_list(
+    file_chunks: List[RequiresPreImportNormalizationFile],
+) -> List[RequiresPreImportNormalizationFileChunk]:
+    individual_chunks = []
+    for file_chunk in file_chunks:
+        individual_chunks.extend(file_chunk.to_file_chunks())
+    return individual_chunks

@@ -21,6 +21,11 @@ from unittest.mock import MagicMock
 
 from recidiviz.airflow.dags.raw_data.gcs_file_processing_tasks import (
     batch_files_by_size,
+    create_chunk_batches,
+)
+from recidiviz.cloud_storage.gcsfs_csv_chunk_boundary_finder import CsvChunkBoundary
+from recidiviz.ingest.direct.types.raw_data_import_types import (
+    RequiresPreImportNormalizationFile,
 )
 
 
@@ -96,3 +101,63 @@ class TestCreateFileBatches(unittest.TestCase):
         ]
         batches = batch_files_by_size(fs, self.file_paths, num_batches)
         self.assertEqual(batches, expected_batches)
+
+
+class TestCreateChunkBatches(unittest.TestCase):
+    """Tests for create_chunk_batches function"""
+
+    def test_even_distribution(self) -> None:
+        chunks = [
+            RequiresPreImportNormalizationFile(
+                path=f"test/path_{i}.csv",
+                chunk_boundaries=self._generate_chunk_boundaries(count=4),
+                normalization_type=None,
+                headers="ID,Name,Age",
+            )
+            for i in range(5)
+        ]
+        batches = create_chunk_batches(chunks, 5)
+
+        self.assertEqual(len(batches), 5)
+        for batch in batches:
+            self.assertEqual(len(batch), 4)
+
+    def test_split_chunk_between_batches(self) -> None:
+        chunks = [
+            RequiresPreImportNormalizationFile(
+                path=f"test/path_{i}.csv",
+                chunk_boundaries=self._generate_chunk_boundaries(count=3),
+                normalization_type=None,
+                headers="ID,Name,Age",
+            )
+            for i in range(5)
+        ]
+        batches = create_chunk_batches(chunks, 2)
+
+        self.assertEqual(len(batches), 2)
+        # The first batch should have one more chunk than the second batch
+        # since there is an odd number of total chunks
+        self.assertEqual(len(batches[0]), len(batches[1]) + 1)
+
+    def test_more_batches_than_chunks(self) -> None:
+        chunks = [
+            RequiresPreImportNormalizationFile(
+                path=f"test/path_{i}.csv",
+                chunk_boundaries=self._generate_chunk_boundaries(count=3),
+                normalization_type=None,
+                headers="ID,Name,Age",
+            )
+            for i in range(2)
+        ]
+        batches = create_chunk_batches(chunks, 10)
+
+        # Should reduce batch size to the number of chunks
+        self.assertEqual(len(batches), 6)
+
+    @staticmethod
+    def _generate_chunk_boundaries(count: int) -> List[CsvChunkBoundary]:
+        """Generates a list of arbitrary CsvChunkBoundary objects based on the specified count."""
+        return [
+            CsvChunkBoundary(start_inclusive=i, end_exclusive=i + 1, chunk_num=i)
+            for i in range(count)
+        ]

@@ -55,6 +55,13 @@ RESOURCES_YAML_PATH = os.path.join(
     "recidiviz_kubernetes_resources.yaml",
 )
 
+ENTRYPOINT_ARGUMENTS = [
+    "run",
+    "python",
+    "-m",
+    "recidiviz.entrypoints.entrypoint_executor",
+]
+
 
 class KubernetesEntrypointResourceAllocator:
     """Class for allocating resources to our entrypoint tasks"""
@@ -218,10 +225,7 @@ def build_kubernetes_pod_task(
         name=task_id,
         cmds=["pipenv"],
         arguments=[
-            "run",
-            "python",
-            "-m",
-            "recidiviz.entrypoints.entrypoint_executor",
+            *ENTRYPOINT_ARGUMENTS,
             *arguments,
         ],
         env_vars=[
