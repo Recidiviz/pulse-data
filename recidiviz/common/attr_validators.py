@@ -31,9 +31,20 @@ import attr
 import pytz
 
 
+class IsOptionalValidator:
+    def __init__(self, expected_cls_type: Type) -> None:
+        self._expected_cls_type = expected_cls_type
+
+    def __call__(self, instance: Any, attribute: attr.Attribute, value: Any) -> None:
+        return attr.validators.optional(
+            attr.validators.instance_of(self._expected_cls_type)
+        )(instance, attribute, value)
+
+
 def is_opt(cls_type: Type) -> Callable:
-    """Returns an attrs validator that checks if the value is an instance of |cls_type| or None."""
-    return attr.validators.optional(attr.validators.instance_of(cls_type))
+    """Returns an attrs validator that checks if the value is an instance of |cls_type|
+    or None."""
+    return IsOptionalValidator(cls_type)
 
 
 def is_non_empty_str(_instance: Any, _attribute: attr.Attribute, value: str) -> None:
@@ -190,6 +201,30 @@ is_opt_bool = is_opt(bool)
 # List field validators
 is_list = attr.validators.instance_of(list)
 is_opt_list = is_opt(list)
+
+
+class IsListOfValidator:
+    def __init__(self, list_item_expected_type: Type) -> None:
+        self._list_item_expected_type = list_item_expected_type
+
+    def __call__(self, instance: Any, attribute: attr.Attribute, value: Any) -> None:
+        if not isinstance(value, list):
+            raise ValueError(
+                f"Found value for list type field [{attribute.name}] on class "
+                f"[{type(instance)}] which has non-list type [{type(value)}]."
+            )
+        for item in value:
+            if not isinstance(item, self._list_item_expected_type):
+                raise ValueError(
+                    f"Found item in list type field [{attribute.name}] on class "
+                    f"[{type(instance)}] which is not the expected type "
+                    f"[{self._list_item_expected_type}]: {type(item)}"
+                )
+
+
+def is_list_of(list_item_expected_type: Type) -> IsListOfValidator:
+    return IsListOfValidator(list_item_expected_type)
+
 
 # Dict field validators
 is_dict = attr.validators.instance_of(dict)
