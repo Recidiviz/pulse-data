@@ -285,7 +285,13 @@ class StateIngestPipeline(BasePipeline[IngestPipelineParameters]):
             _ = getattr(
                 final_entities, table_name
             ) | f"Write {table_name} to BigQuery" >> WriteToBigQuery(
-                output_dataset=self.pipeline_parameters.output,
+                output_dataset=self.pipeline_parameters.pre_normalization_output,
                 output_table=table_name,
                 write_disposition=beam.io.BigQueryDisposition.WRITE_TRUNCATE,
+            )
+
+        if self.pipeline_parameters.run_normalization:
+            # TODO(#29517): Actually add normalization logic here!
+            raise NotImplementedError(
+                "Normalization logic in ingest pipelines not yet implemented"
             )

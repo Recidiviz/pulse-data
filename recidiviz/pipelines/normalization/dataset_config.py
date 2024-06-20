@@ -15,10 +15,9 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Helpers for getting normalization pipeline output datasets."""
-from recidiviz.calculator.query.state.dataset_config import NORMALIZED_STATE_DATASET
 from recidiviz.common.constants.states import StateCode
 
 
 def normalized_state_dataset_for_state_code(state_code: StateCode) -> str:
     """Where the output of state-specific entity normalization pipelines is stored."""
-    return f"{state_code.value.lower()}_{NORMALIZED_STATE_DATASET}"
+    return f"{state_code.value.lower()}_normalized_state"

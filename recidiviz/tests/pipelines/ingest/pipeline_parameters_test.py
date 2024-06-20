@@ -68,8 +68,12 @@ class TestIngestPipelineParameters(unittest.TestCase):
             "us_oz_ingest_view_results",
             pipeline_parameters.ingest_view_results_output,
         )
-        self.assertEqual("us_oz_state", pipeline_parameters.output)
+        self.assertEqual("us_oz_state", pipeline_parameters.pre_normalization_output)
+        self.assertEqual(
+            "us_oz_normalized_state", pipeline_parameters.normalized_output
+        )
         self.assertFalse(pipeline_parameters.is_sandbox_pipeline)
+        self.assertFalse(pipeline_parameters.run_normalization)
 
     def test_creation_all_fields_secondary(self) -> None:
         pipeline_parameters = IngestPipelineParameters(
@@ -107,7 +111,9 @@ class TestIngestPipelineParameters(unittest.TestCase):
             "my_prefix_us_oz_ingest_view_results",
             pipeline_parameters.ingest_view_results_output,
         )
-        self.assertEqual("my_prefix_us_oz_state", pipeline_parameters.output)
+        self.assertEqual(
+            "my_prefix_us_oz_state", pipeline_parameters.pre_normalization_output
+        )
         self.assertTrue(pipeline_parameters.is_sandbox_pipeline)
 
     def test_creation_valid_service_account_email(self) -> None:
@@ -190,7 +196,12 @@ class TestIngestPipelineParameters(unittest.TestCase):
             "my_prefix_us_oz_ingest_view_results",
             pipeline_parameters.ingest_view_results_output,
         )
-        self.assertEqual("my_prefix_us_oz_state", pipeline_parameters.output)
+        self.assertEqual(
+            "my_prefix_us_oz_state", pipeline_parameters.pre_normalization_output
+        )
+        self.assertEqual(
+            "my_prefix_us_oz_normalized_state", pipeline_parameters.normalized_output
+        )
         self.assertTrue(pipeline_parameters.is_sandbox_pipeline)
 
     def test_parameters_with_sandbox_prefix_secondary(self) -> None:
@@ -230,7 +241,9 @@ class TestIngestPipelineParameters(unittest.TestCase):
             "my_prefix_us_oz_ingest_view_results",
             pipeline_parameters.ingest_view_results_output,
         )
-        self.assertEqual("my_prefix_us_oz_state", pipeline_parameters.output)
+        self.assertEqual(
+            "my_prefix_us_oz_state", pipeline_parameters.pre_normalization_output
+        )
         self.assertTrue(pipeline_parameters.is_sandbox_pipeline)
 
     def test_ingest_view_results_only(self) -> None:
@@ -262,7 +275,9 @@ class TestIngestPipelineParameters(unittest.TestCase):
             "my_prefix_us_oz_ingest_view_results",
             pipeline_parameters.ingest_view_results_output,
         )
-        self.assertEqual("my_prefix_us_oz_state", pipeline_parameters.output)
+        self.assertEqual(
+            "my_prefix_us_oz_state", pipeline_parameters.pre_normalization_output
+        )
         self.assertTrue(pipeline_parameters.is_sandbox_pipeline)
 
     def test_ingest_view_results_only_no_prefix_set(self) -> None:
@@ -310,7 +325,44 @@ class TestIngestPipelineParameters(unittest.TestCase):
             "my_prefix_us_oz_ingest_view_results",
             pipeline_parameters.ingest_view_results_output,
         )
-        self.assertEqual("my_prefix_us_oz_state", pipeline_parameters.output)
+        self.assertEqual(
+            "my_prefix_us_oz_state", pipeline_parameters.pre_normalization_output
+        )
+        self.assertTrue(pipeline_parameters.is_sandbox_pipeline)
+
+    def test_run_normalization_override(self) -> None:
+        pipeline_parameters = IngestPipelineParameters(
+            project="recidiviz-456",
+            state_code="US_OZ",
+            pipeline="test_pipeline_name",
+            region="us-west1",
+            output_sandbox_prefix="my_prefix",
+            sandbox_username="annag",
+            raw_data_upper_bound_dates_json='{"TEST_RAW_DATA":"2020-01-01T00:00:00.000000"}',
+            run_normalization_override=True,
+        )
+
+        expected_parameters = {
+            "state_code": "US_OZ",
+            "pipeline": "test_pipeline_name",
+            "raw_data_source_instance": "PRIMARY",
+            "raw_data_upper_bound_dates_json": '{"TEST_RAW_DATA":"2020-01-01T00:00:00.000000"}',
+            "ingest_view_results_only": "False",
+            "output_sandbox_prefix": "my_prefix",
+            "run_normalization_override": "True",
+            "sandbox_username": "annag",
+        }
+
+        self.assertEqual(expected_parameters, pipeline_parameters.template_parameters)
+
+        self.assertEqual("us_oz_raw_data", pipeline_parameters.raw_data_table_input)
+        self.assertEqual(
+            "my_prefix_us_oz_ingest_view_results",
+            pipeline_parameters.ingest_view_results_output,
+        )
+        self.assertEqual(
+            "my_prefix_us_oz_state", pipeline_parameters.pre_normalization_output
+        )
         self.assertTrue(pipeline_parameters.is_sandbox_pipeline)
 
     def test_ingest_views_to_run_no_prefix_set(self) -> None:
