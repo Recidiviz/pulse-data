@@ -582,3 +582,8 @@ columns:
         description: "NO - Not Warrant on Bond"
       - value: Y
         description: "YES - Is Warrant on Bond"
+
+table_relationships:
+  - foreign_table: OffenderName
+    join_logic:
+      - OffenderName.OffenderID = SupervisionPlan.OffenderID
