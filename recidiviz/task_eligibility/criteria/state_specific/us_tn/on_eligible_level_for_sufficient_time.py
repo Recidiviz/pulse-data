@@ -16,9 +16,12 @@
 # ============================================================================
 """Describes the spans of time when a TN client has been on an eligible supervision level for a sufficient amount of
 time"""
+from google.cloud import bigquery
+
 from recidiviz.calculator.query.sessions_query_fragments import aggregate_adjacent_spans
 from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
 from recidiviz.common.constants.states import StateCode
+from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
@@ -119,7 +122,10 @@ _QUERY_TEMPLATE = f"""
             supervision_level AS eligible_level,
             critical_date AS eligible_date,
             relevant_date AS start_date_on_eligible_level
-        )) AS reason
+        )) AS reason,
+        supervision_level AS eligible_level,
+        critical_date AS eligible_date,
+        relevant_date AS start_date_on_eligible_level,
     FROM critical_date_has_passed_spans
 """
 
@@ -132,6 +138,23 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
         meets_criteria_default=False,
         sessions_dataset=SESSIONS_DATASET,
         exclude_medium="', '".join(EXCLUDED_MEDIUM_RAW_TEXT),
+        reasons_fields=[
+            ReasonsField(
+                name="eligible_level",
+                type=bigquery.enums.SqlTypeNames.STRING,
+                description="#TODO(#29059): Add reasons field description",
+            ),
+            ReasonsField(
+                name="eligible_date",
+                type=bigquery.enums.SqlTypeNames.DATE,
+                description="#TODO(#29059): Add reasons field description",
+            ),
+            ReasonsField(
+                name="start_date_on_eligible_level",
+                type=bigquery.enums.SqlTypeNames.DATE,
+                description="#TODO(#29059): Add reasons field description",
+            ),
+        ],
     )
 )
 

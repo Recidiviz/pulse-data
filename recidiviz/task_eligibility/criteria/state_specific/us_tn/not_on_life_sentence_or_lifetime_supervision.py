@@ -17,12 +17,15 @@
 """Describes the spans of time during which someone in TN
 is not on lifetime supervision or serving a life sentence.
 """
+from google.cloud import bigquery
+
 from recidiviz.calculator.query.bq_utils import nonnull_end_date_exclusive_clause
 from recidiviz.calculator.query.sessions_query_fragments import (
     create_sub_sessions_with_attributes,
 )
 from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
 from recidiviz.common.constants.states import StateCode
+from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
@@ -83,6 +86,7 @@ _QUERY_TEMPLATE = f"""
         -- is true than criteria is not met, otherwise it is
         CASE WHEN start_date >= min_start_with_lifetime THEN FALSE ELSE NOT COALESCE(lifetime_flag, FALSE) END AS meets_criteria,
         TO_JSON(STRUCT(lifetime_flag)) AS reason,
+        lifetime_flag,
     FROM collapse_sub_sessions
     LEFT JOIN
         get_earliest_start_with_lifetime
@@ -99,6 +103,13 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
         description=_DESCRIPTION,
         sessions_dataset=SESSIONS_DATASET,
         meets_criteria_default=True,
+        reasons_fields=[
+            ReasonsField(
+                name="lifetime_flag",
+                type=bigquery.enums.SqlTypeNames.BOOL,
+                description="#TODO(#29059): Add reasons field description",
+            ),
+        ],
     )
 )
 

@@ -17,11 +17,14 @@
 """Describes the spans of time during which someone in TN
 is supervised at a stricter level than the risk assessment policy recommends.
 """
+from google.cloud import bigquery
+
 from recidiviz.calculator.query.sessions_query_fragments import (
     create_sub_sessions_with_attributes,
 )
 from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
 from recidiviz.common.constants.states import StateCode
+from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
@@ -118,6 +121,9 @@ _QUERY_TEMPLATE = f"""
             assessment_level AS assessment_level,
             assessment_date AS latest_assessment_date
         )) AS reason,
+        supervision_level AS supervision_level,
+        assessment_level AS assessment_level,
+        assessment_date AS latest_assessment_date
     FROM state_specific_mapping
 """
 
@@ -130,6 +136,23 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
         sessions_dataset=SESSIONS_DATASET,
         exclude_medium="', '".join(EXCLUDED_MEDIUM_RAW_TEXT),
         exclude_high="', '".join(EXCLUDED_HIGH_RAW_TEXT),
+        reasons_fields=[
+            ReasonsField(
+                name="supervision_level",
+                type=bigquery.enums.SqlTypeNames.STRING,
+                description="#TODO(#29059): Add reasons field description",
+            ),
+            ReasonsField(
+                name="assessment_level",
+                type=bigquery.enums.SqlTypeNames.STRING,
+                description="#TODO(#29059): Add reasons field description",
+            ),
+            ReasonsField(
+                name="latest_assessment_date",
+                type=bigquery.enums.SqlTypeNames.DATE,
+                description="#TODO(#29059): Add reasons field description",
+            ),
+        ],
     )
 )
 

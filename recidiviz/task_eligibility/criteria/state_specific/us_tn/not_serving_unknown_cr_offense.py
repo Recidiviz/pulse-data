@@ -16,8 +16,11 @@
 # ============================================================================
 """Describes the spans of time when a TN client is serving sentences for an offense that could potentially make a person
 ineligible for compliant reporting."""
+from google.cloud import bigquery
+
 from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
 from recidiviz.common.constants.states import StateCode
+from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
@@ -52,6 +55,8 @@ _QUERY_TEMPLATE = """
             ARRAY_AGG(description ORDER BY COALESCE(projected_completion_date_max,'9999-01-01')) AS ineligible_offenses,
             ARRAY_AGG(projected_completion_date_max ORDER BY COALESCE(projected_completion_date_max,'9999-01-01')) AS ineligible_sentences_expiration_date
             )) AS reason,
+        ARRAY_AGG(description ORDER BY COALESCE(projected_completion_date_max,'9999-01-01')) AS ineligible_offenses,
+        ARRAY_AGG(projected_completion_date_max ORDER BY COALESCE(projected_completion_date_max,'9999-01-01')) AS ineligible_sentences_expiration_date
     FROM `{project_id}.{sessions_dataset}.sentence_spans_materialized` span,
     UNNEST (sentences_preprocessed_id_array_actual_completion) AS sentences_preprocessed_id
     JOIN sentence_prep sent
@@ -76,6 +81,18 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
         description=_DESCRIPTION,
         sessions_dataset=SESSIONS_DATASET,
         meets_criteria_default=True,
+        reasons_fields=[
+            ReasonsField(
+                name="ineligible_offenses",
+                type=bigquery.enums.SqlTypeNames.RECORD,
+                description="#TODO(#29059): Add reasons field description",
+            ),
+            ReasonsField(
+                name="ineligible_sentences_expiration_date",
+                type=bigquery.enums.SqlTypeNames.RECORD,
+                description="#TODO(#29059): Add reasons field description",
+            ),
+        ],
     )
 )
 

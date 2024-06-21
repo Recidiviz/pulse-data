@@ -15,6 +15,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ============================================================================
 """Describes the spans of time when a TN client has passed the drug screen check."""
+from google.cloud import bigquery
+
 from recidiviz.calculator.query.sessions_query_fragments import (
     create_sub_sessions_with_attributes,
 )
@@ -35,6 +37,7 @@ from recidiviz.task_eligibility.criteria.general.has_at_least_2_negative_drug_te
 from recidiviz.task_eligibility.criteria.general.latest_drug_test_is_negative import (
     VIEW_BUILDER as latest_drug_test_is_negative_builder,
 )
+from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
@@ -67,10 +70,11 @@ _QUERY_TEMPLATE = f"""
             CAST(NULL AS BOOL) AS meets_criteria_low_6_months_since_positive,
             CAST(NULL AS BOOL) AS meets_criteria_high_2_negative_screens,
             CAST(NULL AS BOOL) AS meets_criteria_high_12_months_since_positive,
-            CAST(NULL AS BOOL) AS meets_criteria_latest_screen_negative,           
+            CAST(NULL AS BOOL) AS meets_criteria_latest_screen_negative,
             TO_JSON(STRUCT('LATEST_ALCOHOL_DRUG_NEED_LEVEL' AS criteria_name,
                     COALESCE(alc_drug_need_level, 'MISSING') AS reason)) 
                     AS reason,
+            TO_JSON(STRUCT(COALESCE(alc_drug_need_level, 'MISSING') AS latest_alcohol_drug_need_level)) AS reason_v2,
         FROM
             (
             SELECT *,
@@ -102,6 +106,7 @@ _QUERY_TEMPLATE = f"""
             NULL AS meets_criteria_latest_screen_negative,
             TO_JSON(STRUCT('{has_at_least_1_negative_drug_test_past_year_builder.criteria_name}' AS criteria_name, reason AS reason))
             reason,
+            reason_v2,
         FROM
             `{{project_id}}.{{criteria_dataset}}.{has_at_least_1_negative_drug_test_past_year_builder.view_id}_materialized`
         WHERE
@@ -123,6 +128,7 @@ _QUERY_TEMPLATE = f"""
             NULL AS meets_criteria_latest_screen_negative,
             TO_JSON(STRUCT('{at_least_6_months_since_most_recent_positive_drug_test_builder.criteria_name}' AS criteria_name, reason AS reason))
             reason,
+            reason_v2,
         FROM
             `{{project_id}}.{{criteria_dataset}}.{at_least_6_months_since_most_recent_positive_drug_test_builder.view_id}_materialized`
         WHERE
@@ -144,6 +150,7 @@ _QUERY_TEMPLATE = f"""
             meets_criteria AS meets_criteria_latest_negative,
             TO_JSON(STRUCT('{latest_drug_test_is_negative_builder.criteria_name}' AS criteria_name, reason AS reason))
             reason,
+            reason_v2,
         FROM
             `{{project_id}}.{{criteria_dataset}}.{latest_drug_test_is_negative_builder.view_id}_materialized`
         WHERE
@@ -165,6 +172,7 @@ _QUERY_TEMPLATE = f"""
             NULL AS meets_criteria_latest_screen_negative,
             TO_JSON(STRUCT('{has_at_least_2_negative_drug_tests_past_year_builder.criteria_name}' AS criteria_name, reason AS reason))
             reason,
+            reason_v2,
         FROM
             `{{project_id}}.{{criteria_dataset}}.{has_at_least_2_negative_drug_tests_past_year_builder.view_id}_materialized`
         WHERE
@@ -186,6 +194,7 @@ _QUERY_TEMPLATE = f"""
             NULL AS meets_criteria_latest_screen_negative,
             TO_JSON(STRUCT('{at_least_12_months_since_most_recent_positive_drug_test_builder.criteria_name}' AS criteria_name, reason AS reason))
             reason,
+            reason_v2,
         FROM
             `{{project_id}}.{{criteria_dataset}}.{at_least_12_months_since_most_recent_positive_drug_test_builder.view_id}_materialized`
         WHERE
@@ -211,6 +220,12 @@ _QUERY_TEMPLATE = f"""
             TO_JSON(ARRAY_AGG(
                 reason
             )) AS reason,
+
+            ANY_VALUE(JSON_EXTRACT(reason_v2, "$.latest_alcohol_drug_need_level")) AS alc_drug_need_level,
+            ANY_VALUE(JSON_EXTRACT(reason_v2, "$.negative_drug_screen_history_array")) AS negative_drug_screen_history_array,
+            ANY_VALUE(JSON_EXTRACT(reason_v2, "$.most_recent_positive_test_date")) AS most_recent_positive_test_date,
+            ANY_VALUE(JSON_EXTRACT(reason_v2, "$.latest_drug_screen_result")) AS latest_drug_screen_result,
+            ANY_VALUE(JSON_EXTRACT(reason_v2, "$.latest_drug_screen_date")) AS latest_drug_screen_date,
         FROM sub_sessions_with_attributes
         GROUP BY
             1,2,3,4
@@ -231,7 +246,12 @@ _QUERY_TEMPLATE = f"""
                 AND meets_criteria_latest_screen_negative THEN TRUE
             ELSE FALSE
             END AS meets_criteria,
-        reason
+        reason,
+        alc_drug_need_level,
+        negative_drug_screen_history_array,
+        most_recent_positive_test_date,
+        latest_drug_screen_result,
+        latest_drug_screen_date,
     FROM grouped
 """
 
@@ -244,6 +264,33 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
         criteria_dataset=has_at_least_1_negative_drug_test_past_year_builder.dataset_id,
         normalized_state_dataset=NORMALIZED_STATE_DATASET,
         meets_criteria_default=False,
+        reasons_fields=[
+            ReasonsField(
+                name="alc_drug_need_level",
+                type=bigquery.enums.SqlTypeNames.STRING,
+                description="#TODO(#29059): Add reasons field description",
+            ),
+            ReasonsField(
+                name="negative_drug_screen_history_array",
+                type=bigquery.enums.SqlTypeNames.RECORD,
+                description="#TODO(#29059): Add reasons field description",
+            ),
+            ReasonsField(
+                name="most_recent_positive_test_date",
+                type=bigquery.enums.SqlTypeNames.DATE,
+                description="#TODO(#29059): Add reasons field description",
+            ),
+            ReasonsField(
+                name="latest_drug_screen_result",
+                type=bigquery.enums.SqlTypeNames.STRING,
+                description="#TODO(#29059): Add reasons field description",
+            ),
+            ReasonsField(
+                name="latest_drug_screen_date",
+                type=bigquery.enums.SqlTypeNames.DATE,
+                description="#TODO(#29059): Add reasons field description",
+            ),
+        ],
     )
 )
 

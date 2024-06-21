@@ -16,11 +16,14 @@
 # ============================================================================
 """Describes the spans of time when a TN client is not eligible due to a prior record with an ineligible
 offense"""
+from google.cloud import bigquery
+
 from recidiviz.calculator.query.sessions_query_fragments import (
     create_sub_sessions_with_attributes,
 )
 from recidiviz.calculator.query.state.dataset_config import ANALYST_VIEWS_DATASET
 from recidiviz.common.constants.states import StateCode
+from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
@@ -63,6 +66,8 @@ _QUERY_TEMPLATE = f"""
             ARRAY_AGG(description ORDER BY COALESCE(offense_date,'9999-01-01')) AS ineligible_offenses,
             ARRAY_AGG(offense_date ORDER BY COALESCE(offense_date,'9999-01-01')) AS ineligible_offense_dates
             )) AS reason,
+        ARRAY_AGG(description ORDER BY COALESCE(offense_date,'9999-01-01')) AS ineligible_offenses,
+        ARRAY_AGG(offense_date ORDER BY COALESCE(offense_date,'9999-01-01')) AS ineligible_offense_dates,
     FROM sub_sessions_with_attributes
     GROUP BY 1,2,3,4,5
 
@@ -76,6 +81,18 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
         description=_DESCRIPTION,
         analyst_data_dataset=ANALYST_VIEWS_DATASET,
         meets_criteria_default=True,
+        reasons_fields=[
+            ReasonsField(
+                name="ineligible_offenses",
+                type=bigquery.enums.SqlTypeNames.RECORD,
+                description="#TODO(#29059): Add reasons field description",
+            ),
+            ReasonsField(
+                name="ineligible_offense_dates",
+                type=bigquery.enums.SqlTypeNames.RECORD,
+                description="#TODO(#29059): Add reasons field description",
+            ),
+        ],
     )
 )
 

@@ -16,6 +16,8 @@
 # ============================================================================
 """Describes the spans of time when a TN client either has a low fines/fees balance, has a permanent exemption, or
 has made regular payments."""
+from google.cloud import bigquery
+
 from recidiviz.calculator.query.sessions_query_fragments import (
     create_sub_sessions_with_attributes,
 )
@@ -29,6 +31,7 @@ from recidiviz.task_eligibility.criteria.general.has_payments_3_consecutive_mont
 from recidiviz.task_eligibility.criteria.general.has_permanent_fines_fees_exemption import (
     VIEW_BUILDER as has_permanent_fines_fees_exemption_builder,
 )
+from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
@@ -93,6 +96,9 @@ _QUERY_TEMPLATE = f"""
         TO_JSON(ARRAY_AGG(
             reason
         )) AS reason,
+        ANY_VALUE(JSON_EXTRACT(JSON_EXTRACT(reason, "$.reason"), "$.amount_owed")) AS amount_owed,
+        ANY_VALUE(JSON_EXTRACT(JSON_EXTRACT(reason, "$.reason"), "$.consecutive_monthly_payments")) AS consecutive_monthly_payments,
+        ANY_VALUE(JSON_EXTRACT(JSON_EXTRACT(reason, "$.reason"), "$.current_exemptions")) AS current_exemptions,
     FROM sub_sessions_with_attributes
     GROUP BY
         1,2,3,4
@@ -105,6 +111,23 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
         criteria_spans_query_template=_QUERY_TEMPLATE,
         description=_DESCRIPTION,
         criteria_dataset=has_fines_fees_balance_below_500_builder.dataset_id,
+        reasons_fields=[
+            ReasonsField(
+                name="amount_owed",
+                type=bigquery.enums.SqlTypeNames.FLOAT,
+                description="#TODO(#29059): Add reasons field description",
+            ),
+            ReasonsField(
+                name="consecutive_monthly_payments",
+                type=bigquery.enums.SqlTypeNames.INT64,
+                description="#TODO(#29059): Add reasons field description",
+            ),
+            ReasonsField(
+                name="current_exemptions",
+                type=bigquery.enums.SqlTypeNames.STRING,
+                description="#TODO(#29059): Add reasons field description",
+            ),
+        ],
     )
 )
 

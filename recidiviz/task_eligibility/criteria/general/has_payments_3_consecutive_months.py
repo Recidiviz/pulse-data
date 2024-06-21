@@ -116,7 +116,7 @@ VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
             ),
             ReasonsField(
                 name="consecutive_monthly_payments",
-                type=bigquery.enums.SqlTypeNames.FLOAT,
+                type=bigquery.enums.SqlTypeNames.INT64,
                 description="#TODO(#29059): Add reasons field description",
             ),
         ],

@@ -15,6 +15,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ============================================================================
 """Describes the spans of time when a TN client has not had a positive arrest check for 12 months."""
+from google.cloud import bigquery
+
 from recidiviz.calculator.query.sessions_query_fragments import (
     aggregate_adjacent_spans,
     create_sub_sessions_with_attributes,
@@ -23,6 +25,7 @@ from recidiviz.calculator.query.state.dataset_config import NORMALIZED_STATE_DAT
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.dataset_config import raw_latest_views_dataset_for_region
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
@@ -96,7 +99,8 @@ _QUERY_TEMPLATE = f"""
         start_date,
         end_date,
         meets_criteria,
-        TO_JSON(STRUCT(latest_positive_arrest_check_date AS latest_positive_arrest_check)) AS reason
+        TO_JSON(STRUCT(latest_positive_arrest_check_date AS latest_positive_arrest_check)) AS reason,
+        latest_positive_arrest_check_date,
     FROM sessionized_cte
 """
 
@@ -111,6 +115,13 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
         raw_data_up_to_date_views_dataset=raw_latest_views_dataset_for_region(
             state_code=StateCode.US_TN, instance=DirectIngestInstance.PRIMARY
         ),
+        reasons_fields=[
+            ReasonsField(
+                name="latest_positive_arrest_check_date",
+                type=bigquery.enums.SqlTypeNames.DATE,
+                description="#TODO(#29059): Add reasons field description",
+            ),
+        ],
     )
 )
 
