@@ -25,7 +25,7 @@ from recidiviz.calculator.query.sessions_query_fragments import (
     aggregate_adjacent_spans,
     create_sub_sessions_with_attributes,
 )
-from recidiviz.calculator.query.state.dataset_config import NORMALIZED_STATE_DATASET
+from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.dataset_config import (
     task_eligibility_criteria_state_specific_dataset,
@@ -52,15 +52,14 @@ _QUERY_TEMPLATE = f"""WITH pwcc_unit_1 AS (
     SELECT 
         state_code,
         person_id,
-        admission_date AS start_date,
-        release_date AS end_date,
+        start_date,
+        end_date_exclusive AS end_date,
         facility,
-    FROM `{{project_id}}.{{normalized_state_dataset}}.state_incarceration_period` 
+    FROM `{{project_id}}.{{sessions_dataset}}.housing_unit_sessions_materialized`
     WHERE state_code = 'US_IX'
         AND facility = "POCATELLO WOMEN'S CORRECTIONAL CENTER"
         # Only those in Unit 1
         AND REGEXP_CONTAINS(housing_unit, r'UNIT 1')
-        AND admission_date < release_date
 ),
 
 pwcc_unit_1_and_crc AS (
@@ -107,7 +106,7 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = StateSpecificTaskCr
     criteria_name=_CRITERIA_NAME,
     criteria_spans_query_template=_QUERY_TEMPLATE,
     description=_DESCRIPTION,
-    normalized_state_dataset=NORMALIZED_STATE_DATASET,
+    sessions_dataset=SESSIONS_DATASET,
     task_eligibility_criteria_us_ix_dataset=task_eligibility_criteria_state_specific_dataset(
         StateCode.US_IX
     ),

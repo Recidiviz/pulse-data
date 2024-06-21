@@ -385,6 +385,12 @@ US_IX:
     workflows_views.us_ix_complete_transfer_to_limited_supervision_form_record:
       |-
       Usage reason unknown. Grandfathered in 04/18/2024.
+  scl_RetainedJurisdiction:
+    task_eligibility_criteria_us_ix.not_serving_a_rider_sentence: |-
+      We do not ingest any info to identify retained jurisdiction sentences. 05/31/2024
+  scl_RetainedJurisdictionType:
+    task_eligibility_criteria_us_ix.not_serving_a_rider_sentence: |-
+      We do not ingest any info to identify retained jurisdiction sentences. 05/31/2024
   scl_Sentence:
     workflows_views.us_ix_complete_discharge_early_from_supervision_request_record:
       |-
@@ -407,6 +413,8 @@ US_IX:
       |-
       Usage reason unknown. Grandfathered in 04/18/2024.
   scl_SentenceOrder:
+    task_eligibility_criteria_us_ix.not_serving_a_rider_sentence: |-
+      We use this to merge to the RetainedJurisdiction table. 05/31/2024
     workflows_views.us_ix_complete_discharge_early_from_supervision_request_record:
       |-
       Usage reason unknown. Grandfathered in 04/18/2024.

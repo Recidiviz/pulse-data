@@ -43,6 +43,8 @@ from recidiviz.task_eligibility.dataset_config import (
 )
 from recidiviz.task_eligibility.utils.almost_eligible_query_fragments import (
     clients_eligible,
+    one_criteria_away_from_eligibility,
+    json_to_array_cte,
 )
 from recidiviz.task_eligibility.utils.us_ix_query_fragments import (
     CRC_INFORMATION_CONTACT_MODES,
@@ -87,9 +89,19 @@ WITH current_incarcerated_population AS (
         tes_task_query_view = 'transfer_to_crc_work_release_request_materialized',
         id_type = "'US_IX_DOC'")}),
 
+    json_to_array_cte AS (
+        {json_to_array_cte('current_incarcerated_population')}
+    ),
+
     eligible_and_almost_eligible AS (
         -- ELIGIBLE
     {clients_eligible(from_cte = 'current_incarcerated_population')}
+
+        UNION ALL 
+
+        -- ALMOST ELIGIBLE: violent offnese
+    {one_criteria_away_from_eligibility('NOT_SERVING_FOR_VIOLENT_OFFENSE',
+                                        from_cte_table_name = "json_to_array_cte")}
     ),
 
     case_notes_cte AS (

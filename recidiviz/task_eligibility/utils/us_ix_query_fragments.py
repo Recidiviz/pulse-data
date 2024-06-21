@@ -52,6 +52,7 @@ def date_within_time_span(
     critical_date_column: str,
     meets_criteria_leading_window_time: int = 0,
     date_part: str = "DAY",
+    negate_critical_date_has_passed: bool = False,
 ) -> str:
     """
     Generates a BigQuery SQL query that uses <critical_date_has_passed_spans> to
@@ -63,6 +64,9 @@ def date_within_time_span(
             to be checked within the time spans.
         meets_criteria_leading_window_days (int, optional): The leading window of days
             used to determine if a critical date falls within. Default is 0.
+        date_part (str, optional): The date part to use for the date interval. Default is 'DAY'.
+        negate_critical_date_has_passed (bool, optional): Whether to negate the critical date
+            has passed condition. Default is False.
 
     Returns:
         str: A formatted BigQuery SQL query that selects time spans and determines if the
@@ -93,7 +97,7 @@ def date_within_time_span(
         person_id,
         start_date,
         end_date,
-        LOGICAL_AND(critical_date_has_passed) AS meets_criteria,
+        {'NOT' if negate_critical_date_has_passed else ''} LOGICAL_AND(critical_date_has_passed) AS meets_criteria,
         TO_JSON(STRUCT(MAX(critical_date) AS {critical_date_column})) AS reason,
         MAX(critical_date) AS {critical_date_column}
     FROM sub_sessions_with_attributes
@@ -208,6 +212,7 @@ I9_NOTES_STR = "I-9 Documents Notes"
 WORK_HISTORY_STR = "Work History (in the past 5 years)"
 MEDICAL_CLEARANCE_STR = "Medical Clearance (in the past 6 months)"
 RELEASE_INFORMATION_STR = "Release District Information"
+# TODO(#30190) - add new contact mode types
 RELEASE_INFORMATION_CONTACT_MODES = """(
                     "CRC Request - D1 Release",
                     "CRC Request - D2 Release",

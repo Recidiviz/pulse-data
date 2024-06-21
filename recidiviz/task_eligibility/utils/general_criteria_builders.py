@@ -559,6 +559,7 @@ def is_past_completion_date_criteria_builder(
     date_part: str = "DAY",
     critical_date_name_in_reason: str = "eligible_date",
     critical_date_column: str = "projected_completion_date_max",
+    negate_critical_date_has_passed: bool = False,
 ) -> StateAgnosticTaskCriteriaBigQueryViewBuilder:
     """
     Returns a criteria query that has spans of time when the projected completion date
@@ -579,6 +580,9 @@ def is_past_completion_date_criteria_builder(
             the reason column. Defaults to "eligible_date".
         critical_date_column (str, optional): The name of the column that contains the
             critical date. Defaults to "projected_completion_date_max".
+        negate_critical_date_has_passed (bool, optional): If True, the critical date has
+            passed will be negated. This means the periods where this date has passed
+            will become False. Defaults to False.
     Raises:
         ValueError: if compartment_level_1_filter is different from "supervision" or
             "incarceration".
@@ -609,7 +613,7 @@ def is_past_completion_date_criteria_builder(
         person_id,
         start_date,
         end_date,
-        critical_date_has_passed AS meets_criteria,
+        {'NOT' if negate_critical_date_has_passed else ''} critical_date_has_passed AS meets_criteria,
         TO_JSON(STRUCT(critical_date AS {critical_date_name_in_reason})) AS reason,
         critical_date AS {critical_date_name_in_reason},
     FROM critical_date_has_passed_spans

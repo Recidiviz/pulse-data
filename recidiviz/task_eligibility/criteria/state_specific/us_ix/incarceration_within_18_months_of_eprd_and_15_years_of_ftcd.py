@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2023 Recidiviz, Inc.
+# Copyright (C) 2024 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -21,8 +21,13 @@ of their full term completion date (FTCD).
 """
 from google.cloud import bigquery
 
+from recidiviz.calculator.query.bq_utils import nonnull_end_date_exclusive_clause
 from recidiviz.common.constants.states import StateCode
-from recidiviz.task_eligibility.dataset_config import TASK_ELIGIBILITY_CRITERIA_GENERAL
+from recidiviz.task_eligibility.dataset_config import (
+    TASK_ELIGIBILITY_CRITERIA_GENERAL,
+    StateCode,
+    task_eligibility_criteria_state_specific_dataset,
+)
 from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
@@ -50,7 +55,7 @@ _CRITERIA_QUERY_1 = f"""
         * EXCEPT (reason),
         {extract_object_from_json(object_column = 'full_term_completion_date', 
                     object_type = 'DATE')} AS full_term_completion_date,
-        NULL AS min_term_completion_date,
+        NULL AS earliest_possible_release_date,
     FROM `{{project_id}}.{{task_eligibility_criteria_general}}.incarceration_within_15_years_of_full_term_completion_date_materialized`
     {IX_STATE_CODE_WHERE_CLAUSE}"""
 
@@ -58,14 +63,26 @@ _CRITERIA_QUERY_2 = f"""
     SELECT
         * EXCEPT (reason),
         NULL AS full_term_completion_date,
-        {extract_object_from_json(object_column = 'min_term_completion_date', 
-                    object_type = 'DATE')} AS min_term_completion_date,
-    FROM `{{project_id}}.{{task_eligibility_criteria_general}}.incarceration_within_18_months_of_min_term_completion_date_materialized`
-    {IX_STATE_CODE_WHERE_CLAUSE}"""
+        -- The EPRD is the least of all the following dates
+        LEAST(
+            {nonnull_end_date_exclusive_clause(
+                column_name = extract_object_from_json(
+                    object_column = 'parole_hearing_date',
+                    object_type = 'DATE'))},
+            {nonnull_end_date_exclusive_clause(
+                column_name = extract_object_from_json(
+                    object_column = 'tentative_parole_date',
+                    object_type = 'DATE'))},
+            {nonnull_end_date_exclusive_clause(
+                column_name = extract_object_from_json(
+                    object_column = 'parole_eligibility_date',
+                    object_type = 'DATE'))}
+            ) AS earliest_possible_release_date,
+    FROM `{{project_id}}.{{task_eligibility_criteria_us_ix}}.incarceration_within_18_months_of_eprd_materialized`"""
 
 
 _JSON_CONTENT = f"""MIN(full_term_completion_date) AS full_term_completion_date,
-                   MIN(min_term_completion_date) AS min_term_completion_date,
+                   MIN(earliest_possible_release_date) AS min_term_completion_date,
                    '{_CRITERIA_NAME}' AS criteria_name"""
 
 _QUERY_TEMPLATE = f"""
@@ -85,26 +102,27 @@ FROM
     combined_query
 """
 
-VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
-    StateSpecificTaskCriteriaBigQueryViewBuilder(
-        state_code=StateCode.US_IX,
-        criteria_name=_CRITERIA_NAME,
-        criteria_spans_query_template=_QUERY_TEMPLATE,
-        description=_DESCRIPTION,
-        task_eligibility_criteria_general=TASK_ELIGIBILITY_CRITERIA_GENERAL,
-        reasons_fields=[
-            ReasonsField(
-                name="full_term_completion_date",
-                type=bigquery.enums.SqlTypeNames.DATE,
-                description="#TODO(#29059): Add reasons field description",
-            ),
-            ReasonsField(
-                name="min_term_completion_date",
-                type=bigquery.enums.SqlTypeNames.DATE,
-                description="#TODO(#29059): Add reasons field description",
-            ),
-        ],
-    )
+VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = StateSpecificTaskCriteriaBigQueryViewBuilder(
+    state_code=StateCode.US_IX,
+    criteria_name=_CRITERIA_NAME,
+    criteria_spans_query_template=_QUERY_TEMPLATE,
+    description=_DESCRIPTION,
+    task_eligibility_criteria_general=TASK_ELIGIBILITY_CRITERIA_GENERAL,
+    task_eligibility_criteria_us_ix=task_eligibility_criteria_state_specific_dataset(
+        StateCode.US_IX
+    ),
+    reasons_fields=[
+        ReasonsField(
+            name="full_term_completion_date",
+            type=bigquery.enums.SqlTypeNames.DATE,
+            description="#TODO(#29059): Add reasons field description",
+        ),
+        ReasonsField(
+            name="min_term_completion_date",
+            type=bigquery.enums.SqlTypeNames.DATE,
+            description="#TODO(#29059): Add reasons field description",
+        ),
+    ],
 )
 
 if __name__ == "__main__":
