@@ -507,7 +507,7 @@ class TestCaseCompliance(unittest.TestCase):
                 home_visit_count=0,
                 next_recommended_home_visit_date=date(2018, 4, 4),
                 next_recommended_treatment_collateral_contact_date=date(2018, 3, 19),
-                next_recommended_employment_verification_date=date(2018, 3, 5),
+                next_recommended_employment_verification_date=date(2018, 4, 4),
             ),
             compliance,
         )
@@ -597,7 +597,7 @@ class TestCaseCompliance(unittest.TestCase):
                 home_visit_count=0,
                 next_recommended_home_visit_date=date(2018, 4, 4),
                 next_recommended_treatment_collateral_contact_date=date(2018, 3, 19),
-                next_recommended_employment_verification_date=date(2018, 3, 5),
+                next_recommended_employment_verification_date=date(2018, 4, 4),
             ),
             compliance,
         )
@@ -651,7 +651,7 @@ class TestCaseCompliance(unittest.TestCase):
                 home_visit_count=0,
                 next_recommended_home_visit_date=date(2018, 2, 4),
                 next_recommended_treatment_collateral_contact_date=date(2018, 1, 19),
-                next_recommended_employment_verification_date=date(2018, 1, 5),
+                next_recommended_employment_verification_date=date(2018, 2, 4),
             ),
             compliance,
         )
@@ -783,7 +783,7 @@ class TestCaseCompliance(unittest.TestCase):
                 home_visit_count=0,
                 next_recommended_home_visit_date=date(2018, 4, 4),
                 next_recommended_treatment_collateral_contact_date=date(2018, 3, 19),
-                next_recommended_employment_verification_date=date(2018, 3, 5),
+                next_recommended_employment_verification_date=date(2018, 4, 4),
             ),
             compliance,
         )
@@ -860,7 +860,7 @@ class TestCaseCompliance(unittest.TestCase):
                 home_visit_count=0,
                 next_recommended_home_visit_date=date(2018, 4, 4),
                 next_recommended_treatment_collateral_contact_date=date(2018, 3, 19),
-                next_recommended_employment_verification_date=date(2018, 3, 5),
+                next_recommended_employment_verification_date=date(2018, 4, 4),
             ),
             compliance,
         )
@@ -934,7 +934,7 @@ class TestCaseCompliance(unittest.TestCase):
                 next_recommended_home_visit_date=date(2019, 4, 30),
                 home_visit_count=1,
                 next_recommended_treatment_collateral_contact_date=date(2018, 3, 19),
-                next_recommended_employment_verification_date=date(2018, 3, 5),
+                next_recommended_employment_verification_date=date(2018, 4, 4),
             ),
             compliance,
         )
@@ -1009,7 +1009,7 @@ class TestCaseCompliance(unittest.TestCase):
                 home_visit_count=0,
                 next_recommended_home_visit_date=date(2019, 3, 6),
                 next_recommended_treatment_collateral_contact_date=date(2018, 3, 19),
-                next_recommended_employment_verification_date=date(2018, 3, 5),
+                next_recommended_employment_verification_date=date(2018, 4, 4),
             ),
             compliance,
         )
@@ -1141,7 +1141,7 @@ class TestCaseCompliance(unittest.TestCase):
                 home_visit_count=1,
                 next_recommended_home_visit_date=date(2019, 4, 30),
                 next_recommended_treatment_collateral_contact_date=date(2018, 3, 19),
-                next_recommended_employment_verification_date=date(2018, 3, 5),
+                next_recommended_employment_verification_date=date(2018, 4, 4),
             ),
             compliance_1,
         )
@@ -1158,7 +1158,7 @@ class TestCaseCompliance(unittest.TestCase):
                 next_recommended_home_visit_date=date(2020, 4, 29),
                 home_visit_count=1,
                 next_recommended_treatment_collateral_contact_date=date(2019, 3, 19),
-                next_recommended_employment_verification_date=date(2019, 3, 5),
+                next_recommended_employment_verification_date=date(2019, 4, 4),
             ),
             compliance_2,
         )
@@ -1290,7 +1290,7 @@ class TestCaseCompliance(unittest.TestCase):
                 home_visit_count=0,
                 next_recommended_home_visit_date=date(2018, 4, 4),
                 next_recommended_treatment_collateral_contact_date=date(2018, 3, 19),
-                next_recommended_employment_verification_date=date(2018, 3, 5),
+                next_recommended_employment_verification_date=date(2018, 4, 4),
             ),
             compliance_1,
         )
@@ -1307,7 +1307,7 @@ class TestCaseCompliance(unittest.TestCase):
                 home_visit_count=0,
                 next_recommended_home_visit_date=date(2019, 4, 4),
                 next_recommended_treatment_collateral_contact_date=date(2019, 3, 19),
-                next_recommended_employment_verification_date=date(2019, 3, 5),
+                next_recommended_employment_verification_date=date(2019, 4, 4),
             ),
             compliance_2,
         )
@@ -2527,7 +2527,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
                 next_recommended_home_visit_date=date(2018, 4, 4),
                 next_recommended_treatment_collateral_contact_date=date(2018, 3, 19),
                 most_recent_employment_verification_date=None,
-                next_recommended_employment_verification_date=date(2018, 3, 5),
+                next_recommended_employment_verification_date=date(2018, 4, 4),
             ),
             compliance,
         )

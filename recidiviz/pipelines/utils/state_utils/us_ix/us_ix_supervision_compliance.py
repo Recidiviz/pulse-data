@@ -160,7 +160,7 @@ NEW_SUPERVISION_CONTACT_DEADLINE_BUSINESS_DAYS = 3
 NEW_SUPERVISION_HOME_VISIT_DEADLINE_DAYS = 30
 NEW_SUPERVISION_TREATMENT_CONTACT_DEADLINE_DAYS = 14
 # Employment verification is required upon initial sign up for both GENERAL and SEX_OFFENSE cases
-NEW_SUPERVISION_EMPLOYMENT_VERIFICATION_DAYS = 0
+NEW_SUPERVISION_EMPLOYMENT_VERIFICATION_DAYS = 30
 
 # This is the date where Idaho switched its method of determining supervision
 # levels, going from 4 levels to 3.
