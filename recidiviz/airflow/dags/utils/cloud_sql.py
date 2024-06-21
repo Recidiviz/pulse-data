@@ -23,14 +23,7 @@ from recidiviz.persistence.database.schema_type import SchemaType
 
 def cloud_sql_conn_id_for_schema_type(schema_type: SchemaType) -> str:
     """These connection IDs will correspond to an Airflow Connection JSON or URI string
-    stored in the Secrets Manager under `airflow-connections-{this connection id}`.
-
-    For example, the operations schema type is stored in Google Secrets under the name
-    `airflow-connections-operations_postgres_conn_id`. In the secret, we provide a
-    connection uri with query paramters that tell us both how to configure our cloud sql
-    connection and the underlying psycopg2 connection object. For more details, see
-    go/airflow-docs.
-    """
+    stored in the Secrets Manager under `airflow-connections-{this connection id}`."""
     return f"{schema_type.value.lower()}_postgres_conn_id"
 
 

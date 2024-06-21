@@ -15,7 +15,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Test utilities for DAG tests"""
-import json
 import logging
 import os
 import re
@@ -348,10 +347,6 @@ class CloudSqlQueryGeneratorUnitTest(unittest.TestCase):
     temp_db_dir: Optional[str]
     metas: List[DeclarativeMeta]
     conn_id: str = "local_test_db"
-    # n.b. these uri extras are set manually in Google Secrets; if you update the values
-    # here please make sure to also update the values in the corresponding secret at
-    # deploy time
-    secret_uri_extras = {"cursor": "namedtuplecursor"}
 
     @classmethod
     def setUpClass(cls) -> None:
@@ -359,10 +354,9 @@ class CloudSqlQueryGeneratorUnitTest(unittest.TestCase):
         os.environ[
             "AIRFLOW__DATABASE__SQL_ALCHEMY_CONN"
         ] = local_postgres_helpers.on_disk_postgres_db_url().render_as_string()
-        os.environ[f"AIRFLOW_CONN_{cls.conn_id.upper()}"] = (
-            local_postgres_helpers.on_disk_postgres_db_url().render_as_string()
-            + f"?__extra__={json.dumps(cls.secret_uri_extras)}"
-        )
+        os.environ[
+            f"AIRFLOW_CONN_{cls.conn_id.upper()}"
+        ] = local_postgres_helpers.on_disk_postgres_db_url().render_as_string()
         # Make sure airflow's secrets cache picks up local_test_db's connection
         settings.initialize()
 

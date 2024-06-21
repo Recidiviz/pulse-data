@@ -30,7 +30,6 @@ from recidiviz.airflow.dags.raw_data.get_all_unprocessed_bq_file_metadata_sql_qu
 from recidiviz.airflow.dags.raw_data.get_all_unprocessed_gcs_file_metadata_sql_query_generator import (
     GetAllUnprocessedGCSFileMetadataSqlQueryGenerator,
 )
-from recidiviz.airflow.dags.raw_data.types import GCSMetadataRow
 from recidiviz.airflow.tests.test_utils import CloudSqlQueryGeneratorUnitTest
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
@@ -88,13 +87,16 @@ class TestGetAllUnprocessedBQFileMetadataSqlQueryGenerator(
     def _insert_rows_into_gcs(
         self, paths: List[str]
     ) -> List[Tuple[int, Optional[int]]]:
-        records: List[GCSMetadataRow] = self.mock_pg_hook.get_records(
+        results = self.mock_pg_hook.get_records(
             # pylint: disable=protected-access
             self.raw_gcs_generator._register_new_files_sql_query(
                 [GcsfsFilePath.from_absolute_path(path) for path in paths]
             )
         )
-        return [(record.gcs_file_id, record.file_id) for record in records]
+
+        # returns list of tuples of (gcs_file_id, file_id) where file_id will always be
+        # None
+        return [(record[0], record[1]) for record in assert_type(results, list)]
 
     def test_no_files(self) -> None:
         self.mock_operator.xcom_pull.return_value = []

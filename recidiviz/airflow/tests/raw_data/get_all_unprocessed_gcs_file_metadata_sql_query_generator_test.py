@@ -29,7 +29,6 @@ from recidiviz.airflow.dags.operators.cloud_sql_query_operator import (
 from recidiviz.airflow.dags.raw_data.get_all_unprocessed_gcs_file_metadata_sql_query_generator import (
     GetAllUnprocessedGCSFileMetadataSqlQueryGenerator,
 )
-from recidiviz.airflow.dags.raw_data.types import GCSMetadataRow
 from recidiviz.airflow.tests.test_utils import CloudSqlQueryGeneratorUnitTest
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.persistence.database.schema.operations.schema import OperationsBase
@@ -185,10 +184,7 @@ class TestGetAllUnprocessedGCSFileMetadataSqlQueryGenerator(
 
         mock_postgres = create_autospec(PostgresHook)
         mock_postgres.get_records.return_value = [
-            GCSMetadataRow(
-                gcs_file_id=i, file_id=i, normalized_file_name=fn.split("/")[-1]
-            )
-            for i, fn in enumerate(normalized_fns)
+            (i, i, fn.split("/")[-1]) for i, fn in enumerate(normalized_fns)
         ]
 
         results = self.generator.execute_postgres_query(
