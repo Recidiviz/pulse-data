@@ -260,7 +260,7 @@ def plot_timeline_cohort_survival_curves(
     plt.show()
 
 
-def gen_cohort_days_at_status_df(
+def gen_cohort_status_df(
     cohort_df: pd.DataFrame,
     status_df: pd.DataFrame,
     cohort_date_field: str,
@@ -271,13 +271,14 @@ def gen_cohort_days_at_status_df(
     time_unit: str = "months",
     last_day_of_data: Optional[datetime.datetime] = None,
     cohort_attribute_col: Optional[Union[str, List[str]]] = None,
-    status_attribute_col: Optional[Union[str, List[str]]] = None,
+    status_attribute_col: Optional[str] = None,
 ) -> pd.DataFrame:
     # TODO(#23152): Consolidate cohort time at status and cohort event rate functions
     # TODO(#23153): Add warning to cohort functions when full cohort is not used in every time index calculation
     """
     Returns a dataframe indexed by the original columns with values for `days_at_status`
-    calculated across time indices.
+    calculated across time indices. When a `status_attribute_col` is specified, the dataframe
+    also returns a column indicating the status at each evaluation date.
     Params:
     ------
     cohort_df: pandas DataFrame
@@ -324,10 +325,10 @@ def gen_cohort_days_at_status_df(
         that the days at status metrics should be disaggregated by. If no list is specified, the
         metrics are calculated across all cohort starts.
 
-     status_attribute_col: Optional[Union[str, List[str]]]
-        Single field or list of fields in `status_df` that represent attributes of the status
+     status_attribute_col: Optional[str]
+        Single field in `status_df` that represent attributes of the status
         that the days at status metrics should be disaggregated by. If no list is specified, the
-        the metrics are calculated across all statuses.
+        metrics are calculated across all statuses.
     """
     if isinstance(join_field, str):
         join_field_list = [join_field]
@@ -346,10 +347,8 @@ def gen_cohort_days_at_status_df(
 
     if not status_attribute_col:
         status_attribute_col_list = []
-    elif isinstance(status_attribute_col, str):
-        status_attribute_col_list = [status_attribute_col]
     else:
-        status_attribute_col_list = status_attribute_col
+        status_attribute_col_list = [status_attribute_col]
 
     # Check that all necessary columns are present in cohort_df
     for var in [cohort_date_field] + join_field_list + cohort_attribute_col_list:
@@ -463,19 +462,51 @@ def gen_cohort_days_at_status_df(
             )
         ).dt.days
     ).clip(lower=0)
-
     # Aggregate across status spans and calculate the total number of days that a person / cohort start has a given
     # status at each time index
-    cohort_days_at_status = (
-        cohort_x_status.groupby(
+    cohort_days_at_status = cohort_x_status.groupby(
+        (
             join_field_list
             + [cohort_date_field, cohort_index_field, "cohort_eval_date"]
             + cohort_attribute_col_list
             + status_attribute_col_list
-        )["days_at_status"]
-        .sum()
-        .reset_index()
-    )
+        )
+    )["days_at_status"].sum()
+    # If there is a status attribute column, we also pull in a field indicating which of those statuses was relevant
+    # at each time indexed cohort evaluation date
+    if len(status_attribute_col_list) > 0:
+        # Subset the cohort x status dataframe for only those rows where the evaluation date is between the status
+        # start and end dates. This row contains the information indicating the relevant status at each date.
+        in_range = (
+            cohort_x_status["cohort_eval_date"]
+            >= cohort_x_status[status_start_date_field]
+        ) & (
+            cohort_x_status["cohort_eval_date"]
+            < cohort_x_status[status_end_date_field].fillna(pd.Timestamp.now().date())
+        )
+
+        status_at_eval_date = cohort_x_status[in_range].set_index(
+            join_field_list
+            + [cohort_date_field, cohort_index_field, "cohort_eval_date"]
+            + cohort_attribute_col_list
+        )[status_attribute_col_list]
+
+        cohort_days_at_status = (
+            cohort_days_at_status.unstack(status_attribute_col_list)
+            .fillna(0)
+            .astype(int)
+        )
+        # Since the output df will have both `days_at_status` and `status_at_eval_date` columns, make the columns
+        # multi-index so we can differentiate them and easily subset for one or the other
+        status_at_eval_date.columns = pd.MultiIndex.from_product(
+            [["status_at_eval_date"], status_at_eval_date.columns]
+        )
+
+        cohort_days_at_status.columns = pd.MultiIndex.from_product(
+            [["days_at_status"], cohort_days_at_status.columns]
+        )
+
+        cohort_days_at_status = cohort_days_at_status.join(status_at_eval_date)
 
     return cohort_days_at_status
 
