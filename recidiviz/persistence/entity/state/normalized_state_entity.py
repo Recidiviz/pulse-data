@@ -30,6 +30,9 @@ class NormalizedStateEntity(BuildableAttr):
         """The name of the base state entity that this normalized entity extends."""
         return cls.get_base_entity_class().__name__
 
+    # TODO(#30075): The normalized_entities_v2 entities aren't subclasses of their
+    #  corresponding entity - we need a different way to find the comparable class in
+    #  entities.py (or remove usage of this function altogether).
     @classmethod
     def get_base_entity_class(cls) -> Type[BuildableAttr]:
         """For the given NormalizeStateEntity, returns the base Entity class for this class.

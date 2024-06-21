@@ -26,7 +26,8 @@ from recidiviz.common.constants.state.state_supervision_violation import (
 from recidiviz.common.date import NonNegativeDateRange
 from recidiviz.persistence.entity.base_entity import Entity
 
-# TODO(#30075) Have all state entities have a normalized entity defined in this file.
+# TODO(#30075): Deprecate the entities in file in favor of the entities defined in
+#  normalized_entities_v2.py.
 from recidiviz.persistence.entity.state import entities as state_entities
 from recidiviz.persistence.entity.state.normalized_state_entity import (
     NormalizedStateEntity,

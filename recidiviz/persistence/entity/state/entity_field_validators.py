@@ -27,7 +27,7 @@ from recidiviz.persistence.entity.state.normalized_state_entity import (
 
 
 @attr.s(repr=False, slots=True, hash=True)
-class _PreNormOptionalValidator:
+class PreNormOptionalValidator:
     """A copy of _OptionalValidator from the attr library.
     We use this when we want an attribute to only be optional for pre-normalization."""
 
@@ -48,4 +48,4 @@ def pre_norm_opt(
     validator: Union[Callable, List[Callable], Tuple[Callable]]
 ) -> Callable:
     """Returns a validator callable that is equivalent to attr.validators.is_optional"""
-    return _PreNormOptionalValidator(validator)
+    return PreNormOptionalValidator(validator)

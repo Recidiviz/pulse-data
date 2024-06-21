@@ -189,8 +189,9 @@ def get_inner_type_from_list_type(list_type: Type) -> Type:
 
 
 def get_non_flat_attribute_class_name(attribute: attr.Attribute) -> Optional[str]:
-    """Returns the the inner class name for a type that is either List[<type>] or
-    Optional[<type>], or None if the attribute type does not match either format.
+    """Returns the the inner class name for an attribute's type that is either
+    List[<type>] or Optional[<type>], or None if the attribute type does not match
+    either format.
 
     If something is a nested List or Optional type, returns the innermost type if it
     is an object reference type.
@@ -206,8 +207,23 @@ def get_non_flat_attribute_class_name(attribute: attr.Attribute) -> Optional[str
     if not attribute.type:
         raise ValueError(f"Unexpected None type for attribute [{attribute}]")
 
-    attr_type: Type[Any] = attribute.type
+    return get_referenced_class_name_from_type(attribute.type)
 
+
+def get_referenced_class_name_from_type(attr_type: Type) -> Optional[str]:
+    """Returns the the inner class name for a type that is either List[<type>] or
+    Optional[<type>], or None if the attribute type does not match either format.
+
+    If something is a nested List or Optional type, returns the innermost type if it
+    is an object reference type.
+
+    Examples:
+        List[str] -> None
+        List[List[str]] -> None
+        List["StatePerson"] -> "StatePerson"
+        Optional[List["StatePerson"]] -> "StatePerson"
+        Optional["StatePerson"] -> "StatePerson"
+    """
     while True:
         if isinstance(attr_type, ForwardRef):
             return attr_type.__forward_arg__
