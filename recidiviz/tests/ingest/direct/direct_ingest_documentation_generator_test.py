@@ -50,7 +50,7 @@ class FakeDirectIngestViewQueryBuilderCollector(DirectIngestViewQueryBuilderColl
     def __init__(self, region: DirectIngestRegion, expected_ingest_views: List[str]):
         super().__init__(region, expected_ingest_views)
 
-    def collect_query_builders(self) -> List[DirectIngestViewQueryBuilder]:
+    def _collect_query_builders(self) -> List[DirectIngestViewQueryBuilder]:
         builders = [
             DirectIngestViewQueryBuilder(
                 region=self.region.region_code,

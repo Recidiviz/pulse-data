@@ -159,6 +159,24 @@ class StateIngestPipeline(BasePipeline[IngestPipelineParameters]):
             if self.pipeline_parameters.ingest_views_to_run
             else all_launchable_views
         )
+
+        for ingest_view in ingest_views_to_run:
+            if ingest_view not in all_launchable_views:
+                raise ValueError(
+                    f"Found invalid ingest view for {state_code}: {ingest_view}"
+                )
+
+            query_builder = view_collector.get_query_builder_by_view_name(ingest_view)
+
+            raw_files_with_data = set(raw_data_upper_bound_dates)
+            if dependencies_missing_data := (
+                query_builder.raw_data_table_dependency_file_tags - raw_files_with_data
+            ):
+                raise ValueError(
+                    f"Found dependency table(s) of ingest view [{ingest_view}] with no "
+                    f"data: {dependencies_missing_data}"
+                )
+
         expected_output_entities = {
             entity_cls.get_entity_name()
             for ingest_view in ingest_views_to_run
@@ -177,11 +195,6 @@ class StateIngestPipeline(BasePipeline[IngestPipelineParameters]):
             beam.PCollection[Tuple[ExternalIdKey, Tuple[UpperBoundDate, RootEntity]]],
         ] = {}
         for ingest_view in ingest_views_to_run:
-            if ingest_view not in all_launchable_views:
-                raise ValueError(
-                    f"Found invalid ingest view for {state_code}: {ingest_view}"
-                )
-
             query_builder = view_collector.get_query_builder_by_view_name(ingest_view)
 
             ingest_view_results: beam.PCollection[

@@ -262,7 +262,7 @@ def verify_ingest_view_determinism(
     view_query_builders = DirectIngestViewQueryBuilderCollector(
         region,
         expected_ingest_views=launched_ingest_views,
-    ).collect_query_builders()
+    ).get_query_builders()
 
     progress = tqdm(
         total=len(launched_ingest_views),
