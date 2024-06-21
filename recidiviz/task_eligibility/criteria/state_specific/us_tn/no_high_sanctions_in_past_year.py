@@ -15,6 +15,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ============================================================================
 """Describes the spans of time when a TN client has not had a sanction for 12 months."""
+from google.cloud import bigquery
+
 from recidiviz.calculator.query.sessions_query_fragments import (
     aggregate_adjacent_spans,
     create_sub_sessions_with_attributes,
@@ -23,6 +25,7 @@ from recidiviz.calculator.query.state.dataset_config import NORMALIZED_STATE_DAT
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.dataset_config import raw_latest_views_dataset_for_region
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
@@ -93,7 +96,8 @@ _REASON_QUERY = f"""
         start_date,
         end_date,
         meets_criteria,
-        TO_JSON(STRUCT(latest_high_sanction_date AS latest_high_sanction_date)) AS reason
+        TO_JSON(STRUCT(latest_high_sanction_date AS latest_high_sanction_date)) AS reason,
+        latest_high_sanction_date,
     FROM sessionized_cte
 """
 
@@ -109,6 +113,13 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
             instance=DirectIngestInstance.PRIMARY,
         ),
         meets_criteria_default=True,
+        reasons_fields=[
+            ReasonsField(
+                name="latest_high_sanction_date",
+                type=bigquery.enums.SqlTypeNames.DATE,
+                description="#TODO(#29059): Add reasons field description",
+            ),
+        ],
     )
 )
 

@@ -16,11 +16,14 @@
 # ============================================================================
 """Describes the spans of time when at least 12 months have passed since a resident's last classification assessment."""
 
+from google.cloud import bigquery
+
 from recidiviz.calculator.query.sessions_query_fragments import (
     aggregate_adjacent_spans,
     create_sub_sessions_with_attributes,
 )
 from recidiviz.common.constants.states import StateCode
+from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
@@ -96,7 +99,9 @@ _QUERY_TEMPLATE = f"""
         TO_JSON(STRUCT(assessment_date AS most_recent_assessment_date,
                         assessment_due_date AS assessment_due_date
                         )
-                ) AS reason
+                ) AS reason,
+        assessment_date AS most_recent_assessment_date,
+        assessment_due_date AS assessment_due_date,
     FROM sessionized_cte
 """
 
@@ -107,6 +112,18 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
         description=_DESCRIPTION,
         criteria_spans_query_template=_QUERY_TEMPLATE,
         meets_criteria_default=True,
+        reasons_fields=[
+            ReasonsField(
+                name="most_recent_assessment_date",
+                type=bigquery.enums.SqlTypeNames.DATE,
+                description="#TODO(#29059): Add reasons field description",
+            ),
+            ReasonsField(
+                name="assessment_due_date",
+                type=bigquery.enums.SqlTypeNames.DATE,
+                description="#TODO(#29059): Add reasons field description",
+            ),
+        ],
     )
 )
 if __name__ == "__main__":

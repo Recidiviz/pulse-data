@@ -16,6 +16,8 @@
 # ============================================================================
 """Describes the spans of time when a TN client is not eligible due to being within 3 months of a non-permanent
 rejection from compliant reporting."""
+from google.cloud import bigquery
+
 from recidiviz.calculator.query.sessions_query_fragments import (
     aggregate_adjacent_spans,
     create_sub_sessions_with_attributes,
@@ -24,6 +26,7 @@ from recidiviz.calculator.query.state.dataset_config import NORMALIZED_STATE_DAT
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.dataset_config import raw_latest_views_dataset_for_region
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
@@ -88,7 +91,9 @@ _QUERY_TEMPLATE = f"""
         start_date,
         end_date,
         FALSE AS meets_criteria,
-        reason   
+        reason,
+        JSON_EXTRACT(reason, "$.contact_date") AS contact_date_array,
+        JSON_EXTRACT(reason, "$.contact_code") AS contact_code_array,
     FROM sessionized_cte
     """
 
@@ -104,6 +109,18 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
         ),
         normalized_state_dataset=NORMALIZED_STATE_DATASET,
         meets_criteria_default=True,
+        reasons_fields=[
+            ReasonsField(
+                name="contact_date_array",
+                type=bigquery.enums.SqlTypeNames.RECORD,
+                description="#TODO(#29059): Add reasons field description",
+            ),
+            ReasonsField(
+                name="contact_code_array",
+                type=bigquery.enums.SqlTypeNames.RECORD,
+                description="#TODO(#29059): Add reasons field description",
+            ),
+        ],
     )
 )
 

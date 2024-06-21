@@ -19,6 +19,8 @@ within their sentence span. Probation clients with zero-tolerance codes recorded
 likelihood of missing ingested sentencing data in TN. Parole clients are excluded as they do not
 have missing sentence data issues.
 """
+from google.cloud import bigquery
+
 from recidiviz.calculator.query.bq_utils import nonnull_end_date_exclusive_clause
 from recidiviz.calculator.query.sessions_query_fragments import (
     create_sub_sessions_with_attributes,
@@ -29,6 +31,7 @@ from recidiviz.calculator.query.state.dataset_config import (
     SESSIONS_DATASET,
 )
 from recidiviz.common.constants.states import StateCode
+from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
@@ -142,6 +145,9 @@ _QUERY_TEMPLATE = f"""
                 ) AS zero_tolerance_code_dates
               )
             ) AS reason,
+            ARRAY_AGG(
+                IF(critical_date >= end_date, NULL, critical_date) IGNORE NULLS ORDER BY critical_date
+            ) AS zero_tolerance_code_dates,
         FROM sub_sessions_with_attributes
         GROUP BY 1,2,3,4
     )
@@ -157,6 +163,7 @@ _QUERY_TEMPLATE = f"""
         -- Someone meets the criteria if there are no zero tolerance contact codes in a given span, unless they are on parole
         CASE WHEN supervision_type = 'PAROLE' THEN TRUE ELSE NOT critical_date_has_passed END AS meets_criteria,
         CASE WHEN supervision_type = 'PAROLE' THEN NULL ELSE reason END AS reason,
+        CASE WHEN supervision_type = 'PAROLE' THEN NULL ELSE zero_tolerance_code_dates END AS zero_tolerance_code_dates,
     FROM grouped_dates g
     LEFT JOIN reason_blob r
         ON g.state_code = r.state_code
@@ -174,6 +181,13 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
         sessions_dataset=SESSIONS_DATASET,
         normalized_state_dataset=NORMALIZED_STATE_DATASET,
         analyst_dataset=ANALYST_VIEWS_DATASET,
+        reasons_fields=[
+            ReasonsField(
+                name="zero_tolerance_code_dates",
+                type=bigquery.enums.SqlTypeNames.RECORD,
+                description="#TODO(#29059): Add reasons field description",
+            ),
+        ],
     )
 )
 

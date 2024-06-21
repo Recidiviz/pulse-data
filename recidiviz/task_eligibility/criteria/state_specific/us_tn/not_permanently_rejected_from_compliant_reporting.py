@@ -16,10 +16,13 @@
 # ============================================================================
 """Describes the spans of time when a TN client is not eligible due to being permanently rejected from
 compliant reporting."""
+from google.cloud import bigquery
+
 from recidiviz.calculator.query.state.dataset_config import NORMALIZED_STATE_DATASET
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.dataset_config import raw_latest_views_dataset_for_region
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
@@ -64,7 +67,9 @@ _QUERY_TEMPLATE = """
         TO_JSON(STRUCT(
             contact_code AS contact_code,
             contact_date AS contact_code_date
-        )) AS reason     
+        )) AS reason,
+        contact_code,
+        contact_date AS contact_code_date,
     FROM cte
 """
 
@@ -80,6 +85,18 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
             instance=DirectIngestInstance.PRIMARY,
         ),
         meets_criteria_default=True,
+        reasons_fields=[
+            ReasonsField(
+                name="contact_code",
+                type=bigquery.enums.SqlTypeNames.STRING,
+                description="#TODO(#29059): Add reasons field description",
+            ),
+            ReasonsField(
+                name="contact_code_date",
+                type=bigquery.enums.SqlTypeNames.DATE,
+                description="#TODO(#29059): Add reasons field description",
+            ),
+        ],
     )
 )
 

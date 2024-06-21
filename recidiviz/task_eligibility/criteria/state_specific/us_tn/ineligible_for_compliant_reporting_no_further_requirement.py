@@ -19,10 +19,13 @@
  or further action/requirement
 """
 
+from google.cloud import bigquery
+
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.dataset_config import (
     task_eligibility_spans_state_specific_dataset,
 )
+from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
@@ -70,7 +73,8 @@ _QUERY_TEMPLATE = """
              AND "US_TN_NO_ZERO_TOLERANCE_CODES_SPANS" NOT IN UNNEST(ineligible_criteria) 
         THEN FALSE
         ELSE NOT is_eligible END AS meets_criteria,
-        TO_JSON(STRUCT( (ineligible_criteria) AS ineligible_criteria )) AS reason
+        TO_JSON(STRUCT( (ineligible_criteria) AS ineligible_criteria )) AS reason,
+        ineligible_criteria,
     FROM `{project_id}.{task_eligibility_dataset}.transfer_to_compliant_reporting_no_discretion_materialized` tes
     WHERE
         tes.state_code = 'US_TN'
@@ -85,6 +89,13 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
         task_eligibility_dataset=task_eligibility_spans_state_specific_dataset(
             StateCode.US_TN
         ),
+        reasons_fields=[
+            ReasonsField(
+                name="ineligible_criteria",
+                type=bigquery.enums.SqlTypeNames.RECORD,
+                description="#TODO(#29059): Add reasons field description",
+            ),
+        ],
     )
 )
 

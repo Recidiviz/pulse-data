@@ -16,11 +16,14 @@
 # ============================================================================
 """Describes spans of time when the latest CAF assessment for a resident did not have an override."""
 
+from google.cloud import bigquery
+
 from recidiviz.calculator.query.sessions_query_fragments import (
     create_sub_sessions_with_attributes,
 )
 from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
 from recidiviz.common.constants.states import StateCode
+from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
@@ -69,6 +72,7 @@ _QUERY_TEMPLATE = f"""
         TO_JSON(STRUCT(
             override_reason AS override_reason
         )) AS reason,
+        override_reason,
     FROM dedup_cte
 """
 
@@ -81,6 +85,13 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
         sessions_dataset=SESSIONS_DATASET,
         state_code=StateCode.US_TN,
         meets_criteria_default=False,
+        reasons_fields=[
+            ReasonsField(
+                name="override_reason",
+                type=bigquery.enums.SqlTypeNames.STRING,
+                description="#TODO(#29059): Add reasons field description",
+            ),
+        ],
     )
 )
 

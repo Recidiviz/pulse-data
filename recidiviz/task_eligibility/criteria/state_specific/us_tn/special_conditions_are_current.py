@@ -15,6 +15,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ============================================================================
 """Describes the spans of time when a TN client's special conditions contact note is not overdue."""
+from google.cloud import bigquery
+
 from recidiviz.calculator.query.sessions_query_fragments import (
     create_sub_sessions_with_attributes,
 )
@@ -25,6 +27,7 @@ from recidiviz.calculator.query.state.dataset_config import (
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.dataset_config import raw_latest_views_dataset_for_region
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
@@ -206,6 +209,7 @@ _QUERY_TEMPLATE = f"""
         TO_JSON(STRUCT(
             critical_date AS spe_note_due
         )) AS reason,
+        critical_date AS spe_note_due_date,
     FROM
         critical_date_has_passed_spans
 
@@ -224,6 +228,13 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
             state_code=StateCode.US_TN, instance=DirectIngestInstance.PRIMARY
         ),
         exclude_medium="', '".join(EXCLUDED_MEDIUM_RAW_TEXT),
+        reasons_fields=[
+            ReasonsField(
+                name="spe_note_due_date",
+                type=bigquery.enums.SqlTypeNames.DATE,
+                description="#TODO(#29059): Add reasons field description",
+            ),
+        ],
     )
 )
 if __name__ == "__main__":

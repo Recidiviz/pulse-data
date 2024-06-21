@@ -15,6 +15,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ============================================================================
 """Describes the spans of time when a TN client has not had a murder conviction."""
+from google.cloud import bigquery
+
 from recidiviz.calculator.query.sessions_query_fragments import (
     aggregate_adjacent_spans,
     create_sub_sessions_with_attributes,
@@ -24,6 +26,7 @@ from recidiviz.calculator.query.state.dataset_config import (
     SESSIONS_DATASET,
 )
 from recidiviz.common.constants.states import StateCode
+from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
@@ -96,7 +99,8 @@ _QUERY_TEMPLATE = f"""
         start_date,
         end_date,
         meets_criteria,
-        TO_JSON(STRUCT(latest_homicide_offense_date AS latest_homicide_offense)) AS reason
+        TO_JSON(STRUCT(latest_homicide_offense_date AS latest_homicide_offense)) AS reason,
+        latest_homicide_offense_date,
     FROM sessionized_cte
 
 """
@@ -110,6 +114,13 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
         sessions_dataset=SESSIONS_DATASET,
         analyst_data_dataset=ANALYST_VIEWS_DATASET,
         meets_criteria_default=True,
+        reasons_fields=[
+            ReasonsField(
+                name="latest_homicide_offense_date",
+                type=bigquery.enums.SqlTypeNames.DATE,
+                description="#TODO(#29059): Add reasons field description",
+            ),
+        ],
     )
 )
 

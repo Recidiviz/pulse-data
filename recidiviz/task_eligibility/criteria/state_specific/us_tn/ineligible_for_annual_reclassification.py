@@ -16,10 +16,13 @@
 # ============================================================================
 """Describes the spans of time when a resident is ineligible for annual reclassification."""
 
+from google.cloud import bigquery
+
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.dataset_config import (
     task_eligibility_spans_state_specific_dataset,
 )
+from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
@@ -37,7 +40,8 @@ _QUERY_TEMPLATE = """
         start_date,
         end_date,
         NOT is_eligible AS meets_criteria,
-        TO_JSON(STRUCT((ineligible_criteria) AS ineligible_criteria)) AS reason
+        TO_JSON(STRUCT((ineligible_criteria) AS ineligible_criteria)) AS reason,
+        ineligible_criteria,
     FROM `{project_id}.{task_eligibility_dataset}.annual_reclassification_review_materialized` tes
     WHERE
         tes.state_code = 'US_TN'
@@ -52,6 +56,13 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
         task_eligibility_dataset=task_eligibility_spans_state_specific_dataset(
             StateCode.US_TN
         ),
+        reasons_fields=[
+            ReasonsField(
+                name="ineligible_criteria",
+                type=bigquery.enums.SqlTypeNames.RECORD,
+                description="#TODO(#29059): Add reasons field description",
+            ),
+        ],
     )
 )
 
