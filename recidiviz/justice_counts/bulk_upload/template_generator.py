@@ -202,15 +202,11 @@ def _add_rows_for_annual_metric(
     metric_interface: MetricInterface,
 ) -> List[Dict[str, str]]:
     """Creates rows for an annual metric."""
-    if (
+    if is_disaggregated_by_supervision_subsystems is True and (
         metricfile.definition.system == schema.System.SUPERVISION
         or metricfile.definition.system in schema.System.supervision_subsystems()
     ):
-        system = (
-            metric_interface.metric_definition.system.value
-            if is_disaggregated_by_supervision_subsystems is True
-            else "ALL"
-        )
+        system = metric_interface.metric_definition.system.value
         for year in [LAST_YEAR, THIS_YEAR]:
             row = (
                 # Columns will be  `year`, `system`, `value`
@@ -259,15 +255,11 @@ def _add_rows_for_monthly_metric(
     metric_interface: MetricInterface,
 ) -> List[Dict[str, str]]:
     """Creates rows for an monthly metric."""
-    if (
+    if is_disaggregated_by_supervision_subsystems is True and (
         metricfile.definition.system == schema.System.SUPERVISION
         or metricfile.definition.system in schema.System.supervision_subsystems()
     ):
-        system = (
-            metric_interface.metric_definition.system.value
-            if is_disaggregated_by_supervision_subsystems is True
-            else "ALL"
-        )
+        system = metric_interface.metric_definition.system.value
         for year in [LAST_YEAR, THIS_YEAR]:
             for month in range(1, 13):
                 row = (
