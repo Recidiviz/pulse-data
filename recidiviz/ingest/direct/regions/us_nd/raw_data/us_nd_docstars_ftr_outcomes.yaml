@@ -37,3 +37,4 @@ columns:
   - name: SOURCE
   - name: NOTE
     is_pii: True
+always_historical_export: True
