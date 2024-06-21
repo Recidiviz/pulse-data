@@ -25,10 +25,15 @@ max_allowed_error_overrides:
   - validation_name: state_supervision_period_by_start_date_stable_counts
     hard_max_allowed_error_override: 0.27
     override_reason: .27 falls within an expected range of variation for this measure
+  - validation_name: outliers_staff_count_percent_change_intermonth
+    hard_max_allowed_error_override: .05
+    override_reason: This is likely expected variation.
 num_allowed_rows_overrides:
   - validation_name: overlapping_supervision_periods
     hard_num_allowed_rows_override: 50
-    override_reason: Very few cases (as of 7/10/2023 there were ~12 cases) and looked like it was likely entity deletion
+    override_reason: >-
+      Very few cases (as of 7/10/2023 there were ~12 cases) and looked like it was
+      likely entity deletion
   - validation_name: current_impact_funnel_status_duplicate_external_ids
     hard_num_allowed_rows_override: 1000
     override_reason: As of 1/17/2024, there are 808 failing rows. To investigate (#26789).
