@@ -73,7 +73,7 @@ def _get_ingest_view(
     view_collector = DirectIngestViewQueryBuilderCollector(region, [])
 
     ingest_views_by_name = {
-        view.ingest_view_name: view for view in view_collector.collect_query_builders()
+        view.ingest_view_name: view for view in view_collector.get_query_builders()
     }
     if ingest_view_name not in ingest_views_by_name:
         maybe_name = get_closest_string(

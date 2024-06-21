@@ -106,7 +106,7 @@ def _get_ingest_view_builders(
         ingest_manifest_collector.launchable_ingest_views(),
     )
 
-    return view_collector.collect_query_builders()
+    return view_collector.get_query_builders()
 
 
 def _build_ingest_view_source_table_collections(

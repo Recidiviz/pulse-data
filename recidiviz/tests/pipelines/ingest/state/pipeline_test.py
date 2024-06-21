@@ -15,6 +15,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests the state ingest pipeline."""
+import json
+import re
 from datetime import date
 from typing import List
 
@@ -301,6 +303,30 @@ class TestStateIngestPipeline(StateIngestPipelineTestCase):
             expected_root_entities,
             ingest_views_to_run=" ".join(subset_of_ingest_views),
         )
+
+    def test_missing_raw_data_upper_bound_dates(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            re.escape(
+                "Found dependency table(s) of ingest view "
+                "[ingestMultipleRootExternalIds] with no data: {'table3'}"
+            ),
+        ):
+            self.run_test_state_pipeline(
+                {},
+                [],
+                raw_data_upper_bound_dates_json_override=json.dumps(
+                    {
+                        # Fake upper bound dates for US_DD region, missing table3
+                        "table1": "2022-07-04T00:00:00.000000",
+                        "table2": "2022-07-04T00:00:00.000000",
+                        "table4": "2022-07-04T00:00:00.000000",
+                        "table5": "2023-07-05T00:00:00.000000",
+                        "table6": None,
+                        "table7": "2023-07-04T00:00:00.000000",
+                    }
+                ),
+            )
 
     def test_expected_pipeline_output(self) -> None:
         expected_output_entities = {

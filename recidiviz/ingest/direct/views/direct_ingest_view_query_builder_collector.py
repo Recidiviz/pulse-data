@@ -18,8 +18,6 @@
 
 from typing import List
 
-from more_itertools import one
-
 from recidiviz.common.module_collector_mixin import ModuleCollectorMixin
 from recidiviz.ingest.direct.direct_ingest_regions import DirectIngestRegion
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
@@ -39,7 +37,12 @@ class DirectIngestViewQueryBuilderCollector(ModuleCollectorMixin):
         # The list of views we expect to find during collection.
         self.expected_ingest_views = expected_ingest_views
 
-    def collect_query_builders(self) -> List[DirectIngestViewQueryBuilder]:
+        self._builders_by_view_name: dict[
+            str, DirectIngestViewQueryBuilder
+        ] | None = None
+
+    def _collect_query_builders(self) -> List[DirectIngestViewQueryBuilder]:
+        """Collect the ingest view query builders for this state from the file system."""
         if self.region.region_module.__file__ is None:
             raise ValueError(f"No file associated with {self.region.region_module}.")
 
@@ -60,14 +63,30 @@ class DirectIngestViewQueryBuilderCollector(ModuleCollectorMixin):
 
         return ingest_view_builders
 
+    def _query_builders_by_name(
+        self,
+    ) -> dict[str, DirectIngestViewQueryBuilder]:
+        if not self._builders_by_view_name:
+            ingest_view_builders = self._collect_query_builders()
+
+            self._builders_by_view_name = {
+                builder.ingest_view_name: builder for builder in ingest_view_builders
+            }
+        return self._builders_by_view_name
+
+    def get_query_builders(self) -> List[DirectIngestViewQueryBuilder]:
+        """Returns a list of ingest view query builders for the state, collecting them
+        via a file system read if we have not already.
+        """
+        return list(self._query_builders_by_name().values())
+
     def get_query_builder_by_view_name(
         self, ingest_view_name: str
     ) -> DirectIngestViewQueryBuilder:
-        return one(
-            builder
-            for builder in self.collect_query_builders()
-            if builder.ingest_view_name == ingest_view_name
-        )
+        """Returns the ingest view query builder with the given ingest_view_name. Will
+        do a file system read to load builders if they have not been loaded already.
+        """
+        return self._query_builders_by_name()[ingest_view_name]
 
     def _validate_query_builders(
         self, ingest_view_builders: List[DirectIngestViewQueryBuilder]

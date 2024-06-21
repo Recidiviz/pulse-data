@@ -366,7 +366,7 @@ class DirectIngestRegionDirStructureBase:
                 # Collect all views regardless of gating and make sure they build
                 views = DirectIngestViewQueryBuilderCollector(
                     region, expected_ingest_views=[]
-                ).collect_query_builders()
+                ).get_query_builders()
                 for view in views:
                     view.build_and_print()
 

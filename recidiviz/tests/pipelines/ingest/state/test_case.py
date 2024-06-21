@@ -590,6 +590,7 @@ class StateIngestPipelineTestCase(
         ingest_view_results_only: bool = False,
         ingest_views_to_run: Optional[str] = None,
         field_index: CoreEntityFieldIndex = CoreEntityFieldIndex(),
+        raw_data_upper_bound_dates_json_override: Optional[str] = None,
         debug: bool = False,  # pylint: disable=unused-argument
     ) -> None:
         """Runs the state ingest pipeline and validates the output."""
@@ -639,16 +640,20 @@ class StateIngestPipelineTestCase(
             read_all_from_bq_constructor=self.create_fake_bq_read_all_source_constructor,
             ingest_view_results_only=ingest_view_results_only,
             ingest_views_to_run=ingest_views_to_run,
-            raw_data_upper_bound_dates_json=json.dumps(
-                {
-                    # Fake upper bound dates for US_DD region
-                    "table1": "2022-07-04T00:00:00.000000",
-                    "table2": "2022-07-04T00:00:00.000000",
-                    "table3": "2022-07-04T00:00:00.000000",
-                    "table4": "2022-07-04T00:00:00.000000",
-                    "table5": "2023-07-05T00:00:00.000000",
-                    "table6": None,
-                    "table7": "2023-07-04T00:00:00.000000",
-                }
+            raw_data_upper_bound_dates_json=(
+                raw_data_upper_bound_dates_json_override
+                if raw_data_upper_bound_dates_json_override
+                else json.dumps(
+                    {
+                        # Fake upper bound dates for US_DD region
+                        "table1": "2022-07-04T00:00:00.000000",
+                        "table2": "2022-07-04T00:00:00.000000",
+                        "table3": "2022-07-04T00:00:00.000000",
+                        "table4": "2022-07-04T00:00:00.000000",
+                        "table5": "2023-07-05T00:00:00.000000",
+                        "table6": None,
+                        "table7": "2023-07-04T00:00:00.000000",
+                    }
+                )
             ),
         )

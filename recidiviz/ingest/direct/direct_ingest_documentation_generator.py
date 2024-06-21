@@ -249,7 +249,7 @@ class DirectIngestDocumentationGenerator:
         """Generates a dictionary mapping raw files to ingest views that reference them"""
         views_by_raw_file = defaultdict(list)
 
-        for ingest_view in view_collector.collect_query_builders():
+        for ingest_view in view_collector.get_query_builders():
             dependency_file_tags = ingest_view.raw_data_table_dependency_file_tags
             for dependency_file_tag in dependency_file_tags:
                 views_by_raw_file[dependency_file_tag].append(
