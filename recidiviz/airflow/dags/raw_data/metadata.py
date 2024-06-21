@@ -20,7 +20,6 @@ from typing import Any, List, Optional, Tuple
 
 import attr
 
-from recidiviz.airflow.dags.raw_data.types import GCSMetadataRow
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.constants.operations.direct_ingest_raw_data_resource_lock import (
     DirectIngestRawDataResourceLockResource,
@@ -89,12 +88,10 @@ class RawGCSFileMetadataSummary:
 
     @classmethod
     def from_gcs_metadata_table_row(
-        cls, metadata_row: GCSMetadataRow, abs_path: GcsfsFilePath
+        cls, db_record: Tuple[int, Optional[int], str], abs_path: GcsfsFilePath
     ) -> "RawGCSFileMetadataSummary":
         return RawGCSFileMetadataSummary(
-            gcs_file_id=metadata_row.gcs_file_id,
-            file_id=metadata_row.file_id,
-            path=abs_path,
+            gcs_file_id=db_record[0], file_id=db_record[1], path=abs_path
         )
 
     @classmethod

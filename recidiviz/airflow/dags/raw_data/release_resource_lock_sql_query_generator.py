@@ -30,6 +30,8 @@ from recidiviz.persistence.errors import (
 )
 from recidiviz.utils.string import StrictStringFormatter
 
+LockSummary = NamedTuple("LockSummary", [("lock_id", int), ("released", bool)])
+
 GET_LOCKS_BY_IDS = """
 SELECT lock_id, released
 FROM direct_ingest_raw_data_resource_lock
@@ -45,8 +47,6 @@ WHERE region_code = '{region_code}'
 AND raw_data_source_instance = '{raw_data_instance}' 
 AND lock_id in ({lock_ids})
 RETURNING lock_id, released;"""
-
-ReleasedLocks = NamedTuple("ReleasedLocks", [("lock_id", int), ("released", bool)])
 
 
 class ReleaseRawDataResourceLockSqlQueryGenerator(
@@ -78,9 +78,12 @@ class ReleaseRawDataResourceLockSqlQueryGenerator(
 
         # get existing locks to make sure they are valid lock_ids and they are not
         # released
-        existing_locks = postgres_hook.get_records(
-            self.get_locks_by_id_sql_query(locks_to_release)
-        )
+        existing_locks: List[LockSummary] = [
+            LockSummary(*row)
+            for row in postgres_hook.get_records(
+                self.get_locks_by_id_sql_query(locks_to_release)
+            )
+        ]
 
         if len(existing_locks) != len(locks_to_release):
             raise LookupError(
@@ -93,9 +96,12 @@ class ReleaseRawDataResourceLockSqlQueryGenerator(
             )
 
         # update the released col to be True
-        updated_locks: List[ReleasedLocks] = postgres_hook.get_records(
-            self.set_locks_as_released_by_ids_sql_query(locks_to_release)
-        )
+        updated_locks: List[LockSummary] = [
+            LockSummary(*row)
+            for row in postgres_hook.get_records(
+                self.set_locks_as_released_by_ids_sql_query(locks_to_release)
+            )
+        ]
 
         if len(updated_locks) != len(locks_to_release):
             raise ValueError(
