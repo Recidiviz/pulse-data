@@ -25,9 +25,9 @@ from recidiviz.case_triage.jii.helpers import (
     FULLY_ELIGIBLE_TEXT,
     INITIAL_TEXT,
     MISSING_INCOME_BULLET,
-    MISSING_NEGATIVE_UA_BULLET,
-    MISSING_NEGATIVE_UA_OR_INCOME_CLOSER,
-    MISSING_NEGATIVE_UA_OR_INCOME_OPENER,
+    MISSING_NEGATIVE_DA_BULLET,
+    MISSING_NEGATIVE_DA_OR_INCOME_CLOSER,
+    MISSING_NEGATIVE_DA_OR_INCOME_OPENER,
     generate_eligibility_text_messages_dict,
     generate_initial_text_messages_dict,
 )
@@ -184,8 +184,8 @@ class TestSendIDLSUTexts(BigQueryEmulatorTestCase):
                     "status": None,
                     "denied_reasons": "[]",
                     "lsir_level": "LOW",
-                    "ineligible_criteria_list": "NEGATIVE_UA_WITHIN_90_DAYS",
-                    "ineligible_criteria": ["NEGATIVE_UA_WITHIN_90_DAYS"],
+                    "ineligible_criteria_list": "NEGATIVE_DA_WITHIN_90_DAYS",
+                    "ineligible_criteria": ["NEGATIVE_DA_WITHIN_90_DAYS"],
                 },
                 {
                     "state_code": "US_IX",
@@ -224,9 +224,9 @@ class TestSendIDLSUTexts(BigQueryEmulatorTestCase):
                     "status": None,
                     "denied_reasons": "[]",
                     "lsir_level": "MODERATE",
-                    "ineligible_criteria_list": "NEGATIVE_UA_WITHIN_90_DAYS, US_IX_INCOME_VERIFIED_WITHIN_3_MONTHS",
+                    "ineligible_criteria_list": "NEGATIVE_DA_WITHIN_90_DAYS, US_IX_INCOME_VERIFIED_WITHIN_3_MONTHS",
                     "ineligible_criteria": [
-                        "NEGATIVE_UA_WITHIN_90_DAYS",
+                        "NEGATIVE_DA_WITHIN_90_DAYS",
                         "US_IX_INCOME_VERIFIED_WITHIN_3_MONTHS",
                     ],
                 },
@@ -297,11 +297,11 @@ class TestSendIDLSUTexts(BigQueryEmulatorTestCase):
             external_id_to_phone_num_to_text_dict["0"],
             {
                 "1234567890": StrictStringFormatter().format(
-                    MISSING_NEGATIVE_UA_OR_INCOME_OPENER, given_name="Ted"
+                    MISSING_NEGATIVE_DA_OR_INCOME_OPENER, given_name="Ted"
                 )
                 + MISSING_INCOME_BULLET
                 + StrictStringFormatter().format(
-                    MISSING_NEGATIVE_UA_OR_INCOME_CLOSER, po_name="Test Po 1"
+                    MISSING_NEGATIVE_DA_OR_INCOME_CLOSER, po_name="Test Po 1"
                 )
                 + ALL_CLOSER
             },
@@ -310,12 +310,12 @@ class TestSendIDLSUTexts(BigQueryEmulatorTestCase):
             external_id_to_phone_num_to_text_dict["1"],
             {
                 "1111111111": StrictStringFormatter().format(
-                    MISSING_NEGATIVE_UA_OR_INCOME_OPENER,
+                    MISSING_NEGATIVE_DA_OR_INCOME_OPENER,
                     given_name="Roy",
                 )
-                + MISSING_NEGATIVE_UA_BULLET
+                + MISSING_NEGATIVE_DA_BULLET
                 + StrictStringFormatter().format(
-                    MISSING_NEGATIVE_UA_OR_INCOME_CLOSER, po_name="Test Po 1"
+                    MISSING_NEGATIVE_DA_OR_INCOME_CLOSER, po_name="Test Po 1"
                 )
                 + ALL_CLOSER
             },
@@ -333,13 +333,13 @@ class TestSendIDLSUTexts(BigQueryEmulatorTestCase):
             external_id_to_phone_num_to_text_dict["3"],
             {
                 "3333333333": StrictStringFormatter().format(
-                    MISSING_NEGATIVE_UA_OR_INCOME_OPENER,
+                    MISSING_NEGATIVE_DA_OR_INCOME_OPENER,
                     given_name="Coach",
                 )
                 + MISSING_INCOME_BULLET
-                + MISSING_NEGATIVE_UA_BULLET
+                + MISSING_NEGATIVE_DA_BULLET
                 + StrictStringFormatter().format(
-                    MISSING_NEGATIVE_UA_OR_INCOME_CLOSER, po_name="Test Po 2"
+                    MISSING_NEGATIVE_DA_OR_INCOME_CLOSER, po_name="Test Po 2"
                 )
                 + ALL_CLOSER
             },

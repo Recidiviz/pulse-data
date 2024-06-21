@@ -37,10 +37,10 @@ from recidiviz.utils.string import StrictStringFormatter
 
 INITIAL_TEXT = "Hi {given_name}, we’re reaching out on behalf of the Idaho Department of Correction (IDOC). We will send information about your eligibility for opportunities such as the Limited Supervision Unit (LSU), which offers a lower level of supervision.\n\nIf you have questions, reach out to {po_name}."
 FULLY_ELIGIBLE_TEXT = "Hi {given_name}, according to IDOC records, you might be eligible for the Limited Supervision Unit (LSU). LSU is a lower level of supervision with monthly online check-ins. To learn more, visit rviz.co/id_lsu\n\nIf you are interested in LSU, reach out to {po_name} or a specialist at specialistsd3@idoc.idaho.gov or (208) 454-7601. They can check if you’ve met all the requirements.\n\nYou may or may not be approved for LSU."
-MISSING_NEGATIVE_UA_OR_INCOME_OPENER = "Hi {given_name}, according to IDOC records, you are almost eligible for the Limited Supervision Unit (LSU). LSU is a lower level of supervision with monthly online check-ins. To learn more, visit rviz.co/id_lsu.\n\nLSU is optional, but if you are interested, you can do the following:\n"
+MISSING_NEGATIVE_DA_OR_INCOME_OPENER = "Hi {given_name}, according to IDOC records, you are almost eligible for the Limited Supervision Unit (LSU). LSU is a lower level of supervision with monthly online check-ins. To learn more, visit rviz.co/id_lsu.\n\nLSU is optional, but if you are interested, you can do the following:\n"
 MISSING_INCOME_BULLET = "\n- You may share documents showing that you have a job, are a full-time student, or have other income such as a pension or disability benefits.\n"
-MISSING_NEGATIVE_UA_BULLET = "\n- You may provide a urine analysis test at the parole and probation office. You must test negative to be eligible for LSU.\n"
-MISSING_NEGATIVE_UA_OR_INCOME_CLOSER = "\nIf you have questions or would like to complete the steps above, reach out to {po_name} or a specialist at specialistsd3@idoc.idaho.gov or (208) 454-7601.\n\nYou may or may not be approved for LSU. You are not required to participate in LSU, nor required to complete any of the above steps."
+MISSING_NEGATIVE_DA_BULLET = "\n- You may provide a drug analysis test at the parole and probation office. You must test negative to be eligible for LSU.\n"
+MISSING_NEGATIVE_DA_OR_INCOME_CLOSER = "\nIf you have questions or would like to complete the steps above, reach out to {po_name} or a specialist at specialistsd3@idoc.idaho.gov or (208) 454-7601.\n\nYou may or may not be approved for LSU. You are not required to participate in LSU, nor required to complete any of the above steps."
 ALL_CLOSER = "\n\nReply STOP to stop receiving these messages at any time. We’re unable to respond to messages sent to this number."
 
 
@@ -85,18 +85,18 @@ def generate_eligibility_text_messages_dict(
 
     for individual in bq_output:
         fully_eligible = False
-        missing_negative_ua_within_90_days = False
+        missing_negative_da_within_90_days = False
         missing_income_verified_within_3_months = False
         if individual["is_eligible"] is True:
             fully_eligible = True
         elif set(individual["ineligible_criteria"]) == {
-            "NEGATIVE_UA_WITHIN_90_DAYS",
+            "NEGATIVE_DA_WITHIN_90_DAYS",
             "US_IX_INCOME_VERIFIED_WITHIN_3_MONTHS",
         }:
-            missing_negative_ua_within_90_days = True
+            missing_negative_da_within_90_days = True
             missing_income_verified_within_3_months = True
-        elif individual["ineligible_criteria"] == ["NEGATIVE_UA_WITHIN_90_DAYS"]:
-            missing_negative_ua_within_90_days = True
+        elif individual["ineligible_criteria"] == ["NEGATIVE_DA_WITHIN_90_DAYS"]:
+            missing_negative_da_within_90_days = True
         elif individual["ineligible_criteria"] == [
             "US_IX_INCOME_VERIFIED_WITHIN_3_MONTHS"
         ]:
@@ -109,14 +109,14 @@ def generate_eligibility_text_messages_dict(
         text_body = construct_text_body(
             individual=individual,
             fully_eligible=fully_eligible,
-            missing_negative_ua_within_90_days=missing_negative_ua_within_90_days,
+            missing_negative_da_within_90_days=missing_negative_da_within_90_days,
             missing_income_verified_within_3_months=missing_income_verified_within_3_months,
         )
         external_id_to_phone_num_to_text_dict[external_id] = {phone_num: text_body}
         logging.info("Eligibility text constructed for external_id: %s", external_id)
         logging.info("fully_eligible: %s", fully_eligible)
         logging.info(
-            "missing_negative_ua_within_90_days: %s", missing_negative_ua_within_90_days
+            "missing_negative_da_within_90_days: %s", missing_negative_da_within_90_days
         )
         logging.info(
             "missing_income_verified_within_3_months: %s",
@@ -129,7 +129,7 @@ def generate_eligibility_text_messages_dict(
 def construct_text_body(
     individual: Dict[str, str],
     fully_eligible: bool,
-    missing_negative_ua_within_90_days: bool,
+    missing_negative_da_within_90_days: bool,
     missing_income_verified_within_3_months: bool,
 ) -> str:
     """Constructs a text message (string) to be sent to a given individual based on their
@@ -144,23 +144,23 @@ def construct_text_body(
             FULLY_ELIGIBLE_TEXT, given_name=given_name, po_name=po_name
         )
     elif (
-        missing_negative_ua_within_90_days is True
+        missing_negative_da_within_90_days is True
         or missing_income_verified_within_3_months is True
     ):
         text_body += StrictStringFormatter().format(
-            MISSING_NEGATIVE_UA_OR_INCOME_OPENER, given_name=given_name
+            MISSING_NEGATIVE_DA_OR_INCOME_OPENER, given_name=given_name
         )
 
     if missing_income_verified_within_3_months is True:
         text_body += MISSING_INCOME_BULLET
-    if missing_negative_ua_within_90_days is True:
-        text_body += MISSING_NEGATIVE_UA_BULLET
+    if missing_negative_da_within_90_days is True:
+        text_body += MISSING_NEGATIVE_DA_BULLET
     if (
-        missing_negative_ua_within_90_days is True
+        missing_negative_da_within_90_days is True
         or missing_income_verified_within_3_months is True
     ):
         text_body += StrictStringFormatter().format(
-            MISSING_NEGATIVE_UA_OR_INCOME_CLOSER, po_name=po_name
+            MISSING_NEGATIVE_DA_OR_INCOME_CLOSER, po_name=po_name
         )
 
     text_body += ALL_CLOSER
