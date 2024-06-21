@@ -61,7 +61,13 @@ US_TN_SEGREGATION_STAYS_QUERY_TEMPLATE = f"""
     fix_end_date AS (
         SELECT
             *,
-            CASE WHEN DATE_ADD(end_date, INTERVAL 1 DAY) = next_start_date THEN DATE_ADD(end_date, INTERVAL 1 DAY)
+            CASE WHEN DATE_ADD(end_date, INTERVAL 1 DAY) = next_start_date 
+                    THEN DATE_ADD(end_date, INTERVAL 1 DAY)
+                 -- 3% of seg periods have the same start/end date but not same start/end time. To accurately still count these
+                 -- in our seg starts metrics, setting the end_date_exclusive to be 1 day after the start date. If this creates
+                 -- overlapping spans, those will be addressed by create_sub_sessions_with_attributes later
+                 WHEN start_date = end_date 
+                    THEN DATE_ADD(end_date, INTERVAL 1 DAY)
                  ELSE end_date END AS end_date_exclusive,
     FROM 
         (
