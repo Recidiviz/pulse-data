@@ -122,7 +122,7 @@ def get_case_compliance_task_ctes() -> str:
                     TO_JSON({config.task_details_struct}),
                     NULL
                 ) AS task
-            FROM `{{project_id}}.{{dataflow_metrics_materialized}}.most_recent_supervision_case_compliance_metrics_materialized` cc
+            FROM case_compliance_with_next_recommended_recalculated cc
 
             INNER JOIN `{{project_id}}.{{workflows_views}}.client_record_materialized` client
             USING(person_external_id, state_code)
@@ -132,7 +132,7 @@ def get_case_compliance_task_ctes() -> str:
             WHERE cc.state_code = 'US_IX'
             AND date_of_evaluation = (
                 SELECT MAX(date_of_evaluation)
-                FROM `{{project_id}}.{{dataflow_metrics_materialized}}.most_recent_supervision_case_compliance_metrics_materialized` 
+                FROM case_compliance_with_next_recommended_recalculated
             )
             AND {config.due_date_column} IS NOT NULL
             GROUP BY 1,2
@@ -159,7 +159,60 @@ def get_case_compliance_need_ctes() -> str:
 
 
 US_IX_SUPERVISION_TASKS_RECORD_QUERY_TEMPLATE = f"""
-    WITH all_supervision_tasks AS ({get_case_compliance_task_ctes()}),
+    WITH 
+    income_verification AS (
+        SELECT 
+            person_id,
+            MAX(DATE(JSON_EXTRACT_SCALAR(reason, "$.income_verified_date"))) as most_recent_income_verification_date,
+        FROM `{{project_id}}.task_eligibility_criteria_us_ix.income_verified_within_3_months_materialized`
+        INNER JOIN `{{project_id}}.normalized_state.state_person_external_id` pei
+            USING(person_id)
+        INNER JOIN `{{project_id}}.{{workflows_views}}.client_record_materialized` client
+            ON pei.external_id = client.person_external_id AND pei.id_type = 'US_IX_DOC' and pei.state_code = client.state_code
+        WHERE start_date >= supervision_start_date
+        group by 1
+    ),
+    case_compliances_with_income_verification AS (
+    select cc.* EXCEPT(most_recent_employment_verification_date, next_recommended_employment_verification_date),
+        CASE 
+            WHEN most_recent_income_verification_date IS NOT NULL 
+                AND most_recent_employment_verification_date IS NOT NULL
+            THEN
+                IF(most_recent_income_verification_date > most_recent_employment_verification_date,
+                most_recent_income_verification_date,
+                most_recent_employment_verification_date)
+            ELSE COALESCE(most_recent_income_verification_date, most_recent_employment_verification_date)
+            END AS most_recent_employment_verification_date,
+        next_recommended_employment_verification_date AS orig_next_recommended_employment_verification_date
+    FROM `{{project_id}}.{{dataflow_metrics_materialized}}.most_recent_supervision_case_compliance_metrics_materialized` cc
+    LEFT JOIN income_verification USING(person_id)
+    WHERE state_code = 'US_IX'
+    ),
+    case_compliance_with_next_recommended_recalculated AS (
+        SELECT *,
+            -- If no further employment verification was originally recommended, then leave as is because that means that standards were fulfilled regardless of any new info from income verifications
+            CASE WHEN orig_next_recommended_employment_verification_date IS NULL
+                THEN orig_next_recommended_employment_verification_date
+            -- Else if it's a GENERAL case and we do now see a most_recent_employment_verification_date, then no further employment verification is needed
+            WHEN case_type = 'GENERAL' AND most_recent_employment_verification_date is NOT NULL
+                THEN NULL
+            -- if it's a sex offense case with level = HIGH and we do see a most recent employment verification date, then the next employment verification date is 30 days after the most recent employment verification date 
+            WHEN case_type = 'SEX_OFFENSE' 
+                AND supervision_level = 'HIGH'
+                AND most_recent_employment_verification_date IS NOT NULL
+                THEN DATE_ADD(most_recent_employment_verification_date, INTERVAL 30 DAY)
+            -- if it's a sex offense case with level = MINIMUM or MEDIUM and we do see a most recent employment verification date, then the next employment verification date is 60 days after the most recent employment verification date 
+            WHEN case_type = 'SEX_OFFENSE' 
+                AND supervision_level in ('MINIMUM', 'MEDIUM')
+                AND most_recent_employment_verification_date IS NOT NULL
+                THEN DATE_ADD(most_recent_employment_verification_date, INTERVAL 60 DAY)
+            ELSE orig_next_recommended_employment_verification_date
+        END AS next_recommended_employment_verification_date
+        FROM case_compliances_with_income_verification
+    ),
+    
+    all_supervision_tasks AS ({get_case_compliance_task_ctes()}),
+
     combined_tasks AS (
         SELECT
             person_external_id,
