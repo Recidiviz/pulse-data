@@ -73,7 +73,7 @@ eligible_and_almost_eligible AS (
     UNION ALL
 
     -- ALMOST ELIGIBLE (missing negative drug screen within 90 days)
-    {one_criteria_away_from_eligibility(criteria_name='NEGATIVE_UA_WITHIN_90_DAYS',
+    {one_criteria_away_from_eligibility(criteria_name='NEGATIVE_DA_WITHIN_90_DAYS',
                                         from_cte_table_name = "json_to_array_cte")}
 
     UNION ALL
@@ -93,7 +93,7 @@ eligible_and_almost_eligible AS (
         FROM json_to_array_cte
         WHERE 
             ('US_IX_INCOME_VERIFIED_WITHIN_3_MONTHS' IN UNNEST(ineligible_criteria) 
-                AND 'NEGATIVE_UA_WITHIN_90_DAYS' IN UNNEST (ineligible_criteria))
+                AND 'NEGATIVE_DA_WITHIN_90_DAYS' IN UNNEST (ineligible_criteria))
             AND ARRAY_LENGTH(ineligible_criteria) = 2
         )
 )

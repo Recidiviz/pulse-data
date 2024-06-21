@@ -168,7 +168,7 @@ US_IX_COMPLETE_TRANSFER_TO_LIMITED_SUPERVISION_FORM_RECORD_QUERY_TEMPLATE = f"""
         drug_screen_date,
         IF(ds.drug_screen_result = "NEGATIVE", false, true) AS is_positive_result,
       FROM `{{project_id}}.{{normalized_state_dataset}}.state_drug_screen` ds
-        WHERE sample_type = "URINE"
+        WHERE sample_type IN ("URINE","SALIVA") 
         AND state_code = 'US_IX'
       QUALIFY ROW_NUMBER() OVER (PARTITION BY person_id ORDER BY drug_screen_date DESC)=1
     ),

@@ -16,7 +16,7 @@
 # =============================================================================
 """Defines a criteria span view that shows spans of time during which
 someone with a history of drug/alcohol risk has a recent negative
-urine analysis test and no positive result within 90 days.
+drug analysis test and no positive result within 90 days.
 """
 from google.cloud import bigquery
 
@@ -34,16 +34,16 @@ from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_CRITERIA_NAME = "NEGATIVE_UA_WITHIN_90_DAYS"
+_CRITERIA_NAME = "NEGATIVE_DA_WITHIN_90_DAYS"
 
 _DESCRIPTION = """Defines a criteria span view that shows spans of time during which
 someone with a history of drug/alcohol risk has a recent negative
-urine analysis test and no positive result within 90 days"""
+drug analysis test and no positive result within 90 days"""
 
 _QUERY_TEMPLATE = f"""
     WITH check_spans AS (
     /* This CTE checks for ALCOHOL/DRUG offenses as a proxy for alcohol or drug risk and sets a start date for needing a
-    urine analysis test as the earliest date imposed for a alcohol/drug offense */
+    drug analysis test as the earliest date imposed for a alcohol/drug offense */
     SELECT
         state_code,
         person_id,
@@ -72,7 +72,7 @@ _QUERY_TEMPLATE = f"""
         AND cs.state_code = ds.state_code
         --only include tests after someone has a history of drug/alcohol risk
         AND ds.drug_screen_date >= cs.start_date
-      WHERE sample_type = "URINE"
+      WHERE sample_type in ("URINE","SALIVA")
         AND ds.state_code IS NOT NULL 
         AND ds.person_id IS NOT NULL
     /* This query creates a span of time which someone has a drug/alcohol risk and sets needs_ua_check to TRUE*/
