@@ -1280,6 +1280,33 @@ def parse_state_sentence_type_from_supervision_status(
     return StateSentenceType.PROBATION
 
 
+def get_sentence_type(raw_text: str) -> StateSentenceType:
+    """Returns the sentence type at imposition.
+
+    Args:
+        raw_text: initial_FSO@@initial_status_code@@initial_status_desc
+    """
+    initial_FSO, initial_status_code, initial_status_desc = raw_text.split("@@")
+    if initial_FSO == "0":
+        return StateSentenceType.STATE_PRISON
+    status = UsMoSentenceStatus(
+        sentence_status_external_id="0-0-0",
+        sentence_external_id="0-0-0",
+        status_date=None,
+        status_code=initial_status_code,
+        status_description=initial_status_desc,
+    )
+    sentence_type = status.supervision_sentence_type_status_classification
+    if (
+        sentence_type != StateSentenceType.INTERNAL_UNKNOWN
+        and sentence_type is not None
+    ):
+        return sentence_type
+    # We assume everything from the TAK024 (Sentence Prob) is
+    # in fact, PROBATION. Unless it has been parsed otherwise above.
+    return StateSentenceType.PROBATION
+
+
 def parse_supervision_sentencing_authority(raw_text: str) -> StateSentencingAuthority:
     """
     Returns the StateSentencingAuthority based on the given

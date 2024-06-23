@@ -152,6 +152,21 @@ def null_if_magic_date(date: str) -> Optional[str]:
     return date
 
 
+def get_imposed_date(initial_FSO: str, BS_DO: str, BU_SF: str) -> Optional[str]:
+    """Returns the imposed_date for a sentence as a string,
+    or None if it is a magic date.
+
+    Args:
+        initial_FSO: The FSO of the initial sentence status. "0" means the
+                     this is an incarceration sentence.
+        BS_DO: The imposed date of incarceration.
+        BU_SF: The imposed date of supervision.
+    """
+    if initial_FSO == "0":
+        return null_if_magic_date(BS_DO)
+    return null_if_magic_date(BU_SF)
+
+
 def null_if_invalid_date(date: str) -> Optional[str]:
     """
     Some (229/535028 as of 2023-03-13) of the dates in the TAK044 CG_MD (parole

@@ -180,6 +180,14 @@ def _sentencing_entities_checks(
         yield from _sentence_group_checks(state_person)
 
     for sentence in state_person.sentences:
+        # TODO(#30803) Remove this check new implementation is complete
+        # This lets us update views with the new implementation
+        # without breaking existing ingest
+        if state_person.state_code == StateCode.US_MO.value and (
+            "INCARCERATION" in sentence.external_id
+            or "SUPERVISION" in sentence.external_id
+        ):
+            continue
         if (
             not sentence.imposed_date
             and sentence.sentencing_authority != StateSentencingAuthority.OTHER_STATE

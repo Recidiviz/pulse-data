@@ -1,0 +1,125 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_offender_sentence_institution` to
+#  corresponding Ingest Object fields.
+launch_env:
+  $env: is_local
+manifest_language: 1.0.0
+input_columns:
+  - BS_DOC # unique for each person
+  - BS_CYC # unique for each sentence group
+  - BS_SEO # unique for each sentence
+  - BS_CNS # sentence county_code
+  - BS_NCI # charge ncic_code
+  - BS_ASO # charge statute
+  - BS_CLT # charge classification_type
+  - BS_CNT # charge county_code
+  - BS_CLA # charge classification_subtype
+  - BS_DO # charge offense_date
+  - BS_COD # charge description
+  - BS_CRC # charge judicial_district_code
+  - BT_SD # sentence imposed_date incarceration
+  - BT_CRR # sentence is_life
+  - BT_SDI # sentence is_capital_punishment
+  - BU_SF # sentence imposed_date supervision
+  - initial_status_desc
+  - initial_status_code
+  - initial_FSO
+  - parent_sentence_external_id_array
+unused_columns: []
+variables:
+  - sentence_group_external_id:
+      $concat:
+        $values:
+          - BS_DOC
+          - BS_CYC
+  - sentence_external_id:
+      $concat:
+        $values:
+          - BS_DOC
+          - BS_CYC
+          - BS_SEO
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: BS_DOC
+          id_type: $literal("US_MO_DOC")
+    sentences:
+      - StateSentence:
+          external_id: $variable(sentence_external_id)
+          sentence_group_external_id: $variable(sentence_group_external_id)
+          sentence_type:
+            $enum_mapping:
+              $raw_text:
+                $concat:
+                  $separator: "@@"
+                  $values:
+                    - initial_FSO
+                    - initial_status_code
+                    - initial_status_desc
+              $custom_parser: us_mo_custom_enum_parsers.get_sentence_type
+          imposed_date:
+            $custom:
+              $function: us_mo_custom_parsers.get_imposed_date
+              $args:
+                initial_FSO: initial_FSO
+                BS_DO: BT_SD
+                BU_SF: BU_SF
+          parent_sentence_external_id_array: parent_sentence_external_id_array
+          county_code:
+            $custom:
+              $function: us_mo_custom_parsers.normalize_county_code
+              $args:
+                county_code: BS_CNS
+          is_life:
+            $equal: [BT_CRR, $literal("LIF")]
+          is_capital_punishment:
+            $equal: [BT_SDI, $literal("Y")]
+          sentencing_authority:
+            $enum_mapping:
+              $raw_text:
+                $concat:
+                  $values:
+                    - BS_CNS
+                    - initial_status_desc
+                  $separator: "@@"
+              $custom_parser: us_mo_custom_enum_parsers.parse_supervision_sentencing_authority
+          charges:
+            - StateChargeV2:
+                external_id: $variable(sentence_external_id)
+                status: $literal_enum(StateChargeV2Status.PRESENT_WITHOUT_INFO)
+                offense_date:
+                  $custom:
+                    $function: us_mo_custom_parsers.null_if_magic_date
+                    $args:
+                      date: BS_DO
+                county_code:
+                  $custom:
+                    $function: us_mo_custom_parsers.normalize_county_code
+                    $args:
+                      county_code: BS_CNT
+                statute: BS_ASO
+                description: BS_COD
+                classification_type:
+                  $enum_mapping:
+                    $raw_text: BS_CLT
+                    $mappings:
+                      StateChargeV2ClassificationType.INTERNAL_UNKNOWN:
+                        - U
+                      StateChargeV2ClassificationType.FELONY:
+                        - F
+                      StateChargeV2ClassificationType.MISDEMEANOR:
+                        - M
+                      StateChargeV2ClassificationType.CIVIL:
+                        - I
+                        - L
+                classification_subtype: BS_CLA
+                # Sentence Missouri Charge Code (https://www.mshp.dps.missouri.gov/CJ08Client/Home/ChargeCode)
+                # TODO(#2648): Many/all of these codes all changed in 2016? How do we convert between the two schemes?
+                ncic_code: BS_NCI
+                is_violent:
+                  $custom:
+                    $function: us_mo_custom_parsers.set_charge_is_violent_from_ncic
+                    $args:
+                      ncic_code: BS_NCI
+                judicial_district_code: BS_CRC
