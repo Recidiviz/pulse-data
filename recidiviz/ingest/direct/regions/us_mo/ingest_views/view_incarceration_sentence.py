@@ -24,6 +24,7 @@ Raw data files include:
   - LBAKRDTA_TAK022 has the base information for incarceration sentences
   - LBAKRDTA_TAK023 has detailed infor for incarceration sentences
 """
+# TODO(#30803) Remove this view when new implementation is complete
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
     DirectIngestViewQueryBuilder,
 )

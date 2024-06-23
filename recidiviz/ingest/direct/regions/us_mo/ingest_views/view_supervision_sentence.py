@@ -29,6 +29,7 @@ Raw data files include:
 We do not ingest sentences that only have pre-trial status codes!
 This includes pre-trial investigation and pre-trial bonds.
 """
+# TODO(#30803) Remove this view when new implementation is complete
 from recidiviz.ingest.direct.regions.us_mo.ingest_views.templates_sentences import (
     FROM_BU_BS_BV_BW_WHERE_NOT_PRETRIAL,
 )

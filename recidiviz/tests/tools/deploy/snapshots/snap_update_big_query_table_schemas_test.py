@@ -687,6 +687,7 @@ snapshots[
     "us_mo_ingest_view_results.offender_sentence_supervision",
     "us_mo_ingest_view_results.oras_assessments_weekly_v2",
     "us_mo_ingest_view_results.program_assignment",
+    "us_mo_ingest_view_results.sentence",
     "us_mo_ingest_view_results.sentence_length",
     "us_mo_ingest_view_results.sentence_status_snapshot",
     "us_mo_ingest_view_results.supervision_sentence",
