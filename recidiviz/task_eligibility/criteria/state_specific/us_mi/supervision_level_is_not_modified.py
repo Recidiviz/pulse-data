@@ -17,6 +17,8 @@
 """This criteria view builder defines spans of time that clients do not have a disqualifying supervision
 level modifier.
 """
+from google.cloud import bigquery
+
 from recidiviz.calculator.query.bq_utils import nonnull_end_date_clause
 from recidiviz.calculator.query.sessions_query_fragments import (
     create_sub_sessions_with_attributes,
@@ -25,6 +27,7 @@ from recidiviz.calculator.query.state.dataset_config import NORMALIZED_STATE_DAT
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.dataset_config import raw_latest_views_dataset_for_region
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
@@ -88,7 +91,8 @@ SELECT
     start_date,
     end_date, 
     False AS meets_criteria,
-    TO_JSON(STRUCT(active_modifiers AS active_modifiers)) AS reason
+    TO_JSON(STRUCT(active_modifiers AS active_modifiers)) AS reason,
+    active_modifiers
 FROM aggregated_modifier_spans
 """
 
@@ -104,6 +108,13 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
         ),
         meets_criteria_default=True,
         normalized_state_dataset=NORMALIZED_STATE_DATASET,
+        reasons_fields=[
+            ReasonsField(
+                name="active_modifiers",
+                type=bigquery.enums.SqlTypeNames.BOOLEAN,
+                description="#TODO(#29059): Add reasons field description",
+            ),
+        ],
     )
 )
 

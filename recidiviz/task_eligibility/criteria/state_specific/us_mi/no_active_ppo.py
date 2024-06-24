@@ -17,6 +17,7 @@
 """Defines a criteria span view that shows spans of time during which someone does
 not have an active personal protection order (PPO).
 """
+from google.cloud import bigquery
 
 from recidiviz.calculator.query.bq_utils import nonnull_end_date_clause
 from recidiviz.calculator.query.sessions_query_fragments import (
@@ -26,6 +27,7 @@ from recidiviz.calculator.query.state.dataset_config import NORMALIZED_STATE_DAT
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.dataset_config import raw_latest_views_dataset_for_region
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
@@ -87,6 +89,7 @@ active_ppos AS (
         end_date,
         NOT active_ppo AS meets_criteria,
         TO_JSON(STRUCT(LOGICAL_OR(active_ppo) AS active_ppo)) AS reason,
+        LOGICAL_OR(active_ppo) AS active_ppo,
     FROM sub_sessions_with_attributes
     GROUP BY 1,2,3,4,5
 """
@@ -103,6 +106,13 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
         ),
         meets_criteria_default=True,
         normalized_state_dataset=NORMALIZED_STATE_DATASET,
+        reasons_fields=[
+            ReasonsField(
+                name="active_ppo",
+                type=bigquery.enums.SqlTypeNames.BOOLEAN,
+                description="#TODO(#29059): Add reasons field description",
+            )
+        ],
     )
 )
 

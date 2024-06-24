@@ -17,6 +17,7 @@
 """Defines a criteria span view that shows spans of time during which someone is eligible for an in person review
 from the ADD during their security classification review, as the number of expected reviews is greater than the
 number of observed reviews."""
+from google.cloud import bigquery
 
 from recidiviz.calculator.query.bq_utils import (
     nonnull_end_date_clause,
@@ -27,6 +28,7 @@ from recidiviz.calculator.query.state.dataset_config import (
     SESSIONS_DATASET,
 )
 from recidiviz.common.constants.states import StateCode
+from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
@@ -188,6 +190,10 @@ _QUERY_TEMPLATE = f"""
                 t.expected_reviews-t.reviews_due AS number_of_reviews,
                 p.change_date AS latest_add_in_person_scc_review_date
             )) AS reason,
+        housing_start_date AS solitary_start_date,
+        t.expected_reviews AS number_of_expected_reviews,
+        t.expected_reviews-t.reviews_due AS number_of_reviews,
+        p.change_date AS latest_add_in_person_scc_review_date,
     FROM time_spans_agg t
     LEFT JOIN population_change_dates  p
         ON p.state_code = t.state_code
@@ -208,6 +214,28 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
         state_code=StateCode.US_MI,
         sessions_dataset=SESSIONS_DATASET,
         analyst_views_dataset=ANALYST_VIEWS_DATASET,
+        reasons_fields=[
+            ReasonsField(
+                name="solitary_start_date",
+                type=bigquery.enums.SqlTypeNames.DATE,
+                description="#TODO(#29059): Add reasons field description",
+            ),
+            ReasonsField(
+                name="number_of_expected_reviews",
+                type=bigquery.enums.SqlTypeNames.INTEGER,
+                description="#TODO(#29059): Add reasons field description",
+            ),
+            ReasonsField(
+                name="number_of_reviews",
+                type=bigquery.enums.SqlTypeNames.INTEGER,
+                description="#TODO(#29059): Add reasons field description",
+            ),
+            ReasonsField(
+                name="latest_add_in_person_scc_review_date",
+                type=bigquery.enums.SqlTypeNames.DATE,
+                description="#TODO(#29059): Add reasons field description",
+            ),
+        ],
     )
 )
 

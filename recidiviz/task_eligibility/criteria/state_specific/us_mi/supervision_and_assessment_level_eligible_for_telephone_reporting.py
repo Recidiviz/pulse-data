@@ -17,6 +17,7 @@
 """Defines a criteria span view that shows spans of time during which someone's supervision level is minimum
 low or if their supervision level is minimum in person, their initial assessment score was medium/minimum.
 """
+from google.cloud import bigquery
 
 from recidiviz.calculator.query.bq_utils import nonnull_end_date_clause
 from recidiviz.calculator.query.state.dataset_config import (
@@ -24,6 +25,7 @@ from recidiviz.calculator.query.state.dataset_config import (
     SESSIONS_DATASET,
 )
 from recidiviz.common.constants.states import StateCode
+from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
@@ -84,6 +86,8 @@ eligible combination of supervision and initial assessment level */
 SELECT * EXCEPT (description, initial_assessment_level),
     TO_JSON(STRUCT(description AS supervision_level_raw_text, 
                     COALESCE(initial_assessment_level, "Not needed") AS initial_assessment_level)) AS reason,
+    description AS supervision_level_raw_text, 
+    COALESCE(initial_assessment_level, "Not needed") AS initial_assessment_level,
 FROM eligibility_spans
 """
 
@@ -96,6 +100,18 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
         state_code=StateCode.US_MI,
         sessions_dataset=SESSIONS_DATASET,
         analyst_data_dataset=ANALYST_VIEWS_DATASET,
+        reasons_fields=[
+            ReasonsField(
+                name="supervision_level_raw_text",
+                type=bigquery.enums.SqlTypeNames.STRING,
+                description="#TODO(#29059): Add reasons field description",
+            ),
+            ReasonsField(
+                name="initial_assessment_level",
+                type=bigquery.enums.SqlTypeNames.STRING,
+                description="#TODO(#29059): Add reasons field description",
+            ),
+        ],
     )
 )
 

@@ -17,10 +17,13 @@
 """Defines a criteria span view that shows spans of time during which someone is in the period of supervision
 before their initial review date
 """
+from google.cloud import bigquery
+
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.dataset_config import (
     task_eligibility_criteria_state_specific_dataset,
 )
+from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
@@ -40,6 +43,7 @@ SELECT
     end_date,
     NOT meets_criteria AS meets_criteria,
     reason,
+    CAST(NULL AS DATE) AS classification_review_date,
 FROM `{project_id}.{criteria_dataset}.past_initial_classification_review_date_materialized`
 """
 
@@ -52,6 +56,13 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
         criteria_dataset=task_eligibility_criteria_state_specific_dataset(
             StateCode.US_MI
         ),
+        reasons_fields=[
+            ReasonsField(
+                name="classification_review_date",
+                type=bigquery.enums.SqlTypeNames.DATE,
+                description="#TODO(#29059): Add reasons field description",
+            ),
+        ],
     )
 )
 

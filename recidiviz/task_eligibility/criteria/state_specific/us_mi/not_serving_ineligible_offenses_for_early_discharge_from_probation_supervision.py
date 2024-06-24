@@ -17,6 +17,8 @@
 """Defines a criteria span view that shows spans of time during which someone is not serving
 ineligible offenses on probation supervision
 """
+from google.cloud import bigquery
+
 from recidiviz.calculator.query.sessions_query_fragments import (
     join_sentence_spans_to_compartment_sessions,
 )
@@ -24,6 +26,7 @@ from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.dataset_config import raw_latest_views_dataset_for_region
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
@@ -47,6 +50,7 @@ _QUERY_TEMPLATE = f"""
         span.end_date,
         FALSE AS meets_criteria,
         TO_JSON(STRUCT(ARRAY_AGG(DISTINCT statute) AS ineligible_offenses)) AS reason,
+        ARRAY_AGG(DISTINCT statute) AS ineligible_offenses,
     {join_sentence_spans_to_compartment_sessions(compartment_level_2_to_overlap="PROBATION")}
     WHERE span.state_code = "US_MI"
         AND sent.sentence_sub_type = "PROBATION" 
@@ -69,6 +73,13 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
             state_code=StateCode.US_MI,
             instance=DirectIngestInstance.PRIMARY,
         ),
+        reasons_fields=[
+            ReasonsField(
+                name="ineligible_offenses",
+                type=bigquery.enums.SqlTypeNames.RECORD,
+                description="#TODO(#29059): Add reasons field description",
+            ),
+        ],
     )
 )
 

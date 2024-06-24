@@ -17,12 +17,15 @@
 """Defines a criteria span view that shows spans of time during which someone has no new
 operating while intoxicated violation on parole/dual supervision
 """
+from google.cloud import bigquery
+
 from recidiviz.calculator.query.bq_utils import nonnull_end_date_clause
 from recidiviz.calculator.query.sessions_query_fragments import (
     create_sub_sessions_with_attributes,
 )
 from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
 from recidiviz.common.constants.states import StateCode
+from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
@@ -98,6 +101,8 @@ SELECT
       IF(LOGICAL_OR(cd.critical_date_has_passed), ARRAY_AGG(cd.critical_date), NULL)
         AS latest_ineligible_convictions
     )) AS reason,
+    IF(LOGICAL_OR(cd.critical_date_has_passed), ARRAY_AGG(cd.critical_date), NULL)
+        AS latest_ineligible_convictions,
 FROM sub_sessions_with_attributes cd
 GROUP BY 1,2,3,4
 
@@ -111,6 +116,13 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
         state_code=StateCode.US_MI,
         sessions_dataset=SESSIONS_DATASET,
         meets_criteria_default=True,
+        reasons_fields=[
+            ReasonsField(
+                name="latest_ineligible_convictions",
+                type=bigquery.enums.SqlTypeNames.RECORD,
+                description="#TODO(#29059): Add reasons field description",
+            )
+        ],
     )
 )
 

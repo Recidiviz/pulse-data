@@ -17,10 +17,13 @@
 """This criteria view builder defines spans of time that clients are not on supervision after participating in
  SAI (Special Alternative Incarceration) based on supervision level raw text values that contain SAI.
 """
+from google.cloud import bigquery
+
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.dataset_config import (
     task_eligibility_criteria_state_specific_dataset,
 )
+from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
@@ -41,6 +44,7 @@ SELECT
     end_date,
     NOT meets_criteria AS meets_criteria,
     reason,
+    CAST(JSON_VALUE(reason, "$.supervision_level_is_sai") AS BOOL) AS supervision_level_is_sai,
 FROM `{project_id}.{criteria_dataset}.supervision_or_supervision_out_of_state_level_is_sai_materialized`
 """
 
@@ -54,6 +58,13 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
         criteria_dataset=task_eligibility_criteria_state_specific_dataset(
             StateCode.US_MI
         ),
+        reasons_fields=[
+            ReasonsField(
+                name="supervision_level_is_sai",
+                type=bigquery.enums.SqlTypeNames.BOOLEAN,
+                description="#TODO(#29059): Add reasons field description",
+            ),
+        ],
     )
 )
 

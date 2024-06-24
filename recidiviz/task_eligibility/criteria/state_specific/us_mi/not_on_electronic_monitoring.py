@@ -17,6 +17,8 @@
 """This criteria view builder defines spans of time that clients are not on a supervision level that indicates
 electronic monitoring
 """
+from google.cloud import bigquery
+
 from recidiviz.calculator.query.bq_utils import nonnull_end_date_clause
 from recidiviz.calculator.query.sessions_query_fragments import (
     aggregate_adjacent_spans,
@@ -30,6 +32,7 @@ from recidiviz.calculator.query.state.dataset_config import (
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.dataset_config import raw_latest_views_dataset_for_region
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
@@ -105,6 +108,7 @@ sessionized_cte AS (
         end_date,
         NOT is_electronic_monitoring AS meets_criteria,
         TO_JSON(STRUCT(start_date AS eligible_date)) AS reason,
+        start_date AS em_start_date,
     FROM sessionized_cte
     WINDOW w AS (PARTITION BY person_id, state_code ORDER BY start_date)
 """
@@ -123,6 +127,13 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
             instance=DirectIngestInstance.PRIMARY,
         ),
         meets_criteria_default=True,
+        reasons_fields=[
+            ReasonsField(
+                name="em_start_date",
+                type=bigquery.enums.SqlTypeNames.DATE,
+                description="#TODO(#29059): Add reasons field description",
+            ),
+        ],
     )
 )
 

@@ -18,11 +18,14 @@
 POPULATION because either their detention sanction timeframe has expired while in DISCIPLINARY SOLITARY CONFINEMENT
 OR they have been in TEMPORARY SOLITARY CONFINEMENT for over 30 days.
 """
+from google.cloud import bigquery
+
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.dataset_config import (
     TASK_ELIGIBILITY_CRITERIA_GENERAL,
     task_eligibility_criteria_state_specific_dataset,
 )
+from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
@@ -69,12 +72,31 @@ _JSON_CONTENT = """LOGICAL_OR(detention_sanction_has_expired) AS detention_sanct
                     MAX(overdue_in_temporary_date) AS overdue_in_temporary_date"""
 
 _QUERY_TEMPLATE = f"""
+WITH combined_query_cte AS (
 {combining_several_criteria_into_one(
         select_statements_for_criteria_lst=[_CRITERIA_QUERY_1,
                                              _CRITERIA_QUERY_2],
         meets_criteria="LOGICAL_OR(meets_criteria)",
         json_content=_JSON_CONTENT,
     )}
+)
+SELECT
+    state_code,
+    person_id,
+    start_date,
+    end_date,
+    meets_criteria,
+    reason,
+    {extract_object_from_json(object_column = 'detention_sanction_has_expired', 
+                                  object_type = 'BOOL')} AS detention_sanction_has_expired,
+    {extract_object_from_json(object_column = 'overdue_in_temporary', 
+                                  object_type = 'BOOL')} AS overdue_in_temporary,
+    {extract_object_from_json(object_column = 'sanction_expiration_date', 
+                                  object_type = 'DATE')} AS sanction_expiration_date,
+    {extract_object_from_json(object_column = 'overdue_in_temporary_date', 
+                                  object_type = 'DATE')} AS overdue_in_temporary_date,
+FROM
+    combined_query_cte
 """
 
 VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = StateSpecificTaskCriteriaBigQueryViewBuilder(
@@ -86,6 +108,28 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = StateSpecificTaskCr
         StateCode.US_MI
     ),
     task_eligibility_criteria_general=TASK_ELIGIBILITY_CRITERIA_GENERAL,
+    reasons_fields=[
+        ReasonsField(
+            name="detention_sanction_has_expired",
+            type=bigquery.enums.SqlTypeNames.BOOLEAN,
+            description="#TODO(#29059): Add reasons field description",
+        ),
+        ReasonsField(
+            name="overdue_in_temporary",
+            type=bigquery.enums.SqlTypeNames.BOOLEAN,
+            description="#TODO(#29059): Add reasons field description",
+        ),
+        ReasonsField(
+            name="sanction_expiration_date",
+            type=bigquery.enums.SqlTypeNames.DATE,
+            description="#TODO(#29059): Add reasons field description",
+        ),
+        ReasonsField(
+            name="overdue_in_temporary_date",
+            type=bigquery.enums.SqlTypeNames.DATE,
+            description="#TODO(#29059): Add reasons field description",
+        ),
+    ],
 )
 
 if __name__ == "__main__":

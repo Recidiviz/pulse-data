@@ -17,12 +17,15 @@
 """Defines a criteria span view that shows spans of time during which someone has completed 12 months
 on active supervision if serving a sentence for operating under the influence of liquor or operating while impaired
 """
+from google.cloud import bigquery
+
 from recidiviz.calculator.query.bq_utils import nonnull_end_date_clause
 from recidiviz.calculator.query.sessions_query_fragments import aggregate_adjacent_spans
 from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.dataset_config import raw_latest_views_dataset_for_region
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
@@ -167,6 +170,7 @@ SELECT
     TO_JSON(STRUCT(
         cd.critical_date AS eligible_date
     )) AS reason,
+    cd.critical_date AS one_year_on_supervision_date,
 FROM critical_date_has_passed_spans cd
 """
 
@@ -182,6 +186,13 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
             instance=DirectIngestInstance.PRIMARY,
         ),
         meets_criteria_default=True,
+        reasons_fields=[
+            ReasonsField(
+                name="one_year_on_supervision_date",
+                type=bigquery.enums.SqlTypeNames.DATE,
+                description="#TODO(#29059): Add reasons field description",
+            )
+        ],
     )
 )
 if __name__ == "__main__":
