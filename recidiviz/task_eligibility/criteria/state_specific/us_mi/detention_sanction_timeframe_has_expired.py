@@ -18,6 +18,8 @@
 for a resident has expired. Policy dictates that detention should not exceed 10 days for
 each violation or 20 days for all violations arising from a specific incident.
 """
+from google.cloud import bigquery
+
 from recidiviz.calculator.query.bq_utils import (
     nonnull_end_date_clause,
     revert_nonnull_start_date_clause,
@@ -30,6 +32,7 @@ from recidiviz.calculator.query.state.dataset_config import (
     SESSIONS_DATASET,
 )
 from recidiviz.common.constants.states import StateCode
+from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
@@ -102,6 +105,7 @@ SELECT
     TO_JSON(STRUCT(
         cd.critical_date AS eligible_date
     )) AS reason,
+    cd.critical_date AS expiration_date,
 FROM critical_date_has_passed_spans cd
 """
 
@@ -113,6 +117,13 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
         state_code=StateCode.US_MI,
         normalized_state_dataset=NORMALIZED_STATE_DATASET,
         sessions_dataset=SESSIONS_DATASET,
+        reasons_fields=[
+            ReasonsField(
+                name="expiration_date",
+                type=bigquery.enums.SqlTypeNames.DATE,
+                description="#TODO(#29059): Add reasons field description",
+            )
+        ],
     )
 )
 

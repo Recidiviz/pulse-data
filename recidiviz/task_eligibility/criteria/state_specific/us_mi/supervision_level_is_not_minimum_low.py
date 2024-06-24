@@ -16,12 +16,15 @@
 # ============================================================================
 """This criteria view builder defines spans of time that a client is on Minimum Low Supervision
 """
+from google.cloud import bigquery
+
 from recidiviz.calculator.query.sessions_query_fragments import aggregate_adjacent_spans
 from recidiviz.calculator.query.state.dataset_config import (
     ANALYST_VIEWS_DATASET,
     SESSIONS_DATASET,
 )
 from recidiviz.common.constants.states import StateCode
+from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
@@ -64,6 +67,7 @@ WITH minimum_low_spans AS (
         end_date,
         FALSE AS meets_criteria,
     TO_JSON(STRUCT(TRUE AS supervision_level_is_minimum_low)) AS reason,
+    TRUE AS supervision_level_is_minimum_low,
     FROM ({aggregate_adjacent_spans(table_name='minimum_low_spans')})
 """
 
@@ -76,6 +80,13 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
         sessions_dataset=SESSIONS_DATASET,
         analyst_data_dataset=ANALYST_VIEWS_DATASET,
         meets_criteria_default=True,
+        reasons_fields=[
+            ReasonsField(
+                name="supervision_level_is_minimum_low",
+                type=bigquery.enums.SqlTypeNames.BOOLEAN,
+                description="#TODO(#29059): Add reasons field description",
+            ),
+        ],
     )
 )
 

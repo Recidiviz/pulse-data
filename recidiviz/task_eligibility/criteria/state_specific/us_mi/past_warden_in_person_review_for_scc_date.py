@@ -17,10 +17,13 @@
 """Defines a criteria span view that shows spans of time during which someone is past
 their date for an in person scc review from a warden. Residents are entitled to an in person review every 6 months.
 """
+from google.cloud import bigquery
+
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.dataset_config import (
     task_eligibility_criteria_state_specific_dataset,
 )
+from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
@@ -72,12 +75,33 @@ _JSON_CONTENT = """MIN(solitary_start_date) AS solitary_start_date,
                     IF(LOGICAL_OR(meets_criteria), start_date, NULL) AS next_scc_date"""
 
 _QUERY_TEMPLATE = f"""
+WITH combined_query_cte AS (
 {combining_several_criteria_into_one(
         select_statements_for_criteria_lst=[_CRITERIA_QUERY_1,
                                              _CRITERIA_QUERY_2],
         meets_criteria="LOGICAL_OR(meets_criteria)",
         json_content=_JSON_CONTENT,
     )}
+)
+SELECT
+    state_code,
+    person_id,
+    start_date,
+    end_date,
+    meets_criteria,
+    reason,
+    {extract_object_from_json(object_column = 'solitary_start_date', 
+                                  object_type = 'DATE')} AS solitary_start_date,
+    {extract_object_from_json(object_column = 'latest_warden_in_person_scc_review_date', 
+                                  object_type = 'DATE')} AS latest_warden_in_person_scc_review_date,
+    {extract_object_from_json(object_column = 'number_of_expected_reviews', 
+                                  object_type = 'INT64')} AS number_of_expected_reviews,
+    {extract_object_from_json(object_column = 'number_of_reviews', 
+                                  object_type = 'INT64')} AS number_of_reviews,
+    {extract_object_from_json(object_column = 'next_scc_date', 
+                                  object_type = 'DATE')} AS next_scc_date,
+FROM
+    combined_query_cte
 """
 
 VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = StateSpecificTaskCriteriaBigQueryViewBuilder(
@@ -88,6 +112,33 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = StateSpecificTaskCr
     task_eligibility_criteria_us_mi=task_eligibility_criteria_state_specific_dataset(
         StateCode.US_MI
     ),
+    reasons_fields=[
+        ReasonsField(
+            name="solitary_start_date",
+            type=bigquery.enums.SqlTypeNames.DATE,
+            description="#TODO(#29059): Add reasons field description",
+        ),
+        ReasonsField(
+            name="latest_warden_in_person_scc_review_date",
+            type=bigquery.enums.SqlTypeNames.DATE,
+            description="#TODO(#29059): Add reasons field description",
+        ),
+        ReasonsField(
+            name="number_of_expected_reviews",
+            type=bigquery.enums.SqlTypeNames.INTEGER,
+            description="#TODO(#29059): Add reasons field description",
+        ),
+        ReasonsField(
+            name="number_of_reviews",
+            type=bigquery.enums.SqlTypeNames.INTEGER,
+            description="#TODO(#29059): Add reasons field description",
+        ),
+        ReasonsField(
+            name="next_scc_date",
+            type=bigquery.enums.SqlTypeNames.DATE,
+            description="#TODO(#29059): Add reasons field description",
+        ),
+    ],
 )
 
 if __name__ == "__main__":

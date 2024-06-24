@@ -17,8 +17,11 @@
 """Defines a criteria span view that shows spans of time during which someone has
 been in solitary confinement (excluding the START program) for at least 1 year.
 """
+from google.cloud import bigquery
+
 from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
 from recidiviz.common.constants.states import StateCode
+from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
@@ -54,6 +57,7 @@ WITH critical_date_spans AS (
         TO_JSON(STRUCT(
             cd.critical_date AS eligible_date
         )) AS reason,
+    cd.critical_date AS one_year_in_solitary_date,
     FROM critical_date_has_passed_spans cd
 """
 
@@ -64,6 +68,13 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
         criteria_spans_query_template=_QUERY_TEMPLATE,
         state_code=StateCode.US_MI,
         sessions_dataset=SESSIONS_DATASET,
+        reasons_fields=[
+            ReasonsField(
+                name="one_year_in_solitary_date",
+                type=bigquery.enums.SqlTypeNames.DATE,
+                description="#TODO(#29059): Add reasons field description",
+            )
+        ],
     )
 )
 

@@ -17,12 +17,15 @@
 """Defines a criteria span view that shows spans of time during which six months has passed
 from the last security classification committee review where the warden was in person.
 """
+from google.cloud import bigquery
+
 from recidiviz.calculator.query.bq_utils import nonnull_end_date_exclusive_clause
 from recidiviz.calculator.query.state.dataset_config import (
     ANALYST_VIEWS_DATASET,
     SESSIONS_DATASET,
 )
 from recidiviz.common.constants.states import StateCode
+from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
@@ -67,6 +70,7 @@ SELECT
     TO_JSON(STRUCT(
         cd.critical_date AS eligible_date
     )) AS reason,
+    cd.critical_date AS six_months_past_in_person_review_date,
 FROM critical_date_has_passed_spans cd
 """
 
@@ -78,6 +82,13 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
         description=_DESCRIPTION,
         analyst_views_dataset=ANALYST_VIEWS_DATASET,
         sessions_dataset=SESSIONS_DATASET,
+        reasons_fields=[
+            ReasonsField(
+                name="six_months_past_in_person_review_date",
+                type=bigquery.enums.SqlTypeNames.DATE,
+                description="#TODO(#29059): Add reasons field description",
+            ),
+        ],
     )
 )
 

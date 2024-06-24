@@ -17,12 +17,14 @@
 """Defines a criteria span view that shows spans of time during which someone has no ineligible offenses
 for supervision level downgrade
 """
+from google.cloud import bigquery
 
 from recidiviz.calculator.query.sessions_query_fragments import (
     join_sentence_spans_to_compartment_sessions,
 )
 from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
 from recidiviz.common.constants.states import StateCode
+from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
@@ -50,6 +52,10 @@ _QUERY_TEMPLATE = f"""
                         ARRAY_AGG(DISTINCT sent.status IGNORE NULLS ORDER BY status) AS sentence_status,
                          LOGICAL_OR(sent.life_sentence) AS is_life_sentence,
                          LOGICAL_OR(sent.is_sex_offense) AS is_sex_offense )) AS reason,
+        ARRAY_AGG(DISTINCT statute IGNORE NULLS ORDER BY statute) AS ineligible_offenses,
+        ARRAY_AGG(DISTINCT sent.status IGNORE NULLS ORDER BY status) AS sentence_status,
+        LOGICAL_OR(sent.life_sentence) AS is_life_sentence,
+        LOGICAL_OR(sent.is_sex_offense) AS is_sex_offense,
     {join_sentence_spans_to_compartment_sessions(compartment_level_1_to_overlap="SUPERVISION")}
     WHERE span.state_code = "US_MI"
     AND (sent.is_sex_offense
@@ -73,5 +79,27 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
         state_code=StateCode.US_MI,
         sessions_dataset=SESSIONS_DATASET,
         meets_criteria_default=True,
+        reasons_fields=[
+            ReasonsField(
+                name="ineligible_offenses",
+                type=bigquery.enums.SqlTypeNames.RECORD,
+                description="#TODO(#29059): Add reasons field description",
+            ),
+            ReasonsField(
+                name="sentence_status",
+                type=bigquery.enums.SqlTypeNames.RECORD,
+                description="#TODO(#29059): Add reasons field description",
+            ),
+            ReasonsField(
+                name="is_life_sentence",
+                type=bigquery.enums.SqlTypeNames.BOOLEAN,
+                description="#TODO(#29059): Add reasons field description",
+            ),
+            ReasonsField(
+                name="is_sex_offense",
+                type=bigquery.enums.SqlTypeNames.BOOLEAN,
+                description="#TODO(#29059): Add reasons field description",
+            ),
+        ],
     )
 )

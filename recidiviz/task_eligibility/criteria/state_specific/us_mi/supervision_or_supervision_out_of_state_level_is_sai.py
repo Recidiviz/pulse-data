@@ -17,6 +17,8 @@
 """This criteria view builder defines spans of time that clients are on supervision after participating in
  SAI (Special Alternative Incarceration) based on supervision level raw text values that contain SAI.
 """
+from google.cloud import bigquery
+
 from recidiviz.calculator.query.bq_utils import nonnull_end_date_clause
 from recidiviz.calculator.query.sessions_query_fragments import (
     aggregate_adjacent_spans,
@@ -30,6 +32,7 @@ from recidiviz.calculator.query.state.dataset_config import (
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.dataset_config import raw_latest_views_dataset_for_region
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
@@ -102,6 +105,7 @@ deduped_sub_sessions AS (
         end_date,
         is_sai AS meets_criteria,
     TO_JSON(STRUCT(is_sai AS supervision_level_is_sai)) AS reason,
+    is_sai AS supervision_level_is_sai,
     FROM ({aggregate_adjacent_spans(table_name='deduped_sub_sessions',
                               attribute=['is_sai'])})
 """
@@ -119,6 +123,13 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
             state_code=StateCode.US_MI,
             instance=DirectIngestInstance.PRIMARY,
         ),
+        reasons_fields=[
+            ReasonsField(
+                name="supervision_level_is_sai",
+                type=bigquery.enums.SqlTypeNames.BOOLEAN,
+                description="#TODO(#29059): Add reasons field description",
+            ),
+        ],
     )
 )
 

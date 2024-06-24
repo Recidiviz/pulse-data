@@ -17,10 +17,13 @@
 """Defines a criteria span view that shows spans of time during which someone was not
 required to register under SORA (Sex Offender Registration Act)
 """
+from google.cloud import bigquery
+
 from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.dataset_config import raw_latest_views_dataset_for_region
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
@@ -40,7 +43,8 @@ _QUERY_TEMPLATE = """
         MIN(date_imposed) AS start_date,
         CAST(NULL AS DATE) AS end_date,
         FALSE AS meets_criteria,
-        TO_JSON(STRUCT(MIN(date_imposed) AS ineligible_date)) AS reason
+        TO_JSON(STRUCT(MIN(date_imposed) AS ineligible_date)) AS reason,
+        MIN(date_imposed) AS sentence_date_imposed,
     FROM `{project_id}.{sessions_dataset}.sentences_preprocessed_materialized` sent
     INNER JOIN `{project_id}.{raw_data_up_to_date_views_dataset}.RECIDIVIZ_REFERENCE_offense_exclusion_list_latest` l
         ON sent.statute = l.statute_code
@@ -62,6 +66,13 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
         ),
         meets_criteria_default=True,
         sessions_dataset=SESSIONS_DATASET,
+        reasons_fields=[
+            ReasonsField(
+                name="sentence_date_imposed",
+                type=bigquery.enums.SqlTypeNames.DATE,
+                description="#TODO(#29059): Add reasons field description",
+            ),
+        ],
     )
 )
 

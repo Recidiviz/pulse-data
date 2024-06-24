@@ -17,6 +17,8 @@
 """Defines a criteria span view that shows spans of time during which someone has no new
 ineligible offenses on parole/dual or probation supervision
 """
+from google.cloud import bigquery
+
 from recidiviz.calculator.query.bq_utils import nonnull_end_date_clause
 from recidiviz.calculator.query.sessions_query_fragments import (
     create_sub_sessions_with_attributes,
@@ -28,6 +30,7 @@ from recidiviz.calculator.query.state.dataset_config import (
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.dataset_config import raw_latest_views_dataset_for_region
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
@@ -119,6 +122,8 @@ SELECT
       IF(LOGICAL_OR(cd.critical_date_has_passed), ARRAY_AGG(cd.critical_date ORDER BY cd.critical_date), NULL)
         AS latest_ineligible_convictions
     )) AS reason,
+    IF(LOGICAL_OR(cd.critical_date_has_passed), ARRAY_AGG(cd.critical_date ORDER BY cd.critical_date), NULL)
+        AS latest_ineligible_convictions,
 FROM sub_sessions_with_attributes cd
 GROUP BY 1,2,3,4
 
@@ -137,6 +142,13 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
         ),
         normalized_state_dataset=NORMALIZED_STATE_DATASET,
         meets_criteria_default=True,
+        reasons_fields=[
+            ReasonsField(
+                name="latest_ineligible_convictions",
+                type=bigquery.enums.SqlTypeNames.RECORD,
+                description="#TODO(#29059): Add reasons field description",
+            )
+        ],
     )
 )
 

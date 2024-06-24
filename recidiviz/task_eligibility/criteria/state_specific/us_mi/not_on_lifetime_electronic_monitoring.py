@@ -16,7 +16,9 @@
 # ============================================================================
 """Defines a criteria span view that shows spans of time during which someone is on lifetime electronic monitoring
 """
+from google.cloud import bigquery
 
+from recidiviz.calculator.query.bq_utils import nonnull_end_date_clause
 from recidiviz.calculator.query.sessions_query_fragments import (
     aggregate_adjacent_spans,
     create_sub_sessions_with_attributes,
@@ -25,18 +27,15 @@ from recidiviz.calculator.query.state.dataset_config import (
     NORMALIZED_STATE_DATASET,
     SESSIONS_DATASET,
 )
-from recidiviz.calculator.query.bq_utils import (
-    nonnull_end_date_clause,
-)
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.dataset_config import raw_latest_views_dataset_for_region
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
-
 
 _CRITERIA_NAME = "US_MI_NOT_ON_LIFETIME_ELECTRONIC_MONITORING"
 
@@ -110,6 +109,7 @@ WITH lifetime_em_sentences AS (
         TO_JSON(STRUCT(
             start_date AS lifetime_em_date
         )) AS reason,
+        start_date AS lifetime_em_date,
     FROM ({aggregate_adjacent_spans(table_name='deduped_sub_sessions',
                               attribute=['is_electronic_monitoring'])})
 """
@@ -127,6 +127,13 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
         meets_criteria_default=True,
         normalized_state_dataset=NORMALIZED_STATE_DATASET,
         sessions_dataset=SESSIONS_DATASET,
+        reasons_fields=[
+            ReasonsField(
+                name="lifetime_em_date",
+                type=bigquery.enums.SqlTypeNames.DATE,
+                description="#TODO(#29059): Add reasons field description",
+            ),
+        ],
     )
 )
 

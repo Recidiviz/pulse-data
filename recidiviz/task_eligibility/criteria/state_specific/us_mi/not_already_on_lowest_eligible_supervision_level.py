@@ -17,6 +17,8 @@
 """Defines a criteria span view that shows spans of time during which someone is not
 eligible for classification review because they are already on the lowest eligible level for their case
 """
+from google.cloud import bigquery
+
 from recidiviz.calculator.query.sessions_query_fragments import (
     create_sub_sessions_with_attributes,
 )
@@ -24,6 +26,7 @@ from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.dataset_config import raw_latest_views_dataset_for_region
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
@@ -76,7 +79,9 @@ _QUERY_TEMPLATE = f"""
         --if requires_so_registration AND on_lowest_level, then meets_criteria is FALSE
         NOT (LOGICAL_AND(on_lowest_level) AND LOGICAL_AND(requires_so_registration)) AS meets_criteria,
         TO_JSON(STRUCT(MAX(supervision_level) AS supervision_level, 
-                        LOGICAL_AND(requires_so_registration) AS requires_so_registration)) AS reason
+                        LOGICAL_AND(requires_so_registration) AS requires_so_registration)) AS reason,
+        MAX(supervision_level) AS supervision_level,
+        LOGICAL_AND(requires_so_registration) AS requires_so_registration,
     FROM sub_sessions_with_attributes
     GROUP BY 1,2,3,4
 """
@@ -93,6 +98,18 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
         ),
         meets_criteria_default=True,
         sessions_dataset=SESSIONS_DATASET,
+        reasons_fields=[
+            ReasonsField(
+                name="supervision_level",
+                type=bigquery.enums.SqlTypeNames.STRING,
+                description="#TODO(#29059): Add reasons field description",
+            ),
+            ReasonsField(
+                name="requires_so_registration",
+                type=bigquery.enums.SqlTypeNames.BOOLEAN,
+                description="#TODO(#29059): Add reasons field description",
+            ),
+        ],
     )
 )
 

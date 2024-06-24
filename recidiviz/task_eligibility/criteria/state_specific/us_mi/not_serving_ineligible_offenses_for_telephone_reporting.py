@@ -17,6 +17,8 @@
 """Defines a criteria span view that shows spans of time during which
 someone is not serving ineligible offenses on supervision for downgrade to minimum telephone reporting
 """
+from google.cloud import bigquery
+
 from recidiviz.calculator.query.sessions_query_fragments import (
     join_sentence_spans_to_compartment_sessions,
 )
@@ -24,6 +26,7 @@ from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.dataset_config import raw_latest_views_dataset_for_region
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
@@ -52,6 +55,10 @@ _QUERY_TEMPLATE = f"""
                         ARRAY_AGG(DISTINCT sent.status IGNORE NULLS ORDER BY sent.status) AS sentence_status,
                          LOGICAL_OR(sent.life_sentence) AS is_life_sentence,
                          ARRAY_AGG(DISTINCT ref.description IGNORE NULLS ORDER BY ref.description) AS sentence_status_raw_text)) AS reason,
+        ARRAY_AGG(DISTINCT statute IGNORE NULLS ORDER BY statute) AS ineligible_offenses,
+        ARRAY_AGG(DISTINCT sent.status IGNORE NULLS ORDER BY sent.status) AS sentence_status,
+        LOGICAL_OR(sent.life_sentence) AS is_life_sentence,
+        ARRAY_AGG(DISTINCT ref.description IGNORE NULLS ORDER BY ref.description) AS sentence_status_raw_text,
     {join_sentence_spans_to_compartment_sessions(compartment_level_1_to_overlap="SUPERVISION")}
     LEFT JOIN `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.ADH_REFERENCE_CODE_latest` ref 
         ON sent.status_raw_text = ref.reference_code_id
@@ -81,6 +88,28 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
             state_code=StateCode.US_MI,
             instance=DirectIngestInstance.PRIMARY,
         ),
+        reasons_fields=[
+            ReasonsField(
+                name="ineligible_offenses",
+                type=bigquery.enums.SqlTypeNames.RECORD,
+                description="#TODO(#29059): Add reasons field description",
+            ),
+            ReasonsField(
+                name="sentence_status",
+                type=bigquery.enums.SqlTypeNames.RECORD,
+                description="#TODO(#29059): Add reasons field description",
+            ),
+            ReasonsField(
+                name="is_life_sentence",
+                type=bigquery.enums.SqlTypeNames.BOOLEAN,
+                description="#TODO(#29059): Add reasons field description",
+            ),
+            ReasonsField(
+                name="sentence_status_raw_text",
+                type=bigquery.enums.SqlTypeNames.RECORD,
+                description="#TODO(#29059): Add reasons field description",
+            ),
+        ],
     )
 )
 
