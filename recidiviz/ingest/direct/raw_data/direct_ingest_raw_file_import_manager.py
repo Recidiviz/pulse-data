@@ -272,7 +272,7 @@ class DirectIngestRawFileImportManager:
             region_code=self.region.region_code,
             instance=self.instance,
             regions_module_override=self.region.region_module,
-        ).collect_raw_table_migration_queries(sandbox_dataset_prefix)
+        )
         self.raw_tables_dataset = raw_tables_dataset_for_region(
             state_code=self.state_code,
             instance=instance,
@@ -303,13 +303,15 @@ class DirectIngestRawFileImportManager:
         temp_file_paths, columns = self._upload_contents_to_temp_gcs_paths(
             path, file_metadata, augment_with_metadata_columns
         )
+
+        raw_data_destination_address = BigQueryAddress(
+            dataset_id=self.raw_tables_dataset,
+            table_id=parts.file_tag,
+        )
+
         if temp_file_paths:
             if not columns:
                 raise ValueError("Found delegate output_columns is unexpectedly None.")
-            raw_data_destination_address = BigQueryAddress(
-                dataset_id=self.raw_tables_dataset,
-                table_id=parts.file_tag,
-            )
             if self._should_prune_new_data(parts.file_tag):
                 self._load_pruned_contents_to_bigquery(
                     file_tag=parts.file_tag,
@@ -327,7 +329,11 @@ class DirectIngestRawFileImportManager:
                     columns=columns,
                 )
 
-        migration_queries = self.raw_table_migrations.get(parts.file_tag, [])
+        migration_queries = (
+            self.raw_table_migrations.get_raw_table_migration_queries_for_file_tag(
+                parts.file_tag, raw_data_destination_address
+            )
+        )
 
         logging.info(
             "Running [%s] migration queries for table [%s]",

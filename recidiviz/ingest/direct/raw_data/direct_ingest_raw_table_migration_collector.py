@@ -16,11 +16,11 @@
 # =============================================================================
 """Defines a class that finds all raw table migrations defined for a given region."""
 
-import datetime
 from collections import defaultdict
 from types import ModuleType
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional
 
+from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.common.module_collector_mixin import ModuleCollectorMixin
 from recidiviz.ingest.direct import regions
 from recidiviz.ingest.direct.raw_data.direct_ingest_raw_table_migration import (
@@ -35,8 +35,6 @@ from recidiviz.ingest.direct.raw_data.direct_ingest_raw_table_migration_generato
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 
 _MIGRATIONS_FUNCTION_EXPECTED_NAME = "get_migrations"
-
-RawFileKey = Tuple[str, Optional[datetime.datetime]]
 
 
 class DirectIngestRawTableMigrationCollector(ModuleCollectorMixin):
@@ -57,7 +55,7 @@ class DirectIngestRawTableMigrationCollector(ModuleCollectorMixin):
         region_code: str,
         instance: DirectIngestInstance,
         regions_module_override: Optional[ModuleType] = None,
-    ):
+    ) -> None:
         regions_module = regions_module_override or regions
         self.region_code = region_code
         self.instance = instance
@@ -65,26 +63,35 @@ class DirectIngestRawTableMigrationCollector(ModuleCollectorMixin):
             regions_module,
             [self.region_code.lower(), RAW_DATA_SUBDIR, MIGRATIONS_SUBDIR],
         )
+        self._migration_by_file_tag: Dict[
+            str, List[RawTableMigration]
+        ] = self.collect_raw_table_migrations_by_file_tag()
 
-    def collect_raw_table_migration_queries(
-        self, sandbox_dataset_prefix: Optional[str]
-    ) -> Dict[str, List[str]]:
-        """Finds all migrations defined for this region and returns a dict indexing all migration queries that should be
-        run for a given raw file.
+    # TODO(#30757) because we know file_id at this point we also know update_datetime,
+    # so we can add a filter to not run migration queries whose `update_datetime_filters`
+    # dont match the update_datetime of the raw file
+    def get_raw_table_migration_queries_for_file_tag(
+        self,
+        file_tag: str,
+        raw_table_address: BigQueryAddress,
+    ) -> List[str]:
+        """Generates a migration query that will modify raw data for the raw data table
+        specified by |file_tag| that is located at |raw_table_address|.
         """
-        migrations_list = self.collect_raw_table_migrations()
-        migrations_by_file_tag = defaultdict(list)
-        for migration in migrations_list:
-            migrations_by_file_tag[migration.file_tag].append(migration)
+        return RawTableMigrationGenerator.migration_queries(
+            self._migration_by_file_tag[file_tag],
+            raw_table_address=raw_table_address,
+        )
 
-        return {
-            file_tag: RawTableMigrationGenerator.migration_queries(
-                migrations,
-                ingest_instance=self.instance,
-                sandbox_dataset_prefix=sandbox_dataset_prefix,
-            )
-            for file_tag, migrations in migrations_by_file_tag.items()
-        }
+    def collect_raw_table_migrations_by_file_tag(
+        self,
+    ) -> Dict[str, List[RawTableMigration]]:
+        """Collects raw table migrations by file_tag"""
+        migration_by_file_tag = defaultdict(list)
+        for migration in self.collect_raw_table_migrations():
+            migration_by_file_tag[migration.file_tag].append(migration)
+
+        return migration_by_file_tag
 
     def collect_raw_table_migrations(self) -> List[RawTableMigration]:
         """Finds all raw table migration objects defined for this region."""
