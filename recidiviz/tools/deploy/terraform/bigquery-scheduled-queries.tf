@@ -89,40 +89,6 @@ EOT
   }
 }
 
-# `synthetic_state_weights` weights for non-partner states used to generate a
-# (synthetic) control group whose metrics approximate the specified partner state.
-# The source data is located in a Google Sheet.
-resource "google_bigquery_data_transfer_config" "synthetic_state_weights" {
-  display_name           = "synthetic_state_weights"
-  location               = "US"
-  data_source_id         = "scheduled_query"
-  schedule               = "every day 08:00" # In UTC
-  service_account_name   = google_service_account.bigquery_scheduled_queries.email
-  destination_dataset_id = module.static_reference_tables.dataset_id
-  params = {
-    destination_table_name_template = "synthetic_state_weights_materialized"
-    write_disposition               = "WRITE_TRUNCATE"
-    query                           = <<-EOT
-SELECT
-  state_code,
-  assignment_date,
-  ARRAY(
-    SELECT trim(val)
-    FROM UNNEST(SPLIT(TRIM(control_states, "[]"))) val
-  ) AS control_states,
-  ARRAY(
-    SELECT trim(val)
-    FROM UNNEST(SPLIT(TRIM(control_weights, "[]"))) val
-  ) AS control_weights,
-  metric_matched_on,
-FROM
-  `${var.project_id}.static_reference_tables.synthetic_state_weights`
-WHERE
-  state_code IS NOT NULL
-EOT
-  }
-}
-
 resource "google_bigquery_data_transfer_config" "product_roster_archive" {
   display_name           = "product_roster_archive"
   location               = "US"
