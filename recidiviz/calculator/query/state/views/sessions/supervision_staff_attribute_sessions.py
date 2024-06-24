@@ -53,7 +53,7 @@ _SUPERVISION_STAFF_ATTRIBUTES_NO_OVERLAPS: Dict[str, List[str]] = {
 _SUPERVISION_STAFF_ATTRIBUTES_WITH_OVERLAPS: Dict[str, List[str]] = {
     "role_subtype": ["COALESCE(role_subtype_priority, 99)"],
     "role_type": [],
-    "specialized_caseload_type": [],
+    "specialized_caseload_type": ['specialized_caseload_type = "TRANSITIONAL"'],
     "supervisor_staff_external_id": [
         "supervisor_staff_external_id",
         "supervisor_staff_id",

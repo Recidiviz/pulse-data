@@ -192,11 +192,17 @@ from recidiviz.calculator.query.state.views.sessions.supervision_officer_inferre
 from recidiviz.calculator.query.state.views.sessions.supervision_officer_sessions import (
     SUPERVISION_OFFICER_SESSIONS_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.sessions.supervision_officer_transitional_caseload_type_sessions import (
+    SUPERVISION_OFFICER_TRANSITIONAL_CASELOAD_TYPE_SESSIONS_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.sessions.supervision_projected_completion_date_spans import (
     SUPERVISION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.sessions.supervision_staff_attribute_sessions import (
     SUPERVISION_STAFF_ATTRIBUTE_SESSIONS_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.sessions.supervision_staff_primary_specialized_caseload_type_sessions import (
+    SUPERVISION_STAFF_PRIMARY_SPECIALIZED_CASELOAD_TYPE_SESSIONS_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.sessions.supervision_super_sessions import (
     SUPERVISION_SUPER_SESSIONS_VIEW_BUILDER,
@@ -353,7 +359,9 @@ SESSIONS_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     SUPERVISION_LEVEL_SESSIONS_VIEW_BUILDER,
     SUPERVISION_OFFICER_INFERRED_LOCATION_SESSIONS_VIEW_BUILDER,
     SUPERVISION_OFFICER_SESSIONS_VIEW_BUILDER,
+    SUPERVISION_OFFICER_TRANSITIONAL_CASELOAD_TYPE_SESSIONS_VIEW_BUILDER,
     SUPERVISION_STAFF_ATTRIBUTE_SESSIONS_VIEW_BUILDER,
+    SUPERVISION_STAFF_PRIMARY_SPECIALIZED_CASELOAD_TYPE_SESSIONS_VIEW_BUILDER,
     SUPERVISION_UNIT_SUPERVISOR_SESSIONS_VIEW_BUILDER,
     SUPERVISION_SUPER_SESSIONS_VIEW_BUILDER,
     SUPERVISION_TOOL_ACCESS_SESSIONS_VIEW_BUILDER,
