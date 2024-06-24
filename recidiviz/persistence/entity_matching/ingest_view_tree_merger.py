@@ -53,6 +53,8 @@ class IngestViewTreeMerger:
     def merge(
         self,
         ingested_root_entities: List[RootEntityT],
+        # TODO(#24679): Delete this argument entirely once
+        #  INGEST_VIEW_TREE_MERGER_ERROR_EXEMPTIONS is empty and deleted.
         should_throw_on_conflicts: bool = True,
     ) -> List[RootEntityT]:
         """Merges all ingested root entity trees that can be connected via external_id.
