@@ -380,10 +380,10 @@ def parse_supervision_level(
     if re.search(r"MINIMUM ADMINISTRATIVE", supervision_level_value):
         return StateSupervisionLevel.UNSUPERVISED
 
-    if re.search(r"ABSCONDER", supervision_level_value):
-        return StateSupervisionLevel.ABSCONSION
-
-    if re.search(r"WARRANT", supervision_level_value):
+    if (
+        re.search(r"WARRANT", supervision_level_value)
+        and re.search(r"ABSCOND", supervision_level_value) is None
+    ):
         return StateSupervisionLevel.WARRANT
 
     if re.search(r"INTENSIVE", supervision_level_value):
@@ -547,7 +547,7 @@ def map_supervision_type_based_on_COMS(
     raw_text: str,
 ) -> Optional[StateSupervisionPeriodSupervisionType]:
 
-    if re.search(r"ABSCONDED|ESCAPED|ABSCONDER WARRANT", raw_text.upper()):
+    if re.search(r"ABSCONDED|ESCAPED", raw_text.upper()):
         return StateSupervisionPeriodSupervisionType.ABSCONSION
 
     if re.search(
