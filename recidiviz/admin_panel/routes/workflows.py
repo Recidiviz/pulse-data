@@ -181,3 +181,21 @@ class OpportunitySingleConfigurationAPI(MethodView):
             )
 
         return config
+
+
+@workflows_blueprint.route(
+    "<state_code_str>/opportunities/<opportunity_type>/configurations/<int:config_id>/deactivate"
+)
+class OpportunitySingleConfigurationDeactivateAPI(MethodView):
+    "Endpoint to deactivate a config given an id."
+
+    @workflows_blueprint.response(HTTPStatus.OK)
+    def put(self, state_code_str: str, opportunity_type: str, config_id: int) -> str:
+        state_code = refine_state_code(state_code_str)
+
+        try:
+            WorkflowsQuerier(state_code).deactivate_config(opportunity_type, config_id)
+        except ValueError as error:
+            abort(HTTPStatus.BAD_REQUEST, message=str(error))
+
+        return f"Configuration {str(config_id)} has been deactivated"
