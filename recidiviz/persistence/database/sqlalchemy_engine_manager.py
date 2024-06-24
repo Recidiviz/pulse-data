@@ -276,11 +276,8 @@ class SQLAlchemyEngineManager:
         project_id:region:instance_id.
 
         For example:
-            recidiviz-staging:us-east1:dev-state-data
+            recidiviz-staging:us-east1:dev-pathways-data
         """
-
-        # TODO(#20930): Delete secrets for the STATE cloud SQL instance after we delete
-        #  the instance.
         instance_id_key = cls._get_cloudsql_instance_id_key(
             schema_type=schema_type, secret_prefix_override=secret_prefix_override
         )

@@ -18,6 +18,7 @@
 
 from recidiviz.common.constants.states import StateCode
 
+# TODO(#24679): Delete this list once it is empty
 INGEST_VIEW_TREE_MERGER_ERROR_EXEMPTIONS = {
     # TODO(#24299) Remove this exemption once conflicts no longer appear.
     StateCode.US_PA: {"sci_incarceration_period"},

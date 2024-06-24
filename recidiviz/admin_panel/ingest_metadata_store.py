@@ -86,7 +86,7 @@ class StateDataFreshnessInfo:
     last_state_dataset_refresh_time: Optional[datetime.datetime]
 
 
-# TODO(#20930): The data freshness page for STATE does not make any sense in a post-IID
+# TODO(#30883): The data freshness page for STATE does not make any sense in a post-IID
 #  world. We should delete it entirely and replace it with messaging around how it
 #  has been replaced by the Raw Data Freshness + Latest Pipeline Run/Job End Time
 #  sections on the state-specific admin panel page.
