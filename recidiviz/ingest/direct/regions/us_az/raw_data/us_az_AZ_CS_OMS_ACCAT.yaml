@@ -1,0 +1,54 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: AZ_CS_OMS_ACCAT
+file_description: |-
+  A table containing specific scores and resulting supervision level designations from specific ACCAT assessments.
+data_classification: source
+primary_key_cols:
+  - ACCAT_ID
+columns:
+  - name: ACCAT_ID
+    description: Primary Key
+  - name: DPP_ID
+    description: ID of the person who was taking the assessment.
+    is_pii: True
+  - name: DATE_ASSESSMENT
+    description: Date the assessment took place
+    field_type: datetime
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S %p', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
+  - name: LEVEL_ID
+    description: ID of supervision level prescribed as a result of this assessment.
+  - name: TOTAL
+    description: Total score
+  - name: GENERAL_NEEDS
+    description: Section score
+  - name: VOCATIONAL
+    description: Section score
+  - name: RELATIONSHIPS
+    description: Section score
+  - name: HEALTH
+    description: Section score
+  - name: ATTITUDE
+    description: Section score
+  - name: CRIMINAL_BEHAVIOR
+    description: Section score
+  - name: CREATE_USERID
+    description: User Id Who created the record references MEA_USERS Table
+    is_pii: True
+  - name: CREATE_DTM
+    description: Date When Record Created
+    field_type: datetime
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S %p', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
+  - name: UPDT_USERID
+    description: User Id Who updated the record references MEA_USERS Table
+    is_pii: True
+  - name: UPDT_DTM
+    description: Date When Record Last Updated
+    field_type: datetime
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S %p', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
+  - name: CHANGE_ID
+    description: References CHNAGE_HISTORY table
+  - name: ACTIVE_FLAG
+    description: Is the record deleted Y/N

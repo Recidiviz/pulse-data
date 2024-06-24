@@ -16,3 +16,4 @@ columns:
     description: |-
       Description if reason declined is Other
     is_pii: True
+always_historical_export: True
