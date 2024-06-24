@@ -217,7 +217,7 @@ UNIT_OF_ANALYSIS_ASSIGNMENT_QUERIES_DICT: Dict[
         MetricUnitOfAnalysisType.SUPERVISION_OFFICER,
     ): """
 SELECT *, supervising_officer_external_id AS officer_id
-FROM `{project_id}.sessions.supervision_officer_sessions_materialized`
+FROM `{project_id}.sessions.supervision_officer_transitional_caseload_type_sessions_materialized`
 """,
     (
         MetricUnitOfObservationType.PERSON_ID,
