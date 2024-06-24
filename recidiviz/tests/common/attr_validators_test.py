@@ -385,22 +385,39 @@ class TestEmailValidator(unittest.TestCase):
 @attr.s
 class _ProperTestEntity:
     """
-    Used in TestAssertAppearTogether
+    Used in TestAppearsWith
     """
-
-    def __attrs_post_init__(self) -> None:
-
-        attr_validators.assert_appear_together(
-            instance=self, field_1="first_field", field_2="second_field"
-        )
 
     first_field: Optional[str] = attr.ib(
         default=None,
         validator=[
             attr_validators.is_opt_str,
+            attr_validators.appears_with("second_field"),
         ],
     )
 
+    second_field: Optional[str] = attr.ib(
+        default=None,
+        validator=[
+            attr_validators.is_opt_str,
+            attr_validators.appears_with("first_field"),
+        ],
+    )
+
+
+@attr.s
+class _OnlyOneFieldHasAppearsWith:
+    """
+    Used in TestAppearsWith
+    """
+
+    first_field: Optional[str] = attr.ib(
+        default=None,
+        validator=[
+            attr_validators.is_opt_str,
+            attr_validators.appears_with("second_field"),
+        ],
+    )
     second_field: Optional[str] = attr.ib(
         default=None,
         validator=[
@@ -410,46 +427,23 @@ class _ProperTestEntity:
 
 
 @attr.s
-class _ImproperTestEntity1:
+class _Missingfirstfieldattribute:
     """
-    Used in TestAssertAppearTogether
+    Used in TestAppearsWith
     """
-
-    def __attrs_post_init__(self) -> None:
-        attr_validators.assert_appear_together(
-            instance=self, field_1="first_field", field_2="second_field"
-        )
-
-    first_field: Optional[str] = attr.ib(
-        default=None,
-        validator=[
-            attr_validators.is_opt_str,
-        ],
-    )
-
-
-@attr.s
-class _ImproperTestEntity2:
-    """
-    Used in TestAssertAppearTogether
-    """
-
-    def __attrs_post_init__(self) -> None:
-        attr_validators.assert_appear_together(
-            instance=self, field_1="first_field", field_2="second_field"
-        )
 
     second_field: Optional[str] = attr.ib(
         default=None,
         validator=[
             attr_validators.is_opt_str,
+            attr_validators.appears_with("first_field"),
         ],
     )
 
 
-class TestAssertAppearTogether(unittest.TestCase):
+class TestAssertAppearsWith(unittest.TestCase):
     """
-    Tests for assert_appear_together validator.
+    Tests for appears_with validator.
     """
 
     def test_first_field_none(self) -> None:
@@ -468,21 +462,20 @@ class TestAssertAppearTogether(unittest.TestCase):
         ):
             _ProperTestEntity(first_field="value1")
 
-    def test_field2_attributes(self) -> None:
+    def test_field2_validator(self) -> None:
         with self.assertRaisesRegex(
             ValueError,
-            f"second_field is currently not an attribute of {_ImproperTestEntity1}. "
-            f"Fields 'first_field' and 'second_field' should both be attributes of {_ImproperTestEntity1}",
+            "Field second_field does not have 'appears_with' validator",
         ):
-            _ImproperTestEntity1(first_field="value1")
+            _OnlyOneFieldHasAppearsWith(first_field="value1", second_field="value2")
 
     def test_field1_attribute(self) -> None:
         with self.assertRaisesRegex(
             ValueError,
-            f"first_field is currently not an attribute of {_ImproperTestEntity2}. "
-            f"Fields 'first_field' and 'second_field' should both be attributes of {_ImproperTestEntity2}",
+            f"first_field is currently not an attribute of {_Missingfirstfieldattribute}. "
+            f"Fields 'first_field' and 'second_field' should both be attributes of {_Missingfirstfieldattribute}",
         ):
-            _ImproperTestEntity2(second_field="value2")
+            _Missingfirstfieldattribute(second_field="value2")
 
     def test_valid_field_values(self) -> None:
         # These don't crash

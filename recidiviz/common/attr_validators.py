@@ -29,6 +29,7 @@ from typing import Any, Callable, Optional, Type
 
 import attr
 import pytz
+from more_itertools import one
 
 
 class IsOptionalValidator:
@@ -151,31 +152,49 @@ def is_valid_email(_instance: Any, _attribute: attr.Attribute, value: str) -> No
         raise ValueError(f"Email has a suspicious username {local_part}")
 
 
-def assert_appear_together(instance: Any, field_1: str, field_2: str) -> None:
+class AppearsWithValidator:
     """
-    Assert that two fields either both appear (are non-None) or both do not appear (are None).
-    Additionally, ensure that both fields exist as attributes on the instance.
-    Must be called from "__attrs_post_init__" which executes after the instance has been fully initialized
+    Validator to ensure that a specified field appears together with the current field.
 
+    This validator enforces that both fields are either set (non-None) or unset (None) together,
+    and ensures that the specified related field also includes an `AppearsWithValidator`
+    referencing the current field.
     """
-    if not hasattr(instance, field_1):
-        raise ValueError(
-            f"{field_1} is currently not an attribute of {type(instance)}. "
-            f"Fields '{field_1}' and '{field_2}' should both be attributes of {type(instance)}"
-        )
-    if not hasattr(instance, field_2):
-        raise ValueError(
-            f"{field_2} is currently not an attribute of {type(instance)}. "
-            f"Fields '{field_1}' and '{field_2}' should both be attributes of {type(instance)}"
+
+    def __init__(self, field_name: str):
+        self.field_name = field_name
+
+    def __call__(
+        self, instance: Any, attribute: attr.Attribute, value: Optional[Any]
+    ) -> None:
+        if not hasattr(instance, self.field_name):
+            raise ValueError(
+                f"{self.field_name} is currently not an attribute of {type(instance)}. "
+                f"Fields '{self.field_name}' and '{attribute.name}' should both be attributes of {type(instance)}"
+            )
+
+        other_field = one(
+            f for f in attr.fields(instance.__class__) if f.name == self.field_name
         )
 
-    value_1 = getattr(instance, field_1)
-    value_2 = getattr(instance, field_2)
-    if (value_1 is None) != (value_2 is None):
-        raise ValueError(
-            f"Fields of {type(instance)}: '{field_1}' and '{field_2}' must both be set or both be None. "
-            f"Current values: {field_1}={value_1}, {field_2}={value_2}"
-        )
+        if repr(AppearsWithValidator(attribute.name)) not in str(other_field.validator):
+            raise ValueError(
+                f"Field {self.field_name} does not have 'appears_with' validator"
+            )
+
+        other_value = getattr(instance, self.field_name)
+        if (value is None) != (other_value is None):
+            raise ValueError(
+                f"Fields of {type(instance)}: '{attribute.name}' and '{self.field_name}' must both be set or both be None. "
+                f"Current values: {attribute.name}={value}, {self.field_name}={other_value}"
+            )
+
+    def __repr__(self) -> str:
+        return f"AppearsWithValidator field_name:{self.field_name}"
+
+
+def appears_with(field_name: str) -> AppearsWithValidator:
+    return AppearsWithValidator(field_name)
 
 
 # String field validators
