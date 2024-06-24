@@ -218,7 +218,7 @@ def supervision_type_info_from_COMS(supervision_level: str, modifier: str) -> bo
     """Returns whether the COMS supervision level or modifier data contains information about supervision type"""
 
     if search(
-        r"ABSCONDER WARRANT|ARRESTED OUT OF STATE|PAROLE #2|PROBATION WARRANT",
+        r"ARRESTED OUT OF STATE|PAROLE #2|PROBATION WARRANT",
         supervision_level.upper(),
     ):
         return True

@@ -789,6 +789,21 @@ output:
                           - specialties
                         $separator: "##"
                     $custom_parser: us_mi_custom_enum_parsers.map_in_custody_level
+              # Map supervision level to Absconsion if the modifier indicates absconsion
+              - $else_if:
+                  $equal:
+                    - modifier
+                    - $literal("Absconded")
+                $then:
+                  $enum_mapping:
+                    $raw_text:
+                      $concat:
+                        $values:
+                          - $literal("MODIFIER")
+                          - modifier
+                    $mappings:
+                      StateSupervisionLevel.ABSCONSION:
+                        - "MODIFIER-Absconded"
               # If this period has a in custody related supervision site, map to IN_CUSTODY
               - $else_if:
                   $in:
