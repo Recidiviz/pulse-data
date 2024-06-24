@@ -322,3 +322,31 @@ class WorkflowsQuerier:
             session.commit()
 
             return config_id
+
+    def deactivate_config(self, opportunity_type: str, config_id: int) -> None:
+        """
+        Given an opportunity type and a config id, deactivates that config in the database.
+        Raises an exception if the config does not exist, the config is already inactive,
+        or the config is the default config for the opportunity (feature_variant=None).
+        """
+        with self.database_session() as session:
+            config = self.get_config_for_id(opportunity_type, config_id)
+
+            if config is None:
+                raise ValueError("Config does not exist")
+            if config.status == OpportunityStatus.INACTIVE:
+                raise ValueError("Config is already inactive")
+            if config.feature_variant is None:
+                raise ValueError("Cannot deactivate default config")
+
+            update_statement = (
+                update(OpportunityConfiguration)
+                .filter(
+                    OpportunityConfiguration.opportunity_type == opportunity_type,
+                    OpportunityConfiguration.id == config_id,
+                )
+                .values(status=OpportunityStatus.INACTIVE)
+            )
+
+            session.execute(update_statement)
+            session.commit()

@@ -519,3 +519,45 @@ class TestWorkflowsQuerier(TestCase):
         querier = WorkflowsQuerier(StateCode.US_ID)
         with pytest.raises(Exception):
             querier.add_config(**make_add_config_arguments("badType"))  # type: ignore
+
+    def test_deactivate_config(self) -> None:
+        querier = WorkflowsQuerier(StateCode.US_ID)
+        config_id = querier.add_config(
+            **make_add_config_arguments(
+                "usIdSupervisionLevelDowngrade",
+                feature_variant="someNewVariant",
+            )
+        )
+
+        querier.deactivate_config("usIdSupervisionLevelDowngrade", config_id)
+
+        actual = querier.get_config_for_id("usIdSupervisionLevelDowngrade", config_id)
+
+        self.assertEqual(actual.status, OpportunityStatus.INACTIVE)  # type: ignore
+
+    def test_deactivate_config_nonexistent(self) -> None:
+        querier = WorkflowsQuerier(StateCode.US_ID)
+        with pytest.raises(ValueError, match="Config does not exist"):
+            querier.deactivate_config("usIdSupervisionLevelDowngrade", 100)
+
+    def test_deactivate_config_already_inactive(self) -> None:
+        querier = WorkflowsQuerier(StateCode.US_ID)
+        config_id = querier.add_config(
+            **make_add_config_arguments(
+                "usIdSupervisionLevelDowngrade",
+                feature_variant="someNewVariant",
+            )
+        )
+
+        # deactivate it once
+        querier.deactivate_config("usIdSupervisionLevelDowngrade", config_id)
+
+        # attempt to deactivate a second time
+        with pytest.raises(ValueError, match="Config is already inactive"):
+            querier.deactivate_config("usIdSupervisionLevelDowngrade", config_id)
+
+    def test_deactivate_config_no_feature_variant(self) -> None:
+        querier = WorkflowsQuerier(StateCode.US_ID)
+
+        with pytest.raises(ValueError, match="Cannot deactivate default config"):
+            querier.deactivate_config("usIdSupervisionLevelDowngrade", 3)
