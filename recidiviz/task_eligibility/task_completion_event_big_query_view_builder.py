@@ -77,6 +77,7 @@ class TaskCompletionEventType(Enum):
     TRANSFER_TO_SPECIAL_CIRCUMSTANCES_SUPERVISION = (
         "TRANSFER_TO_SPECIAL_CIRCUMSTANCES_SUPERVISION"
     )
+    ADMINISTRATIVE_TRANSFER = "ADMINISTRATIVE_TRANSFER"
 
 
 class StateSpecificTaskCompletionEventBigQueryViewBuilder(SimpleBigQueryViewBuilder):
