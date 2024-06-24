@@ -74,6 +74,9 @@ base_with_descriptions AS (
   WHERE UPPER(action_lookup.DESCRIPTION) LIKE "%PRISON%" 
   OR action_lookup.DESCRIPTION IS NULL 
   OR UPPER(action_lookup.DESCRIPTION) = 'NOT APPLICABLE'
+  -- These releases only have supervision-related actions, but are releases from incarceration,
+  -- so we have to include them specifically.
+  OR UPPER(MOVEMENT_DESCRIPTION) = 'RELEASE ISC'
 ),
 -- This CTE results in one row per locator code from the AZ_DOC_LOCATOR_CODE reference file,
 -- preprocessed so joining using a date field will yield the location information that was
@@ -159,8 +162,9 @@ locations_decoded AS (
     ORIGIN_LOC_DESC,
     facility,
     custody_level.CUSTODY_LEVEL,
-    TRIM(jail_lookup.DESCRIPTION, 'Court in ') AS county_jail_location, 
-    TRIM(hospital_lookup.DESCRIPTION, 'Court in ') AS hospital_location,
+    REPLACE(jail_lookup.DESCRIPTION, 'Court in ', '') AS county_jail_location, 
+    -- For some reason hospital locations sometimes say "Court in XX County"
+    REPLACE(REPLACE(hospital_lookup.DESCRIPTION, 'Court in ', ''), 'Hospital in ', '') AS hospital_location,
   FROM custody_level
   LEFT JOIN {LOOKUPS} jail_lookup
   ON(DESTINATION_COURT_ID = jail_lookup.LOOKUP_ID)
@@ -196,7 +200,7 @@ SELECT
   CASE WHEN 
     UPPER(PERIOD_ACTION) LIKE "%OPEN%" OR UPPER(MOVEMENT_DESCRIPTION) LIKE "%CREATE%" THEN 1
     WHEN UPPER(PERIOD_ACTION) LIKE "%NOT APPLICABLE%" OR MOVEMENT_DESCRIPTION IS NULL THEN 2
-    WHEN UPPER(PERIOD_ACTION) LIKE "%CLOSE PRISON%" THEN 3 
+    WHEN UPPER(PERIOD_ACTION) LIKE "%CLOSE%" THEN 3 
   END AS action_ranking
 FROM locations_decoded 
 )
@@ -229,7 +233,7 @@ WHERE DOC_ID IS NOT NULL AND PERSON_ID IS NOT NULL
 -- admission and release reasons
 AND (admission_date != release_date 
   OR (admission_date=release_date AND (UPPER(adm_action) LIKE "%CREATE%" OR UPPER(adm_action) LIKE "%OPEN%"))
-  OR (admission_date=release_date AND (UPPER(rel_action) LIKE "%CLOSE PRISON%"))
+  OR (admission_date=release_date AND (UPPER(rel_action) LIKE "%CLOSE%"))
   OR release_date IS NULL)
 AND (MOVEMENT_DIRECTION != 'OUT' 
 -- These are internal movements (transfers, out to hospital, etc)
