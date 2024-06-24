@@ -17,6 +17,7 @@
 """Tests for the admin panel workflows endpoints."""
 
 import datetime
+import json
 from http import HTTPStatus
 from unittest import TestCase
 from unittest.mock import MagicMock, patch
@@ -108,6 +109,12 @@ class WorkflowsAdminPanelEndpointTests(TestCase):
             )
             self.single_opportunity_configuration_url = url_for(
                 "workflows.OpportunitySingleConfigurationAPI",
+                state_code_str="US_ID",
+                opportunity_type=TEST_WORKFLOW_TYPE,
+                config_id=TEST_CONFIG_ID,
+            )
+            self.single_opportunity_configuration_deactivate_url = url_for(
+                "workflows.OpportunitySingleConfigurationDeactivateAPI",
                 state_code_str="US_ID",
                 opportunity_type=TEST_WORKFLOW_TYPE,
                 config_id=TEST_CONFIG_ID,
@@ -349,3 +356,46 @@ class WorkflowsAdminPanelEndpointTests(TestCase):
         response = self.client.get(self.single_opportunity_configuration_url)
 
         self.assertEqual(HTTPStatus.BAD_REQUEST, response.status_code)
+
+    ########
+    # PUT /workflows/<state_code>/opportunities/<opportunity_type>/configurations/<id>/deactivate
+    ########
+
+    @patch(
+        "recidiviz.admin_panel.routes.workflows.WorkflowsQuerier",
+    )
+    @patch(
+        "recidiviz.admin_panel.routes.workflows.get_workflows_enabled_states",
+    )
+    def test_deactivate_config(
+        self, mock_enabled_states: MagicMock, mock_querier: MagicMock
+    ) -> None:
+        mock_enabled_states.return_value = ["US_ID"]
+
+        response = self.client.put(self.single_opportunity_configuration_deactivate_url)
+
+        self.assertEqual(HTTPStatus.OK, response.status_code)
+
+        mock_querier.return_value.deactivate_config.assert_called_with(
+            TEST_WORKFLOW_TYPE,
+            TEST_CONFIG_ID,
+        )
+
+    # if WorkflowsQuerier.deactivate_config throws a ValueError, the route should
+    # return BAD_REQUEST with the error message
+    @patch(
+        "recidiviz.admin_panel.routes.workflows.WorkflowsQuerier",
+        side_effect=ValueError("Config does not exist"),
+    )
+    @patch(
+        "recidiviz.admin_panel.routes.workflows.get_workflows_enabled_states",
+    )
+    def test_deactivate_config_error(
+        self, mock_enabled_states: MagicMock, _mock_querier: MagicMock
+    ) -> None:
+        mock_enabled_states.return_value = ["US_ID"]
+
+        response = self.client.put(self.single_opportunity_configuration_deactivate_url)
+
+        self.assertEqual(HTTPStatus.BAD_REQUEST, response.status_code)
+        self.assertEqual("Config does not exist", json.loads(response.data)["message"])
