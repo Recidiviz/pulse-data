@@ -1,0 +1,5 @@
+primary_key,value,file_id,update_datetime,is_deleted
+hellothere,whitespacestotrim,1,2024-01-01 01:01:01,False
+no seriously,"there's literally a 
+newline character here but dont worry it wont get trimmed since its not on the edges",1,2024-01-01 01:01:01,False
+none               here,there's literally   a tab there,1,2024-01-01 01:01:01,False

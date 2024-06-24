@@ -1,0 +1,13 @@
+primary_key,value
+hellothere  , whitespacestotrim          
+"
+
+
+
+no seriously  
+
+
+
+      ","there's literally a 
+newline character here but dont worry it wont get trimmed since its not on the edges"
+                none               here,    there's literally   a tab there
