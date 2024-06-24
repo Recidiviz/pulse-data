@@ -436,25 +436,36 @@ USING (person_id)
 
 SELECT 
   * EXCEPT(prioritized_date),
+
+  /*
+  The CASE below adjusts the prioritized date using these steps.
+  - Follow the standard prioritization ranking from above (BDRD, then ME/MPT, then CR, 
+  then MAX). 
+  - Then, remove the prioritized date entirely for people serving life sentences.
+  - Then, for people past their ME/MPT dates who have RCH dates, override the prioritized 
+    date with either:
+    (a) the RCH date, if it's 10 years (or less) before the CR/MAX date
+    (b) The CR/MAX date, if it's more than 10 years past the RCH date
+  */
+
   CASE 
-    WHEN past_me_mpt AND cr_md IS NOT NULL AND meets_rch_conditions THEN rch_date
-    WHEN past_me_mpt AND cr_md IS NOT NULL AND NOT meets_rch_conditions THEN cr_md
+    WHEN life_flag THEN NULL
+    WHEN past_me_mpt AND 
+      cr_md IS NOT NULL AND 
+      rch_date IS NOT NULL AND 
+      DATE_DIFF(cr_md,rch_date,MONTH) <= 120 
+    THEN rch_date
+    WHEN past_me_mpt AND 
+      cr_md IS NOT NULL AND 
+      rch_date IS NOT NULL AND 
+      DATE_DIFF(cr_md,rch_date,YEAR) > 120 
+    THEN cr_md
     ELSE prioritized_date
     -- TODO(#29245): This currently will fall back to the standard prioritized date if 
     -- someone's CR/MAX dates are null, regardless of their RCH date. We need to check if 
     -- this is the desired behavior.
   END AS prioritized_date
-FROM (
-SELECT 
-  *,
-  rch_date IS NOT NULL AND     
-  DATE_DIFF(
-    cr_md,
-    rch_date,
-    YEAR
-  ) <= 10 AS meets_rch_conditions
 FROM pre_rch_override
-)
 """
 
 US_MO_PROGRAM_TRACKS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
