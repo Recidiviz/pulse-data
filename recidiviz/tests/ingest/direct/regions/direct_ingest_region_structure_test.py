@@ -31,6 +31,7 @@ from mock import patch
 from more_itertools import one
 from parameterized import parameterized
 
+from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_utils import normalize_column_name_for_bq
 from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath, GcsfsFilePath
 from recidiviz.common.constants.operations.direct_ingest_instance_status import (
@@ -383,10 +384,16 @@ class DirectIngestRegionDirStructureBase:
                         instance=instance,
                         regions_module_override=self.region_module_override,
                     )
-                    # Test this doesn't crash
-                    _ = collector.collect_raw_table_migration_queries(
-                        sandbox_dataset_prefix=None
-                    )
+                    for (
+                        file_tag
+                    ) in collector.collect_raw_table_migrations_by_file_tag():
+                        # Test this doesn't crash
+                        _ = collector.get_raw_table_migration_queries_for_file_tag(
+                            file_tag,
+                            raw_table_address=BigQueryAddress(
+                                dataset_id="some_dataset", table_id=file_tag
+                            ),
+                        )
 
                     # Check that migrations are valid
                     migrations = collector.collect_raw_table_migrations()

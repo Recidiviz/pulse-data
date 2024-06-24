@@ -21,6 +21,7 @@ import os
 import unittest
 from typing import List
 
+from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.ingest.direct import regions
 from recidiviz.ingest.direct.raw_data.direct_ingest_raw_table_migration import (
     RAW_TABLE_MIGRATION_FILE_PREFIX,
@@ -31,7 +32,6 @@ from recidiviz.ingest.direct.raw_data.direct_ingest_raw_table_migration import (
 from recidiviz.ingest.direct.raw_data.direct_ingest_raw_table_migration_generator import (
     RawTableMigrationGenerator,
 )
-from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.utils.metadata import local_project_id_override
 
 _DATE_1 = datetime.datetime(2020, 4, 14, 0, 31, 0)
@@ -59,18 +59,17 @@ class TestDirectIngestRawTableMigrationGenerator(unittest.TestCase):
             update_datetime_filters=[_DATE_1],
             filters=[("COL1", "31415")],
         )
+
+        test_raw_table = BigQueryAddress(dataset_id="us_xx_raw_data", table_id="tagC")
+
         with local_project_id_override("recidiviz-456"):
             project_1_queries = RawTableMigrationGenerator.migration_queries(
-                [migration],
-                ingest_instance=DirectIngestInstance.PRIMARY,
-                sandbox_dataset_prefix=None,
+                [migration], test_raw_table
             )
 
         with local_project_id_override("recidiviz-789"):
             project_2_queries = RawTableMigrationGenerator.migration_queries(
-                [migration],
-                ingest_instance=DirectIngestInstance.PRIMARY,
-                sandbox_dataset_prefix=None,
+                [migration], test_raw_table
             )
 
         expected_project_1_queries = [
@@ -95,18 +94,19 @@ WHERE STRUCT(COL1, update_datetime) IN (
             update_datetime_filters=[_DATE_1],
             filters=[("COL1", "31415")],
         )
+
+        test_raw_table = BigQueryAddress(
+            dataset_id="us_xx_raw_data_secondary", table_id="tagC"
+        )
+
         with local_project_id_override("recidiviz-456"):
             project_1_queries = RawTableMigrationGenerator.migration_queries(
-                [migration],
-                ingest_instance=DirectIngestInstance.SECONDARY,
-                sandbox_dataset_prefix=None,
+                [migration], test_raw_table
             )
 
         with local_project_id_override("recidiviz-789"):
             project_2_queries = RawTableMigrationGenerator.migration_queries(
-                [migration],
-                ingest_instance=DirectIngestInstance.SECONDARY,
-                sandbox_dataset_prefix=None,
+                [migration], test_raw_table
             )
 
         expected_project_1_queries = [
@@ -131,11 +131,14 @@ WHERE STRUCT(COL1, update_datetime) IN (
             update_datetime_filters=[_DATE_1, _DATE_2],
             filters=[("col_name_1a", "31415"), ("col_name_1b", "45678")],
         )
+
+        test_raw_table = BigQueryAddress(
+            dataset_id="us_xx_raw_data", table_id="file_tag_first"
+        )
+
         with local_project_id_override("recidiviz-456"):
             queries = RawTableMigrationGenerator.migration_queries(
-                [migration],
-                ingest_instance=DirectIngestInstance.PRIMARY,
-                sandbox_dataset_prefix=None,
+                [migration], test_raw_table
             )
 
         expected_queries = [
@@ -153,18 +156,17 @@ WHERE STRUCT(col_name_1a, col_name_1b, update_datetime) IN (
             update_datetime_filters=None,
             filters=[("COL1", "31415")],
         )
+
+        test_raw_table = BigQueryAddress(dataset_id="us_xx_raw_data", table_id="tagC")
+
         with local_project_id_override("recidiviz-456"):
             project_1_queries = RawTableMigrationGenerator.migration_queries(
-                [migration],
-                ingest_instance=DirectIngestInstance.PRIMARY,
-                sandbox_dataset_prefix=None,
+                [migration], test_raw_table
             )
 
         with local_project_id_override("recidiviz-789"):
             project_2_queries = RawTableMigrationGenerator.migration_queries(
-                [migration],
-                ingest_instance=DirectIngestInstance.PRIMARY,
-                sandbox_dataset_prefix=None,
+                [migration], test_raw_table
             )
 
         expected_project_1_queries = [
@@ -192,18 +194,17 @@ WHERE STRUCT(COL1) IN (
             filters=[("COL1", "31415")],
             updates=[("COL1", "91011")],
         )
+
+        test_raw_table = BigQueryAddress(dataset_id="us_xx_raw_data", table_id="tagC")
+
         with local_project_id_override("recidiviz-456"):
             project_1_queries = RawTableMigrationGenerator.migration_queries(
-                [migration],
-                ingest_instance=DirectIngestInstance.PRIMARY,
-                sandbox_dataset_prefix=None,
+                [migration], test_raw_table
             )
 
         with local_project_id_override("recidiviz-789"):
             project_2_queries = RawTableMigrationGenerator.migration_queries(
-                [migration],
-                ingest_instance=DirectIngestInstance.PRIMARY,
-                sandbox_dataset_prefix=None,
+                [migration], test_raw_table
             )
 
         expected_project_1_queries = [
@@ -233,11 +234,14 @@ WHERE original.COL1 = updates.COL1 AND original.update_datetime = updates.update
             filters=[("col_name_1a", "12345"), ("col_name_1b", "4567")],
             updates=[("col_name_1a", "4567"), ("col_name_1b", "12345")],
         )
+
+        test_raw_table = BigQueryAddress(
+            dataset_id="us_xx_raw_data", table_id="file_tag_first"
+        )
+
         with local_project_id_override("recidiviz-456"):
             queries = RawTableMigrationGenerator.migration_queries(
-                [migration],
-                ingest_instance=DirectIngestInstance.PRIMARY,
-                sandbox_dataset_prefix=None,
+                [migration], test_raw_table
             )
 
         expected_queries = [
@@ -261,18 +265,16 @@ WHERE original.col_name_1a = updates.col_name_1a AND original.col_name_1b = upda
             filters=[("COL1", "31415")],
             updates=[("COL1", "91011")],
         )
+
+        test_raw_table = BigQueryAddress(dataset_id="us_xx_raw_data", table_id="tagC")
         with local_project_id_override("recidiviz-456"):
             project_1_queries = RawTableMigrationGenerator.migration_queries(
-                [migration],
-                ingest_instance=DirectIngestInstance.PRIMARY,
-                sandbox_dataset_prefix=None,
+                [migration], test_raw_table
             )
 
         with local_project_id_override("recidiviz-789"):
             project_2_queries = RawTableMigrationGenerator.migration_queries(
-                [migration],
-                ingest_instance=DirectIngestInstance.PRIMARY,
-                sandbox_dataset_prefix=None,
+                [migration], test_raw_table
             )
 
         expected_project_1_queries = [
@@ -329,6 +331,11 @@ WHERE original.COL1 = updates.COL1;"""
         with local_project_id_override("recidiviz-456"):
             RawTableMigrationGenerator.print_list(migrations)
 
+        test_raw_table = BigQueryAddress(dataset_id="us_xx_raw_data", table_id="tagC")
+
+        with local_project_id_override("recidiviz-456"):
+            RawTableMigrationGenerator.print_list(migrations, [test_raw_table])
+
     def test_merge_delete_migrations(self) -> None:
         migrations_file = self._migration_file_path_for_tag("tagC")
 
@@ -345,11 +352,11 @@ WHERE original.COL1 = updates.COL1;"""
             ),
         ]
 
+        test_raw_table = BigQueryAddress(dataset_id="us_xx_raw_data", table_id="tagC")
+
         with local_project_id_override("recidiviz-456"):
             queries_map = RawTableMigrationGenerator.migration_queries(
-                migrations,
-                ingest_instance=DirectIngestInstance.PRIMARY,
-                sandbox_dataset_prefix=None,
+                migrations, test_raw_table
             )
 
         expected_queries_map = [
@@ -378,11 +385,11 @@ WHERE STRUCT(COL1, update_datetime) IN (
             ),
         ]
 
+        test_raw_table = BigQueryAddress(dataset_id="us_xx_raw_data", table_id="tagC")
+
         with local_project_id_override("recidiviz-456"):
             queries_map = RawTableMigrationGenerator.migration_queries(
-                migrations,
-                ingest_instance=DirectIngestInstance.PRIMARY,
-                sandbox_dataset_prefix=None,
+                migrations, test_raw_table
             )
 
         expected_queries_map = [
@@ -416,11 +423,11 @@ WHERE STRUCT(COL1, update_datetime) IN (
             ),
         ]
 
+        test_raw_table = BigQueryAddress(dataset_id="us_xx_raw_data", table_id="tagC")
+
         with local_project_id_override("recidiviz-456"):
             queries_map = RawTableMigrationGenerator.migration_queries(
-                migrations,
-                ingest_instance=DirectIngestInstance.PRIMARY,
-                sandbox_dataset_prefix=None,
+                migrations, test_raw_table
             )
 
         expected_queries_map = [
@@ -453,11 +460,11 @@ WHERE STRUCT(COL1) IN (
             ),
         ]
 
+        test_raw_table = BigQueryAddress(dataset_id="us_xx_raw_data", table_id="tagC")
+
         with local_project_id_override("recidiviz-456"):
             queries_map = RawTableMigrationGenerator.migration_queries(
-                migrations,
-                ingest_instance=DirectIngestInstance.PRIMARY,
-                sandbox_dataset_prefix=None,
+                migrations, test_raw_table
             )
 
         expected_queries_map = [
@@ -491,11 +498,11 @@ WHERE STRUCT(COL2, update_datetime) IN (
             ),
         ]
 
+        test_raw_table = BigQueryAddress(dataset_id="us_xx_raw_data", table_id="tagC")
+
         with local_project_id_override("recidiviz-456"):
             queries_map = RawTableMigrationGenerator.migration_queries(
-                migrations,
-                ingest_instance=DirectIngestInstance.PRIMARY,
-                sandbox_dataset_prefix=None,
+                migrations, test_raw_table
             )
 
         expected_queries_map = [
@@ -529,11 +536,11 @@ WHERE STRUCT(COL2, update_datetime) IN (
             ),
         ]
 
+        test_raw_table = BigQueryAddress(dataset_id="us_xx_raw_data", table_id="tagC")
+
         with local_project_id_override("recidiviz-456"):
             queries_map = RawTableMigrationGenerator.migration_queries(
-                migrations,
-                ingest_instance=DirectIngestInstance.PRIMARY,
-                sandbox_dataset_prefix=None,
+                migrations, test_raw_table
             )
 
         expected_queries_map = [
@@ -566,11 +573,11 @@ WHERE original.COL1 = updates.COL1 AND original.update_datetime = updates.update
             ),
         ]
 
+        test_raw_table = BigQueryAddress(dataset_id="us_xx_raw_data", table_id="tagC")
+
         with local_project_id_override("recidiviz-456"):
             queries_map = RawTableMigrationGenerator.migration_queries(
-                migrations,
-                ingest_instance=DirectIngestInstance.PRIMARY,
-                sandbox_dataset_prefix=None,
+                migrations, test_raw_table
             )
 
         expected_queries_map = [
@@ -609,11 +616,11 @@ WHERE original.COL1 = updates.COL1;"""
             ),
         ]
 
+        test_raw_table = BigQueryAddress(dataset_id="us_xx_raw_data", table_id="tagC")
+
         with local_project_id_override("recidiviz-456"):
             queries_map = RawTableMigrationGenerator.migration_queries(
-                migrations,
-                ingest_instance=DirectIngestInstance.PRIMARY,
-                sandbox_dataset_prefix=None,
+                migrations, test_raw_table
             )
 
         expected_queries_map = [
@@ -652,11 +659,11 @@ WHERE original.COL1 = updates.COL1;""",
             ),
         ]
 
+        test_raw_table = BigQueryAddress(dataset_id="us_xx_raw_data", table_id="tagC")
+
         with local_project_id_override("recidiviz-456"):
             queries_map = RawTableMigrationGenerator.migration_queries(
-                migrations,
-                ingest_instance=DirectIngestInstance.PRIMARY,
-                sandbox_dataset_prefix=None,
+                migrations, test_raw_table
             )
 
         expected_queries_map = [
@@ -696,11 +703,11 @@ WHERE original.COL1 = updates.COL1;""",
             ),
         ]
 
+        test_raw_table = BigQueryAddress(dataset_id="us_xx_raw_data", table_id="tagC")
+
         with local_project_id_override("recidiviz-456"):
             queries_map = RawTableMigrationGenerator.migration_queries(
-                migrations,
-                ingest_instance=DirectIngestInstance.PRIMARY,
-                sandbox_dataset_prefix=None,
+                migrations, test_raw_table
             )
 
         expected_queries_map = [
@@ -737,11 +744,11 @@ WHERE original.COL1 = updates.COL1 AND original.update_datetime = updates.update
             ),
         ]
 
+        test_raw_table = BigQueryAddress(dataset_id="us_xx_raw_data", table_id="tagC")
+
         with local_project_id_override("recidiviz-456"):
             queries_map = RawTableMigrationGenerator.migration_queries(
-                migrations,
-                ingest_instance=DirectIngestInstance.PRIMARY,
-                sandbox_dataset_prefix=None,
+                migrations, test_raw_table
             )
 
         expected_queries_map = [
@@ -773,11 +780,11 @@ WHERE original.COL1 = updates.COL1 AND original.update_datetime = updates.update
             )
         ]
 
+        test_raw_table = BigQueryAddress(dataset_id="us_xx_raw_data", table_id="tagC")
+
         with local_project_id_override("recidiviz-456"):
             queries_map = RawTableMigrationGenerator.migration_queries(
-                migrations,
-                ingest_instance=DirectIngestInstance.PRIMARY,
-                sandbox_dataset_prefix=None,
+                migrations, test_raw_table
             )
 
         expected_queries_map = [
