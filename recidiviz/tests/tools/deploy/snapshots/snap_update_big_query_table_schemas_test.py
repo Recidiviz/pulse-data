@@ -1065,6 +1065,7 @@ snapshots[
     "us_pa_ingest_view_results.dbo_tblInmTestScore",
     "us_pa_ingest_view_results.doc_person_info",
     "us_pa_ingest_view_results.parole_sentences",
+    "us_pa_ingest_view_results.parole_sentences_task_deadlines",
     "us_pa_ingest_view_results.person_external_ids",
     "us_pa_ingest_view_results.program_assignment",
     "us_pa_ingest_view_results.sci_incarceration_period",

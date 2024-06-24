@@ -1,0 +1,28 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+manifest_language: 1.0.0
+input_columns:
+  - ParoleNumber
+  - ParoleCountId
+  - RelMaxDate
+  - update_datetime
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: ParoleNumber
+          id_type: $literal("US_PA_PBPP")
+    task_deadlines:
+      - StateTaskDeadline:
+          task_type: $literal_enum(StateTaskType.DISCHARGE_FROM_SUPERVISION)
+          eligible_date: RelMaxDate
+          update_datetime: update_datetime
+          task_metadata:
+            $json_dict:
+              external_id:
+                $concat:
+                  $values:
+                    - $literal("PAROLE")
+                    - ParoleNumber
+                    - ParoleCountId
+              sentence_type: $literal("SUPERVISION")
