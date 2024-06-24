@@ -254,40 +254,6 @@ class TestStateEntities(TestCase):
             conducting_staff_external_id_type="EMP-2",
         )
 
-    def test_post_attrs_conducting_staff_id_null_id_nonnull_type(
-        self,
-    ) -> None:
-        with self.assertRaisesRegex(
-            ValueError,
-            r"Found inconsistent conducting_staff_external_id\* fields for StateAssessment with id 1000. "
-            r"conducting_staff_external_id: None conducting_staff_external_id_type: EMP-2. "
-            r"Either both must be null or both must be nonnull.",
-        ):
-            _ = StateAssessment(
-                assessment_id=1000,
-                state_code="US_XX",
-                external_id="1111",
-                conducting_staff_external_id=None,
-                conducting_staff_external_id_type="EMP-2",
-            )
-
-    def test_post_attrs_conducting_staff_id_nonnull_id_null_type(
-        self,
-    ) -> None:
-        with self.assertRaisesRegex(
-            ValueError,
-            r"Found inconsistent conducting_staff_external_id\* fields for StateAssessment with id 1000. "
-            r"conducting_staff_external_id: ABCDE conducting_staff_external_id_type: None. "
-            r"Either both must be null or both must be nonnull.",
-        ):
-            _ = StateAssessment(
-                assessment_id=1000,
-                state_code="US_XX",
-                external_id="1111",
-                conducting_staff_external_id="ABCDE",
-                conducting_staff_external_id_type=None,
-            )
-
     def test_check_constraint_for_contacting_staff_id_simple(self) -> None:
         _ = StateSupervisionContact(
             supervision_contact_id=1000,

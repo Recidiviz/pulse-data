@@ -659,10 +659,18 @@ class StateAssessment(HasExternalIdEntity, BuildableAttr, DefaultableAttr):
     #   - Who
     # See |conducting_agent| below
     conducting_staff_external_id: Optional[str] = attr.ib(
-        default=None, validator=attr_validators.is_opt_str
+        default=None,
+        validator=[
+            attr_validators.is_opt_str,
+            attr_validators.appears_with("conducting_staff_external_id_type"),
+        ],
     )
     conducting_staff_external_id_type: Optional[str] = attr.ib(
-        default=None, validator=attr_validators.is_opt_str
+        default=None,
+        validator=[
+            attr_validators.is_opt_str,
+            attr_validators.appears_with("conducting_staff_external_id"),
+        ],
     )
 
     # Primary key - Only optional when hydrated in the parsing layer, before we have
@@ -676,20 +684,6 @@ class StateAssessment(HasExternalIdEntity, BuildableAttr, DefaultableAttr):
     # Only optional when hydrated in the parsing layer, before we have written this
     # entity to the persistence layer
     person: Optional["StatePerson"] = attr.ib(default=None)
-
-    def __attrs_post_init__(self) -> None:
-        if (
-            self.conducting_staff_external_id is None
-            and self.conducting_staff_external_id_type is not None
-        ) or (
-            self.conducting_staff_external_id is not None
-            and self.conducting_staff_external_id_type is None
-        ):
-            raise ValueError(
-                f"Found inconsistent conducting_staff_external_id* fields for StateAssessment with id {self.assessment_id}. "
-                f"conducting_staff_external_id: {self.conducting_staff_external_id} conducting_staff_external_id_type: {self.conducting_staff_external_id_type}. "
-                "Either both must be null or both must be nonnull."
-            )
 
 
 @attr.s(eq=False, kw_only=True)
