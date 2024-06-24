@@ -156,6 +156,7 @@ output:
                   - Flat Discretionary Release
                   - WK F 41-160411C # Work release
                   - Home Arrest 41-1604.13
+                  - Release ISC
                 StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED:
                   - Community Supervision End Date
                   - OLD/NEW CODE - Expiration
