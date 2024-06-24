@@ -29,7 +29,6 @@ from typing import Any, Callable, Optional, Type
 
 import attr
 import pytz
-from more_itertools import one
 
 
 class IsOptionalValidator:
@@ -150,51 +149,6 @@ def is_valid_email(_instance: Any, _attribute: attr.Attribute, value: str) -> No
 
     if local_part.lower() in suspicious_usernames:
         raise ValueError(f"Email has a suspicious username {local_part}")
-
-
-class AppearsWithValidator:
-    """
-    Validator to ensure that a specified field appears together with the current field.
-
-    This validator enforces that both fields are either set (non-None) or unset (None) together,
-    and ensures that the specified related field also includes an `AppearsWithValidator`
-    referencing the current field.
-    """
-
-    def __init__(self, field_name: str):
-        self.field_name = field_name
-
-    def __call__(
-        self, instance: Any, attribute: attr.Attribute, value: Optional[Any]
-    ) -> None:
-        if not hasattr(instance, self.field_name):
-            raise ValueError(
-                f"{self.field_name} is currently not an attribute of {type(instance)}. "
-                f"Fields '{self.field_name}' and '{attribute.name}' should both be attributes of {type(instance)}"
-            )
-
-        other_field = one(
-            f for f in attr.fields(instance.__class__) if f.name == self.field_name
-        )
-
-        if repr(AppearsWithValidator(attribute.name)) not in str(other_field.validator):
-            raise ValueError(
-                f"Field {self.field_name} does not have 'appears_with' validator"
-            )
-
-        other_value = getattr(instance, self.field_name)
-        if (value is None) != (other_value is None):
-            raise ValueError(
-                f"Fields of {type(instance)}: '{attribute.name}' and '{self.field_name}' must both be set or both be None. "
-                f"Current values: {attribute.name}={value}, {self.field_name}={other_value}"
-            )
-
-    def __repr__(self) -> str:
-        return f"AppearsWithValidator field_name:{self.field_name}"
-
-
-def appears_with(field_name: str) -> AppearsWithValidator:
-    return AppearsWithValidator(field_name)
 
 
 # String field validators

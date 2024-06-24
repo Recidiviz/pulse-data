@@ -24,7 +24,10 @@ import attr
 
 from recidiviz.common import attr_validators
 from recidiviz.persistence.entity.base_entity import Entity
-from recidiviz.persistence.entity.state.entity_field_validators import pre_norm_opt
+from recidiviz.persistence.entity.state.entity_field_validators import (
+    appears_with,
+    pre_norm_opt,
+)
 from recidiviz.persistence.entity.state.normalized_state_entity import (
     NormalizedStateEntity,
 )
@@ -258,3 +261,106 @@ class TestPreNormOptionalValidator(unittest.TestCase):
                 always_optional_foo=Foo(),
                 always_optional_date=None,
             )
+
+
+@attr.s
+class _ProperTestEntity:
+    """
+    Used in TestAppearsWith
+    """
+
+    first_field: Optional[str] = attr.ib(
+        default=None,
+        validator=[
+            attr_validators.is_opt_str,
+            appears_with("second_field"),
+        ],
+    )
+
+    second_field: Optional[str] = attr.ib(
+        default=None,
+        validator=[
+            attr_validators.is_opt_str,
+            appears_with("first_field"),
+        ],
+    )
+
+
+@attr.s
+class _OnlyOneFieldHasAppearsWith:
+    """
+    Used in TestAppearsWith
+    """
+
+    first_field: Optional[str] = attr.ib(
+        default=None,
+        validator=[
+            attr_validators.is_opt_str,
+            appears_with("second_field"),
+        ],
+    )
+    second_field: Optional[str] = attr.ib(
+        default=None,
+        validator=[
+            attr_validators.is_opt_str,
+        ],
+    )
+
+
+@attr.s
+class _Missingfirstfieldattribute:
+    """
+    Used in TestAppearsWith
+    """
+
+    second_field: Optional[str] = attr.ib(
+        default=None,
+        validator=[
+            attr_validators.is_opt_str,
+            appears_with("first_field"),
+        ],
+    )
+
+
+class TestAssertAppearsWith(unittest.TestCase):
+    """
+    Tests for appears_with validator.
+    """
+
+    def test_first_field_none(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            f"Fields of {_ProperTestEntity}: 'first_field' and 'second_field' must both be set or both be None. "
+            "Current values: first_field=None, second_field=value2",
+        ):
+            _ProperTestEntity(second_field="value2")
+
+    def test_second_field_none(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            f"Fields of {_ProperTestEntity}: 'first_field' and 'second_field' must both be set or both be None. "
+            "Current values: first_field=value1, second_field=None",
+        ):
+            _ProperTestEntity(first_field="value1")
+
+    def test_field2_validator(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            "Field second_field does not have 'appears_with' validator",
+        ):
+            _OnlyOneFieldHasAppearsWith(first_field="value1", second_field="value2")
+
+    def test_field1_attribute(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            f"first_field is currently not an attribute of {_Missingfirstfieldattribute}. "
+            f"Fields 'first_field' and 'second_field' should both be attributes of {_Missingfirstfieldattribute}",
+        ):
+            _Missingfirstfieldattribute(second_field="value2")
+
+    def test_valid_field_values(self) -> None:
+        # These don't crash
+        _ = _ProperTestEntity()  # both fields are none
+        _ = _ProperTestEntity(
+            first_field="value1", second_field="value2"
+        )  # both fields are non null

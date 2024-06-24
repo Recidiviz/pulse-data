@@ -136,8 +136,10 @@ from recidiviz.persistence.entity.base_entity import (
     RootEntity,
     UniqueConstraint,
 )
-from recidiviz.persistence.entity.state import entity_field_validators
-from recidiviz.persistence.entity.state.entity_field_validators import pre_norm_opt
+from recidiviz.persistence.entity.state.entity_field_validators import (
+    appears_with,
+    pre_norm_opt,
+)
 from recidiviz.persistence.entity.state.state_entity_mixins import LedgerEntityMixin
 
 # **** Entity Types for convenience *****:
@@ -662,14 +664,14 @@ class StateAssessment(HasExternalIdEntity, BuildableAttr, DefaultableAttr):
         default=None,
         validator=[
             attr_validators.is_opt_str,
-            attr_validators.appears_with("conducting_staff_external_id_type"),
+            appears_with("conducting_staff_external_id_type"),
         ],
     )
     conducting_staff_external_id_type: Optional[str] = attr.ib(
         default=None,
         validator=[
             attr_validators.is_opt_str,
-            attr_validators.appears_with("conducting_staff_external_id"),
+            appears_with("conducting_staff_external_id"),
         ],
     )
 
@@ -2598,9 +2600,7 @@ class StateSentenceStatusSnapshot(
     )
     # The status of a sentence
     status: StateSentenceStatus = attr.ib(
-        validator=entity_field_validators.pre_norm_opt(
-            attr.validators.instance_of(StateSentenceStatus)
-        )
+        validator=pre_norm_opt(attr.validators.instance_of(StateSentenceStatus))
     )
 
     # The raw text value of the status of the sentence
