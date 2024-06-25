@@ -84,6 +84,6 @@ class MetricContextData:
         """
         context_data: List[MetricContextDataT] = []
         for context in metric_definition_contexts:
-            value = stored_metric_contexts.get(context.key.value, None)
+            value = stored_metric_contexts.get(context.key.name, None)
             context_data.append(cls(key=context.key, value=value))
         return context_data

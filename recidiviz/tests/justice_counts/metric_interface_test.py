@@ -700,9 +700,9 @@ class TestMetricInterface(TestCase):
                 "aggregated_dimensions": {
                     "metric/law_enforcement/calls_for_service/type": {
                         "dimension_to_enabled_status": {
-                            "Emergency Calls": False,
-                            "Non-emergency Calls": False,
-                            "Unknown Calls": False,
+                            "EMERGENCY": False,
+                            "NON_EMERGENCY": False,
+                            "UNKNOWN": False,
                         },
                         "dimension_to_includes_excludes_member_to_setting": {},
                         "dimension_to_contexts": {},
@@ -756,9 +756,9 @@ class TestMetricInterface(TestCase):
                 "aggregated_dimensions": {
                     "metric/law_enforcement/calls_for_service/type": {
                         "dimension_to_enabled_status": {
-                            "Emergency Calls": True,
-                            "Non-emergency Calls": False,
-                            "Unknown Calls": False,
+                            "EMERGENCY": True,
+                            "NON_EMERGENCY": False,
+                            "UNKNOWN": False,
                         },
                         "dimension_to_includes_excludes_member_to_setting": {},
                         "dimension_to_contexts": {},
@@ -808,7 +808,29 @@ class TestMetricInterface(TestCase):
                     value="our metrics are different because xyz",
                 )
             ],
-            aggregated_dimensions=[],  # Empty as per JSON
+            aggregated_dimensions=[
+                MetricAggregatedDimensionData(
+                    dimension_to_value={
+                        CallType.EMERGENCY: None,
+                        CallType.NON_EMERGENCY: None,
+                        CallType.OTHER: None,
+                        CallType.UNKNOWN: None,
+                    },
+                    dimension_to_enabled_status={
+                        CallType.EMERGENCY: None,
+                        CallType.NON_EMERGENCY: None,
+                        CallType.OTHER: None,
+                        CallType.UNKNOWN: None,
+                    },
+                    dimension_to_includes_excludes_member_to_setting={
+                        CallType.EMERGENCY: {},
+                        CallType.NON_EMERGENCY: {},
+                        CallType.OTHER: {},
+                        CallType.UNKNOWN: {},
+                    },
+                    dimension_to_contexts={},
+                )
+            ],
             disaggregated_by_supervision_subsystems=None,
             includes_excludes_member_to_setting={},  # Empty as per JSON
             custom_reporting_frequency=CustomReportingFrequency(
@@ -846,9 +868,9 @@ class TestMetricInterface(TestCase):
             "aggregated_dimensions": {
                 "metric/law_enforcement/calls_for_service/type": {
                     "dimension_to_enabled_status": {
-                        "Emergency Calls": True,
-                        "Non-emergency Calls": False,
-                        "Unknown Calls": False,
+                        "EMERGENCY": True,
+                        "NON_EMERGENCY": False,
+                        "UNKNOWN": False,
                     },
                     "dimension_to_includes_excludes_member_to_setting": {},
                     "dimension_to_contexts": {},
