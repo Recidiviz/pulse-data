@@ -84,17 +84,19 @@ US_TN_SEGREGATION_LISTS_QUERY_TEMPLATE = f"""
             l.facility AS current_facility, 
             l.housing_unit AS current_unit,
             open_segs.* EXCEPT(external_id),
-            CASE WHEN housing_unit_type = 'ADMINISTRATIVE_SEGREGATION' AND DATE_DIFF(coalesce(s.end_date_exclusive,current_date()), s.start_date, DAY) > 365 THEN TRUE
-                 WHEN DATE_DIFF(coalesce(s.end_date_exclusive,CURRENT_DATE('US/Eastern')), s.start_date, DAY) > 180 THEN TRUE
+            CASE WHEN housing_unit_type = 'ADMINISTRATIVE_SOLITARY_CONFINEMENT' AND DATE_DIFF(CURRENT_DATE('US/Eastern'), s.start_date, DAY) > 365 THEN TRUE
+                 WHEN housing_unit_type != 'ADMINISTRATIVE_SOLITARY_CONFINEMENT' AND DATE_DIFF(CURRENT_DATE('US/Eastern'), s.start_date, DAY) > 180 THEN TRUE
                  ELSE FALSE END AS long_stay,
             CASE 
-                WHEN compartment_level_1 != "INCARCERATION" OR compartment_level_2 NOT IN ('GENERAL','TEMPORARY_CUSTODY') THEN "no longer incarcerated"
+                WHEN compartment_level_1 != "INCARCERATION" THEN "no longer incarcerated"
+                WHEN compartment_level_1 = "INCARCERATION" AND compartment_level_2 != 'GENERAL' THEN "incarcerated, not in TDOC facility"
                 WHEN (compartment_level_1 = "INCARCERATION" 
                         AND facility NOT IN UNNEST(open_seg_periods_facilities))
                         AND ARRAY_LENGTH(open_seg_periods_facilities) > 0 
                         THEN "seg facility mismatch"
                 WHEN count_distinct_facilities_open_periods > 1 THEN "multiple facility open seg periods"
                 WHEN open_periods_latest_scheduled_end > CURRENT_DATE('US/Eastern') THEN "future scheduled end date"
+                WHEN "DEA" IN UNNEST(open_seg_periods_reasons) THEN "death row"
                 ELSE "high confidence"
             END AS data_category,
         FROM current_seg_stays s
