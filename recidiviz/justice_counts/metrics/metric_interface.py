@@ -121,9 +121,13 @@ class MetricInterface:
         )
         return metric_files_for_metric
 
-    def apply_invariants(self) -> None:
-        """Make sure that the MetricInterface invariants are met. If they are not met,
-        modify the object accordingly."""
+    def post_process_storage_json(self) -> None:
+        """Method to run on a MetricInterface after it has been created from a storage
+        json object.
+
+        This method stores any assertions we expect to have on a MetricInterface before
+        it enters the rest of our system.
+        """
         metric_definition = self.metric_definition
         # If this is a supervision subsystem metric, and the metric is not supposed to
         # be disaggregated by supervision subsystems, the metric must be disabled.
@@ -209,14 +213,15 @@ class MetricInterface:
         }
 
     @classmethod
-    def from_storage_json(
+    def _validate_storage_json(
         cls: Type[MetricInterfaceT],
         json: Dict[str, Any],
-    ) -> MetricInterfaceT:
-        """Creates a instance of a MetricInterface from a formatted json."""
-        # Ensure that the json object has all required fields. This should always be the
-        # case, since we should only call from_storage_json() on json objects that were
-        # created using to_storage_json().
+    ) -> None:
+        """
+        Ensure that the json object has all required fields. This should always be the
+        case, since we should only call from_storage_json() on json objects that were
+        created using to_storage_json().
+        """
         required_fields = [
             "key",
             "aggregated_dimensions",
@@ -225,10 +230,17 @@ class MetricInterface:
         for required_field in required_fields:
             if required_field not in json:
                 raise JusticeCountsServerError(
-                    code="missing_metric_interface_field",
+                    code="invalid_storage_json",
                     description=f"Metric interface json is missing required field: {required_field}",
                 )
 
+    @classmethod
+    def from_storage_json(
+        cls: Type[MetricInterfaceT],
+        json: Dict[str, Any],
+    ) -> MetricInterfaceT:
+        """Creates a instance of a MetricInterface from a formatted json."""
+        cls._validate_storage_json(json)
         metric_definition = METRIC_KEY_TO_METRIC[json["key"]]
 
         contexts = MetricContextData.get_metric_context_data_from_storage_json(

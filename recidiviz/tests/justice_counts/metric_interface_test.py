@@ -3473,7 +3473,7 @@ class TestMetricInterface(TestCase):
             is_metric_enabled=None,
             disaggregated_by_supervision_subsystems=False,
         )
-        metric_interface.apply_invariants()
+        metric_interface.post_process_storage_json()
         self.assertEqual(metric_interface.is_metric_enabled, False)
 
     def test_apply_invariant_for_supervision_metric(self) -> None:
@@ -3484,7 +3484,7 @@ class TestMetricInterface(TestCase):
             key="SUPERVISION_EXPENSES",
             disaggregated_by_supervision_subsystems=None,
         )
-        metric_interface.apply_invariants()
+        metric_interface.post_process_storage_json()
         self.assertEqual(
             metric_interface.disaggregated_by_supervision_subsystems, False
         )
