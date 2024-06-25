@@ -2310,9 +2310,6 @@ class StateSentence(HasExternalIdEntity, BuildableAttr, DefaultableAttr):
     # State code of the state providing the external id
     state_code: str = attr.ib(validator=attr_validators.is_str)
 
-    # Unique external identifier for a sentence
-    external_id: str = attr.ib(default=None, validator=attr_validators.is_str)
-
     # Unique internal identifier for a sentence
     # Primary key - Only optional when hydrated in the parsing layer,
     # before we have written this entity to the persistence layer

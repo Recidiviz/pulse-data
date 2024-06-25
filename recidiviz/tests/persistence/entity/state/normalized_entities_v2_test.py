@@ -40,6 +40,9 @@ from recidiviz.persistence.entity.state import (
 from recidiviz.persistence.entity.state.entity_field_validators import (
     PreNormOptionalValidator,
 )
+from recidiviz.persistence.entity.state.normalized_entities_v2 import (
+    EntityBackedgeValidator,
+)
 from recidiviz.tests.persistence.entity.state.normalized_entities_test import (
     NORMALIZED_PREFIX,
 )
@@ -48,70 +51,17 @@ from recidiviz.utils.types import non_optional
 # TODO(#30075): This list should become empty and get removed once we've implemented all
 #  normalized v2 entities.
 UNIMPLEMENTED_NORMALIZED_V2_CLASSES = {
-    "StateAssessment",
-    "StateCharge",
-    "StateChargeV2",
-    "StateDrugScreen",
-    "StateEarlyDischarge",
-    "StateEmploymentPeriod",
-    "StateIncarcerationIncident",
-    "StateIncarcerationIncidentOutcome",
-    "StateIncarcerationPeriod",
-    "StateIncarcerationSentence",
-    "StatePersonAddressPeriod",
-    "StatePersonAlias",
-    "StatePersonEthnicity",
-    "StatePersonHousingStatusPeriod",
-    "StatePersonRace",
-    "StateProgramAssignment",
-    "StateSentence",
-    "StateSentenceGroup",
-    "StateSentenceGroupLength",
-    "StateSentenceLength",
-    "StateSentenceServingPeriod",
-    "StateSentenceStatusSnapshot",
     "StateStaff",
     "StateStaffCaseloadTypePeriod",
     "StateStaffExternalId",
     "StateStaffLocationPeriod",
     "StateStaffRolePeriod",
     "StateStaffSupervisorPeriod",
-    "StateSupervisionCaseTypeEntry",
-    "StateSupervisionContact",
-    "StateSupervisionPeriod",
-    "StateSupervisionSentence",
-    "StateSupervisionViolatedConditionEntry",
-    "StateSupervisionViolation",
-    "StateSupervisionViolationResponse",
-    "StateSupervisionViolationResponseDecisionEntry",
-    "StateSupervisionViolationTypeEntry",
-    "StateTaskDeadline",
 }
 
 EXPECTED_MISSING_NORMALIZED_FIELDS: Dict[Type[Entity], Set[str]] = {
-    normalized_entities_v2.NormalizedStatePerson: {
-        # TODO(#30075): This list should become empty and get removed once we've implemented all
-        #  normalized v2 entities.
-        "supervision_periods",
-        "incarceration_incidents",
-        "employment_periods",
-        "program_assignments",
-        "races",
-        "aliases",
-        "housing_status_periods",
-        "ethnicities",
-        "supervision_contacts",
-        "address_periods",
-        "incarceration_sentences",
-        "supervision_violations",
-        "sentences",
-        "assessments",
-        "drug_screens",
-        "supervision_sentences",
-        "incarceration_periods",
-        "task_deadlines",
-        "sentence_groups",
-    }
+    # TODO(#15559): Add NormalizedStateCharge / NormalizedStateChargeV2 fields that we
+    #  plan to delete here.
 }
 
 
@@ -149,7 +99,9 @@ class TestNormalizedEntities(unittest.TestCase):
                     self.assertTrue(
                         normalized_field_info.referenced_cls_name.startswith(
                             NORMALIZED_PREFIX
-                        )
+                        ),
+                        f"Referenced class [{normalized_field_info.referenced_cls_name}] "
+                        f"is not a Normalized* entity",
                     )
 
                 field_validator = normalized_field_info.attribute.validator
@@ -160,6 +112,10 @@ class TestNormalizedEntities(unittest.TestCase):
                         f"validator"
                     )
                 field_type = non_optional(normalized_field_info.attribute.type)
+                # TODO(#30075): Define a class hierarchy for normalized entities so we
+                #  can use that to determine if the field is a backedge field, then
+                #  assert that all backedge fields have an EntityBackedgeValidator
+                is_backedge_field = isinstance(field_validator, EntityBackedgeValidator)
                 if not is_optional_type(field_type):
                     self.assertFalse(
                         isinstance(field_validator, IsOptionalValidator),
@@ -167,7 +123,11 @@ class TestNormalizedEntities(unittest.TestCase):
                         f"[{normalized_entity_class_name}] which has a validator that "
                         f"allows for optional values.",
                     )
-                    if normalized_field_info.attribute.default != attr.NOTHING:
+                    if (
+                        # We allow list type back edge fields to have a default
+                        not is_backedge_field
+                        and normalized_field_info.attribute.default != attr.NOTHING
+                    ):
                         raise ValueError(
                             f"Found non-optional [{field_name}] on class "
                             f"[{normalized_entity_class_name}] with default value set.",
@@ -180,12 +140,15 @@ class TestNormalizedEntities(unittest.TestCase):
                     )
 
                 if is_list_type(field_type):
-                    self.assertTrue(
-                        isinstance(field_validator, IsListOfValidator),
-                        f"Found list field [{field_name}] on class "
-                        f"[{normalized_entity_class_name}] which does not use an "
-                        f"is_list_of() validator.",
-                    )
+                    # Backedges use EntityBackedgeValidator which also validate that the
+                    # value is a list.
+                    if not is_backedge_field:
+                        self.assertTrue(
+                            isinstance(field_validator, IsListOfValidator),
+                            f"Found list field [{field_name}] on class "
+                            f"[{normalized_entity_class_name}] which does not use an "
+                            f"is_list_of() validator.",
+                        )
 
                 primary_key_col_name = normalized_entity_class.get_class_id_name()
                 if field_name == primary_key_col_name:
