@@ -34,7 +34,10 @@ from recidiviz.calculator.query.state.views.dataflow_metrics_materialized import
     most_recent_dataflow_metrics,
 )
 from recidiviz.common.constants.states import StateCode
-from recidiviz.ingest.direct.dataset_config import raw_data_pruning_new_raw_data_dataset
+from recidiviz.ingest.direct.dataset_config import (
+    raw_data_pruning_new_raw_data_dataset,
+    raw_data_temp_load_dataset,
+)
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.persistence.entity.state.normalized_entities import (
     NormalizedStateIncarcerationPeriod,
@@ -508,6 +511,68 @@ class CalculationDataStorageManagerTest(unittest.TestCase):
         ]
         self.mock_client.get_dataset.side_effect = [
             pruning_dataset,
+            empty_dataset,
+        ]
+        self.mock_client.dataset_is_empty.return_value = True
+
+        calculation_data_storage_manager._delete_empty_or_temp_datasets()
+
+        self.mock_client.list_datasets.assert_called()
+        self.mock_client.delete_dataset.assert_called_with(empty_dataset_ref)
+
+        # pylint: disable=protected-access
+
+    @freeze_time("2020-01-02 00:00")
+    def test_delete_empty_or_temp_datasets_temp_load_dataset(self) -> None:
+        """Test that _delete_empty_or_temp_datasets does not delete raw data temp load
+        datasets we expect to be empty sometimes.
+        """
+        empty_dataset_name = "empty"
+        empty_dataset = MockDataset(
+            empty_dataset_name,
+            datetime.datetime(2020, 1, 1, 0, 0, 0, tzinfo=datetime.timezone.utc),
+        )
+        load_dataset_name = raw_data_temp_load_dataset(
+            StateCode.US_XX, DirectIngestInstance.PRIMARY
+        )
+        load_dataset = MockDataset(
+            dataset_id=load_dataset_name,
+            created=datetime.datetime(
+                2020, 1, 1, 0, 0, 0, tzinfo=datetime.timezone.utc
+            ),
+        )
+
+        load_dataset_ref = bigquery.dataset.DatasetReference(
+            self.project_id, load_dataset_name
+        )
+        empty_dataset_ref = bigquery.dataset.DatasetReference(
+            self.project_id, empty_dataset_name
+        )
+
+        self.mock_client.list_datasets.return_value = [
+            bigquery.dataset.DatasetListItem(
+                {
+                    "datasetReference": {
+                        "projectId": self.project_id,
+                        "datasetId": load_dataset_name,
+                    },
+                }
+            ),
+            bigquery.dataset.DatasetListItem(
+                {
+                    "datasetReference": {
+                        "projectId": self.project_id,
+                        "datasetId": empty_dataset_name,
+                    },
+                }
+            ),
+        ]
+        self.mock_client.dataset_ref_for_id.side_effect = [
+            load_dataset_ref,
+            empty_dataset_ref,
+        ]
+        self.mock_client.get_dataset.side_effect = [
+            load_dataset,
             empty_dataset,
         ]
         self.mock_client.dataset_is_empty.return_value = True

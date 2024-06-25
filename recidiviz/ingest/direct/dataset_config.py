@@ -56,3 +56,10 @@ def raw_data_pruning_raw_data_diff_results_dataset(
 ) -> str:
     """Returns the dataset containing the temporary results of raw data diff queries that used in raw data pruning."""
     return f"pruning_{state_code.value.lower()}_raw_data_diff_results_{instance.value.lower()}"
+
+
+def raw_data_temp_load_dataset(
+    state_code: StateCode, instance: DirectIngestInstance
+) -> str:
+    """Returns the dataset containing the temporary raw file load results"""
+    return f"{state_code.value.lower()}_{instance.value.lower()}_raw_data_temp_load"
