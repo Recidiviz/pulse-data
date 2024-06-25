@@ -38,14 +38,23 @@ WITH
         ROW_NUMBER() OVER (PARTITION BY StaffID ORDER BY update_datetime DESC) as RecencyRank
         FROM {StaffEmailByAlias@ALL} ) AS a
     WHERE RecencyRank = 1
+    ),  
+    -- some people have changed IDs or names over time but are the same person with same email,
+    -- this takes the most recent ID for email 
+    most_recent_id_for_email AS (
+        SELECT StaffID, OutlookEmail
+        FROM most_recent_staff_email_information
+        WHERE OutlookEmail is not null
+        AND TRUE
+        QUALIFY ROW_NUMBER() OVER (PARTITION BY OutlookEmail ORDER BY update_datetime DESC) = 1
     )
     SELECT 
         REGEXP_REPLACE(StaffID, r'[^A-Z0-9]', '') as StaffID, 
         LastName,
         FirstName,
-        OutlookEmail
+        IF(OutlookEmail IS NOT NULL AND OutlookEmail NOT LIKE '%@%', '', OutlookEmail) AS OutlookEmail
     FROM most_recent_staff_information si
-    LEFT JOIN most_recent_staff_email_information sei USING (StaffID)
+    LEFT JOIN most_recent_id_for_email sei USING (StaffID)
     WHERE StaffID IS NOT NULL AND si.RecencyRank = 1
 """
 
