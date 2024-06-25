@@ -169,6 +169,13 @@ def _delete_empty_or_temp_datasets() -> None:
             )
             continue
 
+        if dataset_resource.dataset_id.endswith("_raw_data_temp_load"):
+            logging.info(
+                "Skipping empty dataset that is used for housing temporary "
+                "tables used by the load step of the raw data import dag"
+            )
+            continue
+
         if managed_by_terraform:
             logging.info(
                 "Skipping empty dataset that is in Terraform state [%s]",

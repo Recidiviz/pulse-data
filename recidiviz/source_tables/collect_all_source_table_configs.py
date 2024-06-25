@@ -22,6 +22,7 @@ from itertools import groupby
 from recidiviz.ingest.direct.dataset_config import (
     raw_data_pruning_new_raw_data_dataset,
     raw_data_pruning_raw_data_diff_results_dataset,
+    raw_data_temp_load_dataset,
     raw_tables_dataset_for_region,
 )
 from recidiviz.ingest.direct.raw_data.raw_file_configs import get_region_raw_file_config
@@ -90,6 +91,15 @@ def collect_raw_data_source_table_collections() -> list[SourceTableCollection]:
                             state_code, instance
                         ),
                         labels=labels,
+                        default_table_expiration_ms=ONE_DAY_MS,
+                    ),
+                    SourceTableCollection(
+                        dataset_id=raw_data_temp_load_dataset(state_code, instance),
+                        labels=labels,
+                        # TODO(#30687) consider raising this if we think that there are
+                        # certain temp tables we would want to keep around for longer
+                        # by default (i.e. those that have a import-blocking validation)
+                        # failure we'd like to be able to inspect
                         default_table_expiration_ms=ONE_DAY_MS,
                     ),
                 ]

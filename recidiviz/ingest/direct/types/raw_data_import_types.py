@@ -193,3 +193,19 @@ class ImportReadyNormalizedFile:
     file_tag: str
     input_file_path: str
     output_file_paths: List[str]
+
+
+@attr.define
+class LoadPrepSummary:
+    """Summary from DirectIngestRawFileLoadManager.load_and_prep_paths step that will
+    be combined with AppendSummary to build a row in direct_ingest_raw_data_import_session
+
+
+    append_ready_table_address (str): temp BQ address of loaded, transformed and migrated
+        raw data
+    raw_rows_count (int): number of raw rows loaded from raw file paths before any
+        transformations or filtering occured
+    """
+
+    append_ready_table_address: str
+    raw_rows_count: int
