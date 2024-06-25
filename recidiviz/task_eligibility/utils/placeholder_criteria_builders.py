@@ -38,7 +38,7 @@ DEFAULT_REASON_BY_TYPE: Dict[
     bigquery.enums.SqlTypeNames.INT64: "1",
     bigquery.enums.SqlTypeNames.STRING: "'placeholder'",
     bigquery.enums.SqlTypeNames.RECORD: "['placeholder1', 'placeholder2']",
-    bigquery.enums.SqlTypeNames.DATE: MAGIC_END_DATE,
+    bigquery.enums.SqlTypeNames.DATE: f"'{MAGIC_END_DATE}'",
 }
 
 

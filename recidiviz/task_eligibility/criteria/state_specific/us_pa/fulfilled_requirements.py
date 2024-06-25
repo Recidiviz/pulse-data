@@ -28,6 +28,8 @@ from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
 from recidiviz.task_eligibility.utils.placeholder_criteria_builders import (
     state_specific_placeholder_criteria_view_builder,
 )
+from recidiviz.utils.environment import GCP_PROJECT_STAGING
+from recidiviz.utils.metadata import local_project_id_override
 
 _CRITERIA_NAME = "US_PA_FULFILLED_REQUIREMENTS"
 
@@ -50,3 +52,7 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
         state_code=StateCode.US_PA,
     )
 )
+
+if __name__ == "__main__":
+    with local_project_id_override(GCP_PROJECT_STAGING):
+        VIEW_BUILDER.build_and_print()
