@@ -197,9 +197,17 @@ prio_distance AS (
 )
 
 SELECT 
-    *,
-    months_to_prio_date IS NULL AS missing_prio_date 
-FROM prio_distance 
+    pd.*,
+    ug.eligibility_group,
+    COALESCE(ug.group_desc,'Not in an eligible group') AS group_desc 
+FROM (
+    SELECT 
+        *,
+        months_to_prio_date IS NULL AS missing_prio_date 
+    FROM prio_distance 
+) pd 
+LEFT JOIN unioned_groups ug 
+USING(person_id)
 ORDER BY months_to_prio_date NULLS LAST
 """
 
