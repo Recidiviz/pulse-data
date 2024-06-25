@@ -290,7 +290,7 @@ class MetricSettingInterface:
                 MetricInterface(key=metric_definition.key),
             )
             # Ensure the metric interface obeys MetricInterface invariants.
-            metric_interface.apply_invariants()
+            metric_interface.post_process_storage_json()
             result.append(metric_interface)
         return result
 
