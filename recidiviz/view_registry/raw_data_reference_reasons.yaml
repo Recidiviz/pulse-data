@@ -22,6 +22,9 @@ US_AR:
   PROGRAMACHIEVEMENT:
     workflows_views.us_ar_resident_metadata: |-
       Used to pull in resident metadata.
+  RECIDIVIZ_REFERENCE_OFFICE_LOCATIONS:
+    reference_views.us_ar_location_metadata: |-
+      Used to pull in location reference data.
   RELATEDPARTY:
     reference_views.us_ar_location_metadata: |-
       Used to pull in location reference data.
