@@ -34,6 +34,10 @@ columns:
   - name: FUNCTIONAL_IMPAIRMENTS
     description: |-
       Codes of functional impairments to be treated during this episode.
+  - name: CURRENT_NEEDS
+    description: |-
+      A replacement field for FUNCTIONAL_IMPAIRMENTS. Codes of needs to be treated 
+      during this episode.
   - name: IS_CLINICAL_ASSESSMENT
     description: |-
       Whether a clinical assessment was performed during this episode.
