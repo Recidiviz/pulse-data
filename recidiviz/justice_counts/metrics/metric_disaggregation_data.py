@@ -87,7 +87,7 @@ class MetricAggregatedDimensionData:
         return {
             # Optional[Dict[DimensionBase, Any]]
             "dimension_to_enabled_status": {
-                dimension.to_enum().value: enabled
+                dimension.to_enum().name: enabled
                 for dimension, enabled in self.dimension_to_enabled_status.items()
                 if enabled is not None
             }
@@ -95,8 +95,8 @@ class MetricAggregatedDimensionData:
             else None,
             # Dict[DimensionBase, Dict[enum.Enum, Optional[IncludesExcludesSetting]]]
             "dimension_to_includes_excludes_member_to_setting": {
-                dimension.to_enum().value: {
-                    member.value: include_excludes_setting.value
+                dimension.to_enum().name: {
+                    member.name: include_excludes_setting.name
                     for member, include_excludes_setting in includes_excludes_member_to_setting.items()
                     if include_excludes_setting is not None
                 }
@@ -104,8 +104,8 @@ class MetricAggregatedDimensionData:
             },
             # Dict[DimensionBase, List[MetricContextData]]
             "dimension_to_contexts": {
-                dimension.to_enum().value: {
-                    context.key.value: context.value for context in contexts
+                dimension.to_enum().name: {
+                    context.key.name: context.value for context in contexts
                 }
                 for dimension, contexts in self.dimension_to_contexts.items()
             },
@@ -126,7 +126,7 @@ class MetricAggregatedDimensionData:
         """
         dimension_class = aggregated_dimension.dimension  # example: RaceAndEthnicity
         dimension_str_to_dimension = {
-            dimension.to_enum().value: dimension for dimension in dimension_class  # type: ignore[attr-defined]
+            dimension.to_enum().name: dimension for dimension in dimension_class  # type: ignore[attr-defined]
         }
         # We set the value of all dimensions to None since from_storage_json does not
         # return report datapoints. Report datapoints are stored in the Datapoints table.
@@ -160,7 +160,7 @@ class MetricAggregatedDimensionData:
                 # with a default setting for that member.
                 includes_excludes_member_to_setting = (
                     json_dimension_to_includes_excludes_member_to_setting.get(
-                        dimension.to_enum().value, {}
+                        dimension.to_enum().name, {}
                     )
                 )
                 dimension_to_includes_excludes_member_to_setting[
@@ -174,9 +174,9 @@ class MetricAggregatedDimensionData:
 
         dimension_to_contexts: Dict[DimensionBase, List[MetricContextData]] = {}
         if aggregated_dimension.dimension_to_contexts is not None:
-            for dimension_str, stored_metric_contexts in json[
-                "dimension_to_contexts"
-            ].items():
+            for dimension_str, stored_metric_contexts in json.get(
+                "dimension_to_contexts", {}
+            ).items():
                 dimension = dimension_str_to_dimension[dimension_str]
                 dimension_to_contexts[
                     dimension

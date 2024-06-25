@@ -141,6 +141,30 @@ class MetricInterface:
         ):
             self.disaggregated_by_supervision_subsystems = False
 
+        # If the MetricInterface corresponds to a metric which should have at least one
+        # aggregated dimension, but the MetricInterface has an unpopulated
+        # aggregated_dimensions field (this might happen if there are no metric settings
+        # stored in the MetricSetting table for this agency and metric key pair), we
+        # must populate the aggregated_dimension field. We set all dimension's
+        # dimension_to_enabled_status and dimension_to_value fields to None.
+        if len(self.aggregated_dimensions) == 0:
+            for aggregated_dimension in metric_definition.aggregated_dimensions or []:
+                self.aggregated_dimensions.append(
+                    MetricAggregatedDimensionData(
+                        dimension_to_value={
+                            d: None for d in aggregated_dimension.dimension  # type: ignore[attr-defined]
+                        },
+                        dimension_to_enabled_status={
+                            d: None for d in aggregated_dimension.dimension  # type: ignore[attr-defined]
+                        },
+                    )
+                )
+
+        # Add null contexts if the MetricInterface has an empty context field.
+        if len(self.contexts) == 0:
+            for context in metric_definition.contexts:
+                self.contexts.append(MetricContextData(key=context.key, value=None))
+
     def to_storage_json(self) -> Dict[str, Any]:
         """
         Returns the json form of the MetricInterface object to be stored in the database.
@@ -154,7 +178,7 @@ class MetricInterface:
             "is_metric_enabled": self.is_metric_enabled,
             # Type: List[MetricContextData] -> Dict[key, value]
             "contexts": {
-                context.key.value: context.value
+                context.key.name: context.value
                 for context in self.contexts
                 if context.value is not None
             },
@@ -167,7 +191,7 @@ class MetricInterface:
             "disaggregated_by_supervision_subsystems": self.disaggregated_by_supervision_subsystems,
             # Type: Dict[enum.Enum, Optional[IncludesExcludesSetting]]
             "includes_excludes_member_to_setting": {
-                member.value: include_excludes_setting.value
+                member.name: include_excludes_setting.name
                 for member, include_excludes_setting in self.includes_excludes_member_to_setting.items()
                 if include_excludes_setting is not None
             },
@@ -176,7 +200,7 @@ class MetricInterface:
             #   frequency: Optional[schema.ReportingFrequency]
             #   starting_month: Optional[int]
             "custom_reporting_frequency": {
-                "custom_frequency": self.custom_reporting_frequency.frequency.value
+                "custom_frequency": self.custom_reporting_frequency.frequency.name
                 if self.custom_reporting_frequency.frequency is not None
                 else None,
                 "starting_month": self.custom_reporting_frequency.starting_month,
@@ -190,6 +214,21 @@ class MetricInterface:
         json: Dict[str, Any],
     ) -> MetricInterfaceT:
         """Creates a instance of a MetricInterface from a formatted json."""
+        # Ensure that the json object has all required fields. This should always be the
+        # case, since we should only call from_storage_json() on json objects that were
+        # created using to_storage_json().
+        required_fields = [
+            "key",
+            "aggregated_dimensions",
+            "disaggregated_by_supervision_subsystems",
+        ]
+        for required_field in required_fields:
+            if required_field not in json:
+                raise JusticeCountsServerError(
+                    code="missing_metric_interface_field",
+                    description=f"Metric interface json is missing required field: {required_field}",
+                )
+
         metric_definition = METRIC_KEY_TO_METRIC[json["key"]]
 
         contexts = MetricContextData.get_metric_context_data_from_storage_json(
@@ -198,24 +237,15 @@ class MetricInterface:
             metric_definition_contexts=metric_definition.contexts,
         )
 
-        aggregated_dimensions: List[MetricAggregatedDimensionData] = []
-        if metric_definition.aggregated_dimensions is not None:
-            str_to_aggr_dimension = {
-                aggregated_dimension.dimension.dimension_identifier(): aggregated_dimension
-                for aggregated_dimension in metric_definition.aggregated_dimensions
-            }
-            aggregated_dimensions = [
-                MetricAggregatedDimensionData.from_storage_json(
-                    json=aggregated_dimension_json,
-                    aggregated_dimension=str_to_aggr_dimension[
-                        # aggregated_dimension_json["key"]
-                        dimension_identifier
-                    ],
-                )
-                for dimension_identifier, aggregated_dimension_json in json.get(
-                    "aggregated_dimensions", {}
-                ).items()
-            ]
+        aggregated_dimensions: List[MetricAggregatedDimensionData] = [
+            MetricAggregatedDimensionData.from_storage_json(
+                json=json["aggregated_dimensions"].get(
+                    aggregated_dimension.dimension.dimension_identifier(), {}
+                ),
+                aggregated_dimension=aggregated_dimension,
+            )
+            for aggregated_dimension in metric_definition.aggregated_dimensions or []
+        ]
 
         disaggregated_by_supervision_subsystems: Optional[bool] = (
             False  # Cannot be null for supervision systems.

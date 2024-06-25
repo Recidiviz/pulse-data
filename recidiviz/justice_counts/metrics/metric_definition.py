@@ -102,7 +102,7 @@ class IncludesExcludesSet:
                 member,
                 _,
             ) in includes_excludes.member_to_default_inclusion_setting.items():
-                setting = includes_excludes_member_to_setting.get(member.value, None)
+                setting = includes_excludes_member_to_setting.get(member.name, None)
                 try:
                     includes_excludes_dict[member] = IncludesExcludesSetting(setting)
                 except ValueError:
