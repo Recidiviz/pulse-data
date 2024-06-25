@@ -38,24 +38,25 @@ https://www.notion.so/recidiviz/AR-Location-Data-19ef2cc46465457a8ddf73b2f65625f
 """
 
 US_AR_LOCATION_METADATA_QUERY_TEMPLATE = f"""
-with counties_to_regions AS (
-    -- Maps AR counties to the supervision region they belong to, associating each party
-    -- that has ORGANIZATIONTYPE 'Z2' (which are the counties in AR) with its numbered region.
+with counties_to_areas AS (
+    -- Maps AR counties to the supervision area they belong to, associating each party
+    -- that has ORGANIZATIONTYPE 'Z2' (which are the counties in AR) with its numbered area.
     SELECT 
         PARTYID,
         UORGANIZATIONNAME AS county_name,
         CASE 
-            WHEN UORGANIZATIONNAME in ('BENTON','WASHINGTON','MADISON') THEN 1
-            WHEN UORGANIZATIONNAME in ('CARROLL','BOONE','NEWTON','MARION','SEARCY','BAXTER','FULTON','IZARD','STONE','VAN BUREN') THEN 2
-            WHEN UORGANIZATIONNAME in ('RANDOLPH','LAWRENCE','SHARP','INDEPENDENCE','JACKSON','CLEBURNE','WHITE','PRAIRIE','LONOKE') THEN 3
-            WHEN UORGANIZATIONNAME in ('CLAY','GREENE','CRAIGHEAD','MISSISSIPPI','POINSETT') THEN 4
-            WHEN UORGANIZATIONNAME in ('CRAWFORD','FRANKLIN','JOHNSON','SEBASTIAN','LOGAN','SCOTT','POLK','MONTGOMERY') THEN 5
-            WHEN UORGANIZATIONNAME in ('POPE','CONWAY','FAULKNER','PERRY','YELL') THEN 6
-            WHEN UORGANIZATIONNAME in ('PULASKI') THEN 8
-            WHEN UORGANIZATIONNAME in ('WOODRUFF','CROSS','CRITTENDEN','ST. FRANCIS','MONROE','LEE','PHILLIPS') THEN 9
-            WHEN UORGANIZATIONNAME in ('GARLAND','SALINE','HOT SPRING','GRANT','CLARK','DALLAS','OUACHITA','CALHOUN') THEN 10
-            WHEN UORGANIZATIONNAME in ('JEFFERSON','ARKANSAS','CLEVELAND','LINCOLN','DESHA','BRADLEY','DREW','UNION','ASHLEY','CHICOT') THEN 11
-            WHEN UORGANIZATIONNAME in ('SEVIER','HOWARD','PIKE','LITTLE RIVER','HEMPSTEAD','NEVADA','MILLER','LAFAYETTE','COLUMBIA') THEN 12
+            WHEN UORGANIZATIONNAME in ('BENTON','WASHINGTON','MADISON') THEN 'FAYETTEVILLE P&P'
+            WHEN UORGANIZATIONNAME in ('CARROLL','BOONE','NEWTON','MARION','SEARCY','BAXTER','FULTON','IZARD','STONE','VAN BUREN','CLEBURNE','INDEPENDENCE') THEN 'MOUNTAIN HOME'
+            WHEN UORGANIZATIONNAME in ('RANDOLPH','LAWRENCE','SHARP','JACKSON','WHITE','PRAIRIE','LONOKE','WOODRUFF','CROSS','ST. FRANCIS') THEN 'SEARCY'
+            WHEN UORGANIZATIONNAME in ('CLAY','GREENE','CRAIGHEAD','MISSISSIPPI','POINSETT','CRITTENDEN') THEN 'JONESBORO'
+            WHEN UORGANIZATIONNAME in ('CRAWFORD','FRANKLIN','JOHNSON','SEBASTIAN','LOGAN','SCOTT','POLK','MONTGOMERY') THEN 'FORT SMITH'
+            WHEN UORGANIZATIONNAME in ('POPE','CONWAY','FAULKNER','PERRY','YELL') THEN 'CONWAY'
+            -- TODO(#30626): Area 8 will need to be split into 7 and 8. See ticket and
+            -- comment below for more information.
+            WHEN UORGANIZATIONNAME in ('PULASKI') THEN 'UNKNOWN'
+            WHEN UORGANIZATIONNAME in ('SEVIER','HOWARD','PIKE','LITTLE RIVER','HEMPSTEAD','NEVADA','MILLER','LAFAYETTE','COLUMBIA') THEN 'TEXARKANA P & P'
+            WHEN UORGANIZATIONNAME in ('GARLAND','SALINE','HOT SPRING','GRANT','CLARK','DALLAS','OUACHITA','CALHOUN') THEN 'HOT SPRINGS'
+            WHEN UORGANIZATIONNAME in ('JEFFERSON','ARKANSAS','CLEVELAND','LINCOLN','DESHA','BRADLEY','DREW','UNION','ASHLEY','CHICOT','MONROE','LEE','PHILLIPS') THEN 'PINE BLUFF P&P'
             ELSE NULL 
         END AS county_area
     FROM `{{project_id}}.{{us_ar_raw_data_up_to_date_dataset}}.ORGANIZATIONPROF_latest`
@@ -97,11 +98,14 @@ all_organizations AS (
                 'E9' -- Transitional Living
             ) THEN 'RESIDENTIAL_PROGRAM'
             WHEN op.ORGANIZATIONTYPE IN (
+                'C9', -- ACC Interstate Compact,
                 'D2', -- Region Office
                 'D3', -- Area Office
                 'D4', -- Satellite Office
                 'D6', -- Day Reporting Center
-                'D7' -- Drug Court
+                'D7', -- Drug Court
+                'DH', -- Hope Court
+                'DS' -- Swift Court
             ) THEN 'SUPERVISION_LOCATION'
             WHEN op.ORGANIZATIONTYPE IN (
                 'BG', -- Inmate Hospital
@@ -151,10 +155,22 @@ all_organizations AS (
                 op3.PARTYID AS {LocationMetadataKey.FACILITY_GROUP_EXTERNAL_ID.value},
                 op3.UORGANIZATIONNAME AS {LocationMetadataKey.FACILITY_GROUP_NAME.value},
                 ha.facility_security_level AS {LocationMetadataKey.FACILITY_SECURITY_LEVEL.value},
-                rp2.supervision_district_id AS {LocationMetadataKey.SUPERVISION_DISTRICT_ID.value},
-                op4.UORGANIZATIONNAME AS {LocationMetadataKey.SUPERVISION_DISTRICT_NAME.value},
-                rp2.supervision_region_id AS {LocationMetadataKey.SUPERVISION_REGION_ID.value},
-                rp2.supervision_region_id AS {LocationMetadataKey.SUPERVISION_REGION_NAME.value}
+                COALESCE(area_name,inferred_area_name) AS {LocationMetadataKey.SUPERVISION_DISTRICT_NAME.value},
+                CASE COALESCE(area_name,inferred_area_name)
+                    WHEN 'FAYETTEVILLE P&P' THEN '1'
+                    WHEN 'MOUNTAIN HOME' THEN '2'
+                    WHEN 'SEARCY' THEN '3'
+                    WHEN 'JONESBORO' THEN '4'
+                    WHEN 'FORT SMITH' THEN '5'
+                    WHEN 'CONWAY' THEN '6'
+                    WHEN 'LR PROBATION' THEN '7'
+                    WHEN 'LITTLE ROCK PAROLE' THEN '8'
+                    WHEN 'TEXARKANA P & P' THEN '9'
+                    WHEN 'HOT SPRINGS' THEN '10'
+                    WHEN 'PINE BLUFF P&P' THEN '11'
+                    WHEN 'UNKNOWN' THEN 'UNKNOWN'
+                    ELSE NULL
+                END AS {LocationMetadataKey.SUPERVISION_DISTRICT_ID.value}
             )
         ) AS location_metadata
 
@@ -221,46 +237,49 @@ all_organizations AS (
     ) ha
     ON op.PARTYID = ha.PARTYID
     /*
-    Supervision locations serve two different types of regions:
-    1. Judicial districts (specified by relationships of type 8BB and represented in the
-        metadata as supervision districts)
-    2. Supervision area: there are 11 community supervision 'areas', which are simply 
-        groupings of adjacent counties (hardcoded in the counties_to_regions CTE). The
-        supervision area associated with an office is based on the counties served 
-        (relationship type 8BA) by the office, which can include counties outside of an 
-        office's actual location. Represented in the metadata as supervision regions.
-    */
+    Supervision locations can serve multiple counties, which should all fall within a 
+    single supervision area. Supervision areas are groupings of multiple contiguous counties,
+    hardcoded in the counties_to_areas CTE above. In the metadata, supervision_district
+    represents the supervision area containing the counties served by a supervision location.
 
-    -- As with custody levels, the above metadata fields are set to 'MULTIPLE' if a 
-    -- supervision location has more than one.
+    Here, joins each office ID with an external reference table and then joins with the 
+    area(s) served based on 'county served' relationships in the RELATEDPARTYTABLE. Data
+    from the external reference table is more reliable and therefore prioritized first 
+    when setting supervision district. Though supervision locations should serve a single 
+    supervision area, those that serve more have their district set to 'UNKNOWN'. 
+
+    Note that supervision area boundaries (and in turn, the set of counties / supervision 
+    locations within the area) aren't fixed and have changed over time. The county-to-area
+    mappings in counties_to_areas are current as of June 2024.
+    */
+    LEFT JOIN (
+        SELECT DISTINCT 
+            office_id, 
+            area_name
+        FROM `{{project_id}}.{{us_ar_raw_data_up_to_date_dataset}}.RECIDIVIZ_REFERENCE_OFFICE_LOCATIONS_latest` 
+    ) office_ref
+    ON op.PARTYID = office_ref.office_id
+
     LEFT JOIN (
         SELECT 
             rp_sup_areas.PARTYID,
-            CASE
-                WHEN COUNTIF(PARTYRELTYPE='8BB') = 1 THEN ANY_VALUE(RELATEDPARTYID)
-                WHEN COUNTIF(PARTYRELTYPE='8BB') > 1 THEN 'MULTIPLE'
-                ELSE NULL 
-            END AS supervision_district_id,
             CASE 
                 WHEN 
-                    COUNT(DISTINCT CASE WHEN PARTYRELTYPE='8BA' THEN ctr.county_area ELSE NULL END) = 1 
-                    THEN ANY_VALUE(CAST(ctr.county_area AS STRING)) 
+                    COUNT(DISTINCT cta.county_area) = 1 
+                    THEN ANY_VALUE(CAST(cta.county_area AS STRING)) 
                 WHEN 
-                    COUNT(DISTINCT CASE WHEN PARTYRELTYPE='8BA' THEN ctr.county_area ELSE NULL END) > 1 
-                    THEN 'MULTIPLE'
+                    COUNT(DISTINCT cta.county_area) > 1 
+                    THEN 'UNKNOWN'
             ELSE NULL 
-            END AS supervision_region_id
+            END AS inferred_area_name
         FROM `{{project_id}}.{{us_ar_raw_data_up_to_date_dataset}}.RELATEDPARTY_latest` rp_sup_areas
-        LEFT JOIN counties_to_regions ctr
-        ON rp_sup_areas.RELATEDPARTYID = ctr.PARTYID
-        -- Only use relationships with an 'Active' ('A') status.
-        WHERE PARTYRELSTATUS = 'A' 
+        LEFT JOIN counties_to_areas cta
+        ON rp_sup_areas.RELATEDPARTYID = cta.PARTYID
+        -- Only use relationships with an 'Active' status and a 'County Served' relationship type.
+        WHERE PARTYRELSTATUS = 'A' AND PARTYRELTYPE='8BA'
         GROUP BY rp_sup_areas.PARTYID
     ) rp2
     ON op.PARTYID = rp2.PARTYID
-
-    LEFT JOIN `{{project_id}}.{{us_ar_raw_data_up_to_date_dataset}}.ORGANIZATIONPROF_latest` op4
-    ON rp2.supervision_district_id = op4.PARTYID
 ) 
 
 SELECT *
