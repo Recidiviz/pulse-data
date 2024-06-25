@@ -50,11 +50,6 @@ EMULATOR_PLATFORM = "linux/amd64"
 EMULATOR_ENTRYPOINT = "/bin/bigquery-emulator"
 
 
-class DockerNotLoggedIntoGHCRError(RuntimeError):
-    # GHCR is the GitHub Container Registry at ghcr.io
-    pass
-
-
 def _exponential_backoff(
     success_condition: Callable[[], bool],
     delay_ms: int,
@@ -86,21 +81,9 @@ class BigQueryEmulatorControl:
         try:
             self.docker_client.images.get(EMULATOR_IMAGE)
         except errors.APIError:
-            try:
-                self.docker_client.images.pull(
-                    EMULATOR_IMAGE_REPOSITORY, EMULATOR_TAG, platform=EMULATOR_PLATFORM
-                )
-            except errors.APIError as e:
-                raise DockerNotLoggedIntoGHCRError(
-                    "Failed to download the latest version of the emulator.\n"
-                    "Note, the image is private, so you'll need to have docker login to ghcr.io with a \n"
-                    "Personal Access Token with read:packages permission.\n\n"
-                    "To do this, login with a personal access token (classic):\n"
-                    "  1. Create a new Personal Access Token (Classic) with the read:packages permission at https://github.com/settings/tokens\n"
-                    "  2. Run this command with your PAT and github username as filled in:\n"
-                    '    `echo "$PAT" | docker login ghcr.io -u "$USERNAME" --password-stdin`\n'
-                    '     For example: echo "token123" | docker login ghcr.io -u "ohaibbq" --password-stdin'
-                ) from e
+            self.docker_client.images.pull(
+                EMULATOR_IMAGE_REPOSITORY, EMULATOR_TAG, platform=EMULATOR_PLATFORM
+            )
 
     def start_emulator(self, input_schema_json_path: str | None = None) -> None:
         """Starts the emulator container. Optionally mounts source tables volume"""

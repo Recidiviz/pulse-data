@@ -289,10 +289,6 @@ jobs:
       - uses: actions/checkout@ee0669bd1cc54295c223e0bb666b733df41de1c5 # v2
       - name: Python Setup
         uses: ./.github/actions/python-setup
-      # TODO(#20786): This step can be removed when moving back to the upstream bigquery emulator.
-      - name: Docker auth with ghcr
-        run: |
-          echo ${{ secrets.github_token }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
       - name: Pull emulator Docker image
         run: pipenv run python -m recidiviz.tests.utils.big_query_emulator_control pull_image
       - name: Run unittests
@@ -322,10 +318,6 @@ jobs:
       - uses: actions/checkout@ee0669bd1cc54295c223e0bb666b733df41de1c5 # v2
       - name: Python Setup
         uses: ./.github/actions/python-setup
-      # TODO(#20786): This step can be removed when moving back to the upstream bigquery emulator.
-      - name: Docker auth with ghcr
-        run: |
-          echo ${{ secrets.github_token }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
       - name: Pull emulator Docker image
         run: pipenv run python -m recidiviz.tests.utils.big_query_emulator_control pull_image
       - name: Load view graph to emulator
