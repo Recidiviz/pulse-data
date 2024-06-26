@@ -414,7 +414,6 @@ THESE_INGEST_VIEWS_HAVE_UNDOCUMENTED_CTES: Dict[StateCode, Dict[str, List[str]]]
             "identifying_likely_related_events",
             "ordered_vwars_vrpts",
         ],
-        "OffenderMovementIncarcerationPeriod_v3": ["all_incarceration_periods"],
         "OffenderName": ["filtered_out_nicknames", "normalized_rows"],
         "SentencesChargesAndCourtCases_v4": [
             "all_latest_sentences_joined",
