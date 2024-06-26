@@ -15,16 +15,22 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Unit tests for gcs file processing tasks"""
+import base64
 import unittest
 from typing import ClassVar, List
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
+
+import google_crc32c
 
 from recidiviz.airflow.dags.raw_data.gcs_file_processing_tasks import (
     batch_files_by_size,
     create_chunk_batches,
+    regroup_normalized_file_chunks,
+    verify_file_checksums,
 )
 from recidiviz.cloud_storage.gcsfs_csv_chunk_boundary_finder import CsvChunkBoundary
 from recidiviz.ingest.direct.types.raw_data_import_types import (
+    NormalizedCsvChunkResult,
     RequiresPreImportNormalizationFile,
 )
 
@@ -161,3 +167,107 @@ class TestCreateChunkBatches(unittest.TestCase):
             CsvChunkBoundary(start_inclusive=i, end_exclusive=i + 1, chunk_num=i)
             for i in range(count)
         ]
+
+
+class TestRegroupAndVerifyFileChunks(unittest.TestCase):
+    """Tests for regrouping and verifying checksums of normalized file chunks"""
+
+    def setUp(self) -> None:
+        file_bytes = b"these are file bytes"
+
+        file_checksum = google_crc32c.Checksum()
+        file_checksum.update(file_bytes)
+        file_checksum_str = base64.b64encode(file_checksum.digest()).decode("utf-8")
+        self.fs = MagicMock()
+        self.fs.get_crc32c.return_value = file_checksum_str
+
+        fs_patcher = patch(
+            "recidiviz.airflow.dags.raw_data.gcs_file_processing_tasks.GcsfsFactory.build",
+            return_value=self.fs,
+        ).start()
+        self.addCleanup(fs_patcher.stop)
+
+        self.normalized_chunks = [
+            NormalizedCsvChunkResult(
+                input_file_path="test_bucket/file1",
+                output_file_path="test_bucket/file1_0",
+                chunk_boundary=CsvChunkBoundary(0, 10, 0),
+                crc32c=self._get_checksum_int(b"these are "),
+            ),
+            NormalizedCsvChunkResult(
+                input_file_path="test_bucket/file1",
+                output_file_path="test_bucket/file1_1",
+                chunk_boundary=CsvChunkBoundary(10, 20, 1),
+                crc32c=self._get_checksum_int(b"file bytes"),
+            ),
+        ]
+        self.normalized_chunks_result = [
+            [chunk.serialize() for chunk in self.normalized_chunks]
+        ]
+
+        self.file_to_normalized_chunks = {"test_bucket/file1": self.normalized_chunks}
+
+    def test_regroup_normalized_file_chunks(self) -> None:
+        file_to_normalized_chunks = regroup_normalized_file_chunks(
+            self.normalized_chunks_result
+        )
+
+        self.assertEqual(len(file_to_normalized_chunks), 1)
+        self.assertIn("test_bucket/file1", file_to_normalized_chunks)
+        self.assertEqual(
+            file_to_normalized_chunks["test_bucket/file1"],
+            self.normalized_chunks,
+        )
+
+    def test_regroup_normalized_file_chunks_unsorted(self) -> None:
+        chunk0 = NormalizedCsvChunkResult(
+            input_file_path="test_bucket/file1",
+            output_file_path="test_bucket/file1_1",
+            chunk_boundary=CsvChunkBoundary(0, 10, 0),
+            crc32c=self._get_checksum_int(b"these are "),
+        ).serialize()
+
+        chunk1 = NormalizedCsvChunkResult(
+            input_file_path="test_bucket/file1",
+            output_file_path="test_bucket/file1_0",
+            chunk_boundary=CsvChunkBoundary(10, 20, 1),
+            crc32c=self._get_checksum_int(b"file bytes"),
+        ).serialize()
+
+        normalized_chunks = [[chunk1, chunk0]]
+        file_to_normalized_chunks = regroup_normalized_file_chunks(normalized_chunks)
+
+        self.assertEqual(len(file_to_normalized_chunks), 1)
+        self.assertIn("test_bucket/file1", file_to_normalized_chunks)
+        self.assertEqual(
+            file_to_normalized_chunks["test_bucket/file1"],
+            [
+                NormalizedCsvChunkResult.deserialize(chunk0),
+                NormalizedCsvChunkResult.deserialize(chunk1),
+            ],
+        )
+
+    def test_verify_checksum_success(self) -> None:
+        normalized_files, errors = verify_file_checksums(self.file_to_normalized_chunks)
+
+        self.assertEqual(len(normalized_files), 1)
+        self.assertEqual(normalized_files[0].input_file_path, "test_bucket/file1")
+        self.assertEqual(
+            normalized_files[0].output_file_paths,
+            ["test_bucket/file1_0", "test_bucket/file1_1"],
+        )
+        self.assertEqual(errors, [])
+
+    def test_verify_checksum_mismatch(self) -> None:
+        self.fs.get_crc32c.return_value = "different_checksum"
+        normalized_files, errors = verify_file_checksums(self.file_to_normalized_chunks)
+
+        self.assertEqual(normalized_files, [])
+        self.assertEqual(len(errors), 1)
+        self.assertIn("Checksum mismatch for test_bucket/file1", errors[0])
+
+    @staticmethod
+    def _get_checksum_int(bytes_to_checksum: bytes) -> int:
+        checksum = google_crc32c.Checksum()
+        checksum.update(bytes_to_checksum)
+        return int.from_bytes(checksum.digest(), byteorder="big")

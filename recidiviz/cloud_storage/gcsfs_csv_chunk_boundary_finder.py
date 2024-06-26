@@ -45,6 +45,10 @@ class CsvChunkBoundary:
     end_exclusive: int
     chunk_num: int
 
+    def get_chunk_size(self) -> int:
+        """Return the size of the chunk in bytes."""
+        return self.end_exclusive - self.start_inclusive
+
     def serialize(self) -> str:
         data = [self.start_inclusive, self.end_exclusive, self.chunk_num]
         return json.dumps(data)

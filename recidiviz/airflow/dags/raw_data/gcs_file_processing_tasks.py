@@ -16,9 +16,11 @@
 # =============================================================================
 """GCS file processing tasks"""
 
+import base64
 import concurrent.futures
 import heapq
-from typing import List, Tuple
+from collections import defaultdict
+from typing import Dict, List, Tuple
 
 from airflow.decorators import task
 from more_itertools import distribute
@@ -36,6 +38,11 @@ from recidiviz.ingest.direct.types.raw_data_import_types import (
     RequiresPreImportNormalizationFile,
     RequiresPreImportNormalizationFileChunk,
 )
+from recidiviz.ingest.direct.types.raw_data_import_types import (
+    ImportReadyNormalizedFile,
+    NormalizedCsvChunkResult,
+)
+from recidiviz.utils.crc32c import digest_ordered_checksum_and_size_pairs
 
 MAX_THREADS = 16  # TODO(#29946) determine reasonable default
 
@@ -147,3 +154,74 @@ def _create_individual_chunk_objects_list(
     for file_chunk in file_chunks:
         individual_chunks.extend(file_chunk.to_file_chunks())
     return individual_chunks
+
+
+@task
+def regroup_and_verify_file_chunks(
+    normalized_chunks_result: List[List[str]],
+) -> Dict[str, List]:
+    """Task organizes normalized chunks by file and compares their collective checksum
+    against the full file checksum to ensure all file bytes were read correctly"""
+    file_to_normalized_chunks = regroup_normalized_file_chunks(normalized_chunks_result)
+    normalized_files, errors = verify_file_checksums(file_to_normalized_chunks)
+    return {
+        "normalized_files": normalized_files,
+        "errors": errors,
+    }
+
+
+def verify_file_checksums(
+    file_to_normalized_chunks: Dict[str, List[NormalizedCsvChunkResult]],
+) -> Tuple[List[ImportReadyNormalizedFile], List[str]]:
+    """Verify the checksum of the normalized file chunks against the full file checksum."""
+
+    fs = GcsfsFactory.build()
+    normalized_files, errors = [], []
+
+    for file_path, chunks in file_to_normalized_chunks.items():
+        chunk_checksums_and_sizes = [
+            (chunk.crc32c, chunk.get_chunk_boundary_size()) for chunk in chunks
+        ]
+        chunk_combined_digest = digest_ordered_checksum_and_size_pairs(
+            chunk_checksums_and_sizes
+        )
+        chunk_combined_checksum = base64.b64encode(chunk_combined_digest).decode(
+            "utf-8"
+        )
+
+        full_file_checksum = fs.get_crc32c(GcsfsFilePath.from_absolute_path(file_path))
+
+        if chunk_combined_checksum != full_file_checksum:
+            errors.append(
+                f"Checksum mismatch for {file_path}: {chunk_combined_checksum} != {full_file_checksum}"
+            )
+        else:
+            normalized_files.append(
+                ImportReadyNormalizedFile(
+                    input_file_path=file_path,
+                    output_file_paths=[chunk.output_file_path for chunk in chunks],
+                )
+            )
+
+    return normalized_files, errors
+
+
+def regroup_normalized_file_chunks(
+    normalized_chunks_result: List[List[str]],
+) -> Dict[str, List[NormalizedCsvChunkResult]]:
+    """Returns dictionary of filepath: [chunk_results]"""
+    file_to_normalized_chunks = defaultdict(list)
+    # Each chunk normalization task returns a list of serialized file chunks
+    # So we need to flatten the result list and deserialize each chunk
+    for chunk_list in normalized_chunks_result:
+        for chunk in chunk_list:
+            normalized_chunk = NormalizedCsvChunkResult.deserialize(chunk)
+            file_to_normalized_chunks[normalized_chunk.input_file_path].append(
+                normalized_chunk
+            )
+
+    # Chunks need to be in order for checksum validation
+    for chunks in file_to_normalized_chunks.values():
+        chunks.sort(key=lambda x: x.chunk_boundary.chunk_num)
+
+    return file_to_normalized_chunks

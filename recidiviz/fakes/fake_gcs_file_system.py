@@ -131,6 +131,9 @@ class FakeGCSFileSystem(GCSFileSystem):
         with self.mutex:
             return path.abs_path() in self.files
 
+    def get_crc32c(self, path: GcsfsFilePath) -> str:
+        raise NotImplementedError("FakeGCSFileSystem does not support get_crc32c")
+
     def get_file_size(self, path: GcsfsFilePath) -> Optional[int]:
         if not self.exists(path):
             return None

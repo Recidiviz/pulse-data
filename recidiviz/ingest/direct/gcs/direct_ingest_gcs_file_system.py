@@ -186,6 +186,9 @@ class DirectIngestGCSFileSystem(Generic[GCSFileSystemType], GCSFileSystem):
     def exists(self, path: Union[GcsfsBucketPath, GcsfsFilePath]) -> bool:
         return self.gcs_file_system.exists(path)
 
+    def get_crc32c(self, path: GcsfsFilePath) -> Optional[str]:
+        return self.gcs_file_system.get_crc32c(path)
+
     def get_file_size(self, path: GcsfsFilePath) -> Optional[int]:
         return self.gcs_file_system.get_file_size(path)
 

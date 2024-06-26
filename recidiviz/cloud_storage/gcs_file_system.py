@@ -75,6 +75,13 @@ class GCSFileSystem:
         """Returns the file size of the object if it exists in the fs, None otherwise."""
 
     @abc.abstractmethod
+    def get_crc32c(self, path: GcsfsFilePath) -> Optional[str]:
+        """
+        Returns the base64 encoded string representation of the big-endian ordered CRC32C checksum
+        for the specified file if it exists in the fs, None otherwise.
+        """
+
+    @abc.abstractmethod
     def get_metadata(self, path: GcsfsFilePath) -> Optional[Dict[str, str]]:
         """
         Returns the metadata for the object at the given path if it exists in the fs, None otherwise. Returns
