@@ -152,7 +152,8 @@ class DirectIngestRawFilePreImportNormalizer:
             self._fs.upload_from_string(output_path, decoded_output, "text/csv")
 
         return NormalizedCsvChunkResult(
-            path=output_path.abs_path(),
+            input_file_path=chunk.path,
+            output_file_path=output_path.abs_path(),
             chunk_boundary=chunk.chunk_boundary,
-            crc32c=verifiable_reader.get_crc32c(),
+            crc32c=verifiable_reader.get_crc32c_as_int(),
         )

@@ -146,6 +146,14 @@ class GCSFileSystemImpl(GCSFileSystem):
             return None
 
     @retry.Retry(predicate=google_api_retry_predicate)
+    def get_crc32c(self, path: GcsfsFilePath) -> Optional[str]:
+        try:
+            blob = self._get_blob(path)
+            return blob.crc32c
+        except GCSBlobDoesNotExistError:
+            return None
+
+    @retry.Retry(predicate=google_api_retry_predicate)
     def get_metadata(self, path: GcsfsFilePath) -> Optional[Dict[str, Any]]:
         try:
             blob = self._get_blob(path)

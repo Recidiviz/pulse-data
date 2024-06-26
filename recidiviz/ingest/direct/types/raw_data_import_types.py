@@ -160,13 +160,18 @@ class NormalizedCsvChunkResult:
     """Encapsulates the output path, chunk boundary and checksum of the CSV chunk. This
     should relate 1-1 to a RequiresPreImportNormalizationFileChunk."""
 
-    path: str
+    input_file_path: str
+    output_file_path: str
     chunk_boundary: CsvChunkBoundary
-    crc32c: str
+    crc32c: int
+
+    def get_chunk_boundary_size(self) -> int:
+        return self.chunk_boundary.get_chunk_size()
 
     def serialize(self) -> str:
         result_dict = {
-            "path": self.path,
+            "input_file_path": self.input_file_path,
+            "output_file_path": self.output_file_path,
             "chunk_boundary": self.chunk_boundary.serialize(),
             "crc32c": self.crc32c,
         }
@@ -176,7 +181,8 @@ class NormalizedCsvChunkResult:
     def deserialize(json_str: str) -> "NormalizedCsvChunkResult":
         data = json.loads(json_str)
         return NormalizedCsvChunkResult(
-            path=data["path"],
+            input_file_path=data["input_file_path"],
+            output_file_path=data["output_file_path"],
             chunk_boundary=CsvChunkBoundary.deserialize(data["chunk_boundary"]),
             crc32c=data["crc32c"],
         )
@@ -190,7 +196,6 @@ class RequiresNormalizationFile:
 
 @attr.define
 class ImportReadyNormalizedFile:
-    file_tag: str
     input_file_path: str
     output_file_paths: List[str]
 

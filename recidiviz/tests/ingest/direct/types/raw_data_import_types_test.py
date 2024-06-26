@@ -193,13 +193,16 @@ class TestSerialization(unittest.TestCase):
             start_inclusive=0, end_exclusive=100, chunk_num=0
         )
         original = NormalizedCsvChunkResult(
-            path="path/to/result.csv", chunk_boundary=chunk_boundary, crc32c="abcd1234"
+            input_file_path="path/to/file.csv",
+            output_file_path="path/to/result.csv",
+            chunk_boundary=chunk_boundary,
+            crc32c=0xFFFFFFFF,
         )
 
         serialized = original.serialize()
         deserialized = NormalizedCsvChunkResult.deserialize(serialized)
 
-        self.assertEqual(original.path, deserialized.path)
+        self.assertEqual(original.output_file_path, deserialized.output_file_path)
         self.assertEqual(original.crc32c, deserialized.crc32c)
         self.assertEqual(
             original.chunk_boundary.start_inclusive,

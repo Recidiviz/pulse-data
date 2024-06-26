@@ -60,6 +60,9 @@ class VerifiableBytesReader(io.BufferedIOBase, BinaryIO):
         # - str.decode() on those bytes gives us the string
         return base64.b64encode(self._crc32c.digest()).decode("utf-8")
 
+    def get_crc32c_as_int(self) -> int:
+        return int.from_bytes(self._crc32c.digest(), byteorder="big")
+
     def verify_crc32c(self, expected_checksum: str) -> None:
         if not self._eof:
             # We can't verify the checksum if we don't download the whole file. That is

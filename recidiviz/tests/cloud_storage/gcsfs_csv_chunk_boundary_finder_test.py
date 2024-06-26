@@ -278,3 +278,7 @@ class TestCsvChunkBoundary(unittest.TestCase):
         self.assertEqual(original.start_inclusive, deserialized.start_inclusive)
         self.assertEqual(original.end_exclusive, deserialized.end_exclusive)
         self.assertEqual(original.chunk_num, deserialized.chunk_num)
+
+    def test_get_chunk_size(self) -> None:
+        boundary = CsvChunkBoundary(start_inclusive=0, end_exclusive=100, chunk_num=1)
+        self.assertEqual(boundary.get_chunk_size(), 100)

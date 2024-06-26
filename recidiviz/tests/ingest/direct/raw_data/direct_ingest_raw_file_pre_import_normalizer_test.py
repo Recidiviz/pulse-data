@@ -101,7 +101,7 @@ class DirectIngestRawFileNormalizationPassTest(unittest.TestCase):
         normalizer = DirectIngestRawFilePreImportNormalizer(self.fs, StateCode.US_XX)
 
         pass_result = normalizer.normalize_chunk_for_import(chunk)
-        output_gcs_path = GcsfsFilePath.from_absolute_path(pass_result.path)
+        output_gcs_path = GcsfsFilePath.from_absolute_path(pass_result.output_file_path)
 
         with self.fs.open(output_gcs_path, "r", encoding="UTF-8") as f:
             assert f.read() == expected_output
