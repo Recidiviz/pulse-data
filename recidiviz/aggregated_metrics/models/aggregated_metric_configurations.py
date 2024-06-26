@@ -611,6 +611,35 @@ AVG_DAILY_POPULATION_HOUSING_TYPE_METRICS = [
     for housing_type in _HOUSING_UNIT_TYPES
 ]
 
+AVG_ACTIVE_LENGTH_OF_STAY_SOLITARY_CONFINEMENT = DailyAvgTimeSinceSpanStartMetric(
+    name="avg_active_length_of_stay_solitary_confinement",
+    display_name="Average Active Length of Stay: Solitary Confinement",
+    description="Average daily active length of stay in solitary confinement",
+    span_selectors=[
+        SpanSelector(
+            span_type=SpanType.HOUSING_UNIT_TYPE_COLLAPSED_SOLITARY_SESSION,
+            span_conditions_dict={
+                "housing_unit_type_collapsed_solitary": ["SOLITARY_CONFINEMENT"],
+            },
+        )
+    ],
+)
+
+AVG_ACTIVE_LENGTH_OF_STAY_HOUSING_UNIT_TYPE_METRICS = [
+    DailyAvgTimeSinceSpanStartMetric(
+        name=f"avg_active_length_of_stay_{housing_type.lower()}",
+        display_name=f"Average Active Length of Stay: {snake_to_title(housing_type)}",
+        description=f"Average daily active length of stay in {snake_to_title(housing_type)}",
+        span_selectors=[
+            SpanSelector(
+                span_type=SpanType.HOUSING_TYPE_SESSION,
+                span_conditions_dict={"housing_unit_type": [housing_type]},
+            )
+        ],
+    )
+    for housing_type in _HOUSING_UNIT_TYPES
+]
+
 AVG_DAILY_POPULATION_SOLITARY_CONFINEMENT_JUSTICE_IMPACT = DailyAvgSpanCountMetric(
     name="avg_population_solitary_confinement_justice_impact",
     display_name="Average Population: Solitary Confinement (Justice Impact Type)",
@@ -1314,6 +1343,81 @@ EMPLOYER_CHANGES_365 = AssignmentEventCountMetric(
         )
     ],
 )
+
+HOUSING_UNIT_TYPE_ENDS = [
+    EventCountMetric(
+        name=f"housing_unit_type_end_{housing_unit_type.lower()}",
+        display_name=f"Housing Unit Type Ends: {snake_to_title(housing_unit_type)}",
+        description=f"Number of transfers to {snake_to_title(housing_unit_type)}",
+        event_selectors=[
+            EventSelector(
+                event_type=EventType.HOUSING_UNIT_TYPE_END,
+                event_conditions_dict={"housing_unit_type": [housing_unit_type]},
+            )
+        ],
+    )
+    for housing_unit_type in _HOUSING_UNIT_TYPES
+]
+
+HOUSING_UNIT_TYPE_STARTS = [
+    EventCountMetric(
+        name=f"housing_unit_type_start_{housing_unit_type.lower()}",
+        display_name=f"Housing Unit Type Starts: {snake_to_title(housing_unit_type)}",
+        description=f"Number of transfers to {snake_to_title(housing_unit_type)}",
+        event_selectors=[
+            EventSelector(
+                event_type=EventType.HOUSING_UNIT_TYPE_START,
+                event_conditions_dict={"housing_unit_type": [housing_unit_type]},
+            )
+        ],
+    )
+    for housing_unit_type in _HOUSING_UNIT_TYPES
+]
+
+HOUSING_UNIT_TYPE_LENGTH_OF_STAY_BY_END = [
+    EventValueMetric(
+        name=f"housing_unit_type_length_of_stay_end_{housing_unit_type.lower()}",
+        display_name=f"Housing Unit Type Length of Stay by end date: {snake_to_title(housing_unit_type)}",
+        description=f"Length of stay in {snake_to_title(housing_unit_type)} in days, by end date",
+        event_selectors=[
+            EventSelector(
+                event_type=EventType.HOUSING_UNIT_TYPE_END,
+                event_conditions_dict={"housing_unit_type": [housing_unit_type]},
+            ),
+        ],
+        event_value_numeric="length_of_stay",
+        event_count_metric=next(
+            metric
+            for metric in HOUSING_UNIT_TYPE_ENDS
+            if metric.name.endswith(housing_unit_type.lower())
+        ),
+    )
+    for housing_unit_type in _HOUSING_UNIT_TYPES
+]
+
+HOUSING_UNIT_TYPE_LENGTH_OF_STAY_BY_START = [
+    EventValueMetric(
+        name=f"housing_unit_type_length_of_stay_start_{housing_unit_type.lower()}",
+        display_name=f"Housing Unit Type Length of Stay, by start date: {snake_to_title(housing_unit_type)}",
+        description=f"Length of stay in {snake_to_title(housing_unit_type)} in days, aggregated by start date, for periods that have ended",
+        event_selectors=[
+            EventSelector(
+                event_type=EventType.HOUSING_UNIT_TYPE_START,
+                event_conditions_dict={
+                    "housing_unit_type": [housing_unit_type],
+                    "is_active": ["false"],
+                },
+            ),
+        ],
+        event_value_numeric="length_of_stay",
+        event_count_metric=next(
+            metric
+            for metric in HOUSING_UNIT_TYPE_STARTS
+            if metric.name.endswith(housing_unit_type.lower())
+        ),
+    )
+    for housing_unit_type in _HOUSING_UNIT_TYPES
+]
 
 INCARCERATIONS_INFERRED = EventCountMetric(
     name="incarcerations_inferred",
@@ -2075,6 +2179,72 @@ PROP_SENTENCE_SERVED_AT_SUPERVISION_INFLOW_FROM_INCARCERATION = EventValueMetric
     ],
     event_value_numeric="prop_sentence_served",
     event_count_metric=SUPERVISION_STARTS_FROM_INCARCERATION,
+)
+
+SOLITARY_CONFINEMENT_ENDS = EventCountMetric(
+    name="solitary_confinement_ends",
+    display_name="Solitary Confinement Ends",
+    description="Number of solitary confinement ends",
+    event_selectors=[
+        EventSelector(
+            event_type=EventType.SOLITARY_CONFINEMENT_END,
+            event_conditions_dict={},
+        ),
+    ],
+)
+
+SOLITARY_CONFINEMENT_STARTS = EventCountMetric(
+    name="solitary_confinement_starts",
+    display_name="Solitary Confinement Starts",
+    description="Number of solitary confinement starts",
+    event_selectors=[
+        EventSelector(
+            event_type=EventType.SOLITARY_CONFINEMENT_START,
+            event_conditions_dict={},
+        ),
+    ],
+)
+
+SOLITARY_CONFINEMENT_LENGTH_OF_STAY_BY_END = EventValueMetric(
+    name="solitary_confinement_length_of_stay_by_end",
+    display_name="Solitary Confinement Length of Stay, by End Date",
+    description="Length of stay in solitary confinement in days, by end date",
+    event_selectors=[
+        EventSelector(
+            event_type=EventType.SOLITARY_CONFINEMENT_END,
+            event_conditions_dict={},
+        ),
+    ],
+    event_value_numeric="length_of_stay",
+    event_count_metric=SOLITARY_CONFINEMENT_ENDS,
+)
+
+SOLITARY_CONFINEMENT_LENGTH_OF_STAY_BY_START = EventValueMetric(
+    name="solitary_confinement_length_of_stay_by_start",
+    display_name="Solitary Confinement Length of Stay, by Start Date",
+    description="Length of stay in solitary confinement in days, by start date",
+    event_selectors=[
+        EventSelector(
+            event_type=EventType.SOLITARY_CONFINEMENT_START,
+            event_conditions_dict={"is_active": ["false"]},
+        ),
+    ],
+    event_value_numeric="length_of_stay",
+    event_count_metric=SOLITARY_CONFINEMENT_STARTS,
+)
+
+SOLITARY_CONFINEMENT_STARTS_LAST_YEAR = EventValueMetric(
+    name="solitary_confinement_starts_last_year",
+    display_name="Solitary Confinement Starts in Last Year",
+    description="Number of solitary confinement starts in the past year at date of assignment to solitary",
+    event_selectors=[
+        EventSelector(
+            event_type=EventType.SOLITARY_CONFINEMENT_START,
+            event_conditions_dict={},
+        ),
+    ],
+    event_value_numeric="solitary_starts_in_last_year",
+    event_count_metric=SOLITARY_CONFINEMENT_STARTS,
 )
 
 SUPERVISION_LEVEL_DOWNGRADES = EventCountMetric(

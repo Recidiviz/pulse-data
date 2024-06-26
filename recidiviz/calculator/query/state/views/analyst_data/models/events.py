@@ -31,6 +31,9 @@ from recidiviz.calculator.query.state.views.analyst_data.models.event_type impor
 from recidiviz.calculator.query.state.views.sessions.absconsion_bench_warrant_sessions import (
     ABSCONSION_BENCH_WARRANT_SESSIONS_VIEW_BUILDER,
 )
+from recidiviz.task_eligibility.utils.general_criteria_builders import (
+    num_events_within_time_interval_spans,
+)
 
 
 def get_task_eligible_event_query_builder(
@@ -244,6 +247,30 @@ QUALIFY
     ), FALSE)""",
         attribute_cols=["is_employed"],
         event_date_col="employment_status_start_date",
+    ),
+    EventQueryBuilder(
+        event_type=EventType.HOUSING_UNIT_TYPE_END,
+        description="Transitions to a new housing unit type - end of housing unit type session",
+        sql_source="""
+        SELECT *,
+        DATE_DIFF(end_date_exclusive, start_date, DAY) AS length_of_stay,
+        FROM `{project_id}.sessions.housing_unit_type_sessions_materialized`
+        WHERE end_date_exclusive IS NOT NULL
+        """,
+        attribute_cols=["housing_unit_type", "length_of_stay"],
+        event_date_col="end_date_exclusive",
+    ),
+    EventQueryBuilder(
+        event_type=EventType.HOUSING_UNIT_TYPE_START,
+        description="Transitions to a new housing unit type - start of housing unit type session",
+        sql_source=f"""
+        SELECT *,
+        DATE_DIFF({nonnull_end_date_exclusive_clause('end_date_exclusive')}, start_date, DAY) AS length_of_stay,
+        end_date_exclusive IS NOT NULL AS is_active,
+        FROM `{{project_id}}.sessions.housing_unit_type_sessions_materialized`
+        """,
+        attribute_cols=["housing_unit_type", "length_of_stay", "is_active"],
+        event_date_col="start_date",
     ),
     EventQueryBuilder(
         event_type=EventType.INCARCERATION_RELEASE,
@@ -586,6 +613,62 @@ FROM (
             "most_severe_description",
         ],
         event_date_col="date_imposed",
+    ),
+    EventQueryBuilder(
+        event_type=EventType.SOLITARY_CONFINEMENT_END,
+        description="Transitions out of solitary confinement",
+        sql_source="""
+        SELECT
+            state_code,
+            person_id,
+            start_date,
+            end_date_exclusive,
+            DATE_DIFF(end_date_exclusive, start_date, DAY) AS length_of_stay,
+        FROM `{project_id}.sessions.housing_unit_type_collapsed_solitary_sessions_materialized`
+        WHERE 
+            housing_unit_type_collapsed_solitary = "SOLITARY_CONFINEMENT"
+            AND end_date_exclusive IS NOT NULL
+        """,
+        attribute_cols=["length_of_stay"],
+        event_date_col="end_date_exclusive",
+    ),
+    EventQueryBuilder(
+        event_type=EventType.SOLITARY_CONFINEMENT_START,
+        description="Transitions to solitary confinement",
+        sql_source=f"""
+        WITH solitary_starts AS (
+            SELECT
+                state_code,
+                person_id,
+                start_date,
+                DATE_DIFF({nonnull_end_date_exclusive_clause('end_date_exclusive')}, start_date, DAY) AS length_of_stay,
+                end_date_exclusive IS NOT NULL AS is_active,
+                start_date AS event_date
+            FROM `{{project_id}}.sessions.housing_unit_type_collapsed_solitary_sessions_materialized`
+            WHERE housing_unit_type_collapsed_solitary = "SOLITARY_CONFINEMENT"
+        )
+        ,
+        {num_events_within_time_interval_spans(
+            events_cte="solitary_starts",
+            date_interval=1,
+            date_part="YEAR"
+        )}
+        SELECT
+            solitary_starts.state_code,
+            solitary_starts.person_id,
+            solitary_starts.start_date,
+            solitary_starts.length_of_stay,
+            solitary_starts.is_active,
+            event_count_spans.event_count AS solitary_starts_in_last_year
+        FROM solitary_starts
+        LEFT JOIN event_count_spans
+        ON
+            solitary_starts.state_code = event_count_spans.state_code
+            AND solitary_starts.person_id = event_count_spans.person_id
+            AND solitary_starts.start_date = event_count_spans.start_date
+        """,
+        attribute_cols=["solitary_starts_in_last_year", "length_of_stay", "is_active"],
+        event_date_col="start_date",
     ),
     EventQueryBuilder(
         event_type=EventType.SUPERVISING_OFFICER_CHANGE,
