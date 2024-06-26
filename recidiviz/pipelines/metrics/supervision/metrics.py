@@ -135,12 +135,6 @@ A person is excluded from the supervision population on any days that they are a
     # Date of the supervision population count
     date_of_supervision: date = attr.ib(default=None)
 
-    # Optional characteristics
-
-    # TODO(#16605): This is no-longer used after the Core dashboard deprecation - delete it.
-    # The projected end date for the person's supervision term.
-    projected_end_date: Optional[date] = attr.ib(default=None)
-
 
 @attr.s
 class SupervisionOutOfStatePopulationMetric(SupervisionPopulationMetric):
