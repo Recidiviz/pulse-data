@@ -22,7 +22,7 @@ import logging
 import os
 from pprint import pprint
 
-from recidiviz.big_query.big_query_client import BigQueryClient, BigQueryClientImpl
+from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
     get_direct_ingest_states_existing_in_env,
 )
@@ -51,7 +51,6 @@ from recidiviz.utils.metadata import local_project_id_override
 
 def build_source_table_collection_update_configs(
     source_table_repository: SourceTableRepository,
-    bq_client: BigQueryClient,
 ) -> list[SourceTableCollectionUpdateConfig]:
     """Builds a list of update configs"""
     # TODO(#30356): Add static yaml tables to this list
@@ -95,27 +94,11 @@ def build_source_table_collection_update_configs(
         )
     )
 
-    # TODO(#30495): These will not need to be added separately once ingest views define
-    #  their schemas in the YAML mappings definitions and we can collect these ingest
-    #  view tables with all the other source tables.
-    logging.info("Building source table configs for ingest views...")
-    update_configs.extend(
-        SourceTableCollectionUpdateConfig(
-            source_table_collection=source_table_collection,
-            allow_field_deletions=True,
-            recreate_on_update_error=True,
-        )
-        for source_table_collection in build_ingest_view_source_table_configs(
-            bq_client=bq_client,
-            state_codes=get_direct_ingest_states_existing_in_env(),
-        )
-    )
-
     return update_configs
 
 
 def update_all_source_table_schemas(
-    source_table_repository: SourceTableRepository,
+    update_configs: list[SourceTableCollectionUpdateConfig],
     update_manager: SourceTableUpdateManager | None = None,
     *,
     dry_run: bool = True,
@@ -123,10 +106,6 @@ def update_all_source_table_schemas(
     """Given a repository of source tables, update BigQuery to match"""
     if not update_manager:
         update_manager = SourceTableUpdateManager(client=BigQueryClientImpl())
-
-    update_configs = build_source_table_collection_update_configs(
-        source_table_repository=source_table_repository, bq_client=update_manager.client
-    )
 
     def _retry_fn() -> None:
         if dry_run:
@@ -153,6 +132,35 @@ def update_all_source_table_schemas(
     )
 
 
+def perform_bigquery_table_schema_update(dry_run: bool) -> None:
+    repository = build_source_table_repository_for_collected_schemata()
+
+    update_all_source_table_schemas(
+        update_configs=build_source_table_collection_update_configs(
+            source_table_repository=repository
+        ),
+        dry_run=dry_run,
+    )
+
+    # TODO(#30495): These will not need to be added separately once ingest views define
+    #  their schemas in the YAML mappings definitions and we can collect these ingest
+    #  view tables with all the other source tables.
+    logging.info("Building source table configs for ingest views...")
+    update_all_source_table_schemas(
+        update_configs=[
+            SourceTableCollectionUpdateConfig(
+                source_table_collection=source_table_collection,
+                allow_field_deletions=True,
+                recreate_on_update_error=True,
+            )
+            for source_table_collection in build_ingest_view_source_table_configs(
+                bq_client=BigQueryClientImpl(),
+                state_codes=get_direct_ingest_states_existing_in_env(),
+            )
+        ]
+    )
+
+
 if __name__ == "__main__":
     logging.getLogger().setLevel(logging.INFO)
     parser = argparse.ArgumentParser()
@@ -165,11 +173,6 @@ if __name__ == "__main__":
         "--dry-run",
         action="store_true",
     )
-    args, _ = parser.parse_known_args()
+    args = parser.parse_args()
     with local_project_id_override(args.project_id):
-        repository = build_source_table_repository_for_collected_schemata()
-
-        update_all_source_table_schemas(
-            source_table_repository=repository,
-            dry_run=args.dry_run,
-        )
+        perform_bigquery_table_schema_update(dry_run=args.dry_run)
