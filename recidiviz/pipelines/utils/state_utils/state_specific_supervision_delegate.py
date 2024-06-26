@@ -19,7 +19,6 @@ for state-specific decisions involved in categorizing various attributes of
 supervision."""
 # pylint: disable=unused-argument
 import abc
-from datetime import date
 from typing import List, Optional, Tuple
 
 from recidiviz.common.constants.state.state_assessment import (
@@ -30,15 +29,9 @@ from recidiviz.common.constants.state.state_assessment import (
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodSupervisionType,
 )
-from recidiviz.common.date import DateRange, DateRangeDiff
-from recidiviz.persistence.entity.state.entities import (
-    StateIncarcerationPeriod,
-    StateSupervisionPeriod,
-)
+from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
 from recidiviz.persistence.entity.state.normalized_entities import (
-    NormalizedStateIncarcerationSentence,
     NormalizedStateSupervisionPeriod,
-    NormalizedStateSupervisionSentence,
 )
 from recidiviz.pipelines.utils.state_utils.state_specific_delegate import (
     StateSpecificDelegate,
@@ -139,45 +132,3 @@ class StateSpecificSupervisionDelegate(abc.ABC, StateSpecificDelegate):
         we will use the supervision period's supervision type that corresponds date-wise.
         """
         return None
-
-    def get_projected_completion_date(
-        self,
-        supervision_period: StateSupervisionPeriod,
-        incarceration_sentences: List[NormalizedStateIncarcerationSentence],
-        supervision_sentences: List[NormalizedStateSupervisionSentence],
-    ) -> Optional[date]:
-        """Returns the projected completion date. Because supervision periods have
-        different relationships with incarceration and supervision sentences, we consider
-        the projected completion date to be the latest projected_completion_date /
-        projected_max_release_date of all sentences that overlap with the given period.
-        """
-        if not supervision_sentences and not incarceration_sentences:
-            return None
-
-        relevant_max_dates = [
-            incarceration_sentence.projected_max_release_date
-            for incarceration_sentence in incarceration_sentences
-            if incarceration_sentence.effective_date
-            and DateRangeDiff(
-                supervision_period.duration,
-                DateRange.from_maybe_open_range(
-                    incarceration_sentence.effective_date,
-                    incarceration_sentence.completion_date,
-                ),
-            ).overlapping_range
-            and incarceration_sentence.projected_max_release_date
-        ] + [
-            supervision_sentence.projected_completion_date
-            for supervision_sentence in supervision_sentences
-            if supervision_sentence.effective_date
-            and DateRangeDiff(
-                supervision_period.duration,
-                DateRange.from_maybe_open_range(
-                    supervision_sentence.effective_date,
-                    supervision_sentence.completion_date,
-                ),
-            ).overlapping_range
-            and supervision_sentence.projected_completion_date
-        ]
-
-        return max(relevant_max_dates) if relevant_max_dates else None

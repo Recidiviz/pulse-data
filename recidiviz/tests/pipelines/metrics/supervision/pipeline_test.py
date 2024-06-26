@@ -1034,7 +1034,6 @@ class TestClassifyEvents(unittest.TestCase):
                 assessment_level=assessment.assessment_level,
                 assessment_type=assessment.assessment_type,
                 level_1_supervision_location_external_id="10",
-                projected_supervision_completion_date=supervision_sentence.projected_completion_date,
             ),
             create_termination_event_from_period(
                 supervision_period,
@@ -1140,7 +1139,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
                     date_of_evaluation=date(2015, 3, 31),
                     next_recommended_assessment_date=None,
                 ),
-                projected_end_date=None,
             ),
         ]
 

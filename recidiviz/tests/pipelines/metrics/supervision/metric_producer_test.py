@@ -128,7 +128,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
                 case_type=StateSupervisionCaseType.GENERAL,
                 supervision_level=StateSupervisionLevel.HIGH,
                 supervision_level_raw_text="HIGH",
-                projected_end_date=None,
             ),
             SupervisionPopulationEvent(
                 state_code="US_XX",
@@ -139,7 +138,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
                 case_type=StateSupervisionCaseType.GENERAL,
                 supervision_level=StateSupervisionLevel.HIGH,
                 supervision_level_raw_text="HIGH",
-                projected_end_date=None,
             ),
         ]
 
@@ -190,7 +188,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
                 assessment_score=31,
                 assessment_level=StateAssessmentLevel.HIGH,
                 assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
-                projected_end_date=None,
             ),
             SupervisionPopulationEvent(
                 state_code="US_XX",
@@ -202,7 +199,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
                 assessment_score=31,
                 assessment_level=StateAssessmentLevel.HIGH,
                 assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
-                projected_end_date=None,
             ),
         ]
 
@@ -254,7 +250,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
                 assessment_score=31,
                 assessment_level=StateAssessmentLevel.HIGH,
                 assessment_type=StateAssessmentType.ORAS_PRISON_INTAKE,
-                projected_end_date=None,
             ),
             SupervisionPopulationEvent(
                 state_code="US_XX",
@@ -266,7 +261,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
                 assessment_score=31,
                 assessment_level=StateAssessmentLevel.HIGH,
                 assessment_type=StateAssessmentType.ORAS_PRISON_INTAKE,
-                projected_end_date=None,
             ),
         ]
 
@@ -319,7 +313,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
                 assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION_SCREENING,
                 supervising_officer_staff_id=10000,
                 level_1_supervision_location_external_id="DISTRICT X",
-                projected_end_date=None,
             ),
             SupervisionPopulationEvent(
                 state_code="US_XX",
@@ -332,7 +325,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
                 assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION_SCREENING,
                 supervising_officer_staff_id=10000,
                 level_1_supervision_location_external_id="DISTRICT X",
-                projected_end_date=None,
             ),
         ]
 
@@ -393,7 +385,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
                 case_type=StateSupervisionCaseType.GENERAL,
                 supervision_level=StateSupervisionLevel.HIGH,
                 supervision_level_raw_text="HIGH",
-                projected_end_date=None,
             ),
             SupervisionPopulationEvent(
                 state_code="US_XX",
@@ -404,7 +395,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
                 case_type=StateSupervisionCaseType.GENERAL,
                 supervision_level=StateSupervisionLevel.HIGH,
                 supervision_level_raw_text="HIGH",
-                projected_end_date=None,
             ),
         ]
 
@@ -466,7 +456,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
                 case_type=StateSupervisionCaseType.GENERAL,
                 supervision_level=StateSupervisionLevel.HIGH,
                 supervision_level_raw_text="HIGH",
-                projected_end_date=None,
             ),
             SupervisionPopulationEvent(
                 state_code="US_XX",
@@ -477,7 +466,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
                 case_type=StateSupervisionCaseType.GENERAL,
                 supervision_level=StateSupervisionLevel.HIGH,
                 supervision_level_raw_text="HIGH",
-                projected_end_date=None,
             ),
         ]
 
@@ -550,7 +538,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
                 month=2,
                 event_date=date(2010, 2, 2),
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
-                projected_end_date=None,
             ),
             SupervisionPopulationEvent(
                 state_code="US_XX",
@@ -558,7 +545,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
                 month=4,
                 event_date=date(2010, 4, 2),
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
-                projected_end_date=None,
             ),
         ]
 
@@ -692,7 +678,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
                 month=3,
                 event_date=date(2018, 3, 31),
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
-                projected_end_date=None,
             ),
             SupervisionPopulationEvent(
                 state_code="US_XX",
@@ -700,7 +685,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
                 year=2018,
                 month=4,
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
-                projected_end_date=None,
             ),
             SupervisionPopulationEvent(
                 state_code="US_XX",
@@ -708,7 +692,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
                 year=2018,
                 month=4,
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
-                projected_end_date=None,
             ),
             SupervisionPopulationEvent(
                 state_code="US_XX",
@@ -716,7 +699,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
                 year=2018,
                 month=4,
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
-                projected_end_date=None,
             ),
             SupervisionPopulationEvent(
                 state_code="US_XX",
@@ -724,7 +706,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
                 year=2018,
                 month=4,
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
-                projected_end_date=None,
             ),
         ]
 
@@ -772,7 +753,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
                 month=3,
                 event_date=date(2018, 3, 1),
                 supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
-                projected_end_date=None,
             ),
             SupervisionPopulationEvent(
                 state_code="US_XX",
@@ -780,7 +760,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
                 month=3,
                 event_date=date(2018, 3, 1),
                 supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
-                projected_end_date=None,
             ),
             SupervisionPopulationEvent(
                 state_code="US_XX",
@@ -788,7 +767,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
                 month=4,
                 event_date=date(2018, 4, 1),
                 supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
-                projected_end_date=None,
             ),
         ]
 
@@ -836,7 +814,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
                 month=3,
                 event_date=date(2018, 3, 31),
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
-                projected_end_date=None,
             ),
             SupervisionPopulationEvent(
                 state_code="US_XX",
@@ -844,7 +821,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
                 month=3,
                 event_date=date(2010, 3, 31),
                 supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
-                projected_end_date=None,
             ),
             SupervisionPopulationEvent(
                 state_code="US_XX",
@@ -852,7 +828,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
                 month=4,
                 event_date=date(2010, 4, 2),
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
-                projected_end_date=None,
             ),
             SupervisionPopulationEvent(
                 state_code="US_XX",
@@ -860,7 +835,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
                 month=5,
                 event_date=date(2010, 5, 1),
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
-                projected_end_date=None,
             ),
         ]
 
@@ -910,7 +884,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
                 month=2,
                 event_date=date(2010, 2, 2),
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
-                projected_end_date=None,
             ),
             SupervisionPopulationEvent(
                 state_code="US_XX",
@@ -918,7 +891,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
                 month=2,
                 event_date=date(2010, 2, 2),
                 supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
-                projected_end_date=None,
             ),
             SupervisionPopulationEvent(
                 state_code="US_XX",
@@ -926,7 +898,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
                 month=2,
                 event_date=date(2010, 2, 2),
                 supervision_type=StateSupervisionPeriodSupervisionType.DUAL,
-                projected_end_date=None,
             ),
             SupervisionPopulationEvent(
                 state_code="US_XX",
@@ -934,7 +905,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
                 month=4,
                 event_date=date(2010, 4, 2),
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
-                projected_end_date=None,
             ),
             SupervisionPopulationEvent(
                 state_code="US_XX",
@@ -942,7 +912,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
                 month=4,
                 event_date=date(2010, 4, 2),
                 supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
-                projected_end_date=None,
             ),
             SupervisionPopulationEvent(
                 state_code="US_XX",
@@ -950,7 +919,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
                 month=4,
                 event_date=date(2010, 4, 2),
                 supervision_type=StateSupervisionPeriodSupervisionType.DUAL,
-                projected_end_date=None,
             ),
         ]
 
@@ -1351,7 +1319,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
                 month=2,
                 event_date=date(2010, 2, 22),
                 supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
-                projected_end_date=None,
             ),
         ]
 
@@ -1417,7 +1384,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
                 month=1,
                 event_date=date(2010, 1, 1),
                 supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
-                projected_end_date=None,
             ),
             SupervisionPopulationEvent(
                 state_code="US_MO",
@@ -1425,7 +1391,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
                 month=1,
                 event_date=date(2010, 1, 1),
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
-                projected_end_date=None,
             ),
         ]
 
@@ -1482,7 +1447,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
                     next_recommended_assessment_date=None,
                     next_recommended_face_to_face_date=None,
                 ),
-                projected_end_date=None,
             ),
             SupervisionPopulationEvent(
                 state_code="US_XX",
@@ -1498,7 +1462,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
                     next_recommended_assessment_date=date(2018, 4, 19),
                     next_recommended_face_to_face_date=None,
                 ),
-                projected_end_date=None,
             ),
         ]
 
@@ -1547,7 +1510,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             event_date=date(2010, 1, 1),
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             level_1_supervision_location_external_id="INTERSTATE PROBATION - 123",
-            projected_end_date=None,
             supervision_out_of_state=True,
         )
 
@@ -1611,7 +1573,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             event_date=date(2010, 1, 1),
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             custodial_authority=StateCustodialAuthority.FEDERAL,
-            projected_end_date=None,
             supervision_out_of_state=True,
         )
 
@@ -1676,7 +1637,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
                 event_date=date(2010, 1, 1),
                 supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
                 level_1_supervision_location_external_id="INVALID - 123",
-                projected_end_date=None,
             ),
         ]
 
@@ -1728,7 +1688,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
                 event_date=date(2010, 1, 1),
                 supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
                 custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
-                projected_end_date=None,
             ),
         ]
 
@@ -1781,7 +1740,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
                 case_type=StateSupervisionCaseType.GENERAL,
                 supervision_level=StateSupervisionLevel.HIGH,
                 supervision_level_raw_text="HIGH",
-                projected_end_date=None,
             ),
             SupervisionPopulationEvent(
                 state_code="US_XX",
@@ -1792,7 +1750,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
                 case_type=StateSupervisionCaseType.GENERAL,
                 supervision_level=StateSupervisionLevel.MINIMUM,
                 supervision_level_raw_text="MINIMUM",
-                projected_end_date=None,
             ),
         ]
 
@@ -1828,7 +1785,6 @@ class TestIncludeEventInMetric(unittest.TestCase):
             case_type=StateSupervisionCaseType.GENERAL,
             supervision_level=StateSupervisionLevel.HIGH,
             supervision_level_raw_text="HIGH",
-            projected_end_date=None,
         )
 
         self.assertFalse(
@@ -1852,7 +1808,6 @@ class TestIncludeEventInMetric(unittest.TestCase):
                 next_recommended_assessment_date=None,
                 next_recommended_face_to_face_date=None,
             ),
-            projected_end_date=None,
         )
 
         self.assertTrue(
@@ -1871,7 +1826,6 @@ class TestIncludeEventInMetric(unittest.TestCase):
             case_type=StateSupervisionCaseType.GENERAL,
             supervision_level=StateSupervisionLevel.HIGH,
             supervision_level_raw_text="HIGH",
-            projected_end_date=None,
         )
 
         self.assertFalse(
@@ -1890,7 +1844,6 @@ class TestIncludeEventInMetric(unittest.TestCase):
             case_type=StateSupervisionCaseType.GENERAL,
             supervision_level=StateSupervisionLevel.HIGH,
             supervision_level_raw_text="HIGH",
-            projected_end_date=None,
             supervision_out_of_state=True,
         )
         self.assertTrue(
@@ -1909,7 +1862,6 @@ class TestIncludeEventInMetric(unittest.TestCase):
             case_type=StateSupervisionCaseType.GENERAL,
             supervision_level=StateSupervisionLevel.HIGH,
             supervision_level_raw_text="HIGH",
-            projected_end_date=None,
             supervision_out_of_state=True,
         )
 
@@ -1929,7 +1881,6 @@ class TestIncludeEventInMetric(unittest.TestCase):
             case_type=StateSupervisionCaseType.GENERAL,
             supervision_level=StateSupervisionLevel.HIGH,
             supervision_level_raw_text="HIGH",
-            projected_end_date=None,
         )
 
         self.assertTrue(

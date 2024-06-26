@@ -15,7 +15,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """US_PA implementation of the supervision delegate"""
-from datetime import date
 from typing import List, Optional, Tuple
 
 from recidiviz.common.constants.state.state_assessment import (
@@ -26,12 +25,8 @@ from recidiviz.common.constants.state.state_assessment import (
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodAdmissionReason,
 )
-from recidiviz.common.date import DateRange, DateRangeDiff
-from recidiviz.persistence.entity.state.entities import StateSupervisionPeriod
 from recidiviz.persistence.entity.state.normalized_entities import (
-    NormalizedStateIncarcerationSentence,
     NormalizedStateSupervisionPeriod,
-    NormalizedStateSupervisionSentence,
 )
 from recidiviz.pipelines.utils.state_utils.state_specific_supervision_delegate import (
     StateSpecificSupervisionDelegate,
@@ -93,31 +88,3 @@ class UsPaSupervisionDelegate(StateSpecificSupervisionDelegate):
         if assessment_level:
             return assessment_level.value
         return None
-
-    # pylint: disable=unused-argument
-    def get_projected_completion_date(
-        self,
-        supervision_period: StateSupervisionPeriod,
-        incarceration_sentences: List[NormalizedStateIncarcerationSentence],
-        supervision_sentences: List[NormalizedStateSupervisionSentence],
-    ) -> Optional[date]:
-        """In US_PA, we only consider incarceration sentences for the projected completion
-        dates of periods of supervision."""
-        if not incarceration_sentences:
-            return None
-
-        relevant_max_release_dates = [
-            incarceration_sentence.projected_max_release_date
-            for incarceration_sentence in incarceration_sentences
-            if incarceration_sentence.effective_date
-            and DateRangeDiff(
-                supervision_period.duration,
-                DateRange.from_maybe_open_range(
-                    incarceration_sentence.effective_date,
-                    incarceration_sentence.completion_date,
-                ),
-            ).overlapping_range
-            and incarceration_sentence.projected_max_release_date
-        ]
-
-        return max(relevant_max_release_dates) if relevant_max_release_dates else None

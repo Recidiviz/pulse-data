@@ -221,8 +221,6 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
                 supervision_events.extend(
                     self._find_population_events_for_supervision_period(
                         person=person,
-                        supervision_sentences=supervision_sentences,
-                        incarceration_sentences=incarceration_sentences,
                         supervision_period=supervision_period,
                         supervision_period_index=supervision_period_index,
                         incarceration_period_index=incarceration_period_index,
@@ -267,8 +265,6 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
     def _find_population_events_for_supervision_period(
         self,
         person: StatePerson,
-        supervision_sentences: List[NormalizedStateSupervisionSentence],
-        incarceration_sentences: List[NormalizedStateIncarcerationSentence],
         supervision_period: NormalizedStateSupervisionPeriod,
         supervision_period_index: NormalizedSupervisionPeriodIndex,
         incarceration_period_index: NormalizedIncarcerationPeriodIndex,
@@ -283,8 +279,6 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
 
         Args:
             - person: StatePerson encoding of the person under supervision
-            - supervision_sentences: List of StateSupervisionSentences for a person
-            - incarceration_sentences: List of StateIncarcerationSentence for a person
             - supervision_period: The supervision period the person was on
             - supervision_period_index: Class containing information about this person's supervision periods
             - incarceration_period_index: Class containing information about this person's incarceration periods
@@ -406,14 +400,6 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
                         event_date
                     )
 
-                projected_end_date = (
-                    self.supervision_delegate.get_projected_completion_date(
-                        supervision_period=supervision_period,
-                        incarceration_sentences=incarceration_sentences,
-                        supervision_sentences=supervision_sentences,
-                    )
-                )
-
                 supervision_out_of_state = is_supervision_out_of_state(
                     supervision_period.custodial_authority,
                 )
@@ -441,7 +427,6 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
                     supervision_level_raw_text=supervision_period.supervision_level_raw_text,
                     case_compliance=case_compliance,
                     custodial_authority=supervision_period.custodial_authority,
-                    projected_end_date=projected_end_date,
                     supervision_out_of_state=supervision_out_of_state,
                 )
 

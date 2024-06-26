@@ -87,9 +87,6 @@ class SupervisionPopulationEvent(
 ):
     """Models a day on which a person was on supervision."""
 
-    # The projected end date for the person's supervision term.
-    projected_end_date: Optional[date] = attr.ib(default=None)
-
     # Information related to whether the supervision case is meeting compliance standards
     case_compliance: Optional[SupervisionCaseCompliance] = attr.ib(default=None)
 
