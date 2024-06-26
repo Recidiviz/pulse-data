@@ -28,6 +28,7 @@ input_columns:
   - SUBMITTED_BY
   - SUBMITTED_BY_NAME
   - SID
+  - CURRENT_NEEDS
 unused_columns:
   - PEER_SUPPORT_OFFERED
   - SN_LAST_UPDATED_DATE
@@ -35,6 +36,7 @@ unused_columns:
   - COORDINATOR_GUID
   - ALLOW_VIEWING
   - PENDING_CODE
+  - CURRENT_NEEDS
 output:
   StatePerson:
     external_ids:
