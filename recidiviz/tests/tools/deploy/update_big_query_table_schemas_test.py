@@ -22,7 +22,6 @@ import pytest
 from recidiviz.big_query.big_query_client import BigQueryClient
 from recidiviz.source_tables.collect_all_source_table_configs import (
     build_source_table_repository_for_collected_schemata,
-    collect_raw_data_source_table_collections,
 )
 from recidiviz.source_tables.dataflow_output_table_collector import (
     get_dataflow_output_source_table_collections,
@@ -65,7 +64,7 @@ class UpdateBigQueryTableSchemasTest(BigQueryEmulatorTestCase):
         # TODO(#30495): Once we generate ingest view schemas based on types defined in
         #  the ingest mappings YAMLs, we won't need to load the raw data tables in order
         #  to build the ingest view output tables.
-        return collect_raw_data_source_table_collections()
+        return []
 
     def test_create_dataflow_output_source_tables_matches_snapshot(self) -> None:
         """Tests that the source tables output by the"""
@@ -73,7 +72,9 @@ class UpdateBigQueryTableSchemasTest(BigQueryEmulatorTestCase):
             source_table_collections=get_dataflow_output_source_table_collections()
         )
         update_all_source_table_schemas(
-            source_table_repository=source_table_repository,
+            update_configs=build_source_table_collection_update_configs(
+                source_table_repository
+            ),
             update_manager=SourceTableUpdateManager(client=self.bq_client),
             dry_run=False,
         )
@@ -89,7 +90,6 @@ class UpdateBigQueryTableSchemasTest(BigQueryEmulatorTestCase):
         source_table_repository = build_source_table_repository_for_collected_schemata()
         update_configs = build_source_table_collection_update_configs(
             source_table_repository=source_table_repository,
-            bq_client=self.bq_client,
         )
         visited_addresses = set()
         duplicate_addresses = set()
