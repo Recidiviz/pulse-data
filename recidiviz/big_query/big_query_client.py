@@ -1640,9 +1640,8 @@ class BigQueryClientImpl(BigQueryClient):
         hydrate_missing_columns_with_null: bool = False,
         write_disposition: str = bigquery.WriteDisposition.WRITE_APPEND,
     ) -> bigquery.QueryJob:
-        """Inserts data from a source table into a destination table. Depending on the
-        write_disposition passed in it can either append or overwrite the destination
-        table. Defaults to WRITE_APPEND.
+        """Loads data from a source table to a destination table, depending on the write_disposition passed in
+        it can either append or overwrite the destination table. Defaults to WRITE_APPEND.
         """
         source_dataset_ref = self.dataset_ref_for_id(source_dataset_id)
         destination_dataset_ref = self.dataset_ref_for_id(destination_dataset_id)
@@ -1658,16 +1657,8 @@ class BigQueryClientImpl(BigQueryClient):
             destination_dataset_ref, destination_table_id
         )
 
-        # we draw select columns from intersection of the two table columns
-        shared_columns = {field.name for field in destination_table.schema} & {
-            field.name for field in source_table.schema
-        }
+        select_columns = "*"
 
-        destination_columns = ", ".join(shared_columns)
-
-        # if we hydrate different columns, they need to be foramtted slightly differenlty
-        # based on where in the statement they are
-        select_columns = destination_columns
         if hydrate_missing_columns_with_null:
             schema_fields_missing_from_source = self._get_excess_schema_fields(
                 source_table.schema, destination_table.schema
@@ -1678,17 +1669,12 @@ class BigQueryClientImpl(BigQueryClient):
                     for missing_column in schema_fields_missing_from_source
                 ]
                 select_columns += f", {', '.join(missing_columns)}"
-                destination_columns += f", {', '.join(missing_column.name for missing_column in schema_fields_missing_from_source)}"
 
-        query = (
-            f"INSERT INTO `{self.project_id}.{destination_dataset_id}.{destination_table_id}` "
-            f"({destination_columns}) "
-            f"SELECT {select_columns} FROM `{self.project_id}.{source_dataset_id}.{source_table_id}`"
-        )
+        query = f"SELECT {select_columns} FROM `{self.project_id}.{source_dataset_id}.{source_table_id}`"
 
         if source_data_filter_clause:
             self._validate_source_data_filter_clause(source_data_filter_clause)
-            query = f"{query} \n {source_data_filter_clause}"
+            query = f"{query} {source_data_filter_clause}"
 
         logging.info(
             "Copying data from: %s.%s to: %s.%s",

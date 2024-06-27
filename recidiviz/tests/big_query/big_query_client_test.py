@@ -639,10 +639,6 @@ class BigQueryClientImplTest(unittest.TestCase):
         self, mock_job_config: mock.MagicMock
     ) -> None:
         """Tests that the insert_into_table_from_table_async function runs a query."""
-        mock_table = create_autospec(bigquery.Table)
-        mock_table.schema = self.mock_schema
-        self.mock_client.get_table.return_value = mock_table
-
         self.bq_client.insert_into_table_from_table_async(
             source_dataset_id=self.mock_dataset_id,
             source_table_id=self.mock_table_id,
@@ -650,51 +646,7 @@ class BigQueryClientImplTest(unittest.TestCase):
             destination_table_id="fake_table_temp",
             use_query_cache=False,
         )
-        expected_query = f"INSERT INTO `fake-recidiviz-project.{self.mock_dataset_id}.fake_table_temp` (fake_column) SELECT fake_column FROM `fake-recidiviz-project.{self.mock_dataset_id}.{self.mock_table_id}`"
-        self.mock_client.get_table.assert_called()
-        self.mock_client.query.assert_called_with(
-            query=expected_query,
-            location=BigQueryClient.DEFAULT_REGION,
-            job_config=mock_job_config(),
-        )
-
-    @mock.patch("google.cloud.bigquery.job.QueryJobConfig")
-    def test_insert_into_table_from_table_async_source_has_too_many_cols(
-        self, mock_job_config: mock.MagicMock
-    ) -> None:
-        """Tests that the insert_into_table_from_table_async function runs a query."""
-        mock_table_source = create_autospec(bigquery.Table)
-        mock_table_source.schema = self.mock_schema
-        mock_table_dest = create_autospec(bigquery.Table)
-        mock_table_dest.schema = [
-            bigquery.SchemaField(
-                mode="NULLABLE", field_type="STRING", name="fake_column"
-            ),
-            bigquery.SchemaField(
-                name="new_schema_field", field_type="STRING", mode="REQUIRED"
-            ),
-            bigquery.SchemaField(
-                name="partition_field", field_type="DATETIME", mode="REQUIRED"
-            ),
-        ]
-
-        def _get_table(_table_ref: bigquery.TableReference) -> bigquery.Table:
-            if _table_ref.table_id == "fake_table_temp":
-                return mock_table_dest
-            if _table_ref.table_id == self.mock_table_id:
-                return mock_table_source
-            raise ValueError("Unrecognized table!")
-
-        self.mock_client.get_table.side_effect = _get_table
-
-        self.bq_client.insert_into_table_from_table_async(
-            source_dataset_id=self.mock_dataset_id,
-            source_table_id=self.mock_table_id,
-            destination_dataset_id=self.mock_dataset_id,
-            destination_table_id="fake_table_temp",
-            use_query_cache=False,
-        )
-        expected_query = f"INSERT INTO `fake-recidiviz-project.{self.mock_dataset_id}.fake_table_temp` (fake_column) SELECT fake_column FROM `fake-recidiviz-project.{self.mock_dataset_id}.{self.mock_table_id}`"
+        expected_query = f"SELECT * FROM `fake-recidiviz-project.{self.mock_dataset_id}.{self.mock_table_id}`"
         self.mock_client.get_table.assert_called()
         self.mock_client.query.assert_called_with(
             query=expected_query,
@@ -708,10 +660,6 @@ class BigQueryClientImplTest(unittest.TestCase):
     ) -> None:
         """Tests that the insert_into_table_from_table_async function runs a query with the correct source and
         destination datasets."""
-        mock_table = create_autospec(bigquery.Table)
-        mock_table.schema = self.mock_schema
-        self.mock_client.get_table.return_value = mock_table
-
         self.bq_client.insert_into_table_from_table_async(
             source_dataset_id="mock-source-dataset",
             source_table_id="mock_source_table",
@@ -719,7 +667,7 @@ class BigQueryClientImplTest(unittest.TestCase):
             destination_table_id="mock_destination_table",
             use_query_cache=False,
         )
-        expected_query = "INSERT INTO `fake-recidiviz-project.mock-destination-dataset.mock_destination_table` (fake_column) SELECT fake_column FROM `fake-recidiviz-project.mock-source-dataset.mock_source_table`"
+        expected_query = "SELECT * FROM `fake-recidiviz-project.mock-source-dataset.mock_source_table`"
         self.mock_client.get_table.assert_called()
         self.mock_client.query.assert_called_with(
             query=expected_query,
@@ -732,9 +680,6 @@ class BigQueryClientImplTest(unittest.TestCase):
         self, mock_job_config: mock.MagicMock
     ) -> None:
         """Tests that the insert_into_table_from_table_async generates a query with missing columns as NULL."""
-        mock_table = create_autospec(bigquery.Table)
-        mock_table.schema = self.mock_schema
-        self.mock_client.get_table.return_value = mock_table
         with mock.patch(
             "recidiviz.big_query.big_query_client.BigQueryClientImpl"
             "._get_excess_schema_fields"
@@ -753,7 +698,10 @@ class BigQueryClientImplTest(unittest.TestCase):
                 allow_field_additions=True,
                 use_query_cache=False,
             )
-            expected_query = f"INSERT INTO `fake-recidiviz-project.{self.mock_dataset_id}.{self.mock_destination_id}` (fake_column, state_code, new_column_name) SELECT fake_column, CAST(NULL AS STRING) AS state_code, CAST(NULL AS INTEGER) AS new_column_name FROM `fake-recidiviz-project.{self.mock_dataset_id}.{self.mock_table_id}`"
+            expected_query = (
+                "SELECT *, CAST(NULL AS STRING) AS state_code, CAST(NULL AS INTEGER) AS new_column_name "
+                f"FROM `fake-recidiviz-project.{self.mock_dataset_id}.{self.mock_table_id}`"
+            )
             self.mock_client.query.assert_called_with(
                 query=expected_query,
                 location=BigQueryClient.DEFAULT_REGION,
@@ -801,10 +749,7 @@ class BigQueryClientImplTest(unittest.TestCase):
         self, mock_job_config: mock.MagicMock
     ) -> None:
         """Tests that the insert_into_table_from_table_async generates a valid query when given a filter clause."""
-        mock_table = create_autospec(bigquery.Table)
-        mock_table.schema = self.mock_schema
-        self.mock_client.get_table.return_value = mock_table
-        filter_clause = "WHERE fake_column IN ('US_ND')"
+        filter_clause = "WHERE state_code IN ('US_ND')"
         job_config = mock_job_config()
         self.bq_client.insert_into_table_from_table_async(
             source_dataset_id=self.mock_dataset_id,
@@ -815,8 +760,8 @@ class BigQueryClientImplTest(unittest.TestCase):
             use_query_cache=False,
         )
         expected_query = (
-            f"INSERT INTO `fake-recidiviz-project.fake_source_dataset_id.fake_table_id` (fake_column) SELECT fake_column FROM `fake-recidiviz-project.{self.mock_dataset_id}.{self.mock_table_id}` "
-            "\n WHERE fake_column IN ('US_ND')"
+            "SELECT * FROM `fake-recidiviz-project.fake-dataset.test_table` "
+            "WHERE state_code IN ('US_ND')"
         )
         self.mock_client.query.assert_called_with(
             query=expected_query,
