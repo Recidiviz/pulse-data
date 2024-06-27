@@ -17,6 +17,7 @@
 """Base class for official Justice Counts metrics."""
 
 import enum
+import logging
 from typing import Any, Dict, List, Optional, Set, Type, TypeVar
 
 import attr
@@ -104,8 +105,17 @@ class IncludesExcludesSet:
             ) in includes_excludes.member_to_default_inclusion_setting.items():
                 setting = includes_excludes_member_to_setting.get(member.name, None)
                 try:
-                    includes_excludes_dict[member] = IncludesExcludesSetting(setting)
-                except ValueError:
+                    includes_excludes_dict[member] = (
+                        IncludesExcludesSetting.__members__[setting]
+                        if setting is not None
+                        else None
+                    )
+                except ValueError as e:
+                    logging.error(
+                        "%s is not valid IncludesExcludesSetting member. Error: %s",
+                        setting,
+                        e,
+                    )
                     includes_excludes_dict[member] = None
         return includes_excludes_dict
 
