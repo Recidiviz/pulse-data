@@ -36,6 +36,7 @@ from recidiviz.outliers.constants import (
     VIOLATION_RESPONSES,
 )
 from recidiviz.outliers.types import (
+    ExcludedSupervisionOfficerEntity,
     OutliersBackendConfig,
     OutliersClientEventConfig,
     OutliersMetricConfig,
@@ -355,6 +356,63 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
             )
 
             self.snapshot.assert_match(response.json, name="test_get_officers_for_supervisor")  # type: ignore[attr-defined]
+
+    @patch(
+        "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_supervisor_entity_from_pseudonymized_id",
+    )
+    @patch(
+        "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_excluded_officers_for_supervisor",
+    )
+    @patch(
+        "recidiviz.case_triage.outliers.outliers_authorization.get_outliers_enabled_states",
+    )
+    def test_get_excluded_officers_for_supervisor(
+        self,
+        mock_enabled_states: MagicMock,
+        mock_get_excluded_officers: MagicMock,
+        mock_get_supervisor: MagicMock,
+    ) -> None:
+        self.mock_authorization_handler.side_effect = self.auth_side_effect("us_pa")
+        mock_enabled_states.return_value = ["US_PA"]
+
+        with SessionFactory.using_database(self.insights_database_key) as session:
+            mock_get_supervisor.return_value = (
+                session.query(SupervisionOfficerSupervisor)
+                .filter(SupervisionOfficerSupervisor.external_id == "102")
+                .first()
+            )
+
+            mock_get_excluded_officers.return_value = [
+                ExcludedSupervisionOfficerEntity(
+                    full_name=PersonName(
+                        **{"given_names": "HARRY", "surname": "POTTER"}
+                    ),
+                    external_id="123",
+                    pseudonymized_id="hashhash",
+                    supervisor_external_id="102",
+                    supervisor_external_ids=["102"],
+                    district="Hogwarts",
+                    caseload_type=None,
+                ),
+                ExcludedSupervisionOfficerEntity(
+                    full_name=PersonName(
+                        **{"given_names": "RON", "surname": "WEASLEY"}
+                    ),
+                    external_id="456",
+                    pseudonymized_id="hashhashhash",
+                    supervisor_external_id="102",
+                    supervisor_external_ids=["102"],
+                    district="Hogwarts",
+                    caseload_type=None,
+                ),
+            ]
+
+            response = self.test_client.get(
+                "/outliers/US_PA/supervisor/hash1/excluded_officers",
+                headers={"Origin": "http://localhost:3000"},
+            )
+
+            self.snapshot.assert_match(response.json, name="test_get_excluded_officers_for_supervisor")  # type: ignore[attr-defined]
 
     @patch(
         "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_supervisor_entity_from_pseudonymized_id",

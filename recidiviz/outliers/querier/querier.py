@@ -38,6 +38,7 @@ from recidiviz.outliers.constants import DEFAULT_NUM_LOOKBACK_PERIODS
 from recidiviz.outliers.outliers_configs import get_outliers_backend_config
 from recidiviz.outliers.types import (
     ConfigurationStatus,
+    ExcludedSupervisionOfficerEntity,
     MetricContext,
     MetricOutcome,
     OfficerMetricEntity,
@@ -64,6 +65,7 @@ from recidiviz.persistence.database.schema.insights.schema import (
     SupervisionClients,
     SupervisionDistrictManager,
     SupervisionOfficer,
+    SupervisionOfficerMetric,
     SupervisionOfficerOutlierStatus,
     SupervisionOfficerSupervisor,
     UserMetadata,
@@ -518,6 +520,59 @@ class OutliersQuerier:
             supervisor_external_id=supervisor_external_id,
         )
         return list(id_to_entities.values())
+
+    def get_excluded_officers_for_supervisor(
+        self,
+        supervisor_external_id: str,
+    ) -> List[ExcludedSupervisionOfficerEntity]:
+        """
+        Returns a list of ExcludedSupervisionOfficerEntity objects that represent the supervisor's officers that
+        are currently excluded from metric calculations (see supervision_officer_metric_exclusions clause).
+
+        :param supervisor_external_id: The external id of the supervisor to get outlier information for
+        :rtype: List[ExcludedSupervisionOfficerEntity]
+        """
+        with self.insights_database_session() as session:
+            officer_status_query = (
+                session.query(SupervisionOfficer)
+                .outerjoin(
+                    SupervisionOfficerMetric,
+                    SupervisionOfficer.external_id
+                    == SupervisionOfficerMetric.officer_id,
+                )
+                .filter(
+                    SupervisionOfficer.supervisor_external_ids.any(
+                        supervisor_external_id
+                    ),
+                    SupervisionOfficerMetric.officer_id.is_(None),
+                )
+                .with_entities(
+                    SupervisionOfficer.external_id,
+                    SupervisionOfficer.full_name,
+                    SupervisionOfficer.pseudonymized_id,
+                    SupervisionOfficer.supervisor_external_id,
+                    SupervisionOfficer.supervisor_external_ids,
+                    SupervisionOfficer.supervision_district,
+                    SupervisionOfficer.specialized_caseload_type,
+                )
+            )
+
+            officer_status_records = officer_status_query.all()
+
+            return [
+                (
+                    ExcludedSupervisionOfficerEntity(
+                        full_name=PersonName(**record.full_name),
+                        external_id=record.external_id,
+                        pseudonymized_id=record.pseudonymized_id,
+                        supervisor_external_id=record.supervisor_external_id,
+                        supervisor_external_ids=record.supervisor_external_ids,
+                        district=record.supervision_district,
+                        caseload_type=record.specialized_caseload_type,
+                    )
+                )
+                for record in officer_status_records
+            ]
 
     def get_supervisor_entity_from_pseudonymized_id(
         self, supervisor_pseudonymized_id: str

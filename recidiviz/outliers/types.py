@@ -337,7 +337,9 @@ class OfficerSupervisorReportData:
 
 
 @attr.s
-class SupervisionOfficerEntity:
+class SupervisionOfficerEntityBase:
+    """Base class for supervision officer types."""
+
     # The full name of the officer
     full_name: PersonName = attr.ib()
     # The officer's external id
@@ -352,6 +354,18 @@ class SupervisionOfficerEntity:
     district: str = attr.ib()
     # The officer's caseload type in the latest period
     caseload_type: Optional[str] = attr.ib()
+
+    def to_json(self) -> Dict[str, Any]:
+        # TODO(#28217): To refine when designing Insights with disaggregated caseload types
+        self.caseload_type = None
+        return cattrs.unstructure(self)
+
+
+@attr.s
+class SupervisionOfficerEntity(SupervisionOfficerEntityBase):
+    """Represents an officer we have included in our benchmarks and outlier status
+    calculations. These officers may or may not be outliers themselves."""
+
     # List of objects that represent what metrics the officer is an Outlier for
     # If the list is empty, then the officer is not an Outlier on any metric.
     outlier_metrics: list = attr.ib()
@@ -359,10 +373,11 @@ class SupervisionOfficerEntity:
     # where x can be specified on the OutliersMetricConfig in a state's OutliersBackendConfig
     top_x_pct_metrics: list = attr.ib()
 
-    def to_json(self) -> Dict[str, Any]:
-        # TODO(#28217): To refine when designing Insights with disaggregated caseload types
-        self.caseload_type = None
-        return cattrs.unstructure(self)
+
+@attr.s
+class ExcludedSupervisionOfficerEntity(SupervisionOfficerEntityBase):
+    """An officer that was excluded from benchmark and outlier status
+    calculations."""
 
 
 @attr.s

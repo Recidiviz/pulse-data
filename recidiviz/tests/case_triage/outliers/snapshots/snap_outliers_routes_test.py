@@ -189,6 +189,41 @@ snapshots[
     ]
 }
 
+snapshots[
+    "TestOutliersRoutes.TestOutliersRoutes test_get_excluded_officers_for_supervisor"
+] = {
+    "officers": [
+        {
+            "caseloadType": None,
+            "district": "Hogwarts",
+            "externalId": "123",
+            "fullName": {
+                "givenNames": "Harry",
+                "middleNames": None,
+                "nameSuffix": None,
+                "surname": "Potter",
+            },
+            "pseudonymizedId": "hashhash",
+            "supervisorExternalId": "102",
+            "supervisorExternalIds": ["102"],
+        },
+        {
+            "caseloadType": None,
+            "district": "Hogwarts",
+            "externalId": "456",
+            "fullName": {
+                "givenNames": "Ron",
+                "middleNames": None,
+                "nameSuffix": None,
+                "surname": "Weasley",
+            },
+            "pseudonymizedId": "hashhashhash",
+            "supervisorExternalId": "102",
+            "supervisorExternalIds": ["102"],
+        },
+    ]
+}
+
 snapshots["TestOutliersRoutes.TestOutliersRoutes test_get_officer_not_outlier"] = {
     "officer": {
         "caseloadType": None,
