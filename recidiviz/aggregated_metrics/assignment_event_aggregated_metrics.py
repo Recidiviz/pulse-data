@@ -158,13 +158,6 @@ def generate_assignment_event_aggregated_metrics_view_builder(
 WITH time_periods AS (
     SELECT * FROM `{{project_id}}.aggregated_metrics.metric_time_periods_materialized`
 )
-, week_metrics AS ({get_assignment_event_time_specific_cte(
-    unit_of_analysis = unit_of_analysis,
-    population_type = population_type,
-    metrics = metrics,
-    metric_time_period = MetricTimePeriod.WEEK,
-)})
-
 , month_metrics AS ({get_assignment_event_time_specific_cte(
     unit_of_analysis = unit_of_analysis,
     population_type = population_type,

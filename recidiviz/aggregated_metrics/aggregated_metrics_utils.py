@@ -51,13 +51,6 @@ def get_unioned_time_granularity_clause(
 SELECT
     *
 FROM
-    week_metrics
-
-UNION ALL
-
-SELECT
-    *
-FROM
     month_metrics
 
 UNION ALL
