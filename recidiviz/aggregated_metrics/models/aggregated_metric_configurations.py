@@ -596,6 +596,20 @@ AVG_DAILY_POPULATION_SOLITARY_CONFINEMENT = DailyAvgSpanCountMetric(
         )
     ],
 )
+
+
+AVG_DAILY_POPULATION_STATE_PRISON = DailyAvgSpanCountMetric(
+    name="avg_population_state_prison",
+    display_name="Average Population: State Prison location type",
+    description="Average daily count of people in state prison",
+    span_selectors=[
+        SpanSelector(
+            span_type=SpanType.LOCATION_TYPE_SESSION,
+            span_conditions_dict={"location_type": ["STATE_PRISON"]},
+        )
+    ],
+)
+
 AVG_DAILY_POPULATION_HOUSING_TYPE_METRICS = [
     DailyAvgSpanCountMetric(
         name=f"avg_population_{housing_type.lower()}",
