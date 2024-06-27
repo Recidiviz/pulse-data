@@ -28,6 +28,9 @@ US_AR:
   RELATEDPARTY:
     reference_views.us_ar_location_metadata: |-
       Used to pull in location reference data.
+  SUPERVISIONEVENT:
+    reference_views.us_ar_location_metadata: |-
+      Used to pull in location reference data.
   SUPVINCENTIVE:
     analyst_data.us_ar_ovg_events_preprocessed: |-
       Source for preprocessed data used in us_ar_ovg_timeline.

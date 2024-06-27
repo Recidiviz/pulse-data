@@ -62,6 +62,16 @@ with counties_to_areas AS (
     FROM `{{project_id}}.{{us_ar_raw_data_up_to_date_dataset}}.ORGANIZATIONPROF_latest`
     WHERE ORGANIZATIONTYPE = 'Z2'
 ),
+locs_used_as_offices AS (
+    /*
+    Some locations that don't have location_type = 'SUPERVISION_LOCATION' are still
+    treated as supervision offices in the raw data. Therefore, we set supervision_office_id
+    and supervision_office_name for all locations that show up as offices in the supervision
+    data, rather than only setting these metadata fields for SUPERVISION_LOCATION type locations.
+    */
+    SELECT DISTINCT PPOFFICE 
+    FROM `{{project_id}}.{{us_ar_raw_data_up_to_date_dataset}}.SUPERVISIONEVENT_latest`
+),
 all_organizations AS (
     SELECT
         'US_AR' AS state_code,
@@ -170,7 +180,18 @@ all_organizations AS (
                     WHEN 'PINE BLUFF P&P' THEN '11'
                     WHEN 'UNKNOWN' THEN 'UNKNOWN'
                     ELSE NULL
-                END AS {LocationMetadataKey.SUPERVISION_DISTRICT_ID.value}
+                END AS {LocationMetadataKey.SUPERVISION_DISTRICT_ID.value},
+                -- If a location is treated as a supervision office in the data, then we
+                -- reuse the location_external_id and location_name as the supervision_office_id
+                -- and supervision_office_name.
+                CASE 
+                    WHEN op.PARTYID IN (SELECT * FROM locs_used_as_offices) THEN op.PARTYID 
+                    ELSE NULL
+                END AS {LocationMetadataKey.SUPERVISION_OFFICE_ID.value},
+                CASE 
+                    WHEN op.PARTYID IN (SELECT * FROM locs_used_as_offices) THEN op.UORGANIZATIONNAME 
+                    ELSE NULL
+                END AS {LocationMetadataKey.SUPERVISION_OFFICE_NAME.value}
             )
         ) AS location_metadata
 
