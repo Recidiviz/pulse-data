@@ -270,7 +270,7 @@ supervision_super_sessions AS (
   FROM `{{project_id}}.{{sessions_dataset}}.compartment_level_0_super_sessions_materialized`
   WHERE state_code = 'US_AR' AND 
     compartment_level_0 = 'SUPERVISION' AND
-    DATE_DIFF(end_date, start_date, DAY) != 0
+    DATE_DIFF({nonnull_end_date_clause('end_date')}, start_date, DAY) != 0
 ),
 point_loc_ss_union AS (
   -- Union together the violations from before, incentives, and locations, to be used
@@ -324,10 +324,11 @@ cleaned_timeline AS (
 SELECT 
       *,
       CASE 
-        WHEN COALESCE(points,0) BETWEEN 0 and 10 THEN 0
-        WHEN COALESCE(points,0) BETWEEN 11 and 20 THEN 1
-        WHEN COALESCE(points,0) BETWEEN 21 and 30 THEN 2
-        WHEN COALESCE(points,0) > 30 THEN 3
+        WHEN COALESCE(points,0) = 0 THEN 0
+        WHEN COALESCE(points,0) BETWEEN 1 and 10 THEN 1
+        WHEN COALESCE(points,0) BETWEEN 11 and 20 THEN 2
+        WHEN COALESCE(points,0) BETWEEN 21 and 30 THEN 3
+        WHEN COALESCE(points,0) > 30 THEN 4
 END AS tranche
 FROM cleaned_timeline
 """
