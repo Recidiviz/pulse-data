@@ -288,6 +288,9 @@ from recidiviz.calculator.query.state.views.analyst_data.workflows_person_impact
 from recidiviz.calculator.query.state.views.analyst_data.workflows_user_caseload_access_sessions import (
     WORKFLOWS_USER_CASELOAD_ACCESS_SESSIONS_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.analyst_data.workflows_user_signups import (
+    WORKFLOWS_USER_SIGNUPS_VIEW_BUILDER,
+)
 
 ANALYST_DATA_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     ALL_TASK_ELIGIBILITY_SPANS_VIEW_BUILDER,
@@ -380,4 +383,5 @@ ANALYST_DATA_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     WORKFLOWS_USER_CASELOAD_ACCESS_SESSIONS_VIEW_BUILDER,
     US_AR_OVG_TIMELINE_VIEW_BUILDER,
     US_AR_OVG_EVENTS_PREPROCESSED_VIEW_BUILDER,
+    WORKFLOWS_USER_SIGNUPS_VIEW_BUILDER,
 ]

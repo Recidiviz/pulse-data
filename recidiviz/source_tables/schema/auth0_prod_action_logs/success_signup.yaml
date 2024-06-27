@@ -1,0 +1,122 @@
+address:
+  dataset_id: auth0_prod_action_logs
+  table_id: success_signup
+description:
+  "TODO(#29155): Add a description as to what this is used for and why
+  it isn't managed in code"
+schema:
+  - name: allowed_supervision_location_ids
+    type: STRING
+    mode: NULLABLE
+  - name: context_library_name
+    type: STRING
+    mode: NULLABLE
+  - name: context_library_version
+    type: STRING
+    mode: NULLABLE
+  - name: email
+    type: STRING
+    mode: NULLABLE
+  - name: email_verified
+    type: BOOLEAN
+    mode: NULLABLE
+  - name: event
+    type: STRING
+    mode: NULLABLE
+  - name: event_text
+    type: STRING
+    mode: NULLABLE
+  - name: id
+    type: STRING
+    mode: NULLABLE
+  - name: last_ip
+    type: STRING
+    mode: NULLABLE
+  - name: loaded_at
+    type: TIMESTAMP
+    mode: NULLABLE
+  - name: logins_count
+    type: INTEGER
+    mode: NULLABLE
+  - name: original_timestamp
+    type: TIMESTAMP
+    mode: NULLABLE
+  - name: received_at
+    type: TIMESTAMP
+    mode: NULLABLE
+  - name: role
+    type: STRING
+    mode: NULLABLE
+  - name: sent_at
+    type: TIMESTAMP
+    mode: NULLABLE
+  - name: state_code
+    type: STRING
+    mode: NULLABLE
+  - name: timestamp
+    type: TIMESTAMP
+    mode: NULLABLE
+  - name: user_hash
+    type: STRING
+    mode: NULLABLE
+  - name: user_id
+    type: STRING
+    mode: NULLABLE
+  - name: uuid_ts
+    type: TIMESTAMP
+    mode: NULLABLE
+  - name: routes_operations
+    type: BOOLEAN
+    mode: NULLABLE
+  - name: routes_system_liberty_to_prison
+    type: BOOLEAN
+    mode: NULLABLE
+  - name: routes_system_prison
+    type: BOOLEAN
+    mode: NULLABLE
+  - name: routes_system_prison_to_supervision
+    type: BOOLEAN
+    mode: NULLABLE
+  - name: routes_system_supervision
+    type: BOOLEAN
+    mode: NULLABLE
+  - name: routes_system_supervision_to_liberty
+    type: BOOLEAN
+    mode: NULLABLE
+  - name: routes_system_supervision_to_prison
+    type: BOOLEAN
+    mode: NULLABLE
+  - name: routes_workflows
+    type: BOOLEAN
+    mode: NULLABLE
+  - name: allowed_supervision_location_level
+    type: STRING
+    mode: NULLABLE
+  - name: district
+    type: STRING
+    mode: NULLABLE
+  - name: external_id
+    type: STRING
+    mode: NULLABLE
+  - name: feature_variants_rh_active_date
+    type: TIMESTAMP
+    mode: NULLABLE
+  - name: feature_variants_rh_access_active_date
+    type: TIMESTAMP
+    mode: NULLABLE
+  - name: feature_variants_responsive_revamp
+    type: BOOLEAN
+    mode: NULLABLE
+  - name: routes_workflows_facilities
+    type: BOOLEAN
+    mode: NULLABLE
+  - name: routes_workflows_supervision
+    type: BOOLEAN
+    mode: NULLABLE
+  - name: feature_variants_enable_snooze_active_date
+    type: TIMESTAMP
+    mode: NULLABLE
+  - name: feature_variants_responsive_revamp_active_date
+    type: TIMESTAMP
+    mode: NULLABLE
+clustering_fields: null

@@ -103,3 +103,6 @@ OUTLIERS_VIEWS_DATASET: str = "outliers_views"
 
 # Views that contain events logged from Auth0 actions via Segment
 AUTH0_PROD_ACTION_LOGS: str = "auth0_prod_action_logs"
+
+# Views that contain legacy events logged from Auth0 actions via Segment
+AUTH0_EVENTS: str = "auth0_events"
