@@ -42,6 +42,9 @@ from recidiviz.calculator.query.state.views.sessions.compartment_sub_sessions im
 from recidiviz.calculator.query.state.views.sessions.justice_impact_sessions import (
     JUSTICE_IMPACT_SESSIONS_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.sessions.location_type_sessions import (
+    LOCATION_TYPE_SESSIONS_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.sessions.person_demographics import (
     PERSON_DEMOGRAPHICS_VIEW_BUILDER,
 )
@@ -197,6 +200,16 @@ WHERE
             "justice_impact_weight",
             "unweighted_days_justice_impacted",
             "weighted_days_justice_impacted",
+        ],
+        span_start_date_col="start_date",
+        span_end_date_col="end_date_exclusive",
+    ),
+    SpanQueryBuilder(
+        span_type=SpanType.LOCATION_TYPE_SESSION,
+        description="Potentially overlapping spans of time over which a person has a certain location type",
+        sql_source=LOCATION_TYPE_SESSIONS_VIEW_BUILDER.table_for_query,
+        attribute_cols=[
+            "location_type",
         ],
         span_start_date_col="start_date",
         span_end_date_col="end_date_exclusive",
