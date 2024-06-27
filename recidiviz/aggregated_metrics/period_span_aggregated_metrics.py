@@ -19,7 +19,6 @@ from typing import Dict, List
 
 from recidiviz.aggregated_metrics.aggregated_metrics_utils import (
     get_joined_metrics_by_observation_type_query,
-    get_unioned_time_granularity_clause,
 )
 from recidiviz.aggregated_metrics.dataset_config import AGGREGATED_METRICS_DATASET_ID
 from recidiviz.aggregated_metrics.metric_time_periods import MetricTimePeriod
@@ -157,27 +156,26 @@ def generate_period_span_aggregated_metrics_view_builder(
 
     All end_dates are exclusive, i.e. the metric is for the range [start_date, end_date).
     """
+    time_specific_ctes = [
+        get_period_span_time_specific_cte(
+            unit_of_analysis=unit_of_analysis,
+            population_type=population_type,
+            metrics=metrics,
+            metric_time_period=time_period,
+        )
+        for time_period in (
+            MetricTimePeriod.MONTH,
+            MetricTimePeriod.QUARTER,
+            MetricTimePeriod.YEAR,
+        )
+    ]
+    unioned_time_specific_ctes = "\nUNION ALL\n".join(time_specific_ctes)
     query_template = f"""
 WITH time_periods AS (
     SELECT * FROM `{{project_id}}.aggregated_metrics.metric_time_periods_materialized`
 )
-, week_metrics AS ({get_period_span_time_specific_cte(
-    unit_of_analysis = unit_of_analysis,
-    population_type = population_type,
-    metrics = metrics,
-    metric_time_period = MetricTimePeriod.WEEK,
-)})
-
-, month_metrics AS ({get_period_span_time_specific_cte(
-    unit_of_analysis = unit_of_analysis,
-    population_type = population_type,
-    metrics = metrics,
-    metric_time_period = MetricTimePeriod.MONTH,
-)})
-""" + get_unioned_time_granularity_clause(
-        unit_of_analysis=unit_of_analysis,
-        metrics=metrics,
-    )
+{unioned_time_specific_ctes}
+"""
 
     return SimpleBigQueryViewBuilder(
         dataset_id=AGGREGATED_METRICS_DATASET_ID,
