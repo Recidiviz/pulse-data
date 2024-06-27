@@ -21,7 +21,7 @@ num_allowed_rows_overrides:
     hard_num_allowed_rows_override: 1700
     override_reason: Needs investigation. Current failing level as of 11/20/23 is 1655 rows #TODO(#25600): Investigate further
   - validation_name: sessions_missing_closest_sentence_imposed_group
-    hard_num_allowed_rows_override: 60000
+    hard_num_allowed_rows_override: 14000
     override_reason: Current failing level as of 11/29/23 is 56,879 rows #TODO(#25773): Revisit sentencing related thresholds post-refactor
   - validation_name: session_new_admissions_with_no_sentence_date_imposed
     hard_num_allowed_rows_override: 190000
@@ -36,5 +36,5 @@ num_allowed_rows_overrides:
     hard_num_allowed_rows_override: 400
     override_reason: Needs further investigation #TODO(#26393)
   - validation_name: overlapping_incarceration_periods
-    hard_num_allowed_rows_override: 200
+    hard_num_allowed_rows_override: 100
     override_reason: Needs further investigation #TODO(#26393)

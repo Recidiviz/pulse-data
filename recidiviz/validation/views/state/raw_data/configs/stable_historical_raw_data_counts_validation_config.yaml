@@ -29,6 +29,11 @@ PERMANENT:
       exclusion_reason:
         Small reference file that is updated infrequently -- small changes in file size
         cauase large % changes
+  US_OR:
+    - file_tag: RCDVZ_CISUIR_INCIDENT_LOCATION
+      exclusion_reason:
+        Small reference file that is updated infrequently -- small changes in file size
+        cauase large % changes. This file is also not currently used in a view.
 DATE_RANGE:
   US_MO:
     - file_tag: LBAKRDTA_TAK237
