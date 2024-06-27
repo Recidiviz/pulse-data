@@ -44,6 +44,7 @@ from recidiviz.persistence.database.schema.insights.schema import (
     SupervisionClients,
     SupervisionDistrictManager,
     SupervisionOfficer,
+    SupervisionOfficerMetric,
     SupervisionOfficerOutlierStatus,
     SupervisionOfficerSupervisor,
     UserMetadata,
@@ -122,6 +123,10 @@ class TestOutliersQuerier(InsightsDbTestCase):
                 session.add(SupervisionClientEvent(**event))
             for client in load_model_from_json_fixture(SupervisionClients):
                 session.add(SupervisionClients(**client))
+            for officer_metric in load_model_from_json_fixture(
+                SupervisionOfficerMetric
+            ):
+                session.add(SupervisionOfficerMetric(**officer_metric))
 
     def tearDown(self) -> None:
         super().tearDown()
@@ -164,6 +169,12 @@ class TestOutliersQuerier(InsightsDbTestCase):
             supervisor_external_id="102", num_lookback_periods=5
         )
         self.snapshot.assert_match(actual, name="test_get_officers_for_supervisor")  # type: ignore[attr-defined]
+
+    def test_get_excluded_officers_for_supervisor(self) -> None:
+        actual = OutliersQuerier(StateCode.US_PA).get_excluded_officers_for_supervisor(
+            supervisor_external_id="102"
+        )
+        self.snapshot.assert_match(actual, name="test_get_excluded_officers_for_supervisor")  # type: ignore[attr-defined]
 
     def test_get_supervisor_from_pseudonymized_id_no_match(self) -> None:
         # If matching supervisor doesn't exist, return None

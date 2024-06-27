@@ -181,6 +181,36 @@ def create_outliers_api_blueprint() -> Blueprint:
         ]
         return jsonify({"officers": officers})
 
+    @api.get("/<state>/supervisor/<supervisor_pseudonymized_id>/excluded_officers")
+    def excluded_officers_for_supervisor(
+        state: str, supervisor_pseudonymized_id: str
+    ) -> Response:
+        state_code = StateCode(state.upper())
+
+        querier = OutliersQuerier(state_code)
+        supervisor = querier.get_supervisor_entity_from_pseudonymized_id(
+            supervisor_pseudonymized_id
+        )
+
+        if supervisor is None:
+            return jsonify_response(
+                f"Supervisor with pseudonymized_id doesn't exist in DB. Pseudonymized id: {supervisor_pseudonymized_id}",
+                HTTPStatus.NOT_FOUND,
+            )
+
+        officer_entities = querier.get_excluded_officers_for_supervisor(
+            supervisor.external_id,
+        )
+
+        officers = [
+            convert_nested_dictionary_keys(
+                entity.to_json(),
+                snake_to_camel,
+            )
+            for entity in officer_entities
+        ]
+        return jsonify({"officers": officers})
+
     @api.get("/<state>/benchmarks")
     def benchmarks(
         state: str,

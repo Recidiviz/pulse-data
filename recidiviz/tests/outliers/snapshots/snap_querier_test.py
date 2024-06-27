@@ -54,6 +54,17 @@ snapshots["TestOutliersQuerier.TestOutliersQuerier test_get_benchmarks"] = [
 ]
 
 snapshots[
+    "TestOutliersQuerier.TestOutliersQuerier test_get_excluded_officers_for_supervisor"
+] = [
+    GenericRepr(
+        "ExcludedSupervisionOfficerEntity(full_name=PersonName(given_names='Officer', surname='10', middle_names='', name_suffix=''), external_id='10', pseudonymized_id='officerhash10', supervisor_external_id='102', supervisor_external_ids=['102'], district=None, caseload_type=None)"
+    ),
+    GenericRepr(
+        "ExcludedSupervisionOfficerEntity(full_name=PersonName(given_names='Officer', surname='11', middle_names='', name_suffix=''), external_id='11', pseudonymized_id='officerhash11', supervisor_external_id='102', supervisor_external_ids=['102'], district=None, caseload_type='OTHER')"
+    ),
+]
+
+snapshots[
     "TestOutliersQuerier.TestOutliersQuerier test_get_officer_level_report_data_by_supervisor"
 ] = {
     "101": GenericRepr(
