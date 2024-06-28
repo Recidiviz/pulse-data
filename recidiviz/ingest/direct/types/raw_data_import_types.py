@@ -15,9 +15,10 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Types associated with raw data imports"""
+import abc
 import json
 from enum import Enum, auto
-from typing import List, Optional
+from typing import Generic, List, Optional, Type, TypeVar
 
 import attr
 
@@ -66,15 +67,118 @@ class PreImportNormalizationType(Enum):
         return None
 
 
+class BaseResult:
+    """Represents the result of a raw data import dag airflow task
+    with methods to serialize/deserialize in order to be passed
+    between tasks via xcom"""
+
+    @abc.abstractmethod
+    def serialize(self) -> str:
+        """Method to serialized object to string"""
+
+    @staticmethod
+    @abc.abstractmethod
+    def deserialize(json_str: str) -> "BaseResult":
+        """Method to deserialize json string to object"""
+
+
 @attr.define
-class RequiresPreImportNormalizationFileChunk:
+class RawFileProcessingError:
+    file_path: str
+    error_msg: str
+
+    def serialize(self) -> str:
+        result_dict = {"file_path": self.file_path, "error_msg": self.error_msg}
+        return json.dumps(result_dict)
+
+    @staticmethod
+    def deserialize(json_str: str) -> "RawFileProcessingError":
+        data = json.loads(json_str)
+        return RawFileProcessingError(
+            file_path=data["file_path"], error_msg=data["error_msg"]
+        )
+
+
+T = TypeVar("T", bound="BaseResult")
+
+
+@attr.define
+class BatchedTaskInstanceOutput(Generic[T]):
+    """
+    Represents the output from an Airflow task instance operating on a batch of input to increase parallelism
+    with methods to serialize/deserialize in order to be passed between tasks via xcom.
+
+    Attributes:
+        results (List[T]): A list of results produced by the task instance.
+        errors (List[RawFileProcessingError]): A list of errors encountered during the task execution.
+    """
+
+    results: List[T]
+    errors: List[RawFileProcessingError]
+
+    def serialize(self) -> str:
+        result_dict = {
+            "results": [result.serialize() for result in self.results],
+            "errors": [error.serialize() for error in self.errors],
+        }
+        return json.dumps(result_dict)
+
+    @staticmethod
+    def deserialize(json_str: str, result_cls: Type[T]) -> "BatchedTaskInstanceOutput":
+        data = json.loads(json_str)
+        return BatchedTaskInstanceOutput(
+            results=[result_cls.deserialize(chunk) for chunk in data["results"]],
+            errors=[
+                RawFileProcessingError.deserialize(error) for error in data["errors"]
+            ],
+        )
+
+
+@attr.define
+class MappedBatchedTaskOutput:
+    """Represents output of a mapped airflow task (task created using the expand function).
+
+    Attributes:
+        task_instance_output_list (List[BatchedTaskInstanceOutput]): The output of all of the task instances in the mapped task.
+    """
+
+    task_instance_output_list: List[BatchedTaskInstanceOutput]
+
+    def flatten_errors(self) -> List[RawFileProcessingError]:
+        return [
+            error
+            for task_instance_result in self.task_instance_output_list
+            for error in task_instance_result.errors
+        ]
+
+    def flatten_results(self) -> List[T]:
+        return [
+            result
+            for task_instance_result in self.task_instance_output_list
+            for result in task_instance_result.results
+        ]
+
+    @staticmethod
+    def deserialize(
+        json_str_list: List[str], result_cls: Type[T]
+    ) -> "MappedBatchedTaskOutput":
+        return MappedBatchedTaskOutput(
+            task_instance_output_list=[
+                BatchedTaskInstanceOutput.deserialize(json_str, result_cls)
+                for json_str in json_str_list
+            ]
+        )
+
+
+@attr.define
+class RequiresPreImportNormalizationFileChunk(BaseResult):
     """Encapsulates the path, the chunk boundary and the type of normalization required
     for the CSV to conform to BigQuery's load job standards."""
 
     path: str
     normalization_type: Optional[PreImportNormalizationType]
     chunk_boundary: CsvChunkBoundary
-    headers: str
+    headers: List[str]
 
     def serialize(self) -> str:
         return json.dumps(
@@ -100,7 +204,7 @@ class RequiresPreImportNormalizationFileChunk:
 
 
 @attr.define
-class RequiresPreImportNormalizationFile:
+class RequiresPreImportNormalizationFile(BaseResult):
     """Encapsulates the path, the headers, the chunk boundaries for the file
     and the type of normalization required for the CSV to conform to
     BigQuery's load job standards."""
@@ -108,7 +212,7 @@ class RequiresPreImportNormalizationFile:
     path: str
     normalization_type: Optional[PreImportNormalizationType]
     chunk_boundaries: List[CsvChunkBoundary]
-    headers: str
+    headers: List[str]
 
     def serialize(self) -> str:
         return json.dumps(
@@ -156,7 +260,7 @@ class RequiresPreImportNormalizationFile:
 
 
 @attr.define
-class NormalizedCsvChunkResult:
+class NormalizedCsvChunkResult(BaseResult):
     """Encapsulates the output path, chunk boundary and checksum of the CSV chunk. This
     should relate 1-1 to a RequiresPreImportNormalizationFileChunk."""
 
@@ -195,9 +299,24 @@ class RequiresNormalizationFile:
 
 
 @attr.define
-class ImportReadyNormalizedFile:
+class ImportReadyNormalizedFile(BaseResult):
     input_file_path: str
     output_file_paths: List[str]
+
+    def serialize(self) -> str:
+        result_dict = {
+            "input_file_path": self.input_file_path,
+            "output_file_paths": self.output_file_paths,
+        }
+        return json.dumps(result_dict)
+
+    @staticmethod
+    def deserialize(json_str: str) -> "ImportReadyNormalizedFile":
+        data = json.loads(json_str)
+        return ImportReadyNormalizedFile(
+            input_file_path=data["input_file_path"],
+            output_file_paths=data["output_file_paths"],
+        )
 
 
 @attr.define

@@ -26,7 +26,7 @@ from recidiviz.airflow.dags.raw_data.gcs_file_processing_tasks import (
     batch_files_by_size,
     create_chunk_batches,
     regroup_normalized_file_chunks,
-    verify_file_checksums,
+    verify_file_checksums_and_build_import_ready_file,
 )
 from recidiviz.cloud_storage.gcsfs_csv_chunk_boundary_finder import CsvChunkBoundary
 from recidiviz.ingest.direct.types.raw_data_import_types import (
@@ -118,7 +118,7 @@ class TestCreateChunkBatches(unittest.TestCase):
                 path=f"test/path_{i}.csv",
                 chunk_boundaries=self._generate_chunk_boundaries(count=4),
                 normalization_type=None,
-                headers="ID,Name,Age",
+                headers=["ID", "Name", "Age"],
             )
             for i in range(5)
         ]
@@ -134,7 +134,7 @@ class TestCreateChunkBatches(unittest.TestCase):
                 path=f"test/path_{i}.csv",
                 chunk_boundaries=self._generate_chunk_boundaries(count=3),
                 normalization_type=None,
-                headers="ID,Name,Age",
+                headers=["ID", "Name", "Age"],
             )
             for i in range(5)
         ]
@@ -151,7 +151,7 @@ class TestCreateChunkBatches(unittest.TestCase):
                 path=f"test/path_{i}.csv",
                 chunk_boundaries=self._generate_chunk_boundaries(count=3),
                 normalization_type=None,
-                headers="ID,Name,Age",
+                headers=["ID", "Name", "Age"],
             )
             for i in range(2)
         ]
@@ -201,15 +201,12 @@ class TestRegroupAndVerifyFileChunks(unittest.TestCase):
                 crc32c=self._get_checksum_int(b"file bytes"),
             ),
         ]
-        self.normalized_chunks_result = [
-            [chunk.serialize() for chunk in self.normalized_chunks]
-        ]
 
         self.file_to_normalized_chunks = {"test_bucket/file1": self.normalized_chunks}
 
     def test_regroup_normalized_file_chunks(self) -> None:
         file_to_normalized_chunks = regroup_normalized_file_chunks(
-            self.normalized_chunks_result
+            self.normalized_chunks, normalized_chunks_errors=[]
         )
 
         self.assertEqual(len(file_to_normalized_chunks), 1)
@@ -225,46 +222,52 @@ class TestRegroupAndVerifyFileChunks(unittest.TestCase):
             output_file_path="test_bucket/file1_1",
             chunk_boundary=CsvChunkBoundary(0, 10, 0),
             crc32c=self._get_checksum_int(b"these are "),
-        ).serialize()
-
+        )
         chunk1 = NormalizedCsvChunkResult(
             input_file_path="test_bucket/file1",
             output_file_path="test_bucket/file1_0",
             chunk_boundary=CsvChunkBoundary(10, 20, 1),
             crc32c=self._get_checksum_int(b"file bytes"),
-        ).serialize()
+        )
 
-        normalized_chunks = [[chunk1, chunk0]]
-        file_to_normalized_chunks = regroup_normalized_file_chunks(normalized_chunks)
+        file_to_normalized_chunks = regroup_normalized_file_chunks(
+            normalized_chunks_result=[chunk1, chunk0], normalized_chunks_errors=[]
+        )
 
         self.assertEqual(len(file_to_normalized_chunks), 1)
         self.assertIn("test_bucket/file1", file_to_normalized_chunks)
         self.assertEqual(
             file_to_normalized_chunks["test_bucket/file1"],
             [
-                NormalizedCsvChunkResult.deserialize(chunk0),
-                NormalizedCsvChunkResult.deserialize(chunk1),
+                chunk0,
+                chunk1,
             ],
         )
 
     def test_verify_checksum_success(self) -> None:
-        normalized_files, errors = verify_file_checksums(self.file_to_normalized_chunks)
+        result = verify_file_checksums_and_build_import_ready_file(
+            self.file_to_normalized_chunks
+        )
 
-        self.assertEqual(len(normalized_files), 1)
-        self.assertEqual(normalized_files[0].input_file_path, "test_bucket/file1")
+        self.assertEqual(len(result.results), 1)
+        self.assertEqual(result.results[0].input_file_path, "test_bucket/file1")
         self.assertEqual(
-            normalized_files[0].output_file_paths,
+            result.results[0].output_file_paths,
             ["test_bucket/file1_0", "test_bucket/file1_1"],
         )
-        self.assertEqual(errors, [])
+        self.assertEqual(result.errors, [])
 
     def test_verify_checksum_mismatch(self) -> None:
         self.fs.get_crc32c.return_value = "different_checksum"
-        normalized_files, errors = verify_file_checksums(self.file_to_normalized_chunks)
+        result = verify_file_checksums_and_build_import_ready_file(
+            self.file_to_normalized_chunks
+        )
 
-        self.assertEqual(normalized_files, [])
-        self.assertEqual(len(errors), 1)
-        self.assertIn("Checksum mismatch for test_bucket/file1", errors[0])
+        self.assertEqual(result.results, [])
+        self.assertEqual(len(result.errors), 1)
+        self.assertIn(
+            "Checksum mismatch for test_bucket/file1", result.errors[0].error_msg
+        )
 
     @staticmethod
     def _get_checksum_int(bytes_to_checksum: bytes) -> int:

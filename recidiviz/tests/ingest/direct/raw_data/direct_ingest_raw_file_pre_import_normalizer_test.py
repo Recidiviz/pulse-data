@@ -116,7 +116,7 @@ class DirectIngestRawFileNormalizationPassTest(unittest.TestCase):
             chunk_boundary=CsvChunkBoundary(
                 start_inclusive=0, end_exclusive=28, chunk_num=0
             ),
-            headers="we-dont-want-headers-here",
+            headers=["we-dont-want-headers-here"],
         )
         expected_output = "col1,col2,col3\nhello,its,me\n"
 
@@ -132,7 +132,7 @@ class DirectIngestRawFileNormalizationPassTest(unittest.TestCase):
             chunk_boundary=CsvChunkBoundary(
                 start_inclusive=28, end_exclusive=81, chunk_num=1
             ),
-            headers="col1,col2,col3\n",
+            headers=["col1", "col2", "col3"],
         )
         expected_output = (
             "col1,col2,col3\ni was,wondering,if\nyou could, decode, the following:\n"
@@ -150,7 +150,7 @@ class DirectIngestRawFileNormalizationPassTest(unittest.TestCase):
             chunk_boundary=CsvChunkBoundary(
                 start_inclusive=81, end_exclusive=93, chunk_num=2
             ),
-            headers="col1,col2,col3\n",
+            headers=["col1", "col2", "col3"],
         )
         expected_output = "col1,col2,col3\ná,æ,Ö\nì,ÿ,÷\n"
 
@@ -170,7 +170,7 @@ class DirectIngestRawFileNormalizationPassTest(unittest.TestCase):
             chunk_boundary=CsvChunkBoundary(
                 start_inclusive=0, end_exclusive=28, chunk_num=0
             ),
-            headers="we-dont-want-to-add-headers",
+            headers=["we-dont-want-to-add-headers"],
         )
         expected_output = '"col1","col2","col3"\n"hello","its","me"\n'
         self.run_local_test(WINDOWS_FILE_CUSTOM_NEWLINES, chunk, expected_output)
@@ -189,7 +189,7 @@ class DirectIngestRawFileNormalizationPassTest(unittest.TestCase):
             chunk_boundary=CsvChunkBoundary(
                 start_inclusive=81, end_exclusive=93, chunk_num=1
             ),
-            headers='"col1","col2","col3"\n',
+            headers=['"col1"', '"col2"', '"col3"'],
         )
         expected_output = '"col1","col2","col3"\n"á","æ","Ö"\n"ì","ÿ","÷"\n'
 
@@ -210,7 +210,7 @@ class DirectIngestRawFileNormalizationPassTest(unittest.TestCase):
             chunk_boundary=CsvChunkBoundary(
                 start_inclusive=0, end_exclusive=40, chunk_num=0
             ),
-            headers="we-dont-want-to-add-headers",
+            headers=["we-dont-want-to-add-headers"],
         )
         expected_output = '"col1","col2","col3"\n"hello,,,","its,,,,","me,,,,,"\n'
         self.run_local_test(
@@ -232,7 +232,7 @@ class DirectIngestRawFileNormalizationPassTest(unittest.TestCase):
             chunk_boundary=CsvChunkBoundary(
                 start_inclusive=96, end_exclusive=108, chunk_num=1
             ),
-            headers='"col1","col2","col3"\n',
+            headers=['"col1"', '"col2"', '"col3"'],
         )
         expected_output = '"col1","col2","col3"\n"á","æ","Ö"\n"ì","ÿ","÷"\n'
 
@@ -255,7 +255,7 @@ class DirectIngestRawFileNormalizationPassTest(unittest.TestCase):
             chunk_boundary=CsvChunkBoundary(
                 start_inclusive=0, end_exclusive=42, chunk_num=0
             ),
-            headers="we-dont-want-to-add-headers",
+            headers=["we-dont-want-to-add-headers"],
         )
         expected_output = '"col1","col2","col3"\n"hello,,,","its,,,,","me,,,,,"\n'
         self.run_local_test(WINDOWS_FILE_MULIBYTE_NEWLINES, chunk, expected_output)
@@ -275,7 +275,7 @@ class DirectIngestRawFileNormalizationPassTest(unittest.TestCase):
             chunk_boundary=CsvChunkBoundary(
                 start_inclusive=100, end_exclusive=107, chunk_num=3
             ),
-            headers='"col1","col2","col3"\n',
+            headers=['"col1"', '"col2"', '"col3"'],
         )
         expected_output = '"col1","col2","col3"\n"á","æ","Ö"\n'
 
