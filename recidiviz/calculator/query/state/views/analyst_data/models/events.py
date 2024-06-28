@@ -1071,6 +1071,52 @@ FROM
         event_date_col="incident_date",
     ),
     EventQueryBuilder(
+        event_type=EventType.US_AR_OVG_TRANCHE_CHANGES,
+        description="US_AR OVG Points Tranche Changes",
+        sql_source="""
+        -- TODO(#31020): Revisit moving some of this information into upstream ingest / creating a state agnostic view
+        SELECT
+            state_code,
+            person_id,
+            start_date,
+            end_date,
+            points,
+            tranche,
+            IF(tranche > previous_tranche, "INCREASE", "DECREASE") AS change_type
+        FROM (
+            SELECT s.*, 
+                    s_lag.tranche AS previous_tranche,
+            FROM `{project_id}.analyst_data.us_ar_ovg_timeline_materialized` s
+            LEFT JOIN `{project_id}.analyst_data.us_ar_ovg_timeline_materialized` s_lag
+                ON s.person_id = s_lag.person_id
+                AND s.start_date = s_lag.end_date
+        )
+        WHERE tranche != previous_tranche
+        """,
+        attribute_cols=["points", "tranche", "change_type"],
+        event_date_col="start_date",
+    ),
+    EventQueryBuilder(
+        event_type=EventType.US_AR_INCENTIVES,
+        description="US_AR OVG Incentives",
+        sql_source="""
+        -- TODO(#31020): Revisit moving some of this information into upstream ingest / creating a state agnostic view
+        SELECT 
+            DISTINCT
+            start_date, 
+            person_id, 
+            state_code,
+            'INCENTIVE' AS reward_type,
+        FROM `{project_id}.analyst_data.us_ar_ovg_events_preprocessed_materialized`
+        WHERE event_id = 'INCENTIVE'
+
+        """,
+        attribute_cols=[
+            "reward_type",
+        ],
+        event_date_col="start_date",
+    ),
+    EventQueryBuilder(
         event_type=EventType.VIOLATION,
         description="Violations",
         sql_source=f"""SELECT

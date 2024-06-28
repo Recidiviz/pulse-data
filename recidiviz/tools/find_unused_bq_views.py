@@ -66,12 +66,6 @@ from recidiviz.calculator.query.state.views.analyst_data.projected_discharges im
 from recidiviz.calculator.query.state.views.analyst_data.psa_risk_scores import (
     PSA_RISK_SCORES_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.analyst_data.us_ar.us_ar_ovg_events_preprocessed import (
-    US_AR_OVG_EVENTS_PREPROCESSED_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.analyst_data.us_ar.us_ar_ovg_timeline import (
-    US_AR_OVG_TIMELINE_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.analyst_data.us_az.us_az_action_queue import (
     US_AZ_ACTION_QUEUE_VIEW_BUILDER,
 )
@@ -197,12 +191,6 @@ LOOKER_REFERENCED_ADDRESSES: Set[BigQueryAddress] = {
 # as possible when updating this list, including a point of contact and date we were
 # still using this view where possible.
 UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
-    US_AR_OVG_TIMELINE_VIEW_BUILDER.address: (
-        "Used for ongoing AR analysis (n-damiani 5/23/24)"
-    ),
-    US_AR_OVG_EVENTS_PREPROCESSED_VIEW_BUILDER.address: (
-        "Used for ongoing AR analysis (n-damiani 5/23/24)"
-    ),
     ASSESSMENT_LSIR_SCORING_KEY_VIEW_BUILDER.address: (
         "This is a generic view that helps understand LSI-R scoring which may be "
         "useful for future analysis. (Anna 5/16/24"

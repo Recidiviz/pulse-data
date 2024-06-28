@@ -56,6 +56,7 @@ class SpanType(Enum):
         "WORKFLOWS_PERSON_IMPACT_FUNNEL_STATUS_SESSION"
     )
     WORKFLOWS_USER_CASELOAD_ACCESS_SESSION = "WORKFLOWS_USER_CASELOAD_ACCESS_SESSION"
+    US_AR_OVG_SESSIONS = "US_AR_OVG_SESSIONS"
 
     @property
     def unit_of_observation_type(self) -> MetricUnitOfObservationType:
@@ -80,6 +81,7 @@ class SpanType(Enum):
             SpanType.TASK_CRITERIA_SPAN,
             SpanType.TASK_ELIGIBILITY_SESSION,
             SpanType.WORKFLOWS_PERSON_IMPACT_FUNNEL_STATUS_SESSION,
+            SpanType.US_AR_OVG_SESSIONS,
         ]:
             return MetricUnitOfObservationType.PERSON_ID
         if self in [SpanType.SUPERVISION_OFFICER_INFERRED_LOCATION_SESSION]:

@@ -21,6 +21,7 @@ is not possible using raw tables or ingested data."""
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.bq_utils import nonnull_end_date_clause
 from recidiviz.calculator.query.sessions_query_fragments import (
+    aggregate_adjacent_spans,
     create_sub_sessions_with_attributes,
 )
 from recidiviz.calculator.query.state.dataset_config import (
@@ -39,6 +40,7 @@ time and geography, which is not possible using raw tables or ingested data."""
 
 US_AR_OVG_TIMELINE_QUERY_TEMPLATE = f"""
 -- TODO(#30279): Follow up on remaining discrepancies and policy logic
+-- TODO(#31020): Revisit moving some of this information into upstream ingest 
 WITH
 point_gains_start_end AS (
   /*
@@ -238,34 +240,16 @@ unioned_incentives_points_incentive_ends AS (
   SELECT *
   FROM incentives_with_incentive_ends
 ),
-locations AS (
-  SELECT
-    person_id,
-    'US_AR' AS state_code,
-    start_date,
-    end_date_exclusive,
-    CAST(NULL AS STRING) AS event_id,
-    CAST(NULL AS INT64) AS points,
-    CAST(NULL AS DATE) AS super_session_start,
-    CAST(NULL AS DATE) AS super_session_end,
-    supervision_office,
-    CAST(NULL AS STRING) AS compartment_level_2_start
-  FROM `{{project_id}}.{{sessions_dataset}}.location_sessions_materialized`
-  WHERE
-    state_code = 'US_AR' AND
-    supervision_office IS NOT NULL
-),
 supervision_super_sessions AS (
   SELECT
     person_id,
-    'US_AR' AS state_code,
+    state_code,
     start_date,
     end_date,
     CAST(NULL AS STRING) AS event_id,
     CAST(NULL AS INT64) AS points,
     start_date AS super_session_start,
     end_date AS super_session_end,
-    CAST(NULL AS STRING) AS supervision_office,
     compartment_level_2_start,
   FROM `{{project_id}}.{{sessions_dataset}}.compartment_level_0_super_sessions_materialized`
   WHERE state_code = 'US_AR' AND 
@@ -277,12 +261,11 @@ point_loc_ss_union AS (
   -- in the next round of sub-sessions.
   SELECT
     *,
-    CAST(NULL AS STRING) AS supervision_office,
     CAST(NULL AS STRING) AS compartment_level_2_start,
   FROM unioned_incentives_points_incentive_ends
+  
   UNION ALL
-  SELECT * FROM locations
-  UNION ALL
+  
   SELECT * FROM supervision_super_sessions
 ),
 sub_sessions_3 AS (
@@ -301,15 +284,15 @@ summed_points AS (
   FROM (
     SELECT
       person_id,
+      state_code,
       start_date,
       end_date,
-      ANY_VALUE(supervision_office) AS supervision_office,
       ANY_VALUE(compartment_level_2_start) AS compartment_level_2_start,
-      GREATEST(SUM(points),0) AS points,
+      COALESCE(GREATEST(SUM(points),0),0) AS points,
       ANY_VALUE(super_session_start) AS super_session_start,
       ANY_VALUE(super_session_end) AS super_session_end
     FROM sub_sessions_3
-    GROUP BY 1,2,3
+    GROUP BY 1,2,3,4
   )
 ),
 cleaned_timeline AS (
@@ -325,12 +308,16 @@ SELECT
       *,
       CASE 
         WHEN COALESCE(points,0) = 0 THEN 0
-        WHEN COALESCE(points,0) BETWEEN 1 and 10 THEN 1
-        WHEN COALESCE(points,0) BETWEEN 11 and 20 THEN 2
-        WHEN COALESCE(points,0) BETWEEN 21 and 30 THEN 3
-        WHEN COALESCE(points,0) > 30 THEN 4
-END AS tranche
-FROM cleaned_timeline
+        WHEN COALESCE(points,0) BETWEEN 1 and 9 THEN 1
+        WHEN COALESCE(points,0) BETWEEN 10 and 19 THEN 2
+        WHEN COALESCE(points,0) BETWEEN 20 and 29 THEN 3
+        WHEN COALESCE(points,0) BETWEEN 30 and 39 THEN 4
+        WHEN COALESCE(points,0) >= 40 THEN 5
+      END AS tranche
+      
+FROM ({aggregate_adjacent_spans(table_name='cleaned_timeline',
+                       attribute=['points'],
+                       end_date_field_name='end_date')})
 """
 US_AR_OVG_TIMELINE_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=ANALYST_VIEWS_DATASET,
