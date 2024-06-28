@@ -3355,6 +3355,54 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         self.assertEqual(len(response_json["child_agencies"]), 1)
         self.assertEqual(response_json["child_agencies"][0]["name"], child_agency.name)
 
+    def test_update_custom_child_agency_name(self) -> None:
+        agency = self.test_schema_objects.test_agency_A
+        self.session.add(agency)
+        self.session.commit()
+        agency_id = agency.id
+
+        # Try to update the custom_child_agency_name of a regular agency
+        response = self.client.put(
+            f"/api/agency/{agency_id}/custom-name",
+            json={"custom_child_agency_name": "Agency Incredible"},
+        )
+        self.assertEqual(response.status_code, 200)
+        response_json = assert_type(response.json, dict)
+        # No custom name was set because Agency A is not a child agency
+        self.assertEqual(None, response_json["custom_child_agency_name"])
+        self.assertEqual(agency_id, response_json["id"])
+
+        agency_A = AgencyInterface.get_agency_by_id(
+            session=self.session, agency_id=agency_id
+        )
+        self.assertIsNone(agency_A.custom_child_agency_name)
+        # Make agency A a superagency and create child agency of agency A.
+        agency_A.is_superagency = True
+        child_agency_1 = schema.Agency(
+            name="Agency Alpha Child Agency",
+            super_agency_id=agency_id,
+            systems=["LAW_ENFORCEMENT"],
+        )
+        self.session.add(child_agency_1)
+        self.session.commit()
+
+        child_agency_1 = (
+            self.session.query(Agency)
+            .filter(Agency.name == "Agency Alpha Child Agency")
+            .one()
+        )
+        child_agency_1_id = child_agency_1.id
+        response = self.client.put(
+            f"/api/agency/{child_agency_1_id}/custom-name",
+            json={"custom_child_agency_name": "Agency Incredible"},
+        )
+        self.assertEqual(response.status_code, 200)
+        response_json = assert_type(response.json, dict)
+        # Custom name was set because Agency Alpha Child Agency is a child agency
+        self.assertEqual("Agency Incredible", response_json["custom_child_agency_name"])
+        self.assertEqual(child_agency_1_id, response_json["id"])
+        self.assertEqual("Agency Incredible", child_agency_1.custom_child_agency_name)
+
 
 def test_frozen_now_is_not_global_now() -> None:
     """Tests that the use of @freeze_time(NOW_TIME) is local to the wrapped tests."""
