@@ -69,6 +69,9 @@ class EventType(Enum):
     WORKFLOWS_USER_CLIENT_STATUS_UPDATE = "WORKFLOWS_USER_CLIENT_STATUS_UPDATE"
     WORKFLOWS_USER_PAGE = "WORKFLOWS_USER_PAGE"
 
+    US_AR_OVG_TRANCHE_CHANGES = "US_AR_OVG_TRANCHE_CHANGES"
+    US_AR_INCENTIVES = "US_AR_INCENTIVES"
+
     @property
     def unit_of_observation_type(self) -> MetricUnitOfObservationType:
         """Returns the unit of observation type associated with the event type"""
@@ -111,6 +114,8 @@ class EventType(Enum):
             EventType.VIOLATION,
             EventType.VIOLATION_RESPONSE,
             EventType.WORKFLOWS_PERSON_USAGE_EVENT,
+            EventType.US_AR_INCENTIVES,
+            EventType.US_AR_OVG_TRANCHE_CHANGES,
         ]:
             return MetricUnitOfObservationType.PERSON_ID
         if self in [

@@ -32,6 +32,7 @@ US_AR_OVG_EVENTS_PREPROCESSED_VIEW_NAME = "us_ar_ovg_events_preprocessed"
 US_AR_OVG_EVENTS_PREPROCESSED_VIEW_DESCRIPTION = """Preprocessed OVG event
 (violation / incentive) data, used in us_ar_ovg_timeline."""
 US_AR_OVG_EVENTS_PREPROCESSED_QUERY_TEMPLATE = f"""
+-- TODO(#31020): Revisit moving some of this information into upstream ingest
 with
 supervision_sessions AS (
   /*

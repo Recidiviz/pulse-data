@@ -404,6 +404,20 @@ USING
         span_start_date_col="start_date",
         span_end_date_col="end_date_exclusive",
     ),
+    SpanQueryBuilder(
+        span_type=SpanType.US_AR_OVG_SESSIONS,
+        description="Spans of time between OVG points changing",
+        sql_source="""
+    -- TODO(#31020): Revisit moving some of this information into upstream ingest / creating a state agnostic view
+    SELECT *,
+            points > 0 AS has_points,
+    FROM
+        `{project_id}.analyst_data.us_ar_ovg_timeline_materialized`
+    """,
+        attribute_cols=["points", "has_points"],
+        span_start_date_col="start_date",
+        span_end_date_col="end_date",
+    ),
 ]
 
 SPANS_BY_TYPE = {s.span_type: s for s in SPANS}
