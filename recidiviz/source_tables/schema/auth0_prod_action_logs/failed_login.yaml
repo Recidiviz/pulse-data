@@ -122,15 +122,6 @@ schema:
   - name: external_id
     type: STRING
     mode: NULLABLE
-  - name: feature_variants_rh_active_date
-    type: TIMESTAMP
-    mode: NULLABLE
-  - name: feature_variants_rh_access_active_date
-    type: TIMESTAMP
-    mode: NULLABLE
-  - name: feature_variants_responsive_revamp
-    type: BOOLEAN
-    mode: NULLABLE
   - name: routes_workflows_facilities
     type: BOOLEAN
     mode: NULLABLE
@@ -139,24 +130,6 @@ schema:
     mode: NULLABLE
   - name: pseudonymized_id
     type: STRING
-    mode: NULLABLE
-  - name: feature_variants_enable_snooze_active_date
-    type: TIMESTAMP
-    mode: NULLABLE
-  - name: feature_variants_responsive_revamp_active_date
-    type: TIMESTAMP
-    mode: NULLABLE
-  - name: feature_variants_hide_denial_revert_active_date
-    type: TIMESTAMP
-    mode: NULLABLE
-  - name: feature_variants_us_nd_write_to_docstars_active_date
-    type: TIMESTAMP
-    mode: NULLABLE
-  - name: feature_variants_insights_onboarding_active_date
-    type: TIMESTAMP
-    mode: NULLABLE
-  - name: feature_variants_outliers_onboarding_active_date
-    type: TIMESTAMP
     mode: NULLABLE
   - name: routes_insights
     type: BOOLEAN

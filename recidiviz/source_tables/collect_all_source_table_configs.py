@@ -19,6 +19,10 @@ import glob
 import os.path
 from itertools import groupby
 
+from recidiviz.calculator.query.state.dataset_config import (
+    AUTH0_EVENTS,
+    AUTH0_PROD_ACTION_LOGS,
+)
 from recidiviz.ingest.direct.dataset_config import (
     raw_data_pruning_new_raw_data_dataset,
     raw_data_pruning_raw_data_diff_results_dataset,
@@ -49,6 +53,7 @@ from recidiviz.source_tables.source_table_config import (
     SchemaTypeSourceTableLabel,
     SourceTableCollection,
     SourceTableCollectionUpdateConfig,
+    SourceTableCollectionValidationConfig,
     SourceTableConfig,
     SourceTableLabel,
 )
@@ -172,10 +177,20 @@ def _collect_externally_managed_source_table_collections(
         key=lambda source_table: source_table.address.dataset_id,
     )
 
+    datasets_to_validation_config = {
+        AUTH0_EVENTS: SourceTableCollectionValidationConfig(
+            only_check_required_columns=True,
+        ),
+        AUTH0_PROD_ACTION_LOGS: SourceTableCollectionValidationConfig(
+            only_check_required_columns=True,
+        ),
+    }
+
     return [
         SourceTableCollection(
             dataset_id=dataset_id,
             update_config=SourceTableCollectionUpdateConfig.unmanaged(),
+            validation_config=datasets_to_validation_config.get(dataset_id, None),
             source_tables_by_address={
                 source_table.address: source_table
                 for source_table in source_tables
