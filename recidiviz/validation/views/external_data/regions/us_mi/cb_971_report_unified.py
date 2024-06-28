@@ -109,16 +109,26 @@ DATES_WITH_AVAILABLE_DATA = [
     date(2024, 3, 22),
 ]
 
+# The Facility column changed to Location between these date
+SCHEMA_CHANGE_DATE_RANGE = (date(2022, 9, 16), date(2023, 7, 21))
+
 
 def build_cb_971_report_schemas() -> list[SourceTableConfig]:
     dataset_id = dataset_config.validation_oneoff_dataset_for_state(StateCode.US_MI)
-    schema = SourceTableConfig.from_file(
-        os.path.join(os.path.dirname(__file__), "schema/cb_971.yaml")
+    v1_schema = SourceTableConfig.from_file(
+        os.path.join(os.path.dirname(__file__), "schema/cb_971_v1.yaml")
+    )
+    v2_schema = SourceTableConfig.from_file(
+        os.path.join(os.path.dirname(__file__), "schema/cb_971_v2.yaml")
     )
 
     return [
         attr.evolve(
-            schema,
+            v2_schema
+            if SCHEMA_CHANGE_DATE_RANGE[0]
+            <= date_of_data
+            <= SCHEMA_CHANGE_DATE_RANGE[1]
+            else v1_schema,
             address=BigQueryAddress(
                 dataset_id=dataset_id,
                 table_id=build_cb_971_report_table_name(date_of_data),

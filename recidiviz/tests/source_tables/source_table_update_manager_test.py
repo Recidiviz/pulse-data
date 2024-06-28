@@ -15,10 +15,12 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests capabilities of the SourceTableUpdateManager"""
+import tempfile
 from typing import Any
 from unittest.mock import patch
 
 import attr
+import pytest
 from google.cloud import bigquery
 from google.cloud.bigquery import SchemaField
 from more_itertools import one
@@ -32,10 +34,12 @@ from recidiviz.source_tables.collect_all_source_table_configs import (
 )
 from recidiviz.source_tables.source_table_config import (
     SourceTableCollection,
+    SourceTableCollectionUpdateConfig,
+    SourceTableCollectionValidationConfig,
     SourceTableConfig,
 )
 from recidiviz.source_tables.source_table_update_manager import (
-    SourceTableCollectionUpdateConfig,
+    SourceTableDryRunResult,
     SourceTableFailedToUpdateError,
     SourceTableUpdateManager,
 )
@@ -58,7 +62,9 @@ class TestSourceTableUpdateManager(BigQueryEmulatorTestCase):
         self.source_table_update_manager = SourceTableUpdateManager(
             client=self.bq_client
         )
-        self.repository = build_source_table_repository_for_collected_schemata()
+        self.repository = build_source_table_repository_for_collected_schemata(
+            project_id=None
+        )
         self.source_table_collection = one(
             [
                 collection
@@ -74,10 +80,7 @@ class TestSourceTableUpdateManager(BigQueryEmulatorTestCase):
     def test_base_case(self) -> None:
         """Creates tables for all raw data tables in the collection"""
         self.source_table_update_manager.update(
-            update_config=SourceTableCollectionUpdateConfig(
-                source_table_collection=self.source_table_collection,
-                allow_field_deletions=False,
-            )
+            source_table_collection=self.source_table_collection
         )
 
         self.assertSetEqual(
@@ -119,10 +122,7 @@ class TestSourceTableUpdateManager(BigQueryEmulatorTestCase):
         )
 
         self.source_table_update_manager.update(
-            update_config=SourceTableCollectionUpdateConfig(
-                source_table_collection=with_extraneous_field,
-                allow_field_deletions=False,
-            )
+            source_table_collection=with_extraneous_field,
         )
 
         without_extraneous_field = SourceTableCollection(
@@ -140,10 +140,7 @@ class TestSourceTableUpdateManager(BigQueryEmulatorTestCase):
 
         with self.assertRaises(ValueError):
             self.source_table_update_manager.update(
-                update_config=SourceTableCollectionUpdateConfig(
-                    source_table_collection=without_extraneous_field,
-                    allow_field_deletions=False,
-                )
+                source_table_collection=without_extraneous_field,
             )
 
     def test_clustering_fields_changed_raises(self) -> None:
@@ -163,28 +160,20 @@ class TestSourceTableUpdateManager(BigQueryEmulatorTestCase):
             dataset_id="test_dataset",
             source_tables_by_address={table_address: table_config},
         )
-        self.source_table_update_manager.update(
-            update_config=SourceTableCollectionUpdateConfig(
-                source_table_collection=with_clustering,
-                allow_field_deletions=False,
-            )
-        )
+        self.source_table_update_manager.update(source_table_collection=with_clustering)
 
         with self.assertRaisesRegex(
             SourceTableFailedToUpdateError, "has clustering fields.+that do not match"
         ):
             self.source_table_update_manager.update(
-                SourceTableCollectionUpdateConfig(
-                    source_table_collection=SourceTableCollection(
-                        dataset_id="test_dataset",
-                        source_tables_by_address={
-                            table_address: attr.evolve(
-                                table_config,
-                                clustering_fields=None,
-                            )
-                        },
-                    ),
-                    allow_field_deletions=False,
+                source_table_collection=SourceTableCollection(
+                    dataset_id="test_dataset",
+                    source_tables_by_address={
+                        table_address: attr.evolve(
+                            table_config,
+                            clustering_fields=None,
+                        )
+                    },
                 )
             )
 
@@ -206,24 +195,16 @@ class TestSourceTableUpdateManager(BigQueryEmulatorTestCase):
             dataset_id="test_dataset",
             source_tables_by_address={table_address: table_config},
         )
-        self.source_table_update_manager.update(
-            update_config=SourceTableCollectionUpdateConfig(
-                source_table_collection=collection,
-                allow_field_deletions=False,
-            )
-        )
+        self.source_table_update_manager.update(source_table_collection=collection)
 
         # Assert no errors
         self.source_table_update_manager.update(
-            SourceTableCollectionUpdateConfig(
-                source_table_collection=SourceTableCollection(
-                    dataset_id="test_dataset",
-                    source_tables_by_address={
-                        table_address: attr.evolve(table_config, clustering_fields=[])
-                    },
-                ),
-                allow_field_deletions=False,
-            )
+            source_table_collection=SourceTableCollection(
+                dataset_id="test_dataset",
+                source_tables_by_address={
+                    table_address: attr.evolve(table_config, clustering_fields=[])
+                },
+            ),
         )
 
 
@@ -285,30 +266,32 @@ class TestSourceTableUpdateManagerRecreateOnError(BigQueryEmulatorTestCase):
             expected_regex="Failed to update schema for `test_dataset.test_table`",
         ):
             self.source_table_update_manager.update(
-                SourceTableCollectionUpdateConfig(
-                    source_table_collection=SourceTableCollection(
-                        dataset_id="test_dataset",
-                        source_tables_by_address={
-                            self.table_address: self.updated_table_config
-                        },
+                SourceTableCollection(
+                    dataset_id="test_dataset",
+                    source_tables_by_address={
+                        self.table_address: self.updated_table_config
+                    },
+                    update_config=SourceTableCollectionUpdateConfig(
+                        attempt_to_manage=True,
+                        recreate_on_update_error=False,
+                        allow_field_deletions=False,
                     ),
-                    recreate_on_update_error=False,
-                    allow_field_deletions=False,
                 )
             )
 
     def test_recreate_true_recreates(self) -> None:
         self.source_table_update_manager.update(
-            SourceTableCollectionUpdateConfig(
-                source_table_collection=SourceTableCollection(
-                    dataset_id="test_dataset",
-                    source_tables_by_address={
-                        self.table_address: self.updated_table_config
-                    },
+            SourceTableCollection(
+                dataset_id="test_dataset",
+                update_config=SourceTableCollectionUpdateConfig(
+                    attempt_to_manage=True,
+                    recreate_on_update_error=True,
+                    allow_field_deletions=False,
                 ),
-                recreate_on_update_error=True,
-                allow_field_deletions=False,
-            )
+                source_tables_by_address={
+                    self.table_address: self.updated_table_config
+                },
+            ),
         )
 
         table = self.bq_client.get_table(
@@ -316,3 +299,99 @@ class TestSourceTableUpdateManagerRecreateOnError(BigQueryEmulatorTestCase):
             self.table_address.table_id,
         )
         self.assertEqual(table.schema, self.updated_table_config.schema_fields)
+
+
+@pytest.mark.uses_bq_emulator
+class SourceTableUpdateManagerDryRunTest(BigQueryEmulatorTestCase):
+    """Tests basic functionality of the SourceTableUpdateManager.dry_run function"""
+
+    @classmethod
+    def get_source_tables(cls) -> list[SourceTableCollection]:
+        collection = SourceTableCollection(dataset_id="test_dataset")
+        collection.add_source_table(
+            "test_table_unmodified",
+            schema_fields=[
+                SchemaField("id", "INTEGER"),
+                SchemaField("unused_column", "STRING"),
+            ],
+        )
+        collection.add_source_table(
+            "test_table_modified", schema_fields=[SchemaField("id", "INTEGER")]
+        )
+        return [collection]
+
+    def test_dry_run_results(self) -> None:
+        """Tests that the source tables changes are reflected in the dry run results"""
+        collection = self.get_source_tables()[0]
+
+        # Modify a table to test changes
+        collection.add_source_table(
+            "test_table_modified",
+            [
+                SchemaField("id", "INTEGER"),
+                SchemaField("new_field", "STRING"),
+            ],
+        )
+        update_manager = SourceTableUpdateManager(client=self.bq_client)
+
+        with tempfile.NamedTemporaryFile() as file:
+            changes = update_manager.dry_run(
+                source_table_collections=[collection],
+                log_file=file.name,
+            )
+
+        self.assertEqual(
+            dict(changes),
+            {
+                SourceTableDryRunResult.UPDATE_SCHEMA_WITH_ADDITIONS: [
+                    BigQueryAddress(
+                        dataset_id="test_dataset", table_id="test_table_modified"
+                    )
+                ],
+            },
+        )
+
+    def test_table_minimum_required_columns(self) -> None:
+        collection = attr.evolve(
+            self.get_source_tables()[0],
+            update_config=SourceTableCollectionUpdateConfig.unmanaged(),
+            validation_config=SourceTableCollectionValidationConfig(
+                only_check_required_columns=True,
+            ),
+        )
+
+        # Update test_table_unmodified to only require the id column
+        collection.add_source_table(
+            "test_table_unmodified",
+            [
+                SchemaField("id", "INTEGER"),
+            ],
+        )
+
+        # Modify a table to test changes
+        collection.add_source_table(
+            "test_table_modified",
+            [
+                SchemaField("id", "INTEGER"),
+                SchemaField("new_field", "STRING"),
+            ],
+        )
+        update_manager = SourceTableUpdateManager(client=self.bq_client)
+
+        with tempfile.NamedTemporaryFile() as file:
+            changes = update_manager.dry_run(
+                source_table_collections=[collection],
+                log_file=file.name,
+            )
+
+            self.assertEqual(
+                dict(changes),
+                {
+                    SourceTableDryRunResult.UPDATE_SCHEMA_WITH_CHANGES: [
+                        BigQueryAddress(
+                            dataset_id="test_dataset", table_id="test_table_modified"
+                        )
+                    ]
+                    # test_table_unmodified had no changes as all required columns existed
+                },
+            )

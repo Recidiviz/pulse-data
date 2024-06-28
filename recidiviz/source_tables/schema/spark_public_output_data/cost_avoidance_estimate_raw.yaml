@@ -21,3 +21,5 @@ schema:
     type: TIMESTAMP
     mode: REQUIRED
 clustering_fields: null
+deployed_projects:
+  - recidiviz-staging

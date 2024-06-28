@@ -590,7 +590,9 @@ The following views have less restrictive projects_to_deploy than their parents:
     def test_no_conflicts_between_source_tables_and_views(self) -> None:
         view_builder_addresses = {vb.address for vb in self.all_deployed_view_builders}
         source_table_addresses = set(
-            build_source_table_repository_for_collected_schemata().source_tables.keys()
+            build_source_table_repository_for_collected_schemata(
+                project_id=None
+            ).source_tables.keys()
         )
 
         if not view_builder_addresses.isdisjoint(source_table_addresses):

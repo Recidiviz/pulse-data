@@ -17,9 +17,9 @@
 """Utilities for updating source table schema"""
 import enum
 import logging
-from typing import Any
+from collections import defaultdict
+from typing import Any, Iterable
 
-import attr
 from google.cloud import bigquery
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
@@ -40,20 +40,10 @@ class SourceTableFailedToUpdateError(ValueError):
     pass
 
 
-@attr.s(auto_attribs=True)
-class SourceTableCollectionUpdateConfig:
-    source_table_collection: SourceTableCollection
-    allow_field_deletions: bool
-    # For tables that are ephemeral, or whose contents are fully repopulated each time they're changed,
-    # it may be beneficial to recreate the table in the case of an update error (e.g. incompatible schema type changes,
-    # clustering field mismatch)
-    recreate_on_update_error: bool = attr.ib(default=False)
-
-
 class SourceTableDryRunResult(enum.StrEnum):
     CREATE_TABLE = "create_table"
     MISMATCH_CLUSTERING_FIELDS = "mismatch_clustering_fields"
-    UPDATE_SCHEMA_NO_CHANGES = "update_schema_no_changes"
+    NO_CHANGES = "no_changes"
     UPDATE_SCHEMA_WITH_CHANGES = "update_schema_with_changes"
     UPDATE_SCHEMA_MODE_CHANGES = "update_schema_mode_changes"
     UPDATE_SCHEMA_TYPE_CHANGES = "update_schema_field_type_changes"
@@ -73,6 +63,24 @@ def _validate_clustering_fields_match(
     return current_table.clustering_fields == source_table_config.clustering_fields
 
 
+def validate_table_schema_fields(
+    table_schema_fields: dict[str, bigquery.SchemaField],
+    desired_schema_fields: dict[str, bigquery.SchemaField],
+    field_names: Iterable[str],
+) -> SourceTableDryRunResult | None:
+    for name in field_names:
+        old_schema_field = table_schema_fields[name]
+        new_schema_field = desired_schema_fields[name]
+
+        if old_schema_field.field_type != new_schema_field.field_type:
+            return SourceTableDryRunResult.UPDATE_SCHEMA_TYPE_CHANGES
+
+        if old_schema_field.mode != new_schema_field.mode:
+            return SourceTableDryRunResult.UPDATE_SCHEMA_MODE_CHANGES
+
+    return None
+
+
 class SourceTableUpdateManager:
     """Class for managing source table updates"""
 
@@ -81,15 +89,13 @@ class SourceTableUpdateManager:
 
     def _dry_run_table(
         self,
-        update_config: SourceTableCollectionUpdateConfig,
+        source_table_collection: SourceTableCollection,
         source_table_address: BigQueryAddress,
     ) -> tuple[BigQueryAddress, SourceTableDryRunResult]:
         """Performs a dry run of a table update for a given config"""
-        source_table_config = (
-            update_config.source_table_collection.source_tables_by_address[
-                source_table_address
-            ]
-        )
+        source_table_config = source_table_collection.source_tables_by_address[
+            source_table_address
+        ]
         dataset_ref = self.client.dataset_ref_for_id(
             source_table_config.address.dataset_id
         )
@@ -101,34 +107,47 @@ class SourceTableUpdateManager:
                 dataset_ref, source_table_config.address.table_id
             )
 
-            if _validate_clustering_fields_match(current_table, source_table_config):
+            if not _validate_clustering_fields_match(
+                current_table, source_table_config
+            ):
                 return (
                     source_table_config.address,
                     SourceTableDryRunResult.MISMATCH_CLUSTERING_FIELDS,
                 )
 
-            table_schema_fields = {
-                field.name: field for field in source_table_config.schema_fields
-            }
+            table_schema_fields = {field.name: field for field in current_table.schema}
             table_schema_field_names = set(table_schema_fields.keys())
             desired_schema_fields = {
-                field.name: field for field in current_table.schema
+                field.name: field for field in source_table_config.schema_fields
             }
             desired_schema_field_names = set(desired_schema_fields.keys())
             to_add = desired_schema_field_names - table_schema_field_names
             to_remove = table_schema_field_names - desired_schema_field_names
 
+            if (
+                source_table_collection.validation_config
+                and source_table_collection.validation_config.only_check_required_columns
+            ):
+                if desired_schema_field_names.issubset(table_schema_field_names):
+                    result = SourceTableDryRunResult.NO_CHANGES
+
+                    if field_changes := validate_table_schema_fields(
+                        table_schema_fields,
+                        desired_schema_fields,
+                        desired_schema_field_names,
+                    ):
+                        result = field_changes
+                else:
+                    result = SourceTableDryRunResult.UPDATE_SCHEMA_WITH_CHANGES
+
+                return source_table_config.address, result
+
             if table_schema_field_names == desired_schema_field_names:
-                result = SourceTableDryRunResult.UPDATE_SCHEMA_NO_CHANGES
-                for name in table_schema_field_names:
-                    old_schema_field = table_schema_fields[name]
-                    new_schema_field = desired_schema_fields[name]
-
-                    if old_schema_field.field_type != new_schema_field.field_type:
-                        result = SourceTableDryRunResult.UPDATE_SCHEMA_TYPE_CHANGES
-
-                    if old_schema_field.mode != new_schema_field.mode:
-                        result = SourceTableDryRunResult.UPDATE_SCHEMA_MODE_CHANGES
+                result = SourceTableDryRunResult.NO_CHANGES
+                if field_changes := validate_table_schema_fields(
+                    table_schema_fields, desired_schema_fields, table_schema_field_names
+                ):
+                    result = field_changes
             elif to_add and to_remove:
                 result = SourceTableDryRunResult.UPDATE_SCHEMA_WITH_CHANGES
             elif to_add:
@@ -139,23 +158,23 @@ class SourceTableUpdateManager:
         return source_table_config.address, result
 
     def dry_run(
-        self, update_configs: list[SourceTableCollectionUpdateConfig], log_file: str
-    ) -> dict[BigQueryAddress, SourceTableDryRunResult]:
+        self, source_table_collections: list[SourceTableCollection], log_file: str
+    ) -> dict[SourceTableDryRunResult, list[BigQueryAddress]]:
         """Performs a dry run update of the schemas of all tables specified by the provided list of collections,
         printing a progress bar as tables complete"""
 
-        results: dict[BigQueryAddress, SourceTableDryRunResult] = {}
+        result_by_address: dict[BigQueryAddress, SourceTableDryRunResult] = {}
 
         with redirect_logging_to_file(log_file):
             successes, exceptions = map_fn_with_progress_bar_results(
                 fn=self._dry_run_table,
                 kwargs_list=[
                     {
-                        "update_config": update_config,
+                        "source_table_collection": source_table_collection,
                         "source_table_address": source_table_config.address,
                     }
-                    for update_config in update_configs
-                    for source_table_config in update_config.source_table_collection.source_tables
+                    for source_table_collection in source_table_collections
+                    for source_table_config in source_table_collection.source_tables
                 ],
                 max_workers=int(BQ_CLIENT_MAX_POOL_SIZE / 2),
                 timeout=60 * 10,
@@ -163,6 +182,8 @@ class SourceTableUpdateManager:
             )
 
             if exceptions:
+                for exception in exceptions:
+                    logging.exception(exception)
                 raise ValueError(
                     "Found exceptions doing a source table update dry run - check logs!"
                 )
@@ -170,21 +191,33 @@ class SourceTableUpdateManager:
             for success_result, _ in successes:
                 address, result = success_result
 
-                results[address] = result
+                result_by_address[address] = result
 
-            return results
+        changes: dict[SourceTableDryRunResult, list[BigQueryAddress]] = defaultdict(
+            list
+        )
+        for address, result in result_by_address.items():
+            if result != SourceTableDryRunResult.NO_CHANGES:
+                changes[result].append(address)
+
+        return changes
 
     def _update_table(
         self,
-        update_config: SourceTableCollectionUpdateConfig,
+        source_table_collection: SourceTableCollection,
         source_table_address: BigQueryAddress,
     ) -> None:
         """Updates a single source table's schema'"""
-        source_table_config = (
-            update_config.source_table_collection.source_tables_by_address[
-                source_table_address
-            ]
-        )
+        source_table_config = source_table_collection.source_tables_by_address[
+            source_table_address
+        ]
+        update_config = source_table_collection.update_config
+
+        if not update_config.attempt_to_manage:
+            raise ValueError(
+                f"Attempted to update unmanaged table {source_table_address.to_str()}"
+            )
+
         dataset_ref = self.client.dataset_ref_for_id(
             source_table_config.address.dataset_id
         )
@@ -251,40 +284,42 @@ class SourceTableUpdateManager:
             )
 
     def _create_dataset_if_necessary(
-        self, update_config: SourceTableCollectionUpdateConfig
+        self,
+        source_table_collection: SourceTableCollection,
     ) -> None:
-        dataset_ref = self.client.dataset_ref_for_id(
-            update_config.source_table_collection.dataset_id
-        )
+        dataset_ref = self.client.dataset_ref_for_id(source_table_collection.dataset_id)
         self.client.create_dataset_if_necessary(
             dataset_ref=dataset_ref,
-            default_table_expiration_ms=update_config.source_table_collection.table_expiration_ms,
+            default_table_expiration_ms=source_table_collection.table_expiration_ms,
         )
 
-    def update(self, update_config: SourceTableCollectionUpdateConfig) -> None:
-        self._create_dataset_if_necessary(update_config=update_config)
+    def update(self, source_table_collection: SourceTableCollection) -> None:
+        self._create_dataset_if_necessary(
+            source_table_collection=source_table_collection
+        )
 
-        for source_table_config in update_config.source_table_collection.source_tables:
-            self._update_table(update_config, source_table_config.address)
+        for source_table_config in source_table_collection.source_tables:
+            self._update_table(source_table_collection, source_table_config.address)
 
     def update_async(
-        self, update_configs: list[SourceTableCollectionUpdateConfig], log_file: str
+        self, source_table_collections: list[SourceTableCollection], log_file: str
     ) -> tuple[
         list[tuple[Any, dict[str, Any]]], list[tuple[Exception, dict[str, Any]]]
     ]:
-        """Updates the schemas of all tables specified by the provided list of collections, printing a progress bar as tables complete"""
+        """Updates the schemas of all tables specified by the provided list of collections, printing a progress bar
+        as tables complete"""
         logging.info("Logs can be found at %s", log_file)
         with redirect_logging_to_file(log_file):
-            datasets_to_create: dict[str, SourceTableCollectionUpdateConfig] = {
-                update_config.source_table_collection.dataset_id: update_config
-                for update_config in update_configs
+            datasets_to_create = {
+                source_table_collection.dataset_id: source_table_collection
+                for source_table_collection in source_table_collections
             }
 
             _, exceptions = map_fn_with_progress_bar_results(
                 fn=self._create_dataset_if_necessary,
                 kwargs_list=[
-                    {"update_config": update_config}
-                    for update_config in datasets_to_create.values()
+                    {"source_table_collection": source_table_collection}
+                    for source_table_collection in datasets_to_create.values()
                 ],
                 max_workers=int(BQ_CLIENT_MAX_POOL_SIZE / 2),
                 timeout=60 * 10,  # 3 minutes
@@ -299,11 +334,11 @@ class SourceTableUpdateManager:
                 fn=self._update_table,
                 kwargs_list=[
                     {
-                        "update_config": update_config,
+                        "source_table_collection": source_table_collection,
                         "source_table_address": source_table_config.address,
                     }
-                    for update_config in update_configs
-                    for source_table_config in update_config.source_table_collection.source_tables
+                    for source_table_collection in source_table_collections
+                    for source_table_config in source_table_collection.source_tables
                 ],
                 max_workers=int(BQ_CLIENT_MAX_POOL_SIZE / 2),
                 timeout=60 * 10,  # 10 minutes

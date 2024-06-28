@@ -80,4 +80,7 @@ schema:
   - name: context_page_referrer
     type: STRING
     mode: NULLABLE
+  - name: context_timezone
+    type: STRING
+    mode: NULLABLE
 clustering_fields: null

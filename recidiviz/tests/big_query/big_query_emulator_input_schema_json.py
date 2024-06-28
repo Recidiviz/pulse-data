@@ -29,9 +29,7 @@ from more_itertools import one
 from recidiviz.source_tables.source_table_config import SourceTableCollection
 from recidiviz.tests.test_setup_utils import BQ_EMULATOR_PROJECT_ID
 
-SOURCE_TABLES_FIXTURES_DIR = os.path.join(
-    os.path.dirname(__file__), "../../tools/deploy/fixtures"
-)
+SOURCE_TABLES_FIXTURES_DIR = os.path.join(os.path.dirname(__file__), "./fixtures")
 SOURCE_TABLES_FIXTURE_FILE_NAME = "emulator_source_tables.json"
 SOURCE_TABLES_JSON_PATH = os.path.join(
     SOURCE_TABLES_FIXTURES_DIR, SOURCE_TABLES_FIXTURE_FILE_NAME

@@ -32,73 +32,29 @@ from recidiviz.source_tables.collect_all_source_table_configs import (
 from recidiviz.source_tables.ingest_pipeline_output_table_collector import (
     build_ingest_view_source_table_configs,
 )
-from recidiviz.source_tables.source_table_config import (
-    DataflowPipelineSourceTableLabel,
-    RawDataSourceTableLabel,
-    SchemaTypeSourceTableLabel,
-    UnionedStateAgnosticSourceTableLabel,
-)
+from recidiviz.source_tables.source_table_config import SourceTableCollection
 from recidiviz.source_tables.source_table_repository import SourceTableRepository
-from recidiviz.source_tables.source_table_update_manager import (
-    SourceTableCollectionUpdateConfig,
-    SourceTableUpdateManager,
-)
+from recidiviz.source_tables.source_table_update_manager import SourceTableUpdateManager
 from recidiviz.tools.deploy.logging import get_deploy_logs_dir
 from recidiviz.tools.utils.script_helpers import interactive_prompt_retry_on_exception
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
-from recidiviz.utils.metadata import local_project_id_override
+from recidiviz.utils.metadata import local_project_id_override, project_id
 
 
-def build_source_table_collection_update_configs(
+def collect_managed_source_table_collections(
     source_table_repository: SourceTableRepository,
-) -> list[SourceTableCollectionUpdateConfig]:
-    """Builds a list of update configs"""
-    # TODO(#30356): Add static yaml tables to this list
-    update_configs = [
-        SourceTableCollectionUpdateConfig(
-            source_table_collection=source_table_collection,
-            allow_field_deletions=False,
-        )
-        for source_table_collection in source_table_repository.collections_labelled_with(
-            RawDataSourceTableLabel
-        )
+) -> list[SourceTableCollection]:
+    """Builds a list of source table collections to manage"""
+
+    return [
+        source_table_collection
+        for source_table_collection in source_table_repository.source_table_collections
+        if source_table_collection.update_config.attempt_to_manage
     ]
-
-    update_configs.extend(
-        SourceTableCollectionUpdateConfig(
-            source_table_collection=source_table_collection,
-            allow_field_deletions=True,
-        )
-        for source_table_collection in source_table_repository.collections_labelled_with(
-            DataflowPipelineSourceTableLabel
-        )
-    )
-
-    update_configs.extend(
-        SourceTableCollectionUpdateConfig(
-            source_table_collection=source_table_collection,
-            allow_field_deletions=True,
-        )
-        for source_table_collection in source_table_repository.collections_labelled_with(
-            UnionedStateAgnosticSourceTableLabel
-        )
-    )
-
-    update_configs.extend(
-        SourceTableCollectionUpdateConfig(
-            source_table_collection=source_table_collection,
-            allow_field_deletions=True,
-        )
-        for source_table_collection in source_table_repository.collections_labelled_with(
-            SchemaTypeSourceTableLabel
-        )
-    )
-
-    return update_configs
 
 
 def update_all_source_table_schemas(
-    update_configs: list[SourceTableCollectionUpdateConfig],
+    source_table_collections: list[SourceTableCollection],
     update_manager: SourceTableUpdateManager | None = None,
     *,
     dry_run: bool = True,
@@ -109,16 +65,20 @@ def update_all_source_table_schemas(
 
     def _retry_fn() -> None:
         if dry_run:
-            results = update_manager.dry_run(
-                update_configs=update_configs,
+            changes = update_manager.dry_run(
+                source_table_collections=source_table_collections,
                 log_file=os.path.join(
                     get_deploy_logs_dir(), "update_all_source_table_schemas.log"
                 ),
             )
-            pprint(results)
+            if changes:
+                logging.info("Dry run found the following changes:")
+                pprint(changes)
+            else:
+                logging.info("Dry run found no changes to be made.")
         else:
             update_manager.update_async(
-                update_configs=update_configs,
+                source_table_collections=source_table_collections,
                 log_file=os.path.join(
                     get_deploy_logs_dir(), "update_all_source_table_schemas.log"
                 ),
@@ -132,11 +92,44 @@ def update_all_source_table_schemas(
     )
 
 
+def validate_externally_managed_table_schemata(
+    source_table_repository: SourceTableRepository,
+) -> None:
+    update_manager = SourceTableUpdateManager()
+    logging.info("Validating source table YAML definitions match BigQuery resources...")
+    changes = update_manager.dry_run(
+        source_table_collections=[
+            source_table_collection
+            for source_table_collection in source_table_repository.source_table_collections
+            if not source_table_collection.update_config.attempt_to_manage
+        ],
+        log_file=os.path.join(
+            get_deploy_logs_dir(), "update_all_source_table_schemas_dry_run.log"
+        ),
+    )
+
+    if changes:
+        pprint(changes)
+        raise ValueError(
+            "Cannot continue with BigQuery schema update, source tables do not match YAML definitions.\n"
+            f"If the schemas in {project_id()} are as we expect them to be for these tables,"
+            " resync their definitions using the recidiviz.tools.update_source_table_yaml script.\n"
+            "Otherwise, update these tables manually in BigQuery so their schemas match the YAML definitions in"
+            " recidiviz/source_tables/schema"
+        )
+
+
 def perform_bigquery_table_schema_update(dry_run: bool) -> None:
-    repository = build_source_table_repository_for_collected_schemata()
+    repository = build_source_table_repository_for_collected_schemata(
+        project_id=project_id(),
+    )
+
+    validate_externally_managed_table_schemata(
+        source_table_repository=repository,
+    )
 
     update_all_source_table_schemas(
-        update_configs=build_source_table_collection_update_configs(
+        source_table_collections=collect_managed_source_table_collections(
             source_table_repository=repository
         ),
         dry_run=dry_run,
@@ -147,17 +140,11 @@ def perform_bigquery_table_schema_update(dry_run: bool) -> None:
     #  view tables with all the other source tables.
     logging.info("Building source table configs for ingest views...")
     update_all_source_table_schemas(
-        update_configs=[
-            SourceTableCollectionUpdateConfig(
-                source_table_collection=source_table_collection,
-                allow_field_deletions=True,
-                recreate_on_update_error=True,
-            )
-            for source_table_collection in build_ingest_view_source_table_configs(
-                bq_client=BigQueryClientImpl(),
-                state_codes=get_direct_ingest_states_existing_in_env(),
-            )
-        ]
+        source_table_collections=build_ingest_view_source_table_configs(
+            bq_client=BigQueryClientImpl(),
+            state_codes=get_direct_ingest_states_existing_in_env(),
+        ),
+        dry_run=dry_run,
     )
 
 

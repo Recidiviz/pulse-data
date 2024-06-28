@@ -183,7 +183,7 @@ recidiviz/tools/postgres/log/
 recidiviz/tools/postgres/vendor/
 
 # Test fixtures
-recidiviz/tests/big_query/fixtures/tmp*
+recidiviz/tests/big_query/fixtures/
 
 # Tool logs
 logs/
