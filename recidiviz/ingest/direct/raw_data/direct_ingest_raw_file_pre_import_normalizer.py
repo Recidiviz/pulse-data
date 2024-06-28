@@ -143,7 +143,7 @@ class DirectIngestRawFilePreImportNormalizer:
             if self._requires_prepended_headers(
                 chunk.chunk_boundary.chunk_num, config.infer_columns_from_config
             ):
-                decoded_output = chunk.headers + decoded_output
+                decoded_output = ",".join(chunk.headers) + "\n" + decoded_output
 
             # lastly, upload the output
             # upload_from_string does the encoding for us. when we pass it a string, it

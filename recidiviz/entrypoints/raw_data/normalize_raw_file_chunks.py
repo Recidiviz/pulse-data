@@ -16,9 +16,8 @@
 # =============================================================================
 """Entrypoint for normalizing raw data file chunks for import"""
 import argparse
-import logging
 import traceback
-from typing import Dict, List
+from typing import List
 
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.common.constants.states import StateCode
@@ -28,6 +27,9 @@ from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_pre_import_normaliz
     DirectIngestRawFilePreImportNormalizer,
 )
 from recidiviz.ingest.direct.types.raw_data_import_types import (
+    BatchedTaskInstanceOutput,
+    NormalizedCsvChunkResult,
+    RawFileProcessingError,
     RequiresPreImportNormalizationFileChunk,
 )
 
@@ -37,24 +39,40 @@ FILE_CHUNK_LIST_DELIMITER = "^"
 
 
 def normalize_raw_file_chunks(
-    chunks: List[str], state_code: StateCode
-) -> Dict[str, List[str]]:
+    serialized_chunks: List[str], state_code: StateCode
+) -> str:
     fs = GcsfsFactory.build()
     normalizer = DirectIngestRawFilePreImportNormalizer(fs, state_code)
-    results, errors = [], []
+    deserialized_chunks = [
+        RequiresPreImportNormalizationFileChunk.deserialize(chunk)
+        for chunk in serialized_chunks
+    ]
+
+    normalized_chunks_result = _normalize_chunks(normalizer, deserialized_chunks)
+    return normalized_chunks_result.serialize()
+
+
+def _normalize_chunks(
+    normalizer: DirectIngestRawFilePreImportNormalizer,
+    chunks: List[RequiresPreImportNormalizationFileChunk],
+) -> BatchedTaskInstanceOutput:
+    results: List[NormalizedCsvChunkResult] = []
+    errors: List[RawFileProcessingError] = []
+
     for chunk in chunks:
         try:
-            results.append(
-                normalizer.normalize_chunk_for_import(
-                    RequiresPreImportNormalizationFileChunk.deserialize(chunk)
-                ).serialize()
-            )
+            results.append(normalizer.normalize_chunk_for_import(chunk))
         except Exception as e:
-            logging.error("Failed to normalize chunk %s: %s", chunk, e)
-            tb_str = traceback.format_exc()
-            errors.append(f"{chunk}: {str(e)}\n{tb_str}")
+            errors.append(
+                RawFileProcessingError(
+                    file_path=chunk.path,
+                    error_msg=f"Error for file {chunk.path} chunk {chunk.chunk_boundary}: {str(e)}\n{traceback.format_exc()}",
+                )
+            )
 
-    return {"normalized_chunks": results, "errors": errors}
+    return BatchedTaskInstanceOutput[NormalizedCsvChunkResult](
+        results=results, errors=errors
+    )
 
 
 class RawDataChunkNormalizationEntrypoint(EntrypointInterface):
