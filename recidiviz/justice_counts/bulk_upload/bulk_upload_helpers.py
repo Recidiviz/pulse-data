@@ -17,8 +17,9 @@
 """Helpers for bulk upload functionality."""
 
 import calendar
+from collections import defaultdict
 from datetime import date
-from typing import Any, Dict, List, Optional, Tuple, Type
+from typing import Any, Dict, List, Optional, Set, Tuple, Type
 
 from thefuzz import fuzz
 
@@ -33,6 +34,7 @@ from recidiviz.justice_counts.exceptions import (
     BulkUploadMessageType,
     JusticeCountsBulkUploadException,
 )
+from recidiviz.justice_counts.types import DatapointJson
 from recidiviz.persistence.database.schema.justice_counts import schema
 
 MONTH_NAMES = list(calendar.month_name)
@@ -168,8 +170,69 @@ def get_month_value_from_string(
     return MONTH_NAMES.index(column_value)
 
 
-def separate_file_name_from_system(filename: str) -> str:
-    parts = filename.split("/")
+def separate_file_name_from_system(file_name: str) -> str:
+    parts = file_name.split("/")
     if len(parts) == 2 and parts[0] in {system.value for system in schema.System}:
         return parts[1]
-    return filename
+    return file_name
+
+
+class BulkUploadResult:
+    """
+    A class to represent the return type of a bulk upload process.
+
+    This class holds various pieces of data resulting from a bulk upload process,
+    including the spreadsheet, existing report IDs, datapoints, errors, and updated or unchanged reports.
+    """
+
+    def __init__(
+        self,
+        spreadsheet: schema.Spreadsheet,
+        existing_report_ids: Optional[List[int]] = None,
+        metric_key_to_datapoint_jsons: Optional[Dict[str, List[DatapointJson]]] = None,
+        metric_key_to_errors: Optional[
+            Dict[Optional[str], List[JusticeCountsBulkUploadException]]
+        ] = None,
+        updated_reports: Optional[Set[schema.Report]] = None,
+        unchanged_reports: Optional[Set[schema.Report]] = None,
+    ):
+        """
+        Initializes the BulkUploadResult with the provided data.
+
+        Args:
+            spreadsheet (schema.Spreadsheet): The spreadsheet containing the data to be uploaded.
+            existing_report_ids (List[int]): A list of IDs of existing reports.
+            metric_key_to_datapoint_jsons (Optional[Dict[str, List[DatapointJson]]]): A dictionary mapping metric keys to lists of datapoint JSON objects.
+                Defaults to an empty defaultdict of lists.
+            metric_key_to_errors (Optional[Dict[Optional[str], List[JusticeCountsBulkUploadException]]]): A dictionary mapping metric keys to lists of errors encountered during the bulk upload process.
+                Defaults to an empty defaultdict of lists.
+            updated_reports (Optional[Set[schema.Report]]): A set of reports that have been updated.
+                Defaults to an empty set.
+            unchanged_reports (Optional[Set[schema.Report]]): A set of reports that remain unchanged.
+                Defaults to an empty set.
+        """
+        self.metric_key_to_datapoint_jsons: Dict[str, List[DatapointJson]] = (
+            metric_key_to_datapoint_jsons
+            if metric_key_to_datapoint_jsons is not None
+            else defaultdict()
+        )
+
+        self.metric_key_to_errors: Dict[
+            Optional[str], List[JusticeCountsBulkUploadException]
+        ] = (
+            metric_key_to_errors
+            if metric_key_to_errors is not None
+            else defaultdict(list)
+        )
+
+        self.updated_reports: Set[schema.Report] = (
+            updated_reports if updated_reports is not None else set()
+        )
+        self.unchanged_reports: Set[schema.Report] = (
+            unchanged_reports if unchanged_reports is not None else set()
+        )
+        self.existing_report_ids: List[int] = (
+            existing_report_ids if existing_report_ids is not None else []
+        )
+
+        self.spreadsheet = spreadsheet
