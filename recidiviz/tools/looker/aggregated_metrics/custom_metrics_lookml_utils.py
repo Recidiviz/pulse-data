@@ -16,7 +16,7 @@
 # =============================================================================
 """Util functions to support generating new aggregated metrics on the fly within LookML"""
 
-from typing import Dict, List, Tuple
+from typing import Dict, List, Optional, Tuple
 
 from recidiviz.aggregated_metrics.aggregated_metric_view_collector import (
     UNIT_OF_ANALYSIS_TYPES_BY_POPULATION_TYPE,
@@ -31,6 +31,7 @@ from recidiviz.aggregated_metrics.models.aggregated_metric import (
 )
 from recidiviz.aggregated_metrics.models.aggregated_metric_configurations import (
     AVG_DAILY_POPULATION,
+    DEDUPED_TASK_COMPLETION_EVENT_VB,
 )
 from recidiviz.calculator.query.bq_utils import (
     MAGIC_START_DATE,
@@ -57,6 +58,7 @@ from recidiviz.common.str_field_utils import snake_to_title
 from recidiviz.looker.lookml_view import LookMLView
 from recidiviz.looker.lookml_view_field import (
     DimensionLookMLViewField,
+    FilterLookMLViewField,
     LookMLFieldParameter,
     LookMLViewField,
     MeasureLookMLViewField,
@@ -106,6 +108,7 @@ def generate_period_span_metric_view(
     metrics: List[PeriodSpanAggregatedMetric],
     view_name: str,
     unit_of_observation: MetricUnitOfObservation,
+    json_field_filters: List[str],
 ) -> LookMLView:
     """Generates LookMLView with derived table performing logic for a set of PeriodSpanAggregatedMetric objects"""
     metric_aggregation_fragment = (
@@ -157,6 +160,15 @@ def generate_period_span_metric_view(
         if unit_of_observation.type == MetricUnitOfObservationType.PERSON_ID
         else "TO_JSON_STRING(STRUCT(TRUE AS dummy_attribute)) AS all_attributes"
     )
+    field_filters_query_fragment_json = list_to_query_string(
+        [
+            f"JSON_VALUE(span_attributes, '$.{field}') AS {field}"
+            for field in json_field_filters
+        ]
+    )
+    group_by_query_fragment = list_to_query_string(
+        [f"{n}" for n in range(1, 7 + len(json_field_filters))]
+    )
     derived_table_query = f"""
     WITH eligible_spans AS (
         SELECT
@@ -195,6 +207,10 @@ def generate_period_span_metric_view(
         time_period.period,
         time_period.start_date,
         time_period.end_date,
+
+        -- additional disaggregation fields
+        {field_filters_query_fragment_json},
+
         {metric_aggregation_fragment}
     FROM
         eligible_spans ses
@@ -205,7 +221,7 @@ def generate_period_span_metric_view(
         AND time_period.span_start_date < {nonnull_current_date_clause("ses.end_date")}
         AND {join_on_columns_fragment(columns=sorted(unit_of_observation.primary_key_columns), table1="ses", table2="time_period")}
     GROUP BY
-        1, 2, 3, 4, 5, 6
+        {group_by_query_fragment}
     """
     return LookMLView(
         view_name=f"{unit_of_observation.type.short_name}_period_span_aggregated_metrics_{view_name}",
@@ -218,6 +234,7 @@ def generate_period_event_metric_view(
     metrics: List[PeriodEventAggregatedMetric],
     view_name: str,
     unit_of_observation: MetricUnitOfObservation,
+    json_field_filters: List[str],
 ) -> LookMLView:
     """Generates LookMLView with derived table performing logic for a set of PeriodEventAggregatedMetric objects"""
     metric_aggregation_fragment = "\n".join(
@@ -238,6 +255,15 @@ def generate_period_event_metric_view(
         )
         for metric in metrics
     ]
+    field_filters_query_fragment_json = list_to_query_string(
+        [
+            f"JSON_VALUE(event_attributes" f", '$.{field}') AS {field}"
+            for field in json_field_filters
+        ]
+    )
+    group_by_query_fragment = list_to_query_string(
+        [f"{n}" for n in range(1, 7 + len(json_field_filters))]
+    )
     derived_table_query = f"""
     SELECT
         -- assignments
@@ -249,6 +275,9 @@ def generate_period_event_metric_view(
         assignments.period,
         assignments.start_date,
         assignments.end_date,
+
+        -- additional disaggregation fields
+        {field_filters_query_fragment_json},
 
         -- period_event metrics
         {metric_aggregation_fragment}
@@ -265,7 +294,7 @@ def generate_period_event_metric_view(
     )
 
     GROUP BY
-    1, 2, 3, 4, 5, 6
+        {group_by_query_fragment}
     """
     return LookMLView(
         view_name=f"{unit_of_observation.type.short_name}_period_event_aggregated_metrics_{view_name}",
@@ -278,6 +307,7 @@ def generate_assignment_span_metric_view(
     metrics: List[AssignmentSpanAggregatedMetric],
     view_name: str,
     unit_of_observation: MetricUnitOfObservation,
+    json_field_filters: List[str],
 ) -> LookMLView:
     """Generates LookMLView with derived table performing logic for a set of AssignmentSpanAggregatedMetric objects"""
     unit_of_observation_query_fragment = list_to_query_string(
@@ -306,6 +336,15 @@ def generate_assignment_span_metric_view(
         )
         for metric in metrics
     ]
+    field_filters_query_fragment_json = list_to_query_string(
+        [
+            f"JSON_VALUE(span_attributes, '$.{field}') AS {field}"
+            for field in json_field_filters
+        ]
+    )
+    group_by_query_fragment = list_to_query_string(
+        [f"{n}" for n in range(1, 7 + len(json_field_filters))]
+    )
     derived_table_query = f"""
     SELECT
         -- assignments
@@ -317,6 +356,9 @@ def generate_assignment_span_metric_view(
         assignments.period,
         assignments.start_date,
         assignments.end_date,
+
+        -- additional disaggregation fields
+        {field_filters_query_fragment_json},
 
         COUNT(DISTINCT CONCAT({unit_of_observation_query_fragment}, assignments.assignment_date)) AS assignments,
         {metric_aggregation_fragment}
@@ -332,7 +374,7 @@ def generate_assignment_span_metric_view(
                 AND {nonnull_end_date_exclusive_clause("spans.end_date")}
         )
     GROUP BY
-        1, 2, 3, 4, 5, 6
+        {group_by_query_fragment}
     """
     return LookMLView(
         view_name=f"{unit_of_observation.type.short_name}_assignment_span_aggregated_metrics_{view_name}",
@@ -345,6 +387,7 @@ def generate_assignment_event_metric_view(
     metrics: List[AssignmentEventAggregatedMetric],
     view_name: str,
     unit_of_observation: MetricUnitOfObservation,
+    json_field_filters: List[str],
 ) -> LookMLView:
     """Generates LookMLView with derived table performing logic for a set of AssignmentEventAggregatedMetric objects"""
     metric_aggregation_fragment_inner = "\n".join(
@@ -379,6 +422,16 @@ def generate_assignment_event_metric_view(
         ),
         table_prefix="assignments",
     )
+    field_filters_query_fragment_json = list_to_query_string(
+        [
+            f"JSON_VALUE(event_attributes, '$.{field}') AS {field}"
+            for field in json_field_filters
+        ]
+    )
+    field_filters_query_fragment = list_to_query_string(json_field_filters)
+    group_by_query_fragment = list_to_query_string(
+        [f"{n}" for n in range(1, 7 + len(json_field_filters))]
+    )
     derived_table_query = f"""
     SELECT
         -- assignments
@@ -390,6 +443,10 @@ def generate_assignment_event_metric_view(
         period,
         start_date,
         end_date,
+
+        -- additional disaggregation fields
+        {field_filters_query_fragment},
+
         {metric_aggregation_fragment_outer}
     FROM (
         SELECT
@@ -401,6 +458,7 @@ def generate_assignment_event_metric_view(
             {unit_of_observation_query_fragment},
             assignments.assignment_date,
             assignments.all_attributes,
+            {field_filters_query_fragment_json},
             {metric_aggregation_fragment_inner}
         FROM
             ${{{unit_of_observation.type.short_name}_assignments_with_attributes_and_time_periods_{view_name}.SQL_TABLE_NAME}} assignments
@@ -417,10 +475,11 @@ def generate_assignment_event_metric_view(
             period,
             {unit_of_observation_query_fragment},
             assignments.assignment_date,
-            assignments.all_attributes
+            assignments.all_attributes,
+            {field_filters_query_fragment}
     )
     GROUP BY
-        1, 2, 3, 4, 5, 6
+        {group_by_query_fragment}
     """
     return LookMLView(
         view_name=f"{unit_of_observation.type.short_name}_assignment_event_aggregated_metrics_{view_name}",
@@ -1310,7 +1369,9 @@ def generate_assignments_with_attributes_and_time_periods_view(
 
 
 def custom_metrics_view_query_template(
-    view_name: str, unit_of_observation: MetricUnitOfObservation
+    view_name: str,
+    unit_of_observation: MetricUnitOfObservation,
+    json_field_filters: List[str],
 ) -> str:
     """Returns query template that unions together all LookML view dependencies to generate a custom metrics table"""
 
@@ -1319,6 +1380,7 @@ def custom_metrics_view_query_template(
         if MetricUnitOfObservationType.PERSON_ID
         else f"${{{unit_of_observation.type.short_name}_assignments_with_attributes_{view_name}.SQL_TABLE_NAME}}"
     )
+    field_filters_query_fragment = list_to_query_string(json_field_filters)
 
     derived_table_query = f"""
     WITH time_period_cte AS (
@@ -1407,15 +1469,15 @@ def custom_metrics_view_query_template(
     LEFT JOIN
         period_event_metrics
     USING
-        (state_code, unit_of_analysis, all_attributes, period, start_date, end_date)
+        (state_code, unit_of_analysis, all_attributes, period, start_date, end_date, {field_filters_query_fragment})
     LEFT JOIN
         assignment_span_metrics
     USING
-        (state_code, unit_of_analysis, all_attributes, period, start_date, end_date)
+        (state_code, unit_of_analysis, all_attributes, period, start_date, end_date, {field_filters_query_fragment})
     LEFT JOIN
         assignment_event_metrics
     USING
-        (state_code, unit_of_analysis, all_attributes, period, start_date, end_date)
+        (state_code, unit_of_analysis, all_attributes, period, start_date, end_date, {field_filters_query_fragment})
 """
     return derived_table_query
 
@@ -1423,7 +1485,8 @@ def custom_metrics_view_query_template(
 def generate_custom_metrics_view(
     metrics: List[AggregatedMetric],
     view_name: str,
-    additional_view_fields: List[LookMLViewField],
+    json_field_filters: List[str],
+    additional_view_fields: Optional[List[LookMLViewField]],
 ) -> LookMLView:
     """Generates LookMLView with derived table that joins together metric view
     builders, analysis periods, and assignments to dynamically calculate metrics,
@@ -1443,8 +1506,10 @@ def generate_custom_metrics_view(
                 unit_of_observation=METRIC_UNITS_OF_OBSERVATION_BY_TYPE[
                     unit_of_observation
                 ],
+                json_field_filters=json_field_filters,
             )
         ]
+    field_filters_query_fragment = list_to_query_string(json_field_filters)
 
     derived_table_query = f"""
 SELECT *
@@ -1455,7 +1520,7 @@ FROM ({derived_table_subqueries[0]})
             [
                 f"""FULL OUTER JOIN
 ({subquery})
-USING (state_code, unit_of_analysis, all_attributes, period, start_date, end_date, days_in_period)
+USING (state_code, unit_of_analysis, all_attributes, period, start_date, end_date, days_in_period, {field_filters_query_fragment})
 """
                 for subquery in derived_table_subqueries[1:]
             ]
@@ -1520,6 +1585,45 @@ USING (state_code, unit_of_analysis, all_attributes, period, start_date, end_dat
             ),
         ],
     )
+
+    # Generate a dimension and filter field for every inputted filter field name
+    json_field_filter_lookml_fields: List[LookMLViewField] = []
+    for field in json_field_filters:
+        json_dimension = DimensionLookMLViewField(
+            field_name=field,
+            parameters=[
+                LookMLFieldParameter.description(f"{snake_to_title(field)}"),
+                LookMLFieldParameter.type(LookMLFieldType.STRING),
+                LookMLFieldParameter.view_label("Custom Filters"),
+                LookMLFieldParameter.sql(
+                    f"INITCAP(REPLACE(${{TABLE}}.{field}, '_', ' '))"
+                ),
+            ],
+        )
+        json_field_filter_lookml_fields.append(json_dimension)
+        json_filter = FilterLookMLViewField(
+            field_name=f"{field}_filter",
+            parameters=[
+                LookMLFieldParameter.description(
+                    f"Filter that restricts {snake_to_title(field).lower()}"
+                ),
+                LookMLFieldParameter.type(LookMLFieldType.STRING),
+                LookMLFieldParameter.view_label("Custom Filters"),
+                LookMLFieldParameter.sql(
+                    f"{{% condition {field}_filter %}} ${{{field}}} {{% endcondition %}}"
+                ),
+                LookMLFieldParameter.suggestions(
+                    sorted(
+                        [
+                            snake_to_title(builder.task_type_name)
+                            for builder in DEDUPED_TASK_COMPLETION_EVENT_VB
+                        ]
+                    )
+                ),
+            ],
+        )
+        json_field_filter_lookml_fields.append(json_filter)
+
     return LookMLView(
         view_name=view_name,
         table=LookMLViewSourceTable.derived_table(derived_table_query),
@@ -1527,9 +1631,10 @@ USING (state_code, unit_of_analysis, all_attributes, period, start_date, end_dat
             measure_type_parameter,
             metric_filter_parameter,
             metric_value_measure,
-            *additional_view_fields,
+            *(additional_view_fields or []),
             all_attributes_dimension,
             count_units_measure,
+            *json_field_filter_lookml_fields,
         ],
         included_paths=[
             f"/views/aggregated_metrics/generated/{view_name}/subqueries/*",

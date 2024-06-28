@@ -50,7 +50,6 @@ AVG_DAILY_POPULATION_TASK_ALMOST_ELIGIBLE_LOOKER = DailyAvgSpanCountMetric(
             span_type=SpanType.WORKFLOWS_PERSON_IMPACT_FUNNEL_STATUS_SESSION,
             span_conditions_dict={
                 "is_almost_eligible": ["true"],
-                "task_type": " = {% parameter workflows_impact_metrics.task_type %}",
             },
         )
     ],
@@ -66,7 +65,6 @@ AVG_DAILY_POPULATION_TASK_ALMOST_ELIGIBLE_LOOKER_FUNNEL_METRICS = [
                 span_type=SpanType.WORKFLOWS_PERSON_IMPACT_FUNNEL_STATUS_SESSION,
                 span_conditions_dict={
                     "is_almost_eligible": ["true"],
-                    "task_type": " = {% parameter workflows_impact_metrics.task_type %}",
                     k.lower(): ["true"],
                 },
             )
@@ -83,7 +81,6 @@ AVG_DAILY_POPULATION_TASK_ELIGIBLE_LOOKER = DailyAvgSpanCountMetric(
             span_type=SpanType.WORKFLOWS_PERSON_IMPACT_FUNNEL_STATUS_SESSION,
             span_conditions_dict={
                 "is_eligible": ["true"],
-                "task_type": " = {% parameter workflows_impact_metrics.task_type %}",
             },
         )
     ],
@@ -99,7 +96,6 @@ AVG_DAILY_POPULATION_TASK_ELIGIBLE_LOOKER_FUNNEL_METRICS = [
                 span_type=SpanType.WORKFLOWS_PERSON_IMPACT_FUNNEL_STATUS_SESSION,
                 span_conditions_dict={
                     "is_eligible": ["true"],
-                    "task_type": " = {% parameter workflows_impact_metrics.task_type %}",
                     k.lower(): ["true"],
                 },
             )
@@ -115,21 +111,15 @@ DISTINCT_ACTIVE_USERS_LOOKER = EventDistinctUnitCountMetric(
     event_selectors=[
         EventSelector(
             event_type=EventType.WORKFLOWS_USER_ACTION,
-            event_conditions_dict={
-                "task_type": " = {% parameter workflows_impact_metrics.task_type %}",
-            },
+            event_conditions_dict={},
         ),
         EventSelector(
             event_type=EventType.WORKFLOWS_USER_CLIENT_STATUS_UPDATE,
-            event_conditions_dict={
-                "task_type": " = {% parameter workflows_impact_metrics.task_type %}",
-            },
+            event_conditions_dict={},
         ),
         EventSelector(
             event_type=EventType.WORKFLOWS_USER_PAGE,
-            event_conditions_dict={
-                "task_type": " = {% parameter workflows_impact_metrics.task_type %}",
-            },
+            event_conditions_dict={},
         ),
     ],
 )
@@ -142,7 +132,6 @@ PERSON_DAYS_TASK_ELIGIBLE_LOOKER = SumSpanDaysMetric(
             span_type=SpanType.TASK_ELIGIBILITY_SESSION,
             span_conditions_dict={
                 "is_eligible": ["true"],
-                "task_type": " = {% parameter workflows_impact_metrics.task_type %}",
             },
         )
     ],
@@ -154,9 +143,7 @@ TASK_COMPLETIONS_LOOKER = EventCountMetric(
     event_selectors=[
         EventSelector(
             event_type=EventType.TASK_COMPLETED,
-            event_conditions_dict={
-                "task_type": " = {% parameter workflows_impact_metrics.task_type %}"
-            },
+            event_conditions_dict={},
         ),
     ],
 )
@@ -169,7 +156,6 @@ TASK_COMPLETIONS_AFTER_TOOL_ACTION_LOOKER = EventCountMetric(
             event_type=EventType.TASK_COMPLETED,
             event_conditions_dict={
                 "after_tool_action": ["true"],
-                "task_type": " = {% parameter workflows_impact_metrics.task_type %}",
             },
         ),
     ],
@@ -185,7 +171,6 @@ TASK_COMPLETIONS_WHILE_ALMOST_ELIGIBLE_AFTER_TOOL_ACTION_LOOKER = EventCountMetr
             event_conditions_dict={
                 "after_tool_action": ["true"],
                 "is_almost_eligible": ["true"],
-                "task_type": " = {% parameter workflows_impact_metrics.task_type %}",
             },
         ),
     ],
@@ -199,7 +184,6 @@ TASK_COMPLETIONS_WHILE_ELIGIBLE_LOOKER = EventCountMetric(
             event_type=EventType.TASK_COMPLETED,
             event_conditions_dict={
                 "is_eligible": ["true"],
-                "task_type": " = {% parameter workflows_impact_metrics.task_type %}",
             },
         ),
     ],
@@ -214,7 +198,6 @@ FIRST_TOOL_ACTIONS_LOOKER = EventCountMetric(
             event_type=EventType.WORKFLOWS_PERSON_USAGE_EVENT,
             event_conditions_dict={
                 "is_first_tool_action": ["true"],
-                "task_type": " = {% parameter workflows_impact_metrics.task_type %}",
             },
         ),
     ],
@@ -228,7 +211,6 @@ DAYS_ELIGIBLE_AT_FIRST_TOOL_ACTION_LOOKER = EventValueMetric(
             event_type=EventType.WORKFLOWS_PERSON_USAGE_EVENT,
             event_conditions_dict={
                 "is_first_tool_action": ["true"],
-                "task_type": " = {% parameter workflows_impact_metrics.task_type %}",
             },
         ),
     ],
@@ -242,9 +224,7 @@ DAYS_ELIGIBLE_AT_TASK_COMPLETION_LOOKER = EventValueMetric(
     event_selectors=[
         EventSelector(
             event_type=EventType.TASK_COMPLETED,
-            event_conditions_dict={
-                "task_type": " = {% parameter workflows_impact_metrics.task_type %}"
-            },
+            event_conditions_dict={},
         ),
     ],
     event_value_numeric="days_eligible",
@@ -261,7 +241,6 @@ TASK_ELIGIBILITY_STARTS_WHILE_ALMOST_ELIGIBLE_AFTER_TOOL_ACTION_LOOKER = EventCo
             event_conditions_dict={
                 "after_tool_action": ["true"],
                 "after_almost_eligible": ["true"],
-                "task_type": " = {% parameter workflows_impact_metrics.task_type %}",
             },
         ),
     ],

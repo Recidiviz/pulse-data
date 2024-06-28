@@ -87,6 +87,7 @@ def main(output_directory: str, view_name: str) -> None:
             ],
             view_name,
             additional_view_fields=[],
+            json_field_filters=[],
         ).write(output_directory, source_script_path=__file__)
 
         for unit_of_observation_type in set(
@@ -139,6 +140,7 @@ def main(output_directory: str, view_name: str) -> None:
                 ],
                 view_name,
                 unit_of_observation=unit_of_observation,
+                json_field_filters=[],
             ).write(output_subdirectory, source_script_path=__file__)
 
             generate_period_event_metric_view(
@@ -150,6 +152,7 @@ def main(output_directory: str, view_name: str) -> None:
                 ],
                 view_name,
                 unit_of_observation=unit_of_observation,
+                json_field_filters=[],
             ).write(output_subdirectory, source_script_path=__file__)
 
             generate_assignment_span_metric_view(
@@ -161,6 +164,7 @@ def main(output_directory: str, view_name: str) -> None:
                 ],
                 view_name,
                 unit_of_observation=unit_of_observation,
+                json_field_filters=[],
             ).write(output_subdirectory, source_script_path=__file__)
 
             generate_assignment_event_metric_view(
@@ -172,6 +176,7 @@ def main(output_directory: str, view_name: str) -> None:
                 ],
                 view_name,
                 unit_of_observation=unit_of_observation,
+                json_field_filters=[],
             ).write(output_subdirectory, source_script_path=__file__)
 
 
