@@ -16,6 +16,7 @@
 # =============================================================================
 """Tests for verifying view graph syntax and column names"""
 import logging
+from itertools import groupby
 from typing import Sequence
 
 import pytest
@@ -124,6 +125,51 @@ class BaseViewGraphTest(BigQueryEmulatorTestCase):
     # We disable this functionality in order to save time on teardown
     wipe_emulator_data_on_teardown = False
 
+    # When developing features, it may be beneficial to select a subset of addresses to run this test for
+    # Subclasses can override and provide a list of address strings
+    addresses_to_test: list[str] = []
+
+    _view_builders_to_update: list[BigQueryViewBuilder] = []
+    _source_table_addresses: list[BigQueryAddress] = []
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        if cls.project_id is None:
+            raise ValueError(
+                "Must specify project id when running the view graph validation test"
+            )
+
+        view_builders_to_update = [
+            view_builder
+            for view_builder in all_deployed_view_builders()
+            if view_builder.should_deploy_in_project(project_id=cls.project_id)
+        ]
+
+        with local_project_id_override(cls.project_id):
+            dag_walker = BigQueryViewDagWalker(
+                [view_builder.build() for view_builder in view_builders_to_update]
+            )
+
+        if cls.addresses_to_test:
+            sub_dag = dag_walker.get_sub_dag(
+                views=[
+                    dag_walker.view_for_address(BigQueryAddress.from_str(address))
+                    for address in cls.addresses_to_test
+                ],
+                include_ancestors=True,
+                include_descendants=False,
+            )
+            cls._view_builders_to_update = [
+                view_builder
+                for view_builder in view_builders_to_update
+                if view_builder.address in sub_dag.nodes_by_address.keys()
+            ]
+            cls._source_table_addresses = list(sub_dag.get_referenced_source_tables())
+        else:
+            cls._view_builders_to_update = view_builders_to_update
+
+        super().setUpClass()
+
     @classmethod
     def get_source_tables(cls) -> list[SourceTableCollection]:
         if cls.project_id is None:
@@ -138,19 +184,30 @@ class BaseViewGraphTest(BigQueryEmulatorTestCase):
                 project_id=cls.project_id
             )
 
+        if cls._source_table_addresses:
+            return [
+                SourceTableCollection(
+                    dataset_id=dataset_id,
+                    source_tables_by_address={
+                        address: repository.source_tables[address]
+                        for address in list(source_table_addresses)
+                    },
+                )
+                for dataset_id, source_table_addresses in groupby(
+                    cls._source_table_addresses, key=lambda address: address.dataset_id
+                )
+            ]
+
         return repository.source_table_collections
 
     def run_view_graph_test(self) -> None:
+        skipped_views = _preprocess_views_to_load_to_emulator(
+            self._view_builders_to_update
+        )
         view_builders_to_update = [
             view_builder
-            for view_builder in all_deployed_view_builders()
-            if view_builder.should_deploy_in_project(project_id=self.project_id)
-        ]
-        skipped_views = _preprocess_views_to_load_to_emulator(view_builders_to_update)
-        view_builders_to_update = [
-            view_builder
-            for view_builder in view_builders_to_update
-            if not view_builder.address in skipped_views
+            for view_builder in self._view_builders_to_update
+            if view_builder.address not in skipped_views
         ]
         create_managed_dataset_and_deploy_views_for_view_builders(
             view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
@@ -172,12 +229,18 @@ class BaseViewGraphTest(BigQueryEmulatorTestCase):
 class StagingViewGraphTest(BaseViewGraphTest):
     project_id = GCP_PROJECT_STAGING
 
+    # When debugging this test, view addresses can be added here in the form of `{dataset_id}.{view_id}`
+    addresses_to_test: list[str] = []
+
     def test_view_graph(self) -> None:
         self.run_view_graph_test()
 
 
 class ProductionViewGraphTest(BaseViewGraphTest):
     project_id = GCP_PROJECT_PRODUCTION
+
+    # When debugging this test, view addresses can be added here in the form of `{dataset_id}.{view_id}`
+    addresses_to_test: list[str] = []
 
     def test_view_graph(self) -> None:
         self.run_view_graph_test()

@@ -128,38 +128,8 @@ schema:
   - name: blocked_state_codes
     type: STRING
     mode: NULLABLE
-  - name: feature_variants_restrictive_housing_access
-    type: STRING
-    mode: NULLABLE
-  - name: feature_variants_us_tn_expiration_submit_to_tomis_active_date
-    type: TIMESTAMP
-    mode: NULLABLE
   - name: allowed_states
     type: STRING
-    mode: NULLABLE
-  - name: feature_variants_responsive_revamp
-    type: BOOLEAN
-    mode: NULLABLE
-  - name: feature_variants_responsive_revamp_active_date
-    type: TIMESTAMP
-    mode: NULLABLE
-  - name: feature_variants_us_me_furlough_release_active_date
-    type: TIMESTAMP
-    mode: NULLABLE
-  - name: feature_variants_us_me_work_release_active_date
-    type: TIMESTAMP
-    mode: NULLABLE
-  - name: feature_variants_rh_active_date
-    type: TIMESTAMP
-    mode: NULLABLE
-  - name: feature_variants_rh_access_active_date
-    type: TIMESTAMP
-    mode: NULLABLE
-  - name: feature_variants_responsive_revamp_us_tn_annual_reclassification_active_date
-    type: TIMESTAMP
-    mode: NULLABLE
-  - name: feature_variants_enable_snooze_active_date
-    type: TIMESTAMP
     mode: NULLABLE
   - name: pseudonymized_id
     type: STRING
@@ -173,76 +143,13 @@ schema:
   - name: routes_insights_supervision_supervisors_list
     type: BOOLEAN
     mode: NULLABLE
-  - name: feature_variants_outliers_client_detail
-    type: BOOLEAN
-    mode: NULLABLE
   - name: routes_insights_supervision_supervision_list
     type: BOOLEAN
-    mode: NULLABLE
-  - name: feature_variants_us_tn_annual_reclassification_active_date
-    type: TIMESTAMP
     mode: NULLABLE
   - name: routes_workflows_facilities
     type: BOOLEAN
     mode: NULLABLE
   - name: routes_workflows_supervision
-    type: BOOLEAN
-    mode: NULLABLE
-  - name: feature_variants_supervision_unrestricted_search
-    type: BOOLEAN
-    mode: NULLABLE
-  - name: feature_variants_outliers_client_detail_active_date
-    type: TIMESTAMP
-    mode: NULLABLE
-  - name: feature_variants_us_id_expanded_crc_active_date
-    type: TIMESTAMP
-    mode: NULLABLE
-  - name: feature_variants_outliers_onboarding_active_date
-    type: TIMESTAMP
-    mode: NULLABLE
-  - name: feature_variants_outliers_leadership_page_all_districts
-    type: BOOLEAN
-    mode: NULLABLE
-  - name: feature_variants_us_id_crc_active_date
-    type: TIMESTAMP
-    mode: NULLABLE
-  - name: feature_variants_outliers_onboarding
-    type: BOOLEAN
-    mode: NULLABLE
-  - name: feature_variants_hide_denial_revert_active_date
-    type: TIMESTAMP
-    mode: NULLABLE
-  - name: feature_variants_us_nd_write_to_docstars_active_date
-    type: TIMESTAMP
-    mode: NULLABLE
-  - name: feature_variants_insights_onboarding_active_date
-    type: TIMESTAMP
-    mode: NULLABLE
-  - name: feature_variants_us_tn_annual_reclassification
-    type: BOOLEAN
-    mode: NULLABLE
-  - name: feature_variants_rh_update_active_date
-    type: TIMESTAMP
-    mode: NULLABLE
-  - name: feature_variants_us_tn_expiration
-    type: BOOLEAN
-    mode: NULLABLE
-  - name: feature_variants_us_me_annual_reclassification_review
-    type: BOOLEAN
-    mode: NULLABLE
-  - name: feature_variants_us_me_custody_level_review_active_date
-    type: TIMESTAMP
-    mode: NULLABLE
-  - name: feature_variants_us_me_annual_reclassification_review_active_date
-    type: TIMESTAMP
-    mode: NULLABLE
-  - name: feature_variants_us_ca_enable_sms_active_date
-    type: TIMESTAMP
-    mode: NULLABLE
-  - name: feature_variants_us_nd_checkbox_docstars_active_date
-    type: TIMESTAMP
-    mode: NULLABLE
-  - name: feature_variants_insights_leadership_page_all_districts
     type: BOOLEAN
     mode: NULLABLE
 clustering_fields: null
