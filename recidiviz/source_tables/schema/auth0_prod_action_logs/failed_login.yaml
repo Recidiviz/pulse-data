@@ -152,4 +152,16 @@ schema:
   - name: feature_variants_us_nd_write_to_docstars_active_date
     type: TIMESTAMP
     mode: NULLABLE
+  - name: feature_variants_insights_onboarding_active_date
+    type: TIMESTAMP
+    mode: NULLABLE
+  - name: feature_variants_outliers_onboarding_active_date
+    type: TIMESTAMP
+    mode: NULLABLE
+  - name: routes_insights
+    type: BOOLEAN
+    mode: NULLABLE
+  - name: routes_insights_supervision_supervisors_list
+    type: BOOLEAN
+    mode: NULLABLE
 clustering_fields: null

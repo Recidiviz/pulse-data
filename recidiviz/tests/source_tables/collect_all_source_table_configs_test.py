@@ -31,7 +31,9 @@ class CollectAllSourceTableConfigsTest(unittest.TestCase):
     """Test for built source table collections"""
 
     def test_normalized_state_tables_have_state_code(self) -> None:
-        source_table_repository = build_source_table_repository_for_collected_schemata()
+        source_table_repository = build_source_table_repository_for_collected_schemata(
+            project_id=None
+        )
         normalization_datasets = (
             source_table_repository.get_collections(
                 labels=[
@@ -65,7 +67,9 @@ class CollectAllSourceTableConfigsTest(unittest.TestCase):
                 )
 
     def test_no_duplicate_addresses_across_collections(self) -> None:
-        source_table_repository = build_source_table_repository_for_collected_schemata()
+        source_table_repository = build_source_table_repository_for_collected_schemata(
+            project_id=None
+        )
         visited_addresses = set()
         duplicate_addresses = set()
 

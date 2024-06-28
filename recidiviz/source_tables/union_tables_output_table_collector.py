@@ -32,6 +32,7 @@ from recidiviz.source_tables.normalization_pipeline_output_table_collector impor
 from recidiviz.source_tables.source_table_config import (
     NormalizedStateAgnosticEntitySourceTableLabel,
     SourceTableCollection,
+    SourceTableCollectionUpdateConfig,
     UnionedStateAgnosticSourceTableLabel,
 )
 
@@ -69,6 +70,7 @@ def build_unioned_normalized_state_source_table_collections() -> list[
                 source_is_normalization_pipeline=True
             ),
         ],
+        update_config=SourceTableCollectionUpdateConfig.regenerable(),
         dataset_id=NORMALIZED_STATE_DATASET,
     )
     for (

@@ -33,7 +33,7 @@ from recidiviz.tests.big_query.big_query_emulator_test_case import (
     BigQueryEmulatorTestCase,
 )
 from recidiviz.tools.deploy.update_big_query_table_schemas import (
-    build_source_table_collection_update_configs,
+    collect_managed_source_table_collections,
     update_all_source_table_schemas,
 )
 
@@ -72,7 +72,7 @@ class UpdateBigQueryTableSchemasTest(BigQueryEmulatorTestCase):
             source_table_collections=get_dataflow_output_source_table_collections()
         )
         update_all_source_table_schemas(
-            update_configs=build_source_table_collection_update_configs(
+            source_table_collections=collect_managed_source_table_collections(
                 source_table_repository
             ),
             update_manager=SourceTableUpdateManager(client=self.bq_client),
@@ -87,17 +87,17 @@ class UpdateBigQueryTableSchemasTest(BigQueryEmulatorTestCase):
         )
 
     def test_no_overlapping_addresses(self) -> None:
-        source_table_repository = build_source_table_repository_for_collected_schemata()
-        update_configs = build_source_table_collection_update_configs(
+        source_table_repository = build_source_table_repository_for_collected_schemata(
+            project_id=None
+        )
+        source_table_collections = collect_managed_source_table_collections(
             source_table_repository=source_table_repository,
         )
         visited_addresses = set()
         duplicate_addresses = set()
 
-        for update_config in update_configs:
-            for (
-                source_table_config
-            ) in update_config.source_table_collection.source_tables:
+        for source_table_collection in source_table_collections:
+            for source_table_config in source_table_collection.source_tables:
                 address = source_table_config.address
                 if address in visited_addresses:
                     duplicate_addresses.add(address.to_str())

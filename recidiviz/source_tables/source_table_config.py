@@ -41,9 +41,10 @@ class SourceTableConfig:
     address: BigQueryAddress
     description: str
     schema_fields: list[SchemaField]
-    external_data_configuration: ExternalConfig | None = attr.ib(default=None)
     clustering_fields: list[str] | None = attr.ib(factory=list)
+    external_data_configuration: ExternalConfig | None = attr.ib(default=None)
     yaml_definition_path: str | None = attr.ib(default=None)
+    deployed_projects: list[str] = attr.ib(factory=list)
     is_sandbox_table: bool = attr.ib(default=False)
 
     def as_sandbox_table(self, sandbox_dataset_prefix: str) -> "SourceTableConfig":
@@ -107,6 +108,10 @@ class SourceTableConfig:
             ],
             external_data_configuration=external_data_configuration,
             yaml_definition_path=yaml_path,
+            deployed_projects=yaml_definition.pop_list_optional(
+                "deployed_projects", str
+            )
+            or [],
         )
 
     @classmethod
@@ -242,6 +247,60 @@ class UnionedStateAgnosticSourceTableLabel(SourceTableLabel[str]):
         return self.dataset_id
 
 
+@attr.s(auto_attribs=True, frozen=True)
+class SourceTableCollectionValidationConfig:
+    """Configures the schema validation for the source table collection"""
+
+    # Some unmanaged tables may have many different versions of their schema, it may be useful to only check a subset
+    # of columns in these cases
+    only_check_required_columns: bool
+
+
+@attr.s(auto_attribs=True, frozen=True)
+class SourceTableCollectionUpdateConfig:
+    """Configuration object for how we attempt to manage the schema of source tables"""
+
+    attempt_to_manage: bool
+    allow_field_deletions: bool
+    # For tables that are ephemeral, or whose contents are fully repopulated each time they're changed,
+    # it may be beneficial to recreate the table in the case of an update error (e.g. incompatible schema type changes,
+    # clustering field mismatch)
+    recreate_on_update_error: bool = attr.ib(default=False)
+
+    @classmethod
+    def unmanaged(cls) -> "SourceTableCollectionUpdateConfig":
+        """Unmanaged tables are used in our view graph, but whose creation / schema updates are not managed by our code
+        For example, pulse_dashboard_segment_metrics is created by a Segment reverse ETL integration.
+        We want to have a copy of its schema in code, but we don't want to attempt to manage its schema."""
+        return cls(
+            attempt_to_manage=False,
+            allow_field_deletions=False,
+            recreate_on_update_error=False,
+        )
+
+    @classmethod
+    def static(cls) -> "SourceTableCollectionUpdateConfig":
+        """Static table collections contain data that may not easily be reconstructed from other sources.
+        This configuration is the most precautionary, disallowing any field deletions as it may result in data loss."""
+        return cls(
+            attempt_to_manage=True,
+            allow_field_deletions=False,
+            recreate_on_update_error=False,
+        )
+
+    @classmethod
+    def regenerable(cls) -> "SourceTableCollectionUpdateConfig":
+        """Regenerable tables can be reconstructed from another source on the fly.
+        This configuration allows field deletion. If invalid schema updates are requested (ie changing a column's type),
+        it will be dropped and recreated with the new schema.
+        """
+        return cls(
+            attempt_to_manage=True,
+            allow_field_deletions=True,
+            recreate_on_update_error=True,
+        )
+
+
 @attr.s(auto_attribs=True)
 class SourceTableCollection:
     """Represents a set of source tables in a dataset. A dataset may be composed of
@@ -249,6 +308,14 @@ class SourceTableCollection:
     """
 
     dataset_id: str
+    # Update configs can be overridden, but default to the most precautionary configuration available
+    update_config: SourceTableCollectionUpdateConfig = attr.ib(
+        factory=SourceTableCollectionUpdateConfig.static
+    )
+    validation_config: SourceTableCollectionValidationConfig | None = attr.ib(
+        default=None
+    )
+
     labels: list[SourceTableLabel[Any]] = attr.ib(factory=list)
     default_table_expiration_ms: int | None = attr.ib(default=None)
     source_tables_by_address: dict[BigQueryAddress, SourceTableConfig] = attr.ib(
@@ -314,6 +381,9 @@ class SourceTableCollection:
         description: str | None = None,
         clustering_fields: list[str] | None = None,
     ) -> None:
+        if not clustering_fields:
+            clustering_fields = []
+
         address = self._build_table_address(table_id)
         self.source_tables_by_address[address] = SourceTableConfig(
             address=address,

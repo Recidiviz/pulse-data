@@ -22,6 +22,7 @@ from recidiviz.source_tables.normalization_pipeline_output_table_collector impor
 from recidiviz.source_tables.source_table_config import (
     DataflowPipelineSourceTableLabel,
     SourceTableCollection,
+    SourceTableCollectionUpdateConfig,
 )
 
 
@@ -29,6 +30,7 @@ def get_dataflow_output_source_table_collections() -> list[SourceTableCollection
     """Collects all source tables that are populated by our Dataflow pipelines"""
     dataflow_metrics = SourceTableCollection(
         labels=[DataflowPipelineSourceTableLabel(METRICS_PIPELINE_NAME)],
+        update_config=SourceTableCollectionUpdateConfig.regenerable(),
         dataset_id=DATAFLOW_METRICS_DATASET,
     )
 
@@ -51,6 +53,7 @@ def get_dataflow_output_source_table_collections() -> list[SourceTableCollection
 
     supplemental_data = SourceTableCollection(
         labels=[DataflowPipelineSourceTableLabel(SUPPLEMENTAL_PIPELINE_NAME)],
+        update_config=SourceTableCollectionUpdateConfig.regenerable(),
         dataset_id=SUPPLEMENTAL_DATA_DATASET,
     )
     for pipeline in collect_all_pipeline_classes():

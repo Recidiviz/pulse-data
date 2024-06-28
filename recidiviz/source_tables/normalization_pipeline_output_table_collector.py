@@ -40,6 +40,7 @@ from recidiviz.source_tables.source_table_config import (
     DataflowPipelineSourceTableLabel,
     NormalizedStateSpecificEntitySourceTableLabel,
     SourceTableCollection,
+    SourceTableCollectionUpdateConfig,
 )
 
 
@@ -85,6 +86,7 @@ def build_normalization_pipeline_output_source_table_collections() -> list[
                 DataflowPipelineSourceTableLabel(NORMALIZATION_PIPELINE_NAME),
                 NormalizedStateSpecificEntitySourceTableLabel(state_code=state_code),
             ],
+            update_config=SourceTableCollectionUpdateConfig.regenerable(),
             dataset_id=normalized_state_dataset_for_state_code(state_code=state_code),
         )
         for state_code in get_direct_ingest_states_existing_in_env()

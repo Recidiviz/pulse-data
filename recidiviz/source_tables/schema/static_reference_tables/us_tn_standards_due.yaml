@@ -227,6 +227,12 @@ schema:
   - name: FEE_Note_Due
     type: DATE
     mode: NULLABLE
+  - name: Last_Fee_Payment
+    type: DATE
+    mode: NULLABLE
+  - name: Current_Fee_Balance
+    type: FLOAT
+    mode: NULLABLE
   - name: Last_ARR_Note
     type: DATE
     mode: NULLABLE

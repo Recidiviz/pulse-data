@@ -61,10 +61,7 @@ from recidiviz.source_tables.source_table_config import (
     SourceTableCollection,
 )
 from recidiviz.source_tables.source_table_repository import SourceTableRepository
-from recidiviz.source_tables.source_table_update_manager import (
-    SourceTableCollectionUpdateConfig,
-    SourceTableUpdateManager,
-)
+from recidiviz.source_tables.source_table_update_manager import SourceTableUpdateManager
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -103,13 +100,7 @@ def create_or_update_source_table_collections(
 
     update_manager = SourceTableUpdateManager()
     update_manager.update_async(
-        update_configs=[
-            SourceTableCollectionUpdateConfig(
-                source_table_collection=source_table_collection,
-                allow_field_deletions=True,
-            )
-            for source_table_collection in source_table_collections
-        ],
+        source_table_collections=source_table_collections,
         log_file=os.path.join(
             os.path.dirname(__file__),
             "logs/create_or_update_sandbox.log",

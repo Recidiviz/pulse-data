@@ -236,4 +236,13 @@ schema:
   - name: feature_variants_us_me_annual_reclassification_review_active_date
     type: TIMESTAMP
     mode: NULLABLE
+  - name: feature_variants_us_ca_enable_sms_active_date
+    type: TIMESTAMP
+    mode: NULLABLE
+  - name: feature_variants_us_nd_checkbox_docstars_active_date
+    type: TIMESTAMP
+    mode: NULLABLE
+  - name: feature_variants_insights_leadership_page_all_districts
+    type: BOOLEAN
+    mode: NULLABLE
 clustering_fields: null

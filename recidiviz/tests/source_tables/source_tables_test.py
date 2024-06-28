@@ -92,7 +92,7 @@ class SourceTablesTest(unittest.TestCase):
 
             missing_source_table_definitions = set()
             source_table_repository = (
-                build_source_table_repository_for_collected_schemata()
+                build_source_table_repository_for_collected_schemata(project_id=None)
             )
 
             for source_table_address in referenced_source_tables:

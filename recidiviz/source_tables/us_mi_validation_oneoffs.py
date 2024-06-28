@@ -16,7 +16,11 @@
 # =============================================================================
 """Contains source table definitions for us_mi validation oneoffs."""
 from recidiviz.common.constants.states import StateCode
-from recidiviz.source_tables.source_table_config import SourceTableCollection
+from recidiviz.source_tables.source_table_config import (
+    SourceTableCollection,
+    SourceTableCollectionUpdateConfig,
+    SourceTableCollectionValidationConfig,
+)
 from recidiviz.validation.views import dataset_config
 from recidiviz.validation.views.external_data.regions.us_mi.cb_971_report_supervision_unified import (
     build_cb_971_supervision_report_schemas,
@@ -34,16 +38,32 @@ def collect_duplicative_us_mi_validation_oneoffs() -> list[SourceTableCollection
     rather than duplicating the YAML files.
     """
     source_tables = [
-        *build_orc_report_schemas(),
         *build_cb_971_report_schemas(),
         *build_cb_971_supervision_report_schemas(),
     ]
 
+    dataset_id = dataset_config.validation_oneoff_dataset_for_state(StateCode.US_MI)
     collection = SourceTableCollection(
-        dataset_id=dataset_config.validation_oneoff_dataset_for_state(StateCode.US_MI),
+        dataset_id=dataset_id,
+        update_config=SourceTableCollectionUpdateConfig.unmanaged(),
         source_tables_by_address={
             source_table.address: source_table for source_table in source_tables
         },
     )
 
-    return [collection]
+    orc_report_collection = SourceTableCollection(
+        dataset_id=dataset_id,
+        update_config=SourceTableCollectionUpdateConfig.unmanaged(),
+        validation_config=SourceTableCollectionValidationConfig(
+            only_check_required_columns=True
+        ),
+        source_tables_by_address={
+            source_table.address: source_table
+            for source_table in build_orc_report_schemas()
+        },
+    )
+
+    return [
+        collection,
+        orc_report_collection,
+    ]

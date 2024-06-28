@@ -48,6 +48,7 @@ from recidiviz.source_tables.source_table_config import (
     RawDataSourceTableLabel,
     SchemaTypeSourceTableLabel,
     SourceTableCollection,
+    SourceTableCollectionUpdateConfig,
     SourceTableConfig,
     SourceTableLabel,
 )
@@ -110,6 +111,8 @@ def collect_raw_data_source_table_collections() -> list[SourceTableCollection]:
                     state_code=state_code,
                     instance=instance,
                 ),
+                # Changes to raw data source tables must be manually executed by implementation engineers
+                update_config=SourceTableCollectionUpdateConfig.static(),
                 labels=labels,
             )
 
@@ -140,6 +143,7 @@ def _collect_cloudsql_mirror_source_table_collections() -> list[SourceTableColle
     for export_config in export_configs:
         collection = SourceTableCollection(
             labels=[SchemaTypeSourceTableLabel(export_config.schema_type)],
+            update_config=SourceTableCollectionUpdateConfig.regenerable(),
             dataset_id=export_config.multi_region_dataset(
                 dataset_override_prefix=None,
             ),
@@ -158,7 +162,9 @@ def _collect_cloudsql_mirror_source_table_collections() -> list[SourceTableColle
     return results
 
 
-def _collect_yaml_source_table_collections() -> list[SourceTableCollection]:
+def _collect_externally_managed_source_table_collections(
+    project_id: str | None,
+) -> list[SourceTableCollection]:
     yaml_paths = glob.glob(os.path.join(os.path.dirname(__file__), "schema/**/*.yaml"))
 
     source_tables_by_dataset = groupby(
@@ -166,24 +172,33 @@ def _collect_yaml_source_table_collections() -> list[SourceTableCollection]:
         key=lambda source_table: source_table.address.dataset_id,
     )
 
-    x = [
+    return [
         SourceTableCollection(
             dataset_id=dataset_id,
+            update_config=SourceTableCollectionUpdateConfig.unmanaged(),
             source_tables_by_address={
-                source_table.address: source_table for source_table in source_tables
+                source_table.address: source_table
+                for source_table in source_tables
+                # Filter project-specific source tables
+                if (not project_id or not source_table.deployed_projects)
+                or (project_id in source_table.deployed_projects)
             },
         )
         for dataset_id, source_tables in source_tables_by_dataset
     ]
 
-    return x
 
-
-def build_source_table_repository_for_collected_schemata() -> SourceTableRepository:
-    """Builds a source table repository for all source tables in our BigQuery graph"""
+def build_source_table_repository_for_collected_schemata(
+    project_id: str | None,
+) -> SourceTableRepository:
+    """Builds a source table repository for all source tables in a project's BigQuery graph
+    If the project is unspecified, source tables for all projects are collected.
+    """
     return SourceTableRepository(
         source_table_collections=[
-            *_collect_yaml_source_table_collections(),
+            *_collect_externally_managed_source_table_collections(
+                project_id=project_id
+            ),
             *collect_raw_data_source_table_collections(),
             *_collect_cloudsql_mirror_source_table_collections(),
             *collect_duplicative_us_mi_validation_oneoffs(),
@@ -197,4 +212,4 @@ def build_source_table_repository_for_collected_schemata() -> SourceTableReposit
 if __name__ == "__main__":
     import pprint
 
-    pprint.pprint(build_source_table_repository_for_collected_schemata())
+    pprint.pprint(build_source_table_repository_for_collected_schemata(project_id=None))

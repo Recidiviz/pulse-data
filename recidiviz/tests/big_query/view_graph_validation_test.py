@@ -134,7 +134,9 @@ class BaseViewGraphTest(BigQueryEmulatorTestCase):
         # The view graph validation test uses all source tables
         # When debugging failures, it may be easier to filter this list of collections down to just the failing set
         with local_project_id_override(cls.project_id):
-            repository = build_source_table_repository_for_collected_schemata()
+            repository = build_source_table_repository_for_collected_schemata(
+                project_id=cls.project_id
+            )
 
         return repository.source_table_collections
 
