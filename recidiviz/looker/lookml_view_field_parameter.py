@@ -21,6 +21,7 @@ from typing import List, Union
 
 import attr
 
+from recidiviz.calculator.query.bq_utils import list_to_query_string
 from recidiviz.looker.parameterized_value import ParameterizedValue
 
 
@@ -143,6 +144,10 @@ class LookMLFieldParameter:
     @classmethod
     def primary_key(cls, is_primary_key: bool) -> "LookMLFieldParameter":
         return FieldParameterPrimaryKey(is_primary_key)
+
+    @classmethod
+    def suggestions(cls, suggestions: List[str]) -> "LookMLFieldParameter":
+        return FieldParameterSuggestions(suggestions)
 
     @classmethod
     def sql(cls, sql: Union[str, ParameterizedValue]) -> "LookMLFieldParameter":
@@ -449,6 +454,30 @@ class FieldParameterValueFormat(LookMLFieldParameter):
 
     def allowed_for_category(self, field_category: LookMLFieldCategory) -> bool:
         return field_category != LookMLFieldCategory.PARAMETER
+
+
+@attr.define
+class FieldParameterSuggestions(LookMLFieldParameter):
+    """Generates a `suggestions` field parameter
+    (see https://cloud.google.com/looker/docs/reference/param-field-suggestions).
+    """
+
+    suggestion_columns: List[str]
+
+    @property
+    def key(self) -> str:
+        return "suggestions"
+
+    @property
+    def value_text(self) -> str:
+        return f"[{list_to_query_string(self.suggestion_columns, quoted=True)}]"
+
+    def allowed_for_category(self, field_category: LookMLFieldCategory) -> bool:
+        return field_category in (
+            LookMLFieldCategory.DIMENSION,
+            LookMLFieldCategory.FILTER,
+            LookMLFieldCategory.PARAMETER,
+        )
 
 
 @attr.define

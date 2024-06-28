@@ -244,3 +244,16 @@ class LookMLViewTest(unittest.TestCase):
     drill_fields: [field1, field2, field3]
   }"""
         self.assertEqual(view_field, expected_view_field)
+
+    def test_view_field_suggestions(self) -> None:
+        view_field = DimensionLookMLViewField(
+            field_name="my_dim",
+            parameters=[
+                LookMLFieldParameter.suggestions(["option1", "option2", "option3"])
+            ],
+        ).build()
+        expected_view_field = """
+  dimension: my_dim {
+    suggestions: ["option1", "option2", "option3"]
+  }"""
+        self.assertEqual(view_field, expected_view_field)

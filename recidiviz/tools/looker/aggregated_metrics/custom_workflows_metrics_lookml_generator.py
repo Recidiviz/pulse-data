@@ -34,19 +34,10 @@ from recidiviz.aggregated_metrics.models.aggregated_metric import (
     PeriodSpanAggregatedMetric,
     SpanMetricConditionsMixin,
 )
-from recidiviz.aggregated_metrics.models.aggregated_metric_configurations import (
-    DEDUPED_TASK_COMPLETION_EVENT_VB,
-)
 from recidiviz.calculator.query.state.views.analyst_data.models.metric_unit_of_analysis_type import (
     METRIC_UNITS_OF_OBSERVATION_BY_TYPE,
     MetricUnitOfObservationType,
 )
-from recidiviz.common.str_field_utils import snake_to_title
-from recidiviz.looker.lookml_view_field import (
-    LookMLFieldParameter,
-    ParameterLookMLViewField,
-)
-from recidiviz.looker.lookml_view_field_parameter import LookMLFieldType
 from recidiviz.tools.looker.aggregated_metrics.custom_metrics_lookml_utils import (
     ASSIGNMENT_NAME_TO_TYPES,
     generate_assignment_event_metric_view,
@@ -103,27 +94,6 @@ def main(
         # Create subdirectory for all subquery views
         output_subdirectory = os.path.join(output_directory, "subqueries")
 
-        task_type_parameter_field = ParameterLookMLViewField(
-            field_name="task_type",
-            parameters=[
-                LookMLFieldParameter.type(LookMLFieldType.STRING),
-                LookMLFieldParameter.description(
-                    "Used to select the workflows task type"
-                ),
-                LookMLFieldParameter.view_label("Workflows Filters"),
-                *[
-                    LookMLFieldParameter.allowed_value(
-                        snake_to_title(builder.task_type_name),
-                        builder.task_type_name,
-                    )
-                    for builder in DEDUPED_TASK_COMPLETION_EVENT_VB
-                ],
-                LookMLFieldParameter.default_value(
-                    DEDUPED_TASK_COMPLETION_EVENT_VB[0].task_type_name
-                ),
-            ],
-        )
-
         generate_custom_metrics_view(
             [
                 metric
@@ -131,7 +101,8 @@ def main(
                 if hasattr(metric, "unit_of_observation_type")
             ],
             view_name,
-            additional_view_fields=[task_type_parameter_field],
+            additional_view_fields=[],
+            json_field_filters=["task_type"],
         ).write(output_directory, source_script_path=__file__)
 
         for unit_of_observation_type in set(
@@ -175,6 +146,7 @@ def main(
                 ],
                 view_name,
                 unit_of_observation=unit_of_observation,
+                json_field_filters=["task_type"],
             ).write(output_subdirectory, source_script_path=__file__)
 
             generate_period_event_metric_view(
@@ -186,6 +158,7 @@ def main(
                 ],
                 view_name,
                 unit_of_observation=unit_of_observation,
+                json_field_filters=["task_type"],
             ).write(output_subdirectory, source_script_path=__file__)
 
             generate_assignment_span_metric_view(
@@ -197,6 +170,7 @@ def main(
                 ],
                 view_name,
                 unit_of_observation=unit_of_observation,
+                json_field_filters=["task_type"],
             ).write(output_subdirectory, source_script_path=__file__)
 
             generate_assignment_event_metric_view(
@@ -208,6 +182,7 @@ def main(
                 ],
                 view_name,
                 unit_of_observation=unit_of_observation,
+                json_field_filters=["task_type"],
             ).write(output_subdirectory, source_script_path=__file__)
 
 
