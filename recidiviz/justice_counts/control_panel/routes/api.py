@@ -41,6 +41,7 @@ from recidiviz.justice_counts.agency_setting import AgencySettingInterface
 from recidiviz.justice_counts.agency_user_account_association import (
     AgencyUserAccountAssociationInterface,
 )
+from recidiviz.justice_counts.bulk_upload.bulk_upload_helpers import BulkUploadResult
 from recidiviz.justice_counts.bulk_upload.template_generator import (
     generate_bulk_upload_template,
 )
@@ -50,10 +51,7 @@ from recidiviz.justice_counts.control_panel.utils import (
     raise_if_user_is_wrong_role,
 )
 from recidiviz.justice_counts.datapoint import DatapointInterface
-from recidiviz.justice_counts.exceptions import (
-    JusticeCountsBulkUploadException,
-    JusticeCountsServerError,
-)
+from recidiviz.justice_counts.exceptions import JusticeCountsServerError
 from recidiviz.justice_counts.feed import FeedInterface
 from recidiviz.justice_counts.metric_setting import MetricSettingInterface
 from recidiviz.justice_counts.metrics.metric_definition import MetricDefinition
@@ -1404,14 +1402,7 @@ def get_api_blueprint(
                     system=system, agency=agency
                 )
             )
-            (
-                metric_key_to_datapoint_jsons,
-                metric_key_to_errors,
-                updated_reports,
-                existing_report_ids,
-                unchanged_reports,
-                spreadsheet,
-            ) = SpreadsheetInterface.ingest_workbook_from_gcs(
+            ingest_result = SpreadsheetInterface.ingest_workbook_from_gcs(
                 session=current_session,
                 bucket_name=bucket_name,
                 system=system,
@@ -1434,19 +1425,14 @@ def get_api_blueprint(
             # Get and save ingested spreadsheet json to GCP bucket if not in test/ci
             ingested_spreadsheet_json = _get_ingest_spreadsheet_json(
                 agency=agency,
+                ingest_result=ingest_result,
                 agency_id=agency.id,
-                existing_report_ids=existing_report_ids,
-                updated_reports=updated_reports,
-                unchanged_reports=unchanged_reports,
-                metric_key_to_errors=metric_key_to_errors,
-                metric_key_to_datapoint_jsons=metric_key_to_datapoint_jsons,
                 metric_definitions=metric_definitions,
                 metric_key_to_metric_interface=metric_key_to_metric_interface,
-                spreadsheet=spreadsheet,
             )
             SpreadsheetInterface.save_ingested_spreadsheet_json(
                 ingested_spreadsheet_json=ingested_spreadsheet_json,
-                spreadsheet=spreadsheet,
+                spreadsheet=ingest_result.spreadsheet,
             )
 
             current_session.commit()
@@ -1456,8 +1442,8 @@ def get_api_blueprint(
                 success=True,
                 file_name=file_name,
                 agency_id=agency_id_str,
-                spreadsheet_id=spreadsheet.id,
-                metric_key_to_errors=metric_key_to_errors,
+                spreadsheet_id=ingest_result.spreadsheet.id,
+                metric_key_to_errors=ingest_result.metric_key_to_errors,
             )
 
             return jsonify({"status": "ok", "status_code": HTTPStatus.OK})
@@ -1547,14 +1533,6 @@ def get_api_blueprint(
                     "Invalid file type: All files must be of type .xlsx or .csv.",
                 )
 
-            (
-                xls,
-                new_file_name,
-                upload_filetype,
-            ) = SpreadsheetInterface.convert_file_to_excel(
-                file=file, filename=file.filename  # type: ignore[arg-type]
-            )
-
             # Upload spreadsheet to GCS
             spreadsheet = SpreadsheetInterface.upload_spreadsheet(
                 session=current_session,
@@ -1580,37 +1558,23 @@ def get_api_blueprint(
                     agency=agency, system=schema.System[system]
                 )
             )
-            (
-                metric_key_to_datapoint_jsons,
-                metric_key_to_errors,
-                updated_reports,
-                existing_report_ids,
-                unchanged_reports,
-                spreadsheet,
-            ) = SpreadsheetInterface.ingest_spreadsheet(
+            ingest_result = SpreadsheetInterface.ingest_spreadsheet(
                 session=current_session,
                 spreadsheet=spreadsheet,
                 auth0_user_id=auth0_user_id,
-                xls=xls,
+                file=file,
                 agency=agency,
                 metric_key_to_metric_interface=metric_key_to_metric_interface,
                 metric_definitions=metric_definitions,
-                filename=new_file_name,
                 upload_method=UploadMethod.BULK_UPLOAD,
-                upload_filetype=upload_filetype,
             )
 
             ingested_spreadsheet_json = _get_ingest_spreadsheet_json(
                 agency=agency,
                 agency_id=agency_id,
-                existing_report_ids=existing_report_ids,
-                updated_reports=updated_reports,
-                unchanged_reports=unchanged_reports,
-                metric_key_to_errors=metric_key_to_errors,
-                metric_key_to_datapoint_jsons=metric_key_to_datapoint_jsons,
+                ingest_result=ingest_result,
                 metric_definitions=metric_definitions,
                 metric_key_to_metric_interface=metric_key_to_metric_interface,
-                spreadsheet=spreadsheet,
             )
 
             if in_ci() or in_test():
@@ -1631,16 +1595,9 @@ def get_api_blueprint(
     def _get_ingest_spreadsheet_json(
         agency: schema.Agency,
         agency_id: int,
-        existing_report_ids: List[int],
-        updated_reports: Set[schema.Report],
-        unchanged_reports: Set[schema.Report],
-        metric_key_to_errors: Dict[
-            Optional[str], List[JusticeCountsBulkUploadException]
-        ],
-        metric_key_to_datapoint_jsons: Dict[str, List[DatapointJson]],
+        ingest_result: BulkUploadResult,
         metric_definitions: List[MetricDefinition],
         metric_key_to_metric_interface: Dict[str, MetricInterface],
-        spreadsheet: schema.Spreadsheet,
     ) -> Dict[str, Any]:
         child_agencies = AgencyInterface.get_child_agencies_for_agency(
             session=current_session, agency=agency
@@ -1659,30 +1616,28 @@ def get_api_blueprint(
                 agency_name=report.source.name,
             )
             for report in all_reports
-            if report.id not in existing_report_ids
+            if report.id not in ingest_result.existing_report_ids
         ]
         updated_report_jsons = [
             ReportInterface.to_json_response(
                 report=r, editor_id_to_json={}, agency_name=r.source.name
             )
-            for r in updated_reports
+            for r in ingest_result.updated_reports
         ]
         unchanged_report_jsons = [
             ReportInterface.to_json_response(
                 report=r, editor_id_to_json={}, agency_name=r.source.name
             )
-            for r in unchanged_reports
+            for r in ingest_result.unchanged_reports
         ]
 
         ingested_spreadsheet_json = SpreadsheetInterface.get_ingest_spreadsheet_json(
-            metric_key_to_errors=metric_key_to_errors,
-            metric_key_to_datapoint_jsons=metric_key_to_datapoint_jsons,
+            ingest_result=ingest_result,
             metric_definitions=metric_definitions,
             metric_key_to_metric_interface=metric_key_to_metric_interface,
             updated_report_jsons=updated_report_jsons,
             new_report_jsons=new_report_jsons,
             unchanged_report_jsons=unchanged_report_jsons,
-            spreadsheet=spreadsheet,
         )
         return ingested_spreadsheet_json
 

@@ -20,10 +20,8 @@ import itertools
 import json
 import logging
 import os
-from io import StringIO
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any, Dict, List, Optional
 
-import pandas as pd
 from google.cloud import storage
 from sqlalchemy.orm import Session
 from werkzeug.datastructures import FileStorage
@@ -34,12 +32,12 @@ from recidiviz.common.io.flask_file_storage_contents_handle import (
     FlaskFileStorageContentsHandle,
 )
 from recidiviz.common.io.local_file_contents_handle import LocalFileContentsHandle
-from recidiviz.justice_counts.agency import AgencyInterface
 from recidiviz.justice_counts.agency_user_account_association import (
     AgencyUserAccountAssociationInterface,
 )
-from recidiviz.justice_counts.bulk_upload.bulk_upload_helpers import (
-    separate_file_name_from_system,
+from recidiviz.justice_counts.bulk_upload.bulk_upload_helpers import BulkUploadResult
+from recidiviz.justice_counts.bulk_upload.workbook_standardizer import (
+    WorkbookStandardizer,
 )
 from recidiviz.justice_counts.bulk_upload.workbook_uploader import WorkbookUploader
 from recidiviz.justice_counts.exceptions import (
@@ -53,7 +51,6 @@ from recidiviz.justice_counts.metricfiles.metricfile_registry import (
 )
 from recidiviz.justice_counts.metrics.metric_definition import MetricDefinition
 from recidiviz.justice_counts.metrics.metric_interface import MetricInterface
-from recidiviz.justice_counts.types import BulkUploadFileType, DatapointJson
 from recidiviz.justice_counts.utils.constants import (
     ERRORS_WARNINGS_JSON_BUCKET_PROD,
     ERRORS_WARNINGS_JSON_BUCKET_STAGING,
@@ -241,23 +238,14 @@ class SpreadsheetInterface:
     @staticmethod
     def ingest_spreadsheet(
         session: Session,
-        xls: pd.ExcelFile,
         spreadsheet: schema.Spreadsheet,
         metric_key_to_metric_interface: Dict[str, MetricInterface],
         metric_definitions: List[MetricDefinition],
         agency: schema.Agency,
-        filename: Optional[str],
         upload_method: UploadMethod,
-        upload_filetype: BulkUploadFileType,
+        file: Any,
         auth0_user_id: Optional[str] = None,
-    ) -> Tuple[
-        Dict[str, List[DatapointJson]],
-        Dict[Optional[str], List[JusticeCountsBulkUploadException]],
-        Set[schema.Report],
-        List[int],
-        Set[schema.Report],
-        schema.Spreadsheet,
-    ]:
+    ) -> BulkUploadResult:
         """
         Ingests spreadsheet for an agency and logs any errors.
         upload_filetype: The type of file that was originally uploaded (CSV, XLSX, etc).
@@ -270,28 +258,33 @@ class SpreadsheetInterface:
                 .one()
             )
 
-        child_agencies = AgencyInterface.get_child_agencies_for_agency(
-            session=session, agency=agency
+        workbook_standardizer = WorkbookStandardizer(
+            system=spreadsheet.system, agency=agency, session=session
         )
 
-        child_agency_name_to_agency = {}
-        for child_agency in child_agencies:
-            child_agency_name_to_agency[
-                child_agency.name.strip().lower()
-            ] = child_agency
-            if child_agency.custom_child_agency_name is not None:
-                # Add the custom_child_agency_name of the agency as a key in
-                # child_agency_name_to_agency. That way, Bulk Upload will
-                # be successful if the user uploads with EITHER the name
-                # or the original name of the agency
-                child_agency_name_to_agency[
-                    child_agency.custom_child_agency_name.strip().lower()
-                ] = child_agency
+        if workbook_standardizer.validate_file_name(file_name=file.filename) is False:
+            SpreadsheetInterface.log_errors_and_update_spreadsheet_status(
+                spreadsheet=spreadsheet,
+                agency_id=agency.id,
+                metric_key_to_errors=workbook_standardizer.metric_key_to_errors,
+            )
+            return BulkUploadResult(
+                spreadsheet=spreadsheet,
+                metric_key_to_errors=workbook_standardizer.metric_key_to_errors,
+            )
+
+        (
+            xls,
+            file_name,
+            upload_filetype,
+        ) = workbook_standardizer.convert_file_to_pandas_excel_file(
+            file=file, file_name=file.filename  # type: ignore[arg-type]
+        )
 
         uploader = WorkbookUploader(
             agency=agency,
             system=spreadsheet.system,
-            child_agency_name_to_agency=child_agency_name_to_agency,
+            child_agency_name_to_agency=workbook_standardizer.child_agency_name_to_agency,
             user_account=user_account,
             metric_key_to_metric_interface=metric_key_to_metric_interface,
         )
@@ -302,7 +295,7 @@ class SpreadsheetInterface:
             session=session,
             xls=xls,
             metric_definitions=metric_definitions,
-            filename=filename,
+            filename=file_name,
             upload_method=upload_method,
             upload_filetype=upload_filetype,
         )
@@ -311,15 +304,22 @@ class SpreadsheetInterface:
             and e.message_type != BulkUploadMessageType.ERROR
             for e in itertools.chain(*metric_key_to_errors.values())
         )
+
+        ingest_result = BulkUploadResult(
+            spreadsheet=spreadsheet,
+            existing_report_ids=uploader.existing_report_ids,
+            metric_key_to_datapoint_jsons=metric_key_to_datapoint_jsons,
+            metric_key_to_errors=workbook_standardizer.metric_key_to_errors,
+            updated_reports=uploader.updated_reports,
+        )
+
         # If there are ingest-blocking errors, log errors to console and set the spreadsheet status to ERRORED
         if not is_ingest_successful:
-            logging.info(
-                "Failed to ingest without errors: agency_id: %i, spreadsheet_id: %i, errors: %s",
-                agency.id,
-                spreadsheet.id,
-                metric_key_to_errors,
+            SpreadsheetInterface.log_errors_and_update_spreadsheet_status(
+                spreadsheet=spreadsheet,
+                agency_id=agency.id,
+                metric_key_to_errors=workbook_standardizer.metric_key_to_errors,
             )
-            spreadsheet.status = schema.SpreadsheetStatus.ERRORED
 
         else:
             logging.info(
@@ -337,15 +337,25 @@ class SpreadsheetInterface:
             if report not in uploader.updated_reports
             and report.id in uploader.existing_report_ids
         }
+        ingest_result.unchanged_reports = unchanged_reports
 
-        return (
-            metric_key_to_datapoint_jsons,
+        return ingest_result
+
+    @staticmethod
+    def log_errors_and_update_spreadsheet_status(
+        spreadsheet: schema.Spreadsheet,
+        agency_id: int,
+        metric_key_to_errors: Dict[
+            Optional[str], List[JusticeCountsBulkUploadException]
+        ],
+    ) -> None:
+        logging.error(
+            "Failed to ingest without errors: agency_id: %i, spreadsheet_id: %i, errors: %s",
+            agency_id,
+            spreadsheet.id,
             metric_key_to_errors,
-            uploader.updated_reports,
-            uploader.existing_report_ids,
-            unchanged_reports,
-            spreadsheet,
         )
+        spreadsheet.status = schema.SpreadsheetStatus.ERRORED
 
     @staticmethod
     def get_spreadsheet_path(spreadsheet: schema.Spreadsheet) -> GcsfsFilePath:
@@ -361,22 +371,21 @@ class SpreadsheetInterface:
 
     @staticmethod
     def get_ingest_spreadsheet_json(
-        metric_key_to_datapoint_jsons: Dict[str, List[DatapointJson]],
-        metric_key_to_errors: Dict[
-            Optional[str], List[JusticeCountsBulkUploadException]
-        ],
+        ingest_result: BulkUploadResult,
         metric_definitions: List[MetricDefinition],
         metric_key_to_metric_interface: Dict[str, MetricInterface],
         updated_report_jsons: List[Dict[str, Any]],
         new_report_jsons: List[Dict[str, Any]],
         unchanged_report_jsons: List[Dict[str, Any]],
-        spreadsheet: schema.Spreadsheet,
     ) -> Dict[str, Any]:
         """Returns json response for spreadsheets ingested with the BulkUploader"""
         metrics = []
         metric_key_to_enabled = {}
         metric_key_to_disaggregation_status = {}
-        for key, metric_interface in metric_key_to_metric_interface.items():
+        for (
+            key,
+            metric_interface,
+        ) in metric_key_to_metric_interface.items():
             metric_key_to_enabled[key] = metric_interface.is_metric_enabled
 
             if metric_interface.disaggregated_by_supervision_subsystems is not None:
@@ -398,8 +407,9 @@ class SpreadsheetInterface:
                 # If the metric is a supervision subsystem, but the metric is reported as an aggregate,
                 # only display messages for that metric if data was explicitly reported.
                 if (
-                    metric_definition.key not in metric_key_to_errors
-                    and metric_definition.key not in metric_key_to_datapoint_jsons
+                    metric_definition.key not in ingest_result.metric_key_to_errors
+                    and metric_definition.key
+                    not in ingest_result.metric_key_to_datapoint_jsons
                 ):
                     continue
 
@@ -420,7 +430,7 @@ class SpreadsheetInterface:
             # for the user on the bulk upload error page.
             metric_errors: List[Dict[str, Any]] = []
             for sheet_name, errors in itertools.groupby(
-                metric_key_to_errors.get(metric_definition.key, []),
+                ingest_result.metric_key_to_errors.get(metric_definition.key, []),
                 key=lambda e: e.sheet_name,
             ):
                 metric_errors.append(
@@ -440,7 +450,7 @@ class SpreadsheetInterface:
                     "key": metric_definition.key,
                     "display_name": metric_definition.display_name,
                     "metric_errors": metric_errors,
-                    "datapoints": metric_key_to_datapoint_jsons.get(
+                    "datapoints": ingest_result.metric_key_to_datapoint_jsons.get(
                         metric_definition.key, []
                     ),
                     "enabled": metric_key_to_enabled.get(metric_definition.key),
@@ -451,7 +461,9 @@ class SpreadsheetInterface:
         # excel workbook that contains a sheet that is not associated with a MetricFile.
         # This is an ingest-blocking error because in this scenario we are not able
         # to convert the rows into datapoints.
-        non_metric_errors = [e.to_json() for e in metric_key_to_errors.get(None, [])]
+        non_metric_errors = [
+            e.to_json() for e in ingest_result.metric_key_to_errors.get(None, [])
+        ]
 
         return {
             "metrics": metrics,
@@ -459,7 +471,7 @@ class SpreadsheetInterface:
             "updated_reports": updated_report_jsons,
             "new_reports": new_report_jsons,
             "unchanged_reports": unchanged_report_jsons,
-            "file_name": spreadsheet.original_name,
+            "file_name": ingest_result.spreadsheet.original_name,
         }
 
     @staticmethod
@@ -515,14 +527,7 @@ class SpreadsheetInterface:
         filename: str,
         metric_definitions: List[MetricDefinition],
         upload_method: UploadMethod,
-    ) -> Tuple[
-        Dict[str, List[DatapointJson]],
-        Dict[Optional[str], List[JusticeCountsBulkUploadException]],
-        Set[schema.Report],
-        List[int],
-        Set[schema.Report],
-        schema.Spreadsheet,
-    ]:
+    ) -> BulkUploadResult:
         """Given a filename, an agency, and a system, this method copies the
         file from the agency's bulk upload bucket to GCS bucket where we store
         all workbooks uploaded in publisher, saves the workbook metadata in
@@ -555,21 +560,16 @@ class SpreadsheetInterface:
         )
 
         file_bytes = gcs_file_system.download_as_bytes(path=source_path)
-        xls, filename, upload_filetype = SpreadsheetInterface.convert_file_to_excel(
-            file=file_bytes, filename=filename
-        )
 
         return SpreadsheetInterface.ingest_spreadsheet(
             session=session,
             spreadsheet=spreadsheet,
             auth0_user_id=None,
-            xls=xls,
             agency=agency,
             metric_key_to_metric_interface=metric_key_to_metric_interface,
             metric_definitions=metric_definitions,
-            filename=filename,
             upload_method=upload_method,
-            upload_filetype=upload_filetype,
+            file=file_bytes,
         )
 
     @staticmethod
@@ -592,27 +592,3 @@ class SpreadsheetInterface:
                 else {system}
             ),
         )
-
-    @staticmethod
-    def convert_file_to_excel(
-        file: Any, filename: str
-    ) -> Tuple[pd.ExcelFile, str, BulkUploadFileType]:
-        # source: https://stackoverflow.com/questions/47379476/how-to-convert-bytes-data-into-a-python-pandas-dataframe
-        # Note that invalid metrics will be caught in workbook_uploader._add_invalid_sheet_name_error()
-        # new_file_name is the path of the new xlsx file that we create in line 520
-        # Return value is a tuple of (1) the Excel file XLS, (2) the filename, and
-        # (3) the uploaded file's file type.
-        file_type = BulkUploadFileType.from_suffix(filename.rsplit(".", 1)[1].lower())
-        if file_type == BulkUploadFileType.CSV:
-            new_file_name = separate_file_name_from_system(filename=filename).rsplit(".", 1)[0] + ".xlsx"  # type: ignore[union-attr]
-            metric = new_file_name.rsplit(".", 1)[0].split("/")[-1]
-            if isinstance(file, bytes):
-                s = str(file, "utf-8")
-                file = StringIO(s)
-            csv_df = pd.read_csv(file)
-            csv_df.to_excel(new_file_name, sheet_name=metric, index=False)
-            xls = pd.ExcelFile(new_file_name)
-            return xls, new_file_name, file_type
-
-        xls = pd.ExcelFile(file)
-        return xls, filename, file_type

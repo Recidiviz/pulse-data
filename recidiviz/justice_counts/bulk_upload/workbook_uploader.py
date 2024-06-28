@@ -373,7 +373,7 @@ class WorkbookUploader:
         the Bulk Upload process.
         """
         filename = (
-            separate_file_name_from_system(filename=filename)
+            separate_file_name_from_system(file_name=filename)
             if filename is not None
             else ""
         )

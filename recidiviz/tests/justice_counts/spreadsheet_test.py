@@ -19,6 +19,7 @@ import datetime
 import itertools
 import os
 import tempfile
+from io import BytesIO
 from pathlib import Path
 
 import pandas as pd
@@ -37,7 +38,6 @@ from recidiviz.justice_counts.metrics.custom_reporting_frequency import (
 from recidiviz.justice_counts.metrics.metric_interface import MetricInterface
 from recidiviz.justice_counts.metrics.metric_registry import METRICS_BY_SYSTEM
 from recidiviz.justice_counts.spreadsheet import SpreadsheetInterface
-from recidiviz.justice_counts.types import BulkUploadFileType
 from recidiviz.justice_counts.utils.constants import (
     DISAGGREGATED_BY_SUPERVISION_SUBSYSTEMS,
     REPORTING_FREQUENCY_CONTEXT_KEY,
@@ -79,14 +79,22 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
             update_datetime = datetime.datetime(
                 2022, 2, 1, 1, 0, 0, 0, datetime.timezone.utc
             )
+
             with freeze_time(update_datetime):
                 file_path = create_excel_file(
                     system=schema.System.LAW_ENFORCEMENT,
                     file_name="test_ingest_spreadsheet.xlsx",
                 )
+                content = open(  # pylint:disable=consider-using-with
+                    Path(file_path), "rb"
+                ).read()
+                file = BytesIO(content)
+                file.filename = os.path.basename(  # type: ignore[attr-defined]
+                    file_path
+                )  # Extract filename from path
                 SpreadsheetInterface.ingest_spreadsheet(
                     session=session,
-                    xls=pd.ExcelFile(file_path),
+                    file=file,
                     spreadsheet=spreadsheet,
                     auth0_user_id=user.auth0_user_id,
                     agency=agency,
@@ -94,9 +102,7 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
                     metric_definitions=METRICS_BY_SYSTEM[
                         schema.System.LAW_ENFORCEMENT.value
                     ],
-                    filename=file_path,
                     upload_method=UploadMethod.BULK_UPLOAD,
-                    upload_filetype=BulkUploadFileType.XLSX,
                 )
 
                 spreadsheet = session.query(schema.Spreadsheet).one()
@@ -124,9 +130,14 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
                 file_name="test_ingest_spreadsheet_failure.xlsx",
                 add_invalid_sheet_name=True,
             )
+            content = open(  # pylint:disable=consider-using-with
+                Path(file_path), "rb"
+            ).read()
+            file = BytesIO(content)
+            file.filename = os.path.basename(file_path)  # type: ignore[attr-defined]
             SpreadsheetInterface.ingest_spreadsheet(
                 session=session,
-                xls=pd.ExcelFile(file_path),
+                file=file,
                 spreadsheet=spreadsheet,
                 auth0_user_id=user.auth0_user_id,
                 agency=agency,
@@ -134,9 +145,7 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
                 metric_definitions=METRICS_BY_SYSTEM[
                     schema.System.LAW_ENFORCEMENT.value
                 ],
-                filename=file_path,
                 upload_method=UploadMethod.BULK_UPLOAD,
-                upload_filetype=BulkUploadFileType.XLSX,
             )
 
             spreadsheet = session.query(schema.Spreadsheet).one()
@@ -219,16 +228,14 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
                 },
                 file_name="test_get_ingest_spreadsheet_json.xlsx",
             )
-            (
-                metric_key_to_datapoint_jsons,
-                metric_key_to_errors,
-                _,
-                _,
-                _,
-                _,
-            ) = SpreadsheetInterface.ingest_spreadsheet(
+            content = open(  # pylint:disable=consider-using-with
+                Path(file_path), "rb"
+            ).read()
+            file = BytesIO(content)
+            file.filename = os.path.basename(file_path)  # type: ignore[attr-defined]
+            ingest_result = SpreadsheetInterface.ingest_spreadsheet(
                 session=session,
-                xls=pd.ExcelFile(file_path),
+                file=file,
                 spreadsheet=spreadsheet,
                 auth0_user_id=user.auth0_user_id,
                 agency=agency,
@@ -236,9 +243,7 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
                 metric_definitions=METRICS_BY_SYSTEM[schema.System.PAROLE.value]
                 + METRICS_BY_SYSTEM[schema.System.PROBATION.value]
                 + METRICS_BY_SYSTEM[schema.System.PAROLE.value],
-                filename=file_path,
                 upload_method=UploadMethod.BULK_UPLOAD,
-                upload_filetype=BulkUploadFileType.XLSX,
             )
 
             metric_definitions = (
@@ -248,15 +253,14 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
             )
 
             json = SpreadsheetInterface.get_ingest_spreadsheet_json(
-                metric_key_to_errors=metric_key_to_errors,
-                metric_key_to_datapoint_jsons=metric_key_to_datapoint_jsons,
                 metric_definitions=metric_definitions,
                 metric_key_to_metric_interface=metric_key_to_metric_interface,
                 updated_report_jsons=[],
                 new_report_jsons=[],
                 unchanged_report_jsons=[],
-                spreadsheet=spreadsheet,
+                ingest_result=ingest_result,
             )
+
             metric_key_to_json = {m["key"]: m for m in json["metrics"]}
             for definition in metric_definitions:
                 if definition.key == supervision.funding.key:
@@ -416,24 +420,20 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
                 file_name="test_custom_child_agency_name.xlsx",
                 child_agencies=[child_agency],
             )
-            (
-                metric_key_to_datapoint_jsons,
-                _,
-                _,
-                _,
-                _,
-                _,
-            ) = SpreadsheetInterface.ingest_spreadsheet(
+            content = open(  # pylint:disable=consider-using-with
+                Path(file_path), "rb"
+            ).read()
+            file = BytesIO(content)
+            file.filename = os.path.basename(file_path)  # type: ignore[attr-defined]
+            ingest_result = SpreadsheetInterface.ingest_spreadsheet(
                 session=session,
-                xls=pd.ExcelFile(file_path),
+                file=file,
                 spreadsheet=spreadsheet,
                 auth0_user_id=user.auth0_user_id,
                 agency=agency,
                 metric_key_to_metric_interface={},
                 metric_definitions=METRICS_BY_SYSTEM[schema.System.PRISONS.value],
-                filename=file_path,
                 upload_method=UploadMethod.BULK_UPLOAD,
-                upload_filetype=BulkUploadFileType.XLSX,
             )
 
             spreadsheet = session.query(schema.Spreadsheet).one()
@@ -442,7 +442,9 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
 
             # Confirm that datapoints were ingested for the child agency
             child_agency_datapoints = []
-            for datapoint_json_list in metric_key_to_datapoint_jsons.values():
+            for (
+                datapoint_json_list
+            ) in ingest_result.metric_key_to_datapoint_jsons.values():
                 child_agency_datapoints += [
                     datapoint_json
                     for datapoint_json in datapoint_json_list
@@ -450,5 +452,12 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
                 ]
 
             self.assertTrue(
-                len(list(itertools.chain(*metric_key_to_datapoint_jsons.values()))) > 0
+                len(
+                    list(
+                        itertools.chain(
+                            *ingest_result.metric_key_to_datapoint_jsons.values()
+                        )
+                    )
+                )
+                > 0
             )
