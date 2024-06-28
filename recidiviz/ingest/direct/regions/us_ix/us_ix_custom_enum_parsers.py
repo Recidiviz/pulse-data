@@ -25,6 +25,7 @@ my_enum_field:
 
 from datetime import date
 
+from recidiviz.common.constants.state.state_sentence import StateSentencingAuthority
 from recidiviz.common.constants.state.state_shared_enums import StateActingBodyType
 from recidiviz.common.constants.state.state_staff_caseload_type import (
     StateStaffCaseloadType,
@@ -214,3 +215,12 @@ def county_jail_supervision_level(raw_text: str) -> StateSupervisionLevel:
     if raw_text:
         return StateSupervisionLevel.IN_CUSTODY
     raise ValueError("This parser should never be called on missing raw text.")
+
+
+def parse_sentencing_authority(raw_text: str) -> StateSentencingAuthority:
+    """Maps sentencing authroity"""
+    if raw_text is None:
+        raise ValueError("This parser should never be called on missing raw text.")
+    if raw_text == "Idaho":
+        return StateSentencingAuthority.STATE
+    return StateSentencingAuthority.OTHER_STATE
