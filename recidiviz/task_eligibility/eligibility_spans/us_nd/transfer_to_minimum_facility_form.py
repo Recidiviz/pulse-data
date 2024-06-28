@@ -26,16 +26,17 @@ from recidiviz.task_eligibility.candidate_populations.general import (
 from recidiviz.task_eligibility.completion_events.state_specific.us_nd import (
     transfer_to_reentry_center,
 )
-from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
-    SingleTaskEligibilitySpansBigQueryViewBuilder,
-)
-from recidiviz.task_eligibility.criteria.state_specific.us_nd import (
-    not_in_minimum_security_facility,
-    not_in_an_orientation_unit,
-)
 from recidiviz.task_eligibility.criteria.general import (
     custody_level_is_minimum,
     not_in_work_release,
+)
+from recidiviz.task_eligibility.criteria.state_specific.us_nd import (
+    not_in_an_orientation_unit,
+    not_in_minimum_security_facility,
+    not_in_wtru_btc,
+)
+from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
+    SingleTaskEligibilitySpansBigQueryViewBuilder,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -54,6 +55,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         not_in_minimum_security_facility.VIEW_BUILDER,
         not_in_work_release.VIEW_BUILDER,
         not_in_an_orientation_unit.VIEW_BUILDER,
+        not_in_wtru_btc.VIEW_BUILDER,
     ],
     completion_event_builder=transfer_to_reentry_center.VIEW_BUILDER,
 )
