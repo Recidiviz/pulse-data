@@ -16,9 +16,9 @@
 # =============================================================================
 """Preprocessed fines and fees sessions view for TN.
 Unique on state code, person_id, compartment_level_0_super_session_id, fee_type, start_date, end_date"""
-
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.bq_utils import nonnull_end_date_exclusive_clause
+from recidiviz.calculator.query.sessions_query_fragments import aggregate_adjacent_spans
 from recidiviz.calculator.query.state.dataset_config import (
     ANALYST_VIEWS_DATASET,
     SESSIONS_DATASET,
@@ -109,6 +109,28 @@ US_TN_FINES_FEES_SESSIONS_PREPROCESSED_QUERY_TEMPLATE = f"""
         GROUP BY
             1,2,3
     ),
+    -- TODO(#30816): Consider pulling this aggregation logic into its own view
+    legal_authority_sessions_cte AS
+    (
+    SELECT 
+        state_code,
+        person_id,
+        start_date,
+        end_date_exclusive,
+    FROM `{{project_id}}.sessions.supervision_legal_authority_sessions_materialized`
+    ),
+    legal_authority_sessions_agg AS 
+    (
+    SELECT
+        person_id,
+        state_code,
+        supervision_legal_authority_session_id,
+        start_date,
+        end_date_exclusive,
+    FROM ({aggregate_adjacent_spans(table_name='legal_authority_sessions_cte',
+                                    session_id_output_name='supervision_legal_authority_session_id',
+                                    end_date_field_name='end_date_exclusive')})
+    ),
     time_agg_join AS (
         SELECT 
             p.state_code,
@@ -131,7 +153,7 @@ US_TN_FINES_FEES_SESSIONS_PREPROCESSED_QUERY_TEMPLATE = f"""
         FROM
             population_change_dates_agg p
         LEFT JOIN
-            `{{project_id}}.{{sessions_dataset}}.supervision_legal_authority_sessions_materialized` ss
+            legal_authority_sessions_agg ss
         ON 
             p.person_id = ss.person_id
         AND 
