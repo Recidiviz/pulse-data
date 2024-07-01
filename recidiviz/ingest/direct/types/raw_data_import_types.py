@@ -87,6 +87,9 @@ class RawFileProcessingError:
     file_path: str
     error_msg: str
 
+    def __str__(self) -> str:
+        return f"{self.file_path}:\n\n{self.error_msg}"
+
     def serialize(self) -> str:
         result_dict = {"file_path": self.file_path, "error_msg": self.error_msg}
         return json.dumps(result_dict)
