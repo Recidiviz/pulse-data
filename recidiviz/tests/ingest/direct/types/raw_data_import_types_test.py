@@ -16,6 +16,7 @@
 # =============================================================================
 """Tests for raw_data_import_types.py"""
 import unittest
+from typing import Any, Type
 
 import attr
 
@@ -34,6 +35,7 @@ from recidiviz.ingest.direct.types.raw_data_import_types import (
     ImportReadyNormalizedFile,
     NormalizedCsvChunkResult,
     PreImportNormalizationType,
+    RequiresNormalizationFile,
     RequiresPreImportNormalizationFile,
     RequiresPreImportNormalizationFileChunk,
 )
@@ -152,10 +154,7 @@ class TestSerialization(unittest.TestCase):
             headers=["id", "name", "age"],
         )
 
-        serialized = original.serialize()
-        deserialized = RequiresPreImportNormalizationFileChunk.deserialize(serialized)
-
-        self.assertEqual(original, deserialized)
+        self._validate_serialization(original, RequiresPreImportNormalizationFileChunk)
 
     def test_requires_pre_import_normalization_file(self) -> None:
         chunk_boundaries = [
@@ -169,10 +168,7 @@ class TestSerialization(unittest.TestCase):
             headers=["id", "name", "age"],
         )
 
-        serialized = original.serialize()
-        deserialized = RequiresPreImportNormalizationFile.deserialize(serialized)
-
-        self.assertEqual(original, deserialized)
+        self._validate_serialization(original, RequiresPreImportNormalizationFile)
 
     def test_normalized_csv_chunk_result(self) -> None:
         chunk_boundary = CsvChunkBoundary(
@@ -185,19 +181,22 @@ class TestSerialization(unittest.TestCase):
             crc32c=0xFFFFFFFF,
         )
 
-        serialized = original.serialize()
-        deserialized = NormalizedCsvChunkResult.deserialize(serialized)
-
-        self.assertEqual(original, deserialized)
+        self._validate_serialization(original, NormalizedCsvChunkResult)
 
     def test_import_ready_normalized_file(self) -> None:
         original = ImportReadyNormalizedFile(
             input_file_path="test_bucket/file", output_file_paths=["temp_bucket/file_0"]
         )
-        serialized = original.serialize()
-        deserialized = ImportReadyNormalizedFile.deserialize(serialized)
 
-        self.assertEqual(original, deserialized)
+        self._validate_serialization(original, ImportReadyNormalizedFile)
+
+    def test_requires_normalization_file(self) -> None:
+        original = RequiresNormalizationFile(
+            path="test/file.csv",
+            normalization_type=PreImportNormalizationType.ENCODING_DELIMITER_AND_TERMINATOR_UPDATE,
+        )
+
+        self._validate_serialization(original, RequiresNormalizationFile)
 
     def test_task_result(self) -> None:
         result = ImportReadyNormalizedFile(
@@ -211,3 +210,9 @@ class TestSerialization(unittest.TestCase):
         )
 
         self.assertEqual(original, deserialized)
+
+    def _validate_serialization(self, obj: Any, obj_type: Type) -> None:
+        serialized = obj.serialize()
+        deserialized = obj_type.deserialize(serialized)
+
+        self.assertEqual(obj, deserialized)

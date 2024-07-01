@@ -47,6 +47,9 @@ from recidiviz.entrypoints.monitoring.report_metric_export_timeliness import (
 from recidiviz.entrypoints.normalization.update_normalized_state_dataset import (
     UpdateNormalizedStateEntrypoint,
 )
+from recidiviz.entrypoints.raw_data.divide_raw_file_into_chunks import (
+    RawDataFileChunkingEntrypoint,
+)
 from recidiviz.entrypoints.raw_data.normalize_raw_file_chunks import (
     RawDataChunkNormalizationEntrypoint,
 )
@@ -69,6 +72,7 @@ ENTRYPOINTS: Set[Type[EntrypointInterface]] = {
     MetricViewExportEntrypoint,
     MetricExportTimelinessEntrypoint,
     RawDataChunkNormalizationEntrypoint,
+    RawDataFileChunkingEntrypoint,
     UpdateNormalizedStateEntrypoint,
     UpdateStateEntrypoint,
     ValidationEntrypoint,

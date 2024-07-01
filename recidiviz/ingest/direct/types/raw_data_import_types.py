@@ -210,7 +210,7 @@ class RequiresPreImportNormalizationFile(BaseResult):
     BigQuery's load job standards."""
 
     path: str
-    normalization_type: Optional[PreImportNormalizationType]
+    normalization_type: PreImportNormalizationType
     chunk_boundaries: List[CsvChunkBoundary]
     headers: List[str]
 
@@ -218,9 +218,7 @@ class RequiresPreImportNormalizationFile(BaseResult):
         return json.dumps(
             {
                 "path": self.path,
-                "normalization_type": (
-                    self.normalization_type.value if self.normalization_type else ""
-                ),
+                "normalization_type": (self.normalization_type.value),
                 "chunk_boundaries": [
                     boundary.serialize() for boundary in self.chunk_boundaries
                 ],
@@ -294,8 +292,19 @@ class NormalizedCsvChunkResult(BaseResult):
 
 @attr.define
 class RequiresNormalizationFile:
-    file_path: str
-    file_tag: str
+    path: str
+    normalization_type: PreImportNormalizationType
+
+    def serialize(self) -> str:
+        data = [self.path, self.normalization_type.value]
+        return json.dumps(data)
+
+    @staticmethod
+    def deserialize(json_str: str) -> "RequiresNormalizationFile":
+        data = json.loads(json_str)
+        return RequiresNormalizationFile(
+            path=data[0], normalization_type=PreImportNormalizationType(data[1])
+        )
 
 
 @attr.define

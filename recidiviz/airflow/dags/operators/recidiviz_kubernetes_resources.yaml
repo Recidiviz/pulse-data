@@ -98,3 +98,9 @@ RawDataChunkNormalizationEntrypoint:
     limits:
       cpu: 1000m
       memory: 2Gi
+
+RawDataFileChunkingEntrypoint:
+  default_resources:
+    limits:
+      cpu: 500m
+      memory: 500Mi
