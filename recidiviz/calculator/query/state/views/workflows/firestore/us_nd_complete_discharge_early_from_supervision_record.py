@@ -248,6 +248,7 @@ SELECT
     crime_names AS form_information_crime_names,
     probation_expiration_date AS form_information_probation_expiration_date,
     probation_officer_full_name AS form_information_probation_officer_full_name,
+    sa.full_name AS form_information_states_attorney_name,
     CONCAT(sa.address_line_1, " ", COALESCE(sa.address_line_2, ""), "\\n", sa.city, ", ", sa.state, " ", sa.zip) AS form_information_states_attorney_mailing_address,
     sa.phone_office as form_information_states_attorney_phone_number,
     sa.email_1 as form_information_states_attorney_email_address,
