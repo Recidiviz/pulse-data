@@ -1,0 +1,34 @@
+# Configuration file for the build-prototypes-server trigger in recidiviz-staging.
+# This trigger is responsible for deploying the prototypes Docker image to Cloud Run.
+steps:
+  # Build the recidiviz-base image.
+  - name: "gcr.io/kaniko-project/executor:v1.8.1"
+    args:
+      - "--dockerfile=Dockerfile.recidiviz-base"
+      - "--cache=true"
+      - >-
+        --destination=us.gcr.io/recidiviz-staging/recidiviz-base:latest
+    id: recidiviz-base
+  # Build the prototypes image and push it to Artifact Registry.
+  - name: "gcr.io/kaniko-project/executor:v1.8.1"
+    args:
+      - "--dockerfile=Dockerfile.prototypes"
+      - >-
+        --destination=us-central1-docker.pkg.dev/recidiviz-staging/prototypes/main:$COMMIT_SHA
+    id: build-prototype-image
+    waitFor:
+      - recidiviz-base
+  # Deploy the image to Cloud Run.
+  - name: "gcr.io/cloud-builders/gcloud"
+    args:
+      - "run"
+      - "deploy"
+      - "prototypes"
+      - "--image=us-central1-docker.pkg.dev/recidiviz-staging/prototypes/main:$COMMIT_SHA"
+      - "--platform=managed" # Specify Cloud Run (fully managed)
+      - "--region=us-central1" # Specify the region where your Cloud Run service will be deployed
+    id: run-deploy
+timeout: 3600s
+options:
+  machineType: N1_HIGHCPU_32
+  logging: CLOUD_LOGGING_ONLY
