@@ -271,3 +271,5 @@ docker-build-jc = "docker build . -f Dockerfile.justice-counts -t us-central1-do
 docker-jc = "docker-compose -f docker-compose.yaml -f docker-compose.justice-counts.yaml up"
 fixtures-jc = "docker exec pulse-data-control_panel_backend-1 pipenv run python -m recidiviz.tools.justice_counts.control_panel.load_fixtures"
 migrate-jc = "python -m recidiviz.tools.migrations.autogenerate_migration --database JUSTICE_COUNTS --message "
+docker-build-prototypes = "docker build . -f Dockerfile.prototypes -t us-central1-docker.pkg.dev/recidiviz-staging/prototypes/main:latest --platform=linux/amd64"
+docker-prototypes = "docker-compose -f docker-compose.yaml -f docker-compose.prototypes.yaml up"
