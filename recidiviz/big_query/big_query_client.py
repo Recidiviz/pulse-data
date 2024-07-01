@@ -1923,7 +1923,7 @@ class BigQueryClientImpl(BigQueryClient):
         table_ref = bigquery.TableReference(dataset_ref, table_id)
         table = bigquery.Table(table_ref, schema_fields)
 
-        if clustering_fields is not None:
+        if clustering_fields:
             table.clustering_fields = clustering_fields
 
         if date_partition_field:

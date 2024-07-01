@@ -980,6 +980,22 @@ class BigQueryClientImplTest(unittest.TestCase):
         self.assertIsInstance(table, bigquery.Table)
         self.assertEqual(None, table.time_partitioning)
 
+    def test_create_table_with_schema_empty_clustering_fields(self) -> None:
+        """Tests that the create_table_with_schema function calls the create_table function on the client."""
+        self.mock_client.get_table.side_effect = exceptions.NotFound("!")
+        schema_fields = [bigquery.SchemaField("new_schema_field", "STRING")]
+
+        self.bq_client.create_table_with_schema(
+            self.mock_dataset_id,
+            self.mock_table_id,
+            schema_fields,
+            clustering_fields=[],
+        )
+        self.mock_client.create_table.assert_called_once()
+        table = self.mock_client.create_table.mock_calls[0].args[0]
+        self.assertIsInstance(table, bigquery.Table)
+        self.assertEqual(None, table.clustering_fields)
+
     def test_create_table_with_schema_table_exists(self) -> None:
         """Tests that the create_table_with_schema function raises an error when the table already exists."""
         self.mock_client.get_table.side_effect = None
