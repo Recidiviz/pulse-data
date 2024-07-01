@@ -85,8 +85,12 @@ output:
                   - "Guamanian"
                   - "Japanese"
                   - "Thai"
+                  # Consider raw data migration for this
                   - "Other Paciific Islander Not Listed"
+                  - "Other Pacific Islander Not Listed"
                   - "Jamaican"
+                  - "Other Asian Not Listed"
+                  - "Tongan"
                 StateEthnicity.EXTERNAL_UNKNOWN:
                   - "Unknown"
               $ignore:
