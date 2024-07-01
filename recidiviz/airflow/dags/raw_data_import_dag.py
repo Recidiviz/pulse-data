@@ -16,6 +16,8 @@
 # =============================================================================
 """DAG configuration to run raw data imports"""
 
+from typing import List
+
 from airflow.decorators import dag
 from airflow.utils.task_group import TaskGroup
 
@@ -26,8 +28,19 @@ from recidiviz.airflow.dags.operators.cloud_sql_query_operator import (
 from recidiviz.airflow.dags.operators.raw_data.direct_ingest_list_files_operator import (
     DirectIngestListNormalizedUnprocessedFilesOperator,
 )
+from recidiviz.airflow.dags.operators.recidiviz_kubernetes_pod_operator import (
+    RecidivizKubernetesPodOperator,
+    get_kubernetes_pod_kwargs,
+)
 from recidiviz.airflow.dags.raw_data.acquire_resource_lock_sql_query_generator import (
     AcquireRawDataResourceLockSqlQueryGenerator,
+)
+from recidiviz.airflow.dags.raw_data.gcs_file_processing_tasks import (
+    generate_chunk_processing_pod_arguments,
+    generate_file_chunking_pod_arguments,
+    raise_chunk_normalization_errors,
+    raise_file_chunking_errors,
+    regroup_and_verify_file_chunks,
 )
 from recidiviz.airflow.dags.raw_data.get_all_unprocessed_bq_file_metadata_sql_query_generator import (
     GetAllUnprocessedBQFileMetadataSqlQueryGenerator,
@@ -67,6 +80,8 @@ from recidiviz.persistence.database.schema_type import SchemaType
 
 # Need a "disable expression-not-assigned" because the chaining ('>>') doesn't need expressions to be assigned
 # pylint: disable=W0106 expression-not-assigned
+
+NUM_BATCHES = 5  # TODO(#29946) determine reasonable default
 
 
 def create_single_state_code_ingest_instance_raw_data_import_branch(
@@ -144,12 +159,6 @@ def create_single_state_code_ingest_instance_raw_data_import_branch(
 
         # TODO(#30170) implement splitting into RequiresNormalizationFile, ImportReadyOriginalFile
 
-        (
-            list_normalized_unprocessed_gcs_file_paths
-            >> get_all_unprocessed_gcs_file_metadata
-            >> get_all_unprocessed_bq_file_metadata
-        )
-
         # ------------------------------------------------------------------------------
 
         # --- step 3: pre-import normalization -----------------------------------------
@@ -157,8 +166,46 @@ def create_single_state_code_ingest_instance_raw_data_import_branch(
         # execution layer: k8s
         # outputs: [ ImportReadyNormalizedFile ]
 
-        # TODO(#29946) implement pre-import file boundary finder
-        # TODO(#30167) implement pre-import normalization
+        serialized_requires_normalization_files: List[str] = []
+        with TaskGroup("pre_import_normalization") as pre_import_normalization:
+            divide_files_into_chunks = RecidivizKubernetesPodOperator.partial(
+                **get_kubernetes_pod_kwargs(
+                    task_id="raw_data_file_chunking",
+                    do_xcom_push=True,
+                )
+            ).expand(
+                arguments=generate_file_chunking_pod_arguments(
+                    state_code.value,
+                    serialized_requires_normalization_files,
+                    num_batches=NUM_BATCHES,
+                )
+            )
+            raise_file_chunking_errors(
+                divide_files_into_chunks.output,
+            )
+            normalized_chunks = RecidivizKubernetesPodOperator.partial(
+                **get_kubernetes_pod_kwargs(
+                    task_id="raw_data_chunk_normalization",
+                    do_xcom_push=True,
+                )
+            ).expand(
+                arguments=generate_chunk_processing_pod_arguments(
+                    state_code.value,
+                    file_chunks=divide_files_into_chunks.output,
+                    num_batches=NUM_BATCHES,
+                )
+            )
+            verify_file_results = regroup_and_verify_file_chunks(
+                normalized_chunks.output
+            )
+            raise_chunk_normalization_errors(verify_file_results)
+
+        (
+            list_normalized_unprocessed_gcs_file_paths
+            >> get_all_unprocessed_gcs_file_metadata
+            >> get_all_unprocessed_bq_file_metadata
+            >> pre_import_normalization
+        )
 
         # ------------------------------------------------------------------------------
 
@@ -189,7 +236,7 @@ def create_single_state_code_ingest_instance_raw_data_import_branch(
             ),
         )
 
-        get_all_unprocessed_bq_file_metadata >> release_locks
+        pre_import_normalization >> release_locks
 
         # ------------------------------------------------------------------------------
 

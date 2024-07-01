@@ -202,7 +202,7 @@ class RecidivizKubernetesPodOperator(KubernetesPodOperator):
 def build_kubernetes_pod_task(
     task_id: str,
     arguments: List[str],
-    container_name: str,
+    container_name: Optional[str] = None,
     trigger_rule: Optional[TriggerRule] = TriggerRule.ALL_SUCCESS,
     retries: int = 0,
     do_xcom_push: bool = False,
@@ -221,19 +221,40 @@ def build_kubernetes_pod_task(
     """
 
     return RecidivizKubernetesPodOperator(
-        task_id=task_id,
-        name=task_id,
-        cmds=["pipenv"],
         arguments=[
             *ENTRYPOINT_ARGUMENTS,
             *arguments,
         ],
-        env_vars=[
-            # TODO(census-instrumentation/opencensus-python#796)
-            k8s.V1EnvVar(name="CONTAINER_NAME", value=container_name),
-        ],
-        trigger_rule=trigger_rule,
-        retries=retries,
-        do_xcom_push=do_xcom_push,
-        cloud_sql_connections=cloud_sql_connections,
+        **get_kubernetes_pod_kwargs(
+            task_id,
+            container_name,
+            trigger_rule,
+            retries,
+            do_xcom_push,
+            cloud_sql_connections,
+        ),
     )
+
+
+def get_kubernetes_pod_kwargs(
+    task_id: str,
+    container_name: Optional[str] = None,
+    trigger_rule: Optional[TriggerRule] = TriggerRule.ALL_SUCCESS,
+    retries: int = 0,
+    do_xcom_push: bool = False,
+    cloud_sql_connections: Optional[List[SchemaType]] = None,
+) -> Dict[str, Any]:
+    container_name = container_name or task_id
+    return {
+        "task_id": task_id,
+        "name": task_id,
+        "cmds": ["pipenv"],
+        "env_vars": [
+            # TODO(census-instrumentation/opencensus-python#796)
+            k8s.V1EnvVar(name="CONTAINER_NAME", value=container_name)
+        ],
+        "trigger_rule": trigger_rule,
+        "retries": retries,
+        "do_xcom_push": do_xcom_push,
+        "cloud_sql_connections": cloud_sql_connections,
+    }

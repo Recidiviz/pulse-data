@@ -23,6 +23,7 @@ from collections import defaultdict
 from typing import Dict, List, Tuple
 
 from airflow.decorators import task
+from airflow.exceptions import AirflowException
 from more_itertools import distribute
 
 from recidiviz.airflow.dags.operators.recidiviz_kubernetes_pod_operator import (
@@ -31,12 +32,7 @@ from recidiviz.airflow.dags.operators.recidiviz_kubernetes_pod_operator import (
 from recidiviz.cloud_storage.gcs_file_system import GCSFileSystem
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
-from recidiviz.entrypoints.raw_data.divide_raw_file_into_chunks import (
-    FILE_LIST_DELIMITER,
-)
-from recidiviz.entrypoints.raw_data.normalize_raw_file_chunks import (
-    FILE_CHUNK_LIST_DELIMITER,
-)
+from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.types.raw_data_import_types import (
     BatchedTaskInstanceOutput,
     ImportReadyNormalizedFile,
@@ -50,18 +46,19 @@ from recidiviz.ingest.direct.types.raw_data_import_types import (
 from recidiviz.utils.crc32c import digest_ordered_checksum_and_size_pairs
 
 MAX_THREADS = 16  # TODO(#29946) determine reasonable default
+ENTRYPOINT_ARG_LIST_DELIMITER = "^"
 
 
 @task
 def generate_file_chunking_pod_arguments(
-    state_code: str, requires_normalization_files: List[str], num_batches: int
+    state_code: StateCode, requires_normalization_files: List[str], num_batches: int
 ) -> List[List[str]]:
     return [
         [
             *ENTRYPOINT_ARGUMENTS,
             "--entrypoint=RawDataFileChunkingEntrypoint",
-            f"--state_code={state_code}",
-            f"--requires_normalization_files={FILE_LIST_DELIMITER.join(batch)}",
+            f"--state_code={state_code.value}",
+            f"--requires_normalization_files={ENTRYPOINT_ARG_LIST_DELIMITER.join(batch)}",
         ]
         for batch in create_file_batches(requires_normalization_files, num_batches)
     ]
@@ -137,14 +134,14 @@ def _get_file_size(fs: GCSFileSystem, file_path: str) -> int:
 
 @task
 def generate_chunk_processing_pod_arguments(
-    state_code: str, file_chunks: List[str], num_batches: int
+    state_code: StateCode, file_chunks: List[str], num_batches: int
 ) -> List[List[str]]:
     return [
         [
             *ENTRYPOINT_ARGUMENTS,
             "--entrypoint=RawDataChunkNormalizationEntrypoint",
-            f"--state_code={state_code}",
-            f"--file_chunks={FILE_CHUNK_LIST_DELIMITER.join(batch)}",
+            f"--state_code={state_code.value}",
+            f"--file_chunks={ENTRYPOINT_ARG_LIST_DELIMITER.join(batch)}",
         ]
         for batch in _divide_file_chunks_into_batches(file_chunks, num_batches)
     ]
@@ -280,3 +277,25 @@ def regroup_normalized_file_chunks(
         chunks.sort(key=lambda x: x.chunk_boundary.chunk_num)
 
     return file_to_normalized_chunks
+
+
+@task
+def raise_file_chunking_errors(file_chunking_output: List[str]) -> None:
+    errors = MappedBatchedTaskOutput.deserialize(
+        file_chunking_output, result_cls=RequiresPreImportNormalizationFile
+    ).flatten_errors()
+    _raise_task_errors(errors)
+
+
+@task
+def raise_chunk_normalization_errors(chunk_normalization_output: str) -> None:
+    errors = BatchedTaskInstanceOutput.deserialize(
+        chunk_normalization_output, result_cls=NormalizedCsvChunkResult
+    ).errors
+    _raise_task_errors(errors)
+
+
+def _raise_task_errors(task_errors: List[RawFileProcessingError]) -> None:
+    if task_errors:
+        error_msg = "\n\n".join([str(error) for error in task_errors])
+        raise AirflowException(f"Error(s) occured in file processing:\n{error_msg}")

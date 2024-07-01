@@ -110,6 +110,43 @@ class RawDataImportDagSequencingTest(AirflowIntegrationTest):
                 assert step_2_task_id in next_task.task_id
                 curr_task = next_task
 
+    def test_step_3_sequencing(self) -> None:
+        dag = DagBag(dag_folder=DAG_FOLDER, include_examples=False).dags[self.dag_id]
+        step_3_root = dag.partial_subset(
+            task_ids_or_regex=r"get_all_unprocessed_bq_file_metadata",
+            include_upstream=False,
+            include_downstream=True,
+        )
+        ordered_step_3_task_ids = [
+            "generate_file_chunking_pod_arguments",
+            "raw_data_file_chunking",
+            ["raise_file_chunking_errors", "generate_chunk_processing_pod_arguments"],
+            "raw_data_chunk_normalization",
+            "regroup_and_verify_file_chunks",
+            "raise_chunk_normalization_errors",
+        ]
+        for root in step_3_root.roots:
+            assert "get_all_unprocessed_bq_file_metadata" in root.task_id
+            curr_task = root
+            for step_3_task_id in ordered_step_3_task_ids:
+                if isinstance(step_3_task_id, list):
+                    assert len(curr_task.downstream_list) == len(step_3_task_id)
+                    for downstream_task in curr_task.downstream_list:
+                        # The downstream list is unordered so assert any of the expected task ids are found in the downstream task
+                        assert any(
+                            task_id in downstream_task.task_id
+                            for task_id in step_3_task_id
+                        )
+                        if step_3_task_id[-1] in downstream_task.task_id:
+                            # Assign next task to be the one corresponding to the last element in the expected task id list
+                            # It doesn't matter that it actually executes last but the downstream tasks depend on this task's output
+                            next_task = downstream_task
+                else:
+                    assert len(curr_task.downstream_list) == 1
+                    next_task = curr_task.downstream_list[0]
+                    assert step_3_task_id in next_task.task_id
+                curr_task = next_task
+
 
 class RawDataImportDagIntegrationTest(AirflowIntegrationTest):
     """Integration tests for the raw data import dag"""
@@ -155,6 +192,24 @@ class RawDataImportDagIntegrationTest(AirflowIntegrationTest):
             side_effect=fake_operator_with_return_value([]),
         )
         self.gcs_operator_patcher.start()
+        self.kpo_operator_patcher = patch(
+            "recidiviz.airflow.dags.raw_data_import_dag.RecidivizKubernetesPodOperator",
+            side_effect=fake_operator_with_return_value([]),
+        )
+        self.kpo_operator_patcher.start()
+
+        self.file_chunking_args_patcher = patch(
+            "recidiviz.airflow.dags.raw_data_import_dag.generate_file_chunking_pod_arguments",
+        ).start()
+        self.chunk_processing_args_patcher = patch(
+            "recidiviz.airflow.dags.raw_data_import_dag.generate_chunk_processing_pod_arguments",
+        ).start()
+        self.verify_file_chunks_patcher = patch(
+            "recidiviz.airflow.dags.raw_data_import_dag.regroup_and_verify_file_chunks",
+        ).start()
+        self.raise_errors_patcher = patch(
+            "recidiviz.airflow.dags.raw_data_import_dag.raise_chunk_normalization_errors",
+        ).start()
 
     def tearDown(self) -> None:
         self.environment_patcher.stop()
@@ -163,6 +218,11 @@ class RawDataImportDagIntegrationTest(AirflowIntegrationTest):
         self.raw_data_enabled_states.stop()
         self.cloud_sql_query_operator_patcher.stop()
         self.gcs_operator_patcher.stop()
+        self.kpo_operator_patcher.stop()
+        self.file_chunking_args_patcher.stop()
+        self.chunk_processing_args_patcher.stop()
+        self.verify_file_chunks_patcher.stop()
+        self.raise_errors_patcher.stop()
         super().tearDown()
 
     def _create_dag(self) -> DAG:
@@ -221,6 +281,7 @@ class RawDataImportDagIntegrationTest(AirflowIntegrationTest):
                     r".*_primary_import_branch\.release_raw_data_resource_locks",
                     r".*_primary_import_branch\.get_all_unprocessed_gcs_file_metadata",
                     r".*_primary_import_branch\.get_all_unprocessed_bq_file_metadata",
+                    r".*_primary_import_branch\.pre_import_normalization\.*",
                     BRANCH_END_TASK_NAME,
                 ],
                 expected_skipped_ids=[
