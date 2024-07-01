@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Sessionized view of non-overlapping periods of continuous stay with a supervision legal authority"""
+"""Sessionized view of non-overlapping periods of continuous stay within a supervision type within a supervision legal authority"""
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.sessions_query_fragments import aggregate_adjacent_spans
@@ -24,11 +24,12 @@ from recidiviz.utils.metadata import local_project_id_override
 
 SUPERVISION_LEGAL_AUTHORITY_SESSIONS_VIEW_NAME = "supervision_legal_authority_sessions"
 
-SUPERVISION_LEGAL_AUTHORITY_SESSIONS_VIEW_DESCRIPTION = """Sessionized view of non-overlapping periods of continuous stay with a supervision legal authority"""
+SUPERVISION_LEGAL_AUTHORITY_SESSIONS_VIEW_DESCRIPTION = """Sessionized view of non-overlapping periods of continuous stay within a supervision type within a supervision legal authority"""
 
 SUPERVISION_LEGAL_AUTHORITY_SESSIONS_QUERY_TEMPLATE = f"""
     -- TODO(#30001): Use legal_authority once hydrated
     -- TODO(#30002): Deprecate supervision_super_sessions in favor of this view
+    -- TODO(#30815): Consider refactoring this view to not dedup to a single supervision type
     WITH sub_sessions_cte AS
     (
     SELECT 
@@ -36,8 +37,9 @@ SUPERVISION_LEGAL_AUTHORITY_SESSIONS_QUERY_TEMPLATE = f"""
         person_id,
         start_date,
         end_date_exclusive,
+        open_supervision_type AS compartment_level_2,
     FROM `{{project_id}}.sessions.compartment_sub_sessions_materialized`
-    WHERE is_on_supervision
+    WHERE open_supervision_type IS NOT NULL
     )
     SELECT
         person_id,
@@ -45,7 +47,9 @@ SUPERVISION_LEGAL_AUTHORITY_SESSIONS_QUERY_TEMPLATE = f"""
         supervision_legal_authority_session_id,
         start_date,
         end_date_exclusive,
+        compartment_level_2,
     FROM ({aggregate_adjacent_spans(table_name='sub_sessions_cte',
+                                    attribute='compartment_level_2',
                                     session_id_output_name='supervision_legal_authority_session_id',
                                     end_date_field_name='end_date_exclusive')})
     """

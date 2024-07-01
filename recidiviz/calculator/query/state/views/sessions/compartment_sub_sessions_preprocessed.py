@@ -137,8 +137,13 @@ COMPARTMENT_SUB_SESSIONS_PREPROCESSED_QUERY_TEMPLATE = """
         cte.housing_unit_type,
         cte.housing_unit_type_raw_text,
         cte.case_type,
-        LOGICAL_OR(cte.compartment_level_1 LIKE 'SUPERVISION%') 
-            OVER(PARTITION BY cte.person_id, cte.state_code, cte.dataflow_session_id) AS is_on_supervision,
+        /*
+        If there is an overlapping supervision period, hydrate this field with the prioritized supervision
+        `compartment_level_2 value`
+        */
+        FIRST_VALUE(IF(cte.compartment_level_1 LIKE 'SUPERVISION%', cte.compartment_level_2, NULL)) OVER(
+            PARTITION BY cte.person_id, cte.state_code, cte.dataflow_session_id
+            ORDER BY IF(cte.compartment_level_1 LIKE 'SUPERVISION%', cl2_dedup.priority, 999) ASC) AS open_supervision_type,
         cte.prioritized_race_or_ethnicity,
         cte.gender,
         cte.start_date,
@@ -201,7 +206,7 @@ COMPARTMENT_SUB_SESSIONS_PREPROCESSED_QUERY_TEMPLATE = """
         CAST(NULL AS STRING) AS housing_unit_type,
         CAST(NULL AS STRING) AS housing_unit_type_raw_text,
         CAST(NULL AS STRING) AS case_type,
-        CAST(NULL AS BOOL) AS is_on_supervision,
+        CAST(NULL AS STRING) AS open_supervision_type,
         prioritized_race_or_ethnicity,
         gender,
         start_date,
@@ -455,8 +460,7 @@ COMPARTMENT_SUB_SESSIONS_PREPROCESSED_QUERY_TEMPLATE = """
         first_sub_session,
         last_sub_session,
         session_id_prelim,
-        is_on_supervision,
-
+        open_supervision_type,
         /*
         The following field is calculated to tells us which sub-sessions are actually impacted by the inference. This is
         used so that we can enforce that any recategorization of a sub-session compartment is applied to all
