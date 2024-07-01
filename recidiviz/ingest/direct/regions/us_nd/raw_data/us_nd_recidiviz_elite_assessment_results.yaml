@@ -48,3 +48,4 @@ columns:
     description: |-
       Whether or not this record can be updated over time.
 always_historical_export: False
+update_cadence: IRREGULAR
