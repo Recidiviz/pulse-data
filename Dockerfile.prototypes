@@ -1,0 +1,17 @@
+FROM us.gcr.io/recidiviz-staging/recidiviz-base:latest
+
+WORKDIR /app/recidiviz
+
+COPY . /app
+
+WORKDIR /app
+
+CMD pipenv run hypercorn recidiviz.prototypes.app:app --bind :8080
+
+# This makes docker not report that our container is healthy until the workers are
+# started and returning 200 on the `/health` endpoint.
+HEALTHCHECK --interval=5s --timeout=3s \
+    CMD curl -f http://localhost:8080/health || exit 1
+
+RUN rm -rf /var/lib/apt/lists/*; \
+    apt-get clean;

@@ -1,0 +1,15 @@
+# Defines services needed to run the Justice Counts Control Panel app (on top of shared services already in docker-compose.yaml)
+# Run via `docker-compose -f docker-compose.yaml -f docker-compose.prototypes.yaml up`
+
+version: "3"
+
+services:
+  prototypes_backend:
+    image: us-central1-docker.pkg.dev/recidiviz-staging/prototypes/main:latest
+    volumes:
+      - "./recidiviz:/app/recidiviz/"
+      - "~/.config:/root/.config" # use user's credentials to access GCP APIs
+    ports:
+      - "8080:8080"
+    command: pipenv run hypercorn recidiviz.prototypes.app:app --bind 0.0.0.0:8080
+    working_dir: /app
