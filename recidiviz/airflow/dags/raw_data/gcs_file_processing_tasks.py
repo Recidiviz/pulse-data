@@ -31,6 +31,9 @@ from recidiviz.airflow.dags.operators.recidiviz_kubernetes_pod_operator import (
 from recidiviz.cloud_storage.gcs_file_system import GCSFileSystem
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
+from recidiviz.entrypoints.raw_data.divide_raw_file_into_chunks import (
+    FILE_LIST_DELIMITER,
+)
 from recidiviz.entrypoints.raw_data.normalize_raw_file_chunks import (
     FILE_CHUNK_LIST_DELIMITER,
 )
@@ -40,6 +43,7 @@ from recidiviz.ingest.direct.types.raw_data_import_types import (
     MappedBatchedTaskOutput,
     NormalizedCsvChunkResult,
     RawFileProcessingError,
+    RequiresNormalizationFile,
     RequiresPreImportNormalizationFile,
     RequiresPreImportNormalizationFileChunk,
 )
@@ -49,51 +53,80 @@ MAX_THREADS = 16  # TODO(#29946) determine reasonable default
 
 
 @task
-def create_file_batches(file_paths: List[str], num_batches: int) -> List[List[str]]:
-    fs = GcsfsFactory.build()
-    return batch_files_by_size(fs, file_paths, num_batches)
-
-
-def batch_files_by_size(
-    fs: GCSFileSystem, file_paths: List[str], num_batches: int
+def generate_file_chunking_pod_arguments(
+    state_code: str, requires_normalization_files: List[str], num_batches: int
 ) -> List[List[str]]:
+    return [
+        [
+            *ENTRYPOINT_ARGUMENTS,
+            "--entrypoint=RawDataFileChunkingEntrypoint",
+            f"--state_code={state_code}",
+            f"--requires_normalization_files={FILE_LIST_DELIMITER.join(batch)}",
+        ]
+        for batch in create_file_batches(requires_normalization_files, num_batches)
+    ]
+
+
+def create_file_batches(
+    requires_normalization_files: List[str], num_batches: int
+) -> List[List[str]]:
+    fs = GcsfsFactory.build()
+    deserialized_files = [
+        RequiresNormalizationFile.deserialize(f) for f in requires_normalization_files
+    ]
+
+    batches = _batch_files_by_size(fs, deserialized_files, num_batches)
+    serialized_batches = [[f.serialize() for f in batch] for batch in batches]
+
+    return serialized_batches
+
+
+def _batch_files_by_size(
+    fs: GCSFileSystem,
+    requires_normalization_files: List[RequiresNormalizationFile],
+    num_batches: int,
+) -> List[List[RequiresNormalizationFile]]:
     """Divide files into batches with approximately equal cumulative size"""
     # If get_file_size returns None, set size to 0 and don't worry about sorting correctly
     # If the file doesn't exist we'll return an error downstream
-    files_with_sizes = _get_files_with_sizes_concurrently(fs, file_paths)
+    files_with_sizes = _get_files_with_sizes_concurrently(
+        fs, requires_normalization_files
+    )
     files_with_sizes.sort(key=lambda x: x[1], reverse=True)
 
-    num_batches = len(file_paths) if len(file_paths) < num_batches else num_batches
-    batches: List[List[str]] = [[] for _ in range(num_batches)]
+    num_batches = min(len(requires_normalization_files), num_batches)
+    batches: List[List[RequiresNormalizationFile]] = [[] for _ in range(num_batches)]
     heap = [(0, batch_index) for batch_index in range(num_batches)]
     heapq.heapify(heap)
 
-    for file_path, file_size in files_with_sizes:
+    for requires_normalization_file, file_size in files_with_sizes:
         batch_size, batch_index = heapq.heappop(heap)
-        batches[batch_index].append(file_path)
+        batches[batch_index].append(requires_normalization_file)
         heapq.heappush(heap, (batch_size + file_size, batch_index))
 
     return batches
 
 
 def _get_files_with_sizes_concurrently(
-    fs: GCSFileSystem, file_paths: List[str]
-) -> List[Tuple[str, int]]:
-    files_with_sizes: List[Tuple[str, int]] = []
+    fs: GCSFileSystem, requires_normalization_files: List[RequiresNormalizationFile]
+) -> List[Tuple[RequiresNormalizationFile, int]]:
+    files_with_sizes: List[Tuple[RequiresNormalizationFile, int]] = []
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=MAX_THREADS) as executor:
         future_to_file_path = {
-            executor.submit(_get_file_size, fs, file_path): file_path
-            for file_path in file_paths
+            executor.submit(
+                _get_file_size, fs, requires_normalization_file.path
+            ): requires_normalization_file
+            for requires_normalization_file in requires_normalization_files
         }
 
         for future in concurrent.futures.as_completed(future_to_file_path):
-            file_path = future_to_file_path[future]
+            requires_normalization_file = future_to_file_path[future]
             try:
                 size = future.result()
-                files_with_sizes.append((file_path, size))
+                files_with_sizes.append((requires_normalization_file, size))
             except Exception:
-                files_with_sizes.append((file_path, 0))
+                files_with_sizes.append((requires_normalization_file, 0))
 
     return files_with_sizes
 

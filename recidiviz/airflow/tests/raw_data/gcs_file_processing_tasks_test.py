@@ -17,20 +17,23 @@
 """Unit tests for gcs file processing tasks"""
 import base64
 import unittest
-from typing import ClassVar, List
+from typing import ClassVar, List, Optional
 from unittest.mock import MagicMock, patch
 
 import google_crc32c
 
 from recidiviz.airflow.dags.raw_data.gcs_file_processing_tasks import (
-    batch_files_by_size,
     create_chunk_batches,
+    create_file_batches,
     regroup_normalized_file_chunks,
     verify_file_checksums_and_build_import_ready_file,
 )
 from recidiviz.cloud_storage.gcsfs_csv_chunk_boundary_finder import CsvChunkBoundary
+from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.ingest.direct.types.raw_data_import_types import (
     NormalizedCsvChunkResult,
+    PreImportNormalizationType,
+    RequiresNormalizationFile,
     RequiresPreImportNormalizationFile,
 )
 
@@ -38,74 +41,113 @@ from recidiviz.ingest.direct.types.raw_data_import_types import (
 class TestCreateFileBatches(unittest.TestCase):
     """Tests for file batching"""
 
-    file_paths: ClassVar[List[str]]
+    requires_normalization_files: ClassVar[List[str]]
     file_sizes: ClassVar[List[int]]
     fs: ClassVar[MagicMock]
 
+    @staticmethod
+    def _get_serialized_file(file_num: int) -> str:
+        return RequiresNormalizationFile(
+            path=f"test/file{file_num}",
+            normalization_type=PreImportNormalizationType.ENCODING_UPDATE_ONLY,
+        ).serialize()
+
     @classmethod
     def setUpClass(cls) -> None:
-        cls.file_paths = [
-            "test_bucket/file1",
-            "test_bucket/file2",
-            "test_bucket/file3",
-            "test_bucket/file4",
-            "test_bucket/file5",
+        cls.requires_normalization_files = [
+            cls._get_serialized_file(file_num=1),
+            cls._get_serialized_file(file_num=2),
+            cls._get_serialized_file(file_num=3),
+            cls._get_serialized_file(file_num=4),
+            cls._get_serialized_file(file_num=5),
         ]
-        cls.file_sizes = [100, 200, 300, 400, 500]
 
         cls.fs = MagicMock()
-        cls.fs.get_file_size.side_effect = lambda x: cls.file_sizes[
-            cls.file_paths.index(x.abs_path())
-        ]
+        # Hackily assign size by using the last character (containing file_num) in the file path
+        cls.fs.get_file_size.side_effect = lambda x: int(x.abs_path()[-1])
+        fs_patcher = patch(
+            "recidiviz.airflow.dags.raw_data.gcs_file_processing_tasks.GcsfsFactory.build",
+            return_value=cls.fs,
+        ).start()
+        cls.addClassCleanup(fs_patcher.stop)
 
     def test_three_batches(self) -> None:
         num_batches = 3
         expected_batches = [
-            ["test_bucket/file5"],
-            ["test_bucket/file4", "test_bucket/file1"],
-            ["test_bucket/file3", "test_bucket/file2"],
+            [self._get_serialized_file(file_num=5)],
+            [
+                self._get_serialized_file(file_num=4),
+                self._get_serialized_file(file_num=1),
+            ],
+            [
+                self._get_serialized_file(file_num=3),
+                self._get_serialized_file(file_num=2),
+            ],
         ]
-        batches = batch_files_by_size(self.fs, self.file_paths, num_batches)
+        batches = create_file_batches(self.requires_normalization_files, num_batches)
         self.assertEqual(batches, expected_batches)
 
     def test_two_batches(self) -> None:
         num_batches = 2
         expected_batches = [
-            ["test_bucket/file5", "test_bucket/file2", "test_bucket/file1"],
-            ["test_bucket/file4", "test_bucket/file3"],
+            [
+                self._get_serialized_file(file_num=5),
+                self._get_serialized_file(file_num=2),
+                self._get_serialized_file(file_num=1),
+            ],
+            [
+                self._get_serialized_file(file_num=4),
+                self._get_serialized_file(file_num=3),
+            ],
         ]
-        batches = batch_files_by_size(self.fs, self.file_paths, num_batches)
+        batches = create_file_batches(self.requires_normalization_files, num_batches)
         self.assertEqual(batches, expected_batches)
 
     def test_fewer_files_than_batches(self) -> None:
         num_batches = 6
         expected_batches = [
-            ["test_bucket/file5"],
-            ["test_bucket/file4"],
-            ["test_bucket/file3"],
-            ["test_bucket/file2"],
-            ["test_bucket/file1"],
+            [self._get_serialized_file(file_num=5)],
+            [self._get_serialized_file(file_num=4)],
+            [self._get_serialized_file(file_num=3)],
+            [self._get_serialized_file(file_num=2)],
+            [self._get_serialized_file(file_num=1)],
         ]
-        batches = batch_files_by_size(self.fs, self.file_paths, num_batches)
+        batches = create_file_batches(self.requires_normalization_files, num_batches)
         self.assertEqual(batches, expected_batches)
 
     def test_no_files(self) -> None:
-        batches = batch_files_by_size(self.fs, [], 3)
+        batches = create_file_batches([], 3)
         self.assertEqual(batches, [])
 
     def test_file_size_not_found(self) -> None:
-        num_batches = 2
-        # file3 returns None for size so it's size is treated as 0
-        file_sizes = [100, 200, None, 400, 500]
+        def side_effect(file_path: GcsfsFilePath) -> Optional[int]:
+            # file3 returns None for size so it's size is treated as 0
+            if file_path.abs_path() == "test/file3":
+                return None
+            return int(file_path.abs_path()[-1])
+
         fs = MagicMock()
-        fs.get_file_size.side_effect = lambda x: file_sizes[
-            self.file_paths.index(x.abs_path())
-        ]
+        fs.get_file_size.side_effect = side_effect
+
+        num_batches = 2
         expected_batches = [
-            ["test_bucket/file5", "test_bucket/file1", "test_bucket/file3"],
-            ["test_bucket/file4", "test_bucket/file2"],
+            [
+                self._get_serialized_file(file_num=5),
+                self._get_serialized_file(file_num=1),
+                self._get_serialized_file(file_num=3),
+            ],
+            [
+                self._get_serialized_file(file_num=4),
+                self._get_serialized_file(file_num=2),
+            ],
         ]
-        batches = batch_files_by_size(fs, self.file_paths, num_batches)
+        with patch(
+            "recidiviz.airflow.dags.raw_data.gcs_file_processing_tasks.GcsfsFactory.build",
+            return_value=fs,
+        ):
+            batches = create_file_batches(
+                self.requires_normalization_files, num_batches
+            )
         self.assertEqual(batches, expected_batches)
 
 
@@ -117,7 +159,7 @@ class TestCreateChunkBatches(unittest.TestCase):
             RequiresPreImportNormalizationFile(
                 path=f"test/path_{i}.csv",
                 chunk_boundaries=self._generate_chunk_boundaries(count=4),
-                normalization_type=None,
+                normalization_type=PreImportNormalizationType.ENCODING_UPDATE_ONLY,
                 headers=["ID", "Name", "Age"],
             )
             for i in range(5)
@@ -133,7 +175,7 @@ class TestCreateChunkBatches(unittest.TestCase):
             RequiresPreImportNormalizationFile(
                 path=f"test/path_{i}.csv",
                 chunk_boundaries=self._generate_chunk_boundaries(count=3),
-                normalization_type=None,
+                normalization_type=PreImportNormalizationType.ENCODING_UPDATE_ONLY,
                 headers=["ID", "Name", "Age"],
             )
             for i in range(5)
@@ -150,7 +192,7 @@ class TestCreateChunkBatches(unittest.TestCase):
             RequiresPreImportNormalizationFile(
                 path=f"test/path_{i}.csv",
                 chunk_boundaries=self._generate_chunk_boundaries(count=3),
-                normalization_type=None,
+                normalization_type=PreImportNormalizationType.ENCODING_UPDATE_ONLY,
                 headers=["ID", "Name", "Age"],
             )
             for i in range(2)
