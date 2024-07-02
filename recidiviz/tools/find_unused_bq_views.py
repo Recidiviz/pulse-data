@@ -46,7 +46,6 @@ from recidiviz.calculator.query.externally_shared_views.dataset_config import (
     EXTERNALLY_SHARED_VIEWS_DATASET,
 )
 from recidiviz.calculator.query.state.dataset_config import (
-    ANALYST_VIEWS_DATASET,
     DATAFLOW_METRICS_MATERIALIZED_DATASET,
     POPULATION_PROJECTION_DATASET,
     SPARK_OUTPUT_DATASET_MOST_RECENT,
@@ -346,10 +345,6 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
     MILESTONES_FUNNEL_VIEW_BUILDER.address: (
         "Will be referenced to support Workflows Milestones Impact Tracking (see #28874) (Michelle Orden 5/22/24)"
     ),
-    BigQueryAddress(
-        dataset_id=ANALYST_VIEWS_DATASET,
-        table_id="workflows_user_signups",
-    ): ("Will be referenced in PR #30990 that adds workflows user registration spans."),
 }
 
 DATASETS_REFERENCED_BY_MISC_PROCESSES = {

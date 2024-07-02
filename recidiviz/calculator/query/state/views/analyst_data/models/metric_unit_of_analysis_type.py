@@ -313,7 +313,13 @@ WHERE "SUPERVISION_OFFICER" IN UNNEST(role_type_array)
     (
         MetricUnitOfObservationType.WORKFLOWS_USER,
         MetricUnitOfAnalysisType.STATE_CODE,
-    ): """SELECT * FROM `{project_id}.analyst_data.workflows_user_caseload_access_sessions_materialized`""",
+    ): """SELECT
+    state_code,
+    workflows_user_email_address AS email_address,
+    workflows_signup_date AS start_date,
+    CAST(NULL AS DATE) end_date_exclusive, 
+FROM
+    `{project_id}.analyst_data.workflows_user_signups_materialized`""",
 }
 
 UNIT_OF_ANALYSIS_STATIC_ATTRIBUTE_COLS_QUERY_DICT: Dict[
