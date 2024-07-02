@@ -1407,7 +1407,7 @@ def get_api_blueprint(
                 bucket_name=bucket_name,
                 system=system,
                 agency=agency,
-                filename=file_name,
+                file_name=file_name,
                 metric_definitions=metric_definitions,
                 upload_method=UploadMethod.AUTOMATED_BULK_UPLOAD,
             )
@@ -1563,6 +1563,7 @@ def get_api_blueprint(
                 spreadsheet=spreadsheet,
                 auth0_user_id=auth0_user_id,
                 file=file,
+                file_name=file.filename,  # type: ignore[arg-type]
                 agency=agency,
                 metric_key_to_metric_interface=metric_key_to_metric_interface,
                 metric_definitions=metric_definitions,
