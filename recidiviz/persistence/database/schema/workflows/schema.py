@@ -26,7 +26,7 @@ from sqlalchemy import (
     Integer,
     String,
 )
-from sqlalchemy.dialects.postgresql import ARRAY, JSONB
+from sqlalchemy.dialects.postgresql import ARRAY, JSON
 from sqlalchemy.orm import DeclarativeMeta, declarative_base
 
 from recidiviz.persistence.database.database_entity import DatabaseEntity
@@ -109,11 +109,11 @@ class OpportunityConfiguration(WorkflowsBase):
     initial_header = Column(String, nullable=True)
 
     # Map from code to description for denial reasons
-    denial_reasons = Column(JSONB, nullable=False, server_default="{}")
+    denial_reasons = Column(JSON, nullable=False, server_default="{}")
 
     # Templatized copy to show for eligibility criteria
-    eligible_criteria_copy = Column(JSONB, nullable=False, server_default="{}")
-    ineligible_criteria_copy = Column(JSONB, nullable=False, server_default="{}")
+    eligible_criteria_copy = Column(JSON, nullable=False, server_default="{}")
+    ineligible_criteria_copy = Column(JSON, nullable=False, server_default="{}")
 
     # Text shown when results are found
     dynamic_eligibility_text = Column(String, nullable=False)
@@ -134,13 +134,13 @@ class OpportunityConfiguration(WorkflowsBase):
     denial_text = Column(String, nullable=True)
 
     # Configuration blob for the snooze feature
-    snooze = Column(JSONB, nullable=True)
+    snooze = Column(JSON, nullable=True)
 
     # Sidebar components to display
     sidebar_components = Column(ARRAY(String), nullable=False, server_default="{}")
 
     # Configuration blob for eligibility tab groups
-    tab_groups = Column(JSONB, nullable=True)
+    tab_groups = Column(JSON, nullable=True)
 
     # Configuration blob for person sorting
-    compare_by = Column(JSONB, nullable=True)
+    compare_by = Column(JSON, nullable=True)
