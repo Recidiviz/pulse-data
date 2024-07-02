@@ -60,10 +60,10 @@ _OUTLIERS_BACKEND_CONFIGS_BY_STATE: Dict[StateCode, OutliersBackendConfig] = {
                 event_name="incarcerations",
                 event_name_singular="incarceration",
                 event_name_past_tense="were incarcerated",
-                description_markdown="""The numerator is all reported incarcerations from this officer's caseload for the given time period.
+                description_markdown="""The numerator represents the number of transitions to incarceration from supervision in the given time period, regardless of whether the final decision was a revocation or sanction admission. A client is considered to be in a period of incarceration if their location during that time is within a correctional facility or county jail, or if their supervision level at the time indicates an ICE detainer or federal custody. We exclude incarcerations for which the most serious violation was an absconsion, because we count absconsion violations separately, as outlined below. We associate violations with incarcerations by looking for the most severe violation between two years before and 14 days after the incarceration period started. Client location is pulled from the transfer records in Atlas.
 
 <br />
-The denominator is the average daily caseload for the officer over the given time period.""",
+The denominator is the average daily caseload for the officer over the given time period. Clients on Unsupervised/Court Probation or clients who are supervised out of state with respect to an Interstate Compact are excluded from an officer's active caseload.""",
             ),
             OutliersMetricConfig.build_from_metric(
                 metric=VIOLATIONS_ABSCONSION,
@@ -72,10 +72,10 @@ The denominator is the average daily caseload for the officer over the given tim
                 event_name="absconsions",
                 event_name_singular="absconsion",
                 event_name_past_tense="absconded",
-                description_markdown="""The numerator is all reported absconsions for the given time period, including multiple absconsions for the same client.
+                description_markdown="""The numerator represents the number of all reported absconsion violations in the given time period, which could include multiple absconsion violations for the same client. Absconsion violations are calculated based on the number of Violation Surveys entered into Atlas with “Absconding” selected as one of its violation types. The time period of each absconsion violation is determined using the date the Violation Survey was completed. If the absconsion violation is filed after the incarceration event, neither the violation nor the incarceration event will be included in our metrics.
 
 <br />
-The denominator is the average daily caseload for the officer over the given time period.""",
+The denominator is the average daily caseload for the officer over the given time period. Clients on Unsupervised/Court Probation or clients who are supervised out of state with respect to an Interstate Compact are excluded from an officer's active caseload.""",
             ),
         ],
         supervision_officer_metric_exclusions="""
