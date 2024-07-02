@@ -24,6 +24,7 @@ from recidiviz.calculator.query.bq_utils import (
 )
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.calculator.query.state.dataset_config import (
+    ANALYST_VIEWS_DATASET,
     NORMALIZED_STATE_DATASET,
     SESSIONS_DATASET,
 )
@@ -67,18 +68,25 @@ def scc_form(
     ):
         reasons_blob = "latest_scc_review_date"
         criteria_name = "US_MI_PAST_SECURITY_CLASSIFICATION_COMMITTEE_REVIEW_DATE"
+        task_name_upper = "COMPLETE_SECURITY_CLASSIFICATION_COMMITTEE_REVIEW_FORM"
     elif (
         task_name
         == "complete_warden_in_person_security_classification_committee_review_form_materialized"
     ):
         reasons_blob = "latest_warden_in_person_scc_review_date"
         criteria_name = "US_MI_PAST_WARDEN_IN_PERSON_REVIEW_FOR_SCC_DATE"
+        task_name_upper = (
+            "COMPLETE_WARDEN_IN_PERSON_SECURITY_CLASSIFICATION_COMMITTEE_REVIEW_FORM"
+        )
     elif (
         task_name
         == "complete_add_in_person_security_classification_committee_review_form_materialized"
     ):
         reasons_blob = "latest_add_in_person_scc_review_date"
         criteria_name = "US_MI_PAST_ADD_IN_PERSON_REVIEW_FOR_SCC_DATE"
+        task_name_upper = (
+            "COMPLETE_ADD_IN_PERSON_SECURITY_CLASSIFICATION_COMMITTEE_REVIEW_FORM"
+        )
     else:
         raise ValueError("Incorrect input for task_name")
 
@@ -229,35 +237,36 @@ GROUP BY person_id
     UNION ALL
 
     -- ALMOST ELIGIBLE (x days from upcoming scc review regardless of the criteria)
-    SELECT
-        pei.external_id,
-        tes.person_id,
-        tes.state_code,
-        --pull reasons blob from the upcoming eligible span 
-        tes.next_reasons AS reasons,
-        tes.ineligible_criteria,
-        tes.is_eligible,
-        tes.start_date,
-    FROM (
-        SELECT 
-            c.*,
-            LEAD(is_eligible) OVER (PARTITION BY person_id ORDER BY start_date) AS next_eligibility,
-            LEAD(start_date) OVER (PARTITION BY person_id ORDER BY start_date) AS next_start_date,
-            LEAD(reasons) OVER (PARTITION BY person_id ORDER BY start_date) AS next_reasons,
+        SELECT
+            pei.external_id,
+            c.person_id,
+            c.state_code,
+            --pull reasons blob from the upcoming eligible span 
+            t.reasons AS reasons,
+            --pull ineligible criteria from current span
+            cp.ineligible_criteria,
+            c.is_eligible,
+            c.start_date,
         FROM 
-            `{{project_id}}.{{task_eligibility_dataset}}.{task_name}` c
-        ) AS tes
+            `{{project_id}}.{{analyst_dataset}}.all_task_eligibility_spans_materialized` c
+        INNER JOIN  `{{project_id}}.{{task_eligibility_dataset}}.{task_name}` t
+          ON t.person_id = c.person_id
+          --since all_task_eligibility_spans is sessionized over eligibility, if NOT c.is_eligible then t.is_eligible
+          AND c.end_date = t.start_date
+          AND c.task_name = '{task_name_upper}'
+          --find spans where the resident is not currently eligible but their next span is
+          AND t.is_eligible
+          AND NOT c.is_eligible
+          AND CURRENT_DATE('US/Eastern') BETWEEN c.start_date AND {nonnull_end_date_exclusive_clause('c.end_date')}
+        INNER JOIN current_population cp
+            ON cp.person_id = c.person_id 
         LEFT JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
-            ON pei.person_id = tes.person_id 
+            ON pei.person_id = c.person_id 
             AND pei.id_type = 'US_MI_DOC' 
         WHERE 
-           CURRENT_DATE('US/Eastern') BETWEEN tes.start_date AND 
-                                         {nonnull_end_date_exclusive_clause('tes.end_date')}
-            AND tes.state_code = 'US_MI'
+            c.state_code = 'US_MI'
             --select spans of time where someone is currently not eligible, but will be within the next x days
-            AND next_eligibility
-            AND NOT is_eligible
-            AND DATE_DIFF(next_start_date, CURRENT_DATE("US/Eastern"), DAY) BETWEEN 0 AND {almost_eligible_days}
+            AND DATE_DIFF(t.start_date, CURRENT_DATE("US/Eastern"), DAY) BETWEEN 0 AND {almost_eligible_days}
 ),
 reasons_for_eligibility AS (
 /* Queries the reasons for eligibility from the currently eligible or upcoming eligible span */
@@ -385,6 +394,7 @@ LEFT JOIN temp_opt_stg_information temp
         description=description,
         normalized_state_dataset=NORMALIZED_STATE_DATASET,
         sessions_dataset=SESSIONS_DATASET,
+        analyst_dataset=ANALYST_VIEWS_DATASET,
         task_eligibility_dataset=task_eligibility_spans_state_specific_dataset(
             StateCode.US_MI
         ),
