@@ -1372,15 +1372,30 @@ def custom_metrics_view_query_template(
     view_name: str,
     unit_of_observation: MetricUnitOfObservation,
     json_field_filters: List[str],
+    include_column_mapping: bool = True,
 ) -> str:
-    """Returns query template that unions together all LookML view dependencies to generate a custom metrics table"""
+    """Returns query template that unions together all LookML view dependencies to generate a custom metrics table.
+    `include_column_mapping` indicates whether we want to pull index columns into the final query template.
+    """
 
     assignments_and_attributes_view = (
         f"${{person_assignments_with_attributes_{view_name}.SQL_TABLE_NAME}}"
         if MetricUnitOfObservationType.PERSON_ID
         else f"${{{unit_of_observation.type.short_name}_assignments_with_attributes_{view_name}.SQL_TABLE_NAME}}"
     )
-    field_filters_query_fragment = list_to_query_string(json_field_filters)
+    field_filters_query_fragment = (
+        ", " + list_to_query_string(json_field_filters)
+        if len(json_field_filters) > 0
+        else ""
+    )
+
+    first_join_fragment = "period_span_metrics"
+    if include_column_mapping:
+        first_join_fragment = """column_mapping
+    INNER JOIN
+        period_span_metrics
+    USING
+        (state_code, unit_of_analysis, all_attributes)"""
 
     derived_table_query = f"""
     WITH time_period_cte AS (
@@ -1461,23 +1476,19 @@ def custom_metrics_view_query_template(
         DATE_DIFF(end_date, start_date, DAY) AS days_in_period,
         {{% endif %}}
     FROM
-        column_mapping
-    INNER JOIN
-        period_span_metrics
-    USING
-        (state_code, unit_of_analysis, all_attributes)
+        {first_join_fragment}
     LEFT JOIN
         period_event_metrics
     USING
-        (state_code, unit_of_analysis, all_attributes, period, start_date, end_date, {field_filters_query_fragment})
+        (state_code, unit_of_analysis, all_attributes, period, start_date, end_date{field_filters_query_fragment})
     LEFT JOIN
         assignment_span_metrics
     USING
-        (state_code, unit_of_analysis, all_attributes, period, start_date, end_date, {field_filters_query_fragment})
+        (state_code, unit_of_analysis, all_attributes, period, start_date, end_date{field_filters_query_fragment})
     LEFT JOIN
         assignment_event_metrics
     USING
-        (state_code, unit_of_analysis, all_attributes, period, start_date, end_date, {field_filters_query_fragment})
+        (state_code, unit_of_analysis, all_attributes, period, start_date, end_date{field_filters_query_fragment})
 """
     return derived_table_query
 
@@ -1507,9 +1518,18 @@ def generate_custom_metrics_view(
                     unit_of_observation
                 ],
                 json_field_filters=json_field_filters,
+                # Only include full index column mappings for the first unit of observation cte
+                # to avoid having duplicate index columns in the final query
+                include_column_mapping=(
+                    unit_of_observation == unit_of_observation_types[0]
+                ),
             )
         ]
-    field_filters_query_fragment = list_to_query_string(json_field_filters)
+    field_filters_query_fragment = (
+        ", " + list_to_query_string(json_field_filters)
+        if len(json_field_filters) > 0
+        else ""
+    )
 
     derived_table_query = f"""
 SELECT *
@@ -1520,7 +1540,7 @@ FROM ({derived_table_subqueries[0]})
             [
                 f"""FULL OUTER JOIN
 ({subquery})
-USING (state_code, unit_of_analysis, all_attributes, period, start_date, end_date, days_in_period, {field_filters_query_fragment})
+USING (state_code, unit_of_analysis, all_attributes, period, start_date, end_date, days_in_period{field_filters_query_fragment})
 """
                 for subquery in derived_table_subqueries[1:]
             ]
