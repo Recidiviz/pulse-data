@@ -18,6 +18,10 @@
 
 from typing import List
 
+from recidiviz.aggregated_metrics.models.aggregated_metric_configurations import (
+    DEDUPED_TASK_COMPLETION_EVENT_VB,
+)
+from recidiviz.calculator.query.bq_utils import list_to_query_string
 from recidiviz.calculator.query.state.views.analyst_data.models.span_query_builder import (
     SpanQueryBuilder,
 )
@@ -50,6 +54,11 @@ from recidiviz.calculator.query.state.views.sessions.person_demographics import 
 )
 from recidiviz.calculator.query.state.views.sessions.supervision_officer_sessions import (
     SUPERVISION_OFFICER_SESSIONS_VIEW_BUILDER,
+)
+
+DEDUPED_TASK_COMPLETION_EVENT_VB_QUERY_FRAGMENT = list_to_query_string(
+    sorted([event.task_type_name for event in DEDUPED_TASK_COMPLETION_EVENT_VB]),
+    quoted=True,
 )
 
 SPANS: List[SpanQueryBuilder] = [
@@ -417,6 +426,23 @@ USING
         attribute_cols=["points", "has_points"],
         span_start_date_col="start_date",
         span_end_date_col="end_date",
+    ),
+    SpanQueryBuilder(
+        span_type=SpanType.WORKFLOWS_USER_REGISTRATION_SESSION,
+        description="Spans of time over which a workflows user is a registered user of the workflows tool",
+        sql_source=f"""
+SELECT
+    *,
+    workflows_user_email_address AS email_address,
+    CAST(NULL AS DATE) AS end_date_exclusive,
+FROM `{{project_id}}.analyst_data.workflows_user_signups_materialized`,
+# Unnest all supported task types so that user registration can be associated with all task types
+#TODO(#31097): Restrict task type unnest to tasks available in a state_code
+UNNEST([{DEDUPED_TASK_COMPLETION_EVENT_VB_QUERY_FRAGMENT}]) AS task_type
+""",
+        attribute_cols=["task_type"],
+        span_start_date_col="workflows_signup_date",
+        span_end_date_col="end_date_exclusive",
     ),
 ]
 

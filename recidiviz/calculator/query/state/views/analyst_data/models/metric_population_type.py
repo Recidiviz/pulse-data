@@ -72,8 +72,8 @@ POPULATION_TYPE_TO_SPAN_SELECTOR_LIST: Dict[
             },
         ),
         SpanSelector(
-            span_type=SpanType.WORKFLOWS_USER_CASELOAD_ACCESS_SESSION,
-            span_conditions_dict={"has_facilities_workflows": ["true"]},
+            span_type=SpanType.WORKFLOWS_USER_REGISTRATION_SESSION,
+            span_conditions_dict={},
         ),
     ],
     MetricPopulationType.SUPERVISION: [
@@ -95,8 +95,8 @@ POPULATION_TYPE_TO_SPAN_SELECTOR_LIST: Dict[
             span_conditions_dict={},
         ),
         SpanSelector(
-            span_type=SpanType.WORKFLOWS_USER_CASELOAD_ACCESS_SESSION,
-            span_conditions_dict={"has_supervision_workflows": ["true"]},
+            span_type=SpanType.WORKFLOWS_USER_REGISTRATION_SESSION,
+            span_conditions_dict={},
         ),
     ],
     MetricPopulationType.JUSTICE_INVOLVED: [
@@ -121,7 +121,7 @@ POPULATION_TYPE_TO_SPAN_SELECTOR_LIST: Dict[
             },
         ),
         SpanSelector(
-            span_type=SpanType.WORKFLOWS_USER_CASELOAD_ACCESS_SESSION,
+            span_type=SpanType.WORKFLOWS_USER_REGISTRATION_SESSION,
             span_conditions_dict={},
         ),
     ],
