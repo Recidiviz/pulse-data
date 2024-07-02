@@ -87,7 +87,7 @@ class SpreadsheetInterface:
         session: Session,
         system: schema.System,
         agency_id: int,
-        filename: str,
+        file_name: str,
         auth0_user_id: Optional[str] = None,
     ) -> schema.Spreadsheet:
         uploaded_at = datetime.datetime.now(tz=datetime.timezone.utc)
@@ -95,7 +95,7 @@ class SpreadsheetInterface:
             f"{str(agency_id)}:{system.value}:{uploaded_at.timestamp()}.xlsx"
         )
         spreadsheet = schema.Spreadsheet(
-            original_name=os.path.basename(filename) if filename is not None else "",
+            original_name=os.path.basename(file_name) if file_name is not None else "",
             standardized_name=standardized_name,
             agency_id=agency_id,
             system=system,
@@ -121,7 +121,7 @@ class SpreadsheetInterface:
             system=schema.System[system],
             agency_id=agency_id,
             auth0_user_id=auth0_user_id,
-            filename=file_storage.filename or "",
+            file_name=file_storage.filename or "",
         )
         fs.upload_from_contents_handle_stream(
             path=SpreadsheetInterface.get_spreadsheet_path(spreadsheet=spreadsheet),
@@ -244,6 +244,7 @@ class SpreadsheetInterface:
         agency: schema.Agency,
         upload_method: UploadMethod,
         file: Any,
+        file_name: str,
         auth0_user_id: Optional[str] = None,
     ) -> BulkUploadResult:
         """
@@ -262,7 +263,7 @@ class SpreadsheetInterface:
             system=spreadsheet.system, agency=agency, session=session
         )
 
-        if workbook_standardizer.validate_file_name(file_name=file.filename) is False:
+        if workbook_standardizer.validate_file_name(file_name=file_name) is False:
             SpreadsheetInterface.log_errors_and_update_spreadsheet_status(
                 spreadsheet=spreadsheet,
                 agency_id=agency.id,
@@ -278,7 +279,7 @@ class SpreadsheetInterface:
             file_name,
             upload_filetype,
         ) = workbook_standardizer.convert_file_to_pandas_excel_file(
-            file=file, file_name=file.filename  # type: ignore[arg-type]
+            file=file, file_name=file_name
         )
 
         uploader = WorkbookUploader(
@@ -524,7 +525,7 @@ class SpreadsheetInterface:
         bucket_name: str,
         system: schema.System,
         agency: schema.Agency,
-        filename: str,
+        file_name: str,
         metric_definitions: List[MetricDefinition],
         upload_method: UploadMethod,
     ) -> BulkUploadResult:
@@ -538,10 +539,10 @@ class SpreadsheetInterface:
             session=session,
             system=system,
             agency_id=agency.id,
-            filename=filename,
+            file_name=file_name,
         )
 
-        source_path = GcsfsFilePath.from_absolute_path(f"{bucket_name}/{filename}")
+        source_path = GcsfsFilePath.from_absolute_path(f"{bucket_name}/{file_name}")
         destination_path = SpreadsheetInterface.get_spreadsheet_path(
             spreadsheet=spreadsheet
         )
@@ -570,6 +571,7 @@ class SpreadsheetInterface:
             metric_definitions=metric_definitions,
             upload_method=upload_method,
             file=file_bytes,
+            file_name=file_name,
         )
 
     @staticmethod

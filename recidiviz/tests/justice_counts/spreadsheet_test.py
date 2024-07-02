@@ -79,22 +79,20 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
             update_datetime = datetime.datetime(
                 2022, 2, 1, 1, 0, 0, 0, datetime.timezone.utc
             )
-
+            file_name = "test_ingest_spreadsheet.xlsx"
             with freeze_time(update_datetime):
                 file_path = create_excel_file(
                     system=schema.System.LAW_ENFORCEMENT,
-                    file_name="test_ingest_spreadsheet.xlsx",
+                    file_name=file_name,
                 )
                 content = open(  # pylint:disable=consider-using-with
                     Path(file_path), "rb"
                 ).read()
                 file = BytesIO(content)
-                file.filename = os.path.basename(  # type: ignore[attr-defined]
-                    file_path
-                )  # Extract filename from path
                 SpreadsheetInterface.ingest_spreadsheet(
                     session=session,
                     file=file,
+                    file_name=file_name,
                     spreadsheet=spreadsheet,
                     auth0_user_id=user.auth0_user_id,
                     agency=agency,
@@ -123,21 +121,22 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
                 user_id=user.auth0_user_id,
                 agency_id=agency.id,
             )
+            file_name = "test_ingest_spreadsheet_failure.xlsx"
             session.add(spreadsheet)
             # Excel workbook will have an invalid sheet.
             file_path = create_excel_file(
                 system=schema.System.LAW_ENFORCEMENT,
-                file_name="test_ingest_spreadsheet_failure.xlsx",
+                file_name=file_name,
                 add_invalid_sheet_name=True,
             )
             content = open(  # pylint:disable=consider-using-with
                 Path(file_path), "rb"
             ).read()
             file = BytesIO(content)
-            file.filename = os.path.basename(file_path)  # type: ignore[attr-defined]
             SpreadsheetInterface.ingest_spreadsheet(
                 session=session,
                 file=file,
+                file_name=file_name,
                 spreadsheet=spreadsheet,
                 auth0_user_id=user.auth0_user_id,
                 agency=agency,
@@ -217,6 +216,7 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
                     setting_datapoint_disabled,
                 ]
             )
+            file_name = "test_get_ingest_spreadsheet_json.xlsx"
             # Excel workbook will have an invalid sheet.
             file_path = create_excel_file(
                 system=schema.System.SUPERVISION,
@@ -226,7 +226,7 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
                         schema.System.PROBATION,
                     ]
                 },
-                file_name="test_get_ingest_spreadsheet_json.xlsx",
+                file_name=file_name,
             )
             content = open(  # pylint:disable=consider-using-with
                 Path(file_path), "rb"
@@ -236,6 +236,7 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
             ingest_result = SpreadsheetInterface.ingest_spreadsheet(
                 session=session,
                 file=file,
+                file_name=file_name,  # type: ignore[arg-type]
                 spreadsheet=spreadsheet,
                 auth0_user_id=user.auth0_user_id,
                 agency=agency,
@@ -414,20 +415,20 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
             session.add(spreadsheet)
             # Excel workbook will not have any warnings or errors.
             # create_excel_file is populating the agency name with the custom_child_agency_name.
-
+            file_name = "test_custom_child_agency_name.xlsx"
             file_path = create_excel_file(
                 system=schema.System.PRISONS,
-                file_name="test_custom_child_agency_name.xlsx",
+                file_name=file_name,
                 child_agencies=[child_agency],
             )
             content = open(  # pylint:disable=consider-using-with
                 Path(file_path), "rb"
             ).read()
             file = BytesIO(content)
-            file.filename = os.path.basename(file_path)  # type: ignore[attr-defined]
             ingest_result = SpreadsheetInterface.ingest_spreadsheet(
                 session=session,
                 file=file,
+                file_name=file_name,
                 spreadsheet=spreadsheet,
                 auth0_user_id=user.auth0_user_id,
                 agency=agency,
