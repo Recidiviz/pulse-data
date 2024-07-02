@@ -18,9 +18,12 @@
 in an orientation unit. These are units that house people who have just arrived to 
 the DOC and are not yet eligible for many opportunities because of this.
 """
+from google.cloud import bigquery
+
 from recidiviz.calculator.query.bq_utils import nonnull_end_date_exclusive_clause
 from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
 from recidiviz.common.constants.states import StateCode
+from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
@@ -42,6 +45,8 @@ SELECT
     FALSE AS meets_criteria,
     TO_JSON(STRUCT(start_date AS housing_unit_start_date,
                    ANY_VALUE(housing_unit) AS housing_unit)) AS reason,
+    start_date AS housing_unit_start_date,
+    ANY_VALUE(housing_unit) AS housing_unit,
 FROM `{{project_id}}.{{sessions_dataset}}.housing_unit_sessions_materialized`
 WHERE state_code = 'US_ND'
     -- Folks on ORU in NDSP are in an orientation unit
@@ -60,6 +65,18 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
         description=_DESCRIPTION,
         sessions_dataset=SESSIONS_DATASET,
         meets_criteria_default=True,
+        reasons_fields=[
+            ReasonsField(
+                name="housing_unit_start_date",
+                type=bigquery.enums.SqlTypeNames.DATE,
+                description="#TODO(#29059): Add reasons field description",
+            ),
+            ReasonsField(
+                name="housing_unit",
+                type=bigquery.enums.SqlTypeNames.STRING,
+                description="#TODO(#29059): Add reasons field description",
+            ),
+        ],
     )
 )
 

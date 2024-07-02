@@ -101,12 +101,10 @@ class TaskCriteriaGroupBigQueryViewBuilder:
         """
         reasons_fields_by_name = defaultdict(list)
         for sub_criteria in self.sub_criteria_list:
-            # TODO(#29664): Remove this if-check once reasons_fields is non-optional
-            if sub_criteria.reasons_fields is not None:
-                for field in sub_criteria.reasons_fields:
-                    reasons_fields_by_name[field.name].append(
-                        (field, sub_criteria.criteria_name)
-                    )
+            for field in sub_criteria.reasons_fields:
+                reasons_fields_by_name[field.name].append(
+                    (field, sub_criteria.criteria_name)
+                )
 
         for field_name, fields_list in reasons_fields_by_name.items():
             if (
@@ -365,7 +363,7 @@ class InvertedTaskCriteriaBigQueryViewBuilder:
         return not self.sub_criteria.meets_criteria_default
 
     @property
-    def reasons_fields(self) -> Optional[List[ReasonsField]]:
+    def reasons_fields(self) -> List[ReasonsField]:
         """Returns the reasons fields of the inverted sub-criteria"""
         return self.sub_criteria.reasons_fields
 
@@ -431,20 +429,13 @@ class InvertedTaskCriteriaBigQueryViewBuilder:
         """Returns a query template that inverts the meets criteria values."""
         sub_criteria = self._sub_criteria_as_view_builder()
 
-        # TODO(#29664): Remove this if-check once reasons_fields is non-optional
-        if sub_criteria.reasons_fields is not None:
-            reason_columns = (
-                "\n    "
-                + ",\n    ".join(
-                    [
-                        f'{extract_object_from_json(reason.name, reason.type.value, "reason_v2")} AS {reason.name}'
-                        for reason in sub_criteria.reasons_fields
-                    ]
-                )
-                + ","
-            )
-        else:
-            reason_columns = ""
+        reason_columns = "\n    ".join(
+            [
+                f'{extract_object_from_json(reason.name, reason.type.value, "reason_v2")} AS {reason.name},'
+                for reason in sub_criteria.reasons_fields
+            ]
+        )
+
         return f"""
 SELECT
     state_code,
@@ -452,7 +443,8 @@ SELECT
     start_date,
     end_date,
     NOT meets_criteria AS meets_criteria,
-    reason,{reason_columns}
+    reason,
+{f"    {reason_columns}" if len(sub_criteria.reasons_fields) > 0 else ""}
 FROM
     `{{project_id}}.{sub_criteria.table_for_query.to_str()}`
 """

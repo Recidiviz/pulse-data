@@ -18,11 +18,14 @@
 Defines a criteria span view that shows spans of time during which
 someone is NOT within 6 months of their tentative parole date.
 """
+from google.cloud import bigquery
+
 from recidiviz.calculator.query.sessions_query_fragments import (
     create_sub_sessions_with_attributes,
 )
 from recidiviz.calculator.query.state.dataset_config import ANALYST_VIEWS_DATASET
 from recidiviz.common.constants.states import StateCode
+from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
@@ -56,6 +59,7 @@ WITH tpd AS (
       end_date,
       False AS meets_criteria,
       TO_JSON(STRUCT(MAX(tentative_parole_date) AS latest_tentative_parole_date)) AS reason,
+      MAX(tentative_parole_date) AS latest_tentative_parole_date,
     FROM sub_sessions_with_attributes
     GROUP BY 1,2,3,4
 """
@@ -68,6 +72,13 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
         analyst_dataset=ANALYST_VIEWS_DATASET,
         state_code=StateCode.US_IX,
         meets_criteria_default=True,
+        reasons_fields=[
+            ReasonsField(
+                name="latest_tentative_parole_date",
+                type=bigquery.enums.SqlTypeNames.DATE,
+                description="#TODO(#29059): Add reasons field description",
+            ),
+        ],
     )
 )
 

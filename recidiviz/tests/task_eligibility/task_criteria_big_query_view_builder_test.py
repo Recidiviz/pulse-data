@@ -45,6 +45,7 @@ class TestStateSpecificTaskCriteriaBigQueryViewBuilder(unittest.TestCase):
             criteria_spans_query_template="SELECT * FROM `{project_id}.{raw_data_dataset}.foo`;",
             description="Simple criteria description",
             raw_data_dataset="raw_data",
+            reasons_fields=[],
         )
         view = builder.build()
 
@@ -89,6 +90,7 @@ FROM
             criteria_spans_query_template="SELECT * FROM `{project_id}.{raw_data_dataset}.foo`;",
             description="Simple criteria description",
             raw_data_dataset="raw_data",
+            reasons_fields=[],
         )
         address_overrides = (
             BigQueryAddressOverrides.Builder("my_prefix")
@@ -145,6 +147,7 @@ FROM
                 criteria_spans_query_template="SELECT * FROM `{project_id}.{raw_data_dataset}.foo`;",
                 description="Simple criteria description",
                 raw_data_dataset="raw_data",
+                reasons_fields=[],
             )
 
     def test_wrong_state_prefix_on_criteria_throws(self) -> None:
@@ -159,6 +162,7 @@ FROM
                 criteria_spans_query_template="SELECT * FROM `{project_id}.{raw_data_dataset}.foo`;",
                 description="Simple criteria description",
                 raw_data_dataset="raw_data",
+                reasons_fields=[],
             )
 
     def test_lowercase_criteria_name_throws(self) -> None:
@@ -172,6 +176,7 @@ FROM
                 criteria_spans_query_template="SELECT * FROM `{project_id}.{raw_data_dataset}.foo`;",
                 description="Simple criteria description",
                 raw_data_dataset="raw_data",
+                reasons_fields=[],
             )
 
 
@@ -188,6 +193,7 @@ class TestStateAgnosticTaskCriteriaBigQueryViewBuilder(unittest.TestCase):
             criteria_spans_query_template="SELECT * FROM `{project_id}.{ingested_data_dataset}.foo`;",
             description="Simple criteria description",
             ingested_data_dataset="ingested_data",
+            reasons_fields=[],
         )
         view = builder.build()
 
@@ -230,6 +236,7 @@ FROM
             criteria_spans_query_template="SELECT * FROM `{project_id}.{ingested_data_dataset}.foo`;",
             description="Simple criteria description",
             ingested_data_dataset="ingested_data",
+            reasons_fields=[],
         )
         address_overrides = (
             BigQueryAddressOverrides.Builder("my_prefix")
@@ -283,6 +290,7 @@ FROM
                 criteria_spans_query_template="SELECT * FROM `{project_id}.{ingested_data_dataset}.foo`;",
                 description="Simple criteria description",
                 ingested_data_dataset="ingested_data",
+                reasons_fields=[],
             )
 
     def test_get_template_with_reasons_as_json_empty(self) -> None:
