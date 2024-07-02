@@ -14,16 +14,20 @@ PERMANENT:
     - file_tag: RECIDIVIZ_REFERENCE_supervisor_roster
       exclusion_reason:
         Small reference file that is updated infrequently -- small changes in file size
-        cauase large % changes
+        cause large % changes
   US_TN:
     - file_tag: Chain
       exclusion_reason:
         Small reference file that is updated infrequently -- small changes in file size
-        cauase large % changes
+        cause large % changes
     - file_tag: PhotoIDRequest
       exclusion_reason:
         Small reference file that is updated infrequently -- small changes in file size
-        cauase large % changes
+        cause large % changes
+    - file_tag: SupervisionStandard
+      exclusion_reason:
+        Small reference file that is updated infrequently -- small changes in file size
+        cause large % changes
   US_MI:
     - file_tag: RECIDIVIZ_REFERENCE_offense_exclusion_list
       exclusion_reason:
@@ -33,7 +37,7 @@ PERMANENT:
     - file_tag: RCDVZ_CISUIR_INCIDENT_LOCATION
       exclusion_reason:
         Small reference file that is updated infrequently -- small changes in file size
-        cauase large % changes. This file is also not currently used in a view.
+        cause large % changes. This file is also not currently used in a view.
 DATE_RANGE:
   US_MO:
     - file_tag: LBAKRDTA_TAK237
