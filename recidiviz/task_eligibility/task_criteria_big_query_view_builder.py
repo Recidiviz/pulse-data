@@ -17,7 +17,7 @@
 """Defines BigQueryViewBuilders that can be used to define single criteria span views.
 These views are used as inputs to a task eligibility spans view.
 """
-from typing import List, Optional, Union
+from typing import List, Union
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.sessions_query_fragments import convert_cols_to_json
@@ -26,7 +26,7 @@ from recidiviz.task_eligibility.reasons_field import ReasonsField
 
 
 def get_template_with_reasons_as_json(
-    query_template: str, reasons_fields: Optional[List[ReasonsField]] = None
+    query_template: str, reasons_fields: List[ReasonsField]
 ) -> str:
     # If no reason fields are provided, default to NULL
     reasons_query_fragment = "CAST(NULL AS JSON)"
@@ -65,8 +65,8 @@ class StateSpecificTaskCriteriaBigQueryViewBuilder(SimpleBigQueryViewBuilder):
         criteria_name: str,
         criteria_spans_query_template: str,
         description: str,
+        reasons_fields: List[ReasonsField],
         meets_criteria_default: bool = False,
-        reasons_fields: Optional[List[ReasonsField]] = None,
         # TODO(#14311): Add arguments to allow bounding the policy to specific dates
         #  and use those values in the span-collapsing logic in the
         #  SingleTaskEligibilitySpansBigQueryViewBuilder.
@@ -114,8 +114,8 @@ class StateAgnosticTaskCriteriaBigQueryViewBuilder(SimpleBigQueryViewBuilder):
         criteria_name: str,
         criteria_spans_query_template: str,
         description: str,
+        reasons_fields: List[ReasonsField],
         meets_criteria_default: bool = False,
-        reasons_fields: Optional[List[ReasonsField]] = None,
         **query_format_kwargs: str,
     ) -> None:
         if criteria_name.upper() != criteria_name:

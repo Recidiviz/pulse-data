@@ -18,9 +18,12 @@
 Describes the spans of time during which someone in ND is not in the Women's Treatment 
 and Recovery Unit (WTRU) in Bismarck Transition Center (BTC).
 """
+from google.cloud import bigquery
+
 from recidiviz.calculator.query.bq_utils import nonnull_end_date_exclusive_clause
 from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
 from recidiviz.common.constants.states import StateCode
+from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
@@ -40,6 +43,7 @@ SELECT
     DATE_SUB(end_date_exclusive, INTERVAL 1 DAY) AS end_date,
     FALSE AS meets_criteria,
     TO_JSON(STRUCT(start_date AS wtru_start_date)) AS reason,
+    start_date AS wtru_start_date,
 FROM `{{project_id}}.{{sessions_dataset}}.housing_unit_sessions_materialized`
 WHERE state_code = 'US_ND'
     AND (facility = 'BTC' AND REGEXP_CONTAINS(housing_unit, r'WTRU'))
@@ -55,6 +59,13 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
         description=_DESCRIPTION,
         sessions_dataset=SESSIONS_DATASET,
         meets_criteria_default=True,
+        reasons_fields=[
+            ReasonsField(
+                name="wtru_start_date",
+                type=bigquery.StandardSqlTypeNames.DATE,
+                description="#TODO(#29059): Add reasons field description",
+            ),
+        ],
     )
 )
 
