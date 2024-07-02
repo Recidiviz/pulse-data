@@ -61,6 +61,8 @@ class SupervisionOfficer(PersonBase, InsightsBase):
 
     __tablename__ = "supervision_officers"
 
+    email = Column(String, nullable=True)
+
     supervisor_external_id = Column(String, nullable=True)
     # List of supervisors for this officer
     supervisor_external_ids = Column(ARRAY(String), nullable=True)

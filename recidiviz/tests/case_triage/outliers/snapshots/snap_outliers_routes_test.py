@@ -196,6 +196,7 @@ snapshots[
         {
             "caseloadType": None,
             "district": "Hogwarts",
+            "email": None,
             "externalId": "123",
             "fullName": {
                 "givenNames": "Harry",
@@ -210,6 +211,7 @@ snapshots[
         {
             "caseloadType": None,
             "district": "Hogwarts",
+            "email": "officer3@corrections.pa.gov",
             "externalId": "456",
             "fullName": {
                 "givenNames": "Ron",
@@ -228,6 +230,7 @@ snapshots["TestOutliersRoutes.TestOutliersRoutes test_get_officer_not_outlier"] 
     "officer": {
         "caseloadType": None,
         "district": "Guts",
+        "email": "officer3@corrections.pa.gov",
         "externalId": "123",
         "fullName": {
             "givenNames": "Olivia",
@@ -247,6 +250,7 @@ snapshots["TestOutliersRoutes.TestOutliersRoutes test_get_officer_success"] = {
     "officer": {
         "caseloadType": None,
         "district": "Guts",
+        "email": "officer3@corrections.pa.gov",
         "externalId": "123",
         "fullName": {
             "givenNames": "Olivia",
@@ -274,6 +278,7 @@ snapshots["TestOutliersRoutes.TestOutliersRoutes test_get_officers_for_superviso
         {
             "caseloadType": None,
             "district": "Hogwarts",
+            "email": None,
             "externalId": "123",
             "fullName": {
                 "givenNames": "Harry",
@@ -300,6 +305,7 @@ snapshots["TestOutliersRoutes.TestOutliersRoutes test_get_officers_for_superviso
         {
             "caseloadType": None,
             "district": "Hogwarts",
+            "email": "officer3@corrections.pa.gov",
             "externalId": "456",
             "fullName": {
                 "givenNames": "Ron",
@@ -323,6 +329,7 @@ snapshots[
         {
             "caseloadType": None,
             "district": "Hogwarts",
+            "email": "officer3@corrections.pa.gov",
             "externalId": "123",
             "fullName": {
                 "givenNames": "Harry",
@@ -347,6 +354,7 @@ snapshots[
         {
             "caseloadType": None,
             "district": "Hogwarts",
+            "email": "officer3@corrections.pa.gov",
             "externalId": "456",
             "fullName": {
                 "givenNames": "Ron",

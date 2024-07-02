@@ -344,6 +344,8 @@ class SupervisionOfficerEntityBase:
     full_name: PersonName = attr.ib()
     # The officer's external id
     external_id: str = attr.ib()
+    # The officer's email
+    email: Optional[str] = attr.ib()
     # The officer's pseudonymized id
     pseudonymized_id: str = attr.ib()
     # The officer's supervisor's external id

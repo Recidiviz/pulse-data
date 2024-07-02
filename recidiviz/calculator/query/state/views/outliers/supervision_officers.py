@@ -54,6 +54,7 @@ SUPERVISION_OFFICERS_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
         "staff_id",
         "full_name",
         "pseudonymized_id",
+        "email",
         "supervisor_external_id",
         "supervisor_external_ids",
         "supervision_district",
