@@ -28,6 +28,7 @@ from typing import Dict, List, Type
 from recidiviz.common.constants.enum_parser import EnumParsingError
 from recidiviz.common.constants.state.state_charge import StateChargeClassificationType
 from recidiviz.common.constants.state.state_entity_enum import StateEntityEnum
+from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodCustodyLevel,
     StateIncarcerationPeriodHousingUnitCategory,
@@ -188,7 +189,6 @@ POST_JULY_2017_PFI_ENUM_MAP: Dict[
     StateSpecializedPurposeForIncarceration, List[str]
 ] = {
     StateSpecializedPurposeForIncarceration.TEMPORARY_CUSTODY: [
-        "CJ",
         "DEFP",
         "NTAD",
         # There are only a few of these, and they seem to represent judicial
@@ -204,6 +204,7 @@ POST_JULY_2017_PFI_ENUM_MAP: Dict[
         "FD",  # Federal court
     ],
     StateSpecializedPurposeForIncarceration.GENERAL: [
+        "CJ",  # All temporary CJ stays are caught before this. These are all DOCR sentences being served physically in a County Jail to avoid overcrowding.
         "BTC",
         "BTCWTR",
         "CONT",
@@ -260,6 +261,8 @@ POST_JULY_2017_PFI_RAW_TEXT_TO_ENUM_MAP: Dict[
 def _datetime_str_is_before_2017_custodial_authority_cutoff(
     datetime_str: str, enum_type_being_parsed: Type[StateEntityEnum]
 ) -> bool:
+    """A helper function to determine if a datetime is prior to or after 7/1/2017, when
+    options for custodial authority mappings changed."""
     comparison_date = parse_datetime(datetime_str)
 
     if not comparison_date:
@@ -275,6 +278,8 @@ def _datetime_str_is_before_2017_custodial_authority_cutoff(
 def custodial_authority_from_facility_and_dates(
     raw_text: str,
 ) -> StateCustodialAuthority:
+    """Parse the StateCustodialAuthority for a given stay using a combination of
+    bed assignment, facility, and date of stay."""
     bed_assignment, facility, datetime_str_for_comparison = raw_text.split("|")
     # Ensure that work release programs have StateCustodialAuthority.STATE_PRISON
     if bed_assignment in ("CJ-WRK-WAR", "CJ-WRK-STA"):
@@ -302,7 +307,28 @@ def custodial_authority_from_facility_and_dates(
 def pfi_from_facility_and_dates(
     raw_text: str,
 ) -> StateSpecializedPurposeForIncarceration:
-    facility, datetime_str_for_comparison = raw_text.split("-", maxsplit=1)
+    """
+    Parses the specialized purpose for incarceration from a combination of a person's
+    bed assignment, facility of residence, and date of incarceration.
+
+    The bed assignment is a necessary component for this
+    classification because some people are physically housed at a County Jail while serving
+    standard DOCR sentences in order to avoid overcrowding. People who are in a county jail
+    in those circumstances can be identified specifically by their bed assignments.
+
+    Otherwise, a combination of facility and date of stay is used to determine the PFI.
+    """
+    bed_assignment, facility, datetime_str_for_comparison = raw_text.split("|")
+    if (
+        bed_assignment.count("CJ-SS-") > 0
+        or bed_assignment.count("CJ-PV-") > 0
+        or bed_assignment.count("CJ-ESCAPE-") > 0
+    ):
+        # These are the only instances of a person being in county jail who has not
+        # been taken into DOCR custody. These are short sentences, parole violators, or returns
+        # from escape. These folks are typically transferred to a DOCR orientation unit eventually,
+        # but sometimes serve the entirety of their time in county jail.
+        return StateSpecializedPurposeForIncarceration.TEMPORARY_CUSTODY
 
     if facility in OTHER_STATE_FACILITY:
         return StateSpecializedPurposeForIncarceration.INTERNAL_UNKNOWN
@@ -325,6 +351,7 @@ def pfi_from_facility_and_dates(
 def parse_residency_status_from_address(
     raw_text: str,
 ) -> StateResidencyStatus:
+    """Parses a person's address to determine their StateResidencyStatus."""
     if "HOMELESS" in raw_text.upper():
         return StateResidencyStatus.HOMELESS
     return StateResidencyStatus.PERMANENT
@@ -333,6 +360,7 @@ def parse_residency_status_from_address(
 def parse_classification_type_from_raw_text(
     raw_text: str,
 ) -> StateChargeClassificationType:
+    """Parses a raw text field with the level of an offense to determine classification type."""
     if raw_text.startswith("F"):
         return StateChargeClassificationType.FELONY
     if raw_text.startswith("M"):
@@ -342,7 +370,6 @@ def parse_classification_type_from_raw_text(
 
 def supervision_contact_type_mapper(raw_text: str) -> StateSupervisionContactType:
     """Parses the contact type from a string containing the contact codes."""
-
     codes = raw_text.split("-")
     # ND confirmed that "HV", "OV", and "OO" are placeholders for the “face to face” code,
     # and that we should not prioritize the collateral contact code over others.
@@ -362,7 +389,6 @@ def supervision_contact_location_mapper(
     raw_text: str,
 ) -> StateSupervisionContactLocation:
     """Parses the contact location from a string containing the contact codes."""
-
     codes = raw_text.split("-")
 
     # There may multiple codes that indicate multiple locations.
@@ -452,6 +478,7 @@ def parse_housing_unit_type(
 
 
 def parse_caseload_type(raw_text: str) -> StateStaffCaseloadType:
+    """Parse an officer's caseload type using a raw text field with their job title."""
     if raw_text:
         if "DRUG COURT" in raw_text:
             return StateStaffCaseloadType.DRUG_COURT
@@ -470,11 +497,13 @@ def parse_caseload_type(raw_text: str) -> StateStaffCaseloadType:
 
 
 def parse_role_subtype(raw_text: str) -> StateStaffRoleSubtype:
-    # "Lead Officer" is a supervisor of other officers.
-    # It is common for these staff members to also supervise clients directly.
-    # "Case Manager" and "Community Corrections Agent" are designations for staff members
-    # who only supervise clients, not other officers.
-    # "Region X Program Manager" is a district manager.
+    """
+    Lead Officer" is a supervisor of other officers.
+    It is common for these staff members to also supervise clients directly.
+    "Case Manager" and "Community Corrections Agent" are designations for staff members
+    who only supervise clients, not other officers.
+    "Region X Program Manager" is a district manager.
+    """
     if raw_text:
         if "LEAD OFFICER" in raw_text:
             return StateStaffRoleSubtype.SUPERVISION_OFFICER_SUPERVISOR
@@ -516,3 +545,38 @@ def parse_custody_level(raw_text: str) -> StateIncarcerationPeriodCustodyLevel:
     if level == "CLO":
         return StateIncarcerationPeriodCustodyLevel.CLOSE
     return StateIncarcerationPeriodCustodyLevel.INTERNAL_UNKNOWN
+
+
+def incarceration_type_from_unit_or_facility(raw_text: str) -> StateIncarcerationType:
+    """
+    A function to parse the StateIncarcerationType of a stay based on a person's bed assignment
+    and facility of residence. The bed assignment is a necessary component for this
+    classification because some people are physically housed at a County Jail while serving
+    standard DOCR sentences in order to avoid overcrowding. People who are in a county jail
+    in those circumstances can be identified specifically by their bed assignments.
+    """
+    bed_assignment, facility = raw_text.split("|")
+    if bed_assignment in ("CJ-WRK-WAR", "CJ-WRK-STA"):
+        # Work Release
+        return StateIncarcerationType.STATE_PRISON
+    if (
+        bed_assignment.count("CJ-SS-") > 0
+        or bed_assignment.count("CJ-PV-") > 0
+        or bed_assignment.count("CJ-ESCAPE-") > 0
+    ):
+        # These are the only instances of a person being in county jail who has not
+        # been taken into DOCR custody. These are short sentences, parole violators, or returns
+        # from escape. These folks are typically transferred to a DOCR orientation unit eventually,
+        # but sometimes serve the entirety of their time in county jail.
+        return StateIncarcerationType.COUNTY_JAIL
+    if facility in ("DEFP", "NW", "SC", "SW", "SE", "EAST", "NE", "NEC", "NC", "FD"):
+        return StateIncarcerationType.COUNTY_JAIL
+    if facility == "NTAD":
+        return StateIncarcerationType.EXTERNAL_UNKNOWN
+    if facility in ("OS", "OOS", "OUT"):
+        # Other state facilities can be county jails or prisons; only the state is documented
+        # in these cases, not the facility type.
+        return StateIncarcerationType.INTERNAL_UNKNOWN
+    # This will include all bed assignments that start with "CJ" and are folks who have
+    # gone through orientation and have been selected to serve their DOCR time in a county jail.
+    return StateIncarcerationType.STATE_PRISON

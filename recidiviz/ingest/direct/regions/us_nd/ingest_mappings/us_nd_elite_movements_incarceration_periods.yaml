@@ -44,75 +44,14 @@ output:
                 $then: $literal("SWMCCC") # Southwest Multi-County Correction Center
               - $else: facility
           incarceration_type:
-            $conditional:
-              - $if:
-                  $in:
-                    $value: bed_assignment
-                    $options:
-                      - $literal("CJ-WRK-WAR")
-                      - $literal("CJ-WRK-STA")
-                $then: $literal_enum(StateIncarcerationType.STATE_PRISON)
-              - $else:
-                  $enum_mapping:
-                    $raw_text: facility
-                    $mappings:
-                      StateIncarcerationType.COUNTY_JAIL:
-                        - CJ
-                        - DEFP
-                        # There are only a few of these, and they seem to
-                        # represent judicial districts in ND
-                        - NW
-                        - SC
-                        - SW
-                        - SE
-                        - EAST
-                        - NE
-                        - NEC
-                        - NC
-                        - FD # Federal court
-                      StateIncarcerationType.EXTERNAL_UNKNOWN:
-                        # Could be a county jail or another state's facility
-                        - NTAD
-                      StateIncarcerationType.INTERNAL_UNKNOWN:
-                        # Other state facilities can be county jails or prisons; only the state is documented
-                        # in these cases, not the facility type.
-                        - OS
-                        - OOS
-                        - OUT
-                      StateIncarcerationType.STATE_PRISON:
-                        - BTC
-                        - CONT
-                        - CPP
-                        - DWCRC
-                        - FTPFAR
-                        - FTPMND
-                        - BTCWTR
-                        - DWCRC1
-                        - GFC
-                        - HACTC
-                        - HRCC
-                        - INACT
-                        - JRCC
-                        - LRRP
-                        - MRCC
-                        - MTPFAR
-                        - MTPMDN
-                        - MTPMND
-                        - NCCRC
-                        - NDSP
-                        - PREA
-                        - PROB
-                        # TODO(#10432): We don't know what facility "TABLET" is - ask ND how
-                        #  to properly map this.
-                        - TABLET
-                        - TRC
-                        - TRCC
-                        - TRN
-                        - YCC
-                        - JRMU
-                        # Each of these only appears once, likely MN and SD
-                        - MINN
-                        - SD
+            $enum_mapping:
+              $custom_parser: us_nd_custom_enum_parsers.incarceration_type_from_unit_or_facility
+              $raw_text:
+                $concat:
+                  $values:
+                    - bed_assignment
+                    - facility
+                  $separator: "|"
           custodial_authority:
             $enum_mapping:
               $raw_text:
@@ -132,12 +71,14 @@ output:
               $raw_text:
                 $concat:
                   $values:
+                    - bed_assignment
                     - facility
                     - $conditional:
                         - $if:
                             $not_null: start_date
                           $then: start_date
                         - $else: end_date
+                  $separator: "|"
               $custom_parser: us_nd_custom_enum_parsers.pfi_from_facility_and_dates
           admission_reason:
             $enum_mapping:
