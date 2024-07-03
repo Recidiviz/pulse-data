@@ -931,8 +931,27 @@ class OutliersQuerier:
 
             earliest_end_date = end_date - relativedelta(months=num_lookback_periods)
 
+            avgs_subquery = (
+                session.query(
+                    SupervisionOfficerMetric.officer_id,
+                    func.array_agg(
+                        aggregate_order_by(
+                            SupervisionOfficerMetric.metric_value,
+                            SupervisionOfficerMetric.end_date.desc(),
+                        )
+                    )[1].label("avg_daily_population"),
+                )
+                .filter(SupervisionOfficerMetric.metric_id == "avg_daily_population")
+                .group_by(SupervisionOfficerMetric.officer_id)
+                .subquery()
+            )
+
             officer_status_query = (
                 session.query(SupervisionOfficer)
+                .join(
+                    avgs_subquery,
+                    avgs_subquery.c.officer_id == SupervisionOfficer.external_id,
+                )
                 .join(
                     SupervisionOfficerOutlierStatus,
                     SupervisionOfficer.external_id
@@ -954,6 +973,7 @@ class OutliersQuerier:
                     SupervisionOfficer.supervision_district,
                     SupervisionOfficer.specialized_caseload_type,
                     SupervisionOfficerOutlierStatus.metric_id,
+                    avgs_subquery.c.avg_daily_population,
                 )
                 .with_entities(
                     SupervisionOfficer.external_id,
@@ -993,6 +1013,7 @@ class OutliersQuerier:
                             SupervisionOfficerOutlierStatus.end_date.desc(),
                         )
                     ).label("is_top_x_pct_over_time"),
+                    avgs_subquery.c.avg_daily_population,
                 )
             )
 
@@ -1081,6 +1102,7 @@ class OutliersQuerier:
                         supervisor_external_ids=record.supervisor_external_ids,
                         district=record.supervision_district,
                         caseload_type=record.specialized_caseload_type,
+                        avg_daily_population=record.avg_daily_population,
                         outlier_metrics=(
                             [
                                 {

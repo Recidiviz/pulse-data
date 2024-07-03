@@ -251,6 +251,28 @@ class TestOutliersQuerier(InsightsDbTestCase):
         )
         self.snapshot.assert_match(actual, name="test_get_supervision_officer_entity_found_match_not_top_x_pct")  # type: ignore[attr-defined]
 
+    def test_get_supervision_officer_entity_found_match_uses_most_recent_avg_caseload(
+        self,
+    ) -> None:
+        # Return matching supervision officer entity for prior end date (2023-04-01)
+        actual = OutliersQuerier(StateCode.US_PA).get_supervision_officer_entity(
+            pseudonymized_officer_id="officerhash3",
+            num_lookback_periods=0,
+            period_end_date=TEST_PREV_END_DATE,
+        )
+        self.assertEqual(actual.avg_daily_population, 54.321)  # type: ignore[union-attr]
+
+    def test_get_supervision_officer_entity_found_match_multiperiod_uses_most_recent_avg_caseload(
+        self,
+    ) -> None:
+        # Return matching supervision officer entity for most recent end date (2023-05-01) with multiple periods
+        actual = OutliersQuerier(StateCode.US_PA).get_supervision_officer_entity(
+            pseudonymized_officer_id="officerhash3",
+            num_lookback_periods=4,
+            period_end_date=TEST_END_DATE,
+        )
+        self.assertEqual(actual.avg_daily_population, 54.321)  # type: ignore[union-attr]
+
     @patch(
         "recidiviz.outliers.querier.querier.OutliersQuerier.get_outliers_backend_config"
     )

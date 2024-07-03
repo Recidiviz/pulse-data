@@ -374,6 +374,8 @@ class SupervisionOfficerEntity(SupervisionOfficerEntityBase):
     # List of objects that represent what metrics the officer is in the top x% for the latest period for,
     # where x can be specified on the OutliersMetricConfig in a state's OutliersBackendConfig
     top_x_pct_metrics: list = attr.ib()
+    # The officer's avg caseload size in the latest period
+    avg_daily_population: float = attr.ib()
 
 
 @attr.s

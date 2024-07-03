@@ -1,7 +1,7 @@
-"""
-Snapshots for recidiviz/tests/case_triage/outliers/outliers_routes_test.py
-Update snapshots automatically by running `pytest recidiviz/tests/case_triage/outliers/outliers_routes_test.py --snapshot-update
-Remember to include a docstring like this after updating the snapshots for Pylint purposes
+"""	
+Snapshots for recidiviz/tests/case_triage/outliers/outliers_routes_test.py	
+Update snapshots automatically by running `pytest recidiviz/tests/case_triage/outliers/outliers_routes_test.py --snapshot-update	
+Remember to include a docstring like this after updating the snapshots for Pylint purposes	
 """
 
 # -*- coding: utf-8 -*-
@@ -228,6 +228,7 @@ snapshots[
 
 snapshots["TestOutliersRoutes.TestOutliersRoutes test_get_officer_not_outlier"] = {
     "officer": {
+        "avgDailyPopulation": 10.0,
         "caseloadType": None,
         "district": "Guts",
         "email": "officer3@corrections.pa.gov",
@@ -248,6 +249,7 @@ snapshots["TestOutliersRoutes.TestOutliersRoutes test_get_officer_not_outlier"] 
 
 snapshots["TestOutliersRoutes.TestOutliersRoutes test_get_officer_success"] = {
     "officer": {
+        "avgDailyPopulation": 10.0,
         "caseloadType": None,
         "district": "Guts",
         "email": "officer3@corrections.pa.gov",
@@ -276,6 +278,7 @@ snapshots["TestOutliersRoutes.TestOutliersRoutes test_get_officer_success"] = {
 snapshots["TestOutliersRoutes.TestOutliersRoutes test_get_officers_for_supervisor"] = {
     "officers": [
         {
+            "avgDailyPopulation": 10.0,
             "caseloadType": None,
             "district": "Hogwarts",
             "email": None,
@@ -303,6 +306,7 @@ snapshots["TestOutliersRoutes.TestOutliersRoutes test_get_officers_for_superviso
             ],
         },
         {
+            "avgDailyPopulation": 10.0,
             "caseloadType": None,
             "district": "Hogwarts",
             "email": "officer3@corrections.pa.gov",
@@ -327,6 +331,7 @@ snapshots[
 ] = {
     "officers": [
         {
+            "avgDailyPopulation": 10.0,
             "caseloadType": None,
             "district": "Hogwarts",
             "email": "officer3@corrections.pa.gov",
@@ -352,6 +357,7 @@ snapshots[
             "topXPctMetrics": [],
         },
         {
+            "avgDailyPopulation": 10.0,
             "caseloadType": None,
             "district": "Hogwarts",
             "email": "officer3@corrections.pa.gov",

@@ -335,6 +335,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                             "top_x_pct": 10,
                         }
                     ],
+                    avg_daily_population=10.0,
                 ),
                 SupervisionOfficerEntity(
                     full_name=PersonName(
@@ -349,6 +350,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                     caseload_type=None,
                     outlier_metrics=[],
                     top_x_pct_metrics=[],
+                    avg_daily_population=10.0,
                 ),
             ]
 
@@ -475,6 +477,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                         }
                     ],
                     top_x_pct_metrics=[],
+                    avg_daily_population=10.0,
                 ),
                 SupervisionOfficerEntity(
                     full_name=PersonName(
@@ -489,6 +492,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                     caseload_type=None,
                     outlier_metrics=[],
                     top_x_pct_metrics=[],
+                    avg_daily_population=10.0,
                 ),
             ]
 
@@ -731,6 +735,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                 }
             ],
             top_x_pct_metrics=[],
+            avg_daily_population=10.0,
         )
 
         with SessionFactory.using_database(self.insights_database_key) as session:
@@ -808,6 +813,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                 }
             ],
             top_x_pct_metrics=[],
+            avg_daily_population=10.0,
         )
 
         with SessionFactory.using_database(self.insights_database_key) as session:
@@ -873,6 +879,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
             caseload_type=None,
             outlier_metrics=[],
             top_x_pct_metrics=[],
+            avg_daily_population=10.0,
         )
         mock_get_supervisor.return_value = None
 
@@ -935,6 +942,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                 }
             ],
             top_x_pct_metrics=[],
+            avg_daily_population=10.0,
         )
 
         with SessionFactory.using_database(self.insights_database_key) as session:
@@ -1005,6 +1013,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                 }
             ],
             top_x_pct_metrics=[],
+            avg_daily_population=10.0,
         )
 
         with local_project_id_override("test-project"):
@@ -1096,6 +1105,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                 },
             ],
             top_x_pct_metrics=[],
+            avg_daily_population=10.0,
         )
 
         mock_get_supervisor.return_value = None
@@ -1166,6 +1176,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                 }
             ],
             top_x_pct_metrics=[],
+            avg_daily_population=10.0,
         )
 
         with SessionFactory.using_database(self.insights_database_key) as session:
@@ -1251,6 +1262,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                 }
             ],
             top_x_pct_metrics=[],
+            avg_daily_population=10.0,
         )
 
         with SessionFactory.using_database(self.insights_database_key) as session:
@@ -1368,6 +1380,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                 }
             ],
             top_x_pct_metrics=[],
+            avg_daily_population=10.0,
         )
 
         with SessionFactory.using_database(self.insights_database_key) as session:
@@ -1430,6 +1443,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
             caseload_type=None,
             outlier_metrics=[],
             top_x_pct_metrics=[],
+            avg_daily_population=10.0,
         )
 
         mock_get_supervisor.return_value = None
@@ -1491,6 +1505,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                 }
             ],
             top_x_pct_metrics=[],
+            avg_daily_population=10.0,
         )
 
         mock_get_supervisor.return_value = None
