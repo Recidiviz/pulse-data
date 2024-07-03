@@ -1502,12 +1502,13 @@ def generate_custom_metrics_view(
     """Generates LookMLView with derived table that joins together metric view
     builders, analysis periods, and assignments to dynamically calculate metrics,
     referencing the provided view name."""
-    unit_of_observation_types = list(
+    unit_of_observation_types = sorted(
         set(
             metric.unit_of_observation_type
             for metric in metrics
             if hasattr(metric, "unit_of_observation_type")
-        )
+        ),
+        key=lambda x: x.name,
     )
     derived_table_subqueries: List[str] = []
     for unit_of_observation in unit_of_observation_types:
