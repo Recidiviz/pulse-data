@@ -550,7 +550,6 @@ class OutliersQuerier:
                     SupervisionOfficer.external_id,
                     SupervisionOfficer.full_name,
                     SupervisionOfficer.pseudonymized_id,
-                    SupervisionOfficer.email,
                     SupervisionOfficer.supervisor_external_id,
                     SupervisionOfficer.supervisor_external_ids,
                     SupervisionOfficer.supervision_district,
@@ -566,7 +565,6 @@ class OutliersQuerier:
                         full_name=PersonName(**record.full_name),
                         external_id=record.external_id,
                         pseudonymized_id=record.pseudonymized_id,
-                        email=record.email,
                         supervisor_external_id=record.supervisor_external_id,
                         supervisor_external_ids=record.supervisor_external_ids,
                         district=record.supervision_district,
@@ -966,7 +964,6 @@ class OutliersQuerier:
                 .group_by(
                     SupervisionOfficer.external_id,
                     SupervisionOfficer.full_name,
-                    SupervisionOfficer.email,
                     SupervisionOfficer.pseudonymized_id,
                     SupervisionOfficer.supervisor_external_id,
                     SupervisionOfficer.supervisor_external_ids,
@@ -978,7 +975,6 @@ class OutliersQuerier:
                 .with_entities(
                     SupervisionOfficer.external_id,
                     SupervisionOfficer.full_name,
-                    SupervisionOfficer.email,
                     SupervisionOfficer.pseudonymized_id,
                     SupervisionOfficer.supervisor_external_id,
                     SupervisionOfficer.supervisor_external_ids,
@@ -1096,7 +1092,6 @@ class OutliersQuerier:
                     ] = SupervisionOfficerEntity(
                         full_name=PersonName(**record.full_name),
                         external_id=record.external_id,
-                        email=record.email,
                         pseudonymized_id=record.pseudonymized_id,
                         supervisor_external_id=record.supervisor_external_id,
                         supervisor_external_ids=record.supervisor_external_ids,
