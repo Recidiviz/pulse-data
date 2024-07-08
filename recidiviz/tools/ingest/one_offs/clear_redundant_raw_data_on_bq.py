@@ -329,7 +329,10 @@ def create_parser() -> argparse.ArgumentParser:
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO, format="%(message)s", stream=sys.stdout)
     args = create_parser().parse_args()
-
+    admin_prefix = {
+        GCP_PROJECT_STAGING: "admin-panel-staging",
+        GCP_PROJECT_PRODUCTION: "admin-panel-prod",
+    }
     if not args.dry_run:
         prompt_for_confirmation(
             f"[{args.state_code.value}][{args.project_id}] Execute raw data pruning? [n] will skip this state/project pair",
@@ -342,7 +345,7 @@ if __name__ == "__main__":
         )
         prompt_for_confirmation(
             "Pause queues: "
-            f"https://{args.project_id}.ue.r.appspot.com/admin/ingest_operations/key_actions/{args.state_code.value}/ingest_queues?"
+            f"https://{admin_prefix[args.project_id]}.recidiviz.org/admin/ingest_operations/ingest_pipeline_summary/{args.state_code.value}/raw_data_queues?"
         )
         prompt_for_confirmation(
             f"Are you sure this state receives frequent historical uploads {args.state_code.value}?"
@@ -355,5 +358,5 @@ if __name__ == "__main__":
     if not args.dry_run:
         prompt_for_confirmation(
             f"Unpause queues: "
-            f"https://{args.project_id}.ue.r.appspot.com/admin/ingest_operations/key_actions={args.state_code.value}/ingest_queues?"
+            f"https://{admin_prefix[args.project_id]}.recidiviz.org/admin/ingest_operations/ingest_pipeline_summary/{args.state_code.value}/raw_data_queues?"
         )
