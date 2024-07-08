@@ -20,6 +20,9 @@ from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.bq_utils import (
     today_between_start_date_and_nullable_end_date_clause,
 )
+from recidiviz.calculator.query.sessions_query_fragments import (
+    join_sentence_spans_to_compartment_sessions,
+)
 from recidiviz.calculator.query.state.dataset_config import WORKFLOWS_VIEWS_DATASET
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -48,21 +51,19 @@ US_AR_RESIDENT_METADATA_VIEW_QUERY_TEMPLATE = f"""
     ,
     current_sentences AS (
         SELECT
-            person_id,
+            sent.person_id,
             ARRAY_AGG(
                 STRUCT(
-                    person_id,
-                    sentence_id,
-                    effective_date AS start_date,
-                    projected_completion_date_max AS end_date,
-                    initial_time_served_days
-                ) ORDER BY effective_date DESC
+                    sent.person_id,
+                    sent.sentence_id,
+                    sent.effective_date AS start_date,
+                    sent.projected_completion_date_max AS end_date,
+                    sent.initial_time_served_days
+                ) ORDER BY sent.effective_date DESC
             ) AS current_sentences,
-        FROM `{{project_id}}.sessions.sentences_preprocessed_materialized`
-        WHERE 
-            state_code = 'US_AR'
-            AND sentence_type = 'INCARCERATION'
-            AND status = 'SERVING'
+        {join_sentence_spans_to_compartment_sessions(compartment_level_1_to_overlap=["INCARCERATION"])}
+        WHERE {today_between_start_date_and_nullable_end_date_clause('span.start_date', 'span.end_date')}
+        AND span.state_code = 'US_AR'
         GROUP BY 1
     )
     ,
@@ -164,6 +165,7 @@ US_AR_RESIDENT_METADATA_VIEW_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_id=US_AR_RESIDENT_METADATA_VIEW_NAME,
     view_query_template=US_AR_RESIDENT_METADATA_VIEW_QUERY_TEMPLATE,
     description=US_AR_RESIDENT_METADATA_VIEW_DESCRIPTION,
+    sessions_dataset="sessions",
     should_materialize=True,
 )
 
