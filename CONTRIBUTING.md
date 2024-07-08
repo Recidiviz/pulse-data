@@ -81,14 +81,14 @@ comment on that issue.
 
 In general, you will find that our issues are separated into vertical
 functionality, e.g. `Subject: Entity Matching`, and also into horizontal type,
-e.g. `Type: Feature` or `Type: Bug`. Take a look at the code and consider 
-jumping first into an area where you feel more comfortable, and then perhaps 
+e.g. `Type: Feature` or `Type: Bug`. Take a look at the code and consider
+jumping first into an area where you feel more comfortable, and then perhaps
 into an area where you feel less comfortable or need to learn something new.
 
 **Note**: at present, our repository is structured as a private repo on which
 development takes place, with commits mirrored out to a public repo. If you are
 not yet a collaborator on the private repo, the notes above do not apply. We are
-always evaluating other modes of structuring work for volunteers and welcome 
+always evaluating other modes of structuring work for volunteers and welcome
 input!
 
 ### Doing the Work
@@ -110,7 +110,7 @@ to ensure no regression, as described in [our Readme](README.md).
 
 These same commands will be run by our continuous integration (CI) suite and
 your pull request will be "built" automatically to show whether it passes.
-Stay ahead of the curve by running these throughout the development process, 
+Stay ahead of the curve by running these throughout the development process,
 which will help you avoid any surprises.
 
 Related, include unit and//or integration tests to cover any new code. Update or
@@ -124,6 +124,13 @@ title as "WIP: My title here" and place the PR in a "Draft" state via Github's U
 
 Make sure the pull request description explicitly lists everything that the work
 does, and references any issues it contributes to.
+
+> 🚧 A note about continous integration in our public repo 🚧
+>
+> Please note that while Continuous Integration (CI) tests are not run directly
+> in this public repository, all commits undergo rigorous CI testing in our private
+> upstream repository. Every commit that makes it into this public
+> repo has passed all CI tests to ensure stability and reliability.
 
 ### Before Merging
 
