@@ -60,6 +60,18 @@ class TestDirectIngestRawFileLoadManager(BigQueryEmulatorTestCase):
         self.load_job_mock = self.load_job_patch.start()
         self.load_job_mock.side_effect = self._mock_load
 
+        self.pruning_patches = [
+            patch(path)
+            for path in [
+                "recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_load_manager.raw_data_pruning_enabled_in_state_and_instance",
+                "recidiviz.ingest.direct.views.raw_data_diff_query_builder.raw_data_pruning_enabled_in_state_and_instance",
+                "recidiviz.ingest.direct.views.raw_data_diff_query_builder.is_raw_data_import_dag_enabled",
+                "recidiviz.ingest.direct.views.raw_table_query_builder.raw_data_pruning_enabled_in_state_and_instance",
+            ]
+        ]
+        self.pruning_mocks = [p.start() for p in self.pruning_patches]
+        self._set_pruning_mocks(False)
+
         super().setUp()
 
         self.region_raw_file_config = DirectIngestRegionRawFileConfig(
@@ -79,7 +91,13 @@ class TestDirectIngestRawFileLoadManager(BigQueryEmulatorTestCase):
 
     def tearDown(self) -> None:
         self.load_job_patch.stop()
+        for p in self.pruning_patches:
+            p.stop()
         super().tearDown()
+
+    def _set_pruning_mocks(self, b: bool) -> None:
+        for m in self.pruning_mocks:
+            m.return_value = b
 
     def _mock_fail(self, *_: Any, **__: Any) -> None:
         raise ValueError("We hit an error!")
@@ -116,7 +134,7 @@ class TestDirectIngestRawFileLoadManager(BigQueryEmulatorTestCase):
 
     def _prep_test(
         self, fixture_directory_name: str
-    ) -> Tuple[List[GcsfsFilePath], pd.DataFrame, pd.DataFrame, str]:
+    ) -> Tuple[str, List[GcsfsFilePath], pd.DataFrame, pd.DataFrame, str]:
         """preps test for |fixture_directory_name|"""
         (
             file_tag,
@@ -158,6 +176,7 @@ class TestDirectIngestRawFileLoadManager(BigQueryEmulatorTestCase):
 
         # return back to caller
         return (
+            file_tag,
             input_files,
             load_dataframe_from_path(load_output, fixture_columns=None),
             load_dataframe_from_path(append_output, fixture_columns=None),
@@ -207,12 +226,16 @@ class TestDirectIngestRawFileLoadManager(BigQueryEmulatorTestCase):
         self.compare_expected_and_result_dfs(expected=expected_df, results=actual_df)
 
     def test_no_migrations_no_changes_single_file_starts_empty(self) -> None:
-        input_paths, prep_output, append_output, raw_data_table = self._prep_test(
-            "no_migrations_no_changes_single_file"
-        )
+        (
+            file_tag,
+            input_paths,
+            prep_output,
+            append_output,
+            raw_data_table,
+        ) = self._prep_test("no_migrations_no_changes_single_file")
         load_prep_summary = self.manager.load_and_prep_paths(
             1,
-            "singlePrimaryKey",
+            file_tag,
             datetime.datetime(2024, 1, 1, 1, 1, 1, tzinfo=datetime.UTC),
             input_paths,
         )
@@ -273,10 +296,12 @@ class TestDirectIngestRawFileLoadManager(BigQueryEmulatorTestCase):
 
     # TODO(#30788) add integration test back once struct in works in emulator
     def _test_migration_depends_on_transforms(self) -> None:
-        input_paths, output_df, *_ = self._prep_test("migration_depends_on_transforms")
+        file_tag, input_paths, output_df, *_ = self._prep_test(
+            "migration_depends_on_transforms"
+        )
         load_prep_summary = self.manager.load_and_prep_paths(
             1,
-            "tagBasicData",
+            file_tag,
             datetime.datetime(2020, 6, 10, 0, 0, 0, tzinfo=datetime.UTC),
             input_paths,
         )
@@ -285,15 +310,46 @@ class TestDirectIngestRawFileLoadManager(BigQueryEmulatorTestCase):
             load_prep_summary.append_ready_table_address, output_df
         )
 
+    def test_historical_diff_depends_on_trasnform(self) -> None:
+        self._set_pruning_mocks(True)
+        (
+            file_tag,
+            input_paths,
+            prep_output,
+            append_output,
+            raw_data_table,
+        ) = self._prep_test("historical_diff_depends_on_trasnform")
+        load_prep_summary = self.manager.load_and_prep_paths(
+            10,
+            file_tag,
+            datetime.datetime(2023, 4, 8, 0, 0, 1, tzinfo=datetime.UTC),
+            input_paths,
+        )
+
+        self.compare_output_against_expected(
+            load_prep_summary.append_ready_table_address, prep_output
+        )
+
+        _ = self.manager.append_to_raw_data_table(
+            10,
+            file_tag,
+            datetime.datetime(2023, 4, 8, 0, 0, 1, tzinfo=datetime.UTC),
+            BigQueryAddress.from_str(load_prep_summary.append_ready_table_address),
+        )
+
+        self.compare_output_against_expected(raw_data_table, append_output)
+
     def test_fail_load_failure_to_start(self) -> None:
-        input_paths, *_ = self._prep_test("no_migrations_no_changes_single_file")
+        file_tag, input_paths, *_ = self._prep_test(
+            "no_migrations_no_changes_single_file"
+        )
 
         self.load_job_mock.side_effect = self._mock_fail
 
         with self.assertRaisesRegex(ValueError, "We hit an error!"):
             _ = self.manager.load_and_prep_paths(
                 1,
-                "tagBasicData",
+                file_tag,
                 datetime.datetime(2020, 6, 10, 0, 0, 0, tzinfo=datetime.UTC),
                 input_paths,
             )
@@ -307,14 +363,16 @@ class TestDirectIngestRawFileLoadManager(BigQueryEmulatorTestCase):
         )
 
     def test_fail_load_result_failure(self) -> None:
-        input_paths, *_ = self._prep_test("no_migrations_no_changes_single_file")
+        file_tag, input_paths, *_ = self._prep_test(
+            "no_migrations_no_changes_single_file"
+        )
 
         self.fake_job.result.side_effect = self._mock_fail
 
         with self.assertRaisesRegex(ValueError, "We hit an error!"):
             _ = self.manager.load_and_prep_paths(
                 1,
-                "tagBasicData",
+                file_tag,
                 datetime.datetime(2020, 6, 10, 0, 0, 0, tzinfo=datetime.UTC),
                 input_paths,
             )
@@ -328,7 +386,9 @@ class TestDirectIngestRawFileLoadManager(BigQueryEmulatorTestCase):
         )
 
     def test_fail_transformation_result_failure(self) -> None:
-        input_paths, *_ = self._prep_test("no_migrations_no_changes_single_file")
+        file_tag, input_paths, *_ = self._prep_test(
+            "no_migrations_no_changes_single_file"
+        )
 
         self.fake_job.result.side_effect = self._mock_fail
 
@@ -339,7 +399,7 @@ class TestDirectIngestRawFileLoadManager(BigQueryEmulatorTestCase):
             with self.assertRaisesRegex(ValueError, "We hit an error!"):
                 _ = self.manager.load_and_prep_paths(
                     1,
-                    "tagBasicData",
+                    file_tag,
                     datetime.datetime(2020, 6, 10, 0, 0, 0, tzinfo=datetime.UTC),
                     input_paths,
                 )
@@ -360,7 +420,7 @@ class TestDirectIngestRawFileLoadManager(BigQueryEmulatorTestCase):
         )
 
     def test_fail_migration_result_failure(self) -> None:
-        input_paths, *_ = self._prep_test("migration_depends_on_transforms")
+        file_tag, input_paths, *_ = self._prep_test("migration_depends_on_transforms")
 
         self.fake_job.result.side_effect = self._mock_fail
 
@@ -371,7 +431,7 @@ class TestDirectIngestRawFileLoadManager(BigQueryEmulatorTestCase):
             with self.assertRaisesRegex(ValueError, "We hit an error!"):
                 _ = self.manager.load_and_prep_paths(
                     1,
-                    "tagBasicData",
+                    file_tag,
                     datetime.datetime(2020, 6, 10, 0, 0, 0, tzinfo=datetime.UTC),
                     input_paths,
                 )
