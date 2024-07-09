@@ -81,7 +81,7 @@ WITH outlier_officers AS (
         supervisors.export_year
     FROM `{project_id}.auth0_prod_action_logs.success_login` logins
     INNER JOIN supervisors
-        ON supervisors.supervisor_pseudonymized_id = logins.pseudonymized_id
+        ON LOWER(supervisors.supervisor_email) = LOWER(logins.email)
         AND supervisors.export_month = EXTRACT(MONTH FROM logins.timestamp)
         AND supervisors.export_year = EXTRACT(YEAR FROM logins.timestamp)
 )
