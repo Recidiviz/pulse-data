@@ -41,7 +41,16 @@ class RawDataDiffQueryTest(RawDataDiffEmulatorQueryTestCase):
     """Tests the raw data diff query functionality."""
 
     def setUp(self) -> None:
+        self.raw_data_dag_patch = patch(
+            "recidiviz.ingest.direct.views.raw_data_diff_query_builder.raw_data_pruning_enabled_in_state_and_instance",
+        )
+        self.raw_data_dag_mock = self.raw_data_dag_patch.start()
+        self.raw_data_dag_mock.return_value = False
         super().setUp()
+
+    def tearDown(self) -> None:
+        self.raw_data_dag_patch.stop()
+        return super().tearDown()
 
     def test_raw_data_diff_query_simple(self) -> None:
         self.run_diff_query_and_validate_output(
@@ -55,6 +64,18 @@ class RawDataDiffQueryTest(RawDataDiffEmulatorQueryTestCase):
         self.run_diff_query_and_validate_output(
             file_tag="multipleColPrimaryKeyHistorical",
             fixture_directory_name="multipleColPrimaryKeyHistoricalManyIsDeleted",
+            new_file_id=5,
+            new_update_datetime=datetime.datetime(2023, 5, 5),
+        )
+
+    # TODO(#28239) remove once raw data import is rolled out
+    def test_raw_data_diff_query_multiple_col_primary_key_historical_select_except(
+        self,
+    ) -> None:
+        self.raw_data_dag_mock.return_value = True
+        self.run_diff_query_and_validate_output(
+            file_tag="multipleColPrimaryKeyHistorical",
+            fixture_directory_name="multipleColPrimaryKeyHistoricalManyIsDeletedSelectExcept",
             new_file_id=5,
             new_update_datetime=datetime.datetime(2023, 5, 5),
         )

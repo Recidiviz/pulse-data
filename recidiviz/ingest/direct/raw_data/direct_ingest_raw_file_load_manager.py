@@ -406,8 +406,7 @@ class DirectIngestRawFileLoadManager:
         try:
 
             if self._should_generate_historical_diffs(file_tag):
-                # TODO(#28694) this query assues recidiviz-managed fields aren't
-                # included, needs to be upated
+
                 self._generate_historical_diff(
                     file_tag=file_tag,
                     file_id=file_id,
