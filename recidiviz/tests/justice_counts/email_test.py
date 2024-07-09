@@ -16,12 +16,12 @@
 # =============================================================================
 """This class implements tests for the Justice Counts Publisher emails."""
 import datetime
-import itertools
-from typing import Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 from dateutil.relativedelta import relativedelta
 from freezegun import freeze_time
 
+from recidiviz.justice_counts.metric_setting import MetricSettingInterface
 from recidiviz.justice_counts.metrics import law_enforcement, prisons, supervision
 from recidiviz.justice_counts.metrics.custom_reporting_frequency import (
     CustomReportingFrequency,
@@ -33,11 +33,7 @@ from recidiviz.justice_counts.metrics.metric_registry import (
     METRICS_BY_SYSTEM,
 )
 from recidiviz.justice_counts.report import ReportInterface
-from recidiviz.justice_counts.utils.constants import (
-    DISAGGREGATED_BY_SUPERVISION_SUBSYSTEMS,
-    REPORTING_FREQUENCY_CONTEXT_KEY,
-    UploadMethod,
-)
+from recidiviz.justice_counts.utils.constants import UploadMethod
 from recidiviz.justice_counts.utils.email import (
     get_missing_metrics,
     get_missing_metrics_for_superagencies,
@@ -108,39 +104,61 @@ class TestEmails(JusticeCountsDatabaseTestCase):
             date_range_end=self.july_end_date,
         )
 
-    def get_enabled_metric_setting_datapoints(
-        self, metric_definitions: List[MetricDefinition], agency: schema.Agency
-    ) -> List[schema.Datapoint]:
-        enabled_metrics = [
-            schema.Datapoint(
-                metric_definition_key=metric_definition.key,
-                enabled=True,
-                source=agency,
-                is_report_datapoint=False,
-            )
-            for metric_definition in metric_definitions
-        ]
-        return enabled_metrics
-
-    def get_custom_reported_metrics(
+    def set_is_metric_enabled(
         self,
+        session: Any,
+        is_metric_enabled: bool,
+        metric_definitions: List[MetricDefinition],
+        agency: schema.Agency,
+    ) -> None:
+        for metric_definition in metric_definitions:
+            MetricSettingInterface.add_or_update_agency_metric_setting(
+                session=session,
+                agency=agency,
+                agency_metric=MetricInterface(
+                    key=metric_definition.key, is_metric_enabled=is_metric_enabled
+                ),
+            )
+        session.commit()
+
+    def set_disaggregated_by_supervision_subsystems(
+        self,
+        session: Any,
+        disaggregated_by_supervision_subsystems: bool,
+        metric_definitions: List[MetricDefinition],
+        agency: schema.Agency,
+    ) -> None:
+        for metric_definition in metric_definitions:
+            MetricSettingInterface.add_or_update_agency_metric_setting(
+                session=session,
+                agency=agency,
+                agency_metric=MetricInterface(
+                    key=metric_definition.key,
+                    disaggregated_by_supervision_subsystems=disaggregated_by_supervision_subsystems,
+                ),
+            )
+        session.commit()
+
+    def set_custom_reported_metric_settings(
+        self,
+        session: Any,
         agency: schema.Agency,
         starting_month: int,
         metric_definitions: List[MetricDefinition],
-    ) -> List[schema.Datapoint]:
-        fiscal_frequency = CustomReportingFrequency(
-            starting_month=starting_month, frequency=schema.ReportingFrequency.ANNUAL
-        )
-        return [
-            schema.Datapoint(
-                metric_definition_key=metric_definition.key,
-                context_key=REPORTING_FREQUENCY_CONTEXT_KEY,
-                value=fiscal_frequency.to_json_str(),
-                source=agency,
-                is_report_datapoint=False,
+    ) -> None:
+        for metric_definition in metric_definitions:
+            MetricSettingInterface.add_or_update_agency_metric_setting(
+                session=session,
+                agency=agency,
+                agency_metric=MetricInterface(
+                    key=metric_definition.key,
+                    custom_reporting_frequency=CustomReportingFrequency(
+                        starting_month=starting_month,
+                        frequency=schema.ReportingFrequency.ANNUAL,
+                    ),
+                ),
             )
-            for metric_definition in metric_definitions
-        ]
+        session.commit()
 
     def _test_missing_metrics_functionality_law_enforcement_and_prison_agency(
         self,
@@ -304,6 +322,9 @@ class TestEmails(JusticeCountsDatabaseTestCase):
                 schema.System.LAW_ENFORCEMENT.value,
                 schema.System.PRISONS.value,
             ]
+            session.add(agency)
+            session.commit()
+            session.refresh(agency)
 
             monthly_report = self.get_monthly_report(agency=agency)
             annual_calendar_year_report = self.get_annual_calendar_year_report(
@@ -312,7 +333,10 @@ class TestEmails(JusticeCountsDatabaseTestCase):
             annual_fiscal_year_report = self.annual_fiscal_year_report(agency=agency)
 
             # Enable all metrics
-            enabled_metrics = self.get_enabled_metric_setting_datapoints(
+            # Here.
+            self.set_is_metric_enabled(
+                session=session,
+                is_metric_enabled=True,
                 metric_definitions=METRICS_BY_SYSTEM[
                     schema.System.LAW_ENFORCEMENT.value
                 ]
@@ -321,7 +345,8 @@ class TestEmails(JusticeCountsDatabaseTestCase):
             )
 
             # Set expenses to be reported fiscally
-            custom_reported_metrics = self.get_custom_reported_metrics(
+            self.set_custom_reported_metric_settings(
+                session=session,
                 starting_month=7,
                 agency=agency,
                 metric_definitions=[prisons.expenses, law_enforcement.expenses],
@@ -329,13 +354,10 @@ class TestEmails(JusticeCountsDatabaseTestCase):
 
             session.add_all(
                 [
-                    agency,
                     monthly_report,
                     annual_calendar_year_report,
                     annual_fiscal_year_report,
                 ]
-                + enabled_metrics
-                + custom_reported_metrics
             )
             session.commit()
 
@@ -358,40 +380,30 @@ class TestEmails(JusticeCountsDatabaseTestCase):
             )
 
             # Disable Funding Metrics!
-            disabled_metrics = [
-                schema.Datapoint(
-                    metric_definition_key=law_enforcement.funding.key,
-                    enabled=False,
-                    source=agency,
-                    is_report_datapoint=False,
-                ),
-                schema.Datapoint(
-                    metric_definition_key=prisons.funding.key,
-                    enabled=False,
-                    source=agency,
-                    is_report_datapoint=False,
-                ),
-            ]
-        session.add_all(disabled_metrics)
-        session.commit()
+            self.set_is_metric_enabled(
+                session=session,
+                is_metric_enabled=False,
+                metric_definitions=[law_enforcement.funding, prisons.funding],
+                agency=agency,
+            )
 
-        (
-            system_to_missing_monthly_metrics,
-            date_range_to_system_to_missing_annual_metrics,
-            monthly_report_date_range,
-        ) = get_missing_metrics(
-            agency=agency,
-            session=session,
-            today=frozen_today,
-            days_after_time_period_to_send_email=15,
-        )
+            (
+                system_to_missing_monthly_metrics,
+                date_range_to_system_to_missing_annual_metrics,
+                monthly_report_date_range,
+            ) = get_missing_metrics(
+                agency=agency,
+                session=session,
+                today=frozen_today,
+                days_after_time_period_to_send_email=15,
+            )
 
-        self._test_missing_metrics_functionality_law_enforcement_and_prison_agency_disabled_metrics(
-            agency=agency,
-            system_to_missing_monthly_metrics=system_to_missing_monthly_metrics,
-            date_range_to_system_to_missing_annual_metrics=date_range_to_system_to_missing_annual_metrics,
-            monthly_report_date_range=monthly_report_date_range,
-        )
+            self._test_missing_metrics_functionality_law_enforcement_and_prison_agency_disabled_metrics(
+                agency=agency,
+                system_to_missing_monthly_metrics=system_to_missing_monthly_metrics,
+                date_range_to_system_to_missing_annual_metrics=date_range_to_system_to_missing_annual_metrics,
+                monthly_report_date_range=monthly_report_date_range,
+            )
 
     @freeze_time(
         datetime.date.today().replace(month=datetime.date.today().month, day=15)
@@ -403,11 +415,14 @@ class TestEmails(JusticeCountsDatabaseTestCase):
             agency.systems = [
                 schema.System.LAW_ENFORCEMENT.value,
             ]
+            session.add(agency)
+            session.commit()
+            session.refresh(agency)
 
             # Enable funding and expense metrics
-            enabled_metrics = (
-                enabled_metrics
-            ) = self.get_enabled_metric_setting_datapoints(
+            self.set_is_metric_enabled(
+                session=session,
+                is_metric_enabled=True,
                 metric_definitions=[
                     law_enforcement.funding,
                     law_enforcement.expenses,
@@ -437,7 +452,7 @@ class TestEmails(JusticeCountsDatabaseTestCase):
                 upload_method=UploadMethod.BULK_UPLOAD,
             )
 
-            session.add_all([agency, annual_calendar_year_report] + enabled_metrics)
+            session.add_all([agency, annual_calendar_year_report])
             session.commit()
 
             (
@@ -495,9 +510,14 @@ class TestEmails(JusticeCountsDatabaseTestCase):
             agency.systems = [
                 schema.System.LAW_ENFORCEMENT.value,
             ]
+            session.add(agency)
+            session.commit()
+            session.refresh(agency)
 
             # Enable funding metric
-            enabled_metrics = self.get_enabled_metric_setting_datapoints(
+            self.set_is_metric_enabled(
+                session=session,
+                is_metric_enabled=True,
                 metric_definitions=[law_enforcement.funding],
                 agency=agency,
             )
@@ -523,7 +543,7 @@ class TestEmails(JusticeCountsDatabaseTestCase):
                 upload_method=UploadMethod.BULK_UPLOAD,
             )
 
-            session.add_all([agency, annual_calendar_year_report] + enabled_metrics)
+            session.add_all([agency, annual_calendar_year_report])
             session.commit()
 
             (
@@ -566,56 +586,30 @@ class TestEmails(JusticeCountsDatabaseTestCase):
                 schema.System.PAROLE.value,
                 schema.System.PROBATION.value,
             ]
+            session.add(agency)
+            session.commit()
+            session.refresh(agency)
 
             # Enable funding and expense metrics, disaggregate funding by
             # parole and probation
-            agency_datapoints = [
-                schema.Datapoint(
-                    metric_definition_key=supervision.expenses.key,
-                    enabled=True,
-                    source=agency,
-                    is_report_datapoint=False,
-                ),
-                schema.Datapoint(
-                    metric_definition_key="PROBATION_FUNDING",
-                    enabled=True,
-                    source=agency,
-                    is_report_datapoint=False,
-                ),
-                schema.Datapoint(
-                    metric_definition_key="PAROLE_FUNDING",
-                    enabled=True,
-                    source=agency,
-                    is_report_datapoint=False,
-                ),
-                schema.Datapoint(
-                    metric_definition_key=supervision.funding.key,
-                    source=agency,
-                    context_key=DISAGGREGATED_BY_SUPERVISION_SUBSYSTEMS,
-                    value=str(True),
-                    is_report_datapoint=False,
-                ),
-                schema.Datapoint(
-                    metric_definition_key="PROBATION_FUNDING",
-                    source=agency,
-                    context_key=DISAGGREGATED_BY_SUPERVISION_SUBSYSTEMS,
-                    value=str(True),
-                    is_report_datapoint=False,
-                ),
-                schema.Datapoint(
-                    metric_definition_key="PAROLE_FUNDING",
-                    source=agency,
-                    context_key=DISAGGREGATED_BY_SUPERVISION_SUBSYSTEMS,
-                    value=str(True),
-                    is_report_datapoint=False,
-                ),
-            ]
+            self.set_is_metric_enabled(
+                session=session,
+                is_metric_enabled=True,
+                metric_definitions=[supervision.expenses],
+                agency=agency,
+            )
+            self.set_disaggregated_by_supervision_subsystems(
+                session=session,
+                disaggregated_by_supervision_subsystems=True,
+                metric_definitions=[supervision.funding],
+                agency=agency,
+            )
 
             annual_calendar_year_report = self.get_annual_calendar_year_report(
                 agency=agency
             )
 
-            session.add_all([agency, annual_calendar_year_report] + agency_datapoints)
+            session.add_all([agency, annual_calendar_year_report])
             session.commit()
 
             (
@@ -704,14 +698,16 @@ class TestEmails(JusticeCountsDatabaseTestCase):
             agency = self.test_schema_objects.test_prison_super_agency
             child_agency_A = self.test_schema_objects.test_prison_child_agency_A
             child_agency_B = self.test_schema_objects.test_prison_child_agency_B
-
             agency.systems = [
                 schema.System.SUPERAGENCY.value,
                 schema.System.PRISONS.value,
             ]
-
             child_agency_A.systems = [schema.System.PRISONS.value]
             child_agency_B.systems = [schema.System.PRISONS.value]
+            session.add_all([agency, child_agency_A, child_agency_B])
+            session.commit()
+            for elem in [agency, child_agency_A, child_agency_B]:
+                session.refresh(elem)
 
             monthly_report_superagency = self.get_monthly_report(agency=agency)
             monthly_report_child_agency_A = self.get_monthly_report(
@@ -741,31 +737,28 @@ class TestEmails(JusticeCountsDatabaseTestCase):
             )
 
             # Enable all metrics
-            enabled_metrics = list(
-                itertools.chain(
-                    *[
-                        self.get_enabled_metric_setting_datapoints(
-                            METRICS_BY_SYSTEM[schema.System.PRISONS.value],
-                            agency=agency,
-                        )
-                        for agency in [child_agency_A, child_agency_B]
-                    ]
+            for child in [child_agency_A, child_agency_B]:
+                self.set_is_metric_enabled(
+                    is_metric_enabled=True,
+                    session=session,
+                    metric_definitions=METRICS_BY_SYSTEM[schema.System.PRISONS.value],
+                    agency=child,
                 )
-            ) + self.get_enabled_metric_setting_datapoints(
-                METRICS_BY_SYSTEM[schema.System.SUPERAGENCY.value],
+            self.set_is_metric_enabled(
+                is_metric_enabled=True,
+                session=session,
+                metric_definitions=METRICS_BY_SYSTEM[schema.System.SUPERAGENCY.value],
                 agency=agency,
             )
 
             # Set grievances to be reported fiscally for child agencies
-            custom_reported_metrics = self.get_custom_reported_metrics(
-                starting_month=7,
-                agency=child_agency_A,
-                metric_definitions=[prisons.grievances_upheld],
-            ) + self.get_custom_reported_metrics(
-                starting_month=7,
-                agency=child_agency_B,
-                metric_definitions=[prisons.grievances_upheld],
-            )
+            for child in [child_agency_A, child_agency_B]:
+                self.set_custom_reported_metric_settings(
+                    session=session,
+                    starting_month=7,
+                    agency=child,
+                    metric_definitions=[prisons.grievances_upheld],
+                )
 
             session.add_all(
                 [
@@ -782,11 +775,11 @@ class TestEmails(JusticeCountsDatabaseTestCase):
                     annual_fiscal_year_report_child_agency_A,
                     annual_fiscal_year_report_child_agency_B,
                 ]
-                + enabled_metrics
-                + custom_reported_metrics
             )
             session.commit()
             session.refresh(agency)
+            session.refresh(child_agency_A)
+            session.refresh(child_agency_B)
             (
                 system_to_monthly_metric_to_num_child_agencies,
                 date_range_to_system_to_annual_metric_to_num_child_agencies,
@@ -853,15 +846,12 @@ class TestEmails(JusticeCountsDatabaseTestCase):
             )
 
             # Disable Admission Metric for child_agency_A!
-            session.add(
-                schema.Datapoint(
-                    metric_definition_key=prisons.admissions.key,
-                    enabled=False,
-                    source=child_agency_A,
-                    is_report_datapoint=False,
-                ),
+            self.set_is_metric_enabled(
+                session=session,
+                is_metric_enabled=False,
+                metric_definitions=[prisons.admissions],
+                agency=child_agency_A,
             )
-            session.commit()
 
             (
                 system_to_monthly_metric_to_num_child_agencies,
@@ -890,6 +880,9 @@ class TestEmails(JusticeCountsDatabaseTestCase):
                 schema.System.LAW_ENFORCEMENT.value,
                 schema.System.PRISONS.value,
             ]
+            session.add(agency)
+            session.commit()
+            session.refresh(agency)
 
             monthly_report = self.get_monthly_report(agency=agency)
             annual_calendar_year_report = self.get_annual_calendar_year_report(
@@ -898,7 +891,9 @@ class TestEmails(JusticeCountsDatabaseTestCase):
             annual_fiscal_year_report = self.annual_fiscal_year_report(agency=agency)
 
             # Enable all metrics
-            enabled_metrics = self.get_enabled_metric_setting_datapoints(
+            self.set_is_metric_enabled(
+                session=session,
+                is_metric_enabled=True,
                 metric_definitions=METRICS_BY_SYSTEM[
                     schema.System.LAW_ENFORCEMENT.value
                 ]
@@ -907,11 +902,17 @@ class TestEmails(JusticeCountsDatabaseTestCase):
             )
 
             # Set expenses to be reported fiscally
-            custom_reported_metrics = self.get_custom_reported_metrics(
+            self.set_custom_reported_metric_settings(
+                session=session,
                 starting_month=7,
                 agency=agency,
                 metric_definitions=[prisons.expenses, law_enforcement.expenses],
             )
+            # custom_reported_metrics = self.get_custom_reported_metrics(
+            #     starting_month=7,
+            #     agency=agency,
+            #     metric_definitions=[prisons.expenses, law_enforcement.expenses],
+            # )
             session.add_all(
                 [
                     agency,
@@ -919,8 +920,6 @@ class TestEmails(JusticeCountsDatabaseTestCase):
                     annual_calendar_year_report,
                     annual_fiscal_year_report,
                 ]
-                + enabled_metrics
-                + custom_reported_metrics
             )
             session.commit()
 

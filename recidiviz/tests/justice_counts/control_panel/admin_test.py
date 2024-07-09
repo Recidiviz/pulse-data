@@ -16,7 +16,6 @@
 # =============================================================================
 """Implements tests for the Justice Counts Control Panel backend API."""
 import datetime
-from collections import defaultdict
 from typing import Any, Dict
 
 import mock
@@ -27,22 +26,21 @@ from sqlalchemy.engine import Engine
 from recidiviz.justice_counts.agency import AgencyInterface
 from recidiviz.justice_counts.control_panel.config import Config
 from recidiviz.justice_counts.control_panel.server import create_app
-from recidiviz.justice_counts.datapoint import DatapointInterface
+from recidiviz.justice_counts.metric_setting import MetricSettingInterface
 from recidiviz.justice_counts.metrics import law_enforcement
 from recidiviz.justice_counts.metrics.custom_reporting_frequency import (
     CustomReportingFrequency,
 )
+from recidiviz.justice_counts.metrics.metric_interface import MetricInterface
 from recidiviz.justice_counts.user_account import UserAccountInterface
-from recidiviz.justice_counts.utils.constants import (
-    REPORTING_FREQUENCY_CONTEXT_KEY,
-    VALID_SYSTEMS,
-)
+from recidiviz.justice_counts.utils.constants import VALID_SYSTEMS
 from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.persistence.database.schema.justice_counts.schema import (
     Agency,
     AgencyUserAccountAssociation,
     Datapoint,
     DatapointHistory,
+    MetricSetting,
     Report,
     Source,
     Spreadsheet,
@@ -813,32 +811,29 @@ class TestJusticePublisherAdminPanelAPI(JusticeCountsDatabaseTestCase):
             super_agency_id=super_agency.id,
             systems=["LAW_ENFORCEMENT"],
         )
-
-        disabled_metric = schema.Datapoint(
-            metric_definition_key=law_enforcement.funding.key,
-            enabled=False,
-            source_id=super_agency.id,
-            is_report_datapoint=False,
-        )
-
-        custom_reporting_frequency = schema.Datapoint(
-            metric_definition_key=law_enforcement.expenses.key,
-            source_id=super_agency.id,
-            context_key=REPORTING_FREQUENCY_CONTEXT_KEY,
-            value=(
-                CustomReportingFrequency(
-                    frequency=schema.ReportingFrequency.ANNUAL, starting_month=2
-                ).to_json_str()
+        MetricSettingInterface.add_or_update_agency_metric_setting(
+            session=self.session,
+            agency=super_agency,
+            agency_metric=MetricInterface(
+                key=law_enforcement.funding.key,
+                is_metric_enabled=False,
             ),
-            is_report_datapoint=False,
+        )
+        MetricSettingInterface.add_or_update_agency_metric_setting(
+            session=self.session,
+            agency=super_agency,
+            agency_metric=MetricInterface(
+                key=law_enforcement.expenses.key,
+                custom_reporting_frequency=CustomReportingFrequency(
+                    frequency=schema.ReportingFrequency.ANNUAL, starting_month=2
+                ),
+            ),
         )
 
         self.session.add_all(
             [
                 child_agency_1,
                 child_agency_2,
-                disabled_metric,
-                custom_reporting_frequency,
             ]
         )
         self.session.commit()
@@ -849,117 +844,109 @@ class TestJusticePublisherAdminPanelAPI(JusticeCountsDatabaseTestCase):
         child_agency_2_id = child_agency_2.id
         super_agency_id = super_agency.id
 
+        # Copy the expenses metric settings values for child agency 1.
         copy_metric_settings(
             super_agency_id=super_agency_id,
             dry_run=False,
             metric_definition_key_subset=[law_enforcement.expenses.key],
+            child_agency_id_subset=[child_agency_1_id],
             current_session=self.session,
             agency_name="Agency Alpha",
         )
-        agency_datapoints = DatapointInterface.get_agency_datapoints(
-            session=self.session, agency_id=child_agency_1_id
-        )
-
-        # There will be two agency datapoints, one that is a default
-        # datapoint to record the includes/excludes description for the
-        # expenses metric, the other that records the information about
-        # the custom reporting frequency.
-        self.assertEqual(len(agency_datapoints), 2)
-        self.assertEqual(
-            agency_datapoints[0].context_key, "INCLUDES_EXCLUDES_DESCRIPTION"
-        )
-        self.assertIsNone(agency_datapoints[0].value)
-        self.assertEqual(agency_datapoints[1].context_key, "REPORTING_FREQUENCY")
-        self.assertEqual(
-            agency_datapoints[1].value,
-            '{"custom_frequency": "ANNUAL", "starting_month": 2}',
-        )
-
-        copy_metric_settings(
-            super_agency_id=super_agency_id,
-            dry_run=False,
-            metric_definition_key_subset=["ALL"],
-            current_session=self.session,
-            agency_name="Agency Alpha",
-        )
-        agency_datapoints = DatapointInterface.get_agency_datapoints(
-            session=self.session, agency_id=child_agency_1_id
-        )
-
-        # There will be two agency datapoints, one that is a default
-        # datapoint to record the includes/excludes description for the
-        # expenses metric, the other that records the information about
-        # the custom reporting frequency.
-        metric_key_to_agency_datapoints = defaultdict(list)
-        for datapoint in agency_datapoints:
-            metric_key_to_agency_datapoints[datapoint.metric_definition_key].append(
-                datapoint
+        # Check if the expense metric settings have been copied to the child agencies.
+        copied_expenses_metrics = (
+            self.session.query(MetricSetting)
+            .filter(
+                MetricSetting.agency_id == child_agency_1_id,
+                MetricSetting.metric_definition_key == law_enforcement.expenses.key,
             )
-
-        for key, datapoints in metric_key_to_agency_datapoints.items():
-            if key == law_enforcement.expenses.key:
-                # The expenses agency datapoints will not change
-                self.assertEqual(
-                    datapoints[0].context_key, "INCLUDES_EXCLUDES_DESCRIPTION"
-                )
-                self.assertIsNone(datapoints[0].value)
-                self.assertEqual(datapoints[1].context_key, "REPORTING_FREQUENCY")
-                self.assertEqual(
-                    datapoints[1].value,
-                    '{"custom_frequency": "ANNUAL", "starting_month": 2}',
-                )
-            elif key == law_enforcement.funding.key:
-                # The funding agency datapoints will not change from when
-                # they were updated in the last call.
-                self.assertEqual(datapoints[0].context_key, None)
-                self.assertEqual(datapoints[0].enabled, False)
-                self.assertEqual(
-                    datapoints[1].context_key, "INCLUDES_EXCLUDES_DESCRIPTION"
-                )
-                self.assertIsNone(datapoints[1].value)
-            else:
-                for datapoint in datapoints:
-                    self.assertIsNone(datapoint.value)
-
-        # Now test copying just for one child agency
-        disabled_metric_2 = schema.Datapoint(
-            metric_definition_key=law_enforcement.expenses.key,
-            enabled=False,
-            source_id=super_agency.id,
-            is_report_datapoint=False,
+            .one()
         )
-        self.session.add(disabled_metric_2)
+        self.assertEqual(
+            copied_expenses_metrics.metric_interface["custom_reporting_frequency"][
+                "custom_frequency"
+            ],
+            "ANNUAL",
+        )
+        self.assertEqual(
+            copied_expenses_metrics.metric_interface["custom_reporting_frequency"][
+                "starting_month"
+            ],
+            2,
+        )
+        # Make sure funding metrics were NOT copied.
+        self.assertEqual(
+            0,
+            len(
+                self.session.query(MetricSetting)
+                .filter(
+                    MetricSetting.agency_id == child_agency_1_id,
+                    MetricSetting.metric_definition_key == law_enforcement.funding.key,
+                )
+                .all()
+            ),
+        )
 
+        # Make sure NO metrics were copied for child agency 2.
+        child_2_metrics = (
+            self.session.query(MetricSetting)
+            .filter(
+                MetricSetting.agency_id == child_agency_2_id,
+            )
+            .all()
+        )
+        self.assertEqual(len(child_2_metrics), 0)
+
+        # Test copying all metric_definitions for child agency 1.
         copy_metric_settings(
             super_agency_id=super_agency_id,
             dry_run=False,
             metric_definition_key_subset=["ALL"],
-            child_agency_id_subset=[child_agency_2_id],
+            child_agency_id_subset=[child_agency_1_id],
             current_session=self.session,
             agency_name="Agency Alpha",
         )
+        # Check if the expense metric settings have been copied to the child agencies.
+        copied_funding_metrics = (
+            self.session.query(MetricSetting)
+            .filter(
+                MetricSetting.agency_id == child_agency_1_id,
+                MetricSetting.metric_definition_key == law_enforcement.funding.key,
+            )
+            .one()
+        )
+        self.assertEqual(
+            copied_funding_metrics.metric_interface["is_metric_enabled"],
+            False,
+        )
+        # Make sure still NO metrics were copied for child agency 2.
+        child_2_metrics = (
+            self.session.query(MetricSetting)
+            .filter(
+                MetricSetting.agency_id == child_agency_2_id,
+            )
+            .all()
+        )
+        self.assertEqual(len(child_2_metrics), 0)
 
-        agency_1_datapoints = DatapointInterface.get_agency_datapoints(
-            session=self.session, agency_id=child_agency_1_id
+        # Copy all metric settings for all agencies (so, child agency 2 also).
+        copy_metric_settings(
+            super_agency_id=super_agency_id,
+            dry_run=False,
+            metric_definition_key_subset=["ALL"],
+            current_session=self.session,
+            agency_name="Agency Alpha",
         )
-        agency_2_datapoints = DatapointInterface.get_agency_datapoints(
-            session=self.session, agency_id=child_agency_2_id
+        # Expense metric settings have been copied to child agency 2.
+        copied_funding_metrics = (
+            self.session.query(MetricSetting)
+            .filter(
+                MetricSetting.agency_id == child_agency_2_id,
+                MetricSetting.metric_definition_key == law_enforcement.funding.key,
+            )
+            .one()
         )
-        for i, datapoints in enumerate([agency_1_datapoints, agency_2_datapoints]):
-            metric_key_to_agency_datapoints = defaultdict(list)
-            for datapoint in datapoints:
-                metric_key_to_agency_datapoints[datapoint.metric_definition_key].append(
-                    datapoint
-                )
-            expenses_datapoints = metric_key_to_agency_datapoints[
-                law_enforcement.expenses.key
-            ]
-            disabled_datapoint = [
-                dp for dp in expenses_datapoints if dp.enabled is False
-            ]
-            if i == 0:
-                # Child agency 1 should have no disabled datapoints
-                self.assertTrue(len(disabled_datapoint) == 0)
-            else:
-                # Child agency 2 should have a disabled datapoint
-                self.assertTrue(len(disabled_datapoint) == 1)
+        self.assertEqual(
+            copied_funding_metrics.metric_interface["is_metric_enabled"],
+            False,
+        )

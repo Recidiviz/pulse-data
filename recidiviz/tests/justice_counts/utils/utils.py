@@ -35,6 +35,7 @@ from recidiviz.justice_counts.includes_excludes.prisons import (
     PrisonClinicalStaffIncludesExcludes,
     PrisonManagementAndOperationsStaffIncludesExcludes,
     PrisonProgrammaticStaffIncludesExcludes,
+    PrisonReleasesToParoleIncludesExcludes,
     PrisonSecurityStaffIncludesExcludes,
     PrisonStaffIncludesExcludes,
     VacantPrisonStaffIncludesExcludes,
@@ -43,12 +44,12 @@ from recidiviz.justice_counts.metrics import law_enforcement, prisons
 from recidiviz.justice_counts.metrics.custom_reporting_frequency import (
     CustomReportingFrequency,
 )
+from recidiviz.justice_counts.metrics.metric_definition import IncludesExcludesSetting
 from recidiviz.justice_counts.metrics.metric_interface import (
     MetricAggregatedDimensionData,
     MetricContextData,
     MetricInterface,
 )
-from recidiviz.justice_counts.utils.constants import REPORTING_FREQUENCY_CONTEXT_KEY
 from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
@@ -402,16 +403,6 @@ class JusticeCountsSchemaTestObjects:
             ],
         )
 
-        self.calls_for_service_custom_reporting_frequency = schema.Datapoint(
-            metric_definition_key=law_enforcement.calls_for_service.key,
-            source=self.test_agency_A,
-            context_key=REPORTING_FREQUENCY_CONTEXT_KEY,
-            value=CustomReportingFrequency(
-                frequency=schema.ReportingFrequency.ANNUAL, starting_month=2
-            ).to_json_str(),
-            is_report_datapoint=False,
-        )
-
     # Spreadsheets
     @staticmethod
     def get_test_spreadsheet(
@@ -740,138 +731,74 @@ class JusticeCountsSchemaTestObjects:
         }
 
     @staticmethod
-    def get_test_agency_datapoints(
-        agency_id: int,
-    ) -> List[schema.Datapoint]:
-        """Returns agency datapoints that can be used during testing."""
-        disabled_metric = schema.Datapoint(
-            metric_definition_key=prisons.funding.key,
-            enabled=False,
-            source_id=agency_id,
-            is_report_datapoint=False,
+    def get_test_metric_interfaces() -> List[MetricInterface]:
+        """Returns a list of test metric interfaces that can be uploaded into unit tests."""
+        # Disabled, CustomReportingFrequency.
+        funding = MetricInterface(
+            key=prisons.funding.key,
+            is_metric_enabled=False,
+            custom_reporting_frequency=CustomReportingFrequency(
+                frequency=schema.ReportingFrequency.ANNUAL, starting_month=2
+            ),
         )
-        custom_reporting_frequency = schema.Datapoint(
-            metric_definition_key=prisons.funding.key,
-            source_id=agency_id,
-            context_key=REPORTING_FREQUENCY_CONTEXT_KEY,
-            value=(
-                CustomReportingFrequency(
-                    frequency=schema.ReportingFrequency.ANNUAL, starting_month=2
-                ).to_json_str()
-            ),
-            is_report_datapoint=False,
+        # includes_excludes_member_to_setting.
+        staff = MetricInterface(
+            key=prisons.staff.key,
+            includes_excludes_member_to_setting={
+                PrisonStaffIncludesExcludes.VOLUNTEER: IncludesExcludesSetting.YES,
+                PrisonStaffIncludesExcludes.INTERN: IncludesExcludesSetting.NO,
+            },
         )
-        excluded_metric_settings_datapoints = [
-            schema.Datapoint(
-                metric_definition_key=prisons.staff.key,
-                includes_excludes_key="VOLUNTEER",
-                value="Yes",
-                source_id=agency_id,
-                is_report_datapoint=False,
-            ),
-            schema.Datapoint(
-                metric_definition_key=prisons.staff.key,
-                includes_excludes_key="INTERN",
-                value="No",
-                source_id=agency_id,
-                is_report_datapoint=False,
-            ),
+        # Context.
+        readmissions = MetricInterface(
+            key=prisons.readmissions.key,
+            contexts=[
+                MetricContextData(
+                    key=ContextKey.ADDITIONAL_CONTEXT,
+                    value="this additional context provides contexts",
+                )
+            ],
+        )
+        # Dimension to enabled status.
+        admissions = MetricInterface(
+            key=prisons.admissions.key,
+            aggregated_dimensions=[
+                MetricAggregatedDimensionData(
+                    dimension_to_enabled_status={
+                        OffenseType.PERSON: False,
+                        OffenseType.PROPERTY: False,
+                        OffenseType.DRUG: False,
+                        OffenseType.PUBLIC_ORDER: False,
+                        OffenseType.OTHER: False,
+                        OffenseType.UNKNOWN: False,
+                    },
+                )
+            ],
+        )
+        # Excluded disaggregation settings
+        releases = MetricInterface(
+            key=prisons.releases.key,
+            aggregated_dimensions=[
+                MetricAggregatedDimensionData(
+                    dimension_to_enabled_status={
+                        ReleaseType.TO_PAROLE_SUPERVISION: None,
+                    },
+                    dimension_to_includes_excludes_member_to_setting={
+                        ReleaseType.TO_PAROLE_SUPERVISION: {
+                            PrisonReleasesToParoleIncludesExcludes.AFTER_SANCTION: IncludesExcludesSetting.NO,
+                            PrisonReleasesToParoleIncludesExcludes.ELIGIBLE: IncludesExcludesSetting.NO,
+                        },
+                    },
+                )
+            ],
+        )
+        return [
+            funding,
+            staff,
+            readmissions,
+            admissions,
+            releases,
         ]
-        prefilled_context_datapoint = schema.Datapoint(
-            metric_definition_key=prisons.readmissions.key,
-            context_key=ContextKey.ADDITIONAL_CONTEXT.name,
-            value="this additional context provides contexts",
-            source_id=agency_id,
-            is_report_datapoint=False,
-        )
-
-        disaggregation_datapoints = [
-            # Disabled disaggregations
-            schema.Datapoint(
-                metric_definition_key=prisons.admissions.key,
-                dimension_identifier_to_member={
-                    OffenseType.dimension_identifier(): OffenseType.PERSON.name
-                },
-                enabled=False,
-                source_id=agency_id,
-                is_report_datapoint=False,
-            ),
-            schema.Datapoint(
-                metric_definition_key=prisons.admissions.key,
-                dimension_identifier_to_member={
-                    OffenseType.dimension_identifier(): OffenseType.PROPERTY.name
-                },
-                enabled=False,
-                source_id=agency_id,
-                is_report_datapoint=False,
-            ),
-            schema.Datapoint(
-                metric_definition_key=prisons.admissions.key,
-                dimension_identifier_to_member={
-                    OffenseType.dimension_identifier(): OffenseType.DRUG.name
-                },
-                enabled=False,
-                source_id=agency_id,
-                is_report_datapoint=False,
-            ),
-            schema.Datapoint(
-                metric_definition_key=prisons.admissions.key,
-                dimension_identifier_to_member={
-                    OffenseType.dimension_identifier(): OffenseType.PUBLIC_ORDER.name
-                },
-                enabled=False,
-                source_id=agency_id,
-                is_report_datapoint=False,
-            ),
-            schema.Datapoint(
-                metric_definition_key=prisons.admissions.key,
-                dimension_identifier_to_member={
-                    OffenseType.dimension_identifier(): OffenseType.OTHER.name
-                },
-                enabled=False,
-                source_id=agency_id,
-                is_report_datapoint=False,
-            ),
-            schema.Datapoint(
-                metric_definition_key=prisons.admissions.key,
-                dimension_identifier_to_member={
-                    OffenseType.dimension_identifier(): OffenseType.UNKNOWN.name
-                },
-                enabled=False,
-                source_id=agency_id,
-                is_report_datapoint=False,
-            ),
-            # Excluded disaggregation settings
-            schema.Datapoint(
-                metric_definition_key=prisons.releases.key,
-                dimension_identifier_to_member={
-                    ReleaseType.dimension_identifier(): ReleaseType.TO_PAROLE_SUPERVISION.name
-                },
-                includes_excludes_key="AFTER_SANCTION",
-                source_id=agency_id,
-                value="No",
-                is_report_datapoint=False,
-            ),
-            schema.Datapoint(
-                metric_definition_key=prisons.releases.key,
-                dimension_identifier_to_member={
-                    ReleaseType.dimension_identifier(): ReleaseType.TO_PAROLE_SUPERVISION.name
-                },
-                includes_excludes_key="ELIGIBLE",
-                source_id=agency_id,
-                value="No",
-                is_report_datapoint=False,
-            ),
-        ]
-        return (
-            [
-                disabled_metric,
-                custom_reporting_frequency,
-                prefilled_context_datapoint,
-            ]
-            + disaggregation_datapoints
-            + excluded_metric_settings_datapoints
-        )
 
     @staticmethod
     def get_reported_calls_for_service_metric(

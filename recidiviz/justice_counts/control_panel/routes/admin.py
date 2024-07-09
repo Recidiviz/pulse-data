@@ -29,8 +29,8 @@ from recidiviz.justice_counts.agency import AgencyInterface
 from recidiviz.justice_counts.agency_user_account_association import (
     AgencyUserAccountAssociationInterface,
 )
-from recidiviz.justice_counts.datapoint import DatapointInterface
 from recidiviz.justice_counts.exceptions import JusticeCountsServerError
+from recidiviz.justice_counts.metric_setting import MetricSettingInterface
 from recidiviz.justice_counts.user_account import UserAccountInterface
 from recidiviz.justice_counts.utils.agency_utils import delete_agency
 from recidiviz.justice_counts.utils.constants import (
@@ -280,7 +280,7 @@ def get_admin_blueprint(
             # Pull the list of metrics that the agency has done configuration for
             # This list will be shown on the frontend so the user can choose which
             # metric settings to copy over to child agencies
-            metric_settings = DatapointInterface.get_metric_settings_by_agency(
+            metric_settings = MetricSettingInterface.get_agency_metric_interfaces(
                 session=current_session,
                 agency=agency,
             )
