@@ -22,8 +22,9 @@ WITH
     caseIds AS (
         SELECT DISTINCT
             AssignedToUserId,
-            STRING_AGG(PSIReportId, ',') OVER (PARTITION BY AssignedToUserId ORDER BY UpdateDate) as caseIds
-        FROM  `{project_id}.{us_ix_raw_data_up_to_date_dataset}.com_PSIReport_latest`
+            STRING_AGG(PSIReportId, ',' ORDER BY UpdateDate) AS caseIds
+        FROM   `{project_id}.{us_ix_raw_data_up_to_date_dataset}.com_PSIReport_latest`
+        GROUP BY AssignedToUserId
     )
     SELECT DISTINCT
         psi.AssignedToUserId as external_id,
