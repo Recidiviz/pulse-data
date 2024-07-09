@@ -62,3 +62,8 @@ columns:
     is_pii: True
     description: |-
       Supervision Enhancement Reference ID
+
+table_relationships:
+  - foreign_table: LBAKRDTA_TAK001
+    join_logic:
+      - LBAKRDTA_TAK001.EK_DOC = OFNDR_PDB_FOC_SUPERVISION_ENHANCEMENTS_VW.DOC_ID

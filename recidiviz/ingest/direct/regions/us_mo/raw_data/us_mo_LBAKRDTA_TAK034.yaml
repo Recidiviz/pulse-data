@@ -60,3 +60,6 @@ table_relationships:
   - foreign_table: LBCMDATA_APFX91
     join_logic:
       - LBAKRDTA_TAK034.CE_PON = LBCMDATA_APFX91.BDGNO
+  - foreign_table: LBAKRDTA_TAK001
+    join_logic:
+      - LBAKRDTA_TAK001.EK_DOC = LBAKRDTA_TAK034.CE_DOC

@@ -71,3 +71,7 @@ columns:
     description: |-
       User Identification
 always_historical_export: True
+table_relationships:
+  - foreign_table: LBAKRDTA_TAK001
+    join_logic:
+      - LBAKRDTA_TAK001.EK_DOC = LBAKRDTA_TAK065.CS_DOC
