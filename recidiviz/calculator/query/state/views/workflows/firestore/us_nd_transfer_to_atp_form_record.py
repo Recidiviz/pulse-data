@@ -25,30 +25,35 @@ from recidiviz.calculator.query.state.views.workflows.firestore.opportunity_reco
     opportunity_query_final_select_with_case_notes,
 )
 from recidiviz.common.constants.states import StateCode
-from recidiviz.task_eligibility.dataset_config import (
-    task_eligibility_spans_state_specific_dataset,
-)
-from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.dataset_config import (
     raw_latest_views_dataset_for_region,
     raw_tables_dataset_for_region,
 )
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.task_eligibility.dataset_config import (
+    task_eligibility_spans_state_specific_dataset,
+)
 from recidiviz.task_eligibility.utils.almost_eligible_query_fragments import (
     clients_eligible,
     json_to_array_cte,
+    one_criteria_away_from_eligibility,
+    x_time_away_from_eligibility,
 )
-from recidiviz.task_eligibility.utils.us_nd_query_fragments import reformat_ids
+from recidiviz.task_eligibility.utils.us_nd_query_fragments import (
+    get_positive_behavior_reports_as_case_notes,
+    get_program_assignments_as_case_notes,
+    reformat_ids,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
-from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 
-US_ND_WORK_RELEASE_FORM_RECORD_VIEW_NAME = "us_nd_work_release_form_record"
+US_ND_TRANSFER_TO_ATP_RECORD_VIEW_NAME = "us_nd_transfer_to_atp_form_record"
 
-US_ND_WORK_RELEASE_FORM_RECORD_DESCRIPTION = """
+US_ND_TRANSFER_TO_ATP_RECORD_DESCRIPTION = """
     Queries information needed to fill out a ATP form in ND
     """
 
-US_ND_WORK_RELEASE_FORM_RECORD_QUERY_TEMPLATE = f"""
+US_ND_TRANSFER_TO_ATP_RECORD_QUERY_TEMPLATE = f"""
 
 WITH current_incarceration_pop_cte AS (
     {join_current_task_eligibility_spans_with_external_id(state_code= "'US_ND'", 
@@ -60,42 +65,12 @@ case_notes_cte AS (
 -- Get together all case_notes
 
     -- Positive Behavior Reports (PBR)
-    SELECT 
-        peid.external_id,
-        "Positive Behavior Reports (in the past year)" AS criteria,
-        facility AS note_title, 
-        incident_details AS note_body,
-        sic.incident_date AS event_date,
-    FROM `{{project_id}}.{{normalized_state_dataset}}.state_incarceration_incident` sic
-    INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` peid
-        USING (person_id)
-    WHERE sic.state_code= 'US_ND'
-        AND sic.incident_type = 'POSITIVE'
-        AND sic.incident_date > DATE_SUB(CURRENT_DATE, INTERVAL 1 YEAR)
+    {get_positive_behavior_reports_as_case_notes()}
 
     UNION ALL
 
     -- Assignments (this includes programming, career readiness and jobs)
-    SELECT 
-        peid.external_id,
-        "Assignments" AS criteria,
-        spa.participation_status AS note_title,
-        CONCAT(
-            spa.program_location_id,
-            " - Service: ",
-            SPLIT(spa.program_id, '@@')[SAFE_OFFSET(0)],
-            " - Activity Description: ",
-            SPLIT(spa.program_id, '@@')[SAFE_OFFSET(1)]
-        ) AS note_body,
-        COALESCE(spa.discharge_date, spa.start_date, spa.referral_date) AS event_date,
-    FROM `{{project_id}}.{{normalized_state_dataset}}.state_program_assignment` spa
-    INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` peid
-        USING (person_id)
-    WHERE spa.state_code = 'US_ND'
-        AND spa.program_id IS NOT NULL
-        AND spa.participation_status = 'IN_PROGRESS'
-    GROUP BY 1,2,3,4,5
-    HAVING note_body IS NOT NULL
+    {get_program_assignments_as_case_notes()}
 
     UNION ALL
 
@@ -123,6 +98,32 @@ json_to_array_cte AS (
 eligible_and_almost_eligible AS (
     -- ELIGIBLE
     {clients_eligible(from_cte = 'current_incarceration_pop_cte')}
+
+    UNION ALL
+
+    -- ALMOST ELIGIBLE (<3mo away from eligibility according to the full_term_completion_date)
+    {x_time_away_from_eligibility(time_interval= 3, date_part= 'MONTH',
+        criteria_name= 'US_ND_INCARCERATION_WITHIN_1_YEAR_OF_FTCD_OR_PRD_OR_CPP_RELEASE',
+        eligible_date = 'full_term_completion_date',
+        from_cte_table_name = "json_to_array_cte")}
+
+    UNION ALL
+    
+    -- ALMOST ELIGIBLE (<3mo away from eligibility according to the parole_review_date)
+    {x_time_away_from_eligibility(time_interval= 15, date_part= 'MONTH',
+        criteria_name= 'US_ND_INCARCERATION_WITHIN_1_YEAR_OF_FTCD_OR_PRD_OR_CPP_RELEASE',
+        eligible_date = 'parole_review_date',
+        from_cte_table_name = "json_to_array_cte")}
+
+    UNION ALL
+    
+    -- ALMOST ELIGIBLE (Only missing the 30 days in the same facility criteria)
+    {one_criteria_away_from_eligibility(criteria_name = 'INCARCERATED_AT_LEAST_30_DAYS_IN_SAME_FACILITY',)}
+
+    UNION ALL
+    
+    -- ALMOST ELIGIBLE (Only missing the 90 days in NDDCR criteria)
+    {one_criteria_away_from_eligibility(criteria_name = 'INCARCERATED_AT_LEAST_90_DAYS',)}
 ),
 
 array_case_notes_cte AS (
@@ -132,11 +133,11 @@ array_case_notes_cte AS (
 {opportunity_query_final_select_with_case_notes()}
 """
 
-US_ND_WORK_RELEASE_FORM_RECORD_VIEW_BUILDER = SimpleBigQueryViewBuilder(
+US_ND_TRANSFER_TO_ATP_FORM_RECORD_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=dataset_config.WORKFLOWS_VIEWS_DATASET,
-    view_id=US_ND_WORK_RELEASE_FORM_RECORD_VIEW_NAME,
-    view_query_template=US_ND_WORK_RELEASE_FORM_RECORD_QUERY_TEMPLATE,
-    description=US_ND_WORK_RELEASE_FORM_RECORD_DESCRIPTION,
+    view_id=US_ND_TRANSFER_TO_ATP_RECORD_VIEW_NAME,
+    view_query_template=US_ND_TRANSFER_TO_ATP_RECORD_QUERY_TEMPLATE,
+    description=US_ND_TRANSFER_TO_ATP_RECORD_DESCRIPTION,
     normalized_state_dataset=NORMALIZED_STATE_DATASET,
     task_eligibility_dataset=task_eligibility_spans_state_specific_dataset(
         StateCode.US_ND
@@ -152,4 +153,4 @@ US_ND_WORK_RELEASE_FORM_RECORD_VIEW_BUILDER = SimpleBigQueryViewBuilder(
 
 if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
-        US_ND_WORK_RELEASE_FORM_RECORD_VIEW_BUILDER.build_and_print()
+        US_ND_TRANSFER_TO_ATP_FORM_RECORD_VIEW_BUILDER.build_and_print()

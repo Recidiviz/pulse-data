@@ -1,8 +1,3 @@
-# Enumerates all the places raw data tables are referenced directly in our deployed view graph. Generally, direct raw
-# data references in our deployed views should be avoided - we should aim to capture all state-specific logic in ingest
-# pipelines via ingest view queries / mappings or in normalization pipeline logic. However, there are cases where we
-# still find we need to pull raw data into queries directly (e.g. there is no place in the STATE schema to store the
-# info). Those reasons should be outlined here.
 US_AR:
   ADDRESS:
     reference_views.us_ar_location_metadata: |-
@@ -37,7 +32,6 @@ US_AR:
   SUPVINTERVENTION:
     analyst_data.us_ar_ovg_events_preprocessed: |-
       Source for preprocessed data used in us_ar_ovg_timeline.
-
 US_AZ:
   AZ_AQ_CATEGORY:
     analyst_data.us_az_action_queue: |-
@@ -1064,7 +1058,7 @@ US_MO:
       Usage reason unknown. Grandfathered in 04/18/2024.
 US_ND:
   RECIDIVIZ_REFERENCE_alert_codes:
-    workflows_views.us_nd_work_release_form_record: |-
+    workflows_views.us_nd_transfer_to_atp_form_record: |-
       Alerts are not ingested.
   RECIDIVIZ_REFERENCE_state_attorney:
     workflows_views.us_nd_complete_discharge_early_from_supervision_record: |-
@@ -1118,6 +1112,9 @@ US_ND:
     task_eligibility_criteria_us_nd.incarceration_within_6_months_of_parole_review_date:
       |-
       Usage reason unknown. Grandfathered in 04/18/2024.
+  elite_offender_offences:
+    task_eligibility_criteria_us_nd.no_detainers_or_warrants: |-
+      We don't have a place to ingest detainers or warrants.
   elite_offenderchargestable:
     task_eligibility_criteria_us_nd.has_an_aomms_sentence: |-
       We needed this to connect to sentences_preprocessed.
@@ -1137,7 +1134,7 @@ US_ND:
   recidiviz_elite_offender_alerts:
     task_eligibility_criteria_us_nd.has_registration_requirements: |-
       Alerts are not ingested.
-    workflows_views.us_nd_work_release_form_record: |-
+    workflows_views.us_nd_transfer_to_atp_form_record: |-
       Alerts are not ingested.
 US_OR:
   RCDVZ_CISPRDDTA_CMOFFT:
