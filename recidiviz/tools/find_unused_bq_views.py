@@ -116,6 +116,12 @@ from recidiviz.calculator.query.state.views.outliers.supervision_officers_archiv
 from recidiviz.calculator.query.state.views.outliers.supervision_usage_metrics import (
     SUPERVISION_USAGE_METRICS_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.sentencing.recidivism_event import (
+    RECIDIVISM_EVENT_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.sentencing.sentence_cohort import (
+    SENTENCE_COHORT_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.sessions.assessment_lsir_responses import (
     ASSESSMENT_LSIR_RESPONSES_VIEW_BUILDER,
 )
@@ -344,6 +350,12 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
     ),
     MILESTONES_FUNNEL_VIEW_BUILDER.address: (
         "Will be referenced to support Workflows Milestones Impact Tracking (see #28874) (Michelle Orden 5/22/24)"
+    ),
+    RECIDIVISM_EVENT_VIEW_BUILDER.address: (
+        "Referenced by PSI Case Insights BigQuery writer (see #30876) (Ben Packer 7/9/24) "
+    ),
+    SENTENCE_COHORT_VIEW_BUILDER.address: (
+        "Referenced by PSI Case Insights BigQuery writer (see #30876) (Ben Packer 7/9/24) "
     ),
 }
 

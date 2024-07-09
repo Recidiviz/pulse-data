@@ -24,9 +24,20 @@ from recidiviz.calculator.query.state.views.sentencing.case_record import (
 from recidiviz.calculator.query.state.views.sentencing.client_record import (
     SENTENCING_CLIENT_RECORD_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.sentencing.recidivism_event import (
+    RECIDIVISM_EVENT_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.sentencing.sentence_cohort import (
+    SENTENCE_COHORT_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.sentencing.staff_record import (
     SENTENCING_STAFF_RECORD_VIEW_BUILDER,
 )
+
+CASE_INSIGHTS_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
+    RECIDIVISM_EVENT_VIEW_BUILDER,
+    SENTENCE_COHORT_VIEW_BUILDER,
+]
 
 SENTENCING_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
     SENTENCING_CASE_RECORD_VIEW_BUILDER,
