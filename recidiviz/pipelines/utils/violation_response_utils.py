@@ -18,13 +18,13 @@
 import datetime
 from collections import defaultdict
 from datetime import date
-from typing import Dict, List, Optional, Sequence, TypeVar
+from typing import Dict, List, Optional, Sequence
 
 from recidiviz.common.constants.state.state_supervision_violation_response import (
     StateSupervisionViolationResponseDecision,
 )
-from recidiviz.persistence.entity.state.entities import (
-    StateSupervisionViolationResponse,
+from recidiviz.persistence.entity.state.normalized_entities import (
+    NormalizedStateSupervisionViolationResponse,
 )
 
 DECISION_SEVERITY_ORDER = [
@@ -49,21 +49,17 @@ DECISION_SEVERITY_ORDER = [
     StateSupervisionViolationResponseDecision.EXTERNAL_UNKNOWN,
 ]
 
-StateSupervisionViolationResponseT = TypeVar(
-    "StateSupervisionViolationResponseT", bound=StateSupervisionViolationResponse
-)
-
 
 def responses_on_most_recent_response_date(
-    violation_responses: List[StateSupervisionViolationResponseT],
-) -> List[StateSupervisionViolationResponseT]:
+    violation_responses: List[NormalizedStateSupervisionViolationResponse],
+) -> List[NormalizedStateSupervisionViolationResponse]:
     """Finds the most recent response_date out of all of the violation_responses, and returns all responses with that
     response_date."""
     if not violation_responses:
         return []
 
     responses_by_date: Dict[
-        datetime.date, List[StateSupervisionViolationResponseT]
+        datetime.date, List[NormalizedStateSupervisionViolationResponse]
     ] = defaultdict(list)
 
     for response in violation_responses:
@@ -79,7 +75,7 @@ def responses_on_most_recent_response_date(
 
 
 def get_most_severe_response_decision(
-    violation_responses: Sequence[StateSupervisionViolationResponse],
+    violation_responses: Sequence[NormalizedStateSupervisionViolationResponse],
 ) -> Optional[StateSupervisionViolationResponseDecision]:
     """Returns the most severe response decision on the given |violation_responses|."""
     if not violation_responses:
@@ -99,10 +95,10 @@ def get_most_severe_response_decision(
 
 
 def violation_responses_in_window(
-    violation_responses: List[StateSupervisionViolationResponseT],
+    violation_responses: List[NormalizedStateSupervisionViolationResponse],
     upper_bound_exclusive: date,
     lower_bound_inclusive: Optional[date],
-) -> List[StateSupervisionViolationResponseT]:
+) -> List[NormalizedStateSupervisionViolationResponse]:
     """Filters the violation responses to the ones that have a response_date before the
     |upper_bound_exclusive| date and after the |lower_bound_inclusive|, if set.
     """

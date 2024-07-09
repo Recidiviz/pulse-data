@@ -46,6 +46,7 @@ from recidiviz.persistence.entity.normalized_entities_utils import (
 )
 from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
 from recidiviz.persistence.entity.state.normalized_entities import (
+    NormalizedStateIncarcerationPeriod,
     NormalizedStateIncarcerationSentence,
     NormalizedStateSupervisionViolationResponse,
 )
@@ -1026,7 +1027,9 @@ class IncarcerationPeriodNormalizationManager(EntityNormalizationManager):
 
     @staticmethod
     def validate_ip_invariants(
-        incarceration_periods: Sequence[StateIncarcerationPeriod],
+        incarceration_periods: Sequence[
+            StateIncarcerationPeriod | NormalizedStateIncarcerationPeriod
+        ],
     ) -> None:
         """Validates that no IPs violate standards that we can expect to be
         met for all periods in all states at the end of IP normalization."""

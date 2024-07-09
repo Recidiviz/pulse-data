@@ -24,7 +24,9 @@ from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodReleaseReason,
 )
 from recidiviz.common.constants.state.state_shared_enums import StateCustodialAuthority
-from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
+from recidiviz.persistence.entity.state.normalized_entities import (
+    NormalizedStateIncarcerationPeriod,
+)
 from recidiviz.pipelines.utils.state_utils.templates.us_xx.us_xx_incarceration_delegate import (
     UsXxIncarcerationDelegate,
 )
@@ -39,7 +41,7 @@ class TestStateSpecificIncarcerationDelegate(unittest.TestCase):
     def test_is_period_included_in_state_population_for_custodial_authority_state_prison(
         self,
     ) -> None:
-        incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+        incarceration_period = NormalizedStateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1112,
             external_id="2",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
@@ -49,6 +51,7 @@ class TestStateSpecificIncarcerationDelegate(unittest.TestCase):
             admission_reason_raw_text="60",
             release_date=date(2010, 12, 21),
             release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
+            sequence_num=0,
         )
 
         self.assertTrue(
@@ -58,7 +61,7 @@ class TestStateSpecificIncarcerationDelegate(unittest.TestCase):
     def test_is_period_included_in_state_population_for_custodial_authority_supervision_authority(
         self,
     ) -> None:
-        incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+        incarceration_period = NormalizedStateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1112,
             external_id="2",
             incarceration_type=StateIncarcerationType.COUNTY_JAIL,
@@ -68,6 +71,7 @@ class TestStateSpecificIncarcerationDelegate(unittest.TestCase):
             admission_reason_raw_text="CCIS-TRUE-INRS",
             release_date=date(2010, 12, 21),
             release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
+            sequence_num=0,
         )
 
         incarceration_period.custodial_authority = (

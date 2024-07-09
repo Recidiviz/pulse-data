@@ -38,7 +38,6 @@ from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionLevel,
 )
 from recidiviz.persistence.entity.state.entities import (
-    StateAssessment,
     StatePerson,
     StateSupervisionContact,
 )
@@ -219,7 +218,7 @@ class StateSupervisionCaseComplianceManager:
 
     def _next_recommended_assessment_date(
         self,
-        most_recent_assessment: Optional[StateAssessment],
+        most_recent_assessment: Optional[NormalizedStateAssessment],
         compliance_evaluation_date: Optional[date] = None,
     ) -> Optional[date]:
         """Outputs what the next assessment date is for the person under supervision."""

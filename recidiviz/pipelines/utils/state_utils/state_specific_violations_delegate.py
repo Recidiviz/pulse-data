@@ -24,16 +24,15 @@ from typing import Dict, List, Optional, Tuple
 
 from dateutil.relativedelta import relativedelta
 
+from recidiviz.common.constants.state.state_supervision_violation import (
+    StateSupervisionViolationType,
+)
 from recidiviz.common.constants.state.state_supervision_violation_response import (
     StateSupervisionViolationResponseType,
 )
 from recidiviz.common.date import DateRange
-from recidiviz.persistence.entity.state.entities import (
-    StateSupervisionViolation,
-    StateSupervisionViolationResponse,
-    StateSupervisionViolationType,
-)
 from recidiviz.persistence.entity.state.normalized_entities import (
+    NormalizedStateSupervisionViolation,
     NormalizedStateSupervisionViolationResponse,
 )
 from recidiviz.pipelines.utils.state_utils.state_specific_delegate import (
@@ -72,7 +71,7 @@ class StateSpecificViolationDelegate(abc.ABC, StateSpecificDelegate):
 
     def should_include_response_in_violation_history(
         self,
-        response: StateSupervisionViolationResponse,
+        response: NormalizedStateSupervisionViolationResponse,
         include_follow_up_responses: bool = False,  # pylint: disable=unused-argument
     ) -> bool:
         """Determines whether the given |response| should be included in violation history analyses.
@@ -141,7 +140,7 @@ class StateSpecificViolationDelegate(abc.ABC, StateSpecificDelegate):
 
     def get_violation_type_subtype_strings_for_violation(
         self,
-        violation: StateSupervisionViolation,
+        violation: NormalizedStateSupervisionViolation,
     ) -> Dict[str, List[Optional[str]]]:
         """Returns a list of tuples that represent the violation subtypes present on
         the given |violation|, along with the raw text used to determine the subtype.

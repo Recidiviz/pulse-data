@@ -29,7 +29,6 @@ from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodSupervisionType,
     StateSupervisionPeriodTerminationReason,
 )
-from recidiviz.persistence.entity.state.entities import StateSupervisionPeriod
 from recidiviz.persistence.entity.state.normalized_entities import (
     NormalizedStateIncarcerationPeriod,
     NormalizedStateSupervisionPeriod,
@@ -63,7 +62,7 @@ class TestPreCommitmentSupervisionPeriod(unittest.TestCase):
         admission_reason: StateIncarcerationPeriodAdmissionReason,
         admission_reason_raw_text: str,
         supervision_periods: List[NormalizedStateSupervisionPeriod],
-    ) -> Optional[StateSupervisionPeriod]:
+    ) -> Optional[NormalizedStateSupervisionPeriod]:
         ip = NormalizedStateIncarcerationPeriod.new_with_defaults(
             sequence_num=0,
             state_code="US_ND",

@@ -16,7 +16,9 @@
 # =============================================================================
 """US_ND implementation of the incarceration delegate"""
 from recidiviz.common.constants.state.state_shared_enums import StateCustodialAuthority
-from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
+from recidiviz.persistence.entity.state.normalized_entities import (
+    NormalizedStateIncarcerationPeriod,
+)
 from recidiviz.pipelines.utils.state_utils.state_specific_incarceration_delegate import (
     StateSpecificIncarcerationDelegate,
 )
@@ -27,7 +29,7 @@ class UsNdIncarcerationDelegate(StateSpecificIncarcerationDelegate):
 
     def is_period_included_in_state_population(
         self,
-        incarceration_period: StateIncarcerationPeriod,
+        incarceration_period: NormalizedStateIncarcerationPeriod,
     ) -> bool:
         """In US_ND, only periods of incarceration that are under the custodial
         authority of the state prison are included in the state population.

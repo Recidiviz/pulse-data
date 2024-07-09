@@ -25,9 +25,9 @@ from recidiviz.common.constants.state.state_supervision_violation import (
 from recidiviz.common.constants.state.state_supervision_violation_response import (
     StateSupervisionViolationResponseType,
 )
-from recidiviz.persistence.entity.state.entities import (
-    StateSupervisionViolation,
-    StateSupervisionViolationResponse,
+from recidiviz.persistence.entity.state.normalized_entities import (
+    NormalizedStateSupervisionViolation,
+    NormalizedStateSupervisionViolationResponse,
 )
 from recidiviz.pipelines.utils.state_utils.state_specific_violations_delegate import (
     StateSpecificViolationDelegate,
@@ -103,7 +103,7 @@ class UsMoViolationDelegate(StateSpecificViolationDelegate):
 
     def should_include_response_in_violation_history(
         self,
-        response: StateSupervisionViolationResponse,
+        response: NormalizedStateSupervisionViolationResponse,
         include_follow_up_responses: bool = False,
     ) -> bool:
         """For US_MO, we include all responses of type CITATION, and certain VIOLATION_REPORT responses depending on
@@ -122,7 +122,7 @@ class UsMoViolationDelegate(StateSpecificViolationDelegate):
 
     def get_violation_type_subtype_strings_for_violation(
         self,
-        violation: StateSupervisionViolation,
+        violation: NormalizedStateSupervisionViolation,
     ) -> Dict[str, List[Optional[str]]]:
         """Returns a list of strings that represent the violation subtypes present on
         the given |violation|, along with the raw text used to determine the subtype.

@@ -34,7 +34,6 @@ from recidiviz.common.date import DateRange, DateRangeDiff
 from recidiviz.persistence.entity.normalized_entities_utils import (
     sort_normalized_entities_by_sequence_num,
 )
-from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
 from recidiviz.persistence.entity.state.normalized_entities import (
     NormalizedStateIncarcerationPeriod,
 )
@@ -98,15 +97,15 @@ class NormalizedIncarcerationPeriodIndex:
     # portion of the month, where the incarceration prevents the person from being counted simultaneously in the
     # supervision population.
     month_to_overlapping_ips_not_under_supervision_authority: Dict[
-        int, Dict[int, List[StateIncarcerationPeriod]]
+        int, Dict[int, List[NormalizedStateIncarcerationPeriod]]
     ] = attr.ib()
 
     @month_to_overlapping_ips_not_under_supervision_authority.default
     def _month_to_overlapping_ips_not_under_supervision_authority(
         self,
-    ) -> Dict[int, Dict[int, List[StateIncarcerationPeriod]]]:
+    ) -> Dict[int, Dict[int, List[NormalizedStateIncarcerationPeriod]]]:
         month_to_overlapping_ips_not_under_supervision_authority: Dict[
-            int, Dict[int, List[StateIncarcerationPeriod]]
+            int, Dict[int, List[NormalizedStateIncarcerationPeriod]]
         ] = defaultdict(lambda: defaultdict(list))
 
         for (
@@ -129,7 +128,7 @@ class NormalizedIncarcerationPeriodIndex:
 
     @months_excluded_from_supervision_population.default
     def _months_excluded_from_supervision_population(self) -> Set[Tuple[int, int]]:
-        """For each StateIncarcerationPeriod, identifies months where the person was incarcerated for every day during
+        """For each NormalizedStateIncarcerationPeriod, identifies months where the person was incarcerated for every day during
         that month. Returns a set of months in the format (year, month) for which the person spent the entire month in a
         prison, where the incarceration prevents the person from being counted simultaneously in the supervision
         population.
@@ -160,19 +159,19 @@ class NormalizedIncarcerationPeriodIndex:
 
         return months_excluded_from_supervision_population
 
-    # A dictionary mapping admission dates of admissions to prison to the StateIncarcerationPeriods that happened on
+    # A dictionary mapping admission dates of admissions to prison to the NormalizedStateIncarcerationPeriods that happened on
     # that day.
     incarceration_periods_by_admission_date: Dict[
-        date, List[StateIncarcerationPeriod]
+        date, List[NormalizedStateIncarcerationPeriod]
     ] = attr.ib()
 
     @incarceration_periods_by_admission_date.default
     def _incarceration_periods_by_admission_date(
         self,
-    ) -> Dict[date, List[StateIncarcerationPeriod]]:
-        """Organizes the list of StateIncarcerationPeriods by the admission_date on the period."""
+    ) -> Dict[date, List[NormalizedStateIncarcerationPeriod]]:
+        """Organizes the list of NormalizedStateIncarcerationPeriods by the admission_date on the period."""
         incarceration_periods_by_admission_date: Dict[
-            date, List[StateIncarcerationPeriod]
+            date, List[NormalizedStateIncarcerationPeriod]
         ] = defaultdict(list)
 
         for incarceration_period in self.sorted_incarceration_periods:
@@ -243,7 +242,7 @@ class NormalizedIncarcerationPeriodIndex:
     @staticmethod
     def _get_portions_of_range_not_covered_by_periods_subset(
         time_range_to_cover: DateRange,
-        incarceration_periods_subset: List[StateIncarcerationPeriod],
+        incarceration_periods_subset: List[NormalizedStateIncarcerationPeriod],
     ) -> List[DateRange]:
         """Returns a list of date ranges within the provided |time_range_to_cover| which the provided set of
         incarceration periods does not fully overlap.
@@ -391,7 +390,7 @@ class NormalizedIncarcerationPeriodIndex:
         ip_index_to_most_recent_board_hold_index: Dict[int, Optional[DateRange]] = {}
 
         most_recent_board_hold_start_date: Optional[date] = None
-        most_recent_board_hold: Optional[StateIncarcerationPeriod] = None
+        most_recent_board_hold: Optional[NormalizedStateIncarcerationPeriod] = None
 
         for index, ip in enumerate(self.sorted_incarceration_periods):
             if most_recent_board_hold:
@@ -443,7 +442,7 @@ class NormalizedIncarcerationPeriodIndex:
         return ip_index_to_most_recent_board_hold_index
 
     def most_recent_board_hold_span_in_index(
-        self, incarceration_period: StateIncarcerationPeriod
+        self, incarceration_period: NormalizedStateIncarcerationPeriod
     ) -> Optional[DateRange]:
         """Returns the date range of the most recent parole board hold that preceded
         the given |incarceration_period|, if one exists."""

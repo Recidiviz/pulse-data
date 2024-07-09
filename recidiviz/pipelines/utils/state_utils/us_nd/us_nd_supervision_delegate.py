@@ -28,6 +28,9 @@ from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodSupervisionType,
 )
 from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
+from recidiviz.persistence.entity.state.normalized_entities import (
+    NormalizedStateIncarcerationPeriod,
+)
 from recidiviz.pipelines.utils.state_utils.state_specific_supervision_delegate import (
     StateSpecificSupervisionDelegate,
 )
@@ -56,7 +59,9 @@ class UsNdSupervisionDelegate(StateSpecificSupervisionDelegate):
         return None
 
     def get_incarceration_period_supervision_type_at_release(
-        self, incarceration_period: StateIncarcerationPeriod
+        self,
+        incarceration_period: StateIncarcerationPeriod
+        | NormalizedStateIncarcerationPeriod,
     ) -> Optional[StateSupervisionPeriodSupervisionType]:
         """Calculates the post-incarceration supervision type for US_ND by evaluating the raw text fields associated
         with the release_reason.

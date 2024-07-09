@@ -57,6 +57,7 @@ from recidiviz.pipelines.utils.violation_response_utils import (
     get_most_severe_response_decision,
     identify_most_severe_response_decision,
 )
+from recidiviz.utils.types import assert_type
 
 
 class ViolationIdentifier(BaseIdentifier[List[ViolationEvent]]):
@@ -128,12 +129,7 @@ class ViolationIdentifier(BaseIdentifier[List[ViolationEvent]]):
 
         violation_with_response_events: List[ViolationWithResponseEvent] = []
 
-        supervision_violation_id = violation.supervision_violation_id
-
-        if not supervision_violation_id:
-            raise ValueError(
-                "Invalid event: a violation should always have a supervision_violation_id."
-            )
+        supervision_violation_id = assert_type(violation.supervision_violation_id, int)
 
         state_code = violation.state_code
         violation_date = violation.violation_date

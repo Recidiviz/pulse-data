@@ -31,6 +31,7 @@ from recidiviz.common.constants.state.state_supervision_period import (
 )
 from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
 from recidiviz.persistence.entity.state.normalized_entities import (
+    NormalizedStateIncarcerationPeriod,
     NormalizedStateSupervisionPeriod,
 )
 from recidiviz.pipelines.utils.state_utils.state_specific_delegate import (
@@ -125,7 +126,9 @@ class StateSpecificSupervisionDelegate(abc.ABC, StateSpecificDelegate):
         return None
 
     def get_incarceration_period_supervision_type_at_release(
-        self, incarceration_period: StateIncarcerationPeriod
+        self,
+        incarceration_period: StateIncarcerationPeriod
+        | NormalizedStateIncarcerationPeriod,
     ) -> Optional[StateSupervisionPeriodSupervisionType]:
         """For some states, we may need to look at the incarceration period to determine
         the supervision type upon release. By default, returns None, as it's assumed
