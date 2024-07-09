@@ -52,10 +52,7 @@ from recidiviz.justice_counts.metrics.metric_registry import METRICS_BY_SYSTEM
 from recidiviz.justice_counts.report import ReportInterface
 from recidiviz.justice_counts.types import BulkUploadFileType
 from recidiviz.justice_counts.user_account import UserAccountInterface
-from recidiviz.justice_counts.utils.constants import (
-    DISAGGREGATED_BY_SUPERVISION_SUBSYSTEMS,
-    UploadMethod,
-)
+from recidiviz.justice_counts.utils.constants import UploadMethod
 from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.tests.justice_counts.spreadsheet_helpers import (
@@ -942,20 +939,18 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
         with SessionFactory.using_database(self.database_key) as session:
             agency = self.test_schema_objects.test_agency_E
             user = self.test_schema_objects.test_user_A
-            disaggregation_datapoint = schema.Datapoint(  # Funding metric will be disaggregated by supervision subsystem
-                metric_definition_key=supervision.funding.key,
-                source_id=self.supervision_agency_id,
-                context_key=DISAGGREGATED_BY_SUPERVISION_SUBSYSTEMS,
-                dimension_identifier_to_member=None,
-                value=str(True),
-                is_report_datapoint=False,
-            )
+            session.add_all([user, agency])
+            session.commit()
+            session.refresh(agency)
+
             metric_interface = MetricInterface(
                 key=supervision.funding.key,
                 disaggregated_by_supervision_subsystems=True,
             )
-
-            session.add_all([user, agency, disaggregation_datapoint])
+            MetricSettingInterface.add_or_update_agency_metric_setting(
+                session=session, agency=agency, agency_metric=metric_interface
+            )
+            session.commit()
 
             file_path = create_excel_file(
                 system=schema.System.SUPERVISION,

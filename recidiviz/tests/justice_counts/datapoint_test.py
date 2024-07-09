@@ -29,7 +29,6 @@ from recidiviz.justice_counts.exceptions import JusticeCountsServerError
 from recidiviz.justice_counts.includes_excludes.prisons import (
     PrisonFundingTimeframeIncludesExcludes,
 )
-from recidiviz.justice_counts.metric_setting import MetricSettingInterface
 from recidiviz.justice_counts.metrics import law_enforcement, prisons, supervision
 from recidiviz.justice_counts.metrics.custom_reporting_frequency import (
     CustomReportingFrequency,
@@ -653,68 +652,6 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
                     histories=histories,
                 )
                 session.commit()
-
-    def test_get_disaggregated_by_supervision_subsystems_agency_metric(self) -> None:
-        with SessionFactory.using_database(self.database_key) as session:
-            supervision_agency = self.test_schema_objects.test_agency_C
-            law_enforcement_agency = self.test_schema_objects.test_agency_A
-            session.add_all([supervision_agency, law_enforcement_agency])
-            session.flush()
-            session.refresh(supervision_agency)
-            session.refresh(law_enforcement_agency)
-            supervision_agency_metrics = (
-                MetricSettingInterface.get_agency_metric_interfaces(
-                    session=session, agency=supervision_agency
-                )
-            )
-
-            law_enforcement_agency_metrics = (
-                MetricSettingInterface.get_agency_metric_interfaces(
-                    session=session, agency=law_enforcement_agency
-                )
-            )
-
-            for metric in supervision_agency_metrics:
-                # Since the agency is a supervision agency, the disaggregated_by_supervision_subsystems
-                # field will default to False
-                self.assertEqual(metric.disaggregated_by_supervision_subsystems, False)
-
-            for metric in law_enforcement_agency_metrics:
-                # Since the agency is NOT a supervision agency, the disaggregated_by_supervision_subsystems
-                # field will default to None
-                self.assertEqual(metric.disaggregated_by_supervision_subsystems, None)
-
-            # Add agency datapoint that makes the supervision funding metric be
-            # disaggregated by subsystem
-            session.add(
-                Datapoint(
-                    metric_definition_key=supervision.funding.key,
-                    source=supervision_agency,
-                    context_key=DISAGGREGATED_BY_SUPERVISION_SUBSYSTEMS,
-                    dimension_identifier_to_member=None,
-                    value=str(True),
-                    is_report_datapoint=False,
-                ),
-            )
-            session.flush()
-
-            supervision_agency_metrics = (
-                MetricSettingInterface.get_agency_metric_interfaces(
-                    session=session, agency=supervision_agency
-                )
-            )
-            for metric in supervision_agency_metrics:
-                # All metrics except for funding should have a
-                # disaggregated_by_supervision_subsystems field as False,
-                # budget should be True.
-                if metric.key != supervision.funding.key:
-                    self.assertEqual(
-                        metric.disaggregated_by_supervision_subsystems, False
-                    )
-                else:
-                    self.assertEqual(
-                        metric.disaggregated_by_supervision_subsystems, True
-                    )
 
     def test_get_datapoints(self) -> None:
         with SessionFactory.using_database(self.database_key) as session:
@@ -1881,7 +1818,7 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
                 key=prisons.funding.key,
             )
         }
-        report_datapoints = [
+        not_a_report_datapoint = [
             Datapoint(
                 metric_definition_key=prisons.funding.key,
                 is_report_datapoint=False,
@@ -1894,7 +1831,7 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
         try:
             DatapointInterface.join_report_datapoints_to_metric_interfaces(
                 metric_key_to_metric_interface=metric_key_to_metric_interface,
-                report_datapoints=report_datapoints,
+                report_datapoints=not_a_report_datapoint,
             )
             assert False
         except ValueError:

@@ -28,6 +28,7 @@ from freezegun import freeze_time
 from recidiviz.justice_counts.bulk_upload.template_generator import (
     generate_bulk_upload_template,
 )
+from recidiviz.justice_counts.metric_setting import MetricSettingInterface
 from recidiviz.justice_counts.metricfiles.metricfile_registry import (
     SYSTEM_TO_METRICFILES,
 )
@@ -38,11 +39,7 @@ from recidiviz.justice_counts.metrics.custom_reporting_frequency import (
 from recidiviz.justice_counts.metrics.metric_interface import MetricInterface
 from recidiviz.justice_counts.metrics.metric_registry import METRICS_BY_SYSTEM
 from recidiviz.justice_counts.spreadsheet import SpreadsheetInterface
-from recidiviz.justice_counts.utils.constants import (
-    DISAGGREGATED_BY_SUPERVISION_SUBSYSTEMS,
-    REPORTING_FREQUENCY_CONTEXT_KEY,
-    UploadMethod,
-)
+from recidiviz.justice_counts.utils.constants import UploadMethod
 from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.tests.justice_counts.spreadsheet_helpers import create_excel_file
@@ -163,44 +160,41 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
             session.commit()
             session.refresh(user)
             session.refresh(agency)
-            # Agency datapoint that makes the supervision funding metric be
-            # disaggregated by subsystem
-            metric_key_to_metric_interface = {}
-            disaggregation_datapoint = schema.Datapoint(
-                metric_definition_key=supervision.funding.key,
-                source=agency,
-                context_key=DISAGGREGATED_BY_SUPERVISION_SUBSYSTEMS,
-                dimension_identifier_to_member=None,
-                value=str(True),
-                is_report_datapoint=False,
+
+            # Add a supervision funding metric that is disaggregated by subsystem.
+            MetricSettingInterface.add_or_update_agency_metric_setting(
+                session=session,
+                agency=agency,
+                agency_metric=MetricInterface(
+                    key=supervision.funding.key,
+                    disaggregated_by_supervision_subsystems=True,
+                ),
             )
-            metric_key_to_metric_interface[supervision.funding.key] = MetricInterface(
-                key=supervision.funding.key,
-                disaggregated_by_supervision_subsystems=True,
+
+            # Add a supervision expenses metric that is enabled.
+            MetricSettingInterface.add_or_update_agency_metric_setting(
+                session=session,
+                agency=agency,
+                agency_metric=MetricInterface(
+                    key=supervision.expenses.key,
+                    is_metric_enabled=True,
+                ),
             )
-            # Set metrics to Enabled
-            setting_datapoint_enabled = schema.Datapoint(
-                metric_definition_key=supervision.expenses.key,
-                source=agency,
-                enabled=True,
-                is_report_datapoint=False,
+
+            # Add a supervision discharges metric that is disabled.
+            MetricSettingInterface.add_or_update_agency_metric_setting(
+                session=session,
+                agency=agency,
+                agency_metric=MetricInterface(
+                    key=supervision.discharges.key,
+                    is_metric_enabled=False,
+                ),
             )
-            metric_key_to_metric_interface[supervision.expenses.key] = MetricInterface(
-                key=supervision.expenses.key,
-                is_metric_enabled=True,
-            )
-            # Set metrics to Disabled
-            setting_datapoint_disabled = schema.Datapoint(
-                metric_definition_key=supervision.discharges.key,
-                source=agency,
-                enabled=False,
-                is_report_datapoint=False,
-            )
-            metric_key_to_metric_interface[
-                supervision.discharges.key
-            ] = MetricInterface(
-                key=supervision.discharges.key,
-                is_metric_enabled=False,
+
+            metric_key_to_metric_interface = (
+                MetricSettingInterface.get_metric_key_to_metric_interface(
+                    session=session, agency=agency
+                )
             )
 
             spreadsheet = self.test_schema_objects.get_test_spreadsheet(
@@ -208,14 +202,7 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
                 user_id=user.auth0_user_id,
                 agency_id=agency.id,
             )
-            session.add_all(
-                [
-                    disaggregation_datapoint,
-                    spreadsheet,
-                    setting_datapoint_enabled,
-                    setting_datapoint_disabled,
-                ]
-            )
+            session.add(spreadsheet)
             file_name = "test_get_ingest_spreadsheet_json.xlsx"
             # Excel workbook will have an invalid sheet.
             file_path = create_excel_file(
@@ -306,37 +293,29 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
             prison_child_agency_A.super_agency_id = prison_super_agency.id
             prison_child_agency_B.super_agency_id = prison_super_agency.id
             session.refresh(prison_super_agency)
-            super_agency_datapoints = (
-                self.test_schema_objects.get_test_agency_datapoints(
-                    agency_id=prison_super_agency.id
+
+            # Write test interfaces to the Metrics Setting table.
+            super_agency_metric_interfaces = (
+                self.test_schema_objects.get_test_metric_interfaces()
+            )
+            for metric_interface in super_agency_metric_interfaces:
+                MetricSettingInterface.add_or_update_agency_metric_setting(
+                    session=session,
+                    agency=prison_super_agency,
+                    agency_metric=metric_interface,
                 )
-            )
-
-            enabled_admissions_datapoint = schema.Datapoint(
-                metric_definition_key=prisons.admissions.key,
-                source=prison_super_agency,
-                enabled=True,
-                dimension_identifier_to_member=None,
-                value=str(True),
-                is_report_datapoint=False,
-            )
-
-            admissions_custom_reporting_frequency = schema.Datapoint(
-                metric_definition_key=prisons.admissions.key,
-                source=prison_super_agency,
-                context_key=REPORTING_FREQUENCY_CONTEXT_KEY,
-                value=CustomReportingFrequency(
-                    frequency=schema.ReportingFrequency.ANNUAL, starting_month=2
-                ).to_json_str(),
-                is_report_datapoint=False,
-            )
-
-            session.add_all(
-                super_agency_datapoints
-                + [
-                    admissions_custom_reporting_frequency,
-                    enabled_admissions_datapoint,
-                ]
+            # Modify prison admissions metric setting so that it is enabled with a
+            # custom reporting frequency.
+            MetricSettingInterface.add_or_update_agency_metric_setting(
+                session=session,
+                agency=prison_super_agency,
+                agency_metric=MetricInterface(
+                    key=prisons.admissions.key,
+                    is_metric_enabled=True,
+                    custom_reporting_frequency=CustomReportingFrequency(
+                        frequency=schema.ReportingFrequency.ANNUAL, starting_month=2
+                    ),
+                ),
             )
 
             session.commit()

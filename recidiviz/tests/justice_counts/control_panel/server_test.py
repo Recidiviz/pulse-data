@@ -52,19 +52,18 @@ from recidiviz.justice_counts.includes_excludes.prisons import (
     PrisonReleasesToParoleIncludesExcludes,
     PrisonStaffIncludesExcludes,
 )
+from recidiviz.justice_counts.metric_setting import MetricSettingInterface
 from recidiviz.justice_counts.metrics import law_enforcement, prisons
 from recidiviz.justice_counts.metrics.custom_reporting_frequency import (
     CustomReportingFrequency,
 )
 from recidiviz.justice_counts.metrics.metric_definition import IncludesExcludesSetting
+from recidiviz.justice_counts.metrics.metric_interface import MetricInterface
 from recidiviz.justice_counts.metrics.metric_registry import METRICS_BY_SYSTEM
 from recidiviz.justice_counts.report import ReportInterface
 from recidiviz.justice_counts.types import BulkUploadFileType
 from recidiviz.justice_counts.user_account import UserAccountInterface
-from recidiviz.justice_counts.utils.constants import (
-    REPORTING_FREQUENCY_CONTEXT_KEY,
-    UploadMethod,
-)
+from recidiviz.justice_counts.utils.constants import UploadMethod
 from recidiviz.justice_counts.utils.datapoint_utils import get_value
 from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.persistence.database.schema.justice_counts.schema import (
@@ -817,10 +816,12 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         )
         self.session.commit()
         agency = self.session.query(Agency).one()
-        agency_datapoints = self.test_schema_objects.get_test_agency_datapoints(
-            agency_id=agency.id
-        )
-        self.session.add_all(agency_datapoints)
+        # Write test metrics to the Metrics Setting table.
+        metric_interfaces = self.test_schema_objects.get_test_metric_interfaces()
+        for metric_interface in metric_interfaces:
+            MetricSettingInterface.add_or_update_agency_metric_setting(
+                session=self.session, agency=agency, agency_metric=metric_interface
+            )
         self.session.commit()
         with self.app.test_request_context():
             g.user_context = UserContext(
@@ -888,10 +889,12 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         )
         self.session.commit()
         agency = self.session.query(Agency).one()
-        agency_datapoints = self.test_schema_objects.get_test_agency_datapoints(
-            agency_id=agency.id
-        )
-        self.session.add_all(agency_datapoints)
+        # Write test metrics to the Metrics Setting table.
+        metric_interfaces = self.test_schema_objects.get_test_metric_interfaces()
+        for metric_interface in metric_interfaces:
+            MetricSettingInterface.add_or_update_agency_metric_setting(
+                session=self.session, agency=agency, agency_metric=metric_interface
+            )
         self.session.commit()
 
         user_A = self.test_schema_objects.test_user_A
@@ -3206,70 +3209,70 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         # - funding reported annually
         # - total staff reported monthly
         # - grievances upheld reported annually
-        super_funding_datapoint = schema.Datapoint(
-            metric_definition_key=prisons.funding.key,
-            source_id=super_agency.id,
-            context_key=REPORTING_FREQUENCY_CONTEXT_KEY,
-            value=CustomReportingFrequency(
-                frequency=schema.ReportingFrequency.ANNUAL
-            ).to_json_str(),
-            is_report_datapoint=False,
+        MetricSettingInterface.add_or_update_agency_metric_setting(
+            session=self.session,
+            agency=super_agency,
+            agency_metric=MetricInterface(
+                key=prisons.funding.key,
+                custom_reporting_frequency=CustomReportingFrequency(
+                    frequency=schema.ReportingFrequency.ANNUAL,
+                ),
+            ),
         )
-        super_staff_datapoint = schema.Datapoint(
-            metric_definition_key=prisons.staff.key,
-            source_id=super_agency.id,
-            context_key=REPORTING_FREQUENCY_CONTEXT_KEY,
-            value=CustomReportingFrequency(
-                frequency=schema.ReportingFrequency.MONTHLY
-            ).to_json_str(),
-            is_report_datapoint=False,
+        MetricSettingInterface.add_or_update_agency_metric_setting(
+            session=self.session,
+            agency=super_agency,
+            agency_metric=MetricInterface(
+                key=prisons.staff.key,
+                custom_reporting_frequency=CustomReportingFrequency(
+                    frequency=schema.ReportingFrequency.MONTHLY,
+                ),
+            ),
         )
-        super_grievances_datapoint = schema.Datapoint(
-            metric_definition_key=prisons.grievances_upheld.key,
-            source_id=super_agency.id,
-            context_key=REPORTING_FREQUENCY_CONTEXT_KEY,
-            value=CustomReportingFrequency(
-                frequency=schema.ReportingFrequency.ANNUAL
-            ).to_json_str(),
-            is_report_datapoint=False,
-        )
-        self.session.add_all(
-            [super_funding_datapoint, super_staff_datapoint, super_grievances_datapoint]
+        MetricSettingInterface.add_or_update_agency_metric_setting(
+            session=self.session,
+            agency=super_agency,
+            agency_metric=MetricInterface(
+                key=prisons.grievances_upheld.key,
+                custom_reporting_frequency=CustomReportingFrequency(
+                    frequency=schema.ReportingFrequency.ANNUAL,
+                ),
+            ),
         )
 
         # Set child agency to have the following metric config (different from super agency)
         # - funding reported monthly
         # - total staff reported annually
         # - grievances upheld reported monthly
-        child_funding_datapoint = schema.Datapoint(
-            metric_definition_key=prisons.funding.key,
-            source_id=child_agency.id,
-            context_key=REPORTING_FREQUENCY_CONTEXT_KEY,
-            value=CustomReportingFrequency(
-                frequency=schema.ReportingFrequency.MONTHLY
-            ).to_json_str(),
-            is_report_datapoint=False,
+        MetricSettingInterface.add_or_update_agency_metric_setting(
+            session=self.session,
+            agency=super_agency,
+            agency_metric=MetricInterface(
+                key=prisons.funding.key,
+                custom_reporting_frequency=CustomReportingFrequency(
+                    frequency=schema.ReportingFrequency.MONTHLY,
+                ),
+            ),
         )
-        child_staff_datapoint = schema.Datapoint(
-            metric_definition_key=prisons.staff.key,
-            source_id=child_agency.id,
-            context_key=REPORTING_FREQUENCY_CONTEXT_KEY,
-            value=CustomReportingFrequency(
-                frequency=schema.ReportingFrequency.ANNUAL
-            ).to_json_str(),
-            is_report_datapoint=False,
+        MetricSettingInterface.add_or_update_agency_metric_setting(
+            session=self.session,
+            agency=super_agency,
+            agency_metric=MetricInterface(
+                key=prisons.staff.key,
+                custom_reporting_frequency=CustomReportingFrequency(
+                    frequency=schema.ReportingFrequency.ANNUAL,
+                ),
+            ),
         )
-        child_grievances_datapoint = schema.Datapoint(
-            metric_definition_key=prisons.grievances_upheld.key,
-            source_id=child_agency.id,
-            context_key=REPORTING_FREQUENCY_CONTEXT_KEY,
-            value=CustomReportingFrequency(
-                frequency=schema.ReportingFrequency.MONTHLY
-            ).to_json_str(),
-            is_report_datapoint=False,
-        )
-        self.session.add_all(
-            [child_funding_datapoint, child_staff_datapoint, child_grievances_datapoint]
+        MetricSettingInterface.add_or_update_agency_metric_setting(
+            session=self.session,
+            agency=super_agency,
+            agency_metric=MetricInterface(
+                key=prisons.grievances_upheld.key,
+                custom_reporting_frequency=CustomReportingFrequency(
+                    frequency=schema.ReportingFrequency.MONTHLY,
+                ),
+            ),
         )
         self.session.commit()
 

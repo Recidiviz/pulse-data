@@ -31,12 +31,10 @@ from recidiviz.justice_counts.metrics import law_enforcement
 from recidiviz.justice_counts.metrics.custom_reporting_frequency import (
     CustomReportingFrequency,
 )
+from recidiviz.justice_counts.metrics.metric_interface import MetricInterface
 from recidiviz.justice_counts.report import ReportInterface
 from recidiviz.justice_counts.user_account import UserAccountInterface
-from recidiviz.justice_counts.utils.constants import (
-    REPORTING_FREQUENCY_CONTEXT_KEY,
-    UploadMethod,
-)
+from recidiviz.justice_counts.utils.constants import UploadMethod
 from recidiviz.justice_counts.utils.datapoint_utils import get_value
 from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.persistence.database.session_factory import SessionFactory
@@ -1152,11 +1150,22 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
                     agency,
                     self.test_schema_objects.test_user_A,
                     self.test_schema_objects.test_report_monthly,
-                    self.test_schema_objects.calls_for_service_custom_reporting_frequency,
                 ]
             )
             session.flush()
             session.refresh(agency)
+
+            MetricSettingInterface.add_or_update_agency_metric_setting(
+                session=session,
+                agency=agency,
+                agency_metric=MetricInterface(
+                    key=law_enforcement.calls_for_service.key,
+                    custom_reporting_frequency=CustomReportingFrequency(
+                        frequency=schema.ReportingFrequency.ANNUAL, starting_month=2
+                    ),
+                ),
+            )
+
             metrics = sorted(
                 ReportInterface.get_metrics_by_report(
                     report=self.test_schema_objects.test_report_monthly,
@@ -1265,6 +1274,11 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
                 user_account=self.test_schema_objects.test_user_A,
                 upload_method=UploadMethod.BULK_UPLOAD,
             )
+            MetricSettingInterface.add_or_update_agency_metric_setting(
+                session=session,
+                agency=agency,
+                agency_metric=self.test_schema_objects.reported_calls_for_service_metric,
+            )
             DatapointInterface.flush_report_datapoints(
                 session=session,
                 inserts=inserts,
@@ -1302,19 +1316,21 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
                 self.test_schema_objects.reported_calls_for_service_metric.aggregated_dimensions,
             )
 
-            # Add custom reporting frequency
-            session.add(
-                schema.Datapoint(
-                    metric_definition_key=law_enforcement.calls_for_service.key,
-                    source=agency,
-                    context_key=REPORTING_FREQUENCY_CONTEXT_KEY,
-                    value=CustomReportingFrequency(
-                        frequency=schema.ReportingFrequency.ANNUAL
-                    ).to_json_str(),
-                    is_report_datapoint=False,
-                ),
+            # Add custom reporting frequency to reported_calls_for_service_metric.
+            reported_calls_for_service_metric = (
+                self.test_schema_objects.reported_calls_for_service_metric
             )
-
+            reported_calls_for_service_metric.custom_reporting_frequency = (
+                CustomReportingFrequency(
+                    frequency=schema.ReportingFrequency.ANNUAL,
+                )
+            )
+            MetricSettingInterface.add_or_update_agency_metric_setting(
+                session=session,
+                agency=agency,
+                agency_metric=reported_calls_for_service_metric,
+            )
+            session.commit()
             # Calls for service reporting frequency should still appear in the
             # report because the report was created and edited before the change.
             metrics = ReportInterface.get_metrics_by_report(
@@ -1335,17 +1351,17 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
 
             # Add a custom reporting frequency so that now civilian complaints sustained is
             # reported monthly.
-            session.add(
-                schema.Datapoint(
-                    metric_definition_key=law_enforcement.civilian_complaints_sustained.key,
-                    source=agency,
-                    context_key=REPORTING_FREQUENCY_CONTEXT_KEY,
-                    value=CustomReportingFrequency(
-                        frequency=schema.ReportingFrequency.MONTHLY
-                    ).to_json_str(),
-                    is_report_datapoint=False,
+            MetricSettingInterface.add_or_update_agency_metric_setting(
+                session=session,
+                agency=agency,
+                agency_metric=MetricInterface(
+                    key=law_enforcement.civilian_complaints_sustained.key,
+                    custom_reporting_frequency=CustomReportingFrequency(
+                        frequency=schema.ReportingFrequency.MONTHLY,
+                    ),
                 ),
             )
+            session.commit()
 
             # Civilians complaints should still appear in the report
             metrics = ReportInterface.get_metrics_by_report(
