@@ -32,8 +32,9 @@ US_IX_SENTENCING_CLIENT_TEMPLATE = """
     caseIds AS (
         SELECT DISTINCT
             OffenderId,
-            STRING_AGG(PSIReportId, ',') OVER (PARTITION BY OffenderId ORDER BY UpdateDate) as caseIds
+            STRING_AGG(PSIReportId, ',' ORDER BY UpdateDate) AS caseIds
         FROM  `{project_id}.{us_ix_raw_data_up_to_date_dataset}.com_PSIReport_latest`
+        GROUP BY OffenderId
     )
     SELECT DISTINCT
         psi.OffenderId AS external_id,
