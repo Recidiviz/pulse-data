@@ -26,7 +26,14 @@ from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_client import BigQueryClient, BigQueryClientImpl
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.constants.states import StateCode
-from recidiviz.ingest.direct.dataset_config import raw_data_temp_load_dataset
+from recidiviz.ingest.direct.dataset_config import (
+    raw_data_pruning_raw_data_diff_results_dataset,
+    raw_data_temp_load_dataset,
+    raw_tables_dataset_for_region,
+)
+from recidiviz.ingest.direct.direct_ingest_regions import (
+    raw_data_pruning_enabled_in_state_and_instance,
+)
 from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
     DirectIngestGCSFileSystem,
 )
@@ -43,7 +50,13 @@ from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRegionRawFileConfig,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
-from recidiviz.ingest.direct.types.raw_data_import_types import LoadPrepSummary
+from recidiviz.ingest.direct.types.raw_data_import_types import (
+    AppendSummary,
+    LoadPrepSummary,
+)
+from recidiviz.ingest.direct.views.raw_data_diff_query_builder import (
+    RawDataDiffQueryBuilder,
+)
 from recidiviz.utils import metadata
 
 
@@ -237,10 +250,6 @@ class DirectIngestRawFileLoadManager:
             table_id=f"{file_tag}__{file_id}",
         )
 
-        raw_rows_count = self._load_paths_to_temp_table(
-            file_tag, paths, temp_raw_file_address
-        )
-
         temp_raw_file_with_transformations_address = BigQueryAddress(
             dataset_id=raw_data_temp_load_dataset(
                 self.state_code,
@@ -249,17 +258,176 @@ class DirectIngestRawFileLoadManager:
             table_id=f"{file_tag}__{file_id}__transformed",
         )
 
-        self._apply_pre_migration_transformations(
-            temp_raw_file_address,
-            temp_raw_file_with_transformations_address,
-            file_tag,
-            file_id,
-            update_datetime,
-        )
+        try:
 
-        self._apply_migrations(file_tag, temp_raw_file_with_transformations_address)
+            raw_rows_count = self._load_paths_to_temp_table(
+                file_tag, paths, temp_raw_file_address
+            )
+
+            self._apply_pre_migration_transformations(
+                temp_raw_file_address,
+                temp_raw_file_with_transformations_address,
+                file_tag,
+                file_id,
+                update_datetime,
+            )
+
+            self._apply_migrations(file_tag, temp_raw_file_with_transformations_address)
+
+        finally:
+            self._clean_up_temp_tables(temp_raw_file_address)
 
         return LoadPrepSummary(
             append_ready_table_address=temp_raw_file_with_transformations_address.to_str(),
             raw_rows_count=raw_rows_count,
         )
+
+    def _generate_historical_diff(
+        self,
+        file_tag: str,
+        file_id: int,
+        update_datetime: datetime.datetime,
+        temp_raw_data_diff_table_address: BigQueryAddress,
+        temp_raw_file_address: BigQueryAddress,
+    ) -> None:
+        """Create and run raw data diff query between contents of |temp_raw_file_address|
+        and the latest version of the raw data table on BQ, saving the results to a
+        |temp_raw_data_diff_table_address|."""
+
+        raw_data_diff_query = RawDataDiffQueryBuilder(
+            project_id=metadata.project_id(),
+            state_code=self.state_code,
+            file_id=file_id,
+            update_datetime=update_datetime,
+            raw_data_instance=self.raw_data_instance,
+            raw_file_config=self.region_raw_file_config.raw_file_configs[file_tag],
+            new_raw_data_table_id=temp_raw_file_address.table_id,
+            new_raw_data_dataset=temp_raw_file_address.dataset_id,
+        ).build_query()
+
+        create_job = self.big_query_client.create_table_from_query_async(
+            dataset_id=temp_raw_data_diff_table_address.dataset_id,
+            table_id=temp_raw_data_diff_table_address.table_id,
+            query=raw_data_diff_query,
+            overwrite=True,
+            use_query_cache=False,
+        )
+
+        try:
+            create_job.result()
+        except Exception as e:
+            logging.error(
+                "Create job [%s] for [%s] with id [%s] failed with errors: [%s]",
+                create_job.job_id,
+                file_tag,
+                file_id,
+                create_job.errors,
+            )
+            raise e
+
+    def _should_generate_historical_diffs(self, file_tag: str) -> bool:
+        """Returns whether or not we should apply historical diffs to this file during
+        raw data import.
+        """
+        raw_data_pruning_enabled = raw_data_pruning_enabled_in_state_and_instance(
+            self.state_code, self.raw_data_instance
+        )
+        if not raw_data_pruning_enabled:
+            return False
+
+        file_config = self.region_raw_file_config.raw_file_configs[file_tag]
+        is_exempt_from_raw_data_pruning = file_config.is_exempt_from_raw_data_pruning()
+        return not is_exempt_from_raw_data_pruning
+
+    def _append_data_to_raw_table(
+        self, source_table: BigQueryAddress, destination_table: BigQueryAddress
+    ) -> None:
+        """Appends the contents of |source_table| to |destination_table|."""
+
+        append_job = self.big_query_client.insert_into_table_from_table_async(
+            source_dataset_id=source_table.dataset_id,
+            source_table_id=source_table.table_id,
+            destination_dataset_id=destination_table.dataset_id,
+            destination_table_id=destination_table.table_id,
+            use_query_cache=False,
+        )
+
+        try:
+            append_job.result()
+        except Exception as e:
+            logging.error(
+                "Insert job [%s] appending data from [%s] to [%s] failed with errors: [%s]",
+                append_job.job_id,
+                source_table.to_str(),
+                destination_table.to_str(),
+                append_job.errors,
+            )
+            raise e
+
+    def _clean_up_temp_tables(self, *addresses: BigQueryAddress) -> None:
+        for address in addresses:
+            try:
+                logging.info("Deleting [%s]", address)
+                self.big_query_client.delete_table(address.dataset_id, address.table_id)
+            except Exception as e:
+                logging.error(
+                    "Error: failed to clean up [%s] with [%s]: %s",
+                    address,
+                    e.__class__,
+                    e,
+                )
+
+    def append_to_raw_data_table(
+        self,
+        file_id: int,
+        file_tag: str,
+        update_datetime: datetime.datetime,
+        temp_raw_file_with_transformations_address: BigQueryAddress,
+    ) -> AppendSummary:
+        """Appends already loaded and transformed data to the raw data table,
+        optionally applying a historical data diff to the data if historical diffs
+        are active.
+        """
+
+        temp_raw_data_diff_table_address = BigQueryAddress(
+            dataset_id=raw_data_pruning_raw_data_diff_results_dataset(
+                self.state_code, self.raw_data_instance
+            ),
+            table_id=f"{file_tag}__{file_id}",
+        )
+
+        raw_data_table = BigQueryAddress(
+            dataset_id=raw_tables_dataset_for_region(
+                state_code=self.state_code, instance=self.raw_data_instance
+            ),
+            table_id=file_tag,
+        )
+
+        try:
+
+            if self._should_generate_historical_diffs(file_tag):
+                # TODO(#28694) this query assues recidiviz-managed fields aren't
+                # included, needs to be upated
+                self._generate_historical_diff(
+                    file_tag=file_tag,
+                    file_id=file_id,
+                    update_datetime=update_datetime,
+                    temp_raw_data_diff_table_address=temp_raw_data_diff_table_address,
+                    temp_raw_file_address=temp_raw_file_with_transformations_address,
+                )
+
+                append_source_table = temp_raw_data_diff_table_address
+            else:
+                append_source_table = temp_raw_file_with_transformations_address
+
+            self._append_data_to_raw_table(
+                source_table=append_source_table, destination_table=raw_data_table
+            )
+        finally:
+            self._clean_up_temp_tables(
+                temp_raw_file_with_transformations_address,
+                temp_raw_data_diff_table_address,
+            )
+
+        # TODO(#28694) add additional query to grab these stats
+        return AppendSummary(net_new_or_updated_rows=None, deleted_rows=None)

@@ -490,7 +490,7 @@ class DirectIngestRawDataImportSession(OperationsBase):
     # this number will not be equal to the number of rows added to the raw data table.
     raw_rows = Column(Integer, nullable=True)
 
-    # Number of rows added with is_deleted as True during the diffing process
+    # Number of net new or updated rows added during the diffing process)
     net_new_or_updated_rows = Column(Integer, nullable=True)
 
     # Number of rows added with is_deleted as True during the diffing process

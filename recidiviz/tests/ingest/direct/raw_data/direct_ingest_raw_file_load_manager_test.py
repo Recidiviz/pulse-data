@@ -17,7 +17,8 @@
 """Tests for DirectIngestRawFileLoadManager"""
 import datetime
 import os
-from typing import List, Tuple
+import re
+from typing import Any, List, Tuple
 from unittest.mock import create_autospec, patch
 
 import pandas as pd
@@ -25,18 +26,22 @@ from google.cloud.bigquery import LoadJob, LoadJobConfig, TableReference
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath, GcsfsFilePath
+from recidiviz.common.constants.states import StateCode
 from recidiviz.fakes.fake_gcs_file_system import FakeGCSFileSystem
+from recidiviz.ingest.direct.dataset_config import raw_tables_dataset_for_region
 from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
     DirectIngestGCSFileSystem,
 )
 from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_load_manager import (
     DirectIngestRawFileLoadManager,
 )
+from recidiviz.ingest.direct.raw_data.direct_ingest_raw_table_schema_builder import (
+    RawDataTableBigQuerySchemaBuilder,
+)
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRegionRawFileConfig,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
-from recidiviz.ingest.direct.types.raw_data_import_types import LoadPrepSummary
 from recidiviz.tests.big_query.big_query_emulator_test_case import (
     BigQueryEmulatorTestCase,
 )
@@ -76,6 +81,9 @@ class TestDirectIngestRawFileLoadManager(BigQueryEmulatorTestCase):
         self.load_job_patch.stop()
         super().tearDown()
 
+    def _mock_fail(self, *_: Any, **__: Any) -> None:
+        raise ValueError("We hit an error!")
+
     def _mock_load(
         self,
         source_uris: List[str],
@@ -108,9 +116,17 @@ class TestDirectIngestRawFileLoadManager(BigQueryEmulatorTestCase):
 
     def _prep_test(
         self, fixture_directory_name: str
-    ) -> Tuple[List[GcsfsFilePath], pd.DataFrame]:
-        input_paths, output_path = self._get_paths_for_test(fixture_directory_name)
+    ) -> Tuple[List[GcsfsFilePath], pd.DataFrame, pd.DataFrame, str]:
+        """preps test for |fixture_directory_name|"""
+        (
+            file_tag,
+            input_paths,
+            append_seed,
+            load_output,
+            append_output,
+        ) = self._get_paths_for_test(fixture_directory_name)
 
+        # load input files into fake fs
         input_files = []
         for input_path in input_paths:
             input_file = GcsfsFilePath.from_directory_and_file_name(
@@ -122,41 +138,78 @@ class TestDirectIngestRawFileLoadManager(BigQueryEmulatorTestCase):
             )
             input_files.append(input_file)
 
-        return input_files, load_dataframe_from_path(output_path, fixture_columns=None)
+        # create and seed existing raw data table if necessary
+        seed_data = load_dataframe_from_path(append_seed, fixture_columns=None)
+        mock_raw_table = BigQueryAddress(
+            dataset_id=raw_tables_dataset_for_region(
+                state_code=StateCode(self.region_raw_file_config.region_code.upper()),
+                instance=self.raw_data_instance,
+            ),
+            table_id=file_tag,
+        )
+        self.create_mock_table(
+            mock_raw_table,
+            schema=RawDataTableBigQuerySchemaBuilder.build_bq_schmea_for_config(
+                raw_file_config=self.region_raw_file_config.raw_file_configs[file_tag]
+            ),
+        )
+        if seed_data.shape[1]:
+            self.load_rows_into_table(mock_raw_table, seed_data.to_dict("records"))
+
+        # return back to caller
+        return (
+            input_files,
+            load_dataframe_from_path(load_output, fixture_columns=None),
+            load_dataframe_from_path(append_output, fixture_columns=None),
+            mock_raw_table.to_str(),
+        )
 
     def _get_paths_for_test(
-        self,
-        fixture_directory_name: str,
-    ) -> Tuple[List[str], str]:
+        self, fixture_directory_name: str
+    ) -> Tuple[str, List[str], str, str, str]:
+        """gets paths and metadata for |fixture_directory_name|"""
         raw_fixture_directory = os.path.join(
             os.path.dirname(load_manager_fixtures.__file__),
             fixture_directory_name,
         )
 
-        ins = []
-        out = None
+        file_tag = ""
+        load_ins = []
+        load_out = ""
+        append_out = ""
+        append_seed = ""
+
         for file in os.listdir(raw_fixture_directory):
-            if "input" in file:
-                ins.append(os.path.join(raw_fixture_directory, file))
-            if "output" in file:
-                out = os.path.join(raw_fixture_directory, file)
+            if "load_input" in file:
+                file_tag = file.split("_load_input")[0]
+                load_ins.append(os.path.join(raw_fixture_directory, file))
+            if "load_output" in file:
+                load_out = os.path.join(raw_fixture_directory, file)
+            if "append_table_output" in file:
+                append_out = os.path.join(raw_fixture_directory, file)
+            if "append_table_seed" in file:
+                append_seed = os.path.join(raw_fixture_directory, file)
 
-        if not isinstance(out, str) or not all(isinstance(_in, str) for _in in ins):
-            raise ValueError()
+        if not all(
+            bool(_out) for _out in [file_tag, load_out, append_out, append_seed]
+        ) or not (load_ins or all(isinstance(_in, str) for _in in load_ins)):
+            raise ValueError("Failed to instantiate directory for load manager test")
 
-        return ins, out
+        return file_tag, load_ins, append_seed, load_out, append_out
 
     def compare_output_against_expected(
-        self, summary: LoadPrepSummary, expected_df: pd.DataFrame
+        self, output_table: str, expected_df: pd.DataFrame
     ) -> None:
         actual_df = self.query(
-            f"select * from {summary.append_ready_table_address}",
+            f"select * from {output_table}",
         )
 
         self.compare_expected_and_result_dfs(expected=expected_df, results=actual_df)
 
-    def test_no_migrations_no_changes_single_file(self) -> None:
-        input_paths, output_df = self._prep_test("no_migrations_no_changes_single_file")
+    def test_no_migrations_no_changes_single_file_starts_empty(self) -> None:
+        input_paths, prep_output, append_output, raw_data_table = self._prep_test(
+            "no_migrations_no_changes_single_file"
+        )
         load_prep_summary = self.manager.load_and_prep_paths(
             1,
             "singlePrimaryKey",
@@ -170,11 +223,57 @@ class TestDirectIngestRawFileLoadManager(BigQueryEmulatorTestCase):
             == "us_xx_primary_raw_data_temp_load.singlePrimaryKey__1__transformed"
         )
 
-        self.compare_output_against_expected(load_prep_summary, output_df)
+        self.assertFalse(
+            self.bq_client.table_exists(
+                self.bq_client.dataset_ref_for_id("us_xx_primary_raw_data_temp_load"),
+                "singlePrimaryKey__1",
+            )
+        )
+
+        self.assertTrue(len(self.fs.all_paths) == 0)
+
+        self.compare_output_against_expected(
+            load_prep_summary.append_ready_table_address, prep_output
+        )
+
+        _ = self.manager.append_to_raw_data_table(
+            1,
+            "singlePrimaryKey",
+            datetime.datetime(2024, 1, 1, 1, 1, 1, tzinfo=datetime.UTC),
+            BigQueryAddress.from_str(load_prep_summary.append_ready_table_address),
+        )
+
+        self.compare_output_against_expected(raw_data_table, append_output)
+
+        # make sure we cleaned up properly
+
+        self.assertFalse(
+            self.bq_client.table_exists(
+                self.bq_client.dataset_ref_for_id("us_xx_primary_raw_data_temp_load"),
+                "singlePrimaryKey__1__transformed",
+            )
+        )
+
+        self.assertFalse(
+            self.bq_client.dataset_exists(
+                self.bq_client.dataset_ref_for_id(
+                    "pruning_us_xx_raw_data_diff_results_primary"
+                )
+            )
+        )
+
+        self.assertFalse(
+            self.bq_client.dataset_exists(
+                self.bq_client.dataset_ref_for_id("pruning_us_xx_new_raw_data_primary")
+            )
+        )
+
+        assert not list(self.bq_client.list_tables("us_xx_primary_raw_data_temp_load"))
+        assert len(list(self.bq_client.list_tables("us_xx_raw_data"))) == 1
 
     # TODO(#30788) add integration test back once struct in works in emulator
     def _test_migration_depends_on_transforms(self) -> None:
-        input_paths, output_df = self._prep_test("migration_depends_on_transforms")
+        input_paths, output_df, *_ = self._prep_test("migration_depends_on_transforms")
         load_prep_summary = self.manager.load_and_prep_paths(
             1,
             "tagBasicData",
@@ -182,4 +281,147 @@ class TestDirectIngestRawFileLoadManager(BigQueryEmulatorTestCase):
             input_paths,
         )
 
-        self.compare_output_against_expected(load_prep_summary, output_df)
+        self.compare_output_against_expected(
+            load_prep_summary.append_ready_table_address, output_df
+        )
+
+    def test_fail_load_failure_to_start(self) -> None:
+        input_paths, *_ = self._prep_test("no_migrations_no_changes_single_file")
+
+        self.load_job_mock.side_effect = self._mock_fail
+
+        with self.assertRaisesRegex(ValueError, "We hit an error!"):
+            _ = self.manager.load_and_prep_paths(
+                1,
+                "tagBasicData",
+                datetime.datetime(2020, 6, 10, 0, 0, 0, tzinfo=datetime.UTC),
+                input_paths,
+            )
+
+        self.assertTrue(len(self.fs.all_paths) == 0)
+        self.assertFalse(
+            self.bq_client.table_exists(
+                self.bq_client.dataset_ref_for_id("us_xx_primary_raw_data_temp_load"),
+                "singlePrimaryKey__1",
+            )
+        )
+
+    def test_fail_load_result_failure(self) -> None:
+        input_paths, *_ = self._prep_test("no_migrations_no_changes_single_file")
+
+        self.fake_job.result.side_effect = self._mock_fail
+
+        with self.assertRaisesRegex(ValueError, "We hit an error!"):
+            _ = self.manager.load_and_prep_paths(
+                1,
+                "tagBasicData",
+                datetime.datetime(2020, 6, 10, 0, 0, 0, tzinfo=datetime.UTC),
+                input_paths,
+            )
+
+        self.assertTrue(len(self.fs.all_paths) == 0)
+        self.assertFalse(
+            self.bq_client.table_exists(
+                self.bq_client.dataset_ref_for_id("us_xx_primary_raw_data_temp_load"),
+                "singlePrimaryKey__1",
+            )
+        )
+
+    def test_fail_transformation_result_failure(self) -> None:
+        input_paths, *_ = self._prep_test("no_migrations_no_changes_single_file")
+
+        self.fake_job.result.side_effect = self._mock_fail
+
+        with patch(
+            "recidiviz.big_query.big_query_client.bigquery.Client.query",
+            return_value=self.fake_job,
+        ):
+            with self.assertRaisesRegex(ValueError, "We hit an error!"):
+                _ = self.manager.load_and_prep_paths(
+                    1,
+                    "tagBasicData",
+                    datetime.datetime(2020, 6, 10, 0, 0, 0, tzinfo=datetime.UTC),
+                    input_paths,
+                )
+
+        self.assertTrue(len(self.fs.all_paths) == 0)
+        self.assertFalse(
+            self.bq_client.table_exists(
+                self.bq_client.dataset_ref_for_id("us_xx_primary_raw_data_temp_load"),
+                "singlePrimaryKey__1",
+            )
+        )
+
+        self.assertFalse(
+            self.bq_client.table_exists(
+                self.bq_client.dataset_ref_for_id("us_xx_primary_raw_data_temp_load"),
+                "singlePrimaryKey__1__transformed",
+            )
+        )
+
+    def test_fail_migration_result_failure(self) -> None:
+        input_paths, *_ = self._prep_test("migration_depends_on_transforms")
+
+        self.fake_job.result.side_effect = self._mock_fail
+
+        with patch(
+            "recidiviz.big_query.big_query_client.BigQueryClientImpl.run_query_async",
+            return_value=self.fake_job,
+        ):
+            with self.assertRaisesRegex(ValueError, "We hit an error!"):
+                _ = self.manager.load_and_prep_paths(
+                    1,
+                    "tagBasicData",
+                    datetime.datetime(2020, 6, 10, 0, 0, 0, tzinfo=datetime.UTC),
+                    input_paths,
+                )
+
+        self.assertTrue(len(self.fs.all_paths) == 0)
+        self.assertFalse(
+            self.bq_client.table_exists(
+                self.bq_client.dataset_ref_for_id("us_xx_primary_raw_data_temp_load"),
+                "singlePrimaryKey__1",
+            )
+        )
+
+        self.assertFalse(
+            self.bq_client.table_exists(
+                self.bq_client.dataset_ref_for_id("us_xx_primary_raw_data_temp_load"),
+                "singlePrimaryKey__1__transformed",
+            )
+        )
+
+    def test_fail_source_table_missing(self) -> None:
+        with patch(
+            "recidiviz.big_query.big_query_client.BigQueryClientImpl.run_query_async",
+            return_value=self.fake_job,
+        ):
+            with self.assertRaisesRegex(
+                ValueError,
+                re.escape(
+                    r"Destination table [recidiviz-bq-emulator-project.us_xx_raw_data.tagBasicData] does not exist!"
+                ),
+            ):
+                _ = self.manager.append_to_raw_data_table(
+                    1,
+                    "tagBasicData",
+                    datetime.datetime(2020, 6, 10, 0, 0, 0, tzinfo=datetime.UTC),
+                    BigQueryAddress.from_str(
+                        '"us_xx_primary_raw_data_temp_load.singlePrimaryKey__1__transformed"'
+                    ),
+                )
+
+        self.assertTrue(len(self.fs.all_paths) == 0)
+        self.assertFalse(
+            self.bq_client.table_exists(
+                self.bq_client.dataset_ref_for_id("us_xx_primary_raw_data_temp_load"),
+                "singlePrimaryKey__1",
+            )
+        )
+
+        self.assertFalse(
+            self.bq_client.table_exists(
+                self.bq_client.dataset_ref_for_id("us_xx_primary_raw_data_temp_load"),
+                "singlePrimaryKey__1__transformed",
+            )
+        )

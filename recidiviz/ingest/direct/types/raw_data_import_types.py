@@ -28,6 +28,7 @@ from recidiviz.big_query.big_query_utils import (
     is_big_query_valid_line_terminator,
 )
 from recidiviz.cloud_storage.gcsfs_csv_chunk_boundary_finder import CsvChunkBoundary
+from recidiviz.common import attr_validators
 from recidiviz.common.constants.csv import DEFAULT_CSV_ENCODING
 from recidiviz.ingest.direct.raw_data.raw_file_configs import DirectIngestRawFileConfig
 
@@ -343,5 +344,25 @@ class LoadPrepSummary:
         transformations or filtering occured
     """
 
-    append_ready_table_address: str
-    raw_rows_count: int
+    append_ready_table_address: str = attr.ib(validator=attr_validators.is_str)
+    raw_rows_count: int = attr.ib(validator=attr_validators.is_int)
+
+
+@attr.define
+class AppendSummary:
+    """Summary from DirectIngestRawFileLoadManager.append_to_raw_data_table step that will
+    be combined with LoadPrepSummary to build a row in direct_ingest_raw_data_import_session
+
+    net_new_or_updated_rows(int | None): the number of net new or updated rows added
+        during the diffing process
+    deleted_rows(int | None): the number of rows added with is_deleted as True during the
+        historical diffing process
+
+    """
+
+    net_new_or_updated_rows: Optional[int] = attr.ib(
+        default=None, validator=attr_validators.is_opt_int
+    )
+    deleted_rows: Optional[int] = attr.ib(
+        default=None, validator=attr_validators.is_opt_int
+    )
