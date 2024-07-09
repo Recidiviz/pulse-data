@@ -2338,8 +2338,8 @@ class StateSentence(HasExternalIdEntity, BuildableAttr, DefaultableAttr):
 
     # The type of sentence *at imposition*, for example
     # INCARCERATION, PROBATION, etc.
-    # Only optional for parsing
-    sentence_type: StateSentenceType = attr.ib(
+    # *Only optional for parsing*
+    sentence_type: Optional[StateSentenceType] = attr.ib(
         default=None,
         validator=pre_norm_opt(attr.validators.instance_of(StateSentenceType)),
     )

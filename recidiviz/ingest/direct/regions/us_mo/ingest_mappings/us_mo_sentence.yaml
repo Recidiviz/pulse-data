@@ -1,8 +1,6 @@
 # yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
 # This file associates the columns outputted from the query in `view_offender_sentence_institution` to
 #  corresponding Ingest Object fields.
-launch_env:
-  $env: is_local
 manifest_language: 1.0.0
 input_columns:
   - BS_DOC # unique for each person
@@ -23,7 +21,6 @@ input_columns:
   - BU_SF # sentence imposed_date supervision
   - initial_status_desc
   - initial_status_code
-  - initial_FSO
   - parent_sentence_external_id_array
 unused_columns: []
 variables:
@@ -54,7 +51,6 @@ output:
                 $concat:
                   $separator: "@@"
                   $values:
-                    - initial_FSO
                     - initial_status_code
                     - initial_status_desc
               $custom_parser: us_mo_custom_enum_parsers.get_sentence_type
@@ -62,9 +58,11 @@ output:
             $custom:
               $function: us_mo_custom_parsers.get_imposed_date
               $args:
-                initial_FSO: initial_FSO
-                BS_DO: BT_SD
+                BT_SD: BT_SD
                 BU_SF: BU_SF
+                BS_CNS: BS_CNS
+                initial_status_code: initial_status_code
+                initial_status_desc: initial_status_desc
           parent_sentence_external_id_array: parent_sentence_external_id_array
           county_code:
             $custom:

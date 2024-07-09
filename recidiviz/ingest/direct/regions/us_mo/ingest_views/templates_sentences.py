@@ -18,6 +18,16 @@
 
 from recidiviz.ingest.direct.regions.us_mo.us_mo_custom_parsers import MAGIC_DATES
 
+INVALID_IMPOSED_DATE = (
+    "0",
+    "19000000",
+    "20000000",
+    "66666666",
+    "77777777",
+    "99999999",
+)
+
+
 BOND_STATUSES = (
     "05I5400",  # New Bond Investigation
     "15I3000",  # New PreTrial Bond Supervision
@@ -75,6 +85,9 @@ BOND_STATUSES = (
 #     - "40N1070", # Parole To IS Compact Sent-Inst
 #     - "40N3070", # CR To IS Compact Sent-Inst
 #     - "40N8070", # Adm Par To IS Compact Sen-Inst
+#     - "95O5210",  # IS Comp-Report Instruct Closed
+#     - "95O5220",  # IS Comp-Inv-Unsup/Priv PB-Clos
+#     - "95O5230",  # IS Comp-RepIns-Uns/Prv PB-Clos
 INTERSTATE_COMPACT_STATUSES = (
     "20I4000",  # IS Compact-Inst-Addl Charge
     "25I5200",  # IS Compact-Invest-Addl Charge
@@ -109,9 +122,6 @@ INTERSTATE_COMPACT_STATUSES = (
     "95O4100",  # IS Compact-Parole Completion
     "95O4110",  # IS Compact-Parole Ret/Tran
     "95O4120",  # IS Compact-Parole Revoked
-    "95O5210",  # IS Comp-Report Instruct Closed
-    "95O5220",  # IS Comp-Inv-Unsup/Priv PB-Clos
-    "95O5230",  # IS Comp-RepIns-Uns/Prv PB-Clos
     "99O4000",  # IS Compact-Prob Discharge
     "99O4010",  # IS Compact-Prob Return/Tran
     "99O4020",  # IS Compact-Probation Revoked
@@ -140,7 +150,46 @@ NOT (
 AND (
     BW_SCD NOT IN {BOND_STATUSES}
 )
+-- We get weekly data with expected statuses for the (future) week,
+-- so this ensures we only get statuses that have happened
+AND (
+    CAST(BW_SY AS INT64) <= CAST(FORMAT_DATE('%Y%m%d', CURRENT_TIMESTAMP()) AS INT64)
+)
 """
+
+BS_BT_BU_IMPOSITION_FILTER = f"""
+    (BU_SF NOT IN {INVALID_IMPOSED_DATE} AND BU_SF IS NOT NULL)
+OR
+    (BT_SD NOT IN {INVALID_IMPOSED_DATE} AND BT_SD IS NOT NULL)
+OR
+    -- OTST is how MODOC designates 'other state'
+    BS_CNS = 'OTST'
+"""
+
+# We take the earliest (by FSO) non-investigation,
+# non-bond, valid supervision data.
+# An observation from this view does not necessarily mean
+# an individual was *sentenced* to supervision.
+VALID_SUPERVISION_SENTENCE_INITIAL_INFO = f"""
+SELECT
+    BU_DOC, -- unique for each person
+    BU_CYC, -- unique for each sentence group
+    BU_SEO, -- unique for each sentence
+    BU_SF  -- sentence imposed_date
+FROM
+    {{LBAKRDTA_TAK024}}
+WHERE 
+    BU_PBT NOT IN ('INV', 'BND')
+AND 
+    BU_SF NOT IN {INVALID_IMPOSED_DATE}
+QUALIFY (
+    ROW_NUMBER() OVER(
+        PARTITION BY BU_DOC, BU_CYC, BU_SEO 
+        ORDER BY CAST(BU_FSO AS INT64)
+    ) = 1
+)
+"""
+
 
 # Interstate Compact sentence probably has imposed_date = '88888888',
 # and we allow that to be null downstream as the sentencing_authority
@@ -189,19 +238,16 @@ WHERE
     {VALID_IMPOSITON}
 AND 
     {STATUS_CODE_FILTERS}
-AND (
-    -- We get weekly data with expected statuses for the (future) week,
-    -- so this ensures we only get statuses that have happened
-    CAST(BW_SY AS INT64) <= CAST(FORMAT_DATE('%Y%m%d', CURRENT_TIMESTAMP()) AS INT64)
-)
 """
 
-EARLIEST_STATUS_CODE = f"""
+VALID_STATUS_CODES = f"""
 SELECT
     BS_DOC,
     BS_CYC,
     BS_SEO,
     BV_FSO,
+    BW_SSO,
+    BW_SY,
     BW_SCD,
     FH_SDE
 FROM
@@ -224,5 +270,4 @@ ON
     FH.FH_SCD = BW.BW_SCD
 WHERE
     {STATUS_CODE_FILTERS}
-QUALIFY (ROW_NUMBER() OVER(PARTITION BY BS_DOC, BS_CYC, BS_SEO ORDER BY CAST(BV_SSO AS INT64)) = 1)
 """

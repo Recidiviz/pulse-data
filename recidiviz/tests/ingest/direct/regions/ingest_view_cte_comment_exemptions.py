@@ -487,7 +487,6 @@ THESE_INGEST_VIEWS_HAVE_UNDOCUMENTED_CTES: Dict[StateCode, Dict[str, List[str]]]
             "supervision_only_ledger",
             "unioned_rows",
         ],
-        "sentence_status_snapshot": ["inc_status", "sup_status"],
         "supervision_sentence": ["charge_info", "supervision_sentence_info"],
         "supervision_staff": ["APFX_ALL"],
         "supervision_staff_role_periods": [
