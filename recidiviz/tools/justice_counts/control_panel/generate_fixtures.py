@@ -160,7 +160,7 @@ def generate_fixtures(session: Session) -> List[schema.JusticeCountsBase]:
             name=f"User {i}",
             email=f"user{i}@email.com",
         )
-        for i in range(num_users)
+        for i in range(1, num_users + 1)  # start user IDs b/c 0 is not a valid user ID
     ]
     session.add_all(users)
     session.execute(
