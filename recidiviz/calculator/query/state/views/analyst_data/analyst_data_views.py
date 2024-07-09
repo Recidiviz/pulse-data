@@ -48,6 +48,9 @@ from recidiviz.calculator.query.state.views.analyst_data.fines_fees_sessions imp
 from recidiviz.calculator.query.state.views.analyst_data.incarceration_incidents_preprocessed import (
     INCARCERATION_INCIDENTS_PREPROCESSED_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.analyst_data.insights_caseload_category_sessions import (
+    get_insights_caseload_category_sessions_view_builder,
+)
 from recidiviz.calculator.query.state.views.analyst_data.invoices_preprocessed import (
     INVOICES_PREPROCESSED_VIEW_BUILDER,
 )
@@ -384,4 +387,5 @@ ANALYST_DATA_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     US_AR_OVG_TIMELINE_VIEW_BUILDER,
     US_AR_OVG_EVENTS_PREPROCESSED_VIEW_BUILDER,
     WORKFLOWS_USER_SIGNUPS_VIEW_BUILDER,
+    get_insights_caseload_category_sessions_view_builder(),
 ]

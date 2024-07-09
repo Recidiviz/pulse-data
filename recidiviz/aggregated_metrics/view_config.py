@@ -21,6 +21,7 @@ from typing import Sequence
 from recidiviz.aggregated_metrics.aggregated_metric_view_collector import (
     METRICS_BY_POPULATION_TYPE,
     UNIT_OF_ANALYSIS_TYPES_BY_POPULATION_TYPE,
+    UNIT_OF_ANALYSIS_TYPES_TO_EXCLUDE_FROM_NON_ASSIGNMENT_VIEWS,
     collect_aggregated_metrics_view_builders,
 )
 from recidiviz.aggregated_metrics.metric_time_periods import (
@@ -42,5 +43,6 @@ def get_aggregated_metrics_view_builders() -> Sequence[BigQueryViewBuilder]:
         *collect_aggregated_metrics_view_builders(
             METRICS_BY_POPULATION_TYPE,
             UNIT_OF_ANALYSIS_TYPES_BY_POPULATION_TYPE,
+            UNIT_OF_ANALYSIS_TYPES_TO_EXCLUDE_FROM_NON_ASSIGNMENT_VIEWS,
         ),
     ]
