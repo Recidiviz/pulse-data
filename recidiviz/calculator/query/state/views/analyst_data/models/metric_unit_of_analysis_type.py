@@ -33,6 +33,7 @@ class MetricUnitOfAnalysisType(Enum):
     STATE_CODE = "STATE"
     FACILITY = "FACILITY"
     FACILITY_COUNSELOR = "FACILITY_COUNSELOR"
+    INSIGHTS_CASELOAD_CATEGORY = "INSIGHTS_CASELOAD_CATEGORY"
     SUPERVISION_DISTRICT = "DISTRICT"
     SUPERVISION_OFFICE = "OFFICE"
     SUPERVISION_OFFICER = "OFFICER"
@@ -161,6 +162,11 @@ METRIC_UNITS_OF_ANALYSIS = [
         static_attribute_columns=["facility_counselor_name"],
     ),
     MetricUnitOfAnalysis(
+        type=MetricUnitOfAnalysisType.INSIGHTS_CASELOAD_CATEGORY,
+        primary_key_columns=["state_code", "caseload_category", "category_type"],
+        static_attribute_columns=[],
+    ),
+    MetricUnitOfAnalysis(
         type=MetricUnitOfAnalysisType.STATE_CODE,
         primary_key_columns=["state_code"],
         static_attribute_columns=[],
@@ -264,6 +270,12 @@ FROM
     `{project_id}.sessions.incarceration_staff_assignment_sessions_preprocessed_materialized`
 WHERE
     incarceration_staff_assignment_role_subtype = "COUNSELOR"
+""",
+    (
+        MetricUnitOfObservationType.PERSON_ID,
+        MetricUnitOfAnalysisType.INSIGHTS_CASELOAD_CATEGORY,
+    ): """
+SELECT * FROM `{project_id}.analyst_data.insights_caseload_category_sessions_materialized`
 """,
     (
         MetricUnitOfObservationType.SUPERVISION_OFFICER,

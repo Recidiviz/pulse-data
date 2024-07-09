@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Returns all aggregated metric view builders for specified populations and units of analysis"""
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 from recidiviz.aggregated_metrics.aggregated_metrics import (
     generate_aggregated_metrics_view_builder,
@@ -411,6 +411,7 @@ UNIT_OF_ANALYSIS_TYPES_BY_POPULATION_TYPE: Dict[
         MetricUnitOfAnalysisType.STATE_CODE,
     ],
     MetricPopulationType.SUPERVISION: [
+        MetricUnitOfAnalysisType.INSIGHTS_CASELOAD_CATEGORY,
         MetricUnitOfAnalysisType.SUPERVISION_OFFICER,
         MetricUnitOfAnalysisType.SUPERVISION_UNIT,
         MetricUnitOfAnalysisType.SUPERVISION_OFFICE,
@@ -429,6 +430,7 @@ UNIT_OF_ANALYSIS_TYPES_BY_POPULATION_TYPE: Dict[
 UNIT_OF_ANALYSIS_TYPES_TO_EXCLUDE_FROM_NON_ASSIGNMENT_VIEWS: List[
     MetricUnitOfAnalysisType
 ] = [
+    MetricUnitOfAnalysisType.INSIGHTS_CASELOAD_CATEGORY,
     MetricUnitOfAnalysisType.WORKFLOWS_CASELOAD,
     MetricUnitOfAnalysisType.WORKFLOWS_LOCATION,
 ]
@@ -439,6 +441,9 @@ def collect_aggregated_metrics_view_builders(
     units_of_analysis_by_population_dict: Dict[
         MetricPopulationType, List[MetricUnitOfAnalysisType]
     ],
+    units_of_analysis_to_exclude_from_non_assignment_views: Optional[
+        List[MetricUnitOfAnalysisType]
+    ] = None,
 ) -> List[SimpleBigQueryViewBuilder]:
     """
     Collects all aggregated metrics view builders at all available units of analysis and populations
@@ -492,10 +497,10 @@ def collect_aggregated_metrics_view_builders(
         for unit_of_analysis_type in units_of_analysis_by_population_dict[
             population_type
         ]:
-            # Filter out unit of analysis types for which we don't need detailed views
-            if (
+            # Filter out unit of analysis types for which we don't need materialized metric views
+            if units_of_analysis_to_exclude_from_non_assignment_views and (
                 unit_of_analysis_type
-                in UNIT_OF_ANALYSIS_TYPES_TO_EXCLUDE_FROM_NON_ASSIGNMENT_VIEWS
+                in units_of_analysis_to_exclude_from_non_assignment_views
             ):
                 continue
             unit_of_analysis = METRIC_UNITS_OF_ANALYSIS_BY_TYPE[unit_of_analysis_type]
