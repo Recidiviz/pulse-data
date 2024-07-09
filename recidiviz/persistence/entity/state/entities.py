@@ -2099,6 +2099,7 @@ class StateStaff(
     full_name: Optional[str] = attr.ib(
         default=None, validator=attr_validators.is_opt_str
     )
+    # TODO(#29072): Add is_opt_valid_email validator once all states have valid emails
     email: Optional[str] = attr.ib(default=None, validator=attr_validators.is_opt_str)
 
     # Primary key - Only optional when hydrated in the parsing layer, before we have
