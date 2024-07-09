@@ -27,7 +27,9 @@ Raw data files include:
   - LBAKRDTA_TAK025 and LBAKRDTA_TAK026 for status code information
 """
 from recidiviz.ingest.direct.regions.us_mo.ingest_views.templates_sentences import (
-    EARLIEST_STATUS_CODE,
+    BS_BT_BU_IMPOSITION_FILTER,
+    VALID_STATUS_CODES,
+    VALID_SUPERVISION_SENTENCE_INITIAL_INFO,
 )
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
     DirectIngestViewQueryBuilder,
@@ -61,9 +63,9 @@ FROM
 """
 
 # We get data for anyone who was incarcerated,
-# so we add an FSO placeholder to join to status codes.
-# We infer an incarceration sentence if the initial
-# status code for this person/cycle has an FSO of 0
+# however the existence of this data does not neccessarily
+# mean they were *sentenced* to incarceration.
+# For example, they could have had probation revoked
 INCARCERATION_SENTENCE_DETAIL_INFO = """
 SELECT
     BT_DOC, -- unique for each person
@@ -71,23 +73,9 @@ SELECT
     BT_SEO, -- unique for each sentence
     BT_SD,  -- sentence imposed_date
     BT_CRR, -- sentence is_life
-    BT_SDI, -- sentence is_capital_punishment
-    '0' AS FSO_PLACEHOLDER -- needed to join to earliest status table
+    BT_SDI -- sentence is_capital_punishment
 FROM
     {LBAKRDTA_TAK023}
-"""
-
-# We get multiple rows per sentence and then join to
-# a relation of earliest statuses
-SUPERVISION_SENTENCE_DETAIL_INFO = """
-SELECT
-    BU_DOC, -- unique for each person
-    BU_CYC, -- unique for each sentence group
-    BU_SEO, -- unique for each sentence
-    BU_FSO, -- mutliple per sentence, needed to join
-    BU_SF  -- sentence imposed_date
-FROM
-    {LBAKRDTA_TAK024}
 """
 
 VIEW_QUERY_TEMPLATE = f"""
@@ -96,41 +84,27 @@ WITH
     -- This CTE provides charge level information
     base_sentence_info AS ({BASE_SENTENCE_INFO}),
 
-    -- This gives the FSO, code, and description of the first status. 
-    -- '0' is incarceration, > 0 is supervision. We use all three pieces
-    -- of data to infer sentence_type
-    earliest_status_code AS ({EARLIEST_STATUS_CODE}),
-
-    -- These are actual incarceration sentences.
-    -- We inner join to earliest_status_code to filter out TAK023 data
-    -- that arises to capture incarceration from revocation.
-    incarceration_sentences AS (
-        SELECT *
-        FROM ({INCARCERATION_SENTENCE_DETAIL_INFO}) AS inc
-        JOIN 
-            earliest_status_code
-        ON
-            earliest_status_code.BS_DOC = inc.BT_DOC AND 
-            earliest_status_code.BS_CYC = inc.BT_CYC AND 
-            earliest_status_code.BS_SEO = inc.BT_SEO AND
-            earliest_status_code.BV_FSO = inc.FSO_PLACEHOLDER
+    -- This gives the status code and description of the first status. 
+    -- We use both to infer sentence type and sentencing authority
+    earliest_status_code AS (
+        {VALID_STATUS_CODES}
+        -- The Status Sequence (SSO) is not necessarily chronological, so
+        -- we order by the status change date instead
+        QUALIFY (
+            ROW_NUMBER() OVER(
+                PARTITION BY BS_DOC, BS_CYC, BS_SEO 
+                ORDER BY CAST(BW_SY AS INT64)
+            ) = 1)
     ),
 
-    -- These are actual supervision sentences.
-    -- We inner join to earliest_status_code to filter out TAK024 data
-    -- that arises from field sequence data over time and/or
-    -- pre-trial investigation data.
-    supervision_sentences AS (
-        SELECT *
-        FROM ({SUPERVISION_SENTENCE_DETAIL_INFO}) AS sup
-        JOIN 
-            earliest_status_code
-        ON
-            earliest_status_code.BS_DOC = sup.BU_DOC AND 
-            earliest_status_code.BS_CYC = sup.BU_CYC AND 
-            earliest_status_code.BS_SEO = sup.BU_SEO AND
-            earliest_status_code.BV_FSO = sup.BU_FSO
-    )
+    -- These are not neccessarily incarceration sentences,
+    -- but has imposition information if the eariest status code
+    -- denotes incarceration.
+    incarceration_detail AS ({INCARCERATION_SENTENCE_DETAIL_INFO}),
+
+    -- These are not neccessarily supervision sentences, but will have
+    -- the necessary imposition date for probation sentences.
+    supervision_detail AS ({VALID_SUPERVISION_SENTENCE_INITIAL_INFO})
 
 SELECT
     base_sentence_info.BS_DOC,                 -- unique for each person
@@ -146,20 +120,32 @@ SELECT
     base_sentence_info.BS_COD,                 -- charge description,
     base_sentence_info.BS_CRC,                 -- charge judicial_district_code
     base_sentence_info.parent_sentence_external_id_array,
-    incarceration_sentences.BT_SD,  -- sentence imposed_date, incarceration
-    incarceration_sentences.BT_CRR, -- sentence is_life
-    incarceration_sentences.BT_SDI, -- sentence is_capital_punishment
-    supervision_sentences.BU_SF,    -- sentence imposed_date, supervision
+    incarceration_detail.BT_SD,  -- sentence imposed_date, incarceration
+    incarceration_detail.BT_CRR, -- sentence is_life
+    incarceration_detail.BT_SDI, -- sentence is_capital_punishment
+    supervision_detail.BU_SF,    -- sentence imposed_date, supervision
     earliest_status_code.FH_SDE AS initial_status_desc,
-    earliest_status_code.BW_SCD AS initial_status_code,
-    earliest_status_code.BV_FSO AS initial_FSO,
-FROM base_sentence_info
-LEFT JOIN incarceration_sentences
-USING(BS_DOC, BS_CYC, BS_SEO)
-LEFT JOIN supervision_sentences 
-USING(BS_DOC, BS_CYC, BS_SEO)
-JOIN earliest_status_code
-USING(BS_DOC, BS_CYC, BS_SEO)
+    earliest_status_code.BW_SCD AS initial_status_code
+FROM 
+    base_sentence_info
+LEFT JOIN 
+    incarceration_detail
+ON
+    BS_DOC = BT_DOC AND 
+    BS_CYC = BT_CYC AND
+    BS_SEO = BT_SEO
+LEFT JOIN 
+    supervision_detail 
+ON
+    BS_DOC = BU_DOC AND 
+    BS_CYC = BU_CYC AND
+    BS_SEO = BU_SEO
+JOIN 
+    earliest_status_code
+USING
+    (BS_DOC, BS_CYC, BS_SEO)
+WHERE
+    {BS_BT_BU_IMPOSITION_FILTER}
 """
 
 VIEW_BUILDER = DirectIngestViewQueryBuilder(

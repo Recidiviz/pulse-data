@@ -42,6 +42,9 @@ from recidiviz.ingest.direct.regions.us_mo.us_mo_county_code_reference import (
 from recidiviz.ingest.direct.regions.us_nd.us_nd_county_code_reference import (
     normalized_county_code,
 )
+from recidiviz.pipelines.utils.state_utils.us_mo.us_mo_sentence_classification import (
+    UsMoSentenceStatus,
+)
 
 MAGIC_DATES = (
     "0",
@@ -149,22 +152,66 @@ def null_if_magic_date(date: str) -> Optional[str]:
     """
     if date in MAGIC_DATES:
         return None
-    return date
+    return null_if_invalid_date(date)
 
 
-def get_imposed_date(initial_FSO: str, BS_DO: str, BU_SF: str) -> Optional[str]:
+def get_imposed_date(
+    BT_SD: str,
+    BU_SF: str,
+    BS_CNS: str,
+    initial_status_code: str,
+    initial_status_desc: str,
+) -> Optional[str]:
     """Returns the imposed_date for a sentence as a string,
     or None if it is a magic date.
 
     Args:
-        initial_FSO: The FSO of the initial sentence status. "0" means the
-                     this is an incarceration sentence.
-        BS_DO: The imposed date of incarceration.
+        BT_SD: The imposed date of incarceration.
         BU_SF: The imposed date of supervision.
+        BS_CNS: The county code (we check for "other state" OTST)
+        initial_status_desc: The initial status description for this sentence.
     """
-    if initial_FSO == "0":
-        return null_if_magic_date(BS_DO)
-    return null_if_magic_date(BU_SF)
+
+    # If this is an interstate compact sentence we can have a null imposed_date
+    # OTST is the raw string MODOC uses for 'other state'
+    if BS_CNS.upper() == "OTST" or "IS COMP" in initial_status_desc.upper():
+        return None
+
+    # Some revocations and revisits do not have the
+    # imposed date in the incarceration sentence file,
+    # despite the initial status matching up to incarceration.
+    inc_imposed_date = null_if_magic_date(BT_SD)
+
+    # Some sentences with an initial status of "Supv to DAI..."
+    # do not have the imposed date in the probation sentence file,
+    # despite the initial status matching up to probation.
+    sup_imposed_date = null_if_magic_date(BU_SF)
+
+    # If the initial status code is related to incarceration,
+    # we check the incarceration data for an imposed_date.
+    # However, we fall back to the imposed date,
+    # found in supervision data if needed.
+    status = UsMoSentenceStatus(
+        sentence_status_external_id="0-0-0",
+        sentence_external_id="000",
+        status_date=None,
+        status_code=initial_status_code,
+        status_description=initial_status_desc,
+    )
+    if status.is_incarceration_in_status or status.is_incarceration_out_status:
+        imposed_date = (
+            inc_imposed_date if inc_imposed_date is not None else sup_imposed_date
+        )
+    else:
+        imposed_date = (
+            sup_imposed_date if sup_imposed_date is not None else inc_imposed_date
+        )
+    if imposed_date is None:
+        raise ValueError(
+            "No valid imposed date from BT_SD or BU_SF! "
+            f"{BT_SD=} {BU_SF=} {initial_status_code=} {initial_status_desc=} {BS_CNS=}"
+        )
+    return imposed_date
 
 
 def null_if_invalid_date(date: str) -> Optional[str]:

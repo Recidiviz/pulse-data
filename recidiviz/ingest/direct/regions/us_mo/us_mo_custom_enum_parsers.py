@@ -1228,31 +1228,22 @@ def parse_incarceration_incident_type(raw_text: str) -> StateIncarcerationIncide
 # TODO(#28189): Expand status code knowledge/coverage for supervision type classification
 def get_recidiviz_sentence_status(raw_text: str) -> StateSentenceStatus:
     """This is a custom parser to get a StateSentenceStatus.
-
-    It recreates the statuses associated with StateIncarcerationSentence and
-    StateSupervisionSentence in the V1 sentencing schema, but there is room
-    to further improve/specify statuses.
-
+    If a status is not commuted, suspended, or completed, then it is serving.
     Args:
-        raw_text: (str) BW_SCD, sentence_external_id and FH_SDE concatenated with "@@"
-            (ex: 45O2000@@XXX-XXX-XXX-INCARCERATION@@Prob Rev-Technical)
+        raw_text: (str) Concatenation of status code and description, separated by '@@'
+                  We pass in the status description to use in normalization!
     Returns:
         StateSentenceStatus
     """
-    raw_text_parts = raw_text.split("@@")
-    if not len(raw_text_parts) == 3:
-        raise ValueError(
-            f"Unexpected number of raw text parts for sentence status raw text [{raw_text}]"
-        )
-    status_code, sentence_external_id, description = raw_text_parts
+    code, description = raw_text.split("@@")
     status = UsMoSentenceStatus(
         sentence_status_external_id="0-0-0",
-        sentence_external_id=sentence_external_id,
+        sentence_external_id="000",
         status_date=None,
-        status_code=status_code,
+        status_code=code,
         status_description=description,
     )
-    return status.state_sentence_status or StateSentenceStatus.EXTERNAL_UNKNOWN
+    return status.state_sentence_status
 
 
 # TODO(#28189): Expand status code knowledge/coverage for supervision type classification.
@@ -1269,7 +1260,7 @@ def parse_state_sentence_type_from_supervision_status(
         status_code=status_code,
         status_description=status_description,
     )
-    sentence_type = status.supervision_sentence_type_status_classification
+    sentence_type = status.state_sentence_type
     if (
         sentence_type != StateSentenceType.INTERNAL_UNKNOWN
         and sentence_type is not None
@@ -1283,12 +1274,14 @@ def parse_state_sentence_type_from_supervision_status(
 def get_sentence_type(raw_text: str) -> StateSentenceType:
     """Returns the sentence type at imposition.
 
+    Defaults to INTERNAL_UNKOWN, which happens if
+    it the initial status is not an incarceration in/out status
+    AND we couldn't distinguish from PROBATION or PAROLE.
+
     Args:
-        raw_text: initial_FSO@@initial_status_code@@initial_status_desc
+        raw_text: initial_status_code@@initial_status_desc
     """
-    initial_FSO, initial_status_code, initial_status_desc = raw_text.split("@@")
-    if initial_FSO == "0":
-        return StateSentenceType.STATE_PRISON
+    initial_status_code, initial_status_desc = raw_text.split("@@")
     status = UsMoSentenceStatus(
         sentence_status_external_id="0-0-0",
         sentence_external_id="0-0-0",
@@ -1296,15 +1289,7 @@ def get_sentence_type(raw_text: str) -> StateSentenceType:
         status_code=initial_status_code,
         status_description=initial_status_desc,
     )
-    sentence_type = status.supervision_sentence_type_status_classification
-    if (
-        sentence_type != StateSentenceType.INTERNAL_UNKNOWN
-        and sentence_type is not None
-    ):
-        return sentence_type
-    # We assume everything from the TAK024 (Sentence Prob) is
-    # in fact, PROBATION. Unless it has been parsed otherwise above.
-    return StateSentenceType.PROBATION
+    return status.state_sentence_type
 
 
 def parse_supervision_sentencing_authority(raw_text: str) -> StateSentencingAuthority:

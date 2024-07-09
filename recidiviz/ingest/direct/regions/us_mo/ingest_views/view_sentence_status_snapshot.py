@@ -20,12 +20,14 @@ This includes:
   - Type of status (COMPLETED, SERVING, REVOKED, COMMUTED, etc.)
 
 Raw data files include:
+  - LBAKRDTA_TAK022 relates sentences to charges
   - LBAKRDTA_TAK025 to cross-reference sentences with sentence status snapshots
   - LBAKRDTA_TAK026 has the information for sentence status snapshots
 """
 from recidiviz.ingest.direct.regions.us_mo.ingest_views.templates_sentences import (
-    FROM_BU_BS_BV_BW_WHERE_NOT_PRETRIAL,
-    MAGIC_DATES,
+    BS_BT_BU_IMPOSITION_FILTER,
+    VALID_STATUS_CODES,
+    VALID_SUPERVISION_SENTENCE_INITIAL_INFO,
 )
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
     DirectIngestViewQueryBuilder,
@@ -33,77 +35,47 @@ from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-SUPERVISION_STATUSES = f"""
-SELECT 
-    supervision_statuses.*,
-    FH_SDE -- status code description
-FROM (
-    SELECT 
-        BV_DOC AS person_external_id,
-        CONCAT(BV_DOC, '-', BV_CYC, '-', BV_SEO, '-', 'SUPERVISION') AS sentence_external_id,
-        BW_SSO,  -- status sequence num
-        BW_SY,  -- status code change date
-        BW_SCD  -- status code
-    {FROM_BU_BS_BV_BW_WHERE_NOT_PRETRIAL}
-) supervision_statuses
-JOIN
-    {{LBAKRCOD_TAK146}} AS FH
-ON
-    supervision_statuses.BW_SCD = FH.FH_SCD
-"""
-
-# TODO(#28880) Remove the join to TAK022 BS here after raw data migration.
-INCARCERATION_STATUSES = f"""
-SELECT 
-    BV_DOC AS person_external_id,
-    CONCAT(BV_DOC, '-', BV_CYC, '-', BV_SEO, '-', 'INCARCERATION') AS sentence_external_id,
-    BW_SSO,  -- status sequence num
-    BW_SY,  -- status code change date
-    BW_SCD,  -- status code
-    FH_SDE,  -- status code description
-FROM
-    {{LBAKRDTA_TAK023}} AS BT
-JOIN
-    {{LBAKRDTA_TAK022}} AS BS
-ON
-    BT.BT_DOC = BS.BS_DOC AND
-    BT.BT_CYC = BS.BS_CYC AND
-    BT.BT_SEO = BS.BS_SEO
-JOIN
-    {{LBAKRDTA_TAK025}} AS BV
-ON
-    BT.BT_DOC = BV.BV_DOC AND
-    BT.BT_CYC = BV.BV_CYC AND
-    BT.BT_SEO = BV.BV_SEO
-JOIN
-     {{LBAKRDTA_TAK026}} AS BW
-ON
-    BV.BV_DOC = BW.BW_DOC AND
-    BV.BV_CYC = BW.BW_CYC AND
-    BV.BV_SSO = BW.BW_SSO
-JOIN
-    {{LBAKRCOD_TAK146}} AS FH
-ON
-    BW.BW_SCD = FH.FH_SCD
-WHERE
-    -- Incarceration statuses have an FSO of 0
-    BV_FSO = '0'
-AND
-    -- We get weekly data with expected statuses for the (future) week,
-    -- so this ensures we only get statuses that have happened
-    CAST(BW_SY AS INT64) <= CAST(FORMAT_DATE('%Y%m%d', CURRENT_TIMESTAMP()) AS INT64)
-AND
-    -- sentence must have valid imposed_date
-    BT_SD NOT IN {MAGIC_DATES}
-"""
-
 VIEW_QUERY_TEMPLATE = f"""
 WITH 
-    inc_status AS ({INCARCERATION_STATUSES}),
-    sup_status AS ({SUPERVISION_STATUSES})
-SELECT * FROM inc_status
-UNION ALL
-SELECT * FROM sup_status
+    -- Valid statuses are the base of hydrating this entity.
+    valid_statuses AS ({VALID_STATUS_CODES}),
+    -- These sentences have a charge and imposed_date
+    valid_imposed AS (
+        SELECT
+            BS_DOC, -- unique for each person
+            BS_CYC, -- unique for each sentence group
+            BS_SEO  -- unique for each sentence
+        FROM
+            {{LBAKRDTA_TAK022}}
+        LEFT JOIN
+            ({VALID_SUPERVISION_SENTENCE_INITIAL_INFO})
+        ON
+            BS_DOC = BU_DOC AND
+            BS_CYC = BU_CYC AND
+            BS_SEO = BU_SEO
+        LEFT JOIN
+            {{LBAKRDTA_TAK023}}
+        ON
+            BS_DOC = BT_DOC AND 
+            BS_CYC = BT_CYC AND
+            BS_SEO = BT_SEO
+        WHERE
+            {BS_BT_BU_IMPOSITION_FILTER}
+    )
+SELECT 
+    BS_DOC, -- Unique for each person
+    BS_CYC, -- Unique for each sentence group
+    BS_SEO, -- Unique for each sentence
+    BW_SSO, -- status sequence num
+    BW_SY,  -- status code change date
+    BW_SCD, -- status code
+    FH_SDE  -- status description
+FROM
+    valid_statuses
+JOIN
+    valid_imposed
+USING
+    (BS_DOC, BS_CYC, BS_SEO)
 """
 
 VIEW_BUILDER = DirectIngestViewQueryBuilder(

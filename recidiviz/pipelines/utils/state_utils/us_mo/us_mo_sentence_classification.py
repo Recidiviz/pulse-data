@@ -247,25 +247,19 @@ class UsMoSentenceStatus(BuildableAttr):
 
     # This is to identify the type of supervision a sentence has
     # based on the status at imposition.
-    supervision_sentence_type_status_classification: Optional[
-        StateSentenceType
-    ] = attr.ib()
+    state_sentence_type: StateSentenceType = attr.ib()
 
     # TODO(#28189): Expand status code knowledge/coverage for supervision type classification
-    @supervision_sentence_type_status_classification.default
-    def _supervision_sentence_type_status_classification(
-        self,
-    ) -> Optional[StateSentenceType]:
-        """Calculates what the sentence supervision type should be associated with this sentence if this is the
-        critical status for determining supervision type.
+    @state_sentence_type.default
+    def _state_sentence_type(self) -> StateSentenceType:
         """
+        Determines the sentence type at imposition based on the
+        earliest valid status code and status description.
+        """
+        if self.is_incarceration_in_status or self.is_incarceration_out_status:
+            return StateSentenceType.STATE_PRISON
         if self.is_treatment_status:
             return StateSentenceType.TREATMENT
-        if (
-            self.supervision_type_status_classification
-            == StateSupervisionSentenceSupervisionType.INTERNAL_UNKNOWN
-        ):
-            return StateSentenceType.INTERNAL_UNKNOWN
         if (
             self.supervision_type_status_classification
             == StateSupervisionSentenceSupervisionType.PROBATION
@@ -276,7 +270,7 @@ class UsMoSentenceStatus(BuildableAttr):
             == StateSupervisionSentenceSupervisionType.PAROLE
         ):
             return StateSentenceType.PAROLE
-        return None
+        return StateSentenceType.INTERNAL_UNKNOWN
 
     # This is to identify the type of SentenceStatus at its own
     # point in time in a ledger of StateSentenceStatusSnapshots
@@ -287,24 +281,6 @@ class UsMoSentenceStatus(BuildableAttr):
         self,
     ) -> StateSentenceStatus:
         """Returns the StateSentenceStatus based on the given sentence and status code."""
-        is_incarceration_sentence = "INCARCERATION" in self.sentence_external_id
-
-        # Revocation statuses can occur:
-        #   - when PROBATION or PAROLE is revoked
-        #   - when TREATMENT is revoked
-        #   - when STATE_PRISON starts, meaning the status is the first status for incarceration
-        #   - when some TREATMENT starts, meaning the status is the first status for treatment
-        # https://revisor.mo.gov/main/OneSection.aspx?section=559.100&bid=29109&hl=
-        if self.status_code in {
-            "45O2000",  # Prob Rev - Technical
-            "45O2005",  # Prob Rev - New Felony Conv
-            "45O2015",  # Prob Rev - Felony Law Viol
-            "45O2010",  # Prob Rev - New Misd Conv
-            "45O2020",  # Prob Rev - Misd Law Viol
-        } or self.status_code.startswith("40I2"):
-            if is_incarceration_sentence:
-                return StateSentenceStatus.SERVING
-            return StateSentenceStatus.REVOKED
 
         if self.status_code in {
             "35I3500",  # Bond Supv-Pb Suspended-Revisit
