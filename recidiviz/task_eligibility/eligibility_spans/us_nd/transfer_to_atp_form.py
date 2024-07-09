@@ -26,10 +26,13 @@ from recidiviz.task_eligibility.candidate_populations.general import (
 from recidiviz.task_eligibility.completion_events.general import granted_work_release
 from recidiviz.task_eligibility.criteria.general import (
     custody_level_is_minimum,
+    incarcerated_at_least_30_days_in_same_facility,
+    incarcerated_at_least_90_days,
     not_in_work_release,
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_nd import (
     incarceration_within_1_year_of_ftcd_or_prd_or_cpp_release,
+    no_detainers_or_warrants,
     not_serving_ineligible_offense_for_atp_work_release,
     work_release_committee_requirements,
 )
@@ -54,6 +57,9 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         work_release_committee_requirements.VIEW_BUILDER,
         not_in_work_release.VIEW_BUILDER,
         not_serving_ineligible_offense_for_atp_work_release.VIEW_BUILDER,
+        incarcerated_at_least_90_days.VIEW_BUILDER,
+        incarcerated_at_least_30_days_in_same_facility.VIEW_BUILDER,
+        no_detainers_or_warrants.VIEW_BUILDER,
     ],
     completion_event_builder=granted_work_release.VIEW_BUILDER,
 )

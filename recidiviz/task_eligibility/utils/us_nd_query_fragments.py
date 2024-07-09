@@ -93,6 +93,7 @@ def parole_review_date_criteria_builder(
             ON peid.external_id = REPLACE(REPLACE(ms.OFFENDER_BOOK_ID,',',''), '.00', '')
             AND peid.id_type = 'US_ND_ELITE_BOOKING'
             AND peid.state_code = 'US_ND'
+            AND ms.MEDICAL_QUESTIONAIRE_CODE = 'PAR'
         ),
 
         critical_date_spans AS (
@@ -161,3 +162,51 @@ def reformat_ids(column_name: str) -> str:
     """
 
     return f"""REPLACE(REPLACE({column_name},',',''), '.00', '')"""
+
+
+def get_positive_behavior_reports_as_case_notes() -> str:
+    """
+    Returns a SQL query that retrieves positive behavior reports as case notes.
+    """
+    return """
+    SELECT 
+        peid.external_id,
+        "Positive Behavior Reports (in the past year)" AS criteria,
+        facility AS note_title, 
+        incident_details AS note_body,
+        sic.incident_date AS event_date,
+    FROM `{project_id}.{normalized_state_dataset}.state_incarceration_incident` sic
+    INNER JOIN `{project_id}.{normalized_state_dataset}.state_person_external_id` peid
+        USING (person_id)
+    WHERE sic.state_code= 'US_ND'
+        AND sic.incident_type = 'POSITIVE'
+        AND sic.incident_date > DATE_SUB(CURRENT_DATE, INTERVAL 1 YEAR)"""
+
+
+def get_program_assignments_as_case_notes() -> str:
+    """
+    Returns a SQL query that retrieves program assignments as case notes.
+    """
+
+    return """
+    SELECT 
+        peid.external_id,
+        "Assignments" AS criteria,
+        spa.participation_status AS note_title,
+        CONCAT(
+            spa.program_location_id,
+            " - Service: ",
+            SPLIT(spa.program_id, '@@')[SAFE_OFFSET(0)],
+            " - Activity Description: ",
+            SPLIT(spa.program_id, '@@')[SAFE_OFFSET(1)]
+        ) AS note_body,
+        COALESCE(spa.discharge_date, spa.start_date, spa.referral_date) AS event_date,
+    FROM `{project_id}.{normalized_state_dataset}.state_program_assignment` spa
+    INNER JOIN `{project_id}.{normalized_state_dataset}.state_person_external_id` peid
+        USING (person_id)
+    WHERE spa.state_code = 'US_ND'
+        AND spa.program_id IS NOT NULL
+        AND spa.participation_status IN ('IN_PROGRESS', 'PENDING', 'DISCHARGED')
+    GROUP BY 1,2,3,4,5
+    HAVING note_body IS NOT NULL
+    """
