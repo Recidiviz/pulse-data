@@ -52,10 +52,7 @@ V2_SENTENCES = """
 # TODO(#29211) Update this query to handle US_ID external IDs once entities are hydrated
 V1_SENTENCES = """
     SELECT 
-        CASE WHEN state_code = 'US_MO'
-            THEN CONCAT(sentence.external_id, '-INCARCERATION') 
-            ELSE sentence.external_id 
-        END AS sentence_external_id, 
+        sentence.external_id AS sentence_external_id, 
         charge.external_id AS charge_v1_external_id,
         state_code
     FROM 
@@ -72,10 +69,7 @@ V1_SENTENCES = """
     UNION ALL
 
     SELECT 
-        CASE WHEN state_code = 'US_MO'
-            THEN CONCAT(sentence.external_id, '-SUPERVISION') 
-            ELSE sentence.external_id 
-        END AS sentence_external_id, 
+        sentence.external_id AS sentence_external_id, 
         charge.external_id AS charge_v1_external_id,
         state_code
     FROM 
