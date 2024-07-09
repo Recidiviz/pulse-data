@@ -27,6 +27,7 @@ from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_compiler_deleg
     IS_STAGING_PROPERTY_NAME,
 )
 from recidiviz.utils import environment
+from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 
 
 class IngestViewContentsContext:
@@ -48,12 +49,40 @@ class IngestViewContentsContextImpl(IngestViewContentsContext):
     production code.
     """
 
+    def __init__(self, is_local: bool, is_staging: bool, is_production: bool) -> None:
+        self.is_local = is_local
+        self.is_staging = is_staging
+        self.is_production = is_production
+
     def get_env_property(self, property_name: str) -> Union[bool, str]:
         if property_name == IS_LOCAL_PROPERTY_NAME:
-            return not environment.in_gcp()
+            return self.is_local
         if property_name == IS_STAGING_PROPERTY_NAME:
-            return environment.in_gcp_staging()
+            return self.is_staging
         if property_name == IS_PRODUCTION_PROPERTY_NAME:
-            return environment.in_gcp_production()
+            return self.is_production
 
         raise ValueError(f"Unexpected environment property: [{property_name}]")
+
+    @classmethod
+    @environment.test_only
+    def build_for_tests(cls) -> "IngestViewContentsContextImpl":
+        """Creates a context for use in tests. Ingest views gated with `is_local: True`
+        will be run with this context"""
+        return IngestViewContentsContextImpl(
+            is_local=True,
+            # We run all views gated to staging in tests
+            is_staging=True,
+            is_production=False,
+        )
+
+    @classmethod
+    def build_for_project(cls, project_id: str) -> "IngestViewContentsContextImpl":
+        """Creates context for an ingest view that will be processed in an ingest
+        pipeline running in the given project.
+        """
+        return IngestViewContentsContextImpl(
+            is_local=False,
+            is_staging=project_id == GCP_PROJECT_STAGING,
+            is_production=project_id == GCP_PROJECT_PRODUCTION,
+        )

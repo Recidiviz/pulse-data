@@ -68,7 +68,7 @@ class TestMergeIngestViewRootEntityTrees(StateIngestPipelineTestCase):
         provided |ingest_view_name| and |test_name|, then parses the rows into root
         entity trees, returning those along with their associated upper bound date.
         """
-        parser_context = IngestViewContentsContextImpl()
+        parser_context = IngestViewContentsContextImpl.build_for_tests()
         rows = list(
             self.get_ingest_view_results_from_fixture(
                 ingest_view_name=ingest_view_name, test_name=test_name

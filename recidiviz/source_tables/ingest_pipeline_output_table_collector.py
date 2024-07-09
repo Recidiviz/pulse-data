@@ -24,6 +24,9 @@ from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_client import BQ_CLIENT_MAX_POOL_SIZE, BigQueryClient
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct import direct_ingest_regions
+from recidiviz.ingest.direct.ingest_mappings.ingest_view_contents_context import (
+    IngestViewContentsContextImpl,
+)
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_collector import (
     IngestViewManifestCollector,
 )
@@ -60,6 +63,7 @@ from recidiviz.source_tables.source_table_config import (
     SourceTableCollection,
     SourceTableCollectionUpdateConfig,
 )
+from recidiviz.utils import metadata
 
 
 def build_ingest_pipeline_output_source_table_collections() -> list[
@@ -104,7 +108,12 @@ def _get_ingest_view_builders(
     )
     view_collector = DirectIngestViewQueryBuilderCollector(
         region,
-        ingest_manifest_collector.launchable_ingest_views(),
+        ingest_manifest_collector.launchable_ingest_views(
+            # We collect views that will be present in the project this is running for
+            IngestViewContentsContextImpl.build_for_project(
+                project_id=metadata.project_id()
+            ),
+        ),
     )
 
     return view_collector.get_query_builders()

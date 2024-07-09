@@ -38,6 +38,9 @@ from recidiviz.ingest.direct.direct_ingest_regions import (
     DirectIngestRegion,
     get_direct_ingest_region,
 )
+from recidiviz.ingest.direct.ingest_mappings.ingest_view_contents_context import (
+    IngestViewContentsContextImpl,
+)
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRegionRawFileConfig,
 )
@@ -242,9 +245,18 @@ class StateSpecificIngestPipelineIntegrationTestCase(BaseStateIngestPipelineTest
         self.mock_environment_fn = self.environment_patcher.start()
         self.mock_environment_fn.return_value = True
 
+        self.context_patcher = patch(
+            "recidiviz.pipelines.ingest.state.pipeline.IngestViewContentsContextImpl.build_for_project"
+        )
+        self.context_patcher_fn = self.context_patcher.start()
+        self.context_patcher_fn.return_value = (
+            IngestViewContentsContextImpl.build_for_tests()
+        )
+
     def tearDown(self) -> None:
         self.metadata_patcher.stop()
         self.environment_patcher.stop()
+        self.context_patcher_fn.stop()
         super().tearDown()
 
     def get_ingest_view_results_from_fixture(
@@ -333,8 +345,7 @@ class StateSpecificIngestPipelineIntegrationTestCase(BaseStateIngestPipelineTest
         passed in directly."""
         if not ingest_view_results:
             ingest_view_results = {
-                ingest_view: []
-                for ingest_view in self.ingest_view_manifest_collector().launchable_ingest_views()
+                ingest_view: [] for ingest_view in self.launchable_ingest_views()
             }
         expected_entities = [
             entity
@@ -350,7 +361,7 @@ class StateSpecificIngestPipelineIntegrationTestCase(BaseStateIngestPipelineTest
                 for entity in expected_entities
                 if entity.get_entity_name() == entity_type
             ]
-            for ingest_view in self.ingest_view_manifest_collector().launchable_ingest_views()
+            for ingest_view in self.launchable_ingest_views()
             for entity_type in self.get_expected_output_entity_types(
                 ingest_view_name=ingest_view,
             )

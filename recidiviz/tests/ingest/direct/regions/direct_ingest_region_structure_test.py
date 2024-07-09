@@ -571,9 +571,8 @@ class TestControllerWithIngestManifestCollection(unittest.TestCase):
 
     def setUp(self) -> None:
         self.combinations = [
-            (region_code, ingest_instance, project)
+            (region_code, project)
             for region_code in get_existing_direct_ingest_states()
-            for ingest_instance in list(DirectIngestInstance)
             for project in sorted(environment.GCP_PROJECTS)
         ]
 
@@ -628,7 +627,7 @@ class TestControllerWithIngestManifestCollection(unittest.TestCase):
     def test_ingest_views_with_similar_names_are_in_different_environments(
         self,
     ) -> None:
-        for region_code, ingest_instance, project in self.combinations:
+        for region_code, project in self.combinations:
             region = direct_ingest_regions.get_direct_ingest_region(
                 region_code=region_code.value
             )
@@ -655,7 +654,9 @@ class TestControllerWithIngestManifestCollection(unittest.TestCase):
                 related_ingest_view_pairs = self._get_related_ingest_view_pairs(
                     ingest_view_names
                 )
-                contents_context = IngestViewContentsContextImpl()
+                contents_context = IngestViewContentsContextImpl.build_for_project(
+                    project
+                )
                 for ingest_view, ingest_view_2 in related_ingest_view_pairs:
                     manifest = ingest_view_manifest_collector.ingest_view_to_manifest[
                         ingest_view
@@ -668,7 +669,7 @@ class TestControllerWithIngestManifestCollection(unittest.TestCase):
                         and manifest_2.should_launch(contents_context),
                         f"Found related {region_code.value} views, [{ingest_view}] and "
                         f"[{ingest_view_2}], which are both configured to launch in "
-                        f"[{project}] and [{ingest_instance}]",
+                        f"[{project}]",
                     )
 
     def test_integration_test_ingest_view_result_fixture_files_have_corresponding_yaml(

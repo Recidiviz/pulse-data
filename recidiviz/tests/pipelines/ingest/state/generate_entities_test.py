@@ -21,6 +21,9 @@ import apache_beam as beam
 from apache_beam.options.pipeline_options import PipelineOptions, SetupOptions
 from apache_beam.pipeline_test import TestPipeline, assert_that, equal_to
 
+from recidiviz.ingest.direct.ingest_mappings.ingest_view_contents_context import (
+    IngestViewContentsContextImpl,
+)
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_compiler import (
     IngestViewManifestCompiler,
 )
@@ -90,7 +93,9 @@ class TestGenerateEntities(StateIngestPipelineTestCase):
                 )
             )
             | pipeline.GenerateEntities(
-                state_code=self.region_code(), ingest_view_manifest=ingest_view_manifest
+                state_code=self.region_code(),
+                ingest_view_manifest=ingest_view_manifest,
+                ingest_view_context=IngestViewContentsContextImpl.build_for_tests(),
             )
         )
         assert_that(output, equal_to(expected_output))

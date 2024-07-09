@@ -16,8 +16,10 @@
 # =============================================================================
 """Tests for ingest_view_manifest_collector.py."""
 import unittest
-from unittest.mock import patch
 
+from recidiviz.ingest.direct.ingest_mappings.ingest_view_contents_context import (
+    IngestViewContentsContextImpl,
+)
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_collector import (
     IngestViewManifestCollector,
 )
@@ -26,7 +28,6 @@ from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_compiler_deleg
 )
 from recidiviz.tests.ingest.direct import fake_regions
 from recidiviz.tests.utils.fake_region import fake_region
-from recidiviz.utils.environment import GCPEnvironment
 
 
 class IngestViewManifestCollectorTest(unittest.TestCase):
@@ -65,32 +66,41 @@ class IngestViewManifestCollectorTest(unittest.TestCase):
         )
 
     def test_launchable_ingest_views(self) -> None:
-        result = self.us_xx_ingest_view_manifest_collector.launchable_ingest_views()
+        result = self.us_xx_ingest_view_manifest_collector.launchable_ingest_views(
+            IngestViewContentsContextImpl(
+                is_production=False,
+                is_staging=True,
+                is_local=False,
+            )
+        )
         self.assertListEqual(
             ["basic", "tagBasicData", "tagMoreBasicData"],
             list(sorted(result)),
         )
-
-        with patch(
-            "recidiviz.utils.environment.get_gcp_environment",
-            return_value=GCPEnvironment.PRODUCTION.value,
-        ):
-            result = self.us_yy_ingest_view_manifest_collector.launchable_ingest_views()
-            self.assertListEqual(
-                [],
-                list(sorted(result)),
+        result = self.us_yy_ingest_view_manifest_collector.launchable_ingest_views(
+            IngestViewContentsContextImpl(
+                is_production=True,
+                is_staging=False,
+                is_local=False,
             )
+        )
+        self.assertListEqual(
+            [],
+            list(sorted(result)),
+        )
 
-        with patch(
-            "recidiviz.utils.environment.get_gcp_environment",
-            return_value=GCPEnvironment.STAGING.value,
-        ):
-            result = self.us_yy_ingest_view_manifest_collector.launchable_ingest_views()
-            self.assertListEqual(
-                # In US_YY this view is gated to only run in STAGING
-                ["basic"],
-                list(sorted(result)),
+        result = self.us_yy_ingest_view_manifest_collector.launchable_ingest_views(
+            IngestViewContentsContextImpl(
+                is_production=False,
+                is_staging=True,
+                is_local=False,
             )
+        )
+        self.assertListEqual(
+            # In US_YY this view is gated to only run in STAGING
+            ["basic"],
+            list(sorted(result)),
+        )
 
     def test_parse_ingest_view_name(self) -> None:
         self.assertEqual(

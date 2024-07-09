@@ -25,7 +25,7 @@ from more_itertools import one
 
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_contents_context import (
-    IngestViewContentsContextImpl,
+    IngestViewContentsContext,
 )
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_compiler import (
     IngestViewManifest,
@@ -63,12 +63,17 @@ def to_string_value_converter(
 class GenerateEntities(beam.PTransform):
     """A PTransform that generates entities from ingest view results."""
 
-    def __init__(self, state_code: StateCode, ingest_view_manifest: IngestViewManifest):
+    def __init__(
+        self,
+        state_code: StateCode,
+        ingest_view_manifest: IngestViewManifest,
+        ingest_view_context: IngestViewContentsContext,
+    ):
         super().__init__()
 
         self._state_code = state_code
         self._ingest_view_manifest = ingest_view_manifest
-        self._parser_context = IngestViewContentsContextImpl()
+        self._parser_context = ingest_view_context
 
     def expand(
         self, input_or_inputs: beam.PCollection[Dict[str, Any]]

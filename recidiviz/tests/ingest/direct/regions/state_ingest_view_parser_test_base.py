@@ -124,7 +124,7 @@ class StateIngestViewParserTestBase:
         for row in csv.DictReader(contents_handle.get_contents_iterator()):
             _ = enum_parser_manifest.build_from_row(
                 row,
-                context=IngestViewContentsContextImpl(),
+                context=IngestViewContentsContextImpl.build_for_tests(),
             )
 
     def _run_parse_ingest_view_test(
@@ -178,7 +178,7 @@ class StateIngestViewParserTestBase:
                         row[field] = converter(row[field])
             parsed_output = manifest.parse_contents(
                 contents_iterator=fixture_content,
-                context=IngestViewContentsContextImpl(),
+                context=IngestViewContentsContextImpl.build_for_tests(),
             )
 
         if debug:
