@@ -24,8 +24,8 @@ from recidiviz.common.constants.state.state_supervision_violation_response impor
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.common.date import DateRange
-from recidiviz.persistence.entity.state.entities import (
-    StateSupervisionViolationResponse,
+from recidiviz.persistence.entity.state.normalized_entities import (
+    NormalizedStateSupervisionViolationResponse,
 )
 from recidiviz.pipelines.metrics.utils.violation_utils import (
     filter_violation_responses_for_violation_history,
@@ -45,9 +45,9 @@ class TestFilterViolationResponses(unittest.TestCase):
 
     def _test_filter_violation_responses(
         self,
-        violation_responses: List[StateSupervisionViolationResponse],
+        violation_responses: List[NormalizedStateSupervisionViolationResponse],
         include_follow_up_responses: bool = False,
-    ) -> List[StateSupervisionViolationResponse]:
+    ) -> List[NormalizedStateSupervisionViolationResponse]:
         return filter_violation_responses_for_violation_history(
             self.delegate,
             violation_responses,
@@ -56,11 +56,12 @@ class TestFilterViolationResponses(unittest.TestCase):
 
     def test_filter_violation_responses_PERMANENT(self) -> None:
         supervision_violation_responses = [
-            StateSupervisionViolationResponse.new_with_defaults(
+            NormalizedStateSupervisionViolationResponse.new_with_defaults(
                 state_code=_STATE_CODE,
                 external_id="svr1",
                 response_date=date(2021, 1, 1),
                 response_type=StateSupervisionViolationResponseType.PERMANENT_DECISION,
+                sequence_num=0,
             ),
         ]
 
@@ -73,23 +74,26 @@ class TestFilterViolationResponses(unittest.TestCase):
         self,
     ) -> None:
         supervision_violation_responses = [
-            StateSupervisionViolationResponse.new_with_defaults(
+            NormalizedStateSupervisionViolationResponse.new_with_defaults(
                 state_code=_STATE_CODE,
                 external_id="svr1",
                 response_date=date(2021, 1, 1),
                 response_type=StateSupervisionViolationResponseType.PERMANENT_DECISION,
+                sequence_num=0,
             ),
-            StateSupervisionViolationResponse.new_with_defaults(
+            NormalizedStateSupervisionViolationResponse.new_with_defaults(
                 state_code=_STATE_CODE,
                 external_id="svr2",
                 response_date=date(2021, 1, 1),
                 response_type=StateSupervisionViolationResponseType.CITATION,  # Should not be included
+                sequence_num=1,
             ),
-            StateSupervisionViolationResponse.new_with_defaults(
+            NormalizedStateSupervisionViolationResponse.new_with_defaults(
                 state_code=_STATE_CODE,
                 external_id="svr3",
                 response_date=date(2021, 1, 1),
                 response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,  # Should not be included
+                sequence_num=2,
             ),
         ]
 
@@ -97,11 +101,12 @@ class TestFilterViolationResponses(unittest.TestCase):
             supervision_violation_responses, include_follow_up_responses=False
         )
         expected_output = [
-            StateSupervisionViolationResponse.new_with_defaults(
+            NormalizedStateSupervisionViolationResponse.new_with_defaults(
                 state_code=_STATE_CODE,
                 external_id="svr1",
                 response_date=date(2021, 1, 1),
                 response_type=StateSupervisionViolationResponseType.PERMANENT_DECISION,
+                sequence_num=0,
             )
         ]
 
@@ -109,24 +114,26 @@ class TestFilterViolationResponses(unittest.TestCase):
 
     def test_filter_violation_responses_none_valid(self) -> None:
         supervision_violation_responses = [
-            StateSupervisionViolationResponse.new_with_defaults(
+            NormalizedStateSupervisionViolationResponse.new_with_defaults(
                 state_code=_STATE_CODE,
                 external_id="svr1",
                 response_date=date(2021, 1, 1),
                 response_type=StateSupervisionViolationResponseType.CITATION,  # Should not be included
+                sequence_num=0,
             ),
-            StateSupervisionViolationResponse.new_with_defaults(
+            NormalizedStateSupervisionViolationResponse.new_with_defaults(
                 state_code=_STATE_CODE,
                 external_id="svr2",
                 response_date=date(2021, 1, 1),
                 response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,  # Should not be included
+                sequence_num=1,
             ),
         ]
 
         filtered_responses = self._test_filter_violation_responses(
             supervision_violation_responses, include_follow_up_responses=False
         )
-        expected_output: List[StateSupervisionViolationResponse] = []
+        expected_output: List[NormalizedStateSupervisionViolationResponse] = []
 
         self.assertEqual(expected_output, filtered_responses)
 

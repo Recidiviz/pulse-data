@@ -29,7 +29,9 @@ from recidiviz.common.constants.state.state_incarceration_period import (
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodSupervisionType,
 )
-from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
+from recidiviz.persistence.entity.state.normalized_entities import (
+    NormalizedStateIncarcerationPeriod,
+)
 from recidiviz.pipelines.utils.state_utils.us_nd.us_nd_supervision_delegate import (
     UsNdSupervisionDelegate,
 )
@@ -61,7 +63,7 @@ class TestUsNdSupervisionDelegate(unittest.TestCase):
         raw_text_values: List[str],
         expected_supervision_type: StateSupervisionPeriodSupervisionType,
     ) -> None:
-        incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+        incarceration_period = NormalizedStateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1112,
             external_id="2",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
@@ -72,6 +74,7 @@ class TestUsNdSupervisionDelegate(unittest.TestCase):
             admission_reason_raw_text="Revocation",
             release_date=date(2008, 12, 21),
             release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
+            sequence_num=0,
         )
 
         for value in raw_text_values:
@@ -88,7 +91,7 @@ class TestUsNdSupervisionDelegate(unittest.TestCase):
     def test_get_incarceration_period_supervision_type_at_release_no_supervision(
         self,
     ) -> None:
-        incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+        incarceration_period = NormalizedStateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1112,
             external_id="2",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
@@ -100,6 +103,7 @@ class TestUsNdSupervisionDelegate(unittest.TestCase):
             release_date=date(2008, 12, 21),
             release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
             release_reason_raw_text="X",
+            sequence_num=0,
         )
 
         supervision_type_at_release = self.supervision_delegate.get_incarceration_period_supervision_type_at_release(
@@ -111,7 +115,7 @@ class TestUsNdSupervisionDelegate(unittest.TestCase):
     def test_get_incarceration_period_supervision_type_at_release_unexpected_raw_text(
         self,
     ) -> None:
-        incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+        incarceration_period = NormalizedStateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1112,
             external_id="2",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
@@ -123,6 +127,7 @@ class TestUsNdSupervisionDelegate(unittest.TestCase):
             release_date=date(2008, 12, 21),
             release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
             release_reason_raw_text="NOT A VALID RAW TEXT VALUE",
+            sequence_num=0,
         )
 
         with self.assertRaises(ValueError):

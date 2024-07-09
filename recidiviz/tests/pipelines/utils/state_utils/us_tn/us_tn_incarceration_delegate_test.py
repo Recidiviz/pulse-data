@@ -25,7 +25,9 @@ from recidiviz.common.constants.state.state_incarceration_period import (
 )
 from recidiviz.common.constants.state.state_shared_enums import StateCustodialAuthority
 from recidiviz.common.constants.states import StateCode
-from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
+from recidiviz.persistence.entity.state.normalized_entities import (
+    NormalizedStateIncarcerationPeriod,
+)
 from recidiviz.pipelines.utils.state_utils.us_tn.us_tn_incarceration_delegate import (
     UsTnIncarcerationDelegate,
 )
@@ -42,7 +44,7 @@ class TestUsTnIncarcerationDelegate(unittest.TestCase):
     def test_is_period_included_in_state_population_state_prison_custodial_authority(
         self,
     ) -> None:
-        incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+        incarceration_period = NormalizedStateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1112,
             external_id="2",
             custodial_authority=StateCustodialAuthority.STATE_PRISON,
@@ -51,6 +53,7 @@ class TestUsTnIncarcerationDelegate(unittest.TestCase):
             admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
             release_date=date(2010, 12, 21),
             release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
+            sequence_num=0,
         )
 
         self.assertTrue(
@@ -60,7 +63,7 @@ class TestUsTnIncarcerationDelegate(unittest.TestCase):
     def test_is_period_included_in_state_population_by_custodial_authority(
         self,
     ) -> None:
-        incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+        incarceration_period = NormalizedStateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1112,
             external_id="2",
             state_code=_STATE_CODE,
@@ -68,6 +71,7 @@ class TestUsTnIncarcerationDelegate(unittest.TestCase):
             admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
             release_date=date(2010, 12, 21),
             release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
+            sequence_num=0,
         )
 
         for custodial_authority in StateCustodialAuthority:
@@ -91,7 +95,7 @@ class TestUsTnIncarcerationDelegate(unittest.TestCase):
     def test_is_period_included_in_state_population_court_and_temporary_custody(
         self,
     ) -> None:
-        incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+        incarceration_period = NormalizedStateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1112,
             external_id="2",
             custodial_authority=StateCustodialAuthority.COUNTY,
@@ -101,6 +105,7 @@ class TestUsTnIncarcerationDelegate(unittest.TestCase):
             release_date=date(2010, 12, 21),
             release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TEMPORARY_CUSTODY,
+            sequence_num=0,
         )
 
         self.assertTrue(
@@ -110,7 +115,7 @@ class TestUsTnIncarcerationDelegate(unittest.TestCase):
     def test_is_period_included_in_state_population_temporary_custody(
         self,
     ) -> None:
-        incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+        incarceration_period = NormalizedStateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1112,
             external_id="2",
             custodial_authority=StateCustodialAuthority.STATE_PRISON,
@@ -120,6 +125,7 @@ class TestUsTnIncarcerationDelegate(unittest.TestCase):
             release_date=date(2010, 12, 21),
             release_reason=StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TEMPORARY_CUSTODY,
+            sequence_num=0,
         )
 
         self.assertTrue(

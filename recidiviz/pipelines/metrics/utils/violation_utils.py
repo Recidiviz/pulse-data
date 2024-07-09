@@ -41,7 +41,6 @@ from recidiviz.pipelines.utils.state_utils.state_specific_violations_delegate im
     StateSpecificViolationDelegate,
 )
 from recidiviz.pipelines.utils.violation_response_utils import (
-    StateSupervisionViolationResponseT,
     get_most_severe_response_decision,
     violation_responses_in_window,
 )
@@ -410,9 +409,9 @@ def _get_violation_history_description(
 
 def filter_violation_responses_for_violation_history(
     violation_delegate: StateSpecificViolationDelegate,
-    violation_responses: List[StateSupervisionViolationResponseT],
+    violation_responses: List[NormalizedStateSupervisionViolationResponse],
     include_follow_up_responses: bool = False,
-) -> List[StateSupervisionViolationResponseT]:
+) -> List[NormalizedStateSupervisionViolationResponse]:
     """Returns the list of violation responses that should be included in analyses of
     violation history. Uses the state-specific code to determine whether each
     response should also be included."""

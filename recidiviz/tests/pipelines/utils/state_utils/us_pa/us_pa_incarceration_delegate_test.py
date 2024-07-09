@@ -25,7 +25,9 @@ from recidiviz.common.constants.state.state_incarceration_period import (
     StateSpecializedPurposeForIncarceration,
 )
 from recidiviz.common.constants.state.state_shared_enums import StateCustodialAuthority
-from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
+from recidiviz.persistence.entity.state.normalized_entities import (
+    NormalizedStateIncarcerationPeriod,
+)
 from recidiviz.pipelines.utils.state_utils.us_pa.us_pa_incarceration_delegate import (
     UsPaIncarcerationDelegate,
 )
@@ -42,7 +44,7 @@ class TestUsPaIncarcerationDelegate(unittest.TestCase):
     def test_is_period_included_in_state_population_does_not_include_ccc_programs(
         self,
     ) -> None:
-        incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+        incarceration_period = NormalizedStateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1112,
             external_id="2",
             incarceration_type=StateIncarcerationType.COUNTY_JAIL,
@@ -52,6 +54,7 @@ class TestUsPaIncarcerationDelegate(unittest.TestCase):
             admission_reason_raw_text="CCIS-TRUE-INRS",
             release_date=date(2010, 12, 21),
             release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
+            sequence_num=0,
         )
 
         incarceration_period.specialized_purpose_for_incarceration = (
@@ -68,7 +71,7 @@ class TestUsPaIncarcerationDelegate(unittest.TestCase):
     def test_is_period_included_in_state_population_includes_shock_incarceration(
         self,
     ) -> None:
-        incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+        incarceration_period = NormalizedStateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1112,
             external_id="2",
             incarceration_type=StateIncarcerationType.COUNTY_JAIL,
@@ -78,6 +81,7 @@ class TestUsPaIncarcerationDelegate(unittest.TestCase):
             admission_reason_raw_text="CCIS-TRUE-INRS",
             release_date=date(2010, 12, 21),
             release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
+            sequence_num=0,
         )
 
         incarceration_period.specialized_purpose_for_incarceration = (
@@ -94,7 +98,7 @@ class TestUsPaIncarcerationDelegate(unittest.TestCase):
     def test_is_period_included_in_state_population_for_custodial_authority_state_prison(
         self,
     ) -> None:
-        incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+        incarceration_period = NormalizedStateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1112,
             external_id="2",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
@@ -104,6 +108,7 @@ class TestUsPaIncarcerationDelegate(unittest.TestCase):
             admission_reason_raw_text="60",
             release_date=date(2010, 12, 21),
             release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
+            sequence_num=0,
         )
 
         self.assertTrue(

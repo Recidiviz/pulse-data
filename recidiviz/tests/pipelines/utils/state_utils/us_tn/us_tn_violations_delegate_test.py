@@ -59,9 +59,9 @@ class TestUsTnViolationsDelegate(unittest.TestCase):
 
     def _test_filter_violation_responses(
         self,
-        violation_responses: List[StateSupervisionViolationResponse],
+        violation_responses: List[NormalizedStateSupervisionViolationResponse],
         include_follow_up_responses: bool = False,
-    ) -> List[StateSupervisionViolationResponse]:
+    ) -> List[NormalizedStateSupervisionViolationResponse]:
         return filter_violation_responses_for_violation_history(
             self.delegate,
             violation_responses,
@@ -72,29 +72,33 @@ class TestUsTnViolationsDelegate(unittest.TestCase):
         self,
     ) -> None:
         supervision_violation_responses = [
-            StateSupervisionViolationResponse.new_with_defaults(
+            NormalizedStateSupervisionViolationResponse.new_with_defaults(
                 state_code=_STATE_CODE,
                 external_id="svr1",
                 response_date=date(2021, 1, 1),
                 response_type=StateSupervisionViolationResponseType.PERMANENT_DECISION,  # Should be included
+                sequence_num=0,
             ),
-            StateSupervisionViolationResponse.new_with_defaults(
+            NormalizedStateSupervisionViolationResponse.new_with_defaults(
                 state_code=_STATE_CODE,
                 external_id="svr2",
                 response_date=date(2021, 1, 11),
                 response_type=StateSupervisionViolationResponseType.CITATION,  # Should be included
+                sequence_num=1,
             ),
-            StateSupervisionViolationResponse.new_with_defaults(
+            NormalizedStateSupervisionViolationResponse.new_with_defaults(
                 state_code=_STATE_CODE,
                 external_id="svr3",
                 response_date=date(2021, 1, 20),
                 response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,  # Should be included
+                sequence_num=2,
             ),
-            StateSupervisionViolationResponse.new_with_defaults(
+            NormalizedStateSupervisionViolationResponse.new_with_defaults(
                 state_code=_STATE_CODE,
                 external_id="svr4",
                 response_date=date(2021, 1, 30),
                 response_type=StateSupervisionViolationResponseType.INTERNAL_UNKNOWN,  # Should not be included
+                sequence_num=3,
             ),
         ]
 
@@ -102,23 +106,26 @@ class TestUsTnViolationsDelegate(unittest.TestCase):
             supervision_violation_responses, include_follow_up_responses=False
         )
         expected_output = [
-            StateSupervisionViolationResponse.new_with_defaults(
+            NormalizedStateSupervisionViolationResponse.new_with_defaults(
                 state_code=_STATE_CODE,
                 external_id="svr1",
                 response_date=date(2021, 1, 1),
                 response_type=StateSupervisionViolationResponseType.PERMANENT_DECISION,  # Should be included
+                sequence_num=0,
             ),
-            StateSupervisionViolationResponse.new_with_defaults(
+            NormalizedStateSupervisionViolationResponse.new_with_defaults(
                 state_code=_STATE_CODE,
                 external_id="svr2",
                 response_date=date(2021, 1, 11),
                 response_type=StateSupervisionViolationResponseType.CITATION,  # Should be included
+                sequence_num=1,
             ),
-            StateSupervisionViolationResponse.new_with_defaults(
+            NormalizedStateSupervisionViolationResponse.new_with_defaults(
                 state_code=_STATE_CODE,
                 external_id="svr3",
                 response_date=date(2021, 1, 20),
                 response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,  # Should be included
+                sequence_num=2,
             ),
         ]
 
@@ -126,17 +133,19 @@ class TestUsTnViolationsDelegate(unittest.TestCase):
 
     def test_filter_violation_responses_none_valid(self) -> None:
         supervision_violation_responses = [
-            StateSupervisionViolationResponse.new_with_defaults(
+            NormalizedStateSupervisionViolationResponse.new_with_defaults(
                 state_code=_STATE_CODE,
                 external_id="svr1",
                 response_date=date(2021, 1, 1),
                 response_type=StateSupervisionViolationResponseType.INTERNAL_UNKNOWN,  # Should not be included
+                sequence_num=0,
             ),
-            StateSupervisionViolationResponse.new_with_defaults(
+            NormalizedStateSupervisionViolationResponse.new_with_defaults(
                 state_code=_STATE_CODE,
                 external_id="svr2",
                 response_date=date(2021, 1, 1),
                 response_type=StateSupervisionViolationResponseType.EXTERNAL_UNKNOWN,  # Should not be included
+                sequence_num=1,
             ),
         ]
 

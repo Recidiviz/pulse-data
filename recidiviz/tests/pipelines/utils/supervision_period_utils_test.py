@@ -39,6 +39,7 @@ from recidiviz.persistence.entity.state.entities import (
     StateSupervisionPeriod,
 )
 from recidiviz.persistence.entity.state.normalized_entities import (
+    NormalizedStateIncarcerationPeriod,
     NormalizedStateSupervisionPeriod,
 )
 from recidiviz.pipelines.utils.state_utils.templates.us_xx.us_xx_supervision_delegate import (
@@ -408,7 +409,9 @@ class TestGetPostIncarcerationSupervisionType(unittest.TestCase):
 
     class TestSupervisionDelegate(UsXxSupervisionDelegate):
         def get_incarceration_period_supervision_type_at_release(
-            self, incarceration_period: StateIncarcerationPeriod
+            self,
+            incarceration_period: StateIncarcerationPeriod
+            | NormalizedStateIncarcerationPeriod,
         ) -> Optional[StateSupervisionPeriodSupervisionType]:
             return StateSupervisionPeriodSupervisionType.COMMUNITY_CONFINEMENT
 

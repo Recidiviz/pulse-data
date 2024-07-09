@@ -22,13 +22,14 @@ from typing import Dict, List, Optional, Tuple
 from recidiviz.common.constants.state.state_supervision_violation import (
     StateSupervisionViolationType,
 )
-from recidiviz.persistence.entity.state.entities import (
-    StateSupervisionViolation,
-    StateSupervisionViolationTypeEntry,
+from recidiviz.persistence.entity.state.normalized_entities import (
+    NormalizedStateSupervisionViolation,
+    NormalizedStateSupervisionViolationTypeEntry,
 )
 from recidiviz.pipelines.utils.state_utils.state_specific_violations_delegate import (
     StateSpecificViolationDelegate,
 )
+from recidiviz.utils.types import assert_type
 
 _LOW_TECHNICAL_SUBTYPE_STR: str = "LOW_TECH"
 _MEDIUM_TECHNICAL_SUBTYPE_STR: str = "MED_TECH"
@@ -95,7 +96,7 @@ class UsPaViolationDelegate(StateSpecificViolationDelegate):
 
     def get_violation_type_subtype_strings_for_violation(
         self,
-        violation: StateSupervisionViolation,
+        violation: NormalizedStateSupervisionViolation,
     ) -> Dict[str, List[Optional[str]]]:
         """Returns a list of strings that represent the violation subtypes present on
         the given |violation|, along with the raw text used to determine the subtype.
@@ -118,13 +119,18 @@ class UsPaViolationDelegate(StateSpecificViolationDelegate):
 
             else:
                 violation_subtypes_map[
-                    _violation_subtype_from_violation_type_entry(violation_type_entry)
+                    _violation_subtype_from_violation_type_entry(
+                        assert_type(
+                            violation_type_entry,
+                            NormalizedStateSupervisionViolationTypeEntry,
+                        )
+                    )
                 ].append(violation_type_entry.violation_type_raw_text)
         return violation_subtypes_map
 
 
 def _violation_subtype_from_violation_type_entry(
-    violation_type_entry: StateSupervisionViolationTypeEntry,
+    violation_type_entry: NormalizedStateSupervisionViolationTypeEntry,
 ) -> str:
     """Returns the subtype on the |violation_type_entry|. Fails if this does not have a violation_type_raw_text value
     that we expect to see for TECHNICAL violations in US_PA."""

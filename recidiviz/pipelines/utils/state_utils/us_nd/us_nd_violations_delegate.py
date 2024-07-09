@@ -24,9 +24,6 @@ from recidiviz.common.constants.state.state_supervision_violation_response impor
     StateSupervisionViolationResponseType,
 )
 from recidiviz.common.date import DateRange
-from recidiviz.persistence.entity.state.entities import (
-    StateSupervisionViolationResponse,
-)
 from recidiviz.persistence.entity.state.normalized_entities import (
     NormalizedStateSupervisionViolationResponse,
 )
@@ -40,7 +37,7 @@ class UsNdViolationDelegate(StateSpecificViolationDelegate):
 
     def should_include_response_in_violation_history(
         self,
-        response: StateSupervisionViolationResponse,
+        response: NormalizedStateSupervisionViolationResponse,
         include_follow_up_responses: bool = False,
     ) -> bool:
         """For US_ND we only include responses of type PERMANENT_DECISION."""

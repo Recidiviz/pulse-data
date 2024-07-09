@@ -23,8 +23,8 @@ from recidiviz.common.constants.state.state_supervision_violation_response impor
     StateSupervisionViolationResponseDecision,
     StateSupervisionViolationResponseType,
 )
-from recidiviz.persistence.entity.state.entities import (
-    StateSupervisionViolationResponse,
+from recidiviz.persistence.entity.state.normalized_entities import (
+    NormalizedStateSupervisionViolationResponse,
 )
 from recidiviz.pipelines.metrics.utils.violation_utils import (
     filter_violation_responses_for_violation_history,
@@ -46,15 +46,16 @@ class TestResponsesOnMostRecentResponseDate(unittest.TestCase):
     @staticmethod
     def _test_responses_on_most_recent_response_date(
         response_dates: List[datetime.date],
-    ) -> List[StateSupervisionViolationResponse]:
+    ) -> List[NormalizedStateSupervisionViolationResponse]:
         """Helper function for testing the responses_on_most_recent_response_date function."""
-        violation_responses: List[StateSupervisionViolationResponse] = []
+        violation_responses: List[NormalizedStateSupervisionViolationResponse] = []
 
-        for response_date in response_dates:
+        for i, response_date in enumerate(response_dates):
             violation_responses.append(
-                StateSupervisionViolationResponse.new_with_defaults(
+                NormalizedStateSupervisionViolationResponse.new_with_defaults(
                     state_code="US_XX",
                     external_id=f"external_id_{response_date.isoformat()}",
+                    sequence_num=i,
                     response_date=response_date,
                 )
             )
@@ -106,23 +107,26 @@ class TestDefaultFilteredViolationResponsesForViolationHistory(unittest.TestCase
 
     def test_filter_violation_responses_for_violation_history(self) -> None:
         violation_responses = [
-            StateSupervisionViolationResponse.new_with_defaults(
+            NormalizedStateSupervisionViolationResponse.new_with_defaults(
                 state_code="US_XX",
                 external_id="svr1",
                 response_type=StateSupervisionViolationResponseType.PERMANENT_DECISION,
                 response_date=datetime.date(2000, 1, 1),
+                sequence_num=0,
             ),
-            StateSupervisionViolationResponse.new_with_defaults(
+            NormalizedStateSupervisionViolationResponse.new_with_defaults(
                 state_code="US_XX",
                 external_id="svr2",
                 response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
                 response_date=datetime.date(1998, 2, 1),
+                sequence_num=1,
             ),
-            StateSupervisionViolationResponse.new_with_defaults(
+            NormalizedStateSupervisionViolationResponse.new_with_defaults(
                 state_code="US_XX",
                 external_id="svr3",
                 response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
                 response_date=datetime.date(1997, 3, 1),
+                sequence_num=2,
             ),
         ]
 
@@ -134,17 +138,19 @@ class TestDefaultFilteredViolationResponsesForViolationHistory(unittest.TestCase
 
         self.assertCountEqual(
             [
-                StateSupervisionViolationResponse.new_with_defaults(
+                NormalizedStateSupervisionViolationResponse.new_with_defaults(
                     state_code="US_XX",
                     external_id="svr2",
                     response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
                     response_date=datetime.date(1998, 2, 1),
+                    sequence_num=1,
                 ),
-                StateSupervisionViolationResponse.new_with_defaults(
+                NormalizedStateSupervisionViolationResponse.new_with_defaults(
                     state_code="US_XX",
                     external_id="svr3",
                     response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
                     response_date=datetime.date(1997, 3, 1),
+                    sequence_num=2,
                 ),
             ],
             filtered_responses,
@@ -153,7 +159,7 @@ class TestDefaultFilteredViolationResponsesForViolationHistory(unittest.TestCase
     def test_default_filtered_violation_responses_for_violation_history_empty(
         self,
     ) -> None:
-        violation_responses: List[StateSupervisionViolationResponse] = []
+        violation_responses: List[NormalizedStateSupervisionViolationResponse] = []
 
         filtered_responses = filter_violation_responses_for_violation_history(
             violation_delegate=self.delegate,
@@ -172,23 +178,26 @@ class TestViolationResponsesInWindow(unittest.TestCase):
 
     def test_violation_responses_in_window(self) -> None:
         violation_responses = [
-            StateSupervisionViolationResponse.new_with_defaults(
+            NormalizedStateSupervisionViolationResponse.new_with_defaults(
                 state_code="US_XX",
                 external_id="svr1",
                 response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
                 response_date=datetime.date(2010, 1, 1),
+                sequence_num=0,
             ),
-            StateSupervisionViolationResponse.new_with_defaults(
+            NormalizedStateSupervisionViolationResponse.new_with_defaults(
                 state_code="US_XX",
                 external_id="svr2",
                 response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
                 response_date=datetime.date(1998, 2, 1),
+                sequence_num=1,
             ),
-            StateSupervisionViolationResponse.new_with_defaults(
+            NormalizedStateSupervisionViolationResponse.new_with_defaults(
                 state_code="US_XX",
                 external_id="svr3",
                 response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
                 response_date=datetime.date(2017, 3, 1),
+                sequence_num=2,
             ),
         ]
 
@@ -203,11 +212,12 @@ class TestViolationResponsesInWindow(unittest.TestCase):
 
         self.assertEqual(
             [
-                StateSupervisionViolationResponse.new_with_defaults(
+                NormalizedStateSupervisionViolationResponse.new_with_defaults(
                     state_code="US_XX",
                     external_id="svr1",
                     response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
                     response_date=datetime.date(2010, 1, 1),
+                    sequence_num=0,
                 )
             ],
             responses_in_window,
@@ -215,23 +225,26 @@ class TestViolationResponsesInWindow(unittest.TestCase):
 
     def test_violation_responses_in_window_no_lower_bound(self) -> None:
         violation_responses = [
-            StateSupervisionViolationResponse.new_with_defaults(
+            NormalizedStateSupervisionViolationResponse.new_with_defaults(
                 state_code="US_XX",
                 external_id="svr1",
                 response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
                 response_date=datetime.date(2010, 1, 1),
+                sequence_num=0,
             ),
-            StateSupervisionViolationResponse.new_with_defaults(
+            NormalizedStateSupervisionViolationResponse.new_with_defaults(
                 state_code="US_XX",
                 external_id="svr2",
                 response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
                 response_date=datetime.date(1990, 2, 1),
+                sequence_num=1,
             ),
-            StateSupervisionViolationResponse.new_with_defaults(
+            NormalizedStateSupervisionViolationResponse.new_with_defaults(
                 state_code="US_XX",
                 external_id="svr3",
                 response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
                 response_date=datetime.date(2017, 3, 1),
+                sequence_num=2,
             ),
         ]
 
@@ -245,17 +258,19 @@ class TestViolationResponsesInWindow(unittest.TestCase):
 
         self.assertCountEqual(
             [
-                StateSupervisionViolationResponse.new_with_defaults(
+                NormalizedStateSupervisionViolationResponse.new_with_defaults(
                     state_code="US_XX",
                     external_id="svr2",
                     response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
                     response_date=datetime.date(1990, 2, 1),
+                    sequence_num=1,
                 ),
-                StateSupervisionViolationResponse.new_with_defaults(
+                NormalizedStateSupervisionViolationResponse.new_with_defaults(
                     state_code="US_XX",
                     external_id="svr1",
                     response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
                     response_date=datetime.date(2010, 1, 1),
+                    sequence_num=0,
                 ),
             ],
             responses_in_window,
@@ -263,23 +278,26 @@ class TestViolationResponsesInWindow(unittest.TestCase):
 
     def test_violation_responses_in_window_all_outside_of_window(self) -> None:
         violation_responses = [
-            StateSupervisionViolationResponse.new_with_defaults(
+            NormalizedStateSupervisionViolationResponse.new_with_defaults(
                 state_code="US_XX",
                 external_id="svr1",
                 response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
                 response_date=datetime.date(2000, 1, 1),
+                sequence_num=0,
             ),
-            StateSupervisionViolationResponse.new_with_defaults(
+            NormalizedStateSupervisionViolationResponse.new_with_defaults(
                 state_code="US_XX",
                 external_id="svr2",
                 response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
                 response_date=datetime.date(1998, 2, 1),
+                sequence_num=1,
             ),
-            StateSupervisionViolationResponse.new_with_defaults(
+            NormalizedStateSupervisionViolationResponse.new_with_defaults(
                 state_code="US_XX",
                 external_id="svr3",
                 response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
                 response_date=datetime.date(2019, 3, 1),
+                sequence_num=2,
             ),
         ]
 
@@ -296,23 +314,26 @@ class TestViolationResponsesInWindow(unittest.TestCase):
 
     def test_violation_responses_in_window_exclude_before_window(self) -> None:
         violation_responses = [
-            StateSupervisionViolationResponse.new_with_defaults(
+            NormalizedStateSupervisionViolationResponse.new_with_defaults(
                 state_code="US_XX",
                 external_id="svr1",
                 response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
                 response_date=datetime.date(2000, 1, 1),
+                sequence_num=0,
             ),
-            StateSupervisionViolationResponse.new_with_defaults(
+            NormalizedStateSupervisionViolationResponse.new_with_defaults(
                 state_code="US_XX",
                 external_id="svr2",
                 response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
                 response_date=datetime.date(1998, 2, 1),
+                sequence_num=1,
             ),
-            StateSupervisionViolationResponse.new_with_defaults(
+            NormalizedStateSupervisionViolationResponse.new_with_defaults(
                 state_code="US_XX",
                 external_id="svr3",
                 response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
                 response_date=datetime.date(1997, 3, 1),
+                sequence_num=2,
             ),
         ]
 

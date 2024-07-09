@@ -23,7 +23,9 @@ from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
 )
 from recidiviz.common.constants.state.state_shared_enums import StateCustodialAuthority
-from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
+from recidiviz.persistence.entity.state.normalized_entities import (
+    NormalizedStateIncarcerationPeriod,
+)
 from recidiviz.pipelines.utils.state_utils.state_specific_delegate import (
     StateSpecificDelegate,
 )
@@ -34,7 +36,7 @@ class StateSpecificIncarcerationDelegate(abc.ABC, StateSpecificDelegate):
 
     def is_period_included_in_state_population(  # pylint: disable=unused-argument
         self,
-        incarceration_period: StateIncarcerationPeriod,
+        incarceration_period: NormalizedStateIncarcerationPeriod,
     ) -> bool:
         """Determines whether the given incarceration period counts towards the state's incarceration population.
 
