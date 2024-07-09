@@ -87,6 +87,13 @@ from recidiviz.common.constants.state.state_shared_enums import (
     StateActingBodyType,
     StateCustodialAuthority,
 )
+from recidiviz.common.constants.state.state_staff_caseload_type import (
+    StateStaffCaseloadType,
+)
+from recidiviz.common.constants.state.state_staff_role_period import (
+    StateStaffRoleSubtype,
+    StateStaffRoleType,
+)
 from recidiviz.common.constants.state.state_supervision_contact import (
     StateSupervisionContactLocation,
     StateSupervisionContactMethod,
@@ -156,7 +163,7 @@ class EntityBackedgeValidator:
         pass
 
     def __call__(
-        self, instance: Any, attribute: attr.Attribute, value: Optional[Any]
+        self, instance: Any, attribute: attr.Attribute, value: Any | None
     ) -> None:
         if value is None:
             return
@@ -230,6 +237,11 @@ class IsNormalizedSupervisionPeriodBackedgeValidator(EntityBackedgeValidator):
 class IsNormalizedIncarcerationIncidentBackedgeValidator(EntityBackedgeValidator):
     def get_backedge_type(self) -> Type:
         return NormalizedStateIncarcerationIncident
+
+
+class IsNormalizedStaffBackedgeValidator(EntityBackedgeValidator):
+    def get_backedge_type(self) -> Type:
+        return NormalizedStateStaff
 
 
 ##### END VALIDATORS #####
@@ -2755,3 +2767,231 @@ class NormalizedStatePerson(
     @classmethod
     def back_edge_field_name(cls) -> str:
         return "person"
+
+
+@attr.s(eq=False, kw_only=True)
+class NormalizedStateStaffExternalId(NormalizedStateEntity, ExternalIdEntity):
+    """Models an external id associated with a particular StateStaff."""
+
+    # State Code
+    # State providing the external id
+    state_code: str = attr.ib(validator=attr_validators.is_str)
+
+    # Attributes
+    #   - What
+    id_type: str = attr.ib(validator=attr_validators.is_str)
+
+    # Primary key
+    staff_external_id_id: int = attr.ib(validator=attr_validators.is_int)
+
+    # Cross-entity relationships
+    staff: Optional["NormalizedStateStaff"] = attr.ib(
+        default=None, validator=IsNormalizedStaffBackedgeValidator()
+    )
+
+    @classmethod
+    def global_unique_constraints(cls) -> list[UniqueConstraint]:
+        return [
+            UniqueConstraint(
+                name="staff_external_ids_unique_within_type_and_region",
+                fields=["state_code", "id_type", "external_id"],
+            )
+        ]
+
+
+@attr.s(eq=False, kw_only=True)
+class NormalizedStateStaffRolePeriod(NormalizedStateEntity, HasExternalIdEntity):
+    """Represents information about a staff member’s role in the justice system during a
+    particular period of time.
+    """
+
+    # State Code
+    # State providing the external id
+    state_code: str = attr.ib(validator=attr_validators.is_str)
+
+    # Attributes
+    #   - When
+    start_date: date = attr.ib(validator=attr_validators.is_date)
+    end_date: date | None = attr.ib(default=None, validator=attr_validators.is_opt_date)
+
+    #   - What
+    role_type: StateStaffRoleType = attr.ib(
+        validator=attr.validators.instance_of(StateStaffRoleType)
+    )
+    role_type_raw_text: str | None = attr.ib(
+        default=None, validator=attr_validators.is_opt_str
+    )
+    role_subtype: StateStaffRoleSubtype | None = attr.ib(
+        default=None, validator=attr_validators.is_opt(StateStaffRoleSubtype)
+    )
+    role_subtype_raw_text: str | None = attr.ib(
+        default=None, validator=attr_validators.is_opt_str
+    )
+
+    # Primary key
+    staff_role_period_id: int = attr.ib(validator=attr_validators.is_int)
+
+    # Cross-entity relationships
+    staff: Optional["NormalizedStateStaff"] = attr.ib(
+        default=None, validator=IsNormalizedStaffBackedgeValidator()
+    )
+
+    @classmethod
+    def global_unique_constraints(cls) -> list[UniqueConstraint]:
+        return [
+            UniqueConstraint(
+                name="staff_role_periods_unique_within_region",
+                fields=["state_code", "external_id"],
+            )
+        ]
+
+
+@attr.s(eq=False, kw_only=True)
+class NormalizedStateStaffSupervisorPeriod(NormalizedStateEntity, HasExternalIdEntity):
+    """Represents information about a staff member’s direct supervisor during a
+    particular period of time.
+    """
+
+    # State Code
+    # State providing the external id
+    state_code: str = attr.ib(validator=attr_validators.is_str)
+
+    # Attributes
+    #   - When
+    start_date: date = attr.ib(validator=attr_validators.is_date)
+    end_date: date | None = attr.ib(default=None, validator=attr_validators.is_opt_date)
+
+    #   - What
+    supervisor_staff_external_id: str = attr.ib(validator=attr_validators.is_str)
+    supervisor_staff_external_id_type: str = attr.ib(validator=attr_validators.is_str)
+
+    # Primary key
+    staff_supervisor_period_id: int = attr.ib(validator=attr_validators.is_int)
+
+    # Cross-entity relationships
+    staff: Optional["NormalizedStateStaff"] = attr.ib(
+        default=None, validator=IsNormalizedStaffBackedgeValidator()
+    )
+
+    @classmethod
+    def global_unique_constraints(cls) -> list[UniqueConstraint]:
+        return [
+            UniqueConstraint(
+                name="staff_supervisor_periods_unique_within_region",
+                fields=["state_code", "external_id"],
+            )
+        ]
+
+
+@attr.s(eq=False, kw_only=True)
+class NormalizedStateStaffLocationPeriod(NormalizedStateEntity, HasExternalIdEntity):
+    """Represents information about a period of time during which a staff member has
+    a given assigned location.
+    """
+
+    # State Code
+    # State providing the external id
+    state_code: str = attr.ib(validator=attr_validators.is_str)
+
+    # Attributes
+    #   - When
+    start_date: date = attr.ib(validator=attr_validators.is_date)
+    end_date: date | None = attr.ib(default=None, validator=attr_validators.is_opt_date)
+
+    #   - What
+    location_external_id: str = attr.ib(validator=attr_validators.is_str)
+
+    # Primary key
+    staff_location_period_id: int = attr.ib(validator=attr_validators.is_int)
+
+    # Cross-entity relationships
+    staff: Optional["NormalizedStateStaff"] = attr.ib(
+        default=None, validator=IsNormalizedStaffBackedgeValidator()
+    )
+
+    @classmethod
+    def global_unique_constraints(cls) -> list[UniqueConstraint]:
+        return [
+            UniqueConstraint(
+                name="staff_location_periods_unique_within_region",
+                fields=["state_code", "external_id"],
+            )
+        ]
+
+
+@attr.s(eq=False, kw_only=True)
+class NormalizedStateStaffCaseloadTypePeriod(
+    NormalizedStateEntity, HasExternalIdEntity
+):
+    """Represents information about a staff member’s caseload type over a period."""
+
+    # State Code
+    # State providing the external id
+    state_code: str = attr.ib(validator=attr_validators.is_str)
+
+    # The caseload type that the officer supervises
+    caseload_type: StateStaffCaseloadType = attr.ib(
+        validator=attr.validators.instance_of(StateStaffCaseloadType),
+    )
+    caseload_type_raw_text: str | None = attr.ib(
+        default=None, validator=attr_validators.is_opt_str
+    )
+    # Attributes
+    #   - When
+    # The beginning of the period where this officer had this type of specialized caseload
+    start_date: date = attr.ib(validator=attr_validators.is_date)
+
+    # The end of the period where this officer had this type of specialized caseload
+    end_date: date | None = attr.ib(default=None, validator=attr_validators.is_opt_date)
+    # Primary key
+    staff_caseload_type_period_id: int = attr.ib(validator=attr_validators.is_int)
+
+    # Cross-entity relationships
+    staff: Optional["NormalizedStateStaff"] = attr.ib(
+        default=None, validator=IsNormalizedStaffBackedgeValidator()
+    )
+
+
+@attr.s(eq=False, kw_only=True)
+class NormalizedStateStaff(
+    NormalizedStateEntity,
+    HasMultipleExternalIdsEntity[NormalizedStateStaffExternalId],
+    RootEntity,
+):
+    """Models a staff member working within a justice system."""
+
+    # State Code
+    state_code: str = attr.ib(validator=attr_validators.is_str)
+
+    # Attributes
+    #   - What
+    full_name: str | None = attr.ib(default=None, validator=attr_validators.is_opt_str)
+    # TODO(#29072): Add is_opt_valid_email validator once all states have valid emails
+    email: str | None = attr.ib(default=None, validator=attr_validators.is_opt_str)
+
+    # Primary key
+    staff_id: int = attr.ib(validator=attr_validators.is_int)
+
+    # Cross-entity relationships
+    external_ids: list["NormalizedStateStaffExternalId"] = attr.ib(
+        validator=attr_validators.is_list_of(NormalizedStateStaffExternalId),
+    )
+    role_periods: list["NormalizedStateStaffRolePeriod"] = attr.ib(
+        validator=attr_validators.is_list_of(NormalizedStateStaffRolePeriod),
+    )
+    supervisor_periods: list["NormalizedStateStaffSupervisorPeriod"] = attr.ib(
+        validator=attr_validators.is_list_of(NormalizedStateStaffSupervisorPeriod),
+    )
+    location_periods: list["NormalizedStateStaffLocationPeriod"] = attr.ib(
+        validator=attr_validators.is_list_of(NormalizedStateStaffLocationPeriod),
+    )
+    caseload_type_periods: list["NormalizedStateStaffCaseloadTypePeriod"] = attr.ib(
+        validator=attr_validators.is_list_of(NormalizedStateStaffCaseloadTypePeriod),
+    )
+
+    def get_external_ids(self) -> list[NormalizedStateStaffExternalId]:
+        return self.external_ids
+
+    @classmethod
+    def back_edge_field_name(cls) -> str:
+        return "staff"

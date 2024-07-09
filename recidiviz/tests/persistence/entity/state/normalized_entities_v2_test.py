@@ -48,17 +48,6 @@ from recidiviz.tests.persistence.entity.state.normalized_entities_test import (
 )
 from recidiviz.utils.types import non_optional
 
-# TODO(#30075): This list should become empty and get removed once we've implemented all
-#  normalized v2 entities.
-UNIMPLEMENTED_NORMALIZED_V2_CLASSES = {
-    "StateStaff",
-    "StateStaffCaseloadTypePeriod",
-    "StateStaffExternalId",
-    "StateStaffLocationPeriod",
-    "StateStaffRolePeriod",
-    "StateStaffSupervisorPeriod",
-}
-
 EXPECTED_MISSING_NORMALIZED_FIELDS: Dict[Type[Entity], Set[str]] = {
     # TODO(#15559): Add NormalizedStateCharge / NormalizedStateChargeV2 fields that we
     #  plan to delete here.
@@ -76,16 +65,6 @@ class TestNormalizedEntities(unittest.TestCase):
         self.normalized_entity_classes_by_name = {
             c.__name__: c for c in self.normalized_entity_classes
         }
-
-    # TODO(#30075): Delete this test when UNIMPLEMENTED_NORMALIZED_V2_CLASSES is empty
-    def test_UNIMPLEMENTED_NORMALIZED_V2_CLASSES_cleanup(self) -> None:
-        for normalized_class_name in self.normalized_entity_classes_by_name:
-            non_normalized_name = normalized_class_name[len(NORMALIZED_PREFIX) :]
-            if non_normalized_name in UNIMPLEMENTED_NORMALIZED_V2_CLASSES:
-                self.fail(
-                    f"Found class [{normalized_class_name}] - can remove "
-                    f"[{non_normalized_name}] from UNIMPLEMENTED_NORMALIZED_V2_CLASSES."
-                )
 
     def test_normalized_entities_correct_setup(self) -> None:
         for normalized_entity_class in self.normalized_entity_classes:
@@ -167,8 +146,6 @@ class TestNormalizedEntities(unittest.TestCase):
         ):
             normalized_entity_class_name = legacy_normalized_entity_class.__name__
             entity_class_name = normalized_entity_class_name[len(NORMALIZED_PREFIX) :]
-            if entity_class_name in UNIMPLEMENTED_NORMALIZED_V2_CLASSES:
-                continue
 
             new_normalized_entity_class = self.normalized_entity_classes_by_name[
                 normalized_entity_class_name
@@ -213,8 +190,6 @@ class TestNormalizedEntities(unittest.TestCase):
 
         for entity_class in entity_classes:
             entity_class_name = entity_class.__name__
-            if entity_class_name in UNIMPLEMENTED_NORMALIZED_V2_CLASSES:
-                continue
             entity_fields = attribute_field_type_reference_for_class(entity_class)
 
             normalized_entity_class_name = f"{NORMALIZED_PREFIX}{entity_class_name}"
