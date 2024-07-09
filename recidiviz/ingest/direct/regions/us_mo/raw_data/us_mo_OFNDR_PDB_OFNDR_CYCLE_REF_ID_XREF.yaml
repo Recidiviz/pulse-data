@@ -54,3 +54,8 @@ columns:
     is_pii: True
     description: |-
       XXX
+
+table_relationships:
+  - foreign_table: LBAKRDTA_TAK001
+    join_logic:
+      - LBAKRDTA_TAK001.EK_DOC = OFNDR_PDB_OFNDR_CYCLE_REF_ID_XREF.DOC_ID

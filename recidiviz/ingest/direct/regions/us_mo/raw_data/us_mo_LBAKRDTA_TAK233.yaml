@@ -105,3 +105,8 @@ columns:
     description: |-
       Update User Id
     is_pii: True
+
+table_relationships:
+  - foreign_table: LBAKRDTA_TAK001
+    join_logic:
+      - LBAKRDTA_TAK001.EK_DOC = LBAKRDTA_TAK233.IZ_DOC

@@ -105,3 +105,8 @@ columns:
     is_pii: True
     description: |-
       Unknown - not included in data dictionary binder
+
+table_relationships:
+  - foreign_table: LBAKRDTA_TAK001
+    join_logic:
+      - LBAKRDTA_TAK001.EK_DOC = LBAKRDTA_TAK028.BY_DOC
