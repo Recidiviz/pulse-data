@@ -211,40 +211,6 @@ class TestStateEntities(TestCase):
             supervising_officer_staff_external_id_type="EMP-2",
         )
 
-    def test_post_attrs_supervising_officer_staff_id_null_id_nonnull_type(
-        self,
-    ) -> None:
-        with self.assertRaisesRegex(
-            ValueError,
-            r"Found inconsistent supervising_officer_staff_external_id\* fields for StateSupervisionPeriod with id 1000. "
-            r"supervising_officer_staff_external_id: None supervising_officer_staff_external_id_type: EMP-2. "
-            r"Either both must be null or both must be nonnull.",
-        ):
-            _ = StateSupervisionPeriod(
-                supervision_period_id=1000,
-                state_code="US_XX",
-                external_id="1111",
-                supervising_officer_staff_external_id=None,
-                supervising_officer_staff_external_id_type="EMP-2",
-            )
-
-    def test_post_attrs_supervising_officer_staff_id_nonnull_id_null_type(
-        self,
-    ) -> None:
-        with self.assertRaisesRegex(
-            ValueError,
-            r"Found inconsistent supervising_officer_staff_external_id\* fields for StateSupervisionPeriod with id 1000. "
-            r"supervising_officer_staff_external_id: ABCDE supervising_officer_staff_external_id_type: None. "
-            r"Either both must be null or both must be nonnull.",
-        ):
-            _ = StateSupervisionPeriod(
-                supervision_period_id=1000,
-                state_code="US_XX",
-                external_id="1111",
-                supervising_officer_staff_external_id="ABCDE",
-                supervising_officer_staff_external_id_type=None,
-            )
-
     def test_post_attrs_conducting_staff_id_simple(self) -> None:
         _ = StateAssessment(
             assessment_id=1000,
@@ -263,40 +229,6 @@ class TestStateEntities(TestCase):
             contacting_staff_external_id_type="EMP-2",
         )
 
-    def test_post_attrs_contacting_staff_id_null_id_nonnull_type(
-        self,
-    ) -> None:
-        with self.assertRaisesRegex(
-            ValueError,
-            r"Found inconsistent contacting_staff_external_id\* fields for StateSupervisionContact with id 1000. "
-            r"contacting_staff_external_id: None contacting_staff_external_id_type: EMP-2. "
-            r"Either both must be null or both must be nonnull.",
-        ):
-            _ = StateSupervisionContact(
-                supervision_contact_id=1000,
-                state_code="US_XX",
-                external_id="1111",
-                contacting_staff_external_id=None,
-                contacting_staff_external_id_type="EMP-2",
-            )
-
-    def test_post_attrs_contacting_staff_id_nonnull_id_null_type(
-        self,
-    ) -> None:
-        with self.assertRaisesRegex(
-            ValueError,
-            r"Found inconsistent contacting_staff_external_id\* fields for StateSupervisionContact with id 1000. "
-            r"contacting_staff_external_id: ABCDE contacting_staff_external_id_type: None. "
-            r"Either both must be null or both must be nonnull.",
-        ):
-            _ = StateSupervisionContact(
-                supervision_contact_id=1000,
-                state_code="US_XX",
-                external_id="1111",
-                contacting_staff_external_id="ABCDE",
-                contacting_staff_external_id_type=None,
-            )
-
     def test_post_attrs_referring_staff_id_simple(self) -> None:
         _ = StateProgramAssignment(
             program_assignment_id=1000,
@@ -307,40 +239,6 @@ class TestStateEntities(TestCase):
             participation_status=StateProgramAssignmentParticipationStatus.INTERNAL_UNKNOWN,
             participation_status_raw_text="X",
         )
-
-    def test_post_attrs_referring_staff_id_null_id_nonnull_type(self) -> None:
-        with self.assertRaisesRegex(
-            ValueError,
-            r"Found inconsistent referring_staff_external_id\* fields for StateProgramAssignment with id 1000. "
-            r"referring_staff_external_id: None referring_staff_external_id_type: EMP-2. "
-            "Either both must be null or both must be nonnull.",
-        ):
-            _ = StateProgramAssignment(
-                program_assignment_id=1000,
-                state_code="US_XX",
-                external_id="1111",
-                referring_staff_external_id=None,
-                referring_staff_external_id_type="EMP-2",
-                participation_status=StateProgramAssignmentParticipationStatus.INTERNAL_UNKNOWN,
-                participation_status_raw_text="X",
-            )
-
-    def test_post_attrs_referring_staff_id_nonnull_id_null_type(self) -> None:
-        with self.assertRaisesRegex(
-            ValueError,
-            r"Found inconsistent referring_staff_external_id\* fields for StateProgramAssignment with id 1000. "
-            r"referring_staff_external_id: ABCDE referring_staff_external_id_type: None. "
-            "Either both must be null or both must be nonnull.",
-        ):
-            _ = StateProgramAssignment(
-                program_assignment_id=1000,
-                state_code="US_XX",
-                external_id="1111",
-                referring_staff_external_id="ABCDE",
-                referring_staff_external_id_type=None,
-                participation_status=StateProgramAssignmentParticipationStatus.INTERNAL_UNKNOWN,
-                participation_status_raw_text="X",
-            )
 
     def test_post_attrs_state_task_deadline_simple(self) -> None:
         _ = StateTaskDeadline(

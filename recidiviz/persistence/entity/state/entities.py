@@ -1132,10 +1132,18 @@ class StateSupervisionPeriod(
     #   - Who
     # See |person| in entity relationships below.
     supervising_officer_staff_external_id: Optional[str] = attr.ib(
-        default=None, validator=attr_validators.is_opt_str
+        default=None,
+        validator=[
+            attr_validators.is_opt_str,
+            appears_with("supervising_officer_staff_external_id_type"),
+        ],
     )
     supervising_officer_staff_external_id_type: Optional[str] = attr.ib(
-        default=None, validator=attr_validators.is_opt_str
+        default=None,
+        validator=[
+            attr_validators.is_opt_str,
+            appears_with("supervising_officer_staff_external_id"),
+        ],
     )
 
     # Primary key - Only optional when hydrated in the parsing layer, before we have
@@ -1555,10 +1563,18 @@ class StateSupervisionViolationResponse(
     )
 
     deciding_staff_external_id: Optional[str] = attr.ib(
-        default=None, validator=attr_validators.is_opt_str
+        default=None,
+        validator=[
+            attr_validators.is_opt_str,
+            appears_with("deciding_staff_external_id_type"),
+        ],
     )
     deciding_staff_external_id_type: Optional[str] = attr.ib(
-        default=None, validator=attr_validators.is_opt_str
+        default=None,
+        validator=[
+            attr_validators.is_opt_str,
+            appears_with("deciding_staff_external_id"),
+        ],
     )
 
     # Primary key - Only optional when hydrated in the parsing layer, before we have
@@ -1582,20 +1598,6 @@ class StateSupervisionViolationResponse(
                 fields=["state_code", "external_id"],
             )
         ]
-
-    def __attrs_post_init__(self) -> None:
-        if (
-            self.deciding_staff_external_id is None
-            and self.deciding_staff_external_id_type is not None
-        ) or (
-            self.deciding_staff_external_id is not None
-            and self.deciding_staff_external_id_type is None
-        ):
-            raise ValueError(
-                f"Found inconsistent deciding_staff_external_id* fields for StateSupervisionViolationResponse with id {self.supervision_violation_response_id}. "
-                f"deciding_staff_external_id: {self.deciding_staff_external_id} deciding_staff_external_id_type: {self.deciding_staff_external_id_type}. "
-                "Either both must be null or both must be nonnull."
-            )
 
 
 @attr.s(eq=False, kw_only=True)
@@ -1639,10 +1641,18 @@ class StateProgramAssignment(HasExternalIdEntity, BuildableAttr, DefaultableAttr
     #   - Who
     # See |person| in entity relationships below.
     referring_staff_external_id: Optional[str] = attr.ib(
-        default=None, validator=attr_validators.is_opt_str
+        default=None,
+        validator=[
+            attr_validators.is_opt_str,
+            appears_with("referring_staff_external_id_type"),
+        ],
     )
     referring_staff_external_id_type: Optional[str] = attr.ib(
-        default=None, validator=attr_validators.is_opt_str
+        default=None,
+        validator=[
+            attr_validators.is_opt_str,
+            appears_with("referring_staff_external_id"),
+        ],
     )
     # Primary key - Only optional when hydrated in the parsing layer, before we have
     # written this entity to the persistence layer
@@ -1661,20 +1671,6 @@ class StateProgramAssignment(HasExternalIdEntity, BuildableAttr, DefaultableAttr
                 fields=["state_code", "external_id"],
             )
         ]
-
-    def __attrs_post_init__(self) -> None:
-        if (
-            self.referring_staff_external_id is None
-            and self.referring_staff_external_id_type is not None
-        ) or (
-            self.referring_staff_external_id is not None
-            and self.referring_staff_external_id_type is None
-        ):
-            raise ValueError(
-                f"Found inconsistent referring_staff_external_id* fields for StateProgramAssignment with id {self.program_assignment_id}. "
-                f"referring_staff_external_id: {self.referring_staff_external_id} referring_staff_external_id_type: {self.referring_staff_external_id_type}. "
-                "Either both must be null or both must be nonnull."
-            )
 
 
 @attr.s(eq=False, kw_only=True)
@@ -1814,10 +1810,18 @@ class StateSupervisionContact(HasExternalIdEntity, BuildableAttr, DefaultableAtt
     #   - Who
     # See |person| in entity relationships below.
     contacting_staff_external_id: Optional[str] = attr.ib(
-        default=None, validator=attr_validators.is_opt_str
+        default=None,
+        validator=[
+            attr_validators.is_opt_str,
+            appears_with("contacting_staff_external_id_type"),
+        ],
     )
     contacting_staff_external_id_type: Optional[str] = attr.ib(
-        default=None, validator=attr_validators.is_opt_str
+        default=None,
+        validator=[
+            attr_validators.is_opt_str,
+            appears_with("contacting_staff_external_id"),
+        ],
     )
 
     # Primary key - Only optional when hydrated in the parsing layer, before we have
@@ -1837,20 +1841,6 @@ class StateSupervisionContact(HasExternalIdEntity, BuildableAttr, DefaultableAtt
                 fields=["state_code", "external_id"],
             )
         ]
-
-    def __attrs_post_init__(self) -> None:
-        if (
-            self.contacting_staff_external_id is None
-            and self.contacting_staff_external_id_type is not None
-        ) or (
-            self.contacting_staff_external_id is not None
-            and self.contacting_staff_external_id_type is None
-        ):
-            raise ValueError(
-                f"Found inconsistent contacting_staff_external_id* fields for StateSupervisionContact with id {self.supervision_contact_id}. "
-                f"contacting_staff_external_id: {self.contacting_staff_external_id} contacting_staff_external_id_type: {self.contacting_staff_external_id_type}. "
-                "Either both must be null or both must be nonnull."
-            )
 
 
 @attr.s(eq=False, kw_only=True)
