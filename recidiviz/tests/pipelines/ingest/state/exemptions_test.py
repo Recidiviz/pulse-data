@@ -21,6 +21,9 @@ from typing import Dict, Set
 
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.direct_ingest_regions import get_direct_ingest_region
+from recidiviz.ingest.direct.ingest_mappings.ingest_view_contents_context import (
+    IngestViewContentsContextImpl,
+)
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_collector import (
     IngestViewManifestCollector,
 )
@@ -33,6 +36,7 @@ from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
 from recidiviz.pipelines.ingest.state.exemptions import (
     INGEST_VIEW_TREE_MERGER_ERROR_EXEMPTIONS,
 )
+from recidiviz.utils.environment import GCP_PROJECTS
 
 
 class TestExemptions(unittest.TestCase):
@@ -42,13 +46,22 @@ class TestExemptions(unittest.TestCase):
         state_codes = get_existing_direct_ingest_states()
         state_code_to_launchable_views: Dict[StateCode, Set[str]] = defaultdict(set)
         for state_code in state_codes:
-            region = get_direct_ingest_region(region_code=state_code.value)
-            ingest_manifest_collector = IngestViewManifestCollector(
-                region=region,
-                delegate=StateSchemaIngestViewManifestCompilerDelegate(region=region),
-            )
-            all_launchable_views = ingest_manifest_collector.launchable_ingest_views()
-            state_code_to_launchable_views[state_code] = set(all_launchable_views)
+            for project_id in GCP_PROJECTS:
+                region = get_direct_ingest_region(region_code=state_code.value)
+                ingest_manifest_collector = IngestViewManifestCollector(
+                    region=region,
+                    delegate=StateSchemaIngestViewManifestCompilerDelegate(
+                        region=region
+                    ),
+                )
+                all_launchable_views = (
+                    ingest_manifest_collector.launchable_ingest_views(
+                        IngestViewContentsContextImpl.build_for_project(project_id)
+                    )
+                )
+                state_code_to_launchable_views[state_code].update(
+                    set(all_launchable_views)
+                )
 
         for (
             state_code,

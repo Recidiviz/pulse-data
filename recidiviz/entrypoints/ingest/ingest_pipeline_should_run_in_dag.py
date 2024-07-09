@@ -22,13 +22,16 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.entrypoints.entrypoint_interface import EntrypointInterface
 from recidiviz.entrypoints.entrypoint_utils import save_to_xcom
 from recidiviz.ingest.direct import direct_ingest_regions
+from recidiviz.ingest.direct.ingest_mappings.ingest_view_contents_context import (
+    IngestViewContentsContextImpl,
+)
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_collector import (
     IngestViewManifestCollector,
 )
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_compiler_delegate import (
     StateSchemaIngestViewManifestCompilerDelegate,
 )
-from recidiviz.utils import environment
+from recidiviz.utils import environment, metadata
 
 
 def _has_launchable_ingest_views(state_code: StateCode) -> bool:
@@ -39,7 +42,16 @@ def _has_launchable_ingest_views(state_code: StateCode) -> bool:
         region=region,
         delegate=StateSchemaIngestViewManifestCompilerDelegate(region=region),
     )
-    return len(ingest_manifest_collector.launchable_ingest_views()) > 0
+    return (
+        len(
+            ingest_manifest_collector.launchable_ingest_views(
+                IngestViewContentsContextImpl.build_for_project(
+                    project_id=metadata.project_id()
+                )
+            )
+        )
+        > 0
+    )
 
 
 def ingest_pipeline_should_run_in_dag(state_code: StateCode) -> bool:

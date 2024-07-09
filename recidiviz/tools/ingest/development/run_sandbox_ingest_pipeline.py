@@ -50,6 +50,9 @@ from typing import List, Tuple
 
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct import direct_ingest_regions
+from recidiviz.ingest.direct.ingest_mappings.ingest_view_contents_context import (
+    IngestViewContentsContextImpl,
+)
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_collector import (
     IngestViewManifestCollector,
 )
@@ -143,7 +146,12 @@ def get_extra_pipeline_parameter_args(
         region=region,
         delegate=StateSchemaIngestViewManifestCompilerDelegate(region=region),
     )
-    launchable_ingest_views = ingest_manifest_collector.launchable_ingest_views()
+    launchable_ingest_views = ingest_manifest_collector.launchable_ingest_views(
+        # Use the context for the project we will be running against, not the one that
+        # corresponds to the local environment so that we don't identify local-only
+        # views as launchable here.
+        IngestViewContentsContextImpl.build_for_project(project_id=project),
+    )
     view_collector = DirectIngestViewQueryBuilderCollector(
         region,
         launchable_ingest_views,

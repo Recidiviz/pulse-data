@@ -25,6 +25,9 @@ from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
 from recidiviz.big_query.big_query_query_provider import StateFilteredQueryProvider
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct import direct_ingest_regions
+from recidiviz.ingest.direct.ingest_mappings.ingest_view_contents_context import (
+    IngestViewContentsContextImpl,
+)
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_collector import (
     IngestViewManifestCollector,
 )
@@ -129,6 +132,9 @@ class StateIngestPipeline(BasePipeline[IngestPipelineParameters]):
         )
         state_code = StateCode(self.pipeline_parameters.state_code.upper())
         raw_data_upper_bound_dates = self.pipeline_parameters.raw_data_upper_bound_dates
+        ingest_view_context = IngestViewContentsContextImpl.build_for_project(
+            project_id=self.pipeline_parameters.project
+        )
 
         region = direct_ingest_regions.get_direct_ingest_region(
             region_code=state_code.value
@@ -149,7 +155,9 @@ class StateIngestPipeline(BasePipeline[IngestPipelineParameters]):
             region=region,
             delegate=StateSchemaIngestViewManifestCompilerDelegate(region=region),
         )
-        all_launchable_views = ingest_manifest_collector.launchable_ingest_views()
+        all_launchable_views = ingest_manifest_collector.launchable_ingest_views(
+            ingest_view_context
+        )
         view_collector = DirectIngestViewQueryBuilderCollector(
             region, all_launchable_views
         )
@@ -231,6 +239,7 @@ class StateIngestPipeline(BasePipeline[IngestPipelineParameters]):
                     ingest_view_manifest=ingest_manifest_collector.ingest_view_to_manifest[
                         ingest_view
                     ],
+                    ingest_view_context=ingest_view_context,
                 )
                 | f"Merge {ingest_view} entities using IngestViewTreeMerger within same date and external ID."
                 >> MergeIngestViewRootEntityTrees(

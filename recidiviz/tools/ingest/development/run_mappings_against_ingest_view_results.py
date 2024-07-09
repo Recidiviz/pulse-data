@@ -62,6 +62,7 @@ from recidiviz.ingest.direct.views.direct_ingest_view_query_builder_collector im
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.entity_utils import print_entity_tree
 from recidiviz.pipelines.ingest.state.generate_entities import to_string_value_converter
+from recidiviz.utils import metadata
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.utils.string import get_closest_string
@@ -169,7 +170,9 @@ def parse_results(
         ).parse_contents(
             contents_iterator=contents_handle.get_contents_iterator(),
             result_callable=result_processor,
-            context=IngestViewContentsContextImpl(),
+            context=IngestViewContentsContextImpl.build_for_project(
+                metadata.project_id()
+            ),
         )
 
         progress.close()

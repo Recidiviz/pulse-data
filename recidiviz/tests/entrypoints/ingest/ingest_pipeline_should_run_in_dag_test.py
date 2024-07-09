@@ -25,6 +25,7 @@ from recidiviz.entrypoints.ingest.ingest_pipeline_should_run_in_dag import (
 )
 from recidiviz.ingest.direct.direct_ingest_regions import get_direct_ingest_region
 from recidiviz.tests.ingest.direct import fake_regions as fake_regions_module
+from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 
 
 class TestIngestDagOrchestrationUtils(unittest.TestCase):
@@ -54,15 +55,11 @@ class TestIngestDagOrchestrationUtils(unittest.TestCase):
         self.direct_ingest_regions_patcher.stop()
 
     @patch(
-        "recidiviz.ingest.direct.direct_ingest_regions.environment.get_gcp_environment",
-        return_value="staging",
-    )
-    @patch(
-        "recidiviz.ingest.direct.direct_ingest_regions.environment.in_gcp_production",
-        return_value=False,
+        "recidiviz.utils.metadata.project_id",
+        return_value=GCP_PROJECT_STAGING,
     )
     def test_ingest_pipeline_should_run_in_dag(
-        self, _mock_in_gcp_production: MagicMock, _mock_get_gcp_environment: MagicMock
+        self, _mock_project_id: MagicMock
     ) -> None:
         self.assertTrue(ingest_pipeline_should_run_in_dag(StateCode.US_XX))
         self.assertTrue(ingest_pipeline_should_run_in_dag(StateCode.US_YY))
@@ -70,15 +67,11 @@ class TestIngestDagOrchestrationUtils(unittest.TestCase):
         self.assertFalse(ingest_pipeline_should_run_in_dag(StateCode.US_WW))
 
     @patch(
-        "recidiviz.ingest.direct.direct_ingest_regions.environment.get_gcp_environment",
-        return_value="production",
-    )
-    @patch(
-        "recidiviz.ingest.direct.direct_ingest_regions.environment.in_gcp_production",
-        return_value=True,
+        "recidiviz.utils.metadata.project_id",
+        return_value=GCP_PROJECT_PRODUCTION,
     )
     def test_ingest_pipeline_should_run_in_dag_only_us_dd_launched_in_env(
-        self, _mock_in_gcp_production: MagicMock, _mock_get_gcp_environment: MagicMock
+        self, _mock_projec_id: MagicMock
     ) -> None:
         self.assertFalse(ingest_pipeline_should_run_in_dag(StateCode.US_XX))
         self.assertFalse(ingest_pipeline_should_run_in_dag(StateCode.US_XX))
