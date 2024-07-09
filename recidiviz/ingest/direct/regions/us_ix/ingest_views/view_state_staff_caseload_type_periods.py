@@ -171,6 +171,14 @@ VIEW_QUERY_TEMPLATE = f""",
         
         UNION ALL
 
+        -- INTERSTATE
+        SELECT *, 'OTHER' AS caseload_type
+        FROM caseload_periods
+        WHERE 
+            caseload_type_raw LIKE '%INTERSTATE%'
+
+        UNION ALL
+
         -- TRANSITIONAL
         SELECT
             officer_EmployeeId,
