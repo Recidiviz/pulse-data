@@ -546,12 +546,17 @@ class BigQueryClient:
         destination_table_id: str,
         use_query_cache: bool,
         source_data_filter_clause: Optional[str] = None,
-        hydrate_missing_columns_with_null: bool = False,
-        allow_field_additions: bool = False,
-        write_disposition: str = bigquery.WriteDisposition.WRITE_APPEND,
     ) -> bigquery.QueryJob:
-        """Inserts rows from the source table into the destination table. May include an optional filter clause
-        to only insert a subset of rows into the destination table.
+        """Appends data from a source table into a destination table using an INSERT INTO
+        statement for columns that exist in both tables, with an optional
+        source_data_filter_clause applied. Columns missing from the source table will
+        be hydrated with the destination table's default value if set, otherwise with
+        NULL.
+
+        Note: Types for shared columns of the two tables must match. If a REQUIRED field
+        in the destination table is missing from the source table, the query will likely
+        fail unless a non-null default is set. For more info, see big query docs:
+        https://cloud.google.com/bigquery/docs/reference/standard-sql/dml-syntax#insert_statement
 
         Args:
             source_dataset_id: The name of the source dataset.
@@ -560,15 +565,6 @@ class BigQueryClient:
             destination_table_id: The name of the table to insert into.
             source_data_filter_clause: An optional clause to filter the contents of the source table that are inserted
                 into the destination table. Must start with "WHERE".
-            hydrate_missing_columns_with_null: If True, schema fields in the destination table that are missing
-                from the source table will be selected as NULL. Defaults to False. If this is False, the request will
-                fail if the source table/query is missing columns that the destination table has.
-            allow_field_additions: Whether or not to allow new columns to be created in the destination table if the
-                schema in the source table does not exactly match the destination table. Defaults to False. If this is
-                False, the request will fail if the destination table is missing columns that the source table/query
-                has.
-            write_disposition: Indicates whether BigQuery should overwrite the table completely (WRITE_TRUNCATE) or
-                adds to the table with new rows (WRITE_APPEND). By default, WRITE_APPEND is used.
             use_query_cache: Whether to look for the result in the query cache. See:
                 https://cloud.google.com/bigquery/docs/reference/rest/v2/Job#JobConfigurationQuery.FIELDS.use_query_cache
 
@@ -1636,13 +1632,20 @@ class BigQueryClientImpl(BigQueryClient):
         destination_table_id: str,
         use_query_cache: bool,
         source_data_filter_clause: Optional[str] = None,
-        allow_field_additions: bool = False,
-        hydrate_missing_columns_with_null: bool = False,
-        write_disposition: str = bigquery.WriteDisposition.WRITE_APPEND,
     ) -> bigquery.QueryJob:
-        """Loads data from a source table to a destination table, depending on the write_disposition passed in
-        it can either append or overwrite the destination table. Defaults to WRITE_APPEND.
+        """Appends data from a source table into a destination table using an INSERT INTO
+        statement for columns that exist in both tables, with an optional
+        source_data_filter_clause applied. Columns missing from the source table will
+        be hydrated with the destination table's default value if set, otherwise with
+        NULL.
+
+        Note: Types for shared columns of the two tables must match. If a REQUIRED field
+        in the destination table is missing from the source table, the query will likely
+        fail unless a non-null default is set. For more info, see big query docs:
+        https://cloud.google.com/bigquery/docs/reference/standard-sql/dml-syntax#insert_statement
         """
+        insert_job_config = bigquery.job.QueryJobConfig(use_query_cache=use_query_cache)
+
         source_dataset_ref = self.dataset_ref_for_id(source_dataset_id)
         destination_dataset_ref = self.dataset_ref_for_id(destination_dataset_id)
 
@@ -1657,40 +1660,33 @@ class BigQueryClientImpl(BigQueryClient):
             destination_dataset_ref, destination_table_id
         )
 
-        select_columns = "*"
+        # we draw select columns from intersection of the two table columns
+        shared_columns = {field.name for field in destination_table.schema} & {
+            field.name for field in source_table.schema
+        }
+        shared_columns_str = ", ".join(shared_columns)
 
-        if hydrate_missing_columns_with_null:
-            schema_fields_missing_from_source = self._get_excess_schema_fields(
-                source_table.schema, destination_table.schema
-            )
-            if schema_fields_missing_from_source:
-                missing_columns = [
-                    f"CAST(NULL AS {missing_column.field_type}) AS {missing_column.name}"
-                    for missing_column in schema_fields_missing_from_source
-                ]
-                select_columns += f", {', '.join(missing_columns)}"
-
-        query = f"SELECT {select_columns} FROM `{self.project_id}.{source_dataset_id}.{source_table_id}`"
+        query = (
+            f"INSERT INTO `{self.project_id}.{destination_dataset_id}.{destination_table_id}` "
+            f"({shared_columns_str}) \n"
+            f"SELECT {shared_columns_str} \n"
+            f"FROM `{self.project_id}.{source_dataset_id}.{source_table_id}`"
+        )
 
         if source_data_filter_clause:
             self._validate_source_data_filter_clause(source_data_filter_clause)
-            query = f"{query} {source_data_filter_clause}"
+            query = f"{query} \n {source_data_filter_clause}"
 
         logging.info(
-            "Copying data from: %s.%s to: %s.%s",
-            source_dataset_id,
-            source_table_id,
+            "Inserting data to: [%s.%s] from [%s.%s]",
             destination_dataset_id,
             destination_table_id,
+            source_dataset_id,
+            source_table_id,
         )
 
-        return self.insert_into_table_from_query_async(
-            destination_dataset_id=destination_dataset_id,
-            destination_table_id=destination_table_id,
-            query=query,
-            allow_field_additions=allow_field_additions,
-            write_disposition=write_disposition,
-            use_query_cache=use_query_cache,
+        return self.client.query(
+            query=query, location=self.region, job_config=insert_job_config
         )
 
     @staticmethod
@@ -1772,9 +1768,6 @@ class BigQueryClientImpl(BigQueryClient):
         destination_table_id: str,
         use_query_cache: bool,
         source_data_filter_clause: Optional[str] = None,
-        hydrate_missing_columns_with_null: bool = False,
-        allow_field_additions: bool = False,
-        write_disposition: str = bigquery.WriteDisposition.WRITE_APPEND,
     ) -> bigquery.QueryJob:
         return self._insert_into_table_from_table_async(
             source_dataset_id=source_dataset_id,
@@ -1782,9 +1775,6 @@ class BigQueryClientImpl(BigQueryClient):
             destination_dataset_id=destination_dataset_id,
             destination_table_id=destination_table_id,
             source_data_filter_clause=source_data_filter_clause,
-            hydrate_missing_columns_with_null=hydrate_missing_columns_with_null,
-            allow_field_additions=allow_field_additions,
-            write_disposition=write_disposition,
             use_query_cache=use_query_cache,
         )
 

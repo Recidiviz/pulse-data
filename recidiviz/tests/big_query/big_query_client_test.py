@@ -49,6 +49,9 @@ from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_client import BigQueryClient, BigQueryClientImpl
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.big_query.export.export_query_config import ExportQueryConfig
+from recidiviz.tests.big_query.big_query_emulator_test_case import (
+    BigQueryEmulatorTestCase,
+)
 
 
 # TODO(#27976) migrate to use the BigQueryEmulatorTestCase for testing instead of
@@ -639,6 +642,10 @@ class BigQueryClientImplTest(unittest.TestCase):
         self, mock_job_config: mock.MagicMock
     ) -> None:
         """Tests that the insert_into_table_from_table_async function runs a query."""
+        mock_table = create_autospec(bigquery.Table)
+        mock_table.schema = self.mock_schema
+        self.mock_client.get_table.return_value = mock_table
+
         self.bq_client.insert_into_table_from_table_async(
             source_dataset_id=self.mock_dataset_id,
             source_table_id=self.mock_table_id,
@@ -646,7 +653,51 @@ class BigQueryClientImplTest(unittest.TestCase):
             destination_table_id="fake_table_temp",
             use_query_cache=False,
         )
-        expected_query = f"SELECT * FROM `fake-recidiviz-project.{self.mock_dataset_id}.{self.mock_table_id}`"
+        expected_query = f"INSERT INTO `fake-recidiviz-project.{self.mock_dataset_id}.fake_table_temp` (fake_column) \nSELECT fake_column \nFROM `fake-recidiviz-project.{self.mock_dataset_id}.{self.mock_table_id}`"
+        self.mock_client.get_table.assert_called()
+        self.mock_client.query.assert_called_with(
+            query=expected_query,
+            location=BigQueryClient.DEFAULT_REGION,
+            job_config=mock_job_config(),
+        )
+
+    @mock.patch("google.cloud.bigquery.job.QueryJobConfig")
+    def test_insert_into_table_from_table_async_source_has_too_many_cols(
+        self, mock_job_config: mock.MagicMock
+    ) -> None:
+        """Tests that the insert_into_table_from_table_async function runs a query."""
+        mock_table_source = create_autospec(bigquery.Table)
+        mock_table_source.schema = self.mock_schema
+        mock_table_dest = create_autospec(bigquery.Table)
+        mock_table_dest.schema = [
+            bigquery.SchemaField(
+                mode="NULLABLE", field_type="STRING", name="fake_column"
+            ),
+            bigquery.SchemaField(
+                name="new_schema_field", field_type="STRING", mode="REQUIRED"
+            ),
+            bigquery.SchemaField(
+                name="partition_field", field_type="DATETIME", mode="REQUIRED"
+            ),
+        ]
+
+        def _get_table(_table_ref: bigquery.TableReference) -> bigquery.Table:
+            if _table_ref.table_id == "fake_table_temp":
+                return mock_table_dest
+            if _table_ref.table_id == self.mock_table_id:
+                return mock_table_source
+            raise ValueError("Unrecognized table!")
+
+        self.mock_client.get_table.side_effect = _get_table
+
+        self.bq_client.insert_into_table_from_table_async(
+            source_dataset_id=self.mock_dataset_id,
+            source_table_id=self.mock_table_id,
+            destination_dataset_id=self.mock_dataset_id,
+            destination_table_id="fake_table_temp",
+            use_query_cache=False,
+        )
+        expected_query = f"INSERT INTO `fake-recidiviz-project.{self.mock_dataset_id}.fake_table_temp` (fake_column) \nSELECT fake_column \nFROM `fake-recidiviz-project.{self.mock_dataset_id}.{self.mock_table_id}`"
         self.mock_client.get_table.assert_called()
         self.mock_client.query.assert_called_with(
             query=expected_query,
@@ -660,6 +711,10 @@ class BigQueryClientImplTest(unittest.TestCase):
     ) -> None:
         """Tests that the insert_into_table_from_table_async function runs a query with the correct source and
         destination datasets."""
+        mock_table = create_autospec(bigquery.Table)
+        mock_table.schema = self.mock_schema
+        self.mock_client.get_table.return_value = mock_table
+
         self.bq_client.insert_into_table_from_table_async(
             source_dataset_id="mock-source-dataset",
             source_table_id="mock_source_table",
@@ -667,46 +722,13 @@ class BigQueryClientImplTest(unittest.TestCase):
             destination_table_id="mock_destination_table",
             use_query_cache=False,
         )
-        expected_query = "SELECT * FROM `fake-recidiviz-project.mock-source-dataset.mock_source_table`"
+        expected_query = "INSERT INTO `fake-recidiviz-project.mock-destination-dataset.mock_destination_table` (fake_column) \nSELECT fake_column \nFROM `fake-recidiviz-project.mock-source-dataset.mock_source_table`"
         self.mock_client.get_table.assert_called()
         self.mock_client.query.assert_called_with(
             query=expected_query,
             location=BigQueryClient.DEFAULT_REGION,
             job_config=mock_job_config(),
         )
-
-    @mock.patch("google.cloud.bigquery.job.QueryJobConfig")
-    def test_insert_into_table_from_table_async_hydrate_missing_columns(
-        self, mock_job_config: mock.MagicMock
-    ) -> None:
-        """Tests that the insert_into_table_from_table_async generates a query with missing columns as NULL."""
-        with mock.patch(
-            "recidiviz.big_query.big_query_client.BigQueryClientImpl"
-            "._get_excess_schema_fields"
-        ) as mock_missing:
-            mock_missing.return_value = [
-                bigquery.SchemaField("state_code", "STRING", "REQUIRED"),
-                bigquery.SchemaField("new_column_name", "INTEGER", "REQUIRED"),
-            ]
-            self.mock_destination_id = "fake_table_temp"
-            self.bq_client.insert_into_table_from_table_async(
-                source_dataset_id=self.mock_dataset_id,
-                source_table_id=self.mock_table_id,
-                destination_dataset_id=self.mock_dataset_id,
-                destination_table_id=self.mock_destination_id,
-                hydrate_missing_columns_with_null=True,
-                allow_field_additions=True,
-                use_query_cache=False,
-            )
-            expected_query = (
-                "SELECT *, CAST(NULL AS STRING) AS state_code, CAST(NULL AS INTEGER) AS new_column_name "
-                f"FROM `fake-recidiviz-project.{self.mock_dataset_id}.{self.mock_table_id}`"
-            )
-            self.mock_client.query.assert_called_with(
-                query=expected_query,
-                location=BigQueryClient.DEFAULT_REGION,
-                job_config=mock_job_config(),
-            )
 
     def test_insert_into_table_from_table_invalid_destination(self) -> None:
         """Tests that the insert_into_table_from_table_async function does not run the query if the destination
@@ -749,7 +771,10 @@ class BigQueryClientImplTest(unittest.TestCase):
         self, mock_job_config: mock.MagicMock
     ) -> None:
         """Tests that the insert_into_table_from_table_async generates a valid query when given a filter clause."""
-        filter_clause = "WHERE state_code IN ('US_ND')"
+        mock_table = create_autospec(bigquery.Table)
+        mock_table.schema = self.mock_schema
+        self.mock_client.get_table.return_value = mock_table
+        filter_clause = "WHERE fake_column IN ('US_ND')"
         job_config = mock_job_config()
         self.bq_client.insert_into_table_from_table_async(
             source_dataset_id=self.mock_dataset_id,
@@ -760,8 +785,8 @@ class BigQueryClientImplTest(unittest.TestCase):
             use_query_cache=False,
         )
         expected_query = (
-            "SELECT * FROM `fake-recidiviz-project.fake-dataset.test_table` "
-            "WHERE state_code IN ('US_ND')"
+            f"INSERT INTO `fake-recidiviz-project.fake_source_dataset_id.fake_table_id` (fake_column) \nSELECT fake_column \nFROM `fake-recidiviz-project.{self.mock_dataset_id}.{self.mock_table_id}` "
+            "\n WHERE fake_column IN ('US_ND')"
         )
         self.mock_client.query.assert_called_with(
             query=expected_query,
@@ -2572,3 +2597,282 @@ class MaterializeTableJobConfigMatcher:
             return False
 
         return str(other.destination) == self.expected_destination
+
+
+class BigQueryClientImplEmulatorTest(BigQueryEmulatorTestCase):
+    """Emulator test cases for BigQueryClientImpl"""
+
+    def setUp(self) -> None:
+        super().setUp()
+
+        self.simple_schema = [
+            bigquery.SchemaField(mode="NULLABLE", field_type="STRING", name="col_1"),
+            bigquery.SchemaField(mode="NULLABLE", field_type="STRING", name="col_2"),
+        ]
+
+    def test_insert_into_table_from_table_async(self) -> None:
+        source, destination = BigQueryAddress(
+            dataset_id="dataset", table_id="source"
+        ), BigQueryAddress(dataset_id="datatset", table_id="destination")
+        self.create_mock_table(source, self.simple_schema)
+        self.create_mock_table(destination, self.simple_schema)
+
+        fake_data = [
+            {"col_1": "val_1", "col_2": "val_2"},
+            {"col_1": "val_3", "col_2": "val_4"},
+        ]
+
+        self.load_rows_into_table(source, fake_data)
+
+        job = self.bq_client.insert_into_table_from_table_async(
+            source_dataset_id=source.dataset_id,
+            source_table_id=source.table_id,
+            destination_dataset_id=destination.dataset_id,
+            destination_table_id=destination.table_id,
+            use_query_cache=False,
+        )
+
+        job.result()
+
+        self.run_query_test(f"select * from `{destination.to_str()}`", fake_data)
+
+        job = self.bq_client.insert_into_table_from_table_async(
+            source_dataset_id=source.dataset_id,
+            source_table_id=source.table_id,
+            destination_dataset_id=destination.dataset_id,
+            destination_table_id=destination.table_id,
+            use_query_cache=False,
+        )
+
+        job.result()
+
+        self.run_query_test(f"select * from `{destination.to_str()}`", fake_data * 2)
+
+    def test_insert_into_table_from_table_async_source_has_fewer_cols(self) -> None:
+        source, destination = BigQueryAddress(
+            dataset_id="dataset", table_id="source"
+        ), BigQueryAddress(dataset_id="datatset", table_id="destination")
+        self.create_mock_table(source, self.simple_schema)
+        self.create_mock_table(
+            destination,
+            [
+                *self.simple_schema,
+                bigquery.SchemaField(
+                    mode="NULLABLE", field_type="STRING", name="col_3"
+                ),
+            ],
+        )
+
+        fake_data = [
+            {"col_1": "val_1", "col_2": "val_2"},
+            {"col_1": "val_3", "col_2": "val_4"},
+        ]
+
+        self.load_rows_into_table(source, fake_data)
+
+        job = self.bq_client.insert_into_table_from_table_async(
+            source_dataset_id=source.dataset_id,
+            source_table_id=source.table_id,
+            destination_dataset_id=destination.dataset_id,
+            destination_table_id=destination.table_id,
+            use_query_cache=False,
+        )
+
+        job.result()
+
+        fake_output = [{**row, "col_3": None} for row in fake_data]
+
+        self.run_query_test(f"select * from `{destination.to_str()}`", fake_output)
+
+    def test_insert_into_table_from_table_async_dest_has_fewer_cols(self) -> None:
+        source, destination = BigQueryAddress(
+            dataset_id="dataset", table_id="source"
+        ), BigQueryAddress(dataset_id="datatset", table_id="destination")
+        self.create_mock_table(
+            source,
+            [
+                *self.simple_schema,
+                bigquery.SchemaField(
+                    mode="NULLABLE", field_type="STRING", name="col_3"
+                ),
+            ],
+        )
+        self.create_mock_table(destination, self.simple_schema)
+
+        fake_data = [
+            {"col_1": "val_1", "col_2": "val_2", "col_3": "watch me"},
+            {"col_1": "val_3", "col_2": "val_4", "col_3": "dissapear"},
+        ]
+
+        self.load_rows_into_table(source, fake_data)
+
+        job = self.bq_client.insert_into_table_from_table_async(
+            source_dataset_id=source.dataset_id,
+            source_table_id=source.table_id,
+            destination_dataset_id=destination.dataset_id,
+            destination_table_id=destination.table_id,
+            use_query_cache=False,
+        )
+
+        job.result()
+
+        fake_output = [
+            {"col_1": "val_1", "col_2": "val_2"},
+            {"col_1": "val_3", "col_2": "val_4"},
+        ]
+
+        self.run_query_test(f"select * from `{destination.to_str()}`", fake_output)
+
+    def test_insert_into_table_from_table_async_where_clause(self) -> None:
+        source, destination = BigQueryAddress(
+            dataset_id="dataset", table_id="source"
+        ), BigQueryAddress(dataset_id="datatset", table_id="destination")
+        self.create_mock_table(
+            source,
+            [
+                *self.simple_schema,
+                bigquery.SchemaField(
+                    mode="NULLABLE", field_type="STRING", name="col_3"
+                ),
+            ],
+        )
+        self.create_mock_table(destination, self.simple_schema)
+
+        fake_data = [
+            {"col_1": "val_1", "col_2": "val_2", "col_3": "watch me"},
+            {"col_1": "val_3", "col_2": "val_4", "col_3": "dissapear"},
+        ]
+
+        self.load_rows_into_table(source, fake_data)
+
+        job = self.bq_client.insert_into_table_from_table_async(
+            source_dataset_id=source.dataset_id,
+            source_table_id=source.table_id,
+            destination_dataset_id=destination.dataset_id,
+            destination_table_id=destination.table_id,
+            source_data_filter_clause="WHERE col_3 != 'dissapear'",
+            use_query_cache=False,
+        )
+
+        job.result()
+
+        fake_output = [{"col_1": "val_1", "col_2": "val_2"}]
+
+        self.run_query_test(f"select * from `{destination.to_str()}`", fake_output)
+
+    # TODO(#31105) un-underscore when emulator rejects null values in required fields
+    def _test_insert_into_table_from_table_async_dest_required(self) -> None:
+        """Test that should fail as the rows being loaded are nullable in the source
+        schema (and are null) but are required in the destination schema
+        """
+        source, destination = BigQueryAddress(
+            dataset_id="dataset", table_id="source"
+        ), BigQueryAddress(dataset_id="datatset", table_id="destination")
+
+        self.create_mock_table(source, self.simple_schema)
+        self.create_mock_table(
+            destination,
+            [
+                bigquery.SchemaField(
+                    mode="REQUIRED", field_type="STRING", name="col_1"
+                ),
+                bigquery.SchemaField(
+                    mode="REQUIRED", field_type="STRING", name="col_2"
+                ),
+            ],
+        )
+
+        fake_data = [
+            {"col_1": "val_1", "col_2": "val_2"},
+            {"col_1": "val_3", "col_2": "val_4"},
+        ]
+
+        self.load_rows_into_table(source, fake_data)
+
+        job = self.bq_client.insert_into_table_from_table_async(
+            source_dataset_id=source.dataset_id,
+            source_table_id=source.table_id,
+            destination_dataset_id=destination.dataset_id,
+            destination_table_id=destination.table_id,
+            use_query_cache=False,
+        )
+
+        job.result()
+
+        fake_output = [
+            {"col_1": "val_1", "col_2": "val_2"},
+            {"col_1": "val_3", "col_2": "val_4"},
+        ]
+
+        self.run_query_test(f"select * from `{destination.to_str()}`", fake_output)
+
+        fake_data_fail = [{"col_1": None, "col_2": "val_2"}]
+
+        self.load_rows_into_table(source, fake_data_fail)
+
+        job = self.bq_client.insert_into_table_from_table_async(
+            source_dataset_id=source.dataset_id,
+            source_table_id=source.table_id,
+            destination_dataset_id=destination.dataset_id,
+            destination_table_id=destination.table_id,
+            use_query_cache=False,
+        )
+
+        # should fail
+        job.result()
+
+        # if one row fails to be inserted, the whole statement is rolled back so we
+        # should have the same table as before
+        fake_output = [
+            {"col_1": "val_1", "col_2": "val_2"},
+            {"col_1": "val_3", "col_2": "val_4"},
+        ]
+
+        self.run_query_test(f"select * from `{destination.to_str()}`", fake_output)
+
+    # TODO(#31105) un-underscore when emulator rejects null values in required fields
+    def _test_insert_into_table_from_table_async_dest_required_but_missing(
+        self,
+    ) -> None:
+        """Test that should fail as a required schema field that will always is missing
+        from the source schema and thus will always be null
+        """
+        source, destination = BigQueryAddress(
+            dataset_id="dataset", table_id="source"
+        ), BigQueryAddress(dataset_id="datatset", table_id="destination")
+
+        self.create_mock_table(source, self.simple_schema)
+        self.create_mock_table(
+            destination,
+            [
+                bigquery.SchemaField(
+                    mode="REQUIRED", field_type="STRING", name="col_1"
+                ),
+                bigquery.SchemaField(
+                    mode="REQUIRED", field_type="STRING", name="col_2"
+                ),
+                bigquery.SchemaField(
+                    mode="REQUIRED", field_type="STRING", name="col_3"
+                ),
+            ],
+        )
+
+        fake_data = [
+            {"col_1": "val_1", "col_2": "val_2"},
+            {"col_1": "val_3", "col_2": "val_4"},
+        ]
+
+        self.load_rows_into_table(source, fake_data)
+
+        job = self.bq_client.insert_into_table_from_table_async(
+            source_dataset_id=source.dataset_id,
+            source_table_id=source.table_id,
+            destination_dataset_id=destination.dataset_id,
+            destination_table_id=destination.table_id,
+            use_query_cache=False,
+        )
+
+        # this will always fail
+        job.result()
+
+        self.run_query_test(f"select * from `{destination.to_str()}`", [])
