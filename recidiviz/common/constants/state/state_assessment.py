@@ -27,6 +27,8 @@ from recidiviz.common.constants.state.state_entity_enum import StateEntityEnum
 class StateAssessmentClass(StateEntityEnum):
     """An enumeration of assessment classifications tracked in our schema."""
 
+    EDUCATION = state_enum_strings.state_assessment_class_education
+    MENTAL_HEALTH = state_enum_strings.state_assessment_class_mental_health
     RISK = state_enum_strings.state_assessment_class_risk
     SEX_OFFENSE = state_enum_strings.state_assessment_class_sex_offense
     SOCIAL = state_enum_strings.state_assessment_class_social
@@ -44,6 +46,8 @@ class StateAssessmentClass(StateEntityEnum):
 
 
 _STATE_ASSESSMENT_CLASS_VALUE_DESCRIPTIONS: Dict[StateEntityEnum, str] = {
+    StateAssessmentClass.EDUCATION: "Describes an assessment that evaluates the education level of an individual.",
+    StateAssessmentClass.MENTAL_HEALTH: "Describes an assessment that evaluates the mental health of an individual.",
     StateAssessmentClass.RISK: "Describes an assessment that evaluates the risk of an "
     "individual.",
     StateAssessmentClass.SEX_OFFENSE: "Describes an assessment that evaluates the "
@@ -63,8 +67,10 @@ class StateAssessmentType(StateEntityEnum):
     CAF = state_enum_strings.state_assessment_type_caf
     CSRA = state_enum_strings.state_assessment_type_csra
     CSSM = state_enum_strings.state_assessment_type_cssm
+    CMHS = state_enum_strings.state_assessment_type_cmhs
     COMPAS = state_enum_strings.state_assessment_type_compas
     HIQ = state_enum_strings.state_assessment_type_hiq
+    ICASA = state_enum_strings.state_assessment_type_icasa
     J_SOAP = state_enum_strings.state_assessment_type_j_soap
     LSIR = state_enum_strings.state_assessment_type_lsir
     ODARA = state_enum_strings.state_assessment_type_odara
@@ -92,6 +98,7 @@ class StateAssessmentType(StateEntityEnum):
     OYAS = state_enum_strings.state_assessment_type_oyas
     PA_RST = state_enum_strings.state_assessment_type_pa_rst
     PSA = state_enum_strings.state_assessment_type_psa
+    SACA = state_enum_strings.state_assessment_type_saca
     SORAC = state_enum_strings.state_assessment_type_sorac
     SOTIPS = state_enum_strings.state_assessment_type_sotips
     SPIN_W = state_enum_strings.state_assessment_type_spin_w
@@ -115,8 +122,10 @@ _STATE_ASSESSMENT_TYPE_VALUE_DESCRIPTIONS: Dict[StateEntityEnum, str] = {
     StateAssessmentType.CAF: "Custody Assessment Form (CAF)",
     StateAssessmentType.CSRA: "California Static Risk Assessment",
     StateAssessmentType.CSSM: "Criminal Sentiments Scale – Modified (CSM-R)",
+    StateAssessmentType.CMHS: "Correctional Mental Health Screen (CMHS)",
     StateAssessmentType.COMPAS: "Correctional Offender Management Profiling for Alternative Sanctions (COMPAS)",
     StateAssessmentType.HIQ: "Hostile Interpretations Questionnaire (HIQ) ",
+    StateAssessmentType.ICASA: "International Collaboration on ADHD and Substance Abuse (ICASA)",
     StateAssessmentType.J_SOAP: "Juvenile Sex Offender Assessment Protocol-II "
     "(J-SOAP-II)",
     StateAssessmentType.LSIR: "Level of Service Inventory - Revised (LSI-R)",
@@ -142,6 +151,7 @@ _STATE_ASSESSMENT_TYPE_VALUE_DESCRIPTIONS: Dict[StateEntityEnum, str] = {
     StateAssessmentType.OYAS: "Ohio Youth Assessment System (OYAS)",
     StateAssessmentType.PA_RST: "Pennsylvania Risk Screen Tool (RST)",
     StateAssessmentType.PSA: "Public Safety Assessment (PSA)",
+    StateAssessmentType.SACA: "Screening for Alcohol and Chemical Abuse (SACA)",
     StateAssessmentType.SORAC: "Sex Offender Risk Assessment Committee (SORAC)",
     StateAssessmentType.SOTIPS: "Sex Offender Treatment Intervention and Progress "
     "Scale (SOTIPS)",
