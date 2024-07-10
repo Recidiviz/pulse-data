@@ -58,6 +58,7 @@ def update_all_source_table_schemas(
     update_manager: SourceTableUpdateManager | None = None,
     *,
     dry_run: bool = True,
+    log_output: bool = False,
 ) -> None:
     """Given a repository of source tables, update BigQuery to match"""
     if not update_manager:
@@ -82,6 +83,7 @@ def update_all_source_table_schemas(
                 log_file=os.path.join(
                     get_deploy_logs_dir(), "update_all_source_table_schemas.log"
                 ),
+                log_output=log_output,
             )
 
     interactive_prompt_retry_on_exception(
@@ -119,7 +121,7 @@ def validate_externally_managed_table_schemata(
         )
 
 
-def perform_bigquery_table_schema_update(dry_run: bool) -> None:
+def perform_bigquery_table_schema_update(dry_run: bool, log_output: bool) -> None:
     repository = build_source_table_repository_for_collected_schemata(
         project_id=project_id(),
     )
@@ -133,6 +135,7 @@ def perform_bigquery_table_schema_update(dry_run: bool) -> None:
             source_table_repository=repository
         ),
         dry_run=dry_run,
+        log_output=log_output,
     )
 
     # TODO(#30495): These will not need to be added separately once ingest views define
@@ -145,6 +148,7 @@ def perform_bigquery_table_schema_update(dry_run: bool) -> None:
             state_codes=get_direct_ingest_states_existing_in_env(),
         ),
         dry_run=dry_run,
+        log_output=log_output,
     )
 
 
@@ -160,6 +164,12 @@ if __name__ == "__main__":
         "--dry-run",
         action="store_true",
     )
+    parser.add_argument(
+        "--log-output",
+        action="store_true",
+    )
     args = parser.parse_args()
     with local_project_id_override(args.project_id):
-        perform_bigquery_table_schema_update(dry_run=args.dry_run)
+        perform_bigquery_table_schema_update(
+            dry_run=args.dry_run, log_output=args.log_output
+        )

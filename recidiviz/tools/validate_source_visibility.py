@@ -617,6 +617,34 @@ def main() -> int:
         ),
     )
 
+    success &= check_dependencies_for_entrypoint(
+        "recidiviz.entrypoints.entrypoint_executor",
+        valid_module_prefixes=make_module_matcher(
+            {
+                "recidiviz.aggregated_metrics",
+                "recidiviz.big_query",
+                "recidiviz.calculator",
+                "recidiviz.case_triage.views",
+                "recidiviz.view_registry",
+                "recidiviz.tools.deploy.logging",
+                "recidiviz.cloud_storage",
+                "recidiviz.common",
+                "recidiviz.datasets",
+                "recidiviz.ingest",
+                "recidiviz.metrics",
+                "recidiviz.monitoring",
+                "recidiviz.outliers",
+                "recidiviz.persistence",
+                "recidiviz.pipelines",
+                "recidiviz.source_tables",
+                "recidiviz.task_eligibility",
+                "recidiviz.utils",
+                "recidiviz.validation",
+            },
+        ),
+        explicitly_invalid_package_dependencies=["apache_beam"],
+    )
+
     return 0 if success else 1
 
 

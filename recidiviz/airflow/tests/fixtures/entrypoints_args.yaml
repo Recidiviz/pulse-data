@@ -45,3 +45,6 @@ test_trigger_metric_view_data_operator_state_code:
 
 test_monitoring_dag_args:
   - --entrypoint=MetricExportTimelinessEntrypoint
+
+test_update_big_query_schemata_args:
+  - --entrypoint=UpdateBigQuerySourceTableSchemataEntrypoint

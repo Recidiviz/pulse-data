@@ -105,6 +105,7 @@ def create_or_update_source_table_collections(
             os.path.dirname(__file__),
             "logs/create_or_update_sandbox.log",
         ),
+        log_output=False,
     )
 
 

@@ -207,7 +207,7 @@ class SourceTableUpdateManager:
         source_table_collection: SourceTableCollection,
         source_table_address: BigQueryAddress,
     ) -> None:
-        """Updates a single source table's schema'"""
+        """Updates a single source table's schema"""
         source_table_config = source_table_collection.source_tables_by_address[
             source_table_address
         ]
@@ -302,7 +302,10 @@ class SourceTableUpdateManager:
             self._update_table(source_table_collection, source_table_config.address)
 
     def update_async(
-        self, source_table_collections: list[SourceTableCollection], log_file: str
+        self,
+        source_table_collections: list[SourceTableCollection],
+        log_file: str,
+        log_output: bool = False,
     ) -> tuple[
         list[tuple[Any, dict[str, Any]]], list[tuple[Exception, dict[str, Any]]]
     ]:
@@ -350,4 +353,9 @@ class SourceTableUpdateManager:
                     f"Failed to update table schemas, encountered the following exceptions: {exceptions}"
                 )
 
-            return successes, exceptions
+        if log_output:
+            with open(log_file, "r", encoding="utf-8") as file:
+                for line in file.readlines():
+                    logging.info(line)
+
+        return successes, exceptions

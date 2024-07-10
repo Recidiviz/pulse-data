@@ -77,6 +77,7 @@ class UpdateBigQueryTableSchemasTest(BigQueryEmulatorTestCase):
             ),
             update_manager=SourceTableUpdateManager(client=self.bq_client),
             dry_run=False,
+            log_output=True,
         )
 
         # If this test fails due to a newly added table, re-run it with `pytest --snapshot-update` to resolve:

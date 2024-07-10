@@ -147,18 +147,17 @@ class TestCalculationPipelineDag(AirflowIntegrationTest):
             update_reference_views_group.upstream_group_ids,
         )
 
-    def test_bq_refresh_downstream_initialize_dag(self) -> None:
-        """Tests that the `bq_refresh` task is downstream of initialize_dag."""
+    def test_bq_refresh_downstream_update_bq_schemata(self) -> None:
+        """Tests that the `bq_refresh` task is downstream of updating bigquery tables."""
         dag_bag = DagBag(dag_folder=DAG_FOLDER, include_examples=False)
         dag = dag_bag.dags[self.CALCULATION_DAG_ID]
         self.assertNotEqual(0, len(dag.task_ids))
 
         bq_refresh_group: TaskGroup = dag.task_group_dict["bq_refresh"]
-        initialize_dag = dag.task_group_dict["initialize_dag"]
 
         self.assertIn(
-            initialize_dag.group_id,
-            bq_refresh_group.upstream_group_ids,
+            "update_big_query_table_schemata",
+            bq_refresh_group.upstream_task_ids,
         )
 
     def test_update_normalized_state_upstream_of_view_update(self) -> None:
@@ -770,6 +769,7 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
                 expected_skipped_ids=[
                     r"wait_to_continue_or_cancel",
                     r"handle_queueing_result",
+                    r"update_big_query_table_schemata",
                     r"ingest",
                     r"update_state",
                     r"bq_refresh",
