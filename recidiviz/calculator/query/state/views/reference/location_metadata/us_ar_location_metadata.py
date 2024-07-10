@@ -182,6 +182,7 @@ all_organizations AS (
                     WHEN 'TEXARKANA P & P' THEN '9'
                     WHEN 'HOT SPRINGS' THEN '10'
                     WHEN 'PINE BLUFF P&P' THEN '11'
+                    WHEN 'C.O. INTERSTATE COMPACT' THEN 'ISC'
                     WHEN 'UNKNOWN' THEN 'UNKNOWN'
                     ELSE NULL
                 END AS {LocationMetadataKey.SUPERVISION_DISTRICT_ID.value},
@@ -280,7 +281,16 @@ all_organizations AS (
     LEFT JOIN (
         SELECT DISTINCT 
             office_id, 
-            area_name
+            /*
+            West Memphis used to be its own supervision area, and appears in the office
+            location reference table, but is now part of Jonesboro (area 4). Every other
+            area name in the table is current, so West Memphis is the only name that gets
+            manually adjusted here.
+            */
+            CASE 
+                WHEN area_name = 'WEST MEMPHIS' THEN 'JONESBORO'
+                ELSE area_name
+            END AS area_name
         FROM `{{project_id}}.{{us_ar_raw_data_up_to_date_dataset}}.RECIDIVIZ_REFERENCE_OFFICE_LOCATIONS_latest` 
     ) office_ref
     ON op.PARTYID = office_ref.office_id
