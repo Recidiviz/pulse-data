@@ -37,3 +37,8 @@ columns:
   - name: Entered_Date
     description: Date violation incident record entered into COMS
     field_type: datetime
+
+table_relationships:
+  - foreign_table: ADH_OFFENDER
+    join_logic:
+      - ADH_OFFENDER.offender_number = COMS_Violation_Incidents.Offender_Number

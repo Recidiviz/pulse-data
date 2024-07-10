@@ -32,3 +32,8 @@ columns:
   - name: Entered_Date
     description: Date Parole Violation Record Entered into COMS
     field_type: datetime
+
+table_relationships:
+  - foreign_table: ADH_OFFENDER
+    join_logic:
+      - ADH_OFFENDER.offender_number = COMS_Parole_Violations.Offender_Number
