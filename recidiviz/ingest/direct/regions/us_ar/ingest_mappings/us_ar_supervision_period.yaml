@@ -17,15 +17,19 @@ input_columns:
 unused_columns: []
 variables:
   - is_isc:
-      $in:
-        $value: SUPVTYPE
-        $options:
-          - $literal("02") # Parole (ISC)
-          - $literal("17") # Dual - Parole & ISC
-          - $literal("23") # Probation (ISC)
-          - $literal("19") # Dual - Probation & ISC
-          - $literal("26") # Dual - Drug Court/Probation ISC
-          - $literal("27") # Dual - Drug Court/Parole ISC
+      $or:
+        - $equal:
+            - PPOFFICE
+            - $literal("0059291") # Central Ofc Interstate Compact
+        - $in:
+            $value: SUPVTYPE
+            $options:
+              - $literal("02") # Parole (ISC)
+              - $literal("17") # Dual - Parole & ISC
+              - $literal("23") # Probation (ISC)
+              - $literal("19") # Dual - Probation & ISC
+              - $literal("26") # Dual - Drug Court/Probation ISC
+              - $literal("27") # Dual - Drug Court/Parole ISC
 output:
   StatePerson:
     external_ids:
