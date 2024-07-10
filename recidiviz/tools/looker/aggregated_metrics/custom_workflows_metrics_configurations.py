@@ -21,6 +21,7 @@ from recidiviz.aggregated_metrics.models.aggregated_metric import (
     EventCountMetric,
     EventDistinctUnitCountMetric,
     EventValueMetric,
+    SpanDistinctUnitCountMetric,
     SumSpanDaysMetric,
 )
 from recidiviz.calculator.query.state.views.analyst_data.models.event_selector import (
@@ -120,6 +121,17 @@ DISTINCT_ACTIVE_USERS_LOOKER = EventDistinctUnitCountMetric(
         EventSelector(
             event_type=EventType.WORKFLOWS_USER_PAGE,
             event_conditions_dict={},
+        ),
+    ],
+)
+DISTINCT_REGISTERED_USERS = SpanDistinctUnitCountMetric(
+    name="distinct_registered_users",
+    display_name="Distinct Total Registered Users",
+    description="Number of distinct Workflows users who have signed up/logged into Workflows at least once",
+    span_selectors=[
+        SpanSelector(
+            span_type=SpanType.WORKFLOWS_USER_REGISTRATION_SESSION,
+            span_conditions_dict={},
         ),
     ],
 )

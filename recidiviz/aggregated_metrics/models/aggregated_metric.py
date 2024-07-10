@@ -424,6 +424,35 @@ class SumSpanDaysMetric(PeriodSpanAggregatedMetric):
 
 
 @attr.define(frozen=True, kw_only=True)
+class SpanDistinctUnitCountMetric(PeriodSpanAggregatedMetric):
+    """
+    Class that stores information about a metric that counts the distinct
+    number of unit of observations among the observed spans.
+
+    Example metric: total registered users
+    """
+
+    def generate_aggregation_query_fragment(
+        self,
+        span_start_date_col: str,
+        span_end_date_col: str,
+        period_start_date_col: str,
+        period_end_date_col: str,
+        original_span_start_date: str,
+    ) -> str:
+        return f"""
+            COUNT(DISTINCT IF(
+                {self.get_metric_conditions_string()},
+                CONCAT({self.unit_of_observation.get_primary_key_columns_query_string(prefix="ses")}),
+                NULL
+            )) AS {self.name}
+        """
+
+    def generate_aggregate_time_periods_query_fragment(self) -> str:
+        return f"AVG({self.name}) AS {self.name}"
+
+
+@attr.define(frozen=True, kw_only=True)
 class AssignmentSpanDaysMetric(AssignmentSpanAggregatedMetric):
     """
     Class that stores information about a metric that counts total length in days of intersection
