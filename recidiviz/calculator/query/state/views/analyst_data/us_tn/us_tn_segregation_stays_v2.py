@@ -118,16 +118,21 @@ US_TN_SEGREGATION_STAYS_QUERY_TEMPLATE = f"""
     -- levels (incarcerated or not) because TN is using seg lists to clean up incorrectly open seg periods. 
     compartment_sessions AS (
         SELECT 
-            state_code,
-            person_id,
-            start_date,
-            end_date_exclusive,
-            compartment_level_1, 
-            compartment_level_2, 
-            facility,
-            housing_unit
-        FROM `{{project_id}}.sessions.compartment_sub_sessions_materialized`
-        WHERE state_code='US_TN' 
+            cs.state_code,
+            cs.person_id,
+            cs.start_date,
+            cs.end_date_exclusive,
+            cs.compartment_level_1, 
+            cs.compartment_level_2, 
+            cs.facility,
+            COALESCE(lm.location_type, 'UNKNOWN') AS location_type,
+            cs.housing_unit
+        FROM `{{project_id}}.sessions.compartment_sub_sessions_materialized` cs
+        LEFT JOIN
+            `{{project_id}}.reference_views.location_metadata_materialized` lm
+        ON
+            facility = location_external_id
+        WHERE cs.state_code = 'US_TN' 
     ),
     -- Using create_intersection_spans because we know there are some overlapping periods within Segregation raw table and between Segregation and max custordy periods
     incarceration_spans AS (
@@ -136,7 +141,7 @@ US_TN_SEGREGATION_STAYS_QUERY_TEMPLATE = f"""
                                     table_2_name='compartment_sessions',
                                     index_columns=['state_code', 'person_id'],
                                     table_1_columns=['external_id','segregation_type'],
-                                    table_2_columns=['compartment_level_1','compartment_level_2', 'facility', 'housing_unit'],
+                                    table_2_columns=['compartment_level_1','compartment_level_2', 'facility', 'location_type', 'housing_unit'],
                                     table_1_start_date_field_name='start_date',
                                     table_1_end_date_field_name='end_date_exclusive',)})
     ),
@@ -152,6 +157,7 @@ US_TN_SEGREGATION_STAYS_QUERY_TEMPLATE = f"""
             person_id,
             external_id,
             facility,
+            location_type,
             housing_unit,
             start_date,
             end_date_exclusive,
@@ -160,8 +166,6 @@ US_TN_SEGREGATION_STAYS_QUERY_TEMPLATE = f"""
             compartment_level_2
         FROM
             sub_sessions_with_attributes
-        -- After priortizing MAX because of more reliable data, we prioritize SPND (special needs facility)
-        -- because often times a spot is held at orginal facility while at SPND
         QUALIFY ROW_NUMBER() OVER(PARTITION BY person_id, state_code, start_date, end_date_exclusive
                                 ORDER BY 
                                     CASE WHEN segregation_type = 'MAXIMUM' THEN 0 
@@ -174,6 +178,7 @@ US_TN_SEGREGATION_STAYS_QUERY_TEMPLATE = f"""
         person_id,
         state_code,
         facility,
+        location_type,
         compartment_level_1,
         compartment_level_2,
         housing_unit,

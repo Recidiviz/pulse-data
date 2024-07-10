@@ -57,6 +57,7 @@ US_TN_SEGREGATION_LISTS_QUERY_TEMPLATE = f"""
             external_id,
             state_code,
             facility,
+            location_type,
             housing_unit,
             housing_unit_type,
             housing_unit_type_raw_text AS segregation_type,
@@ -81,7 +82,8 @@ US_TN_SEGREGATION_LISTS_QUERY_TEMPLATE = f"""
             compartment_level_2,
             segregation_type,
             housing_unit_type,
-            l.facility AS current_facility, 
+            l.facility AS current_facility,
+            l.location_type,
             l.housing_unit AS current_unit,
             open_segs.* EXCEPT(external_id),
             CASE WHEN housing_unit_type = 'ADMINISTRATIVE_SOLITARY_CONFINEMENT' AND DATE_DIFF(CURRENT_DATE('US/Eastern'), s.start_date, DAY) > 365 THEN TRUE
@@ -89,7 +91,7 @@ US_TN_SEGREGATION_LISTS_QUERY_TEMPLATE = f"""
                  ELSE FALSE END AS long_stay,
             CASE 
                 WHEN compartment_level_1 != "INCARCERATION" THEN "no longer incarcerated"
-                WHEN compartment_level_1 = "INCARCERATION" AND compartment_level_2 != 'GENERAL' THEN "incarcerated, not in TDOC facility"
+                WHEN compartment_level_1 = "INCARCERATION" AND l.location_type != 'STATE_PRISON' THEN "incarcerated, not in TDOC facility"
                 WHEN (compartment_level_1 = "INCARCERATION" 
                         AND facility NOT IN UNNEST(open_seg_periods_facilities))
                         AND ARRAY_LENGTH(open_seg_periods_facilities) > 0 
