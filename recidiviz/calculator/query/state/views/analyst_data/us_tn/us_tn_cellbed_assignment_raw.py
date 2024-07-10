@@ -30,7 +30,7 @@ US_TN_CELLBED_ASSIGNMENT_RAW_VIEW_DESCRIPTION = (
 US_TN_CELLBED_ASSIGNMENT_RAW_QUERY_TEMPLATE = """
     -- TODO(#24959): Deprecate usage when re-run is over
     -- TODO(#27428): Once source of facility ID in TN is reconciled, this can be removed
-      SELECT
+      SELECT  
         state_code,
         person_id,
             /* From TN: "The ‘Requested’ location columns contain the new housing assignment 
