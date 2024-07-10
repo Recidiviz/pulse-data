@@ -15,7 +15,13 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """
-Update BigQuery table schemas during deployment
+Module responsible for updating BigQuery source table schemata.
+This is primarily called via the `update_big_query_table_schemata` Airflow calculation DAG task,
+but in case it needs to be run outside of that context, a CLI is provided.
+
+python -m recidiviz.source_tables.update_big_query_table_schemas \
+  --project-id [project_id] \
+  --dry_run
 """
 import argparse
 import logging
@@ -36,7 +42,6 @@ from recidiviz.source_tables.source_table_config import SourceTableCollection
 from recidiviz.source_tables.source_table_repository import SourceTableRepository
 from recidiviz.source_tables.source_table_update_manager import SourceTableUpdateManager
 from recidiviz.tools.deploy.logging import get_deploy_logs_dir
-from recidiviz.tools.utils.script_helpers import interactive_prompt_retry_on_exception
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override, project_id
 
@@ -64,34 +69,26 @@ def update_all_source_table_schemas(
     if not update_manager:
         update_manager = SourceTableUpdateManager(client=BigQueryClientImpl())
 
-    def _retry_fn() -> None:
-        if dry_run:
-            changes = update_manager.dry_run(
-                source_table_collections=source_table_collections,
-                log_file=os.path.join(
-                    get_deploy_logs_dir(), "update_all_source_table_schemas.log"
-                ),
-            )
-            if changes:
-                logging.info("Dry run found the following changes:")
-                pprint(changes)
-            else:
-                logging.info("Dry run found no changes to be made.")
+    if dry_run:
+        changes = update_manager.dry_run(
+            source_table_collections=source_table_collections,
+            log_file=os.path.join(
+                get_deploy_logs_dir(), "update_all_source_table_schemas.log"
+            ),
+        )
+        if changes:
+            logging.info("Dry run found the following changes:")
+            pprint(changes)
         else:
-            update_manager.update_async(
-                source_table_collections=source_table_collections,
-                log_file=os.path.join(
-                    get_deploy_logs_dir(), "update_all_source_table_schemas.log"
-                ),
-                log_output=log_output,
-            )
-
-    interactive_prompt_retry_on_exception(
-        input_text="Exception encountered when updating source table schemas - retry?",
-        accepted_response_override="yes",
-        exit_on_cancel=True,
-        fn=_retry_fn,
-    )
+            logging.info("Dry run found no changes to be made.")
+    else:
+        update_manager.update_async(
+            source_table_collections=source_table_collections,
+            log_file=os.path.join(
+                get_deploy_logs_dir(), "update_all_source_table_schemas.log"
+            ),
+            log_output=log_output,
+        )
 
 
 def validate_externally_managed_table_schemata(

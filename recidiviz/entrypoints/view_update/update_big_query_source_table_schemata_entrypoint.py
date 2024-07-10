@@ -19,7 +19,7 @@ KubernetesPodOperator."""
 import argparse
 
 from recidiviz.entrypoints.entrypoint_interface import EntrypointInterface
-from recidiviz.tools.deploy.update_big_query_table_schemas import (
+from recidiviz.source_tables.update_big_query_table_schemas import (
     perform_bigquery_table_schema_update,
 )
 from recidiviz.utils.params import str_to_bool
