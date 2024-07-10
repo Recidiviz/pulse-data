@@ -35,7 +35,11 @@ columns:
   - name: Entered_Date
     description: Date modifier record entered into COMS
     field_type: datetime
+
 table_relationships:
   - foreign_table: COMS_Supervision_Statuses
     join_logic:
       - COMS_Supervision_Statuses.Supervision_Status_Id = COMS_Modifiers.Supervision_Status_Id
+  - foreign_table: ADH_OFFENDER
+    join_logic:
+      - ADH_OFFENDER.offender_number = COMS_Modifiers.Offender_Number
