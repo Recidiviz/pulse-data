@@ -134,6 +134,8 @@ state_sentencing_authority = Enum(
 )
 
 state_assessment_class = Enum(
+    state_enum_strings.state_assessment_class_education,
+    state_enum_strings.state_assessment_class_mental_health,
     state_enum_strings.state_assessment_class_risk,
     state_enum_strings.state_assessment_class_sex_offense,
     state_enum_strings.state_assessment_class_social,
@@ -147,14 +149,17 @@ state_assessment_type = Enum(
     state_enum_strings.state_assessment_type_caf,
     state_enum_strings.state_assessment_type_csra,
     state_enum_strings.state_assessment_type_cssm,
+    state_enum_strings.state_assessment_type_cmhs,
     state_enum_strings.state_assessment_type_compas,
     state_enum_strings.state_assessment_type_hiq,
+    state_enum_strings.state_assessment_type_icasa,
     state_enum_strings.state_assessment_type_j_soap,
     state_enum_strings.state_assessment_type_lsir,
     state_enum_strings.state_assessment_type_odara,
     state_enum_strings.state_assessment_type_oyas,
     state_enum_strings.state_assessment_type_pa_rst,
     state_enum_strings.state_assessment_type_psa,
+    state_enum_strings.state_assessment_type_saca,
     state_enum_strings.state_assessment_type_sorac,
     state_enum_strings.state_assessment_type_sotips,
     state_enum_strings.state_assessment_type_spin_w,
