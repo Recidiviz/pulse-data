@@ -183,16 +183,6 @@ function pre_deploy_configure_infrastructure {
     deploy_terraform_infrastructure "${PROJECT}" "${COMMIT_HASH}" "${DOCKER_IMAGE_TAG}" || exit_on_fail
 
     deploy_migrations "${PROJECT}" "${COMMIT_HASH}"
-
-    # Update the table schemas in BigQuery
-    echo "Updating BigQuery source table schemas to match code definitions"
-    verify_hash "$COMMIT_HASH"
-    run_cmd pipenv run python -m recidiviz.tools.deploy.update_big_query_table_schemas --project-id "${PROJECT}"
-
-    echo "Deploying views to test schema"
-    verify_hash "$COMMIT_HASH"
-    run_cmd pipenv run python -m recidiviz.tools.deploy.deploy_test_empty_views --project-id "${PROJECT}"
-
 }
 
 function check_running_in_pipenv_shell {

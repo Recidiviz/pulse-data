@@ -38,9 +38,6 @@ from recidiviz.source_tables.source_table_config import SourceTableCollection
 from recidiviz.tests.big_query.big_query_emulator_test_case import (
     BigQueryEmulatorTestCase,
 )
-from recidiviz.tools.deploy.deploy_test_empty_views import (
-    DEFAULT_TEMPORARY_TABLE_EXPIRATION,
-)
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.validation.views.view_config import (
@@ -48,6 +45,8 @@ from recidiviz.validation.views.view_config import (
 )
 from recidiviz.view_registry.datasets import VIEW_SOURCE_TABLE_DATASETS
 from recidiviz.view_registry.deployed_views import all_deployed_view_builders
+
+DEFAULT_TEMPORARY_TABLE_EXPIRATION = 60 * 60 * 1000  # 1 hour
 
 
 def _preprocess_views_to_load_to_emulator(

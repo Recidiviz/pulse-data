@@ -14,8 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Tests the recidiviz/tools/deploy/update_big_query_table_schemas.py file that issues updates to raw regional
-schemas"""
+"""Tests the recidiviz/source_tables/update_big_query_table_schemas.py file that issues updates to BigQuery schemas"""
 
 import pytest
 
@@ -29,12 +28,12 @@ from recidiviz.source_tables.dataflow_output_table_collector import (
 from recidiviz.source_tables.source_table_config import SourceTableCollection
 from recidiviz.source_tables.source_table_repository import SourceTableRepository
 from recidiviz.source_tables.source_table_update_manager import SourceTableUpdateManager
-from recidiviz.tests.big_query.big_query_emulator_test_case import (
-    BigQueryEmulatorTestCase,
-)
-from recidiviz.tools.deploy.update_big_query_table_schemas import (
+from recidiviz.source_tables.update_big_query_table_schemas import (
     collect_managed_source_table_collections,
     update_all_source_table_schemas,
+)
+from recidiviz.tests.big_query.big_query_emulator_test_case import (
+    BigQueryEmulatorTestCase,
 )
 
 
@@ -81,7 +80,7 @@ class UpdateBigQueryTableSchemasTest(BigQueryEmulatorTestCase):
         )
 
         # If this test fails due to a newly added table, re-run it with `pytest --snapshot-update` to resolve:
-        # pytest recidiviz/tests/tools/deploy/update_big_query_table_schemas_test.py --snapshot-update
+        # pytest recidiviz/tests/source_tables/update_big_query_table_schemas_test.py --snapshot-update
         self.snapshot.assert_match(  # type: ignore[attr-defined]
             build_bq_snapshot(bq_client=self.bq_client),
             name="test_create_dataflow_output_source_tables_matches_snapshot.json",
