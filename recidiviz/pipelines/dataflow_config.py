@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Config for Dataflow pipelines and BigQuery storage of metric output."""
+import datetime
 from typing import Dict, List, Type
 
 from recidiviz.pipelines.metrics.incarceration.metrics import (
@@ -52,6 +53,12 @@ from recidiviz.pipelines.metrics.utils.metric_utils import (
 from recidiviz.pipelines.metrics.violation.metrics import (
     ViolationMetricType,
     ViolationWithResponseMetric,
+)
+from recidiviz.pipelines.supplemental.us_ix_case_note_extracted_entities.us_ix_note_content_text_analysis_configuration import (
+    UsIxNoteContentTextEntity,
+)
+from recidiviz.pipelines.supplemental.us_ix_case_note_extracted_entities.us_ix_note_title_text_analysis_configuration import (
+    UsIxNoteTitleTextEntity,
 )
 
 # Pipelines that are always run for all dates.
@@ -142,3 +149,28 @@ DATAFLOW_TABLES_TO_METRIC_TYPES: Dict[str, RecidivizMetricType] = {
 
 # A list of fields on which to cluster the Dataflow metrics tables
 METRIC_CLUSTERING_FIELDS = ["state_code", "year"]
+
+
+US_IX_CASE_NOTE_MATCHED_ENTITIES_TABLE_NAME = "us_ix_case_note_matched_entities"
+US_IX_CASE_NOTE_DEFAULT_ENTITY_MAPPING = {
+    entity.name.lower(): False
+    for entity in UsIxNoteTitleTextEntity
+    if entity != UsIxNoteTitleTextEntity.REVOCATION_INCLUDE
+} | {
+    entity.name.lower(): False
+    for entity in UsIxNoteContentTextEntity
+    if entity != UsIxNoteContentTextEntity.REVOCATION_INCLUDE
+}
+
+DATAFLOW_SUPPLEMENTAL_TABLE_TO_TABLE_FIELDS: dict[str, dict[str, Type]] = {
+    US_IX_CASE_NOTE_MATCHED_ENTITIES_TABLE_NAME: {
+        "person_id": int,
+        "person_external_id": str,
+        "state_code": str,
+        "OffenderNoteId": str,
+        "NoteDate": datetime.date,
+        "StaffId": str,
+        "Details": str,
+        **{entity: bool for entity in US_IX_CASE_NOTE_DEFAULT_ENTITY_MAPPING.keys()},
+    }
+}

@@ -20,7 +20,7 @@ local run."""
 import datetime
 import re
 from copy import deepcopy
-from typing import Any, Dict, Type
+from typing import Dict, Type
 
 import apache_beam as beam
 from apache_beam import Pipeline
@@ -31,6 +31,11 @@ from recidiviz.big_query.big_query_query_provider import BigQueryQueryProvider
 from recidiviz.common.constants.states import StateCode
 from recidiviz.common.text_analysis import TextAnalyzer
 from recidiviz.persistence.entity.serialization import json_serializable_dict
+from recidiviz.pipelines.dataflow_config import (
+    DATAFLOW_SUPPLEMENTAL_TABLE_TO_TABLE_FIELDS,
+    US_IX_CASE_NOTE_DEFAULT_ENTITY_MAPPING,
+    US_IX_CASE_NOTE_MATCHED_ENTITIES_TABLE_NAME,
+)
 from recidiviz.pipelines.supplemental.base_supplemental_dataset_pipeline import (
     SupplementalDatasetPipeline,
 )
@@ -78,23 +83,13 @@ class UsIxCaseNoteExtractedEntitiesPipeline(SupplementalDatasetPipeline):
 
     @classmethod
     def table_id(cls) -> str:
-        return "us_ix_case_note_matched_entities"
+        return US_IX_CASE_NOTE_MATCHED_ENTITIES_TABLE_NAME
 
     @classmethod
     def table_fields(cls) -> Dict[str, Type]:
-        fields_from_case_updates: Dict[str, Type[Any]] = {
-            "person_id": int,
-            "person_external_id": str,
-            "state_code": str,
-            "OffenderNoteId": str,
-            "NoteDate": datetime.date,
-            "StaffId": str,
-            "Details": str,
-        }
-        default_entity_mapping_types: Dict[str, Type] = {
-            entity: bool for entity in cls.default_entity_mapping().keys()
-        }
-        return {**fields_from_case_updates, **default_entity_mapping_types}
+        return DATAFLOW_SUPPLEMENTAL_TABLE_TO_TABLE_FIELDS[
+            US_IX_CASE_NOTE_MATCHED_ENTITIES_TABLE_NAME
+        ]
 
     @property
     def note_title_text_analyzer(self) -> TextAnalyzer:
@@ -173,15 +168,7 @@ class UsIxCaseNoteExtractedEntitiesPipeline(SupplementalDatasetPipeline):
 
     @classmethod
     def default_entity_mapping(cls) -> Dict[str, bool]:
-        return {
-            entity.name.lower(): False
-            for entity in UsIxNoteTitleTextEntity
-            if entity != UsIxNoteTitleTextEntity.REVOCATION_INCLUDE
-        } | {
-            entity.name.lower(): False
-            for entity in UsIxNoteContentTextEntity
-            if entity != UsIxNoteContentTextEntity.REVOCATION_INCLUDE
-        }
+        return US_IX_CASE_NOTE_DEFAULT_ENTITY_MAPPING
 
     def run_pipeline(self, p: Pipeline) -> None:
         state_code = StateCode(self.pipeline_parameters.state_code)

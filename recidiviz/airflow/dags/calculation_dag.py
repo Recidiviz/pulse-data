@@ -102,6 +102,21 @@ def update_managed_views_operator() -> RecidivizKubernetesPodOperator:
     )
 
 
+def execute_update_big_query_table_schemata(
+    dry_run: bool,
+) -> RecidivizKubernetesPodOperator:
+    task_id = "update_big_query_table_schemata"
+    return build_kubernetes_pod_task(
+        task_id=task_id,
+        container_name=task_id,
+        arguments=[
+            "--entrypoint=UpdateBigQuerySourceTableSchemataEntrypoint",
+            f"--dry-run={dry_run}",
+        ],
+        trigger_rule=TriggerRule.ALL_DONE,
+    )
+
+
 def refresh_bq_dataset_operator(
     schema_type: SchemaType,
 ) -> RecidivizKubernetesPodOperator:
@@ -329,6 +344,9 @@ def create_calculation_dag() -> None:
     3. Trigger BigQuery exports for each state and other datasets."""
 
     update_state_dataset = execute_update_state()
+    update_big_query_table_schemata = execute_update_big_query_table_schemata(
+        dry_run=False
+    )
 
     with TaskGroup("bq_refresh") as bq_refresh:
         operations_bq_refresh_completion = refresh_bq_dataset_operator(
@@ -339,7 +357,7 @@ def create_calculation_dag() -> None:
         )
 
     initialize_dag = initialize_calculation_dag_group()
-    initialize_dag >> bq_refresh
+    initialize_dag >> update_big_query_table_schemata >> bq_refresh
 
     with TaskGroup(group_id="ingest") as ingest_task_group:
         ingest_pipelines_by_state = ingest_pipeline_branches_by_state_code()
@@ -347,7 +365,12 @@ def create_calculation_dag() -> None:
             ingest_pipelines_by_state, select_state_code_parameter_branch
         )
 
-    initialize_dag >> ingest_task_group >> update_state_dataset
+    (
+        initialize_dag
+        >> update_big_query_table_schemata
+        >> ingest_task_group
+        >> update_state_dataset
+    )
 
     update_all_views = update_managed_views_operator()
 

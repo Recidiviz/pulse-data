@@ -57,6 +57,9 @@ from recidiviz.entrypoints.validation.validate import ValidationEntrypoint
 from recidiviz.entrypoints.view_update.update_all_managed_views import (
     UpdateAllManagedViewsEntrypoint,
 )
+from recidiviz.entrypoints.view_update.update_big_query_source_table_schemata_entrypoint import (
+    UpdateBigQuerySourceTableSchemataEntrypoint,
+)
 from recidiviz.monitoring.context import get_current_trace_id
 from recidiviz.monitoring.flask_insrumentation import instrument_common_libraries
 from recidiviz.monitoring.providers import (
@@ -73,6 +76,7 @@ ENTRYPOINTS: Set[Type[EntrypointInterface]] = {
     MetricExportTimelinessEntrypoint,
     RawDataChunkNormalizationEntrypoint,
     RawDataFileChunkingEntrypoint,
+    UpdateBigQuerySourceTableSchemataEntrypoint,
     UpdateNormalizedStateEntrypoint,
     UpdateStateEntrypoint,
     ValidationEntrypoint,

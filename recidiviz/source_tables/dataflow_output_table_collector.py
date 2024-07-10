@@ -2,17 +2,14 @@
 
 import attr
 
+from recidiviz.big_query.big_query_utils import schema_field_for_type
 from recidiviz.calculator.query.state.dataset_config import DATAFLOW_METRICS_DATASET
 from recidiviz.pipelines import dataflow_config
 from recidiviz.pipelines.pipeline_names import (
     METRICS_PIPELINE_NAME,
     SUPPLEMENTAL_PIPELINE_NAME,
 )
-from recidiviz.pipelines.supplemental.base_supplemental_dataset_pipeline import (
-    SupplementalDatasetPipeline,
-)
 from recidiviz.pipelines.supplemental.dataset_config import SUPPLEMENTAL_DATA_DATASET
-from recidiviz.pipelines.utils.pipeline_run_utils import collect_all_pipeline_classes
 from recidiviz.source_tables.ingest_pipeline_output_table_collector import (
     build_ingest_pipeline_output_source_table_collections,
 )
@@ -56,12 +53,18 @@ def get_dataflow_output_source_table_collections() -> list[SourceTableCollection
         update_config=SourceTableCollectionUpdateConfig.regenerable(),
         dataset_id=SUPPLEMENTAL_DATA_DATASET,
     )
-    for pipeline in collect_all_pipeline_classes():
-        if issubclass(pipeline, SupplementalDatasetPipeline):
-            supplemental_data.add_source_table(
-                table_id=pipeline.table_id(),
-                schema_fields=pipeline.bq_schema_for_table(),
-            )
+
+    for (
+        table_id,
+        table_fields,
+    ) in dataflow_config.DATAFLOW_SUPPLEMENTAL_TABLE_TO_TABLE_FIELDS.items():
+        supplemental_data.add_source_table(
+            table_id=table_id,
+            schema_fields=[
+                schema_field_for_type(field_name=field_name, field_type=field_type)
+                for field_name, field_type in table_fields.items()
+            ],
+        )
 
     return [
         dataflow_metrics,
