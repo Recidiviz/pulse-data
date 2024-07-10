@@ -359,12 +359,16 @@ class TestMetricSettingInterface(JusticeCountsDatabaseTestCase):
             session.flush()
             session.refresh(supervision_agency)
             session.refresh(law_enforcement_agency)
-            supervision_agency_metrics = MetricSettingInterface.get_agency_metric_interfaces_from_metric_settings(
-                session=session, agency=supervision_agency
+            supervision_agency_metrics = (
+                MetricSettingInterface.get_agency_metric_interfaces(
+                    session=session, agency=supervision_agency
+                )
             )
 
-            law_enforcement_agency_metrics = MetricSettingInterface.get_agency_metric_interfaces_from_metric_settings(
-                session=session, agency=law_enforcement_agency
+            law_enforcement_agency_metrics = (
+                MetricSettingInterface.get_agency_metric_interfaces(
+                    session=session, agency=law_enforcement_agency
+                )
             )
 
             for metric in supervision_agency_metrics:
@@ -389,8 +393,10 @@ class TestMetricSettingInterface(JusticeCountsDatabaseTestCase):
             )
             session.commit()
 
-            supervision_agency_metrics = MetricSettingInterface.get_agency_metric_interfaces_from_metric_settings(
-                session=session, agency=supervision_agency
+            supervision_agency_metrics = (
+                MetricSettingInterface.get_agency_metric_interfaces(
+                    session=session, agency=supervision_agency
+                )
             )
             for metric in supervision_agency_metrics:
                 # All metrics except for funding should have a

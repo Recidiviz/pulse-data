@@ -246,25 +246,23 @@ class MetricSettingInterface:
     def get_agency_metric_interfaces(
         session: Session,
         agency: schema.Agency,
-        agency_datapoints: Optional[List[schema.Datapoint]] = None,
-    ) -> List[MetricInterface]:
-        """Gets an agency metric interface from the MetricSetting table.
-        Note: Until we start the migration process, this method will read agency metrics
-        from the Datapoint table."""
-        return DatapointInterface.get_metric_settings_by_agency(
-            session=session, agency=agency, agency_datapoints=agency_datapoints
-        )
-
-    @staticmethod
-    def get_agency_metric_interfaces_from_metric_settings(
-        session: Session,
-        agency: schema.Agency,
         agency_metric_settings: Optional[List[schema.MetricSetting]] = None,
     ) -> List[MetricInterface]:
-        """Gets an agency metric interface from the MetricSetting table.
+        """
+        Gets an agency's metric interfaces from the MetricSetting table.
 
-        TODO(#28469): Change the name to simply get_agency_metric_interfaces() once we
-        deprecate the agency datapoints.
+        If a metric applies to an agency but does not exist in the MetricSetting table,
+        return an empty MetricInterface for that metric.
+
+        Performs post-processing on the stored_metric_interfaces. See post_process_storage_json()
+        for post-processing details.
+
+        Parameters:
+        - session (Session): The SQLAlchemy session.
+        - agency (Agency): The agency for which to get metric interfaces.
+        - agency_metric_settings (List[MetricSetting]): If provided, this set of
+            MetricSettings will be used instead of querying the database.
+            Post-processing steps are then applied to the provided metric settings.
         """
         if agency_metric_settings is None:
             agency_metric_settings = (
@@ -298,16 +296,24 @@ class MetricSettingInterface:
     def get_metric_key_to_metric_interface(
         session: Session,
         agency: schema.Agency,
-        agency_datapoints: Optional[List[schema.Datapoint]] = None,
+        metric_interfaces: Optional[List[MetricInterface]] = None,
     ) -> Dict[str, MetricInterface]:
         """Create a map of all metric keys to MetricInterfaces that
-        belong to an agency."""
+        belong to an agency.
 
-        metric_interfaces = MetricSettingInterface.get_agency_metric_interfaces(
-            session=session,
-            agency=agency,
-            agency_datapoints=agency_datapoints,
-        )
+        Parameters:
+        - session: The SQLAlchemy session.
+        - agency: The agency for which to get metric interfaces.
+        - metric_interfaces: If provided, this list of MetricInterfaces will be used
+            instead of querying the database. The list of metric_interfaces MUST be
+            obtained from a call to MetricSettingInterface.get_agency_metric_interfaces()
+            since this method applies important post-processing steps to the interfaces.
+        """
+        if metric_interfaces is None:
+            metric_interfaces = MetricSettingInterface.get_agency_metric_interfaces(
+                session=session,
+                agency=agency,
+            )
         metric_key_to_metric_interface = {
             metric_interface.key: metric_interface
             for metric_interface in metric_interfaces

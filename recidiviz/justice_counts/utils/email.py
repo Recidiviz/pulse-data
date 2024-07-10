@@ -30,7 +30,6 @@ from recidiviz.justice_counts.agency import AgencyInterface
 from recidiviz.justice_counts.agency_user_account_association import (
     AgencyUserAccountAssociationInterface,
 )
-from recidiviz.justice_counts.datapoint import DatapointInterface
 from recidiviz.justice_counts.exceptions import JusticeCountsBulkUploadException
 from recidiviz.justice_counts.metrics.metric_definition import MetricDefinition
 from recidiviz.justice_counts.metrics.metric_disaggregation_data import (
@@ -512,16 +511,11 @@ def get_missing_metrics(
         today=today,
     )
 
-    metric_setting_datapoints = DatapointInterface.get_agency_datapoints(
-        session=session, agency_id=agency.id
-    )
-
     (
         system_to_missing_monthly_metrics,
         date_range_to_system_to_missing_annual_metrics,
     ) = _get_missing_metrics_by_system(
         session=session,
-        agency_datapoints=metric_setting_datapoints,
         reports=(
             [latest_monthly_report] + latest_annual_reports
             if latest_monthly_report is not None
@@ -539,7 +533,6 @@ def get_missing_metrics(
 
 def _get_missing_metrics_by_system(
     session: Session,
-    agency_datapoints: List[schema.Datapoint],
     reports: List[schema.Report],
     is_superagency: bool,
 ) -> Tuple[
@@ -581,7 +574,6 @@ def _get_missing_metrics_by_system(
         report_metrics = ReportInterface.get_metrics_by_report(
             session=session,
             report=report,
-            agency_datapoints=agency_datapoints,
             is_superagency=is_superagency,
         )
 
