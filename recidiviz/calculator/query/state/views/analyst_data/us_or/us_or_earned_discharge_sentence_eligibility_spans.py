@@ -39,6 +39,7 @@ US_OR_EARNED_DISCHARGE_SENTENCE_ELIGIBILITY_SPANS_QUERY_TEMPLATE = f"""
             NULL AS served_half_of_sentence,
             NULL AS statute,
             NULL AS no_convictions_since_sentence_start_date,
+            NULL AS in_state_sentence,
         FROM `{{project_id}}.{{analyst_dataset}}.us_or_sentence_imposition_date_eligible`
         UNION ALL
         SELECT * EXCEPT(meets_criteria),
@@ -47,6 +48,7 @@ US_OR_EARNED_DISCHARGE_SENTENCE_ELIGIBILITY_SPANS_QUERY_TEMPLATE = f"""
             NULL AS served_half_of_sentence,
             NULL AS statute,
             NULL AS no_convictions_since_sentence_start_date,
+            NULL AS in_state_sentence,
         FROM `{{project_id}}.{{analyst_dataset}}.us_or_served_6_months_supervision`
         UNION ALL
         SELECT * EXCEPT(meets_criteria),
@@ -55,6 +57,7 @@ US_OR_EARNED_DISCHARGE_SENTENCE_ELIGIBILITY_SPANS_QUERY_TEMPLATE = f"""
             meets_criteria AS served_half_of_sentence,
             NULL AS statute,
             NULL AS no_convictions_since_sentence_start_date,
+            NULL AS in_state_sentence,
         FROM `{{project_id}}.{{analyst_dataset}}.us_or_served_half_sentence`
         UNION ALL
         SELECT * EXCEPT(meets_criteria),
@@ -63,6 +66,7 @@ US_OR_EARNED_DISCHARGE_SENTENCE_ELIGIBILITY_SPANS_QUERY_TEMPLATE = f"""
             NULL AS served_half_of_sentence,
             meets_criteria AS statute,
             NULL AS no_convictions_since_sentence_start_date,
+            NULL AS in_state_sentence,
         FROM `{{project_id}}.{{analyst_dataset}}.us_or_statute_eligible`
         UNION ALL
         SELECT * EXCEPT(meets_criteria),
@@ -71,7 +75,17 @@ US_OR_EARNED_DISCHARGE_SENTENCE_ELIGIBILITY_SPANS_QUERY_TEMPLATE = f"""
             NULL AS served_half_of_sentence,
             NULL AS statute,
             meets_criteria AS no_convictions_since_sentence_start_date,
+            NULL AS in_state_sentence,
         FROM `{{project_id}}.{{analyst_dataset}}.us_or_no_convictions_since_sentence_start`
+        UNION ALL
+        SELECT * EXCEPT(meets_criteria),
+            NULL AS sentence_date,
+            NULL AS served_6_months,
+            NULL AS served_half_of_sentence,
+            NULL AS statute,
+            NULL AS no_convictions_since_sentence_start_date,
+            meets_criteria AS in_state_sentence,
+        FROM `{{project_id}}.{{analyst_dataset}}.us_or_in_state_sentence`
     ),
     {create_sub_sessions_with_attributes("sentence_subcriteria_eligibility_spans", index_columns=["state_code", "person_id", "sentence_id"])},
     sub_sessions_with_attributes_condensed AS (
@@ -91,6 +105,7 @@ US_OR_EARNED_DISCHARGE_SENTENCE_ELIGIBILITY_SPANS_QUERY_TEMPLATE = f"""
             COALESCE(LOGICAL_AND(served_half_of_sentence), FALSE) AS meets_criteria_served_half_of_sentence,
             COALESCE(LOGICAL_AND(statute), FALSE) AS meets_criteria_statute,
             COALESCE(LOGICAL_AND(no_convictions_since_sentence_start_date), FALSE) AS meets_criteria_no_convictions_since_sentence_start_date,
+            COALESCE(LOGICAL_AND(in_state_sentence), FALSE) AS meets_criteria_in_state_sentence,
         FROM sub_sessions_with_attributes
         GROUP BY 1, 2, 3, 4, 5
     ),
@@ -106,18 +121,20 @@ US_OR_EARNED_DISCHARGE_SENTENCE_ELIGIBILITY_SPANS_QUERY_TEMPLATE = f"""
                 AND meets_criteria_served_half_of_sentence
                 AND meets_criteria_statute
                 AND meets_criteria_no_convictions_since_sentence_start_date
+                AND meets_criteria_in_state_sentence
             ) AS is_eligible,
             meets_criteria_sentence_date,
             meets_criteria_served_6_months,
             meets_criteria_served_half_of_sentence,
             meets_criteria_statute,
             meets_criteria_no_convictions_since_sentence_start_date,
+            meets_criteria_in_state_sentence,
         FROM sub_sessions_with_attributes_condensed
     ),
     sentence_eligibility_spans_aggregated AS (
         {aggregate_adjacent_spans("sentence_eligibility_spans",
                                   index_columns=['state_code', 'person_id', 'sentence_id'],
-                                  attribute=['is_eligible', 'meets_criteria_sentence_date', 'meets_criteria_served_6_months', 'meets_criteria_served_half_of_sentence', 'meets_criteria_statute', 'meets_criteria_no_convictions_since_sentence_start_date'])}
+                                  attribute=['is_eligible', 'meets_criteria_sentence_date', 'meets_criteria_served_6_months', 'meets_criteria_served_half_of_sentence', 'meets_criteria_statute', 'meets_criteria_no_convictions_since_sentence_start_date', 'meets_criteria_in_state_sentence'])}
     )
     SELECT
         * EXCEPT (session_id, date_gap_id)
