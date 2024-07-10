@@ -38,6 +38,7 @@ from recidiviz.aggregated_metrics.models.aggregated_metric import (
     EventDistinctUnitCountMetric,
     EventValueMetric,
     MiscAggregatedMetric,
+    SpanDistinctUnitCountMetric,
     SumSpanDaysMetric,
 )
 from recidiviz.calculator.query.state.views.analyst_data.models.metric_unit_of_analysis_type import (
@@ -96,7 +97,7 @@ def _generate_lookml_measure_fragment(
             f"SAFE_DIVIDE(SUM(${{TABLE}}.{metric.name} * ${{TABLE}}.{metric.event_count_metric.name}), "
             f"SUM(${{TABLE}}.{metric.event_count_metric.name}))"
         )
-    if isinstance(metric, EventDistinctUnitCountMetric):
+    if isinstance(metric, (EventDistinctUnitCountMetric, SpanDistinctUnitCountMetric)):
         return f"AVG(${{TABLE}}.{metric.name})"
     return "NULL"
 
