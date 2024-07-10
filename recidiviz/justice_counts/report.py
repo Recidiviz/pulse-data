@@ -397,7 +397,7 @@ class ReportInterface:
     def get_metrics_by_report(
         session: Session,
         report: schema.Report,
-        agency_datapoints: Optional[List[schema.Datapoint]] = None,
+        metric_interfaces: Optional[List[MetricInterface]] = None,
         is_superagency: Optional[bool] = False,
     ) -> List[MetricInterface]:
         """Given a report, determine all MetricDefinitions that must be populated
@@ -416,10 +416,21 @@ class ReportInterface:
         4. Return a list of MetricInterfaces. If the agency has not filled out data for a
            metric, its values will be None; otherwise they will be populated from the data
            already stored in our database.
+
+        Parameters:
+        - session: The SQLAlchemy session.
+        - report: The report for which to get metric interfaces.
+        - is_superagency: For superagencies, only include metrics that are
+            specific to superagencies.
+        - metric_interfaces: If provided, this list of
+            MetricInterfaces will be used instead of querying the database. The list of
+            metric_interfaces MUST be obtained from a call to
+            MetricSettingInterface.get_agency_metric_interfaces() since this method
+            applies important post-processing steps to the interfaces.
         """
-        if agency_datapoints is None:
-            agency_datapoints = DatapointInterface.get_agency_datapoints(
-                session=session, agency_id=report.source_id
+        if metric_interfaces is None:
+            metric_interfaces = MetricSettingInterface.get_agency_metric_interfaces(
+                session=session, agency=report.agency
             )
         # Gets all metric interfaces for the agency and populates them with report
         # datapoints if data has already been reported for the metrics on this report.
@@ -429,7 +440,7 @@ class ReportInterface:
             metric_key_to_metric_interface=MetricSettingInterface.get_metric_key_to_metric_interface(
                 session=session,
                 agency=report.agency,
-                agency_datapoints=agency_datapoints,
+                metric_interfaces=metric_interfaces,
             ),
         )
 

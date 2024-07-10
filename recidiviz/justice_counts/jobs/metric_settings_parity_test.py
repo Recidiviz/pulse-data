@@ -45,7 +45,7 @@ import argparse
 import logging
 import sys
 from collections import defaultdict
-from typing import Any
+from typing import Any, Dict, List
 
 from deepdiff import DeepDiff
 from sqlalchemy import false
@@ -117,7 +117,9 @@ def parity_test(
     # Fetch all agency metric settings.
     agency_metric_settings = session.query(schema.MetricSetting).all()
     # Group agency metric settings by agency id.
-    agency_id_to_metric_settings = defaultdict(list)
+    agency_id_to_metric_settings: Dict[int, List[schema.MetricSetting]] = defaultdict(
+        list
+    )
     for setting in agency_metric_settings:
         agency_id_to_metric_settings[setting.agency_id].append(setting)
 
@@ -138,7 +140,7 @@ def parity_test(
         }
         # Get metric interfaces stored in the metric settings table.
         metric_setting_metric_interfaces = (
-            MetricSettingInterface.get_agency_metric_interfaces_from_metric_settings(
+            MetricSettingInterface.get_agency_metric_interfaces(
                 session=session,
                 agency=agency,
                 agency_metric_settings=agency_id_to_metric_settings[agency.id],

@@ -727,15 +727,15 @@ def get_api_blueprint(
             latest_annual_report_definition_json = {}
             latest_annual_reports_json = {}
 
-            agency_datapoints = DatapointInterface.get_agency_datapoints(
-                session=current_session, agency_id=agency_id
+            metric_interfaces = MetricSettingInterface.get_agency_metric_interfaces(
+                session=current_session, agency=agency
             )
 
             if latest_monthly_report is not None:
                 latest_monthly_report_metrics = ReportInterface.get_metrics_by_report(
                     session=current_session,
                     report=latest_monthly_report,
-                    agency_datapoints=agency_datapoints,
+                    metric_interfaces=metric_interfaces,
                 )
                 latest_monthly_report_definition_json = (
                     ReportInterface.to_json_response(
@@ -758,7 +758,7 @@ def get_api_blueprint(
                 latest_annual_report_metrics = ReportInterface.get_metrics_by_report(
                     session=current_session,
                     report=latest_annual_report,
-                    agency_datapoints=agency_datapoints,
+                    metric_interfaces=metric_interfaces,
                 )
                 latest_annual_report_definition_json = ReportInterface.to_json_response(
                     report=latest_annual_report,
@@ -775,14 +775,9 @@ def get_api_blueprint(
                 ] = latest_annual_report_metrics_json
                 latest_annual_reports_json[month] = latest_annual_report_definition_json
 
-            agency_metrics = MetricSettingInterface.get_agency_metric_interfaces(
-                session=current_session,
-                agency=agency,
-                agency_datapoints=agency_datapoints,
-            )
             agency_metrics_json = [
                 metric.to_json(entry_point=DatapointGetRequestEntryPoint.METRICS_TAB)
-                for metric in agency_metrics
+                for metric in metric_interfaces
             ]
 
             return jsonify(
@@ -949,14 +944,10 @@ def get_api_blueprint(
 
             raise_if_user_is_not_in_agency(user=user, agency_id=report.source_id)
 
-            agency_datapoints = DatapointInterface.get_agency_datapoints(
-                session=current_session, agency_id=report.source_id
-            )
             report_metrics = ReportInterface.get_metrics_by_report(
                 session=current_session,
                 report=report,
                 is_superagency=is_superagency,
-                agency_datapoints=agency_datapoints,
             )
             editor_id_to_json = (
                 AgencyUserAccountAssociationInterface.get_editor_id_to_json(
