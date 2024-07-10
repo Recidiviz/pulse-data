@@ -32,7 +32,7 @@ US_IX_SENTENCING_CLIENT_TEMPLATE = """
     caseIds AS (
         SELECT DISTINCT
             OffenderId,
-            STRING_AGG(PSIReportId, ',' ORDER BY UpdateDate) AS caseIds
+            STRING_AGG(CONCAT('"',PSIReportId,'"'), ',' ORDER BY UpdateDate) AS case_ids
         FROM  `{project_id}.{us_ix_raw_data_up_to_date_dataset}.com_PSIReport_latest`
         GROUP BY OffenderId
     )
@@ -43,7 +43,7 @@ US_IX_SENTENCING_CLIENT_TEMPLATE = """
         person.gender,
         UPPER(loc.LocationName) AS county,
         "US_IX" AS state_code,
-        CONCAT('[', caseIds,']') AS caseIds
+        CONCAT('[', case_ids,']') AS case_ids
     FROM `{project_id}.{us_ix_raw_data_up_to_date_dataset}.com_PSIReport_latest` psi
     LEFT JOIN `{project_id}.{normalized_state_dataset}.state_person_external_id`  id 
         ON psi.OffenderId = id.external_id and id_type = 'US_IX_DOC'

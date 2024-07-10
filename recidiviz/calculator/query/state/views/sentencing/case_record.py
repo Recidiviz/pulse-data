@@ -66,7 +66,7 @@ SENTENCING_CASE_RECORD_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
         "completion_date",
         "sentence_date",
         "assigned_date",
-        "county_name",
+        "county",
         "lsir_score",
         "lsir_level",
         "report_type",

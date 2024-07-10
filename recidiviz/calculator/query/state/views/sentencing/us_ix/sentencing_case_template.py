@@ -28,7 +28,7 @@ WITH
         CompletedDate AS completion_date,
         SentenceDate AS sentence_date,
         AssignedDate AS assigned_date,
-        loc.LocationName AS county_name,
+        loc.LocationName AS county,
         PSIReportId AS external_id,
         id.person_id
     FROM 
@@ -98,9 +98,9 @@ WITH
             report_type = "PSI File Review w/LSI Assigned"
                     AND assessment_date >= date(assigned_date) 
                     AND assessment_date <= date(completion_date)
-                THEN assessment_score
+                THEN CAST(assessment_score AS INT64)
             WHEN report_type = "PSI File Review Assigned" 
-                THEN assessment_score
+                THEN CAST(assessment_score AS INT64)
             ELSE NULL
         END AS lsir_score,
          CASE
