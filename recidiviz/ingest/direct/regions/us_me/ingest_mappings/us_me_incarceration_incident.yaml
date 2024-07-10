@@ -1,0 +1,210 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_IncarcerationIncident` to
+#  corresponding Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  - Cis_100_Client_Id
+  - Incident_Id
+  - Year_Num
+  - Incident_Date
+  - Location_name
+  - Location_Tx
+  - E_Violation_Disposition_Type_Desc
+  - E_Violation_Disposition_Class_Desc
+  - Summary_Tx
+  - HEARING_ACTUALLY_HELD_DATE
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: Cis_100_Client_Id
+          id_type: $literal("US_ME_DOC")
+    incarceration_incidents:
+      - StateIncarcerationIncident:
+          external_id:
+            $concat:
+              $values:
+                - Cis_100_Client_Id
+                - Incident_Id
+                - Year_Num
+          incident_details: Summary_Tx
+          incident_date: Incident_Date
+          facility: Location_name
+          location_within_facility: Location_Tx
+          incident_type:
+            $enum_mapping:
+              $raw_text: E_Violation_Disposition_Type_Desc
+              $mappings:
+                StateIncarcerationIncidentType.CONTRABAND:
+                  - Alcohol
+                  - Animal
+                  - Body Fluid
+                  - Body Fluid, Other
+                  - Body Piercing or Tattooing
+                  - Canine
+                  - Currency
+                  - Currency, Giving or Receiving
+                  - Currency, Possession of Use
+                  - Deadly Instrument
+                  - Electronic Communication Devices
+                  - Equipment
+                  - Evidence
+                  - Giving or Receiving
+                  - Identification
+                  - Possession
+                  - Possession of Major Contraband
+                  - Possession, Alcohol, Marijuana, Inhalant, or Drug
+                  - Possession, Contraband
+                  - Possession, Other
+                  - Mail
+                  - Medication
+                  - Money
+                  - Tablet
+                  - Telephone
+                  - Tobacco
+                  - Trafficking
+                  - Trafficking Marijuana
+                  - Trafficking, Alcohol, Marijuana, Inhalant, or Drug
+                StateIncarcerationIncidentType.DISORDERLY_CONDUCT:
+                  - Damage or Misuse of Property
+                  - Damage/Destruction over $50 or Misuse of Property
+                  - Disorderliness
+                  - Disorderly Behavior
+                  - Disregard of Orders, Encouraging
+                  - Desrespectful Behavior
+                  - Disturbance
+                  - Disturbance, Major
+                  - Exposure
+                  - Failure to Follow Directive or Rule
+                  - Failure to Maintain Cleanliness
+                  - Fire (Intentional)
+                  - Fire (Negligence)
+                  - Fire, Intentional
+                  - Gambling
+                  - Gambling or Bribery
+                  - Gang-Related Activity or Article
+                  - Gang or Security Threat Group Affiliation
+                  - Harassment
+                  - Harassment, General
+                  - Harassment, Specific
+                  - Hostage Taking
+                  - Hoarding
+                  - Horesplay
+                  - Housing Regulations
+                  - Influencing Staff
+                  - Martial Arts
+                  - Order, Negligent Failure to Obey
+                  - Order, Refusing to Obey
+                  - Prohibited Contact, Other Than a Current Victim
+                  - Provocation
+                  - Rioting
+                  - Safety
+                  - Security Threat Group Affiliation
+                  - Sexual Contact
+                  - Social Networking
+                  - Tampering
+                  - Tattooing
+                  - Tempering with Safety/Security Device/Disobedience
+                  - Theft ($25 or less)
+                  - Theft, $25 or less
+                  - Theft (More than $25)
+                  - Theft, More than $25
+                  - Threatening
+                  - Throwing
+                  - Unauthorized use of Equipment
+                  - Violation of Criminal Law
+                  - Violation of Resident Handbook Procedures
+                StateIncarcerationIncidentType.ESCAPE:
+                  - Escape
+                  - Escape Tool
+                  - Security Fence, Escape, or Furlough Violation
+                StateIncarcerationIncidentType.INTERNAL_UNKNOWN:
+                  - Intake
+                  - Search or Scan
+                StateIncarcerationIncidentType.MINOR_OFFENSE:
+                  - Absence
+                  - Arson or Possession of Arson Item
+                  - Being in Another Resident's Room
+                  - Being Out of Place
+                  - Bribery
+                  - Communicating
+                  - Community Release Violation
+                  - Business
+                  - Business or Commerce
+                  - Count
+                  - Count, Interference
+                  - Count, Other
+                  - Counterfeiting
+                  - Debt
+                  - Deception
+                  - Demonstrating
+                  - Demonstration
+                  - Destruction of Property, $50 or less
+                  - Destruction of Property ($50 or less)
+                  - Destruction of Property, More than $50
+                  - Destruction of Property. (More than $50)
+                  - Dishonesty
+                  - Disturbance, Minor
+                  - Disturbance, Property Damage, or Personal Injury
+                  - DNA Sample, Refusing to Provide
+                  - Extortion
+                  - False Statement
+                  - False Statement (Force or Duress)
+                  - Fire, Negligent
+                  - Hygiene
+                  - Interference
+                  - Leaving a Place of Assignment
+                  - Noises
+                  - Out of Place
+                  - Positive Drug or Alcohol Test Result/Refusal
+                  - Prohibited Contact, Current Victim
+                  - Repeated Minor Misconduct
+                  - Running
+                  - Smoking
+                  - Soliciting
+                  - Soliciting or Sending
+                  - Test, Negative Drug Test
+                  - Test, Positive Alcohol Inhalant, Marijuana, or Drug Test
+                  - Test, Refusing to Take Alcohol Test
+                  - Test, Refusing to Take Alcohol or Drug Test
+                  - Test, Refusing to Take Alcohol, Inhalant, Marijuana, or Drug Test
+                  - Test, Refusing to Take Drug Test
+                  - Test, Tampering with Alcohol, Inhalant, Marijuana or Drug Test
+                  - Under the Influence or Use of Alcohol, Marijuana, Inhalant, or Drug
+                  - Under the Influence or Taking of Substance
+                  - Visiting
+                  - Waste
+                  - Waste ($10 or less)
+                  - Waste (More than $10)
+                  - Work, Refusal
+                  - Written Communication
+                StateIncarcerationIncidentType.REPORT:
+                  - Assessment
+                  - Administrative Burden
+                  - Informal or Formal Resolution
+                  - Multiple Violation, Class A
+                  - Multiple Violation, Class B
+                  - Power of Attorney
+                  - Rules
+                  - Sexual Activity Not under Duress or Force
+                  - Violation of Informal Resolution
+                StateIncarcerationIncidentType.VIOLENCE:
+                  - Assault
+                  - Assault on Staff, Volunteer or Student Intern
+                  - Assault with Body Fluid
+                  - Assault, Other
+                  - Bodily Injury
+                  - Body Fluid on/at Staff, Volunteer or Student Intern
+                  - Fighting
+                  - Fighting, Asssault, or Threatening
+                  - Mistreatment of an Animal
+                  - Offensive Physical Contact
+                  - Self-Injurious Behaviour
+                  - Sexual Activity by Force or Duress
+                  - Unauthorized Physical Touching
+          #TODO(#30945): Ingest outcome once we have required tables, especially HEARING_ACTUALLY_HELD_DATE.
+          incident_metadata:
+            $json_dict:
+              CLASS: E_Violation_Disposition_Class_Desc
+              HEARING_ACTUALLY_HELD_DATE: HEARING_ACTUALLY_HELD_DATE
