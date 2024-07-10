@@ -29,3 +29,10 @@ columns:
   - name: OffenderId
     description: JII involved in this disciplinary action procedure
     is_pii: True
+    field_type: person_external_id
+    external_id_type: US_IX_DOC
+
+table_relationships:
+  - foreign_table: ind_Offender
+    join_logic:
+      - ind_Offender.OffenderId = dsc_DAProcedure.OffenderId

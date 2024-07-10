@@ -17,6 +17,8 @@ columns:
     description: |-
       IDOC client ID
     is_pii: True
+    field_type: person_external_id
+    external_id_type: US_IX_DOC
   - name: PrimaryPhone
     description: |-
       TODO(#15329): Fill in column description

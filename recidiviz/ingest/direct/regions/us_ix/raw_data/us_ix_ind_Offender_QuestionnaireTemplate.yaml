@@ -12,6 +12,9 @@ columns:
     description: Reference code for the questionnaire template type
   - name: OffenderId
     description: Atlas-generated ID for the justice impacted individual
+    is_pii: True
+    field_type: person_external_id
+    external_id_type: US_IX_DOC
   - name: Response
     description: JSON field for the responses for each question of the questionnaire
   - name: Locking
@@ -39,3 +42,8 @@ columns:
   - name: CompletedByEmployeeId
     description: EmployeeId for staff member that completed the questionnaire
     is_pii: True
+
+table_relationships:
+  - foreign_table: ind_Offender
+    join_logic:
+      - ind_Offender.OffenderId = ind_Offender_QuestionnaireTemplate.OffenderId

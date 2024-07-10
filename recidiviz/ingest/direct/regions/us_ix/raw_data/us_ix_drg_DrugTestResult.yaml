@@ -14,6 +14,8 @@ columns:
       ID for the offender who performed the drug test. Can be joined to 
       `ind_Offender.OffenderId`.
     is_pii: True
+    field_type: person_external_id
+    external_id_type: US_IX_DOC
   - name: CollectionDate
     description: |-
       Date of the drug test's collection.
@@ -169,3 +171,8 @@ columns:
   - name: TestCancellationReasonId
     description: |-
       TODO(#15329): Fill in column description
+
+table_relationships:
+  - foreign_table: ind_Offender
+    join_logic:
+      - ind_Offender.OffenderId = drg_DrugTestResult.OffenderId
