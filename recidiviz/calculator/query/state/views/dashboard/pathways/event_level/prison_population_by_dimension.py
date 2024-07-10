@@ -89,7 +89,7 @@ PRISON_POPULATION_BY_DIMENSION_VIEW_QUERY_TEMPLATE = """
             length_of_stay,
             {dimensions_clause}
         FROM all_dimensions
-        {filter_to_enabled_states} AND {facility_filter} 
+        {filter_to_enabled_states} AND {facility_filter} AND {inferred_period_filter}
     )
     SELECT {columns} FROM data
 """
@@ -124,6 +124,7 @@ PRISON_POPULATION_BY_DIMENSION_VIEW_BUILDER = WithMetadataQueryBigQueryViewBuild
         add_age_groups=add_age_groups(),
         length_of_stay_months_grouped=length_of_stay_month_groups(),
         facility_filter=state_specific_query_strings.pathways_state_specific_facility_filter(),
+        inferred_period_filter=state_specific_query_strings.state_specific_facility_type_inclusion_filter(),
     ),
 )
 

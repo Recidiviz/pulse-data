@@ -81,7 +81,7 @@ PRISON_POPULATION_OVER_TIME_VIEW_QUERY_TEMPLATE = """
             {dimensions_clause},
         FROM add_mapped_dimensions
         {filter_to_enabled_states}
-        AND {facility_filter}
+        AND {facility_filter} AND {inferred_period_filter}
         AND date_in_population <= CURRENT_DATE('US/Eastern')
         AND time_period IS NOT NULL
     )
@@ -126,6 +126,7 @@ PRISON_POPULATION_OVER_TIME_VIEW_BUILDER = WithMetadataQueryBigQueryViewBuilder(
             ]
         ),
         facility_filter=state_specific_query_strings.pathways_state_specific_facility_filter(),
+        inferred_period_filter=state_specific_query_strings.state_specific_facility_type_inclusion_filter(),
         time_period_months=get_binned_time_period_months(
             "date_of_stay",
             current_date_expr="DATE_TRUNC(CURRENT_DATE('US/Eastern'), MONTH)",
