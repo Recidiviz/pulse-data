@@ -81,6 +81,8 @@ columns:
     description: |-
       The IDOC identifier for a given person.  This is synonymous to the docno and ofndr_num fields in other IDOC data systems.
     is_pii: True
+    field_type: person_external_id
+    external_id_type: US_IX_DOC
 
   - name: Locking
     description: |-
@@ -113,3 +115,8 @@ columns:
   - name: ViolenceLevelId
     description: |-
       TODO(#23206): Fill in column description like that for each column name
+
+table_relationships:
+  - foreign_table: ind_Offender
+    join_logic:
+      - ind_Offender.OffenderId = dsc_DACase.OffenderId

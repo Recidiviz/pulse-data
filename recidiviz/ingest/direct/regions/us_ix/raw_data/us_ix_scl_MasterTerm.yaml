@@ -24,6 +24,9 @@ columns:
   - name: OffenderId
     description: |-
       TODO(#15329): Fill in column description
+    is_pii: True
+    field_type: person_external_id
+    external_id_type: US_IX_DOC
   - name: Locking
     description: |-
       TODO(#15329): Fill in column description
@@ -48,3 +51,8 @@ columns:
   - name: SupervisionStartTransferId
     description: |-
       TODO(#15329): Fill in column description
+
+table_relationships:
+  - foreign_table: ind_Offender
+    join_logic:
+      - ind_Offender.OffenderId = scl_MasterTerm.OffenderId

@@ -11,6 +11,9 @@ columns:
     description: |-
       The IDOC identifier for a given person.  This is synonymous to the docno and ofndr_num fields in other IDOC data systems.
     is_pii: True
+    field_type: person_external_id
+    external_id_type: US_IX_DOC
+    is_primary_for_external_id_type: True
   - name: ODS_NUM
     description: |-
       TODO(#15329): Fill in column description
