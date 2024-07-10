@@ -1,0 +1,314 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_supervision_period_v4` to
+#  corresponding Ingest Object fields.
+manifest_language: 1.0.0
+launch_env:
+  $or:
+    - $env: is_staging
+    - $env: is_local
+input_columns:
+  - ParoleNumber
+  - start_date
+  - end_date
+  - admission_reason
+  - termination_reason
+  - status_code
+  - status_code_update
+  - next_status_code
+  - supervision_type
+  - county_of_residence
+  - supervision_level
+  - condition_codes
+  - supervising_officer_id
+  - district_office
+  - district_sub_office_id
+  - supervision_location_org_code
+  - period_seq_num
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: ParoleNumber
+          id_type: $literal("US_PA_PBPP")
+    supervision_periods:
+      - StateSupervisionPeriod:
+          external_id:
+            $concat:
+              $values:
+                - ParoleNumber
+                - period_seq_num
+          supervision_type:
+            $conditional:
+              - $if:
+                  $in:
+                    $value: status_code
+                    $options:
+                      - $literal("29") # Absconder Status - Not Reporting
+                      - $literal("30") # UCV and Absconder Status
+                $then:
+                  $enum_mapping:
+                    $raw_text: status_code
+                    $mappings:
+                      StateSupervisionPeriodSupervisionType.ABSCONSION:
+                        - "29" # Absconder Status - Not Reporting
+                        - "30" # UCV and Absconder Status
+              - $else:
+                  $enum_mapping:
+                    $raw_text: supervision_type
+                    $mappings:
+                      StateSupervisionPeriodSupervisionType.DUAL:
+                        - "4C" # COOP case - Offender on both PBPP and County Supervision
+                      StateSupervisionPeriodSupervisionType.PAROLE:
+                        - "02" # Paroled from SCI to PBPP Supervision
+                        - "03" # Reparoled from SCI to PBPP Supervision
+                        - "05" # Special Parole sentenced by County and Supervised by PBPP
+                        - "06" # Paroled/Reparoled by other state and transferred to PA
+                        - "B2" # Released according to Boot Camp Law
+                        - "C2" # CCC Parole
+                        - "C3" # CCC Reparole
+                        - "R2" # RSAT Parole
+                        - "R3" # RSAT Reparole
+                      StateSupervisionPeriodSupervisionType.PROBATION:
+                        - "04" # Sentenced to Probation by County Judge and Supervised by PBPP
+                        - "07" # Sentenced to Probation by other state and transferred to PA
+                        - "4A" # ARD (Accelerated Rehabilitative Disposition) case - Sentenced by County Judge, Supervised by PBPP
+                        - "4B" # PWV (Probation Without Verdict) case - Sentenced by County Judge and Supervised by PBPP
+                      StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN:
+                        - "08" # Other States’ Deferred Sentence
+                        - "09" # Emergency Release - used for COVID releases
+          admission_reason:
+            $conditional:
+              - $if:
+                  $in:
+                    $value: status_code_update
+                    $options:
+                      - $literal("20") # UCV Violation (New Offense) Detention
+                      - $literal("22") # UCV Violation (Tech & New Offense) Detention
+                      - $literal("32") # UCV Violation (Tech) Detention
+                      - $literal("34") # UCV Violation (New Offense) Detention
+                      - $literal("36") # CV Violation (New Offense) Detention
+                      - $literal("29") # Absconder Status - Not Reporting
+                      - $literal("30") # UCV and Absconder Status
+                      # These detainer statuses indicate that the person has been paroled by the Board and released to a detainer
+                      # At this point, their location is only being tracked administratively by the PBPP
+                      - $literal("50") # Federal/US Marshall Detainer
+                      - $literal("51") # Other State Detainer
+                      - $literal("52") # INS Detainer
+                $then:
+                  $enum_mapping:
+                    $raw_text: status_code_update
+                    $mappings:
+                      StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE:
+                        - "20" # UCV Violation (New Offense) Detention
+                        - "22" # UCV Violation (Tech & New Offense) Detention
+                        - "32" # UCV Violation (Tech) Detention
+                        - "34" # UCV Violation (New Offense) Detention
+                        - "36" # CV Violation (New Offense) Detention
+                        - "50" # Federal/US Marshall Detainer
+                        - "51" # Other State Detainer
+                        - "52" # INS Detainer
+                      StateSupervisionPeriodAdmissionReason.ABSCONSION:
+                        - "29" # Absconder Status - Not Reporting
+                        - "30" # UCV and Absconder Status
+              - $else_if:
+                  $not_null: admission_reason
+                $then:
+                  $enum_mapping:
+                    $raw_text: admission_reason
+                    $mappings:
+                      StateSupervisionPeriodAdmissionReason.RELEASE_FROM_INCARCERATION:
+                        - "02" # Paroled from SCI to PBPP Supervision
+                        - "03" # Reparoled from SCI to PBPP Supervision
+                        - "B2" # Released according to Boot Camp Law
+                        - "C2" # CCC Parole
+                        - "C3" # CCC Reparole
+                        - "R2" # RSAT Parole
+                        - "R3" # RSAT Reparole
+                      StateSupervisionPeriodAdmissionReason.COURT_SENTENCE:
+                        - "04" # Sentenced to Probation by County Judge and Supervised by PBPP
+                        - "05" # Special Parole sentenced by County and Supervised by PBPP
+                        - "4A" # ARD case - Sentenced by County Judge and Supervised by PBPP
+                        - "4B" # PWV case - Sentenced by County Judge and Supervised by PBPP
+                        - "4C" # COOP case - Offender on both PBPP and County Supervision
+                      StateSupervisionPeriodAdmissionReason.INTERNAL_UNKNOWN:
+                        - "08" # Other States' Deferred Sentence
+                        - "09" # Emergency Release - used for COVID releases
+                      StateSupervisionPeriodAdmissionReason.TRANSFER_FROM_OTHER_JURISDICTION:
+                        - "06" # Paroled/Reparoled by other state and transferred to PA
+                        - "07" # Sentenced to Probation by other state and transferred to PA
+              - $else: $literal_enum(StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE)
+          start_date: start_date
+          termination_reason:
+            $conditional:
+              - $if:
+                  $in:
+                    $value: next_status_code
+                    $options:
+                      - $literal("19") # Deceased - Awaiting Death Certificate
+                      - $literal("54") # Deported
+                      - $literal("29") # Absconder Status - Not Reporting
+                      - $literal("30") # UCV and Absconder Status
+                $then:
+                  $enum_mapping:
+                    $raw_text: next_status_code
+                    $mappings:
+                      StateSupervisionPeriodTerminationReason.DEATH:
+                        - "19" # Deceased - Awaiting Death Certificate
+                      StateSupervisionPeriodTerminationReason.ABSCONSION:
+                        - "29" # Absconder Status - Not Reporting
+                        - "30" # UCV and Absconder Status
+                      StateSupervisionPeriodTerminationReason.TRANSFER_TO_OTHER_JURISDICTION:
+                        - "54" # Deported
+              - $else_if:
+                  $not_null: termination_reason
+                $then:
+                  $enum_mapping:
+                    $raw_text: termination_reason
+                    $mappings:
+                      StateSupervisionPeriodTerminationReason.DEATH:
+                        - "47" # Death while under supervision of causes unrelated to crime
+                        - "48" # Death while under supervision caused by criminal activity
+                      StateSupervisionPeriodTerminationReason.DISCHARGE:
+                        - "46" # The Board of Pardons grants a pardon or commutation which terminates supervision or early discharge is granted by a judge
+                      StateSupervisionPeriodTerminationReason.EXPIRATION:
+                        - "43" # Successful completion of sentence at maximum expiration date
+                        - "45" # Case closed for client with criminal charges pending that has reached maximum expiration of sentence on paroled offense - usually applies to absconders or unconvicted violators
+                        - "49" # Not an actually closed case - Case reached the Maximum Expiration
+                          # Date for a State Sentence but has a county sentence of probation to finish.
+                          # Closes the case and reopens it as a county probation case
+                      StateSupervisionPeriodTerminationReason.INTERNAL_UNKNOWN:
+                        - "50" # Case Opened in Error
+                        - "51" # ?? Not in data dictionary
+                      StateSupervisionPeriodTerminationReason.ADMITTED_TO_INCARCERATION:
+                        - "44" # Conviction and return to prison to serve detainer sentence
+                      StateSupervisionPeriodTerminationReason.REVOCATION:
+                        - "40" # Recommitment to prison for new criminal convictions while under supervision
+                        - "41" # Recommitment to prison for adjudication of technical parole violations while under supervision
+                        - "42" # Recommitment to prison for convictions of new crimes and technical
+              - $else: $literal_enum(StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE)
+          termination_date: end_date
+          county_code: county_of_residence
+          supervision_site:
+            $conditional:
+              #  Ignore "0" in supervision_location_code
+              - $if:
+                  $equal:
+                    - supervision_location_org_code
+                    - $literal("0")
+                $then:
+                  $concat:
+                    $separator: "|"
+                    $values:
+                      - district_office
+                      - district_sub_office_id
+              - $else:
+                  $concat:
+                    $separator: "|"
+                    $values:
+                      - district_office
+                      - district_sub_office_id
+                      - supervision_location_org_code
+          custodial_authority:
+            $conditional:
+              - $if:
+                  $in:
+                    $value: status_code
+                    $options:
+                      - $literal("50") # Federal/US Marshall Detainer
+                      - $literal("51") # Other State Detainer
+                      - $literal("52") # INS Detainer
+                $then:
+                  $enum_mapping:
+                    $raw_text: status_code
+                    $mappings:
+                      StateCustodialAuthority.FEDERAL:
+                        - "50" # Federal/US Marshall Detainer
+                        - "52" # INS Detainer
+                      StateCustodialAuthority.OTHER_STATE:
+                        - "51" # Other State Detainer
+              - $else:
+                  $enum_mapping:
+                    $raw_text: supervision_type
+                    $mappings:
+                      StateCustodialAuthority.SUPERVISION_AUTHORITY:
+                        - "02" # Paroled from SCI to PBPP Supervision
+                        - "03" # Reparoled from SCI to PBPP Supervision
+                        - "04" # Sentenced to Probation by County Judge and Supervised by PBPP
+                        - "05" # Special Parole sentenced by County and Supervised by PBPP
+                        - "4A" # ARD (Accelerated Rehabilitative Disposition) case - Sentenced by County Judge, Supervised by PBPP
+                        - "4B" # PWV (Probation Without Verdict) case - Sentenced by County Judge and Supervised by PBPP
+                        - "4C" # COOP case - Offender on both PBPP and County Supervision
+                        - "B2" # Released according to Boot Camp Law
+                        - "C2" # CCC Parole
+                        - "C3" # CCC Reparole
+                        - "R2" # RSAT Parole
+                        - "R3" # RSAT Reparole
+                      StateCustodialAuthority.OTHER_STATE:
+                        - "06" # Paroled/Reparoled by other state and transferred to PA
+                        - "07" # Sentenced to Probation by other state and transferred to PA
+                      StateCustodialAuthority.INTERNAL_UNKNOWN:
+                        - "08" # Other States’ Deferred Sentence
+                        - "09" # Emergency Release - used for COVID releases
+          supervision_level:
+            $conditional:
+              - $if:
+                  $in:
+                    $value: status_code
+                    $options:
+                      - $literal("20") # UCV Violation (New Offense) Detention
+                      - $literal("22") # UCV Violation (Tech & New Offense) Detention
+                      - $literal("32") # UCV Violation (Tech) Detention
+                      - $literal("34") # UCV Violation (New Offense) Detention
+                      - $literal("36") # CV Violation (New Offense) Detention
+                      - $literal("29") # Absconder Status - Not Reporting
+                      - $literal("30") # UCV and Absconder Status
+                      # These detainer statuses indicate that the person has been paroled by the Board and released to a detainer
+                      # At this point, their location is only being tracked administratively by the PBPP
+                      - $literal("50") # Federal/US Marshall Detainer
+                      - $literal("51") # Other State Detainer
+                      - $literal("52") # INS Detainer
+                $then:
+                  $enum_mapping:
+                    $raw_text: status_code
+                    $mappings:
+                      StateSupervisionLevel.IN_CUSTODY:
+                        - "20" # UCV Violation (New Offense) Detention
+                        - "22" # UCV Violation (Tech & New Offense) Detention
+                        - "32" # UCV Violation (Tech) Detention
+                        - "34" # UCV Violation (New Offense) Detention
+                        - "36" # CV Violation (New Offense) Detention
+                        - "50" # Federal/US Marshall Detainer
+                        - "51" # Other State Detainer
+                        - "52" # INS Detainer
+                      StateSupervisionLevel.ABSCONSION:
+                        - "29" # Absconder Status - Not Reporting
+                        - "30" # UCV and Absconder Status
+              - $else:
+                  $enum_mapping:
+                    $raw_text: supervision_level
+                    $mappings:
+                      StateSupervisionLevel.MAXIMUM:
+                        - "MAX" # Maximum
+                      StateSupervisionLevel.MEDIUM:
+                        - "MED" # Medium
+                      StateSupervisionLevel.MINIMUM:
+                        - "MIN" # Minimum
+                      StateSupervisionLevel.ELECTRONIC_MONITORING_ONLY:
+                        - "MON" # Monitored
+                      StateSupervisionLevel.LIMITED:
+                        - "ADM" # Administrative Supervision
+                        - "SPC" # Special Circumstance
+                      StateSupervisionLevel.HIGH:
+                        - "ENH" # Enhanced
+                      StateSupervisionLevel.INTERNAL_UNKNOWN:
+                        # these two don't appear in the data dictionary but only appear a total of 15 times
+                        - "00"
+                        - "NOT"
+          conditions: condition_codes
+          supervising_officer_staff_external_id: supervising_officer_id
+          supervising_officer_staff_external_id_type:
+            $conditional:
+              - $if:
+                  $not_null: supervising_officer_id
+                $then: $literal("US_PA_PBPP_EMPLOYEE_NUM")

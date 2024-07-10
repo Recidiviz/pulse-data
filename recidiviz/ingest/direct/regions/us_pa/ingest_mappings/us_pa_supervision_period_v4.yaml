@@ -2,6 +2,10 @@
 # This file associates the columns outputted from the query in `view_supervision_period_v4` to
 #  corresponding Ingest Object fields.
 manifest_language: 1.0.0
+launch_env:
+  $or:
+    - $env: is_production
+    - $env: is_local
 input_columns:
   - admission_reason
   - start_date
