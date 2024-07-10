@@ -794,3 +794,11 @@ def workflows_state_specific_supervision_level() -> str:
             ELSE most_recent_active_supervision_level
         END
     """
+
+
+def state_specific_facility_type_inclusion_filter() -> str:
+    """State-specific exclusions based on facility"""
+    return """
+    -- US_IX only, removes inferred incarceration period
+    (state_code != 'US_IX' OR 
+    (facility IS NOT NULL OR admission_reason != "TEMPORARY_CUSTODY"))"""

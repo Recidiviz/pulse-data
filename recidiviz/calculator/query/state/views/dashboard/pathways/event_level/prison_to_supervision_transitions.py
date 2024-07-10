@@ -52,6 +52,7 @@ PRISON_TO_SUPERVISION_TRANSITIONS_QUERY_TEMPLATE = """
             sessions.state_code,
             sessions.person_id,
             sessions.end_date + 1 AS transition_date,
+            sessions.start_reason,
             EXTRACT(YEAR FROM sessions.end_date + 1) AS year,
             EXTRACT(MONTH FROM sessions.end_date + 1) AS month,
             sessions.age_end AS age,
@@ -88,6 +89,7 @@ PRISON_TO_SUPERVISION_TRANSITIONS_QUERY_TEMPLATE = """
                 PARTITION BY sessions_data.state_code, sessions_data.person_id, sessions_data.transition_date
                 ORDER BY pei.external_id
             ) as rn,
+            sessions_data.start_reason AS admission_reason,
         FROM sessions_data
         LEFT JOIN `{project_id}.{dashboard_views_dataset}.pathways_incarceration_location_name_map_materialized` location
             ON sessions_data.state_code = location.state_code 
@@ -111,12 +113,13 @@ PRISON_TO_SUPERVISION_TRANSITIONS_QUERY_TEMPLATE = """
             state_id,
             state_code,
             rn,
+            admission_reason,
             {dimensions_clause}
         FROM all_rows
     )
     SELECT {columns}
     FROM transitions_without_unknowns
-    WHERE {facility_filter}
+    WHERE {facility_filter} AND {inferred_period_filter}
     AND rn = 1
 """
 
@@ -138,6 +141,7 @@ PRISON_TO_SUPERVISION_TRANSITIONS_VIEW_BUILDER = WithMetadataQueryBigQueryViewBu
         state_id_type=state_specific_query_strings.state_specific_external_id_type(
             "sessions_data"
         ),
+        inferred_period_filter=state_specific_query_strings.state_specific_facility_type_inclusion_filter(),
         transition_time_period=get_binned_time_period_months("transition_date"),
         dimensions_clause=PathwaysMetricBigQueryViewBuilder.replace_unknowns(
             [

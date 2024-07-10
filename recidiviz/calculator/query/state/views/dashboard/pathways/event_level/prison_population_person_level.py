@@ -72,7 +72,7 @@ PRISON_POPULATION_PERSON_LEVEL_QUERY_TEMPLATE = """
             age,
             IFNULL(full_name, "Unknown") AS full_name,
         FROM all_rows
-        WHERE {facility_filter}
+        WHERE {facility_filter} AND {inferred_period_filter}
         AND state_id IS NOT NULL
     )
     SELECT {columns}
@@ -118,6 +118,7 @@ PRISON_POPULATION_PERSON_LEVEL_VIEW_BUILDER = WithMetadataQueryBigQueryViewBuild
         ),
         formatted_name=get_person_full_name("person.full_name"),
         facility_filter=state_specific_query_strings.pathways_state_specific_facility_filter(),
+        inferred_period_filter=state_specific_query_strings.state_specific_facility_type_inclusion_filter(),
     ),
 )
 
