@@ -12,6 +12,8 @@ columns:
   - name: CIS_100_CLIENT_ID
     description: The MDOC associated with this row.
     is_pii: True
+    field_type: person_external_id
+    external_id_type: US_ME_DOC
   - name: CIS_319_TERM_ID
     description: The Term associated with this instance of escape.
   - name: CIS_3240_AWOL_TYPE_CD
@@ -48,3 +50,8 @@ columns:
   - name: MODIFIED_BY_TX
     is_pii: True
   - name: MODIFIED_ON_DATE
+
+table_relationships:
+  - foreign_table: CIS_100_CLIENT
+    join_logic:
+      - CIS_100_CLIENT.Client_Id = CIS_324_AWOL.CIS_100_CLIENT_ID

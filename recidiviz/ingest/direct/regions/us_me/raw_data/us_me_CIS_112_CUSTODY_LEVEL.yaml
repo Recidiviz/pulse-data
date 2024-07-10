@@ -16,6 +16,9 @@ columns:
     is_pii: True
   - name: CIS_100_CLIENT_ID
     description: The client for whom this custody level applies.
+    is_pii: True
+    field_type: person_external_id
+    external_id_type: US_ME_DOC
   - name: CIS_1017_CLIENT_SYS_CD
     description: The code for this custody level. Can be joined to CIS_1017_CLIENT_SYS.CLIENT_SYS_CD for a description.
   - name: CIS_900_EMPLOYEE_ID
@@ -27,3 +30,8 @@ columns:
   - name: MODIFIED_BY_TX
     is_pii: True
   - name: MODIFIED_ON_DATE
+
+table_relationships:
+  - foreign_table: CIS_100_CLIENT
+    join_logic:
+      - CIS_100_CLIENT.Client_Id = CIS_112_CUSTODY_LEVEL.CIS_100_CLIENT_ID

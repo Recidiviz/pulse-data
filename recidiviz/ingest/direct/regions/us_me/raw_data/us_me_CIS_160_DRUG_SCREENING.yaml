@@ -21,6 +21,8 @@ columns:
   - name: CIS_100_CLIENT_ID
     is_pii: True
     description: ID of the client who was subjected to the drug screen.
+    field_type: person_external_id
+    external_id_type: US_ME_DOC
   - name: CIS_1603_DRUG_TEST_PANEL_CD
     description: Code for the type of drug screen conducted. Joins to `CIS_1603_DRUG_TEST_PANEL.DRUG_TEST_PANEL_CD`.
   - name: CIS_1602_DRUG_TEST_REASON_CD
@@ -48,3 +50,8 @@ columns:
   - name: MODIFIED_BY_TX
     is_pii: True
   - name: MODIFIED_ON_DATE
+
+table_relationships:
+  - foreign_table: CIS_100_CLIENT
+    join_logic:
+      - CIS_100_CLIENT.Client_Id = CIS_160_DRUG_SCREENING.CIS_100_CLIENT_ID

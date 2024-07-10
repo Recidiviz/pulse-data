@@ -12,6 +12,8 @@ columns:
     description: |-
       The unique identifier for the client that took the assessment.
     is_pii: True
+    field_type: person_external_id
+    external_id_type: US_ME_DOC
   - name: Cis_1009_Lsi_Type_Cd
     description: |-
       The type of LSI questionnaire that was completed, see CIS_1009_LSI_TYPE for all possible values and descriptions.
@@ -111,3 +113,8 @@ columns:
         description: Policy - There are some policies that require a client's score to be overridden, for example, domestic violence and sex offense cases are usually overridden to a Moderate rating because the LSI score is generally lower.
       - value: 2
         description: Discretionary - A client's supervision level can be overridden based on the supervising officer's discretion.
+
+table_relationships:
+  - foreign_table: CIS_100_CLIENT
+    join_logic:
+      - CIS_100_CLIENT.Client_Id = CIS_116_LSI_HISTORY.Cis_100_Client_Id

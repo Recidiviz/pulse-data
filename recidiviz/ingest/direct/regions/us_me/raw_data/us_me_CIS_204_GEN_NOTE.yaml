@@ -9,6 +9,8 @@ columns:
   - name: Cis_100_Client_Id
     description: This is the client ID associated with the note.
     is_pii: True
+    field_type: person_external_id
+    external_id_type: US_ME_DOC
   - name: Cis_2040_Contact_Mode_Cd
     description: Contact mode code. Some CMs use this field to group their notes. E.g. if related to programming, could be set as <Program/Service>
   - name: Cis_2041_Note_Type_Cd
@@ -43,3 +45,8 @@ columns:
     description: Short free text note
     is_pii: True
   - name: Violation_Ind
+
+table_relationships:
+  - foreign_table: CIS_100_CLIENT
+    join_logic:
+      - CIS_100_CLIENT.Client_Id = CIS_204_GEN_NOTE.Cis_100_Client_Id

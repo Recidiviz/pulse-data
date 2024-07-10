@@ -14,6 +14,8 @@ columns:
   - name: Cis_100_Client_Id
     description: The client that is associated with this violation entry.
     is_pii: True
+    field_type: person_external_id
+    external_id_type: US_ME_DOC
   - name: Cis_1016_Extradition_Cd
   - name: Cis_4009_Client_Loc_Cd
     description: |-
@@ -157,3 +159,8 @@ columns:
     description: Number of months to be served in some form of custody as an outcome of the violation.
   - name: Serve_Yrs
     description: Number of years to be served in some form of custody as an outcome of the violation.
+
+table_relationships:
+  - foreign_table: CIS_100_CLIENT
+    join_logic:
+      - CIS_100_CLIENT.Client_Id = CIS_480_VIOLATION.Cis_100_Client_Id

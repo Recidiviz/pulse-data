@@ -9,6 +9,8 @@ columns:
   - name: Cis_100_Client_Id
     description: The client ID that was involved in the incident.
     is_pii: True
+    field_type: person_external_id
+    external_id_type: US_ME_DOC
   - name: Cis_460_Incident_Id
     description: The incident ID that is associated with the CIS_460_INCIDENTS table.
   - name: Cis_460_Year_Id
@@ -55,3 +57,8 @@ columns:
     description: Date the record was modified on.
   - name: Type_Force_Used_Cd
     description: Code for type of force used.
+
+table_relationships:
+  - foreign_table: CIS_100_CLIENT
+    join_logic:
+      - CIS_100_CLIENT.Client_Id = CIS_462_CLIENTS_INVOLVED.Cis_100_Client_Id

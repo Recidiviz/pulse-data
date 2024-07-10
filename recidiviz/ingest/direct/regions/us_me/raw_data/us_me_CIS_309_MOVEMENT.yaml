@@ -82,6 +82,8 @@ columns:
     description: |-
       The unique identifier for all clients in the offender management system.
     is_pii: True
+    field_type: person_external_id
+    external_id_type: US_ME_DOC
   - name: Created_By_Tx
     is_pii: True
   - name: Created_On_Date
@@ -94,3 +96,8 @@ columns:
     field_type: datetime
   - name: Movement_Id
     description: Primary key field
+
+table_relationships:
+  - foreign_table: CIS_100_CLIENT
+    join_logic:
+      - CIS_100_CLIENT.Client_Id = CIS_309_MOVEMENT.Cis_Client_Id

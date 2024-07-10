@@ -11,6 +11,8 @@ columns:
   - name: CIS_100_CLIENT_ID
     is_pii: True
     description: The MDOC ID associated with this enrollment.
+    field_type: person_external_id
+    external_id_type: US_ME_DOC
   - name: TERM_END_DATE
     description: The date the client's term ends.
     field_type: datetime
@@ -51,3 +53,8 @@ columns:
     is_pii: True
   - name: MODIFIED_ON_DATE
     description: Date it was modified on
+
+table_relationships:
+  - foreign_table: CIS_100_CLIENT
+    join_logic:
+      - CIS_100_CLIENT.Client_Id = CIS_425_MAIN_PROG.CIS_100_CLIENT_ID

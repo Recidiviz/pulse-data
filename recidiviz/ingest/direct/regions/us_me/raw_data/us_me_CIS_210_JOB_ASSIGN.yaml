@@ -79,6 +79,9 @@ columns:
   - name: CIS_100_CLIENT_ID
     description: |-
       The client who is working this job.
+    is_pii: True
+    field_type: person_external_id
+    external_id_type: US_ME_DOC
   - name: LOGICAL_DELETE_IND
     description: |-
       If the file was logically deleted.
@@ -98,3 +101,8 @@ columns:
     description: |-
       When the file was last modified.
     field_type: datetime
+
+table_relationships:
+  - foreign_table: CIS_100_CLIENT
+    join_logic:
+      - CIS_100_CLIENT.Client_Id = CIS_210_JOB_ASSIGN.CIS_100_CLIENT_ID

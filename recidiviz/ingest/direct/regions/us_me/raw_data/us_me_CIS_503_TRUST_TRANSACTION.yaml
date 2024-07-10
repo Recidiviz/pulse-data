@@ -99,6 +99,9 @@ columns:
   - name: CIS_100_CLIENT_ID
     description: |-
       TODO(#23225)
+    is_pii: True
+    field_type: person_external_id
+    external_id_type: US_ME_DOC
   - name: CIS_900_EMPLOYEE_ID
     description: |-
       TODO(#23225)
@@ -143,3 +146,8 @@ columns:
     description: |-
       TODO(#23225)
     is_pii: True
+
+table_relationships:
+  - foreign_table: CIS_100_CLIENT
+    join_logic:
+      - CIS_100_CLIENT.Client_Id = CIS_503_TRUST_TRANSACTION.CIS_100_CLIENT_ID

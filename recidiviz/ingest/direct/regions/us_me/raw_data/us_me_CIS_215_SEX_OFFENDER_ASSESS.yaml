@@ -22,6 +22,8 @@ columns:
   - name: Cis_100_Client_Id
     description: The client ID that completed the assessment.
     is_pii: True
+    field_type: person_external_id
+    external_id_type: US_ME_DOC
   - name: Cis_1161_Lsi_Effct_Date
     description: The date the LSI rating went into effect, is either NULL or matches the date in Cis_1161_Lsi_Effct_Over_Date. This date matches what is in the `Lsi_Effct_Date` column in the CIS_1161_LSI_RATING table.
     field_type: datetime
@@ -59,3 +61,8 @@ columns:
       Indicates whether or not the assigned LSI rating for this assessment has been overridden.
   - name: Sex_Offender_Assess_Id
     description: The primary key for this table.
+
+table_relationships:
+  - foreign_table: CIS_100_CLIENT
+    join_logic:
+      - CIS_100_CLIENT.Client_Id = CIS_215_SEX_OFFENDER_ASSESS.Cis_100_Client_Id

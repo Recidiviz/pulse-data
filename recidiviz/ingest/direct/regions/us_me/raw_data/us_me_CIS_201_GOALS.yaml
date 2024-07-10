@@ -10,6 +10,8 @@ columns:
     description: |-
       The ID of the client who has this goal.
     is_pii: True
+    field_type: person_external_id
+    external_id_type: US_ME_DOC
   - name: Cis_200_Cp_Id
     description: |-
       Identifies which case plan this goal belongs to within the client. To join, you must use Cis_200_Cis_100_Client_Id as well.
@@ -46,3 +48,8 @@ columns:
     description: |-
       Description if CIS_2010_GOAL_TYPE.E_Goal_Type_Desc = 'Other', this field 
       provides the description we need
+
+table_relationships:
+  - foreign_table: CIS_100_CLIENT
+    join_logic:
+      - CIS_100_CLIENT.Client_Id = CIS_201_GOALS.Cis_200_Cis_100_Client_Id
