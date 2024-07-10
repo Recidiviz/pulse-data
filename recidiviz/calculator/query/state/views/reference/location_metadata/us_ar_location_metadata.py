@@ -161,6 +161,10 @@ all_organizations AS (
             STRUCT(
                 a.COUNTY AS {LocationMetadataKey.COUNTY_ID.value},
                 rp.PARTYRELSTATUS = 'A' AS {LocationMetadataKey.IS_ACTIVE_LOCATION.value},
+                CASE 
+                    WHEN op.ORGANIZATIONTYPE IN ('B8','BC') THEN 'BACKUP'
+                    ELSE NULL
+                END AS {LocationMetadataKey.LOCATION_SUBTYPE.value},
                 op.ORGCOMMONID AS {LocationMetadataKey.LOCATION_ACRONYM.value},
                 op3.PARTYID AS {LocationMetadataKey.FACILITY_GROUP_EXTERNAL_ID.value},
                 op3.UORGANIZATIONNAME AS {LocationMetadataKey.FACILITY_GROUP_NAME.value},
