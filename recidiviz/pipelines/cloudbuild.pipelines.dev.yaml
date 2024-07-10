@@ -10,6 +10,6 @@ steps:
       - --dockerfile=recidiviz/pipelines/Dockerfile.pipelines
       # For unknown reasons, Cloud Build does not respect these arguments in the format of `--build-arg=""`
       - --build-arg
-      - GOOGLE_CLOUD_PROJECT="${_GOOGLE_CLOUD_PROJECT}"
+      - GOOGLE_CLOUD_PROJECT=${_GOOGLE_CLOUD_PROJECT}
       - --build-arg
-      - RECIDIVIZ_ENV="${_RECIDIVIZ_ENV}"
+      - RECIDIVIZ_ENV=${_RECIDIVIZ_ENV}
