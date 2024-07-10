@@ -104,7 +104,7 @@ def get_gendered_assessment_score_bucket(cohort_df_row: pd.Series) -> str:
 def get_cohort_df(project_id: str) -> pd.DataFrame:
     cohort_query = f"""
     SELECT *
-    FROM `bpacker_sentencing_views.sentence_cohort`
+    FROM `sentencing_views.sentence_cohort`
     WHERE state_code IN ({SUPPORTED_STATES_STR})
     """
     cohort_df = pd.read_gbq(cohort_query, project_id=project_id)
@@ -117,7 +117,7 @@ def get_recidivism_event_df(project_id: str) -> pd.DataFrame:
 
     event_query = f"""
     SELECT *
-    FROM `bpacker_sentencing_views.recidivism_event`
+    FROM `sentencing_views.recidivism_event`
     WHERE state_code IN ({SUPPORTED_STATES_STR})
     """
     event_df = pd.read_gbq(event_query, project_id=project_id)
