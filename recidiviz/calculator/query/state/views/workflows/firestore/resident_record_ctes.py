@@ -250,16 +250,6 @@ _RESIDENT_RECORD_HOUSING_UNIT_CTE = f"""
         CAST(NULL AS STRING) AS facility_id,
         IF(complex_number=building_number, complex_number, complex_number || " " || building_number) AS unit_id
       FROM current_bed_stay
-      
-      UNION ALL
-      
-      -- TODO(#27428): Once source of facility ID in TN is reconciled, this can be removed
-      SELECT
-        person_id,
-        facility_id,
-        unit_id
-      FROM `{{project_id}}.analyst_data.us_tn_cellbed_assignment_raw_materialized`
-      
     ),
 """
 
@@ -367,8 +357,7 @@ _RESIDENT_RECORD_JOIN_RESIDENTS_CTE = """
             ic.person_external_id,
             ic.gender,
             officer_id,
-            -- TODO(#27428): Once source of facility ID in TN is reconciled, this can be removed
-            CASE WHEN ic.state_code = 'US_TN' THEN hu.facility_id ELSE ic.facility_id END AS facility_id,
+            ic.facility_id,
             unit_id,
             custody_level.custody_level,
             ic.admission_date,
