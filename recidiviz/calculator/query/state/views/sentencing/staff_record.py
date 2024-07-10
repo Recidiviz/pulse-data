@@ -78,7 +78,7 @@ SENTENCING_STAFF_RECORD_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
         "external_id",
         "email",
         "pseudonymized_id",
-        "caseIds",
+        "case_ids",
     ],
 )
 

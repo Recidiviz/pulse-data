@@ -22,7 +22,7 @@ WITH
     caseIds AS (
         SELECT DISTINCT
             AssignedToUserId,
-            STRING_AGG(PSIReportId, ',' ORDER BY UpdateDate) AS caseIds
+            STRING_AGG(CONCAT('"',PSIReportId,'"'), ',' ORDER BY UpdateDate) AS case_ids
         FROM   `{project_id}.{us_ix_raw_data_up_to_date_dataset}.com_PSIReport_latest`
         GROUP BY AssignedToUserId
     )
@@ -31,7 +31,7 @@ WITH
         staff.full_name,
         staff.email,
         "US_IX" AS state_code,
-        CONCAT('[', caseIds,']') AS caseIds
+        CONCAT('[', case_ids,']') AS case_ids
     FROM `{project_id}.{us_ix_raw_data_up_to_date_dataset}.com_PSIReport_latest` psi
     LEFT JOIN `{project_id}.{normalized_state_dataset}.state_staff_external_id` id 
         ON psi.AssignedToUserId = id.external_id and id_type = 'US_IX_EMPLOYEE'
