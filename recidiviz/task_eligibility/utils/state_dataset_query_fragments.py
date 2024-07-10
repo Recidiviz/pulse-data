@@ -415,6 +415,7 @@ def sentence_attributes() -> str:
         offense_date,
         date_imposed,
         statute,
+        county_code,
         sentence_metadata,
         max_sentence_length_days_calculated,
         effective_date AS start_date,

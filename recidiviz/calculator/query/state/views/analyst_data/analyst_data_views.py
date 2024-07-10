@@ -174,6 +174,9 @@ from recidiviz.calculator.query.state.views.analyst_data.us_nd.us_nd_early_disch
 from recidiviz.calculator.query.state.views.analyst_data.us_or.us_or_earned_discharge_sentence_eligibility_spans import (
     US_OR_EARNED_DISCHARGE_SENTENCE_ELIGIBILITY_SPANS_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.analyst_data.us_or.us_or_in_state_sentence import (
+    US_OR_IN_STATE_SENTENCE_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.analyst_data.us_or.us_or_no_convictions_since_sentence_start import (
     US_OR_NO_CONVICTIONS_SINCE_SENTENCE_START_VIEW_BUILDER,
 )
@@ -327,6 +330,7 @@ ANALYST_DATA_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     US_MI_SECURITY_CLASSIFICATION_COMMITTEE_REVIEW_VIEW_BUILDER,
     US_ND_EARLY_DISCHARGE_SESSIONS_PREPROCESSING_VIEW_BUILDER,
     US_OR_EARNED_DISCHARGE_SENTENCE_ELIGIBILITY_SPANS_VIEW_BUILDER,
+    US_OR_IN_STATE_SENTENCE_VIEW_BUILDER,
     US_OR_NO_CONVICTIONS_SINCE_SENTENCE_START_VIEW_BUILDER,
     US_OR_SENTENCE_IMPOSITION_DATE_ELIGIBLE_VIEW_BUILDER,
     US_OR_SERVED_6_MONTHS_SUPERVISION_VIEW_BUILDER,
