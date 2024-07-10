@@ -11,6 +11,8 @@ columns:
   - name: Cis_100_Client_Id
     description: The unique identifier for all clients in the offender management system.
     is_pii: True
+    field_type: person_external_id
+    external_id_type: US_ME_DOC
   - name: Cis_900_Employee_Id
     is_pii: True
   - name: Cis_9083_9082_Chng_Type_Cd
@@ -40,3 +42,8 @@ columns:
     description: The start date for the bed assignment.
     field_type: datetime
   - name: Top_Bunk_Ind
+
+table_relationships:
+  - foreign_table: CIS_100_CLIENT
+    join_logic:
+      - CIS_100_CLIENT.Client_Id = CIS_916_ASSIGN_BED.Cis_100_Client_Id

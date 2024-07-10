@@ -19,6 +19,9 @@ columns:
   - name: Cis_100_Client_Id
     description: |-
       The unique identifier for all clients in the offender management system.
+    is_pii: True
+    field_type: person_external_id
+    external_id_type: US_ME_DOC
   - name: Cis_4000_Charge_Outcome_Cd
     description: |-
       The status of the charge, see CIS_4000_CHARGE_STATUS for possible values.
@@ -82,3 +85,8 @@ columns:
       The date that the offense was referred to the courts system for an official charge.
     field_type: datetime
   - name: Summons_Date
+
+table_relationships:
+  - foreign_table: CIS_100_CLIENT
+    join_logic:
+      - CIS_100_CLIENT.Client_Id = CIS_400_CHARGE.Cis_100_Client_Id

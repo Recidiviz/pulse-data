@@ -9,6 +9,8 @@ columns:
   - name: Cis_100_Client_Id
     description: This is the client ID associated with the investigation.
     is_pii: True
+    field_type: person_external_id
+    external_id_type: US_ME_DOC
   - name: Cis_900_Employee_Id
     is_pii: True
   - name: Cis_908_Ccs_Location_Id
@@ -46,3 +48,8 @@ columns:
   - name: Cis_1301_Type_Cd
     description: Type of Investigation
   - name: Cis_9902_Court_Cd
+
+table_relationships:
+  - foreign_table: CIS_100_CLIENT
+    join_logic:
+      - CIS_100_CLIENT.Client_Id = CIS_130_INVESTIGATION.Cis_100_Client_Id

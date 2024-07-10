@@ -33,6 +33,9 @@ columns:
     is_pii: True
   - name: CIS_100_CLIENT_ID
     description: TODO(#26093) - add description
+    is_pii: True
+    field_type: person_external_id
+    external_id_type: US_ME_DOC
   - name: CIS_1401_TYPE_CD
     description: TODO(#26093) - add description
   - name: CIS_1401_FROM_CD
@@ -67,3 +70,8 @@ columns:
   - name: MODIFIED_ON_DATE
     description: TODO(#26093) - add description
     field_type: datetime
+
+table_relationships:
+  - foreign_table: CIS_100_CLIENT
+    join_logic:
+      - CIS_100_CLIENT.Client_Id = CIS_140_CLASSIFICATION_REVIEW.CIS_100_CLIENT_ID

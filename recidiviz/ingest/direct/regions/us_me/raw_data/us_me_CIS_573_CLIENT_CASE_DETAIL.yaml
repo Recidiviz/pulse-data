@@ -10,6 +10,8 @@ columns:
     description: |-
       The unique identifier for all clients in the offender management system.
     is_pii: True
+    field_type: person_external_id
+    external_id_type: US_ME_DOC
   - name: cis_570_rest_case_id
     description: |-
       Column used to merge with CIS_570_REST_CASE.
@@ -42,3 +44,8 @@ columns:
   - name: total_owing_num
     description: |-
       Adjusted original restitution amount. This field and the payments table is what's used to calculate the amount still owed
+
+table_relationships:
+  - foreign_table: CIS_100_CLIENT
+    join_logic:
+      - CIS_100_CLIENT.Client_Id = CIS_573_CLIENT_CASE_DETAIL.cis_100_client_id

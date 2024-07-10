@@ -31,6 +31,8 @@ columns:
     is_pii: True
     description: |-
       The unique MEDOC client ID that is associated with this sentence information, associated with the CIS_100_CLIENT table.
+    field_type: person_external_id
+    external_id_type: US_ME_DOC
   - name: Cis_4003_Offence_Type_Cd
     description: |-
       This code maps to an offense type that is listed in the CIS_4003_OFFENCE_TYPE table. There are over 10k possible offense types listed.
@@ -401,3 +403,8 @@ columns:
     description: The number of years in the sentence originally given by the court.
   - name: Victim_Comp_Fee_Num
   - name: Weekend_Holiday_Ind
+
+table_relationships:
+  - foreign_table: CIS_100_CLIENT
+    join_logic:
+      - CIS_100_CLIENT.Client_Id = CIS_401_CRT_ORDER_HDR.Cis_400_Cis_100_Client_Id

@@ -24,7 +24,9 @@ columns:
   - name: CIS_100_CLIENT_ID
     description: >-
       ID of the client this alert relates to.
-    is_pii: true
+    is_pii: True
+    field_type: person_external_id
+    external_id_type: US_ME_DOC
   - name: CIS_1020_ALERT_CD
     description: >-
       Joins to CIS_1020_ALERT_CD to describe the type of alert.
@@ -50,3 +52,8 @@ columns:
   - name: CCS_ID
     description: >-
       Numberic value. Unsure what this means.
+
+table_relationships:
+  - foreign_table: CIS_100_CLIENT
+    join_logic:
+      - CIS_100_CLIENT.Client_Id = CIS_102_ALERT_HISTORY.CIS_100_CLIENT_ID

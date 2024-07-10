@@ -36,6 +36,9 @@ columns:
   - name: CIS_100_CLIENT_ID
     description: |-
       Client who is related to this personal property.
+    is_pii: True
+    field_type: person_external_id
+    external_id_type: US_ME_DOC
   - name: CIS_301_ADMISSION_ID
     description: |-
       TODO(#23225)
@@ -67,3 +70,8 @@ columns:
     description: |-
       When the file was last modified.
     field_type: datetime
+
+table_relationships:
+  - foreign_table: CIS_100_CLIENT
+    join_logic:
+      - CIS_100_CLIENT.Client_Id = CIS_300_Personal_Property.CIS_100_CLIENT_ID

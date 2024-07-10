@@ -8,6 +8,9 @@ columns:
   - name: Cis_100_Client_Id
     description: |-
       The client who owns this goal. Clients may have multiple goals.
+    is_pii: true
+    field_type: person_external_id
+    external_id_type: US_ME_DOC
   - name: Cis_112_Level_Id
   - name: Cis_116_Lsi_History_Id
   - name: Cis_119_Client_Bin_Id
@@ -29,3 +32,8 @@ columns:
   - name: Review_Ind
   - name: Review_Sent_Ind
   - name: Start_Date
+
+table_relationships:
+  - foreign_table: CIS_100_CLIENT
+    join_logic:
+      - CIS_100_CLIENT.Client_Id = CIS_200_CASE_PLAN.Cis_100_Client_Id

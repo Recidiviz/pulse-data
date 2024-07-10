@@ -20,6 +20,8 @@ columns:
   - name: Cis_100_Client_Id
     description: The client that is assigned the assessment.
     is_pii: True
+    field_type: person_external_id
+    external_id_type: US_ME_DOC
   - name: Cis_4035_Assess_Prog_Type_Cd
     description: The type of program the assessment is for, see CIS_4035_ASSESS_PROG_TYPE for all possible values. This field is not used very often.
   - name: Cis_4036_Tool_Type_Cd
@@ -70,3 +72,8 @@ columns:
   - name: Start_Date
     description: The date the assessment was started. An assessment can be completed on a different day than when it was started.
     field_type: datetime
+
+table_relationships:
+  - foreign_table: CIS_100_CLIENT
+    join_logic:
+      - CIS_100_CLIENT.Client_Id = CIS_430_ASSESSMENT.Cis_100_Client_Id

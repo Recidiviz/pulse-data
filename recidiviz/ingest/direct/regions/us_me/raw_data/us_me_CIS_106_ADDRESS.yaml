@@ -10,7 +10,10 @@ columns:
   - name: Care_Of_Name
     is_pii: True
   - name: Cis_100_Client_Id
+    description: ID of client.
     is_pii: True
+    field_type: person_external_id
+    external_id_type: US_ME_DOC
   - name: Cis_1016_Relationship_Type_Cd
   - name: Cis_1017_Liv_Arrgmt_Cd
   - name: Cis_1017_Place_By_Cd
@@ -58,3 +61,8 @@ columns:
     is_pii: True
   - name: Unit_Id
   - name: Cis_9004_Country_Cd
+
+table_relationships:
+  - foreign_table: CIS_100_CLIENT
+    join_logic:
+      - CIS_100_CLIENT.Client_Id = CIS_106_ADDRESS.Cis_100_Client_Id

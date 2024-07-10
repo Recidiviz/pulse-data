@@ -33,9 +33,16 @@ columns:
   - name: CIS_100_CLIENT_ID
     is_pii: True
     description: ID of the client. Joins to `CIS_100_CLIENT.CLIENT_ID`.
+    field_type: person_external_id
+    external_id_type: US_ME_DOC
   - name: CREATED_BY_TX
     is_pii: True
   - name: CREATED_ON_DATE
   - name: MODIFIED_BY_TX
     is_pii: True
   - name: MODIFIED_ON_DATE
+
+table_relationships:
+  - foreign_table: CIS_100_CLIENT
+    join_logic:
+      - CIS_100_CLIENT.Client_Id = CIS_128_EMPLOYMENT_HISTORY.CIS_100_CLIENT_ID

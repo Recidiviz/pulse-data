@@ -20,6 +20,8 @@ columns:
     description: |-
       The assigned client's MEDOC ID
     is_pii: True
+    field_type: person_external_id
+    external_id_type: US_ME_DOC
   - name: Cis_1240_Supervision_Type_Cd
     description: |-
       A description of the supervising officer's broader job title.
@@ -119,3 +121,8 @@ columns:
   - name: Supervision_History_Id
     description: |-
       The primary key for the CIS_124_SUPERVISION_HISTORY table.
+
+table_relationships:
+  - foreign_table: CIS_100_CLIENT
+    join_logic:
+      - CIS_100_CLIENT.Client_Id = CIS_124_SUPERVISION_HISTORY.Cis_100_Client_Id

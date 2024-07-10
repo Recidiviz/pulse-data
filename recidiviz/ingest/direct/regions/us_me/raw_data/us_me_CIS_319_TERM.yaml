@@ -16,6 +16,8 @@ columns:
     description: |-
       The unique identifier for all clients in the offender management system.
     is_pii: True
+    field_type: person_external_id
+    external_id_type: US_ME_DOC
   - name: Cis_1200_Term_Status_Cd
     description: |-
       Lists whether the status is Active (1) or Complete (2).
@@ -58,3 +60,8 @@ columns:
   - name: Term_Id
     description: |-
       Primary key field
+
+table_relationships:
+  - foreign_table: CIS_100_CLIENT
+    join_logic:
+      - CIS_100_CLIENT.Client_Id = CIS_319_TERM.Cis_100_Client_Id

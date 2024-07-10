@@ -11,6 +11,8 @@ columns:
     description: |-
       The unique identifier for all clients in the offender management system.
     is_pii: True
+    field_type: person_external_id
+    external_id_type: US_ME_DOC
   - name: Cis_1000_Current_Status_Cd
     description: |-
       This is a client's status in the system between the Effct_Date and the End_Date.
@@ -309,3 +311,8 @@ columns:
   - name: Prim_Mess_Ind
   - name: Rca_Mess_Ind
   - name: Start_Datetime
+
+table_relationships:
+  - foreign_table: CIS_100_CLIENT
+    join_logic:
+      - CIS_100_CLIENT.Client_Id = CIS_125_CURRENT_STATUS_HIST.Cis_100_Client_Id
