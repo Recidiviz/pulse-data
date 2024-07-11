@@ -45,7 +45,7 @@ from recidiviz.persistence.database.schema_utils import (
     get_state_database_association_with_names,
     get_table_class_by_name,
 )
-from recidiviz.persistence.entity.base_entity import Entity
+from recidiviz.persistence.entity.base_entity import Entity, RootEntity
 from recidiviz.persistence.entity.entity_utils import (
     CoreEntityFieldIndex,
     EntityFieldType,
@@ -59,9 +59,6 @@ from recidiviz.persistence.entity.normalized_entities_utils import (
     update_forward_references_on_updated_entity,
 )
 from recidiviz.persistence.entity.state import entities as state_entities
-from recidiviz.persistence.entity.state.normalized_entities import (
-    get_entity_class_names_excluded_from_normalization,
-)
 from recidiviz.persistence.entity.state.normalized_state_entity import (
     NormalizedStateEntity,
 )
@@ -136,7 +133,7 @@ def convert_entity_trees_to_normalized_versions(
         # Verify the base entity and normalized entity are compatible
         base_entity_cls = type(base_entity)
         base_entity_cls_name = base_entity_cls.__name__
-        if normalized_base_entity_class.__base__ != base_entity_cls:
+        if normalized_base_entity_class.base_class_name() != base_entity_cls_name:
             raise ValueError(
                 f"Trying to convert entities of type {base_entity_cls} to "
                 f"the type {normalized_base_entity_class}, which is not the "
@@ -179,67 +176,64 @@ def convert_entity_trees_to_normalized_versions(
             type(base_entity), EntityFieldType.FORWARD_EDGE
         )
         for field in forward_fields:
+            field_value = normalized_base_entity_attributes[field]
+            if not field_value:
+                continue
+
             related_entity_cls_name = attr_field_referenced_cls_name_for_field_name(
                 normalized_base_entity_class, field
             )
-
-            if (
-                related_entity_cls_name
-                in get_entity_class_names_excluded_from_normalization()
-            ):
+            if not related_entity_cls_name:
                 continue
 
-            field_value = normalized_base_entity_attributes[field]
-            if field_value and related_entity_cls_name:
-                field_is_list = isinstance(field_value, list)
-                related_entities: Sequence[Entity] = (
-                    field_value if field_is_list else [field_value]
-                )
+            referenced_normalized_class: Type[
+                NormalizedStateEntity
+            ] = normalized_entity_class_with_base_class_name(related_entity_cls_name)
 
-                referenced_normalized_class: Type[
-                    NormalizedStateEntity
-                ] = normalized_entity_class_with_base_class_name(
-                    related_entity_cls_name
-                )
+            if issubclass(referenced_normalized_class, RootEntity):
+                continue
 
-                reverse_relationship_field = (
-                    attr_field_name_storing_referenced_cls_name(
-                        base_cls=referenced_normalized_class,
-                        referenced_cls_name=base_entity_cls_name,
+            field_is_list = isinstance(field_value, list)
+            related_entities: Sequence[Entity] = (
+                field_value if field_is_list else [field_value]
+            )
+
+            reverse_relationship_field = attr_field_name_storing_referenced_cls_name(
+                base_cls=referenced_normalized_class,
+                referenced_cls_name=base_entity_cls_name,
+            )
+
+            reverse_relationship_field_type = (
+                attr_field_type_for_field_name(
+                    referenced_normalized_class, reverse_relationship_field
+                )
+                if reverse_relationship_field
+                else None
+            )
+
+            for related_entity in related_entities:
+                related_entity_key = (
+                    referenced_normalized_class,
+                    related_entity.get_id(),
+                )
+                if related_entity_key not in normalized_entities_by_id:
+                    stack.append(
+                        (
+                            referenced_normalized_class,
+                            related_entity,
+                        )  # type: ignore
                     )
-                )
 
-                reverse_relationship_field_type = (
-                    attr_field_type_for_field_name(
-                        referenced_normalized_class, reverse_relationship_field
-                    )
-                    if reverse_relationship_field
-                    else None
-                )
-
-                for related_entity in related_entities:
-                    related_entity_key = (
-                        referenced_normalized_class,
-                        related_entity.get_id(),
-                    )
-                    if related_entity_key not in normalized_entities_by_id:
-                        stack.append(
-                            (
-                                referenced_normalized_class,
-                                related_entity,
-                            )  # type: ignore
+                forward_relationships_by_id_and_field[base_entity_key][
+                    field, field_is_list
+                ].append(related_entity_key)
+                if reverse_relationship_field and reverse_relationship_field_type:
+                    reverse_relationships_by_id_and_field[related_entity_key][
+                        (
+                            reverse_relationship_field,
+                            reverse_relationship_field_type,
                         )
-
-                    forward_relationships_by_id_and_field[base_entity_key][
-                        field, field_is_list
-                    ].append(related_entity_key)
-                    if reverse_relationship_field and reverse_relationship_field_type:
-                        reverse_relationships_by_id_and_field[related_entity_key][
-                            (
-                                reverse_relationship_field,
-                                reverse_relationship_field_type,
-                            )
-                        ].append(base_entity_key)
+                    ].append(base_entity_key)
 
     # At this point all of the entities are normalized, but need to be connected to their
     # appropriate relationships
@@ -314,42 +308,39 @@ def convert_entities_to_normalized_dicts(
             type(entity), EntityFieldType.FORWARD_EDGE
         )
         for field in forward_fields:
+            field_value = entity.get_field(field)
+            if field_value is None:
+                continue
             related_entity_cls_name = attr_field_referenced_cls_name_for_field_name(
                 type(entity), field
             )
-            if (
-                related_entity_cls_name
-                in get_entity_class_names_excluded_from_normalization()
-            ):
+            if not related_entity_cls_name:
                 continue
 
-            field_value = entity.get_field(field)
-            if field_value is not None and related_entity_cls_name:
-                field_is_list = isinstance(field_value, list)
-                referenced_normalized_class = (
-                    normalized_entity_class_with_base_class_name(
-                        related_entity_cls_name
-                    )
+            referenced_normalized_class = normalized_entity_class_with_base_class_name(
+                related_entity_cls_name
+            )
+            if issubclass(referenced_normalized_class, RootEntity):
+                continue
+
+            field_is_list = isinstance(field_value, list)
+            reverse_relationship_field = attr_field_name_storing_referenced_cls_name(
+                base_cls=referenced_normalized_class,
+                referenced_cls_name=entity_cls_name,
+            )
+            reverse_relationship_field_type = (
+                attr_field_type_for_field_name(
+                    referenced_normalized_class, reverse_relationship_field
                 )
-                reverse_relationship_field = (
-                    attr_field_name_storing_referenced_cls_name(
-                        base_cls=referenced_normalized_class,
-                        referenced_cls_name=entity_cls_name,
-                    )
-                )
-                reverse_relationship_field_type = (
-                    attr_field_type_for_field_name(
-                        referenced_normalized_class, reverse_relationship_field
-                    )
-                    if reverse_relationship_field
-                    else None
-                )
-                if (
-                    field_is_list
-                    and reverse_relationship_field_type is not None
-                    and reverse_relationship_field_type == BuildableAttrFieldType.LIST
-                ):
-                    many_to_many_relationships.add(field)
+                if reverse_relationship_field
+                else None
+            )
+            if (
+                field_is_list
+                and reverse_relationship_field_type is not None
+                and reverse_relationship_field_type == BuildableAttrFieldType.LIST
+            ):
+                many_to_many_relationships.add(field)
 
     stack = deque(
         convert_entities_to_schema(
