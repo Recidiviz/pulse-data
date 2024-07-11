@@ -23,7 +23,10 @@ These requisites are:
 """
 from google.cloud import bigquery
 
-from recidiviz.calculator.query.bq_utils import nonnull_end_date_clause
+from recidiviz.calculator.query.bq_utils import (
+    nonnull_end_date_clause,
+    nonnull_start_date_clause,
+)
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.dataset_config import (
     task_eligibility_criteria_state_specific_dataset,
@@ -80,12 +83,12 @@ commmitte_plus_6mo_plus_no_infraction AS (
         cp6.state_code,
         cp6.person_id,
         -- We want the intersection of both spans. That's why we use GREATEST and LEAST
-        GREATEST(cp6.start_date, ni.start_date) AS start_date,
+        GREATEST(cp6.start_date, {nonnull_start_date_clause('ni.start_date')}) AS start_date,
         LEAST(cp6.end_date, {nonnull_end_date_clause('ni.end_date')}) AS end_date,
         six_months_away_from_relevant_date,
         full_term_completion_date,
         parole_review_date,
-        ni.meets_criteria AS no_level_2_or_3_infractions,
+        IFNULL(ni.meets_criteria, True) AS no_level_2_or_3_infractions,
         {extract_object_from_json(object_column='infraction_categories', 
                                   object_type='STRING',
                                   json_column='ni.reason')} AS infraction_categories,
@@ -93,7 +96,7 @@ commmitte_plus_6mo_plus_no_infraction AS (
                                   object_type='STRING',
                                   json_column='ni.reason')} AS most_recent_infraction_date,
     FROM commmitte_plus_6mo cp6
-    INNER JOIN `{{project_id}}.{{task_eligibility_criteria_us_nd}}.no_level_2_or_3_infractions_for_6_months_materialized` ni
+    LEFT JOIN `{{project_id}}.{{task_eligibility_criteria_us_nd}}.no_level_2_or_3_infractions_for_6_months_materialized` ni
         ON cp6.person_id = ni.person_id
             AND cp6.state_code = ni.state_code
             AND cp6.start_date < {nonnull_end_date_clause('ni.end_date')}

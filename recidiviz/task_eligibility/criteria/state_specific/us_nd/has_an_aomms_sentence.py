@@ -67,7 +67,7 @@ SELECT
     span.person_id,
     span.start_date,
     span.end_date,
-    FALSE AS meets_criteria,
+    TRUE AS meets_criteria,
     TO_JSON(STRUCT('Minimum Mandatory Sentence' AS ineligible_offenses)) AS reason,
     'Minimum Mandatory Sentence' AS ineligible_offenses,
 FROM `{{project_id}}.{{sessions_dataset}}.sentence_spans_materialized` span,
