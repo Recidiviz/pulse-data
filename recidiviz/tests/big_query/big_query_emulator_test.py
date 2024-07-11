@@ -581,6 +581,50 @@ GROUP BY b;
             expected_result=[{"a_list": [3], "b": 2}],
         )
 
+    def test_json_load_rows_into_table(self) -> None:
+        """
+        Tests resolution of https://github.com/goccy/bigquery-emulator/issues/286 loading a mock table with a JSON
+        column and using JSON_TYPE, JSON_QUERY, and JSON_VALUE query functions to inspect the JSON elements.
+        """
+        address = BigQueryAddress(dataset_id=_DATASET_1, table_id=_TABLE_1)
+        self.create_mock_table(
+            address=address,
+            schema=[
+                bigquery.SchemaField(
+                    "json_column",
+                    field_type=bigquery.enums.StandardSqlTypeNames.JSON.value,
+                    mode="NULLABLE",
+                ),
+            ],
+        )
+        self.load_rows_into_table(
+            address=address,
+            data=[
+                {"json_column": {"a": "2024-01-01", "b": 1.2}},
+            ],
+        )
+        test_query = f"""
+        SELECT
+            JSON_TYPE(json_column) AS json_column_type,
+            JSON_TYPE(JSON_QUERY(json_column, "$.a")) AS a_column_type,
+            JSON_TYPE(JSON_QUERY(json_column, "$.b")) AS b_column_type,
+            SAFE_CAST(JSON_VALUE(json_column, "$.a") AS DATE) AS a,
+            SAFE_CAST(JSON_VALUE(json_column, "$.b") AS FLOAT64) AS b,
+        FROM `{self.project_id}.{address.dataset_id}.{address.table_id}`
+        """
+        self.run_query_test(
+            test_query,
+            expected_result=[
+                {
+                    "json_column_type": "object",
+                    "a_column_type": "string",
+                    "b_column_type": "number",
+                    "a": date(2024, 1, 1),
+                    "b": 1.2,
+                },
+            ],
+        )
+
     def test_array_agg_with_nulls(self) -> None:
         """Tests fix for https://github.com/goccy/bigquery-emulator/issues/33"""
         address = BigQueryAddress(dataset_id=_DATASET_1, table_id=_TABLE_1)
