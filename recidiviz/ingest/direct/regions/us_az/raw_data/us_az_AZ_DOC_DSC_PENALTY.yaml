@@ -109,3 +109,6 @@ columns:
   - name: ERC_SUSPENSION_IMPOSED_SR_ID
     description: |-
       The previous ERC penalty staff reaviw ID. References table AZ_DOC_DSC_STAFF_REVIEW
+  - name: FINE
+    description: |-
+      The fine required to be paid as a part of the penalty.
