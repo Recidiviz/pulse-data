@@ -37,7 +37,6 @@ from recidiviz.justice_counts.metrics.custom_reporting_frequency import (
     CustomReportingFrequency,
 )
 from recidiviz.justice_counts.metrics.metric_interface import MetricInterface
-from recidiviz.justice_counts.metrics.metric_registry import METRICS_BY_SYSTEM
 from recidiviz.justice_counts.spreadsheet import SpreadsheetInterface
 from recidiviz.justice_counts.utils.constants import UploadMethod
 from recidiviz.persistence.database.schema.justice_counts import schema
@@ -94,9 +93,6 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
                     auth0_user_id=user.auth0_user_id,
                     agency=agency,
                     metric_key_to_metric_interface={},
-                    metric_definitions=METRICS_BY_SYSTEM[
-                        schema.System.LAW_ENFORCEMENT.value
-                    ],
                     upload_method=UploadMethod.BULK_UPLOAD,
                 )
 
@@ -138,9 +134,6 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
                 auth0_user_id=user.auth0_user_id,
                 agency=agency,
                 metric_key_to_metric_interface={},
-                metric_definitions=METRICS_BY_SYSTEM[
-                    schema.System.LAW_ENFORCEMENT.value
-                ],
                 upload_method=UploadMethod.BULK_UPLOAD,
             )
 
@@ -228,9 +221,6 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
                 auth0_user_id=user.auth0_user_id,
                 agency=agency,
                 metric_key_to_metric_interface=metric_key_to_metric_interface,
-                metric_definitions=METRICS_BY_SYSTEM[schema.System.PAROLE.value]
-                + METRICS_BY_SYSTEM[schema.System.PROBATION.value]
-                + METRICS_BY_SYSTEM[schema.System.PAROLE.value],
                 upload_method=UploadMethod.BULK_UPLOAD,
             )
 
@@ -412,7 +402,6 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
                 auth0_user_id=user.auth0_user_id,
                 agency=agency,
                 metric_key_to_metric_interface={},
-                metric_definitions=METRICS_BY_SYSTEM[schema.System.PRISONS.value],
                 upload_method=UploadMethod.BULK_UPLOAD,
             )
 

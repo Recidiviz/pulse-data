@@ -59,9 +59,7 @@ from recidiviz.justice_counts.metrics.custom_reporting_frequency import (
 )
 from recidiviz.justice_counts.metrics.metric_definition import IncludesExcludesSetting
 from recidiviz.justice_counts.metrics.metric_interface import MetricInterface
-from recidiviz.justice_counts.metrics.metric_registry import METRICS_BY_SYSTEM
 from recidiviz.justice_counts.report import ReportInterface
-from recidiviz.justice_counts.types import BulkUploadFileType
 from recidiviz.justice_counts.user_account import UserAccountInterface
 from recidiviz.justice_counts.utils.constants import UploadMethod
 from recidiviz.justice_counts.utils.datapoint_utils import get_value
@@ -2693,9 +2691,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         uploader.upload_workbook(
             session=self.session,
             xls=pd.ExcelFile(law_enforcement_excel),
-            metric_definitions=METRICS_BY_SYSTEM[schema.System.LAW_ENFORCEMENT.value],
             filename=law_enforcement_excel,
-            upload_filetype=BulkUploadFileType.XLSX,
             upload_method=UploadMethod.BULK_UPLOAD,
         )
         self.session.commit()
@@ -2755,10 +2751,8 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         uploader.upload_workbook(
             session=self.session,
             xls=pd.ExcelFile(law_enforcement_excel),
-            metric_definitions=METRICS_BY_SYSTEM[schema.System.LAW_ENFORCEMENT.value],
             filename=law_enforcement_excel,
             upload_method=UploadMethod.BULK_UPLOAD,
-            upload_filetype=BulkUploadFileType.XLSX,
         )
         self.session.commit()
 

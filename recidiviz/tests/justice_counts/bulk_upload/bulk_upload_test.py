@@ -36,10 +36,7 @@ from recidiviz.justice_counts.dimensions.prosecution import (
     StaffType as ProsecutionStaffType,
 )
 from recidiviz.justice_counts.dimensions.supervision import StaffType
-from recidiviz.justice_counts.exceptions import (
-    BulkUploadMessageType,
-    JusticeCountsBulkUploadException,
-)
+from recidiviz.justice_counts.exceptions import JusticeCountsBulkUploadException
 from recidiviz.justice_counts.metric_setting import MetricSettingInterface
 from recidiviz.justice_counts.metrics import (
     law_enforcement,
@@ -48,9 +45,7 @@ from recidiviz.justice_counts.metrics import (
     supervision,
 )
 from recidiviz.justice_counts.metrics.metric_interface import MetricInterface
-from recidiviz.justice_counts.metrics.metric_registry import METRICS_BY_SYSTEM
 from recidiviz.justice_counts.report import ReportInterface
-from recidiviz.justice_counts.types import BulkUploadFileType
 from recidiviz.justice_counts.user_account import UserAccountInterface
 from recidiviz.justice_counts.utils.constants import UploadMethod
 from recidiviz.persistence.database.schema.justice_counts import schema
@@ -133,9 +128,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             _, metric_key_to_errors = workbook_uploader.upload_workbook(
                 session=session,
                 xls=pd.ExcelFile(file_path),
-                metric_definitions=METRICS_BY_SYSTEM[schema.System.PROSECUTION.value],
                 filename=file_path,
-                upload_filetype=BulkUploadFileType.XLSX,
                 upload_method=UploadMethod.BULK_UPLOAD,
             )
 
@@ -186,9 +179,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             workbook_uploader.upload_workbook(
                 session=session,
                 xls=pd.ExcelFile(file_path),
-                metric_definitions=METRICS_BY_SYSTEM[schema.System.PRISONS.value],
                 filename=file_path,
-                upload_filetype=BulkUploadFileType.XLSX,
                 upload_method=UploadMethod.BULK_UPLOAD,
             )
 
@@ -247,9 +238,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             workbook_uploader.upload_workbook(
                 session=session,
                 xls=pd.ExcelFile(excel_file_path),
-                metric_definitions=METRICS_BY_SYSTEM[schema.System.PRISONS.value],
                 filename=excel_file_path,
-                upload_filetype=BulkUploadFileType.CSV,
                 upload_method=UploadMethod.BULK_UPLOAD,
             )
 
@@ -294,9 +283,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             workbook_uploader.upload_workbook(
                 session=session,
                 xls=pd.ExcelFile(file_path),
-                metric_definitions=METRICS_BY_SYSTEM[schema.System.PROSECUTION.value],
                 filename=file_path,
-                upload_filetype=BulkUploadFileType.XLSX,
                 upload_method=UploadMethod.BULK_UPLOAD,
             )
 
@@ -331,11 +318,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             workbook_uploader.upload_workbook(
                 session=session,
                 xls=pd.ExcelFile(file_path),
-                metric_definitions=METRICS_BY_SYSTEM[
-                    schema.System.LAW_ENFORCEMENT.value
-                ],
                 filename=file_path,
-                upload_filetype=BulkUploadFileType.XLSX,
                 upload_method=UploadMethod.BULK_UPLOAD,
             )
 
@@ -368,9 +351,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             workbook_uploader.upload_workbook(
                 session=session,
                 xls=pd.ExcelFile(file_path),
-                metric_definitions=METRICS_BY_SYSTEM[schema.System.SUPERVISION.value],
                 filename=file_path,
-                upload_filetype=BulkUploadFileType.XLSX,
                 upload_method=UploadMethod.BULK_UPLOAD,
             )
             reports = ReportInterface.get_reports_by_agency_id(
@@ -622,11 +603,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             workbook_uploader.upload_workbook(
                 session=session,
                 xls=pd.ExcelFile(file_path),
-                metric_definitions=METRICS_BY_SYSTEM[
-                    schema.System.LAW_ENFORCEMENT.value
-                ],
                 filename=file_path,
-                upload_filetype=BulkUploadFileType.XLSX,
                 upload_method=UploadMethod.BULK_UPLOAD,
             )
 
@@ -679,104 +656,6 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                     )
                     self.assertEqual(sum(inferred_value), 30)
 
-    def test_missing_total_and_metric_validation(
-        self,
-    ) -> None:
-        """Checks that we warn the user when a metric is missing or a total sheet is missing."""
-        with SessionFactory.using_database(self.database_key) as session:
-            user_account = UserAccountInterface.get_user_by_id(
-                session=session, user_account_id=self.user_account_id
-            )
-            law_enforcement_agency = AgencyInterface.get_agency_by_id(
-                session=session, agency_id=self.law_enforcement_agency_id
-            )
-            file_path = create_excel_file(
-                system=schema.System.LAW_ENFORCEMENT,
-                sheet_names_to_skip={
-                    "arrests",
-                    "use_of_force",
-                    "use_of_force_by_type",
-                    "staff_by_race",
-                    "staff_by_biological_sex",
-                    "staff_by_type",
-                },
-                file_name="test_missing_total_and_metric_validation.xlsx",
-            )
-
-            workbook_uploader = WorkbookUploader(
-                system=schema.System.LAW_ENFORCEMENT,
-                agency=law_enforcement_agency,
-                user_account=user_account,
-                metric_key_to_metric_interface={},
-            )
-            _, metric_key_to_errors = workbook_uploader.upload_workbook(
-                session=session,
-                xls=pd.ExcelFile(file_path),
-                metric_definitions=METRICS_BY_SYSTEM[
-                    schema.System.LAW_ENFORCEMENT.value
-                ],
-                filename=file_path,
-                upload_filetype=BulkUploadFileType.XLSX,
-                upload_method=UploadMethod.BULK_UPLOAD,
-            )
-
-            # Case 1 (Missing entire metric)
-            # Use of Force has 1 breakdown
-            # We expect niether a Missing Breakdown Sheet nor Missing Total Sheet warning
-            # because entire metric is missing. This will be handled on the frontend
-            self.assertEqual(len(metric_key_to_errors), 2)
-
-            # Case 2 (Missing Total Sheet)
-            # Arrests has 3 breakdowns
-            # We expect 1 Missing Total Sheet warning
-            arrest_errors = metric_key_to_errors[law_enforcement.arrests.key]
-            self.assertEqual(len(arrest_errors), 1)
-            arrest_error = arrest_errors[0]
-            self.assertEqual(arrest_error.title, "Missing Total Sheet")
-            self.assertEqual(arrest_error.message_type, BulkUploadMessageType.WARNING)
-            self.assertIn(
-                "No total values sheet was provided for this metric. The total values will be assumed to be equal to the sum of the breakdown values provided in arrests_by_",
-                arrest_error.description,
-            )
-
-            # Case 3 (Missing breakdown sheets)
-            # Staff has 3 breakdowns
-            # We expect 3 Missing Breakdown Sheet warnings
-            staff_errors = metric_key_to_errors[law_enforcement.staff.key]
-            self.assertEqual(len(staff_errors), 3)
-            for error in staff_errors:
-                if error.sheet_name == "staff_by_race":
-                    self.assertEqual(error.title, "Missing Breakdown Sheet")
-                    self.assertEqual(error.message_type, BulkUploadMessageType.WARNING)
-                    self.assertEqual(
-                        "Please provide data in a sheet named staff_by_race.",
-                        error.description,
-                    )
-                elif error.sheet_name == "staff_by_biological_sex":
-                    self.assertEqual(error.title, "Missing Breakdown Sheet")
-                    self.assertEqual(
-                        error.message_type,
-                        BulkUploadMessageType.WARNING,
-                    )
-                    self.assertEqual(
-                        "Please provide data in a sheet named staff_by_biological_sex.",
-                        error.description,
-                    )
-                elif error.sheet_name == "staff_by_type":
-                    self.assertEqual(error.title, "Missing Breakdown Sheet")
-                    self.assertEqual(
-                        error.message_type,
-                        BulkUploadMessageType.WARNING,
-                    )
-                    self.assertEqual(
-                        "Please provide data in a sheet named staff_by_type.",
-                        error.description,
-                    )
-                else:
-                    raise ValueError(
-                        "There should only be errors for the staff_by_race and staff_by_biological_sex sheets."
-                    )
-
     def test_no_missing_breakdown_sheet_warnings_for_csv(
         self,
     ) -> None:
@@ -818,11 +697,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             _, metric_key_to_errors = workbook_uploader.upload_workbook(
                 session=session,
                 xls=pd.ExcelFile(excel_file_path),
-                metric_definitions=METRICS_BY_SYSTEM[
-                    schema.System.LAW_ENFORCEMENT.value
-                ],
                 filename=excel_file_path,
-                upload_filetype=BulkUploadFileType.CSV,
                 upload_method=UploadMethod.BULK_UPLOAD,
             )
 
@@ -870,11 +745,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             _, metric_key_to_errors = workbook_uploader.upload_workbook(
                 session=session,
                 xls=pd.ExcelFile(excel_file_path),
-                metric_definitions=METRICS_BY_SYSTEM[
-                    schema.System.LAW_ENFORCEMENT.value
-                ],
                 filename=excel_file_path,
-                upload_filetype=BulkUploadFileType.CSV,
                 upload_method=UploadMethod.BULK_UPLOAD,
             )
 
@@ -920,11 +791,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             _, metric_key_to_errors = workbook_uploader.upload_workbook(
                 session=session,
                 xls=pd.ExcelFile(file_path),
-                metric_definitions=METRICS_BY_SYSTEM[
-                    schema.System.LAW_ENFORCEMENT.value
-                ],
                 filename=file_path,
-                upload_filetype=BulkUploadFileType.XLSX,
                 upload_method=UploadMethod.BULK_UPLOAD,
             )
             # There should be no errors because calls for service metric is missing
@@ -972,9 +839,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             metric_key_to_datapoint_jsons, _ = workbook_uploader.upload_workbook(
                 session=session,
                 xls=pd.ExcelFile(file_path),
-                metric_definitions=METRICS_BY_SYSTEM[schema.System.SUPERVISION.value],
                 filename=file_path,
-                upload_filetype=BulkUploadFileType.XLSX,
                 upload_method=UploadMethod.BULK_UPLOAD,
             )
 
@@ -1033,9 +898,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             _, metric_key_to_errors = workbook_uploader.upload_workbook(
                 session=session,
                 xls=pd.ExcelFile(file_path),
-                metric_definitions=METRICS_BY_SYSTEM[schema.System.PRISONS.value],
                 filename=file_path,
-                upload_filetype=BulkUploadFileType.XLSX,
                 upload_method=UploadMethod.BULK_UPLOAD,
             )
             self.assertEqual(len(metric_key_to_errors), 3)
@@ -1084,9 +947,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             _, metric_key_to_errors = workbook_uploader.upload_workbook(
                 session=session,
                 xls=pd.ExcelFile(file_path),
-                metric_definitions=METRICS_BY_SYSTEM[schema.System.PRISONS.value],
                 filename=file_path,
-                upload_filetype=BulkUploadFileType.XLSX,
                 upload_method=UploadMethod.BULK_UPLOAD,
             )
             self.assertEqual(len(metric_key_to_errors), 8)
@@ -1146,9 +1007,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             workbook_uploader.upload_workbook(
                 session=session,
                 xls=pd.ExcelFile(file_path),
-                metric_definitions=METRICS_BY_SYSTEM[schema.System.PRISONS.value],
                 filename=file_path,
-                upload_filetype=BulkUploadFileType.XLSX,
                 upload_method=UploadMethod.BULK_UPLOAD,
             )
             # Make sure reports were created
@@ -1168,9 +1027,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             workbook_uploader.upload_workbook(
                 session=session,
                 xls=pd.ExcelFile(file_path),
-                metric_definitions=METRICS_BY_SYSTEM[schema.System.PRISONS.value],
                 filename=file_path,
-                upload_filetype=BulkUploadFileType.XLSX,
                 upload_method=UploadMethod.BULK_UPLOAD,
             )
             session.commit()
@@ -1193,9 +1050,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             workbook_uploader.upload_workbook(
                 session=session,
                 xls=pd.ExcelFile(file_path),
-                metric_definitions=METRICS_BY_SYSTEM[schema.System.PRISONS.value],
                 filename=file_path,
-                upload_filetype=BulkUploadFileType.XLSX,
                 upload_method=UploadMethod.BULK_UPLOAD,
             )
             session.commit()
@@ -1228,9 +1083,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             workbook_uploader.upload_workbook(
                 session=session,
                 xls=pd.ExcelFile(file_path),
-                metric_definitions=METRICS_BY_SYSTEM[schema.System.PRISONS.value],
                 filename=file_path,
-                upload_filetype=BulkUploadFileType.XLSX,
                 upload_method=UploadMethod.BULK_UPLOAD,
             )
             session.commit()
@@ -1261,9 +1114,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             workbook_uploader.upload_workbook(
                 session=session,
                 xls=pd.ExcelFile(file_path),
-                metric_definitions=METRICS_BY_SYSTEM[schema.System.PRISONS.value],
                 filename=file_path,
-                upload_filetype=BulkUploadFileType.XLSX,
                 upload_method=UploadMethod.BULK_UPLOAD,
             )
             session.commit()
@@ -1307,9 +1158,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             workbook_uploader.upload_workbook(
                 session=session,
                 xls=pd.ExcelFile(file_path),
-                metric_definitions=METRICS_BY_SYSTEM[schema.System.PRISONS.value],
                 filename=file_path,
-                upload_filetype=BulkUploadFileType.XLSX,
                 upload_method=UploadMethod.BULK_UPLOAD,
             )
             reports = ReportInterface.get_reports_by_agency_id(
@@ -1334,9 +1183,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             workbook_uploader.upload_workbook(
                 session=session,
                 xls=pd.ExcelFile(file_path),
-                metric_definitions=METRICS_BY_SYSTEM[schema.System.PRISONS.value],
                 filename=file_path,
-                upload_filetype=BulkUploadFileType.XLSX,
                 upload_method=UploadMethod.BULK_UPLOAD,
             )
             self.assertEqual(len(workbook_uploader.updated_reports), 0)
@@ -1351,9 +1198,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             workbook_uploader.upload_workbook(
                 session=session,
                 xls=pd.ExcelFile(file_path),
-                metric_definitions=METRICS_BY_SYSTEM[schema.System.PRISONS.value],
                 filename=file_path,
-                upload_filetype=BulkUploadFileType.XLSX,
                 upload_method=UploadMethod.BULK_UPLOAD,
             )
             reports = ReportInterface.get_reports_by_agency_id(
@@ -1407,9 +1252,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             workbook_uploader.upload_workbook(
                 session=session,
                 xls=pd.ExcelFile(file_path),
-                metric_definitions=METRICS_BY_SYSTEM[schema.System.PRISONS.value],
                 filename=file_path,
-                upload_filetype=BulkUploadFileType.XLSX,
                 upload_method=UploadMethod.BULK_UPLOAD,
             )
             super_agency_reports = ReportInterface.get_reports_by_agency_id(
@@ -1447,9 +1290,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             workbook_uploader.upload_workbook(
                 session=session,
                 xls=pd.ExcelFile(file_path),
-                metric_definitions=METRICS_BY_SYSTEM[schema.System.PROSECUTION.value],
                 filename=file_path,
-                upload_filetype=BulkUploadFileType.XLSX,
                 upload_method=UploadMethod.BULK_UPLOAD,
             )
             self.assertEqual(len(workbook_uploader.metric_key_to_errors), 0)

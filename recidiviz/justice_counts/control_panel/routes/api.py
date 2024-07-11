@@ -1399,7 +1399,6 @@ def get_api_blueprint(
                 system=system,
                 agency=agency,
                 file_name=file_name,
-                metric_definitions=metric_definitions,
                 upload_method=UploadMethod.AUTOMATED_BULK_UPLOAD,
             )
 
@@ -1557,7 +1556,6 @@ def get_api_blueprint(
                 file_name=file.filename,  # type: ignore[arg-type]
                 agency=agency,
                 metric_key_to_metric_interface=metric_key_to_metric_interface,
-                metric_definitions=metric_definitions,
                 upload_method=UploadMethod.BULK_UPLOAD,
             )
 
