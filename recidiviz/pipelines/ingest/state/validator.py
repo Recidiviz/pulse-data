@@ -249,6 +249,9 @@ def _sentencing_entities_checks(
                 sentence.sentence_status_snapshots,
             ):
                 yield err
+            # TODO(#10389): Add a validation here that throws if a COMPLETED status (or
+            #  status that means completion like COMMUTED) is followed by a
+            #  non-completion status.
 
 
 def ledger_entity_checks(
