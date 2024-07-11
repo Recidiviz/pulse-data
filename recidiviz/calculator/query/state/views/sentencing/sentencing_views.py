@@ -21,6 +21,9 @@ from recidiviz.big_query.big_query_view import BigQueryViewBuilder
 from recidiviz.calculator.query.state.views.sentencing.case_record import (
     SENTENCING_CASE_RECORD_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.sentencing.charge_record import (
+    SENTENCING_CHARGE_RECORD_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.sentencing.client_record import (
     SENTENCING_CLIENT_RECORD_VIEW_BUILDER,
 )
@@ -47,4 +50,5 @@ SENTENCING_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
     SENTENCING_CLIENT_RECORD_VIEW_BUILDER,
     SENTENCING_STAFF_RECORD_VIEW_BUILDER,
     SENTENCING_COMMUNITY_OPPORTUNITY_RECORD_VIEW_BUILDER,
+    SENTENCING_CHARGE_RECORD_VIEW_BUILDER,
 ]
