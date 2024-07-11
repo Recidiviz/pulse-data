@@ -155,6 +155,11 @@ AND (
 AND (
     CAST(BW_SY AS INT64) <= CAST(FORMAT_DATE('%Y%m%d', CURRENT_TIMESTAMP()) AS INT64)
 )
+-- Warrant / abscosion statuses (65N*/65L*) are tracked in the statuses table, but don't
+-- impact the *sentence* status. Filter these out.
+AND (
+    BW_SCD NOT LIKE '65N%' AND BW_SCD NOT LIKE '65L%'
+)
 """
 
 BS_BT_BU_IMPOSITION_FILTER = f"""
