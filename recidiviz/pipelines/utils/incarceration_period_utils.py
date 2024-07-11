@@ -17,7 +17,7 @@
 """Utils for validating and manipulating incarceration periods for use in
 calculations."""
 import datetime
-from typing import List, Optional
+from typing import List, Optional, TypeVar
 
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_period import (
@@ -36,6 +36,7 @@ from recidiviz.persistence.entity.normalized_entities_utils import (
 )
 from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
 from recidiviz.persistence.entity.state.normalized_entities import (
+    NormalizedStateIncarcerationPeriod,
     NormalizedStateSupervisionPeriod,
 )
 from recidiviz.pipelines.utils.entity_normalization.normalized_supervision_period_index import (
@@ -46,6 +47,11 @@ from recidiviz.pipelines.utils.period_utils import (
 )
 
 DEFAULT_VALID_TRANSFER_THRESHOLD_DAYS: int = 1
+
+StateIncarcerationPeriodT = TypeVar(
+    "StateIncarcerationPeriodT",
+    bound=(StateIncarcerationPeriod | NormalizedStateIncarcerationPeriod),
+)
 
 
 def _is_transfer_start(period: StateIncarcerationPeriod) -> bool:
@@ -88,8 +94,8 @@ def dates_are_temporally_adjacent(
 
 
 def periods_are_temporally_adjacent(
-    first_incarceration_period: StateIncarcerationPeriod,
-    second_incarceration_period: StateIncarcerationPeriod,
+    first_incarceration_period: StateIncarcerationPeriodT,
+    second_incarceration_period: StateIncarcerationPeriodT,
     valid_adjacency_threshold_override: Optional[int] = None,
 ) -> bool:
     """Returns whether two incarceration periods are temporally adjacent, meaning they

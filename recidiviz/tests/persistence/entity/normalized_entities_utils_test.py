@@ -617,6 +617,7 @@ class TestUpdateNormalizedEntityWithGloballyUniqueId(unittest.TestCase):
             supervision_period_id=789,
             external_id="sp1",
             state_code=state_code.value,
+            start_date=datetime.date(2020, 1, 1),
         )
 
         update_normalized_entity_with_globally_unique_id(

@@ -22,7 +22,7 @@ ORM objects can't provide.
 """
 
 import datetime
-from typing import List, Optional, TypeVar, Union
+from typing import List, Optional
 
 import attr
 
@@ -141,12 +141,6 @@ from recidiviz.persistence.entity.state.entity_field_validators import (
     pre_norm_opt,
 )
 from recidiviz.persistence.entity.state.state_entity_mixins import LedgerEntityMixin
-
-# **** Entity Types for convenience *****:
-PeriodType = TypeVar(
-    "PeriodType", bound=Union["StateSupervisionPeriod", "StateIncarcerationPeriod"]
-)
-
 
 # **** Entity ordering template *****:
 
@@ -1064,9 +1058,7 @@ class StateSupervisionPeriod(
 
     # Attributes
     #   - When
-    start_date: Optional[datetime.date] = attr.ib(
-        default=None, validator=attr_validators.is_opt_date
-    )
+    start_date: datetime.date = attr.ib(validator=attr_validators.is_date)
     termination_date: Optional[datetime.date] = attr.ib(
         default=None, validator=attr_validators.is_opt_date
     )

@@ -53,6 +53,10 @@ from recidiviz.common.constants.state.state_supervision_period import (
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.entity.state import entities, normalized_entities
+from recidiviz.persistence.entity.state.normalized_entities import (
+    NormalizedStateIncarcerationPeriod,
+    NormalizedStateSupervisionPeriod,
+)
 from recidiviz.pipelines.metrics.base_metric_pipeline import (
     ClassifyResults,
     ProduceMetrics,
@@ -346,8 +350,10 @@ class TestClassifyResults(unittest.TestCase):
     @staticmethod
     def load_person_entities_dict(
         person: entities.StatePerson,
-        incarceration_periods: Optional[List[entities.StateIncarcerationPeriod]] = None,
-        supervision_periods: Optional[List[entities.StateSupervisionPeriod]] = None,
+        incarceration_periods: Optional[
+            List[NormalizedStateIncarcerationPeriod]
+        ] = None,
+        supervision_periods: Optional[List[NormalizedStateSupervisionPeriod]] = None,
     ) -> Dict[str, List]:
         return {
             entities.StatePerson.__name__: [person],

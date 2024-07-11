@@ -1181,6 +1181,7 @@ class TestBidirectionalUpdates(TestCase):
             supervision_period_id=123,
             external_id="123",
             state_code=_STATE_CODE,
+            start_date=datetime.date(2020, 1, 1),
         )
 
         new_case_type_entries = [
@@ -1206,6 +1207,7 @@ class TestBidirectionalUpdates(TestCase):
             supervision_period_id=123,
             external_id="123",
             state_code=_STATE_CODE,
+            start_date=datetime.date(2020, 1, 1),
             case_type_entries=updated_case_type_entries,
         )
 
@@ -1221,6 +1223,7 @@ class TestBidirectionalUpdates(TestCase):
             supervision_period_id=123,
             external_id="123",
             state_code=_STATE_CODE,
+            start_date=datetime.date(2020, 1, 1),
         )
 
         updated_entity = deep_entity_update(
@@ -1232,6 +1235,7 @@ class TestBidirectionalUpdates(TestCase):
             supervision_period_id=123,
             external_id="123",
             state_code=_STATE_CODE,
+            start_date=datetime.date(2020, 1, 1),
             supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
         )
 
@@ -1246,6 +1250,7 @@ class TestBidirectionalUpdates(TestCase):
             supervision_period_id=123,
             external_id="123",
             state_code=_STATE_CODE,
+            start_date=datetime.date(2020, 1, 1),
             case_type_entries=[
                 StateSupervisionCaseTypeEntry.new_with_defaults(
                     supervision_case_type_entry_id=123,
@@ -1272,6 +1277,7 @@ class TestBidirectionalUpdates(TestCase):
             supervision_period_id=123,
             external_id="123",
             state_code=_STATE_CODE,
+            start_date=datetime.date(2020, 1, 1),
             case_type_entries=[
                 StateSupervisionCaseTypeEntry.new_with_defaults(
                     supervision_case_type_entry_id=123,
