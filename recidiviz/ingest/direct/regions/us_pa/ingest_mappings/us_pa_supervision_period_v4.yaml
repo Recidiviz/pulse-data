@@ -22,6 +22,7 @@ input_columns:
   - district_sub_office_id
   - supervision_location_org_code
   - supervision_types
+  - status_code
 unused_columns:
   - supervising_officer_name
 output:
@@ -138,48 +139,82 @@ output:
                       - supervision_location_org_code
           custodial_authority: $literal_enum(StateCustodialAuthority.SUPERVISION_AUTHORITY)
           supervision_level:
-            $enum_mapping:
-              $raw_text: supervision_level
-              $mappings:
-                StateSupervisionLevel.MAXIMUM:
-                  - "MA"
-                  - "MAX"
-                StateSupervisionLevel.MEDIUM:
-                  - "ME"
-                  - "MED"
-                StateSupervisionLevel.MINIMUM:
-                  - "MI"
-                  - "MIN"
-                StateSupervisionLevel.ELECTRONIC_MONITORING_ONLY: "MON"
-                StateSupervisionLevel.LIMITED:
-                  - "ADM" # Administrative Supervision
-                  - "SPC" # Special Circumstance
-                StateSupervisionLevel.HIGH: "ENH"
-                StateSupervisionLevel.INTERNAL_UNKNOWN:
-                  - "NOT" # <Unclear what this is>
-                  # These are very old status codes that only show up in history table (dbo_Hist_Release) largely in records
-                  # from the 80s.
-                  - "00"
-                  - "50"
-                  - "51"
-                  - "52"
-                  - "53"
-                  - "54"
-                  - "55"
-                  - "56"
-                  - "57"
-                  - "58"
-                  - "59"
-                  - "5A"
-                  - "5B"
-                  - "5C"
-                  - "5D"
-                  - "5E"
-                  - "5F"
-                  - "5G"
-                  - "5H"
-                  - "5J"
-                  - "5K"
+            $conditional:
+              - $if:
+                  $in:
+                    $value: status_code
+                    $options:
+                      - $literal("20") # UCV Violation (New Offense) Detention
+                      - $literal("22") # UCV Violation (Tech & New Offense) Detention
+                      - $literal("32") # UCV Violation (Tech) Detention
+                      - $literal("34") # UCV Violation (New Offense) Detention
+                      - $literal("36") # CV Violation (New Offense) Detention
+                      - $literal("29") # Absconder Status - Not Reporting
+                      - $literal("30") # UCV and Absconder Status
+                      # These detainer statuses indicate that the person has been paroled by the Board and released to a detainer
+                      # At this point, their location is only being tracked administratively by the PBPP
+                      - $literal("50") # Federal/US Marshall Detainer
+                      - $literal("51") # Other State Detainer
+                      - $literal("52") # INS Detainer
+                $then:
+                  $enum_mapping:
+                    $raw_text: status_code
+                    $mappings:
+                      StateSupervisionLevel.IN_CUSTODY:
+                        - "20" # UCV Violation (New Offense) Detention
+                        - "22" # UCV Violation (Tech & New Offense) Detention
+                        - "32" # UCV Violation (Tech) Detention
+                        - "34" # UCV Violation (New Offense) Detention
+                        - "36" # CV Violation (New Offense) Detention
+                        - "50" # Federal/US Marshall Detainer
+                        - "51" # Other State Detainer
+                        - "52" # INS Detainer
+                      StateSupervisionLevel.ABSCONSION:
+                        - "29" # Absconder Status - Not Reporting
+                        - "30" # UCV and Absconder Status
+              - $else:
+                  $enum_mapping:
+                    $raw_text: supervision_level
+                    $mappings:
+                      StateSupervisionLevel.MAXIMUM:
+                        - "MA"
+                        - "MAX"
+                      StateSupervisionLevel.MEDIUM:
+                        - "ME"
+                        - "MED"
+                      StateSupervisionLevel.MINIMUM:
+                        - "MI"
+                        - "MIN"
+                      StateSupervisionLevel.ELECTRONIC_MONITORING_ONLY: "MON"
+                      StateSupervisionLevel.LIMITED:
+                        - "ADM" # Administrative Supervision
+                        - "SPC" # Special Circumstance
+                      StateSupervisionLevel.HIGH: "ENH"
+                      StateSupervisionLevel.INTERNAL_UNKNOWN:
+                        - "NOT" # <Unclear what this is>
+                        # These are very old status codes that only show up in history table (dbo_Hist_Release) largely in records
+                        # from the 80s.
+                        - "00"
+                        - "50"
+                        - "51"
+                        - "52"
+                        - "53"
+                        - "54"
+                        - "55"
+                        - "56"
+                        - "57"
+                        - "58"
+                        - "59"
+                        - "5A"
+                        - "5B"
+                        - "5C"
+                        - "5D"
+                        - "5E"
+                        - "5F"
+                        - "5G"
+                        - "5H"
+                        - "5J"
+                        - "5K"
           conditions: condition_codes
           supervising_officer_staff_external_id: supervising_officer_id
           supervising_officer_staff_external_id_type:

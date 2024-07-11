@@ -123,6 +123,7 @@ parole_count_id_level_info AS (
     parole_count_id_termination_reason,
     county_of_residence,
     supervision_level,
+    status_code,
     most_recent_district_office,
     parole_count_id_start_date,
     parole_count_id_start_date_raw,
@@ -140,6 +141,7 @@ parole_count_id_level_info AS (
         parole_count_id_termination_reason,
         county_of_residence,
         supervision_level,
+        status_code,
         most_recent_district_office,
         SAFE.PARSE_DATE('%Y%m%d', parole_count_id_start_date) AS parole_count_id_start_date,
         SAFE.PARSE_DATE('%Y%m%d', parole_count_id_termination_date) AS parole_count_id_termination_date,
@@ -169,6 +171,7 @@ start_count_edges AS (
         parole_count_id_start_date AS edge_date,
         county_of_residence,
         supervision_level,
+        status_code,
         CAST(NULL AS STRING) AS supervising_officer_name,
         CAST(NULL AS STRING) AS supervising_officer_id,
         CAST(NULL AS STRING) AS district_office,
@@ -191,6 +194,7 @@ end_count_edges AS (
         parole_count_id_termination_date AS edge_date,
         CAST(NULL AS STRING) AS county_of_residence,
         CAST(NULL AS STRING) AS supervision_level,
+        CAST(NULL AS STRING) AS status_code,
         CAST(NULL AS STRING) AS supervising_officer_name,
         CAST(NULL AS STRING) AS supervising_officer_id,
         most_recent_district_office AS district_office,
@@ -257,6 +261,7 @@ agent_update_edges_with_district AS (
         po_modified_date AS edge_date,
         CAST(NULL AS STRING) AS county_of_residence,
         CAST(NULL AS STRING) AS supervision_level,
+        CAST(NULL AS STRING) AS status_code,
         supervising_officer_name,
         supervising_officer_id,
         level_2_supervision_location_external_id AS district_office,
@@ -353,6 +358,7 @@ edges_with_backfilled_supervising_agents AS (
         edge_reason,
         county_of_residence,
         supervision_level,
+        status_code,
         condition_codes,
         IFNULL(supervising_officer_name,
             IF(open_block_did_change = 1 AND DATE_DIFF(edge_date, LAG(edge_date) OVER parolee_window, DAY) < 8,
@@ -410,6 +416,7 @@ hydrated_edges AS (
     edge_date,
     LAST_VALUE(county_of_residence IGNORE NULLS) OVER preceding_for_parole_number AS county_of_residence,
     LAST_VALUE(supervision_level IGNORE NULLS) OVER preceding_for_parole_number AS supervision_level,
+    LAST_VALUE(status_code IGNORE NULLS) OVER preceding_for_parole_number AS status_code,
     LAST_VALUE(supervising_officer_name IGNORE NULLS) OVER preceding_for_parole_number AS supervising_officer_name,
     # Do not IGNORE NULLS for supervising_officer_id because we do not want to incorrectly assign an id
     # to an officer if the associated id is NULL. The agent_employee_numbers block should reduce the number of NULL values
@@ -440,6 +447,7 @@ hydrated_edges_better_districts AS (
     district_sub_office_id,
     supervision_location_org_code,
     supervision_level,
+    status_code,
     supervising_officer_name,
     supervising_officer_id,
     condition_codes,
@@ -468,6 +476,7 @@ filtered_edges AS (
     district_sub_office_id,
     supervision_location_org_code,
     supervision_level,
+    status_code,
     supervising_officer_name,
     supervising_officer_id,
     condition_codes,
@@ -508,6 +517,7 @@ supervision_periods AS
     edge_reason AS admission_reason,
     county_of_residence,
     supervision_level,
+    status_code,
     condition_codes,
     LEAD(district_office) OVER parole_number_window AS next_district_office,
     LEAD(edge_date) OVER parole_number_window AS termination_date,
@@ -539,7 +549,8 @@ SELECT
     supervision_level,
     supervising_officer_name,
     supervising_officer_id,
-    condition_codes
+    condition_codes,
+    status_code
 FROM supervision_periods
 -- Filter out periods created that start with termination edges
 WHERE open_count != 0
