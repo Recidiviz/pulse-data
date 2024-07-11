@@ -26,6 +26,8 @@ columns:
     description: |-
       A unique number generated for each person.
     is_pii: True
+    field_type: person_external_id
+    external_id_type: US_OR_ID
   - name: SANC_NUMBER
     description: |-
       Unique number for each sanction.
@@ -41,3 +43,8 @@ columns:
   - name: SUPPORTED
     description: |-
       Indicates whether allegations were supported.
+
+table_relationships:
+  - foreign_table: RCDVZ_PRDDTA_OP970P
+    join_logic:
+      - RCDVZ_PRDDTA_OP970P.RECORD_KEY = RCDVZ_CISPRDDTA_CMSACN.RECORD_KEY

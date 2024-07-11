@@ -9,6 +9,9 @@ columns:
   - name: RECORD_KEY
     description: |-
       Unique identifier for each row.
+    is_pii: True
+    field_type: person_external_id
+    external_id_type: US_OR_ID
   - name: SEX
     description: |-
       Sex information for the Adult in Custody (AIC).
@@ -66,3 +69,8 @@ columns:
   - name: JOB_CODE
   - name: COUNTY
   - name: END_TRAIN_DATE
+
+table_relationships:
+  - foreign_table: RCDVZ_PRDDTA_OP970P
+    join_logic:
+      - RCDVZ_PRDDTA_OP970P.RECORD_KEY = RCDVZ_PRDDTA_OP007P.RECORD_KEY

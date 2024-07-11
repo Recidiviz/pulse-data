@@ -21,6 +21,9 @@ columns:
   - name: RECORD_KEY
     description: |-
       Unique identifier for each person.
+    is_pii: True
+    field_type: person_external_id
+    external_id_type: US_OR_ID
   - name: CUSTODY_NUMBER
     description: |-
       Number indicating order of custody.
@@ -279,3 +282,8 @@ columns:
   - name: PB_DEFERAL_DAYS
     description: |-
       TODO(#17148): Fill in with answer from OR
+
+table_relationships:
+  - foreign_table: RCDVZ_PRDDTA_OP970P
+    join_logic:
+      - RCDVZ_PRDDTA_OP970P.RECORD_KEY = RCDVZ_PRDDTA_OP054P.RECORD_KEY

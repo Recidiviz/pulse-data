@@ -12,6 +12,8 @@ columns:
     description: |-
       A unique number generated for each person.
     is_pii: True
+    field_type: person_external_id
+    external_id_type: US_OR_ID
   - name: SANC_NUMBER
     description: |-
       A unique number generated for each sanction.
@@ -82,3 +84,8 @@ columns:
   - name: EXCEPTION_SANC_IMPOSED
     description: |-
       Flag indicates that the actual sanction units are less than the amount on the grid.
+
+table_relationships:
+  - foreign_table: RCDVZ_PRDDTA_OP970P
+    join_logic:
+      - RCDVZ_PRDDTA_OP970P.RECORD_KEY = RCDVZ_CISPRDDTA_CMSACO.RECORD_KEY

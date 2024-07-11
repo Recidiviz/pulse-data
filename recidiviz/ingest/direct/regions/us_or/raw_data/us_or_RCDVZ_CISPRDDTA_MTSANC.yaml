@@ -14,6 +14,9 @@ columns:
   - name: RECORD_KEY
     description: |-
       Unique coded identifier for each AIC.
+    is_pii: True
+    field_type: person_external_id
+    external_id_type: US_OR_ID
   - name: NEXT_NUMBER
     description: |-
       TODO(#17148): Fill in with more context from OR
@@ -85,3 +88,8 @@ columns:
   - name: SANCTION_ADJUST_ID
     description: |-
       TODO(#17148): Fill in with more context from OR
+
+table_relationships:
+  - foreign_table: RCDVZ_PRDDTA_OP970P
+    join_logic:
+      - RCDVZ_PRDDTA_OP970P.RECORD_KEY = RCDVZ_CISPRDDTA_MTSANC.RECORD_KEY
