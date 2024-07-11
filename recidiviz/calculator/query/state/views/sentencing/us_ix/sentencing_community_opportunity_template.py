@@ -19,7 +19,14 @@
 US_IX_SENTENCING_COMMUNITY_OPPORTUNITY_TEMPLATE = """
 WITH community_opp_info AS (
     SELECT
-       *,
+       OpportunityName,
+       Description,
+       ProviderName,
+       ProviderWebsite,
+       ProviderAddress,
+       CapacityTotal,
+       CapacityAvailable,
+       TO_JSON(STRUCT(NeedsAddressed AS NeedsAddressed)) AS NeedsAddressed,
        REGEXP_REPLACE(ProviderPhoneNumber, r'[^0-9]', '') AS CleanedProviderPhoneNumber,
        CASE
             WHEN EligibilityCriteria LIKE "%Ages 18+%"
@@ -98,12 +105,13 @@ WITH community_opp_info AS (
             CASE WHEN substanceUseDisorderCriteria LIKE "%Severe%" THEN 'Severe, ' ELSE '' END,
             CASE WHEN substanceUseDisorderCriteria IS NULL THEN 'Any' ELSE '' END
           ) AS substanceUseConcat,
-        minLSIRScore AS minLSIRScoreCriterion,
-        maxLSIRScore AS maxLsirScoreCriterion
+        CAST(minLSIRScore AS INT64) AS minLSIRScoreCriterion,
+        CAST(maxLSIRScore AS INT64) AS maxLsirScoreCriterion
    FROM `{project_id}.{us_ix_raw_data_up_to_date_dataset}.RECIDIVIZ_REFERENCE_community_opportunities_latest`)
 
    SELECT 
         *,
+        "US_IX" AS state_code,
         TO_JSON(STRUCT(
             CASE 
               WHEN mentalHealthConcat = 'Any' THEN mentalHealthConcat 
