@@ -33,7 +33,7 @@ variable "dry_run" {
 
 locals {
   normalization_function_name = "ingest_filename_normalization_${var.state_code}${var.ingest_instance != "PRIMARY" ? "_${lower(var.ingest_instance)}" : ""}"
-  zip_function_name = "ingest_zipfile_handler_${var.state_code}${var.ingest_instance != "PRIMARY" ? "_${lower(var.ingest_instance)}" : ""}"
+  zip_function_name = "ingest_zipfile_handler"
 }
 
 data "google_storage_project_service_account" "default" {
@@ -64,42 +64,6 @@ resource "google_project_iam_member" "storage_admin" {
   role       = "roles/storage.objectAdmin"
   member     = "serviceAccount:${var.service_account_email}"
   depends_on = [google_project_iam_member.event_receiving]
-}
-
-resource "google_cloudfunctions2_function" "handle_zipfile" {
-  name        = local.zip_function_name
-  location    = var.region 
-  description = "Unzip ingest files for ${var.bucket_name}"
-  build_config {
-    runtime     = "python311"
-    entry_point = "handle_zipfile"
-    environment_variables = {
-      GOOGLE_FUNCTION_SOURCE = "recidiviz/cloud_functions/ingest_filename_normalization.py"
-      GOOGLE_INTERNAL_REQUIREMENTS_FILES = "recidiviz/cloud_functions/requirements.txt"
-    }
-    source {
-      repo_source {
-        repo_name   = "github_Recidiviz_pulse-data"
-        commit_sha = var.git_hash
-      }
-    }
-  }
-
-  labels = {
-    "deployment-tool" = "terraform"
-  }
-
-  service_config {
-    max_instance_count = 10
-    available_memory   = "8G"
-    timeout_seconds    = 540
-    environment_variables = {
-      PYTHONPATH = "/workspace"
-      STATE_CODE      = var.state_code
-      INGEST_INSTANCE = var.ingest_instance
-      PROJECT_ID      = var.project_id
-    }
-  }
 }
 
 resource "google_cloudfunctions2_function" "filename_normalization" {
@@ -148,7 +112,7 @@ resource "google_cloudfunctions2_function" "filename_normalization" {
     timeout_seconds    = 540
     environment_variables = {
       PYTHONPATH      = "/workspace" # directory recidiviz/ lives in
-      ZIPFILE_HANDLER_FUNCTION_URL = "https://${var.region}-${var.project_id}.cloudfunctions.net/${google_cloudfunctions2_function.handle_zipfile.name}"
+      ZIPFILE_HANDLER_FUNCTION_URL = "https://us-central1-${var.project_id}.cloudfunctions.net/ingest_zipfile_handler"
       DRY_RUN         = var.dry_run
     }
   }
