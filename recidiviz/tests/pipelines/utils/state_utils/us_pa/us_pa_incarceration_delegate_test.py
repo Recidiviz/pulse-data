@@ -44,7 +44,7 @@ class TestUsPaIncarcerationDelegate(unittest.TestCase):
     def test_is_period_included_in_state_population_does_not_include_ccc_programs(
         self,
     ) -> None:
-        incarceration_period = NormalizedStateIncarcerationPeriod.new_with_defaults(
+        incarceration_period = NormalizedStateIncarcerationPeriod(
             incarceration_period_id=1112,
             external_id="2",
             incarceration_type=StateIncarcerationType.COUNTY_JAIL,
@@ -71,7 +71,7 @@ class TestUsPaIncarcerationDelegate(unittest.TestCase):
     def test_is_period_included_in_state_population_includes_shock_incarceration(
         self,
     ) -> None:
-        incarceration_period = NormalizedStateIncarcerationPeriod.new_with_defaults(
+        incarceration_period = NormalizedStateIncarcerationPeriod(
             incarceration_period_id=1112,
             external_id="2",
             incarceration_type=StateIncarcerationType.COUNTY_JAIL,
@@ -98,7 +98,7 @@ class TestUsPaIncarcerationDelegate(unittest.TestCase):
     def test_is_period_included_in_state_population_for_custodial_authority_state_prison(
         self,
     ) -> None:
-        incarceration_period = NormalizedStateIncarcerationPeriod.new_with_defaults(
+        incarceration_period = NormalizedStateIncarcerationPeriod(
             incarceration_period_id=1112,
             external_id="2",
             incarceration_type=StateIncarcerationType.STATE_PRISON,

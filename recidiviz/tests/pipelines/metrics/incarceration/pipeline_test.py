@@ -502,7 +502,7 @@ class TestClassifyIncarcerationEvents(unittest.TestCase):
             residency_status=StateResidencyStatus.PERMANENT,
         )
 
-        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod(
             supervision_period_id=1111,
             external_id="sp1",
             state_code=self.state_code.value,
@@ -519,7 +519,7 @@ class TestClassifyIncarcerationEvents(unittest.TestCase):
             sequence_num=0,
         )
 
-        incarceration_period = NormalizedStateIncarcerationPeriod.new_with_defaults(
+        incarceration_period = NormalizedStateIncarcerationPeriod(
             incarceration_period_id=1111,
             external_id="ip1",
             incarceration_type=StateIncarcerationType.STATE_PRISON,

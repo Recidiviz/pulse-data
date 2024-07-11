@@ -122,7 +122,7 @@ class TestUsTnIncarcerationNormalizationDelegate(unittest.TestCase):
     def test_normalized_incarceration_periods_new_admission_with_abutting_period_override_to_temporary_custody(
         self,
     ) -> None:
-        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod(
             supervision_period_id=111,
             external_id="sp1",
             state_code="US_TN",
@@ -173,7 +173,7 @@ class TestUsTnIncarcerationNormalizationDelegate(unittest.TestCase):
     def test_normalized_incarceration_periods_new_admission_do_not_override_to_temporary_custody(
         self,
     ) -> None:
-        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod(
             supervision_period_id=111,
             external_id="sp1",
             state_code="US_TN",
@@ -224,7 +224,7 @@ class TestUsTnIncarcerationNormalizationDelegate(unittest.TestCase):
     def test_normalized_incarceration_periods_new_admission_with_overlapping_open_sp_override_to_temporary_custody(
         self,
     ) -> None:
-        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod(
             supervision_period_id=111,
             external_id="sp1",
             state_code="US_TN",
@@ -275,7 +275,7 @@ class TestUsTnIncarcerationNormalizationDelegate(unittest.TestCase):
     def test_normalized_incarceration_periods_new_admission_with_overlapping_closed_sp_override_to_temporary_custody(
         self,
     ) -> None:
-        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod(
             supervision_period_id=111,
             external_id="sp1",
             state_code="US_TN",
@@ -328,7 +328,7 @@ class TestUsTnIncarcerationNormalizationDelegate(unittest.TestCase):
     def test_inferred_incarceration_periods_from_open_IC_supervision_period_with_no_ips(
         self,
     ) -> None:
-        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod(
             supervision_period_id=111,
             external_id="sp1",
             state_code="US_TN",
@@ -366,7 +366,7 @@ class TestUsTnIncarcerationNormalizationDelegate(unittest.TestCase):
     def test_inferred_incarceration_periods_from_closed_IC_supervision_period_with_no_ips(
         self,
     ) -> None:
-        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod(
             supervision_period_id=111,
             external_id="sp1",
             state_code="US_TN",
@@ -404,7 +404,7 @@ class TestUsTnIncarcerationNormalizationDelegate(unittest.TestCase):
     def test_inferred_incarceration_periods_from_closed_IC_supervision_period_that_abutts_IP_start(
         self,
     ) -> None:
-        supervision_period_1 = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period_1 = NormalizedStateSupervisionPeriod(
             supervision_period_id=111,
             external_id="sp1",
             state_code="US_TN",
@@ -469,7 +469,7 @@ class TestUsTnIncarcerationNormalizationDelegate(unittest.TestCase):
     def test_inferred_incarceration_periods_from_closed_IC_supervision_period_that_terminates_before_IP_start(
         self,
     ) -> None:
-        supervision_period_1 = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period_1 = NormalizedStateSupervisionPeriod(
             supervision_period_id=111,
             external_id="sp1",
             state_code="US_TN",
@@ -534,7 +534,7 @@ class TestUsTnIncarcerationNormalizationDelegate(unittest.TestCase):
     def test_inferred_incarceration_periods_from_closed_IC_supervision_period_that_overlaps_IP_start(
         self,
     ) -> None:
-        supervision_period_1 = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period_1 = NormalizedStateSupervisionPeriod(
             supervision_period_id=111,
             external_id="sp1",
             state_code="US_TN",
@@ -646,7 +646,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
     # Tests creating IPs for a person with no other IPS but has IN_CUSTODY SPs that indicates we should infer an IP
     def test_inferred_additional_ips_when_no_other_ips(self) -> None:
 
-        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod(
             supervision_period_id=111,
             external_id="sp1",
             state_code="US_TN",
@@ -681,7 +681,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
     # Tests not creating any additional IPs for a person when they don't have any IN_CUSTODY SPs
     def test_no_inferred_additional_ips_when_no_ic_sps(self) -> None:
 
-        supervision_period_1 = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period_1 = NormalizedStateSupervisionPeriod(
             supervision_period_id=111,
             external_id="sp1",
             state_code="US_TN",

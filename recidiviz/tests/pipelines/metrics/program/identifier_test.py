@@ -82,7 +82,7 @@ class TestFindProgramEvents(unittest.TestCase):
 
     @freeze_time("2020-01-02")
     def test_find_program_events(self) -> None:
-        program_assignment = NormalizedStateProgramAssignment.new_with_defaults(
+        program_assignment = NormalizedStateProgramAssignment(
             sequence_num=0,
             state_code="US_XX",
             external_id="pa1",
@@ -93,7 +93,7 @@ class TestFindProgramEvents(unittest.TestCase):
             start_date=date(2020, 1, 1),
         )
 
-        assessment = NormalizedStateAssessment.new_with_defaults(
+        assessment = NormalizedStateAssessment(
             state_code="US_XX",
             external_id="a1",
             assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
@@ -103,7 +103,7 @@ class TestFindProgramEvents(unittest.TestCase):
             sequence_num=0,
         )
 
-        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod(
             sequence_num=0,
             supervision_period_id=999,
             external_id="sp1",
@@ -174,7 +174,7 @@ class TestFindProgramParticipationEvents(unittest.TestCase):
 
     @freeze_time("2000-01-01")
     def test_find_program_participation_events(self) -> None:
-        program_assignment = NormalizedStateProgramAssignment.new_with_defaults(
+        program_assignment = NormalizedStateProgramAssignment(
             state_code="US_XX",
             external_id="pa1",
             sequence_num=0,
@@ -185,7 +185,7 @@ class TestFindProgramParticipationEvents(unittest.TestCase):
             start_date=date(1999, 12, 31),
         )
 
-        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod(
             sequence_num=0,
             supervision_period_id=111,
             external_id="sp1",
@@ -223,7 +223,7 @@ class TestFindProgramParticipationEvents(unittest.TestCase):
         self.assertListEqual(expected_events, participation_events)
 
     def test_find_program_participation_events_not_actively_participating(self) -> None:
-        program_assignment = NormalizedStateProgramAssignment.new_with_defaults(
+        program_assignment = NormalizedStateProgramAssignment(
             state_code="US_XX",
             external_id="pa1",
             sequence_num=0,
@@ -235,7 +235,7 @@ class TestFindProgramParticipationEvents(unittest.TestCase):
             discharge_date=date(2009, 11, 8),
         )
 
-        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod(
             sequence_num=0,
             supervision_period_id=111,
             external_id="sp1",
@@ -282,7 +282,7 @@ class TestFindProgramParticipationEvents(unittest.TestCase):
         self.assertListEqual(expected_events, participation_events)
 
     def test_find_program_participation_events_no_start_date(self) -> None:
-        program_assignment = NormalizedStateProgramAssignment.new_with_defaults(
+        program_assignment = NormalizedStateProgramAssignment(
             state_code="US_XX",
             external_id="pa1",
             sequence_num=0,
@@ -302,7 +302,7 @@ class TestFindProgramParticipationEvents(unittest.TestCase):
         self.assertEqual([], participation_events)
 
     def test_find_program_participation_events_no_discharge_date(self) -> None:
-        program_assignment = NormalizedStateProgramAssignment.new_with_defaults(
+        program_assignment = NormalizedStateProgramAssignment(
             state_code="US_XX",
             external_id="pa1",
             sequence_num=0,

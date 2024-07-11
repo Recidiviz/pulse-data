@@ -106,7 +106,7 @@ class TestFindPopulationSpans(unittest.TestCase):
         )
 
     def test_find_incarceration_spans(self) -> None:
-        incarceration_period = NormalizedStateIncarcerationPeriod.new_with_defaults(
+        incarceration_period = NormalizedStateIncarcerationPeriod(
             sequence_num=0,
             incarceration_period_id=_DEFAULT_IP_ID,
             external_id="ip1",
@@ -134,7 +134,7 @@ class TestFindPopulationSpans(unittest.TestCase):
         self.assertEqual(expected_spans, spans)
 
     def test_find_incarceration_spans_multiple(self) -> None:
-        incarceration_period_1 = NormalizedStateIncarcerationPeriod.new_with_defaults(
+        incarceration_period_1 = NormalizedStateIncarcerationPeriod(
             incarceration_period_id=_DEFAULT_IP_ID,
             external_id="ip1",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
@@ -149,7 +149,7 @@ class TestFindPopulationSpans(unittest.TestCase):
             sequence_num=0,
         )
 
-        incarceration_period_2 = NormalizedStateIncarcerationPeriod.new_with_defaults(
+        incarceration_period_2 = NormalizedStateIncarcerationPeriod(
             incarceration_period_id=2222,
             external_id="ip2",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
@@ -179,7 +179,7 @@ class TestFindPopulationSpans(unittest.TestCase):
         self.assertEqual(expected_spans, spans)
 
     def test_find_incarceration_spans_out_of_state(self) -> None:
-        incarceration_period = NormalizedStateIncarcerationPeriod.new_with_defaults(
+        incarceration_period = NormalizedStateIncarcerationPeriod(
             incarceration_period_id=1111,
             external_id="ip1",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
@@ -212,7 +212,7 @@ class TestFindPopulationSpans(unittest.TestCase):
         self.assertEqual(expected_spans, spans)
 
     def test_find_supervision_spans(self) -> None:
-        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod(
             supervision_period_id=_DEFAULT_SP_ID,
             external_id="sp1",
             supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
@@ -224,7 +224,7 @@ class TestFindPopulationSpans(unittest.TestCase):
             termination_date=date(2015, 2, 3),
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             case_type_entries=[
-                NormalizedStateSupervisionCaseTypeEntry.new_with_defaults(
+                NormalizedStateSupervisionCaseTypeEntry(
                     state_code="US_XX", case_type=StateSupervisionCaseType.GENERAL
                 )
             ],
@@ -248,7 +248,7 @@ class TestFindPopulationSpans(unittest.TestCase):
         self.assertEqual(expected_spans, spans)
 
     def test_find_supervision_spans_multiple(self) -> None:
-        supervision_period_1 = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period_1 = NormalizedStateSupervisionPeriod(
             supervision_period_id=_DEFAULT_SP_ID,
             external_id="sp1",
             supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
@@ -260,14 +260,14 @@ class TestFindPopulationSpans(unittest.TestCase):
             termination_date=date(2015, 2, 3),
             termination_reason=StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE,
             case_type_entries=[
-                NormalizedStateSupervisionCaseTypeEntry.new_with_defaults(
+                NormalizedStateSupervisionCaseTypeEntry(
                     state_code="US_XX", case_type=StateSupervisionCaseType.GENERAL
                 )
             ],
             custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
             sequence_num=0,
         )
-        supervision_period_2 = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period_2 = NormalizedStateSupervisionPeriod(
             supervision_period_id=222,
             external_id="sp2",
             supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
@@ -279,7 +279,7 @@ class TestFindPopulationSpans(unittest.TestCase):
             termination_date=date(2020, 2, 3),
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             case_type_entries=[
-                NormalizedStateSupervisionCaseTypeEntry.new_with_defaults(
+                NormalizedStateSupervisionCaseTypeEntry(
                     state_code="US_XX", case_type=StateSupervisionCaseType.GENERAL
                 )
             ],
@@ -314,7 +314,7 @@ class TestFindPopulationSpans(unittest.TestCase):
         self.assertEqual([], population_spans)
 
     def test_find_both_types_of_spans(self) -> None:
-        incarceration_period = NormalizedStateIncarcerationPeriod.new_with_defaults(
+        incarceration_period = NormalizedStateIncarcerationPeriod(
             sequence_num=0,
             incarceration_period_id=_DEFAULT_IP_ID,
             external_id="ip1",
@@ -329,7 +329,7 @@ class TestFindPopulationSpans(unittest.TestCase):
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
         )
 
-        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod(
             supervision_period_id=_DEFAULT_SP_ID,
             external_id="sp1",
             supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
@@ -341,7 +341,7 @@ class TestFindPopulationSpans(unittest.TestCase):
             termination_date=date(2015, 2, 3),
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             case_type_entries=[
-                NormalizedStateSupervisionCaseTypeEntry.new_with_defaults(
+                NormalizedStateSupervisionCaseTypeEntry(
                     state_code="US_XX", case_type=StateSupervisionCaseType.GENERAL
                 )
             ],
@@ -369,7 +369,7 @@ class TestFindPopulationSpans(unittest.TestCase):
         self.assertEqual(expected_spans, spans)
 
     def test_find_both_types_of_spans_filtered(self) -> None:
-        incarceration_period = NormalizedStateIncarcerationPeriod.new_with_defaults(
+        incarceration_period = NormalizedStateIncarcerationPeriod(
             sequence_num=0,
             incarceration_period_id=_DEFAULT_IP_ID,
             external_id="ip1",
@@ -384,7 +384,7 @@ class TestFindPopulationSpans(unittest.TestCase):
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
         )
 
-        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod(
             supervision_period_id=_DEFAULT_SP_ID,
             external_id="sp1",
             supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
@@ -396,7 +396,7 @@ class TestFindPopulationSpans(unittest.TestCase):
             termination_date=date(2015, 2, 3),
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             case_type_entries=[
-                NormalizedStateSupervisionCaseTypeEntry.new_with_defaults(
+                NormalizedStateSupervisionCaseTypeEntry(
                     state_code="US_XX", case_type=StateSupervisionCaseType.GENERAL
                 )
             ],
@@ -419,7 +419,7 @@ class TestFindPopulationSpans(unittest.TestCase):
         self.assertEqual(expected_spans, spans)
 
     def test_find_both_types_of_spans_with_overlaps(self) -> None:
-        incarceration_period = NormalizedStateIncarcerationPeriod.new_with_defaults(
+        incarceration_period = NormalizedStateIncarcerationPeriod(
             sequence_num=0,
             incarceration_period_id=_DEFAULT_IP_ID,
             external_id="ip1",
@@ -434,7 +434,7 @@ class TestFindPopulationSpans(unittest.TestCase):
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
         )
 
-        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod(
             supervision_period_id=_DEFAULT_SP_ID,
             external_id="sp1",
             supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
@@ -446,7 +446,7 @@ class TestFindPopulationSpans(unittest.TestCase):
             termination_date=date(2015, 2, 3),
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             case_type_entries=[
-                NormalizedStateSupervisionCaseTypeEntry.new_with_defaults(
+                NormalizedStateSupervisionCaseTypeEntry(
                     state_code="US_XX", case_type=StateSupervisionCaseType.GENERAL
                 )
             ],
@@ -488,7 +488,7 @@ class TestFindPopulationSpans(unittest.TestCase):
     def test_find_both_types_of_spans_with_overlap_open_incarceration_and_supervision(
         self,
     ) -> None:
-        incarceration_period = NormalizedStateIncarcerationPeriod.new_with_defaults(
+        incarceration_period = NormalizedStateIncarcerationPeriod(
             sequence_num=0,
             incarceration_period_id=_DEFAULT_IP_ID,
             external_id="ip1",
@@ -503,7 +503,7 @@ class TestFindPopulationSpans(unittest.TestCase):
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
         )
 
-        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod(
             supervision_period_id=_DEFAULT_SP_ID,
             external_id="sp1",
             supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
@@ -515,7 +515,7 @@ class TestFindPopulationSpans(unittest.TestCase):
             termination_date=None,
             termination_reason=None,
             case_type_entries=[
-                NormalizedStateSupervisionCaseTypeEntry.new_with_defaults(
+                NormalizedStateSupervisionCaseTypeEntry(
                     state_code="US_XX", case_type=StateSupervisionCaseType.GENERAL
                 )
             ],
@@ -556,7 +556,7 @@ class TestFindPopulationSpans(unittest.TestCase):
     def test_find_both_types_of_spans_overlapping_consecutive_incarceration_periods(
         self,
     ) -> None:
-        incarceration_period_1 = NormalizedStateIncarcerationPeriod.new_with_defaults(
+        incarceration_period_1 = NormalizedStateIncarcerationPeriod(
             incarceration_period_id=_DEFAULT_IP_ID,
             external_id="ip1",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
@@ -571,7 +571,7 @@ class TestFindPopulationSpans(unittest.TestCase):
             sequence_num=0,
         )
 
-        incarceration_period_2 = NormalizedStateIncarcerationPeriod.new_with_defaults(
+        incarceration_period_2 = NormalizedStateIncarcerationPeriod(
             incarceration_period_id=2222,
             external_id="ip2",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
@@ -586,7 +586,7 @@ class TestFindPopulationSpans(unittest.TestCase):
             sequence_num=1,
         )
 
-        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod(
             supervision_period_id=_DEFAULT_SP_ID,
             external_id="sp1",
             supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
@@ -598,7 +598,7 @@ class TestFindPopulationSpans(unittest.TestCase):
             termination_date=date(2012, 1, 1),
             termination_reason=None,
             case_type_entries=[
-                NormalizedStateSupervisionCaseTypeEntry.new_with_defaults(
+                NormalizedStateSupervisionCaseTypeEntry(
                     state_code="US_XX", case_type=StateSupervisionCaseType.GENERAL
                 )
             ],
@@ -640,7 +640,7 @@ class TestFindPopulationSpans(unittest.TestCase):
     def test_find_both_types_of_spans_multiple_incarceration_periods_during_supervision(
         self,
     ) -> None:
-        incarceration_period_1 = NormalizedStateIncarcerationPeriod.new_with_defaults(
+        incarceration_period_1 = NormalizedStateIncarcerationPeriod(
             incarceration_period_id=_DEFAULT_IP_ID,
             external_id="ip1",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
@@ -655,7 +655,7 @@ class TestFindPopulationSpans(unittest.TestCase):
             sequence_num=0,
         )
 
-        incarceration_period_2 = NormalizedStateIncarcerationPeriod.new_with_defaults(
+        incarceration_period_2 = NormalizedStateIncarcerationPeriod(
             incarceration_period_id=2222,
             external_id="ip2",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
@@ -670,7 +670,7 @@ class TestFindPopulationSpans(unittest.TestCase):
             sequence_num=1,
         )
 
-        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod(
             supervision_period_id=_DEFAULT_SP_ID,
             external_id="sp1",
             supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
@@ -682,7 +682,7 @@ class TestFindPopulationSpans(unittest.TestCase):
             termination_date=date(2012, 1, 1),
             termination_reason=None,
             case_type_entries=[
-                NormalizedStateSupervisionCaseTypeEntry.new_with_defaults(
+                NormalizedStateSupervisionCaseTypeEntry(
                     state_code="US_XX", case_type=StateSupervisionCaseType.GENERAL
                 )
             ],
@@ -751,7 +751,7 @@ class TestFindPopulationSpans(unittest.TestCase):
     def test_find_both_types_of_spans_multiple_supervision_periods_during_incarceration(
         self,
     ) -> None:
-        incarceration_period = NormalizedStateIncarcerationPeriod.new_with_defaults(
+        incarceration_period = NormalizedStateIncarcerationPeriod(
             incarceration_period_id=_DEFAULT_IP_ID,
             external_id="ip1",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
@@ -765,7 +765,7 @@ class TestFindPopulationSpans(unittest.TestCase):
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
             sequence_num=0,
         )
-        supervision_period_1 = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period_1 = NormalizedStateSupervisionPeriod(
             supervision_period_id=_DEFAULT_SP_ID,
             external_id="sp1",
             supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
@@ -777,14 +777,14 @@ class TestFindPopulationSpans(unittest.TestCase):
             termination_date=date(2011, 3, 1),
             termination_reason=StateSupervisionPeriodTerminationReason.ABSCONSION,
             case_type_entries=[
-                NormalizedStateSupervisionCaseTypeEntry.new_with_defaults(
+                NormalizedStateSupervisionCaseTypeEntry(
                     state_code="US_XX", case_type=StateSupervisionCaseType.GENERAL
                 )
             ],
             custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
             sequence_num=0,
         )
-        supervision_period_2 = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period_2 = NormalizedStateSupervisionPeriod(
             supervision_period_id=2222,
             external_id="sp2",
             supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
@@ -796,7 +796,7 @@ class TestFindPopulationSpans(unittest.TestCase):
             termination_date=date(2011, 7, 1),
             termination_reason=StateSupervisionPeriodTerminationReason.ABSCONSION,
             case_type_entries=[
-                NormalizedStateSupervisionCaseTypeEntry.new_with_defaults(
+                NormalizedStateSupervisionCaseTypeEntry(
                     state_code="US_XX", case_type=StateSupervisionCaseType.GENERAL
                 )
             ],
@@ -835,7 +835,7 @@ class TestFindPopulationSpans(unittest.TestCase):
         self.assertEqual(expected_spans, spans)
 
     def test_find_all_supervision_spans_for_dual_periods_to_be_expanded(self) -> None:
-        dual_supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        dual_supervision_period = NormalizedStateSupervisionPeriod(
             supervision_period_id=_DEFAULT_SP_ID,
             external_id="sp1",
             supervision_type=StateSupervisionPeriodSupervisionType.DUAL,
@@ -847,7 +847,7 @@ class TestFindPopulationSpans(unittest.TestCase):
             termination_date=date(2011, 3, 1),
             termination_reason=StateSupervisionPeriodTerminationReason.ABSCONSION,
             case_type_entries=[
-                NormalizedStateSupervisionCaseTypeEntry.new_with_defaults(
+                NormalizedStateSupervisionCaseTypeEntry(
                     state_code="US_XX", case_type=StateSupervisionCaseType.GENERAL
                 )
             ],
@@ -886,7 +886,7 @@ class TestFindPopulationSpans(unittest.TestCase):
         self.assertEqual(expected_spans, spans)
 
     def test_find_all_supervision_spans_for_dual_periods_to_be_converted(self) -> None:
-        parole_period_1 = NormalizedStateSupervisionPeriod.new_with_defaults(
+        parole_period_1 = NormalizedStateSupervisionPeriod(
             supervision_period_id=_DEFAULT_SP_ID,
             external_id="sp1",
             supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
@@ -898,14 +898,14 @@ class TestFindPopulationSpans(unittest.TestCase):
             termination_date=date(2011, 3, 1),
             termination_reason=StateSupervisionPeriodTerminationReason.ABSCONSION,
             case_type_entries=[
-                NormalizedStateSupervisionCaseTypeEntry.new_with_defaults(
+                NormalizedStateSupervisionCaseTypeEntry(
                     state_code="US_XX", case_type=StateSupervisionCaseType.GENERAL
                 )
             ],
             custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
             sequence_num=0,
         )
-        parole_period_2 = NormalizedStateSupervisionPeriod.new_with_defaults(
+        parole_period_2 = NormalizedStateSupervisionPeriod(
             supervision_period_id=2222,
             external_id="sp2",
             supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
@@ -917,14 +917,14 @@ class TestFindPopulationSpans(unittest.TestCase):
             termination_date=date(2011, 5, 1),
             termination_reason=StateSupervisionPeriodTerminationReason.ABSCONSION,
             case_type_entries=[
-                NormalizedStateSupervisionCaseTypeEntry.new_with_defaults(
+                NormalizedStateSupervisionCaseTypeEntry(
                     state_code="US_XX", case_type=StateSupervisionCaseType.GENERAL
                 )
             ],
             custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
             sequence_num=2,
         )
-        probation_period_1 = NormalizedStateSupervisionPeriod.new_with_defaults(
+        probation_period_1 = NormalizedStateSupervisionPeriod(
             supervision_period_id=3333,
             external_id="sp3",
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
@@ -936,14 +936,14 @@ class TestFindPopulationSpans(unittest.TestCase):
             termination_date=date(2011, 4, 1),
             termination_reason=StateSupervisionPeriodTerminationReason.ABSCONSION,
             case_type_entries=[
-                NormalizedStateSupervisionCaseTypeEntry.new_with_defaults(
+                NormalizedStateSupervisionCaseTypeEntry(
                     state_code="US_XX", case_type=StateSupervisionCaseType.GENERAL
                 )
             ],
             custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
             sequence_num=1,
         )
-        dual_period_1 = NormalizedStateSupervisionPeriod.new_with_defaults(
+        dual_period_1 = NormalizedStateSupervisionPeriod(
             supervision_period_id=4444,
             external_id="sp4",
             supervision_type=StateSupervisionPeriodSupervisionType.DUAL,
@@ -955,14 +955,14 @@ class TestFindPopulationSpans(unittest.TestCase):
             termination_date=date(2011, 7, 1),
             termination_reason=StateSupervisionPeriodTerminationReason.ABSCONSION,
             case_type_entries=[
-                NormalizedStateSupervisionCaseTypeEntry.new_with_defaults(
+                NormalizedStateSupervisionCaseTypeEntry(
                     state_code="US_XX", case_type=StateSupervisionCaseType.GENERAL
                 )
             ],
             custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
             sequence_num=3,
         )
-        probation_period_2 = NormalizedStateSupervisionPeriod.new_with_defaults(
+        probation_period_2 = NormalizedStateSupervisionPeriod(
             supervision_period_id=5555,
             external_id="sp5",
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
@@ -974,7 +974,7 @@ class TestFindPopulationSpans(unittest.TestCase):
             termination_date=date(2011, 8, 1),
             termination_reason=StateSupervisionPeriodTerminationReason.ABSCONSION,
             case_type_entries=[
-                NormalizedStateSupervisionCaseTypeEntry.new_with_defaults(
+                NormalizedStateSupervisionCaseTypeEntry(
                     state_code="US_XX", case_type=StateSupervisionCaseType.GENERAL
                 )
             ],

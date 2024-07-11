@@ -1261,7 +1261,7 @@ class TestExtractDataForPipeline(unittest.TestCase):
         entity_alias = entity_converter.convert(schema_alias)
         entity_external_id = entity_converter.convert(schema_external_id)
         entity_races = entity_converter.convert_all([schema_race_1, schema_race_2])
-        entity_program = normalized_entities.NormalizedStateProgramAssignment.new_with_defaults(
+        entity_program = normalized_entities.NormalizedStateProgramAssignment(
             state_code="US_XX",
             external_id="pa1",
             participation_status=StateProgramAssignmentParticipationStatus.IN_PROGRESS,
@@ -1390,20 +1390,20 @@ class TestExtractDataForPipeline(unittest.TestCase):
         entity_converter = StateSchemaToEntityConverter()
 
         entity_person = entity_converter.convert(schema_person)
-        entity_violation = (
-            normalized_entities.NormalizedStateSupervisionViolation.new_with_defaults(
-                supervision_violation_id=321,
-                state_code="US_XX",
-                external_id="external_id",
-            )
-        )
-        entity_violation_response = normalized_entities.NormalizedStateSupervisionViolationResponse.new_with_defaults(
-            supervision_violation_response_id=456,
-            external_id="external_id",
+        entity_violation = normalized_entities.NormalizedStateSupervisionViolation(
+            supervision_violation_id=321,
             state_code="US_XX",
-            response_date=datetime.date(2000, 1, 1),
-            supervision_violation=entity_violation,
-            sequence_num=0,
+            external_id="external_id",
+        )
+        entity_violation_response = (
+            normalized_entities.NormalizedStateSupervisionViolationResponse(
+                supervision_violation_response_id=456,
+                external_id="external_id",
+                state_code="US_XX",
+                response_date=datetime.date(2000, 1, 1),
+                supervision_violation=entity_violation,
+                sequence_num=0,
+            )
         )
         entity_person.supervision_violations = [entity_violation]
         entity_violation.supervision_violation_responses = [entity_violation_response]

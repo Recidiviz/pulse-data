@@ -49,7 +49,7 @@ class TestUsMeIncarcerationNormalizationDelegate(unittest.TestCase):
             admission_date=date(2009, 1, 10),
         )
         incarceration_sentences = [
-            NormalizedStateIncarcerationSentence.new_with_defaults(
+            NormalizedStateIncarcerationSentence(
                 state_code=StateCode.US_ME.value,
                 external_id="is1",
                 status=StateSentenceStatus.COMPLETED,
@@ -79,7 +79,7 @@ class TestUsMeIncarcerationNormalizationDelegate(unittest.TestCase):
             admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
         )
         incarceration_sentences = [
-            NormalizedStateIncarcerationSentence.new_with_defaults(
+            NormalizedStateIncarcerationSentence(
                 state_code=StateCode.US_ME.value,
                 external_id="is1",
                 status=StateSentenceStatus.COMPLETED,
@@ -109,7 +109,7 @@ class TestUsMeIncarcerationNormalizationDelegate(unittest.TestCase):
             admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
         )
         incarceration_sentences = [
-            NormalizedStateIncarcerationSentence.new_with_defaults(
+            NormalizedStateIncarcerationSentence(
                 state_code=StateCode.US_ME.value,
                 external_id="is1",
                 status=StateSentenceStatus.COMPLETED,

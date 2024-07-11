@@ -72,28 +72,28 @@ class TestUsTnViolationsDelegate(unittest.TestCase):
         self,
     ) -> None:
         supervision_violation_responses = [
-            NormalizedStateSupervisionViolationResponse.new_with_defaults(
+            NormalizedStateSupervisionViolationResponse(
                 state_code=_STATE_CODE,
                 external_id="svr1",
                 response_date=date(2021, 1, 1),
                 response_type=StateSupervisionViolationResponseType.PERMANENT_DECISION,  # Should be included
                 sequence_num=0,
             ),
-            NormalizedStateSupervisionViolationResponse.new_with_defaults(
+            NormalizedStateSupervisionViolationResponse(
                 state_code=_STATE_CODE,
                 external_id="svr2",
                 response_date=date(2021, 1, 11),
                 response_type=StateSupervisionViolationResponseType.CITATION,  # Should be included
                 sequence_num=1,
             ),
-            NormalizedStateSupervisionViolationResponse.new_with_defaults(
+            NormalizedStateSupervisionViolationResponse(
                 state_code=_STATE_CODE,
                 external_id="svr3",
                 response_date=date(2021, 1, 20),
                 response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,  # Should be included
                 sequence_num=2,
             ),
-            NormalizedStateSupervisionViolationResponse.new_with_defaults(
+            NormalizedStateSupervisionViolationResponse(
                 state_code=_STATE_CODE,
                 external_id="svr4",
                 response_date=date(2021, 1, 30),
@@ -106,21 +106,21 @@ class TestUsTnViolationsDelegate(unittest.TestCase):
             supervision_violation_responses, include_follow_up_responses=False
         )
         expected_output = [
-            NormalizedStateSupervisionViolationResponse.new_with_defaults(
+            NormalizedStateSupervisionViolationResponse(
                 state_code=_STATE_CODE,
                 external_id="svr1",
                 response_date=date(2021, 1, 1),
                 response_type=StateSupervisionViolationResponseType.PERMANENT_DECISION,  # Should be included
                 sequence_num=0,
             ),
-            NormalizedStateSupervisionViolationResponse.new_with_defaults(
+            NormalizedStateSupervisionViolationResponse(
                 state_code=_STATE_CODE,
                 external_id="svr2",
                 response_date=date(2021, 1, 11),
                 response_type=StateSupervisionViolationResponseType.CITATION,  # Should be included
                 sequence_num=1,
             ),
-            NormalizedStateSupervisionViolationResponse.new_with_defaults(
+            NormalizedStateSupervisionViolationResponse(
                 state_code=_STATE_CODE,
                 external_id="svr3",
                 response_date=date(2021, 1, 20),
@@ -133,14 +133,14 @@ class TestUsTnViolationsDelegate(unittest.TestCase):
 
     def test_filter_violation_responses_none_valid(self) -> None:
         supervision_violation_responses = [
-            NormalizedStateSupervisionViolationResponse.new_with_defaults(
+            NormalizedStateSupervisionViolationResponse(
                 state_code=_STATE_CODE,
                 external_id="svr1",
                 response_date=date(2021, 1, 1),
                 response_type=StateSupervisionViolationResponseType.INTERNAL_UNKNOWN,  # Should not be included
                 sequence_num=0,
             ),
-            NormalizedStateSupervisionViolationResponse.new_with_defaults(
+            NormalizedStateSupervisionViolationResponse(
                 state_code=_STATE_CODE,
                 external_id="svr2",
                 response_date=date(2021, 1, 1),
@@ -193,26 +193,26 @@ class TestViolationAndResponseHistory(unittest.TestCase):
     def test_get_violation_and_response_history_with_tn_logic_prio_misdemeanor_before_incarceration(
         self,
     ) -> None:
-        supervision_violation_1 = NormalizedStateSupervisionViolation.new_with_defaults(
+        supervision_violation_1 = NormalizedStateSupervisionViolation(
             supervision_violation_id=123455,
             external_id="sv1",
             state_code="US_TN",
             violation_date=date(2021, 1, 1),
             supervision_violation_types=[
-                NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
+                NormalizedStateSupervisionViolationTypeEntry(
                     state_code="US_XX",
                     violation_type=StateSupervisionViolationType.TECHNICAL,
                 ),
             ],
         )
 
-        supervision_violation_2 = NormalizedStateSupervisionViolation.new_with_defaults(
+        supervision_violation_2 = NormalizedStateSupervisionViolation(
             supervision_violation_id=123456,
             external_id="sv2",
             state_code="US_TN",
             violation_date=date(2021, 1, 20),
             supervision_violation_types=[
-                NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
+                NormalizedStateSupervisionViolationTypeEntry(
                     state_code="US_TN",
                     violation_type=StateSupervisionViolationType.MISDEMEANOR,
                 ),
@@ -220,42 +220,42 @@ class TestViolationAndResponseHistory(unittest.TestCase):
         )
 
         supervision_violation_responses = [
-            NormalizedStateSupervisionViolationResponse.new_with_defaults(
+            NormalizedStateSupervisionViolationResponse(
                 state_code=_STATE_CODE,
                 external_id="svr1",
                 response_date=date(2019, 1, 1),
                 response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,  # Should not be included
                 sequence_num=0,
             ),
-            NormalizedStateSupervisionViolationResponse.new_with_defaults(
+            NormalizedStateSupervisionViolationResponse(
                 state_code=_STATE_CODE,
                 external_id="svr2",
                 response_date=date(2021, 1, 1),
                 response_type=StateSupervisionViolationResponseType.PERMANENT_DECISION,  # Should be included
                 sequence_num=0,
                 supervision_violation_response_decisions=[
-                    NormalizedStateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                    NormalizedStateSupervisionViolationResponseDecisionEntry(
                         state_code="US_TN",
                         decision=StateSupervisionViolationResponseDecision.REVOCATION,
                     ),
                 ],
                 supervision_violation=supervision_violation_1,
             ),
-            NormalizedStateSupervisionViolationResponse.new_with_defaults(
+            NormalizedStateSupervisionViolationResponse(
                 state_code=_STATE_CODE,
                 external_id="svr3",
                 response_date=date(2021, 1, 20),
                 response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,  # Should be included
                 sequence_num=0,
                 supervision_violation_response_decisions=[
-                    NormalizedStateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                    NormalizedStateSupervisionViolationResponseDecisionEntry(
                         state_code="US_TN",
                         decision=StateSupervisionViolationResponseDecision.WARRANT_ISSUED,
                     ),
                 ],
                 supervision_violation=supervision_violation_2,
             ),
-            NormalizedStateSupervisionViolationResponse.new_with_defaults(
+            NormalizedStateSupervisionViolationResponse(
                 state_code=_STATE_CODE,
                 external_id="svr4",
                 response_date=date(2021, 1, 30),
@@ -264,7 +264,7 @@ class TestViolationAndResponseHistory(unittest.TestCase):
             ),
         ]
 
-        incarceration_period = NormalizedStateIncarcerationPeriod.new_with_defaults(
+        incarceration_period = NormalizedStateIncarcerationPeriod(
             state_code=_STATE_CODE,
             external_id="ip1",
             admission_date=date(2021, 3, 1),
@@ -318,7 +318,7 @@ class TestViolationAndResponseHistory(unittest.TestCase):
     def test_get_violation_and_response_history_with_tn_logic_prio_technical_attached_to_ip_no_other_viols(
         self,
     ) -> None:
-        incarceration_period = NormalizedStateIncarcerationPeriod.new_with_defaults(
+        incarceration_period = NormalizedStateIncarcerationPeriod(
             state_code=_STATE_CODE,
             external_id="ip1",
             admission_date=date(2021, 3, 1),
@@ -360,26 +360,26 @@ class TestViolationAndResponseHistory(unittest.TestCase):
     def test_get_violation_and_response_history_with_tn_logic_prio_misdemeanor_from_ip_over_technicals_in_window(
         self,
     ) -> None:
-        supervision_violation_1 = NormalizedStateSupervisionViolation.new_with_defaults(
+        supervision_violation_1 = NormalizedStateSupervisionViolation(
             supervision_violation_id=123455,
             external_id="sv1",
             state_code="US_TN",
             violation_date=date(2021, 1, 1),
             supervision_violation_types=[
-                NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
+                NormalizedStateSupervisionViolationTypeEntry(
                     state_code="US_XX",
                     violation_type=StateSupervisionViolationType.TECHNICAL,
                 ),
             ],
         )
 
-        supervision_violation_2 = NormalizedStateSupervisionViolation.new_with_defaults(
+        supervision_violation_2 = NormalizedStateSupervisionViolation(
             supervision_violation_id=123456,
             external_id="sv2",
             state_code="US_TN",
             violation_date=date(2021, 1, 20),
             supervision_violation_types=[
-                NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
+                NormalizedStateSupervisionViolationTypeEntry(
                     state_code="US_TN",
                     violation_type=StateSupervisionViolationType.TECHNICAL,
                 ),
@@ -387,42 +387,42 @@ class TestViolationAndResponseHistory(unittest.TestCase):
         )
 
         supervision_violation_responses = [
-            NormalizedStateSupervisionViolationResponse.new_with_defaults(
+            NormalizedStateSupervisionViolationResponse(
                 state_code=_STATE_CODE,
                 external_id="svr1",
                 response_date=date(2019, 1, 1),
                 response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,  # Should not be included
                 sequence_num=0,
             ),
-            NormalizedStateSupervisionViolationResponse.new_with_defaults(
+            NormalizedStateSupervisionViolationResponse(
                 state_code=_STATE_CODE,
                 external_id="svr2",
                 response_date=date(2021, 1, 1),
                 response_type=StateSupervisionViolationResponseType.PERMANENT_DECISION,  # Should be included
                 sequence_num=0,
                 supervision_violation_response_decisions=[
-                    NormalizedStateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                    NormalizedStateSupervisionViolationResponseDecisionEntry(
                         state_code="US_TN",
                         decision=StateSupervisionViolationResponseDecision.REVOCATION,
                     ),
                 ],
                 supervision_violation=supervision_violation_1,
             ),
-            NormalizedStateSupervisionViolationResponse.new_with_defaults(
+            NormalizedStateSupervisionViolationResponse(
                 state_code=_STATE_CODE,
                 external_id="svr3",
                 response_date=date(2021, 1, 20),
                 response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,  # Should be included
                 sequence_num=0,
                 supervision_violation_response_decisions=[
-                    NormalizedStateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                    NormalizedStateSupervisionViolationResponseDecisionEntry(
                         state_code="US_TN",
                         decision=StateSupervisionViolationResponseDecision.WARRANT_ISSUED,
                     ),
                 ],
                 supervision_violation=supervision_violation_2,
             ),
-            NormalizedStateSupervisionViolationResponse.new_with_defaults(
+            NormalizedStateSupervisionViolationResponse(
                 state_code=_STATE_CODE,
                 external_id="svr4",
                 response_date=date(2021, 1, 30),
@@ -431,7 +431,7 @@ class TestViolationAndResponseHistory(unittest.TestCase):
             ),
         ]
 
-        incarceration_period = NormalizedStateIncarcerationPeriod.new_with_defaults(
+        incarceration_period = NormalizedStateIncarcerationPeriod(
             state_code=_STATE_CODE,
             external_id="ip1",
             admission_date=date(2021, 3, 1),

@@ -55,7 +55,7 @@ class TestPreCommitmentSupervisionPeriod(unittest.TestCase):
         admission_reason: StateIncarcerationPeriodAdmissionReason,
         supervision_periods: List[NormalizedStateSupervisionPeriod],
     ) -> Optional[NormalizedStateSupervisionPeriod]:
-        ip = NormalizedStateIncarcerationPeriod.new_with_defaults(
+        ip = NormalizedStateIncarcerationPeriod(
             sequence_num=0,
             state_code="US_IX",
             incarceration_period_id=111,
@@ -80,7 +80,7 @@ class TestPreCommitmentSupervisionPeriod(unittest.TestCase):
         )
 
     def test_us_ix_pre_commitment_supervision_period(self) -> None:
-        supervision_period_set = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period_set = NormalizedStateSupervisionPeriod(
             supervision_period_id=111,
             sequence_num=0,
             external_id="sp1",
@@ -90,7 +90,7 @@ class TestPreCommitmentSupervisionPeriod(unittest.TestCase):
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
         )
 
-        supervision_period_unset = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period_unset = NormalizedStateSupervisionPeriod(
             supervision_period_id=222,
             sequence_num=1,
             external_id="sp1",
@@ -114,7 +114,7 @@ class TestPreCommitmentSupervisionPeriod(unittest.TestCase):
     def test_us_ix_pre_commitment_supervision_period_internal_unknown(
         self,
     ) -> None:
-        supervision_period_set = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period_set = NormalizedStateSupervisionPeriod(
             supervision_period_id=111,
             sequence_num=0,
             external_id="sp1",
@@ -124,7 +124,7 @@ class TestPreCommitmentSupervisionPeriod(unittest.TestCase):
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
         )
 
-        supervision_period_unset = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period_unset = NormalizedStateSupervisionPeriod(
             supervision_period_id=222,
             sequence_num=1,
             external_id="sp1",

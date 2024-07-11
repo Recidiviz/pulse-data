@@ -63,7 +63,7 @@ class TestUsNdSupervisionDelegate(unittest.TestCase):
         raw_text_values: List[str],
         expected_supervision_type: StateSupervisionPeriodSupervisionType,
     ) -> None:
-        incarceration_period = NormalizedStateIncarcerationPeriod.new_with_defaults(
+        incarceration_period = NormalizedStateIncarcerationPeriod(
             incarceration_period_id=1112,
             external_id="2",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
@@ -91,7 +91,7 @@ class TestUsNdSupervisionDelegate(unittest.TestCase):
     def test_get_incarceration_period_supervision_type_at_release_no_supervision(
         self,
     ) -> None:
-        incarceration_period = NormalizedStateIncarcerationPeriod.new_with_defaults(
+        incarceration_period = NormalizedStateIncarcerationPeriod(
             incarceration_period_id=1112,
             external_id="2",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
@@ -115,7 +115,7 @@ class TestUsNdSupervisionDelegate(unittest.TestCase):
     def test_get_incarceration_period_supervision_type_at_release_unexpected_raw_text(
         self,
     ) -> None:
-        incarceration_period = NormalizedStateIncarcerationPeriod.new_with_defaults(
+        incarceration_period = NormalizedStateIncarcerationPeriod(
             incarceration_period_id=1112,
             external_id="2",
             incarceration_type=StateIncarcerationType.STATE_PRISON,

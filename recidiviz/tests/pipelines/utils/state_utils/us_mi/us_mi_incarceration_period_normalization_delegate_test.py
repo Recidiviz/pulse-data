@@ -307,7 +307,7 @@ class TestUsMiIncarcerationNormalizationDelegate(unittest.TestCase):
 
         incarceration_periods = [incarceration_period_1]
 
-        supervision_period_1 = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period_1 = NormalizedStateSupervisionPeriod(
             supervision_period_id=111,
             external_id="sp1",
             state_code=_STATE_CODE,
@@ -369,7 +369,7 @@ class TestUsMiIncarcerationNormalizationDelegate(unittest.TestCase):
 
         incarceration_periods = [incarceration_period_1, incarceration_period_2]
 
-        supervision_period_1 = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period_1 = NormalizedStateSupervisionPeriod(
             supervision_period_id=111,
             external_id="sp1",
             state_code=_STATE_CODE,
@@ -423,7 +423,7 @@ class TestUsMiIncarcerationNormalizationDelegate(unittest.TestCase):
 
         incarceration_periods = [incarceration_period_1, incarceration_period_2]
 
-        supervision_period_1 = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period_1 = NormalizedStateSupervisionPeriod(
             supervision_period_id=111,
             external_id="sp1",
             state_code=_STATE_CODE,
@@ -500,7 +500,7 @@ class TestUsMiIncarcerationNormalizationDelegate(unittest.TestCase):
 
         incarceration_periods = [incarceration_period_1]
 
-        supervision_period_1 = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period_1 = NormalizedStateSupervisionPeriod(
             supervision_period_id=111,
             external_id="sp1",
             state_code=_STATE_CODE,
@@ -538,7 +538,7 @@ class TestUsMiIncarcerationNormalizationDelegate(unittest.TestCase):
 
         incarceration_periods = [incarceration_period_1]
 
-        supervision_period_1 = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period_1 = NormalizedStateSupervisionPeriod(
             supervision_period_id=111,
             external_id="sp1",
             state_code=_STATE_CODE,
@@ -584,7 +584,7 @@ class TestUsMiIncarcerationNormalizationDelegate(unittest.TestCase):
 
         incarceration_periods = [incarceration_period_1, incarceration_period_2]
 
-        supervision_period_1 = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period_1 = NormalizedStateSupervisionPeriod(
             supervision_period_id=111,
             external_id="sp1",
             state_code=_STATE_CODE,
@@ -649,7 +649,7 @@ class TestUsMiIncarcerationNormalizationDelegate(unittest.TestCase):
 
         incarceration_periods = [incarceration_period_1, incarceration_period_2]
 
-        supervision_period_1 = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period_1 = NormalizedStateSupervisionPeriod(
             supervision_period_id=111,
             external_id="sp1",
             state_code=_STATE_CODE,
@@ -690,7 +690,7 @@ class TestUsMiIncarcerationNormalizationDelegate(unittest.TestCase):
 
     #     incarceration_periods = [incarceration_period_1]
 
-    #     supervision_period_1 = NormalizedStateSupervisionPeriod.new_with_defaults(
+    #     supervision_period_1 = NormalizedStateSupervisionPeriod(
     #         supervision_period_id=111,
     #         external_id="sp1",
     #         state_code=_STATE_CODE,
@@ -740,7 +740,7 @@ class TestUsMiIncarcerationNormalizationDelegate(unittest.TestCase):
 
     #     incarceration_periods = [incarceration_period_1]
 
-    #     supervision_period_1 = NormalizedStateSupervisionPeriod.new_with_defaults(
+    #     supervision_period_1 = NormalizedStateSupervisionPeriod(
     #         supervision_period_id=111,
     #         external_id="sp1",
     #         state_code=_STATE_CODE,
@@ -785,7 +785,7 @@ class TestUsMiIncarcerationNormalizationDelegate(unittest.TestCase):
 
         incarceration_periods = [incarceration_period_1, incarceration_period_2]
 
-        supervision_period_1 = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period_1 = NormalizedStateSupervisionPeriod(
             supervision_period_id=111,
             external_id="sp1",
             state_code=_STATE_CODE,
@@ -848,7 +848,7 @@ class TestUsMiIncarcerationNormalizationDelegate(unittest.TestCase):
 
         incarceration_periods = [incarceration_period_1, incarceration_period_2]
 
-        supervision_period_1 = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period_1 = NormalizedStateSupervisionPeriod(
             supervision_period_id=111,
             external_id="sp1",
             state_code=_STATE_CODE,

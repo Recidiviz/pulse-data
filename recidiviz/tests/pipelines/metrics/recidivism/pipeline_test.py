@@ -453,7 +453,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
             residency_status=StateResidencyStatus.PERMANENT,
         )
 
-        initial_incarceration = NormalizedStateIncarcerationPeriod.new_with_defaults(
+        initial_incarceration = NormalizedStateIncarcerationPeriod(
             incarceration_period_id=1111,
             external_id="ip1",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
@@ -465,7 +465,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
             sequence_num=0,
         )
 
-        first_reincarceration = NormalizedStateIncarcerationPeriod.new_with_defaults(
+        first_reincarceration = NormalizedStateIncarcerationPeriod(
             incarceration_period_id=2222,
             external_id="ip2",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
@@ -477,16 +477,14 @@ class TestClassifyReleaseEvents(unittest.TestCase):
             sequence_num=1,
         )
 
-        subsequent_reincarceration = (
-            NormalizedStateIncarcerationPeriod.new_with_defaults(
-                incarceration_period_id=3333,
-                external_id="ip3",
-                incarceration_type=StateIncarcerationType.STATE_PRISON,
-                state_code="US_XX",
-                admission_date=date(2017, 1, 4),
-                admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
-                sequence_num=2,
-            )
+        subsequent_reincarceration = NormalizedStateIncarcerationPeriod(
+            incarceration_period_id=3333,
+            external_id="ip3",
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            state_code="US_XX",
+            admission_date=date(2017, 1, 4),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+            sequence_num=2,
         )
 
         person_incarceration_periods = {
@@ -570,7 +568,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
             residency_status=StateResidencyStatus.PERMANENT,
         )
 
-        only_incarceration = NormalizedStateIncarcerationPeriod.new_with_defaults(
+        only_incarceration = NormalizedStateIncarcerationPeriod(
             incarceration_period_id=1111,
             external_id="ip1",
             incarceration_type=StateIncarcerationType.STATE_PRISON,

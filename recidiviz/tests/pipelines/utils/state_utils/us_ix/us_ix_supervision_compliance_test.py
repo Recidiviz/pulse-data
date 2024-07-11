@@ -110,7 +110,7 @@ class TestAssessmentsInComplianceMonth(unittest.TestCase):
 
     def test_completed_assessments_in_compliance_month(self) -> None:
         evaluation_date = date(2018, 4, 30)
-        assessment_out_of_range = NormalizedStateAssessment.new_with_defaults(
+        assessment_out_of_range = NormalizedStateAssessment(
             state_code="US_IX",
             external_id="a1",
             assessment_type=StateAssessmentType.LSIR,
@@ -118,7 +118,7 @@ class TestAssessmentsInComplianceMonth(unittest.TestCase):
             assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
             sequence_num=0,
         )
-        assessment_out_of_range_2 = NormalizedStateAssessment.new_with_defaults(
+        assessment_out_of_range_2 = NormalizedStateAssessment(
             state_code="US_IX",
             external_id="a2",
             assessment_type=StateAssessmentType.LSIR,
@@ -126,7 +126,7 @@ class TestAssessmentsInComplianceMonth(unittest.TestCase):
             assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
             sequence_num=4,
         )
-        assessment_1 = NormalizedStateAssessment.new_with_defaults(
+        assessment_1 = NormalizedStateAssessment(
             state_code="US_IX",
             assessment_id=1,
             external_id="a3",
@@ -136,7 +136,7 @@ class TestAssessmentsInComplianceMonth(unittest.TestCase):
             assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
             sequence_num=2,
         )
-        assessment_2 = NormalizedStateAssessment.new_with_defaults(
+        assessment_2 = NormalizedStateAssessment(
             state_code="US_IX",
             assessment_id=2,
             external_id="a4",
@@ -146,7 +146,7 @@ class TestAssessmentsInComplianceMonth(unittest.TestCase):
             assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
             sequence_num=3,
         )
-        assessment_no_score = NormalizedStateAssessment.new_with_defaults(
+        assessment_no_score = NormalizedStateAssessment(
             state_code="US_IX",
             external_id="a5",
             assessment_type=StateAssessmentType.LSIR,
@@ -154,7 +154,7 @@ class TestAssessmentsInComplianceMonth(unittest.TestCase):
             assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
             sequence_num=1,
         )
-        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod(
             supervision_period_id=111,
             external_id="sp1",
             state_code="US_IX",
@@ -253,7 +253,7 @@ class TestFaceToFaceContactsInComplianceMonth(unittest.TestCase):
             status=StateSupervisionContactStatus.COMPLETED,
         )
 
-        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod(
             supervision_period_id=111,
             external_id="sp1",
             state_code="US_IX",
@@ -317,7 +317,7 @@ class TestNextRecommendedContactDate(unittest.TestCase):
         self,
     ) -> None:
         start_of_supervision = date(2018, 3, 5)  # This was a Monday
-        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod(
             sequence_num=0,
             supervision_period_id=111,
             external_id="sp1",
@@ -374,7 +374,7 @@ class TestNextRecommendedContactDate(unittest.TestCase):
         self,
     ) -> None:
         start_of_supervision = date(2018, 3, 5)
-        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod(
             sequence_num=0,
             supervision_period_id=111,
             external_id="sp1",
@@ -432,7 +432,7 @@ class TestNextRecommendedContactDate(unittest.TestCase):
         self,
     ) -> None:
         start_of_supervision = date(2018, 3, 5)
-        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod(
             sequence_num=0,
             supervision_period_id=111,
             external_id="sp1",
@@ -490,7 +490,7 @@ class TestNextRecommendedContactDate(unittest.TestCase):
         self,
     ) -> None:
         start_of_supervision = date(2018, 3, 5)
-        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod(
             sequence_num=0,
             supervision_period_id=111,
             external_id="sp1",
@@ -769,7 +769,7 @@ class TestNextRecommendedContactDate(unittest.TestCase):
         expected_contact_date: Optional[date],
     ) -> None:
         start_of_supervision = date(2018, 3, 5)
-        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod(
             supervision_period_id=111,
             external_id="sp1",
             state_code="US_IX",
@@ -823,7 +823,7 @@ class TestNextRecommendedContactDate(unittest.TestCase):
         self,
     ) -> None:
         start_of_supervision = date(1999, 8, 13)  # This was a Friday
-        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod(
             supervision_period_id=111,
             external_id="sp1",
             state_code="US_IX",
@@ -870,7 +870,7 @@ class TestNextRecommendedContactDate(unittest.TestCase):
         self,
     ) -> None:
         start_of_supervision = date(1999, 8, 13)  # This was a Friday
-        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod(
             supervision_period_id=111,
             external_id="sp1",
             state_code="US_IX",
@@ -1015,7 +1015,7 @@ class TestNextRecommendedContactDate(unittest.TestCase):
         expected_contact_date: Optional[date],
     ) -> None:
         start_of_supervision = date(2018, 3, 5)
-        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod(
             supervision_period_id=111,
             external_id="sp1",
             state_code="US_IX",
@@ -1113,7 +1113,7 @@ class TestNextRecommendedContactDate(unittest.TestCase):
         expected_next_contact: date,
     ) -> None:
         start_of_supervision = date(2018, 3, 5)
-        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod(
             supervision_period_id=111,
             external_id="sp1",
             state_code="US_IX",
@@ -1167,7 +1167,7 @@ class TestNextRecommendedContactDate(unittest.TestCase):
 
     def test_next_recommended_home_visit_no_previous_contacts(self) -> None:
         start_of_supervision = date(2018, 3, 5)
-        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod(
             supervision_period_id=111,
             external_id="sp1",
             state_code="US_IX",
@@ -1210,7 +1210,7 @@ class TestNextRecommendedContactDate(unittest.TestCase):
 
     def test_next_recommended_home_visit_non_existent_level(self) -> None:
         start_of_supervision = date(2018, 3, 5)
-        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod(
             supervision_period_id=111,
             external_id="sp1",
             state_code="US_IX",
@@ -1253,7 +1253,7 @@ class TestNextRecommendedContactDate(unittest.TestCase):
 
     def test_next_recommended_home_visit_contact_type_agnostic(self) -> None:
         start_of_supervision = date(2018, 3, 5)
-        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod(
             supervision_period_id=111,
             external_id="sp1",
             state_code="US_IX",
@@ -1341,7 +1341,7 @@ class TestNextRecommendedContactDate(unittest.TestCase):
         expected_next_contact: date,
     ) -> None:
         start_of_supervision = date(2018, 3, 5)
-        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod(
             supervision_period_id=111,
             external_id="sp1",
             state_code="US_IX",
@@ -1395,7 +1395,7 @@ class TestNextRecommendedContactDate(unittest.TestCase):
         self,
     ) -> None:
         start_of_supervision = date(2018, 3, 5)
-        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod(
             supervision_period_id=111,
             external_id="sp1",
             state_code="US_IX",
@@ -1438,7 +1438,7 @@ class TestNextRecommendedContactDate(unittest.TestCase):
         self,
     ) -> None:
         start_of_supervision = date(2018, 3, 5)
-        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod(
             supervision_period_id=111,
             external_id="sp1",
             state_code="US_IX",
@@ -1479,7 +1479,7 @@ class TestNextRecommendedContactDate(unittest.TestCase):
 
     def test_is_new_level_system_case_sensitivity(self) -> None:
         start_date = date(2018, 3, 5)
-        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod(
             supervision_period_id=111,
             external_id="sp1",
             state_code="US_IX",
@@ -1523,7 +1523,7 @@ class TestGuidelinesApplicableForCase(unittest.TestCase):
 
     def test_guidelines_applicable_for_case_general(self) -> None:
         start_date = date(2018, 3, 5)
-        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod(
             supervision_period_id=111,
             external_id="sp1",
             state_code="US_IX",
@@ -1562,7 +1562,7 @@ class TestGuidelinesApplicableForCase(unittest.TestCase):
 
     def test_guidelines_applicable_for_case_no_supervision_level_general(self) -> None:
         start_date = date(2018, 3, 5)
-        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod(
             supervision_period_id=111,
             external_id="sp1",
             state_code="US_IX",
@@ -1602,7 +1602,7 @@ class TestGuidelinesApplicableForCase(unittest.TestCase):
         self,
     ) -> None:
         start_date = date(2018, 3, 5)
-        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod(
             supervision_period_id=111,
             external_id="sp1",
             state_code="US_IX",
@@ -1641,7 +1641,7 @@ class TestGuidelinesApplicableForCase(unittest.TestCase):
 
     def test_guidelines_applicable_for_case_invalid_case_type(self) -> None:
         start_date = date(2018, 3, 5)
-        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod(
             supervision_period_id=111,
             external_id="sp1",
             state_code="US_IX",
@@ -1680,7 +1680,7 @@ class TestGuidelinesApplicableForCase(unittest.TestCase):
 
     def test_guidelines_applicable_for_case_sex_offense(self) -> None:
         start_date = date(2018, 3, 5)
-        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod(
             supervision_period_id=111,
             external_id="sp1",
             state_code="US_IX",
@@ -1721,7 +1721,7 @@ class TestGuidelinesApplicableForCase(unittest.TestCase):
 
     def test_guidelines_not_applicable_for_case_invalid_leveL_sex_offense(self) -> None:
         start_date = date(2018, 3, 5)
-        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod(
             supervision_period_id=111,
             external_id="sp1",
             state_code="US_IX",
@@ -1764,7 +1764,7 @@ class TestGuidelinesApplicableForCase(unittest.TestCase):
         self,
     ) -> None:
         start_date = date(2018, 3, 5)
-        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod(
             sequence_num=0,
             supervision_period_id=111,
             external_id="sp1",
@@ -1805,7 +1805,7 @@ class TestGuidelinesApplicableForCase(unittest.TestCase):
     #  cases then this will no longer be an invalid case
     def test_guidelines_applicable_for_case_invalid_bench_warrant(self) -> None:
         start_date = date(2018, 3, 5)
-        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod(
             sequence_num=0,
             supervision_period_id=111,
             external_id="sp1",
@@ -1843,7 +1843,7 @@ class TestGuidelinesApplicableForCase(unittest.TestCase):
 
     def test_guideline_applicability_around_date_change(self) -> None:
         start_of_supervision = date(2018, 3, 5)
-        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod(
             supervision_period_id=111,
             external_id="sp1",
             state_code="US_IX",
@@ -1899,7 +1899,7 @@ class TestReassessmentRequirementAreMet(unittest.TestCase):
 
     def test_next_recommended_reassessment_general_minimum(self) -> None:
         start_of_supervision = date(2018, 3, 5)  # This was a Monday
-        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod(
             sequence_num=0,
             supervision_period_id=111,
             external_id="sp1",
@@ -1914,7 +1914,7 @@ class TestReassessmentRequirementAreMet(unittest.TestCase):
 
         assessment_date = date(2018, 4, 2)
         assessment_score = 25
-        assessment = NormalizedStateAssessment.new_with_defaults(
+        assessment = NormalizedStateAssessment(
             sequence_num=0,
             state_code=StateCode.US_ID.value,
             external_id="a1",
@@ -1947,7 +1947,7 @@ class TestReassessmentRequirementAreMet(unittest.TestCase):
 
     def test_next_recommended_reassessment_sex_offense_with_score(self) -> None:
         start_of_supervision = date(2018, 3, 5)  # This was a Monday
-        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod(
             sequence_num=0,
             supervision_period_id=111,
             external_id="sp1",
@@ -1962,7 +1962,7 @@ class TestReassessmentRequirementAreMet(unittest.TestCase):
 
         assessment_date = date(2018, 4, 2)
         assessment_score = 34
-        assessment = NormalizedStateAssessment.new_with_defaults(
+        assessment = NormalizedStateAssessment(
             sequence_num=0,
             state_code=StateCode.US_ID.value,
             external_id="a1",
@@ -1995,7 +1995,7 @@ class TestReassessmentRequirementAreMet(unittest.TestCase):
 
     def test_reassessment_requirements_are_not_met(self) -> None:
         start_of_supervision = date(2018, 3, 5)  # This was a Monday
-        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod(
             sequence_num=0,
             supervision_period_id=111,
             external_id="sp1",
@@ -2009,7 +2009,7 @@ class TestReassessmentRequirementAreMet(unittest.TestCase):
 
         assessment_date = date(2010, 4, 2)
         assessment_score = 25
-        assessment = NormalizedStateAssessment.new_with_defaults(
+        assessment = NormalizedStateAssessment(
             sequence_num=0,
             state_code=StateCode.US_ID.value,
             external_id="a1",
@@ -2054,7 +2054,7 @@ class TestReassessmentRequirementAreMet(unittest.TestCase):
     ) -> None:
         self.person.gender = gender
         start_of_supervision = date(2018, 3, 5)  # This was a Monday
-        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod(
             sequence_num=0,
             supervision_period_id=111,
             external_id="sp1",
@@ -2068,7 +2068,7 @@ class TestReassessmentRequirementAreMet(unittest.TestCase):
 
         assessment_date = date(2010, 4, 2)
         assessment_boundary_score = SEX_OFFENSE_LSIR_MINIMUM_SCORE[gender]
-        assessment_boundary = NormalizedStateAssessment.new_with_defaults(
+        assessment_boundary = NormalizedStateAssessment(
             sequence_num=0,
             state_code=StateCode.US_IX.value,
             external_id="a1",
@@ -2102,7 +2102,7 @@ class TestReassessmentRequirementAreMet(unittest.TestCase):
 
         self.assertEqual(boundary_deadline, date(2011, 4, 2))
 
-        assessment_under_boundary = NormalizedStateAssessment.new_with_defaults(
+        assessment_under_boundary = NormalizedStateAssessment(
             sequence_num=0,
             state_code=StateCode.US_IX.value,
             external_id="a2",
@@ -2153,7 +2153,7 @@ class TestSupervisionDowngrades(unittest.TestCase):
     def _supervision_period_with_level(
         self, supervision_level: StateSupervisionLevel
     ) -> NormalizedStateSupervisionPeriod:
-        return NormalizedStateSupervisionPeriod.new_with_defaults(
+        return NormalizedStateSupervisionPeriod(
             supervision_period_id=111,
             external_id="sp1",
             state_code=StateCode.US_IX.value,
@@ -2167,7 +2167,7 @@ class TestSupervisionDowngrades(unittest.TestCase):
         )
 
     def _assessment_with_score(self, score: int) -> NormalizedStateAssessment:
-        return NormalizedStateAssessment.new_with_defaults(
+        return NormalizedStateAssessment(
             state_code=StateCode.US_IX.value,
             external_id=f"{score}",
             assessment_type=StateAssessmentType.LSIR,
@@ -2424,7 +2424,7 @@ class TestSupervisionDowngrades(unittest.TestCase):
             assessments_by_date=RangeQuerier(
                 [
                     # this would result in a MINIMUM recommendation
-                    NormalizedStateAssessment.new_with_defaults(
+                    NormalizedStateAssessment(
                         state_code=StateCode.US_IX.value,
                         external_id="a1",
                         assessment_type=StateAssessmentType.LSIR,

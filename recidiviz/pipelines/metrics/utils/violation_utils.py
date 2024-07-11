@@ -303,13 +303,13 @@ def get_violation_and_response_history(
         incarceration_period
         and incarceration_period.incarceration_admission_violation_type
     ):
-        placeholder_violation_based_on_ip = NormalizedStateSupervisionViolation.new_with_defaults(
+        placeholder_violation_based_on_ip = NormalizedStateSupervisionViolation(
             state_code=incarceration_period.state_code,
             external_id=incarceration_period.external_id,
             supervision_violation_id=len(violations_in_window) + 1,
             violation_date=incarceration_period.admission_date,
             supervision_violation_types=[
-                normalized_entities.NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
+                normalized_entities.NormalizedStateSupervisionViolationTypeEntry(
                     state_code=incarceration_period.state_code,
                     violation_type=incarceration_period.incarceration_admission_violation_type,
                 ),

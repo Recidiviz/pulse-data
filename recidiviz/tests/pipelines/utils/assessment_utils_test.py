@@ -56,7 +56,7 @@ class TestFindMostRecentApplicableAssessment(unittest.TestCase):
             return [StateAssessmentType.LSIR]
 
     def test_find_most_recent_applicable_assessment_LSIR(self) -> None:
-        assessment_1 = NormalizedStateAssessment.new_with_defaults(
+        assessment_1 = NormalizedStateAssessment(
             state_code="US_XX",
             external_id="a1",
             assessment_type=StateAssessmentType.LSIR,
@@ -66,7 +66,7 @@ class TestFindMostRecentApplicableAssessment(unittest.TestCase):
             sequence_num=0,
         )
 
-        assessment_2 = NormalizedStateAssessment.new_with_defaults(
+        assessment_2 = NormalizedStateAssessment(
             state_code="US_XX",
             external_id="a2",
             assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION_SCREENING,
@@ -92,7 +92,7 @@ class TestFindMostRecentApplicableAssessment(unittest.TestCase):
         self.assertEqual(most_recent_assessment, assessment_1)
 
     def test_find_most_recent_applicable_assessment_LSIR_no_matches(self) -> None:
-        assessment = NormalizedStateAssessment.new_with_defaults(
+        assessment = NormalizedStateAssessment(
             state_code="US_XX",
             external_id="a1",
             assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION_SCREENING,
@@ -124,7 +124,7 @@ class TestFindMostRecentApplicableAssessment(unittest.TestCase):
     def test_find_most_recent_applicable_assessment_no_assessment_types_for_pipeline(
         self,
     ) -> None:
-        assessment = NormalizedStateAssessment.new_with_defaults(
+        assessment = NormalizedStateAssessment(
             state_code="US_XX",
             external_id="a1",
             assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION_SCREENING,
@@ -148,7 +148,7 @@ class TestFindMostRecentApplicableAssessment(unittest.TestCase):
         self.assertIsNone(most_recent_assessment, assessment)
 
     def test_find_most_recent_applicable_assessment_no_assessment_score(self) -> None:
-        assessment = NormalizedStateAssessment.new_with_defaults(
+        assessment = NormalizedStateAssessment(
             state_code="US_XX",
             external_id="a1",
             assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
@@ -174,7 +174,7 @@ class TestFindMostRecentApplicableAssessment(unittest.TestCase):
     def test_find_most_recent_applicable_assessment_US_IX(self) -> None:
         state_code = "US_IX"
 
-        lsir_assessment = NormalizedStateAssessment.new_with_defaults(
+        lsir_assessment = NormalizedStateAssessment(
             state_code=state_code,
             external_id="a1",
             assessment_type=StateAssessmentType.LSIR,
@@ -184,7 +184,7 @@ class TestFindMostRecentApplicableAssessment(unittest.TestCase):
             sequence_num=0,
         )
 
-        oras_assessment = NormalizedStateAssessment.new_with_defaults(
+        oras_assessment = NormalizedStateAssessment(
             state_code=state_code,
             external_id="a2",
             assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION_SCREENING,
@@ -212,7 +212,7 @@ class TestFindMostRecentApplicableAssessment(unittest.TestCase):
     def test_find_most_recent_applicable_assessment_US_ND(self) -> None:
         state_code = "US_ND"
 
-        lsir_assessment = NormalizedStateAssessment.new_with_defaults(
+        lsir_assessment = NormalizedStateAssessment(
             state_code=state_code,
             external_id="a1",
             assessment_type=StateAssessmentType.LSIR,
@@ -222,7 +222,7 @@ class TestFindMostRecentApplicableAssessment(unittest.TestCase):
             sequence_num=0,
         )
 
-        oras_assessment = NormalizedStateAssessment.new_with_defaults(
+        oras_assessment = NormalizedStateAssessment(
             state_code=state_code,
             external_id="a2",
             assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION_SCREENING,
@@ -250,7 +250,7 @@ class TestFindMostRecentApplicableAssessment(unittest.TestCase):
     def test_find_most_recent_applicable_assessment_US_MO(self) -> None:
         state_code = "US_MO"
 
-        lsir_assessment = NormalizedStateAssessment.new_with_defaults(
+        lsir_assessment = NormalizedStateAssessment(
             state_code=state_code,
             external_id="a1",
             assessment_type=StateAssessmentType.LSIR,
@@ -260,7 +260,7 @@ class TestFindMostRecentApplicableAssessment(unittest.TestCase):
             sequence_num=0,
         )
 
-        oras_assessment = NormalizedStateAssessment.new_with_defaults(
+        oras_assessment = NormalizedStateAssessment(
             state_code=state_code,
             external_id="a2",
             assessment_date=date(2018, 4, 29),
@@ -289,7 +289,7 @@ class TestFindMostRecentApplicableAssessment(unittest.TestCase):
             self.assertEqual(most_recent_assessment, oras_assessment)
 
     def test_same_dates(self) -> None:
-        assessment_1 = NormalizedStateAssessment.new_with_defaults(
+        assessment_1 = NormalizedStateAssessment(
             state_code="US_XX",
             assessment_type=StateAssessmentType.LSIR,
             assessment_date=date(2018, 4, 28),
@@ -299,7 +299,7 @@ class TestFindMostRecentApplicableAssessment(unittest.TestCase):
             sequence_num=0,
         )
 
-        assessment_2 = NormalizedStateAssessment.new_with_defaults(
+        assessment_2 = NormalizedStateAssessment(
             state_code="US_XX",
             assessment_type=StateAssessmentType.LSIR,
             assessment_date=date(2018, 4, 28),

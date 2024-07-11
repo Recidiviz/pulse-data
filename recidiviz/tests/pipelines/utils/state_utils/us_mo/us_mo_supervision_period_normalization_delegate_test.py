@@ -148,7 +148,7 @@ class TestUsMoSupervisionPeriodNormalizationDelegate(unittest.TestCase):
             supervising_officer_staff_external_id_type="MO_STAFF",
         )
 
-        supervision_sentence = NormalizedStateSupervisionSentence.new_with_defaults(
+        supervision_sentence = NormalizedStateSupervisionSentence(
             state_code="US_MO",
             supervision_sentence_id=111,
             effective_date=date(2020, 9, 1),
@@ -251,7 +251,7 @@ class TestUsMoSupervisionPeriodNormalizationDelegate(unittest.TestCase):
         self.assertEqual(expected_periods, results)
 
     def test_split_periods_based_on_sentences_no_periods(self) -> None:
-        supervision_sentence = NormalizedStateSupervisionSentence.new_with_defaults(
+        supervision_sentence = NormalizedStateSupervisionSentence(
             state_code="US_MO",
             supervision_sentence_id=111,
             effective_date=date(2020, 9, 1),
@@ -344,7 +344,7 @@ class TestUsMoSupervisionPeriodNormalizationDelegate(unittest.TestCase):
             supervising_officer_staff_external_id_type="MO_STAFF",
         )
 
-        supervision_sentence = NormalizedStateSupervisionSentence.new_with_defaults(
+        supervision_sentence = NormalizedStateSupervisionSentence(
             state_code="US_MO",
             supervision_sentence_id=111,
             effective_date=date(2020, 9, 1),
@@ -451,7 +451,7 @@ class TestUsMoSupervisionPeriodNormalizationDelegate(unittest.TestCase):
             supervising_officer_staff_external_id_type="MO_STAFF",
         )
 
-        supervision_sentence = NormalizedStateSupervisionSentence.new_with_defaults(
+        supervision_sentence = NormalizedStateSupervisionSentence(
             state_code="US_MO",
             supervision_sentence_id=111,
             effective_date=date(2020, 9, 1),

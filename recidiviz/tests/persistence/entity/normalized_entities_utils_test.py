@@ -343,14 +343,14 @@ def get_normalized_violation_tree(
     starting_id_value = starting_id_value or 1
     starting_sequence_num = starting_sequence_num or 0
 
-    supervision_violation = NormalizedStateSupervisionViolation.new_with_defaults(
+    supervision_violation = NormalizedStateSupervisionViolation(
         external_id="sv1",
         supervision_violation_id=starting_id_value,
         violation_date=datetime.date(year=2004, month=9, day=1),
         state_code="US_XX",
         is_violent=False,
         supervision_violation_types=[
-            NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
+            NormalizedStateSupervisionViolationTypeEntry(
                 state_code="US_XX",
                 supervision_violation_type_entry_id=starting_id_value + 1,
                 violation_type=entities.StateSupervisionViolationType.TECHNICAL,
@@ -358,7 +358,7 @@ def get_normalized_violation_tree(
             ),
         ],
         supervision_violated_conditions=[
-            NormalizedStateSupervisionViolatedConditionEntry.new_with_defaults(
+            NormalizedStateSupervisionViolatedConditionEntry(
                 supervision_violated_condition_entry_id=starting_id_value + 2,
                 state_code="US_XX",
                 condition=StateSupervisionViolatedConditionType.SPECIAL_CONDITIONS,
@@ -367,7 +367,7 @@ def get_normalized_violation_tree(
         ],
     )
 
-    supervision_violation_response_1 = NormalizedStateSupervisionViolationResponse.new_with_defaults(
+    supervision_violation_response_1 = NormalizedStateSupervisionViolationResponse(
         external_id="svr1",
         supervision_violation_response_id=starting_id_value + 3,
         response_type=entities.StateSupervisionViolationResponseType.CITATION,
@@ -377,7 +377,7 @@ def get_normalized_violation_tree(
         sequence_num=starting_sequence_num,
         supervision_violation=supervision_violation,
         supervision_violation_response_decisions=[
-            NormalizedStateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+            NormalizedStateSupervisionViolationResponseDecisionEntry(
                 state_code="US_XX",
                 supervision_violation_response_decision_entry_id=starting_id_value + 4,
                 decision=StateSupervisionViolationResponseDecision.EXTERNAL_UNKNOWN,
@@ -386,7 +386,7 @@ def get_normalized_violation_tree(
         ],
     )
 
-    supervision_violation_response_2 = NormalizedStateSupervisionViolationResponse.new_with_defaults(
+    supervision_violation_response_2 = NormalizedStateSupervisionViolationResponse(
         external_id="svr2",
         supervision_violation_response_id=starting_id_value + 5,
         response_type=entities.StateSupervisionViolationResponseType.VIOLATION_REPORT,
@@ -396,7 +396,7 @@ def get_normalized_violation_tree(
         sequence_num=starting_sequence_num + 1,
         supervision_violation=supervision_violation,
         supervision_violation_response_decisions=[
-            NormalizedStateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+            NormalizedStateSupervisionViolationResponseDecisionEntry(
                 state_code="US_XX",
                 supervision_violation_response_decision_entry_id=starting_id_value + 6,
                 decision=StateSupervisionViolationResponseDecision.PRIVILEGES_REVOKED,

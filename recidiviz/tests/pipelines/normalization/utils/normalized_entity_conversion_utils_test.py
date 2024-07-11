@@ -213,7 +213,7 @@ class TestConvertEntityTreesToNormalizedVersions(unittest.TestCase):
         )
 
         expected_normalized_ips = [
-            NormalizedStateIncarcerationPeriod.new_with_defaults(
+            NormalizedStateIncarcerationPeriod(
                 state_code="US_XX",
                 incarceration_period_id=111,
                 external_id="ip1",
@@ -221,7 +221,7 @@ class TestConvertEntityTreesToNormalizedVersions(unittest.TestCase):
                 purpose_for_incarceration_subtype="XYZ",
                 incarceration_admission_violation_type=StateSupervisionViolationType.TECHNICAL,
             ),
-            NormalizedStateIncarcerationPeriod.new_with_defaults(
+            NormalizedStateIncarcerationPeriod(
                 state_code="US_XX",
                 incarceration_period_id=222,
                 external_id="ip2",

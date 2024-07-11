@@ -565,7 +565,7 @@ class TestNormalizeEntitiesConvertedToNormalized(unittest.TestCase):
         normalized_ips: List[NormalizedStateIncarcerationPeriod] = []
 
         for index, ip in enumerate(self.full_graph_person.incarceration_periods):
-            normalized_ip = NormalizedStateIncarcerationPeriod.new_with_defaults(
+            normalized_ip = NormalizedStateIncarcerationPeriod(
                 **{
                     **ip.__dict__,
                     **{
@@ -580,10 +580,10 @@ class TestNormalizeEntitiesConvertedToNormalized(unittest.TestCase):
         normalized_sps: List[NormalizedStateSupervisionPeriod] = []
 
         for index, sp in enumerate(self.full_graph_person.supervision_periods):
-            normalized_case_type_entries: Sequence[
+            normalized_case_type_entries: List[
                 NormalizedStateSupervisionCaseTypeEntry
             ] = [
-                NormalizedStateSupervisionCaseTypeEntry.new_with_defaults(
+                NormalizedStateSupervisionCaseTypeEntry(
                     **{
                         field: value
                         for field, value in cte.__dict__.items()
@@ -595,13 +595,9 @@ class TestNormalizeEntitiesConvertedToNormalized(unittest.TestCase):
 
             sp_copy = deepcopy(sp)
             sp_copy.case_type_entries = []
-            normalized_sp = NormalizedStateSupervisionPeriod.new_with_defaults(
+            normalized_sp = NormalizedStateSupervisionPeriod(
                 **{
-                    field: value
-                    for field, value in sp_copy.__dict__.items()
-                    if field not in ("case_type_entries")
-                },
-                **{
+                    **sp_copy.__dict__,
                     "sequence_num": index,
                     "case_type_entries": normalized_case_type_entries,
                     "supervising_officer_staff_id": 10000,
@@ -616,9 +612,9 @@ class TestNormalizeEntitiesConvertedToNormalized(unittest.TestCase):
         normalized_pas: List[NormalizedStateProgramAssignment] = []
 
         for index, pa in enumerate(self.full_graph_person.program_assignments):
-            normalized_pa = NormalizedStateProgramAssignment.new_with_defaults(
-                **pa.__dict__,
+            normalized_pa = NormalizedStateProgramAssignment(
                 **{
+                    **pa.__dict__,
                     "sequence_num": index,
                     "referring_staff_id": 10000,
                 },
@@ -670,7 +666,7 @@ class TestNormalizeEntitiesConvertedToNormalized(unittest.TestCase):
         normalized_ips: List[NormalizedStateIncarcerationPeriod] = []
 
         for index, ip in enumerate(self.full_graph_person.incarceration_periods):
-            normalized_ip = NormalizedStateIncarcerationPeriod.new_with_defaults(
+            normalized_ip = NormalizedStateIncarcerationPeriod(
                 **{
                     **ip.__dict__,
                     **{

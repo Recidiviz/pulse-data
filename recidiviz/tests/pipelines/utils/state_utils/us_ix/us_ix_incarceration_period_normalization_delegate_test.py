@@ -212,7 +212,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
     def test_normalized_incarceration_periods_commitment_with_general_purpose(
         self,
     ) -> None:
-        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod(
             sequence_num=0,
             state_code="US_IX",
             supervision_period_id=111,
@@ -279,7 +279,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
     def test_normalized_incarceration_periods_commitment_with_treatment_transfer(
         self,
     ) -> None:
-        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod(
             sequence_num=0,
             supervision_period_id=111,
             external_id="sp1",
@@ -337,7 +337,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
     def test_normalized_incarceration_periods_admission_from_investigation(
         self,
     ) -> None:
-        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod(
             sequence_num=0,
             supervision_period_id=111,
             external_id="sp1",
@@ -434,7 +434,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
     def test_us_ix_normalize_period_if_commitment_from_supervision_probation_revocation(
         self,
     ) -> None:
-        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod(
             sequence_num=0,
             state_code="US_IX",
             supervision_period_id=111,
@@ -473,7 +473,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
     def test_us_ix_normalize_period_if_commitment_from_supervision_treatment(
         self,
     ) -> None:
-        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod(
             sequence_num=0,
             state_code="US_IX",
             supervision_period_id=111,
@@ -510,7 +510,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
         self.assertEqual([expected_period], validated_incarceration_periods)
 
     def test_us_ix_sanction_admission_shock_incarceration(self) -> None:
-        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod(
             sequence_num=0,
             state_code="US_IX",
             supervision_period_id=111,
@@ -542,7 +542,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
     def test_us_ix_normalize_period_if_commitment_from_supervision_parole_board_revocation(
         self,
     ) -> None:
-        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod(
             sequence_num=0,
             state_code="US_IX",
             supervision_period_id=111,
@@ -605,7 +605,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
     def test_us_ix_normalize_period_if_commitment_from_supervision_parole_board_to_treatment_revocation(
         self,
     ) -> None:
-        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod(
             sequence_num=0,
             state_code="US_IX",
             supervision_period_id=111,
@@ -668,7 +668,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
     def test_us_ix_normalize_period_if_commitment_from_supervision_treatment_transfer_not_revocation(
         self,
     ) -> None:
-        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod(
             sequence_num=0,
             state_code="US_IX",
             supervision_period_id=111,
@@ -780,7 +780,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
     def test_us_ix_normalize_period_if_commitment_from_supervision_investigation_not_revocation(
         self,
     ) -> None:
-        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod(
             sequence_num=0,
             state_code="US_IX",
             supervision_period_id=111,
@@ -821,7 +821,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
         self,
     ) -> None:
         self.maxDiff = None
-        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod(
             supervision_period_id=111,
             external_id="sp1",
             state_code="US_IX",
@@ -859,7 +859,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
     def test_inferred_incarceration_periods_from_closed_IC_supervision_period_with_no_ips(
         self,
     ) -> None:
-        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod(
             supervision_period_id=111,
             external_id="sp1",
             state_code="US_IX",
@@ -897,7 +897,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
     def test_inferred_incarceration_periods_from_closed_IC_supervision_period_that_abutts_IP_start(
         self,
     ) -> None:
-        supervision_period_1 = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period_1 = NormalizedStateSupervisionPeriod(
             supervision_period_id=111,
             external_id="sp1",
             state_code="US_IX",
@@ -960,7 +960,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
     def test_inferred_incarceration_periods_from_closed_IC_supervision_period_that_terminates_before_IP_start(
         self,
     ) -> None:
-        supervision_period_1 = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period_1 = NormalizedStateSupervisionPeriod(
             supervision_period_id=111,
             external_id="sp1",
             state_code="US_IX",
@@ -1023,7 +1023,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
     def test_inferred_incarceration_periods_from_closed_IC_supervision_period_that_overlaps_IP_start(
         self,
     ) -> None:
-        supervision_period_1 = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period_1 = NormalizedStateSupervisionPeriod(
             supervision_period_id=111,
             external_id="sp1",
             state_code="US_IX",
