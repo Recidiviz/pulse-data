@@ -240,7 +240,6 @@ class SpreadsheetInterface:
         session: Session,
         spreadsheet: schema.Spreadsheet,
         metric_key_to_metric_interface: Dict[str, MetricInterface],
-        metric_definitions: List[MetricDefinition],
         agency: schema.Agency,
         upload_method: UploadMethod,
         file: Any,
@@ -274,11 +273,7 @@ class SpreadsheetInterface:
                 metric_key_to_errors=workbook_standardizer.metric_key_to_errors,
             )
 
-        (
-            xls,
-            file_name,
-            upload_filetype,
-        ) = workbook_standardizer.convert_file_to_pandas_excel_file(
+        (xls, file_name, _) = workbook_standardizer.convert_file_to_pandas_excel_file(
             file=file, file_name=file_name
         )
 
@@ -295,10 +290,8 @@ class SpreadsheetInterface:
         ) = uploader.upload_workbook(
             session=session,
             xls=xls,
-            metric_definitions=metric_definitions,
             filename=file_name,
             upload_method=upload_method,
-            upload_filetype=upload_filetype,
         )
         is_ingest_successful = all(
             isinstance(e, JusticeCountsBulkUploadException)
@@ -526,7 +519,6 @@ class SpreadsheetInterface:
         system: schema.System,
         agency: schema.Agency,
         file_name: str,
-        metric_definitions: List[MetricDefinition],
         upload_method: UploadMethod,
     ) -> BulkUploadResult:
         """Given a filename, an agency, and a system, this method copies the
@@ -568,7 +560,6 @@ class SpreadsheetInterface:
             auth0_user_id=None,
             agency=agency,
             metric_key_to_metric_interface=metric_key_to_metric_interface,
-            metric_definitions=metric_definitions,
             upload_method=upload_method,
             file=file_bytes,
             file_name=file_name,
