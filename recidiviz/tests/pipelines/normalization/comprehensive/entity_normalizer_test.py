@@ -629,7 +629,7 @@ class TestNormalizeEntitiesConvertedToNormalized(unittest.TestCase):
         normalized_scs: List[NormalizedStateSupervisionContact] = []
 
         for index, sc in enumerate(self.full_graph_person.supervision_contacts):
-            normalized_sc = NormalizedStateSupervisionContact.new_with_defaults(
+            normalized_sc = NormalizedStateSupervisionContact(
                 **{**sc.__dict__, "contacting_staff_id": 20000}
             )
 
@@ -718,7 +718,7 @@ class TestNormalizeEntitiesConvertedToNormalized(unittest.TestCase):
         )
 
         normalized_role_periods: Sequence[NormalizedStateStaffRolePeriod] = [
-            NormalizedStateStaffRolePeriod.new_with_defaults(
+            NormalizedStateStaffRolePeriod(
                 **{
                     field: value
                     for field, value in role_period.__dict__.items()

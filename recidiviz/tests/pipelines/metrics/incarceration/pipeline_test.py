@@ -54,14 +54,12 @@ from recidiviz.common.constants.state.state_supervision_period import (
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.entity.state import entities
-from recidiviz.persistence.entity.state.entities import (
-    StateIncarcerationPeriod,
-    StatePerson,
-    StateSupervisionPeriod,
-)
+from recidiviz.persistence.entity.state.entities import StatePerson
 from recidiviz.persistence.entity.state.normalized_entities import (
+    NormalizedStateAssessment,
     NormalizedStateIncarcerationPeriod,
     NormalizedStateSupervisionPeriod,
+    NormalizedStateSupervisionViolationResponse,
 )
 from recidiviz.pipelines.metrics.base_metric_pipeline import (
     ClassifyResults,
@@ -469,12 +467,14 @@ class TestClassifyIncarcerationEvents(unittest.TestCase):
     @staticmethod
     def load_person_entities_dict(
         person: StatePerson,
-        incarceration_periods: Optional[List[StateIncarcerationPeriod]] = None,
-        supervision_periods: Optional[List[StateSupervisionPeriod]] = None,
-        violation_responses: Optional[
-            List[entities.StateSupervisionViolationResponse]
+        incarceration_periods: Optional[
+            List[NormalizedStateIncarcerationPeriod]
         ] = None,
-        assessments: Optional[List[entities.StateAssessment]] = None,
+        supervision_periods: Optional[List[NormalizedStateSupervisionPeriod]] = None,
+        violation_responses: Optional[
+            List[NormalizedStateSupervisionViolationResponse]
+        ] = None,
+        assessments: Optional[List[NormalizedStateAssessment]] = None,
     ) -> Dict[str, List]:
         return {
             StatePerson.__name__: [person],

@@ -81,6 +81,7 @@ class TestIdentifyMostSevereCaseType(unittest.TestCase):
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             state_code="US_XX",
             external_id="sp1",
+            start_date=date(2017, 3, 5),
             case_type_entries=[
                 StateSupervisionCaseTypeEntry.new_with_defaults(
                     state_code="US_XX",
@@ -101,6 +102,7 @@ class TestIdentifyMostSevereCaseType(unittest.TestCase):
             supervision_period = StateSupervisionPeriod.new_with_defaults(
                 state_code="US_XX",
                 external_id="sp1",
+                start_date=date(2017, 3, 5),
                 case_type_entries=[
                     StateSupervisionCaseTypeEntry.new_with_defaults(
                         state_code="US_XX", case_type=case_type
@@ -116,6 +118,7 @@ class TestIdentifyMostSevereCaseType(unittest.TestCase):
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             state_code="US_XX",
             external_id="sp1",
+            start_date=date(2017, 3, 5),
             case_type_entries=[],
         )
 

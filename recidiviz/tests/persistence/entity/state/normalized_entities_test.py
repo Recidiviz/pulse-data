@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests for normalized_entities.py"""
+import datetime
 import unittest
 from typing import List, Set, Type
 
@@ -133,6 +134,7 @@ class TestNormalizedEntities(unittest.TestCase):
             _ = NormalizedStateSupervisionPeriod(
                 state_code=STATE_CODE,
                 external_id="external_id",
+                start_date=datetime.date(2020, 1, 1),
                 sequence_num=1,
                 case_type_entries=[
                     state_entities.StateSupervisionCaseTypeEntry(
@@ -160,6 +162,7 @@ class TestNormalizedEntities(unittest.TestCase):
             _ = NormalizedStateSupervisionPeriod(
                 state_code=STATE_CODE,
                 external_id="external_id",
+                start_date=datetime.date(2020, 1, 1),
                 sequence_num=1,
                 case_type_entries=NormalizedStateSupervisionCaseTypeEntry(  # type: ignore[arg-type]
                     state_code=STATE_CODE,
@@ -170,7 +173,10 @@ class TestNormalizedEntities(unittest.TestCase):
     def test_ref_is_unset(self) -> None:
         # Assert that this does not fail when case_type_entries is unset
         _ = NormalizedStateSupervisionPeriod(
-            state_code=STATE_CODE, external_id="external_id", sequence_num=1
+            state_code=STATE_CODE,
+            external_id="external_id",
+            start_date=datetime.date(2020, 1, 1),
+            sequence_num=1,
         )
 
     def test_new_fields_are_all_flat_fields(self) -> None:

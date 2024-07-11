@@ -65,15 +65,15 @@ from recidiviz.common.constants.state.state_supervision_violation_response impor
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.entity.state import entities
-from recidiviz.persistence.entity.state.entities import (
-    StateIncarcerationSentence,
-    StatePerson,
-)
+from recidiviz.persistence.entity.state.entities import StatePerson
 from recidiviz.persistence.entity.state.normalized_entities import (
     NormalizedStateAssessment,
     NormalizedStateIncarcerationPeriod,
+    NormalizedStateIncarcerationSentence,
+    NormalizedStateSupervisionContact,
     NormalizedStateSupervisionPeriod,
     NormalizedStateSupervisionSentence,
+    NormalizedStateSupervisionViolationResponse,
 )
 from recidiviz.pipelines.metrics.base_metric_pipeline import (
     ClassifyResults,
@@ -894,22 +894,24 @@ class TestClassifyEvents(unittest.TestCase):
     @staticmethod
     def load_person_entities_dict(
         person: StatePerson,
-        supervision_periods: Optional[Iterable[entities.StateSupervisionPeriod]] = None,
+        supervision_periods: Optional[
+            Iterable[NormalizedStateSupervisionPeriod]
+        ] = None,
         incarceration_periods: Optional[
-            Iterable[entities.StateIncarcerationPeriod]
+            Iterable[NormalizedStateIncarcerationPeriod]
         ] = None,
         incarceration_sentences: Optional[
-            Iterable[entities.StateIncarcerationSentence]
+            Iterable[NormalizedStateIncarcerationSentence]
         ] = None,
         supervision_sentences: Optional[
-            Iterable[entities.StateSupervisionSentence]
+            Iterable[NormalizedStateSupervisionSentence]
         ] = None,
         violation_responses: Optional[
-            Iterable[entities.StateSupervisionViolationResponse]
+            Iterable[NormalizedStateSupervisionViolationResponse]
         ] = None,
-        assessments: Optional[Iterable[entities.StateAssessment]] = None,
+        assessments: Optional[Iterable[NormalizedStateAssessment]] = None,
         supervision_contacts: Optional[
-            Iterable[entities.StateSupervisionContact]
+            Iterable[NormalizedStateSupervisionContact]
         ] = None,
     ) -> Dict[str, Iterable[Any]]:
         return {
@@ -990,7 +992,7 @@ class TestClassifyEvents(unittest.TestCase):
             completion_date=completion_date,
         )
 
-        incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
+        incarceration_sentence = NormalizedStateIncarcerationSentence.new_with_defaults(
             state_code="US_XX",
             incarceration_sentence_id=123,
             external_id="is1",

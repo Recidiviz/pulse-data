@@ -207,6 +207,7 @@ class TestStateEntities(TestCase):
             supervision_period_id=1000,
             state_code="US_XX",
             external_id="1111",
+            start_date=date(2020, 1, 1),
             supervising_officer_staff_external_id="ABCDE",
             supervising_officer_staff_external_id_type="EMP-2",
         )

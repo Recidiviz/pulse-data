@@ -18,7 +18,7 @@
 StateSupervisionPeriod)."""
 from datetime import date
 from functools import cmp_to_key
-from typing import Callable, List, Optional, Sequence
+from typing import Callable, List, Optional, Sequence, TypeVar
 
 from dateutil.relativedelta import relativedelta
 
@@ -29,9 +29,23 @@ from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodTerminationReason,
 )
 from recidiviz.persistence.entity.state.entities import (
-    PeriodType,
     StateIncarcerationPeriod,
     StateSupervisionPeriod,
+)
+from recidiviz.persistence.entity.state.normalized_entities import (
+    NormalizedStateIncarcerationPeriod,
+    NormalizedStateSupervisionPeriod,
+)
+
+# **** Entity Types for convenience *****:
+PeriodType = TypeVar(
+    "PeriodType",
+    bound=(
+        StateIncarcerationPeriod
+        | StateSupervisionPeriod
+        | NormalizedStateIncarcerationPeriod
+        | NormalizedStateSupervisionPeriod
+    ),
 )
 
 

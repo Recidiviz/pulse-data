@@ -1135,27 +1135,3 @@ class TestSupervisionPeriodRootEntityChecks(unittest.TestCase):
         self.state_person.supervision_periods = [valid_period]
         errors = validate_root_entity(self.state_person, self.field_index)
         self.assertEqual(errors, [])
-
-    def test_missing_date_supervision_period(self) -> None:
-        valid_period = state_entities.StateSupervisionPeriod(
-            state_code=self.state_code,
-            external_id="IP-EXTERNAL-1",
-            person=self.state_person,
-            start_date=date(2020, 1, 1),
-        )
-        missing_date_period = state_entities.StateSupervisionPeriod(
-            state_code=self.state_code,
-            external_id="IP-EXTERNAL-2",
-            person=self.state_person,
-        )
-        self.state_person.supervision_periods = [valid_period, missing_date_period]
-        errors = validate_root_entity(self.state_person, self.field_index)
-        self.assertEqual(
-            errors,
-            [
-                "Found StatePerson(person_id=1, "
-                "external_ids=[StatePersonExternalId(external_id='1', "
-                "id_type='US_XX_TEST_PERSON', person_external_id_id=None)]) having a "
-                "StateSupervisionPeriod with a null start date."
-            ],
-        )

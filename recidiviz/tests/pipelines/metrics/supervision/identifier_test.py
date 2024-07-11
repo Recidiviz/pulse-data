@@ -131,6 +131,7 @@ from recidiviz.tests.pipelines.utils.entity_normalization.normalization_testing_
     default_normalized_sp_index_for_tests,
 )
 from recidiviz.utils.range_querier import RangeQuerier
+from recidiviz.utils.types import assert_type
 
 _STATE_CODE = "US_XX"
 _DEFAULT_SUPERVISION_PERIOD_ID = 999
@@ -1123,7 +1124,9 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             expected_population_events(
                 attr.evolve(
                     second_supervision_period,
-                    start_date=incarceration_period.release_date,
+                    start_date=assert_type(
+                        incarceration_period.release_date, datetime.date
+                    ),
                 ),
                 second_supervision_type,
                 case_compliances=_generate_case_compliances(
@@ -1547,7 +1550,9 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             expected_population_events(
                 attr.evolve(
                     supervision_period,
-                    start_date=first_incarceration_period.release_date,
+                    start_date=assert_type(
+                        first_incarceration_period.release_date, datetime.date
+                    ),
                 ),
                 supervision_type,
                 second_incarceration_period.admission_date,
@@ -1563,7 +1568,9 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             expected_population_events(
                 attr.evolve(
                     supervision_period,
-                    start_date=second_incarceration_period.release_date,
+                    start_date=assert_type(
+                        second_incarceration_period.release_date, datetime.date
+                    ),
                 ),
                 supervision_type,
                 case_compliances=_generate_case_compliances(
@@ -1717,13 +1724,17 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             expected_population_events(
                 attr.evolve(
                     first_supervision_period,
-                    start_date=first_incarceration_period.release_date,
+                    start_date=assert_type(
+                        first_incarceration_period.release_date, datetime.date
+                    ),
                 ),
                 first_supervision_type,
                 second_incarceration_period.admission_date,
                 case_compliances=_generate_case_compliances(
                     person=self.person,
-                    start_date=first_incarceration_period.release_date,
+                    start_date=assert_type(
+                        first_incarceration_period.release_date, datetime.date
+                    ),
                     supervision_period=first_supervision_period,
                 ),
             )
@@ -1733,12 +1744,16 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             expected_population_events(
                 attr.evolve(
                     first_supervision_period,
-                    start_date=second_incarceration_period.release_date,
+                    start_date=assert_type(
+                        second_incarceration_period.release_date, datetime.date
+                    ),
                 ),
                 first_supervision_type,
                 case_compliances=_generate_case_compliances(
                     person=self.person,
-                    start_date=second_incarceration_period.release_date,
+                    start_date=assert_type(
+                        second_incarceration_period.release_date, datetime.date
+                    ),
                     supervision_period=first_supervision_period,
                 ),
             )
@@ -2717,7 +2732,9 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             expected_population_events(
                 attr.evolve(
                     supervision_period,
-                    start_date=violation_report_1.response_date,
+                    start_date=assert_type(
+                        violation_report_1.response_date, datetime.date
+                    ),
                 ),
                 supervision_type,
                 end_date=violation_report_2.response_date,
@@ -2734,7 +2751,9 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             expected_population_events(
                 attr.evolve(
                     supervision_period,
-                    start_date=violation_report_2.response_date,
+                    start_date=assert_type(
+                        violation_report_2.response_date, datetime.date
+                    ),
                 ),
                 supervision_type,
                 end_date=date(2019, 4, 21),
@@ -2997,7 +3016,10 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
         expected_events.extend(
             expected_population_events(
                 attr.evolve(
-                    supervision_period, start_date=incarceration_period.release_date
+                    supervision_period,
+                    start_date=assert_type(
+                        incarceration_period.release_date, datetime.date
+                    ),
                 ),
                 supervision_type,
                 case_compliances=_generate_case_compliances(
@@ -3150,7 +3172,10 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
         expected_events.extend(
             expected_population_events(
                 attr.evolve(
-                    supervision_period, start_date=incarceration_period.release_date
+                    supervision_period,
+                    start_date=assert_type(
+                        incarceration_period.release_date, datetime.date
+                    ),
                 ),
                 supervision_type,
                 case_compliances=_generate_case_compliances(
@@ -3434,7 +3459,10 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
         expected_events.extend(
             expected_population_events(
                 attr.evolve(
-                    supervision_period, start_date=incarceration_period.release_date
+                    supervision_period,
+                    start_date=assert_type(
+                        incarceration_period.release_date, datetime.date
+                    ),
                 ),
                 supervision_type,
                 assessment_score=assessment_2.assessment_score,
@@ -6393,7 +6421,7 @@ def create_projected_completion_event_from_period(
 
 def _generate_case_compliances(
     person: StatePerson,
-    start_date: Optional[date],
+    start_date: date,
     supervision_period: NormalizedStateSupervisionPeriod,
     assessments: Optional[List[NormalizedStateAssessment]] = None,
     face_to_face_contacts: Optional[List[StateSupervisionContact]] = None,
@@ -6408,10 +6436,6 @@ def _generate_case_compliances(
     """Generates the expected list of supervision case compliances. Because case compliance logic is tested in
     supervision_case_compliance_manager_test and state-specific compliance tests, this function generates expected case
     compliances using the compliance manager."""
-
-    # This was simpler than trying to refactor much of the above code to satisfy mypy
-    assert start_date is not None
-
     end_date: Optional[date] = (
         supervision_period.termination_date
         if not end_date_override

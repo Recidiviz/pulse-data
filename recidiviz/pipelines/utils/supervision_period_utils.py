@@ -28,12 +28,15 @@ from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodTerminationReason,
 )
 from recidiviz.common.date import DateRange, DateRangeDiff
-from recidiviz.persistence.entity.state.entities import (
-    StateIncarcerationPeriod,
-    StateSupervisionPeriod,
+from recidiviz.persistence.entity.state.entities import StateSupervisionPeriod
+from recidiviz.persistence.entity.state.normalized_entities import (
+    NormalizedStateSupervisionPeriod,
 )
 from recidiviz.pipelines.utils.entity_normalization.normalized_supervision_period_index import (
     NormalizedSupervisionPeriodIndex,
+)
+from recidiviz.pipelines.utils.incarceration_period_utils import (
+    StateIncarcerationPeriodT,
 )
 from recidiviz.pipelines.utils.period_utils import (
     sort_periods_by_set_dates_and_statuses,
@@ -70,18 +73,19 @@ SUCCESSFUL_TERMINATIONS = (
 )
 
 StateSupervisionPeriodT = TypeVar(
-    "StateSupervisionPeriodT", bound=StateSupervisionPeriod
+    "StateSupervisionPeriodT",
+    bound=(StateSupervisionPeriod | NormalizedStateSupervisionPeriod),
 )
 
 
-def _is_transfer_start(period: StateSupervisionPeriod) -> bool:
+def _is_transfer_start(period: StateSupervisionPeriodT) -> bool:
     return (
         period.admission_reason
         == StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE
     )
 
 
-def _is_transfer_end(period: StateSupervisionPeriod) -> bool:
+def _is_transfer_end(period: StateSupervisionPeriodT) -> bool:
     return (
         period.termination_reason
         == StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE
@@ -102,7 +106,7 @@ def standard_date_sort_for_supervision_periods(
 
 
 def identify_most_severe_case_type(
-    supervision_period: StateSupervisionPeriod,
+    supervision_period: StateSupervisionPeriodT,
 ) -> StateSupervisionCaseType:
     """Identifies the most severe supervision case type that the supervision period
     is classified as. If there are no case types on the period that are listed in the
@@ -171,7 +175,7 @@ def filter_out_supervision_period_types_excluded_from_pre_admission_search(
 
 
 def supervising_location_info(
-    supervision_period: StateSupervisionPeriod,
+    supervision_period: StateSupervisionPeriodT,
     supervision_delegate: StateSpecificSupervisionDelegate,
 ) -> Tuple[Optional[str], Optional[str]]:
     """
@@ -193,7 +197,7 @@ def supervising_location_info(
 
 
 def get_post_incarceration_supervision_type(
-    incarceration_period: StateIncarcerationPeriod,
+    incarceration_period: StateIncarcerationPeriodT,
     supervision_period_index: NormalizedSupervisionPeriodIndex,
     supervision_delegate: StateSpecificSupervisionDelegate,
 ) -> Optional[StateSupervisionPeriodSupervisionType]:
@@ -232,8 +236,8 @@ def get_post_incarceration_supervision_type(
 
 
 def _sort_supervision_periods_for_release_type(
-    supervision_period: StateSupervisionPeriod,
-    incarceration_period: StateIncarcerationPeriod,
+    supervision_period: StateSupervisionPeriodT,
+    incarceration_period: StateIncarcerationPeriodT,
     supervision_delegate: StateSpecificSupervisionDelegate,
 ) -> Tuple[int, int, int]:
     """To determine the most relevant supervision period for post incarceration release,
