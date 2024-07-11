@@ -61,3 +61,10 @@ def assert_type_list(v: Iterable[Any], expected_type: Type[T]) -> Iterable[T]:
     """Asserts that the type of a value is a list of a particular type, throwing if any
     of the elements are not that type."""
     return [assert_type(element, expected_type) for element in v]
+
+
+def assert_subclass(v_type: Type, expected_type: Type[T]) -> Type[T]:
+    """Asserts that the value is a class that is a subclass of the expected type."""
+    if issubclass(v_type, expected_type):
+        return v_type
+    raise ValueError(f"Expected subclass of [{expected_type}], found [{v_type}].")

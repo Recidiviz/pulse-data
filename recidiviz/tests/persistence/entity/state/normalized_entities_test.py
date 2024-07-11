@@ -41,6 +41,7 @@ from recidiviz.persistence.entity.state.normalized_entities import (
     get_entity_class_names_excluded_from_normalization,
 )
 from recidiviz.persistence.entity.state.normalized_state_entity import (
+    NORMALIZED_PREFIX,
     NormalizedStateEntity,
 )
 from recidiviz.pipelines.normalization.utils.entity_normalization_manager_utils import (
@@ -50,7 +51,6 @@ from recidiviz.pipelines.normalization.utils.normalized_entity_conversion_utils 
     fields_unique_to_normalized_class,
 )
 
-NORMALIZED_PREFIX = "Normalized"
 STATE_CODE = "US_XX"
 
 

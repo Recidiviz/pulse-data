@@ -57,7 +57,6 @@ from recidiviz.persistence.entity.state.normalized_entities import (
     NormalizedStateSupervisionViolationResponse,
     NormalizedStateSupervisionViolationResponseDecisionEntry,
     NormalizedStateSupervisionViolationTypeEntry,
-    add_normalized_entity_validator_to_ref_fields,
 )
 from recidiviz.persistence.entity.state.normalized_state_entity import (
     NormalizedStateEntity,
@@ -65,37 +64,6 @@ from recidiviz.persistence.entity.state.normalized_state_entity import (
 from recidiviz.tests.pipelines.normalization.utils.normalization_managers.supervision_violation_responses_normalization_manager_test import (
     hydrate_bidirectional_relationships_on_expected_response,
 )
-
-
-@attr.s(
-    eq=False,
-    kw_only=True,
-    field_transformer=add_normalized_entity_validator_to_ref_fields,
-)
-class FakeNormalizedStateSupervisionSentence(
-    entities.StateSupervisionSentence, NormalizedStateEntity
-):
-    """Fake NormalizedStateSupervisionSentence to use in tests."""
-
-
-@attr.s(
-    eq=False,
-    kw_only=True,
-    field_transformer=add_normalized_entity_validator_to_ref_fields,
-)
-class FakeNormalizedStateCharge(entities.StateCharge, NormalizedStateEntity):
-    """Fake NormalizedStateCharge to use in tests."""
-
-
-@attr.s(
-    eq=False,
-    kw_only=True,
-    field_transformer=add_normalized_entity_validator_to_ref_fields,
-)
-class FakeNormalizedStateEarlyDischarge(
-    entities.StateEarlyDischarge, NormalizedStateEntity
-):
-    """Fake NormalizedStateEarlyDischarge to use in tests."""
 
 
 class TestNormalizedEntityClassesCoverage(unittest.TestCase):

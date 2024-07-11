@@ -49,6 +49,7 @@ from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.entity_utils import (
     CoreEntityFieldIndex,
     EntityFieldType,
+    get_entity_class_in_module_with_name,
     update_reverse_references_on_related_entities,
 )
 from recidiviz.persistence.entity.normalized_entities_utils import (
@@ -57,12 +58,14 @@ from recidiviz.persistence.entity.normalized_entities_utils import (
     normalized_entity_class_with_base_class_name,
     update_forward_references_on_updated_entity,
 )
+from recidiviz.persistence.entity.state import entities as state_entities
 from recidiviz.persistence.entity.state.normalized_entities import (
     get_entity_class_names_excluded_from_normalization,
 )
 from recidiviz.persistence.entity.state.normalized_state_entity import (
     NormalizedStateEntity,
 )
+from recidiviz.utils.types import assert_subclass
 
 NormalizedEntityKey = Tuple[Type[NormalizedStateEntity], int]
 
@@ -475,7 +478,9 @@ def bq_schema_for_normalized_state_entity(
             schema_field_for_attribute(field_name=field, attribute=attribute)
         )
 
-    base_class: Type[BuildableAttr] = entity_cls.get_base_entity_class()
+    base_class: Type[BuildableAttr] = assert_subclass(
+        get_base_entity_class_for_normalized_entity(entity_cls), BuildableAttr
+    )
     base_schema_class = schema_utils.get_state_database_entity_with_name(
         base_class.__name__
     )
@@ -519,6 +524,16 @@ def _get_unique_fields_reference() -> Dict[Type[NormalizedStateEntity], Set[str]
     return _unique_fields_reference
 
 
+def get_base_entity_class_for_normalized_entity(
+    entity_cls: Type[NormalizedStateEntity],
+) -> Type[Entity]:
+    """For the given NormalizeStateEntity, returns the base Entity class for this class.
+    For example: for NormalizedStatePerson, returns `StatePerson`.
+    """
+    base_class_name = entity_cls.base_class_name()
+    return get_entity_class_in_module_with_name(state_entities, base_class_name)
+
+
 def _get_fields_unique_to_normalized_class(
     entity_cls: Type[NormalizedStateEntity],
 ) -> Set[str]:
@@ -527,7 +542,9 @@ def _get_fields_unique_to_normalized_class(
     yet in the cached _class_structure_reference.
     """
     normalized_class_fields_dict = attr.fields_dict(entity_cls)  # type: ignore[arg-type]
-    base_class_fields_dict = attr.fields_dict(entity_cls.get_base_entity_class())  # type: ignore[arg-type]
+    base_class_fields_dict = attr.fields_dict(
+        get_base_entity_class_for_normalized_entity(entity_cls)
+    )
     return set(normalized_class_fields_dict.keys()).difference(
         set(base_class_fields_dict.keys())
     )

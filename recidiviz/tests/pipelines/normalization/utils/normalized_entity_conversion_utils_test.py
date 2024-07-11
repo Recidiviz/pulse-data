@@ -52,8 +52,11 @@ from recidiviz.persistence.entity.state.entities import (
     StateSupervisionViolationTypeEntry,
 )
 from recidiviz.persistence.entity.state.normalized_entities import (
+    NormalizedStateCharge,
+    NormalizedStateEarlyDischarge,
     NormalizedStateIncarcerationPeriod,
     NormalizedStateSupervisionCaseTypeEntry,
+    NormalizedStateSupervisionSentence,
     NormalizedStateSupervisionViolatedConditionEntry,
     NormalizedStateSupervisionViolation,
     NormalizedStateSupervisionViolationResponse,
@@ -65,9 +68,6 @@ from recidiviz.pipelines.normalization.utils.normalized_entity_conversion_utils 
     fields_unique_to_normalized_class,
 )
 from recidiviz.tests.persistence.entity.normalized_entities_utils_test import (
-    FakeNormalizedStateCharge,
-    FakeNormalizedStateEarlyDischarge,
-    FakeNormalizedStateSupervisionSentence,
     get_normalized_violation_tree,
     get_violation_tree,
 )
@@ -264,20 +264,22 @@ class TestConvertEntityTreesToNormalizedVersions(unittest.TestCase):
         "recidiviz.persistence.entity."
         "normalized_entities_utils.LEGACY_NORMALIZATION_ENTITY_CLASSES",
         [
-            FakeNormalizedStateSupervisionSentence,
-            FakeNormalizedStateCharge,
-            FakeNormalizedStateEarlyDischarge,
+            NormalizedStateSupervisionSentence,
+            NormalizedStateCharge,
+            NormalizedStateEarlyDischarge,
         ],
     )
     def test_convert_entity_trees_to_normalized_versions_many_to_many_entities(
         self,
     ) -> None:
         charge = entities.StateCharge.new_with_defaults(
+            charge_id=1,
             state_code="US_XX",
             external_id="c1",
             status=StateChargeStatus.PRESENT_WITHOUT_INFO,
         )
         early_discharge = entities.StateEarlyDischarge.new_with_defaults(
+            early_discharge_id=1,
             state_code="US_XX",
             external_id="ed1",
         )
@@ -302,7 +304,7 @@ class TestConvertEntityTreesToNormalizedVersions(unittest.TestCase):
 
         normalized_trees = convert_entity_trees_to_normalized_versions(
             root_entities=[ss1, ss2],
-            normalized_entity_class=FakeNormalizedStateSupervisionSentence,
+            normalized_entity_class=NormalizedStateSupervisionSentence,
             additional_attributes_map={
                 entities.StateSupervisionSentence.__name__: {},
                 entities.StateCharge.__name__: {},
@@ -311,16 +313,18 @@ class TestConvertEntityTreesToNormalizedVersions(unittest.TestCase):
             field_index=self.field_index,
         )
 
-        expected_charge = FakeNormalizedStateCharge(
+        expected_charge = NormalizedStateCharge(
+            charge_id=1,
             state_code="US_XX",
             external_id="c1",
             status=StateChargeStatus.PRESENT_WITHOUT_INFO,
         )
-        expected_early_discharge = FakeNormalizedStateEarlyDischarge(
+        expected_early_discharge = NormalizedStateEarlyDischarge(
+            early_discharge_id=1,
             state_code="US_XX",
             external_id="ed1",
         )
-        expected_ss1 = FakeNormalizedStateSupervisionSentence(
+        expected_ss1 = NormalizedStateSupervisionSentence(
             state_code="US_XX",
             external_id="ss1",
             supervision_sentence_id=1,
@@ -328,12 +332,13 @@ class TestConvertEntityTreesToNormalizedVersions(unittest.TestCase):
             charges=[expected_charge],
             early_discharges=[expected_early_discharge],
         )
-        expected_ss2 = FakeNormalizedStateSupervisionSentence(
+        expected_ss2 = NormalizedStateSupervisionSentence(
             state_code="US_XX",
             external_id="ss2",
             supervision_sentence_id=2,
             status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
             charges=[expected_charge],
+            early_discharges=[],
         )
         expected_charge.supervision_sentences = [expected_ss1, expected_ss2]
         expected_early_discharge.supervision_sentence = expected_ss1
