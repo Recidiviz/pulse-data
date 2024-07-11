@@ -55,7 +55,7 @@ US_AR_RESIDENT_METADATA_VIEW_QUERY_TEMPLATE = f"""
             ARRAY_AGG(
                 STRUCT(
                     sent.person_id,
-                    sent.sentence_id,
+                    sent.external_id AS sentence_id,
                     sent.effective_date AS start_date,
                     sent.projected_completion_date_max AS end_date,
                     sent.initial_time_served_days
@@ -64,6 +64,7 @@ US_AR_RESIDENT_METADATA_VIEW_QUERY_TEMPLATE = f"""
         {join_sentence_spans_to_compartment_sessions(compartment_level_1_to_overlap=["INCARCERATION"])}
         WHERE {today_between_start_date_and_nullable_end_date_clause('span.start_date', 'span.end_date')}
         AND span.state_code = 'US_AR'
+        AND sent.sentence_type = 'INCARCERATION'
         GROUP BY 1
     )
     ,
