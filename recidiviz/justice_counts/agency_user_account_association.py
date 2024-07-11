@@ -320,42 +320,13 @@ class AgencyUserAccountAssociationInterface:
         return editor_json
 
     @staticmethod
-    def remove_child_agencies_from_super_agency(
-        session: Session, child_agencies: List[schema.Agency], super_agency_id: int
-    ) -> None:
-        for child_agency in child_agencies:
-            child_agency.super_agency_id = None
-
-        super_agency_user_assocs = (
-            AgencyUserAccountAssociationInterface.get_users_by_agency_id(
-                session=session, agency_id=super_agency_id
-            )
-        )
-        super_agency_user_ids = [
-            assoc.user_account_id for assoc in super_agency_user_assocs
-        ]
-        child_agency_ids = [a.id for a in child_agencies]
-        super_agency_user_assocs_in_child_agencies = (
-            session.query(schema.AgencyUserAccountAssociation)
-            .filter(
-                schema.AgencyUserAccountAssociation.user_account_id.in_(
-                    super_agency_user_ids
-                ),
-                schema.AgencyUserAccountAssociation.agency_id.in_(child_agency_ids),
-            )
-            .all()
-        )
-        # Remove super agency users from child agencies
-        for assoc in super_agency_user_assocs_in_child_agencies:
-            session.delete(assoc)
-
-    @staticmethod
-    def add_child_agencies_to_super_agency(
+    def add_child_agencies_to_super_agency_and_copy_users(
         session: Session, child_agency_ids: List[int], super_agency_id: int
     ) -> None:
         child_agencies = AgencyInterface.get_agencies_by_id(
             session=session, agency_ids=child_agency_ids
         )
+
         for child_agency in child_agencies:
             child_agency.super_agency_id = super_agency_id
 

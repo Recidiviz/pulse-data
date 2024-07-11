@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Implements api routes for the Justice Counts Publisher Admin Panel."""
+import itertools
 from collections import defaultdict
 from http import HTTPStatus
 from typing import Any, Callable, Dict, List, Optional
@@ -201,13 +202,22 @@ def get_admin_blueprint(
 
             curr_agencies = {assoc.agency_id for assoc in user.agency_assocs}
             agency_ids_to_add = {id for id in agency_ids if id not in curr_agencies}
+            child_agencies_to_add = AgencyInterface.get_child_agencies_by_agency_ids(
+                session=current_session, agency_ids=list(agency_ids_to_add)
+            )
+
             agencies_ids_to_remove = [
                 id for id in curr_agencies if id not in agency_ids
             ]
+            child_agencies_to_remove = AgencyInterface.get_child_agencies_by_agency_ids(
+                session=current_session, agency_ids=list(agencies_ids_to_remove)
+            )
 
             # Add user to agencies
             if len(agency_ids_to_add) > 0:
-                agencies_to_add = [a for a in agencies if a.id in agency_ids_to_add]
+                agencies_to_add = [
+                    a for a in agencies if a.id in agency_ids_to_add
+                ] + child_agencies_to_add
                 UserAccountInterface.add_or_update_user_agency_association(
                     session=current_session,
                     user=user,
@@ -219,7 +229,8 @@ def get_admin_blueprint(
                 UserAccountInterface.remove_user_from_agencies(
                     session=current_session,
                     user=user,
-                    agency_ids=agencies_ids_to_remove,
+                    agency_ids=agencies_ids_to_remove
+                    + [a.id for a in child_agencies_to_remove],
                 )
 
             user_jsons.append(user.to_json(agencies=agencies))
@@ -339,36 +350,34 @@ def get_admin_blueprint(
             with_users=True,
         )
 
+        child_agencies = []
         if request_json.get("child_agency_ids") is not None:
-            # Update child agencies
+            # Get the current child agencies for the given agency
             curr_child_agencies = AgencyInterface.get_child_agencies_for_agency(
                 session=current_session, agency=agency
             )
             curr_child_agency_ids = {a.id for a in curr_child_agencies}
 
-            agency_ids_to_add = [
-                id
-                for id in request_json.get("child_agency_ids", [])
-                if id not in curr_child_agency_ids
-            ]
-
-            agencies_to_remove = [
-                a
-                for a in curr_child_agencies
-                if a.id not in request_json.get("child_agency_ids", [])
-            ]
-
-            AgencyUserAccountAssociationInterface.add_child_agencies_to_super_agency(
+            # Get the list of child agencies specified in the request
+            child_agencies = AgencyInterface.get_agencies_by_id(
                 session=current_session,
-                super_agency_id=agency.id,
-                child_agency_ids=agency_ids_to_add,
+                agency_ids=request_json.get("child_agency_ids", []),
             )
+            new_child_agency_ids = {a.id for a in child_agencies}
 
-            AgencyUserAccountAssociationInterface.remove_child_agencies_from_super_agency(
-                session=current_session,
-                super_agency_id=agency.id,
-                child_agencies=agencies_to_remove,
-            )
+            # Determine which agencies need to be added and removed
+            ids_to_add = new_child_agency_ids - curr_child_agency_ids
+            ids_to_remove = curr_child_agency_ids - new_child_agency_ids
+
+            # Process ids_to_add: update their super_agency_id to the current agency's ID
+            for child_agency in child_agencies:
+                if child_agency.id in ids_to_add:
+                    child_agency.super_agency_id = agency.id
+
+            # Process ids_to_remove: update their super_agency_id to None or another value as needed
+            for curr_child_agency in curr_child_agencies:
+                if curr_child_agency.id in ids_to_remove:
+                    curr_child_agency.super_agency_id = None
 
         # Update `is_superagency` after editing the child agencies because if we
         # call AgencyInterface.get_child_agencies_for_agency after `is_superagency`
@@ -376,23 +385,30 @@ def get_admin_blueprint(
         # and the child agencies will not be updated.
         agency.is_superagency = request_json["is_superagency"]
 
-        if request_json.get("team") is not None:
-            # Add users to agency
+        if request_json.get("super_agency_id") is not None:
+            AgencyUserAccountAssociationInterface.add_child_agencies_to_super_agency_and_copy_users(
+                session=current_session,
+                child_agency_ids=[agency.id],
+                super_agency_id=request_json["super_agency_id"],
+            )
 
+        if request_json.get("team") is not None:
             # Prepare all the values that should be "upserted" to the DB
             values = []
             user_account_ids = set()
+            agency_ids = [agency.id] + request_json.get("child_agency_ids", [])
             for user_json in request_json.get("team", []):
                 user_account_ids.add(user_json.get("user_account_id"))
-                value = {
-                    "agency_id": agency.id,
-                    "user_account_id": user_json.get("user_account_id"),
-                }
+                for agency_id in agency_ids:
+                    value = {
+                        "agency_id": agency_id,
+                        "user_account_id": user_json.get("user_account_id"),
+                    }
 
-                if user_json.get("role") is not None:
-                    value["role"] = schema.UserAccountRole[user_json.get("role")]
+                    if user_json.get("role") is not None:
+                        value["role"] = schema.UserAccountRole[user_json.get("role")]
 
-                values.append(value)
+                    values.append(value)
             if len(values) > 0:
                 insert_statement = insert(schema.AgencyUserAccountAssociation).values(
                     values
@@ -407,7 +423,9 @@ def get_admin_blueprint(
 
             # Delete team members that are in the agency's assocs, but not in the
             # list of team members that are sent over.
-            for assoc in agency.user_account_assocs:
+            for assoc in agency.user_account_assocs + list(
+                itertools.chain(*[a.user_account_assocs for a in child_agencies])
+            ):
                 if assoc.user_account_id not in user_account_ids:
                     current_session.delete(assoc)
 
@@ -419,11 +437,8 @@ def get_admin_blueprint(
             session=current_session, agency_id=agency.id, with_users=True
         )
 
-        child_agency_ids = AgencyInterface.get_child_agency_ids_for_agency(
-            session=current_session, agency=agency
-        )
         agency_json = agency.to_json()
-        agency_json["child_agency_ids"] = child_agency_ids
+        agency_json["child_agency_ids"] = [a.id for a in child_agencies]
         return jsonify(agency_json)
 
     @admin_blueprint.route(
