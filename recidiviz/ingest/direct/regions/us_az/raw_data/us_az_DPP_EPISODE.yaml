@@ -9,6 +9,7 @@ columns:
   - name: DPP_ID
     description: |-
       primary key for the table
+    is_pii: True
   - name: PERSON_ID
     description: |-
       foreign key to person Table
@@ -18,7 +19,6 @@ columns:
   - name: DPP_NUMBER
     description: |-
       the generated dpp-number
-    is_pii: True
   - name: CASE_TYPE
     description: |-
       the case type
