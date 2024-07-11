@@ -15,9 +15,10 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """NormalizedStateEntity is the common class to all normalized entities in the state dataset."""
-from typing import Type
 
 from recidiviz.common.attr_mixins import BuildableAttr
+
+NORMALIZED_PREFIX = "Normalized"
 
 
 class NormalizedStateEntity(BuildableAttr):
@@ -27,18 +28,12 @@ class NormalizedStateEntity(BuildableAttr):
 
     @classmethod
     def base_class_name(cls) -> str:
-        """The name of the base state entity that this normalized entity extends."""
-        return cls.get_base_entity_class().__name__
-
-    # TODO(#30075): The normalized_entities_v2 entities aren't subclasses of their
-    #  corresponding entity - we need a different way to find the comparable class in
-    #  entities.py (or remove usage of this function altogether).
-    @classmethod
-    def get_base_entity_class(cls) -> Type[BuildableAttr]:
-        """For the given NormalizeStateEntity, returns the base Entity class for this class.
-        For example: for NormalizedStatePerson, returns `StatePerson`.
+        """The name of the class in entities.py that is the pre-normalization version of
+        this class.
         """
-        base_class = cls.__base__
-        if not base_class or not issubclass(base_class, BuildableAttr):
-            raise ValueError(f"Cannot find base class for entity {cls}")
-        return base_class
+        if not cls.__name__.startswith(NORMALIZED_PREFIX):
+            raise ValueError(
+                f"Name of NormalizedStateEntity class [{cls.__name__}] must start with "
+                f"'{NORMALIZED_PREFIX}'"
+            )
+        return cls.__name__[len(NORMALIZED_PREFIX) :]
