@@ -49,6 +49,7 @@ class TestDirectIngestRawTableMigrationCollector(unittest.TestCase):
             BigQueryAddress(
                 dataset_id="prefixed_raw_data", table_id="file_tag_first__1"
             ),
+            data_update_datetime=None,
         )
 
         file_tag_first_query_1 = """UPDATE `recidiviz-456.prefixed_raw_data.file_tag_first__1` original
@@ -74,6 +75,7 @@ WHERE STRUCT(column_1a, update_datetime) IN (
                 dataset_id="wacky_raw_data",
                 table_id="not_related_at_all_to_tag_basic_data__2",
             ),
+            data_update_datetime=None,
         )
 
         tagBasicData_query_1 = """UPDATE `recidiviz-456.wacky_raw_data.not_related_at_all_to_tag_basic_data__2` original
@@ -91,4 +93,47 @@ WHERE STRUCT(COL1) IN (
 
         self.assertEqual(len(queries), 2)
         self.assertIn(tagBasicData_query_1, queries)
+        self.assertIn(tagBasicData_query_2, queries)
+
+        queries = self.collector.get_raw_table_migration_queries_for_file_tag(
+            "tagBasicData",
+            BigQueryAddress(
+                dataset_id="wacky_raw_data",
+                table_id="not_related_at_all_to_tag_basic_data__2",
+            ),
+            data_update_datetime=DATE_1,
+        )
+
+        tagBasicData_query_1 = """UPDATE `recidiviz-456.wacky_raw_data.not_related_at_all_to_tag_basic_data__2` original
+SET COL1 = updates.new__COL1
+FROM (SELECT * FROM UNNEST([
+    STRUCT('123' AS COL1, CAST('2020-06-10T00:00:00' AS DATETIME) AS update_datetime, '456' AS new__COL1),
+    STRUCT('123' AS COL1, CAST('2020-09-21T00:00:00' AS DATETIME) AS update_datetime, '456' AS new__COL1)
+])) updates
+WHERE original.COL1 = updates.COL1 AND original.update_datetime = updates.update_datetime;"""
+
+        tagBasicData_query_2 = """DELETE FROM `recidiviz-456.wacky_raw_data.not_related_at_all_to_tag_basic_data__2`
+WHERE STRUCT(COL1) IN (
+    STRUCT(\"789\")
+);"""
+
+        self.assertEqual(len(queries), 2)
+        self.assertIn(tagBasicData_query_1, queries)
+        self.assertIn(tagBasicData_query_2, queries)
+
+        queries = self.collector.get_raw_table_migration_queries_for_file_tag(
+            "tagBasicData",
+            BigQueryAddress(
+                dataset_id="wacky_raw_data",
+                table_id="not_related_at_all_to_tag_basic_data__2",
+            ),
+            data_update_datetime=DATE_1 + datetime.timedelta(minutes=1),
+        )
+
+        tagBasicData_query_2 = """DELETE FROM `recidiviz-456.wacky_raw_data.not_related_at_all_to_tag_basic_data__2`
+WHERE STRUCT(COL1) IN (
+    STRUCT(\"789\")
+);"""
+
+        self.assertEqual(len(queries), 1)
         self.assertIn(tagBasicData_query_2, queries)

@@ -393,6 +393,7 @@ class DirectIngestRegionDirStructureBase:
                             raw_table_address=BigQueryAddress(
                                 dataset_id="some_dataset", table_id=file_tag
                             ),
+                            data_update_datetime=None,
                         )
 
                     # Check that migrations are valid

@@ -201,11 +201,15 @@ class DirectIngestRawFileLoadManager:
 
         return query_result.total_rows
 
-    def _apply_migrations(self, file_tag: str, table: BigQueryAddress) -> None:
+    def _apply_migrations(
+        self, file_tag: str, update_datetime: datetime.datetime, table: BigQueryAddress
+    ) -> None:
         """If relevant, applies raw data migrations for |file_tag| to |table|."""
         migration_queries = (
             self.raw_table_migrations.get_raw_table_migration_queries_for_file_tag(
-                file_tag, table
+                file_tag,
+                table,
+                data_update_datetime=update_datetime,
             )
         )
 
@@ -272,7 +276,9 @@ class DirectIngestRawFileLoadManager:
                 update_datetime,
             )
 
-            self._apply_migrations(file_tag, temp_raw_file_with_transformations_address)
+            self._apply_migrations(
+                file_tag, update_datetime, temp_raw_file_with_transformations_address
+            )
 
         finally:
             self._clean_up_temp_tables(temp_raw_file_address)
