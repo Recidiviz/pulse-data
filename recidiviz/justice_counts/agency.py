@@ -254,16 +254,23 @@ class AgencyInterface:
 
     @staticmethod
     def get_child_agencies_for_agency(
-        session: Session, agency: schema.Agency
+        session: Session, agency: schema.Agency, with_users: bool = False
     ) -> List[schema.Agency]:
         if agency.is_superagency is False:
             return []
 
-        return (
-            session.query(schema.Agency)
-            .filter(schema.Agency.super_agency_id == agency.id)
-            .all()
+        q = session.query(schema.Agency).filter(
+            schema.Agency.super_agency_id == agency.id
         )
+
+        if with_users:
+            q = q.options(
+                selectinload(schema.Agency.user_account_assocs).joinedload(
+                    schema.AgencyUserAccountAssociation.user_account
+                )
+            )
+
+        return q.all()
 
     @staticmethod
     def get_child_agency_ids_for_agency(
