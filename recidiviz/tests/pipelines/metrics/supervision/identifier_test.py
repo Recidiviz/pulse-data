@@ -218,11 +218,11 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         supervision period with no incarceration periods."""
 
         termination_date = date(2018, 5, 19)
-        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod(
             supervision_period_id=111,
             external_id="sp1",
             case_type_entries=[
-                NormalizedStateSupervisionCaseTypeEntry.new_with_defaults(
+                NormalizedStateSupervisionCaseTypeEntry(
                     state_code=self.state_code.value,
                     case_type=StateSupervisionCaseType.DOMESTIC_VIOLENCE,
                 )
@@ -239,7 +239,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
 
         effective_date = date(2017, 1, 1)
         completion_date = date(2018, 5, 19)
-        supervision_sentence = NormalizedStateSupervisionSentence.new_with_defaults(
+        supervision_sentence = NormalizedStateSupervisionSentence(
             supervision_sentence_id=111,
             effective_date=effective_date,
             external_id="ss1",
@@ -250,7 +250,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             completion_date=completion_date,
         )
 
-        assessment = NormalizedStateAssessment.new_with_defaults(
+        assessment = NormalizedStateAssessment(
             state_code=self.state_code.value,
             external_id="a1",
             assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
@@ -318,11 +318,11 @@ class TestClassifySupervisionEvents(unittest.TestCase):
 
     def test_find_supervision_events_filtered(self) -> None:
         termination_date = date(2018, 5, 19)
-        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod(
             supervision_period_id=111,
             external_id="sp1",
             case_type_entries=[
-                NormalizedStateSupervisionCaseTypeEntry.new_with_defaults(
+                NormalizedStateSupervisionCaseTypeEntry(
                     state_code=self.state_code.value,
                     case_type=StateSupervisionCaseType.DOMESTIC_VIOLENCE,
                 )
@@ -339,7 +339,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
 
         effective_date = date(2017, 1, 1)
         completion_date = date(2018, 5, 19)
-        supervision_sentence = NormalizedStateSupervisionSentence.new_with_defaults(
+        supervision_sentence = NormalizedStateSupervisionSentence(
             supervision_sentence_id=111,
             effective_date=effective_date,
             external_id="ss1",
@@ -350,7 +350,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             completion_date=completion_date,
         )
 
-        assessment = NormalizedStateAssessment.new_with_defaults(
+        assessment = NormalizedStateAssessment(
             state_code=self.state_code.value,
             external_id="a1",
             assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
@@ -413,7 +413,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         """Tests the find_supervision_events function for a single
         supervision period with no incarceration periods, where the supervision
         period overlaps two calendar years."""
-        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod(
             sequence_num=0,
             supervision_period_id=111,
             external_id="sp1",
@@ -423,7 +423,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
         )
 
-        supervision_sentence = NormalizedStateSupervisionSentence.new_with_defaults(
+        supervision_sentence = NormalizedStateSupervisionSentence(
             state_code=self.state_code.value,
             supervision_sentence_id=111,
             effective_date=date(2017, 1, 1),
@@ -484,7 +484,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         """Tests the find_supervision_events function for two supervision
         periods with no incarceration periods."""
 
-        first_supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        first_supervision_period = NormalizedStateSupervisionPeriod(
             supervision_period_id=111,
             external_id="sp1",
             state_code=self.state_code.value,
@@ -494,7 +494,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             sequence_num=0,
         )
 
-        second_supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        second_supervision_period = NormalizedStateSupervisionPeriod(
             supervision_period_id=222,
             external_id="sp2",
             state_code=self.state_code.value,
@@ -504,7 +504,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             sequence_num=1,
         )
 
-        supervision_sentence = NormalizedStateSupervisionSentence.new_with_defaults(
+        supervision_sentence = NormalizedStateSupervisionSentence(
             state_code=self.state_code.value,
             supervision_sentence_id=111,
             effective_date=date(2017, 1, 1),
@@ -589,7 +589,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         periods with no incarceration periods, where the supervision
         periods are of the same type and have overlapping months."""
 
-        first_supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        first_supervision_period = NormalizedStateSupervisionPeriod(
             supervision_period_id=111,
             external_id="sp1",
             state_code=self.state_code.value,
@@ -599,7 +599,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             sequence_num=0,
         )
 
-        second_supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        second_supervision_period = NormalizedStateSupervisionPeriod(
             supervision_period_id=222,
             external_id="sp2",
             state_code=self.state_code.value,
@@ -609,7 +609,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             sequence_num=1,
         )
 
-        supervision_sentence = NormalizedStateSupervisionSentence.new_with_defaults(
+        supervision_sentence = NormalizedStateSupervisionSentence(
             state_code=self.state_code.value,
             supervision_sentence_id=111,
             effective_date=date(2017, 1, 1),
@@ -693,7 +693,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         periods with no incarceration periods, where the supervision
         periods are of different types and have overlapping months."""
 
-        first_supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        first_supervision_period = NormalizedStateSupervisionPeriod(
             supervision_period_id=111,
             external_id="sp1",
             state_code=self.state_code.value,
@@ -704,7 +704,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             sequence_num=0,
         )
 
-        second_supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        second_supervision_period = NormalizedStateSupervisionPeriod(
             supervision_period_id=222,
             external_id="sp2",
             state_code=self.state_code.value,
@@ -715,7 +715,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             sequence_num=1,
         )
 
-        supervision_sentence = NormalizedStateSupervisionSentence.new_with_defaults(
+        supervision_sentence = NormalizedStateSupervisionSentence(
             state_code=self.state_code.value,
             supervision_sentence_id=111,
             effective_date=date(2017, 1, 1),
@@ -798,7 +798,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         """Tests the find_supervision_events function for two supervision
         periods with two incarceration periods."""
 
-        first_supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        first_supervision_period = NormalizedStateSupervisionPeriod(
             supervision_period_id=111,
             external_id="sp1",
             state_code=self.state_code.value,
@@ -809,20 +809,18 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         )
 
         first_admission_date = date(2017, 5, 25)
-        first_incarceration_period = (
-            NormalizedStateIncarcerationPeriod.new_with_defaults(
-                incarceration_period_id=111,
-                external_id="ip1",
-                state_code=self.state_code.value,
-                admission_date=first_admission_date,
-                admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
-                release_date=date(2017, 8, 3),
-                release_reason=ReleaseReason.SENTENCE_SERVED,
-                sequence_num=0,
-            )
+        first_incarceration_period = NormalizedStateIncarcerationPeriod(
+            incarceration_period_id=111,
+            external_id="ip1",
+            state_code=self.state_code.value,
+            admission_date=first_admission_date,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
+            release_date=date(2017, 8, 3),
+            release_reason=ReleaseReason.SENTENCE_SERVED,
+            sequence_num=0,
         )
 
-        second_supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        second_supervision_period = NormalizedStateSupervisionPeriod(
             supervision_period_id=222,
             external_id="sp2",
             state_code=self.state_code.value,
@@ -833,20 +831,18 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         )
 
         second_admission_date = date(2018, 12, 25)
-        second_incarceration_period = (
-            NormalizedStateIncarcerationPeriod.new_with_defaults(
-                incarceration_period_id=222,
-                external_id="ip2",
-                state_code=self.state_code.value,
-                admission_date=second_admission_date,
-                admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
-                release_date=date(2019, 3, 3),
-                release_reason=ReleaseReason.SENTENCE_SERVED,
-                sequence_num=1,
-            )
+        second_incarceration_period = NormalizedStateIncarcerationPeriod(
+            incarceration_period_id=222,
+            external_id="ip2",
+            state_code=self.state_code.value,
+            admission_date=second_admission_date,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
+            release_date=date(2019, 3, 3),
+            release_reason=ReleaseReason.SENTENCE_SERVED,
+            sequence_num=1,
         )
 
-        supervision_sentence = NormalizedStateSupervisionSentence.new_with_defaults(
+        supervision_sentence = NormalizedStateSupervisionSentence(
             state_code=self.state_code.value,
             supervision_sentence_id=111,
             effective_date=date(2017, 1, 1),
@@ -930,7 +926,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
     def test_find_supervision_events_multiple_admissions_in_month(self) -> None:
         """Tests the find_supervision_events function for a supervision period with two incarceration periods
         with admission dates in the same month."""
-        first_supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        first_supervision_period = NormalizedStateSupervisionPeriod(
             supervision_period_id=111,
             external_id="sp1",
             state_code=self.state_code.value,
@@ -941,34 +937,30 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         )
 
         first_admission_date = date(2017, 5, 11)
-        first_incarceration_period = (
-            NormalizedStateIncarcerationPeriod.new_with_defaults(
-                incarceration_period_id=111,
-                external_id="ip1",
-                state_code=self.state_code.value,
-                admission_date=first_admission_date,
-                admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
-                release_date=date(2017, 5, 15),
-                release_reason=ReleaseReason.CONDITIONAL_RELEASE,
-                sequence_num=0,
-            )
+        first_incarceration_period = NormalizedStateIncarcerationPeriod(
+            incarceration_period_id=111,
+            external_id="ip1",
+            state_code=self.state_code.value,
+            admission_date=first_admission_date,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
+            release_date=date(2017, 5, 15),
+            release_reason=ReleaseReason.CONDITIONAL_RELEASE,
+            sequence_num=0,
         )
 
         second_admission_date = date(2017, 5, 17)
-        second_incarceration_period = (
-            NormalizedStateIncarcerationPeriod.new_with_defaults(
-                incarceration_period_id=222,
-                external_id="ip2",
-                state_code=self.state_code.value,
-                admission_date=second_admission_date,
-                admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
-                release_date=date(2019, 3, 3),
-                release_reason=ReleaseReason.SENTENCE_SERVED,
-                sequence_num=1,
-            )
+        second_incarceration_period = NormalizedStateIncarcerationPeriod(
+            incarceration_period_id=222,
+            external_id="ip2",
+            state_code=self.state_code.value,
+            admission_date=second_admission_date,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
+            release_date=date(2019, 3, 3),
+            release_reason=ReleaseReason.SENTENCE_SERVED,
+            sequence_num=1,
         )
 
-        supervision_sentence = NormalizedStateSupervisionSentence.new_with_defaults(
+        supervision_sentence = NormalizedStateSupervisionSentence(
             state_code=self.state_code.value,
             supervision_sentence_id=111,
             effective_date=date(2017, 1, 1),
@@ -1032,7 +1024,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         periods with an incarceration period that overlaps the end of one
         supervision period and the start of another."""
 
-        first_supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        first_supervision_period = NormalizedStateSupervisionPeriod(
             supervision_period_id=111,
             external_id="sp1",
             state_code=self.state_code.value,
@@ -1043,7 +1035,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         )
 
         admission_date = date(2017, 5, 15)
-        incarceration_period = NormalizedStateIncarcerationPeriod.new_with_defaults(
+        incarceration_period = NormalizedStateIncarcerationPeriod(
             incarceration_period_id=111,
             external_id="ip1",
             state_code=self.state_code.value,
@@ -1054,7 +1046,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             sequence_num=0,
         )
 
-        second_supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        second_supervision_period = NormalizedStateSupervisionPeriod(
             supervision_period_id=222,
             external_id="sp2",
             state_code=self.state_code.value,
@@ -1064,7 +1056,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             sequence_num=1,
         )
 
-        supervision_sentence = NormalizedStateSupervisionSentence.new_with_defaults(
+        supervision_sentence = NormalizedStateSupervisionSentence(
             state_code=self.state_code.value,
             supervision_sentence_id=111,
             effective_date=date(2017, 1, 1),
@@ -1159,7 +1151,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         under the custodial authority of a supervision entity so the period does not exclude the supervision periods
         from being counted towards the supervision population."""
 
-        first_supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        first_supervision_period = NormalizedStateSupervisionPeriod(
             supervision_period_id=111,
             external_id="sp1",
             state_code=self.state_code.value,
@@ -1169,7 +1161,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             sequence_num=0,
         )
 
-        incarceration_period = NormalizedStateIncarcerationPeriod.new_with_defaults(
+        incarceration_period = NormalizedStateIncarcerationPeriod(
             incarceration_period_id=111,
             external_id="ip1",
             state_code=self.state_code.value,
@@ -1181,7 +1173,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             sequence_num=0,
         )
 
-        second_supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        second_supervision_period = NormalizedStateSupervisionPeriod(
             supervision_period_id=222,
             external_id="sp2",
             state_code=self.state_code.value,
@@ -1191,7 +1183,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             sequence_num=1,
         )
 
-        supervision_sentence = NormalizedStateSupervisionSentence.new_with_defaults(
+        supervision_sentence = NormalizedStateSupervisionSentence(
             state_code=self.state_code.value,
             supervision_sentence_id=111,
             effective_date=date(2017, 1, 1),
@@ -1266,7 +1258,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
     def test_transition_from_parole_to_probation_in_month(self) -> None:
         """Tests the find_supervision_events function for transition between two supervision periods in a
         month."""
-        first_supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        first_supervision_period = NormalizedStateSupervisionPeriod(
             supervision_period_id=111,
             external_id="sp1",
             state_code=self.state_code.value,
@@ -1276,7 +1268,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             sequence_num=0,
         )
 
-        second_supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        second_supervision_period = NormalizedStateSupervisionPeriod(
             supervision_period_id=222,
             external_id="sp2",
             state_code=self.state_code.value,
@@ -1286,7 +1278,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             sequence_num=1,
         )
 
-        supervision_sentence = NormalizedStateSupervisionSentence.new_with_defaults(
+        supervision_sentence = NormalizedStateSupervisionSentence(
             supervision_sentence_id=111,
             effective_date=date(2017, 1, 1),
             external_id="ss1",
@@ -1369,7 +1361,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         when there is an incarceration period with a revocation admission
         the month after the supervision period's termination_date."""
 
-        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod(
             sequence_num=0,
             supervision_period_id=_DEFAULT_SUPERVISION_PERIOD_ID,
             external_id="sp1",
@@ -1381,7 +1373,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         )
 
         admission_date = date(2018, 6, 25)
-        incarceration_period = NormalizedStateIncarcerationPeriod.new_with_defaults(
+        incarceration_period = NormalizedStateIncarcerationPeriod(
             sequence_num=0,
             incarceration_period_id=111,
             external_id="ip1",
@@ -1391,7 +1383,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
         )
 
-        supervision_sentence = NormalizedStateSupervisionSentence.new_with_defaults(
+        supervision_sentence = NormalizedStateSupervisionSentence(
             state_code=self.state_code.value,
             supervision_sentence_id=111,
             effective_date=date(2017, 1, 1),
@@ -1457,7 +1449,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         when the person is revoked and returned to supervision twice in one
         year."""
 
-        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod(
             supervision_period_id=111,
             external_id="sp1",
             state_code=self.state_code.value,
@@ -1470,34 +1462,30 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         )
 
         first_admission_date = date(2018, 3, 25)
-        first_incarceration_period = (
-            NormalizedStateIncarcerationPeriod.new_with_defaults(
-                incarceration_period_id=111,
-                external_id="ip1",
-                state_code=self.state_code.value,
-                admission_date=first_admission_date,
-                admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
-                release_date=date(2018, 8, 2),
-                release_reason=ReleaseReason.CONDITIONAL_RELEASE,
-                sequence_num=0,
-            )
+        first_incarceration_period = NormalizedStateIncarcerationPeriod(
+            incarceration_period_id=111,
+            external_id="ip1",
+            state_code=self.state_code.value,
+            admission_date=first_admission_date,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
+            release_date=date(2018, 8, 2),
+            release_reason=ReleaseReason.CONDITIONAL_RELEASE,
+            sequence_num=0,
         )
 
         second_admission_date = date(2018, 9, 25)
-        second_incarceration_period = (
-            NormalizedStateIncarcerationPeriod.new_with_defaults(
-                incarceration_period_id=111,
-                external_id="ip2",
-                state_code=self.state_code.value,
-                admission_date=second_admission_date,
-                admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
-                release_date=date(2018, 12, 2),
-                release_reason=ReleaseReason.CONDITIONAL_RELEASE,
-                sequence_num=1,
-            )
+        second_incarceration_period = NormalizedStateIncarcerationPeriod(
+            incarceration_period_id=111,
+            external_id="ip2",
+            state_code=self.state_code.value,
+            admission_date=second_admission_date,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
+            release_date=date(2018, 12, 2),
+            release_reason=ReleaseReason.CONDITIONAL_RELEASE,
+            sequence_num=1,
         )
 
-        supervision_sentence = NormalizedStateSupervisionSentence.new_with_defaults(
+        supervision_sentence = NormalizedStateSupervisionSentence(
             state_code=self.state_code.value,
             supervision_sentence_id=111,
             effective_date=date(2017, 1, 1),
@@ -1599,7 +1587,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         when the person is revoked and returned to supervision twice in one
         year, and they have multiple supervision sentences."""
 
-        first_supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        first_supervision_period = NormalizedStateSupervisionPeriod(
             supervision_period_id=111,
             external_id="sp1",
             state_code=self.state_code.value,
@@ -1610,34 +1598,30 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         )
 
         first_admission_date = date(2018, 3, 25)
-        first_incarceration_period = (
-            NormalizedStateIncarcerationPeriod.new_with_defaults(
-                incarceration_period_id=111,
-                external_id="ip1",
-                state_code=self.state_code.value,
-                admission_date=first_admission_date,
-                admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
-                release_date=date(2018, 8, 2),
-                release_reason=ReleaseReason.CONDITIONAL_RELEASE,
-                sequence_num=0,
-            )
+        first_incarceration_period = NormalizedStateIncarcerationPeriod(
+            incarceration_period_id=111,
+            external_id="ip1",
+            state_code=self.state_code.value,
+            admission_date=first_admission_date,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
+            release_date=date(2018, 8, 2),
+            release_reason=ReleaseReason.CONDITIONAL_RELEASE,
+            sequence_num=0,
         )
 
         second_admission_date = date(2018, 9, 25)
-        second_incarceration_period = (
-            NormalizedStateIncarcerationPeriod.new_with_defaults(
-                incarceration_period_id=111,
-                external_id="ip2",
-                state_code=self.state_code.value,
-                admission_date=second_admission_date,
-                admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
-                release_date=date(2018, 12, 2),
-                release_reason=ReleaseReason.CONDITIONAL_RELEASE,
-                sequence_num=1,
-            )
+        second_incarceration_period = NormalizedStateIncarcerationPeriod(
+            incarceration_period_id=111,
+            external_id="ip2",
+            state_code=self.state_code.value,
+            admission_date=second_admission_date,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
+            release_date=date(2018, 12, 2),
+            release_reason=ReleaseReason.CONDITIONAL_RELEASE,
+            sequence_num=1,
         )
 
-        second_supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        second_supervision_period = NormalizedStateSupervisionPeriod(
             supervision_period_id=234,
             external_id="sp2",
             state_code=self.state_code.value,
@@ -1647,28 +1631,24 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             sequence_num=1,
         )
 
-        first_supervision_sentence = (
-            NormalizedStateSupervisionSentence.new_with_defaults(
-                state_code=self.state_code.value,
-                supervision_sentence_id=111,
-                effective_date=date(2017, 1, 1),
-                external_id="ss1",
-                status=StateSentenceStatus.COMPLETED,
-                supervision_type=StateSupervisionSentenceSupervisionType.PAROLE,
-                completion_date=date(2018, 12, 19),
-            )
+        first_supervision_sentence = NormalizedStateSupervisionSentence(
+            state_code=self.state_code.value,
+            supervision_sentence_id=111,
+            effective_date=date(2017, 1, 1),
+            external_id="ss1",
+            status=StateSentenceStatus.COMPLETED,
+            supervision_type=StateSupervisionSentenceSupervisionType.PAROLE,
+            completion_date=date(2018, 12, 19),
         )
 
-        second_supervision_sentence = (
-            NormalizedStateSupervisionSentence.new_with_defaults(
-                state_code=self.state_code.value,
-                supervision_sentence_id=222,
-                effective_date=date(2017, 1, 1),
-                external_id="ss2",
-                status=StateSentenceStatus.COMPLETED,
-                supervision_type=StateSupervisionSentenceSupervisionType.PAROLE,
-                completion_date=date(2019, 1, 19),
-            )
+        second_supervision_sentence = NormalizedStateSupervisionSentence(
+            state_code=self.state_code.value,
+            supervision_sentence_id=222,
+            effective_date=date(2017, 1, 1),
+            external_id="ss2",
+            status=StateSentenceStatus.COMPLETED,
+            supervision_type=StateSupervisionSentenceSupervisionType.PAROLE,
+            completion_date=date(2019, 1, 19),
         )
 
         supervision_sentences = [
@@ -1792,12 +1772,12 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         the supervision sentence."""
 
         supervision_period_termination_date = date(2018, 5, 15)
-        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod(
             sequence_num=0,
             supervision_period_id=111,
             external_id="sp1",
             case_type_entries=[
-                NormalizedStateSupervisionCaseTypeEntry.new_with_defaults(
+                NormalizedStateSupervisionCaseTypeEntry(
                     state_code=self.state_code.value,
                     case_type=StateSupervisionCaseType.DOMESTIC_VIOLENCE,
                 )
@@ -1812,7 +1792,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             supervision_level_raw_text="M",
         )
 
-        supervision_sentence = NormalizedStateSupervisionSentence.new_with_defaults(
+        supervision_sentence = NormalizedStateSupervisionSentence(
             supervision_sentence_id=111,
             effective_date=date(2018, 5, 1),
             external_id="ss1",
@@ -1822,7 +1802,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             projected_completion_date=date(2018, 5, 10),
         )
 
-        assessment = NormalizedStateAssessment.new_with_defaults(
+        assessment = NormalizedStateAssessment(
             state_code=self.state_code.value,
             external_id="a1",
             assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
@@ -1888,7 +1868,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         multiple supervision sentences. Both supervision periods extend past their corresponding supervision
         sentences."""
 
-        first_supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        first_supervision_period = NormalizedStateSupervisionPeriod(
             supervision_period_id=111,
             external_id="sp1",
             state_code=self.state_code.value,
@@ -1899,7 +1879,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             sequence_num=0,
         )
 
-        second_supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        second_supervision_period = NormalizedStateSupervisionPeriod(
             supervision_period_id=234,
             external_id="sp2",
             state_code=self.state_code.value,
@@ -1910,28 +1890,24 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             sequence_num=1,
         )
 
-        first_supervision_sentence = (
-            NormalizedStateSupervisionSentence.new_with_defaults(
-                state_code=self.state_code.value,
-                supervision_sentence_id=111,
-                effective_date=date(2018, 1, 1),
-                external_id="ss1",
-                status=StateSentenceStatus.COMPLETED,
-                supervision_type=StateSupervisionSentenceSupervisionType.PAROLE,
-                completion_date=date(2018, 1, 2),
-            )
+        first_supervision_sentence = NormalizedStateSupervisionSentence(
+            state_code=self.state_code.value,
+            supervision_sentence_id=111,
+            effective_date=date(2018, 1, 1),
+            external_id="ss1",
+            status=StateSentenceStatus.COMPLETED,
+            supervision_type=StateSupervisionSentenceSupervisionType.PAROLE,
+            completion_date=date(2018, 1, 2),
         )
 
-        second_supervision_sentence = (
-            NormalizedStateSupervisionSentence.new_with_defaults(
-                state_code=self.state_code.value,
-                supervision_sentence_id=222,
-                effective_date=date(2019, 2, 1),
-                external_id="ss2",
-                status=StateSentenceStatus.COMPLETED,
-                supervision_type=StateSupervisionSentenceSupervisionType.PAROLE,
-                completion_date=date(2019, 2, 2),
-            )
+        second_supervision_sentence = NormalizedStateSupervisionSentence(
+            state_code=self.state_code.value,
+            supervision_sentence_id=222,
+            effective_date=date(2019, 2, 1),
+            external_id="ss2",
+            status=StateSentenceStatus.COMPLETED,
+            supervision_type=StateSupervisionSentenceSupervisionType.PAROLE,
+            completion_date=date(2019, 2, 2),
         )
 
         supervision_sentences = [
@@ -2009,7 +1985,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         when there are supervision periods that should be dropped
         from the calculations due to no external ID."""
 
-        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod(
             sequence_num=0,
             supervision_period_id=111,
             external_id="sp1",
@@ -2020,7 +1996,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         )
 
         admission_date = date(2018, 5, 25)
-        incarceration_period = NormalizedStateIncarcerationPeriod.new_with_defaults(
+        incarceration_period = NormalizedStateIncarcerationPeriod(
             sequence_num=0,
             incarceration_period_id=111,
             external_id="ip1",
@@ -2029,7 +2005,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
         )
 
-        supervision_sentence = NormalizedStateSupervisionSentence.new_with_defaults(
+        supervision_sentence = NormalizedStateSupervisionSentence(
             state_code=self.state_code.value,
             supervision_sentence_id=111,
             effective_date=date(2017, 1, 1),
@@ -2092,12 +2068,12 @@ class TestClassifySupervisionEvents(unittest.TestCase):
 
         supervision_type = StateSupervisionPeriodSupervisionType.PROBATION
         supervision_period_termination_date = date(2018, 5, 19)
-        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod(
             sequence_num=0,
             supervision_period_id=111,
             external_id="sp1",
             case_type_entries=[
-                NormalizedStateSupervisionCaseTypeEntry.new_with_defaults(
+                NormalizedStateSupervisionCaseTypeEntry(
                     state_code="US_IX", case_type=StateSupervisionCaseType.GENERAL
                 )
             ],
@@ -2113,7 +2089,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             supervision_level_raw_text="LOW",
         )
 
-        supervision_sentence = NormalizedStateSupervisionSentence.new_with_defaults(
+        supervision_sentence = NormalizedStateSupervisionSentence(
             state_code="US_IX",
             supervision_sentence_id=111,
             effective_date=date(2017, 1, 1),
@@ -2121,7 +2097,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             status=StateSentenceStatus.COMPLETED,
         )
 
-        incarceration_sentence = NormalizedStateIncarcerationSentence.new_with_defaults(
+        incarceration_sentence = NormalizedStateIncarcerationSentence(
             state_code="US_IX",
             incarceration_sentence_id=123,
             external_id="is1",
@@ -2129,7 +2105,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
         )
 
-        assessment = NormalizedStateAssessment.new_with_defaults(
+        assessment = NormalizedStateAssessment(
             state_code="US_IX",
             external_id="a1",
             assessment_type=StateAssessmentType.LSIR,
@@ -2202,12 +2178,12 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         self._stop_state_specific_delegate_patchers()
 
         supervision_period_termination_date = date(2018, 5, 19)
-        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod(
             sequence_num=0,
             supervision_period_id=_DEFAULT_SUPERVISION_PERIOD_ID,
             external_id="sp1",
             case_type_entries=[
-                NormalizedStateSupervisionCaseTypeEntry.new_with_defaults(
+                NormalizedStateSupervisionCaseTypeEntry(
                     state_code="US_PA", case_type=StateSupervisionCaseType.GENERAL
                 )
             ],
@@ -2221,7 +2197,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             supervision_level_raw_text="LOW",
         )
 
-        assessment = NormalizedStateAssessment.new_with_defaults(
+        assessment = NormalizedStateAssessment(
             state_code="US_PA",
             external_id="a1",
             assessment_type=StateAssessmentType.LSIR,
@@ -2299,12 +2275,12 @@ class TestClassifySupervisionEvents(unittest.TestCase):
 
         supervision_period_start_date = date(2018, 3, 5)
         supervision_period_termination_date = date(2018, 5, 19)
-        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod(
             sequence_num=0,
             supervision_period_id=111,
             external_id="sp1",
             case_type_entries=[
-                NormalizedStateSupervisionCaseTypeEntry.new_with_defaults(
+                NormalizedStateSupervisionCaseTypeEntry(
                     state_code="US_MO",
                     case_type=StateSupervisionCaseType.DOMESTIC_VIOLENCE,
                 )
@@ -2315,7 +2291,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
         )
 
-        supervision_sentence = NormalizedStateSupervisionSentence.new_with_defaults(
+        supervision_sentence = NormalizedStateSupervisionSentence(
             state_code="US_MO",
             supervision_sentence_id=111,
             effective_date=date(2017, 1, 1),
@@ -2325,7 +2301,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             supervision_type=StateSupervisionSentenceSupervisionType.PROBATION,
         )
 
-        incarceration_sentence = NormalizedStateIncarcerationSentence.new_with_defaults(
+        incarceration_sentence = NormalizedStateIncarcerationSentence(
             state_code="US_MO",
             incarceration_sentence_id=123,
             external_id="is1",
@@ -2369,7 +2345,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         self._stop_state_specific_delegate_patchers()
 
         supervision_period_termination_date = date(2018, 5, 19)
-        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod(
             sequence_num=0,
             supervision_period_id=111,
             external_id="sp1",
@@ -2383,7 +2359,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             supervision_level_raw_text="LOW",
         )
 
-        assessment = NormalizedStateAssessment.new_with_defaults(
+        assessment = NormalizedStateAssessment(
             state_code="US_IX",
             external_id="a1",
             assessment_type=StateAssessmentType.LSIR,
@@ -2452,7 +2428,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         no termination_date on the supervision_period, and no release_date
         on the incarceration_period."""
 
-        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod(
             supervision_period_id=111,
             external_id="sp1",
             state_code=self.state_code.value,
@@ -2462,7 +2438,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         )
 
         admission_date = date.today()
-        incarceration_period = NormalizedStateIncarcerationPeriod.new_with_defaults(
+        incarceration_period = NormalizedStateIncarcerationPeriod(
             incarceration_period_id=111,
             external_id="ip1",
             state_code=self.state_code.value,
@@ -2471,7 +2447,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             sequence_num=0,
         )
 
-        supervision_sentence = NormalizedStateSupervisionSentence.new_with_defaults(
+        supervision_sentence = NormalizedStateSupervisionSentence(
             state_code=self.state_code.value,
             supervision_sentence_id=111,
             effective_date=date(2017, 1, 1),
@@ -2527,7 +2503,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         """Tests the find_population_events_for_supervision_period function when there are multiple
         incarceration periods in the year of supervision."""
         supervision_period_termination_date = date(2018, 6, 9)
-        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod(
             supervision_period_id=111,
             external_id="sp1",
             state_code=self.state_code.value,
@@ -2539,31 +2515,27 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         )
 
         first_admission_date = date(2018, 6, 2)
-        first_incarceration_period = (
-            NormalizedStateIncarcerationPeriod.new_with_defaults(
-                incarceration_period_id=111,
-                external_id="ip1",
-                state_code=self.state_code.value,
-                admission_date=first_admission_date,
-                admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
-                release_date=date(2018, 9, 3),
-                sequence_num=0,
-            )
+        first_incarceration_period = NormalizedStateIncarcerationPeriod(
+            incarceration_period_id=111,
+            external_id="ip1",
+            state_code=self.state_code.value,
+            admission_date=first_admission_date,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
+            release_date=date(2018, 9, 3),
+            sequence_num=0,
         )
 
         second_admission_date = date(2018, 11, 17)
-        second_incarceration_period = (
-            NormalizedStateIncarcerationPeriod.new_with_defaults(
-                incarceration_period_id=222,
-                external_id="ip2",
-                state_code=self.state_code.value,
-                admission_date=second_admission_date,
-                admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
-                sequence_num=1,
-            )
+        second_incarceration_period = NormalizedStateIncarcerationPeriod(
+            incarceration_period_id=222,
+            external_id="ip2",
+            state_code=self.state_code.value,
+            admission_date=second_admission_date,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
+            sequence_num=1,
         )
 
-        incarceration_sentence = NormalizedStateIncarcerationSentence.new_with_defaults(
+        incarceration_sentence = NormalizedStateIncarcerationSentence(
             state_code=self.state_code.value,
             incarceration_sentence_id=123,
             external_id="is1",
@@ -2616,7 +2588,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
     def test_supervision_events_violation_history(self) -> None:
         state_code = "US_XX"
 
-        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod(
             supervision_period_id=111,
             external_id="sp1",
             state_code=state_code,
@@ -2626,24 +2598,24 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             sequence_num=0,
         )
 
-        supervision_violation_1 = NormalizedStateSupervisionViolation.new_with_defaults(
+        supervision_violation_1 = NormalizedStateSupervisionViolation(
             supervision_violation_id=123455,
             external_id="sv1",
             state_code=state_code,
             violation_date=date(2018, 4, 20),
             supervision_violation_types=[
-                NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
+                NormalizedStateSupervisionViolationTypeEntry(
                     state_code=state_code,
                     violation_type=StateSupervisionViolationType.TECHNICAL,
                 ),
-                NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
+                NormalizedStateSupervisionViolationTypeEntry(
                     state_code=state_code,
                     violation_type=StateSupervisionViolationType.FELONY,
                 ),
             ],
         )
 
-        violation_report_1 = NormalizedStateSupervisionViolationResponse.new_with_defaults(
+        violation_report_1 = NormalizedStateSupervisionViolationResponse(
             state_code=state_code,
             supervision_violation_response_id=888,
             external_id="svr1",
@@ -2651,7 +2623,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
             supervision_violation=supervision_violation_1,
             supervision_violation_response_decisions=[
-                NormalizedStateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                NormalizedStateSupervisionViolationResponseDecisionEntry(
                     state_code=state_code,
                     decision=StateSupervisionViolationResponseDecision.REVOCATION,
                 ),
@@ -2659,20 +2631,20 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             sequence_num=0,
         )
 
-        supervision_violation_2 = NormalizedStateSupervisionViolation.new_with_defaults(
+        supervision_violation_2 = NormalizedStateSupervisionViolation(
             supervision_violation_id=32663,
             external_id="sv2",
             state_code=state_code,
             violation_date=date(2019, 1, 20),
             supervision_violation_types=[
-                NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
+                NormalizedStateSupervisionViolationTypeEntry(
                     state_code=state_code,
                     violation_type=StateSupervisionViolationType.MISDEMEANOR,
                 ),
             ],
         )
 
-        violation_report_2 = NormalizedStateSupervisionViolationResponse.new_with_defaults(
+        violation_report_2 = NormalizedStateSupervisionViolationResponse(
             state_code=state_code,
             supervision_violation_response_id=999,
             external_id="svr2",
@@ -2680,7 +2652,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
             supervision_violation=supervision_violation_2,
             supervision_violation_response_decisions=[
-                NormalizedStateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                NormalizedStateSupervisionViolationResponseDecisionEntry(
                     state_code=state_code,
                     decision=StateSupervisionViolationResponseDecision.REVOCATION,
                 ),
@@ -2688,7 +2660,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             sequence_num=1,
         )
 
-        supervision_sentence = NormalizedStateSupervisionSentence.new_with_defaults(
+        supervision_sentence = NormalizedStateSupervisionSentence(
             state_code=state_code,
             supervision_sentence_id=111,
             effective_date=date(2018, 1, 1),
@@ -2819,7 +2791,7 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
         where there is no termination_date on the supervision_period, and
         no release_date on the incarceration_period."""
 
-        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod(
             sequence_num=0,
             supervision_period_id=111,
             external_id="sp1",
@@ -2828,7 +2800,7 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
         )
 
-        incarceration_period = NormalizedStateIncarcerationPeriod.new_with_defaults(
+        incarceration_period = NormalizedStateIncarcerationPeriod(
             sequence_num=0,
             incarceration_period_id=111,
             external_id="ip1",
@@ -2890,7 +2862,7 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
         revocation admission before the supervision period's termination_date, and the supervision_period and the
         incarceration_period end in the same month."""
 
-        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod(
             sequence_num=0,
             supervision_period_id=111,
             external_id="sp1",
@@ -2900,7 +2872,7 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
         )
 
-        incarceration_period = NormalizedStateIncarcerationPeriod.new_with_defaults(
+        incarceration_period = NormalizedStateIncarcerationPeriod(
             sequence_num=0,
             incarceration_period_id=111,
             external_id="ip1",
@@ -2961,7 +2933,7 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
         """Tests the find_population_events_for_supervision_period function when there is an incarceration period with
         a revocation admission, a stay in prison, and a continued supervision period after release from incarceration
         that has still not terminated."""
-        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod(
             sequence_num=0,
             supervision_period_id=111,
             external_id="sp1",
@@ -2970,14 +2942,14 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.MINIMUM,
             case_type_entries=[
-                NormalizedStateSupervisionCaseTypeEntry.new_with_defaults(
+                NormalizedStateSupervisionCaseTypeEntry(
                     state_code=self.state_code.value,
                     case_type=StateSupervisionCaseType.GENERAL,
                 ),
             ],
         )
 
-        incarceration_period = NormalizedStateIncarcerationPeriod.new_with_defaults(
+        incarceration_period = NormalizedStateIncarcerationPeriod(
             sequence_num=0,
             incarceration_period_id=111,
             external_id="ip1",
@@ -3054,7 +3026,7 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
     ) -> None:
         """Tests the find_population_events_for_supervision_period function when there is an incarceration period with a
         non-revocation admission before the supervision period's termination_date."""
-        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod(
             sequence_num=0,
             supervision_period_id=111,
             external_id="sp1",
@@ -3064,7 +3036,7 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
         )
 
-        incarceration_period = NormalizedStateIncarcerationPeriod.new_with_defaults(
+        incarceration_period = NormalizedStateIncarcerationPeriod(
             sequence_num=0,
             incarceration_period_id=111,
             external_id="ip1",
@@ -3122,7 +3094,7 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
         multiple years, and there is an incarceration period during this time that also overlaps multiple years.
         """
 
-        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod(
             sequence_num=0,
             supervision_period_id=111,
             external_id="sp1",
@@ -3132,7 +3104,7 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
         )
 
-        incarceration_period = NormalizedStateIncarcerationPeriod.new_with_defaults(
+        incarceration_period = NormalizedStateIncarcerationPeriod(
             sequence_num=0,
             incarceration_period_id=111,
             external_id="ip1",
@@ -3209,7 +3181,7 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
         supervision period with no incarceration periods, where the supervision
         period ends on the 1st day of a month."""
 
-        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod(
             sequence_num=0,
             supervision_period_id=111,
             external_id="sp1",
@@ -3277,7 +3249,7 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
         supervision period with no incarceration periods, where the supervision
         period ends on the last day of a month."""
 
-        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod(
             sequence_num=0,
             supervision_period_id=111,
             external_id="sp1",
@@ -3343,7 +3315,7 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
     def test_find_population_events_for_supervision_period_start_end_same_day(
         self,
     ) -> None:
-        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod(
             sequence_num=0,
             supervision_period_id=111,
             external_id="sp1",
@@ -3389,7 +3361,7 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
         a stay in prison, a continued supervision period after release
         from incarceration, and multiple assessments over this time period."""
 
-        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod(
             sequence_num=0,
             supervision_period_id=111,
             external_id="sp1",
@@ -3399,7 +3371,7 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
         )
 
-        incarceration_period = NormalizedStateIncarcerationPeriod.new_with_defaults(
+        incarceration_period = NormalizedStateIncarcerationPeriod(
             sequence_num=0,
             incarceration_period_id=111,
             external_id="ip1",
@@ -3410,7 +3382,7 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
             release_date=date(2018, 10, 27),
         )
 
-        assessment_1 = NormalizedStateAssessment.new_with_defaults(
+        assessment_1 = NormalizedStateAssessment(
             state_code=self.state_code.value,
             external_id="a1",
             assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
@@ -3421,7 +3393,7 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
             sequence_num=0,
         )
 
-        assessment_2 = NormalizedStateAssessment.new_with_defaults(
+        assessment_2 = NormalizedStateAssessment(
             state_code=self.state_code.value,
             external_id="a2",
             assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
@@ -3497,7 +3469,7 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
         when there is no revocation and the assessment date is the year before
         the start of the supervision."""
 
-        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod(
             sequence_num=0,
             supervision_period_id=111,
             external_id="sp1",
@@ -3507,7 +3479,7 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
         )
 
-        assessment = NormalizedStateAssessment.new_with_defaults(
+        assessment = NormalizedStateAssessment(
             state_code="US_CA",
             external_id="a1",
             assessment_type=StateAssessmentType.LSIR,
@@ -3568,7 +3540,7 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
         when a supervision level downgrade has taken place."""
 
         supervision_periods = [
-            NormalizedStateSupervisionPeriod.new_with_defaults(
+            NormalizedStateSupervisionPeriod(
                 supervision_period_id=111,
                 sequence_num=0,
                 external_id="sp1",
@@ -3578,7 +3550,7 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
                 supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
                 supervision_level=StateSupervisionLevel.HIGH,
             ),
-            NormalizedStateSupervisionPeriod.new_with_defaults(
+            NormalizedStateSupervisionPeriod(
                 supervision_period_id=123,
                 sequence_num=1,
                 external_id="sp2",
@@ -3637,7 +3609,7 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
         when a supervision level downgrade has taken place."""
 
         supervision_periods = [
-            NormalizedStateSupervisionPeriod.new_with_defaults(
+            NormalizedStateSupervisionPeriod(
                 supervision_period_id=111,
                 sequence_num=0,
                 external_id="sp1",
@@ -3647,7 +3619,7 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
                 supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
                 supervision_level=StateSupervisionLevel.MAXIMUM,
             ),
-            NormalizedStateSupervisionPeriod.new_with_defaults(
+            NormalizedStateSupervisionPeriod(
                 supervision_period_id=123,
                 sequence_num=1,
                 external_id="sp2",
@@ -3715,7 +3687,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
             patcher.stop()
 
     def test_classify_supervision_success(self) -> None:
-        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod(
             sequence_num=0,
             supervision_period_id=111,
             external_id="sp1",
@@ -3729,7 +3701,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
         supervision_sentence_projected_completion_date = date(2018, 12, 25)
         supervision_sentence_completion_date = date(2018, 12, 25)
         supervision_sentence_effective_date = date(2017, 1, 1)
-        supervision_sentence = NormalizedStateSupervisionSentence.new_with_defaults(
+        supervision_sentence = NormalizedStateSupervisionSentence(
             state_code=self.state_code.value,
             supervision_sentence_id=111,
             effective_date=supervision_sentence_effective_date,
@@ -3770,7 +3742,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
         )
 
     def test_classify_supervision_success_unsuccessful(self) -> None:
-        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod(
             sequence_num=0,
             supervision_period_id=111,
             external_id="sp1",
@@ -3784,7 +3756,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
         supervision_sentence_projected_completion_date = date(2018, 12, 25)
         supervision_sentence_completion_date = date(2018, 12, 25)
         supervision_sentence_effective_date = date(2017, 1, 1)
-        supervision_sentence = NormalizedStateSupervisionSentence.new_with_defaults(
+        supervision_sentence = NormalizedStateSupervisionSentence(
             state_code=self.state_code.value,
             supervision_sentence_id=111,
             effective_date=supervision_sentence_effective_date,
@@ -3824,7 +3796,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
         )
 
     def test_classify_supervision_success_multiple_periods(self) -> None:
-        first_supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        first_supervision_period = NormalizedStateSupervisionPeriod(
             supervision_period_id=111,
             sequence_num=0,
             external_id="sp1",
@@ -3835,7 +3807,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
             supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
         )
 
-        second_supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        second_supervision_period = NormalizedStateSupervisionPeriod(
             supervision_period_id=222,
             sequence_num=1,
             external_id="sp2",
@@ -3849,7 +3821,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
         supervision_sentence_projected_completion_date = date(2018, 12, 25)
         supervision_sentence_completion_date = date(2018, 12, 25)
         supervision_sentence_effective_date = date(2017, 1, 1)
-        supervision_sentence = NormalizedStateSupervisionSentence.new_with_defaults(
+        supervision_sentence = NormalizedStateSupervisionSentence(
             state_code=self.state_code.value,
             supervision_sentence_id=111,
             effective_date=supervision_sentence_effective_date,
@@ -3892,7 +3864,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
         )
 
     def test_classify_supervision_success_multiple_sentences(self) -> None:
-        first_supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        first_supervision_period = NormalizedStateSupervisionPeriod(
             supervision_period_id=111,
             sequence_num=0,
             external_id="sp1",
@@ -3903,7 +3875,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
             supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
         )
 
-        second_supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        second_supervision_period = NormalizedStateSupervisionPeriod(
             supervision_period_id=222,
             sequence_num=1,
             external_id="sp2",
@@ -3917,7 +3889,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
         first_supervision_sentence_projected_completion_date = date(2018, 8, 19)
         first_supervision_sentence_completion_date = date(2018, 8, 19)
         first_supervision_sentence_effective_date = date(2017, 1, 1)
-        first_supervision_sentence = NormalizedStateSupervisionSentence.new_with_defaults(
+        first_supervision_sentence = NormalizedStateSupervisionSentence(
             state_code=self.state_code.value,
             supervision_sentence_id=111,
             effective_date=first_supervision_sentence_effective_date,
@@ -3931,7 +3903,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
         second_supervision_sentence_projected_completion_date = date(2018, 12, 25)
         second_supervision_sentence_completion_date = date(2018, 12, 25)
         second_supervision_sentence_effective_date = date(2017, 1, 1)
-        second_supervision_sentence = NormalizedStateSupervisionSentence.new_with_defaults(
+        second_supervision_sentence = NormalizedStateSupervisionSentence(
             state_code=self.state_code.value,
             supervision_sentence_id=111,
             effective_date=second_supervision_sentence_effective_date,
@@ -3986,7 +3958,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
         )
 
     def test_classify_supervision_success_multiple_sentence_types(self) -> None:
-        first_supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        first_supervision_period = NormalizedStateSupervisionPeriod(
             supervision_period_id=111,
             sequence_num=0,
             external_id="sp1",
@@ -3997,7 +3969,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
             supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
         )
 
-        second_supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        second_supervision_period = NormalizedStateSupervisionPeriod(
             supervision_period_id=222,
             sequence_num=1,
             external_id="sp2",
@@ -4011,7 +3983,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
         first_supervision_sentence_projected_completion_date = date(2018, 12, 25)
         first_supervision_sentence_completion_date = date(2018, 12, 25)
         first_supervision_sentence_effective_date = date(2017, 1, 1)
-        first_supervision_sentence = NormalizedStateSupervisionSentence.new_with_defaults(
+        first_supervision_sentence = NormalizedStateSupervisionSentence(
             state_code=self.state_code.value,
             supervision_sentence_id=111,
             effective_date=first_supervision_sentence_effective_date,
@@ -4025,7 +3997,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
         second_supervision_sentence_projected_completion_date = date(2018, 12, 25)
         second_supervision_sentence_completion_date = date(2018, 12, 25)
         second_supervision_sentence_effective_date = date(2017, 1, 1)
-        second_supervision_sentence = NormalizedStateSupervisionSentence.new_with_defaults(
+        second_supervision_sentence = NormalizedStateSupervisionSentence(
             state_code=self.state_code.value,
             supervision_sentence_id=111,
             effective_date=second_supervision_sentence_effective_date,
@@ -4080,7 +4052,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
         )
 
     def test_classify_supervision_success_officer_district(self) -> None:
-        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod(
             sequence_num=0,
             supervision_period_id=111,
             external_id="sp1",
@@ -4095,7 +4067,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
         supervision_sentence_projected_completion_date = date(2018, 12, 25)
         supervision_sentence_completion_date = date(2018, 12, 25)
         supervision_sentence_effective_date = date(2017, 1, 1)
-        supervision_sentence = NormalizedStateSupervisionSentence.new_with_defaults(
+        supervision_sentence = NormalizedStateSupervisionSentence(
             state_code=self.state_code.value,
             supervision_sentence_id=111,
             effective_date=supervision_sentence_effective_date,
@@ -4136,7 +4108,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
         )
 
     def test_classify_supervision_success_empty_officer_district(self) -> None:
-        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod(
             sequence_num=0,
             supervision_period_id=111,
             external_id="sp1",
@@ -4150,7 +4122,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
         supervision_sentence_projected_completion_date = date(2018, 12, 25)
         supervision_sentence_completion_date = date(2018, 12, 25)
         supervision_sentence_effective_date = date(2017, 1, 1)
-        supervision_sentence = NormalizedStateSupervisionSentence.new_with_defaults(
+        supervision_sentence = NormalizedStateSupervisionSentence(
             state_code=self.state_code.value,
             supervision_sentence_id=111,
             effective_date=supervision_sentence_effective_date,
@@ -4191,7 +4163,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
     def test_classify_supervision_success_period_ends_after_projected_completion(
         self,
     ) -> None:
-        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod(
             sequence_num=0,
             supervision_period_id=111,
             external_id="sp1",
@@ -4205,7 +4177,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
         effective_date = date(2017, 1, 1)
         projected_completion_date = date(2018, 12, 25)
         completion_date = date(2018, 12, 19)
-        supervision_sentence = NormalizedStateSupervisionSentence.new_with_defaults(
+        supervision_sentence = NormalizedStateSupervisionSentence(
             state_code=self.state_code.value,
             supervision_sentence_id=111,
             effective_date=effective_date,
@@ -4245,7 +4217,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
     def test_classify_supervision_success_exclude_termination_reason_death(
         self,
     ) -> None:
-        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod(
             sequence_num=0,
             supervision_period_id=111,
             external_id="sp1",
@@ -4256,7 +4228,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
             supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
         )
 
-        supervision_sentence = NormalizedStateSupervisionSentence.new_with_defaults(
+        supervision_sentence = NormalizedStateSupervisionSentence(
             state_code=self.state_code.value,
             supervision_sentence_id=111,
             effective_date=date(2017, 1, 1),
@@ -4280,7 +4252,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
         self.assertEqual(0, len(projected_completion_events))
 
     def test_classify_supervision_success_exclude_no_completion_date(self) -> None:
-        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod(
             sequence_num=0,
             supervision_period_id=111,
             external_id="sp1",
@@ -4291,7 +4263,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
             supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
         )
 
-        supervision_sentence = NormalizedStateSupervisionSentence.new_with_defaults(
+        supervision_sentence = NormalizedStateSupervisionSentence(
             state_code=self.state_code.value,
             supervision_sentence_id=111,
             effective_date=date(2017, 1, 1),
@@ -4314,7 +4286,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
         self.assertEqual(0, len(projected_completion_events))
 
     def test_classify_supervision_success_exclude_completion_before_start(self) -> None:
-        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod(
             sequence_num=0,
             supervision_period_id=111,
             external_id="sp1",
@@ -4325,7 +4297,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
             supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
         )
 
-        supervision_sentence = NormalizedStateSupervisionSentence.new_with_defaults(
+        supervision_sentence = NormalizedStateSupervisionSentence(
             state_code=self.state_code.value,
             supervision_sentence_id=111,
             effective_date=date(2017, 1, 1),
@@ -4349,7 +4321,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
         self.assertEqual(0, len(projected_completion_events))
 
     def test_classify_supervision_success_with_incarceration_sentences(self) -> None:
-        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod(
             sequence_num=0,
             supervision_period_id=111,
             external_id="sp1",
@@ -4363,7 +4335,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
         effective_date = date(2017, 1, 1)
         completion_date = date(2018, 12, 25)
         max_length_days = (completion_date - effective_date).days
-        incarceration_sentence = NormalizedStateIncarcerationSentence.new_with_defaults(
+        incarceration_sentence = NormalizedStateIncarcerationSentence(
             state_code=self.state_code.value,
             incarceration_sentence_id=111,
             effective_date=effective_date,
@@ -4407,7 +4379,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
     def test_classify_supervision_success_with_incarceration_sentence_future_start_date(
         self,
     ) -> None:
-        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod(
             sequence_num=0,
             supervision_period_id=111,
             external_id="sp1",
@@ -4418,7 +4390,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
             supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
         )
 
-        incarceration_sentence = NormalizedStateIncarcerationSentence.new_with_defaults(
+        incarceration_sentence = NormalizedStateIncarcerationSentence(
             state_code=self.state_code.value,
             incarceration_sentence_id=111,
             effective_date=date.today() + datetime.timedelta(days=10),
@@ -4446,7 +4418,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
     def test_classify_supervision_success_with_incarceration_sentence_without_max_length_day(
         self,
     ) -> None:
-        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod(
             sequence_num=0,
             supervision_period_id=111,
             external_id="sp1",
@@ -4457,7 +4429,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
             supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
         )
 
-        incarceration_sentence = NormalizedStateIncarcerationSentence.new_with_defaults(
+        incarceration_sentence = NormalizedStateIncarcerationSentence(
             state_code=self.state_code.value,
             incarceration_sentence_id=111,
             effective_date=date(2017, 1, 1),
@@ -4484,7 +4456,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
     def test_classify_supervision_success_with_large_max_length_date_incarceration_sentence(
         self,
     ) -> None:
-        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod(
             sequence_num=0,
             supervision_period_id=111,
             external_id="sp1",
@@ -4495,7 +4467,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
             supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
         )
 
-        incarceration_sentence = NormalizedStateIncarcerationSentence.new_with_defaults(
+        incarceration_sentence = NormalizedStateIncarcerationSentence(
             state_code=self.state_code.value,
             incarceration_sentence_id=111,
             effective_date=date(2017, 1, 1),
@@ -4523,7 +4495,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
     def test_classify_supervision_success_with_incarceration_and_supervision_sentences(
         self,
     ) -> None:
-        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod(
             supervision_period_id=111,
             sequence_num=0,
             external_id="sp1",
@@ -4536,7 +4508,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
 
         supervision_sentence_completion_date = date(2018, 12, 25)
         supervision_sentence_effective_date = date(2017, 1, 1)
-        supervision_sentence = NormalizedStateSupervisionSentence.new_with_defaults(
+        supervision_sentence = NormalizedStateSupervisionSentence(
             state_code=self.state_code.value,
             supervision_sentence_id=111,
             effective_date=supervision_sentence_effective_date,
@@ -4549,23 +4521,21 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
 
         supervision_sentences = [supervision_sentence]
 
-        incarceration_supervision_period = (
-            NormalizedStateSupervisionPeriod.new_with_defaults(
-                supervision_period_id=222,
-                sequence_num=1,
-                external_id="sp1",
-                state_code=self.state_code.value,
-                start_date=date(2007, 6, 3),
-                termination_date=date(2007, 12, 3),
-                termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-                supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
-            )
+        incarceration_supervision_period = NormalizedStateSupervisionPeriod(
+            supervision_period_id=222,
+            sequence_num=1,
+            external_id="sp1",
+            state_code=self.state_code.value,
+            start_date=date(2007, 6, 3),
+            termination_date=date(2007, 12, 3),
+            termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
+            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
         )
 
         effective_date = date(2006, 2, 21)
         completion_date = date(2007, 12, 3)
         max_length_days = 730
-        incarceration_sentence = NormalizedStateIncarcerationSentence.new_with_defaults(
+        incarceration_sentence = NormalizedStateIncarcerationSentence(
             state_code=self.state_code.value,
             incarceration_sentence_id=111,
             effective_date=effective_date,
@@ -4632,7 +4602,7 @@ class TestFindSupervisionTerminationEvent(unittest.TestCase):
 
     def test_find_supervision_termination_event(self) -> None:
         supervision_period_termination_date = date(2019, 5, 19)
-        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod(
             sequence_num=0,
             supervision_period_id=111,
             external_id="sp1",
@@ -4643,7 +4613,7 @@ class TestFindSupervisionTerminationEvent(unittest.TestCase):
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
         )
 
-        first_assessment = NormalizedStateAssessment.new_with_defaults(
+        first_assessment = NormalizedStateAssessment(
             state_code=self.state_code.value,
             external_id="a1",
             assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
@@ -4654,7 +4624,7 @@ class TestFindSupervisionTerminationEvent(unittest.TestCase):
         )
 
         first_reassessment_score = 29
-        first_reassessment = NormalizedStateAssessment.new_with_defaults(
+        first_reassessment = NormalizedStateAssessment(
             state_code=self.state_code.value,
             external_id="a2",
             assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
@@ -4665,7 +4635,7 @@ class TestFindSupervisionTerminationEvent(unittest.TestCase):
         )
 
         last_assessment_score = 19
-        last_assessment = NormalizedStateAssessment.new_with_defaults(
+        last_assessment = NormalizedStateAssessment(
             state_code=self.state_code.value,
             external_id="a3",
             assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
@@ -4710,7 +4680,7 @@ class TestFindSupervisionTerminationEvent(unittest.TestCase):
 
     def test_find_supervision_termination_event_no_assessments(self) -> None:
         supervision_period_termination_date = date(2019, 5, 19)
-        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod(
             sequence_num=0,
             supervision_period_id=111,
             external_id="sp1",
@@ -4754,7 +4724,7 @@ class TestFindSupervisionTerminationEvent(unittest.TestCase):
 
     def test_find_supervision_termination_event_insufficient_assessments(self) -> None:
         supervision_period_termination_date = date(2019, 5, 19)
-        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod(
             sequence_num=0,
             supervision_period_id=111,
             external_id="sp1",
@@ -4765,7 +4735,7 @@ class TestFindSupervisionTerminationEvent(unittest.TestCase):
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
         )
 
-        first_assessment = NormalizedStateAssessment.new_with_defaults(
+        first_assessment = NormalizedStateAssessment(
             state_code=self.state_code.value,
             external_id="a1",
             assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
@@ -4807,7 +4777,7 @@ class TestFindSupervisionTerminationEvent(unittest.TestCase):
         self.assertEqual(expected_termination_event, termination_event)
 
     def test_find_supervision_termination_event_no_termination(self) -> None:
-        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod(
             sequence_num=0,
             supervision_period_id=111,
             external_id="sp1",
@@ -4842,7 +4812,7 @@ class TestFindSupervisionTerminationEvent(unittest.TestCase):
         supervision_period is still on the SupervisionTerminationEvent."""
         second_supervision_period_termination_date = date(2019, 11, 17)
 
-        first_supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        first_supervision_period = NormalizedStateSupervisionPeriod(
             supervision_period_id=111,
             sequence_num=0,
             external_id="sp2",
@@ -4852,7 +4822,7 @@ class TestFindSupervisionTerminationEvent(unittest.TestCase):
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
         )
 
-        second_supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        second_supervision_period = NormalizedStateSupervisionPeriod(
             supervision_period_id=222,
             sequence_num=1,
             external_id="sp1",
@@ -4862,7 +4832,7 @@ class TestFindSupervisionTerminationEvent(unittest.TestCase):
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
         )
 
-        too_early_assessment = NormalizedStateAssessment.new_with_defaults(
+        too_early_assessment = NormalizedStateAssessment(
             state_code="US_CA",
             external_id="a1",
             assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
@@ -4872,7 +4842,7 @@ class TestFindSupervisionTerminationEvent(unittest.TestCase):
             sequence_num=0,
         )
 
-        assessment_1 = NormalizedStateAssessment.new_with_defaults(
+        assessment_1 = NormalizedStateAssessment(
             state_code="US_CA",
             external_id="a2",
             assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
@@ -4883,7 +4853,7 @@ class TestFindSupervisionTerminationEvent(unittest.TestCase):
         )
 
         assessment_2_score = 29
-        assessment_2 = NormalizedStateAssessment.new_with_defaults(
+        assessment_2 = NormalizedStateAssessment(
             state_code="US_CA",
             external_id="a2",
             assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
@@ -4894,7 +4864,7 @@ class TestFindSupervisionTerminationEvent(unittest.TestCase):
         )
 
         assessment_3_score = 19
-        assessment_3 = NormalizedStateAssessment.new_with_defaults(
+        assessment_3 = NormalizedStateAssessment(
             state_code="US_CA",
             external_id="a3",
             assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
@@ -4941,7 +4911,7 @@ class TestFindSupervisionTerminationEvent(unittest.TestCase):
         self,
     ) -> None:
         supervision_period_termination_date = date(2018, 5, 19)
-        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod(
             sequence_num=0,
             supervision_period_id=111,
             external_id="sp1",
@@ -5045,7 +5015,7 @@ class TestFindSupervisionTerminationEvent(unittest.TestCase):
         if the supervision period is 1 full day and overlapping with another
         supervision period, but in_incarceration_population_on_date=False because it's overlapping
         with no incarceration periods."""
-        first_supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        first_supervision_period = NormalizedStateSupervisionPeriod(
             supervision_period_id=111,
             sequence_num=0,
             external_id="sp1",
@@ -5056,7 +5026,7 @@ class TestFindSupervisionTerminationEvent(unittest.TestCase):
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
         )
 
-        second_supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        second_supervision_period = NormalizedStateSupervisionPeriod(
             supervision_period_id=222,
             sequence_num=1,
             external_id="sp1",
@@ -5132,7 +5102,7 @@ class TestFindSupervisionTerminationEvent(unittest.TestCase):
         if the supervision period is 0 full days and overlapping with another
         supervision period, but in_incarceration_population_on_date=False because it's overlapping
         with no incarceration periods."""
-        first_supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        first_supervision_period = NormalizedStateSupervisionPeriod(
             supervision_period_id=111,
             sequence_num=0,
             external_id="sp1",
@@ -5143,7 +5113,7 @@ class TestFindSupervisionTerminationEvent(unittest.TestCase):
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
         )
 
-        second_supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        second_supervision_period = NormalizedStateSupervisionPeriod(
             supervision_period_id=222,
             sequence_num=1,
             external_id="sp1",
@@ -5201,7 +5171,7 @@ class TestFindSupervisionTerminationEvent(unittest.TestCase):
     ) -> None:
         """Runs a test for find_supervision_termination_event where there are
         overlapping supervision and incarceration periods."""
-        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod(
             sequence_num=0,
             supervision_period_id=111,
             external_id="sp1",
@@ -5212,7 +5182,7 @@ class TestFindSupervisionTerminationEvent(unittest.TestCase):
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
         )
 
-        incarceration_period = NormalizedStateIncarcerationPeriod.new_with_defaults(
+        incarceration_period = NormalizedStateIncarcerationPeriod(
             sequence_num=0,
             incarceration_period_id=111,
             external_id="ip1",
@@ -5360,7 +5330,7 @@ class TestFindSupervisionStartEvent(unittest.TestCase):
         full day and overlapping with another supervision period, but with no
         incarceration periods."""
         first_supervision_period_start_date = date(2018, 3, 5)
-        first_supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        first_supervision_period = NormalizedStateSupervisionPeriod(
             supervision_period_id=111,
             sequence_num=0,
             external_id="sp1",
@@ -5371,7 +5341,7 @@ class TestFindSupervisionStartEvent(unittest.TestCase):
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
         )
 
-        second_supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        second_supervision_period = NormalizedStateSupervisionPeriod(
             supervision_period_id=222,
             sequence_num=1,
             external_id="sp1",
@@ -5436,7 +5406,7 @@ class TestFindSupervisionStartEvent(unittest.TestCase):
         full days and overlapping with another supervision period but with no
         incarceration periods."""
         start_date = date(2018, 3, 5)
-        first_supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        first_supervision_period = NormalizedStateSupervisionPeriod(
             supervision_period_id=111,
             sequence_num=0,
             external_id="sp1",
@@ -5447,7 +5417,7 @@ class TestFindSupervisionStartEvent(unittest.TestCase):
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
         )
 
-        second_supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        second_supervision_period = NormalizedStateSupervisionPeriod(
             supervision_period_id=222,
             sequence_num=1,
             external_id="sp1",
@@ -5495,7 +5465,7 @@ class TestFindSupervisionStartEvent(unittest.TestCase):
     ) -> None:
         """Runs a test for find_supervision_start_event where there are overlapping
         supervision and incarceration periods."""
-        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod(
             sequence_num=0,
             supervision_period_id=111,
             external_id="sp1",
@@ -5506,7 +5476,7 @@ class TestFindSupervisionStartEvent(unittest.TestCase):
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
         )
 
-        incarceration_period = NormalizedStateIncarcerationPeriod.new_with_defaults(
+        incarceration_period = NormalizedStateIncarcerationPeriod(
             sequence_num=0,
             incarceration_period_id=111,
             external_id="ip1",
@@ -5562,14 +5532,14 @@ class TestGetMostSevereResponseDecision(unittest.TestCase):
             patcher.stop()
 
     def test_get_most_severe_response_decision(self) -> None:
-        supervision_violation = NormalizedStateSupervisionViolation.new_with_defaults(
+        supervision_violation = NormalizedStateSupervisionViolation(
             supervision_violation_id=123455,
             external_id="sv1",
             state_code=self.state_code.value,
             violation_date=date(2009, 1, 3),
         )
 
-        supervision_violation_response = NormalizedStateSupervisionViolationResponse.new_with_defaults(
+        supervision_violation_response = NormalizedStateSupervisionViolationResponse(
             supervision_violation_response_id=_DEFAULT_SSVR_ID,
             external_id="svr1",
             response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
@@ -5577,11 +5547,11 @@ class TestGetMostSevereResponseDecision(unittest.TestCase):
             response_date=date(2009, 1, 7),
             sequence_num=0,
             supervision_violation_response_decisions=[
-                NormalizedStateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                NormalizedStateSupervisionViolationResponseDecisionEntry(
                     state_code=self.state_code.value,
                     decision=StateSupervisionViolationResponseDecision.REVOCATION,
                 ),
-                NormalizedStateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                NormalizedStateSupervisionViolationResponseDecisionEntry(
                     state_code=self.state_code.value,
                     decision=StateSupervisionViolationResponseDecision.CONTINUANCE,
                 ),
@@ -5947,7 +5917,7 @@ class TestFindAssessmentScoreChange(unittest.TestCase):
             patcher.stop()
 
     def test_find_assessment_score_change(self) -> None:
-        assessment_1 = NormalizedStateAssessment.new_with_defaults(
+        assessment_1 = NormalizedStateAssessment(
             state_code=self.state_code.value,
             external_id="a1",
             assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
@@ -5958,7 +5928,7 @@ class TestFindAssessmentScoreChange(unittest.TestCase):
             sequence_num=0,
         )
 
-        assessment_2 = NormalizedStateAssessment.new_with_defaults(
+        assessment_2 = NormalizedStateAssessment(
             state_code=self.state_code.value,
             external_id="a2",
             assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
@@ -5969,7 +5939,7 @@ class TestFindAssessmentScoreChange(unittest.TestCase):
             sequence_num=1,
         )
 
-        assessment_3 = NormalizedStateAssessment.new_with_defaults(
+        assessment_3 = NormalizedStateAssessment(
             state_code=self.state_code.value,
             external_id="a3",
             assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
@@ -6006,7 +5976,7 @@ class TestFindAssessmentScoreChange(unittest.TestCase):
         )
 
     def test_find_assessment_score_change_insufficient_assessments(self) -> None:
-        assessment_1 = NormalizedStateAssessment.new_with_defaults(
+        assessment_1 = NormalizedStateAssessment(
             state_code=self.state_code.value,
             external_id="a1",
             assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
@@ -6016,7 +5986,7 @@ class TestFindAssessmentScoreChange(unittest.TestCase):
             sequence_num=0,
         )
 
-        assessment_2 = NormalizedStateAssessment.new_with_defaults(
+        assessment_2 = NormalizedStateAssessment(
             state_code=self.state_code.value,
             external_id="a2",
             assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
@@ -6052,7 +6022,7 @@ class TestFindAssessmentScoreChange(unittest.TestCase):
     def test_find_assessment_score_change_first_reliable_assessment_is_first_assessment(
         self,
     ) -> None:
-        assessment_1 = NormalizedStateAssessment.new_with_defaults(
+        assessment_1 = NormalizedStateAssessment(
             state_code=self.state_code.value,
             external_id="a1",
             assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
@@ -6062,7 +6032,7 @@ class TestFindAssessmentScoreChange(unittest.TestCase):
             sequence_num=0,
         )
 
-        assessment_2 = NormalizedStateAssessment.new_with_defaults(
+        assessment_2 = NormalizedStateAssessment(
             state_code=self.state_code.value,
             external_id="a2",
             assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
@@ -6103,7 +6073,7 @@ class TestFindAssessmentScoreChange(unittest.TestCase):
         )
 
     def test_find_assessment_score_change_different_type(self) -> None:
-        assessment_1 = NormalizedStateAssessment.new_with_defaults(
+        assessment_1 = NormalizedStateAssessment(
             state_code=self.state_code.value,
             external_id="a1",
             assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
@@ -6113,7 +6083,7 @@ class TestFindAssessmentScoreChange(unittest.TestCase):
             sequence_num=0,
         )
 
-        assessment_2 = NormalizedStateAssessment.new_with_defaults(
+        assessment_2 = NormalizedStateAssessment(
             state_code=self.state_code.value,
             external_id="a2",
             assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
@@ -6123,7 +6093,7 @@ class TestFindAssessmentScoreChange(unittest.TestCase):
             sequence_num=1,
         )
 
-        assessment_3 = NormalizedStateAssessment.new_with_defaults(
+        assessment_3 = NormalizedStateAssessment(
             state_code=self.state_code.value,
             external_id="a3",
             assessment_type=StateAssessmentType.LSIR,
@@ -6157,7 +6127,7 @@ class TestFindAssessmentScoreChange(unittest.TestCase):
         self.assertEqual(end_assessment_score_bucket, DEFAULT_ASSESSMENT_SCORE_BUCKET)
 
     def test_find_assessment_score_change_same_date(self) -> None:
-        assessment_1 = NormalizedStateAssessment.new_with_defaults(
+        assessment_1 = NormalizedStateAssessment(
             state_code=self.state_code.value,
             external_id="a1",
             assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
@@ -6167,7 +6137,7 @@ class TestFindAssessmentScoreChange(unittest.TestCase):
             sequence_num=0,
         )
 
-        assessment_2 = NormalizedStateAssessment.new_with_defaults(
+        assessment_2 = NormalizedStateAssessment(
             state_code=self.state_code.value,
             external_id="a2",
             assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
@@ -6177,7 +6147,7 @@ class TestFindAssessmentScoreChange(unittest.TestCase):
             sequence_num=1,
         )
 
-        assessment_3 = NormalizedStateAssessment.new_with_defaults(
+        assessment_3 = NormalizedStateAssessment(
             state_code=self.state_code.value,
             external_id="a3",
             assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
@@ -6235,7 +6205,7 @@ class TestFindAssessmentScoreChange(unittest.TestCase):
         self.assertEqual(end_assessment_score_bucket, DEFAULT_ASSESSMENT_SCORE_BUCKET)
 
     def test_find_assessment_score_change_outside_boundary(self) -> None:
-        assessment_1 = NormalizedStateAssessment.new_with_defaults(
+        assessment_1 = NormalizedStateAssessment(
             state_code=self.state_code.value,
             external_id="a1",
             assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
@@ -6245,7 +6215,7 @@ class TestFindAssessmentScoreChange(unittest.TestCase):
             sequence_num=0,
         )
 
-        assessment_2 = NormalizedStateAssessment.new_with_defaults(
+        assessment_2 = NormalizedStateAssessment(
             state_code=self.state_code.value,
             external_id="a2",
             assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
@@ -6255,7 +6225,7 @@ class TestFindAssessmentScoreChange(unittest.TestCase):
             sequence_num=1,
         )
 
-        assessment_3 = NormalizedStateAssessment.new_with_defaults(
+        assessment_3 = NormalizedStateAssessment(
             state_code=self.state_code.value,
             external_id="a3",
             assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,

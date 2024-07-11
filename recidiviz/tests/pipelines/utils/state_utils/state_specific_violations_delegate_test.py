@@ -43,37 +43,31 @@ class TestDefaultViolationHistoryWindowPreCriticalDate(unittest.TestCase):
     ) -> None:
         state_code = "US_XX"
 
-        supervision_violation_response_1 = (
-            NormalizedStateSupervisionViolationResponse.new_with_defaults(
-                sequence_num=0,
-                state_code=state_code,
-                supervision_violation_response_id=123,
-                external_id="svr1",
-                response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
-                response_date=date(2008, 12, 7),
-            )
+        supervision_violation_response_1 = NormalizedStateSupervisionViolationResponse(
+            sequence_num=0,
+            state_code=state_code,
+            supervision_violation_response_id=123,
+            external_id="svr1",
+            response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
+            response_date=date(2008, 12, 7),
         )
 
-        supervision_violation_response_2 = (
-            NormalizedStateSupervisionViolationResponse.new_with_defaults(
-                sequence_num=0,
-                supervision_violation_response_id=234,
-                external_id="svr2",
-                response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
-                state_code=state_code,
-                response_date=date(2009, 11, 13),
-            )
+        supervision_violation_response_2 = NormalizedStateSupervisionViolationResponse(
+            sequence_num=0,
+            supervision_violation_response_id=234,
+            external_id="svr2",
+            response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
+            state_code=state_code,
+            response_date=date(2009, 11, 13),
         )
 
-        supervision_violation_response_3 = (
-            NormalizedStateSupervisionViolationResponse.new_with_defaults(
-                sequence_num=0,
-                state_code=state_code,
-                supervision_violation_response_id=345,
-                external_id="svr3",
-                response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
-                response_date=date(2009, 12, 1),
-            )
+        supervision_violation_response_3 = NormalizedStateSupervisionViolationResponse(
+            sequence_num=0,
+            state_code=state_code,
+            supervision_violation_response_id=345,
+            external_id="svr3",
+            response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
+            response_date=date(2009, 12, 1),
         )
 
         violation_window = (
@@ -100,38 +94,32 @@ class TestDefaultViolationHistoryWindowPreCriticalDate(unittest.TestCase):
     ) -> None:
         state_code = "US_XX"
 
-        supervision_violation_response_1 = (
-            NormalizedStateSupervisionViolationResponse.new_with_defaults(
-                sequence_num=0,
-                state_code=state_code,
-                supervision_violation_response_id=123,
-                external_id="svr1",
-                response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
-                response_date=date(2008, 12, 7),
-            )
+        supervision_violation_response_1 = NormalizedStateSupervisionViolationResponse(
+            sequence_num=0,
+            state_code=state_code,
+            supervision_violation_response_id=123,
+            external_id="svr1",
+            response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
+            response_date=date(2008, 12, 7),
         )
 
-        supervision_violation_response_2 = (
-            NormalizedStateSupervisionViolationResponse.new_with_defaults(
-                sequence_num=1,
-                supervision_violation_response_id=234,
-                external_id="svr2",
-                response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
-                state_code=state_code,
-                response_date=date(2009, 11, 13),
-            )
+        supervision_violation_response_2 = NormalizedStateSupervisionViolationResponse(
+            sequence_num=1,
+            supervision_violation_response_id=234,
+            external_id="svr2",
+            response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
+            state_code=state_code,
+            response_date=date(2009, 11, 13),
         )
 
         # This is after the critical_date
-        supervision_violation_response_3 = (
-            NormalizedStateSupervisionViolationResponse.new_with_defaults(
-                sequence_num=2,
-                state_code=state_code,
-                supervision_violation_response_id=345,
-                external_id="svr3",
-                response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
-                response_date=date(2012, 12, 1),
-            )
+        supervision_violation_response_3 = NormalizedStateSupervisionViolationResponse(
+            sequence_num=2,
+            state_code=state_code,
+            supervision_violation_response_id=345,
+            external_id="svr3",
+            response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
+            response_date=date(2012, 12, 1),
         )
 
         violation_window = (

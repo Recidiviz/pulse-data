@@ -46,7 +46,7 @@ class TestUsCoCommitmentFromSupervisionDelegate(unittest.TestCase):
     def test_us_co_commitment_supervision_type(self) -> None:
         """Tests that incarceration periods beginning with REVOCATION show coming from
         superivison type of PAROLE."""
-        ip = NormalizedStateIncarcerationPeriod.new_with_defaults(
+        ip = NormalizedStateIncarcerationPeriod(
             state_code="US_CO",
             incarceration_period_id=111,
             external_id="ip1",
@@ -68,7 +68,7 @@ class TestUsCoCommitmentFromSupervisionDelegate(unittest.TestCase):
     def test_us_co_commitment_supervision_type_not_revocation(self) -> None:
         """Tests that incarceration periods beginning with something other than REVOCATION do not show up as coming from
         superivison type of PAROLE."""
-        ip = NormalizedStateIncarcerationPeriod.new_with_defaults(
+        ip = NormalizedStateIncarcerationPeriod(
             sequence_num=0,
             state_code="US_CO",
             incarceration_period_id=111,

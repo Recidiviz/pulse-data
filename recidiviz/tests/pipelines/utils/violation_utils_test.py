@@ -54,15 +54,15 @@ class TestIdentifyMostSevereViolationType(unittest.TestCase):
     """Tests code that identifies the most severe violation type."""
 
     def test_identify_most_severe_violation_simple(self) -> None:
-        violation = NormalizedStateSupervisionViolation.new_with_defaults(
+        violation = NormalizedStateSupervisionViolation(
             state_code="US_XX",
             external_id="sv1",
             supervision_violation_types=[
-                NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
+                NormalizedStateSupervisionViolationTypeEntry(
                     state_code="US_XX",
                     violation_type=StateSupervisionViolationType.TECHNICAL,
                 ),
-                NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
+                NormalizedStateSupervisionViolationTypeEntry(
                     state_code="US_XX",
                     violation_type=StateSupervisionViolationType.FELONY,
                 ),
@@ -76,48 +76,48 @@ class TestIdentifyMostSevereViolationType(unittest.TestCase):
         self.assertEqual(most_severe_violation, violation)
 
     def test_identify_most_severe_violation_multiple(self) -> None:
-        violation_1 = NormalizedStateSupervisionViolation.new_with_defaults(
+        violation_1 = NormalizedStateSupervisionViolation(
             supervision_violation_id=123455,
             external_id="sv1",
             state_code="US_XX",
             supervision_violation_types=[
-                NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
+                NormalizedStateSupervisionViolationTypeEntry(
                     state_code="US_XX",
                     violation_type=StateSupervisionViolationType.TECHNICAL,
                 ),
             ],
         )
 
-        violation_2 = NormalizedStateSupervisionViolation.new_with_defaults(
+        violation_2 = NormalizedStateSupervisionViolation(
             supervision_violation_id=123456,
             external_id="sv2",
             state_code="US_XX",
             supervision_violation_types=[
-                NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
+                NormalizedStateSupervisionViolationTypeEntry(
                     state_code="US_XX",
                     violation_type=StateSupervisionViolationType.TECHNICAL,
                 ),
-                NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
+                NormalizedStateSupervisionViolationTypeEntry(
                     state_code="US_XX",
                     violation_type=StateSupervisionViolationType.LAW,
                 ),
-                NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
+                NormalizedStateSupervisionViolationTypeEntry(
                     state_code="US_XX",
                     violation_type=StateSupervisionViolationType.ABSCONDED,
                 ),
             ],
         )
 
-        violation_3 = NormalizedStateSupervisionViolation.new_with_defaults(
+        violation_3 = NormalizedStateSupervisionViolation(
             supervision_violation_id=123457,
             external_id="sv3",
             state_code="US_XX",
             supervision_violation_types=[
-                NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
+                NormalizedStateSupervisionViolationTypeEntry(
                     state_code="US_XX",
                     violation_type=StateSupervisionViolationType.TECHNICAL,
                 ),
-                NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
+                NormalizedStateSupervisionViolationTypeEntry(
                     state_code="US_XX",
                     violation_type=StateSupervisionViolationType.MISDEMEANOR,
                 ),
@@ -131,40 +131,40 @@ class TestIdentifyMostSevereViolationType(unittest.TestCase):
         self.assertEqual(most_severe_violation, violation_3)
 
     def test_identify_most_severe_violation_first(self) -> None:
-        violation_1 = NormalizedStateSupervisionViolation.new_with_defaults(
+        violation_1 = NormalizedStateSupervisionViolation(
             supervision_violation_id=123455,
             external_id="sv1",
             state_code="US_XX",
             supervision_violation_types=[
-                NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
+                NormalizedStateSupervisionViolationTypeEntry(
                     state_code="US_XX",
                     violation_type=StateSupervisionViolationType.FELONY,
                 ),
             ],
         )
 
-        violation_2 = NormalizedStateSupervisionViolation.new_with_defaults(
+        violation_2 = NormalizedStateSupervisionViolation(
             supervision_violation_id=123456,
             external_id="sv2",
             state_code="US_XX",
             supervision_violation_types=[
-                NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
+                NormalizedStateSupervisionViolationTypeEntry(
                     state_code="US_XX",
                     violation_type=StateSupervisionViolationType.ESCAPED,
                 ),
-                NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
+                NormalizedStateSupervisionViolationTypeEntry(
                     state_code="US_XX",
                     violation_type=StateSupervisionViolationType.LAW,
                 ),
             ],
         )
 
-        violation_3 = NormalizedStateSupervisionViolation.new_with_defaults(
+        violation_3 = NormalizedStateSupervisionViolation(
             supervision_violation_id=123457,
             external_id="sv3",
             state_code="US_XX",
             supervision_violation_types=[
-                NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
+                NormalizedStateSupervisionViolationTypeEntry(
                     state_code="US_XX",
                     violation_type=StateSupervisionViolationType.MISDEMEANOR,
                 ),
@@ -178,43 +178,43 @@ class TestIdentifyMostSevereViolationType(unittest.TestCase):
         self.assertEqual(most_severe_violation, violation_1)
 
     def test_identify_most_severe_violation_most_recent(self) -> None:
-        violation_1 = NormalizedStateSupervisionViolation.new_with_defaults(
+        violation_1 = NormalizedStateSupervisionViolation(
             supervision_violation_id=123455,
             external_id="sv1",
             state_code="US_XX",
             violation_date=datetime.date(2010, 1, 1),
             supervision_violation_types=[
-                NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
+                NormalizedStateSupervisionViolationTypeEntry(
                     state_code="US_XX",
                     violation_type=StateSupervisionViolationType.FELONY,
                 ),
             ],
         )
 
-        violation_2 = NormalizedStateSupervisionViolation.new_with_defaults(
+        violation_2 = NormalizedStateSupervisionViolation(
             supervision_violation_id=123456,
             external_id="sv2",
             state_code="US_XX",
             violation_date=datetime.date(2012, 6, 6),
             supervision_violation_types=[
-                NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
+                NormalizedStateSupervisionViolationTypeEntry(
                     state_code="US_XX",
                     violation_type=StateSupervisionViolationType.FELONY,
                 ),
-                NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
+                NormalizedStateSupervisionViolationTypeEntry(
                     state_code="US_XX",
                     violation_type=StateSupervisionViolationType.LAW,
                 ),
             ],
         )
 
-        violation_3 = NormalizedStateSupervisionViolation.new_with_defaults(
+        violation_3 = NormalizedStateSupervisionViolation(
             supervision_violation_id=123457,
             external_id="sv3",
             state_code="US_XX",
             violation_date=datetime.date(2012, 5, 20),
             supervision_violation_types=[
-                NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
+                NormalizedStateSupervisionViolationTypeEntry(
                     state_code="US_XX",
                     violation_type=StateSupervisionViolationType.MISDEMEANOR,
                 ),
@@ -228,43 +228,43 @@ class TestIdentifyMostSevereViolationType(unittest.TestCase):
         self.assertEqual(most_severe_violation, violation_2)
 
     def test_identify_most_severe_violation_most_recent_ensure_sorted(self) -> None:
-        violation_1 = NormalizedStateSupervisionViolation.new_with_defaults(
+        violation_1 = NormalizedStateSupervisionViolation(
             supervision_violation_id=123456,
             external_id="sv2",
             state_code="US_XX",
             violation_date=datetime.date(2012, 6, 6),
             supervision_violation_types=[
-                NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
+                NormalizedStateSupervisionViolationTypeEntry(
                     state_code="US_XX",
                     violation_type=StateSupervisionViolationType.FELONY,
                 ),
-                NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
+                NormalizedStateSupervisionViolationTypeEntry(
                     state_code="US_XX",
                     violation_type=StateSupervisionViolationType.LAW,
                 ),
             ],
         )
 
-        violation_2 = NormalizedStateSupervisionViolation.new_with_defaults(
+        violation_2 = NormalizedStateSupervisionViolation(
             supervision_violation_id=123457,
             external_id="sv3",
             state_code="US_XX",
             violation_date=datetime.date(2012, 5, 20),
             supervision_violation_types=[
-                NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
+                NormalizedStateSupervisionViolationTypeEntry(
                     state_code="US_XX",
                     violation_type=StateSupervisionViolationType.MISDEMEANOR,
                 ),
             ],
         )
 
-        violation_3 = NormalizedStateSupervisionViolation.new_with_defaults(
+        violation_3 = NormalizedStateSupervisionViolation(
             supervision_violation_id=123455,
             external_id="sv1",
             state_code="US_XX",
             violation_date=datetime.date(2010, 1, 1),
             supervision_violation_types=[
-                NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
+                NormalizedStateSupervisionViolationTypeEntry(
                     state_code="US_XX",
                     violation_type=StateSupervisionViolationType.FELONY,
                 ),
@@ -278,43 +278,43 @@ class TestIdentifyMostSevereViolationType(unittest.TestCase):
         self.assertEqual(most_severe_violation, violation_1)
 
     def test_identify_most_severe_violation_most_recent_none(self) -> None:
-        violation_1 = NormalizedStateSupervisionViolation.new_with_defaults(
+        violation_1 = NormalizedStateSupervisionViolation(
             supervision_violation_id=123456,
             external_id="sv2",
             state_code="US_XX",
             violation_date=None,
             supervision_violation_types=[
-                NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
+                NormalizedStateSupervisionViolationTypeEntry(
                     state_code="US_XX",
                     violation_type=StateSupervisionViolationType.FELONY,
                 ),
-                NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
+                NormalizedStateSupervisionViolationTypeEntry(
                     state_code="US_XX",
                     violation_type=StateSupervisionViolationType.LAW,
                 ),
             ],
         )
 
-        violation_2 = NormalizedStateSupervisionViolation.new_with_defaults(
+        violation_2 = NormalizedStateSupervisionViolation(
             supervision_violation_id=123457,
             external_id="sv3",
             state_code="US_XX",
             violation_date=datetime.date(2012, 5, 20),
             supervision_violation_types=[
-                NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
+                NormalizedStateSupervisionViolationTypeEntry(
                     state_code="US_XX",
                     violation_type=StateSupervisionViolationType.MISDEMEANOR,
                 ),
             ],
         )
 
-        violation_3 = NormalizedStateSupervisionViolation.new_with_defaults(
+        violation_3 = NormalizedStateSupervisionViolation(
             supervision_violation_id=123455,
             external_id="sv1",
             state_code="US_XX",
             violation_date=datetime.date(2010, 1, 1),
             supervision_violation_types=[
-                NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
+                NormalizedStateSupervisionViolationTypeEntry(
                     state_code="US_XX",
                     violation_type=StateSupervisionViolationType.FELONY,
                 ),
@@ -328,7 +328,7 @@ class TestIdentifyMostSevereViolationType(unittest.TestCase):
         self.assertEqual(most_severe_violation, violation_3)
 
     def test_identify_most_severe_violation_empty(self) -> None:
-        violation_1 = NormalizedStateSupervisionViolation.new_with_defaults(
+        violation_1 = NormalizedStateSupervisionViolation(
             supervision_violation_id=123455,
             external_id="sv1",
             state_code="US_XX",
@@ -336,30 +336,30 @@ class TestIdentifyMostSevereViolationType(unittest.TestCase):
             supervision_violation_types=[],
         )
 
-        violation_2 = NormalizedStateSupervisionViolation.new_with_defaults(
+        violation_2 = NormalizedStateSupervisionViolation(
             supervision_violation_id=123456,
             external_id="sv2",
             state_code="US_XX",
             violation_date=datetime.date(2012, 6, 6),
             supervision_violation_types=[
-                NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
+                NormalizedStateSupervisionViolationTypeEntry(
                     state_code="US_XX",
                     violation_type=StateSupervisionViolationType.FELONY,
                 ),
-                NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
+                NormalizedStateSupervisionViolationTypeEntry(
                     state_code="US_XX",
                     violation_type=StateSupervisionViolationType.LAW,
                 ),
             ],
         )
 
-        violation_3 = NormalizedStateSupervisionViolation.new_with_defaults(
+        violation_3 = NormalizedStateSupervisionViolation(
             supervision_violation_id=123457,
             external_id="sv3",
             state_code="US_XX",
             violation_date=datetime.date(2012, 5, 20),
             supervision_violation_types=[
-                NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
+                NormalizedStateSupervisionViolationTypeEntry(
                     state_code="US_XX",
                     violation_type=StateSupervisionViolationType.MISDEMEANOR,
                 ),
@@ -373,7 +373,7 @@ class TestIdentifyMostSevereViolationType(unittest.TestCase):
         self.assertEqual(most_severe_violation, violation_2)
 
     def test_identify_most_severe_violation_all_empty(self) -> None:
-        violation_1 = NormalizedStateSupervisionViolation.new_with_defaults(
+        violation_1 = NormalizedStateSupervisionViolation(
             supervision_violation_id=123455,
             external_id="sv1",
             state_code="US_XX",
@@ -381,7 +381,7 @@ class TestIdentifyMostSevereViolationType(unittest.TestCase):
             supervision_violation_types=[],
         )
 
-        violation_2 = NormalizedStateSupervisionViolation.new_with_defaults(
+        violation_2 = NormalizedStateSupervisionViolation(
             supervision_violation_id=123456,
             external_id="sv2",
             state_code="US_XX",
@@ -389,7 +389,7 @@ class TestIdentifyMostSevereViolationType(unittest.TestCase):
             supervision_violation_types=[],
         )
 
-        violation_3 = NormalizedStateSupervisionViolation.new_with_defaults(
+        violation_3 = NormalizedStateSupervisionViolation(
             supervision_violation_id=123457,
             external_id="sv3",
             state_code="US_XX",
@@ -403,7 +403,7 @@ class TestIdentifyMostSevereViolationType(unittest.TestCase):
         self.assertIsNone(most_severe_violation)
 
     def test_identify_most_severe_violation_single_empty(self) -> None:
-        violation_1 = NormalizedStateSupervisionViolation.new_with_defaults(
+        violation_1 = NormalizedStateSupervisionViolation(
             supervision_violation_id=123455,
             external_id="sv1",
             state_code="US_XX",
@@ -418,43 +418,43 @@ class TestIdentifyMostSevereViolationType(unittest.TestCase):
         self.assertIsNone(most_severe_violation)
 
     def test_identify_most_severe_violation_fallback(self) -> None:
-        violation_1 = NormalizedStateSupervisionViolation.new_with_defaults(
+        violation_1 = NormalizedStateSupervisionViolation(
             supervision_violation_id=123456,
             external_id="sv2",
             state_code="US_XX",
             violation_date=None,
             supervision_violation_types=[
-                NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
+                NormalizedStateSupervisionViolationTypeEntry(
                     state_code="US_XX",
                     violation_type=StateSupervisionViolationType.FELONY,
                 ),
-                NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
+                NormalizedStateSupervisionViolationTypeEntry(
                     state_code="US_XX",
                     violation_type=StateSupervisionViolationType.LAW,
                 ),
             ],
         )
 
-        violation_2 = NormalizedStateSupervisionViolation.new_with_defaults(
+        violation_2 = NormalizedStateSupervisionViolation(
             supervision_violation_id=123457,
             external_id="sv3",
             state_code="US_XX",
             violation_date=None,
             supervision_violation_types=[
-                NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
+                NormalizedStateSupervisionViolationTypeEntry(
                     state_code="US_XX",
                     violation_type=StateSupervisionViolationType.FELONY,
                 ),
             ],
         )
 
-        violation_3 = NormalizedStateSupervisionViolation.new_with_defaults(
+        violation_3 = NormalizedStateSupervisionViolation(
             supervision_violation_id=123455,
             external_id="sv1",
             state_code="US_XX",
             violation_date=None,
             supervision_violation_types=[
-                NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
+                NormalizedStateSupervisionViolationTypeEntry(
                     state_code="US_XX",
                     violation_type=StateSupervisionViolationType.FELONY,
                 ),
@@ -472,28 +472,28 @@ class TestViolationHistoryIdArray(unittest.TestCase):
     """Tests code that identifies the list of violation ids in the violation history."""
 
     def test_identify_violation_history_id_array_simple(self) -> None:
-        violation_1 = NormalizedStateSupervisionViolation.new_with_defaults(
+        violation_1 = NormalizedStateSupervisionViolation(
             state_code="US_XX",
             external_id="sv1",
             supervision_violation_id=1000,
             supervision_violation_types=[
-                NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
+                NormalizedStateSupervisionViolationTypeEntry(
                     state_code="US_XX",
                     violation_type=StateSupervisionViolationType.TECHNICAL,
                 ),
-                NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
+                NormalizedStateSupervisionViolationTypeEntry(
                     state_code="US_XX",
                     violation_type=StateSupervisionViolationType.FELONY,
                 ),
             ],
         )
 
-        violation_2 = NormalizedStateSupervisionViolation.new_with_defaults(
+        violation_2 = NormalizedStateSupervisionViolation(
             state_code="US_XX",
             external_id="sv2",
             supervision_violation_id=2000,
             supervision_violation_types=[
-                NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
+                NormalizedStateSupervisionViolationTypeEntry(
                     state_code="US_XX",
                     violation_type=StateSupervisionViolationType.TECHNICAL,
                 ),
@@ -507,12 +507,12 @@ class TestViolationHistoryIdArray(unittest.TestCase):
         self.assertEqual(expected_violation_id_array, violation_id_array)
 
     def test_identify_violation_history_id_array_single(self) -> None:
-        violation_1 = NormalizedStateSupervisionViolation.new_with_defaults(
+        violation_1 = NormalizedStateSupervisionViolation(
             state_code="US_XX",
             external_id="sv1",
             supervision_violation_id=1000,
             supervision_violation_types=[
-                NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
+                NormalizedStateSupervisionViolationTypeEntry(
                     state_code="US_XX",
                     violation_type=StateSupervisionViolationType.FELONY,
                 ),
@@ -531,19 +531,19 @@ class TestViolationHistoryIdArray(unittest.TestCase):
         self.assertEqual(expected_violation_id_array, violation_id_array)
 
     def test_identify_violation_history_id_array_some_none(self) -> None:
-        violation_1 = NormalizedStateSupervisionViolation.new_with_defaults(
+        violation_1 = NormalizedStateSupervisionViolation(
             state_code="US_XX",
             external_id="sv1",
             supervision_violation_id=4321,
             supervision_violation_types=[
-                NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
+                NormalizedStateSupervisionViolationTypeEntry(
                     state_code="US_XX",
                     violation_type=StateSupervisionViolationType.FELONY,
                 ),
             ],
         )
 
-        violation_2 = NormalizedStateSupervisionViolation.new_with_defaults(
+        violation_2 = NormalizedStateSupervisionViolation(
             state_code="US_XX",
             external_id="sv2",
             supervision_violation_id=1234,
@@ -557,40 +557,40 @@ class TestViolationHistoryIdArray(unittest.TestCase):
         self.assertEqual(expected_violation_id_array, violation_id_array)
 
     def test_identify_violation_history_id_array_multiple(self) -> None:
-        violation_1 = NormalizedStateSupervisionViolation.new_with_defaults(
+        violation_1 = NormalizedStateSupervisionViolation(
             state_code="US_XX",
             supervision_violation_id=3000,
             external_id="sv1",
             supervision_violation_types=[
-                NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
+                NormalizedStateSupervisionViolationTypeEntry(
                     state_code="US_XX",
                     violation_type=StateSupervisionViolationType.TECHNICAL,
                 ),
-                NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
+                NormalizedStateSupervisionViolationTypeEntry(
                     state_code="US_XX",
                     violation_type=StateSupervisionViolationType.FELONY,
                 ),
             ],
         )
 
-        violation_2 = NormalizedStateSupervisionViolation.new_with_defaults(
+        violation_2 = NormalizedStateSupervisionViolation(
             state_code="US_XX",
             supervision_violation_id=2000,
             external_id="sv2",
             supervision_violation_types=[
-                NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
+                NormalizedStateSupervisionViolationTypeEntry(
                     state_code="US_XX",
                     violation_type=StateSupervisionViolationType.TECHNICAL,
                 ),
             ],
         )
 
-        violation_3 = NormalizedStateSupervisionViolation.new_with_defaults(
+        violation_3 = NormalizedStateSupervisionViolation(
             state_code="US_XX",
             supervision_violation_id=1000,
             external_id="sv3",
             supervision_violation_types=[
-                NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
+                NormalizedStateSupervisionViolationTypeEntry(
                     state_code="US_XX",
                     violation_type=StateSupervisionViolationType.MISDEMEANOR,
                 ),
@@ -609,15 +609,15 @@ class TestGetViolationTypeFrequencyCounter(unittest.TestCase):
 
     def test_get_violation_type_frequency_counter(self) -> None:
         violations = [
-            NormalizedStateSupervisionViolation.new_with_defaults(
+            NormalizedStateSupervisionViolation(
                 state_code="US_XX",
                 external_id="sv1",
                 supervision_violation_types=[
-                    NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
+                    NormalizedStateSupervisionViolationTypeEntry(
                         state_code="US_XX",
                         violation_type=StateSupervisionViolationType.ABSCONDED,
                     ),
-                    NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
+                    NormalizedStateSupervisionViolationTypeEntry(
                         state_code="US_XX",
                         violation_type=StateSupervisionViolationType.FELONY,
                     ),
@@ -635,7 +635,7 @@ class TestGetViolationTypeFrequencyCounter(unittest.TestCase):
 
     def test_get_violation_type_frequency_counter_no_types(self) -> None:
         violations = [
-            NormalizedStateSupervisionViolation.new_with_defaults(
+            NormalizedStateSupervisionViolation(
                 state_code="US_XX",
                 external_id="sv1",
             )
@@ -651,21 +651,21 @@ class TestGetViolationTypeFrequencyCounter(unittest.TestCase):
 
     def test_get_violation_type_frequency_counter_us_mo(self) -> None:
         violations = [
-            NormalizedStateSupervisionViolation.new_with_defaults(
+            NormalizedStateSupervisionViolation(
                 state_code="US_MO",
                 external_id="sv1",
                 supervision_violation_types=[
-                    NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
+                    NormalizedStateSupervisionViolationTypeEntry(
                         state_code="US_XX",
                         violation_type=StateSupervisionViolationType.ABSCONDED,
                     ),
-                    NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
+                    NormalizedStateSupervisionViolationTypeEntry(
                         state_code="US_XX",
                         violation_type=StateSupervisionViolationType.FELONY,
                     ),
                 ],
                 supervision_violated_conditions=[
-                    NormalizedStateSupervisionViolatedConditionEntry.new_with_defaults(
+                    NormalizedStateSupervisionViolatedConditionEntry(
                         state_code="US_XX",
                         condition=StateSupervisionViolatedConditionType.INTERNAL_UNKNOWN,
                         condition_raw_text="DRG",
@@ -687,17 +687,17 @@ class TestGetViolationTypeFrequencyCounter(unittest.TestCase):
 
     def test_get_violation_type_frequency_counter_us_mo_technical_only(self) -> None:
         violations = [
-            NormalizedStateSupervisionViolation.new_with_defaults(
+            NormalizedStateSupervisionViolation(
                 state_code="US_MO",
                 external_id="sv1",
                 supervision_violation_types=[
-                    NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
+                    NormalizedStateSupervisionViolationTypeEntry(
                         state_code="US_XX",
                         violation_type=StateSupervisionViolationType.TECHNICAL,
                     )
                 ],
                 supervision_violated_conditions=[
-                    NormalizedStateSupervisionViolatedConditionEntry.new_with_defaults(
+                    NormalizedStateSupervisionViolatedConditionEntry(
                         state_code="US_XX",
                         condition=StateSupervisionViolatedConditionType.INTERNAL_UNKNOWN,
                         condition_raw_text="DRG",
@@ -718,11 +718,11 @@ class TestGetViolationTypeFrequencyCounter(unittest.TestCase):
         self,
     ) -> None:
         violations = [
-            NormalizedStateSupervisionViolation.new_with_defaults(
+            NormalizedStateSupervisionViolation(
                 state_code="US_MO",
                 external_id="sv1",
                 supervision_violation_types=[
-                    NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
+                    NormalizedStateSupervisionViolationTypeEntry(
                         state_code="US_XX",
                         violation_type=StateSupervisionViolationType.TECHNICAL,
                     )
@@ -745,47 +745,47 @@ class TestGetViolationTypeFrequencyCounter(unittest.TestCase):
         self,
     ) -> None:
         violations = [
-            NormalizedStateSupervisionViolation.new_with_defaults(
+            NormalizedStateSupervisionViolation(
                 state_code="US_MO",
                 external_id="sv1",
                 supervision_violation_types=[
-                    NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
+                    NormalizedStateSupervisionViolationTypeEntry(
                         state_code="US_XX",
                         violation_type=StateSupervisionViolationType.ABSCONDED,
                     ),
-                    NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
+                    NormalizedStateSupervisionViolationTypeEntry(
                         state_code="US_XX",
                         violation_type=StateSupervisionViolationType.FELONY,
                     ),
                 ],
                 supervision_violated_conditions=[
-                    NormalizedStateSupervisionViolatedConditionEntry.new_with_defaults(
+                    NormalizedStateSupervisionViolatedConditionEntry(
                         state_code="US_XX",
                         condition=StateSupervisionViolatedConditionType.INTERNAL_UNKNOWN,
                         condition_raw_text="WEA",
                     )
                 ],
             ),
-            NormalizedStateSupervisionViolation.new_with_defaults(
+            NormalizedStateSupervisionViolation(
                 state_code="US_MO",
                 external_id="sv2",
                 supervision_violation_types=[
-                    NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
+                    NormalizedStateSupervisionViolationTypeEntry(
                         state_code="US_XX",
                         violation_type=StateSupervisionViolationType.MISDEMEANOR,
                     ),
-                    NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
+                    NormalizedStateSupervisionViolationTypeEntry(
                         state_code="US_XX",
                         violation_type=StateSupervisionViolationType.TECHNICAL,
                     ),
                 ],
                 supervision_violated_conditions=[
-                    NormalizedStateSupervisionViolatedConditionEntry.new_with_defaults(
+                    NormalizedStateSupervisionViolatedConditionEntry(
                         state_code="US_XX",
                         condition=StateSupervisionViolatedConditionType.INTERNAL_UNKNOWN,
                         condition_raw_text="DRG",
                     ),
-                    NormalizedStateSupervisionViolatedConditionEntry.new_with_defaults(
+                    NormalizedStateSupervisionViolatedConditionEntry(
                         state_code="US_XX",
                         condition=StateSupervisionViolatedConditionType.INTERNAL_UNKNOWN,
                         condition_raw_text="EMP",
@@ -807,34 +807,34 @@ class TestGetViolationTypeFrequencyCounter(unittest.TestCase):
 
     def test_get_violation_type_frequency_counter_us_pa(self) -> None:
         violations = [
-            NormalizedStateSupervisionViolation.new_with_defaults(
+            NormalizedStateSupervisionViolation(
                 state_code="US_PA",
                 external_id="sv1",
                 supervision_violation_types=[
-                    NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
+                    NormalizedStateSupervisionViolationTypeEntry(
                         state_code="US_XX",
                         violation_type=StateSupervisionViolationType.ABSCONDED,
                     ),
-                    NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
+                    NormalizedStateSupervisionViolationTypeEntry(
                         state_code="US_XX",
                         violation_type=StateSupervisionViolationType.FELONY,
                     ),
-                    NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
+                    NormalizedStateSupervisionViolationTypeEntry(
                         state_code="US_XX",
                         violation_type=StateSupervisionViolationType.TECHNICAL,
                         violation_type_raw_text="L05",
                     ),
                 ],
             ),
-            NormalizedStateSupervisionViolation.new_with_defaults(
+            NormalizedStateSupervisionViolation(
                 state_code="US_PA",
                 external_id="sv2",
                 supervision_violation_types=[
-                    NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
+                    NormalizedStateSupervisionViolationTypeEntry(
                         state_code="US_XX",
                         violation_type=StateSupervisionViolationType.MISDEMEANOR,
                     ),
-                    NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
+                    NormalizedStateSupervisionViolationTypeEntry(
                         state_code="US_XX",
                         violation_type=StateSupervisionViolationType.TECHNICAL,
                         violation_type_raw_text="H12",
@@ -859,28 +859,28 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
     """Tests the get_violation_and_response_history function."""
 
     def test_get_violation_and_response_history(self) -> None:
-        supervision_violation = NormalizedStateSupervisionViolation.new_with_defaults(
+        supervision_violation = NormalizedStateSupervisionViolation(
             supervision_violation_id=123455,
             external_id="sv1",
             state_code="US_XX",
             violation_date=datetime.date(2009, 1, 3),
             supervision_violation_types=[
-                NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
+                NormalizedStateSupervisionViolationTypeEntry(
                     state_code="US_XX",
                     violation_type=StateSupervisionViolationType.TECHNICAL,
                 ),
-                NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
+                NormalizedStateSupervisionViolationTypeEntry(
                     state_code="US_XX",
                     violation_type=StateSupervisionViolationType.FELONY,
                 ),
-                NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
+                NormalizedStateSupervisionViolationTypeEntry(
                     state_code="US_XX",
                     violation_type=StateSupervisionViolationType.ABSCONDED,
                 ),
             ],
         )
 
-        supervision_violation_response = NormalizedStateSupervisionViolationResponse.new_with_defaults(
+        supervision_violation_response = NormalizedStateSupervisionViolationResponse(
             sequence_num=0,
             supervision_violation_response_id=_DEFAULT_SSVR_ID,
             external_id="svr1",
@@ -888,11 +888,11 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
             state_code="US_XX",
             response_date=datetime.date(2009, 1, 7),
             supervision_violation_response_decisions=[
-                NormalizedStateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                NormalizedStateSupervisionViolationResponseDecisionEntry(
                     state_code="US_XX",
                     decision=StateSupervisionViolationResponseDecision.REVOCATION,
                 ),
-                NormalizedStateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                NormalizedStateSupervisionViolationResponseDecisionEntry(
                     state_code="US_XX",
                     decision=StateSupervisionViolationResponseDecision.CONTINUANCE,
                 ),
@@ -923,21 +923,21 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
         self.assertEqual(expected_output, violation_history)
 
     def test_get_violation_and_response_history_outside_lookback(self) -> None:
-        supervision_violation = NormalizedStateSupervisionViolation.new_with_defaults(
+        supervision_violation = NormalizedStateSupervisionViolation(
             supervision_violation_id=123455,
             external_id="sv1",
             state_code="US_XX",
             violation_date=datetime.date(2009, 1, 3),
             supervision_violation_types=[
-                NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
+                NormalizedStateSupervisionViolationTypeEntry(
                     state_code="US_XX",
                     violation_type=StateSupervisionViolationType.TECHNICAL,
                 ),
-                NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
+                NormalizedStateSupervisionViolationTypeEntry(
                     state_code="US_XX",
                     violation_type=StateSupervisionViolationType.FELONY,
                 ),
-                NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
+                NormalizedStateSupervisionViolationTypeEntry(
                     state_code="US_XX",
                     violation_type=StateSupervisionViolationType.ABSCONDED,
                 ),
@@ -946,7 +946,7 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
 
         # This is outside of the lookback window
         supervision_violation_response_before_look_back = (
-            NormalizedStateSupervisionViolationResponse.new_with_defaults(
+            NormalizedStateSupervisionViolationResponse(
                 sequence_num=0,
                 supervision_violation_response_id=_DEFAULT_SSVR_ID,
                 external_id="svr1",
@@ -956,7 +956,7 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
             )
         )
 
-        supervision_violation_response = NormalizedStateSupervisionViolationResponse.new_with_defaults(
+        supervision_violation_response = NormalizedStateSupervisionViolationResponse(
             sequence_num=0,
             supervision_violation_response_id=_DEFAULT_SSVR_ID,
             external_id="svr2",
@@ -964,11 +964,11 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
             state_code="US_XX",
             response_date=datetime.date(2019, 1, 20),
             supervision_violation_response_decisions=[
-                NormalizedStateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                NormalizedStateSupervisionViolationResponseDecisionEntry(
                     state_code="US_XX",
                     decision=StateSupervisionViolationResponseDecision.REVOCATION,
                 ),
-                NormalizedStateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                NormalizedStateSupervisionViolationResponseDecisionEntry(
                     state_code="US_XX",
                     decision=StateSupervisionViolationResponseDecision.CONTINUANCE,
                 ),
@@ -1004,24 +1004,24 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
         self.assertEqual(expected_output, violation_history)
 
     def test_get_violation_and_response_history_with_us_mo_subtype(self) -> None:
-        supervision_violation = NormalizedStateSupervisionViolation.new_with_defaults(
+        supervision_violation = NormalizedStateSupervisionViolation(
             supervision_violation_id=123455,
             external_id="sv1",
             state_code="US_MO",
             violation_date=datetime.date(2009, 1, 3),
             supervision_violation_types=[
-                NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
+                NormalizedStateSupervisionViolationTypeEntry(
                     state_code="US_MO",
                     violation_type=StateSupervisionViolationType.TECHNICAL,
                 ),
             ],
             supervision_violated_conditions=[
-                NormalizedStateSupervisionViolatedConditionEntry.new_with_defaults(
+                NormalizedStateSupervisionViolatedConditionEntry(
                     state_code="US_MO",
                     condition=StateSupervisionViolatedConditionType.SUBSTANCE,
                     condition_raw_text="DRG",
                 ),
-                NormalizedStateSupervisionViolatedConditionEntry.new_with_defaults(
+                NormalizedStateSupervisionViolatedConditionEntry(
                     state_code="US_MO",
                     condition=StateSupervisionViolatedConditionType.INTERNAL_UNKNOWN,
                     condition_raw_text="OTHER",
@@ -1029,7 +1029,7 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
             ],
         )
 
-        supervision_violation_response = NormalizedStateSupervisionViolationResponse.new_with_defaults(
+        supervision_violation_response = NormalizedStateSupervisionViolationResponse(
             sequence_num=0,
             supervision_violation_response_id=_DEFAULT_SSVR_ID,
             external_id="svr1",
@@ -1038,11 +1038,11 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
             state_code="US_MO",
             response_date=datetime.date(2009, 1, 7),
             supervision_violation_response_decisions=[
-                NormalizedStateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                NormalizedStateSupervisionViolationResponseDecisionEntry(
                     state_code="US_MO",
                     decision=StateSupervisionViolationResponseDecision.REVOCATION,
                 ),
-                NormalizedStateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                NormalizedStateSupervisionViolationResponseDecisionEntry(
                     state_code="US_MO",
                     decision=StateSupervisionViolationResponseDecision.CONTINUANCE,
                 ),
@@ -1075,18 +1075,18 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
     def test_get_violation_and_response_history_with_us_pa_subtype_high_technical(
         self,
     ) -> None:
-        supervision_violation = NormalizedStateSupervisionViolation.new_with_defaults(
+        supervision_violation = NormalizedStateSupervisionViolation(
             supervision_violation_id=123455,
             external_id="sv1",
             state_code="US_PA",
             violation_date=datetime.date(2009, 1, 3),
             supervision_violation_types=[
-                NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
+                NormalizedStateSupervisionViolationTypeEntry(
                     state_code="US_PA",
                     violation_type=StateSupervisionViolationType.ABSCONDED,
                     violation_type_raw_text="H09",
                 ),
-                NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
+                NormalizedStateSupervisionViolationTypeEntry(
                     state_code="US_PA",
                     violation_type=StateSupervisionViolationType.TECHNICAL,
                     violation_type_raw_text="H08",  # High Technical
@@ -1094,7 +1094,7 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
             ],
         )
 
-        supervision_violation_response = NormalizedStateSupervisionViolationResponse.new_with_defaults(
+        supervision_violation_response = NormalizedStateSupervisionViolationResponse(
             sequence_num=0,
             supervision_violation_response_id=_DEFAULT_SSVR_ID,
             external_id="svr1",
@@ -1102,11 +1102,11 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
             state_code="US_PA",
             response_date=datetime.date(2009, 1, 7),
             supervision_violation_response_decisions=[
-                NormalizedStateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                NormalizedStateSupervisionViolationResponseDecisionEntry(
                     state_code="US_PA",
                     decision=StateSupervisionViolationResponseDecision.REVOCATION,
                 ),
-                NormalizedStateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                NormalizedStateSupervisionViolationResponseDecisionEntry(
                     state_code="US_PA",
                     decision=StateSupervisionViolationResponseDecision.CONTINUANCE,
                 ),
@@ -1139,13 +1139,13 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
     def test_get_violation_and_response_history_with_us_pa_subtype_substance_use(
         self,
     ) -> None:
-        supervision_violation = NormalizedStateSupervisionViolation.new_with_defaults(
+        supervision_violation = NormalizedStateSupervisionViolation(
             supervision_violation_id=123455,
             external_id="sv1",
             state_code="US_PA",
             violation_date=datetime.date(2009, 1, 3),
             supervision_violation_types=[
-                NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
+                NormalizedStateSupervisionViolationTypeEntry(
                     state_code="US_PA",
                     violation_type=StateSupervisionViolationType.TECHNICAL,
                     violation_type_raw_text="L08",  # Substance Use
@@ -1153,7 +1153,7 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
             ],
         )
 
-        supervision_violation_response = NormalizedStateSupervisionViolationResponse.new_with_defaults(
+        supervision_violation_response = NormalizedStateSupervisionViolationResponse(
             sequence_num=0,
             supervision_violation_response_id=_DEFAULT_SSVR_ID,
             external_id="svr1",
@@ -1161,11 +1161,11 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
             state_code="US_PA",
             response_date=datetime.date(2009, 1, 7),
             supervision_violation_response_decisions=[
-                NormalizedStateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                NormalizedStateSupervisionViolationResponseDecisionEntry(
                     state_code="US_PA",
                     decision=StateSupervisionViolationResponseDecision.REVOCATION,
                 ),
-                NormalizedStateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                NormalizedStateSupervisionViolationResponseDecisionEntry(
                     state_code="US_PA",
                     decision=StateSupervisionViolationResponseDecision.CONTINUANCE,
                 ),
@@ -1198,13 +1198,13 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
     def test_get_violation_and_response_history_with_us_pa_subtype_electronic_monitoring(
         self,
     ) -> None:
-        supervision_violation = NormalizedStateSupervisionViolation.new_with_defaults(
+        supervision_violation = NormalizedStateSupervisionViolation(
             supervision_violation_id=123455,
             external_id="sv1",
             state_code="US_PA",
             violation_date=datetime.date(2009, 1, 3),
             supervision_violation_types=[
-                NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
+                NormalizedStateSupervisionViolationTypeEntry(
                     state_code="US_PA",
                     violation_type=StateSupervisionViolationType.TECHNICAL,
                     violation_type_raw_text="M16",  # Electronic Monitoring
@@ -1212,7 +1212,7 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
             ],
         )
 
-        supervision_violation_response = NormalizedStateSupervisionViolationResponse.new_with_defaults(
+        supervision_violation_response = NormalizedStateSupervisionViolationResponse(
             sequence_num=0,
             supervision_violation_response_id=_DEFAULT_SSVR_ID,
             external_id="svr1",
@@ -1220,11 +1220,11 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
             state_code="US_PA",
             response_date=datetime.date(2009, 1, 7),
             supervision_violation_response_decisions=[
-                NormalizedStateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                NormalizedStateSupervisionViolationResponseDecisionEntry(
                     state_code="US_PA",
                     decision=StateSupervisionViolationResponseDecision.REVOCATION,
                 ),
-                NormalizedStateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                NormalizedStateSupervisionViolationResponseDecisionEntry(
                     state_code="US_PA",
                     decision=StateSupervisionViolationResponseDecision.CONTINUANCE,
                 ),
@@ -1257,13 +1257,13 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
     def test_get_violation_and_response_history_with_us_pa_subtype_multiple_types(
         self,
     ) -> None:
-        supervision_violation_1 = NormalizedStateSupervisionViolation.new_with_defaults(
+        supervision_violation_1 = NormalizedStateSupervisionViolation(
             supervision_violation_id=12345,
             external_id="sv1",
             state_code="US_PA",
             violation_date=datetime.date(2009, 1, 3),
             supervision_violation_types=[
-                NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
+                NormalizedStateSupervisionViolationTypeEntry(
                     state_code="US_PA",
                     violation_type=StateSupervisionViolationType.TECHNICAL,
                     violation_type_raw_text="M05",  # MED_TECH
@@ -1271,13 +1271,13 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
             ],
         )
 
-        supervision_violation_2 = NormalizedStateSupervisionViolation.new_with_defaults(
+        supervision_violation_2 = NormalizedStateSupervisionViolation(
             supervision_violation_id=123456,
             external_id="sv2",
             state_code="US_PA",
             violation_date=datetime.date(2009, 1, 3),
             supervision_violation_types=[
-                NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
+                NormalizedStateSupervisionViolationTypeEntry(
                     state_code="US_PA",
                     violation_type=StateSupervisionViolationType.TECHNICAL,
                     violation_type_raw_text="M05",  # MED_TECH
@@ -1285,13 +1285,13 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
             ],
         )
 
-        supervision_violation_3 = NormalizedStateSupervisionViolation.new_with_defaults(
+        supervision_violation_3 = NormalizedStateSupervisionViolation(
             supervision_violation_id=1234567,
             external_id="sv3",
             state_code="US_PA",
             violation_date=datetime.date(2009, 1, 3),
             supervision_violation_types=[
-                NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
+                NormalizedStateSupervisionViolationTypeEntry(
                     state_code="US_PA",
                     violation_type=StateSupervisionViolationType.TECHNICAL,
                     violation_type_raw_text="M14",  # SUBSTANCE_ABUSE
@@ -1299,7 +1299,7 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
             ],
         )
 
-        supervision_violation_response_1 = NormalizedStateSupervisionViolationResponse.new_with_defaults(
+        supervision_violation_response_1 = NormalizedStateSupervisionViolationResponse(
             sequence_num=0,
             supervision_violation_response_id=_DEFAULT_SSVR_ID,
             external_id="svr1",
@@ -1307,11 +1307,11 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
             state_code="US_PA",
             response_date=datetime.date(2009, 1, 7),
             supervision_violation_response_decisions=[
-                NormalizedStateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                NormalizedStateSupervisionViolationResponseDecisionEntry(
                     state_code="US_PA",
                     decision=StateSupervisionViolationResponseDecision.REVOCATION,
                 ),
-                NormalizedStateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                NormalizedStateSupervisionViolationResponseDecisionEntry(
                     state_code="US_PA",
                     decision=StateSupervisionViolationResponseDecision.CONTINUANCE,
                 ),
@@ -1319,28 +1319,24 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
             supervision_violation=supervision_violation_1,
         )
 
-        supervision_violation_response_2 = (
-            NormalizedStateSupervisionViolationResponse.new_with_defaults(
-                sequence_num=0,
-                supervision_violation_response_id=1234567,
-                external_id="svr2",
-                response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
-                state_code="US_PA",
-                response_date=datetime.date(2009, 1, 6),
-                supervision_violation=supervision_violation_2,
-            )
+        supervision_violation_response_2 = NormalizedStateSupervisionViolationResponse(
+            sequence_num=0,
+            supervision_violation_response_id=1234567,
+            external_id="svr2",
+            response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
+            state_code="US_PA",
+            response_date=datetime.date(2009, 1, 6),
+            supervision_violation=supervision_violation_2,
         )
 
-        supervision_violation_response_3 = (
-            NormalizedStateSupervisionViolationResponse.new_with_defaults(
-                sequence_num=0,
-                supervision_violation_response_id=1234567,
-                external_id="svr3",
-                response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
-                state_code="US_PA",
-                response_date=datetime.date(2009, 1, 5),
-                supervision_violation=supervision_violation_3,
-            )
+        supervision_violation_response_3 = NormalizedStateSupervisionViolationResponse(
+            sequence_num=0,
+            supervision_violation_response_id=1234567,
+            external_id="svr3",
+            response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
+            state_code="US_PA",
+            response_date=datetime.date(2009, 1, 5),
+            supervision_violation=supervision_violation_3,
         )
 
         revocation_date = datetime.date(2009, 2, 13)
@@ -1374,7 +1370,7 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
         self.assertEqual(expected_output, violation_history)
 
     def test_get_violation_and_response_history_no_violations(self) -> None:
-        supervision_violation_response = NormalizedStateSupervisionViolationResponse.new_with_defaults(
+        supervision_violation_response = NormalizedStateSupervisionViolationResponse(
             sequence_num=0,
             state_code="US_XX",
             supervision_violation_response_id=_DEFAULT_SSVR_ID,
@@ -1382,7 +1378,7 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
             response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
             response_date=datetime.date(2009, 1, 7),
             supervision_violation_response_decisions=[
-                NormalizedStateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                NormalizedStateSupervisionViolationResponseDecisionEntry(
                     state_code="US_XX",
                     decision=StateSupervisionViolationResponseDecision.CONTINUANCE,
                 )
@@ -1423,23 +1419,23 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
         self.assertEqual(expected_output, violation_history)
 
     def test_get_violation_and_response_history_citation_date(self) -> None:
-        supervision_violation = NormalizedStateSupervisionViolation.new_with_defaults(
+        supervision_violation = NormalizedStateSupervisionViolation(
             supervision_violation_id=123455,
             external_id="sv1",
             state_code="US_XX",
             supervision_violation_types=[
-                NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
+                NormalizedStateSupervisionViolationTypeEntry(
                     state_code="US_XX",
                     violation_type=StateSupervisionViolationType.ABSCONDED,
                 ),
-                NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
+                NormalizedStateSupervisionViolationTypeEntry(
                     state_code="US_XX",
                     violation_type=StateSupervisionViolationType.MISDEMEANOR,
                 ),
             ],
         )
 
-        supervision_violation_response = NormalizedStateSupervisionViolationResponse.new_with_defaults(
+        supervision_violation_response = NormalizedStateSupervisionViolationResponse(
             sequence_num=0,
             state_code="US_XX",
             supervision_violation_response_id=_DEFAULT_SSVR_ID,
@@ -1447,11 +1443,11 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
             response_type=StateSupervisionViolationResponseType.CITATION,
             response_date=datetime.date(2009, 1, 7),
             supervision_violation_response_decisions=[
-                NormalizedStateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                NormalizedStateSupervisionViolationResponseDecisionEntry(
                     state_code="US_XX",
                     decision=StateSupervisionViolationResponseDecision.REVOCATION,
                 ),
-                NormalizedStateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                NormalizedStateSupervisionViolationResponseDecisionEntry(
                     state_code="US_XX",
                     decision=StateSupervisionViolationResponseDecision.CONTINUANCE,
                 ),
@@ -1486,19 +1482,19 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
     ) -> None:
         """Tests that a US_MO violation report with a TECHNICAL type and a LAW condition is not treated like a
         citation with a LAW condition."""
-        supervision_violation = NormalizedStateSupervisionViolation.new_with_defaults(
+        supervision_violation = NormalizedStateSupervisionViolation(
             supervision_violation_id=123455,
             external_id="sv1",
             state_code="US_MO",
             violation_date=datetime.date(2009, 1, 7),
             supervision_violation_types=[
-                NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
+                NormalizedStateSupervisionViolationTypeEntry(
                     state_code="US_MO",
                     violation_type=StateSupervisionViolationType.TECHNICAL,
                 ),
             ],
             supervision_violated_conditions=[
-                NormalizedStateSupervisionViolatedConditionEntry.new_with_defaults(
+                NormalizedStateSupervisionViolatedConditionEntry(
                     state_code="US_MO",
                     condition=StateSupervisionViolatedConditionType.INTERNAL_UNKNOWN,
                     condition_raw_text="LAW",
@@ -1506,7 +1502,7 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
             ],
         )
 
-        supervision_violation_response = NormalizedStateSupervisionViolationResponse.new_with_defaults(
+        supervision_violation_response = NormalizedStateSupervisionViolationResponse(
             sequence_num=0,
             state_code="US_MO",
             external_id="svr1",
@@ -1516,11 +1512,11 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
             response_date=datetime.date(2009, 1, 7),
             is_draft=False,
             supervision_violation_response_decisions=[
-                NormalizedStateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                NormalizedStateSupervisionViolationResponseDecisionEntry(
                     state_code="US_MO",
                     decision=StateSupervisionViolationResponseDecision.REVOCATION,
                 ),
-                NormalizedStateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                NormalizedStateSupervisionViolationResponseDecisionEntry(
                     state_code="US_MO",
                     decision=StateSupervisionViolationResponseDecision.CONTINUANCE,
                 ),

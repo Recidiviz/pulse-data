@@ -75,7 +75,7 @@ class TestUsArIncarcerationNormalizationDelegate(unittest.TestCase):
     def test_normalize_admitted_from_supervision_basic(
         self,
     ) -> None:
-        sp_rev_just_before_ip = NormalizedStateSupervisionPeriod.new_with_defaults(
+        sp_rev_just_before_ip = NormalizedStateSupervisionPeriod(
             supervision_period_id=111,
             external_id="111-1",
             state_code=_STATE_CODE,
@@ -86,7 +86,7 @@ class TestUsArIncarcerationNormalizationDelegate(unittest.TestCase):
             termination_reason=StateSupervisionPeriodTerminationReason.REVOCATION,
             sequence_num=0,
         )
-        sp_rev_day_of_ip = NormalizedStateSupervisionPeriod.new_with_defaults(
+        sp_rev_day_of_ip = NormalizedStateSupervisionPeriod(
             supervision_period_id=111,
             external_id="111-1",
             state_code=_STATE_CODE,
@@ -97,7 +97,7 @@ class TestUsArIncarcerationNormalizationDelegate(unittest.TestCase):
             termination_reason=StateSupervisionPeriodTerminationReason.REVOCATION,
             sequence_num=0,
         )
-        sp_non_rev_just_before_ip = NormalizedStateSupervisionPeriod.new_with_defaults(
+        sp_non_rev_just_before_ip = NormalizedStateSupervisionPeriod(
             supervision_period_id=111,
             external_id="111-1",
             state_code=_STATE_CODE,
@@ -108,7 +108,7 @@ class TestUsArIncarcerationNormalizationDelegate(unittest.TestCase):
             termination_reason=StateSupervisionPeriodTerminationReason.INTERNAL_UNKNOWN,
             sequence_num=0,
         )
-        sp_rev_long_before_ip = NormalizedStateSupervisionPeriod.new_with_defaults(
+        sp_rev_long_before_ip = NormalizedStateSupervisionPeriod(
             supervision_period_id=111,
             external_id="111-1",
             state_code=_STATE_CODE,
@@ -119,7 +119,7 @@ class TestUsArIncarcerationNormalizationDelegate(unittest.TestCase):
             termination_reason=StateSupervisionPeriodTerminationReason.REVOCATION,
             sequence_num=0,
         )
-        sp_rev_after_ip = NormalizedStateSupervisionPeriod.new_with_defaults(
+        sp_rev_after_ip = NormalizedStateSupervisionPeriod(
             supervision_period_id=111,
             external_id="111-1",
             state_code=_STATE_CODE,
@@ -255,7 +255,7 @@ class TestUsArIncarcerationNormalizationDelegate(unittest.TestCase):
     def test_normalize_admitted_from_supervision_multiple_periods(
         self,
     ) -> None:
-        sp_rev_just_before_ip = NormalizedStateSupervisionPeriod.new_with_defaults(
+        sp_rev_just_before_ip = NormalizedStateSupervisionPeriod(
             supervision_period_id=111,
             external_id="111-1",
             state_code=_STATE_CODE,

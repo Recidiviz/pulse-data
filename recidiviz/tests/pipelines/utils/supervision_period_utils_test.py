@@ -335,7 +335,7 @@ class TestGetPostIncarcerationSupervisionType(unittest.TestCase):
             release_date=self.release_date,
             release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
         )
-        self.supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        self.supervision_period = NormalizedStateSupervisionPeriod(
             supervision_period_id=1,
             external_id="sp1",
             sequence_num=0,
@@ -561,7 +561,7 @@ class TestFilterOutSpTypesExcludedFromPreAdmissionSearch(unittest.TestCase):
     def test_filter_out_supervision_period_types_excluded_from_pre_admission_search(
         self,
     ) -> None:
-        sp = NormalizedStateSupervisionPeriod.new_with_defaults(
+        sp = NormalizedStateSupervisionPeriod(
             supervision_period_id=1,
             external_id="sp1",
             sequence_num=0,
@@ -581,7 +581,7 @@ class TestFilterOutSpTypesExcludedFromPreAdmissionSearch(unittest.TestCase):
     def test_filter_out_unset_type_excluded_from_pre_admission_search(
         self,
     ) -> None:
-        sp = NormalizedStateSupervisionPeriod.new_with_defaults(
+        sp = NormalizedStateSupervisionPeriod(
             supervision_period_id=1,
             external_id="sp1",
             sequence_num=0,

@@ -51,11 +51,11 @@ class TestUsPaGetViolationTypeSubstringsForViolation(unittest.TestCase):
 
     def test_us_pa_get_violation_type_subtype_strings_for_violation(self) -> None:
         # Arrange
-        violation = NormalizedStateSupervisionViolation.new_with_defaults(
+        violation = NormalizedStateSupervisionViolation(
             state_code=_STATE_CODE,
             external_id="sv1",
             supervision_violation_types=[
-                NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
+                NormalizedStateSupervisionViolationTypeEntry(
                     state_code=_STATE_CODE,
                     violation_type=StateSupervisionViolationType.LAW,
                 )
@@ -77,11 +77,11 @@ class TestUsPaGetViolationTypeSubstringsForViolation(unittest.TestCase):
         self,
     ) -> None:
         # Arrange
-        violation = NormalizedStateSupervisionViolation.new_with_defaults(
+        violation = NormalizedStateSupervisionViolation(
             state_code=_STATE_CODE,
             external_id="sv1",
             supervision_violation_types=[
-                NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
+                NormalizedStateSupervisionViolationTypeEntry(
                     state_code=_STATE_CODE,
                     violation_type=StateSupervisionViolationType.TECHNICAL,
                     violation_type_raw_text="H12",
@@ -102,11 +102,11 @@ class TestUsPaGetViolationTypeSubstringsForViolation(unittest.TestCase):
         self,
     ) -> None:
         # Arrange
-        violation = NormalizedStateSupervisionViolation.new_with_defaults(
+        violation = NormalizedStateSupervisionViolation(
             state_code=_STATE_CODE,
             external_id="sv1",
             supervision_violation_types=[
-                NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
+                NormalizedStateSupervisionViolationTypeEntry(
                     state_code=_STATE_CODE,
                     violation_type=StateSupervisionViolationType.TECHNICAL,
                     violation_type_raw_text="M16",
@@ -127,11 +127,11 @@ class TestUsPaGetViolationTypeSubstringsForViolation(unittest.TestCase):
         self,
     ) -> None:
         # Arrange
-        violation = NormalizedStateSupervisionViolation.new_with_defaults(
+        violation = NormalizedStateSupervisionViolation(
             state_code=_STATE_CODE,
             external_id="sv1",
             supervision_violation_types=[
-                NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
+                NormalizedStateSupervisionViolationTypeEntry(
                     state_code=_STATE_CODE,
                     violation_type=StateSupervisionViolationType.TECHNICAL,
                     violation_type_raw_text="L05",
@@ -152,13 +152,13 @@ class TestUsPaGetViolationTypeSubstringsForViolation(unittest.TestCase):
         self,
     ) -> None:
         # Arrange
-        violation = NormalizedStateSupervisionViolation.new_with_defaults(
+        violation = NormalizedStateSupervisionViolation(
             supervision_violation_id=123455,
             external_id="sv1",
             state_code="US_PA",
             violation_date=date(2009, 1, 3),
             supervision_violation_types=[
-                NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
+                NormalizedStateSupervisionViolationTypeEntry(
                     state_code=_STATE_CODE,
                     violation_type=StateSupervisionViolationType.TECHNICAL,
                     violation_type_raw_text="M05",
@@ -179,13 +179,13 @@ class TestUsPaGetViolationTypeSubstringsForViolation(unittest.TestCase):
         self,
     ) -> None:
         # Arrange
-        violation = NormalizedStateSupervisionViolation.new_with_defaults(
+        violation = NormalizedStateSupervisionViolation(
             supervision_violation_id=123455,
             external_id="sv1",
             state_code="US_PA",
             violation_date=date(2009, 1, 3),
             supervision_violation_types=[
-                NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
+                NormalizedStateSupervisionViolationTypeEntry(
                     state_code=_STATE_CODE,
                     violation_type=StateSupervisionViolationType.TECHNICAL,
                     violation_type_raw_text="H05",
@@ -206,13 +206,13 @@ class TestUsPaGetViolationTypeSubstringsForViolation(unittest.TestCase):
         self,
     ) -> None:
         # Arrange
-        violation = NormalizedStateSupervisionViolation.new_with_defaults(
+        violation = NormalizedStateSupervisionViolation(
             supervision_violation_id=123455,
             external_id="sv1",
             state_code="US_PA",
             violation_date=date(2009, 1, 3),
             supervision_violation_types=[
-                NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
+                NormalizedStateSupervisionViolationTypeEntry(
                     state_code=_STATE_CODE,
                     violation_type=StateSupervisionViolationType.TECHNICAL,
                     # We expect all TECHNICAL violations to have definable raw text values
@@ -231,13 +231,13 @@ class TestUsPaGetViolationTypeSubstringsForViolation(unittest.TestCase):
         self,
     ) -> None:
         # Arrange
-        violation = NormalizedStateSupervisionViolation.new_with_defaults(
+        violation = NormalizedStateSupervisionViolation(
             supervision_violation_id=123455,
             external_id="sv1",
             state_code="US_PA",
             violation_date=date(2009, 1, 3),
             supervision_violation_types=[
-                NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
+                NormalizedStateSupervisionViolationTypeEntry(
                     state_code=_STATE_CODE,
                     violation_type=StateSupervisionViolationType.TECHNICAL,
                     violation_type_raw_text="XL",
@@ -255,7 +255,7 @@ class TestUsPaGetViolationTypeSubstringsForViolation(unittest.TestCase):
         self,
     ) -> None:
         # Arrange
-        violation = NormalizedStateSupervisionViolation.new_with_defaults(
+        violation = NormalizedStateSupervisionViolation(
             state_code=_STATE_CODE,
             external_id="sv1",
         )

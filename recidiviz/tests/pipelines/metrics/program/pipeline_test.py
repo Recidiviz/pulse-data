@@ -425,7 +425,7 @@ class TestClassifyProgramAssignments(unittest.TestCase):
             residency_status=StateResidencyStatus.PERMANENT,
         )
 
-        program_assignment = normalized_entities.NormalizedStateProgramAssignment.new_with_defaults(
+        program_assignment = normalized_entities.NormalizedStateProgramAssignment(
             sequence_num=0,
             external_id="pa1",
             state_code="US_XX",
@@ -436,7 +436,7 @@ class TestClassifyProgramAssignments(unittest.TestCase):
             start_date=date(2009, 10, 19),
         )
 
-        assessment = normalized_entities.NormalizedStateAssessment.new_with_defaults(
+        assessment = normalized_entities.NormalizedStateAssessment(
             state_code="US_XX",
             external_id="a1",
             assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
@@ -446,17 +446,15 @@ class TestClassifyProgramAssignments(unittest.TestCase):
             sequence_num=0,
         )
 
-        supervision_period = (
-            normalized_entities.NormalizedStateSupervisionPeriod.new_with_defaults(
-                sequence_num=0,
-                supervision_period_id=111,
-                external_id="sp1",
-                state_code="US_XX",
-                start_date=date(2008, 3, 5),
-                termination_date=date(2010, 2, 19),
-                supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
-                supervision_site="10",
-            )
+        supervision_period = normalized_entities.NormalizedStateSupervisionPeriod(
+            sequence_num=0,
+            supervision_period_id=111,
+            external_id="sp1",
+            state_code="US_XX",
+            start_date=date(2008, 3, 5),
+            termination_date=date(2010, 2, 19),
+            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+            supervision_site="10",
         )
 
         person_periods = {
@@ -511,7 +509,7 @@ class TestClassifyProgramAssignments(unittest.TestCase):
             residency_status=StateResidencyStatus.PERMANENT,
         )
 
-        program_assignment = normalized_entities.NormalizedStateProgramAssignment.new_with_defaults(
+        program_assignment = normalized_entities.NormalizedStateProgramAssignment(
             sequence_num=0,
             external_id="pa1",
             state_code="US_ND",
@@ -522,7 +520,7 @@ class TestClassifyProgramAssignments(unittest.TestCase):
             start_date=date(2009, 10, 19),
         )
 
-        assessment = normalized_entities.NormalizedStateAssessment.new_with_defaults(
+        assessment = normalized_entities.NormalizedStateAssessment(
             state_code="US_ND",
             external_id="a1",
             assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
@@ -532,17 +530,15 @@ class TestClassifyProgramAssignments(unittest.TestCase):
             sequence_num=0,
         )
 
-        supervision_period = (
-            normalized_entities.NormalizedStateSupervisionPeriod.new_with_defaults(
-                sequence_num=0,
-                supervision_period_id=111,
-                external_id="sp1",
-                state_code="US_ND",
-                start_date=date(2008, 3, 5),
-                termination_date=date(2010, 3, 1),
-                supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
-                supervision_site="10",
-            )
+        supervision_period = normalized_entities.NormalizedStateSupervisionPeriod(
+            sequence_num=0,
+            supervision_period_id=111,
+            external_id="sp1",
+            state_code="US_ND",
+            start_date=date(2008, 3, 5),
+            termination_date=date(2010, 3, 1),
+            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+            supervision_site="10",
         )
 
         person_periods = {
@@ -596,7 +592,7 @@ class TestClassifyProgramAssignments(unittest.TestCase):
             residency_status=StateResidencyStatus.PERMANENT,
         )
 
-        assessment = normalized_entities.NormalizedStateAssessment.new_with_defaults(
+        assessment = normalized_entities.NormalizedStateAssessment(
             state_code="US_XX",
             external_id="a1",
             assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
@@ -606,17 +602,15 @@ class TestClassifyProgramAssignments(unittest.TestCase):
             sequence_num=0,
         )
 
-        supervision_period = (
-            normalized_entities.NormalizedStateSupervisionPeriod.new_with_defaults(
-                sequence_num=0,
-                supervision_period_id=111,
-                external_id="sp1",
-                state_code="US_XX",
-                start_date=date(2008, 3, 5),
-                termination_date=date(2010, 5, 19),
-                termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-                supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
-            )
+        supervision_period = normalized_entities.NormalizedStateSupervisionPeriod(
+            sequence_num=0,
+            supervision_period_id=111,
+            external_id="sp1",
+            state_code="US_XX",
+            start_date=date(2008, 3, 5),
+            termination_date=date(2010, 5, 19),
+            termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
+            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
         )
 
         person_periods = {
@@ -655,7 +649,7 @@ class TestClassifyProgramAssignments(unittest.TestCase):
             residency_status=StateResidencyStatus.PERMANENT,
         )
 
-        program_assignment = normalized_entities.NormalizedStateProgramAssignment.new_with_defaults(
+        program_assignment = normalized_entities.NormalizedStateProgramAssignment(
             sequence_num=0,
             external_id="pa1",
             state_code="US_XX",
@@ -664,7 +658,7 @@ class TestClassifyProgramAssignments(unittest.TestCase):
             participation_status=StateProgramAssignmentParticipationStatus.PRESENT_WITHOUT_INFO,
         )
 
-        assessment = normalized_entities.NormalizedStateAssessment.new_with_defaults(
+        assessment = normalized_entities.NormalizedStateAssessment(
             state_code="US_XX",
             external_id="a1",
             assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,

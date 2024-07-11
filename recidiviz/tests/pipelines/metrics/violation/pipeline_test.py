@@ -300,15 +300,17 @@ class TestClassifyViolationEvents(unittest.TestCase):
 
     def testClassifyViolationEvents(self) -> None:
         """Tests the ClassifyViolationEvents DoFn."""
-        violation_type = normalized_entities.NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
-            state_code="US_XX",
-            violation_type=StateSupervisionViolationType.FELONY,
+        violation_type = (
+            normalized_entities.NormalizedStateSupervisionViolationTypeEntry(
+                state_code="US_XX",
+                violation_type=StateSupervisionViolationType.FELONY,
+            )
         )
-        violation_decision = normalized_entities.NormalizedStateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+        violation_decision = normalized_entities.NormalizedStateSupervisionViolationResponseDecisionEntry(
             state_code="US_XX",
             decision=StateSupervisionViolationResponseDecision.SHOCK_INCARCERATION,
         )
-        violation_response = normalized_entities.NormalizedStateSupervisionViolationResponse.new_with_defaults(
+        violation_response = normalized_entities.NormalizedStateSupervisionViolationResponse(
             state_code="US_XX",
             external_id="svr1",
             response_type=entities.StateSupervisionViolationResponseType.VIOLATION_REPORT,
@@ -317,17 +319,15 @@ class TestClassifyViolationEvents(unittest.TestCase):
             supervision_violation_response_decisions=[violation_decision],
             sequence_num=0,
         )
-        violation = (
-            normalized_entities.NormalizedStateSupervisionViolation.new_with_defaults(
-                state_code="US_XX",
-                external_id="sv1",
-                supervision_violation_id=self.fake_supervision_violation_id,
-                violation_date=date(2021, 1, 1),
-                is_violent=False,
-                is_sex_offense=False,
-                supervision_violation_types=[violation_type],
-                supervision_violation_responses=[violation_response],
-            )
+        violation = normalized_entities.NormalizedStateSupervisionViolation(
+            state_code="US_XX",
+            external_id="sv1",
+            supervision_violation_id=self.fake_supervision_violation_id,
+            violation_date=date(2021, 1, 1),
+            is_violent=False,
+            is_sex_offense=False,
+            supervision_violation_types=[violation_type],
+            supervision_violation_responses=[violation_response],
         )
         violation_decision.supervision_violation_response = violation_response
         violation_response.supervision_violation = violation
@@ -400,20 +400,20 @@ class TestClassifyViolationEvents(unittest.TestCase):
 
     def testClassifyViolationEventsNoResponses(self) -> None:
         """Tests the ClassifyViolationEvents DoFn with a violation that has no responses for a person."""
-        violation_type = normalized_entities.NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
-            state_code="US_XX",
-            violation_type=StateSupervisionViolationType.FELONY,
-        )
-        violation = (
-            normalized_entities.NormalizedStateSupervisionViolation.new_with_defaults(
+        violation_type = (
+            normalized_entities.NormalizedStateSupervisionViolationTypeEntry(
                 state_code="US_XX",
-                external_id="sv1",
-                supervision_violation_id=self.fake_supervision_violation_id,
-                violation_date=date(2021, 1, 1),
-                is_violent=False,
-                is_sex_offense=False,
-                supervision_violation_types=[violation_type],
+                violation_type=StateSupervisionViolationType.FELONY,
             )
+        )
+        violation = normalized_entities.NormalizedStateSupervisionViolation(
+            state_code="US_XX",
+            external_id="sv1",
+            supervision_violation_id=self.fake_supervision_violation_id,
+            violation_date=date(2021, 1, 1),
+            is_violent=False,
+            is_sex_offense=False,
+            supervision_violation_types=[violation_type],
         )
         violation_type.supervision_violation = violation
 

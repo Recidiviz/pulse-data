@@ -91,7 +91,7 @@ class TestCaseCompliance(unittest.TestCase):
     ) -> None:
         guidelines_fn.return_value = False
 
-        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod(
             sequence_num=0,
             supervision_period_id=111,
             external_id="sp1",
@@ -137,7 +137,7 @@ class TestCaseCompliance(unittest.TestCase):
     ) -> None:
         guidelines_fn.return_value = False
 
-        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod(
             sequence_num=0,
             supervision_period_id=111,
             external_id="sp1",
@@ -180,7 +180,7 @@ class TestCaseCompliance(unittest.TestCase):
     def test_us_nd_get_case_compliance_on_date_no_assessments_but_within_one_month(
         self,
     ) -> None:
-        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod(
             sequence_num=0,
             supervision_period_id=111,
             external_id="sp1",
@@ -232,7 +232,7 @@ class TestCaseCompliance(unittest.TestCase):
     def test_us_nd_get_case_compliance_on_date_with_assessments_within_one_month(
         self,
     ) -> None:
-        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod(
             sequence_num=0,
             supervision_period_id=111,
             external_id="sp1",
@@ -250,7 +250,7 @@ class TestCaseCompliance(unittest.TestCase):
         compliance_evaluation_date = date(2020, 3, 31)
 
         assessments = [
-            NormalizedStateAssessment.new_with_defaults(
+            NormalizedStateAssessment(
                 state_code=StateCode.US_ND.value,
                 external_id="a1",
                 assessment_type=StateAssessmentType.LSIR,
@@ -298,7 +298,7 @@ class TestCaseCompliance(unittest.TestCase):
     def test_us_nd_get_case_compliance_on_date_with_assessments_outside_six_months(
         self,
     ) -> None:
-        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod(
             sequence_num=0,
             supervision_period_id=111,
             external_id="sp1",
@@ -317,7 +317,7 @@ class TestCaseCompliance(unittest.TestCase):
 
         # The assessment is outside the 30 day initial compliance window.
         assessments = [
-            NormalizedStateAssessment.new_with_defaults(
+            NormalizedStateAssessment(
                 state_code=StateCode.US_ND.value,
                 external_id="a1",
                 assessment_type=StateAssessmentType.LSIR,
@@ -364,7 +364,7 @@ class TestCaseCompliance(unittest.TestCase):
     def test_us_nd_get_case_compliance_on_date_with_assessments_outside_one_month_within_six(
         self,
     ) -> None:
-        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod(
             sequence_num=0,
             supervision_period_id=111,
             external_id="sp1",
@@ -382,7 +382,7 @@ class TestCaseCompliance(unittest.TestCase):
         compliance_evaluation_date = date(2018, 7, 31)
 
         assessments = [
-            NormalizedStateAssessment.new_with_defaults(
+            NormalizedStateAssessment(
                 state_code=StateCode.US_ND.value,
                 external_id="a1",
                 assessment_type=StateAssessmentType.LSIR,
@@ -428,7 +428,7 @@ class TestCaseCompliance(unittest.TestCase):
         )
 
     def test_us_ix_get_case_compliance_on_date(self) -> None:
-        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod(
             sequence_num=0,
             supervision_period_id=111,
             external_id="sp1",
@@ -446,7 +446,7 @@ class TestCaseCompliance(unittest.TestCase):
         case_type = StateSupervisionCaseType.GENERAL
 
         assessments = [
-            NormalizedStateAssessment.new_with_defaults(
+            NormalizedStateAssessment(
                 state_code=StateCode.US_IX.value,
                 external_id="a1",
                 assessment_type=StateAssessmentType.LSIR,
@@ -515,7 +515,7 @@ class TestCaseCompliance(unittest.TestCase):
     def test_us_ix_get_case_compliance_on_date_with_direct_contact_on_date(
         self,
     ) -> None:
-        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod(
             sequence_num=0,
             supervision_period_id=111,
             external_id="sp1",
@@ -533,7 +533,7 @@ class TestCaseCompliance(unittest.TestCase):
         case_type = StateSupervisionCaseType.GENERAL
 
         assessments = [
-            NormalizedStateAssessment.new_with_defaults(
+            NormalizedStateAssessment(
                 state_code=StateCode.US_IX.value,
                 external_id="a1",
                 assessment_type=StateAssessmentType.LSIR,
@@ -603,7 +603,7 @@ class TestCaseCompliance(unittest.TestCase):
         )
 
     def test_us_ix_get_case_compliance_on_date_no_assessment_no_contacts(self) -> None:
-        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod(
             sequence_num=0,
             supervision_period_id=111,
             external_id="sp1",
@@ -657,7 +657,7 @@ class TestCaseCompliance(unittest.TestCase):
         )
 
     def test_us_ix_get_case_compliance_on_date_not_applicable_case(self) -> None:
-        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod(
             sequence_num=0,
             supervision_period_id=111,
             external_id="sp1",
@@ -672,7 +672,7 @@ class TestCaseCompliance(unittest.TestCase):
         )
 
         assessments = [
-            NormalizedStateAssessment.new_with_defaults(
+            NormalizedStateAssessment(
                 state_code=StateCode.US_IX.value,
                 external_id="a1",
                 assessment_type=StateAssessmentType.LSIR,
@@ -733,7 +733,7 @@ class TestCaseCompliance(unittest.TestCase):
         )
 
     def test_us_ix_get_case_compliance_on_date_no_home_visits_no_contacts(self) -> None:
-        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod(
             sequence_num=0,
             supervision_period_id=111,
             external_id="sp1",
@@ -791,7 +791,7 @@ class TestCaseCompliance(unittest.TestCase):
     def test_us_ix_get_case_compliance_on_date_no_home_visits_some_contacts(
         self,
     ) -> None:
-        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod(
             sequence_num=0,
             supervision_period_id=111,
             external_id="sp1",
@@ -866,7 +866,7 @@ class TestCaseCompliance(unittest.TestCase):
         )
 
     def test_us_ix_get_case_compliance_on_date_some_home_visits(self) -> None:
-        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod(
             sequence_num=0,
             supervision_period_id=111,
             external_id="sp1",
@@ -940,7 +940,7 @@ class TestCaseCompliance(unittest.TestCase):
         )
 
     def test_us_ix_get_case_compliance_on_date_one_home_visits_other_ftf(self) -> None:
-        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod(
             sequence_num=0,
             supervision_period_id=111,
             external_id="sp1",
@@ -1017,7 +1017,7 @@ class TestCaseCompliance(unittest.TestCase):
     def test_us_ix_get_case_compliance_on_date_multiple_visits_multiple_periods_home_visits(
         self,
     ) -> None:
-        supervision_period_1 = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period_1 = NormalizedStateSupervisionPeriod(
             sequence_num=0,
             supervision_period_id=111,
             external_id="sp1",
@@ -1032,7 +1032,7 @@ class TestCaseCompliance(unittest.TestCase):
             supervision_level_raw_text="MODERATE",
         )
 
-        supervision_period_2 = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period_2 = NormalizedStateSupervisionPeriod(
             sequence_num=0,
             supervision_period_id=111,
             external_id="sp1",
@@ -1167,7 +1167,7 @@ class TestCaseCompliance(unittest.TestCase):
         """Tests when there are two periods and a home visit assigned to each period,
         but each home visit date is outside the bounds of each supervision periods dates
         causing the most_recent_home_visit to be None"""
-        supervision_period_1 = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period_1 = NormalizedStateSupervisionPeriod(
             sequence_num=0,
             supervision_period_id=111,
             external_id="sp1",
@@ -1182,7 +1182,7 @@ class TestCaseCompliance(unittest.TestCase):
             supervision_level_raw_text="MODERATE",
         )
 
-        supervision_period_2 = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period_2 = NormalizedStateSupervisionPeriod(
             sequence_num=0,
             supervision_period_id=111,
             external_id="sp1",
@@ -1321,7 +1321,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
         self.empty_ip_index = default_normalized_ip_index_for_tests()
 
     def test_us_ix_next_recommended_assessment_date(self) -> None:
-        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod(
             sequence_num=0,
             supervision_period_id=111,
             external_id="sp1",
@@ -1334,7 +1334,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
         )
 
-        assessment = NormalizedStateAssessment.new_with_defaults(
+        assessment = NormalizedStateAssessment(
             state_code=StateCode.US_IX.value,
             external_id="a1",
             assessment_type=StateAssessmentType.LSIR,
@@ -1371,7 +1371,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
         self,
     ) -> None:
         start_date = date(2018, 3, 5)
-        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod(
             sequence_num=0,
             supervision_period_id=111,
             external_id="sp1",
@@ -1409,7 +1409,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
         self,
     ) -> None:
         start_date = date(2018, 3, 5)
-        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod(
             sequence_num=0,
             supervision_period_id=111,
             external_id="sp1",
@@ -1451,7 +1451,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
         self,
     ) -> None:
         start_date = date(2018, 3, 5)
-        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod(
             sequence_num=0,
             supervision_period_id=111,
             external_id="sp1",
@@ -1462,7 +1462,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
         )
 
-        assessment = NormalizedStateAssessment.new_with_defaults(
+        assessment = NormalizedStateAssessment(
             state_code=StateCode.US_IX.value,
             external_id="a1",
             assessment_type=StateAssessmentType.LSIR,
@@ -1504,7 +1504,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
         self,
     ) -> None:
         start_date = date(2018, 3, 5)
-        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod(
             sequence_num=0,
             supervision_period_id=111,
             external_id="sp1",
@@ -1515,7 +1515,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             supervision_type=StateSupervisionPeriodSupervisionType.DUAL,
         )
 
-        assessment = NormalizedStateAssessment.new_with_defaults(
+        assessment = NormalizedStateAssessment(
             state_code=StateCode.US_IX.value,
             external_id="a1",
             assessment_type=StateAssessmentType.LSIR,
@@ -1556,7 +1556,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
         self,
     ) -> None:
         start_date = date(2018, 3, 5)
-        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod(
             sequence_num=0,
             supervision_period_id=111,
             external_id="sp1",
@@ -1567,7 +1567,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
         )
 
-        assessment = NormalizedStateAssessment.new_with_defaults(
+        assessment = NormalizedStateAssessment(
             state_code=StateCode.US_IX.value,
             external_id="a1",
             assessment_type=StateAssessmentType.LSIR,
@@ -1609,7 +1609,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
         self,
     ) -> None:
         start_date = date(2018, 3, 5)
-        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod(
             sequence_num=0,
             supervision_period_id=111,
             external_id="sp1",
@@ -1622,7 +1622,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             supervision_level_raw_text="LEVEL 1",
         )
 
-        assessment = NormalizedStateAssessment.new_with_defaults(
+        assessment = NormalizedStateAssessment(
             state_code=StateCode.US_IX.value,
             external_id="a1",
             assessment_type=StateAssessmentType.LSIR,
@@ -1664,7 +1664,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
         self,
     ) -> None:
         start_date = date(2018, 3, 5)
-        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod(
             sequence_num=0,
             supervision_period_id=111,
             external_id="sp1",
@@ -1677,7 +1677,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             supervision_level_raw_text="LOW",
         )
 
-        assessment = NormalizedStateAssessment.new_with_defaults(
+        assessment = NormalizedStateAssessment(
             state_code=StateCode.US_IX.value,
             external_id="a1",
             assessment_type=StateAssessmentType.LSIR,
@@ -1719,7 +1719,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
         self,
     ) -> None:
         start_date = date(2018, 3, 5)
-        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod(
             sequence_num=0,
             supervision_period_id=111,
             external_id="sp1",
@@ -1731,7 +1731,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             supervision_level=StateSupervisionLevel.MAXIMUM,
         )
 
-        assessment = NormalizedStateAssessment.new_with_defaults(
+        assessment = NormalizedStateAssessment(
             state_code=StateCode.US_IX.value,
             external_id="a1",
             assessment_type=StateAssessmentType.LSIR,
@@ -1771,7 +1771,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
 
     def test_us_ix_next_recommended_assessment_date_sex_offense(self) -> None:
         start_date = date(2018, 3, 5)
-        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod(
             sequence_num=0,
             supervision_period_id=111,
             external_id="sp1",
@@ -1784,7 +1784,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
         )
 
-        assessment = NormalizedStateAssessment.new_with_defaults(
+        assessment = NormalizedStateAssessment(
             state_code=StateCode.US_IX.value,
             external_id="a1",
             assessment_type=StateAssessmentType.LSIR,
@@ -1822,7 +1822,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
         self,
     ) -> None:
         start_date = date(2018, 3, 5)
-        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod(
             sequence_num=0,
             supervision_period_id=111,
             external_id="sp1",
@@ -1860,7 +1860,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
         self,
     ) -> None:
         start_date = date(2018, 3, 5)
-        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod(
             sequence_num=0,
             supervision_period_id=111,
             external_id="sp1",
@@ -1902,7 +1902,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
         self,
     ) -> None:
         start_date = date(2018, 3, 5)
-        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod(
             sequence_num=0,
             supervision_period_id=111,
             external_id="sp1",
@@ -1944,7 +1944,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
         self,
     ) -> None:
         start_date = date(2018, 3, 5)
-        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod(
             sequence_num=0,
             supervision_period_id=111,
             external_id="sp1",
@@ -1955,7 +1955,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
         )
 
-        assessment = NormalizedStateAssessment.new_with_defaults(
+        assessment = NormalizedStateAssessment(
             state_code=StateCode.US_IX.value,
             external_id="a1",
             assessment_type=StateAssessmentType.LSIR,
@@ -1997,7 +1997,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
         self,
     ) -> None:
         start_date = date(2018, 3, 5)
-        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod(
             sequence_num=0,
             supervision_period_id=111,
             external_id="sp1",
@@ -2008,7 +2008,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             supervision_type=StateSupervisionPeriodSupervisionType.DUAL,
         )
 
-        assessment = NormalizedStateAssessment.new_with_defaults(
+        assessment = NormalizedStateAssessment(
             state_code=StateCode.US_IX.value,
             external_id="a1",
             assessment_type=StateAssessmentType.LSIR,
@@ -2050,7 +2050,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
         self,
     ) -> None:
         start_date = date(2018, 3, 5)
-        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod(
             sequence_num=0,
             supervision_period_id=111,
             external_id="sp1",
@@ -2061,7 +2061,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
         )
 
-        assessment = NormalizedStateAssessment.new_with_defaults(
+        assessment = NormalizedStateAssessment(
             state_code=StateCode.US_IX.value,
             external_id="a1",
             assessment_type=StateAssessmentType.LSIR,
@@ -2103,7 +2103,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
         self,
     ) -> None:
         start_date = date(2018, 3, 5)
-        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod(
             sequence_num=0,
             supervision_period_id=111,
             external_id="sp1",
@@ -2115,7 +2115,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             supervision_level=StateSupervisionLevel.MAXIMUM,
         )
 
-        assessment = NormalizedStateAssessment.new_with_defaults(
+        assessment = NormalizedStateAssessment(
             state_code=StateCode.US_IX.value,
             external_id="a1",
             assessment_type=StateAssessmentType.LSIR,
@@ -2157,7 +2157,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
         self,
     ) -> None:
         start_date = date(2018, 3, 5)
-        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod(
             sequence_num=0,
             supervision_period_id=111,
             external_id="sp1",
@@ -2169,7 +2169,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             supervision_level=StateSupervisionLevel.MAXIMUM,
         )
 
-        assessment = NormalizedStateAssessment.new_with_defaults(
+        assessment = NormalizedStateAssessment(
             state_code=StateCode.US_IX.value,
             external_id="a1",
             assessment_type=StateAssessmentType.LSIR,
@@ -2211,7 +2211,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
         self,
     ) -> None:
         start_date = date(2018, 3, 5)
-        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod(
             sequence_num=0,
             supervision_period_id=111,
             external_id="sp1",
@@ -2254,7 +2254,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
         self,
     ) -> None:
         start_date = date(2018, 3, 5)
-        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod(
             sequence_num=0,
             supervision_period_id=111,
             external_id="sp1",
@@ -2297,7 +2297,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
         self,
     ) -> None:
         start_date = date(2018, 3, 5)
-        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod(
             sequence_num=0,
             supervision_period_id=111,
             external_id="sp1",
@@ -2308,7 +2308,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             supervision_level=StateSupervisionLevel.MAXIMUM,
         )
 
-        assessment = NormalizedStateAssessment.new_with_defaults(
+        assessment = NormalizedStateAssessment(
             state_code=StateCode.US_ND.value,
             external_id="a1",
             assessment_type=StateAssessmentType.LSIR,
@@ -2347,7 +2347,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
         self,
     ) -> None:
         start_date = date(2018, 3, 5)
-        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod(
             sequence_num=0,
             supervision_period_id=111,
             external_id="sp1",
@@ -2358,7 +2358,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             supervision_level=StateSupervisionLevel.MAXIMUM,
         )
 
-        assessment = NormalizedStateAssessment.new_with_defaults(
+        assessment = NormalizedStateAssessment(
             state_code=StateCode.US_ND.value,
             external_id="a1",
             assessment_type=StateAssessmentType.LSIR,
@@ -2397,7 +2397,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
         self,
     ) -> None:
         start_date = date(2018, 3, 5)
-        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod(
             sequence_num=0,
             supervision_period_id=111,
             external_id="sp1",
@@ -2408,7 +2408,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             supervision_level=StateSupervisionLevel.MAXIMUM,
         )
 
-        assessment = NormalizedStateAssessment.new_with_defaults(
+        assessment = NormalizedStateAssessment(
             state_code=StateCode.US_ND.value,
             external_id="a1",
             assessment_type=StateAssessmentType.LSIR,
@@ -2446,7 +2446,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
         self.assertEqual(assessment_date, date(2010, 9, 2))
 
     def test_us_ix_get_case_compliance_on_date(self) -> None:
-        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod(
             sequence_num=0,
             supervision_period_id=111,
             external_id="sp1",
@@ -2464,7 +2464,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
         case_type = StateSupervisionCaseType.GENERAL
 
         assessments = [
-            NormalizedStateAssessment.new_with_defaults(
+            NormalizedStateAssessment(
                 state_code=StateCode.US_IX.value,
                 external_id="a1",
                 assessment_type=StateAssessmentType.LSIR,
@@ -2535,7 +2535,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
     def test_us_ix_get_case_compliance_sex_offense_employment_verification(
         self,
     ) -> None:
-        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod(
             sequence_num=0,
             supervision_period_id=111,
             external_id="sp1",
@@ -2553,7 +2553,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
         case_type = StateSupervisionCaseType.SEX_OFFENSE
 
         assessments = [
-            NormalizedStateAssessment.new_with_defaults(
+            NormalizedStateAssessment(
                 state_code=StateCode.US_IX.value,
                 external_id="a1",
                 assessment_type=StateAssessmentType.LSIR,

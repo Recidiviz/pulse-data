@@ -44,7 +44,7 @@ class TestUsTnIncarcerationDelegate(unittest.TestCase):
     def test_is_period_included_in_state_population_state_prison_custodial_authority(
         self,
     ) -> None:
-        incarceration_period = NormalizedStateIncarcerationPeriod.new_with_defaults(
+        incarceration_period = NormalizedStateIncarcerationPeriod(
             incarceration_period_id=1112,
             external_id="2",
             custodial_authority=StateCustodialAuthority.STATE_PRISON,
@@ -63,7 +63,7 @@ class TestUsTnIncarcerationDelegate(unittest.TestCase):
     def test_is_period_included_in_state_population_by_custodial_authority(
         self,
     ) -> None:
-        incarceration_period = NormalizedStateIncarcerationPeriod.new_with_defaults(
+        incarceration_period = NormalizedStateIncarcerationPeriod(
             incarceration_period_id=1112,
             external_id="2",
             state_code=_STATE_CODE,
@@ -95,7 +95,7 @@ class TestUsTnIncarcerationDelegate(unittest.TestCase):
     def test_is_period_included_in_state_population_court_and_temporary_custody(
         self,
     ) -> None:
-        incarceration_period = NormalizedStateIncarcerationPeriod.new_with_defaults(
+        incarceration_period = NormalizedStateIncarcerationPeriod(
             incarceration_period_id=1112,
             external_id="2",
             custodial_authority=StateCustodialAuthority.COUNTY,
@@ -115,7 +115,7 @@ class TestUsTnIncarcerationDelegate(unittest.TestCase):
     def test_is_period_included_in_state_population_temporary_custody(
         self,
     ) -> None:
-        incarceration_period = NormalizedStateIncarcerationPeriod.new_with_defaults(
+        incarceration_period = NormalizedStateIncarcerationPeriod(
             incarceration_period_id=1112,
             external_id="2",
             custodial_authority=StateCustodialAuthority.STATE_PRISON,

@@ -367,7 +367,7 @@ class TestClassifyResults(unittest.TestCase):
 
     def test_classify_results(self) -> None:
         """Tests the ClassifyResults DoFn."""
-        incarceration_period = normalized_entities.NormalizedStateIncarcerationPeriod.new_with_defaults(
+        incarceration_period = normalized_entities.NormalizedStateIncarcerationPeriod(
             incarceration_period_id=1111,
             external_id="ip1",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
@@ -383,22 +383,20 @@ class TestClassifyResults(unittest.TestCase):
             sequence_num=0,
         )
 
-        supervision_period = (
-            normalized_entities.NormalizedStateSupervisionPeriod.new_with_defaults(
-                supervision_period_id=2222,
-                external_id="sp1",
-                supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
-                state_code="US_XX",
-                supervision_level=StateSupervisionLevel.MEDIUM,
-                supervision_level_raw_text="MEDIUM",
-                start_date=date(2018, 1, 1),
-                termination_date=date(2020, 1, 1),
-                admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
-                termination_reason=StateSupervisionPeriodTerminationReason.REVOCATION,
-                custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
-                supervision_site="site",
-                sequence_num=0,
-            )
+        supervision_period = normalized_entities.NormalizedStateSupervisionPeriod(
+            supervision_period_id=2222,
+            external_id="sp1",
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            state_code="US_XX",
+            supervision_level=StateSupervisionLevel.MEDIUM,
+            supervision_level_raw_text="MEDIUM",
+            start_date=date(2018, 1, 1),
+            termination_date=date(2020, 1, 1),
+            admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
+            termination_reason=StateSupervisionPeriodTerminationReason.REVOCATION,
+            custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
+            supervision_site="site",
+            sequence_num=0,
         )
 
         self.assertIsNotNone(incarceration_period.admission_date)

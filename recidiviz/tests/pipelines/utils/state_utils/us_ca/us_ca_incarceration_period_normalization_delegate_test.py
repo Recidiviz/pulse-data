@@ -64,7 +64,7 @@ class TestUsCaIncarcerationNormalizationDelegate(unittest.TestCase):
 
     # ~~ Add new tests here ~~
     def test_infer_temp_IPs_for_in_custody_SPs(self) -> None:
-        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod(
             supervision_period_id=111,
             external_id="sp1",
             state_code=_STATE_CODE,

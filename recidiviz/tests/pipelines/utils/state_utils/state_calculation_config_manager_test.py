@@ -120,7 +120,7 @@ class TestStateCalculationConfigManager(unittest.TestCase):
 
     def test_get_state_specific_case_compliance_manager(self) -> None:
         for state_code in get_existing_direct_ingest_states():
-            test_sp = NormalizedStateSupervisionPeriod.new_with_defaults(
+            test_sp = NormalizedStateSupervisionPeriod(
                 state_code=state_code.value,
                 external_id="sp1",
                 start_date=datetime.date(2020, 1, 1),

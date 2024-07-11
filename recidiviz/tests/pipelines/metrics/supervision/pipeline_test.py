@@ -949,7 +949,7 @@ class TestClassifyEvents(unittest.TestCase):
             residency_status=StateResidencyStatus.PERMANENT,
         )
 
-        incarceration_period = NormalizedStateIncarcerationPeriod.new_with_defaults(
+        incarceration_period = NormalizedStateIncarcerationPeriod(
             external_id="ip1",
             incarceration_period_id=1111,
             incarceration_type=StateIncarcerationType.STATE_PRISON,
@@ -962,7 +962,7 @@ class TestClassifyEvents(unittest.TestCase):
         )
 
         supervision_period_termination_date = date(2015, 5, 29)
-        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod(
             supervision_period_id=1111,
             external_id="sp1",
             state_code="US_XX",
@@ -981,7 +981,7 @@ class TestClassifyEvents(unittest.TestCase):
 
         effective_date = date(2008, 1, 1)
         completion_date = date(2015, 5, 29)
-        supervision_sentence = NormalizedStateSupervisionSentence.new_with_defaults(
+        supervision_sentence = NormalizedStateSupervisionSentence(
             state_code="US_XX",
             supervision_sentence_id=111,
             external_id="ss1",
@@ -992,14 +992,14 @@ class TestClassifyEvents(unittest.TestCase):
             completion_date=completion_date,
         )
 
-        incarceration_sentence = NormalizedStateIncarcerationSentence.new_with_defaults(
+        incarceration_sentence = NormalizedStateIncarcerationSentence(
             state_code="US_XX",
             incarceration_sentence_id=123,
             external_id="is1",
             status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
         )
 
-        assessment = NormalizedStateAssessment.new_with_defaults(
+        assessment = NormalizedStateAssessment(
             state_code="US_XX",
             external_id="a1",
             assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
