@@ -59,6 +59,7 @@ SENTENCING_COMMUNITY_OPPORTUNITY_RECORD_VIEW_BUILDER = (
         ),
         should_materialize=True,
         columns=[
+            "state_code",
             "OpportunityName",
             "Description",
             "ProviderName",
