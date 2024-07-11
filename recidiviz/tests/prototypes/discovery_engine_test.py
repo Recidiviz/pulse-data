@@ -17,9 +17,7 @@
 """This class implements tests for the Prototypes DiscoveryEngineInterface class."""
 
 from unittest import TestCase
-from unittest.mock import Mock, patch
-
-from google.api_core.exceptions import GoogleAPICallError, RetryError
+from unittest.mock import MagicMock, patch
 
 from recidiviz.tools.prototypes.discovery_engine import DiscoveryEngineInterface
 
@@ -38,92 +36,44 @@ class TestDiscoveryEngineInterface(TestCase):
         expected = f"projects/{self.project_id}/locations/global/collections/default_collection/engines/{self.engine_id}/servingConfigs/default_config"
         self.assertEqual(self.interface.serving_config, expected)
 
-    def test_get_external_id_filter_condition(self) -> None:
-        external_id = "test_external_id"
-        expected = f'external_id: ANY("{external_id}")'
+    def test_format_filter_condition(self) -> None:
+        filter_condition = {
+            "external_id": ["12345", "23456"],
+            "note_type": ["Supervision Notes"],
+        }
+        expected = (
+            'external_id: ANY("12345", "23456") note_type: ANY("Supervision Notes")'
+        )
         self.assertEqual(
-            self.interface.get_external_id_filter_condition(external_id), expected
-        )
-
-    def test_extract_document_ids(self) -> None:
-        search_response = Mock()
-        search_response.results = [
-            Mock(document=Mock(id="doc1")),
-            Mock(document=Mock(id="doc2")),
-        ]
-        self.assertEqual(
-            self.interface.extract_document_ids(search_response), ["doc1", "doc2"]
+            self.interface._format_filter_condition(  # pylint: disable=protected-access
+                filter_condition
+            ),
+            expected,
         )
 
     @patch(
         "recidiviz.tools.prototypes.discovery_engine.discoveryengine.SearchServiceClient"
     )
-    def test_search_for_document_ids(self, MockSearchServiceClient: Mock) -> None:
-        mock_client = MockSearchServiceClient.return_value
-        mock_response = Mock()
-        mock_response.results = [
-            Mock(document=Mock(id="doc1")),
-            Mock(document=Mock(id="doc2")),
-        ]
-        mock_client.search.return_value = mock_response
-
-        query = "test_query"
-        results = self.interface.search_for_document_ids(query)
-        self.assertEqual(results, ["doc1", "doc2"])
-
-    @patch(
-        "recidiviz.tools.prototypes.discovery_engine.discoveryengine.SearchServiceClient"
-    )
-    def test_search_for_document_ids_with_external_id(
-        self, MockSearchServiceClient: Mock
+    @patch("recidiviz.tools.prototypes.discovery_engine.discoveryengine.SearchRequest")
+    def test_search_success(
+        self, MockSearchRequest: MagicMock, MockSearchServiceClient: MagicMock
     ) -> None:
-        mock_client = MockSearchServiceClient.return_value
-        mock_response = Mock()
-        mock_response.results = [Mock(document=Mock(id="doc1"))]
-        mock_client.search.return_value = mock_response
+        mock_client_instance = MagicMock()
+        mock_client_instance.search.return_value = "this is the query return value"
+        MockSearchServiceClient.return_value = mock_client_instance
 
-        query = "test_query"
-        external_id = "test_external_id"
-        results = self.interface.search_for_document_ids(query, external_id=external_id)
-        self.assertEqual(results, ["doc1"])
+        mock_search_request_instance = MagicMock()
+        MockSearchRequest.return_value = mock_search_request_instance
 
-    @patch(
-        "recidiviz.tools.prototypes.discovery_engine.discoveryengine.SearchServiceClient"
-    )
-    def test_search_for_document_ids_api_call_error(
-        self, MockSearchServiceClient: Mock
-    ) -> None:
-        mock_client = MockSearchServiceClient.return_value
-        mock_client.search.side_effect = GoogleAPICallError("API call error")
+        query = "this is a query"
+        page_size = 10
+        filter_conditions = {"field": ["value"]}
 
-        query = "test_query"
-        results = self.interface.search_for_document_ids(query)
-        self.assertEqual(results, [])
-
-    @patch(
-        "recidiviz.tools.prototypes.discovery_engine.discoveryengine.SearchServiceClient"
-    )
-    def test_search_for_document_ids_retry_error(
-        self, MockSearchServiceClient: Mock
-    ) -> None:
-        mock_client = MockSearchServiceClient.return_value
-        mock_client.search.side_effect = RetryError(
-            "Retry error", cause=Exception("Underlying cause")
+        result = self.interface.search(
+            query=query, page_size=page_size, filter_conditions=filter_conditions
         )
 
-        query = "test_query"
-        results = self.interface.search_for_document_ids(query)
-        self.assertEqual(results, [])
-
-    @patch(
-        "recidiviz.tools.prototypes.discovery_engine.discoveryengine.SearchServiceClient"
-    )
-    def test_search_for_document_ids_unexpected_error(
-        self, MockSearchServiceClient: Mock
-    ) -> None:
-        mock_client = MockSearchServiceClient.return_value
-        mock_client.search.side_effect = Exception("Unexpected error")
-
-        query = "test_query"
-        results = self.interface.search_for_document_ids(query)
-        self.assertEqual(results, [])
+        self.assertEqual(result, "this is the query return value")
+        mock_client_instance.search.assert_called_once_with(
+            mock_search_request_instance
+        )

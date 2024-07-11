@@ -15,67 +15,25 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """An interface for querying Google Vertex AI's Discovery Engine. This interface
-connects to the Discovery Engine using the Google Cloud client library.
+connects to the Discovery Engine using the Google Cloud client library."""
 
-Usage:
-
-pipenv run python -m recidiviz.tools.prototypes.discovery_engine \
-  --page-size=5 --external-id="{external_id}" --query="{query}"
-
-"""
-
-import argparse
 import logging
 from functools import cached_property
-from typing import List, Optional
+from typing import Dict, List, Optional
 
 import attr
 from google.api_core.exceptions import GoogleAPICallError, RetryError
 from google.cloud import discoveryengine_v1 as discoveryengine
 from google.cloud.discoveryengine_v1.services.search_service.pagers import SearchPager
 
-from recidiviz.utils.environment import GCP_PROJECT_STAGING
-
 logging.basicConfig(level=logging.ERROR)
 logger = logging.getLogger(__name__)
-
-engine_id = "id-case-notes-new_1717011992933"
-
-
-def create_parser() -> argparse.ArgumentParser:
-    """Returns an argument parser for the script."""
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "--query",
-        type=str,
-        required=True,
-        help="The query to search with.",
-    )
-    parser.add_argument(
-        "--external-id",
-        type=str,
-        required=False,
-        default=None,
-        help="Filter the search results to only return documents with this external id."
-        "If external_id is None, the search results will not be filtered by external id.",
-    )
-    parser.add_argument(
-        "--page-size",
-        type=int,
-        required=False,
-        default=5,
-        help="The maximum number of results to return. The service may return fewer "
-        "results than this value if there are not enough documents that relate to the "
-        "provided query.",
-    )
-    return parser
 
 
 @attr.define(kw_only=True)
 class DiscoveryEngineInterface:
     """An interface for querying Google Vertex AI's Discovery Engine. This interface
-    connects to the Discovery Engine using the Google Cloud client library.
-    """
+    connects to the Discovery Engine using the Google Cloud client library."""
 
     project_id: str
 
@@ -87,47 +45,61 @@ class DiscoveryEngineInterface:
         return f"projects/{self.project_id}/locations/global/collections/default_collection/engines/{self.engine_id}/servingConfigs/default_config"
 
     @staticmethod
-    def get_external_id_filter_condition(external_id: str) -> str:
-        """Return a filter condition that filters search results by external id."""
-        return f'external_id: ANY("{external_id}")'
+    def _format_filter_condition(filter_conditions: Dict[str, List[str]]) -> str:
+        """Format the filter conditions for SearchRequest use."""
+        formatted_conditions = []
+        for field, values in filter_conditions.items():
+            values_as_str = ", ".join([f'"{value}"' for value in values])
+            formatted_conditions.append(f"{field}: ANY({values_as_str})")
+        return " ".join(formatted_conditions)
 
-    @staticmethod
-    def extract_document_ids(
-        search_pager: SearchPager,
-    ) -> List[str]:
-        """Extract document ids from a Discovery Engine SearchResponse."""
-        return [result.document.id for result in search_pager.results]
-
-    def search_for_document_ids(
+    def search(
         self,
         query: str,
         page_size: int = 10,
-        external_id: Optional[str] = None,
-    ) -> List[str]:
-        """Return the document ids that are the most relevant to the search query.
+        filter_conditions: Optional[Dict[str, List[str]]] = None,
+        with_snippet: bool = False,
+        with_summary: bool = False,
+    ) -> Optional[SearchPager]:
+        """
+        Executes a search query against Google Vertex AI's Discovery Engine.
 
-        Parameters:
-            query (str): The query to search with.
+        Args:
+            query: The search query string.
+            page_size: Optional. The number of search results to return per page. Defaults to 10.
+            filter_conditions: Optional. A dictionary of filter conditions where keys are
+                field names and values are lists of acceptable values for those fields.
+                (e.g. filter_condition = {"external_id": ["XXX"]})
+            with_snippet: If True, includes snippets in the search results. Defaults to False.
+            with_summary: If True, includes summaries in the search results. Defaults to False.
 
-            external_id (str): Filter the search results to only return documents with
-                this external id. If external_id is None, the search results will not be
-                filtered by external id.
-
-            page_size (int): The maximum number of results to return. The service may
-                return fewer results than this value if there are not enough documents
-                that relate to the provided query.
+        Returns:
+            Optional[SearchPager]: A SearchPager object containing the search results,
+                or None if an error occurs.
         """
         try:
             # Refer to the `SearchRequest` reference for all supported fields:
             # https://cloud.google.com/python/docs/reference/discoveryengine/latest/google.cloud.discoveryengine_v1.types.SearchRequest
+            content_search_spec = discoveryengine.SearchRequest.ContentSearchSpec(
+                snippet_spec=discoveryengine.SearchRequest.ContentSearchSpec.SnippetSpec(
+                    max_snippet_count=1  # Only one snippet per document.
+                )
+                if with_snippet
+                else None,
+                summary_spec=discoveryengine.SearchRequest.ContentSearchSpec.SummarySpec(
+                    summary_result_count=10  # The number of documents used to generate the summary. Maximum is 10.
+                )
+                if with_summary
+                else None,
+            )
             request = discoveryengine.SearchRequest(
                 serving_config=self.serving_config,
                 query=query,
                 page_size=page_size,
-                filter=DiscoveryEngineInterface.get_external_id_filter_condition(
-                    external_id
+                filter=DiscoveryEngineInterface._format_filter_condition(
+                    filter_conditions
                 )
-                if external_id is not None
+                if filter_conditions
                 else None,
                 query_expansion_spec=discoveryengine.SearchRequest.QueryExpansionSpec(
                     condition=discoveryengine.SearchRequest.QueryExpansionSpec.Condition.AUTO,
@@ -135,10 +107,13 @@ class DiscoveryEngineInterface:
                 spell_correction_spec=discoveryengine.SearchRequest.SpellCorrectionSpec(
                     mode=discoveryengine.SearchRequest.SpellCorrectionSpec.Mode.AUTO
                 ),
+                content_search_spec=content_search_spec
+                if with_snippet or with_summary
+                else None,
             )
             client = discoveryengine.SearchServiceClient()
             response = client.search(request)
-            return DiscoveryEngineInterface.extract_document_ids(response)
+            return response
 
         # Log errors and return an empty list.
         except GoogleAPICallError as e:
@@ -147,20 +122,4 @@ class DiscoveryEngineInterface:
             logger.error("Retry error during the search: %s", e)
         except Exception as e:
             logger.error("An error occurred during the search: %s", e)
-        return []
-
-
-if __name__ == "__main__":
-    args = create_parser().parse_args()
-
-    # Example usage of the DiscoveryEngineInterface class.
-    discovery_interface = DiscoveryEngineInterface(
-        project_id=GCP_PROJECT_STAGING,
-        engine_id=engine_id,
-    )
-    result = discovery_interface.search_for_document_ids(
-        query=args.query,
-        page_size=args.page_size,
-        external_id=args.external_id,
-    )
-    print(result)
+        return None
