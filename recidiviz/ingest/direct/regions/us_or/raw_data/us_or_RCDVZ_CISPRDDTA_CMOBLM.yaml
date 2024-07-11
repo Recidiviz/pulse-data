@@ -11,6 +11,8 @@ columns:
     description: |-
       Unique number generated for each individual.
     is_pii: True
+    field_type: person_external_id
+    external_id_type: US_OR_ID
   - name: SUBFILE_KEY
     description: |-
       Unique number generated for record.

@@ -23,6 +23,8 @@ columns:
     description: |-
       Unique number generated for all Adult in Custody (AIC).
     is_pii: True
+    field_type: person_external_id
+    external_id_type: US_OR_ID
   - name: LAST_UPDATED_WHEN
     field_type: datetime
     datetime_sql_parsers:

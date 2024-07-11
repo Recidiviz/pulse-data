@@ -13,6 +13,8 @@ columns:
     description: |-
       Unique identifier for each person.
     is_pii: True
+    field_type: person_external_id
+    external_id_type: US_OR_ID
   - name: NEXT_NUMBER
     description: |-
       TODO(#17148): Fill in with answer from OR
@@ -49,3 +51,8 @@ columns:
   - name: MISCONDUCT_CHARGE_ID
     description: |-
       TODO(#17148): Fill in with answer from OR
+
+table_relationships:
+  - foreign_table: RCDVZ_PRDDTA_OP970P
+    join_logic:
+      - RCDVZ_PRDDTA_OP970P.RECORD_KEY = RCDVZ_CISPRDDTA_MTRULE.RECORD_KEY

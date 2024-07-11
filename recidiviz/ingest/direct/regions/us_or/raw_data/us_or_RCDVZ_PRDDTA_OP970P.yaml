@@ -9,6 +9,10 @@ columns:
   - name: RECORD_KEY
     description: |-
       Unique identifier for each row.
+    is_pii: True
+    field_type: person_external_id
+    external_id_type: US_OR_ID
+    is_primary_for_external_id_type: True
   - name: DATE_LAST_UPDATED
     description: |-
       Date when information was last entered.

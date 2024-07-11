@@ -10,6 +10,8 @@ columns:
     description: |-
       Unique identifier for each Adult in Custody (AIC) or Adult on Supervision.
     is_pii: True
+    field_type: person_external_id
+    external_id_type: US_OR_ID
   - name: ASSESSMENT_TYPE
     description: |-
       Type of assessment taken.
@@ -84,3 +86,8 @@ columns:
       - "SAFE.PARSE_DATETIME('%m/%d/%Y', {col_name})"
     description: |-
       When record was added.
+
+table_relationships:
+  - foreign_table: RCDVZ_PRDDTA_OP970P
+    join_logic:
+      - RCDVZ_PRDDTA_OP970P.RECORD_KEY = RCDVZ_CISPRDDTA_CMOFRH.RECORD_KEY

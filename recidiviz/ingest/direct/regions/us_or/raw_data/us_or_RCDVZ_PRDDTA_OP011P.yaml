@@ -16,6 +16,9 @@ columns:
   - name: RECORD_KEY
     description: |-
       Unique identifier for record.
+    is_pii: True
+    field_type: person_external_id
+    external_id_type: US_OR_ID
   - name: CUSTODY_NUMBER
     description: |-
       Prior adjudicated and discharged felony convictions.
@@ -70,3 +73,8 @@ columns:
     description: |-
       Date when last updated.
   - name: CASELOAD
+
+table_relationships:
+  - foreign_table: RCDVZ_PRDDTA_OP970P
+    join_logic:
+      - RCDVZ_PRDDTA_OP970P.RECORD_KEY = RCDVZ_PRDDTA_OP011P.RECORD_KEY

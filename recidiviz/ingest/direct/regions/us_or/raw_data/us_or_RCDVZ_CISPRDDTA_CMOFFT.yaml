@@ -11,6 +11,8 @@ columns:
     description: |-
       Unique identifier for each person.
     is_pii: True
+    field_type: person_external_id
+    external_id_type: US_OR_ID
   - name: SUBFILE_KEY
     description: |-
       File key.
@@ -61,3 +63,8 @@ columns:
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S %p', {col_name})"
       - "SAFE.PARSE_DATETIME('%m/%d/%Y', {col_name})"
+
+table_relationships:
+  - foreign_table: RCDVZ_PRDDTA_OP970P
+    join_logic:
+      - RCDVZ_PRDDTA_OP970P.RECORD_KEY = RCDVZ_CISPRDDTA_CMOFFT.RECORD_KEY

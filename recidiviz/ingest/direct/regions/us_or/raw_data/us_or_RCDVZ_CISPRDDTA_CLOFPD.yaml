@@ -12,6 +12,9 @@ columns:
   - name: RECORD_KEY
     description: |-
       Unique identifier for each person.
+    is_pii: True
+    field_type: person_external_id
+    external_id_type: US_OR_ID
   - name: EFFECTIVE_DATE
     description: |-
       Date component became effective.

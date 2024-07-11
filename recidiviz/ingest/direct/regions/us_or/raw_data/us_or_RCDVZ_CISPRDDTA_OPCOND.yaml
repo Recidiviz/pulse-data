@@ -51,6 +51,8 @@ columns:
     description: |-
       A unique identifier for each individual.
     is_pii: True
+    field_type: person_external_id
+    external_id_type: US_OR_ID
   - name: COURT_CASE_NUMBER
     description: |-
       Court case number attached to condition.
@@ -92,3 +94,8 @@ columns:
       - "SAFE.PARSE_DATETIME('%m/%d/%Y', {col_name})"
     description: |-
       Date when last updated.
+
+table_relationships:
+  - foreign_table: RCDVZ_PRDDTA_OP970P
+    join_logic:
+      - RCDVZ_PRDDTA_OP970P.RECORD_KEY = RCDVZ_CISPRDDTA_OPCOND.RECORD_KEY
