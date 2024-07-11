@@ -140,11 +140,8 @@ class UsMoSupervisionNormalizationDelegate(
         """Given a set of 'supervision type critical' statuses, returns the supervision
         type for the SupervisionTypeSpan starting on that day."""
 
-        # Status external ids are the sentence id with the status sequence number appended - larger sequence numbers
-        # should be given precedence.
-        critical_day_statuses.sort(
-            key=lambda s: s.sentence_status_external_id, reverse=True
-        )
+        # Sort statuses by sequence number in reverse order
+        critical_day_statuses.sort(key=lambda s: s.sequence_num, reverse=True)
         supervision_type = critical_day_statuses[
             0
         ].supervision_type_status_classification

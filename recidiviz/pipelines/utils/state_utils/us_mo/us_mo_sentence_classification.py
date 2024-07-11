@@ -306,6 +306,19 @@ class UsMoSentenceStatus(BuildableAttr):
 
         return StateSentenceStatus.SERVING
 
+    # TODO(#30199): Remove this field once we set sequence_num directly as a param
+    #  on this class.
+    @property
+    def sequence_num(self) -> int:
+        """Parses the status sequence number from the external id."""
+        parts = self.sentence_status_external_id.split("-")
+        if len(parts) < 2:
+            raise ValueError(
+                f"Unexpected sentence status external id format: "
+                f"{self.sentence_status_external_id}"
+            )
+        return int(parts[-1])
+
 
 @attr.s(frozen=True)
 class SupervisionTypeSpan(DurationMixin):
