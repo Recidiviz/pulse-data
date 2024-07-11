@@ -32,13 +32,18 @@ from flask import Request
 from recidiviz.cloud_functions.cloud_function_utils import cloud_functions_log
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath, GcsfsFilePath, GcsfsPath
+from recidiviz.ingest.direct.direct_ingest_bucket_name_utils import (
+    get_region_code_from_direct_ingest_bucket,
+)
 from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
     DirectIngestGCSFileSystem,
 )
 from recidiviz.ingest.direct.gcs.directory_path_utils import (
     gcsfs_direct_ingest_deprecated_storage_directory_path_for_state,
 )
-from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.ingest.direct.types.direct_ingest_instance_factory import (
+    DirectIngestInstanceFactory,
+)
 
 # GCFs will reuse global variables across invocations if they execute on the same function instance
 # This is useful for caching expensive resources like establishing a connection to GCS
@@ -167,8 +172,6 @@ def handle_zipfile(request: Request) -> Tuple[str, HTTPStatus]:
         cloud_functions_log(severity="ERROR", message=error_msg)
         return error_msg, HTTPStatus.BAD_REQUEST
 
-    logging.info("Handling file [%s]", path.abs_path())
-
     if not path.has_zip_extension:
         cloud_functions_log(
             severity="INFO",
@@ -180,6 +183,16 @@ def handle_zipfile(request: Request) -> Tuple[str, HTTPStatus]:
     if fs is None:
         fs = DirectIngestGCSFileSystem(GcsfsFactory.build())
 
+    region_code = get_region_code_from_direct_ingest_bucket(bucket)
+    if region_code is None:
+        error_msg = f"Invalid ingest bucket [{bucket}]"
+        cloud_functions_log(severity="ERROR", message=error_msg)
+        return error_msg, HTTPStatus.BAD_REQUEST
+
+    ingest_instance = DirectIngestInstanceFactory.for_ingest_bucket(
+        GcsfsBucketPath(bucket)
+    )
+
     cloud_functions_log(
         severity="INFO",
         message=f"File [{path.abs_path()}] is a zip file, unzipping...",
@@ -189,8 +202,8 @@ def handle_zipfile(request: Request) -> Tuple[str, HTTPStatus]:
         fs.mv(
             src_path=path,
             dst_path=gcsfs_direct_ingest_deprecated_storage_directory_path_for_state(
-                region_code=os.environ["STATE_CODE"],
-                ingest_instance=DirectIngestInstance(os.environ["INGEST_INSTANCE"]),
+                region_code=region_code,
+                ingest_instance=ingest_instance,
                 deprecated_on_date=date.today(),
                 project_id=os.environ["PROJECT_ID"],
             ),

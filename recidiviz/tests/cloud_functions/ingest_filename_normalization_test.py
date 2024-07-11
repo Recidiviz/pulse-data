@@ -30,8 +30,6 @@ from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath, GcsfsFilePath
 
 
 def set_env_vars() -> None:
-    os.environ["STATE_CODE"] = "us_oz"
-    os.environ["INGEST_INSTANCE"] = "PRIMARY"
     os.environ["PROJECT_ID"] = "recidiviz-test"
     os.environ["DRY_RUN"] = "false"
     os.environ[
@@ -222,7 +220,10 @@ class TestHandleZipfile(TestCase):
 
     def setUp(self) -> None:
         set_env_vars()
-        request_data = {"bucket": "test_bucket", "name": "test_file.zip"}
+        request_data = {
+            "bucket": "recidiviz-test-direct-ingest-state-us-xx",
+            "name": "test_file.zip",
+        }
         self.mock_request = MagicMock()
         self.mock_request.get_json.return_value = request_data
 
