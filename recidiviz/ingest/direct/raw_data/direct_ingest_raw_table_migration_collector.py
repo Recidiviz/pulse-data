@@ -16,6 +16,7 @@
 # =============================================================================
 """Defines a class that finds all raw table migrations defined for a given region."""
 
+import datetime
 from collections import defaultdict
 from types import ModuleType
 from typing import Dict, List, Optional
@@ -67,20 +68,20 @@ class DirectIngestRawTableMigrationCollector(ModuleCollectorMixin):
             str, List[RawTableMigration]
         ] = self.collect_raw_table_migrations_by_file_tag()
 
-    # TODO(#30757) because we know file_id at this point we also know update_datetime,
-    # so we can add a filter to not run migration queries whose `update_datetime_filters`
-    # dont match the update_datetime of the raw file
     def get_raw_table_migration_queries_for_file_tag(
         self,
         file_tag: str,
         raw_table_address: BigQueryAddress,
+        data_update_datetime: Optional[datetime.datetime],
     ) -> List[str]:
         """Generates a migration query that will modify raw data for the raw data table
-        specified by |file_tag| that is located at |raw_table_address|.
+        specified by |file_tag| that is located at |raw_table_address|, optionally
+        filtering migrations by |data_update_datetime|
         """
         return RawTableMigrationGenerator.migration_queries(
             self._migration_by_file_tag[file_tag],
             raw_table_address=raw_table_address,
+            data_update_datetime=data_update_datetime,
         )
 
     def collect_raw_table_migrations_by_file_tag(

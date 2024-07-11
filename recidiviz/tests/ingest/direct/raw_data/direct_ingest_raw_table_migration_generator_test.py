@@ -36,6 +36,7 @@ from recidiviz.utils.metadata import local_project_id_override
 
 _DATE_1 = datetime.datetime(2020, 4, 14, 0, 31, 0)
 _DATE_2 = datetime.datetime(2020, 8, 16, 1, 2, 3)
+_DATE_3 = datetime.datetime(2020, 8, 18, 1, 2, 3)
 
 
 class TestDirectIngestRawTableMigrationGenerator(unittest.TestCase):
@@ -64,12 +65,12 @@ class TestDirectIngestRawTableMigrationGenerator(unittest.TestCase):
 
         with local_project_id_override("recidiviz-456"):
             project_1_queries = RawTableMigrationGenerator.migration_queries(
-                [migration], test_raw_table
+                [migration], test_raw_table, data_update_datetime=None
             )
 
         with local_project_id_override("recidiviz-789"):
             project_2_queries = RawTableMigrationGenerator.migration_queries(
-                [migration], test_raw_table
+                [migration], test_raw_table, data_update_datetime=None
             )
 
         expected_project_1_queries = [
@@ -101,12 +102,12 @@ WHERE STRUCT(COL1, update_datetime) IN (
 
         with local_project_id_override("recidiviz-456"):
             project_1_queries = RawTableMigrationGenerator.migration_queries(
-                [migration], test_raw_table
+                [migration], test_raw_table, data_update_datetime=None
             )
 
         with local_project_id_override("recidiviz-789"):
             project_2_queries = RawTableMigrationGenerator.migration_queries(
-                [migration], test_raw_table
+                [migration], test_raw_table, data_update_datetime=None
             )
 
         expected_project_1_queries = [
@@ -138,7 +139,7 @@ WHERE STRUCT(COL1, update_datetime) IN (
 
         with local_project_id_override("recidiviz-456"):
             queries = RawTableMigrationGenerator.migration_queries(
-                [migration], test_raw_table
+                [migration], test_raw_table, data_update_datetime=None
             )
 
         expected_queries = [
@@ -161,12 +162,12 @@ WHERE STRUCT(col_name_1a, col_name_1b, update_datetime) IN (
 
         with local_project_id_override("recidiviz-456"):
             project_1_queries = RawTableMigrationGenerator.migration_queries(
-                [migration], test_raw_table
+                [migration], test_raw_table, data_update_datetime=None
             )
 
         with local_project_id_override("recidiviz-789"):
             project_2_queries = RawTableMigrationGenerator.migration_queries(
-                [migration], test_raw_table
+                [migration], test_raw_table, data_update_datetime=None
             )
 
         expected_project_1_queries = [
@@ -199,12 +200,12 @@ WHERE STRUCT(COL1) IN (
 
         with local_project_id_override("recidiviz-456"):
             project_1_queries = RawTableMigrationGenerator.migration_queries(
-                [migration], test_raw_table
+                [migration], test_raw_table, data_update_datetime=None
             )
 
         with local_project_id_override("recidiviz-789"):
             project_2_queries = RawTableMigrationGenerator.migration_queries(
-                [migration], test_raw_table
+                [migration], test_raw_table, data_update_datetime=None
             )
 
         expected_project_1_queries = [
@@ -241,7 +242,7 @@ WHERE original.COL1 = updates.COL1 AND original.update_datetime = updates.update
 
         with local_project_id_override("recidiviz-456"):
             queries = RawTableMigrationGenerator.migration_queries(
-                [migration], test_raw_table
+                [migration], test_raw_table, data_update_datetime=None
             )
 
         expected_queries = [
@@ -269,12 +270,12 @@ WHERE original.col_name_1a = updates.col_name_1a AND original.col_name_1b = upda
         test_raw_table = BigQueryAddress(dataset_id="us_xx_raw_data", table_id="tagC")
         with local_project_id_override("recidiviz-456"):
             project_1_queries = RawTableMigrationGenerator.migration_queries(
-                [migration], test_raw_table
+                [migration], test_raw_table, data_update_datetime=None
             )
 
         with local_project_id_override("recidiviz-789"):
             project_2_queries = RawTableMigrationGenerator.migration_queries(
-                [migration], test_raw_table
+                [migration], test_raw_table, data_update_datetime=None
             )
 
         expected_project_1_queries = [
@@ -356,7 +357,7 @@ WHERE original.COL1 = updates.COL1;"""
 
         with local_project_id_override("recidiviz-456"):
             queries_map = RawTableMigrationGenerator.migration_queries(
-                migrations, test_raw_table
+                migrations, test_raw_table, data_update_datetime=None
             )
 
         expected_queries_map = [
@@ -389,7 +390,7 @@ WHERE STRUCT(COL1, update_datetime) IN (
 
         with local_project_id_override("recidiviz-456"):
             queries_map = RawTableMigrationGenerator.migration_queries(
-                migrations, test_raw_table
+                migrations, test_raw_table, data_update_datetime=None
             )
 
         expected_queries_map = [
@@ -427,7 +428,7 @@ WHERE STRUCT(COL1, update_datetime) IN (
 
         with local_project_id_override("recidiviz-456"):
             queries_map = RawTableMigrationGenerator.migration_queries(
-                migrations, test_raw_table
+                migrations, test_raw_table, data_update_datetime=None
             )
 
         expected_queries_map = [
@@ -464,7 +465,7 @@ WHERE STRUCT(COL1) IN (
 
         with local_project_id_override("recidiviz-456"):
             queries_map = RawTableMigrationGenerator.migration_queries(
-                migrations, test_raw_table
+                migrations, test_raw_table, data_update_datetime=None
             )
 
         expected_queries_map = [
@@ -502,7 +503,7 @@ WHERE STRUCT(COL2, update_datetime) IN (
 
         with local_project_id_override("recidiviz-456"):
             queries_map = RawTableMigrationGenerator.migration_queries(
-                migrations, test_raw_table
+                migrations, test_raw_table, data_update_datetime=None
             )
 
         expected_queries_map = [
@@ -540,7 +541,7 @@ WHERE STRUCT(COL2, update_datetime) IN (
 
         with local_project_id_override("recidiviz-456"):
             queries_map = RawTableMigrationGenerator.migration_queries(
-                migrations, test_raw_table
+                migrations, test_raw_table, data_update_datetime=None
             )
 
         expected_queries_map = [
@@ -577,7 +578,7 @@ WHERE original.COL1 = updates.COL1 AND original.update_datetime = updates.update
 
         with local_project_id_override("recidiviz-456"):
             queries_map = RawTableMigrationGenerator.migration_queries(
-                migrations, test_raw_table
+                migrations, test_raw_table, data_update_datetime=None
             )
 
         expected_queries_map = [
@@ -620,7 +621,7 @@ WHERE original.COL1 = updates.COL1;"""
 
         with local_project_id_override("recidiviz-456"):
             queries_map = RawTableMigrationGenerator.migration_queries(
-                migrations, test_raw_table
+                migrations, test_raw_table, data_update_datetime=None
             )
 
         expected_queries_map = [
@@ -663,7 +664,7 @@ WHERE original.COL1 = updates.COL1;""",
 
         with local_project_id_override("recidiviz-456"):
             queries_map = RawTableMigrationGenerator.migration_queries(
-                migrations, test_raw_table
+                migrations, test_raw_table, data_update_datetime=None
             )
 
         expected_queries_map = [
@@ -707,7 +708,7 @@ WHERE original.COL1 = updates.COL1;""",
 
         with local_project_id_override("recidiviz-456"):
             queries_map = RawTableMigrationGenerator.migration_queries(
-                migrations, test_raw_table
+                migrations, test_raw_table, data_update_datetime=None
             )
 
         expected_queries_map = [
@@ -748,7 +749,7 @@ WHERE original.COL1 = updates.COL1 AND original.update_datetime = updates.update
 
         with local_project_id_override("recidiviz-456"):
             queries_map = RawTableMigrationGenerator.migration_queries(
-                migrations, test_raw_table
+                migrations, test_raw_table, data_update_datetime=None
             )
 
         expected_queries_map = [
@@ -784,7 +785,7 @@ WHERE original.COL1 = updates.COL1 AND original.update_datetime = updates.update
 
         with local_project_id_override("recidiviz-456"):
             queries_map = RawTableMigrationGenerator.migration_queries(
-                migrations, test_raw_table
+                migrations, test_raw_table, data_update_datetime=None
             )
 
         expected_queries_map = [
@@ -797,3 +798,118 @@ WHERE original.COL2 = updates.COL2 AND original.update_datetime = updates.update
         ]
 
         self.assertEqual(expected_queries_map, queries_map)
+
+    def test_data_update_datetime_no_update_datetime_filters(self) -> None:
+        migrations_file = self._migration_file_path_for_tag("tagC")
+
+        migrations: List[RawTableMigration] = [
+            UpdateRawTableMigration(
+                migrations_file=migrations_file,
+                update_datetime_filters=None,
+                filters=[("COL1", "123")],
+                updates=[("COL2", "1234")],
+            ),
+            UpdateRawTableMigration(
+                migrations_file=migrations_file,
+                update_datetime_filters=None,
+                filters=[("COL1", "456")],
+                updates=[("COL3", "4567")],
+            ),
+        ]
+
+        test_raw_table = BigQueryAddress(dataset_id="us_xx_raw_data", table_id="tagC")
+
+        with local_project_id_override("recidiviz-456"):
+            queries_map = RawTableMigrationGenerator.migration_queries(
+                migrations,
+                test_raw_table,
+                data_update_datetime=_DATE_1,
+            )
+
+        expected_queries_map = [
+            """UPDATE `recidiviz-456.us_xx_raw_data.tagC` original
+SET COL2 = updates.new__COL2
+FROM (SELECT * FROM UNNEST([
+    STRUCT('123' AS COL1, '1234' AS new__COL2)
+])) updates
+WHERE original.COL1 = updates.COL1;""",
+            """UPDATE `recidiviz-456.us_xx_raw_data.tagC` original
+SET COL3 = updates.new__COL3
+FROM (SELECT * FROM UNNEST([
+    STRUCT('456' AS COL1, '4567' AS new__COL3)
+])) updates
+WHERE original.COL1 = updates.COL1;""",
+        ]
+
+        self.assertEqual(expected_queries_map, queries_map)
+
+    def test_data_update_datetime_only_filters_on_included_date(self) -> None:
+        migrations_file = self._migration_file_path_for_tag("tagC")
+
+        migrations: List[RawTableMigration] = [
+            DeleteFromRawTableMigration(
+                migrations_file=migrations_file,
+                update_datetime_filters=[_DATE_2],
+                filters=[("COL1", "31415")],
+            ),
+            DeleteFromRawTableMigration(
+                migrations_file=migrations_file,
+                update_datetime_filters=None,
+                filters=[("COL1", "6666")],
+            ),
+            DeleteFromRawTableMigration(
+                migrations_file=migrations_file,
+                update_datetime_filters=[_DATE_1],
+                filters=[("COL1", "1234")],
+            ),
+        ]
+
+        test_raw_table = BigQueryAddress(dataset_id="us_xx_raw_data", table_id="tagC")
+
+        with local_project_id_override("recidiviz-456"):
+            queries_map = RawTableMigrationGenerator.migration_queries(
+                migrations,
+                test_raw_table,
+                data_update_datetime=_DATE_2,
+            )
+
+        expected_queries_map = [
+            f"""DELETE FROM `recidiviz-456.us_xx_raw_data.tagC`
+WHERE STRUCT(COL1, update_datetime) IN (
+    STRUCT("31415", "{_DATE_2.isoformat()}")
+);""",
+            """DELETE FROM `recidiviz-456.us_xx_raw_data.tagC`
+WHERE STRUCT(COL1) IN (
+    STRUCT("6666")
+);""",
+        ]
+
+        with local_project_id_override("recidiviz-456"):
+            queries_map = RawTableMigrationGenerator.migration_queries(
+                migrations,
+                test_raw_table,
+                data_update_datetime=None,
+            )
+
+        expected_queries_map = [
+            f"""DELETE FROM `recidiviz-456.us_xx_raw_data.tagC`
+WHERE STRUCT(COL1, update_datetime) IN (
+    STRUCT("31415", "{_DATE_2.isoformat()}"),
+    STRUCT("1234", "{_DATE_1.isoformat()}")
+);""",
+            """DELETE FROM `recidiviz-456.us_xx_raw_data.tagC`
+WHERE STRUCT(COL1) IN (
+    STRUCT("6666")
+);""",
+        ]
+
+        self.assertEqual(expected_queries_map, queries_map)
+
+        with local_project_id_override("recidiviz-456"):
+            queries_map = RawTableMigrationGenerator.migration_queries(
+                migrations,
+                test_raw_table,
+                data_update_datetime=_DATE_3,
+            )
+
+        self.assertEqual(expected_queries_map[1:], queries_map)

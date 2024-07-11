@@ -16,7 +16,8 @@
 # =============================================================================
 """Provides functionality for generating a set of migration queries for migrations
 on a given raw table."""
-
+import datetime
+import logging
 from collections import defaultdict
 from typing import Dict, List, Optional, Sequence, Tuple, Type, cast
 
@@ -53,6 +54,7 @@ class RawTableMigrationGenerator:
         cls,
         migrations: List["RawTableMigration"],
         raw_table_address: BigQueryAddress,
+        data_update_datetime: Optional[datetime.datetime],
     ) -> List[str]:
         """Generates a list of migration query strings from |migrations| that can be
         applied to |raw_table_address| in Big Query. Merges all similarly shaped record
@@ -60,6 +62,11 @@ class RawTableMigrationGenerator:
 
         Throws if the migration configs are not all for migrations on the same raw
         table.
+
+        If provided, |data_update_datetime| indicates that the data we will run these
+        migration queries against has a single associated update_datetime. This allows
+        us to optimize which migration queries are run (some migrations apply only to
+        data with certain update_datetime values).
         """
 
         cls._check_file_tags_match(migrations)
@@ -77,9 +84,18 @@ class RawTableMigrationGenerator:
         result = []
         for migration_cls, filter_key_to_migrations in groupings.items():
             for grouped_migrations in filter_key_to_migrations.values():
+                filtered_grouped_migrations = (
+                    cls._filter_migrations_for_data_update_datetime(
+                        data_update_datetime, grouped_migrations
+                    )
+                )
+
+                if not filtered_grouped_migrations:
+                    continue
+
                 if migration_cls == DeleteFromRawTableMigration:
                     delete_migrations = cast(
-                        List[DeleteFromRawTableMigration], grouped_migrations
+                        List[DeleteFromRawTableMigration], filtered_grouped_migrations
                     )
                     queries = cls._queries_for_delete_migrations(
                         delete_migrations,
@@ -87,7 +103,7 @@ class RawTableMigrationGenerator:
                     )
                 elif migration_cls == UpdateRawTableMigration:
                     update_migrations = cast(
-                        List[UpdateRawTableMigration], grouped_migrations
+                        List[UpdateRawTableMigration], filtered_grouped_migrations
                     )
                     queries = cls._queries_for_update_migrations(
                         update_migrations,
@@ -100,6 +116,40 @@ class RawTableMigrationGenerator:
 
                 result.extend(queries)
         return result
+
+    @staticmethod
+    def _filter_migrations_for_data_update_datetime(
+        data_update_datetime: Optional[datetime.datetime],
+        migrations_shared_filter_keys: List[RawTableMigration],
+    ) -> List[RawTableMigration]:
+        """Returns all migrations in |migrations_shared_filter_keys| that dont have
+            -  an update_datetime_filter or
+            -  |data_update_datetime| is included as a filter value value for in the
+            migration's update_datetime filter values
+
+        If that is the case, we can safely assume that this migration query
+        would be a no-oop when running against a table that only contains data with
+        update_datime of |update_datetime|.
+        """
+        if not data_update_datetime:
+            return migrations_shared_filter_keys
+
+        filtered_migrations = [
+            migration
+            for migration in migrations_shared_filter_keys
+            if not migration.update_datetime_filters
+            or data_update_datetime in migration.update_datetime_filters
+        ]
+
+        if len(filtered_migrations) != len(migrations_shared_filter_keys):
+            logging.info(
+                "Excluding [%s of %s] mirations as they filter by an update_datetime"
+                "that is not included on the destination table",
+                len(migrations_shared_filter_keys) - len(filtered_migrations),
+                len(migrations_shared_filter_keys),
+            )
+
+        return filtered_migrations
 
     @classmethod
     def print_list(
@@ -137,7 +187,9 @@ class RawTableMigrationGenerator:
                 f"************************/"
             )
 
-            for query in cls.migration_queries(migrations, raw_table):
+            for query in cls.migration_queries(
+                migrations, raw_table, data_update_datetime=None
+            ):
                 print(query)
 
     @classmethod

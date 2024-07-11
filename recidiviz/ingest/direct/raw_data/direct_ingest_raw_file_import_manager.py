@@ -331,7 +331,7 @@ class DirectIngestRawFileImportManager:
 
         migration_queries = (
             self.raw_table_migrations.get_raw_table_migration_queries_for_file_tag(
-                parts.file_tag, raw_data_destination_address
+                parts.file_tag, raw_data_destination_address, data_update_datetime=None
             )
         )
 
