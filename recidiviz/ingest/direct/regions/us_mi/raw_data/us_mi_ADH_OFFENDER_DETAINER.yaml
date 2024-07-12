@@ -11,6 +11,8 @@ columns:
   - name: offender_booking_id
     description: The OMNI-database generated ID for an individual's booking
     is_pii: True
+    field_type: person_external_id
+    external_id_type: US_MI_DOC_BOOK
   - name: detainer_sequence_number
     description: sequence number of the detainer for an individual
   - name: detainer_received_date
@@ -66,6 +68,8 @@ columns:
   - name: offender_id
     description: The OMNI-database generated ID for a justice-impacted individual
     is_pii: True
+    field_type: person_external_id
+    external_id_type: US_MI_DOC_ID
   - name: originating_agency
     description: The agency from which the detainer originates
   - name: notify_date
@@ -203,3 +207,8 @@ columns:
     field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M %p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
+
+table_relationships:
+  - foreign_table: ADH_OFFENDER
+    join_logic:
+      - ADH_OFFENDER.offender_id = ADH_OFFENDER_DETAINER.offender_id

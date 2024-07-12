@@ -12,6 +12,9 @@ primary_key_cols:
 columns:
   - name: download_date
   - name: offender_number
+    is_pii: True
+    field_type: person_external_id
+    external_id_type: US_MI_DOC
   - name: prefix
   - name: parole_date
   - name: term_mos
@@ -46,3 +49,8 @@ columns:
   - name: termination_reason
   - name: pba_type
   - name: del_flag
+
+table_relationships:
+  - foreign_table: ADH_OFFENDER
+    join_logic:
+      - ADH_OFFENDER.offender_number = ADH_PAROLE_BOARD_ACTION.offender_number

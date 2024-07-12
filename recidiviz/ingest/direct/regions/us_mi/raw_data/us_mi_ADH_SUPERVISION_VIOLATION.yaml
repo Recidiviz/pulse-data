@@ -10,6 +10,8 @@ columns:
   - name: offender_booking_id
     is_pii: True
     description: OMNI-database generated id for an individual booking
+    field_type: person_external_id
+    external_id_type: US_MI_DOC_BOOK
   - name: legal_order_id
     description: OMNI-database generated id for a legal order
   - name: violation_recommendation_id
@@ -327,3 +329,7 @@ columns:
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M %p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: last_update_node
+table_relationships:
+  - foreign_table: ADH_OFFENDER_BOOKING
+    join_logic:
+      - ADH_OFFENDER_BOOKING.offender_booking_id = ADH_SUPERVISION_VIOLATION.offender_booking_id
