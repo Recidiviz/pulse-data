@@ -220,14 +220,10 @@ def parse_arguments(argv: List[str]) -> Tuple[argparse.Namespace, List[str]]:
         type=str,
         nargs="*",
         choices=[
-            table.name
-            for table in get_all_table_classes_in_schema(SchemaType.INSIGHTS)
-            if table.name not in ["configurations", "user_metadata"]
+            table.name for table in get_all_table_classes_in_schema(SchemaType.INSIGHTS)
         ],
         default=[
-            table.name
-            for table in get_all_table_classes_in_schema(SchemaType.INSIGHTS)
-            if table.name not in ["configurations", "user_metadata"]
+            table.name for table in get_all_table_classes_in_schema(SchemaType.INSIGHTS)
         ],
     )
 
