@@ -55,14 +55,17 @@ class TestIdentifyMostSevereViolationType(unittest.TestCase):
 
     def test_identify_most_severe_violation_simple(self) -> None:
         violation = NormalizedStateSupervisionViolation(
+            supervision_violation_id=1,
             state_code="US_XX",
             external_id="sv1",
             supervision_violation_types=[
                 NormalizedStateSupervisionViolationTypeEntry(
+                    supervision_violation_type_entry_id=1,
                     state_code="US_XX",
                     violation_type=StateSupervisionViolationType.TECHNICAL,
                 ),
                 NormalizedStateSupervisionViolationTypeEntry(
+                    supervision_violation_type_entry_id=1,
                     state_code="US_XX",
                     violation_type=StateSupervisionViolationType.FELONY,
                 ),
@@ -82,6 +85,7 @@ class TestIdentifyMostSevereViolationType(unittest.TestCase):
             state_code="US_XX",
             supervision_violation_types=[
                 NormalizedStateSupervisionViolationTypeEntry(
+                    supervision_violation_type_entry_id=1,
                     state_code="US_XX",
                     violation_type=StateSupervisionViolationType.TECHNICAL,
                 ),
@@ -94,14 +98,17 @@ class TestIdentifyMostSevereViolationType(unittest.TestCase):
             state_code="US_XX",
             supervision_violation_types=[
                 NormalizedStateSupervisionViolationTypeEntry(
+                    supervision_violation_type_entry_id=1,
                     state_code="US_XX",
                     violation_type=StateSupervisionViolationType.TECHNICAL,
                 ),
                 NormalizedStateSupervisionViolationTypeEntry(
+                    supervision_violation_type_entry_id=1,
                     state_code="US_XX",
                     violation_type=StateSupervisionViolationType.LAW,
                 ),
                 NormalizedStateSupervisionViolationTypeEntry(
+                    supervision_violation_type_entry_id=1,
                     state_code="US_XX",
                     violation_type=StateSupervisionViolationType.ABSCONDED,
                 ),
@@ -114,10 +121,12 @@ class TestIdentifyMostSevereViolationType(unittest.TestCase):
             state_code="US_XX",
             supervision_violation_types=[
                 NormalizedStateSupervisionViolationTypeEntry(
+                    supervision_violation_type_entry_id=1,
                     state_code="US_XX",
                     violation_type=StateSupervisionViolationType.TECHNICAL,
                 ),
                 NormalizedStateSupervisionViolationTypeEntry(
+                    supervision_violation_type_entry_id=1,
                     state_code="US_XX",
                     violation_type=StateSupervisionViolationType.MISDEMEANOR,
                 ),
@@ -137,6 +146,7 @@ class TestIdentifyMostSevereViolationType(unittest.TestCase):
             state_code="US_XX",
             supervision_violation_types=[
                 NormalizedStateSupervisionViolationTypeEntry(
+                    supervision_violation_type_entry_id=1,
                     state_code="US_XX",
                     violation_type=StateSupervisionViolationType.FELONY,
                 ),
@@ -149,10 +159,12 @@ class TestIdentifyMostSevereViolationType(unittest.TestCase):
             state_code="US_XX",
             supervision_violation_types=[
                 NormalizedStateSupervisionViolationTypeEntry(
+                    supervision_violation_type_entry_id=1,
                     state_code="US_XX",
                     violation_type=StateSupervisionViolationType.ESCAPED,
                 ),
                 NormalizedStateSupervisionViolationTypeEntry(
+                    supervision_violation_type_entry_id=1,
                     state_code="US_XX",
                     violation_type=StateSupervisionViolationType.LAW,
                 ),
@@ -165,6 +177,7 @@ class TestIdentifyMostSevereViolationType(unittest.TestCase):
             state_code="US_XX",
             supervision_violation_types=[
                 NormalizedStateSupervisionViolationTypeEntry(
+                    supervision_violation_type_entry_id=1,
                     state_code="US_XX",
                     violation_type=StateSupervisionViolationType.MISDEMEANOR,
                 ),
@@ -185,6 +198,7 @@ class TestIdentifyMostSevereViolationType(unittest.TestCase):
             violation_date=datetime.date(2010, 1, 1),
             supervision_violation_types=[
                 NormalizedStateSupervisionViolationTypeEntry(
+                    supervision_violation_type_entry_id=1,
                     state_code="US_XX",
                     violation_type=StateSupervisionViolationType.FELONY,
                 ),
@@ -198,10 +212,12 @@ class TestIdentifyMostSevereViolationType(unittest.TestCase):
             violation_date=datetime.date(2012, 6, 6),
             supervision_violation_types=[
                 NormalizedStateSupervisionViolationTypeEntry(
+                    supervision_violation_type_entry_id=1,
                     state_code="US_XX",
                     violation_type=StateSupervisionViolationType.FELONY,
                 ),
                 NormalizedStateSupervisionViolationTypeEntry(
+                    supervision_violation_type_entry_id=1,
                     state_code="US_XX",
                     violation_type=StateSupervisionViolationType.LAW,
                 ),
@@ -215,6 +231,7 @@ class TestIdentifyMostSevereViolationType(unittest.TestCase):
             violation_date=datetime.date(2012, 5, 20),
             supervision_violation_types=[
                 NormalizedStateSupervisionViolationTypeEntry(
+                    supervision_violation_type_entry_id=1,
                     state_code="US_XX",
                     violation_type=StateSupervisionViolationType.MISDEMEANOR,
                 ),
@@ -235,10 +252,12 @@ class TestIdentifyMostSevereViolationType(unittest.TestCase):
             violation_date=datetime.date(2012, 6, 6),
             supervision_violation_types=[
                 NormalizedStateSupervisionViolationTypeEntry(
+                    supervision_violation_type_entry_id=1,
                     state_code="US_XX",
                     violation_type=StateSupervisionViolationType.FELONY,
                 ),
                 NormalizedStateSupervisionViolationTypeEntry(
+                    supervision_violation_type_entry_id=1,
                     state_code="US_XX",
                     violation_type=StateSupervisionViolationType.LAW,
                 ),
@@ -252,6 +271,7 @@ class TestIdentifyMostSevereViolationType(unittest.TestCase):
             violation_date=datetime.date(2012, 5, 20),
             supervision_violation_types=[
                 NormalizedStateSupervisionViolationTypeEntry(
+                    supervision_violation_type_entry_id=1,
                     state_code="US_XX",
                     violation_type=StateSupervisionViolationType.MISDEMEANOR,
                 ),
@@ -265,6 +285,7 @@ class TestIdentifyMostSevereViolationType(unittest.TestCase):
             violation_date=datetime.date(2010, 1, 1),
             supervision_violation_types=[
                 NormalizedStateSupervisionViolationTypeEntry(
+                    supervision_violation_type_entry_id=1,
                     state_code="US_XX",
                     violation_type=StateSupervisionViolationType.FELONY,
                 ),
@@ -285,10 +306,12 @@ class TestIdentifyMostSevereViolationType(unittest.TestCase):
             violation_date=None,
             supervision_violation_types=[
                 NormalizedStateSupervisionViolationTypeEntry(
+                    supervision_violation_type_entry_id=1,
                     state_code="US_XX",
                     violation_type=StateSupervisionViolationType.FELONY,
                 ),
                 NormalizedStateSupervisionViolationTypeEntry(
+                    supervision_violation_type_entry_id=1,
                     state_code="US_XX",
                     violation_type=StateSupervisionViolationType.LAW,
                 ),
@@ -302,6 +325,7 @@ class TestIdentifyMostSevereViolationType(unittest.TestCase):
             violation_date=datetime.date(2012, 5, 20),
             supervision_violation_types=[
                 NormalizedStateSupervisionViolationTypeEntry(
+                    supervision_violation_type_entry_id=1,
                     state_code="US_XX",
                     violation_type=StateSupervisionViolationType.MISDEMEANOR,
                 ),
@@ -315,6 +339,7 @@ class TestIdentifyMostSevereViolationType(unittest.TestCase):
             violation_date=datetime.date(2010, 1, 1),
             supervision_violation_types=[
                 NormalizedStateSupervisionViolationTypeEntry(
+                    supervision_violation_type_entry_id=1,
                     state_code="US_XX",
                     violation_type=StateSupervisionViolationType.FELONY,
                 ),
@@ -343,10 +368,12 @@ class TestIdentifyMostSevereViolationType(unittest.TestCase):
             violation_date=datetime.date(2012, 6, 6),
             supervision_violation_types=[
                 NormalizedStateSupervisionViolationTypeEntry(
+                    supervision_violation_type_entry_id=1,
                     state_code="US_XX",
                     violation_type=StateSupervisionViolationType.FELONY,
                 ),
                 NormalizedStateSupervisionViolationTypeEntry(
+                    supervision_violation_type_entry_id=2,
                     state_code="US_XX",
                     violation_type=StateSupervisionViolationType.LAW,
                 ),
@@ -360,6 +387,7 @@ class TestIdentifyMostSevereViolationType(unittest.TestCase):
             violation_date=datetime.date(2012, 5, 20),
             supervision_violation_types=[
                 NormalizedStateSupervisionViolationTypeEntry(
+                    supervision_violation_type_entry_id=1,
                     state_code="US_XX",
                     violation_type=StateSupervisionViolationType.MISDEMEANOR,
                 ),
@@ -425,10 +453,12 @@ class TestIdentifyMostSevereViolationType(unittest.TestCase):
             violation_date=None,
             supervision_violation_types=[
                 NormalizedStateSupervisionViolationTypeEntry(
+                    supervision_violation_type_entry_id=1,
                     state_code="US_XX",
                     violation_type=StateSupervisionViolationType.FELONY,
                 ),
                 NormalizedStateSupervisionViolationTypeEntry(
+                    supervision_violation_type_entry_id=2,
                     state_code="US_XX",
                     violation_type=StateSupervisionViolationType.LAW,
                 ),
@@ -442,6 +472,7 @@ class TestIdentifyMostSevereViolationType(unittest.TestCase):
             violation_date=None,
             supervision_violation_types=[
                 NormalizedStateSupervisionViolationTypeEntry(
+                    supervision_violation_type_entry_id=1,
                     state_code="US_XX",
                     violation_type=StateSupervisionViolationType.FELONY,
                 ),
@@ -455,6 +486,7 @@ class TestIdentifyMostSevereViolationType(unittest.TestCase):
             violation_date=None,
             supervision_violation_types=[
                 NormalizedStateSupervisionViolationTypeEntry(
+                    supervision_violation_type_entry_id=1,
                     state_code="US_XX",
                     violation_type=StateSupervisionViolationType.FELONY,
                 ),
@@ -478,10 +510,12 @@ class TestViolationHistoryIdArray(unittest.TestCase):
             supervision_violation_id=1000,
             supervision_violation_types=[
                 NormalizedStateSupervisionViolationTypeEntry(
+                    supervision_violation_type_entry_id=1,
                     state_code="US_XX",
                     violation_type=StateSupervisionViolationType.TECHNICAL,
                 ),
                 NormalizedStateSupervisionViolationTypeEntry(
+                    supervision_violation_type_entry_id=1,
                     state_code="US_XX",
                     violation_type=StateSupervisionViolationType.FELONY,
                 ),
@@ -494,6 +528,7 @@ class TestViolationHistoryIdArray(unittest.TestCase):
             supervision_violation_id=2000,
             supervision_violation_types=[
                 NormalizedStateSupervisionViolationTypeEntry(
+                    supervision_violation_type_entry_id=1,
                     state_code="US_XX",
                     violation_type=StateSupervisionViolationType.TECHNICAL,
                 ),
@@ -513,6 +548,7 @@ class TestViolationHistoryIdArray(unittest.TestCase):
             supervision_violation_id=1000,
             supervision_violation_types=[
                 NormalizedStateSupervisionViolationTypeEntry(
+                    supervision_violation_type_entry_id=1,
                     state_code="US_XX",
                     violation_type=StateSupervisionViolationType.FELONY,
                 ),
@@ -537,6 +573,7 @@ class TestViolationHistoryIdArray(unittest.TestCase):
             supervision_violation_id=4321,
             supervision_violation_types=[
                 NormalizedStateSupervisionViolationTypeEntry(
+                    supervision_violation_type_entry_id=1,
                     state_code="US_XX",
                     violation_type=StateSupervisionViolationType.FELONY,
                 ),
@@ -563,10 +600,12 @@ class TestViolationHistoryIdArray(unittest.TestCase):
             external_id="sv1",
             supervision_violation_types=[
                 NormalizedStateSupervisionViolationTypeEntry(
+                    supervision_violation_type_entry_id=1,
                     state_code="US_XX",
                     violation_type=StateSupervisionViolationType.TECHNICAL,
                 ),
                 NormalizedStateSupervisionViolationTypeEntry(
+                    supervision_violation_type_entry_id=1,
                     state_code="US_XX",
                     violation_type=StateSupervisionViolationType.FELONY,
                 ),
@@ -579,6 +618,7 @@ class TestViolationHistoryIdArray(unittest.TestCase):
             external_id="sv2",
             supervision_violation_types=[
                 NormalizedStateSupervisionViolationTypeEntry(
+                    supervision_violation_type_entry_id=1,
                     state_code="US_XX",
                     violation_type=StateSupervisionViolationType.TECHNICAL,
                 ),
@@ -591,6 +631,7 @@ class TestViolationHistoryIdArray(unittest.TestCase):
             external_id="sv3",
             supervision_violation_types=[
                 NormalizedStateSupervisionViolationTypeEntry(
+                    supervision_violation_type_entry_id=1,
                     state_code="US_XX",
                     violation_type=StateSupervisionViolationType.MISDEMEANOR,
                 ),
@@ -610,14 +651,17 @@ class TestGetViolationTypeFrequencyCounter(unittest.TestCase):
     def test_get_violation_type_frequency_counter(self) -> None:
         violations = [
             NormalizedStateSupervisionViolation(
+                supervision_violation_id=1,
                 state_code="US_XX",
                 external_id="sv1",
                 supervision_violation_types=[
                     NormalizedStateSupervisionViolationTypeEntry(
+                        supervision_violation_type_entry_id=1,
                         state_code="US_XX",
                         violation_type=StateSupervisionViolationType.ABSCONDED,
                     ),
                     NormalizedStateSupervisionViolationTypeEntry(
+                        supervision_violation_type_entry_id=1,
                         state_code="US_XX",
                         violation_type=StateSupervisionViolationType.FELONY,
                     ),
@@ -636,6 +680,7 @@ class TestGetViolationTypeFrequencyCounter(unittest.TestCase):
     def test_get_violation_type_frequency_counter_no_types(self) -> None:
         violations = [
             NormalizedStateSupervisionViolation(
+                supervision_violation_id=1,
                 state_code="US_XX",
                 external_id="sv1",
             )
@@ -652,20 +697,24 @@ class TestGetViolationTypeFrequencyCounter(unittest.TestCase):
     def test_get_violation_type_frequency_counter_us_mo(self) -> None:
         violations = [
             NormalizedStateSupervisionViolation(
+                supervision_violation_id=1,
                 state_code="US_MO",
                 external_id="sv1",
                 supervision_violation_types=[
                     NormalizedStateSupervisionViolationTypeEntry(
+                        supervision_violation_type_entry_id=1,
                         state_code="US_XX",
                         violation_type=StateSupervisionViolationType.ABSCONDED,
                     ),
                     NormalizedStateSupervisionViolationTypeEntry(
+                        supervision_violation_type_entry_id=1,
                         state_code="US_XX",
                         violation_type=StateSupervisionViolationType.FELONY,
                     ),
                 ],
                 supervision_violated_conditions=[
                     NormalizedStateSupervisionViolatedConditionEntry(
+                        supervision_violated_condition_entry_id=1,
                         state_code="US_XX",
                         condition=StateSupervisionViolatedConditionType.INTERNAL_UNKNOWN,
                         condition_raw_text="DRG",
@@ -688,16 +737,19 @@ class TestGetViolationTypeFrequencyCounter(unittest.TestCase):
     def test_get_violation_type_frequency_counter_us_mo_technical_only(self) -> None:
         violations = [
             NormalizedStateSupervisionViolation(
+                supervision_violation_id=1,
                 state_code="US_MO",
                 external_id="sv1",
                 supervision_violation_types=[
                     NormalizedStateSupervisionViolationTypeEntry(
+                        supervision_violation_type_entry_id=1,
                         state_code="US_XX",
                         violation_type=StateSupervisionViolationType.TECHNICAL,
                     )
                 ],
                 supervision_violated_conditions=[
                     NormalizedStateSupervisionViolatedConditionEntry(
+                        supervision_violated_condition_entry_id=1,
                         state_code="US_XX",
                         condition=StateSupervisionViolatedConditionType.INTERNAL_UNKNOWN,
                         condition_raw_text="DRG",
@@ -719,10 +771,12 @@ class TestGetViolationTypeFrequencyCounter(unittest.TestCase):
     ) -> None:
         violations = [
             NormalizedStateSupervisionViolation(
+                supervision_violation_id=1,
                 state_code="US_MO",
                 external_id="sv1",
                 supervision_violation_types=[
                     NormalizedStateSupervisionViolationTypeEntry(
+                        supervision_violation_type_entry_id=1,
                         state_code="US_XX",
                         violation_type=StateSupervisionViolationType.TECHNICAL,
                     )
@@ -746,20 +800,24 @@ class TestGetViolationTypeFrequencyCounter(unittest.TestCase):
     ) -> None:
         violations = [
             NormalizedStateSupervisionViolation(
+                supervision_violation_id=1,
                 state_code="US_MO",
                 external_id="sv1",
                 supervision_violation_types=[
                     NormalizedStateSupervisionViolationTypeEntry(
+                        supervision_violation_type_entry_id=1,
                         state_code="US_XX",
                         violation_type=StateSupervisionViolationType.ABSCONDED,
                     ),
                     NormalizedStateSupervisionViolationTypeEntry(
+                        supervision_violation_type_entry_id=1,
                         state_code="US_XX",
                         violation_type=StateSupervisionViolationType.FELONY,
                     ),
                 ],
                 supervision_violated_conditions=[
                     NormalizedStateSupervisionViolatedConditionEntry(
+                        supervision_violated_condition_entry_id=1,
                         state_code="US_XX",
                         condition=StateSupervisionViolatedConditionType.INTERNAL_UNKNOWN,
                         condition_raw_text="WEA",
@@ -767,25 +825,30 @@ class TestGetViolationTypeFrequencyCounter(unittest.TestCase):
                 ],
             ),
             NormalizedStateSupervisionViolation(
+                supervision_violation_id=1,
                 state_code="US_MO",
                 external_id="sv2",
                 supervision_violation_types=[
                     NormalizedStateSupervisionViolationTypeEntry(
+                        supervision_violation_type_entry_id=1,
                         state_code="US_XX",
                         violation_type=StateSupervisionViolationType.MISDEMEANOR,
                     ),
                     NormalizedStateSupervisionViolationTypeEntry(
+                        supervision_violation_type_entry_id=1,
                         state_code="US_XX",
                         violation_type=StateSupervisionViolationType.TECHNICAL,
                     ),
                 ],
                 supervision_violated_conditions=[
                     NormalizedStateSupervisionViolatedConditionEntry(
+                        supervision_violated_condition_entry_id=1,
                         state_code="US_XX",
                         condition=StateSupervisionViolatedConditionType.INTERNAL_UNKNOWN,
                         condition_raw_text="DRG",
                     ),
                     NormalizedStateSupervisionViolatedConditionEntry(
+                        supervision_violated_condition_entry_id=1,
                         state_code="US_XX",
                         condition=StateSupervisionViolatedConditionType.INTERNAL_UNKNOWN,
                         condition_raw_text="EMP",
@@ -808,18 +871,22 @@ class TestGetViolationTypeFrequencyCounter(unittest.TestCase):
     def test_get_violation_type_frequency_counter_us_pa(self) -> None:
         violations = [
             NormalizedStateSupervisionViolation(
+                supervision_violation_id=1,
                 state_code="US_PA",
                 external_id="sv1",
                 supervision_violation_types=[
                     NormalizedStateSupervisionViolationTypeEntry(
+                        supervision_violation_type_entry_id=1,
                         state_code="US_XX",
                         violation_type=StateSupervisionViolationType.ABSCONDED,
                     ),
                     NormalizedStateSupervisionViolationTypeEntry(
+                        supervision_violation_type_entry_id=1,
                         state_code="US_XX",
                         violation_type=StateSupervisionViolationType.FELONY,
                     ),
                     NormalizedStateSupervisionViolationTypeEntry(
+                        supervision_violation_type_entry_id=1,
                         state_code="US_XX",
                         violation_type=StateSupervisionViolationType.TECHNICAL,
                         violation_type_raw_text="L05",
@@ -827,14 +894,17 @@ class TestGetViolationTypeFrequencyCounter(unittest.TestCase):
                 ],
             ),
             NormalizedStateSupervisionViolation(
+                supervision_violation_id=1,
                 state_code="US_PA",
                 external_id="sv2",
                 supervision_violation_types=[
                     NormalizedStateSupervisionViolationTypeEntry(
+                        supervision_violation_type_entry_id=1,
                         state_code="US_XX",
                         violation_type=StateSupervisionViolationType.MISDEMEANOR,
                     ),
                     NormalizedStateSupervisionViolationTypeEntry(
+                        supervision_violation_type_entry_id=1,
                         state_code="US_XX",
                         violation_type=StateSupervisionViolationType.TECHNICAL,
                         violation_type_raw_text="H12",
@@ -866,14 +936,17 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
             violation_date=datetime.date(2009, 1, 3),
             supervision_violation_types=[
                 NormalizedStateSupervisionViolationTypeEntry(
+                    supervision_violation_type_entry_id=1,
                     state_code="US_XX",
                     violation_type=StateSupervisionViolationType.TECHNICAL,
                 ),
                 NormalizedStateSupervisionViolationTypeEntry(
+                    supervision_violation_type_entry_id=1,
                     state_code="US_XX",
                     violation_type=StateSupervisionViolationType.FELONY,
                 ),
                 NormalizedStateSupervisionViolationTypeEntry(
+                    supervision_violation_type_entry_id=1,
                     state_code="US_XX",
                     violation_type=StateSupervisionViolationType.ABSCONDED,
                 ),
@@ -889,10 +962,12 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
             response_date=datetime.date(2009, 1, 7),
             supervision_violation_response_decisions=[
                 NormalizedStateSupervisionViolationResponseDecisionEntry(
+                    supervision_violation_response_decision_entry_id=1,
                     state_code="US_XX",
                     decision=StateSupervisionViolationResponseDecision.REVOCATION,
                 ),
                 NormalizedStateSupervisionViolationResponseDecisionEntry(
+                    supervision_violation_response_decision_entry_id=1,
                     state_code="US_XX",
                     decision=StateSupervisionViolationResponseDecision.CONTINUANCE,
                 ),
@@ -930,14 +1005,17 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
             violation_date=datetime.date(2009, 1, 3),
             supervision_violation_types=[
                 NormalizedStateSupervisionViolationTypeEntry(
+                    supervision_violation_type_entry_id=1,
                     state_code="US_XX",
                     violation_type=StateSupervisionViolationType.TECHNICAL,
                 ),
                 NormalizedStateSupervisionViolationTypeEntry(
+                    supervision_violation_type_entry_id=1,
                     state_code="US_XX",
                     violation_type=StateSupervisionViolationType.FELONY,
                 ),
                 NormalizedStateSupervisionViolationTypeEntry(
+                    supervision_violation_type_entry_id=1,
                     state_code="US_XX",
                     violation_type=StateSupervisionViolationType.ABSCONDED,
                 ),
@@ -965,10 +1043,12 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
             response_date=datetime.date(2019, 1, 20),
             supervision_violation_response_decisions=[
                 NormalizedStateSupervisionViolationResponseDecisionEntry(
+                    supervision_violation_response_decision_entry_id=1,
                     state_code="US_XX",
                     decision=StateSupervisionViolationResponseDecision.REVOCATION,
                 ),
                 NormalizedStateSupervisionViolationResponseDecisionEntry(
+                    supervision_violation_response_decision_entry_id=1,
                     state_code="US_XX",
                     decision=StateSupervisionViolationResponseDecision.CONTINUANCE,
                 ),
@@ -1011,17 +1091,20 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
             violation_date=datetime.date(2009, 1, 3),
             supervision_violation_types=[
                 NormalizedStateSupervisionViolationTypeEntry(
+                    supervision_violation_type_entry_id=1,
                     state_code="US_MO",
                     violation_type=StateSupervisionViolationType.TECHNICAL,
                 ),
             ],
             supervision_violated_conditions=[
                 NormalizedStateSupervisionViolatedConditionEntry(
+                    supervision_violated_condition_entry_id=1,
                     state_code="US_MO",
                     condition=StateSupervisionViolatedConditionType.SUBSTANCE,
                     condition_raw_text="DRG",
                 ),
                 NormalizedStateSupervisionViolatedConditionEntry(
+                    supervision_violated_condition_entry_id=1,
                     state_code="US_MO",
                     condition=StateSupervisionViolatedConditionType.INTERNAL_UNKNOWN,
                     condition_raw_text="OTHER",
@@ -1039,10 +1122,12 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
             response_date=datetime.date(2009, 1, 7),
             supervision_violation_response_decisions=[
                 NormalizedStateSupervisionViolationResponseDecisionEntry(
+                    supervision_violation_response_decision_entry_id=1,
                     state_code="US_MO",
                     decision=StateSupervisionViolationResponseDecision.REVOCATION,
                 ),
                 NormalizedStateSupervisionViolationResponseDecisionEntry(
+                    supervision_violation_response_decision_entry_id=1,
                     state_code="US_MO",
                     decision=StateSupervisionViolationResponseDecision.CONTINUANCE,
                 ),
@@ -1082,11 +1167,13 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
             violation_date=datetime.date(2009, 1, 3),
             supervision_violation_types=[
                 NormalizedStateSupervisionViolationTypeEntry(
+                    supervision_violation_type_entry_id=1,
                     state_code="US_PA",
                     violation_type=StateSupervisionViolationType.ABSCONDED,
                     violation_type_raw_text="H09",
                 ),
                 NormalizedStateSupervisionViolationTypeEntry(
+                    supervision_violation_type_entry_id=1,
                     state_code="US_PA",
                     violation_type=StateSupervisionViolationType.TECHNICAL,
                     violation_type_raw_text="H08",  # High Technical
@@ -1103,10 +1190,12 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
             response_date=datetime.date(2009, 1, 7),
             supervision_violation_response_decisions=[
                 NormalizedStateSupervisionViolationResponseDecisionEntry(
+                    supervision_violation_response_decision_entry_id=1,
                     state_code="US_PA",
                     decision=StateSupervisionViolationResponseDecision.REVOCATION,
                 ),
                 NormalizedStateSupervisionViolationResponseDecisionEntry(
+                    supervision_violation_response_decision_entry_id=1,
                     state_code="US_PA",
                     decision=StateSupervisionViolationResponseDecision.CONTINUANCE,
                 ),
@@ -1146,6 +1235,7 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
             violation_date=datetime.date(2009, 1, 3),
             supervision_violation_types=[
                 NormalizedStateSupervisionViolationTypeEntry(
+                    supervision_violation_type_entry_id=1,
                     state_code="US_PA",
                     violation_type=StateSupervisionViolationType.TECHNICAL,
                     violation_type_raw_text="L08",  # Substance Use
@@ -1162,10 +1252,12 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
             response_date=datetime.date(2009, 1, 7),
             supervision_violation_response_decisions=[
                 NormalizedStateSupervisionViolationResponseDecisionEntry(
+                    supervision_violation_response_decision_entry_id=1,
                     state_code="US_PA",
                     decision=StateSupervisionViolationResponseDecision.REVOCATION,
                 ),
                 NormalizedStateSupervisionViolationResponseDecisionEntry(
+                    supervision_violation_response_decision_entry_id=1,
                     state_code="US_PA",
                     decision=StateSupervisionViolationResponseDecision.CONTINUANCE,
                 ),
@@ -1205,6 +1297,7 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
             violation_date=datetime.date(2009, 1, 3),
             supervision_violation_types=[
                 NormalizedStateSupervisionViolationTypeEntry(
+                    supervision_violation_type_entry_id=1,
                     state_code="US_PA",
                     violation_type=StateSupervisionViolationType.TECHNICAL,
                     violation_type_raw_text="M16",  # Electronic Monitoring
@@ -1221,10 +1314,12 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
             response_date=datetime.date(2009, 1, 7),
             supervision_violation_response_decisions=[
                 NormalizedStateSupervisionViolationResponseDecisionEntry(
+                    supervision_violation_response_decision_entry_id=1,
                     state_code="US_PA",
                     decision=StateSupervisionViolationResponseDecision.REVOCATION,
                 ),
                 NormalizedStateSupervisionViolationResponseDecisionEntry(
+                    supervision_violation_response_decision_entry_id=1,
                     state_code="US_PA",
                     decision=StateSupervisionViolationResponseDecision.CONTINUANCE,
                 ),
@@ -1264,6 +1359,7 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
             violation_date=datetime.date(2009, 1, 3),
             supervision_violation_types=[
                 NormalizedStateSupervisionViolationTypeEntry(
+                    supervision_violation_type_entry_id=1,
                     state_code="US_PA",
                     violation_type=StateSupervisionViolationType.TECHNICAL,
                     violation_type_raw_text="M05",  # MED_TECH
@@ -1278,6 +1374,7 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
             violation_date=datetime.date(2009, 1, 3),
             supervision_violation_types=[
                 NormalizedStateSupervisionViolationTypeEntry(
+                    supervision_violation_type_entry_id=1,
                     state_code="US_PA",
                     violation_type=StateSupervisionViolationType.TECHNICAL,
                     violation_type_raw_text="M05",  # MED_TECH
@@ -1292,6 +1389,7 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
             violation_date=datetime.date(2009, 1, 3),
             supervision_violation_types=[
                 NormalizedStateSupervisionViolationTypeEntry(
+                    supervision_violation_type_entry_id=1,
                     state_code="US_PA",
                     violation_type=StateSupervisionViolationType.TECHNICAL,
                     violation_type_raw_text="M14",  # SUBSTANCE_ABUSE
@@ -1308,10 +1406,12 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
             response_date=datetime.date(2009, 1, 7),
             supervision_violation_response_decisions=[
                 NormalizedStateSupervisionViolationResponseDecisionEntry(
+                    supervision_violation_response_decision_entry_id=1,
                     state_code="US_PA",
                     decision=StateSupervisionViolationResponseDecision.REVOCATION,
                 ),
                 NormalizedStateSupervisionViolationResponseDecisionEntry(
+                    supervision_violation_response_decision_entry_id=1,
                     state_code="US_PA",
                     decision=StateSupervisionViolationResponseDecision.CONTINUANCE,
                 ),
@@ -1379,6 +1479,7 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
             response_date=datetime.date(2009, 1, 7),
             supervision_violation_response_decisions=[
                 NormalizedStateSupervisionViolationResponseDecisionEntry(
+                    supervision_violation_response_decision_entry_id=1,
                     state_code="US_XX",
                     decision=StateSupervisionViolationResponseDecision.CONTINUANCE,
                 )
@@ -1425,10 +1526,12 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
             state_code="US_XX",
             supervision_violation_types=[
                 NormalizedStateSupervisionViolationTypeEntry(
+                    supervision_violation_type_entry_id=1,
                     state_code="US_XX",
                     violation_type=StateSupervisionViolationType.ABSCONDED,
                 ),
                 NormalizedStateSupervisionViolationTypeEntry(
+                    supervision_violation_type_entry_id=1,
                     state_code="US_XX",
                     violation_type=StateSupervisionViolationType.MISDEMEANOR,
                 ),
@@ -1444,10 +1547,12 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
             response_date=datetime.date(2009, 1, 7),
             supervision_violation_response_decisions=[
                 NormalizedStateSupervisionViolationResponseDecisionEntry(
+                    supervision_violation_response_decision_entry_id=1,
                     state_code="US_XX",
                     decision=StateSupervisionViolationResponseDecision.REVOCATION,
                 ),
                 NormalizedStateSupervisionViolationResponseDecisionEntry(
+                    supervision_violation_response_decision_entry_id=1,
                     state_code="US_XX",
                     decision=StateSupervisionViolationResponseDecision.CONTINUANCE,
                 ),
@@ -1489,12 +1594,14 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
             violation_date=datetime.date(2009, 1, 7),
             supervision_violation_types=[
                 NormalizedStateSupervisionViolationTypeEntry(
+                    supervision_violation_type_entry_id=1,
                     state_code="US_MO",
                     violation_type=StateSupervisionViolationType.TECHNICAL,
                 ),
             ],
             supervision_violated_conditions=[
                 NormalizedStateSupervisionViolatedConditionEntry(
+                    supervision_violated_condition_entry_id=1,
                     state_code="US_MO",
                     condition=StateSupervisionViolatedConditionType.INTERNAL_UNKNOWN,
                     condition_raw_text="LAW",
@@ -1513,10 +1620,12 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
             is_draft=False,
             supervision_violation_response_decisions=[
                 NormalizedStateSupervisionViolationResponseDecisionEntry(
+                    supervision_violation_response_decision_entry_id=1,
                     state_code="US_MO",
                     decision=StateSupervisionViolationResponseDecision.REVOCATION,
                 ),
                 NormalizedStateSupervisionViolationResponseDecisionEntry(
+                    supervision_violation_response_decision_entry_id=1,
                     state_code="US_MO",
                     decision=StateSupervisionViolationResponseDecision.CONTINUANCE,
                 ),

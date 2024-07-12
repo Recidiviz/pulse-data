@@ -111,6 +111,7 @@ class TestAssessmentsInComplianceMonth(unittest.TestCase):
     def test_completed_assessments_in_compliance_month(self) -> None:
         evaluation_date = date(2018, 4, 30)
         assessment_out_of_range = NormalizedStateAssessment(
+            assessment_id=1,
             state_code="US_IX",
             external_id="a1",
             assessment_type=StateAssessmentType.LSIR,
@@ -119,6 +120,7 @@ class TestAssessmentsInComplianceMonth(unittest.TestCase):
             sequence_num=0,
         )
         assessment_out_of_range_2 = NormalizedStateAssessment(
+            assessment_id=2,
             state_code="US_IX",
             external_id="a2",
             assessment_type=StateAssessmentType.LSIR,
@@ -128,7 +130,7 @@ class TestAssessmentsInComplianceMonth(unittest.TestCase):
         )
         assessment_1 = NormalizedStateAssessment(
             state_code="US_IX",
-            assessment_id=1,
+            assessment_id=3,
             external_id="a3",
             assessment_type=StateAssessmentType.LSIR,
             assessment_score=1,
@@ -138,7 +140,7 @@ class TestAssessmentsInComplianceMonth(unittest.TestCase):
         )
         assessment_2 = NormalizedStateAssessment(
             state_code="US_IX",
-            assessment_id=2,
+            assessment_id=4,
             external_id="a4",
             assessment_type=StateAssessmentType.LSIR,
             assessment_score=100,
@@ -147,6 +149,7 @@ class TestAssessmentsInComplianceMonth(unittest.TestCase):
             sequence_num=3,
         )
         assessment_no_score = NormalizedStateAssessment(
+            assessment_id=5,
             state_code="US_IX",
             external_id="a5",
             assessment_type=StateAssessmentType.LSIR,
@@ -1915,6 +1918,7 @@ class TestReassessmentRequirementAreMet(unittest.TestCase):
         assessment_date = date(2018, 4, 2)
         assessment_score = 25
         assessment = NormalizedStateAssessment(
+            assessment_id=1,
             sequence_num=0,
             state_code=StateCode.US_ID.value,
             external_id="a1",
@@ -1963,6 +1967,7 @@ class TestReassessmentRequirementAreMet(unittest.TestCase):
         assessment_date = date(2018, 4, 2)
         assessment_score = 34
         assessment = NormalizedStateAssessment(
+            assessment_id=1,
             sequence_num=0,
             state_code=StateCode.US_ID.value,
             external_id="a1",
@@ -2010,6 +2015,7 @@ class TestReassessmentRequirementAreMet(unittest.TestCase):
         assessment_date = date(2010, 4, 2)
         assessment_score = 25
         assessment = NormalizedStateAssessment(
+            assessment_id=1,
             sequence_num=0,
             state_code=StateCode.US_ID.value,
             external_id="a1",
@@ -2069,6 +2075,7 @@ class TestReassessmentRequirementAreMet(unittest.TestCase):
         assessment_date = date(2010, 4, 2)
         assessment_boundary_score = SEX_OFFENSE_LSIR_MINIMUM_SCORE[gender]
         assessment_boundary = NormalizedStateAssessment(
+            assessment_id=1,
             sequence_num=0,
             state_code=StateCode.US_IX.value,
             external_id="a1",
@@ -2103,6 +2110,7 @@ class TestReassessmentRequirementAreMet(unittest.TestCase):
         self.assertEqual(boundary_deadline, date(2011, 4, 2))
 
         assessment_under_boundary = NormalizedStateAssessment(
+            assessment_id=1,
             sequence_num=0,
             state_code=StateCode.US_IX.value,
             external_id="a2",
@@ -2168,6 +2176,7 @@ class TestSupervisionDowngrades(unittest.TestCase):
 
     def _assessment_with_score(self, score: int) -> NormalizedStateAssessment:
         return NormalizedStateAssessment(
+            assessment_id=1,
             state_code=StateCode.US_IX.value,
             external_id=f"{score}",
             assessment_type=StateAssessmentType.LSIR,
@@ -2425,6 +2434,7 @@ class TestSupervisionDowngrades(unittest.TestCase):
                 [
                     # this would result in a MINIMUM recommendation
                     NormalizedStateAssessment(
+                        assessment_id=1,
                         state_code=StateCode.US_IX.value,
                         external_id="a1",
                         assessment_type=StateAssessmentType.LSIR,

@@ -251,6 +251,7 @@ class TestCaseCompliance(unittest.TestCase):
 
         assessments = [
             NormalizedStateAssessment(
+                assessment_id=1,
                 state_code=StateCode.US_ND.value,
                 external_id="a1",
                 assessment_type=StateAssessmentType.LSIR,
@@ -318,6 +319,7 @@ class TestCaseCompliance(unittest.TestCase):
         # The assessment is outside the 30 day initial compliance window.
         assessments = [
             NormalizedStateAssessment(
+                assessment_id=1,
                 state_code=StateCode.US_ND.value,
                 external_id="a1",
                 assessment_type=StateAssessmentType.LSIR,
@@ -383,6 +385,7 @@ class TestCaseCompliance(unittest.TestCase):
 
         assessments = [
             NormalizedStateAssessment(
+                assessment_id=1,
                 state_code=StateCode.US_ND.value,
                 external_id="a1",
                 assessment_type=StateAssessmentType.LSIR,
@@ -447,6 +450,7 @@ class TestCaseCompliance(unittest.TestCase):
 
         assessments = [
             NormalizedStateAssessment(
+                assessment_id=1,
                 state_code=StateCode.US_IX.value,
                 external_id="a1",
                 assessment_type=StateAssessmentType.LSIR,
@@ -534,6 +538,7 @@ class TestCaseCompliance(unittest.TestCase):
 
         assessments = [
             NormalizedStateAssessment(
+                assessment_id=1,
                 state_code=StateCode.US_IX.value,
                 external_id="a1",
                 assessment_type=StateAssessmentType.LSIR,
@@ -673,6 +678,7 @@ class TestCaseCompliance(unittest.TestCase):
 
         assessments = [
             NormalizedStateAssessment(
+                assessment_id=1,
                 state_code=StateCode.US_IX.value,
                 external_id="a1",
                 assessment_type=StateAssessmentType.LSIR,
@@ -1335,6 +1341,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
         )
 
         assessment = NormalizedStateAssessment(
+            assessment_id=1,
             state_code=StateCode.US_IX.value,
             external_id="a1",
             assessment_type=StateAssessmentType.LSIR,
@@ -1463,6 +1470,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
         )
 
         assessment = NormalizedStateAssessment(
+            assessment_id=1,
             state_code=StateCode.US_IX.value,
             external_id="a1",
             assessment_type=StateAssessmentType.LSIR,
@@ -1516,6 +1524,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
         )
 
         assessment = NormalizedStateAssessment(
+            assessment_id=1,
             state_code=StateCode.US_IX.value,
             external_id="a1",
             assessment_type=StateAssessmentType.LSIR,
@@ -1568,6 +1577,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
         )
 
         assessment = NormalizedStateAssessment(
+            assessment_id=1,
             state_code=StateCode.US_IX.value,
             external_id="a1",
             assessment_type=StateAssessmentType.LSIR,
@@ -1623,6 +1633,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
         )
 
         assessment = NormalizedStateAssessment(
+            assessment_id=1,
             state_code=StateCode.US_IX.value,
             external_id="a1",
             assessment_type=StateAssessmentType.LSIR,
@@ -1678,6 +1689,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
         )
 
         assessment = NormalizedStateAssessment(
+            assessment_id=1,
             state_code=StateCode.US_IX.value,
             external_id="a1",
             assessment_type=StateAssessmentType.LSIR,
@@ -1732,6 +1744,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
         )
 
         assessment = NormalizedStateAssessment(
+            assessment_id=1,
             state_code=StateCode.US_IX.value,
             external_id="a1",
             assessment_type=StateAssessmentType.LSIR,
@@ -1785,6 +1798,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
         )
 
         assessment = NormalizedStateAssessment(
+            assessment_id=1,
             state_code=StateCode.US_IX.value,
             external_id="a1",
             assessment_type=StateAssessmentType.LSIR,
@@ -1956,6 +1970,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
         )
 
         assessment = NormalizedStateAssessment(
+            assessment_id=1,
             state_code=StateCode.US_IX.value,
             external_id="a1",
             assessment_type=StateAssessmentType.LSIR,
@@ -2009,6 +2024,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
         )
 
         assessment = NormalizedStateAssessment(
+            assessment_id=1,
             state_code=StateCode.US_IX.value,
             external_id="a1",
             assessment_type=StateAssessmentType.LSIR,
@@ -2062,6 +2078,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
         )
 
         assessment = NormalizedStateAssessment(
+            assessment_id=1,
             state_code=StateCode.US_IX.value,
             external_id="a1",
             assessment_type=StateAssessmentType.LSIR,
@@ -2116,6 +2133,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
         )
 
         assessment = NormalizedStateAssessment(
+            assessment_id=1,
             state_code=StateCode.US_IX.value,
             external_id="a1",
             assessment_type=StateAssessmentType.LSIR,
@@ -2170,6 +2188,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
         )
 
         assessment = NormalizedStateAssessment(
+            assessment_id=1,
             state_code=StateCode.US_IX.value,
             external_id="a1",
             assessment_type=StateAssessmentType.LSIR,
@@ -2309,6 +2328,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
         )
 
         assessment = NormalizedStateAssessment(
+            assessment_id=1,
             state_code=StateCode.US_ND.value,
             external_id="a1",
             assessment_type=StateAssessmentType.LSIR,
@@ -2359,6 +2379,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
         )
 
         assessment = NormalizedStateAssessment(
+            assessment_id=1,
             state_code=StateCode.US_ND.value,
             external_id="a1",
             assessment_type=StateAssessmentType.LSIR,
@@ -2409,6 +2430,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
         )
 
         assessment = NormalizedStateAssessment(
+            assessment_id=1,
             state_code=StateCode.US_ND.value,
             external_id="a1",
             assessment_type=StateAssessmentType.LSIR,
@@ -2465,6 +2487,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
 
         assessments = [
             NormalizedStateAssessment(
+                assessment_id=1,
                 state_code=StateCode.US_IX.value,
                 external_id="a1",
                 assessment_type=StateAssessmentType.LSIR,
@@ -2554,6 +2577,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
 
         assessments = [
             NormalizedStateAssessment(
+                assessment_id=1,
                 state_code=StateCode.US_IX.value,
                 external_id="a1",
                 assessment_type=StateAssessmentType.LSIR,

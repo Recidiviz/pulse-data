@@ -83,6 +83,7 @@ class TestFindProgramEvents(unittest.TestCase):
     @freeze_time("2020-01-02")
     def test_find_program_events(self) -> None:
         program_assignment = NormalizedStateProgramAssignment(
+            program_assignment_id=1,
             sequence_num=0,
             state_code="US_XX",
             external_id="pa1",
@@ -94,6 +95,7 @@ class TestFindProgramEvents(unittest.TestCase):
         )
 
         assessment = NormalizedStateAssessment(
+            assessment_id=1,
             state_code="US_XX",
             external_id="a1",
             assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
@@ -175,6 +177,7 @@ class TestFindProgramParticipationEvents(unittest.TestCase):
     @freeze_time("2000-01-01")
     def test_find_program_participation_events(self) -> None:
         program_assignment = NormalizedStateProgramAssignment(
+            program_assignment_id=1,
             state_code="US_XX",
             external_id="pa1",
             sequence_num=0,
@@ -224,6 +227,7 @@ class TestFindProgramParticipationEvents(unittest.TestCase):
 
     def test_find_program_participation_events_not_actively_participating(self) -> None:
         program_assignment = NormalizedStateProgramAssignment(
+            program_assignment_id=1,
             state_code="US_XX",
             external_id="pa1",
             sequence_num=0,
@@ -283,6 +287,7 @@ class TestFindProgramParticipationEvents(unittest.TestCase):
 
     def test_find_program_participation_events_no_start_date(self) -> None:
         program_assignment = NormalizedStateProgramAssignment(
+            program_assignment_id=1,
             state_code="US_XX",
             external_id="pa1",
             sequence_num=0,
@@ -303,6 +308,7 @@ class TestFindProgramParticipationEvents(unittest.TestCase):
 
     def test_find_program_participation_events_no_discharge_date(self) -> None:
         program_assignment = NormalizedStateProgramAssignment(
+            program_assignment_id=1,
             state_code="US_XX",
             external_id="pa1",
             sequence_num=0,

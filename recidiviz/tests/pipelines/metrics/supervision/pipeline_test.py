@@ -1000,6 +1000,7 @@ class TestClassifyEvents(unittest.TestCase):
         )
 
         assessment = NormalizedStateAssessment(
+            assessment_id=1,
             state_code="US_XX",
             external_id="a1",
             assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,

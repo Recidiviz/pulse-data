@@ -857,6 +857,7 @@ class TestCommitmentFromSupervisionEventForPeriod(unittest.TestCase):
             violation_date=date(2008, 12, 7),
             supervision_violation_types=[
                 NormalizedStateSupervisionViolationTypeEntry(
+                    supervision_violation_type_entry_id=1,
                     state_code="US_XX",
                     violation_type=StateSupervisionViolationType.FELONY,
                 )
@@ -872,6 +873,7 @@ class TestCommitmentFromSupervisionEventForPeriod(unittest.TestCase):
             response_date=date(2008, 12, 7),
             supervision_violation_response_decisions=[
                 NormalizedStateSupervisionViolationResponseDecisionEntry(
+                    supervision_violation_response_decision_entry_id=1,
                     state_code="US_XX",
                     decision=StateSupervisionViolationResponseDecision.CONTINUANCE,
                 )
@@ -896,6 +898,7 @@ class TestCommitmentFromSupervisionEventForPeriod(unittest.TestCase):
             supervision_violation_response_decisions=[
                 # This REVOCATION decision is the most severe, but this is not the most recent response
                 NormalizedStateSupervisionViolationResponseDecisionEntry(
+                    supervision_violation_response_decision_entry_id=1,
                     state_code="US_XX",
                     decision=StateSupervisionViolationResponseDecision.REVOCATION,
                 )
@@ -910,6 +913,7 @@ class TestCommitmentFromSupervisionEventForPeriod(unittest.TestCase):
             violation_date=date(2009, 12, 1),
             supervision_violation_types=[
                 NormalizedStateSupervisionViolationTypeEntry(
+                    supervision_violation_type_entry_id=1,
                     state_code="US_XX",
                     violation_type=StateSupervisionViolationType.TECHNICAL,
                 )
@@ -925,6 +929,7 @@ class TestCommitmentFromSupervisionEventForPeriod(unittest.TestCase):
             response_date=date(2009, 12, 1),
             supervision_violation_response_decisions=[
                 NormalizedStateSupervisionViolationResponseDecisionEntry(
+                    supervision_violation_response_decision_entry_id=1,
                     state_code="US_XX",
                     decision=StateSupervisionViolationResponseDecision.CONTINUANCE,
                 )
@@ -1011,6 +1016,7 @@ class TestCommitmentFromSupervisionEventForPeriod(unittest.TestCase):
             violation_date=date(2007, 12, 7),
             supervision_violation_types=[
                 NormalizedStateSupervisionViolationTypeEntry(
+                    supervision_violation_type_entry_id=1,
                     state_code="US_XX",
                     violation_type=StateSupervisionViolationType.FELONY,
                 )
@@ -1027,6 +1033,7 @@ class TestCommitmentFromSupervisionEventForPeriod(unittest.TestCase):
                 response_date=date(2007, 12, 7),
                 supervision_violation_response_decisions=[
                     NormalizedStateSupervisionViolationResponseDecisionEntry(
+                        supervision_violation_response_decision_entry_id=1,
                         state_code="US_XX",
                         decision=StateSupervisionViolationResponseDecision.REVOCATION,
                     )
@@ -1042,6 +1049,7 @@ class TestCommitmentFromSupervisionEventForPeriod(unittest.TestCase):
             violation_date=date(2009, 12, 1),
             supervision_violation_types=[
                 NormalizedStateSupervisionViolationTypeEntry(
+                    supervision_violation_type_entry_id=1,
                     state_code="US_XX",
                     violation_type=StateSupervisionViolationType.TECHNICAL,
                 )
@@ -1057,10 +1065,12 @@ class TestCommitmentFromSupervisionEventForPeriod(unittest.TestCase):
             response_date=date(2009, 12, 1),
             supervision_violation_response_decisions=[
                 NormalizedStateSupervisionViolationResponseDecisionEntry(
+                    supervision_violation_response_decision_entry_id=1,
                     state_code="US_XX",
                     decision=StateSupervisionViolationResponseDecision.REVOCATION,
                 ),
                 NormalizedStateSupervisionViolationResponseDecisionEntry(
+                    supervision_violation_response_decision_entry_id=1,
                     state_code="US_XX",
                     decision=StateSupervisionViolationResponseDecision.CONTINUANCE,
                 ),
@@ -1150,6 +1160,7 @@ class TestCommitmentFromSupervisionEventForPeriod(unittest.TestCase):
             violation_date=date(2008, 12, 7),
             supervision_violation_types=[
                 NormalizedStateSupervisionViolationTypeEntry(
+                    supervision_violation_type_entry_id=1,
                     state_code=state_code,
                     violation_type=StateSupervisionViolationType.FELONY,
                 )
@@ -1166,6 +1177,7 @@ class TestCommitmentFromSupervisionEventForPeriod(unittest.TestCase):
             response_date=date(2008, 12, 7),
             supervision_violation_response_decisions=[
                 NormalizedStateSupervisionViolationResponseDecisionEntry(
+                    supervision_violation_response_decision_entry_id=1,
                     state_code=state_code,
                     decision=StateSupervisionViolationResponseDecision.REVOCATION,
                 )
@@ -1180,6 +1192,7 @@ class TestCommitmentFromSupervisionEventForPeriod(unittest.TestCase):
             violation_date=date(2012, 12, 1),
             supervision_violation_types=[
                 NormalizedStateSupervisionViolationTypeEntry(
+                    supervision_violation_type_entry_id=1,
                     state_code=state_code,
                     violation_type=StateSupervisionViolationType.TECHNICAL,
                 )
@@ -1196,6 +1209,7 @@ class TestCommitmentFromSupervisionEventForPeriod(unittest.TestCase):
             response_date=date(2012, 12, 1),
             supervision_violation_response_decisions=[
                 NormalizedStateSupervisionViolationResponseDecisionEntry(
+                    supervision_violation_response_decision_entry_id=1,
                     state_code=state_code,
                     decision=StateSupervisionViolationResponseDecision.SHOCK_INCARCERATION,
                 )
@@ -1290,6 +1304,7 @@ class TestCommitmentFromSupervisionEventForPeriod(unittest.TestCase):
             violation_date=date(2018, 4, 20),
             supervision_violation_types=[
                 NormalizedStateSupervisionViolationTypeEntry(
+                    supervision_violation_type_entry_id=1,
                     state_code="US_ND",
                     violation_type=StateSupervisionViolationType.FELONY,
                 ),
@@ -1370,6 +1385,7 @@ class TestCommitmentFromSupervisionEventForPeriod(unittest.TestCase):
             violation_date=date(2008, 12, 7),
             supervision_violation_types=[
                 NormalizedStateSupervisionViolationTypeEntry(
+                    supervision_violation_type_entry_id=1,
                     state_code="US_XX",
                     violation_type=StateSupervisionViolationType.FELONY,
                 )
@@ -1385,6 +1401,7 @@ class TestCommitmentFromSupervisionEventForPeriod(unittest.TestCase):
             response_date=date(2008, 12, 7),
             supervision_violation_response_decisions=[
                 NormalizedStateSupervisionViolationResponseDecisionEntry(
+                    supervision_violation_response_decision_entry_id=1,
                     state_code="US_XX",
                     decision=StateSupervisionViolationResponseDecision.CONTINUANCE,
                 )
@@ -1409,6 +1426,7 @@ class TestCommitmentFromSupervisionEventForPeriod(unittest.TestCase):
             supervision_violation_response_decisions=[
                 # This REVOCATION decision is the most severe, but this is not the most recent response
                 NormalizedStateSupervisionViolationResponseDecisionEntry(
+                    supervision_violation_response_decision_entry_id=1,
                     state_code="US_XX",
                     decision=StateSupervisionViolationResponseDecision.REVOCATION,
                 )
@@ -1423,6 +1441,7 @@ class TestCommitmentFromSupervisionEventForPeriod(unittest.TestCase):
             violation_date=date(2009, 12, 1),
             supervision_violation_types=[
                 NormalizedStateSupervisionViolationTypeEntry(
+                    supervision_violation_type_entry_id=1,
                     state_code="US_XX",
                     violation_type=StateSupervisionViolationType.TECHNICAL,
                 )
@@ -1438,6 +1457,7 @@ class TestCommitmentFromSupervisionEventForPeriod(unittest.TestCase):
             response_date=date(2009, 12, 1),
             supervision_violation_response_decisions=[
                 NormalizedStateSupervisionViolationResponseDecisionEntry(
+                    supervision_violation_response_decision_entry_id=1,
                     state_code="US_XX",
                     decision=StateSupervisionViolationResponseDecision.CONTINUANCE,
                 )

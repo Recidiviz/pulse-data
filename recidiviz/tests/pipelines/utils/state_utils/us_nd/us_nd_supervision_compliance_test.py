@@ -77,6 +77,7 @@ class TestAssessmentsCompletedInComplianceMonth(unittest.TestCase):
     def test_completed_assessments_in_compliance_month(self) -> None:
         evaluation_date = date(2018, 4, 30)
         assessment_out_of_range = NormalizedStateAssessment(
+            assessment_id=1,
             state_code=StateCode.US_ND.value,
             external_id="a1",
             assessment_type=StateAssessmentType.LSIR,
@@ -85,6 +86,7 @@ class TestAssessmentsCompletedInComplianceMonth(unittest.TestCase):
             sequence_num=0,
         )
         assessment_out_of_range_2 = NormalizedStateAssessment(
+            assessment_id=1,
             state_code=StateCode.US_ND.value,
             external_id="a2",
             assessment_type=StateAssessmentType.LSIR,
@@ -113,6 +115,7 @@ class TestAssessmentsCompletedInComplianceMonth(unittest.TestCase):
             sequence_num=3,
         )
         assessment_no_score = NormalizedStateAssessment(
+            assessment_id=1,
             state_code=StateCode.US_ND.value,
             external_id="a5",
             assessment_type=StateAssessmentType.LSIR,
@@ -964,6 +967,7 @@ class TestReassessmentRequirementAreMet(unittest.TestCase):
         assessment_date = date(2018, 4, 2)
         assessment_score = 25
         assessment = NormalizedStateAssessment(
+            assessment_id=1,
             state_code=StateCode.US_ND.value,
             external_id="a1",
             assessment_type=StateAssessmentType.LSIR,
@@ -1011,6 +1015,7 @@ class TestReassessmentRequirementAreMet(unittest.TestCase):
         assessment_date = date(2010, 4, 2)
         assessment_score = 25
         assessment = NormalizedStateAssessment(
+            assessment_id=1,
             state_code=StateCode.US_ND.value,
             external_id="a1",
             assessment_type=StateAssessmentType.LSIR,
