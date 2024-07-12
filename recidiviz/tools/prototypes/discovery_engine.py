@@ -22,7 +22,6 @@ from functools import cached_property
 from typing import Dict, List, Optional
 
 import attr
-from google.api_core.exceptions import GoogleAPICallError, RetryError
 from google.cloud import discoveryengine_v1 as discoveryengine
 from google.cloud.discoveryengine_v1.services.search_service.pagers import SearchPager
 
@@ -60,7 +59,7 @@ class DiscoveryEngineInterface:
         filter_conditions: Optional[Dict[str, List[str]]] = None,
         with_snippet: bool = False,
         with_summary: bool = False,
-    ) -> Optional[SearchPager]:
+    ) -> SearchPager:
         """
         Executes a search query against Google Vertex AI's Discovery Engine.
 
@@ -81,6 +80,9 @@ class DiscoveryEngineInterface:
             # Refer to the `SearchRequest` reference for all supported fields:
             # https://cloud.google.com/python/docs/reference/discoveryengine/latest/google.cloud.discoveryengine_v1.types.SearchRequest
             content_search_spec = discoveryengine.SearchRequest.ContentSearchSpec(
+                extractive_content_spec=discoveryengine.SearchRequest.ContentSearchSpec.ExtractiveContentSpec(
+                    max_extractive_answer_count=1  # Ensuring extractive answer is always present.
+                ),
                 snippet_spec=discoveryengine.SearchRequest.ContentSearchSpec.SnippetSpec(
                     max_snippet_count=1  # Only one snippet per document.
                 )
@@ -115,11 +117,7 @@ class DiscoveryEngineInterface:
             response = client.search(request)
             return response
 
-        # Log errors and return an empty list.
-        except GoogleAPICallError as e:
-            logger.error("API call error during the search: %s", e)
-        except RetryError as e:
-            logger.error("Retry error during the search: %s", e)
+        # Log error and raise.
         except Exception as e:
-            logger.error("An error occurred during the search: %s", e)
-        return None
+            logger.error("DiscoveryEngineInterface error: %s", e)
+            raise
