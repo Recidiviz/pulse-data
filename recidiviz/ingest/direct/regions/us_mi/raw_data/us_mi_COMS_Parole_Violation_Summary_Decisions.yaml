@@ -22,6 +22,21 @@ columns:
   - name: Create_Date
     description: Figure out what this means TODO(#23037)
     field_type: datetime
+  - name: Case_Manager_Recommendation_Date
+    description: Case manager recommendation date
+    field_type: datetime
+  - name: Case_Manager_Recommendation
+    description: Case manager recommendation
+  - name: Case_Manager_Recommendation_Rationale
+    description: Case manager recommendation rationale
+    is_pii: True
+  - name: Supervisor_Decision_Date
+    description: Supervisor decision date
+  - name: Supervisor_Decision
+    description: Supervisor decision
+  - name: Supervisor_Decision_Rationale
+    description: Supervisor decision rationale
+    is_pii: True
   - name: PV_Specialist_Decision_Needed
     description: Flag for whether a PV Specialist was needed to weigh in on this decision
   - name: PV_Specialist_Decision_Date

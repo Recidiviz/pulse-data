@@ -35,6 +35,15 @@ columns:
   - name: Completed_By_Staff_Omnni_Employee_Id
     description: Employee ID for staff that completed this activity (same employee_id used in OMNI)
     is_pii: True
+  - name: Case_Note_Id
+    description: COMS generated ID for the case note record in COMS_Case_Notes
   - name: Entered_Date
     description: Date supervision activity record entered into COMS
     field_type: datetime
+table_relationships:
+  - foreign_table: COMS_Case_Notes
+    join_logic:
+      - COMS_Case_Notes.Case_Note_Id = COMS_Supervision_Schedule_Activities.Case_Note_Id
+  - foreign_table: ADH_OFFENDER
+    join_logic:
+      - ADH_OFFENDER.offender_number = COMS_Supervision_Schedule_Activities.Offender_Number
