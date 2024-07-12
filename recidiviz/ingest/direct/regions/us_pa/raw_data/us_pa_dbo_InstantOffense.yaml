@@ -37,3 +37,8 @@ columns:
     is_pii: True
   - name: CaseType
   - name: SentenceID
+
+table_relationships:
+  - foreign_table: dbo_tblSearchInmateInfo
+    join_logic:
+      - dbo_tblSearchInmateInfo.parole_board_num = dbo_InstantOffense.ParoleNumber

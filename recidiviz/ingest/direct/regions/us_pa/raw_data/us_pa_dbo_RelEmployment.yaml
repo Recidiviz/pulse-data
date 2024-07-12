@@ -36,3 +36,8 @@ columns:
   - name: RelEmpStatusDateDay
     description: |-
       Day when the current employment status came into effect.
+
+table_relationships:
+  - foreign_table: dbo_tblSearchInmateInfo
+    join_logic:
+      - dbo_tblSearchInmateInfo.parole_board_num = dbo_RelEmployment.ParoleNumber

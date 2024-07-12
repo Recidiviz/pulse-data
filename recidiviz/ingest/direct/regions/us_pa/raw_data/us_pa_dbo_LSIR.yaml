@@ -28,3 +28,8 @@ columns:
     field_type: datetime
     description: |-
       Date when the LSIR assessment interview took place.
+
+table_relationships:
+  - foreign_table: dbo_tblSearchInmateInfo
+    join_logic:
+      - dbo_tblSearchInmateInfo.parole_board_num = dbo_LSIR.ParoleNumber

@@ -50,6 +50,10 @@ columns:
   - name: parole_board_num
     description: |-
       External ID for a unique person who has been supervised by PADOC.
+    is_pii: True
+    field_type: person_external_id
+    external_id_type: US_PA_PBPP
+    is_primary_for_external_id_type: True
   - name: event_number
     description: |-
       Event number.

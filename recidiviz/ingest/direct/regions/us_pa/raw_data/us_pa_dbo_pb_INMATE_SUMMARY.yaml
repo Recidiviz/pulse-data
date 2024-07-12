@@ -50,6 +50,8 @@ columns:
   - name: pittsburgh_photo_number
   - name: parole_board_number
     is_pii: True
+    field_type: person_external_id
+    external_id_type: US_PA_PBPP
   - name: citizenship
   - name: city_of_birth
   - name: state_of_birth
@@ -57,3 +59,8 @@ columns:
   - name: last_modified
   - name: ssp_indicator
   - name: sdtp_code
+
+table_relationships:
+  - foreign_table: dbo_tblSearchInmateInfo
+    join_logic:
+      - dbo_tblSearchInmateInfo.parole_board_num = dbo_pb_INMATE_SUMMARY.parole_board_number
