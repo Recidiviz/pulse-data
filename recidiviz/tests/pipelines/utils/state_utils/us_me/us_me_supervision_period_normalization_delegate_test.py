@@ -256,12 +256,14 @@ class TestUsMeSupervisionNormalizationDelegate(unittest.TestCase):
         )
         supervision_sentences = [
             NormalizedStateSupervisionSentence(
+                supervision_sentence_id=1,
                 state_code=StateCode.US_ME.value,
                 external_id="ss1",
                 completion_date=date(2010, 3, 1),
                 status=StateSentenceStatus.COMPLETED,
             ),
             NormalizedStateSupervisionSentence(
+                supervision_sentence_id=1,
                 state_code=StateCode.US_ME.value,
                 external_id="ss2",
                 completion_date=date(2010, 1, 2),
@@ -289,12 +291,14 @@ class TestUsMeSupervisionNormalizationDelegate(unittest.TestCase):
         )
         supervision_sentences = [
             NormalizedStateSupervisionSentence(
+                supervision_sentence_id=1,
                 state_code=StateCode.US_ME.value,
                 external_id="ss1",
                 completion_date=date(2010, 3, 1),
                 status=StateSentenceStatus.COMPLETED,
             ),
             NormalizedStateSupervisionSentence(
+                supervision_sentence_id=1,
                 state_code=StateCode.US_ME.value,
                 external_id="ss2",
                 completion_date=date(2010, 1, 2),
@@ -322,12 +326,14 @@ class TestUsMeSupervisionNormalizationDelegate(unittest.TestCase):
         )
         supervision_sentences = [
             NormalizedStateSupervisionSentence(
+                supervision_sentence_id=1,
                 state_code=StateCode.US_ME.value,
                 external_id="ss1",
                 completion_date=date(2010, 3, 1),
                 status=StateSentenceStatus.COMPLETED,
             ),
             NormalizedStateSupervisionSentence(
+                supervision_sentence_id=1,
                 state_code=StateCode.US_ME.value,
                 external_id="ss2",
                 completion_date=date(2010, 1, 2),

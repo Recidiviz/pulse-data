@@ -426,6 +426,7 @@ class TestClassifyProgramAssignments(unittest.TestCase):
         )
 
         program_assignment = normalized_entities.NormalizedStateProgramAssignment(
+            program_assignment_id=1,
             sequence_num=0,
             external_id="pa1",
             state_code="US_XX",
@@ -437,6 +438,7 @@ class TestClassifyProgramAssignments(unittest.TestCase):
         )
 
         assessment = normalized_entities.NormalizedStateAssessment(
+            assessment_id=1,
             state_code="US_XX",
             external_id="a1",
             assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
@@ -510,6 +512,7 @@ class TestClassifyProgramAssignments(unittest.TestCase):
         )
 
         program_assignment = normalized_entities.NormalizedStateProgramAssignment(
+            program_assignment_id=1,
             sequence_num=0,
             external_id="pa1",
             state_code="US_ND",
@@ -521,6 +524,7 @@ class TestClassifyProgramAssignments(unittest.TestCase):
         )
 
         assessment = normalized_entities.NormalizedStateAssessment(
+            assessment_id=1,
             state_code="US_ND",
             external_id="a1",
             assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
@@ -593,6 +597,7 @@ class TestClassifyProgramAssignments(unittest.TestCase):
         )
 
         assessment = normalized_entities.NormalizedStateAssessment(
+            assessment_id=1,
             state_code="US_XX",
             external_id="a1",
             assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
@@ -650,6 +655,7 @@ class TestClassifyProgramAssignments(unittest.TestCase):
         )
 
         program_assignment = normalized_entities.NormalizedStateProgramAssignment(
+            program_assignment_id=1,
             sequence_num=0,
             external_id="pa1",
             state_code="US_XX",
@@ -659,6 +665,7 @@ class TestClassifyProgramAssignments(unittest.TestCase):
         )
 
         assessment = normalized_entities.NormalizedStateAssessment(
+            assessment_id=1,
             state_code="US_XX",
             external_id="a1",
             assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,

@@ -225,7 +225,9 @@ class TestFindPopulationSpans(unittest.TestCase):
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             case_type_entries=[
                 NormalizedStateSupervisionCaseTypeEntry(
-                    state_code="US_XX", case_type=StateSupervisionCaseType.GENERAL
+                    supervision_case_type_entry_id=1,
+                    state_code="US_XX",
+                    case_type=StateSupervisionCaseType.GENERAL,
                 )
             ],
             custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
@@ -261,7 +263,9 @@ class TestFindPopulationSpans(unittest.TestCase):
             termination_reason=StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE,
             case_type_entries=[
                 NormalizedStateSupervisionCaseTypeEntry(
-                    state_code="US_XX", case_type=StateSupervisionCaseType.GENERAL
+                    supervision_case_type_entry_id=1,
+                    state_code="US_XX",
+                    case_type=StateSupervisionCaseType.GENERAL,
                 )
             ],
             custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
@@ -280,7 +284,9 @@ class TestFindPopulationSpans(unittest.TestCase):
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             case_type_entries=[
                 NormalizedStateSupervisionCaseTypeEntry(
-                    state_code="US_XX", case_type=StateSupervisionCaseType.GENERAL
+                    supervision_case_type_entry_id=1,
+                    state_code="US_XX",
+                    case_type=StateSupervisionCaseType.GENERAL,
                 )
             ],
             custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
@@ -342,7 +348,9 @@ class TestFindPopulationSpans(unittest.TestCase):
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             case_type_entries=[
                 NormalizedStateSupervisionCaseTypeEntry(
-                    state_code="US_XX", case_type=StateSupervisionCaseType.GENERAL
+                    supervision_case_type_entry_id=1,
+                    state_code="US_XX",
+                    case_type=StateSupervisionCaseType.GENERAL,
                 )
             ],
             custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
@@ -397,7 +405,9 @@ class TestFindPopulationSpans(unittest.TestCase):
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             case_type_entries=[
                 NormalizedStateSupervisionCaseTypeEntry(
-                    state_code="US_XX", case_type=StateSupervisionCaseType.GENERAL
+                    supervision_case_type_entry_id=1,
+                    state_code="US_XX",
+                    case_type=StateSupervisionCaseType.GENERAL,
                 )
             ],
             custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
@@ -447,7 +457,9 @@ class TestFindPopulationSpans(unittest.TestCase):
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             case_type_entries=[
                 NormalizedStateSupervisionCaseTypeEntry(
-                    state_code="US_XX", case_type=StateSupervisionCaseType.GENERAL
+                    supervision_case_type_entry_id=1,
+                    state_code="US_XX",
+                    case_type=StateSupervisionCaseType.GENERAL,
                 )
             ],
             custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
@@ -516,7 +528,9 @@ class TestFindPopulationSpans(unittest.TestCase):
             termination_reason=None,
             case_type_entries=[
                 NormalizedStateSupervisionCaseTypeEntry(
-                    state_code="US_XX", case_type=StateSupervisionCaseType.GENERAL
+                    supervision_case_type_entry_id=1,
+                    state_code="US_XX",
+                    case_type=StateSupervisionCaseType.GENERAL,
                 )
             ],
             custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
@@ -599,7 +613,9 @@ class TestFindPopulationSpans(unittest.TestCase):
             termination_reason=None,
             case_type_entries=[
                 NormalizedStateSupervisionCaseTypeEntry(
-                    state_code="US_XX", case_type=StateSupervisionCaseType.GENERAL
+                    supervision_case_type_entry_id=1,
+                    state_code="US_XX",
+                    case_type=StateSupervisionCaseType.GENERAL,
                 )
             ],
             custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
@@ -683,7 +699,9 @@ class TestFindPopulationSpans(unittest.TestCase):
             termination_reason=None,
             case_type_entries=[
                 NormalizedStateSupervisionCaseTypeEntry(
-                    state_code="US_XX", case_type=StateSupervisionCaseType.GENERAL
+                    supervision_case_type_entry_id=1,
+                    state_code="US_XX",
+                    case_type=StateSupervisionCaseType.GENERAL,
                 )
             ],
             custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
@@ -778,7 +796,9 @@ class TestFindPopulationSpans(unittest.TestCase):
             termination_reason=StateSupervisionPeriodTerminationReason.ABSCONSION,
             case_type_entries=[
                 NormalizedStateSupervisionCaseTypeEntry(
-                    state_code="US_XX", case_type=StateSupervisionCaseType.GENERAL
+                    supervision_case_type_entry_id=1,
+                    state_code="US_XX",
+                    case_type=StateSupervisionCaseType.GENERAL,
                 )
             ],
             custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
@@ -797,7 +817,9 @@ class TestFindPopulationSpans(unittest.TestCase):
             termination_reason=StateSupervisionPeriodTerminationReason.ABSCONSION,
             case_type_entries=[
                 NormalizedStateSupervisionCaseTypeEntry(
-                    state_code="US_XX", case_type=StateSupervisionCaseType.GENERAL
+                    supervision_case_type_entry_id=1,
+                    state_code="US_XX",
+                    case_type=StateSupervisionCaseType.GENERAL,
                 )
             ],
             custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
@@ -848,7 +870,9 @@ class TestFindPopulationSpans(unittest.TestCase):
             termination_reason=StateSupervisionPeriodTerminationReason.ABSCONSION,
             case_type_entries=[
                 NormalizedStateSupervisionCaseTypeEntry(
-                    state_code="US_XX", case_type=StateSupervisionCaseType.GENERAL
+                    supervision_case_type_entry_id=1,
+                    state_code="US_XX",
+                    case_type=StateSupervisionCaseType.GENERAL,
                 )
             ],
             custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
@@ -899,7 +923,9 @@ class TestFindPopulationSpans(unittest.TestCase):
             termination_reason=StateSupervisionPeriodTerminationReason.ABSCONSION,
             case_type_entries=[
                 NormalizedStateSupervisionCaseTypeEntry(
-                    state_code="US_XX", case_type=StateSupervisionCaseType.GENERAL
+                    supervision_case_type_entry_id=1,
+                    state_code="US_XX",
+                    case_type=StateSupervisionCaseType.GENERAL,
                 )
             ],
             custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
@@ -918,7 +944,9 @@ class TestFindPopulationSpans(unittest.TestCase):
             termination_reason=StateSupervisionPeriodTerminationReason.ABSCONSION,
             case_type_entries=[
                 NormalizedStateSupervisionCaseTypeEntry(
-                    state_code="US_XX", case_type=StateSupervisionCaseType.GENERAL
+                    supervision_case_type_entry_id=1,
+                    state_code="US_XX",
+                    case_type=StateSupervisionCaseType.GENERAL,
                 )
             ],
             custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
@@ -937,7 +965,9 @@ class TestFindPopulationSpans(unittest.TestCase):
             termination_reason=StateSupervisionPeriodTerminationReason.ABSCONSION,
             case_type_entries=[
                 NormalizedStateSupervisionCaseTypeEntry(
-                    state_code="US_XX", case_type=StateSupervisionCaseType.GENERAL
+                    supervision_case_type_entry_id=1,
+                    state_code="US_XX",
+                    case_type=StateSupervisionCaseType.GENERAL,
                 )
             ],
             custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
@@ -956,7 +986,9 @@ class TestFindPopulationSpans(unittest.TestCase):
             termination_reason=StateSupervisionPeriodTerminationReason.ABSCONSION,
             case_type_entries=[
                 NormalizedStateSupervisionCaseTypeEntry(
-                    state_code="US_XX", case_type=StateSupervisionCaseType.GENERAL
+                    supervision_case_type_entry_id=1,
+                    state_code="US_XX",
+                    case_type=StateSupervisionCaseType.GENERAL,
                 )
             ],
             custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
@@ -975,7 +1007,9 @@ class TestFindPopulationSpans(unittest.TestCase):
             termination_reason=StateSupervisionPeriodTerminationReason.ABSCONSION,
             case_type_entries=[
                 NormalizedStateSupervisionCaseTypeEntry(
-                    state_code="US_XX", case_type=StateSupervisionCaseType.GENERAL
+                    supervision_case_type_entry_id=1,
+                    state_code="US_XX",
+                    case_type=StateSupervisionCaseType.GENERAL,
                 )
             ],
             custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,

@@ -302,15 +302,18 @@ class TestClassifyViolationEvents(unittest.TestCase):
         """Tests the ClassifyViolationEvents DoFn."""
         violation_type = (
             normalized_entities.NormalizedStateSupervisionViolationTypeEntry(
+                supervision_violation_type_entry_id=1,
                 state_code="US_XX",
                 violation_type=StateSupervisionViolationType.FELONY,
             )
         )
         violation_decision = normalized_entities.NormalizedStateSupervisionViolationResponseDecisionEntry(
+            supervision_violation_response_decision_entry_id=1,
             state_code="US_XX",
             decision=StateSupervisionViolationResponseDecision.SHOCK_INCARCERATION,
         )
         violation_response = normalized_entities.NormalizedStateSupervisionViolationResponse(
+            supervision_violation_response_id=1,
             state_code="US_XX",
             external_id="svr1",
             response_type=entities.StateSupervisionViolationResponseType.VIOLATION_REPORT,
@@ -402,6 +405,7 @@ class TestClassifyViolationEvents(unittest.TestCase):
         """Tests the ClassifyViolationEvents DoFn with a violation that has no responses for a person."""
         violation_type = (
             normalized_entities.NormalizedStateSupervisionViolationTypeEntry(
+                supervision_violation_type_entry_id=1,
                 state_code="US_XX",
                 violation_type=StateSupervisionViolationType.FELONY,
             )

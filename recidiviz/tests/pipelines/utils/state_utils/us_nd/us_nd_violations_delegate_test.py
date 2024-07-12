@@ -57,6 +57,7 @@ class TestFilterViolationResponses(unittest.TestCase):
     def test_filter_violation_responses_PERMANENT(self) -> None:
         supervision_violation_responses = [
             NormalizedStateSupervisionViolationResponse(
+                supervision_violation_response_id=1,
                 state_code=_STATE_CODE,
                 external_id="svr1",
                 response_date=date(2021, 1, 1),
@@ -75,6 +76,7 @@ class TestFilterViolationResponses(unittest.TestCase):
     ) -> None:
         supervision_violation_responses = [
             NormalizedStateSupervisionViolationResponse(
+                supervision_violation_response_id=1,
                 state_code=_STATE_CODE,
                 external_id="svr1",
                 response_date=date(2021, 1, 1),
@@ -82,6 +84,7 @@ class TestFilterViolationResponses(unittest.TestCase):
                 sequence_num=0,
             ),
             NormalizedStateSupervisionViolationResponse(
+                supervision_violation_response_id=1,
                 state_code=_STATE_CODE,
                 external_id="svr2",
                 response_date=date(2021, 1, 1),
@@ -89,6 +92,7 @@ class TestFilterViolationResponses(unittest.TestCase):
                 sequence_num=1,
             ),
             NormalizedStateSupervisionViolationResponse(
+                supervision_violation_response_id=1,
                 state_code=_STATE_CODE,
                 external_id="svr3",
                 response_date=date(2021, 1, 1),
@@ -102,6 +106,7 @@ class TestFilterViolationResponses(unittest.TestCase):
         )
         expected_output = [
             NormalizedStateSupervisionViolationResponse(
+                supervision_violation_response_id=1,
                 state_code=_STATE_CODE,
                 external_id="svr1",
                 response_date=date(2021, 1, 1),
@@ -115,6 +120,7 @@ class TestFilterViolationResponses(unittest.TestCase):
     def test_filter_violation_responses_none_valid(self) -> None:
         supervision_violation_responses = [
             NormalizedStateSupervisionViolationResponse(
+                supervision_violation_response_id=1,
                 state_code=_STATE_CODE,
                 external_id="svr1",
                 response_date=date(2021, 1, 1),
@@ -122,6 +128,7 @@ class TestFilterViolationResponses(unittest.TestCase):
                 sequence_num=0,
             ),
             NormalizedStateSupervisionViolationResponse(
+                supervision_violation_response_id=1,
                 state_code=_STATE_CODE,
                 external_id="svr2",
                 response_date=date(2021, 1, 1),

@@ -235,7 +235,9 @@ class TestGetCommitmentDetails(unittest.TestCase):
             external_id="sp1",
             case_type_entries=[
                 NormalizedStateSupervisionCaseTypeEntry(
-                    state_code=STATE_CODE, case_type=StateSupervisionCaseType.GENERAL
+                    supervision_case_type_entry_id=1,
+                    state_code=STATE_CODE,
+                    case_type=StateSupervisionCaseType.GENERAL,
                 )
             ],
             state_code=STATE_CODE,
