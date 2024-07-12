@@ -16,6 +16,8 @@ columns:
       The MIDOC number for a person who is incarceration, as referenced by the OFFENDER
       table.
     is_pii: True
+    field_type: person_external_id
+    external_id_type: US_MI_DOC
   - name: offender_last_name
     description: |-
       The last name of the person who is incarcerated.
@@ -45,3 +47,8 @@ columns:
       - value: "0"
         description: Temporary
   - name: visitor_flag
+
+table_relationships:
+  - foreign_table: ADH_OFFENDER
+    join_logic:
+      - ADH_OFFENDER.offender_number = ADH_FACILITY_COUNT_SHEET.offender_number

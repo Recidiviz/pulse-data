@@ -16,7 +16,6 @@ columns:
     is_pii: True
     field_type: person_external_id
     external_id_type: US_MI_DOC
-    is_primary_for_external_id_type: True
   - name: SecondOffenderNumber
     is_pii: True
   - name: ThirdOffenderNumber

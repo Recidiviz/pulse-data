@@ -11,6 +11,8 @@ columns:
   - name: offender_booking_id
     description: OMNI-database generated ID for an justice-involved individual's booking (ID for the individual involved in this hearing)
     is_pii: True
+    field_type: person_external_id
+    external_id_type: US_MI_DOC_BOOK
   - name: misconduct_incident_id
     description: OMNI-database generated ID for the misconduct incident connected to this hearing
   - name: location_id
@@ -64,3 +66,7 @@ columns:
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: last_update_node
+table_relationships:
+  - foreign_table: ADH_OFFENDER_BOOKING
+    join_logic:
+      - ADH_OFFENDER_BOOKING.offender_booking_id = ADH_OFFENDER_MISCOND_HEARING.offender_booking_id

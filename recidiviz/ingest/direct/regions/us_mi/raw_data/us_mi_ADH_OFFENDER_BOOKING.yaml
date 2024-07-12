@@ -60,3 +60,8 @@ columns:
   - name: last_update_user
   - name: last_update_date
   - name: last_update_node
+
+table_relationships:
+  - foreign_table: ADH_OFFENDER
+    join_logic:
+      - ADH_OFFENDER.offender_id = ADH_OFFENDER_BOOKING.offender_id

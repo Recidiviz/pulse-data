@@ -13,6 +13,8 @@ columns:
   - name: offender_booking_id
     description: OMNI-database generated id for a specific justice-involved individual during a specific booking
     is_pii: True
+    field_type: person_external_id
+    external_id_type: US_MI_DOC_BOOK
   - name: profile_create_date
     description: Date fee profile was created
     field_type: datetime
@@ -127,3 +129,7 @@ columns:
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %e %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: last_update_node
+table_relationships:
+  - foreign_table: ADH_OFFENDER_BOOKING
+    join_logic:
+      - ADH_OFFENDER_BOOKING.offender_booking_id = ADH_OFFENDER_FEE_PROFILE.offender_booking_id
