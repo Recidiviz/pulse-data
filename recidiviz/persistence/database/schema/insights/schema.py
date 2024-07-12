@@ -261,7 +261,7 @@ class Configuration(InsightsBase):
     # via alembic migrations.
     __table_args__ = {"info": {RUN_MIGRATIONS: True}}
 
-    id = Column(Integer, primary_key=True, autoincrement=True)
+    id = Column(Integer, Identity(), primary_key=True)
     updated_by = Column(String, nullable=False)
     updated_at = Column(DateTime, nullable=False)
     status = Column(String, nullable=False)

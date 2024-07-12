@@ -10,7 +10,7 @@ function write_to_file {
 
 # Database secrets
 write_to_file 'insights' recidiviz/local/gsm/insights_cloudsql_instance_id
-write_to_file 'localhost' recidiviz/local/gsm/insights_db_host
+write_to_file 'insights_db' recidiviz/local/gsm/insights_db_host
 write_to_file 'insights_user' recidiviz/local/gsm/insights_db_user
 write_to_file 'example' recidiviz/local/gsm/insights_db_password
 write_to_file '5432' recidiviz/local/gsm/insights_db_port

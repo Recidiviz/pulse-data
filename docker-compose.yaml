@@ -109,6 +109,16 @@ services:
     ports:
       - "6379:6379"
 
+  insights_migrations:
+    image: us.gcr.io/recidiviz-staging/appengine/default:latest
+    volumes:
+      - "./recidiviz:/app/recidiviz/"
+    depends_on:
+      - insights_db
+    command: pipenv run python -m recidiviz.tools.migrations.run_migrations_docker --database INSIGHTS
+    environment:
+      - IS_DEV=true
+
   insights_db:
     image: postgres:13.1-alpine
     environment:
