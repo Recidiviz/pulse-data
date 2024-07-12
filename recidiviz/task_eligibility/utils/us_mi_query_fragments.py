@@ -167,7 +167,7 @@ recent_misconduct_codes AS (
         h.person_id,
         CONCAT('(', STRING_AGG(DISTINCT CONCAT(bondable_offense, ', ', STRING(b.incident_date)), '), ('), ')') AS bondable_offenses_within_6_months,
         CONCAT('(', STRING_AGG(DISTINCT CONCAT(nonbondable_offense, ', ', STRING(n.incident_date)), '), ('), ')') AS nonbondable_offenses_within_1_year
-    FROM `{{project_id}}.{{sessions_dataset}}.housing_unit_type_sessions_materialized` h
+    FROM `{{project_id}}.{{sessions_dataset}}.housing_unit_type_collapsed_solitary_sessions_materialized` h
     LEFT JOIN (
         SELECT 
             person_id,
