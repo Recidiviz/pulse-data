@@ -79,8 +79,12 @@ def parse_custodial_authority(raw_text: str) -> StateCustodialAuthority:
     """
     Returns the StateCustodialAuthority associated with an incarceration period using the site and site type columns.
     """
-    site_type, site = raw_text.split("-")
+    start_movement_type, start_movement_reason, site_type, site = raw_text.split("-")
 
+    if (
+        start_movement_type == "FAOJ" and start_movement_reason == "OUTCT"
+    ) or start_movement_type == "FACT":
+        return StateCustodialAuthority.STATE_PRISON
     if (
         # The following sites are all courts.
         # TODO(#2912): We actually can't be sure what the custodial authority is for people in these courts -
@@ -104,8 +108,8 @@ def parse_custodial_authority(raw_text: str) -> StateCustodialAuthority:
         "CC",  # Usually, but not always, describes a community corrections facility.
         "CV",  # Conversion (Deprecated after 1992)
         "IJ",  # Institutional Juvenile
-        "TC",
-    ):  # TN DOC Central Office
+        "TC",  # TN DOC Central Office
+    ):
         # TODO(#9421): Update mapping when we have support for community corrections
         return StateCustodialAuthority.INTERNAL_UNKNOWN
 

@@ -176,7 +176,7 @@ WITH
             -- Based on the MovementType, determine the type of period event that is commencing.
             CASE
                 -- Movements whose destinations are associated with incarceration facilities.
-                WHEN RIGHT(MovementType, 2) IN ('FA', 'FH', 'CT') THEN 'INCARCERATION'
+                WHEN RIGHT(MovementType, 2) IN ('FA', 'FH', 'CT', 'OJ') THEN 'INCARCERATION'
 
                 -- Movements whose destinations are not associated with incarceration facilities (i.e. terminations 
                 -- or supervision).
@@ -184,7 +184,7 @@ WITH
                     -- Ends in supervision.
                     'CC', 'PA', 'PR', 'DV', 
                     -- Ends in termination.
-                    'DI', 'EI', 'ES', 'NC', 'AB', 'FU', 'BO', 'WR', 'OJ'
+                    'DI', 'EI', 'ES', 'NC', 'AB', 'FU', 'BO', 'WR'
                 ) THEN 'TERMINATION'
 
                 -- There shouldn't be any PeriodEvents that fall into `UNCATEGORIZED`
@@ -245,7 +245,7 @@ WITH
         FROM filter_out_movements_after_death_date
         WINDOW person_sequence AS (PARTITION BY OffenderID ORDER BY MovementSequenceNumber)
     ),
-    -- We clean up any movements related to revocation statuses
+    -- We clean up any movements related to revocation statuses or transfers to other jurisdictions that are not Courts
     clean_up_movements AS (
         SELECT 
             OffenderID,
@@ -269,6 +269,7 @@ WITH
             CustodyLevel,
             HousingUnit
         FROM append_next_movement_information_and_death_dates
+        WHERE RIGHT(StartMovementType, 2) != 'OJ' OR StartMovementReason = 'OUTCT'
         WINDOW person_sequence AS (PARTITION BY OffenderID ORDER BY MovementSequenceNumber)
     ),
     -- Then filter out any erroneous rows related to incorrect edges or when someone does not actually move as expected through a facility 

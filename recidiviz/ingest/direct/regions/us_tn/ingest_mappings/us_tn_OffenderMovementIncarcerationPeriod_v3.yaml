@@ -86,6 +86,8 @@ output:
               $raw_text:
                 $concat:
                   $values:
+                    - StartMovementType
+                    - StartMovementReason
                     - SiteType
                     - Site
                   $include_nulls: True
