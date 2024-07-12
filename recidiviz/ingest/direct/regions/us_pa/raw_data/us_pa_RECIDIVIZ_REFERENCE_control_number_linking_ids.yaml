@@ -23,3 +23,7 @@ columns:
       Global, Recidiviz-generated ID that allows us to link control numbers to the same
       person.
 is_code_file: True
+table_relationships:
+  - foreign_table: dbo_tblSearchInmateInfo
+    join_logic:
+      - dbo_tblSearchInmateInfo.control_number = RECIDIVIZ_REFERENCE_control_number_linking_ids.control_number

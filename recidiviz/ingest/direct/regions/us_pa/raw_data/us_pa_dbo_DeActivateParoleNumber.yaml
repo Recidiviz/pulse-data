@@ -23,3 +23,8 @@ ignore_quotes: True
 encoding: WINDOWS-1252
 update_cadence: IRREGULAR
 is_code_file: True
+
+table_relationships:
+  - foreign_table: dbo_tblSearchInmateInfo
+    join_logic:
+      - dbo_tblSearchInmateInfo.parole_board_num = dbo_DeActivateParoleNumber.ParoleNumber

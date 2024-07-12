@@ -69,3 +69,8 @@ custom_line_terminator: "\n"
 ignore_quotes: False
 encoding: WINDOWS-1252
 always_historical_export: True
+
+table_relationships:
+  - foreign_table: dbo_tblSearchInmateInfo
+    join_logic:
+      - dbo_tblSearchInmateInfo.parole_board_num = dbo_Hist_Parolee.ParoleNumber

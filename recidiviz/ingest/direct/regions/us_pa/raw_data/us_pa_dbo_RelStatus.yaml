@@ -47,3 +47,8 @@ separator: ‡
 custom_line_terminator: †
 ignore_quotes: True
 encoding: WINDOWS-1252
+# table_relationships:
+# - foreign_table: dbo_Parolee
+#   join_logic:
+#     - dbo_Parolee.ParoleNumber = dbo_RelStatus.ParoleNumber
+#   cardinality: MANY_TO_ONE

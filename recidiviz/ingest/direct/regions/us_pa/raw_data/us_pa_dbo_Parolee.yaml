@@ -16,7 +16,6 @@ columns:
       External ID for a unique person who has been supervised by PBPP.
     field_type: person_external_id
     external_id_type: US_PA_PBPP
-    is_primary_for_external_id_type: True
   - name: ptype_BoardParole
   - name: ptype_BoardReParole
   - name: Ptype_SpecProbParole
@@ -113,3 +112,8 @@ columns:
   - name: Grade
   - name: GradeDate
   - name: Act97
+
+table_relationships:
+  - foreign_table: dbo_tblSearchInmateInfo
+    join_logic:
+      - dbo_tblSearchInmateInfo.parole_board_num = dbo_Parolee.ParoleNumber

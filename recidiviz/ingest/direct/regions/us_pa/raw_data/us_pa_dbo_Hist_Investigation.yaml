@@ -60,3 +60,8 @@ columns:
   - name: InvHistSentenceDateMonth
   - name: InvHistSentenceDateYear
   - name: InvHistSequenceId
+
+table_relationships:
+  - foreign_table: dbo_tblSearchInmateInfo
+    join_logic:
+      - dbo_tblSearchInmateInfo.parole_board_num = dbo_Hist_Investigation.ParoleNumber

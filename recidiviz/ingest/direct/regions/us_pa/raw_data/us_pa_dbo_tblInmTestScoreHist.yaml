@@ -67,3 +67,9 @@ separator: ‡
 custom_line_terminator: †
 ignore_quotes: True
 encoding: WINDOWS-1252
+
+table_relationships:
+  - foreign_table: dbo_tblSearchInmateInfo
+    join_logic:
+      - dbo_tblSearchInmateInfo.inmate_number = dbo_tblInmTestScoreHist.Inmate_number
+      - dbo_tblSearchInmateInfo.control_number = dbo_tblInmTestScoreHist.Control_Number

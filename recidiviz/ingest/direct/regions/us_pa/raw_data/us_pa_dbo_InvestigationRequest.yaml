@@ -175,3 +175,8 @@ columns:
   - name: ptype_SIPParole
   - name: ptype_SDTPParole
   - name: LastModifiedDateTime
+
+table_relationships:
+  - foreign_table: dbo_tblSearchInmateInfo
+    join_logic:
+      - dbo_tblSearchInmateInfo.inmate_number = dbo_InvestigationRequest.Inmate_Number
