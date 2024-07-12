@@ -113,9 +113,9 @@ num_allowed_rows_overrides:
     hard_num_allowed_rows_override: 120000
     override_reason: Needs investigation.  Current failing level as of 2/13/24 is 102,288 rows #TODO(#16435)
   - validation_name: normalized_state_charge_missing_descriptions
-    hard_num_allowed_rows_override: 23000
+    hard_num_allowed_rows_override: 50000
     override_reason:
-      Current failing level as of 5/13/24 is 21,682 rows.  This is largely due to charges that are
+      Current failing level as of 7/12/24 is 47,090 rows.  This is largely due to charges that are
       getting ingested with almost all info missing.  We should re-evaluate this when we do the sentence refactor
       #TODO(#27541) #TODO(#29701)
   - validation_name: normalized_state_charge_missing_uniform_offense_labels

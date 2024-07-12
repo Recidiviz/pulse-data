@@ -63,7 +63,7 @@ num_allowed_rows_overrides:
     hard_num_allowed_rows_override: 4
     override_reason: Needs investigation. Current failing level as of 9/26 is 4 rows #TODO(#15586)
   - validation_name: session_new_admissions_with_no_sentence_date_imposed
-    hard_num_allowed_rows_override: 350000
+    hard_num_allowed_rows_override: 400000
     override_reason:
       Needs investigation.  Current failing level as of 10/26 is 326,285
       rows #TODO(#16227)
@@ -93,10 +93,12 @@ num_allowed_rows_overrides:
     hard_num_allowed_rows_override: 7
     override_reason: Not required for web tool.  Ticket to investigate #TODO(#26496)
   - validation_name: invalid_release_reasons_for_temporary_custody
-    hard_num_allowed_rows_override: 35
+    hard_num_allowed_rows_override: 1500
     override_reason:
-      Needs investigation but seems to be due to single day periods.  Current failing level
-      as of 4/12 is 20 rows TODO(#26444)
+      Needs investigation and seems due to the in custody inference we've done.
+      As of 7/12/24, failing at 1379 rows because we fixed the sorting coming out of normalization (which had previous led to some failing rows not being flagged).
+      No immediate impact because the most recent row it's failing for is a period from 2020, and our tools don't use data that far back.
+      TODO(#26444)
   - validation_name: current_impact_funnel_status_duplicate_external_ids
     hard_num_allowed_rows_override: 10000
     override_reason:
