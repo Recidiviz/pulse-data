@@ -135,6 +135,7 @@ output:
                   - FUFA-RTFUR # Furlough pass to Facility - Return from furlough
                   - WRFA-RETWK # Work release to Facility - Return from work release
                   - FUFA-INTRS # Furlough pass to Facility - In transit
+                  - FAOJ-OUTCT # Out to court
                   - FACT-OUTYS # Out to court (charges)
                   - FACT-OUTNO # Out to court (no charges)
                   - FACT-SARET # Safekeeping (returned)
@@ -333,6 +334,7 @@ output:
                   - OJFA-RTIAD # Return from interstate on detainer
                   - OJFA-RTMED # Return from medical/other jurisdiction
                   - OJFA-RTDET # Return from detainer
+                  - FAOJ-OUTCT # Out to court
 
                 StateIncarcerationPeriodAdmissionReason.REVOCATION:
                   # The following are all movements from parole to facility (PAFA).
