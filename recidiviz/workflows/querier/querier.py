@@ -262,11 +262,13 @@ class WorkflowsQuerier:
         hide_denial_revert: bool,
         tooltip_eligibility_text: Optional[str],
         call_to_action: str,
+        subheading: Optional[str],
         denial_text: Optional[str],
         snooze: Optional[Dict[str, Any]],
         sidebar_components: List[str],
         tab_groups: Optional[Dict[str, List[str]]],
         compare_by: Optional[List[Any]],
+        notifications: List[Any],
     ) -> int:
         """
         Given an opportunity type and a config, adds that config to the database,
@@ -296,11 +298,13 @@ class WorkflowsQuerier:
                     hide_denial_revert=hide_denial_revert,
                     tooltip_eligibility_text=tooltip_eligibility_text,
                     call_to_action=call_to_action,
+                    subheading=subheading,
                     denial_text=denial_text,
                     snooze=snooze,
                     sidebar_components=sidebar_components,
                     tab_groups=tab_groups,
                     compare_by=compare_by,
+                    notifications=notifications,
                 )
                 .returning(OpportunityConfiguration.id)
             )

@@ -145,11 +145,13 @@ class OpportunityConfigurationsAPI(MethodView):
             hide_denial_revert=body_args["hide_denial_revert"],
             tooltip_eligibility_text=body_args.get("tooltip_eligibility_text"),
             call_to_action=body_args["call_to_action"],
+            subheading=body_args.get("subheading"),
             denial_text=body_args.get("denial_text"),
             snooze=body_args.get("snooze"),
             sidebar_components=body_args["sidebar_components"],
             tab_groups=body_args.get("tab_groups"),
             compare_by=body_args.get("compare_by"),
+            notifications=body_args["notifications"],
         )
         return new_config_id
 

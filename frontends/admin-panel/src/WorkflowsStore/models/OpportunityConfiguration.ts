@@ -45,6 +45,15 @@ const criteriaCopySchema = z.record(
   })
 );
 
+export const notificationsSchema = z.array(
+  z.object({
+    id: z.string(),
+    title: z.string().optional(),
+    body: z.string(),
+    cta: z.string().optional(),
+  })
+);
+
 // A BabyOpportunityConfigurationSchema just contains the parts
 // that are set in the form, not those that are set by the backend
 // or presenter
@@ -53,6 +62,7 @@ export const babyOpportunityConfigurationSchema = z.object({
   featureVariant: nullishAsUndefined(z.string()),
   dynamicEligibilityText: z.string(),
   callToAction: z.string(),
+  subheading: nullishAsUndefined(z.string()),
   snooze: nullishAsUndefined(snoozeConfigurationSchema),
   denialReasons: z.record(z.string()),
   denialText: nullishAsUndefined(z.string()),
@@ -66,6 +76,7 @@ export const babyOpportunityConfigurationSchema = z.object({
   hideDenialRevert: z.boolean(),
   tooltipEligibilityText: nullishAsUndefined(z.string()),
   tabGroups: nullishAsUndefined(z.record(z.string().array())),
+  notifications: notificationsSchema,
   compareBy: nullishAsUndefined(
     z.array(
       z.object({

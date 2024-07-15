@@ -20,7 +20,10 @@ import { observer } from "mobx-react-lite";
 import { useHistory } from "react-router";
 import { z } from "zod";
 
-import { babyOpportunityConfigurationSchema } from "../../../WorkflowsStore/models/OpportunityConfiguration";
+import {
+  babyOpportunityConfigurationSchema,
+  notificationsSchema,
+} from "../../../WorkflowsStore/models/OpportunityConfiguration";
 import OpportunityConfigurationPresenter from "../../../WorkflowsStore/presenters/OpportunityConfigurationPresenter";
 import { useWorkflowsStore } from "../../StoreProvider";
 import HydrationWrapper from "../HydrationWrapper";
@@ -58,6 +61,21 @@ const OpportunityConfigurationForm = ({
     hideDenialRevert: !!template?.hideDenialRevert,
   };
 
+  // Add notification UUIDs to newly created notifications
+  const addNotificationIds = (
+    notifications?: z.infer<typeof notificationsSchema>
+  ) => {
+    return notifications?.map((notification) => {
+      if (!notification.id) {
+        return {
+          ...notification,
+          id: crypto.randomUUID(),
+        };
+      }
+      return notification;
+    });
+  };
+
   return (
     <Form
       onFinish={async (values) => {
@@ -77,6 +95,7 @@ const OpportunityConfigurationForm = ({
             values.ineligibleCriteriaCopy ?? []
           ),
           sidebarComponents: values.sidebarComponents ?? [],
+          notifications: addNotificationIds(values.notifications) ?? [],
         });
         const success = await presenter.createOpportunityConfiguration(config);
         if (success) history.push("..");
@@ -122,6 +141,9 @@ const OpportunityConfigurationForm = ({
         name="callToAction"
         rules={[{ required: true }]}
       >
+        <Input />
+      </Form.Item>
+      <Form.Item label="Subheading" name="subheading">
         <Input />
       </Form.Item>
       <MultiEntry label="Denial Reasons" name="denialReasons">
@@ -175,6 +197,42 @@ const OpportunityConfigurationForm = ({
       <Form.Item label="Alert?" name="isAlert" valuePropName="checked">
         <Checkbox />
       </Form.Item>
+      <MultiEntry label="Notifications" name="notifications">
+        {({ name, ...field }) => {
+          return (
+            <>
+              <Form.Item
+                {...field}
+                noStyle
+                name={[name, "title"]}
+                rules={[{ required: false }]}
+              >
+                <Input placeholder="Title (optional)" />
+              </Form.Item>
+              :
+              <Form.Item
+                {...field}
+                noStyle
+                name={[name, "body"]}
+                rules={[
+                  { required: true, message: "Notification body is required" },
+                ]}
+              >
+                <Input placeholder="Body" />
+              </Form.Item>
+              :
+              <Form.Item
+                {...field}
+                noStyle
+                name={[name, "cta"]}
+                rules={[{ required: true }]}
+              >
+                <Input placeholder="CTA (optional)" />
+              </Form.Item>
+            </>
+          );
+        }}
+      </MultiEntry>
       <Button type="primary" htmlType="submit">
         Submit
       </Button>
