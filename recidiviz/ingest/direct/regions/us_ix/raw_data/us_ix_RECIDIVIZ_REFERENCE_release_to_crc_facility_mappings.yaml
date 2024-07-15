@@ -1,0 +1,18 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: RECIDIVIZ_REFERENCE_release_to_crc_facility_mappings
+file_description: |-
+  This table contains a mapping of release to CRC facilities
+always_historical_export: True
+separator: ","
+custom_line_terminator: "\n"
+data_classification: source
+primary_key_cols:
+  - CRC_FACILITY
+  - RELEASE_FACILITY
+columns:
+  - name: CRC_FACILITY
+    description: CRC request district
+  - name: RELEASE_FACILITY
+    description: Release facility name
+is_code_file: True
+update_cadence: IRREGULAR
