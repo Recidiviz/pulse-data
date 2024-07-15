@@ -57,6 +57,7 @@ US_IX_SENTENCING_CLIENT_TEMPLATE = """
         ON loc.LocationId = ref.CountyId
     LEFT JOIN caseIds c 
         ON psi.OffenderId = c.OffenderId
-    WHERE recency_rank = 1
+    -- Gets most recent county of client, doesn't exclude if no county on record
+    WHERE recency_rank = 1 or recency_rank IS NULL
 
 """
