@@ -279,7 +279,7 @@ jobs:
     # If the emulator encounters an incorrect / unknown error that is continuously retried,
     # we'd rather the process time out than incur additional billed minutes.
     # Debugging can be done locally to find the root error
-    timeout-minutes: 5
+    timeout-minutes: 7
     strategy:
       fail-fast: false
       matrix:
