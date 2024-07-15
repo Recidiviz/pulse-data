@@ -186,7 +186,9 @@ output:
                         - "40" # Recommitment to prison for new criminal convictions while under supervision
                         - "41" # Recommitment to prison for adjudication of technical parole violations while under supervision
                         - "42" # Recommitment to prison for convictions of new crimes and technical
-              - $else: $literal_enum(StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE)
+              - $else_if:
+                  $not_null: end_date
+                $then: $literal_enum(StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE)
           termination_date: end_date
           county_code: county_of_residence
           supervision_site:
