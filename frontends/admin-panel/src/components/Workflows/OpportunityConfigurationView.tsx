@@ -67,6 +67,9 @@ const OpportunityConfigurationSettings = ({
         <Form.Item label="Call To Action">
           <span className="ant-form-text">{config.callToAction}</span>
         </Form.Item>
+        <Form.Item label="Subheading">
+          <span className="ant-form-text">{config.subheading}</span>
+        </Form.Item>
         <Form.Item label="Denial Reasons">
           <span className="ant-form-text">
             {JSON.stringify(config.denialReasons)}
@@ -112,6 +115,11 @@ const OpportunityConfigurationSettings = ({
         <Form.Item label="Compare By">
           <span className="ant-form-text">
             {JSON.stringify(config.compareBy)}
+          </span>
+        </Form.Item>
+        <Form.Item label="Notifications">
+          <span className="ant-form-text">
+            {JSON.stringify(config.notifications)}
           </span>
         </Form.Item>
       </Form>

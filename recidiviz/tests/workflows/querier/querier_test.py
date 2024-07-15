@@ -69,6 +69,7 @@ def load_model_fixture(
                         "denial_reasons",
                         "tab_groups",
                         "compare_by",
+                        "notifications",
                     }
                     and v != ""
                 ):
@@ -100,6 +101,7 @@ def make_add_config_arguments(
         "ineligible_criteria_copy": {},
         "dynamic_eligibility_text": "dynamic_eligibility_text",
         "call_to_action": "call_to_action",
+        "subheading": "subheading",
         "snooze": {},
         "feature_variant": feature_variant,
         "is_alert": False,
@@ -110,6 +112,7 @@ def make_add_config_arguments(
         "tooltip_eligibility_text": "tooltip",
         "tab_groups": None,
         "compare_by": None,
+        "notifications": [],
     }
 
 

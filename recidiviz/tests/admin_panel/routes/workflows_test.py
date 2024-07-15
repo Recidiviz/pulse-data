@@ -53,6 +53,7 @@ def generate_config(
         ineligible_criteria_copy={},
         dynamic_eligibility_text="text",
         call_to_action="do something",
+        subheading="this is what the policy does",
         snooze={"default_snooze_days": 30, "max_snooze_days": 180},
         is_alert=False,
         sidebar_components=["someComponent"],
@@ -67,6 +68,7 @@ def generate_config(
         tooltip_eligibility_text="Eligible",
         tab_groups={},
         compare_by=[],
+        notifications=[],
     )
 
 
@@ -272,6 +274,7 @@ class WorkflowsAdminPanelEndpointTests(TestCase):
             "ineligibleCriteriaCopy": config_fields.ineligible_criteria_copy,
             "dynamicEligibilityText": config_fields.dynamic_eligibility_text,
             "callToAction": config_fields.call_to_action,
+            "subheading": config_fields.subheading,
             "denialText": config_fields.denial_text,
             "snooze": {"defaultSnoozeDays": 30, "maxSnoozeDays": 180},
             "sidebarComponents": config_fields.sidebar_components,
@@ -280,6 +283,7 @@ class WorkflowsAdminPanelEndpointTests(TestCase):
             "tooltipEligibilityText": config_fields.tooltip_eligibility_text,
             "tabGroups": config_fields.tab_groups,
             "compareBy": config_fields.compare_by,
+            "notifications": config_fields.notifications,
         }
 
         mock_querier.return_value.add_config.return_value = TEST_CONFIG_ID
@@ -310,11 +314,13 @@ class WorkflowsAdminPanelEndpointTests(TestCase):
                 hide_denial_revert=req_body["hideDenialRevert"],
                 tooltip_eligibility_text=req_body["tooltipEligibilityText"],
                 call_to_action=req_body["callToAction"],
+                subheading=req_body["subheading"],
                 denial_text=req_body["denialText"],
                 snooze={"default_snooze_days": 30, "max_snooze_days": 180},
                 sidebar_components=req_body["sidebarComponents"],
                 tab_groups=req_body["tabGroups"],
                 compare_by=req_body["compareBy"],
+                notifications=req_body["notifications"],
             )
 
     ########

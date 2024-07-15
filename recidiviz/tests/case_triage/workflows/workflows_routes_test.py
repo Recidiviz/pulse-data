@@ -1831,6 +1831,7 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
                 initial_header="header",
                 dynamic_eligibility_text="dynamic text[|s]",
                 call_to_action="action",
+                subheading="the subheading",
                 snooze={"foo": 12},
                 is_alert=False,
                 denial_text=None,
@@ -1848,6 +1849,7 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
                 tooltip_eligibility_text="eligible",
                 tab_groups=None,
                 compare_by=None,
+                notifications=[],
             )
         }
 

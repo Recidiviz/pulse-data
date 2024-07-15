@@ -130,6 +130,9 @@ class OpportunityConfiguration(WorkflowsBase):
     # CTA text shown on the opportunity results page
     call_to_action = Column(String, nullable=False)
 
+    # Subheading for the new policy copy
+    subheading = Column(String, nullable=True)
+
     # Custom override text for the denial button
     denial_text = Column(String, nullable=True)
 
@@ -144,3 +147,6 @@ class OpportunityConfiguration(WorkflowsBase):
 
     # Configuration blob for person sorting
     compare_by = Column(JSON, nullable=True)
+
+    # Notification blob
+    notifications = Column(JSON, nullable=True)

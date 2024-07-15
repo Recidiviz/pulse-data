@@ -190,6 +190,12 @@ class WorkflowsConfigSchema(CamelCaseSchema):
         sortDirection = fields.Str(required=False)
         undefinedBehavior = fields.Str(required=False)
 
+    class NotificationSchema(CamelCaseSchema):
+        id = fields.Str()
+        title = fields.Str(required=False)
+        body = fields.Str()
+        cta = fields.Str(required=False)
+
     state_code = fields.Str()
     display_name = fields.Str()
     feature_variant = fields.Str(required=False)
@@ -198,6 +204,7 @@ class WorkflowsConfigSchema(CamelCaseSchema):
     hide_denial_revert = fields.Bool()
     tooltip_eligibility_text = fields.Str(required=False)
     call_to_action = fields.Str()
+    subheading = fields.Str(required=False)
     snooze = fields.Nested(SnoozeConfigSchema(), required=False)
     denial_reasons = fields.Dict(fields.Str(), fields.Str())
     denial_text = fields.Str(required=False)
@@ -213,6 +220,7 @@ class WorkflowsConfigSchema(CamelCaseSchema):
     is_alert = fields.Bool()
     tab_groups = fields.Dict(fields.Str(), fields.List(fields.Str()), required=False)
     compare_by = fields.List(fields.Nested(SortParamSchema()), required=False)
+    notifications = fields.List(fields.Nested(NotificationSchema()))
 
 
 class WorkflowsFullConfigSchema(WorkflowsConfigSchema):
