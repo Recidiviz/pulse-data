@@ -370,7 +370,4 @@ snapshots[
     GenericRepr(
         "SupervisionOfficerSupervisorEntity(full_name=PersonName(given_names='Supervisor', surname='3', middle_names='', name_suffix=''), external_id='103', pseudonymized_id='hash3', supervision_district='2', email='manager3@recidiviz.org', has_outliers=False)"
     ),
-    GenericRepr(
-        "SupervisionOfficerSupervisorEntity(full_name=PersonName(given_names='Supervisor', surname='4', middle_names='', name_suffix=''), external_id='104', pseudonymized_id='hash4', supervision_district='2', email='manager4@recidiviz.org', has_outliers=True)"
-    ),
 ]
