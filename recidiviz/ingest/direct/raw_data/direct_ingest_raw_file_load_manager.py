@@ -24,6 +24,7 @@ from google.cloud.bigquery.job import LoadJob
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_client import BigQueryClient, BigQueryClientImpl
+from recidiviz.cloud_storage.gcs_file_system import GCSFileSystem
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.dataset_config import (
@@ -33,9 +34,6 @@ from recidiviz.ingest.direct.dataset_config import (
 )
 from recidiviz.ingest.direct.direct_ingest_regions import (
     raw_data_pruning_enabled_in_state_and_instance,
-)
-from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
-    DirectIngestGCSFileSystem,
 )
 from recidiviz.ingest.direct.raw_data.direct_ingest_raw_table_migration_collector import (
     DirectIngestRawTableMigrationCollector,
@@ -51,8 +49,9 @@ from recidiviz.ingest.direct.raw_data.raw_file_configs import (
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.direct.types.raw_data_import_types import (
+    AppendReadyFile,
     AppendSummary,
-    LoadPrepSummary,
+    ImportReadyFile,
 )
 from recidiviz.ingest.direct.views.raw_data_diff_query_builder import (
     RawDataDiffQueryBuilder,
@@ -67,7 +66,7 @@ class DirectIngestRawFileLoadManager:
         self,
         raw_data_instance: DirectIngestInstance,
         region_raw_file_config: DirectIngestRegionRawFileConfig,
-        fs: DirectIngestGCSFileSystem,
+        fs: GCSFileSystem,
         big_query_client: Optional[BigQueryClient] = None,
     ) -> None:
         self.region_code = region_raw_file_config.region_code
@@ -231,13 +230,7 @@ class DirectIngestRawFileLoadManager:
                 )
                 raise e
 
-    def load_and_prep_paths(
-        self,
-        file_id: int,
-        file_tag: str,
-        update_datetime: datetime.datetime,
-        paths: List[GcsfsFilePath],
-    ) -> LoadPrepSummary:
+    def load_and_prep_paths(self, file: ImportReadyFile) -> AppendReadyFile:
         """Loads and transforms a raw data file into a temp table, in the order of:
             (1) load raw data directly into a temp table
             (2) apply pre-migration transformations
@@ -251,7 +244,7 @@ class DirectIngestRawFileLoadManager:
             dataset_id=raw_data_temp_load_dataset(
                 self.state_code, self.raw_data_instance
             ),
-            table_id=f"{file_tag}__{file_id}",
+            table_id=f"{file.file_tag}__{file.file_id}",
         )
 
         temp_raw_file_with_transformations_address = BigQueryAddress(
@@ -259,32 +252,35 @@ class DirectIngestRawFileLoadManager:
                 self.state_code,
                 self.raw_data_instance,
             ),
-            table_id=f"{file_tag}__{file_id}__transformed",
+            table_id=f"{file.file_tag}__{file.file_id}__transformed",
         )
 
         try:
 
             raw_rows_count = self._load_paths_to_temp_table(
-                file_tag, paths, temp_raw_file_address
+                file.file_tag, file.file_paths, temp_raw_file_address
             )
 
             self._apply_pre_migration_transformations(
                 temp_raw_file_address,
                 temp_raw_file_with_transformations_address,
-                file_tag,
-                file_id,
-                update_datetime,
+                file.file_tag,
+                file.file_id,
+                file.update_datetime,
             )
 
             self._apply_migrations(
-                file_tag, update_datetime, temp_raw_file_with_transformations_address
+                file.file_tag,
+                file.update_datetime,
+                temp_raw_file_with_transformations_address,
             )
 
         finally:
             self._clean_up_temp_tables(temp_raw_file_address)
 
-        return LoadPrepSummary(
-            append_ready_table_address=temp_raw_file_with_transformations_address.to_str(),
+        return AppendReadyFile(
+            import_ready_file=file,
+            append_ready_table_address=temp_raw_file_with_transformations_address,
             raw_rows_count=raw_rows_count,
         )
 
@@ -385,54 +381,54 @@ class DirectIngestRawFileLoadManager:
 
     def append_to_raw_data_table(
         self,
-        file_id: int,
-        file_tag: str,
-        update_datetime: datetime.datetime,
-        temp_raw_file_with_transformations_address: BigQueryAddress,
+        append_ready_file: AppendReadyFile,
     ) -> AppendSummary:
         """Appends already loaded and transformed data to the raw data table,
         optionally applying a historical data diff to the data if historical diffs
         are active.
         """
+        file = append_ready_file.import_ready_file
 
         temp_raw_data_diff_table_address = BigQueryAddress(
             dataset_id=raw_data_pruning_raw_data_diff_results_dataset(
                 self.state_code, self.raw_data_instance
             ),
-            table_id=f"{file_tag}__{file_id}",
+            table_id=f"{file.file_tag}__{file.file_id}",
         )
 
         raw_data_table = BigQueryAddress(
             dataset_id=raw_tables_dataset_for_region(
                 state_code=self.state_code, instance=self.raw_data_instance
             ),
-            table_id=file_tag,
+            table_id=file.file_tag,
         )
 
         try:
 
-            if self._should_generate_historical_diffs(file_tag):
+            if self._should_generate_historical_diffs(file.file_tag):
 
                 self._generate_historical_diff(
-                    file_tag=file_tag,
-                    file_id=file_id,
-                    update_datetime=update_datetime,
+                    file_tag=file.file_tag,
+                    file_id=file.file_id,
+                    update_datetime=file.update_datetime,
                     temp_raw_data_diff_table_address=temp_raw_data_diff_table_address,
-                    temp_raw_file_address=temp_raw_file_with_transformations_address,
+                    temp_raw_file_address=append_ready_file.append_ready_table_address,
                 )
 
                 append_source_table = temp_raw_data_diff_table_address
             else:
-                append_source_table = temp_raw_file_with_transformations_address
+                append_source_table = append_ready_file.append_ready_table_address
 
             self._append_data_to_raw_table(
                 source_table=append_source_table, destination_table=raw_data_table
             )
         finally:
             self._clean_up_temp_tables(
-                temp_raw_file_with_transformations_address,
+                append_ready_file.append_ready_table_address,
                 temp_raw_data_diff_table_address,
             )
 
         # TODO(#28694) add additional query to grab these stats
-        return AppendSummary(net_new_or_updated_rows=None, deleted_rows=None)
+        return AppendSummary(
+            file_id=file.file_id, net_new_or_updated_rows=None, deleted_rows=None
+        )

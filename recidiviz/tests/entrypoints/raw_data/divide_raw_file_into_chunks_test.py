@@ -30,11 +30,12 @@ from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRegionRawFileConfig,
 )
 from recidiviz.ingest.direct.types.raw_data_import_types import (
-    BatchedTaskInstanceOutput,
     PreImportNormalizationType,
+    RawFileProcessingError,
     RequiresNormalizationFile,
     RequiresPreImportNormalizationFile,
 )
+from recidiviz.utils.airflow_types import BatchedTaskInstanceOutput
 
 
 class TestExtractFileChunksConcurrently(unittest.TestCase):
@@ -99,7 +100,9 @@ class TestExtractFileChunksConcurrently(unittest.TestCase):
             self.requires_normalization_files, self.state_code
         )
         result = BatchedTaskInstanceOutput.deserialize(
-            serialized_result, result_cls=RequiresPreImportNormalizationFile
+            serialized_result,
+            result_cls=RequiresPreImportNormalizationFile,
+            error_cls=RawFileProcessingError,
         )
         self.assertEqual(len(result.results), 2)
         self.assertEqual(len(result.errors), 0)
@@ -130,7 +133,9 @@ class TestExtractFileChunksConcurrently(unittest.TestCase):
                 self.requires_normalization_files, self.state_code
             )
         result = BatchedTaskInstanceOutput.deserialize(
-            serialized_result, result_cls=RequiresPreImportNormalizationFile
+            serialized_result,
+            result_cls=RequiresPreImportNormalizationFile,
+            error_cls=RawFileProcessingError,
         )
         self.assertEqual(len(result.results), 1)
         self.assertEqual(len(result.errors), 1)

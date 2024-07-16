@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Utils for the raw data import dag"""
+import heapq
 import logging
 from types import ModuleType
 from typing import Callable, Iterable, List, Optional, Tuple, TypeVar
@@ -54,3 +55,26 @@ def partition_as_list(
     """
     falses, trues = partition(pred, iterable)
     return list(falses), list(trues)
+
+
+def n_evenly_weighted_buckets(
+    items_and_weight: List[Tuple[T, int]], n: int
+) -> List[List[T]]:
+    """Constructs at most |n| approximately even weighted buckets from
+    |items_and_weight|
+    """
+    if n <= 0:
+        raise ValueError(f"Expected n to be greater than or equal to 0; got {n}")
+
+    sorted_items = list(sorted(items_and_weight, key=lambda x: x[1], reverse=True))
+    num_buckets = min(len(sorted_items), n)
+    buckets: List[List[T]] = [[] for _ in range(num_buckets)]
+    heap = [(0, bucket_index) for bucket_index in range(num_buckets)]
+    heapq.heapify(heap)
+
+    for item, weight in sorted_items:
+        bucket_size, bucket_index = heapq.heappop(heap)
+        buckets[bucket_index].append(item)
+        heapq.heappush(heap, (bucket_size + weight, bucket_index))
+
+    return buckets
