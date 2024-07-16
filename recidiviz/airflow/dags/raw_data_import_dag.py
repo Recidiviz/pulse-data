@@ -35,6 +35,14 @@ from recidiviz.airflow.dags.operators.recidiviz_kubernetes_pod_operator import (
 from recidiviz.airflow.dags.raw_data.acquire_resource_lock_sql_query_generator import (
     AcquireRawDataResourceLockSqlQueryGenerator,
 )
+from recidiviz.airflow.dags.raw_data.bq_load_tasks import (
+    append_ready_file_batches_from_generate_append_batches,
+    append_to_raw_data_table_for_batch,
+    generate_append_batches,
+    load_and_prep_paths_for_batch,
+    raise_append_errors,
+    raise_load_prep_errors,
+)
 from recidiviz.airflow.dags.raw_data.gcs_file_processing_tasks import (
     generate_chunk_processing_pod_arguments,
     generate_file_chunking_pod_arguments,
@@ -54,6 +62,7 @@ from recidiviz.airflow.dags.raw_data.initialize_raw_data_dag_group import (
 from recidiviz.airflow.dags.raw_data.metadata import (
     RESOURCE_LOCK_AQUISITION_DESCRIPTION,
     RESOURCE_LOCKS_NEEDED,
+    SKIPPED_FILE_ERRORS,
     get_resource_lock_ttl,
 )
 from recidiviz.airflow.dags.raw_data.raw_data_branching import (
@@ -211,10 +220,38 @@ def create_single_state_code_ingest_instance_raw_data_import_branch(
 
         # --- step 4: big-query upload -------------------------------------------------
         # inputs: [ *[ ImportReadyOriginalFile ], *[ ImportReadyNormalizedFile ] ]
-        # execution layer: k8s
+        # execution layer: celery
         # outputs: [ ImportSessionInfo ]
 
-        # TODO(#30168) implement bq load step
+        # TODO(#30168) implement coalesce of results from steps above
+
+        with TaskGroup("biq_query_load") as big_query_load:
+            all_files: List[str] = []
+
+            # load paths into temp table
+            load_and_prep_results = load_and_prep_paths_for_batch.partial(
+                raw_data_instance=raw_data_instance, region_code=state_code.value
+            ).expand(serialized_import_ready_files=all_files)
+
+            # batch tasks for next step and raise errors
+            append_batches_output = generate_append_batches(load_and_prep_results)
+
+            raise_load_prep_errors(
+                load_and_prep_results, append_batches_output[SKIPPED_FILE_ERRORS]
+            )
+
+            # append temp tables to raw data table
+            append_results = append_to_raw_data_table_for_batch.partial(
+                raw_data_instance=raw_data_instance, region_code=state_code.value
+            ).expand(
+                serialized_append_ready_file_batch=append_ready_file_batches_from_generate_append_batches(
+                    append_batches_output
+                )
+            )
+
+            raise_append_errors(append_results)
+
+        pre_import_normalization >> big_query_load
 
         # ------------------------------------------------------------------------------
 
@@ -236,7 +273,7 @@ def create_single_state_code_ingest_instance_raw_data_import_branch(
             ),
         )
 
-        pre_import_normalization >> release_locks
+        big_query_load >> release_locks
 
         # ------------------------------------------------------------------------------
 

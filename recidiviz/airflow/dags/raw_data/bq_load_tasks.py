@@ -47,6 +47,7 @@ from recidiviz.ingest.direct.types.raw_data_import_types import (
     ImportReadyFile,
     RawDataAppendImportError,
     RawFileLoadAndPrepError,
+    RawDataImportError,
 )
 from recidiviz.utils.airflow_types import (
     BatchedTaskInstanceOutput,
@@ -250,7 +251,7 @@ def _filter_load_results_based_on_errors(
     return append_ready_files, skipped_files
 
 
-def _raise_task_errors(task_errors: List[RawFileLoadAndPrepError]) -> None:
+def _raise_task_errors(task_errors: List[RawDataImportError]) -> None:
     if task_errors:
         error_msg = "\n\n".join([str(error) for error in task_errors])
         raise AirflowException(f"Error(s) occurred in file processing:\n{error_msg}")
@@ -359,3 +360,24 @@ def _append_to_raw_data_table_for_file_tag(
     return BatchedTaskInstanceOutput[AppendSummary, RawDataAppendImportError](
         results=results, errors=failures
     )
+
+
+@task
+def raise_append_errors(
+    append_tasks_output: List[str],
+) -> None:
+    """Raises errors from append_to_raw_data_table_for_region step"""
+    append_errors = MappedBatchedTaskOutput.deserialize(
+        append_tasks_output,
+        result_cls=AppendSummary,
+        error_cls=RawDataAppendImportError,
+    ).flatten_errors()
+
+    _raise_task_errors(append_errors)
+
+
+@task
+def append_ready_file_batches_from_generate_append_batches(
+    append_batches_output: Dict,
+) -> List[str]:
+    return append_batches_output[APPEND_READY_FILE_BATCHES]

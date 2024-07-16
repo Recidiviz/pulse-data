@@ -147,6 +147,39 @@ class RawDataImportDagSequencingTest(AirflowIntegrationTest):
                     assert step_3_task_id in next_task.task_id
                 curr_task = next_task
 
+    def test_step_4_sequencing(self) -> None:
+        dag = DagBag(dag_folder=DAG_FOLDER, include_examples=False).dags[self.dag_id]
+        step_4_root = dag.partial_subset(
+            task_ids_or_regex=r"raise_chunk_normalization_errors",
+            include_upstream=False,
+            include_downstream=True,
+        )
+        ordered_step_4_task_ids = [
+            ["load_and_prep_paths_for_batch"],
+            ["raise_load_prep_errors", "generate_append_batches"],
+            [
+                "raise_load_prep_errors",
+                "append_ready_file_batches_from_generate_append_batches",
+            ],
+            ["append_to_raw_data_table_for_batch"],
+            ["raise_append_errors"],
+        ]
+
+        for root in step_4_root.roots:
+            assert "raise_chunk_normalization_errors" in root.task_id
+            curr_task = root
+            for step_4_task_id in ordered_step_4_task_ids:
+                next_task = None
+                assert len(curr_task.downstream_list) == len(step_4_task_id)
+                for downstream_task in curr_task.downstream_list:
+                    assert "biq_query_load" in downstream_task.task_id
+                    assert any(
+                        task_id in downstream_task.task_id for task_id in step_4_task_id
+                    )
+                    if step_4_task_id[-1] in downstream_task.task_id:
+                        next_task = downstream_task
+                curr_task = next_task
+
 
 class RawDataImportDagIntegrationTest(AirflowIntegrationTest):
     """Integration tests for the raw data import dag"""
@@ -241,7 +274,13 @@ class RawDataImportDagIntegrationTest(AirflowIntegrationTest):
                 run_conf={
                     "ingest_instance": "PRIMARY",
                 },
-                expected_skipped_ids=[r".*_secondary_import_branch"],
+                expected_skipped_ids=[
+                    r".*_secondary_import_branch",
+                    # TODO(#30168) remove once files are combined upstream
+                    r"raw_data_branching.*_primary_import_branch.biq_query_load.*",
+                    # TODO(#30169) make cleanup happen no matter what happens in previous steps
+                    r"raw_data_branching.*_primary_import_branch.release_raw_data_resource_locks",
+                ],
             )
             self.assertEqual(DagRunState.SUCCESS, result.dag_run_state)
 
@@ -257,6 +296,10 @@ class RawDataImportDagIntegrationTest(AirflowIntegrationTest):
                 expected_skipped_ids=[
                     r".*_primary_import_branch",
                     "us_yy_secondary_import_branch",
+                    # TODO(#30168) remove once files are combined upstream
+                    r"raw_data_branching.us_xx_secondary_import_branch.biq_query_load..*",
+                    # TODO(#30169) make cleanup happen no matter what happens in previous steps
+                    "raw_data_branching.us_xx_secondary_import_branch.release_raw_data_resource_locks",
                 ],
             )
             self.assertEqual(DagRunState.SUCCESS, result.dag_run_state)
@@ -282,6 +325,7 @@ class RawDataImportDagIntegrationTest(AirflowIntegrationTest):
                     r".*_primary_import_branch\.get_all_unprocessed_gcs_file_metadata",
                     r".*_primary_import_branch\.get_all_unprocessed_bq_file_metadata",
                     r".*_primary_import_branch\.pre_import_normalization\.*",
+                    r".*_primary_import_branch\.biq_query_load\.*",
                     BRANCH_END_TASK_NAME,
                 ],
                 expected_skipped_ids=[
