@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Unit tests for GetAllUnprocessedBQFileMetadataSqlQueryGenerator"""
-from typing import List, Optional, Tuple
+from typing import List
 from unittest.mock import create_autospec
 
 from airflow.providers.postgres.hooks.postgres import PostgresHook
@@ -33,9 +33,12 @@ from recidiviz.airflow.dags.raw_data.get_all_unprocessed_gcs_file_metadata_sql_q
 from recidiviz.airflow.tests.test_utils import CloudSqlQueryGeneratorUnitTest
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.ingest.direct.types.raw_data_import_types import (
+    RawBigQueryFileMetadataSummary,
+    RawGCSFileMetadataSummary,
+)
 from recidiviz.persistence.database.schema.operations.schema import OperationsBase
 from recidiviz.tests.ingest.direct import fake_regions
-from recidiviz.utils.types import assert_type
 
 
 class TestGetAllUnprocessedBQFileMetadataSqlQueryGenerator(
@@ -64,39 +67,42 @@ class TestGetAllUnprocessedBQFileMetadataSqlQueryGenerator(
         self.mock_context = create_autospec(Context)
 
     def _validate_results(
-        self, _results: List[Tuple[int, List[str]]], _inputs: List
+        self, _results: List[str], _inputs: List[RawGCSFileMetadataSummary]
     ) -> None:
+        metadata = [
+            RawBigQueryFileMetadataSummary.deserialize(result) for result in _results
+        ]
 
-        for i, result in enumerate(_results):
-            assert isinstance(result[0], int)
-
-        assert {p for r in _results for p in r[1]} == {i[2] for i in _inputs}
+        assert {p.path for m in metadata for p in m.gcs_files} == {
+            i.path for i in _inputs
+        }
 
         persisted_gcs_records = self.mock_pg_hook.get_records(
             "select file_id, array_agg(normalized_file_name) from direct_ingest_raw_gcs_file_metadata group by file_id order by file_id;"
         )
 
-        assert len(persisted_gcs_records) == len(_results)
+        assert len(persisted_gcs_records) == len(metadata)
 
         # make sure we correctly persisted file_id
         for i, record in enumerate(persisted_gcs_records):
-            assert record[0] == _results[i][0]
+            assert record[0] == metadata[i].file_id
+            ps = [f.path.abs_path() for f in metadata[i].gcs_files]
             for name in record[1]:
-                assert f"testing/{name}" in _results[i][1]
+                assert f"testing/{name}" in ps
 
     def _insert_rows_into_gcs(
         self, paths: List[str]
-    ) -> List[Tuple[int, Optional[int]]]:
+    ) -> List[RawGCSFileMetadataSummary]:
+        p = [GcsfsFilePath.from_absolute_path(path) for path in paths]
         results = self.mock_pg_hook.get_records(
             # pylint: disable=protected-access
-            self.raw_gcs_generator._register_new_files_sql_query(
-                [GcsfsFilePath.from_absolute_path(path) for path in paths]
-            )
+            self.raw_gcs_generator._register_new_files_sql_query(p)
         )
 
-        # returns list of tuples of (gcs_file_id, file_id) where file_id will always be
-        # None
-        return [(record[0], record[1]) for record in assert_type(results, list)]
+        return [
+            RawGCSFileMetadataSummary.from_gcs_metadata_table_row(result, p[i])
+            for i, result in enumerate(results)
+        ]
 
     def test_no_files(self) -> None:
         self.mock_operator.xcom_pull.return_value = []
@@ -110,52 +116,65 @@ class TestGetAllUnprocessedBQFileMetadataSqlQueryGenerator(
 
     def test_all_pre_registered(self) -> None:
         inputs = [
-            [
-                1,
-                2,
-                "testing/unprocessed_2024-01-25T16:35:33:617135_raw_test_file_tag.csv",
-            ],
-            [
-                3,
-                4,
-                "testing/unprocessed_2024-01-25T16:35:33:617135_raw_test_file_tag-1.csv",
-            ],
-            [
-                5,
-                6,
-                "testing/unprocessed_2024-01-25T16:35:33:617135_raw_test_file_tag.csv",
-            ],
+            RawGCSFileMetadataSummary(
+                gcs_file_id=1,
+                file_id=2,
+                path=GcsfsFilePath.from_absolute_path(
+                    "testing/unprocessed_2024-01-25T16:35:33:617135_raw_test_file_tag.csv"
+                ),
+            ),
+            RawGCSFileMetadataSummary(
+                gcs_file_id=3,
+                file_id=4,
+                path=GcsfsFilePath.from_absolute_path(
+                    "testing/unprocessed_2024-01-25T16:35:33:617135_raw_test_file_tag-1.csv",
+                ),
+            ),
+            RawGCSFileMetadataSummary(
+                gcs_file_id=5,
+                file_id=6,
+                path=GcsfsFilePath.from_absolute_path(
+                    "testing/unprocessed_2024-01-25T16:35:33:617135_raw_test_file_tag.csv",
+                ),
+            ),
         ]
 
-        self.mock_operator.xcom_pull.return_value = inputs
+        self.mock_operator.xcom_pull.return_value = [i.serialize() for i in inputs]
         mock_postgres = create_autospec(PostgresHook)
         results = self.generator.execute_postgres_query(
             self.mock_operator, mock_postgres, self.mock_context
         )
+        metadata_results = [
+            RawBigQueryFileMetadataSummary.deserialize(result) for result in results
+        ]
 
-        assert len(results) == len(inputs)
+        assert len(metadata_results) == len(inputs)
 
-        for i, result in enumerate(results):
-            assert result[0] == inputs[i][1]
-            assert len(result[1]) == 1
-            assert result[1][0] in assert_type(inputs[i][2], str)
+        for i, result in enumerate(metadata_results):
+            assert result.file_id == inputs[i].file_id
+            assert len(result.gcs_files) == 1
+            assert result.gcs_files[0].path == inputs[i].path
 
         mock_postgres.get_records.assert_not_called()
 
     def test_no_recognized_paths(self) -> None:
         inputs = [
-            [
-                1,
-                None,
-                "testing/unprocessed_2024-01-25T16:35:33:617135_raw_tagThatDoesNotExist.csv",
-            ],
-            [
-                3,
-                None,
-                "testing/unprocessed_2024-01-25T16:35:33:617135_raw_tagThatIReallyPromiseDoesNotExist.csv",
-            ],
+            RawGCSFileMetadataSummary(
+                gcs_file_id=1,
+                file_id=None,
+                path=GcsfsFilePath.from_absolute_path(
+                    "testing/unprocessed_2024-01-25T16:35:33:617135_raw_tagThatDoesNotExist.csv",
+                ),
+            ),
+            RawGCSFileMetadataSummary(
+                gcs_file_id=3,
+                file_id=None,
+                path=GcsfsFilePath.from_absolute_path(
+                    "testing/unprocessed_2024-01-25T16:35:33:617135_raw_tagThatIReallyPromiseDoesNotExist.csv",
+                ),
+            ),
         ]
-        self.mock_operator.xcom_pull.return_value = inputs
+        self.mock_operator.xcom_pull.return_value = [i.serialize() for i in inputs]
         mock_postgres = create_autospec(PostgresHook)
         with self.assertLogs("raw_data", level="INFO") as logs:
             _ = self.generator.execute_postgres_query(
@@ -175,11 +194,9 @@ class TestGetAllUnprocessedBQFileMetadataSqlQueryGenerator(
             "testing/unprocessed_2024-01-26T16:35:33:617135_raw_tagBasicData-1.csv",
             "testing/unprocessed_2024-01-27T16:35:33:617135_raw_tagBasicData.csv",
         ]
-        inputs = [
-            [*ids, paths[i]] for i, ids in enumerate(self._insert_rows_into_gcs(paths))
-        ]
+        inputs = self._insert_rows_into_gcs(paths)
 
-        self.mock_operator.xcom_pull.return_value = inputs
+        self.mock_operator.xcom_pull.return_value = [i.serialize() for i in inputs]
         results = self.generator.execute_postgres_query(
             self.mock_operator, self.mock_pg_hook, self.mock_context
         )
@@ -194,23 +211,23 @@ class TestGetAllUnprocessedBQFileMetadataSqlQueryGenerator(
         paths_batch_two = [
             "testing/unprocessed_2024-01-27T16:35:33:617135_raw_tagBasicData.csv",
         ]
-        inputs_batch_one = [
-            [*ids, paths_batch_one[i]]
-            for i, ids in enumerate(self._insert_rows_into_gcs(paths_batch_one))
-        ]
+        inputs_batch_one = self._insert_rows_into_gcs(paths_batch_one)
 
-        self.mock_operator.xcom_pull.return_value = inputs_batch_one
+        self.mock_operator.xcom_pull.return_value = [
+            i.serialize() for i in inputs_batch_one
+        ]
         results_one = self.generator.execute_postgres_query(
             self.mock_operator, self.mock_pg_hook, self.mock_context
         )
         self._validate_results(results_one, inputs_batch_one)
 
-        inputs_batch_two = inputs_batch_one + [
-            [*ids, paths_batch_two[i]]
-            for i, ids in enumerate(self._insert_rows_into_gcs(paths_batch_two))
-        ]
+        inputs_batch_two = inputs_batch_one + self._insert_rows_into_gcs(
+            paths_batch_two
+        )
 
-        self.mock_operator.xcom_pull.return_value = inputs_batch_two
+        self.mock_operator.xcom_pull.return_value = [
+            i.serialize() for i in inputs_batch_two
+        ]
         results_two = self.generator.execute_postgres_query(
             self.mock_operator, self.mock_pg_hook, self.mock_context
         )
@@ -222,11 +239,9 @@ class TestGetAllUnprocessedBQFileMetadataSqlQueryGenerator(
             "testing/processed_2024-01-25T16:35:33:617135_raw_tagChunkedFile-2.csv",
             "testing/processed_2024-01-25T16:35:33:617135_raw_tagChunkedFile-3.csv",
         ]
-        inputs = [
-            [*ids, paths[i]] for i, ids in enumerate(self._insert_rows_into_gcs(paths))
-        ]
+        inputs = self._insert_rows_into_gcs(paths)
 
-        self.mock_operator.xcom_pull.return_value = inputs
+        self.mock_operator.xcom_pull.return_value = [i.serialize() for i in inputs]
         with self.assertLogs("raw_data", level="INFO") as logs:
             results = self.generator.execute_postgres_query(
                 self.mock_operator, self.mock_pg_hook, self.mock_context
@@ -248,11 +263,9 @@ class TestGetAllUnprocessedBQFileMetadataSqlQueryGenerator(
             "testing/unprocessed_2024-01-25T16:35:33:617135_raw_tagChunkedFile-1.csv",
             "testing/processed_2024-01-25T16:35:33:617135_raw_tagChunkedFile-2.csv",
         ]
-        inputs = [
-            [*ids, paths[i]] for i, ids in enumerate(self._insert_rows_into_gcs(paths))
-        ]
+        inputs = self._insert_rows_into_gcs(paths)
 
-        self.mock_operator.xcom_pull.return_value = inputs
+        self.mock_operator.xcom_pull.return_value = [i.serialize() for i in inputs]
         with self.assertLogs("raw_data", level="ERROR") as logs:
             results = self.generator.execute_postgres_query(
                 self.mock_operator, self.mock_pg_hook, self.mock_context
@@ -270,12 +283,9 @@ class TestGetAllUnprocessedBQFileMetadataSqlQueryGenerator(
             "testing/unprocessed_2024-01-25T16:35:33:617135_raw_tagChunkedFile-3.csv",
             "testing/processed_2024-01-25T16:35:33:617135_raw_tagChunkedFile-4.csv",
         ]
-        new_inputs = inputs + [
-            [*ids, new_paths[i]]
-            for i, ids in enumerate(self._insert_rows_into_gcs(new_paths))
-        ]
+        new_inputs = inputs + self._insert_rows_into_gcs(new_paths)
 
-        self.mock_operator.xcom_pull.return_value = new_inputs
+        self.mock_operator.xcom_pull.return_value = [i.serialize() for i in new_inputs]
         with self.assertLogs("raw_data", level="ERROR") as logs:
             results = self.generator.execute_postgres_query(
                 self.mock_operator, self.mock_pg_hook, self.mock_context
@@ -302,11 +312,9 @@ class TestGetAllUnprocessedBQFileMetadataSqlQueryGenerator(
             "testing/unprocessed_2024-01-26T16:35:33:617135_raw_tagChunkedFileTwo-3.csv",
             "testing/unprocessed_2024-01-26T16:35:33:617135_raw_tagChunkedFileTwo-3.csv",
         ]
-        inputs = [
-            [*ids, paths[i]] for i, ids in enumerate(self._insert_rows_into_gcs(paths))
-        ]
+        inputs = self._insert_rows_into_gcs(paths)
 
-        self.mock_operator.xcom_pull.return_value = inputs
+        self.mock_operator.xcom_pull.return_value = [i.serialize() for i in inputs]
         with self.assertLogs("raw_data", level="ERROR") as logs:
             results = self.generator.execute_postgres_query(
                 self.mock_operator, self.mock_pg_hook, self.mock_context
@@ -339,15 +347,18 @@ class TestGetAllUnprocessedBQFileMetadataSqlQueryGenerator(
             "testing/unprocessed_2024-01-26T16:35:33:617135_raw_tagChunkedFileTwo-3.csv",
             "testing/unprocessed_2024-01-26T16:35:33:617135_raw_tagChunkedFileTwo-3.csv",
         ]
-        inputs = [
-            [*ids, paths[i]] for i, ids in enumerate(self._insert_rows_into_gcs(paths))
-        ]
+        inputs = self._insert_rows_into_gcs(paths)
 
-        self.mock_operator.xcom_pull.return_value = inputs
+        self.mock_operator.xcom_pull.return_value = [i.serialize() for i in inputs]
         results = self.generator.execute_postgres_query(
             self.mock_operator, self.mock_pg_hook, self.mock_context
         )
 
-        assert len({r[0] for r in results}) == 3
+        metadata = [
+            RawBigQueryFileMetadataSummary.deserialize(result_str)
+            for result_str in results
+        ]
+
+        assert len({meta.file_id for meta in metadata}) == 3
 
         self._validate_results(results, inputs)
