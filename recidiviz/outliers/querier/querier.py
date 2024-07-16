@@ -437,6 +437,7 @@ class OutliersQuerier:
                         SupervisionOfficerOutlierStatus.caseload_type == "ALL",
                     ),
                 )
+                .filter(SupervisionOfficerSupervisor.full_name.is_not(None))
                 .group_by(
                     SupervisionOfficerSupervisor.external_id,
                     SupervisionOfficerSupervisor.full_name,
