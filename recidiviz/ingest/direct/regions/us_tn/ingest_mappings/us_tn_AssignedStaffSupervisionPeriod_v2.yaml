@@ -294,3 +294,4 @@ output:
                         - ZSS # SUSPENDED SUPV PAROLE
                         - ZTS # TEMPORARY STATUS
                         - ZTV # TECHNICAL VIOLATOR
+                        - 7IC # Unknown
