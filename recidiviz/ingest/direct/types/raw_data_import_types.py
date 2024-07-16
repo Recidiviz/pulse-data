@@ -20,7 +20,7 @@ import datetime
 import json
 from enum import Enum, auto
 from functools import cached_property
-from typing import List, Optional, Tuple, Dict
+from typing import Dict, List, Optional, Tuple
 
 import attr
 
@@ -576,12 +576,14 @@ class RawBigQueryFileMetadataSummary(BaseResult):
             chunks (such as ContactNoteComment), each literal CSV that makes up the
             whole file will have a different gcs_file_id, but all of those entries will
             have the same file_id.
+        update_datetime (datetime.datetime): the max update_datetime from |gcs_files|
     """
 
     gcs_files: List[RawGCSFileMetadataSummary] = attr.ib(
         validator=attr_validators.is_list_of(RawGCSFileMetadataSummary)
     )
     file_tag: str = attr.ib(validator=attr_validators.is_str)
+    update_datetime: datetime.datetime = attr.ib(validator=attr_validators.is_datetime)
     file_id: Optional[int] = attr.ib(default=None, validator=attr_validators.is_opt_int)
 
     def serialize(self) -> str:
@@ -590,6 +592,7 @@ class RawBigQueryFileMetadataSummary(BaseResult):
                 "file_tag": self.file_tag,
                 "file_id": self.file_id,
                 "gcs_files": [file.serialize() for file in self.gcs_files],
+                "update_datetime": self.update_datetime.isoformat(),
             }
         )
 
@@ -603,6 +606,7 @@ class RawBigQueryFileMetadataSummary(BaseResult):
                 RawGCSFileMetadataSummary.deserialize(gcs_file_str)
                 for gcs_file_str in data["gcs_files"]
             ],
+            update_datetime=datetime.datetime.fromisoformat(data["update_datetime"]),
         )
 
     @classmethod
@@ -613,4 +617,8 @@ class RawBigQueryFileMetadataSummary(BaseResult):
             file_id=gcs_files[0].file_id,
             file_tag=gcs_files[0].parts.file_tag,
             gcs_files=gcs_files,
+            update_datetime=max(
+                gcs_files,
+                key=lambda x: x.parts.utc_upload_datetime,
+            ).parts.utc_upload_datetime,
         )
