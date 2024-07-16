@@ -36,7 +36,8 @@ CASE_INSIGHTS_RATES_TABLE_NAME = "sentencing.case_insights_rates"
 CASE_INSIGHTS_RATES_SCHEMA = [
     {"name": "state_code", "type": "STRING", "mode": "REQUIRED"},
     {"name": "gender", "type": "STRING", "mode": "REQUIRED"},
-    {"name": "assessment_score_bucket", "type": "STRING", "mode": "REQUIRED"},
+    {"name": "assessment_score_bucket_start", "type": "INT64", "mode": "REQUIRED"},
+    {"name": "assessment_score_bucket_end", "type": "INT64", "mode": "REQUIRED"},
     {"name": "most_severe_description", "type": "STRING", "mode": "REQUIRED"},
     {"name": "recidivism_rollup", "type": "STRING", "mode": "REQUIRED"},
     {"name": "recidivism_num_records", "type": "INT64", "mode": "REQUIRED"},
@@ -75,30 +76,37 @@ class WriteRecidivismRatesToBQEntrypoint(EntrypointInterface):
         write_case_insights_data_to_bq(project_id=args.project_id)
 
 
-def get_gendered_assessment_score_bucket(cohort_df_row: pd.Series) -> str:
-    """Get the risk bucket associated with the given gender and LSI-R assessment score.
+def get_gendered_assessment_score_bucket_range(
+    cohort_df_row: pd.Series,
+) -> Tuple[int, int]:
+    """Get the risk bucket range associated with the given gender and LSI-R assessment score.
 
     These buckets were defined in an Idaho-specific memo:
     https://drive.google.com/file/d/1o7vWvQ507SUvCPShyyOZFXQq53wT2D0J/view.
+
+    This returns an assessment_score_bucket_start and assessment_score_bucket_end, which are inclusive endpoints of the
+    bucket range. If the bucket has no upper limit (e.g. "29+") then assessment_score_bucket_end is -1. If the
+    input assessment_score is invalid or the gender is unhandled, both return values are -1.
+
     TODO(#31126): Revisit these buckets if we start working with other states that call for different buckets.
     """
     assessment_score = cohort_df_row["assessment_score"]
     if pd.isnull(assessment_score) or assessment_score < 0:
-        return UNKNOWN_ATTRIBUTE
+        return -1, -1
     if cohort_df_row["gender"] == "MALE":
         if assessment_score <= 20:
-            return "0-20"
+            return 0, 20
         if assessment_score <= 28:
-            return "21-28"
-        return "29+"
+            return 21, 28
+        return 29, -1
     if cohort_df_row["gender"] == "FEMALE":
         if assessment_score <= 22:
-            return "0-22"
+            return 0, 22
         if assessment_score <= 30:
-            return "23-30"
-        return "31+"
+            return 23, 30
+        return 31, -1
     # This doesn't handle EXTERNAL_UNKNOWN, TRANS_MALE, TRANS_FEMALE
-    return UNKNOWN_ATTRIBUTE
+    return -1, -1
 
 
 def get_cohort_df(project_id: str) -> pd.DataFrame:
@@ -127,15 +135,16 @@ def get_recidivism_event_df(project_id: str) -> pd.DataFrame:
 
 def get_disposition_df(cohort_df: pd.DataFrame) -> pd.DataFrame:
     """
-    Returns: DataFrame with columns 'gender', 'assessment_score_bucket', 'most_severe_description',
-       'disposition_probation_pc', 'disposition_rider_pc', 'disposition_term_pc'
+    Returns: DataFrame with columns 'gender', 'assessment_score_bucket_start', 'assessment_score_bucket_end',
+        'most_severe_description', 'disposition_probation_pc', 'disposition_rider_pc', 'disposition_term_pc'
     """
     disposition_df = (
         cohort_df.groupby(
             [
                 "state_code",
                 "gender",
-                "assessment_score_bucket",
+                "assessment_score_bucket_start",
+                "assessment_score_bucket_end",
                 "most_severe_description",
                 "cohort_group",
             ]
@@ -190,8 +199,8 @@ def add_recidivism_rate_dicts(df: pd.DataFrame) -> None:
 
 
 def get_recidivism_series(aggregated_df: pd.DataFrame) -> pd.DataFrame:
-    """For each gender, assessment_score_bucket, and most_severe_description, concatenate event_rate_dict for all
-    cohort_months into a single JSON array.
+    """For each gender, assessment_score_bucket_start, assessment_score_bucket_end, and most_severe_description,
+    concatenate event_rate_dict for all cohort_months into a single JSON array.
     """
 
     return (
@@ -200,7 +209,8 @@ def get_recidivism_series(aggregated_df: pd.DataFrame) -> pd.DataFrame:
                 "cohort_group",
                 "state_code",
                 "gender",
-                "assessment_score_bucket",
+                "assessment_score_bucket_start",
+                "assessment_score_bucket_end",
                 "most_severe_description",
             ],
             group_keys=True,
@@ -213,8 +223,8 @@ def get_recidivism_series(aggregated_df: pd.DataFrame) -> pd.DataFrame:
 
 
 def get_cohort_sizes(aggregated_df: pd.DataFrame) -> pd.DataFrame:
-    """Returns dataframe with gender, assessment_score_bucket, most_severe_description as index and
-    cohort_size as column"""
+    """Returns dataframe with gender, assessment_score_bucket_start, assessment_score_bucket_end,
+    most_severe_description as index and cohort_size as column"""
     # Cohort size is the same for all months, so take the sum (across cohort_groups) for cohort_months == 0
     return (
         aggregated_df[aggregated_df.cohort_months == 0]
@@ -222,7 +232,8 @@ def get_cohort_sizes(aggregated_df: pd.DataFrame) -> pd.DataFrame:
             [
                 "state_code",
                 "gender",
-                "assessment_score_bucket",
+                "assessment_score_bucket_start",
+                "assessment_score_bucket_end",
                 "most_severe_description",
             ]
         )["cohort_size"]
@@ -236,7 +247,8 @@ def create_final_table(
 ) -> pd.DataFrame:
     """Create final table from aggregated_df and disposition_df.
 
-    This method creates a row for every state_code, gender, assessment_score_bucket, most_severe_description with:
+    This method creates a row for every state_code, gender, assessment_score_bucket_start, assessment_score_bucket_end,
+    most_severe_description with:
     * The cohort size (copied to both disposition_num_records and recidivism_num_records)
     * The series of recidivism stats over all months for each of PROBATION, RIDER, TERM
     * The disposition percentages of each of  PROBATION, RIDER, TERM
@@ -246,7 +258,7 @@ def create_final_table(
     final_table = get_recidivism_series(aggregated_df)
     final_table["cohort_size"] = get_cohort_sizes(aggregated_df)
 
-    # Move state_code, gender, assessment_score_bucket, most_severe_description from index to columns
+    # Move index to columns
     final_table = final_table.reset_index()
 
     final_table = final_table.merge(
@@ -254,7 +266,8 @@ def create_final_table(
         on=[
             "state_code",
             "gender",
-            "assessment_score_bucket",
+            "assessment_score_bucket_start",
+            "assessment_score_bucket_end",
             "most_severe_description",
         ],
     )
@@ -271,8 +284,10 @@ def create_final_table(
 def write_case_insights_data_to_bq(project_id: str) -> None:
     """Write case insights data to BigQuery."""
     cohort_df = get_cohort_df(project_id)
-    cohort_df["assessment_score_bucket"] = cohort_df.apply(
-        get_gendered_assessment_score_bucket, axis=1
+    cohort_df[
+        ["assessment_score_bucket_start", "assessment_score_bucket_end"]
+    ] = cohort_df.apply(
+        get_gendered_assessment_score_bucket_range, axis=1, result_type="expand"
     )
     event_df = get_recidivism_event_df(project_id)
     disposition_df = get_disposition_df(cohort_df)
@@ -295,7 +310,8 @@ def write_case_insights_data_to_bq(project_id: str) -> None:
             "state_code",
             "cohort_group",
             "gender",
-            "assessment_score_bucket",
+            "assessment_score_bucket_start",
+            "assessment_score_bucket_end",
             "most_severe_description",
         ],
         last_day_of_data=datetime.datetime.now(),

@@ -48,155 +48,204 @@ class TestWriteCaseInsightsDataToBQ(unittest.TestCase):
 
     def test_get_gendered_assessment_score_bucket(self) -> None:
         input_row = pd.Series({"gender": "FEMALE", "assessment_score": 0})
-        score_bucket = (
-            write_case_insights_data_to_bq.get_gendered_assessment_score_bucket(
-                input_row
-            )
+        (
+            score_bucket_start,
+            score_bucket_end,
+        ) = write_case_insights_data_to_bq.get_gendered_assessment_score_bucket_range(
+            input_row
         )
-        self.assertEqual("0-22", score_bucket)
+        self.assertEqual(0, score_bucket_start)
+        self.assertEqual(22, score_bucket_end)
 
         input_row = pd.Series({"gender": "FEMALE", "assessment_score": 2})
-        score_bucket = (
-            write_case_insights_data_to_bq.get_gendered_assessment_score_bucket(
-                input_row
-            )
+        (
+            score_bucket_start,
+            score_bucket_end,
+        ) = write_case_insights_data_to_bq.get_gendered_assessment_score_bucket_range(
+            input_row
         )
-        self.assertEqual("0-22", score_bucket)
+        self.assertEqual(0, score_bucket_start)
+        self.assertEqual(22, score_bucket_end)
 
         input_row = pd.Series({"gender": "FEMALE", "assessment_score": 22})
-        score_bucket = (
-            write_case_insights_data_to_bq.get_gendered_assessment_score_bucket(
-                input_row
-            )
+        (
+            score_bucket_start,
+            score_bucket_end,
+        ) = write_case_insights_data_to_bq.get_gendered_assessment_score_bucket_range(
+            input_row
         )
-        self.assertEqual("0-22", score_bucket)
+        self.assertEqual(0, score_bucket_start)
+        self.assertEqual(22, score_bucket_end)
 
         input_row = pd.Series({"gender": "FEMALE", "assessment_score": 23})
-        score_bucket = (
-            write_case_insights_data_to_bq.get_gendered_assessment_score_bucket(
-                input_row
-            )
+        (
+            score_bucket_start,
+            score_bucket_end,
+        ) = write_case_insights_data_to_bq.get_gendered_assessment_score_bucket_range(
+            input_row
         )
-        self.assertEqual("23-30", score_bucket)
+        self.assertEqual(23, score_bucket_start)
+        self.assertEqual(30, score_bucket_end)
 
         input_row = pd.Series({"gender": "FEMALE", "assessment_score": 30})
-        score_bucket = (
-            write_case_insights_data_to_bq.get_gendered_assessment_score_bucket(
-                input_row
-            )
+        (
+            score_bucket_start,
+            score_bucket_end,
+        ) = write_case_insights_data_to_bq.get_gendered_assessment_score_bucket_range(
+            input_row
         )
-        self.assertEqual("23-30", score_bucket)
+        self.assertEqual(23, score_bucket_start)
+        self.assertEqual(30, score_bucket_end)
 
         input_row = pd.Series({"gender": "FEMALE", "assessment_score": 31})
-        score_bucket = (
-            write_case_insights_data_to_bq.get_gendered_assessment_score_bucket(
-                input_row
-            )
+        (
+            score_bucket_start,
+            score_bucket_end,
+        ) = write_case_insights_data_to_bq.get_gendered_assessment_score_bucket_range(
+            input_row
         )
-        self.assertEqual("31+", score_bucket)
+        self.assertEqual(31, score_bucket_start)
+        self.assertEqual(-1, score_bucket_end)
 
         input_row = pd.Series({"gender": "FEMALE", "assessment_score": 35})
-        score_bucket = (
-            write_case_insights_data_to_bq.get_gendered_assessment_score_bucket(
-                input_row
-            )
+        (
+            score_bucket_start,
+            score_bucket_end,
+        ) = write_case_insights_data_to_bq.get_gendered_assessment_score_bucket_range(
+            input_row
         )
-        self.assertEqual("31+", score_bucket)
+        self.assertEqual(31, score_bucket_start)
+        self.assertEqual(-1, score_bucket_end)
 
         input_row = pd.Series({"gender": "MALE", "assessment_score": 0})
-        score_bucket = (
-            write_case_insights_data_to_bq.get_gendered_assessment_score_bucket(
-                input_row
-            )
+        (
+            score_bucket_start,
+            score_bucket_end,
+        ) = write_case_insights_data_to_bq.get_gendered_assessment_score_bucket_range(
+            input_row
         )
-        self.assertEqual("0-20", score_bucket)
+        self.assertEqual(0, score_bucket_start)
+        self.assertEqual(20, score_bucket_end)
 
         input_row = pd.Series({"gender": "MALE", "assessment_score": 2})
-        score_bucket = (
-            write_case_insights_data_to_bq.get_gendered_assessment_score_bucket(
-                input_row
-            )
+        (
+            score_bucket_start,
+            score_bucket_end,
+        ) = write_case_insights_data_to_bq.get_gendered_assessment_score_bucket_range(
+            input_row
         )
-        self.assertEqual("0-20", score_bucket)
+        self.assertEqual(0, score_bucket_start)
+        self.assertEqual(20, score_bucket_end)
 
         input_row = pd.Series({"gender": "MALE", "assessment_score": 20})
-        score_bucket = (
-            write_case_insights_data_to_bq.get_gendered_assessment_score_bucket(
-                input_row
-            )
+        (
+            score_bucket_start,
+            score_bucket_end,
+        ) = write_case_insights_data_to_bq.get_gendered_assessment_score_bucket_range(
+            input_row
         )
-        self.assertEqual("0-20", score_bucket)
+        self.assertEqual(0, score_bucket_start)
+        self.assertEqual(20, score_bucket_end)
 
         input_row = pd.Series({"gender": "MALE", "assessment_score": 21})
-        score_bucket = (
-            write_case_insights_data_to_bq.get_gendered_assessment_score_bucket(
-                input_row
-            )
+        (
+            score_bucket_start,
+            score_bucket_end,
+        ) = write_case_insights_data_to_bq.get_gendered_assessment_score_bucket_range(
+            input_row
         )
-        self.assertEqual("21-28", score_bucket)
+        self.assertEqual(21, score_bucket_start)
+        self.assertEqual(28, score_bucket_end)
 
         input_row = pd.Series({"gender": "MALE", "assessment_score": 28})
-        score_bucket = (
-            write_case_insights_data_to_bq.get_gendered_assessment_score_bucket(
-                input_row
-            )
+        (
+            score_bucket_start,
+            score_bucket_end,
+        ) = write_case_insights_data_to_bq.get_gendered_assessment_score_bucket_range(
+            input_row
         )
-        self.assertEqual("21-28", score_bucket)
+        self.assertEqual(21, score_bucket_start)
+        self.assertEqual(28, score_bucket_end)
 
         input_row = pd.Series({"gender": "MALE", "assessment_score": 29})
-        score_bucket = (
-            write_case_insights_data_to_bq.get_gendered_assessment_score_bucket(
-                input_row
-            )
+        (
+            score_bucket_start,
+            score_bucket_end,
+        ) = write_case_insights_data_to_bq.get_gendered_assessment_score_bucket_range(
+            input_row
         )
-        self.assertEqual("29+", score_bucket)
+        self.assertEqual(29, score_bucket_start)
+        self.assertEqual(-1, score_bucket_end)
 
         input_row = pd.Series({"gender": "MALE", "assessment_score": 35})
-        score_bucket = (
-            write_case_insights_data_to_bq.get_gendered_assessment_score_bucket(
-                input_row
-            )
+        (
+            score_bucket_start,
+            score_bucket_end,
+        ) = write_case_insights_data_to_bq.get_gendered_assessment_score_bucket_range(
+            input_row
         )
-        self.assertEqual("29+", score_bucket)
+        self.assertEqual(29, score_bucket_start)
+        self.assertEqual(-1, score_bucket_end)
 
         input_row = pd.Series({"gender": "MALE", "assessment_score": None})
-        score_bucket = (
-            write_case_insights_data_to_bq.get_gendered_assessment_score_bucket(
-                input_row
-            )
+        (
+            score_bucket_start,
+            score_bucket_end,
+        ) = write_case_insights_data_to_bq.get_gendered_assessment_score_bucket_range(
+            input_row
         )
-        self.assertEqual("UNKNOWN", score_bucket)
+        self.assertEqual(-1, score_bucket_start)
+        self.assertEqual(-1, score_bucket_end)
 
         input_row = pd.Series({"gender": "MALE", "assessment_score": -1})
-        score_bucket = (
-            write_case_insights_data_to_bq.get_gendered_assessment_score_bucket(
-                input_row
-            )
+        (
+            score_bucket_start,
+            score_bucket_end,
+        ) = write_case_insights_data_to_bq.get_gendered_assessment_score_bucket_range(
+            input_row
         )
-        self.assertEqual("UNKNOWN", score_bucket)
+        self.assertEqual(-1, score_bucket_start)
+        self.assertEqual(-1, score_bucket_end)
+
+        input_row = pd.Series({"gender": "MALE", "assessment_score": -5})
+        (
+            score_bucket_start,
+            score_bucket_end,
+        ) = write_case_insights_data_to_bq.get_gendered_assessment_score_bucket_range(
+            input_row
+        )
+        self.assertEqual(-1, score_bucket_start)
+        self.assertEqual(-1, score_bucket_end)
 
         input_row = pd.Series({"gender": "EXTERNAL_UNKNOWN", "assessment_score": 1})
-        score_bucket = (
-            write_case_insights_data_to_bq.get_gendered_assessment_score_bucket(
-                input_row
-            )
+        (
+            score_bucket_start,
+            score_bucket_end,
+        ) = write_case_insights_data_to_bq.get_gendered_assessment_score_bucket_range(
+            input_row
         )
+        self.assertEqual(-1, score_bucket_start)
+        self.assertEqual(-1, score_bucket_end)
 
         input_row = pd.Series({"gender": "TRANS_FEMALE", "assessment_score": 1})
-        score_bucket = (
-            write_case_insights_data_to_bq.get_gendered_assessment_score_bucket(
-                input_row
-            )
+        (
+            score_bucket_start,
+            score_bucket_end,
+        ) = write_case_insights_data_to_bq.get_gendered_assessment_score_bucket_range(
+            input_row
         )
-        self.assertEqual("UNKNOWN", score_bucket)
+        self.assertEqual(-1, score_bucket_start)
+        self.assertEqual(-1, score_bucket_end)
 
         input_row = pd.Series({"gender": "TRANS_MALE", "assessment_score": 1})
-        score_bucket = (
-            write_case_insights_data_to_bq.get_gendered_assessment_score_bucket(
-                input_row
-            )
+        (
+            score_bucket_start,
+            score_bucket_end,
+        ) = write_case_insights_data_to_bq.get_gendered_assessment_score_bucket_range(
+            input_row
         )
-        self.assertEqual("UNKNOWN", score_bucket)
+        self.assertEqual(-1, score_bucket_start)
+        self.assertEqual(-1, score_bucket_end)
 
     def test_get_disposition_df(self) -> None:
         cohort_df = pd.DataFrame(
@@ -224,17 +273,8 @@ class TestWriteCaseInsightsDataToBQ(unittest.TestCase):
                     "MALE",
                     "MALE",
                 ],
-                "assessment_score_bucket": [
-                    "0-22",
-                    "0-22",
-                    "29+",
-                    "29+",
-                    "0-22",
-                    "0-22",
-                    "0-22",
-                    "29+",
-                    "29+",
-                ],
+                "assessment_score_bucket_start": [0, 0, 29, 29, 0, 0, 0, 29, 29],
+                "assessment_score_bucket_end": [22, 22, -1, -1, 22, 22, 22, -1, -1],
                 "most_severe_description": [
                     "DUI DRIVING",
                     "DUI DRIVING",
@@ -269,12 +309,8 @@ class TestWriteCaseInsightsDataToBQ(unittest.TestCase):
                     "FEMALE",
                     "MALE",
                 ],
-                "assessment_score_bucket": [
-                    "0-22",
-                    "29+",
-                    "0-22",
-                    "29+",
-                ],
+                "assessment_score_bucket_start": [0, 29, 0, 29],
+                "assessment_score_bucket_end": [22, -1, 22, -1],
                 "most_severe_description": [
                     "DUI DRIVING",
                     "DUI DRIVING",
@@ -293,7 +329,8 @@ class TestWriteCaseInsightsDataToBQ(unittest.TestCase):
                 [
                     "state_code",
                     "gender",
-                    "assessment_score_bucket",
+                    "assessment_score_bucket_start",
+                    "assessment_score_bucket_end",
                     "most_severe_description",
                 ]
             ).reset_index(drop=True),
@@ -301,7 +338,8 @@ class TestWriteCaseInsightsDataToBQ(unittest.TestCase):
                 [
                     "state_code",
                     "gender",
-                    "assessment_score_bucket",
+                    "assessment_score_bucket_start",
+                    "assessment_score_bucket_end",
                     "most_severe_description",
                 ]
             ).reset_index(drop=True),
@@ -401,20 +439,16 @@ class TestWriteCaseInsightsDataToBQ(unittest.TestCase):
                         "MALE",
                         "MALE",
                     ],
-                    [
-                        "0-20",
-                        "0-22",
-                        "0-22",
-                        "0-20",
-                        "0-20",
-                    ],
+                    [0, 0, 0, 0, 0],
+                    [20, 22, 22, 20, 20],
                     ["Assault", "Bribery", "Bribery", "Burglary", "Burglary"],
                 ],
                 names=[
                     "state_code",
                     "cohort_group",
                     "gender",
-                    "assessment_score_bucket",
+                    "assessment_score_bucket_start",
+                    "assessment_score_bucket_end",
                     "most_severe_description",
                 ],
             ),
@@ -464,13 +498,15 @@ class TestWriteCaseInsightsDataToBQ(unittest.TestCase):
                 [
                     ["US_IX", "US_IX", "US_IX"],
                     ["FEMALE", "MALE", "MALE"],
-                    ["0-22", "0-20", "0-20"],
+                    [0, 0, 0],
+                    [22, 20, 20],
                     ["Bribery", "Assault", "Burglary"],
                 ],
                 names=[
                     "state_code",
                     "gender",
-                    "assessment_score_bucket",
+                    "assessment_score_bucket_start",
+                    "assessment_score_bucket_end",
                     "most_severe_description",
                 ],
             ),
@@ -498,11 +534,8 @@ class TestWriteCaseInsightsDataToBQ(unittest.TestCase):
             {
                 "state_code": ["US_IX", "US_IX", "US_IX"],
                 "gender": ["FEMALE", "MALE", "MALE"],
-                "assessment_score_bucket": [
-                    "0-22",
-                    "0-20",
-                    "0-20",
-                ],
+                "assessment_score_bucket_start": [0, 0, 0],
+                "assessment_score_bucket_end": [22, 20, 20],
                 "most_severe_description": ["Bribery", "Assault", "Burglary"],
                 "disposition_probation_pc": [0.9, 0.6, 0.0],
                 "disposition_rider_pc": [0.06, 0.3, 0.4],
@@ -516,20 +549,16 @@ class TestWriteCaseInsightsDataToBQ(unittest.TestCase):
                     ["US_IX", "US_IX", "US_IX", "US_IX", "US_IX"],
                     ["PROBATION", "PROBATION", "PROBATION", "TERM", "TERM"],
                     ["MALE", "FEMALE", "FEMALE", "MALE", "MALE"],
-                    [
-                        "0-20",
-                        "0-22",
-                        "0-22",
-                        "0-20",
-                        "0-20",
-                    ],
+                    [0, 0, 0, 0, 0],
+                    [20, 22, 22, 20, 20],
                     ["Assault", "Bribery", "Bribery", "Burglary", "Burglary"],
                 ],
                 names=[
                     "state_code",
                     "cohort_group",
                     "gender",
-                    "assessment_score_bucket",
+                    "assessment_score_bucket_start",
+                    "assessment_score_bucket_end",
                     "most_severe_description",
                 ],
             ),
@@ -579,7 +608,8 @@ class TestWriteCaseInsightsDataToBQ(unittest.TestCase):
             {
                 "state_code": ["US_IX", "US_IX", "US_IX"],
                 "gender": ["FEMALE", "MALE", "MALE"],
-                "assessment_score_bucket": ["0-22", "0-20", "0-20"],
+                "assessment_score_bucket_start": [0, 0, 0],
+                "assessment_score_bucket_end": [22, 20, 20],
                 "most_severe_description": ["Bribery", "Assault", "Burglary"],
                 "recidivism_probation_series": [
                     '[{"cohort_months": 0, "event_rate": 0.0, "lower_ci": 0.0, "upper_ci": 0.0},'
