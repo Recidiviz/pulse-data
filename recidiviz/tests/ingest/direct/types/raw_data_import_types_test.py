@@ -328,6 +328,7 @@ class TestSerialization(unittest.TestCase):
                     path=GcsfsFilePath(bucket_name="bucket", blob_name="blob.csv"),
                 )
             ],
+            update_datetime=datetime.datetime(2024, 1, 1, 1, 1, 1, tzinfo=datetime.UTC),
         )
         self._validate_serialization(original, RawBigQueryFileMetadataSummary)
 

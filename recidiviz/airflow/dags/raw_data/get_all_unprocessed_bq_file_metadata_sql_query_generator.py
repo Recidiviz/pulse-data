@@ -44,6 +44,7 @@ from recidiviz.ingest.direct.types.raw_data_import_types import (
     RawGCSFileMetadataSummary,
 )
 from recidiviz.utils.string import StrictStringFormatter
+from recidiviz.utils.types import assert_type
 
 ADD_ROWS = """
 INSERT INTO direct_ingest_raw_big_query_file_metadata (region_code, raw_data_instance, file_tag, update_datetime, is_invalidated) 
@@ -130,10 +131,16 @@ class GetAllUnprocessedBQFileMetadataSqlQueryGenerator(
 
         # --- format and write in a form xcom likes ------------------------------------
 
+        # TODO(#30170) add another query to fetch to make sure we have all files registered
+        # with group present (i.e. reconcile w/ operations db)?
         already_bq_registered_bq_metadata = [
             RawBigQueryFileMetadataSummary.from_gcs_files(list(conceptual_file_group))
             for _, conceptual_file_group in groupby(
-                already_bq_registered_gcs_metadata, lambda x: x.file_id
+                sorted(
+                    already_bq_registered_gcs_metadata,
+                    key=lambda x: assert_type(x.file_id, int),
+                ),
+                key=lambda x: x.file_id,
             )
         ]
 
@@ -229,7 +236,9 @@ class GetAllUnprocessedBQFileMetadataSqlQueryGenerator(
 
             conceptual_files.append(
                 RawBigQueryFileMetadataSummary(
-                    gcs_files=[metadata], file_tag=metadata.parts.file_tag
+                    gcs_files=[metadata],
+                    file_tag=metadata.parts.file_tag,
+                    update_datetime=metadata.parts.utc_upload_datetime,
                 )
             )
 
@@ -275,7 +284,12 @@ class GetAllUnprocessedBQFileMetadataSqlQueryGenerator(
                         )
                         conceptual_files.append(
                             RawBigQueryFileMetadataSummary(
-                                gcs_files=gcs_files, file_tag=file_tag
+                                gcs_files=gcs_files,
+                                file_tag=file_tag,
+                                update_datetime=max(
+                                    gcs_files,
+                                    key=lambda x: x.parts.utc_upload_datetime,
+                                ).parts.utc_upload_datetime,
                             )
                         )
                     else:
@@ -301,9 +315,7 @@ class GetAllUnprocessedBQFileMetadataSqlQueryGenerator(
             self._region_code,
             self._raw_data_instance.value,
             metadata.file_tag,
-            max(
-                metadata.gcs_files, key=lambda x: x.parts.utc_upload_datetime
-            ).parts.utc_upload_datetime.isoformat(),
+            metadata.update_datetime.isoformat(),
             0,  # False
         ]
 
