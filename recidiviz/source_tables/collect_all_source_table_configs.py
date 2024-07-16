@@ -172,9 +172,15 @@ def _collect_externally_managed_source_table_collections(
 ) -> list[SourceTableCollection]:
     yaml_paths = glob.glob(os.path.join(os.path.dirname(__file__), "schema/**/*.yaml"))
 
+    def _source_table_sorter(source_table: SourceTableConfig) -> str:
+        return source_table.address.dataset_id
+
     source_tables_by_dataset = groupby(
-        [SourceTableConfig.from_file(yaml_path) for yaml_path in yaml_paths],
-        key=lambda source_table: source_table.address.dataset_id,
+        sorted(
+            [SourceTableConfig.from_file(yaml_path) for yaml_path in yaml_paths],
+            key=_source_table_sorter,
+        ),
+        key=_source_table_sorter,
     )
 
     datasets_to_validation_config = {
