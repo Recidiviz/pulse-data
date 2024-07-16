@@ -19,7 +19,8 @@ import abc
 import datetime
 import json
 from enum import Enum, auto
-from typing import Dict, List, Optional
+from functools import cached_property
+from typing import List, Optional, Tuple, Dict
 
 import attr
 
@@ -35,6 +36,10 @@ from recidiviz.common import attr_validators
 from recidiviz.common.constants.csv import DEFAULT_CSV_ENCODING
 from recidiviz.common.constants.operations.direct_ingest_raw_data_import_session import (
     DirectIngestRawDataImportSessionStatus,
+)
+from recidiviz.ingest.direct.gcs.filename_parts import (
+    DirectIngestRawFilenameParts,
+    filename_parts_from_path,
 )
 from recidiviz.ingest.direct.raw_data.raw_file_configs import DirectIngestRawFileConfig
 from recidiviz.utils.airflow_types import BaseError, BaseResult
@@ -508,3 +513,104 @@ class AppendReadyFileBatch(BaseResult):
         }
 
         return AppendReadyFileBatch(append_ready_files_by_tag=append_ready_files_by_tag)
+
+
+@attr.define
+class RawGCSFileMetadataSummary(BaseResult):
+    """This represents metadata about a single literal file (e.g. a CSV) that is stored
+    in GCS
+
+    Attributes:
+        gcs_file_id (int): An id that corresponds to the literal file in Google Cloud
+            Storage in direct_ingest_raw_gcs_file_metadata. A single file will always
+            have a single gcs_file_id.
+        file_id (int | None): A "conceptual" file id that corresponds to a single,
+            conceptual file sent to us by the state. For raw files states send us in
+            chunks (such as ContactNoteComment), each literal CSV that makes up the
+            whole file will have a different gcs_file_id, but all of those entries will
+            have the same file_id.
+        path (GcsfsFilePath): The path in Google Cloud Storage of the file.
+    """
+
+    gcs_file_id: int = attr.ib(validator=attr_validators.is_int)
+    file_id: Optional[int] = attr.ib(validator=attr_validators.is_opt_int)
+    path: GcsfsFilePath = attr.ib(validator=attr.validators.instance_of(GcsfsFilePath))
+
+    @cached_property
+    def parts(self) -> DirectIngestRawFilenameParts:
+        return filename_parts_from_path(self.path)
+
+    def serialize(self) -> str:
+        return json.dumps([self.gcs_file_id, self.file_id, self.path.abs_path()])
+
+    @staticmethod
+    def deserialize(json_str: str) -> "RawGCSFileMetadataSummary":
+        data = assert_type(json.loads(json_str), list)
+        return RawGCSFileMetadataSummary(
+            gcs_file_id=data[0],
+            file_id=data[1],
+            path=GcsfsFilePath.from_absolute_path(assert_type(data[2], str)),
+        )
+
+    @classmethod
+    def from_gcs_metadata_table_row(
+        cls, db_record: Tuple[int, Optional[int], str], abs_path: GcsfsFilePath
+    ) -> "RawGCSFileMetadataSummary":
+        return RawGCSFileMetadataSummary(
+            gcs_file_id=db_record[0], file_id=db_record[1], path=abs_path
+        )
+
+
+@attr.define
+class RawBigQueryFileMetadataSummary(BaseResult):
+    """This represents metadata about a "conceptual" file_id that exists in BigQuery,
+    made up of at least one literal csv file |gcs_files|.
+
+    Attributes:
+        gcs_files (list[RawGCSFileMetadataSummary]): a list of RawGCSFileMetadataSummary
+            objects that correspond to the literal csv files that comprise this single,
+            conceptual file.
+        file_tag (str): The shared file_tag from |gcs_files| cached on this object.
+        file_id (int | None): A "conceptual" file id that corresponds to a single,
+            conceptual file sent to us by the state. For raw files states send us in
+            chunks (such as ContactNoteComment), each literal CSV that makes up the
+            whole file will have a different gcs_file_id, but all of those entries will
+            have the same file_id.
+    """
+
+    gcs_files: List[RawGCSFileMetadataSummary] = attr.ib(
+        validator=attr_validators.is_list_of(RawGCSFileMetadataSummary)
+    )
+    file_tag: str = attr.ib(validator=attr_validators.is_str)
+    file_id: Optional[int] = attr.ib(default=None, validator=attr_validators.is_opt_int)
+
+    def serialize(self) -> str:
+        return json.dumps(
+            {
+                "file_tag": self.file_tag,
+                "file_id": self.file_id,
+                "gcs_files": [file.serialize() for file in self.gcs_files],
+            }
+        )
+
+    @staticmethod
+    def deserialize(json_str: str) -> "RawBigQueryFileMetadataSummary":
+        data = assert_type(json.loads(json_str), dict)
+        return RawBigQueryFileMetadataSummary(
+            file_tag=data["file_tag"],
+            file_id=data["file_id"],
+            gcs_files=[
+                RawGCSFileMetadataSummary.deserialize(gcs_file_str)
+                for gcs_file_str in data["gcs_files"]
+            ],
+        )
+
+    @classmethod
+    def from_gcs_files(
+        cls, gcs_files: List[RawGCSFileMetadataSummary]
+    ) -> "RawBigQueryFileMetadataSummary":
+        return RawBigQueryFileMetadataSummary(
+            file_id=gcs_files[0].file_id,
+            file_tag=gcs_files[0].parts.file_tag,
+            gcs_files=gcs_files,
+        )

@@ -16,7 +16,7 @@
 # =============================================================================
 """A CloudSQLQueryGenerator that processes raw files paths and returns gcs file metadata"""
 import datetime
-from typing import List, Optional, Tuple
+from typing import List
 
 from airflow.providers.postgres.hooks.postgres import PostgresHook
 from airflow.utils.context import Context
@@ -25,10 +25,12 @@ from recidiviz.airflow.dags.operators.cloud_sql_query_operator import (
     CloudSqlQueryGenerator,
     CloudSqlQueryOperator,
 )
-from recidiviz.airflow.dags.raw_data.metadata import RawGCSFileMetadataSummary
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.ingest.direct.gcs.filename_parts import filename_parts_from_path
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.ingest.direct.types.raw_data_import_types import (
+    RawGCSFileMetadataSummary,
+)
 from recidiviz.utils.string import StrictStringFormatter
 
 GET_EXISTING_FILES_BY_PATH = """
@@ -48,7 +50,7 @@ RETURNING gcs_file_id, file_id, normalized_file_name;"""
 
 
 class GetAllUnprocessedGCSFileMetadataSqlQueryGenerator(
-    CloudSqlQueryGenerator[List[Tuple[int, Optional[int], str]]]
+    CloudSqlQueryGenerator[List[str]]
 ):
     """Custom query generator that processes raw files paths and returns raw gcs file
     metadata
@@ -72,7 +74,7 @@ class GetAllUnprocessedGCSFileMetadataSqlQueryGenerator(
         operator: CloudSqlQueryOperator,
         postgres_hook: PostgresHook,
         context: Context,
-    ) -> List[Tuple[int, Optional[int], str]]:
+    ) -> List[str]:
         """After pulling in a list of unprocessed paths from xcom, registers not yet
         seen gcs paths with the raw gcs file metadata table. Returns gcs file metadata
         in the form of (gcs_file_id, file_id, abs_path) for every unprocessed file pulled
@@ -137,7 +139,7 @@ class GetAllUnprocessedGCSFileMetadataSqlQueryGenerator(
         # --- last, build xcom output (gcs_file_id, file_id, abs_path) -----------------
 
         return [
-            metadata.to_xcom()
+            metadata.serialize()
             for metadata in alredy_seen_gcs_metadata + new_gcs_metadata
         ]
 

@@ -15,21 +15,10 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Metadata and constants used in the raw data import DAG"""
-from functools import cached_property
-from typing import Any, List, Optional, Tuple
-
-import attr
-
-from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.constants.operations.direct_ingest_raw_data_resource_lock import (
     DirectIngestRawDataResourceLockResource,
 )
-from recidiviz.ingest.direct.gcs.filename_parts import (
-    DirectIngestRawFilenameParts,
-    filename_parts_from_path,
-)
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
-from recidiviz.utils.types import assert_type
 
 RESOURCE_LOCKS_NEEDED = [
     DirectIngestRawDataResourceLockResource.BIG_QUERY_RAW_DATA_DATASET,
@@ -60,91 +49,3 @@ def get_resource_lock_ttl(raw_data_instance: DirectIngestInstance) -> int:
             return RESOURCE_LOCK_TTL_SECONDS_SECONDARY
         case _:
             raise ValueError(f"Unexpected value: {raw_data_instance.value}")
-
-
-@attr.define
-class RawGCSFileMetadataSummary:
-    """This represents metadata about a single literal file (e.g. a CSV) that is stored
-    in GCS
-
-    Attributes:
-        gcs_file_id (int): An id that corresponds to the literal file in Google Cloud
-            Storage in direct_ingest_raw_gcs_file_metadata. A single file will always
-            have a single gcs_file_id.
-        file_id (int | None): A "conceptual" file id that corresponds to a single,
-            conceptual file sent to us by the state. For raw files states send us in
-            chunks (such as ContactNoteComment), each literal CSV that makes up the
-            whole file will have a different gcs_file_id, but all of those entries will
-            have the same file_id.
-        path (GcsfsFilePath): The path in Google Cloud Storage of the file.
-    """
-
-    gcs_file_id: int
-    file_id: Optional[int]
-    path: GcsfsFilePath
-
-    @cached_property
-    def parts(self) -> DirectIngestRawFilenameParts:
-        return filename_parts_from_path(self.path)
-
-    def to_xcom(self) -> Tuple[int, Optional[int], str]:
-        return self.gcs_file_id, self.file_id, self.path.abs_path()
-
-    @classmethod
-    def from_gcs_metadata_table_row(
-        cls, db_record: Tuple[int, Optional[int], str], abs_path: GcsfsFilePath
-    ) -> "RawGCSFileMetadataSummary":
-        return RawGCSFileMetadataSummary(
-            gcs_file_id=db_record[0], file_id=db_record[1], path=abs_path
-        )
-
-    @classmethod
-    def from_xcom(cls, xcom_input: List[Any]) -> "RawGCSFileMetadataSummary":
-        if len(xcom_input) != 3:
-            raise ValueError(
-                f"Expected to retrieve 3 items to build {cls.__name__} but found {len(xcom_input)}"
-            )
-
-        return RawGCSFileMetadataSummary(
-            gcs_file_id=assert_type(xcom_input[0], int),
-            file_id=xcom_input[1],
-            path=GcsfsFilePath.from_absolute_path(assert_type(xcom_input[2], str)),
-        )
-
-
-@attr.define
-class RawBigQueryFileMetadataSummary:
-    """This represents metadata about a "conceptual" file_id that exists in BigQuery,
-    made up of at least one literal csv file |gcs_files|.
-
-    Attributes:
-        gcs_files (list[RawGCSFileMetadataSummary]): a list of RawGCSFileMetadataSummary
-            objects that correspond to the literal csv files that comprise this single,
-            conceptual file.
-        file_tag (str): The shared file_tag from |gcs_files| cached on this object.
-        file_id (int | None): A "conceptual" file id that corresponds to a single,
-            conceptual file sent to us by the state. For raw files states send us in
-            chunks (such as ContactNoteComment), each literal CSV that makes up the
-            whole file will have a different gcs_file_id, but all of those entries will
-            have the same file_id.
-    """
-
-    gcs_files: List[RawGCSFileMetadataSummary]
-    file_tag: str
-    file_id: Optional[int] = attr.field(default=None)
-
-    def to_xcom(self) -> Tuple[int, List[str]]:
-        return (
-            assert_type(self.file_id, int),
-            [gcs_file.path.abs_path() for gcs_file in self.gcs_files],
-        )
-
-    @classmethod
-    def from_gcs_files(
-        cls, gcs_files: List[RawGCSFileMetadataSummary]
-    ) -> "RawBigQueryFileMetadataSummary":
-        return RawBigQueryFileMetadataSummary(
-            file_id=gcs_files[0].file_id,
-            file_tag=gcs_files[0].parts.file_tag,
-            gcs_files=gcs_files,
-        )

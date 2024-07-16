@@ -41,7 +41,9 @@ from recidiviz.ingest.direct.types.raw_data_import_types import (
     ImportReadyNormalizedFile,
     NormalizedCsvChunkResult,
     PreImportNormalizationType,
+    RawBigQueryFileMetadataSummary,
     RawFileProcessingError,
+    RawGCSFileMetadataSummary,
     RequiresNormalizationFile,
     RequiresPreImportNormalizationFile,
     RequiresPreImportNormalizationFileChunk,
@@ -300,6 +302,34 @@ class TestSerialization(unittest.TestCase):
             }
         )
         self._validate_serialization(original, AppendReadyFileBatch)
+
+    def test_raw_gcs_file_metadata_summary(self) -> None:
+        original = RawGCSFileMetadataSummary(
+            gcs_file_id=1,
+            file_id=2,
+            path=GcsfsFilePath(bucket_name="bucket", blob_name="blob.csv"),
+        )
+        self._validate_serialization(original, RawGCSFileMetadataSummary)
+        original_two = RawGCSFileMetadataSummary(
+            gcs_file_id=1,
+            file_id=None,
+            path=GcsfsFilePath(bucket_name="bucket", blob_name="blob.csv"),
+        )
+        self._validate_serialization(original_two, RawGCSFileMetadataSummary)
+
+    def test_raw_bq_file_metadata_summary(self) -> None:
+        original = RawBigQueryFileMetadataSummary(
+            file_tag="tag1",
+            file_id=1,
+            gcs_files=[
+                RawGCSFileMetadataSummary(
+                    gcs_file_id=1,
+                    file_id=1,
+                    path=GcsfsFilePath(bucket_name="bucket", blob_name="blob.csv"),
+                )
+            ],
+        )
+        self._validate_serialization(original, RawBigQueryFileMetadataSummary)
 
     def test_task_result(self) -> None:
         result = ImportReadyNormalizedFile(

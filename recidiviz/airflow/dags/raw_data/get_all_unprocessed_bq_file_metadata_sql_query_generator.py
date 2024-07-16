@@ -20,7 +20,7 @@ import datetime
 from collections import defaultdict
 from itertools import groupby
 from types import ModuleType
-from typing import Dict, Iterator, List, Optional, Tuple
+from typing import Dict, Iterator, List, Optional
 
 from airflow.providers.postgres.hooks.postgres import PostgresHook
 from airflow.utils.context import Context
@@ -29,10 +29,6 @@ from more_itertools import one
 from recidiviz.airflow.dags.operators.cloud_sql_query_operator import (
     CloudSqlQueryGenerator,
     CloudSqlQueryOperator,
-)
-from recidiviz.airflow.dags.raw_data.metadata import (
-    RawBigQueryFileMetadataSummary,
-    RawGCSFileMetadataSummary,
 )
 from recidiviz.airflow.dags.raw_data.utils import (
     get_direct_ingest_region_raw_config,
@@ -43,6 +39,10 @@ from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRegionRawFileConfig,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.ingest.direct.types.raw_data_import_types import (
+    RawBigQueryFileMetadataSummary,
+    RawGCSFileMetadataSummary,
+)
 from recidiviz.utils.string import StrictStringFormatter
 
 ADD_ROWS = """
@@ -60,7 +60,7 @@ WHERE v.gcs_file_id = g.gcs_file_id;"""
 
 
 class GetAllUnprocessedBQFileMetadataSqlQueryGenerator(
-    CloudSqlQueryGenerator[List[Tuple[int, List[str]]]]
+    CloudSqlQueryGenerator[List[str]]
 ):
     """Custom query generator that processes raw gcs file metadata and returns
     raw big query file metadata
@@ -95,17 +95,17 @@ class GetAllUnprocessedBQFileMetadataSqlQueryGenerator(
         operator: CloudSqlQueryOperator,
         postgres_hook: PostgresHook,
         context: Context,
-    ) -> List[Tuple[int, List[str]]]:
-        """After pulling in a list of raw gcs file metadata, processes and registers all
-        gcs file metadata not yet registered in the raw bq file metadata table (i.e.
-        does not yet have a file_id). Returns bq file metadata in the form of
-        (file_id, [abs_path]) for successfully processed and grouped gcs file metadata
-        pulled from xcom.
+    ) -> List[str]:
+        """After pulling in a list of RawGCSFileMetadataSummary frin xcom, processes and
+        registers all RawGCSFileMetadataSummary not yet registered in the raw bq file
+        metadata table (i.e. does not yet have a file_id). Returns serialized
+        RawBigQueryFileMetadataSummary for successfully processed and grouped
+        RawGCSFileMetadataSummary.
         """
         # --- get existing file info from xcom -----------------------------------------
 
         unprocessed_gcs_file_metadata: List[RawGCSFileMetadataSummary] = [
-            RawGCSFileMetadataSummary.from_xcom(xcom_metadata)
+            RawGCSFileMetadataSummary.deserialize(xcom_metadata)
             for xcom_metadata in operator.xcom_pull(
                 context,
                 key="return_value",
@@ -137,10 +137,10 @@ class GetAllUnprocessedBQFileMetadataSqlQueryGenerator(
             )
         ]
 
-        # --- build xcom output (file_id, [ abs_path ]) --------------------------------
+        # --- build xcom output ----------------–––-------------------------------------
 
         return [
-            metadata.to_xcom()
+            metadata.serialize()
             for metadata in already_bq_registered_bq_metadata
             + newly_bq_registered_bq_metadata
         ]

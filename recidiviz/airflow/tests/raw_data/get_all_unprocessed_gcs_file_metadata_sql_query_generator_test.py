@@ -16,7 +16,7 @@
 # =============================================================================
 """Unit tests for GetAllUnprocessedGCSFileMetadataSqlQueryGenerator"""
 import datetime
-from typing import Any, List, Tuple
+from typing import Any, List
 from unittest.mock import create_autospec
 
 from airflow.providers.postgres.hooks.postgres import PostgresHook
@@ -31,6 +31,9 @@ from recidiviz.airflow.dags.raw_data.get_all_unprocessed_gcs_file_metadata_sql_q
 )
 from recidiviz.airflow.tests.test_utils import CloudSqlQueryGeneratorUnitTest
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.ingest.direct.types.raw_data_import_types import (
+    RawGCSFileMetadataSummary,
+)
 from recidiviz.persistence.database.schema.operations.schema import OperationsBase
 
 
@@ -78,9 +81,9 @@ class TestGetAllUnprocessedGCSFileMetadataSqlQueryGenerator(
             )
 
         for i, result in enumerate(results):
-            assert isinstance(result[0], int)
-            assert result[1] is None
-            assert result[2] == normalized_fns[i]
+            gcs = RawGCSFileMetadataSummary.deserialize(result)
+            assert gcs.file_id is None
+            assert gcs.path.abs_path() == normalized_fns[i]
 
         full_results: List[Any] = self.mock_pg_hook.get_records(
             "SELECT gcs_file_id, region_code, raw_data_instance, file_tag, normalized_file_name, update_datetime, file_discovery_time FROM direct_ingest_raw_gcs_file_metadata"
@@ -113,9 +116,9 @@ class TestGetAllUnprocessedGCSFileMetadataSqlQueryGenerator(
         )
 
         for i, result in enumerate(results):
-            assert isinstance(result[0], int)
-            assert result[1] is None
-            assert result[2] == normalized_fns_batch_1[i]
+            gcs = RawGCSFileMetadataSummary.deserialize(result)
+            assert gcs.file_id is None
+            assert gcs.path.abs_path() == normalized_fns_batch_1[i]
 
         self.mock_operator.xcom_pull.return_value = normalized_fns_batch_2
         results = self.generator.execute_postgres_query(
@@ -123,9 +126,9 @@ class TestGetAllUnprocessedGCSFileMetadataSqlQueryGenerator(
         )
 
         for i, result in enumerate(results):
-            assert isinstance(result[0], int)
-            assert result[1] is None
-            assert result[2] == normalized_fns_batch_2[i]
+            gcs = RawGCSFileMetadataSummary.deserialize(result)
+            assert gcs.file_id is None
+            assert gcs.path.abs_path() == normalized_fns_batch_2[i]
 
     def test_all_preregistered(self) -> None:
         normalized_fns = [
@@ -136,11 +139,11 @@ class TestGetAllUnprocessedGCSFileMetadataSqlQueryGenerator(
 
         self.mock_operator.xcom_pull.return_value = normalized_fns
 
-        def _validate(_results: List[Tuple[Any, ...]]) -> None:
+        def _validate(_results: List[str]) -> None:
             for i, result in enumerate(_results):
-                assert isinstance(result[0], int)
-                assert result[1] is None
-                assert result[2] == normalized_fns[i]
+                gcs = RawGCSFileMetadataSummary.deserialize(result)
+                assert gcs.file_id is None
+                assert gcs.path.abs_path() == normalized_fns[i]
 
         results_1 = self.generator.execute_postgres_query(
             self.mock_operator, self.mock_pg_hook, self.mock_context
@@ -165,9 +168,9 @@ class TestGetAllUnprocessedGCSFileMetadataSqlQueryGenerator(
             )
 
             for i, result in enumerate(results):
-                assert isinstance(result[0], int)
-                assert result[1] is None
-                assert result[2] == normalized_fns[i]
+                gcs = RawGCSFileMetadataSummary.deserialize(result)
+                assert gcs.file_id is None
+                assert gcs.path.abs_path() == normalized_fns[i]
 
         results = self.mock_pg_hook.get_records(
             "SELECT * FROM direct_ingest_raw_gcs_file_metadata"
@@ -192,6 +195,7 @@ class TestGetAllUnprocessedGCSFileMetadataSqlQueryGenerator(
         )
 
         for i, result in enumerate(results):
-            assert result[0] == i
-            assert result[1] == i
-            assert result[2] == normalized_fns[i]
+            gcs = RawGCSFileMetadataSummary.deserialize(result)
+            assert gcs.file_id == i
+            assert gcs.gcs_file_id == i
+            assert gcs.path.abs_path() == normalized_fns[i]
