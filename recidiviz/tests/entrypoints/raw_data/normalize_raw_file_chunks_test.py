@@ -26,12 +26,13 @@ from recidiviz.entrypoints.raw_data.normalize_raw_file_chunks import (
     normalize_raw_file_chunks,
 )
 from recidiviz.ingest.direct.types.raw_data_import_types import (
-    BatchedTaskInstanceOutput,
     NormalizedCsvChunkResult,
     PreImportNormalizationType,
+    RawFileProcessingError,
     RequiresPreImportNormalizationFile,
     RequiresPreImportNormalizationFileChunk,
 )
+from recidiviz.utils.airflow_types import BatchedTaskInstanceOutput
 
 
 class TestRawDataChunkNormalization(unittest.TestCase):
@@ -86,6 +87,7 @@ class TestRawDataChunkNormalization(unittest.TestCase):
                 self.serialized_requires_normalization_chunks, self.state_code
             ),
             result_cls=NormalizedCsvChunkResult,
+            error_cls=RawFileProcessingError,
         )
 
         self.assertEqual(result.results, [self.normalized_chunk])
@@ -117,6 +119,7 @@ class TestRawDataChunkNormalization(unittest.TestCase):
                 self.serialized_requires_normalization_chunks, self.state_code
             ),
             result_cls=RequiresPreImportNormalizationFile,
+            error_cls=RawFileProcessingError,
         )
 
         self.assertEqual(result.results, [])

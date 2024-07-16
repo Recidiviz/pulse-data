@@ -29,9 +29,6 @@ from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath, GcsfsFilePath
 from recidiviz.common.constants.states import StateCode
 from recidiviz.fakes.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.ingest.direct.dataset_config import raw_tables_dataset_for_region
-from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
-    DirectIngestGCSFileSystem,
-)
 from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_load_manager import (
     DirectIngestRawFileLoadManager,
 )
@@ -42,6 +39,10 @@ from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRegionRawFileConfig,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.ingest.direct.types.raw_data_import_types import (
+    AppendReadyFile,
+    ImportReadyFile,
+)
 from recidiviz.tests.big_query.big_query_emulator_test_case import (
     BigQueryEmulatorTestCase,
 )
@@ -83,7 +84,7 @@ class TestDirectIngestRawFileLoadManager(BigQueryEmulatorTestCase):
         self.manager = DirectIngestRawFileLoadManager(
             raw_data_instance=self.raw_data_instance,
             region_raw_file_config=self.region_raw_file_config,
-            fs=DirectIngestGCSFileSystem(self.fs),
+            fs=self.fs,
         )
 
         self.bucket = GcsfsBucketPath.from_absolute_path("gs://fake-raw-data-import")
@@ -134,7 +135,7 @@ class TestDirectIngestRawFileLoadManager(BigQueryEmulatorTestCase):
 
     def _prep_test(
         self, fixture_directory_name: str
-    ) -> Tuple[str, List[GcsfsFilePath], pd.DataFrame, pd.DataFrame, str]:
+    ) -> Tuple[str, List[GcsfsFilePath], pd.DataFrame, pd.DataFrame, BigQueryAddress]:
         """preps test for |fixture_directory_name|"""
         (
             file_tag,
@@ -180,7 +181,7 @@ class TestDirectIngestRawFileLoadManager(BigQueryEmulatorTestCase):
             input_files,
             load_dataframe_from_path(load_output, fixture_columns=None),
             load_dataframe_from_path(append_output, fixture_columns=None),
-            mock_raw_table.to_str(),
+            mock_raw_table,
         )
 
     def _get_paths_for_test(
@@ -217,10 +218,10 @@ class TestDirectIngestRawFileLoadManager(BigQueryEmulatorTestCase):
         return file_tag, load_ins, append_seed, load_out, append_out
 
     def compare_output_against_expected(
-        self, output_table: str, expected_df: pd.DataFrame
+        self, output_table: BigQueryAddress, expected_df: pd.DataFrame
     ) -> None:
         actual_df = self.query(
-            f"select * from {output_table}",
+            f"select * from {output_table.to_str()}",
         )
 
         self.compare_expected_and_result_dfs(expected=expected_df, results=actual_df)
@@ -233,16 +234,18 @@ class TestDirectIngestRawFileLoadManager(BigQueryEmulatorTestCase):
             append_output,
             raw_data_table,
         ) = self._prep_test("no_migrations_no_changes_single_file")
-        load_prep_summary = self.manager.load_and_prep_paths(
-            1,
-            file_tag,
-            datetime.datetime(2024, 1, 1, 1, 1, 1, tzinfo=datetime.UTC),
-            input_paths,
+        irf = ImportReadyFile(
+            file_id=1,
+            file_tag=file_tag,
+            update_datetime=datetime.datetime(2024, 1, 1, 1, 1, 1, tzinfo=datetime.UTC),
+            file_paths=input_paths,
         )
+        append_ready_file = self.manager.load_and_prep_paths(irf)
 
-        assert load_prep_summary.raw_rows_count == 2
+        assert append_ready_file.import_ready_file == irf
+        assert append_ready_file.raw_rows_count == 2
         assert (
-            load_prep_summary.append_ready_table_address
+            append_ready_file.append_ready_table_address.to_str()
             == "us_xx_primary_raw_data_temp_load.singlePrimaryKey__1__transformed"
         )
 
@@ -256,15 +259,10 @@ class TestDirectIngestRawFileLoadManager(BigQueryEmulatorTestCase):
         self.assertTrue(len(self.fs.all_paths) == 0)
 
         self.compare_output_against_expected(
-            load_prep_summary.append_ready_table_address, prep_output
+            append_ready_file.append_ready_table_address, prep_output
         )
 
-        _ = self.manager.append_to_raw_data_table(
-            1,
-            "singlePrimaryKey",
-            datetime.datetime(2024, 1, 1, 1, 1, 1, tzinfo=datetime.UTC),
-            BigQueryAddress.from_str(load_prep_summary.append_ready_table_address),
-        )
+        _ = self.manager.append_to_raw_data_table(append_ready_file)
 
         self.compare_output_against_expected(raw_data_table, append_output)
 
@@ -299,15 +297,20 @@ class TestDirectIngestRawFileLoadManager(BigQueryEmulatorTestCase):
         file_tag, input_paths, output_df, *_ = self._prep_test(
             "migration_depends_on_transforms"
         )
-        load_prep_summary = self.manager.load_and_prep_paths(
-            1,
-            file_tag,
-            datetime.datetime(2020, 6, 10, 0, 0, 0, tzinfo=datetime.UTC),
-            input_paths,
+        irf = ImportReadyFile(
+            file_id=1,
+            file_tag=file_tag,
+            update_datetime=datetime.datetime(
+                2020, 6, 10, 0, 0, 0, tzinfo=datetime.UTC
+            ),
+            file_paths=input_paths,
         )
+        append_ready_file = self.manager.load_and_prep_paths(irf)
+
+        assert append_ready_file.import_ready_file == irf
 
         self.compare_output_against_expected(
-            load_prep_summary.append_ready_table_address, output_df
+            append_ready_file.append_ready_table_address, output_df
         )
 
     def test_historical_diff_depends_on_trasnform(self) -> None:
@@ -319,23 +322,20 @@ class TestDirectIngestRawFileLoadManager(BigQueryEmulatorTestCase):
             append_output,
             raw_data_table,
         ) = self._prep_test("historical_diff_depends_on_trasnform")
-        load_prep_summary = self.manager.load_and_prep_paths(
-            10,
-            file_tag,
-            datetime.datetime(2023, 4, 8, 0, 0, 1, tzinfo=datetime.UTC),
-            input_paths,
+        irf = ImportReadyFile(
+            file_id=10,
+            file_tag=file_tag,
+            update_datetime=datetime.datetime(2023, 4, 8, 0, 0, 1, tzinfo=datetime.UTC),
+            file_paths=input_paths,
         )
+        append_ready_file = self.manager.load_and_prep_paths(irf)
 
+        assert append_ready_file.import_ready_file == irf
         self.compare_output_against_expected(
-            load_prep_summary.append_ready_table_address, prep_output
+            append_ready_file.append_ready_table_address, prep_output
         )
 
-        _ = self.manager.append_to_raw_data_table(
-            10,
-            file_tag,
-            datetime.datetime(2023, 4, 8, 0, 0, 1, tzinfo=datetime.UTC),
-            BigQueryAddress.from_str(load_prep_summary.append_ready_table_address),
-        )
+        _ = self.manager.append_to_raw_data_table(append_ready_file)
 
         self.compare_output_against_expected(raw_data_table, append_output)
 
@@ -348,10 +348,14 @@ class TestDirectIngestRawFileLoadManager(BigQueryEmulatorTestCase):
 
         with self.assertRaisesRegex(ValueError, "We hit an error!"):
             _ = self.manager.load_and_prep_paths(
-                1,
-                file_tag,
-                datetime.datetime(2020, 6, 10, 0, 0, 0, tzinfo=datetime.UTC),
-                input_paths,
+                ImportReadyFile(
+                    file_id=10,
+                    file_tag=file_tag,
+                    update_datetime=datetime.datetime(
+                        2023, 4, 8, 0, 0, 1, tzinfo=datetime.UTC
+                    ),
+                    file_paths=input_paths,
+                )
             )
 
         self.assertTrue(len(self.fs.all_paths) == 0)
@@ -371,10 +375,14 @@ class TestDirectIngestRawFileLoadManager(BigQueryEmulatorTestCase):
 
         with self.assertRaisesRegex(ValueError, "We hit an error!"):
             _ = self.manager.load_and_prep_paths(
-                1,
-                file_tag,
-                datetime.datetime(2020, 6, 10, 0, 0, 0, tzinfo=datetime.UTC),
-                input_paths,
+                ImportReadyFile(
+                    file_id=10,
+                    file_tag=file_tag,
+                    update_datetime=datetime.datetime(
+                        2023, 4, 8, 0, 0, 1, tzinfo=datetime.UTC
+                    ),
+                    file_paths=input_paths,
+                )
             )
 
         self.assertTrue(len(self.fs.all_paths) == 0)
@@ -398,10 +406,14 @@ class TestDirectIngestRawFileLoadManager(BigQueryEmulatorTestCase):
         ):
             with self.assertRaisesRegex(ValueError, "We hit an error!"):
                 _ = self.manager.load_and_prep_paths(
-                    1,
-                    file_tag,
-                    datetime.datetime(2020, 6, 10, 0, 0, 0, tzinfo=datetime.UTC),
-                    input_paths,
+                    ImportReadyFile(
+                        file_id=10,
+                        file_tag=file_tag,
+                        update_datetime=datetime.datetime(
+                            2023, 4, 8, 0, 0, 1, tzinfo=datetime.UTC
+                        ),
+                        file_paths=input_paths,
+                    )
                 )
 
         self.assertTrue(len(self.fs.all_paths) == 0)
@@ -430,10 +442,14 @@ class TestDirectIngestRawFileLoadManager(BigQueryEmulatorTestCase):
         ):
             with self.assertRaisesRegex(ValueError, "We hit an error!"):
                 _ = self.manager.load_and_prep_paths(
-                    1,
-                    file_tag,
-                    datetime.datetime(2020, 6, 10, 0, 0, 0, tzinfo=datetime.UTC),
-                    input_paths,
+                    ImportReadyFile(
+                        file_id=10,
+                        file_tag=file_tag,
+                        update_datetime=datetime.datetime(
+                            2023, 4, 8, 0, 0, 1, tzinfo=datetime.UTC
+                        ),
+                        file_paths=input_paths,
+                    )
                 )
 
         self.assertTrue(len(self.fs.all_paths) == 0)
@@ -463,11 +479,19 @@ class TestDirectIngestRawFileLoadManager(BigQueryEmulatorTestCase):
                 ),
             ):
                 _ = self.manager.append_to_raw_data_table(
-                    1,
-                    "tagBasicData",
-                    datetime.datetime(2020, 6, 10, 0, 0, 0, tzinfo=datetime.UTC),
-                    BigQueryAddress.from_str(
-                        '"us_xx_primary_raw_data_temp_load.singlePrimaryKey__1__transformed"'
+                    AppendReadyFile(
+                        import_ready_file=ImportReadyFile(
+                            file_id=10,
+                            file_tag="tagBasicData",
+                            update_datetime=datetime.datetime(
+                                2023, 4, 8, 0, 0, 1, tzinfo=datetime.UTC
+                            ),
+                            file_paths=[],
+                        ),
+                        append_ready_table_address=BigQueryAddress.from_str(
+                            '"us_xx_primary_raw_data_temp_load.singlePrimaryKey__1__transformed"'
+                        ),
+                        raw_rows_count=0,
                     ),
                 )
 

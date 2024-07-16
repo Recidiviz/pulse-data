@@ -27,11 +27,11 @@ from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_pre_import_normaliz
     DirectIngestRawFilePreImportNormalizer,
 )
 from recidiviz.ingest.direct.types.raw_data_import_types import (
-    BatchedTaskInstanceOutput,
     NormalizedCsvChunkResult,
     RawFileProcessingError,
     RequiresPreImportNormalizationFileChunk,
 )
+from recidiviz.utils.airflow_types import BatchedTaskInstanceOutput
 
 # Delimit the list of file chunks with a caret
 # to avoid parsing issues with serialized chunk objects
@@ -55,7 +55,7 @@ def normalize_raw_file_chunks(
 def _normalize_chunks(
     normalizer: DirectIngestRawFilePreImportNormalizer,
     chunks: List[RequiresPreImportNormalizationFileChunk],
-) -> BatchedTaskInstanceOutput:
+) -> BatchedTaskInstanceOutput[NormalizedCsvChunkResult, RawFileProcessingError]:
     results: List[NormalizedCsvChunkResult] = []
     errors: List[RawFileProcessingError] = []
 
@@ -70,7 +70,7 @@ def _normalize_chunks(
                 )
             )
 
-    return BatchedTaskInstanceOutput[NormalizedCsvChunkResult](
+    return BatchedTaskInstanceOutput[NormalizedCsvChunkResult, RawFileProcessingError](
         results=results, errors=errors
     )
 

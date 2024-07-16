@@ -18,30 +18,32 @@
 
 import base64
 import concurrent.futures
-import heapq
 from collections import defaultdict
 from typing import Dict, List, Tuple
 
 from airflow.decorators import task
 from airflow.exceptions import AirflowException
-from more_itertools import distribute
+from more_itertools import distribute, one
 
 from recidiviz.airflow.dags.operators.recidiviz_kubernetes_pod_operator import (
     ENTRYPOINT_ARGUMENTS,
 )
+from recidiviz.airflow.dags.raw_data.utils import n_evenly_weighted_buckets
 from recidiviz.cloud_storage.gcs_file_system import GCSFileSystem
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.types.raw_data_import_types import (
-    BatchedTaskInstanceOutput,
     ImportReadyNormalizedFile,
-    MappedBatchedTaskOutput,
     NormalizedCsvChunkResult,
     RawFileProcessingError,
     RequiresNormalizationFile,
     RequiresPreImportNormalizationFile,
     RequiresPreImportNormalizationFileChunk,
+)
+from recidiviz.utils.airflow_types import (
+    BatchedTaskInstanceOutput,
+    MappedBatchedTaskOutput,
 )
 from recidiviz.utils.crc32c import digest_ordered_checksum_and_size_pairs
 
@@ -89,19 +91,7 @@ def _batch_files_by_size(
     files_with_sizes = _get_files_with_sizes_concurrently(
         fs, requires_normalization_files
     )
-    files_with_sizes.sort(key=lambda x: x[1], reverse=True)
-
-    num_batches = min(len(requires_normalization_files), num_batches)
-    batches: List[List[RequiresNormalizationFile]] = [[] for _ in range(num_batches)]
-    heap = [(0, batch_index) for batch_index in range(num_batches)]
-    heapq.heapify(heap)
-
-    for requires_normalization_file, file_size in files_with_sizes:
-        batch_size, batch_index = heapq.heappop(heap)
-        batches[batch_index].append(requires_normalization_file)
-        heapq.heappush(heap, (batch_size + file_size, batch_index))
-
-    return batches
+    return n_evenly_weighted_buckets(files_with_sizes, num_batches)
 
 
 def _get_files_with_sizes_concurrently(
@@ -155,7 +145,9 @@ def _divide_file_chunks_into_batches(
     all_results: List[
         RequiresPreImportNormalizationFile
     ] = MappedBatchedTaskOutput.deserialize(
-        file_chunking_result, result_cls=RequiresPreImportNormalizationFile
+        file_chunking_result,
+        result_cls=RequiresPreImportNormalizationFile,
+        error_cls=RawFileProcessingError,
     ).flatten_results()
 
     batches = create_chunk_batches(all_results, num_batches)
@@ -196,7 +188,9 @@ def regroup_and_verify_file_chunks(
     """Task organizes normalized chunks by file and compares their collective checksum
     against the full file checksum to ensure all file bytes were read correctly"""
     mapped_task_output = MappedBatchedTaskOutput.deserialize(
-        normalized_chunks_result, result_cls=NormalizedCsvChunkResult
+        normalized_chunks_result,
+        result_cls=NormalizedCsvChunkResult,
+        error_cls=RawFileProcessingError,
     )
     all_results: List[NormalizedCsvChunkResult] = mapped_task_output.flatten_results()
     all_errors: List[RawFileProcessingError] = mapped_task_output.flatten_errors()
@@ -213,7 +207,7 @@ def regroup_and_verify_file_chunks(
 
 def verify_file_checksums_and_build_import_ready_file(
     file_to_normalized_chunks: Dict[str, List[NormalizedCsvChunkResult]],
-) -> BatchedTaskInstanceOutput[ImportReadyNormalizedFile]:
+) -> BatchedTaskInstanceOutput[ImportReadyNormalizedFile, RawFileProcessingError]:
     """Verify the checksum of the normalized file chunks against the full file checksum.
     if they match return the ImportReadyNormalizedFile"""
 
@@ -249,7 +243,7 @@ def verify_file_checksums_and_build_import_ready_file(
                 )
             )
 
-    return BatchedTaskInstanceOutput[ImportReadyNormalizedFile](
+    return BatchedTaskInstanceOutput[ImportReadyNormalizedFile, RawFileProcessingError](
         results=normalized_files, errors=errors
     )
 
@@ -261,7 +255,7 @@ def regroup_normalized_file_chunks(
     """Returns dictionary of filepath: [normalized_chunk_results]"""
     file_to_normalized_chunks = defaultdict(list)
     files_with_previous_errors = set(
-        error.file_path for error in normalized_chunks_errors
+        one(error.file_path) for error in normalized_chunks_errors
     )
 
     for chunk in normalized_chunks_result:
@@ -282,7 +276,9 @@ def regroup_normalized_file_chunks(
 @task
 def raise_file_chunking_errors(file_chunking_output: List[str]) -> None:
     errors = MappedBatchedTaskOutput.deserialize(
-        file_chunking_output, result_cls=RequiresPreImportNormalizationFile
+        file_chunking_output,
+        result_cls=RequiresPreImportNormalizationFile,
+        error_cls=RawFileProcessingError,
     ).flatten_errors()
     _raise_task_errors(errors)
 
@@ -290,7 +286,9 @@ def raise_file_chunking_errors(file_chunking_output: List[str]) -> None:
 @task
 def raise_chunk_normalization_errors(chunk_normalization_output: str) -> None:
     errors = BatchedTaskInstanceOutput.deserialize(
-        chunk_normalization_output, result_cls=NormalizedCsvChunkResult
+        chunk_normalization_output,
+        result_cls=NormalizedCsvChunkResult,
+        error_cls=RawFileProcessingError,
     ).errors
     _raise_task_errors(errors)
 

@@ -39,11 +39,11 @@ from recidiviz.ingest.direct.raw_data.read_raw_file_column_headers import (
     DirectIngestRawFileHeaderReader,
 )
 from recidiviz.ingest.direct.types.raw_data_import_types import (
-    BatchedTaskInstanceOutput,
     RawFileProcessingError,
     RequiresNormalizationFile,
     RequiresPreImportNormalizationFile,
 )
+from recidiviz.utils.airflow_types import BatchedTaskInstanceOutput
 
 MAX_THREADS = 8  # TODO(#29946) determine reasonable default
 FILE_LIST_DELIMITER = "^"
@@ -68,7 +68,9 @@ def _process_files_concurrently(
     fs: GCSFileSystem,
     requires_normalization_files: List[RequiresNormalizationFile],
     region_raw_file_config: DirectIngestRegionRawFileConfig,
-) -> BatchedTaskInstanceOutput[RequiresPreImportNormalizationFile]:
+) -> BatchedTaskInstanceOutput[
+    RequiresPreImportNormalizationFile, RawFileProcessingError
+]:
     """Finds row safe chunk boundaries and headers for each file"""
     results: List[RequiresPreImportNormalizationFile] = []
     errors: List[RawFileProcessingError] = []
@@ -95,9 +97,9 @@ def _process_files_concurrently(
                     )
                 )
 
-    return BatchedTaskInstanceOutput[RequiresPreImportNormalizationFile](
-        results=results, errors=errors
-    )
+    return BatchedTaskInstanceOutput[
+        RequiresPreImportNormalizationFile, RawFileProcessingError
+    ](results=results, errors=errors)
 
 
 def _extract_file_chunks(

@@ -43,6 +43,10 @@ RESOURCE_LOCK_TTL_SECONDS_PRIMARY = 3 * 60 * 60  # 3 hours
 RESOURCE_LOCK_TTL_SECONDS_SECONDARY = 3 * 60 * 60  # 6 hours
 
 
+SKIPPED_FILE_ERRORS: str = "skkipped_file_errors"
+APPEND_READY_FILE_BATCHES: str = "append_ready_file_batches"
+
+
 def get_resource_lock_ttl(raw_data_instance: DirectIngestInstance) -> int:
     """Returns the ttl in seconds for the resources listed in RESOURCE_LOCKS_NEEDED. We
     bifurcate bewteen primary and secondary as we expect secondary runs to take longer

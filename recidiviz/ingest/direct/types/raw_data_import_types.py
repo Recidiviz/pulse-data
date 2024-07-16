@@ -16,21 +16,29 @@
 # =============================================================================
 """Types associated with raw data imports"""
 import abc
+import datetime
 import json
 from enum import Enum, auto
-from typing import Generic, List, Optional, Type, TypeVar
+from typing import Dict, List, Optional
 
 import attr
 
+from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_utils import (
     is_big_query_valid_delimiter,
     is_big_query_valid_encoding,
     is_big_query_valid_line_terminator,
 )
 from recidiviz.cloud_storage.gcsfs_csv_chunk_boundary_finder import CsvChunkBoundary
+from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common import attr_validators
 from recidiviz.common.constants.csv import DEFAULT_CSV_ENCODING
+from recidiviz.common.constants.operations.direct_ingest_raw_data_import_session import (
+    DirectIngestRawDataImportSessionStatus,
+)
 from recidiviz.ingest.direct.raw_data.raw_file_configs import DirectIngestRawFileConfig
+from recidiviz.utils.airflow_types import BaseError, BaseResult
+from recidiviz.utils.types import assert_type
 
 
 class PreImportNormalizationType(Enum):
@@ -68,109 +76,126 @@ class PreImportNormalizationType(Enum):
         return None
 
 
-class BaseResult:
-    """Represents the result of a raw data import dag airflow task
-    with methods to serialize/deserialize in order to be passed
-    between tasks via xcom"""
+@attr.define
+class RawDataImportError(BaseError):
+
+    error_type: DirectIngestRawDataImportSessionStatus = attr.ib(
+        validator=attr.validators.instance_of(DirectIngestRawDataImportSessionStatus)
+    )
+    error_msg: str = attr.ib(validator=attr_validators.is_str)
 
     @abc.abstractmethod
     def serialize(self) -> str:
-        """Method to serialized object to string"""
+        """Method to serialize RawDataImportError to string"""
 
     @staticmethod
     @abc.abstractmethod
-    def deserialize(json_str: str) -> "BaseResult":
-        """Method to deserialize json string to object"""
+    def deserialize(json_str: str) -> "RawDataImportError":
+        """Method to deserialize json string into RawDataImportError"""
 
 
 @attr.define
-class RawFileProcessingError:
+class RawFileProcessingError(RawDataImportError):
+    """Represents an error that occured during a raw data pre-import normalization
+    import task.
+    """
+
     file_path: str
-    error_msg: str
+    error_type: DirectIngestRawDataImportSessionStatus = attr.ib(
+        default=DirectIngestRawDataImportSessionStatus.FAILED_PRE_IMPORT_NORMALIZATION_STEP,
+        validator=attr.validators.instance_of(DirectIngestRawDataImportSessionStatus),
+    )
 
     def __str__(self) -> str:
-        return f"{self.file_path}:\n\n{self.error_msg}"
+        return f"{self.error_type.value} with {self.file_path} failed with:\n\n{self.error_msg}"
 
     def serialize(self) -> str:
-        result_dict = {"file_path": self.file_path, "error_msg": self.error_msg}
+        result_dict = {
+            "file_path": self.file_path,
+            "error_msg": self.error_msg,
+            "error_type": self.error_type.value,
+        }
         return json.dumps(result_dict)
 
     @staticmethod
     def deserialize(json_str: str) -> "RawFileProcessingError":
         data = json.loads(json_str)
         return RawFileProcessingError(
-            file_path=data["file_path"], error_msg=data["error_msg"]
+            error_type=DirectIngestRawDataImportSessionStatus(data["error_type"]),
+            file_path=data["file_path"],
+            error_msg=data["error_msg"],
         )
 
 
-T = TypeVar("T", bound="BaseResult")
-
-
 @attr.define
-class BatchedTaskInstanceOutput(Generic[T]):
-    """
-    Represents the output from an Airflow task instance operating on a batch of input to increase parallelism
-    with methods to serialize/deserialize in order to be passed between tasks via xcom.
-
-    Attributes:
-        results (List[T]): A list of results produced by the task instance.
-        errors (List[RawFileProcessingError]): A list of errors encountered during the task execution.
+class RawFileLoadAndPrepError(RawDataImportError):
+    """Represents an error that occured during a raw data big query load step, specifically
+    durring the load and prep stage where we load raw data files into big query.
     """
 
-    results: List[T]
-    errors: List[RawFileProcessingError]
+    file_tag: str
+    update_datetime: datetime.datetime
+    file_paths: List[GcsfsFilePath]
+    error_type: DirectIngestRawDataImportSessionStatus = attr.ib(
+        default=DirectIngestRawDataImportSessionStatus.FAILED_LOAD_STEP,
+        validator=attr.validators.instance_of(DirectIngestRawDataImportSessionStatus),
+    )
+
+    def __str__(self) -> str:
+        return f"{self.error_type.value} for [{self.file_tag}] for [{self.file_paths}] failed with:\n\n{self.error_msg}"
 
     def serialize(self) -> str:
         result_dict = {
-            "results": [result.serialize() for result in self.results],
-            "errors": [error.serialize() for error in self.errors],
+            "file_paths": [path.uri() for path in self.file_paths],
+            "file_tag": self.file_tag,
+            "update_datetime": self.update_datetime.isoformat(),
+            "error_msg": self.error_msg,
+            "error_type": self.error_type.value,
         }
         return json.dumps(result_dict)
 
     @staticmethod
-    def deserialize(json_str: str, result_cls: Type[T]) -> "BatchedTaskInstanceOutput":
+    def deserialize(json_str: str) -> "RawFileLoadAndPrepError":
         data = json.loads(json_str)
-        return BatchedTaskInstanceOutput(
-            results=[result_cls.deserialize(chunk) for chunk in data["results"]],
-            errors=[
-                RawFileProcessingError.deserialize(error) for error in data["errors"]
-            ],
+        return RawFileLoadAndPrepError(
+            error_type=DirectIngestRawDataImportSessionStatus(data["error_type"]),
+            file_tag=data["file_tag"],
+            update_datetime=datetime.datetime.fromisoformat(data["update_datetime"]),
+            file_paths=data["file_paths"],
+            error_msg=data["error_msg"],
         )
 
 
 @attr.define
-class MappedBatchedTaskOutput:
-    """Represents output of a mapped airflow task (task created using the expand function).
-
-    Attributes:
-        task_instance_output_list (List[BatchedTaskInstanceOutput]): The output of all of the task instances in the mapped task.
+class RawDataAppendImportError(RawDataImportError):
+    """Represents an error that occured during the big query load step of the raw data
+    import dag, specifically during the append stage.
     """
 
-    task_instance_output_list: List[BatchedTaskInstanceOutput]
+    raw_temp_table: BigQueryAddress
+    error_type: DirectIngestRawDataImportSessionStatus = attr.ib(
+        default=DirectIngestRawDataImportSessionStatus.FAILED_LOAD_STEP,
+        validator=attr.validators.instance_of(DirectIngestRawDataImportSessionStatus),
+    )
 
-    def flatten_errors(self) -> List[RawFileProcessingError]:
-        return [
-            error
-            for task_instance_result in self.task_instance_output_list
-            for error in task_instance_result.errors
-        ]
+    def __str__(self) -> str:
+        return f"{self.error_type.value} writing from {self.raw_temp_table.to_str()} to raw data table failed with:\n\n{self.error_msg}"
 
-    def flatten_results(self) -> List[T]:
-        return [
-            result
-            for task_instance_result in self.task_instance_output_list
-            for result in task_instance_result.results
-        ]
+    def serialize(self) -> str:
+        result_dict = {
+            "raw_temp_table": self.raw_temp_table.to_str(),
+            "error_msg": self.error_msg,
+            "error_type": self.error_type.value,
+        }
+        return json.dumps(result_dict)
 
     @staticmethod
-    def deserialize(
-        json_str_list: List[str], result_cls: Type[T]
-    ) -> "MappedBatchedTaskOutput":
-        return MappedBatchedTaskOutput(
-            task_instance_output_list=[
-                BatchedTaskInstanceOutput.deserialize(json_str, result_cls)
-                for json_str in json_str_list
-            ]
+    def deserialize(json_str: str) -> "RawDataAppendImportError":
+        data = json.loads(json_str)
+        return RawDataAppendImportError(
+            error_type=DirectIngestRawDataImportSessionStatus(data["error_type"]),
+            raw_temp_table=BigQueryAddress.from_str(data["raw_temp_table"]),
+            error_msg=data["error_msg"],
         )
 
 
@@ -333,7 +358,47 @@ class ImportReadyNormalizedFile(BaseResult):
 
 
 @attr.define
-class LoadPrepSummary:
+class ImportReadyFile(BaseResult):
+    """Base information required for all tasks in the big query load step.
+
+    file_id (int): file_id of the conceptual file being loaded
+    file_tag (str): file_tag of the file being loaded
+    update_datetime (datetime.datetime): the update_datetime associated with this file_id
+    file_paths (str): the raw file paths in GCS associated with this file_id
+    """
+
+    file_id: int = attr.ib(validator=attr_validators.is_int)
+    file_tag: str = attr.ib(validator=attr_validators.is_str)
+    update_datetime: datetime.datetime = attr.ib(validator=attr_validators.is_datetime)
+    file_paths: List[GcsfsFilePath] = attr.ib(
+        validator=attr_validators.is_list_of(GcsfsFilePath)
+    )
+
+    def serialize(self) -> str:
+        return json.dumps(
+            {
+                "file_id": self.file_id,
+                "file_tag": self.file_tag,
+                "update_datetime": self.update_datetime.isoformat(),
+                "file_paths": [path.uri() for path in self.file_paths],
+            }
+        )
+
+    @staticmethod
+    def deserialize(json_str: str) -> "ImportReadyFile":
+        data = json.loads(json_str)
+        return ImportReadyFile(
+            file_id=data["file_id"],
+            file_tag=data["file_tag"],
+            update_datetime=datetime.datetime.fromisoformat(data["update_datetime"]),
+            file_paths=[
+                GcsfsFilePath.from_absolute_path(path) for path in data["file_paths"]
+            ],
+        )
+
+
+@attr.define
+class AppendReadyFile(BaseResult):
     """Summary from DirectIngestRawFileLoadManager.load_and_prep_paths step that will
     be combined with AppendSummary to build a row in direct_ingest_raw_data_import_session
 
@@ -344,15 +409,37 @@ class LoadPrepSummary:
         transformations or filtering occured
     """
 
-    append_ready_table_address: str = attr.ib(validator=attr_validators.is_str)
+    import_ready_file: ImportReadyFile
+    append_ready_table_address: BigQueryAddress = attr.ib(
+        validator=attr.validators.instance_of(BigQueryAddress)
+    )
     raw_rows_count: int = attr.ib(validator=attr_validators.is_int)
+
+    def serialize(self) -> str:
+        return json.dumps(
+            [
+                self.import_ready_file.serialize(),
+                self.append_ready_table_address.to_str(),
+                self.raw_rows_count,
+            ]
+        )
+
+    @staticmethod
+    def deserialize(json_str: str) -> "AppendReadyFile":
+        data = json.loads(json_str)
+        return AppendReadyFile(
+            import_ready_file=ImportReadyFile.deserialize(data[0]),
+            append_ready_table_address=BigQueryAddress.from_str(data[1]),
+            raw_rows_count=data[2],
+        )
 
 
 @attr.define
-class AppendSummary:
+class AppendSummary(BaseResult):
     """Summary from DirectIngestRawFileLoadManager.append_to_raw_data_table step that will
-    be combined with LoadPrepSummary to build a row in direct_ingest_raw_data_import_session
+    be combined with AppendReadyFile to build a row in direct_ingest_raw_data_import_session
 
+    file_id (int): file_id associated with this append summary
     net_new_or_updated_rows(int | None): the number of net new or updated rows added
         during the diffing process
     deleted_rows(int | None): the number of rows added with is_deleted as True during the
@@ -360,9 +447,64 @@ class AppendSummary:
 
     """
 
+    file_id: int = attr.ib(validator=attr_validators.is_int)
     net_new_or_updated_rows: Optional[int] = attr.ib(
         default=None, validator=attr_validators.is_opt_int
     )
     deleted_rows: Optional[int] = attr.ib(
         default=None, validator=attr_validators.is_opt_int
     )
+
+    def serialize(self) -> str:
+        return json.dumps(
+            [
+                self.file_id,
+                self.net_new_or_updated_rows,
+                self.deleted_rows,
+            ]
+        )
+
+    @staticmethod
+    def deserialize(json_str: str) -> "AppendSummary":
+        data = json.loads(json_str)
+        return AppendSummary(
+            file_id=data[0],
+            net_new_or_updated_rows=data[1],
+            deleted_rows=data[2],
+        )
+
+
+@attr.define
+class AppendReadyFileBatch(BaseResult):
+    """Contains "batches" of AppendReadyFile objects grouped by file_tag.
+
+    append_ready_files_by_tag (Dict[str, List[AppendReadyFile]]): AppendReadyFiles grouped
+        by file tags to be consumed by a single task.
+
+    """
+
+    append_ready_files_by_tag: Dict[str, List[AppendReadyFile]] = attr.ib()
+
+    def serialize(self) -> str:
+        return json.dumps(
+            {
+                file_tag: [
+                    append_ready_file.serialize()
+                    for append_ready_file in append_ready_files
+                ]
+                for file_tag, append_ready_files in self.append_ready_files_by_tag.items()
+            }
+        )
+
+    @staticmethod
+    def deserialize(json_str: str) -> "AppendReadyFileBatch":
+        data = json.loads(json_str)
+        append_ready_files_by_tag = {
+            file_tag: [
+                AppendReadyFile.deserialize(append_ready_file_str)
+                for append_ready_file_str in append_ready_files_str
+            ]
+            for file_tag, append_ready_files_str in assert_type(data, dict).items()
+        }
+
+        return AppendReadyFileBatch(append_ready_files_by_tag=append_ready_files_by_tag)

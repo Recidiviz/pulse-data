@@ -15,12 +15,15 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests for raw_data_import_types.py"""
+import datetime
 import unittest
 from typing import Any, Type
 
 import attr
 
+from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.cloud_storage.gcsfs_csv_chunk_boundary_finder import CsvChunkBoundary
+from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.constants.csv import (
     DEFAULT_CSV_ENCODING,
     DEFAULT_CSV_LINE_TERMINATOR,
@@ -31,14 +34,19 @@ from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     RawDataFileUpdateCadence,
 )
 from recidiviz.ingest.direct.types.raw_data_import_types import (
-    BatchedTaskInstanceOutput,
+    AppendReadyFile,
+    AppendReadyFileBatch,
+    AppendSummary,
+    ImportReadyFile,
     ImportReadyNormalizedFile,
     NormalizedCsvChunkResult,
     PreImportNormalizationType,
+    RawFileProcessingError,
     RequiresNormalizationFile,
     RequiresPreImportNormalizationFile,
     RequiresPreImportNormalizationFileChunk,
 )
+from recidiviz.utils.airflow_types import BatchedTaskInstanceOutput
 
 
 class PreImportNormalizationTypeTest(unittest.TestCase):
@@ -141,7 +149,7 @@ class PreImportNormalizationTypeTest(unittest.TestCase):
 
 
 class TestSerialization(unittest.TestCase):
-    """Test serialization and deserialization of RequiresPreImportNormalizationFileChunk and NormalizedCsvChunkResult"""
+    """Test serialization and deserialization methods for raw data import types"""
 
     def test_requires_pre_import_normalization_file_chunk(self) -> None:
         chunk_boundary = CsvChunkBoundary(
@@ -198,15 +206,114 @@ class TestSerialization(unittest.TestCase):
 
         self._validate_serialization(original, RequiresNormalizationFile)
 
+    def test_import_ready_file(self) -> None:
+        original = ImportReadyFile(
+            file_id=1,
+            file_tag="fake_tag",
+            update_datetime=datetime.datetime(2024, 1, 1, 1, 1, 1, tzinfo=datetime.UTC),
+            file_paths=[GcsfsFilePath(bucket_name="bucket", blob_name="blob.csv")],
+        )
+        self._validate_serialization(original, ImportReadyFile)
+
+    def test_append_ready_file(self) -> None:
+        original = AppendReadyFile(
+            import_ready_file=ImportReadyFile(
+                file_id=1,
+                file_tag="fake_tag",
+                update_datetime=datetime.datetime(
+                    2024, 1, 1, 1, 1, 1, tzinfo=datetime.UTC
+                ),
+                file_paths=[GcsfsFilePath(bucket_name="bucket", blob_name="blob.csv")],
+            ),
+            append_ready_table_address=BigQueryAddress(
+                dataset_id="dataset", table_id="table"
+            ),
+            raw_rows_count=3,
+        )
+        self._validate_serialization(original, AppendReadyFile)
+
+    def test_append_summary(self) -> None:
+        original = AppendSummary(file_id=1, net_new_or_updated_rows=2, deleted_rows=3)
+        self._validate_serialization(original, AppendSummary)
+
+    def test_append_ready_file_batches(self) -> None:
+        original = AppendReadyFileBatch(
+            append_ready_files_by_tag={
+                "tag_a": [
+                    AppendReadyFile(
+                        import_ready_file=ImportReadyFile(
+                            file_id=1,
+                            file_tag="tag_a",
+                            update_datetime=datetime.datetime(
+                                2024, 1, 1, 1, 1, 1, tzinfo=datetime.UTC
+                            ),
+                            file_paths=[
+                                GcsfsFilePath(
+                                    bucket_name="bucket", blob_name="blob1.csv"
+                                )
+                            ],
+                        ),
+                        append_ready_table_address=BigQueryAddress(
+                            dataset_id="dataset", table_id="table1"
+                        ),
+                        raw_rows_count=3,
+                    ),
+                    AppendReadyFile(
+                        import_ready_file=ImportReadyFile(
+                            file_id=2,
+                            file_tag="tag_a",
+                            update_datetime=datetime.datetime(
+                                2024, 1, 2, 1, 1, 1, tzinfo=datetime.UTC
+                            ),
+                            file_paths=[
+                                GcsfsFilePath(
+                                    bucket_name="bucket", blob_name="blob2.csv"
+                                )
+                            ],
+                        ),
+                        append_ready_table_address=BigQueryAddress(
+                            dataset_id="dataset", table_id="table2"
+                        ),
+                        raw_rows_count=3,
+                    ),
+                ],
+                "tag_b": [
+                    AppendReadyFile(
+                        import_ready_file=ImportReadyFile(
+                            file_id=3,
+                            file_tag="tag_b",
+                            update_datetime=datetime.datetime(
+                                2024, 1, 1, 1, 1, 1, tzinfo=datetime.UTC
+                            ),
+                            file_paths=[
+                                GcsfsFilePath(
+                                    bucket_name="bucket", blob_name="blob3.csv"
+                                )
+                            ],
+                        ),
+                        append_ready_table_address=BigQueryAddress(
+                            dataset_id="dataset", table_id="table3"
+                        ),
+                        raw_rows_count=3,
+                    ),
+                ],
+            }
+        )
+        self._validate_serialization(original, AppendReadyFileBatch)
+
     def test_task_result(self) -> None:
         result = ImportReadyNormalizedFile(
             input_file_path="test_bucket/file", output_file_paths=["temp_bucket/file_0"]
         )
-        original = BatchedTaskInstanceOutput(results=[result], errors=[])
+        original = BatchedTaskInstanceOutput[
+            ImportReadyNormalizedFile, RawFileProcessingError
+        ](results=[result], errors=[])
 
         serialized = original.serialize()
         deserialized = BatchedTaskInstanceOutput.deserialize(
-            json_str=serialized, result_cls=ImportReadyNormalizedFile
+            json_str=serialized,
+            result_cls=ImportReadyNormalizedFile,
+            error_cls=RawFileProcessingError,
         )
 
         self.assertEqual(original, deserialized)
