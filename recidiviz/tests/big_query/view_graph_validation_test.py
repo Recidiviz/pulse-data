@@ -193,7 +193,11 @@ class BaseViewGraphTest(BigQueryEmulatorTestCase):
                     },
                 )
                 for dataset_id, source_table_addresses in groupby(
-                    cls._source_table_addresses, key=lambda address: address.dataset_id
+                    sorted(
+                        cls._source_table_addresses,
+                        key=lambda address: address.dataset_id,
+                    ),
+                    key=lambda address: address.dataset_id,
                 )
             ]
 
