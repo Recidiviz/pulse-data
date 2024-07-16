@@ -43,6 +43,9 @@ from recidiviz.airflow.dags.raw_data.bq_load_tasks import (
     raise_append_errors,
     raise_load_prep_errors,
 )
+from recidiviz.airflow.dags.raw_data.file_metadata_tasks import (
+    split_by_pre_import_normalization_type,
+)
 from recidiviz.airflow.dags.raw_data.gcs_file_processing_tasks import (
     generate_chunk_processing_pod_arguments,
     generate_file_chunking_pod_arguments,
@@ -60,6 +63,7 @@ from recidiviz.airflow.dags.raw_data.initialize_raw_data_dag_group import (
     initialize_raw_data_dag_group,
 )
 from recidiviz.airflow.dags.raw_data.metadata import (
+    REQUIRES_NORMALIZATION_FILES,
     RESOURCE_LOCK_AQUISITION_DESCRIPTION,
     RESOURCE_LOCKS_NEEDED,
     SKIPPED_FILE_ERRORS,
@@ -166,7 +170,17 @@ def create_single_state_code_ingest_instance_raw_data_import_branch(
             ),
         )
 
-        # TODO(#30170) implement splitting into RequiresNormalizationFile, ImportReadyOriginalFile
+        files_to_process = split_by_pre_import_normalization_type(
+            region_code=state_code.value,
+            serialized_bq_metadata=get_all_unprocessed_bq_file_metadata.output,
+        )
+
+        (
+            list_normalized_unprocessed_gcs_file_paths
+            >> get_all_unprocessed_gcs_file_metadata
+            >> get_all_unprocessed_bq_file_metadata
+            >> files_to_process
+        )
 
         # ------------------------------------------------------------------------------
 
@@ -175,7 +189,6 @@ def create_single_state_code_ingest_instance_raw_data_import_branch(
         # execution layer: k8s
         # outputs: [ ImportReadyNormalizedFile ]
 
-        serialized_requires_normalization_files: List[str] = []
         with TaskGroup("pre_import_normalization") as pre_import_normalization:
             divide_files_into_chunks = RecidivizKubernetesPodOperator.partial(
                 **get_kubernetes_pod_kwargs(
@@ -185,7 +198,7 @@ def create_single_state_code_ingest_instance_raw_data_import_branch(
             ).expand(
                 arguments=generate_file_chunking_pod_arguments(
                     state_code.value,
-                    serialized_requires_normalization_files,
+                    files_to_process[REQUIRES_NORMALIZATION_FILES],
                     num_batches=NUM_BATCHES,
                 )
             )
@@ -209,12 +222,7 @@ def create_single_state_code_ingest_instance_raw_data_import_branch(
             )
             raise_chunk_normalization_errors(verify_file_results)
 
-        (
-            list_normalized_unprocessed_gcs_file_paths
-            >> get_all_unprocessed_gcs_file_metadata
-            >> get_all_unprocessed_bq_file_metadata
-            >> pre_import_normalization
-        )
+        files_to_process >> pre_import_normalization
 
         # ------------------------------------------------------------------------------
 

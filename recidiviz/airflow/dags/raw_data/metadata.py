@@ -34,6 +34,11 @@ RESOURCE_LOCK_TTL_SECONDS_SECONDARY = 3 * 60 * 60  # 6 hours
 
 SKIPPED_FILE_ERRORS: str = "skkipped_file_errors"
 APPEND_READY_FILE_BATCHES: str = "append_ready_file_batches"
+IMPORT_READY_FILES: str = "import_ready_files"
+REQUIRES_NORMALIZATION_FILES_BQ_METADATA = (
+    "requires_normalization_files_big_query_metadata"
+)
+REQUIRES_NORMALIZATION_FILES = "requires_normalization_files"
 
 
 def get_resource_lock_ttl(raw_data_instance: DirectIngestInstance) -> int:

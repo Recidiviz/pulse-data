@@ -142,7 +142,7 @@ def raise_load_prep_errors(
     _raise_task_errors([*load_errors, *block_errors])
 
 
-@task(multiple_outputs=True)
+@task
 def generate_append_batches(
     serialized_batched_task_instance_output: List[str],
 ) -> Dict[str, List[str]]:

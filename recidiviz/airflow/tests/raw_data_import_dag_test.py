@@ -28,6 +28,7 @@ from recidiviz.airflow.tests.test_utils import DAG_FOLDER, AirflowIntegrationTes
 from recidiviz.airflow.tests.utils.dag_helper_functions import (
     FakeFailureOperator,
     fake_operator_with_return_value,
+    fake_task_function_with_return_value,
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
@@ -99,6 +100,7 @@ class RawDataImportDagSequencingTest(AirflowIntegrationTest):
         step_2_task_ids = [
             "get_all_unprocessed_gcs_file_metadata",
             "get_all_unprocessed_bq_file_metadata",
+            "split_by_pre_import_normalization_type",
         ]
 
         for root in step_2_root.roots:
@@ -113,7 +115,7 @@ class RawDataImportDagSequencingTest(AirflowIntegrationTest):
     def test_step_3_sequencing(self) -> None:
         dag = DagBag(dag_folder=DAG_FOLDER, include_examples=False).dags[self.dag_id]
         step_3_root = dag.partial_subset(
-            task_ids_or_regex=r"get_all_unprocessed_bq_file_metadata",
+            task_ids_or_regex=r"split_by_pre_import_normalization_type",
             include_upstream=False,
             include_downstream=True,
         )
@@ -126,7 +128,7 @@ class RawDataImportDagSequencingTest(AirflowIntegrationTest):
             "raise_chunk_normalization_errors",
         ]
         for root in step_3_root.roots:
-            assert "get_all_unprocessed_bq_file_metadata" in root.task_id
+            assert "split_by_pre_import_normalization_type" in root.task_id
             curr_task = root
             for step_3_task_id in ordered_step_3_task_ids:
                 if isinstance(step_3_task_id, list):
@@ -232,17 +234,34 @@ class RawDataImportDagIntegrationTest(AirflowIntegrationTest):
         self.kpo_operator_patcher.start()
 
         self.file_chunking_args_patcher = patch(
-            "recidiviz.airflow.dags.raw_data_import_dag.generate_file_chunking_pod_arguments",
-        ).start()
+            "recidiviz.airflow.dags.raw_data_import_dag.generate_file_chunking_pod_arguments.function",
+            side_effect=fake_task_function_with_return_value([]),
+        )
+        self.file_chunking_args_patcher.start()
+
         self.chunk_processing_args_patcher = patch(
-            "recidiviz.airflow.dags.raw_data_import_dag.generate_chunk_processing_pod_arguments",
-        ).start()
+            "recidiviz.airflow.dags.raw_data_import_dag.generate_chunk_processing_pod_arguments.function",
+            side_effect=fake_task_function_with_return_value([]),
+        )
+        self.chunk_processing_args_patcher.start()
+
         self.verify_file_chunks_patcher = patch(
-            "recidiviz.airflow.dags.raw_data_import_dag.regroup_and_verify_file_chunks",
-        ).start()
+            "recidiviz.airflow.dags.raw_data_import_dag.regroup_and_verify_file_chunks.function",
+            side_effect=fake_task_function_with_return_value([]),
+        )
+        self.verify_file_chunks_patcher.start()
+
         self.raise_errors_patcher = patch(
-            "recidiviz.airflow.dags.raw_data_import_dag.raise_chunk_normalization_errors",
-        ).start()
+            "recidiviz.airflow.dags.raw_data_import_dag.raise_chunk_normalization_errors.function",
+            side_effect=fake_task_function_with_return_value(None),
+        )
+        self.raise_errors_patcher.start()
+
+        self.split_by_norm = patch(
+            "recidiviz.airflow.dags.raw_data_import_dag.split_by_pre_import_normalization_type.function",
+            side_effect=fake_task_function_with_return_value({}),
+        )
+        self.split_by_norm.start()
 
     def tearDown(self) -> None:
         self.environment_patcher.stop()
@@ -256,6 +275,7 @@ class RawDataImportDagIntegrationTest(AirflowIntegrationTest):
         self.chunk_processing_args_patcher.stop()
         self.verify_file_chunks_patcher.stop()
         self.raise_errors_patcher.stop()
+        self.split_by_norm.stop()
         super().tearDown()
 
     def _create_dag(self) -> DAG:
@@ -324,6 +344,7 @@ class RawDataImportDagIntegrationTest(AirflowIntegrationTest):
                     r".*_primary_import_branch\.release_raw_data_resource_locks",
                     r".*_primary_import_branch\.get_all_unprocessed_gcs_file_metadata",
                     r".*_primary_import_branch\.get_all_unprocessed_bq_file_metadata",
+                    r".*_primary_import_branch\.split_by_pre_import_normalization_type",
                     r".*_primary_import_branch\.pre_import_normalization\.*",
                     r".*_primary_import_branch\.biq_query_load\.*",
                     BRANCH_END_TASK_NAME,
