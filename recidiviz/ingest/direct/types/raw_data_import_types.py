@@ -401,6 +401,17 @@ class ImportReadyFile(BaseResult):
             ],
         )
 
+    @classmethod
+    def from_bq_metadata(
+        cls, bq_metadata: "RawBigQueryFileMetadataSummary"
+    ) -> "ImportReadyFile":
+        return ImportReadyFile(
+            file_id=assert_type(bq_metadata.file_id, int),
+            file_tag=bq_metadata.file_tag,
+            file_paths=[gcs_file.path for gcs_file in bq_metadata.gcs_files],
+            update_datetime=bq_metadata.update_datetime,
+        )
+
 
 @attr.define
 class AppendReadyFile(BaseResult):

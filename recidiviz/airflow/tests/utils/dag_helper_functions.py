@@ -99,3 +99,10 @@ class FakeFailureOperator(BaseOperator):
 
     def execute(self, context: Context) -> Any:
         raise ValueError("Test failure")
+
+
+def fake_task_function_with_return_value(return_value: Any) -> Callable:
+    def fake_func(*args: Any, **kwargs: Any) -> Any:  # pylint: disable=unused-argument
+        return return_value
+
+    return fake_func
