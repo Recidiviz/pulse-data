@@ -57,9 +57,6 @@ from recidiviz.persistence.entity.normalized_entities_utils import (
 )
 from recidiviz.persistence.entity.serialization import json_serializable_dict
 from recidiviz.persistence.entity.state import entities
-from recidiviz.persistence.entity.state.normalized_state_entity import (
-    NormalizedStateEntity,
-)
 from recidiviz.pipelines.base_pipeline import BasePipeline
 from recidiviz.pipelines.normalization.comprehensive.entity_normalizer import (
     ComprehensiveEntityNormalizer,
@@ -120,9 +117,7 @@ class ComprehensiveNormalizationPipeline(BasePipeline[NormalizationPipelineParam
         return "COMPREHENSIVE_NORMALIZATION"
 
     @classmethod
-    def required_entities(
-        cls,
-    ) -> Dict[Type[Entity], List[Union[Type[Entity], Type[NormalizedStateEntity]]]]:
+    def required_entities(cls) -> Dict[Type[Entity], List[Type[Entity]]]:
         # Note: This is a list of all of the entities that are required to
         # perform entity normalization on all entities with normalization
         # processes. This is *not* the list of entities that are normalized by

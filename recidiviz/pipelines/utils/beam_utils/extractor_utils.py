@@ -100,9 +100,7 @@ class ExtractRootEntityDataForPipeline(beam.PTransform):
         state_code: StateCode,
         project_id: str,
         entities_dataset: str,
-        required_entity_classes: Optional[
-            List[Union[Type[Entity], Type[NormalizedStateEntity]]]
-        ],
+        required_entity_classes: Optional[List[Type[Entity]]],
         reference_data_queries_by_name: Dict[str, StateFilteredQueryProvider],
         root_entity_cls: (
             Type[state_entities.StatePerson] | Type[state_entities.StateStaff]
@@ -163,7 +161,9 @@ class ExtractRootEntityDataForPipeline(beam.PTransform):
             )
 
         self._entity_class_to_hydrated_entity_class: Dict[
-            Type[Entity], Union[Type[Entity], Type[NormalizedStateEntity]]
+            Type[Entity],
+            # This could be a normalized or non-normalized entity
+            Type[Entity],
         ] = {}
 
         for entity_class in required_entity_classes or []:
@@ -361,7 +361,7 @@ class ExtractRootEntityDataForPipeline(beam.PTransform):
     def get_shallow_hydrated_entity_pcollection(
         self,
         pipeline: PBegin,
-        entity_class: Union[Type[Entity], Type[NormalizedStateEntity]],
+        entity_class: Type[Entity],
     ) -> PCollection[Tuple[RootEntityId, Entity]]:
         """Returns the hydrated entities of type |entity_class| as a PCollection,
         where each element is a tuple in the format: (root_entity_id, entity).
@@ -778,7 +778,7 @@ class _ExtractValuesFromEntityBase(beam.PTransform):
         self,
         project_id: str,
         entities_dataset: str,
-        entity_class: Union[Type[Entity], Type[NormalizedStateEntity]],
+        entity_class: Type[Entity],
         root_entity_id_field: str,
         root_entity_id_filter_set: Optional[Set[RootEntityId]],
         state_code: str,
@@ -789,58 +789,22 @@ class _ExtractValuesFromEntityBase(beam.PTransform):
         self._root_entity_id_field = root_entity_id_field
         self._root_entity_id_filter_set = root_entity_id_filter_set
         self._dataset = entities_dataset
-
-        if issubclass(entity_class, NormalizedStateEntity):
-            self._base_entity_to_hydrate_class = (
-                state_base_entity_class_for_entity_class(entity_class)
-            )
-        elif issubclass(entity_class, Entity):
-            self._base_entity_to_hydrate_class = entity_class
-        else:
-            raise ValueError(f"Unexpected entity_class [{entity_class}]")
-
         self._entity_to_hydrate_class = entity_class
-        self._base_entity_to_hydrate_schema_class: Type[
-            StateBase
-        ] = schema_utils.get_state_database_entity_with_name(
-            self._base_entity_to_hydrate_class.__name__
-        )
-        self._base_entity_to_hydrate_table_name = (
-            self._base_entity_to_hydrate_schema_class.__tablename__
-        )
         self._entity_to_hydrate_id_field = (
-            self._base_entity_to_hydrate_class.get_class_id_name()
+            self._entity_to_hydrate_class.get_class_id_name()
         )
         self._state_code = state_code
-
-    def _entity_has_root_entity_id_field(self) -> bool:
-        return hasattr(
-            self._base_entity_to_hydrate_schema_class, self._root_entity_id_field
-        )
 
     def _get_entities_table_sql_query(
         self, columns_to_include: Optional[List[str]] = None
     ) -> str:
-        if not self._entity_has_root_entity_id_field():
-            raise ValueError(
-                f"Shouldn't be querying table for entity {self._base_entity_to_hydrate_class} that doesn't have field "
-                f"{self._root_entity_id_field} - these values will never get grouped with results, so it's "
-                f"a waste to query for them."
-            )
-
-        root_entity_id_filter_set = (
-            self._root_entity_id_filter_set
-            if self._entity_has_root_entity_id_field()
-            else None
-        )
-
         entity_query = select_query(
             project_id=self._project_id,
             dataset=self._dataset,
-            table=self._base_entity_to_hydrate_table_name,
+            table=self._entity_to_hydrate_class.get_table_id(),
             state_code_filter=self._state_code,
             root_entity_id_field=self._root_entity_id_field,
-            root_entity_id_filter_set=root_entity_id_filter_set,
+            root_entity_id_filter_set=self._root_entity_id_filter_set,
             columns_to_include=columns_to_include,
         )
 
@@ -860,7 +824,7 @@ class _ExtractAllEntitiesOfType(_ExtractValuesFromEntityBase):
         self,
         project_id: str,
         entities_dataset: str,
-        entity_class: Union[Type[Entity], Type[NormalizedStateEntity]],
+        entity_class: Type[Entity],
         root_entity_id_field: str,
         root_entity_id_filter_set: Optional[Set[RootEntityId]],
         state_code: str,
@@ -877,20 +841,12 @@ class _ExtractAllEntitiesOfType(_ExtractValuesFromEntityBase):
     def _get_entities_raw_pcollection(
         self, input_or_inputs: PBegin
     ) -> PCollection[Dict[str, Any]]:
-        if not self._entity_has_root_entity_id_field():
-            empty_output = (
-                input_or_inputs
-                | f"{self._base_entity_to_hydrate_class} does not have {self._root_entity_id_field}."
-                >> beam.Create([])
-            )
-            return empty_output
-
         entity_query = self._get_entities_table_sql_query()
 
         # Read entities from BQ
         entities_raw = (
             input_or_inputs
-            | f"Read {self._base_entity_to_hydrate_table_name} from BigQuery"
+            | f"Read {self._entity_to_hydrate_class.get_table_id()} from BigQuery"
             >> ReadFromBigQuery(query=entity_query)
         )
 
@@ -902,7 +858,7 @@ class _ExtractAllEntitiesOfType(_ExtractValuesFromEntityBase):
         entities_raw = self._get_entities_raw_pcollection(input_or_inputs)
         return (
             entities_raw
-            | f"Hydrate flat fields of {self._base_entity_to_hydrate_class.__name__} instances"
+            | f"Hydrate flat fields of {self._entity_to_hydrate_class.__name__} instances"
             >> beam.ParDo(
                 _ShallowHydrateEntity(
                     entity_class=self._entity_to_hydrate_class,
@@ -919,40 +875,25 @@ class _ExtractAssociationValues(_ExtractValuesFromEntityBase):
         self,
         project_id: str,
         entities_dataset: str,
-        entity_class: Union[Type[Entity], Type[NormalizedStateEntity]],
-        related_entity_class: Union[Type[Entity], Type[NormalizedStateEntity]],
+        entity_class: Type[Entity],
+        related_entity_class: Type[Entity],
         related_id_field: str,
         association_table: str,
         root_entity_id_field: str,
         root_entity_id_filter_set: Optional[Set[RootEntityId]],
         state_code: str,
     ):
-        self._entity_base_class = state_base_entity_class_for_entity_class(entity_class)
-        self._entity_schema_class: Type[
-            StateBase
-        ] = schema_utils.get_state_database_entity_with_name(
-            self._entity_base_class.__name__
-        )
-
-        self._related_entity_class = related_entity_class
-        self._related_entity_base_class = state_base_entity_class_for_entity_class(
-            related_entity_class
-        )
-        self._related_entity_schema_class: Type[
-            StateBase
-        ] = schema_utils.get_state_database_entity_with_name(
-            self._related_entity_base_class.__name__
-        )
         self._association_table = association_table
 
-        if self._association_table == self._related_entity_schema_class.__tablename__:
+        related_entity_table_name = related_entity_class.get_table_id()
+        if self._association_table == related_entity_table_name:
             # If the provided association_table is the table of the related entity,
             # then we should set that entity as the core entity to be queried from
-            self._entity_class_for_query = self._related_entity_class
+            self._entity_class_for_query = related_entity_class
         else:
             self._entity_class_for_query = entity_class
 
-        self._entity_id_field = self._entity_base_class.get_class_id_name()
+        self._entity_id_field = entity_class.get_class_id_name()
         self._related_entity_id_field = related_id_field
 
         super().__init__(
@@ -964,43 +905,12 @@ class _ExtractAssociationValues(_ExtractValuesFromEntityBase):
             state_code,
         )
 
-    def _entity_has_all_fields_for_association(self) -> bool:
-        return (
-            hasattr(
-                self._base_entity_to_hydrate_schema_class, self._root_entity_id_field
-            )
-            and hasattr(
-                self._base_entity_to_hydrate_schema_class, self._entity_id_field
-            )
-            and hasattr(
-                self._base_entity_to_hydrate_schema_class, self._related_entity_id_field
-            )
-        )
-
     def _get_association_values_raw_pcollection(
         self, pipeline: PBegin
     ) -> PCollection[Tuple[int, EntityAssociation]]:
         """Returns the PCollection of association values from all relevant rows in the
         association table."""
-        if not self._entity_has_root_entity_id_field():
-            raise ValueError(
-                "Should not be querying for the association between two "
-                "entities if one entity does not have the root entity id "
-                f"field. No {self._root_entity_id_field} found on schema "
-                f"class: {self._base_entity_to_hydrate_schema_class}."
-            )
-
-        if (
-            self._association_table
-            == self._base_entity_to_hydrate_schema_class.__tablename__
-        ):
-            if not self._entity_has_all_fields_for_association():
-                raise ValueError(
-                    "All three association fields must exist on the "
-                    "entity if the entity's table is provided as the "
-                    f"association table. association_table: {self._association_table}"
-                )
-
+        if self._association_table == self._entity_to_hydrate_class.get_table_id():
             columns_to_include = [
                 f"{self._root_entity_id_field} as {ROOT_ENTITY_ID_KEY}",
                 self._entity_id_field,
@@ -1026,13 +936,13 @@ class _ExtractAssociationValues(_ExtractValuesFromEntityBase):
             # rows we will need.
             association_view_query = (
                 f"SELECT "
-                f"{self._base_entity_to_hydrate_class.get_entity_name()}.{self._root_entity_id_field} as {ROOT_ENTITY_ID_KEY}, "
+                f"{self._entity_to_hydrate_class.get_table_id()}.{self._root_entity_id_field} as {ROOT_ENTITY_ID_KEY}, "
                 f"{self._association_table}.{self._entity_id_field}, "
                 f"{self._association_table}.{self._related_entity_id_field} "
                 f"FROM `{self._project_id}.{self._dataset}.{self._association_table}`"
                 f" {self._association_table} "
-                f"JOIN ({self._get_entities_table_sql_query()}) {self._base_entity_to_hydrate_class.get_entity_name()} "
-                f"ON {self._base_entity_to_hydrate_class.get_entity_name()}.{self._entity_to_hydrate_id_field} = "
+                f"JOIN ({self._get_entities_table_sql_query()}) {self._entity_to_hydrate_class.get_table_id()} "
+                f"ON {self._entity_to_hydrate_class.get_table_id()}.{self._entity_to_hydrate_id_field} = "
                 f"{self._association_table}.{self._entity_id_field}"
             )
 

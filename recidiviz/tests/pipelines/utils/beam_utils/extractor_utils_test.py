@@ -1697,58 +1697,6 @@ class TestExtractAllEntitiesOfType(unittest.TestCase):
 
             test_pipeline.run()
 
-    def testExtractAllEntitiesOfType_InvalidRootEntityIdField(self):
-        person = remove_relationship_properties(
-            database_test_utils.generate_test_person(
-                person_id=123,
-                state_code="US_XX",
-                incarceration_incidents=[],
-                supervision_violations=[],
-                supervision_contacts=[],
-                incarceration_sentences=[],
-                supervision_sentences=[],
-                incarceration_periods=[],
-                supervision_periods=[],
-            )
-        )
-
-        person_data = [normalized_database_base_dict(person)]
-
-        data_dict = {person.__tablename__: person_data}
-
-        entity_class = entity_utils.get_entity_class_in_module_with_name(
-            entities, "StatePerson"
-        )
-
-        project = "project"
-        dataset = "state"
-        normalized_dataset = "us_xx_normalized_state"
-
-        with patch(
-            "apache_beam.io.ReadFromBigQuery",
-            self.fake_bq_source_factory.create_fake_bq_source_constructor(
-                expected_entities_dataset=dataset, data_dict=data_dict
-            ),
-        ):
-            test_pipeline = TestPipeline()
-
-            output = (
-                test_pipeline
-                | "Extract StatePerson Entity"
-                >> extractor_utils._ExtractAllEntitiesOfType(
-                    project_id=project,
-                    entities_dataset=normalized_dataset,
-                    entity_class=entity_class,
-                    root_entity_id_field="XX",
-                    root_entity_id_filter_set=None,
-                    state_code="US_XX",
-                )
-            )
-
-            assert_that(output, equal_to([]))
-
-            test_pipeline.run()
-
 
 class TestShallowHydrateEntity(unittest.TestCase):
     """Tests the ShallowHydrateEntity DoFn."""
