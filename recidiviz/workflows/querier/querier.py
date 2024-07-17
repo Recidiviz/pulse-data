@@ -360,11 +360,13 @@ class WorkflowsQuerier:
             hide_denial_revert=config.hide_denial_revert,
             tooltip_eligibility_text=config.tooltip_eligibility_text,
             call_to_action=config.call_to_action,
+            subheading=config.subheading,
             denial_text=config.denial_text,
             snooze=config.snooze,
             sidebar_components=config.sidebar_components,
             tab_groups=config.tab_groups,
             compare_by=config.compare_by,
+            notifications=config.notifications,
         )
 
     def deactivate_config(self, opportunity_type: str, config_id: int) -> None:

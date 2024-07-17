@@ -484,6 +484,9 @@ class OutliersProductConfiguration:
     # How to refer to the government agency body
     doc_label: str = attr.ib(default="DOC")
 
+    # The string that represents what a state calls an absconder
+    absconder_label: str = attr.ib(default="absconder")
+
     def to_json(self) -> Dict[str, Any]:
         c = cattrs.Converter()
 
