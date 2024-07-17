@@ -327,6 +327,46 @@ class WorkflowsQuerier:
 
             return config_id
 
+    def activate_config(self, opportunity_type: str, config_id: int) -> int:
+        """
+        Given an opportunity type and a config id, if a matching deactivated config exists,
+        create a new copy of that config with its status set to active and deactivate any
+        existing configs for this opportunity with the same feature variant gating. Raises
+        an exception if the config does not exist or the config is already active.
+        """
+        config = self.get_config_for_id(opportunity_type, config_id)
+
+        if config is None:
+            raise ValueError("Config does not exist")
+        if config.status == OpportunityStatus.ACTIVE:
+            raise ValueError("Config is already active")
+
+        # add_config will create a new activate config and deactivate existing configs with the same feature gating
+        return self.add_config(
+            opportunity_type,
+            created_by=config.created_by,
+            created_at=config.created_at,
+            description=config.description,
+            feature_variant=config.feature_variant,
+            display_name=config.display_name,
+            methodology_url=config.methodology_url,
+            is_alert=config.is_alert,
+            initial_header=config.initial_header,
+            denial_reasons=config.denial_reasons,
+            eligible_criteria_copy=config.eligible_criteria_copy,
+            ineligible_criteria_copy=config.ineligible_criteria_copy,
+            dynamic_eligibility_text=config.dynamic_eligibility_text,
+            eligibility_date_text=config.eligibility_date_text,
+            hide_denial_revert=config.hide_denial_revert,
+            tooltip_eligibility_text=config.tooltip_eligibility_text,
+            call_to_action=config.call_to_action,
+            denial_text=config.denial_text,
+            snooze=config.snooze,
+            sidebar_components=config.sidebar_components,
+            tab_groups=config.tab_groups,
+            compare_by=config.compare_by,
+        )
+
     def deactivate_config(self, opportunity_type: str, config_id: int) -> None:
         """
         Given an opportunity type and a config id, deactivates that config in the database.

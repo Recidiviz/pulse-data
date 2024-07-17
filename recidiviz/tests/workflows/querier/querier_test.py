@@ -564,3 +564,75 @@ class TestWorkflowsQuerier(TestCase):
 
         with pytest.raises(ValueError, match="Cannot deactivate default config"):
             querier.deactivate_config("usIdSupervisionLevelDowngrade", 3)
+
+    def test_activate_config(self) -> None:
+        # create a config
+        querier = WorkflowsQuerier(StateCode.US_ID)
+        config_id = querier.add_config(
+            **make_add_config_arguments(
+                "usIdSupervisionLevelDowngrade",
+                feature_variant="someNewVariant",
+            )
+        )
+
+        # deactivate the config and ensure it is deactivated
+        querier.deactivate_config("usIdSupervisionLevelDowngrade", config_id)
+        deactivated = querier.get_config_for_id(
+            "usIdSupervisionLevelDowngrade", config_id
+        )
+        self.assertEqual(deactivated.status, OpportunityStatus.INACTIVE)  # type: ignore
+
+        # activate the config
+        new_active_id = querier.activate_config(
+            "usIdSupervisionLevelDowngrade", config_id
+        )
+        actual = querier.get_config_for_id(
+            "usIdSupervisionLevelDowngrade", new_active_id
+        )
+
+        # ensure a new activate config was created
+        self.assertNotEqual(config_id, new_active_id)
+        self.assertEqual(actual.status, OpportunityStatus.ACTIVE)  # type: ignore
+
+        # assert all the other activate config data is identical as the deactivate config
+        self.assertEqual(actual.created_by, deactivated.created_by)  # type: ignore
+        self.assertEqual(actual.created_at, deactivated.created_at)  # type: ignore
+        self.assertEqual(actual.description, deactivated.description)  # type: ignore
+        self.assertEqual(actual.feature_variant, deactivated.feature_variant)  # type: ignore
+        self.assertEqual(actual.display_name, deactivated.display_name)  # type: ignore
+        self.assertEqual(actual.methodology_url, deactivated.methodology_url)  # type: ignore
+        self.assertEqual(actual.is_alert, deactivated.is_alert)  # type: ignore
+        self.assertEqual(actual.initial_header, deactivated.initial_header)  # type: ignore
+        self.assertEqual(actual.denial_reasons, deactivated.denial_reasons)  # type: ignore
+        self.assertEqual(
+            actual.eligible_criteria_copy, deactivated.eligible_criteria_copy  # type: ignore
+        )
+        self.assertEqual(
+            actual.ineligible_criteria_copy, deactivated.ineligible_criteria_copy  # type: ignore
+        )
+        self.assertEqual(
+            actual.dynamic_eligibility_text, deactivated.dynamic_eligibility_text  # type: ignore
+        )
+        self.assertEqual(
+            actual.eligibility_date_text, deactivated.eligibility_date_text  # type: ignore
+        )
+        self.assertEqual(actual.hide_denial_revert, deactivated.hide_denial_revert)  # type: ignore
+        self.assertEqual(
+            actual.tooltip_eligibility_text, deactivated.tooltip_eligibility_text  # type: ignore
+        )
+        self.assertEqual(actual.call_to_action, deactivated.call_to_action)  # type: ignore
+        self.assertEqual(actual.denial_text, deactivated.denial_text)  # type: ignore
+        self.assertEqual(actual.snooze, deactivated.snooze)  # type: ignore
+        self.assertEqual(actual.sidebar_components, deactivated.sidebar_components)  # type: ignore
+        self.assertEqual(actual.tab_groups, deactivated.tab_groups)  # type: ignore
+        self.assertEqual(actual.compare_by, deactivated.compare_by)  # type: ignore
+
+    def test_activate_config_nonexistent(self) -> None:
+        querier = WorkflowsQuerier(StateCode.US_ID)
+        with pytest.raises(ValueError, match="Config does not exist"):
+            querier.activate_config("usIdSupervisionLevelDowngrade", 100)
+
+    def test_activate_config_already_active(self) -> None:
+        querier = WorkflowsQuerier(StateCode.US_ID)
+        with pytest.raises(ValueError, match="Config is already active"):
+            querier.activate_config("usIdSupervisionLevelDowngrade", 3)

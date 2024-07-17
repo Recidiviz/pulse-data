@@ -121,6 +121,12 @@ class WorkflowsAdminPanelEndpointTests(TestCase):
                 opportunity_type=TEST_WORKFLOW_TYPE,
                 config_id=TEST_CONFIG_ID,
             )
+            self.single_opportunity_configuration_activate_url = url_for(
+                "workflows.OpportunitySingleConfigurationActivateAPI",
+                state_code_str="US_ID",
+                opportunity_type=TEST_WORKFLOW_TYPE,
+                config_id=TEST_CONFIG_ID,
+            )
 
     ########
     # GET /workflows/enabled_state_codes
@@ -402,6 +408,49 @@ class WorkflowsAdminPanelEndpointTests(TestCase):
         mock_enabled_states.return_value = ["US_ID"]
 
         response = self.client.put(self.single_opportunity_configuration_deactivate_url)
+
+        self.assertEqual(HTTPStatus.BAD_REQUEST, response.status_code)
+        self.assertEqual("Config does not exist", json.loads(response.data)["message"])
+
+    ########
+    # PUT /workflows/<state_code>/opportunities/<opportunity_type>/configurations/<id>/activate
+    ########
+
+    @patch(
+        "recidiviz.admin_panel.routes.workflows.WorkflowsQuerier",
+    )
+    @patch(
+        "recidiviz.admin_panel.routes.workflows.get_workflows_enabled_states",
+    )
+    def test_activate_config(
+        self, mock_enabled_states: MagicMock, mock_querier: MagicMock
+    ) -> None:
+        mock_enabled_states.return_value = ["US_ID"]
+
+        response = self.client.put(self.single_opportunity_configuration_activate_url)
+
+        self.assertEqual(HTTPStatus.OK, response.status_code)
+
+        mock_querier.return_value.activate_config.assert_called_with(
+            TEST_WORKFLOW_TYPE,
+            TEST_CONFIG_ID,
+        )
+
+    # if WorkflowsQuerier.activate_config throws a ValueError, the route should
+    # return BAD_REQUEST with the error message
+    @patch(
+        "recidiviz.admin_panel.routes.workflows.WorkflowsQuerier",
+        side_effect=ValueError("Config does not exist"),
+    )
+    @patch(
+        "recidiviz.admin_panel.routes.workflows.get_workflows_enabled_states",
+    )
+    def test_activate_config_error(
+        self, mock_enabled_states: MagicMock, _mock_querier: MagicMock
+    ) -> None:
+        mock_enabled_states.return_value = ["US_ID"]
+
+        response = self.client.put(self.single_opportunity_configuration_activate_url)
 
         self.assertEqual(HTTPStatus.BAD_REQUEST, response.status_code)
         self.assertEqual("Config does not exist", json.loads(response.data)["message"])
