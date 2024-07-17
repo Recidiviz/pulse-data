@@ -20,14 +20,11 @@ for details on how to launch a local run.
 
 from __future__ import absolute_import
 
-from typing import List, Type, Union
+from typing import List, Type
 
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.state import entities, normalized_entities
-from recidiviz.persistence.entity.state.normalized_state_entity import (
-    NormalizedStateEntity,
-)
 from recidiviz.pipelines.metrics.base_identifier import BaseIdentifier
 from recidiviz.pipelines.metrics.base_metric_pipeline import MetricPipeline
 from recidiviz.pipelines.metrics.base_metric_producer import BaseMetricProducer
@@ -38,9 +35,7 @@ class RecidivismMetricsPipeline(MetricPipeline):
     """Defines the recidivism metric calculation pipeline."""
 
     @classmethod
-    def required_entities(
-        cls,
-    ) -> List[Union[Type[Entity], Type[NormalizedStateEntity]]]:
+    def required_entities(cls) -> List[Type[Entity]]:
         return [
             entities.StatePerson,
             entities.StatePersonRace,
