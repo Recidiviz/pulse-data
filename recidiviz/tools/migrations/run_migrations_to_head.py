@@ -103,6 +103,12 @@ def create_parser() -> argparse.ArgumentParser:
         type=str,
         help="If included, skips the manual git branch confirmation and verifies that the hash is as expected.",
     )
+    parser.add_argument(
+        "--no-launch-proxy",
+        action="store_true",
+        help="If specified, the Cloud SQL Proxy will not be launched. "
+        "Inside of Cloud Build, the proxy is already launched when this script is run",
+    )
     return parser
 
 
@@ -162,16 +168,23 @@ if __name__ == "__main__":
     ]:
         secret_prefix = JUSTICE_COUNTS_DB_SECRET_PREFIX
 
-    with local_project_id_override(args.project_id), cloudsql_proxy_control.connection(
-        schema_type=args.database,
-        prompt=not args.skip_db_name_check,
-        secret_prefix_override=secret_prefix,
-    ):
+    def _run_main(_args: argparse.Namespace) -> None:
         main(
-            schema_type=args.database,
-            repo_root=args.repo_root,
-            dry_run=args.dry_run,
-            skip_db_name_check=args.skip_db_name_check,
-            confirm_hash=args.confirm_hash,
+            schema_type=_args.database,
+            repo_root=_args.repo_root,
+            dry_run=_args.dry_run,
+            skip_db_name_check=_args.skip_db_name_check,
+            confirm_hash=_args.confirm_hash,
             secret_prefix_override=secret_prefix,
         )
+
+    with local_project_id_override(args.project_id):
+        if args.no_launch_proxy:
+            _run_main(args)
+        else:
+            with cloudsql_proxy_control.connection(
+                schema_type=args.database,
+                prompt=not args.skip_db_name_check,
+                secret_prefix_override=secret_prefix,
+            ):
+                _run_main(args)
