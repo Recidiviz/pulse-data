@@ -24,7 +24,7 @@ from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.database.schema_entity_converter import (
     schema_entity_converter as converter,
 )
-from recidiviz.persistence.entity.state import entities
+from recidiviz.persistence.entity.state import entities, normalized_entities
 from recidiviz.utils.types import assert_type
 
 _STATE_CODE = "US_ND"
@@ -91,6 +91,25 @@ class TestCoreEntity(unittest.TestCase):
         self.assertEqual(
             "supervision_violation_response_id",
             entities.StateSupervisionViolationResponse.get_class_id_name(),
+        )
+
+    def test_get_table_id_state_entity_sample(self) -> None:
+        self.assertEqual("state_person", entities.StatePerson.get_table_id())
+        self.assertEqual(
+            "state_supervision_contact",
+            entities.StateSupervisionContact.get_table_id(),
+        )
+        self.assertEqual(
+            "state_supervision_violation_response",
+            entities.StateSupervisionViolationResponse.get_table_id(),
+        )
+        self.assertEqual(
+            "state_assessment",
+            normalized_entities.NormalizedStateAssessment.get_table_id(),
+        )
+        self.assertEqual(
+            "state_supervision_violation_response",
+            normalized_entities.NormalizedStateSupervisionViolationResponse.get_table_id(),
         )
 
     def test_getField(self) -> None:
