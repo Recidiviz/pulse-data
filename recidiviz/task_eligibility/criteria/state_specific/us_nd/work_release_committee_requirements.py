@@ -26,6 +26,7 @@ from google.cloud import bigquery
 from recidiviz.calculator.query.bq_utils import (
     nonnull_end_date_clause,
     nonnull_start_date_clause,
+    revert_nonnull_end_date_clause,
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.dataset_config import (
@@ -106,7 +107,7 @@ SELECT
     state_code,
     person_id,
     start_date,
-    {nonnull_end_date_clause('end_date')} AS end_date,
+    {revert_nonnull_end_date_clause('end_date')} AS end_date,
     -- Folks who are required to be reviewed by the committee need to meet both criteria
     (six_months_away_from_relevant_date AND no_level_2_or_3_infractions) AS meets_criteria,
     TO_JSON(STRUCT(TRUE AS requires_committee_approval,

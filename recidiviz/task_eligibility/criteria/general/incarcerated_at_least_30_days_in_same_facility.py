@@ -20,7 +20,10 @@ been incarcerated at least 30 days in the same facility.
 """
 from google.cloud import bigquery
 
-from recidiviz.calculator.query.sessions_query_fragments import aggregate_adjacent_spans
+from recidiviz.calculator.query.sessions_query_fragments import (
+    aggregate_adjacent_spans,
+    create_sub_sessions_with_attributes,
+)
 from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
 from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
@@ -51,6 +54,21 @@ WITH loc_sessions AS (
     WHERE facility IS NOT NULL
 ),
 
+{create_sub_sessions_with_attributes(
+    table_name="loc_sessions", 
+)},
+
+loc_sessions_no_duplicates AS (
+    SELECT 
+        state_code,
+        person_id,
+        start_date,
+        end_date,
+        STRING_AGG(facility) AS facility,
+    FROM sub_sessions_with_attributes
+    GROUP BY 1,2,3,4
+),
+
 critical_date_spans AS (
     SELECT
         state_code,
@@ -58,7 +76,7 @@ critical_date_spans AS (
         start_date AS start_datetime,
         end_date AS end_datetime,
         DATE_ADD(start_date, INTERVAL 30 DAY) AS critical_date,
-    FROM ({aggregate_adjacent_spans(table_name='loc_sessions',
+    FROM ({aggregate_adjacent_spans(table_name='loc_sessions_no_duplicates',
                                     attribute='facility',)})
 ),
 {critical_date_has_passed_spans_cte()}
