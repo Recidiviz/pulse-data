@@ -377,6 +377,7 @@ snapshots[
         "atOrBelowRateLabel": "At or below statewide rate",
         "clientEvents": [{"displayName": "Sanctions", "name": "violation_responses"}],
         "docLabel": "DOC",
+        "absconderLabel": "absconder",
         "exclusionReasonDescription": "description",
         "featureVariant": None,
         "learnMoreUrl": "https://recidiviz.org",
