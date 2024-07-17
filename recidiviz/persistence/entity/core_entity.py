@@ -18,7 +18,7 @@
 our database schema, whether or not they are actual SQLAlchemy objects."""
 
 from enum import Enum
-from functools import lru_cache
+from functools import cache
 from typing import Any, List, Optional, Type
 
 from recidiviz.common.attr_mixins import attribute_field_type_reference_for_class
@@ -38,7 +38,7 @@ class CoreEntity:
         return super().__new__(cls)
 
     @classmethod
-    @lru_cache(maxsize=None)
+    @cache
     def get_primary_key_column_name(cls) -> str:
         """Returns string name of primary key column of the table
 
@@ -49,14 +49,23 @@ class CoreEntity:
         return primary_key_name_from_cls(cls)
 
     @classmethod
-    @lru_cache(maxsize=None)
+    @cache
+    def get_table_id(cls) -> str:
+        """Returns the BQ table id for this entity.
+        Example:
+            StatePerson -> "state_person"
+            NormalizedStateAssessment -> "state_assessment"
+        """
+        entity_name = cls.get_entity_name()
+        if entity_name.startswith("normalized_"):
+            return entity_name.removeprefix("normalized_")
+        return entity_name
+
+    @classmethod
+    @cache
     def get_class_id_name(cls) -> str:
-        id_name = to_snake_case(cls.__name__) + "_id"
-        if id_name.startswith("normalized_state_"):
-            id_name = id_name.replace("normalized_state_", "")
-        elif id_name.startswith("state_"):
-            id_name = id_name.replace("state_", "")
-        return id_name
+        table_name = cls.get_table_id()
+        return table_name.removeprefix("state_") + "_id"
 
     def get_id(self) -> int:
         return getattr(self, self.get_class_id_name())
@@ -68,7 +77,7 @@ class CoreEntity:
         return hasattr(cls, field)
 
     @classmethod
-    @lru_cache(maxsize=None)
+    @cache
     def get_entity_name(cls) -> str:
         return to_snake_case(cls.__name__)
 
