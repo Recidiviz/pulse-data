@@ -60,6 +60,7 @@ from recidiviz.persistence.entity.core_entity import CoreEntity
 from recidiviz.persistence.entity.entity_deserialize import EntityFactory
 from recidiviz.persistence.entity.operations import entities as operations_entities
 from recidiviz.persistence.entity.state import entities as state_entities
+from recidiviz.persistence.entity.state import normalized_entities
 from recidiviz.persistence.entity.state.normalized_state_entity import (
     NormalizedStateEntity,
 )
@@ -114,6 +115,57 @@ _STATE_CLASS_HIERARCHY = [
     state_entities.StateStaffCaseloadTypePeriod.__name__,
 ]
 
+
+# TODO(#30075): Uncomment all remaining entities once we've migrated to v2 entities where
+#  there is an entity for each class.
+# TODO(#30075): Add a test to make sure this is a superset of the entities in
+#  _STATE_CLASS_HIERARCHY and that the orders don't change.
+_NORMALIZED_STATE_CLASS_HIERARCHY = [
+    # NormalizedStatePerson hierarchy
+    # normalized_entities.NormalizedStatePerson.__name__,
+    # normalized_entities.NormalizedStatePersonExternalId.__name__,
+    # normalized_entities.NormalizedStatePersonAddressPeriod.__name__,
+    # normalized_entities.NormalizedStatePersonHousingStatusPeriod.__name__,
+    # normalized_entities.NormalizedStatePersonAlias.__name__,
+    # normalized_entities.NormalizedStatePersonRace.__name__,
+    # normalized_entities.NormalizedStatePersonEthnicity.__name__,
+    normalized_entities.NormalizedStateIncarcerationSentence.__name__,
+    normalized_entities.NormalizedStateSupervisionSentence.__name__,
+    normalized_entities.NormalizedStateCharge.__name__,
+    normalized_entities.NormalizedStateIncarcerationPeriod.__name__,
+    # normalized_entities.NormalizedStateIncarcerationIncident.__name__,
+    # normalized_entities.NormalizedStateIncarcerationIncidentOutcome.__name__,
+    normalized_entities.NormalizedStateSupervisionPeriod.__name__,
+    normalized_entities.NormalizedStateSupervisionContact.__name__,
+    normalized_entities.NormalizedStateSupervisionCaseTypeEntry.__name__,
+    normalized_entities.NormalizedStateSupervisionViolation.__name__,
+    normalized_entities.NormalizedStateSupervisionViolatedConditionEntry.__name__,
+    normalized_entities.NormalizedStateSupervisionViolationTypeEntry.__name__,
+    normalized_entities.NormalizedStateSupervisionViolationResponse.__name__,
+    normalized_entities.NormalizedStateSupervisionViolationResponseDecisionEntry.__name__,
+    normalized_entities.NormalizedStateAssessment.__name__,
+    normalized_entities.NormalizedStateProgramAssignment.__name__,
+    normalized_entities.NormalizedStateEarlyDischarge.__name__,
+    # normalized_entities.NormalizedStateEmploymentPeriod.__name__,
+    # normalized_entities.NormalizedStateDrugScreen.__name__,
+    # normalized_entities.NormalizedStateTaskDeadline.__name__,
+    # normalized_entities.NormalizedStateSentence.__name__,
+    # normalized_entities.NormalizedStateSentenceServingPeriod.__name__,
+    # TODO(#26240): Replace StateCharge with this entity
+    # normalized_entities.NormalizedStateChargeV2.__name__,
+    # normalized_entities.NormalizedStateSentenceStatusSnapshot.__name__,
+    # normalized_entities.NormalizedStateSentenceLength.__name__,
+    # normalized_entities.NormalizedStateSentenceGroup.__name__,
+    # normalized_entities.NormalizedStateSentenceGroupLength.__name__,
+    # StateStaff hierarchy
+    # normalized_entities.NormalizedStateStaff.__name__,
+    # normalized_entities.NormalizedStateStaffExternalId.__name__,
+    normalized_entities.NormalizedStateStaffRolePeriod.__name__,
+    # normalized_entities.NormalizedStateStaffSupervisorPeriod.__name__,
+    # normalized_entities.NormalizedStateStaffLocationPeriod.__name__,
+    # normalized_entities.NormalizedStateStaffCaseloadTypePeriod.__name__,
+]
+
 _OPERATIONS_CLASS_HIERARCHY = [
     # RawFileMetadata Hierarchy
     operations_entities.DirectIngestRawBigQueryFileMetadata.__name__,
@@ -132,6 +184,7 @@ _OPERATIONS_CLASS_HIERARCHY = [
 ]
 
 _state_direction_checker = None
+_normalized_state_direction_checker = None
 _operations_direction_checker = None
 
 
@@ -146,10 +199,25 @@ class SchemaEdgeDirectionChecker:
 
     @classmethod
     def state_direction_checker(cls) -> "SchemaEdgeDirectionChecker":
+        """Returns a direction checker that can be used to determine edge direction
+        between classes in state/entities.py.
+        """
         global _state_direction_checker
         if not _state_direction_checker:
             _state_direction_checker = cls(_STATE_CLASS_HIERARCHY, state_entities)
         return _state_direction_checker
+
+    @classmethod
+    def normalized_state_direction_checker(cls) -> "SchemaEdgeDirectionChecker":
+        """Returns a direction checker that can be used to determine edge direction
+        between classes in state/normalized_entities.py.
+        """
+        global _normalized_state_direction_checker
+        if not _normalized_state_direction_checker:
+            _normalized_state_direction_checker = cls(
+                _NORMALIZED_STATE_CLASS_HIERARCHY, normalized_entities
+            )
+        return _normalized_state_direction_checker
 
     @classmethod
     def operations_direction_checker(cls) -> "SchemaEdgeDirectionChecker":
