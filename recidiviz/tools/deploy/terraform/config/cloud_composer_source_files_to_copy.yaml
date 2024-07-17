@@ -8,4 +8,5 @@
 - [recidiviz/pipelines, calculation_pipeline_templates.yaml]
 - [recidiviz/pipelines, "*/template_metadata.json"]
 - [recidiviz/ingest/direct/regions, "*/raw_data/*.yaml"]
-- [recidiviz/ingest/direct/regions, "*/raw_data/migrations/*"]
+- [recidiviz/ingest/direct/regions, "*/raw_data/migrations/**/*.py"]
+- [recidiviz/ingest/direct/regions, "*/raw_data/migrations/**/*.csv"]
