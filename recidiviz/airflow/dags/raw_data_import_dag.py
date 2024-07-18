@@ -16,7 +16,6 @@
 # =============================================================================
 """DAG configuration to run raw data imports"""
 
-from typing import List
 
 from airflow.decorators import dag
 from airflow.utils.task_group import TaskGroup
@@ -44,6 +43,7 @@ from recidiviz.airflow.dags.raw_data.bq_load_tasks import (
     raise_load_prep_errors,
 )
 from recidiviz.airflow.dags.raw_data.file_metadata_tasks import (
+    coalesce_import_ready_files,
     split_by_pre_import_normalization_type,
 )
 from recidiviz.airflow.dags.raw_data.gcs_file_processing_tasks import (
@@ -63,7 +63,9 @@ from recidiviz.airflow.dags.raw_data.initialize_raw_data_dag_group import (
     initialize_raw_data_dag_group,
 )
 from recidiviz.airflow.dags.raw_data.metadata import (
+    IMPORT_READY_FILES,
     REQUIRES_NORMALIZATION_FILES,
+    REQUIRES_NORMALIZATION_FILES_BQ_METADATA,
     RESOURCE_LOCK_AQUISITION_DESCRIPTION,
     RESOURCE_LOCKS_NEEDED,
     SKIPPED_FILE_ERRORS,
@@ -187,7 +189,7 @@ def create_single_state_code_ingest_instance_raw_data_import_branch(
         # --- step 3: pre-import normalization -----------------------------------------
         # inputs: [ RequiresNormalizationFile ]
         # execution layer: k8s
-        # outputs: [ ImportReadyNormalizedFile ]
+        # outputs: [ ImportReadyFile ]
 
         with TaskGroup("pre_import_normalization") as pre_import_normalization:
             divide_files_into_chunks = RecidivizKubernetesPodOperator.partial(
@@ -205,6 +207,7 @@ def create_single_state_code_ingest_instance_raw_data_import_branch(
             raise_file_chunking_errors(
                 divide_files_into_chunks.output,
             )
+
             normalized_chunks = RecidivizKubernetesPodOperator.partial(
                 **get_kubernetes_pod_kwargs(
                     task_id="raw_data_chunk_normalization",
@@ -217,29 +220,31 @@ def create_single_state_code_ingest_instance_raw_data_import_branch(
                     num_batches=NUM_BATCHES,
                 )
             )
-            verify_file_results = regroup_and_verify_file_chunks(
-                normalized_chunks.output
+
+            pre_import_normalization_result = regroup_and_verify_file_chunks(
+                normalized_chunks.output,
+                files_to_process[REQUIRES_NORMALIZATION_FILES_BQ_METADATA],
             )
-            raise_chunk_normalization_errors(verify_file_results)
+            raise_chunk_normalization_errors(pre_import_normalization_result)
 
         files_to_process >> pre_import_normalization
 
         # ------------------------------------------------------------------------------
 
         # --- step 4: big-query upload -------------------------------------------------
-        # inputs: [ *[ ImportReadyOriginalFile ], *[ ImportReadyNormalizedFile ] ]
+        # inputs: [ ImportReadyFile ]
         # execution layer: celery
         # outputs: [ ImportSessionInfo ]
 
-        # TODO(#30168) implement coalesce of results from steps above
+        serialized_import_ready_files = coalesce_import_ready_files(
+            files_to_process[IMPORT_READY_FILES], pre_import_normalization_result
+        )
 
         with TaskGroup("biq_query_load") as big_query_load:
-            all_files: List[str] = []
-
             # load paths into temp table
             load_and_prep_results = load_and_prep_paths_for_batch.partial(
                 raw_data_instance=raw_data_instance, region_code=state_code.value
-            ).expand(serialized_import_ready_files=all_files)
+            ).expand(serialized_import_ready_files=serialized_import_ready_files)
 
             # batch tasks for next step and raise errors
             append_batches_output = generate_append_batches(load_and_prep_results)
@@ -259,7 +264,7 @@ def create_single_state_code_ingest_instance_raw_data_import_branch(
 
             raise_append_errors(append_results)
 
-        pre_import_normalization >> big_query_load
+        pre_import_normalization >> serialized_import_ready_files >> big_query_load
 
         # ------------------------------------------------------------------------------
 

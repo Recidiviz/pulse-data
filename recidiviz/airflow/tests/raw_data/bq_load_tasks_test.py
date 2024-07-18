@@ -71,6 +71,7 @@ class LoadAndPrepForRegionTest(TestCase):
                 update_datetime=datetime.datetime(
                     2024, 1, 1, 1, 1, 1, tzinfo=datetime.UTC
                 ),
+                original_file_paths=None,
             ),
             ImportReadyFile(
                 file_id=2,
@@ -79,6 +80,7 @@ class LoadAndPrepForRegionTest(TestCase):
                 update_datetime=datetime.datetime(
                     2024, 1, 2, 1, 1, 1, tzinfo=datetime.UTC
                 ),
+                original_file_paths=None,
             ),
             ImportReadyFile(
                 file_id=3,
@@ -87,6 +89,7 @@ class LoadAndPrepForRegionTest(TestCase):
                 update_datetime=datetime.datetime(
                     2024, 1, 3, 1, 1, 1, tzinfo=datetime.UTC
                 ),
+                original_file_paths=None,
             ),
         ]
 
@@ -199,6 +202,7 @@ class GenerateAppendBatchesTest(TestCase):
             file_tag=file_tag,
             file_paths=[],
             update_datetime=datetime.datetime(2024, 1, 1, 1, 1, 1, tzinfo=datetime.UTC),
+            original_file_paths=None,
         )
         return [
             AppendReadyFile(
@@ -393,6 +397,7 @@ class AppendToRawDataTableForRegionTest(TestCase):
             file_tag=file_tag,
             file_paths=[],
             update_datetime=datetime.datetime(2024, 1, 1, 1, 1, 1, tzinfo=datetime.UTC),
+            original_file_paths=None,
         )
         return [
             AppendReadyFile(

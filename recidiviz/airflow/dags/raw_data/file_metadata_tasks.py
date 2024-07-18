@@ -30,8 +30,10 @@ from recidiviz.ingest.direct.types.raw_data_import_types import (
     ImportReadyFile,
     PreImportNormalizationType,
     RawBigQueryFileMetadataSummary,
+    RawFileProcessingError,
     RequiresNormalizationFile,
 )
+from recidiviz.utils.airflow_types import BatchedTaskInstanceOutput
 
 
 @task
@@ -97,3 +99,23 @@ def split_by_pre_import_normalization_type(
             file.serialize() for file in pre_import_normalization_required_files
         ],
     }
+
+
+@task
+def coalesce_import_ready_files(
+    serialized_input_ready_files_no_normalization: List[str],
+    serialized_pre_import_normalization_result: str,
+) -> List[str]:
+    """Combines import ready file objects from pre-import normalization and files that
+    did not need pre-import normalization into a single list.
+    """
+    pre_import_normalization_result = BatchedTaskInstanceOutput.deserialize(
+        serialized_pre_import_normalization_result,
+        ImportReadyFile,
+        RawFileProcessingError,
+    )
+
+    return [
+        *serialized_input_ready_files_no_normalization,
+        *[result.serialize() for result in pre_import_normalization_result.results],
+    ]

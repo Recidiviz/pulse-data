@@ -15,9 +15,9 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """GCS file processing tasks"""
-
 import base64
 import concurrent.futures
+import logging
 from collections import defaultdict
 from typing import Dict, List, Tuple
 
@@ -34,8 +34,9 @@ from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.types.raw_data_import_types import (
-    ImportReadyNormalizedFile,
+    ImportReadyFile,
     NormalizedCsvChunkResult,
+    RawBigQueryFileMetadataSummary,
     RawFileProcessingError,
     RequiresNormalizationFile,
     RequiresPreImportNormalizationFile,
@@ -46,6 +47,7 @@ from recidiviz.utils.airflow_types import (
     MappedBatchedTaskOutput,
 )
 from recidiviz.utils.crc32c import digest_ordered_checksum_and_size_pairs
+from recidiviz.utils.types import assert_type
 
 MAX_THREADS = 16  # TODO(#29946) determine reasonable default
 ENTRYPOINT_ARG_LIST_DELIMITER = "^"
@@ -184,6 +186,7 @@ def _create_individual_chunk_objects_list(
 @task
 def regroup_and_verify_file_chunks(
     normalized_chunks_result: List[str],
+    serialized_requires_pre_import_normalization_files_bq_metadata: List[str],
 ) -> str:
     """Task organizes normalized chunks by file and compares their collective checksum
     against the full file checksum to ensure all file bytes were read correctly"""
@@ -193,29 +196,49 @@ def regroup_and_verify_file_chunks(
         error_cls=RawFileProcessingError,
     )
     all_results: List[NormalizedCsvChunkResult] = mapped_task_output.flatten_results()
-    all_errors: List[RawFileProcessingError] = mapped_task_output.flatten_errors()
-    file_to_normalized_chunks = regroup_normalized_file_chunks(all_results, all_errors)
+    upstream_errors: List[RawFileProcessingError] = mapped_task_output.flatten_errors()
 
-    results = verify_file_checksums_and_build_import_ready_file(
-        file_to_normalized_chunks
+    requires_pre_import_normalization_files_bq_metadata = [
+        RawBigQueryFileMetadataSummary.deserialize(
+            serialized_requires_normalization_file_bq_metadata
+        )
+        for serialized_requires_normalization_file_bq_metadata in serialized_requires_pre_import_normalization_files_bq_metadata
+    ]
+
+    file_path_to_normalized_chunks = regroup_normalized_file_chunks(
+        all_results, upstream_errors
     )
-    # Return all checksum mismatches and all errors seen in previous normalization task
-    results.errors.extend(all_errors)
 
-    return results.serialize()
+    checksum_errors, filtered_file_path_to_normalized_chunks = verify_file_checksums(
+        file_path_to_normalized_chunks
+    )
+
+    import_ready_files = build_import_ready_files(
+        filtered_file_path_to_normalized_chunks,
+        requires_pre_import_normalization_files_bq_metadata,
+    )
+
+    return BatchedTaskInstanceOutput[ImportReadyFile, RawFileProcessingError](
+        errors=[*upstream_errors, *checksum_errors],
+        results=import_ready_files,
+    ).serialize()
 
 
-def verify_file_checksums_and_build_import_ready_file(
-    file_to_normalized_chunks: Dict[str, List[NormalizedCsvChunkResult]],
-) -> BatchedTaskInstanceOutput[ImportReadyNormalizedFile, RawFileProcessingError]:
-    """Verify the checksum of the normalized file chunks against the full file checksum.
-    if they match return the ImportReadyNormalizedFile"""
+def verify_file_checksums(
+    file_path_to_normalized_chunks: Dict[str, List[NormalizedCsvChunkResult]],
+) -> Tuple[List[RawFileProcessingError], Dict[str, List[NormalizedCsvChunkResult]]]:
+    """Verifies the checksum of the normalized file chunks against the full file checksum
+    and returns the list errors from non-matching files and a mapping of input file paths
+    to their corresponding NormalizedCsvChunkResults.
+    """
 
     fs = GcsfsFactory.build()
-    normalized_files: List[ImportReadyNormalizedFile] = []
     errors: List[RawFileProcessingError] = []
+    filtered_file_path_to_normalized_chunks: Dict[
+        str, List[NormalizedCsvChunkResult]
+    ] = {}
 
-    for file_path, chunks in file_to_normalized_chunks.items():
+    for file_path, chunks in file_path_to_normalized_chunks.items():
         chunk_checksums_and_sizes = [
             (chunk.crc32c, chunk.get_chunk_boundary_size()) for chunk in chunks
         ]
@@ -229,6 +252,8 @@ def verify_file_checksums_and_build_import_ready_file(
         full_file_checksum = fs.get_crc32c(GcsfsFilePath.from_absolute_path(file_path))
 
         if chunk_combined_checksum != full_file_checksum:
+            # TODO(#30169) add input and output file paths so we can clean
+            # them up properly
             errors.append(
                 RawFileProcessingError(
                     file_path=file_path,
@@ -236,16 +261,9 @@ def verify_file_checksums_and_build_import_ready_file(
                 )
             )
         else:
-            normalized_files.append(
-                ImportReadyNormalizedFile(
-                    input_file_path=file_path,
-                    output_file_paths=[chunk.output_file_path for chunk in chunks],
-                )
-            )
+            filtered_file_path_to_normalized_chunks[file_path] = chunks
 
-    return BatchedTaskInstanceOutput[ImportReadyNormalizedFile, RawFileProcessingError](
-        results=normalized_files, errors=errors
-    )
+    return errors, filtered_file_path_to_normalized_chunks
 
 
 def regroup_normalized_file_chunks(
@@ -253,24 +271,95 @@ def regroup_normalized_file_chunks(
     normalized_chunks_errors: List[RawFileProcessingError],
 ) -> Dict[str, List[NormalizedCsvChunkResult]]:
     """Returns dictionary of filepath: [normalized_chunk_results]"""
-    file_to_normalized_chunks = defaultdict(list)
+    file_path_to_normalized_chunks: Dict[
+        str, List[NormalizedCsvChunkResult]
+    ] = defaultdict(list)
+
     files_with_previous_errors = set(
         one(error.file_path) for error in normalized_chunks_errors
     )
 
     for chunk in normalized_chunks_result:
         # If we encountered an error in the normalization of any of the file chunks
-        # then the checksum verification will fail
-        # don't include those chunks so we find only true checksum mismatches
+        # then the checksum verification will fail so don't include those chunks so we
+        # find only true checksum mismatches
         if chunk.input_file_path in files_with_previous_errors:
             continue
-        file_to_normalized_chunks[chunk.input_file_path].append(chunk)
+        file_path_to_normalized_chunks[chunk.input_file_path].append(chunk)
 
     # Chunks need to be in order for checksum validation
-    for chunks in file_to_normalized_chunks.values():
+    for chunks in file_path_to_normalized_chunks.values():
         chunks.sort(key=lambda x: x.chunk_boundary.chunk_num)
 
-    return file_to_normalized_chunks
+    return file_path_to_normalized_chunks
+
+
+def build_import_ready_files(
+    filtered_file_path_to_normalized_chunks: Dict[str, List[NormalizedCsvChunkResult]],
+    requires_pre_import_normalization_files_bq_metadata: List[
+        RawBigQueryFileMetadataSummary
+    ],
+) -> List[ImportReadyFile]:
+    """Uses |filtered_file_path_to_normalized_chunks| to determine which candidates from
+    |requires_pre_import_normalization_files_bq_metadata| will be used to create import
+    ready files, skipping any entries that are missing file paths.
+    """
+
+    # --- first, create mapping of original file path to associated bq metadata --------
+
+    path_to_requires_normalization_files_bq_metadata: Dict[
+        str, RawBigQueryFileMetadataSummary
+    ] = {
+        gcs_metadata.path.abs_path(): bq_metadata
+        for bq_metadata in requires_pre_import_normalization_files_bq_metadata
+        for gcs_metadata in bq_metadata.gcs_files
+    }
+
+    # --- next, group input files by file_id -------------------------------------------
+
+    file_id_to_input_paths: Dict[int, List[str]] = defaultdict(list)
+    for valid_input_file in filtered_file_path_to_normalized_chunks:
+        bq_metadata = path_to_requires_normalization_files_bq_metadata[valid_input_file]
+        file_id_to_input_paths[assert_type(bq_metadata.file_id, int)].append(
+            valid_input_file
+        )
+
+    # --- next, actually build new import ready files ----------------------------------
+
+    new_import_ready_files: List[ImportReadyFile] = []
+    for bq_metadata in requires_pre_import_normalization_files_bq_metadata:
+        successful_input_paths = set(
+            file_id_to_input_paths[assert_type(bq_metadata.file_id, int)]
+        )
+        all_input_paths = {
+            gcs_file.path.abs_path() for gcs_file in bq_metadata.gcs_files
+        }
+
+        if all_input_paths != successful_input_paths:
+            # we are logging this error, but not creating a new error because the error
+            # has been raised at a point before and will be written to operations db
+            # during the cleanup and storage phase
+            logging.error(
+                "Skipping import for [%s] w/ update_datetime [%s] and file_id [%s] due "
+                "to failed pre-import normalization step for [%s]",
+                bq_metadata.file_tag,
+                bq_metadata.update_datetime.isoformat(),
+                bq_metadata.file_id,
+                all_input_paths - successful_input_paths,
+            )
+            continue
+
+        new_import_ready_files.append(
+            ImportReadyFile.from_bq_metadata_and_normalized_chunk_result(
+                bq_metadata,
+                {
+                    input_path: filtered_file_path_to_normalized_chunks[input_path]
+                    for input_path in all_input_paths
+                },
+            )
+        )
+
+    return new_import_ready_files
 
 
 @task
