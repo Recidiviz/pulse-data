@@ -240,7 +240,7 @@ _RESIDENT_RECORD_HOUSING_UNIT_CTE = f"""
       FROM `{{project_id}}.{{normalized_state_dataset}}.state_incarceration_period` 
       WHERE
           release_date IS NULL
-          AND state_code NOT IN ('US_MO','US_TN')
+          AND state_code NOT IN ('US_MO')
       QUALIFY ROW_NUMBER() OVER (PARTITION BY person_id ORDER BY admission_date DESC) = 1
 
       UNION ALL
