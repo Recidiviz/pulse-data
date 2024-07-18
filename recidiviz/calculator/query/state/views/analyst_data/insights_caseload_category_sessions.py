@@ -55,8 +55,10 @@ def get_caseload_category_query_fragment(
         start_date,
         end_date_exclusive,
         CASE
-            # Only categorize as SEX_OFFENSE if SEX_OFFENSE is present in person's caseload type array
-            WHEN "{StateStaffCaseloadType.SEX_OFFENSE.name}" IN UNNEST(specialized_caseload_type_array)
+            # Only categorize as SEX_OFFENSE if SEX_OFFENSE is the only caseload type in the person's caseload type array
+            WHEN 
+                "{StateStaffCaseloadType.SEX_OFFENSE.name}" IN UNNEST(specialized_caseload_type_array) 
+                AND ARRAY_LENGTH(specialized_caseload_type_array) = 1
             THEN "{StateStaffCaseloadType.SEX_OFFENSE.name}"
 
             # If caseload type information is missing, categorize as "NOT_SEX_OFFENSE"
