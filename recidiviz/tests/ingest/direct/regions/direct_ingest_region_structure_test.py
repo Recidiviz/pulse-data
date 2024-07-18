@@ -844,8 +844,6 @@ class TestControllerWithIngestManifestCollection(unittest.TestCase):
                 "person_external_ids"
             },
             StateCode.US_MO: {
-                # TODO(#19824): Write tests for this view and remove exemption
-                "tak001_offender_identification",
                 # TODO(#19825): Write tests for this view and remove exemption
                 "tak028_tak042_tak076_tak024_violation_reports",
                 # TODO(#19826): Write tests for this view and remove exemption
