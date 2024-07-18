@@ -16,6 +16,7 @@
 # =============================================================================
 """Unit tests for gcs file processing tasks"""
 import base64
+import datetime
 import unittest
 from typing import ClassVar, List, Optional
 from unittest.mock import MagicMock, patch
@@ -23,16 +24,20 @@ from unittest.mock import MagicMock, patch
 import google_crc32c
 
 from recidiviz.airflow.dags.raw_data.gcs_file_processing_tasks import (
+    build_import_ready_files,
     create_chunk_batches,
     create_file_batches,
     regroup_normalized_file_chunks,
-    verify_file_checksums_and_build_import_ready_file,
+    verify_file_checksums,
 )
 from recidiviz.cloud_storage.gcsfs_csv_chunk_boundary_finder import CsvChunkBoundary
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.ingest.direct.types.raw_data_import_types import (
+    ImportReadyFile,
     NormalizedCsvChunkResult,
     PreImportNormalizationType,
+    RawBigQueryFileMetadataSummary,
+    RawGCSFileMetadataSummary,
     RequiresNormalizationFile,
     RequiresPreImportNormalizationFile,
 )
@@ -287,32 +292,263 @@ class TestRegroupAndVerifyFileChunks(unittest.TestCase):
         )
 
     def test_verify_checksum_success(self) -> None:
-        result = verify_file_checksums_and_build_import_ready_file(
-            self.file_to_normalized_chunks
-        )
+        errors, results = verify_file_checksums(self.file_to_normalized_chunks)
 
-        self.assertEqual(len(result.results), 1)
-        self.assertEqual(result.results[0].input_file_path, "test_bucket/file1")
+        self.assertEqual(len(results), 1)
+        assert "test_bucket/file1" in results
         self.assertEqual(
-            result.results[0].output_file_paths,
+            [result.output_file_path for result in results["test_bucket/file1"]],
             ["test_bucket/file1_0", "test_bucket/file1_1"],
         )
-        self.assertEqual(result.errors, [])
+        self.assertEqual(errors, [])
 
     def test_verify_checksum_mismatch(self) -> None:
         self.fs.get_crc32c.return_value = "different_checksum"
-        result = verify_file_checksums_and_build_import_ready_file(
-            self.file_to_normalized_chunks
-        )
+        errors, results = verify_file_checksums(self.file_to_normalized_chunks)
 
-        self.assertEqual(result.results, [])
-        self.assertEqual(len(result.errors), 1)
-        self.assertIn(
-            "Checksum mismatch for test_bucket/file1", result.errors[0].error_msg
-        )
+        self.assertEqual(results, {})
+        self.assertEqual(len(errors), 1)
+        self.assertIn("Checksum mismatch for test_bucket/file1", errors[0].error_msg)
 
     @staticmethod
     def _get_checksum_int(bytes_to_checksum: bytes) -> int:
         checksum = google_crc32c.Checksum()
         checksum.update(bytes_to_checksum)
         return int.from_bytes(checksum.digest(), byteorder="big")
+
+    def test_build_import_ready_files_none(self) -> None:
+        assert not build_import_ready_files({}, [])
+
+    def test_build_import_ready_files_failures_no_skips(self) -> None:
+        results = {
+            "path/a.csv": [
+                NormalizedCsvChunkResult(
+                    input_file_path="path/a.csv",
+                    output_file_path="outpath/a.csv",
+                    chunk_boundary=CsvChunkBoundary(0, 1, 0),
+                    crc32c=1,
+                ),
+                NormalizedCsvChunkResult(
+                    input_file_path="path/a.csv",
+                    output_file_path="outpath/a1.csv",
+                    chunk_boundary=CsvChunkBoundary(1, 2, 1),
+                    crc32c=2,
+                ),
+                NormalizedCsvChunkResult(
+                    input_file_path="path/a.csv",
+                    output_file_path="outpath/a2.csv",
+                    chunk_boundary=CsvChunkBoundary(2, 3, 2),
+                    crc32c=3,
+                ),
+            ],
+            "path/aa.csv": [
+                NormalizedCsvChunkResult(
+                    input_file_path="path/aa.csv",
+                    output_file_path="outpath/aa.csv",
+                    chunk_boundary=CsvChunkBoundary(0, 1, 0),
+                    crc32c=1,
+                ),
+            ],
+            "path/b.csv": [
+                NormalizedCsvChunkResult(
+                    input_file_path="path/b.csv",
+                    output_file_path="outpath/b.csv",
+                    chunk_boundary=CsvChunkBoundary(2, 3, 2),
+                    crc32c=3,
+                ),
+            ],
+            "path/c.csv": [
+                NormalizedCsvChunkResult(
+                    input_file_path="path/c.csv",
+                    output_file_path="outpath/c.csv",
+                    chunk_boundary=CsvChunkBoundary(2, 3, 2),
+                    crc32c=3,
+                ),
+            ],
+        }
+        bq_metadata = [
+            RawBigQueryFileMetadataSummary(
+                file_id=1,
+                file_tag="tagBasicData",
+                gcs_files=[
+                    RawGCSFileMetadataSummary(
+                        gcs_file_id=1,
+                        file_id=1,
+                        path=GcsfsFilePath(bucket_name="path", blob_name="a.csv"),
+                    ),
+                    RawGCSFileMetadataSummary(
+                        gcs_file_id=2,
+                        file_id=1,
+                        path=GcsfsFilePath(bucket_name="path", blob_name="aa.csv"),
+                    ),
+                ],
+                update_datetime=datetime.datetime(
+                    2024, 1, 1, 1, 1, 1, tzinfo=datetime.UTC
+                ),
+            ),
+            RawBigQueryFileMetadataSummary(
+                file_id=2,
+                file_tag="tagBasicData",
+                gcs_files=[
+                    RawGCSFileMetadataSummary(
+                        gcs_file_id=4,
+                        file_id=2,
+                        path=GcsfsFilePath(bucket_name="path", blob_name="b.csv"),
+                    )
+                ],
+                update_datetime=datetime.datetime(
+                    2024, 1, 2, 1, 1, 1, tzinfo=datetime.UTC
+                ),
+            ),
+            RawBigQueryFileMetadataSummary(
+                file_id=3,
+                file_tag="tagBasicData",
+                gcs_files=[
+                    RawGCSFileMetadataSummary(
+                        gcs_file_id=5,
+                        file_id=3,
+                        path=GcsfsFilePath(bucket_name="path", blob_name="c.csv"),
+                    )
+                ],
+                update_datetime=datetime.datetime(
+                    2024, 1, 3, 1, 1, 1, tzinfo=datetime.UTC
+                ),
+            ),
+        ]
+        output = build_import_ready_files(results, bq_metadata)
+
+        created_files = [
+            ImportReadyFile.from_bq_metadata_and_normalized_chunk_result(
+                metadata,
+                {
+                    file.path.abs_path(): results[file.path.abs_path()]
+                    for file in metadata.gcs_files
+                },
+            )
+            for metadata in bq_metadata
+        ]
+
+        for i, output_file in enumerate(output):
+            assert output_file.file_id == created_files[i].file_id
+            assert output_file.file_tag == created_files[i].file_tag
+            assert output_file.update_datetime == created_files[i].update_datetime
+            assert set(output_file.file_paths) == set(created_files[i].file_paths)
+            assert set(output_file.original_file_paths or []) == set(
+                created_files[i].original_file_paths or []
+            )
+
+    def test_build_import_ready_files_failures_with_skips(self) -> None:
+        results = {
+            "path/a.csv": [
+                NormalizedCsvChunkResult(
+                    input_file_path="path/a.csv",
+                    output_file_path="outpath/a.csv",
+                    chunk_boundary=CsvChunkBoundary(0, 1, 0),
+                    crc32c=1,
+                ),
+                # this result failed, so we need to have all of a.csv fail :/
+                # NormalizedCsvChunkResult(
+                #     input_file_path="path/a.csv",
+                #     output_file_path="outpath/a1.csv",
+                #     chunk_boundary=CsvChunkBoundary(1, 2, 1),
+                #     crc32c=2,
+                # ),
+                NormalizedCsvChunkResult(
+                    input_file_path="path/a.csv",
+                    output_file_path="outpath/a2.csv",
+                    chunk_boundary=CsvChunkBoundary(2, 3, 2),
+                    crc32c=3,
+                ),
+            ],
+            "path/b.csv": [
+                NormalizedCsvChunkResult(
+                    input_file_path="path/b.csv",
+                    output_file_path="outpath/b.csv",
+                    chunk_boundary=CsvChunkBoundary(2, 3, 2),
+                    crc32c=3,
+                ),
+            ],
+            "path/c.csv": [
+                NormalizedCsvChunkResult(
+                    input_file_path="path/c.csv",
+                    output_file_path="outpath/c.csv",
+                    chunk_boundary=CsvChunkBoundary(2, 3, 2),
+                    crc32c=3,
+                ),
+            ],
+        }
+        bq_metadata = [
+            RawBigQueryFileMetadataSummary(
+                file_id=1,
+                file_tag="tagBasicData",
+                gcs_files=[
+                    RawGCSFileMetadataSummary(
+                        gcs_file_id=1,
+                        file_id=1,
+                        path=GcsfsFilePath(bucket_name="path", blob_name="a.csv"),
+                    ),
+                    RawGCSFileMetadataSummary(
+                        gcs_file_id=2,
+                        file_id=1,
+                        path=GcsfsFilePath(bucket_name="path", blob_name="a1.csv"),
+                    ),
+                    RawGCSFileMetadataSummary(
+                        gcs_file_id=3,
+                        file_id=1,
+                        path=GcsfsFilePath(bucket_name="path", blob_name="a2.csv"),
+                    ),
+                ],
+                update_datetime=datetime.datetime(
+                    2024, 1, 1, 1, 1, 1, tzinfo=datetime.UTC
+                ),
+            ),
+            RawBigQueryFileMetadataSummary(
+                file_id=2,
+                file_tag="tagBasicData",
+                gcs_files=[
+                    RawGCSFileMetadataSummary(
+                        gcs_file_id=4,
+                        file_id=2,
+                        path=GcsfsFilePath(bucket_name="path", blob_name="b.csv"),
+                    )
+                ],
+                update_datetime=datetime.datetime(
+                    2024, 1, 2, 1, 1, 1, tzinfo=datetime.UTC
+                ),
+            ),
+            RawBigQueryFileMetadataSummary(
+                file_id=3,
+                file_tag="tagBasicData",
+                gcs_files=[
+                    RawGCSFileMetadataSummary(
+                        gcs_file_id=5,
+                        file_id=3,
+                        path=GcsfsFilePath(bucket_name="path", blob_name="c.csv"),
+                    )
+                ],
+                update_datetime=datetime.datetime(
+                    2024, 1, 3, 1, 1, 1, tzinfo=datetime.UTC
+                ),
+            ),
+        ]
+        output = build_import_ready_files(results, bq_metadata)
+        created_files = [
+            ImportReadyFile.from_bq_metadata_and_normalized_chunk_result(
+                metadata,
+                {
+                    file.path.abs_path(): results[file.path.abs_path()]
+                    for file in metadata.gcs_files
+                },
+            )
+            for i, metadata in enumerate(bq_metadata)
+            if i != 0
+        ]
+
+        for i, output_file in enumerate(output):
+            assert output_file.file_id == created_files[i].file_id
+            assert output_file.file_tag == created_files[i].file_tag
+            assert output_file.update_datetime == created_files[i].update_datetime
+            assert set(output_file.file_paths) == set(created_files[i].file_paths)
+            assert set(output_file.original_file_paths or []) == set(
+                created_files[i].original_file_paths or []
+            )

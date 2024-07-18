@@ -369,7 +369,11 @@ class ImportReadyFile(BaseResult):
     file_id (int): file_id of the conceptual file being loaded
     file_tag (str): file_tag of the file being loaded
     update_datetime (datetime.datetime): the update_datetime associated with this file_id
-    file_paths (str): the raw file paths in GCS associated with this file_id
+    file_paths (List[GcsfsFilePath]): the raw file paths in GCS associated with this
+        file_id to be loaded into BigQuery
+    original_file_paths (Optional[List[GcsfsFilePath]]): if pre-import normalization was
+        required, the list file paths of the files sent to us by the state before
+        pre-import normalization was performed. Otherwise, None.
     """
 
     file_id: int = attr.ib(validator=attr_validators.is_int)
@@ -377,6 +381,9 @@ class ImportReadyFile(BaseResult):
     update_datetime: datetime.datetime = attr.ib(validator=attr_validators.is_datetime)
     file_paths: List[GcsfsFilePath] = attr.ib(
         validator=attr_validators.is_list_of(GcsfsFilePath)
+    )
+    original_file_paths: Optional[List[GcsfsFilePath]] = attr.ib(
+        validator=attr.validators.optional(attr_validators.is_list_of(GcsfsFilePath))
     )
 
     def serialize(self) -> str:
@@ -386,6 +393,11 @@ class ImportReadyFile(BaseResult):
                 "file_tag": self.file_tag,
                 "update_datetime": self.update_datetime.isoformat(),
                 "file_paths": [path.uri() for path in self.file_paths],
+                "original_file_paths": (
+                    None
+                    if self.original_file_paths is None
+                    else [path.uri() for path in self.original_file_paths]
+                ),
             }
         )
 
@@ -399,6 +411,14 @@ class ImportReadyFile(BaseResult):
             file_paths=[
                 GcsfsFilePath.from_absolute_path(path) for path in data["file_paths"]
             ],
+            original_file_paths=(
+                None
+                if data["original_file_paths"] is None
+                else [
+                    GcsfsFilePath.from_absolute_path(path)
+                    for path in data["original_file_paths"]
+                ]
+            ),
         )
 
     @classmethod
@@ -410,6 +430,30 @@ class ImportReadyFile(BaseResult):
             file_tag=bq_metadata.file_tag,
             file_paths=[gcs_file.path for gcs_file in bq_metadata.gcs_files],
             update_datetime=bq_metadata.update_datetime,
+            original_file_paths=None,
+        )
+
+    @classmethod
+    def from_bq_metadata_and_normalized_chunk_result(
+        cls,
+        bq_metadata: "RawBigQueryFileMetadataSummary",
+        input_path_to_normalized_chunk_results: Dict[
+            str, List[NormalizedCsvChunkResult]
+        ],
+    ) -> "ImportReadyFile":
+        return ImportReadyFile(
+            file_id=assert_type(bq_metadata.file_id, int),
+            file_tag=bq_metadata.file_tag,
+            file_paths=[
+                GcsfsFilePath.from_absolute_path(normalized_chunk.output_file_path)
+                for normalized_chunks in input_path_to_normalized_chunk_results.values()
+                for normalized_chunk in normalized_chunks
+            ],
+            update_datetime=bq_metadata.update_datetime,
+            original_file_paths=[
+                GcsfsFilePath.from_absolute_path(input_path)
+                for input_path in input_path_to_normalized_chunk_results
+            ],
         )
 
 

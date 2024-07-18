@@ -19,6 +19,7 @@ import datetime
 from unittest import TestCase
 
 from recidiviz.airflow.dags.raw_data.file_metadata_tasks import (
+    coalesce_import_ready_files,
     split_by_pre_import_normalization_type,
 )
 from recidiviz.airflow.dags.raw_data.metadata import (
@@ -30,10 +31,12 @@ from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.ingest.direct.types.raw_data_import_types import (
     ImportReadyFile,
     RawBigQueryFileMetadataSummary,
+    RawFileProcessingError,
     RawGCSFileMetadataSummary,
     RequiresNormalizationFile,
 )
 from recidiviz.tests.ingest.direct import fake_regions
+from recidiviz.utils.airflow_types import BatchedTaskInstanceOutput
 
 
 class SplitByPreImportNormalizationTest(TestCase):
@@ -102,3 +105,44 @@ class SplitByPreImportNormalizationTest(TestCase):
         assert [
             ImportReadyFile.deserialize(r) for r in results[IMPORT_READY_FILES]
         ] == [ImportReadyFile.from_bq_metadata(inputs[0])]
+
+
+class CoalesceImportReadyFiles(TestCase):
+    """Tests for coalesce_import_ready_files task"""
+
+    def test_empty(self) -> None:
+        assert not coalesce_import_ready_files.function(
+            [], '{"results": [], "errors": []}'
+        )
+
+    def test_full(self) -> None:
+        files = [
+            ImportReadyFile(
+                file_id=1,
+                file_tag="tag",
+                update_datetime=datetime.datetime(
+                    2024, 1, 1, 1, 1, 1, tzinfo=datetime.UTC
+                ),
+                file_paths=[GcsfsFilePath.from_absolute_path("test/123.csv")],
+                original_file_paths=None,
+            ),
+            ImportReadyFile(
+                file_id=1,
+                file_tag="tag",
+                update_datetime=datetime.datetime(
+                    2024, 1, 1, 1, 1, 1, tzinfo=datetime.UTC
+                ),
+                file_paths=[GcsfsFilePath.from_absolute_path("test/123.csv")],
+                original_file_paths=[GcsfsFilePath.from_absolute_path("test/456.csv")],
+            ),
+        ]
+
+        output = BatchedTaskInstanceOutput[ImportReadyFile, RawFileProcessingError](
+            errors=[], results=files
+        )
+
+        serialized_files = [f.serialize() for f in files]
+
+        assert coalesce_import_ready_files.function(
+            serialized_files, output.serialize()
+        ) == [*serialized_files, *serialized_files]

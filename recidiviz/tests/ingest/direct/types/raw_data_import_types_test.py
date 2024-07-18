@@ -213,7 +213,10 @@ class TestSerialization(unittest.TestCase):
             file_id=1,
             file_tag="fake_tag",
             update_datetime=datetime.datetime(2024, 1, 1, 1, 1, 1, tzinfo=datetime.UTC),
-            file_paths=[GcsfsFilePath(bucket_name="bucket", blob_name="blob.csv")],
+            file_paths=[GcsfsFilePath(bucket_name="bucket_temp", blob_name="blob.csv")],
+            original_file_paths=[
+                GcsfsFilePath(bucket_name="bucket", blob_name="blob.csv")
+            ],
         )
         self._validate_serialization(original, ImportReadyFile)
 
@@ -225,7 +228,12 @@ class TestSerialization(unittest.TestCase):
                 update_datetime=datetime.datetime(
                     2024, 1, 1, 1, 1, 1, tzinfo=datetime.UTC
                 ),
-                file_paths=[GcsfsFilePath(bucket_name="bucket", blob_name="blob.csv")],
+                file_paths=[
+                    GcsfsFilePath(bucket_name="bucket_temp", blob_name="blob.csv")
+                ],
+                original_file_paths=[
+                    GcsfsFilePath(bucket_name="bucket", blob_name="blob.csv")
+                ],
             ),
             append_ready_table_address=BigQueryAddress(
                 dataset_id="dataset", table_id="table"
@@ -251,7 +259,12 @@ class TestSerialization(unittest.TestCase):
                             ),
                             file_paths=[
                                 GcsfsFilePath(
-                                    bucket_name="bucket", blob_name="blob1.csv"
+                                    bucket_name="bucket_temp", blob_name="blob1.csv"
+                                )
+                            ],
+                            original_file_paths=[
+                                GcsfsFilePath(
+                                    bucket_name="bucket", blob_name="blob.csv"
                                 )
                             ],
                         ),
@@ -268,6 +281,11 @@ class TestSerialization(unittest.TestCase):
                                 2024, 1, 2, 1, 1, 1, tzinfo=datetime.UTC
                             ),
                             file_paths=[
+                                GcsfsFilePath(
+                                    bucket_name="bucket_temp", blob_name="blob2.csv"
+                                )
+                            ],
+                            original_file_paths=[
                                 GcsfsFilePath(
                                     bucket_name="bucket", blob_name="blob2.csv"
                                 )
@@ -292,6 +310,7 @@ class TestSerialization(unittest.TestCase):
                                     bucket_name="bucket", blob_name="blob3.csv"
                                 )
                             ],
+                            original_file_paths=None,
                         ),
                         append_ready_table_address=BigQueryAddress(
                             dataset_id="dataset", table_id="table3"

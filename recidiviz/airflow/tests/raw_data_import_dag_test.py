@@ -120,12 +120,16 @@ class RawDataImportDagSequencingTest(AirflowIntegrationTest):
             include_downstream=True,
         )
         ordered_step_3_task_ids = [
-            "generate_file_chunking_pod_arguments",
+            [
+                "coalesce_import_ready_files",
+                "regroup_and_verify_file_chunks",
+                "generate_file_chunking_pod_arguments",
+            ],
             "raw_data_file_chunking",
             ["raise_file_chunking_errors", "generate_chunk_processing_pod_arguments"],
             "raw_data_chunk_normalization",
             "regroup_and_verify_file_chunks",
-            "raise_chunk_normalization_errors",
+            ["coalesce_import_ready_files", "raise_chunk_normalization_errors"],
         ]
         for root in step_3_root.roots:
             assert "split_by_pre_import_normalization_type" in root.task_id
@@ -157,6 +161,7 @@ class RawDataImportDagSequencingTest(AirflowIntegrationTest):
             include_downstream=True,
         )
         ordered_step_4_task_ids = [
+            ["coalesce_import_ready_files"],
             ["load_and_prep_paths_for_batch"],
             ["raise_load_prep_errors", "generate_append_batches"],
             [
@@ -174,7 +179,10 @@ class RawDataImportDagSequencingTest(AirflowIntegrationTest):
                 next_task = None
                 assert len(curr_task.downstream_list) == len(step_4_task_id)
                 for downstream_task in curr_task.downstream_list:
-                    assert "biq_query_load" in downstream_task.task_id
+                    if not any(
+                        task_id in downstream_task.task_id for task_id in step_4_task_id
+                    ):
+                        print()
                     assert any(
                         task_id in downstream_task.task_id for task_id in step_4_task_id
                     )
@@ -263,6 +271,12 @@ class RawDataImportDagIntegrationTest(AirflowIntegrationTest):
         )
         self.split_by_norm.start()
 
+        self.coalesce_files = patch(
+            "recidiviz.airflow.dags.raw_data_import_dag.coalesce_import_ready_files.function",
+            side_effect=fake_task_function_with_return_value([]),
+        )
+        self.coalesce_files.start()
+
     def tearDown(self) -> None:
         self.environment_patcher.stop()
         self.raw_data_enabled_pairs.stop()
@@ -276,6 +290,7 @@ class RawDataImportDagIntegrationTest(AirflowIntegrationTest):
         self.verify_file_chunks_patcher.stop()
         self.raise_errors_patcher.stop()
         self.split_by_norm.stop()
+        self.coalesce_files.stop()
         super().tearDown()
 
     def _create_dag(self) -> DAG:
@@ -345,6 +360,7 @@ class RawDataImportDagIntegrationTest(AirflowIntegrationTest):
                     r".*_primary_import_branch\.get_all_unprocessed_gcs_file_metadata",
                     r".*_primary_import_branch\.get_all_unprocessed_bq_file_metadata",
                     r".*_primary_import_branch\.split_by_pre_import_normalization_type",
+                    r".*_primary_import_branch\.coalesce_import_ready_files",
                     r".*_primary_import_branch\.pre_import_normalization\.*",
                     r".*_primary_import_branch\.biq_query_load\.*",
                     BRANCH_END_TASK_NAME,

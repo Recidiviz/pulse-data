@@ -239,6 +239,7 @@ class TestDirectIngestRawFileLoadManager(BigQueryEmulatorTestCase):
             file_tag=file_tag,
             update_datetime=datetime.datetime(2024, 1, 1, 1, 1, 1, tzinfo=datetime.UTC),
             file_paths=input_paths,
+            original_file_paths=None,
         )
         append_ready_file = self.manager.load_and_prep_paths(irf)
 
@@ -304,6 +305,7 @@ class TestDirectIngestRawFileLoadManager(BigQueryEmulatorTestCase):
                 2020, 6, 10, 0, 0, 0, tzinfo=datetime.UTC
             ),
             file_paths=input_paths,
+            original_file_paths=None,
         )
         append_ready_file = self.manager.load_and_prep_paths(irf)
 
@@ -327,6 +329,7 @@ class TestDirectIngestRawFileLoadManager(BigQueryEmulatorTestCase):
             file_tag=file_tag,
             update_datetime=datetime.datetime(2023, 4, 8, 0, 0, 1, tzinfo=datetime.UTC),
             file_paths=input_paths,
+            original_file_paths=None,
         )
         append_ready_file = self.manager.load_and_prep_paths(irf)
 
@@ -355,6 +358,7 @@ class TestDirectIngestRawFileLoadManager(BigQueryEmulatorTestCase):
                         2023, 4, 8, 0, 0, 1, tzinfo=datetime.UTC
                     ),
                     file_paths=input_paths,
+                    original_file_paths=None,
                 )
             )
 
@@ -382,6 +386,7 @@ class TestDirectIngestRawFileLoadManager(BigQueryEmulatorTestCase):
                         2023, 4, 8, 0, 0, 1, tzinfo=datetime.UTC
                     ),
                     file_paths=input_paths,
+                    original_file_paths=None,
                 )
             )
 
@@ -413,6 +418,7 @@ class TestDirectIngestRawFileLoadManager(BigQueryEmulatorTestCase):
                             2023, 4, 8, 0, 0, 1, tzinfo=datetime.UTC
                         ),
                         file_paths=input_paths,
+                        original_file_paths=None,
                     )
                 )
 
@@ -449,6 +455,7 @@ class TestDirectIngestRawFileLoadManager(BigQueryEmulatorTestCase):
                             2023, 4, 8, 0, 0, 1, tzinfo=datetime.UTC
                         ),
                         file_paths=input_paths,
+                        original_file_paths=None,
                     )
                 )
 
@@ -487,6 +494,7 @@ class TestDirectIngestRawFileLoadManager(BigQueryEmulatorTestCase):
                                 2023, 4, 8, 0, 0, 1, tzinfo=datetime.UTC
                             ),
                             file_paths=[],
+                            original_file_paths=None,
                         ),
                         append_ready_table_address=BigQueryAddress.from_str(
                             '"us_xx_primary_raw_data_temp_load.singlePrimaryKey__1__transformed"'
