@@ -64,9 +64,9 @@ from recidiviz.airflow.dags.raw_data.initialize_raw_data_dag_group import (
 )
 from recidiviz.airflow.dags.raw_data.metadata import (
     IMPORT_READY_FILES,
-    REQUIRES_NORMALIZATION_FILES,
-    REQUIRES_NORMALIZATION_FILES_BQ_METADATA,
-    RESOURCE_LOCK_AQUISITION_DESCRIPTION,
+    REQUIRES_PRE_IMPORT_NORMALIZATION_FILES,
+    REQUIRES_PRE_IMPORT_NORMALIZATION_FILES_BQ_METADATA,
+    RESOURCE_LOCK_ACQUISITION_DESCRIPTION,
     RESOURCE_LOCKS_NEEDED,
     SKIPPED_FILE_ERRORS,
     get_resource_lock_ttl,
@@ -127,7 +127,7 @@ def create_single_state_code_ingest_instance_raw_data_import_branch(
                 region_code=state_code.value,
                 raw_data_instance=raw_data_instance,
                 resources=RESOURCE_LOCKS_NEEDED,
-                lock_description=RESOURCE_LOCK_AQUISITION_DESCRIPTION,
+                lock_description=RESOURCE_LOCK_ACQUISITION_DESCRIPTION,
                 lock_ttl_seconds=get_resource_lock_ttl(raw_data_instance),
             ),
         )
@@ -150,7 +150,7 @@ def create_single_state_code_ingest_instance_raw_data_import_branch(
         # --- step 2: processing logic & metadata management ---------------------------
         # inputs: [ GcsfsFilePath ]
         # execution layer: celery
-        # outputs: [ ImportReadyOriginalFile ], [ RequiresPreImportNormalizationFile ]
+        # outputs: [ ImportReadyFile ], [ RequiresPreImportNormalizationFile ]
 
         get_all_unprocessed_gcs_file_metadata = CloudSqlQueryOperator(
             task_id="get_all_unprocessed_gcs_file_metadata",
@@ -200,7 +200,7 @@ def create_single_state_code_ingest_instance_raw_data_import_branch(
             ).expand(
                 arguments=generate_file_chunking_pod_arguments(
                     state_code.value,
-                    files_to_process[REQUIRES_NORMALIZATION_FILES],
+                    files_to_process[REQUIRES_PRE_IMPORT_NORMALIZATION_FILES],
                     num_batches=NUM_BATCHES,
                 )
             )
@@ -223,7 +223,7 @@ def create_single_state_code_ingest_instance_raw_data_import_branch(
 
             pre_import_normalization_result = regroup_and_verify_file_chunks(
                 normalized_chunks.output,
-                files_to_process[REQUIRES_NORMALIZATION_FILES_BQ_METADATA],
+                files_to_process[REQUIRES_PRE_IMPORT_NORMALIZATION_FILES_BQ_METADATA],
             )
             raise_chunk_normalization_errors(pre_import_normalization_result)
 
@@ -234,7 +234,7 @@ def create_single_state_code_ingest_instance_raw_data_import_branch(
         # --- step 4: big-query upload -------------------------------------------------
         # inputs: [ ImportReadyFile ]
         # execution layer: celery
-        # outputs: [ ImportSessionInfo ]
+        # outputs: [ AppendReadyFile ], [ AppendSummary ]
 
         serialized_import_ready_files = coalesce_import_ready_files(
             files_to_process[IMPORT_READY_FILES], pre_import_normalization_result
@@ -269,7 +269,7 @@ def create_single_state_code_ingest_instance_raw_data_import_branch(
         # ------------------------------------------------------------------------------
 
         # --- step 5: cleanup & storage ----------------------------------------------
-        # inputs: [ ImportSessionInfo ], [ RequiresCleanupFile ]
+        # inputs: [ AppendReadyFile ], [ AppendSummary ]
         # execution layer: celery
         # outputs:
 

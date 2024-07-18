@@ -34,8 +34,8 @@ from recidiviz.ingest.direct.gcs.directory_path_utils import (
 from recidiviz.ingest.direct.gcs.filename_parts import filename_parts_from_path
 from recidiviz.ingest.direct.raw_data.raw_file_configs import get_region_raw_file_config
 from recidiviz.ingest.direct.types.raw_data_import_types import (
-    NormalizedCsvChunkResult,
     PreImportNormalizationType,
+    PreImportNormalizedCsvChunkResult,
     RequiresPreImportNormalizationFileChunk,
 )
 
@@ -46,7 +46,7 @@ DEFAULT_READ_CHUNK_SIZE = 32 * 1024 * 1024  # 32 mb
 class DirectIngestRawFilePreImportNormalizer:
     """Class for coordinating the normalization of a csv dialect. Given a filesystem
     (knowledge about how to read/write chunks) and a state code (knowledge about file
-    metadata via raw file configs), this class can deteremine the correct transformations
+    metadata via raw file configs), this class can determine the correct transformations
     needed to normalize the csv dialect to a BigQuery-readable format.
     """
 
@@ -81,25 +81,24 @@ class DirectIngestRawFilePreImportNormalizer:
     ) -> bool:
         """We will prepend headers for all chunks for files that have
         |infer_columns_from_config| as True. For all other files, we will want to
-        preprend headers for all but the first chunk (chunk_num = 0).
+        prepend headers for all but the first chunk (chunk_num = 0).
         """
         return infer_columns_from_config or chunk_num != 0
 
     def normalize_chunk_for_import(
         self, chunk: RequiresPreImportNormalizationFileChunk
-    ) -> NormalizedCsvChunkResult:
-        """Given a |chunk|, normalize the chunk according to it's normalization_type so
+    ) -> PreImportNormalizedCsvChunkResult:
+        """Given |chunk|, normalize the chunk according to it's normalization_type so
         it can be imported to BQ and write the result out to a temp Google Cloud Storage
         path.
         """
 
-        if chunk.normalization_type is None:
+        if chunk.pre_import_normalization_type is None:
             raise ValueError("No pass is required for this chunk")
 
         # first, get all the info we need about the chunk
 
-        path = GcsfsFilePath.from_absolute_path(chunk.path)
-        path_parts = filename_parts_from_path(path)
+        path_parts = filename_parts_from_path(chunk.path)
         config = self._region_config.raw_file_configs[path_parts.file_tag]
         output_path = self._get_output_path(
             path_parts.file_tag, chunk.chunk_boundary.chunk_num
@@ -107,7 +106,7 @@ class DirectIngestRawFilePreImportNormalizer:
 
         # then, execute the actual normalization step
         with self._fs.open(
-            path, mode="rb", chunk_size=self._read_chunk_size, verifiable=False
+            chunk.path, mode="rb", chunk_size=self._read_chunk_size, verifiable=False
         ) as f:
 
             offset_reader = BytesChunkReader(
@@ -126,7 +125,7 @@ class DirectIngestRawFilePreImportNormalizer:
             output_reader: Union[IO, ReadOnlyCsvNormalizingStream]
 
             if (
-                chunk.normalization_type
+                chunk.pre_import_normalization_type
                 == PreImportNormalizationType.ENCODING_DELIMITER_AND_TERMINATOR_UPDATE
             ):
                 output_reader = ReadOnlyCsvNormalizingStream(
@@ -151,9 +150,9 @@ class DirectIngestRawFilePreImportNormalizer:
             # note: if a blob w/ the same name exists, it will just overwrite it
             self._fs.upload_from_string(output_path, decoded_output, "text/csv")
 
-        return NormalizedCsvChunkResult(
+        return PreImportNormalizedCsvChunkResult(
             input_file_path=chunk.path,
-            output_file_path=output_path.abs_path(),
+            output_file_path=output_path,
             chunk_boundary=chunk.chunk_boundary,
             crc32c=verifiable_reader.get_crc32c_as_int(),
         )

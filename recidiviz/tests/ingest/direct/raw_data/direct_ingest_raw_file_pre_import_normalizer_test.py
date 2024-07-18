@@ -95,15 +95,13 @@ class DirectIngestRawFileNormalizationPassTest(unittest.TestCase):
         chunk: RequiresPreImportNormalizationFileChunk,
         expected_output: str,
     ) -> None:
-        input_gcs_path = GcsfsFilePath.from_absolute_path(chunk.path)
-        self.fs.test_add_path(path=input_gcs_path, local_path=local_path)
+        self.fs.test_add_path(path=chunk.path, local_path=local_path)
 
         normalizer = DirectIngestRawFilePreImportNormalizer(self.fs, StateCode.US_XX)
 
         pass_result = normalizer.normalize_chunk_for_import(chunk)
-        output_gcs_path = GcsfsFilePath.from_absolute_path(pass_result.output_file_path)
 
-        with self.fs.open(output_gcs_path, "r", encoding="UTF-8") as f:
+        with self.fs.open(pass_result.output_file_path, "r", encoding="UTF-8") as f:
             assert f.read() == expected_output
 
     def test_encoding_pass_simple(self) -> None:
@@ -111,8 +109,10 @@ class DirectIngestRawFileNormalizationPassTest(unittest.TestCase):
         self.us_xx_region_config.raw_file_configs = {"myFile": windows_config}
 
         chunk = RequiresPreImportNormalizationFileChunk(
-            path="gs://my-bucket/unprocessed_2024-01-20T16:35:33:617135_raw_myFile.csv",
-            normalization_type=PreImportNormalizationType.ENCODING_UPDATE_ONLY,
+            path=GcsfsFilePath.from_absolute_path(
+                "gs://my-bucket/unprocessed_2024-01-20T16:35:33:617135_raw_myFile.csv"
+            ),
+            pre_import_normalization_type=PreImportNormalizationType.ENCODING_UPDATE_ONLY,
             chunk_boundary=CsvChunkBoundary(
                 start_inclusive=0, end_exclusive=28, chunk_num=0
             ),
@@ -127,8 +127,10 @@ class DirectIngestRawFileNormalizationPassTest(unittest.TestCase):
         self.us_xx_region_config.raw_file_configs = {"myFile": windows_config}
 
         chunk = RequiresPreImportNormalizationFileChunk(
-            path="gs://my-bucket/unprocessed_2024-01-20T16:35:33:617135_raw_myFile.csv",
-            normalization_type=PreImportNormalizationType.ENCODING_UPDATE_ONLY,
+            path=GcsfsFilePath.from_absolute_path(
+                "gs://my-bucket/unprocessed_2024-01-20T16:35:33:617135_raw_myFile.csv"
+            ),
+            pre_import_normalization_type=PreImportNormalizationType.ENCODING_UPDATE_ONLY,
             chunk_boundary=CsvChunkBoundary(
                 start_inclusive=28, end_exclusive=81, chunk_num=1
             ),
@@ -145,8 +147,10 @@ class DirectIngestRawFileNormalizationPassTest(unittest.TestCase):
         self.us_xx_region_config.raw_file_configs = {"myFile": windows_config}
 
         chunk = RequiresPreImportNormalizationFileChunk(
-            path="gs://my-bucket/unprocessed_2024-01-20T16:35:33:617135_raw_myFile.csv",
-            normalization_type=PreImportNormalizationType.ENCODING_UPDATE_ONLY,
+            path=GcsfsFilePath.from_absolute_path(
+                "gs://my-bucket/unprocessed_2024-01-20T16:35:33:617135_raw_myFile.csv"
+            ),
+            pre_import_normalization_type=PreImportNormalizationType.ENCODING_UPDATE_ONLY,
             chunk_boundary=CsvChunkBoundary(
                 start_inclusive=81, end_exclusive=93, chunk_num=2
             ),
@@ -165,8 +169,10 @@ class DirectIngestRawFileNormalizationPassTest(unittest.TestCase):
         self.us_xx_region_config.raw_file_configs = {"myFile": windows_config}
 
         chunk = RequiresPreImportNormalizationFileChunk(
-            path="gs://my-bucket/unprocessed_2024-01-20T16:35:33:617135_raw_myFile.csv",
-            normalization_type=PreImportNormalizationType.ENCODING_DELIMITER_AND_TERMINATOR_UPDATE,
+            path=GcsfsFilePath.from_absolute_path(
+                "gs://my-bucket/unprocessed_2024-01-20T16:35:33:617135_raw_myFile.csv"
+            ),
+            pre_import_normalization_type=PreImportNormalizationType.ENCODING_DELIMITER_AND_TERMINATOR_UPDATE,
             chunk_boundary=CsvChunkBoundary(
                 start_inclusive=0, end_exclusive=28, chunk_num=0
             ),
@@ -184,8 +190,10 @@ class DirectIngestRawFileNormalizationPassTest(unittest.TestCase):
         self.us_xx_region_config.raw_file_configs = {"myFile": windows_config}
 
         chunk = RequiresPreImportNormalizationFileChunk(
-            path="gs://my-bucket/unprocessed_2024-01-20T16:35:33:617135_raw_myFile.csv",
-            normalization_type=PreImportNormalizationType.ENCODING_DELIMITER_AND_TERMINATOR_UPDATE,
+            path=GcsfsFilePath.from_absolute_path(
+                "gs://my-bucket/unprocessed_2024-01-20T16:35:33:617135_raw_myFile.csv"
+            ),
+            pre_import_normalization_type=PreImportNormalizationType.ENCODING_DELIMITER_AND_TERMINATOR_UPDATE,
             chunk_boundary=CsvChunkBoundary(
                 start_inclusive=81, end_exclusive=93, chunk_num=1
             ),
@@ -205,8 +213,10 @@ class DirectIngestRawFileNormalizationPassTest(unittest.TestCase):
         self.us_xx_region_config.raw_file_configs = {"myFile": windows_config}
 
         chunk = RequiresPreImportNormalizationFileChunk(
-            path="gs://my-bucket/unprocessed_2024-01-20T16:35:33:617135_raw_myFile.csv",
-            normalization_type=PreImportNormalizationType.ENCODING_DELIMITER_AND_TERMINATOR_UPDATE,
+            path=GcsfsFilePath.from_absolute_path(
+                "gs://my-bucket/unprocessed_2024-01-20T16:35:33:617135_raw_myFile.csv"
+            ),
+            pre_import_normalization_type=PreImportNormalizationType.ENCODING_DELIMITER_AND_TERMINATOR_UPDATE,
             chunk_boundary=CsvChunkBoundary(
                 start_inclusive=0, end_exclusive=40, chunk_num=0
             ),
@@ -227,8 +237,10 @@ class DirectIngestRawFileNormalizationPassTest(unittest.TestCase):
         self.us_xx_region_config.raw_file_configs = {"myFile": windows_config}
 
         chunk = RequiresPreImportNormalizationFileChunk(
-            path="gs://my-bucket/unprocessed_2024-01-20T16:35:33:617135_raw_myFile.csv",
-            normalization_type=PreImportNormalizationType.ENCODING_DELIMITER_AND_TERMINATOR_UPDATE,
+            path=GcsfsFilePath.from_absolute_path(
+                "gs://my-bucket/unprocessed_2024-01-20T16:35:33:617135_raw_myFile.csv"
+            ),
+            pre_import_normalization_type=PreImportNormalizationType.ENCODING_DELIMITER_AND_TERMINATOR_UPDATE,
             chunk_boundary=CsvChunkBoundary(
                 start_inclusive=96, end_exclusive=108, chunk_num=1
             ),
@@ -250,8 +262,10 @@ class DirectIngestRawFileNormalizationPassTest(unittest.TestCase):
         self.us_xx_region_config.raw_file_configs = {"myFile": windows_config}
 
         chunk = RequiresPreImportNormalizationFileChunk(
-            path="gs://my-bucket/unprocessed_2024-01-20T16:35:33:617135_raw_myFile.csv",
-            normalization_type=PreImportNormalizationType.ENCODING_DELIMITER_AND_TERMINATOR_UPDATE,
+            path=GcsfsFilePath.from_absolute_path(
+                "gs://my-bucket/unprocessed_2024-01-20T16:35:33:617135_raw_myFile.csv"
+            ),
+            pre_import_normalization_type=PreImportNormalizationType.ENCODING_DELIMITER_AND_TERMINATOR_UPDATE,
             chunk_boundary=CsvChunkBoundary(
                 start_inclusive=0, end_exclusive=42, chunk_num=0
             ),
@@ -270,8 +284,10 @@ class DirectIngestRawFileNormalizationPassTest(unittest.TestCase):
         self.us_xx_region_config.raw_file_configs = {"myFile": windows_config}
 
         chunk = RequiresPreImportNormalizationFileChunk(
-            path="gs://my-bucket/unprocessed_2024-01-20T16:35:33:617135_raw_myFile.csv",
-            normalization_type=PreImportNormalizationType.ENCODING_DELIMITER_AND_TERMINATOR_UPDATE,
+            path=GcsfsFilePath.from_absolute_path(
+                "gs://my-bucket/unprocessed_2024-01-20T16:35:33:617135_raw_myFile.csv"
+            ),
+            pre_import_normalization_type=PreImportNormalizationType.ENCODING_DELIMITER_AND_TERMINATOR_UPDATE,
             chunk_boundary=CsvChunkBoundary(
                 start_inclusive=100, end_exclusive=107, chunk_num=3
             ),

@@ -24,8 +24,8 @@ from recidiviz.airflow.dags.raw_data.file_metadata_tasks import (
 )
 from recidiviz.airflow.dags.raw_data.metadata import (
     IMPORT_READY_FILES,
-    REQUIRES_NORMALIZATION_FILES,
-    REQUIRES_NORMALIZATION_FILES_BQ_METADATA,
+    REQUIRES_PRE_IMPORT_NORMALIZATION_FILES,
+    REQUIRES_PRE_IMPORT_NORMALIZATION_FILES_BQ_METADATA,
 )
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.ingest.direct.types.raw_data_import_types import (
@@ -33,7 +33,6 @@ from recidiviz.ingest.direct.types.raw_data_import_types import (
     RawBigQueryFileMetadataSummary,
     RawFileProcessingError,
     RawGCSFileMetadataSummary,
-    RequiresNormalizationFile,
 )
 from recidiviz.tests.ingest.direct import fake_regions
 from recidiviz.utils.airflow_types import BatchedTaskInstanceOutput
@@ -47,8 +46,8 @@ class SplitByPreImportNormalizationTest(TestCase):
             "US_XX", [], fake_regions
         )
         assert results[IMPORT_READY_FILES] == []
-        assert results[REQUIRES_NORMALIZATION_FILES_BQ_METADATA] == []
-        assert results[REQUIRES_NORMALIZATION_FILES] == []
+        assert results[REQUIRES_PRE_IMPORT_NORMALIZATION_FILES_BQ_METADATA] == []
+        assert results[REQUIRES_PRE_IMPORT_NORMALIZATION_FILES] == []
 
     def test_splits_output_correctly(self) -> None:
         inputs = [
@@ -96,12 +95,12 @@ class SplitByPreImportNormalizationTest(TestCase):
 
         assert [
             RawBigQueryFileMetadataSummary.deserialize(r)
-            for r in results[REQUIRES_NORMALIZATION_FILES_BQ_METADATA]
+            for r in results[REQUIRES_PRE_IMPORT_NORMALIZATION_FILES_BQ_METADATA]
         ] == inputs[1:]
         assert {
-            RequiresNormalizationFile.deserialize(file).path
-            for file in results[REQUIRES_NORMALIZATION_FILES]
-        } == {gcs_file.path.abs_path() for gcs_file in inputs[1].gcs_files}
+            GcsfsFilePath.from_absolute_path(path)
+            for path in results[REQUIRES_PRE_IMPORT_NORMALIZATION_FILES]
+        } == {gcs_file.path for gcs_file in inputs[1].gcs_files}
         assert [
             ImportReadyFile.deserialize(r) for r in results[IMPORT_READY_FILES]
         ] == [ImportReadyFile.from_bq_metadata(inputs[0])]

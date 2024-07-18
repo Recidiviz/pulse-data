@@ -38,13 +38,12 @@ from recidiviz.ingest.direct.types.raw_data_import_types import (
     AppendReadyFileBatch,
     AppendSummary,
     ImportReadyFile,
-    ImportReadyNormalizedFile,
-    NormalizedCsvChunkResult,
     PreImportNormalizationType,
+    PreImportNormalizedCsvChunkResult,
+    PreImportNormalizedFileResult,
     RawBigQueryFileMetadataSummary,
     RawFileProcessingError,
     RawGCSFileMetadataSummary,
-    RequiresNormalizationFile,
     RequiresPreImportNormalizationFile,
     RequiresPreImportNormalizationFileChunk,
 )
@@ -158,8 +157,8 @@ class TestSerialization(unittest.TestCase):
             start_inclusive=0, end_exclusive=100, chunk_num=0
         )
         original = RequiresPreImportNormalizationFileChunk(
-            path="path/to/file.csv",
-            normalization_type=PreImportNormalizationType.ENCODING_DELIMITER_AND_TERMINATOR_UPDATE,
+            path=GcsfsFilePath.from_absolute_path("path/to/file.csv"),
+            pre_import_normalization_type=PreImportNormalizationType.ENCODING_DELIMITER_AND_TERMINATOR_UPDATE,
             chunk_boundary=chunk_boundary,
             headers=["id", "name", "age"],
         )
@@ -172,8 +171,8 @@ class TestSerialization(unittest.TestCase):
             CsvChunkBoundary(start_inclusive=100, end_exclusive=200, chunk_num=1),
         ]
         original = RequiresPreImportNormalizationFile(
-            path="path/to/file.csv",
-            normalization_type=PreImportNormalizationType.ENCODING_DELIMITER_AND_TERMINATOR_UPDATE,
+            path=GcsfsFilePath.from_absolute_path("path/to/file.csv"),
+            pre_import_normalization_type=PreImportNormalizationType.ENCODING_DELIMITER_AND_TERMINATOR_UPDATE,
             chunk_boundaries=chunk_boundaries,
             headers=["id", "name", "age"],
         )
@@ -184,29 +183,22 @@ class TestSerialization(unittest.TestCase):
         chunk_boundary = CsvChunkBoundary(
             start_inclusive=0, end_exclusive=100, chunk_num=0
         )
-        original = NormalizedCsvChunkResult(
-            input_file_path="path/to/file.csv",
-            output_file_path="path/to/result.csv",
+        original = PreImportNormalizedCsvChunkResult(
+            input_file_path=GcsfsFilePath.from_absolute_path("path/to/file.csv"),
+            output_file_path=GcsfsFilePath.from_absolute_path("path/to/result.csv"),
             chunk_boundary=chunk_boundary,
             crc32c=0xFFFFFFFF,
         )
 
-        self._validate_serialization(original, NormalizedCsvChunkResult)
+        self._validate_serialization(original, PreImportNormalizedCsvChunkResult)
 
     def test_import_ready_normalized_file(self) -> None:
-        original = ImportReadyNormalizedFile(
-            input_file_path="test_bucket/file", output_file_paths=["temp_bucket/file_0"]
+        original = PreImportNormalizedFileResult(
+            input_file_path=GcsfsFilePath.from_absolute_path("test_bucket/file"),
+            output_file_paths=[GcsfsFilePath.from_absolute_path("temp_bucket/file_0")],
         )
 
-        self._validate_serialization(original, ImportReadyNormalizedFile)
-
-    def test_requires_normalization_file(self) -> None:
-        original = RequiresNormalizationFile(
-            path="test/file.csv",
-            normalization_type=PreImportNormalizationType.ENCODING_DELIMITER_AND_TERMINATOR_UPDATE,
-        )
-
-        self._validate_serialization(original, RequiresNormalizationFile)
+        self._validate_serialization(original, PreImportNormalizedFileResult)
 
     def test_import_ready_file(self) -> None:
         original = ImportReadyFile(
@@ -352,17 +344,18 @@ class TestSerialization(unittest.TestCase):
         self._validate_serialization(original, RawBigQueryFileMetadataSummary)
 
     def test_task_result(self) -> None:
-        result = ImportReadyNormalizedFile(
-            input_file_path="test_bucket/file", output_file_paths=["temp_bucket/file_0"]
+        result = PreImportNormalizedFileResult(
+            input_file_path=GcsfsFilePath.from_absolute_path("test_bucket/file"),
+            output_file_paths=[GcsfsFilePath.from_absolute_path("temp_bucket/file_0")],
         )
         original = BatchedTaskInstanceOutput[
-            ImportReadyNormalizedFile, RawFileProcessingError
+            PreImportNormalizedFileResult, RawFileProcessingError
         ](results=[result], errors=[])
 
         serialized = original.serialize()
         deserialized = BatchedTaskInstanceOutput.deserialize(
             json_str=serialized,
-            result_cls=ImportReadyNormalizedFile,
+            result_cls=PreImportNormalizedFileResult,
             error_cls=RawFileProcessingError,
         )
 

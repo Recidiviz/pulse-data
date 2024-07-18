@@ -18,11 +18,11 @@
 import argparse
 import concurrent.futures
 import traceback
-from typing import List
+from types import ModuleType
+from typing import List, Optional
 
 from recidiviz.cloud_storage.gcs_file_system import GCSFileSystem
 from recidiviz.cloud_storage.gcsfs_csv_chunk_boundary_finder import (
-    CsvChunkBoundary,
     GcsfsCsvChunkBoundaryFinder,
 )
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
@@ -34,39 +34,46 @@ from recidiviz.ingest.direct.gcs.filename_parts import filename_parts_from_path
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRawFileConfig,
     DirectIngestRegionRawFileConfig,
+    get_region_raw_file_config,
 )
 from recidiviz.ingest.direct.raw_data.read_raw_file_column_headers import (
     DirectIngestRawFileHeaderReader,
 )
 from recidiviz.ingest.direct.types.raw_data_import_types import (
+    PreImportNormalizationType,
     RawFileProcessingError,
-    RequiresNormalizationFile,
     RequiresPreImportNormalizationFile,
 )
 from recidiviz.utils.airflow_types import BatchedTaskInstanceOutput
+from recidiviz.utils.types import assert_type
 
 MAX_THREADS = 8  # TODO(#29946) determine reasonable default
 FILE_LIST_DELIMITER = "^"
 
 
 def extract_file_chunks_concurrently(
-    requires_normalization_files: List[str], state_code: StateCode
+    serialized_requires_pre_import_normalization_file_paths: List[str],
+    state_code: StateCode,
+    region_module_override: Optional[ModuleType] = None,
 ) -> str:
     fs = GcsfsFactory.build()
-    region_raw_file_config = DirectIngestRegionRawFileConfig(state_code.value)
-    deserialized_files = [
-        RequiresNormalizationFile.deserialize(f) for f in requires_normalization_files
+    region_raw_file_config = get_region_raw_file_config(
+        state_code.value, region_module=region_module_override
+    )
+    requires_pre_import_normalization_file_paths = [
+        GcsfsFilePath.from_absolute_path(serialized_path)
+        for serialized_path in serialized_requires_pre_import_normalization_file_paths
     ]
 
     chunking_result = _process_files_concurrently(
-        fs, deserialized_files, region_raw_file_config
+        fs, requires_pre_import_normalization_file_paths, region_raw_file_config
     )
     return chunking_result.serialize()
 
 
 def _process_files_concurrently(
     fs: GCSFileSystem,
-    requires_normalization_files: List[RequiresNormalizationFile],
+    requires_pre_import_normalization_file_paths: List[GcsfsFilePath],
     region_raw_file_config: DirectIngestRegionRawFileConfig,
 ) -> BatchedTaskInstanceOutput[
     RequiresPreImportNormalizationFile, RawFileProcessingError
@@ -80,20 +87,20 @@ def _process_files_concurrently(
             executor.submit(
                 _extract_file_chunks,
                 fs,
-                requires_normalization_file,
+                requires_pre_import_normalization_file_path,
                 region_raw_file_config,
-            ): requires_normalization_file
-            for requires_normalization_file in requires_normalization_files
+            ): requires_pre_import_normalization_file_path
+            for requires_pre_import_normalization_file_path in requires_pre_import_normalization_file_paths
         }
         for future in concurrent.futures.as_completed(futures):
-            requires_normalization_file = futures[future]
+            requires_pre_import_normalization_file_path = futures[future]
             try:
                 results.append(future.result())
             except Exception as e:
                 errors.append(
                     RawFileProcessingError(
-                        file_path=requires_normalization_file.path,
-                        error_msg=f"{requires_normalization_file.path}: {str(e)}\n{traceback.format_exc()}",
+                        file_path=requires_pre_import_normalization_file_path,
+                        error_msg=f"{requires_pre_import_normalization_file_path.abs_path()}: {str(e)}\n{traceback.format_exc()}",
                     )
                 )
 
@@ -104,27 +111,29 @@ def _process_files_concurrently(
 
 def _extract_file_chunks(
     fs: GCSFileSystem,
-    requires_normalization_file: RequiresNormalizationFile,
+    requires_pre_import_normalization_file_path: GcsfsFilePath,
     region_raw_file_config: DirectIngestRegionRawFileConfig,
 ) -> RequiresPreImportNormalizationFile:
-    gcs_path = GcsfsFilePath.from_absolute_path(requires_normalization_file.path)
-    raw_file_config = _get_raw_file_config(region_raw_file_config, gcs_path)
-    headers = _get_file_headers(fs, gcs_path, raw_file_config)
+    raw_file_config = _get_raw_file_config(
+        region_raw_file_config, requires_pre_import_normalization_file_path
+    )
+    headers = _get_file_headers(
+        fs, requires_pre_import_normalization_file_path, raw_file_config
+    )
 
     chunker = GcsfsCsvChunkBoundaryFinder(fs)
-    chunks = chunker.get_chunks_for_gcs_path(gcs_path)
+    chunks = chunker.get_chunks_for_gcs_path(
+        requires_pre_import_normalization_file_path
+    )
 
-    return _serialize_chunks(requires_normalization_file, chunks, headers)
-
-
-def _serialize_chunks(
-    requires_normalization_file: RequiresNormalizationFile,
-    chunks: List[CsvChunkBoundary],
-    headers: List[str],
-) -> RequiresPreImportNormalizationFile:
     return RequiresPreImportNormalizationFile(
-        path=requires_normalization_file.path,
-        normalization_type=requires_normalization_file.normalization_type,
+        path=requires_pre_import_normalization_file_path,
+        pre_import_normalization_type=assert_type(
+            PreImportNormalizationType.required_pre_import_normalization_type(
+                raw_file_config
+            ),
+            PreImportNormalizationType,
+        ),
         chunk_boundaries=chunks,
         headers=headers,
     )
