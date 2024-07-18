@@ -118,18 +118,18 @@
             }
           },
           "transforms": {
-            "description": "A list of dictionaries representing transformations/pre-processing that should be done on columns within this join relationship.",
+            "description": "A list of dictionaries representing transforms/pre-processing that should be done on columns within this join relationship.",
             "type": "array",
             "items": {
               "type": "object",
-              "required": ["column", "transformation"],
+              "required": ["column", "transform"],
               "properties": {
                 "column": {
-                  "description": "The column under transformation, formatted as table_name.column_name.",
+                  "description": "The column under transform, formatted as table_name.column_name.",
                   "type": "string"
                 },
-                "transformation": {
-                  "description": "The transformation to apply, a string including {col_name}.",
+                "transform": {
+                  "description": "The transform to apply, a string including {col_name}.",
                   "type": "string"
                 }
               }

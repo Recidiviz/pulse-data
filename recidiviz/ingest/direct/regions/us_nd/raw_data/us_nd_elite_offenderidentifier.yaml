@@ -33,3 +33,8 @@ table_relationships:
   - foreign_table: elite_offenders
     join_logic:
       - elite_offenders.ROOT_OFFENDER_ID = elite_offenderidentifier.ROOT_OFFENDER_ID
+    transforms:
+      - column: elite_offenders.ROOT_OFFENDER_ID
+        transform: REPLACE(REPLACE({col_name},',',''), '.00', '')
+      - column: elite_offenderidentifier.ROOT_OFFENDER_ID
+        transform: REPLACE(REPLACE({col_name},',',''), '.00', '')
