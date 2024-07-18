@@ -275,7 +275,8 @@ def verify_file_checksums(
             # them up properly
             errors.append(
                 RawFileProcessingError(
-                    file_path=file_path,
+                    original_file_path=file_path,
+                    temporary_file_paths=[chunk.output_file_path for chunk in chunks],
                     error_msg=f"Checksum mismatch for {file_path.abs_path()}: {chunk_combined_checksum} != {full_file_checksum}",
                 )
             )
@@ -295,7 +296,7 @@ def regroup_normalized_file_chunks(
     ] = defaultdict(list)
 
     files_with_previous_errors = set(
-        error.file_path for error in normalized_chunks_errors
+        error.original_file_path for error in normalized_chunks_errors
     )
 
     for chunk in normalized_chunks_result:

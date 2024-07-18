@@ -67,29 +67,29 @@ class LoadAndPrepForRegionTest(TestCase):
             ImportReadyFile(
                 file_id=1,
                 file_tag="singlePrimaryKey",
-                file_paths=[],
+                original_file_paths=[],
                 update_datetime=datetime.datetime(
                     2024, 1, 1, 1, 1, 1, tzinfo=datetime.UTC
                 ),
-                original_file_paths=None,
+                pre_import_normalized_file_paths=None,
             ),
             ImportReadyFile(
                 file_id=2,
                 file_tag="singlePrimaryKey",
-                file_paths=[],
+                original_file_paths=[],
                 update_datetime=datetime.datetime(
                     2024, 1, 2, 1, 1, 1, tzinfo=datetime.UTC
                 ),
-                original_file_paths=None,
+                pre_import_normalized_file_paths=None,
             ),
             ImportReadyFile(
                 file_id=3,
                 file_tag="singlePrimaryKey",
-                file_paths=[],
+                original_file_paths=[],
                 update_datetime=datetime.datetime(
                     2024, 1, 3, 1, 1, 1, tzinfo=datetime.UTC
                 ),
-                original_file_paths=None,
+                pre_import_normalized_file_paths=None,
             ),
         ]
 
@@ -200,9 +200,9 @@ class GenerateAppendBatchesTest(TestCase):
         import_ready_file = ImportReadyFile(
             file_id=1,
             file_tag=file_tag,
-            file_paths=[],
+            original_file_paths=[],
             update_datetime=datetime.datetime(2024, 1, 1, 1, 1, 1, tzinfo=datetime.UTC),
-            original_file_paths=None,
+            pre_import_normalized_file_paths=None,
         )
         return [
             AppendReadyFile(
@@ -275,7 +275,8 @@ class GenerateAppendBatchesTest(TestCase):
                 RawFileLoadAndPrepError(
                     error_msg="Error!",
                     file_tag="tagFullHistoricalExport",
-                    file_paths=[],
+                    original_file_paths=[],
+                    pre_import_normalized_file_paths=None,
                     update_datetime=datetime.datetime(
                         2024, 1, 10, 1, 1, tzinfo=datetime.UTC
                     ),
@@ -300,7 +301,8 @@ class GenerateAppendBatchesTest(TestCase):
         f = RawFileLoadAndPrepError(
             error_msg="Error!",
             file_tag="tagFullHistoricalExport",
-            file_paths=[],
+            original_file_paths=[],
+            pre_import_normalized_file_paths=None,
             update_datetime=datetime.datetime(2024, 1, 2, 1, 1, tzinfo=datetime.UTC),
         )
 
@@ -339,7 +341,8 @@ class GenerateAppendBatchesTest(TestCase):
                     update_datetime=datetime.datetime(
                         2024, 1, 5, 1, 1, 1, tzinfo=datetime.UTC
                     ),
-                    file_paths=[],
+                    original_file_paths=[],
+                    pre_import_normalized_file_paths=None,
                 )
             ],
         ) == (self.get_summaries("tagFullHistoricalExport"), [])
@@ -355,7 +358,8 @@ class GenerateAppendBatchesTest(TestCase):
                     update_datetime=datetime.datetime(
                         2024, 1, 2, 1, 1, 1, tzinfo=datetime.UTC
                     ),
-                    file_paths=[],
+                    original_file_paths=[],
+                    pre_import_normalized_file_paths=None,
                 )
             ],
         )
@@ -395,9 +399,9 @@ class AppendToRawDataTableForRegionTest(TestCase):
         import_ready_file = ImportReadyFile(
             file_id=1,
             file_tag=file_tag,
-            file_paths=[],
+            original_file_paths=[],
             update_datetime=datetime.datetime(2024, 1, 1, 1, 1, 1, tzinfo=datetime.UTC),
-            original_file_paths=None,
+            pre_import_normalized_file_paths=None,
         )
         return [
             AppendReadyFile(

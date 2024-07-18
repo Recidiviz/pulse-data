@@ -98,6 +98,7 @@ class DirectIngestRawFileLoadManager:
         file_tag: str,
         paths: List[GcsfsFilePath],
         destination_address: BigQueryAddress,
+        should_delete_temp_files: bool,
     ) -> int:
         """Loads the raw data in the list of files at the provided |paths| into into
         |destination_address|, not including recidivz-managed fields
@@ -123,7 +124,8 @@ class DirectIngestRawFileLoadManager:
                 destination_address.to_str(),
                 paths,
             )
-            self._delete_temp_files(paths)
+            if should_delete_temp_files:
+                self._delete_temp_files(paths)
             raise e
 
         try:
@@ -147,7 +149,8 @@ class DirectIngestRawFileLoadManager:
             )
             raise e
         finally:
-            self._delete_temp_files(paths)
+            if should_delete_temp_files:
+                self._delete_temp_files(paths)
 
         loaded_row_count = load_job.output_rows
 
@@ -258,7 +261,10 @@ class DirectIngestRawFileLoadManager:
         try:
 
             raw_rows_count = self._load_paths_to_temp_table(
-                file.file_tag, file.file_paths, temp_raw_file_address
+                file.file_tag,
+                file.paths_to_load,
+                temp_raw_file_address,
+                bool(file.pre_import_normalized_file_paths),
             )
 
             self._apply_pre_migration_transformations(

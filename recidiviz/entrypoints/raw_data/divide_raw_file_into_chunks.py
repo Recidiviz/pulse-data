@@ -99,7 +99,8 @@ def _process_files_concurrently(
             except Exception as e:
                 errors.append(
                     RawFileProcessingError(
-                        file_path=requires_pre_import_normalization_file_path,
+                        original_file_path=requires_pre_import_normalization_file_path,
+                        temporary_file_paths=None,
                         error_msg=f"{requires_pre_import_normalization_file_path.abs_path()}: {str(e)}\n{traceback.format_exc()}",
                     )
                 )

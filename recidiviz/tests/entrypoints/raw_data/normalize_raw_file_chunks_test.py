@@ -116,6 +116,9 @@ class TestRawDataChunkNormalization(unittest.TestCase):
         self.mock_normalizer_instance.normalize_chunk_for_import.side_effect = (
             Exception("Normalization error")
         )
+        self.mock_normalizer_instance.output_path_for_chunk.return_value = (
+            GcsfsFilePath(bucket_name="temp", blob_name="file.path")
+        )
 
         result = BatchedTaskInstanceOutput.deserialize(
             json_str=normalize_raw_file_chunks(
@@ -127,7 +130,7 @@ class TestRawDataChunkNormalization(unittest.TestCase):
 
         self.assertEqual(result.results, [])
         self.assertEqual(len(result.errors), 1)
-        self.assertEqual(self.file_path, result.errors[0].file_path)
+        self.assertEqual(self.file_path, result.errors[0].original_file_path)
         self.assertIn("Normalization error", result.errors[0].error_msg)
         self.mock_normalizer_instance.normalize_chunk_for_import.assert_called_once_with(
             self.requires_normalization_chunk
@@ -161,8 +164,5 @@ class TestRawDataChunkNormalization(unittest.TestCase):
             ["serialized_chunk1", "serialized_chunk2"], self.state_code
         )
         mock_save_to_xcom.assert_called_once_with(
-            {
-                "results": ["normalized_chunk1", "normalized_chunk2"],
-                "errors": [],
-            }
+            {"results": ["normalized_chunk1", "normalized_chunk2"], "errors": []}
         )

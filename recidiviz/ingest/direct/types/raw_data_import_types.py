@@ -113,15 +113,21 @@ class RawFileProcessingError(RawDataImportError):
     import task.
 
     Attributes:
-        file_path (GcsfsFilePath): the file_path where the error occurred
+        original_file_path (GcsfsFilePath): the path to the original file sent to us
+            by the state associated with this error
+        temporary_file_paths (Optional[List[GcsfsFilePath]]): any temporary files
+            created during pre-import normalization
         error_type (DirectIngestRawDataImportSessionStatus): defaults to
             FAILED_PRE_IMPORT_NORMALIZATION_STEP.
         error_msg (str): an error message, including any relevant stack traces.
 
     """
 
-    file_path: GcsfsFilePath = attr.ib(
+    original_file_path: GcsfsFilePath = attr.ib(
         validator=attr.validators.instance_of(GcsfsFilePath)
+    )
+    temporary_file_paths: Optional[List[GcsfsFilePath]] = attr.ib(
+        validator=attr.validators.optional(attr_validators.is_list_of(GcsfsFilePath))
     )
     error_type: DirectIngestRawDataImportSessionStatus = attr.ib(
         default=DirectIngestRawDataImportSessionStatus.FAILED_PRE_IMPORT_NORMALIZATION_STEP,
@@ -129,11 +135,16 @@ class RawFileProcessingError(RawDataImportError):
     )
 
     def __str__(self) -> str:
-        return f"{self.error_type.value} with {self.file_path} failed with:\n\n{self.error_msg}"
+        return f"{self.error_type.value} with {self.original_file_path} failed with:\n\n{self.error_msg}"
 
     def serialize(self) -> str:
         result_dict = {
-            "file_path": self.file_path.abs_path(),
+            "original_file_path": self.original_file_path.abs_path(),
+            "temporary_file_paths": (
+                [path.abs_path() for path in self.temporary_file_paths]
+                if self.temporary_file_paths
+                else None
+            ),
             "error_msg": self.error_msg,
             "error_type": self.error_type.value,
         }
@@ -144,7 +155,17 @@ class RawFileProcessingError(RawDataImportError):
         data = json.loads(json_str)
         return RawFileProcessingError(
             error_type=DirectIngestRawDataImportSessionStatus(data["error_type"]),
-            file_path=GcsfsFilePath.from_absolute_path(data["file_path"]),
+            original_file_path=GcsfsFilePath.from_absolute_path(
+                data["original_file_path"]
+            ),
+            temporary_file_paths=(
+                [
+                    GcsfsFilePath.from_absolute_path(path)
+                    for path in data["temporary_file_paths"]
+                ]
+                if data["temporary_file_paths"]
+                else None
+            ),
             error_msg=data["error_msg"],
         )
 
@@ -158,8 +179,10 @@ class RawFileLoadAndPrepError(RawDataImportError):
         file_tag (str): file_tag associated with the file_paths
         update_datetime(datetime.datetime): update_datetime associated with the
             file_paths
-        file_paths (List[GcsfsFilePath]): file paths that failed to successfully load
-            into temporary tables
+        original_file_paths (List[GcsfsFilePath]): the paths to the original file sent to
+            us by the state associated with this error
+        pre_import_normalized_file_paths (Optional[List[GcsfsFilePath]]): temporary files
+            created during pre-import normalization
         error_type (DirectIngestRawDataImportSessionStatus): defaults to FAILED_LOAD_STEP
         error_msg (str): an error message, including any relevant stack traces.
     """
@@ -168,18 +191,28 @@ class RawFileLoadAndPrepError(RawDataImportError):
     update_datetime: datetime.datetime = attr.ib(
         validator=attr_validators.is_utc_timezone_aware_datetime
     )
-    file_paths: List[GcsfsFilePath]
+    pre_import_normalized_file_paths: Optional[List[GcsfsFilePath]] = attr.ib(
+        validator=attr.validators.optional(attr_validators.is_list_of(GcsfsFilePath))
+    )
+    original_file_paths: List[GcsfsFilePath] = attr.ib(
+        validator=attr_validators.is_list_of(GcsfsFilePath)
+    )
     error_type: DirectIngestRawDataImportSessionStatus = attr.ib(
         default=DirectIngestRawDataImportSessionStatus.FAILED_LOAD_STEP,
         validator=attr.validators.in_(DirectIngestRawDataImportSessionStatus),
     )
 
     def __str__(self) -> str:
-        return f"{self.error_type.value} for [{self.file_tag}] for [{self.file_paths}] failed with:\n\n{self.error_msg}"
+        return f"{self.error_type.value} for [{self.file_tag}] for [{self.original_file_paths}] failed with:\n\n{self.error_msg}"
 
     def serialize(self) -> str:
         result_dict = {
-            "file_paths": [path.uri() for path in self.file_paths],
+            "original_paths": [path.uri() for path in self.original_file_paths],
+            "normalized_paths": (
+                None
+                if self.pre_import_normalized_file_paths is None
+                else [path.uri() for path in self.pre_import_normalized_file_paths]
+            ),
             "file_tag": self.file_tag,
             "update_datetime": self.update_datetime.isoformat(),
             "error_msg": self.error_msg,
@@ -194,7 +227,18 @@ class RawFileLoadAndPrepError(RawDataImportError):
             error_type=DirectIngestRawDataImportSessionStatus(data["error_type"]),
             file_tag=data["file_tag"],
             update_datetime=datetime.datetime.fromisoformat(data["update_datetime"]),
-            file_paths=data["file_paths"],
+            original_file_paths=[
+                GcsfsFilePath.from_absolute_path(path)
+                for path in data["original_paths"]
+            ],
+            pre_import_normalized_file_paths=(
+                None
+                if data["normalized_paths"] is None
+                else [
+                    GcsfsFilePath.from_absolute_path(path)
+                    for path in data["normalized_paths"]
+                ]
+            ),
             error_msg=data["error_msg"],
         )
 
@@ -459,12 +503,16 @@ class ImportReadyFile(BaseResult):
     Attributes:
         file_id (int): file_id of the conceptual file being loaded
         file_tag (str): file_tag of the file being loaded
-        update_datetime (datetime.datetime): the update_datetime associated with this file_id
-        file_paths (List[GcsfsFilePath]): the raw file paths in GCS associated with this
-            file_id to be loaded into BigQuery
-        original_file_paths (Optional[List[GcsfsFilePath]]): if pre-import normalization was
-            required, the list file paths of the files sent to us by the state before
-            pre-import normalization was performed. Otherwise, None.
+        update_datetime (datetime.datetime): the update_datetime associated with this
+            file_id
+        pre_import_normalized_file_paths (Optional[List[GcsfsFilePath]]): if pre-import
+            normalization was required, these paths will be loaded into big query;
+            otherwise |original_file_paths| will be loaded into big query and this will
+            be None.
+        original_file_paths (List[GcsfsFilePath]): files sent to us by the state. if
+            pre-import normalization was not required, these paths will be loaded into
+            big query; otherwise, |pre_import_normalized_file_paths| will be loaded into
+            big query.
     """
 
     file_id: int = attr.ib(validator=attr_validators.is_int)
@@ -472,12 +520,24 @@ class ImportReadyFile(BaseResult):
     update_datetime: datetime.datetime = attr.ib(
         validator=attr_validators.is_utc_timezone_aware_datetime
     )
-    file_paths: List[GcsfsFilePath] = attr.ib(
-        validator=attr_validators.is_list_of(GcsfsFilePath)
-    )
-    original_file_paths: Optional[List[GcsfsFilePath]] = attr.ib(
+    pre_import_normalized_file_paths: Optional[List[GcsfsFilePath]] = attr.ib(
         validator=attr.validators.optional(attr_validators.is_list_of(GcsfsFilePath))
     )
+    original_file_paths: List[GcsfsFilePath] = attr.ib(
+        validator=attr_validators.is_list_of(GcsfsFilePath)
+    )
+
+    @property
+    def paths_to_load(self) -> List[GcsfsFilePath]:
+        """Returns the paths to load into big query. If pre-import normalization was
+        required (i.e. |pre_import_normalized_file_paths| is populated), returns
+        |pre_import_normalized_file_paths|. Otherwise, returns |original_file_paths|.
+        load those file paths; otherwise,"""
+        return (
+            self.pre_import_normalized_file_paths
+            if self.pre_import_normalized_file_paths
+            else self.original_file_paths
+        )
 
     def serialize(self) -> str:
         return json.dumps(
@@ -485,11 +545,11 @@ class ImportReadyFile(BaseResult):
                 "file_id": self.file_id,
                 "file_tag": self.file_tag,
                 "update_datetime": self.update_datetime.isoformat(),
-                "file_paths": [path.uri() for path in self.file_paths],
-                "original_file_paths": (
+                "original_paths": [path.uri() for path in self.original_file_paths],
+                "normalized_paths": (
                     None
-                    if self.original_file_paths is None
-                    else [path.uri() for path in self.original_file_paths]
+                    if self.pre_import_normalized_file_paths is None
+                    else [path.uri() for path in self.pre_import_normalized_file_paths]
                 ),
             }
         )
@@ -501,15 +561,16 @@ class ImportReadyFile(BaseResult):
             file_id=data["file_id"],
             file_tag=data["file_tag"],
             update_datetime=datetime.datetime.fromisoformat(data["update_datetime"]),
-            file_paths=[
-                GcsfsFilePath.from_absolute_path(path) for path in data["file_paths"]
+            original_file_paths=[
+                GcsfsFilePath.from_absolute_path(path)
+                for path in data["original_paths"]
             ],
-            original_file_paths=(
+            pre_import_normalized_file_paths=(
                 None
-                if data["original_file_paths"] is None
+                if data["normalized_paths"] is None
                 else [
                     GcsfsFilePath.from_absolute_path(path)
-                    for path in data["original_file_paths"]
+                    for path in data["normalized_paths"]
                 ]
             ),
         )
@@ -521,9 +582,9 @@ class ImportReadyFile(BaseResult):
         return ImportReadyFile(
             file_id=assert_type(bq_metadata.file_id, int),
             file_tag=bq_metadata.file_tag,
-            file_paths=[gcs_file.path for gcs_file in bq_metadata.gcs_files],
+            original_file_paths=[gcs_file.path for gcs_file in bq_metadata.gcs_files],
             update_datetime=bq_metadata.update_datetime,
-            original_file_paths=None,
+            pre_import_normalized_file_paths=None,
         )
 
     @classmethod
@@ -537,7 +598,7 @@ class ImportReadyFile(BaseResult):
         return ImportReadyFile(
             file_id=assert_type(bq_metadata.file_id, int),
             file_tag=bq_metadata.file_tag,
-            file_paths=[
+            pre_import_normalized_file_paths=[
                 normalized_chunk.output_file_path
                 for normalized_chunks in input_path_to_normalized_chunk_results.values()
                 for normalized_chunk in normalized_chunks

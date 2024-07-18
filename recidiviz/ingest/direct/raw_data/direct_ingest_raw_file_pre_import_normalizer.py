@@ -85,6 +85,15 @@ class DirectIngestRawFilePreImportNormalizer:
         """
         return infer_columns_from_config or chunk_num != 0
 
+    def output_path_for_chunk(
+        self, chunk: RequiresPreImportNormalizationFileChunk
+    ) -> GcsfsFilePath:
+        """Returns the intended output path for the provided |chunk|"""
+        return self._get_output_path(
+            filename_parts_from_path(chunk.path).file_tag,
+            chunk.chunk_boundary.chunk_num,
+        )
+
     def normalize_chunk_for_import(
         self, chunk: RequiresPreImportNormalizationFileChunk
     ) -> PreImportNormalizedCsvChunkResult:
