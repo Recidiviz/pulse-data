@@ -17,7 +17,23 @@
 """All Outliers views."""
 from typing import List
 
-from recidiviz.big_query.big_query_view import BigQueryViewBuilder
+from recidiviz.aggregated_metrics.aggregated_metric_view_collector import (
+    collect_aggregated_metrics_view_builders,
+)
+from recidiviz.aggregated_metrics.models.aggregated_metric_configurations import (
+    AVG_DAILY_POPULATION,
+)
+from recidiviz.big_query.big_query_view import (
+    BigQueryViewBuilder,
+    SimpleBigQueryViewBuilder,
+)
+from recidiviz.calculator.query.state.dataset_config import OUTLIERS_VIEWS_DATASET
+from recidiviz.calculator.query.state.views.analyst_data.models.metric_population_type import (
+    MetricPopulationType,
+)
+from recidiviz.calculator.query.state.views.analyst_data.models.metric_unit_of_analysis_type import (
+    MetricUnitOfAnalysisType,
+)
 from recidiviz.calculator.query.state.views.outliers.metric_benchmarks import (
     METRIC_BENCHMARKS_VIEW_BUILDER,
 )
@@ -63,6 +79,7 @@ from recidiviz.calculator.query.state.views.outliers.supervision_state_metrics i
 from recidiviz.calculator.query.state.views.outliers.supervision_usage_metrics import (
     SUPERVISION_USAGE_METRICS_VIEW_BUILDER,
 )
+from recidiviz.outliers.aggregated_metrics_collector import AggregatedMetricsCollector
 
 OUTLIERS_ARCHIVE_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
     SUPERVISION_OFFICER_OUTLIER_STATUS_ARCHIVE_VIEW_BUILDER,
@@ -88,8 +105,26 @@ OUTLIERS_IMPACT_VIEW_BUILDERS_TO_EXPORT: List[BigQueryViewBuilder] = [
     SUPERVISION_USAGE_METRICS_VIEW_BUILDER,
 ]
 
-OUTLIERS_VIEW_BUILDERS: List[BigQueryViewBuilder] = (
-    INSIGHTS_VIEW_BUILDERS_TO_EXPORT
-    + OUTLIERS_ARCHIVE_VIEW_BUILDERS
-    + OUTLIERS_IMPACT_VIEW_BUILDERS_TO_EXPORT
+INSIGHTS_AGGREGATED_METRICS_VIEW_BUILDERS: List[
+    SimpleBigQueryViewBuilder
+] = collect_aggregated_metrics_view_builders(
+    metrics_by_population_dict={
+        MetricPopulationType.SUPERVISION: [
+            AVG_DAILY_POPULATION,
+            *AggregatedMetricsCollector.get_metrics(),
+        ]
+    },
+    units_of_analysis_by_population_dict={
+        MetricPopulationType.SUPERVISION: [
+            MetricUnitOfAnalysisType.INSIGHTS_CASELOAD_CATEGORY
+        ]
+    },
+    dataset_id_override=OUTLIERS_VIEWS_DATASET,
 )
+
+OUTLIERS_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
+    *INSIGHTS_VIEW_BUILDERS_TO_EXPORT,
+    *OUTLIERS_ARCHIVE_VIEW_BUILDERS,
+    *OUTLIERS_IMPACT_VIEW_BUILDERS_TO_EXPORT,
+    *INSIGHTS_AGGREGATED_METRICS_VIEW_BUILDERS,
+]

@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Joins together all aggregated metric views for the specified population and unit of analysis"""
-from typing import List
+from typing import List, Optional
 
 from recidiviz.aggregated_metrics.dataset_config import AGGREGATED_METRICS_DATASET_ID
 from recidiviz.aggregated_metrics.misc_aggregated_metrics import (
@@ -47,6 +47,7 @@ def generate_aggregated_metrics_view_builder(
     unit_of_analysis: MetricUnitOfAnalysis,
     population_type: MetricPopulationType,
     metrics: List[AggregatedMetric],
+    dataset_id_override: Optional[str] = None,
 ) -> SimpleBigQueryViewBuilder:
     """
     Returns a SimpleBigQueryViewBuilder that joins together all metric views into a
@@ -178,7 +179,7 @@ SELECT
 """
 
     return SimpleBigQueryViewBuilder(
-        dataset_id=AGGREGATED_METRICS_DATASET_ID,
+        dataset_id=dataset_id_override or AGGREGATED_METRICS_DATASET_ID,
         view_id=view_id,
         view_query_template=query_template,
         description=view_description,
