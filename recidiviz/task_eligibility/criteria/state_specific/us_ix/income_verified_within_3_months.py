@@ -61,6 +61,18 @@ WITH verified_employment_spans AS (
         a.NoteDate AS income_verified_date,
     FROM `{{project_id}}.{{supplemental_dataset}}.us_ix_case_note_matched_entities` a
     WHERE (SSDI_SSI AND NOT PENDING)
+    UNION ALL
+--select open employment periods with UNABLE_TO_WORK
+    SELECT DISTINCT
+        ep.state_code,
+        ep.person_id,
+        start_date,
+        end_date,
+        TRUE as verified_income,
+        start_date AS income_verified_date,
+    FROM `{{project_id}}.{{normalized_state_dataset}}.state_employment_period` ep
+    WHERE state_code = 'US_IX'
+        AND employment_status = 'UNABLE_TO_WORK'
     ),
 {create_sub_sessions_with_attributes('verified_employment_spans')}
 SELECT
