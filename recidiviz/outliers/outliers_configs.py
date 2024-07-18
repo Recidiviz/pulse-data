@@ -262,6 +262,61 @@ Denominator is the average daily caseload for the agent over the given time peri
         supervision_staff_exclusions=f"""
     supervision_office_name NOT IN {tuple(US_CA_EXCLUDED_UNITS)}""",
     ),
+    StateCode.US_ND: OutliersBackendConfig(
+        metrics=[
+            OutliersMetricConfig.build_from_metric(
+                metric=INCARCERATION_STARTS_AND_INFERRED,
+                # TODO(#31528): Check wording with TTs
+                title_display_name="Incarceration Rate",
+                body_display_name="incarceration rate",
+                event_name="all incarcerations",
+                event_name_singular="incarceration",
+                event_name_past_tense="were incarcerated",
+                description_markdown="""All transitions to incarceration (state prison or county jail) from supervision in the given time period, regardless of whether the final decision was a revocation or sanction admission.
+
+<br />
+Denominator is the average daily caseload for the agent over the given time period.""",
+            ),
+            OutliersMetricConfig.build_from_metric(
+                metric=ABSCONSIONS_BENCH_WARRANTS,
+                # TODO(#31528): Check wording with TTs
+                title_display_name="Absconder Rate",
+                body_display_name="absconder rate",
+                event_name="absconsions",
+                event_name_singular="absconsion",
+                event_name_past_tense="absconded",
+                description_markdown="""All reported absconsions from supervision in the given time period.
+
+<br />
+Denominator is the average daily caseload for the agent over the given time period.""",
+            ),
+        ],
+        deprecated_metrics=[
+            OutliersMetricConfig.build_from_metric(
+                metric=INCARCERATION_STARTS_AND_INFERRED_TECHNICAL_VIOLATION,
+                # TODO(#31528): Check wording with TTs
+                title_display_name="Technical Incarceration Rate",
+                body_display_name="technical incarceration rate",
+                event_name="technical incarcerations",
+                event_name_singular="technical incarceration",
+                event_name_past_tense="had a technical incarceration",
+                description_markdown="""Transitions to incarceration from supervision due to technical violations, regardless of whether the final decision was a revocation or sanction admission. It is considered a technical incarceration only if the most serious violation type across all violations in the prior 90 days was a technical violation.
+<br />
+Denominator is the average daily caseload for the agent over the given time period""",
+            ),
+        ],
+        client_events=[
+            OutliersClientEventConfig.build(
+                event=VIOLATIONS, display_name="Violations"
+            ),
+            OutliersClientEventConfig.build(
+                event=VIOLATION_RESPONSES, display_name="Sanctions"
+            ),
+        ],
+        supervision_officer_metric_exclusions="""
+        AND avg_daily_population BETWEEN 10 AND 150
+        AND prop_period_with_critical_caseload >= 0.75""",
+    ),
 }
 
 METRICS_BY_OUTCOME_TYPE: Dict[MetricOutcome, Set[OutliersMetricConfig]] = defaultdict(
