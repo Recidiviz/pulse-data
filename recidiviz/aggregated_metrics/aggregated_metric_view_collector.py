@@ -411,7 +411,6 @@ UNIT_OF_ANALYSIS_TYPES_BY_POPULATION_TYPE: Dict[
         MetricUnitOfAnalysisType.STATE_CODE,
     ],
     MetricPopulationType.SUPERVISION: [
-        MetricUnitOfAnalysisType.INSIGHTS_CASELOAD_CATEGORY,
         MetricUnitOfAnalysisType.SUPERVISION_OFFICER,
         MetricUnitOfAnalysisType.SUPERVISION_UNIT,
         MetricUnitOfAnalysisType.SUPERVISION_OFFICE,
@@ -430,7 +429,6 @@ UNIT_OF_ANALYSIS_TYPES_BY_POPULATION_TYPE: Dict[
 UNIT_OF_ANALYSIS_TYPES_TO_EXCLUDE_FROM_NON_ASSIGNMENT_VIEWS: List[
     MetricUnitOfAnalysisType
 ] = [
-    MetricUnitOfAnalysisType.INSIGHTS_CASELOAD_CATEGORY,
     MetricUnitOfAnalysisType.WORKFLOWS_CASELOAD,
     MetricUnitOfAnalysisType.WORKFLOWS_LOCATION,
 ]
@@ -444,6 +442,7 @@ def collect_aggregated_metrics_view_builders(
     units_of_analysis_to_exclude_from_non_assignment_views: Optional[
         List[MetricUnitOfAnalysisType]
     ] = None,
+    dataset_id_override: Optional[str] = None,
 ) -> List[SimpleBigQueryViewBuilder]:
     """
     Collects all aggregated metrics view builders at all available units of analysis and populations
@@ -455,7 +454,7 @@ def collect_aggregated_metrics_view_builders(
     for (
         population_type,
         unit_of_analysis_types,
-    ) in UNIT_OF_ANALYSIS_TYPES_BY_POPULATION_TYPE.items():
+    ) in units_of_analysis_by_population_dict.items():
         # For every population, create all the assignment tables having a corresponding unit of analysis
         for (
             unit_of_observation_type,
@@ -594,6 +593,7 @@ def collect_aggregated_metrics_view_builders(
                     unit_of_analysis=unit_of_analysis,
                     population_type=population_type,
                     metrics=all_metrics,
+                    dataset_id_override=dataset_id_override,
                 )
             )
 
