@@ -111,6 +111,7 @@ urllib3 = "==1.26.15"
 sqlglot = "==23.11.2"
 docker = "*"
 docker-stubs = "*"
+types-tabulate = "*"
 
 [packages]
 annotated-types="*"
