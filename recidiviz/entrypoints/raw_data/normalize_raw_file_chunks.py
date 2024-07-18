@@ -27,7 +27,7 @@ from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_pre_import_normaliz
     DirectIngestRawFilePreImportNormalizer,
 )
 from recidiviz.ingest.direct.types.raw_data_import_types import (
-    NormalizedCsvChunkResult,
+    PreImportNormalizedCsvChunkResult,
     RawFileProcessingError,
     RequiresPreImportNormalizationFileChunk,
 )
@@ -55,8 +55,10 @@ def normalize_raw_file_chunks(
 def _normalize_chunks(
     normalizer: DirectIngestRawFilePreImportNormalizer,
     chunks: List[RequiresPreImportNormalizationFileChunk],
-) -> BatchedTaskInstanceOutput[NormalizedCsvChunkResult, RawFileProcessingError]:
-    results: List[NormalizedCsvChunkResult] = []
+) -> BatchedTaskInstanceOutput[
+    PreImportNormalizedCsvChunkResult, RawFileProcessingError
+]:
+    results: List[PreImportNormalizedCsvChunkResult] = []
     errors: List[RawFileProcessingError] = []
 
     for chunk in chunks:
@@ -70,9 +72,9 @@ def _normalize_chunks(
                 )
             )
 
-    return BatchedTaskInstanceOutput[NormalizedCsvChunkResult, RawFileProcessingError](
-        results=results, errors=errors
-    )
+    return BatchedTaskInstanceOutput[
+        PreImportNormalizedCsvChunkResult, RawFileProcessingError
+    ](results=results, errors=errors)
 
 
 class RawDataChunkNormalizationEntrypoint(EntrypointInterface):

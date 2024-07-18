@@ -34,11 +34,10 @@ from recidiviz.cloud_storage.gcsfs_csv_chunk_boundary_finder import CsvChunkBoun
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.ingest.direct.types.raw_data_import_types import (
     ImportReadyFile,
-    NormalizedCsvChunkResult,
     PreImportNormalizationType,
+    PreImportNormalizedCsvChunkResult,
     RawBigQueryFileMetadataSummary,
     RawGCSFileMetadataSummary,
-    RequiresNormalizationFile,
     RequiresPreImportNormalizationFile,
 )
 
@@ -52,10 +51,7 @@ class TestCreateFileBatches(unittest.TestCase):
 
     @staticmethod
     def _get_serialized_file(file_num: int) -> str:
-        return RequiresNormalizationFile(
-            path=f"test/file{file_num}",
-            normalization_type=PreImportNormalizationType.ENCODING_UPDATE_ONLY,
-        ).serialize()
+        return GcsfsFilePath.from_absolute_path(f"test/file{file_num}").abs_path()
 
     @classmethod
     def setUpClass(cls) -> None:
@@ -162,9 +158,9 @@ class TestCreateChunkBatches(unittest.TestCase):
     def test_even_distribution(self) -> None:
         chunks = [
             RequiresPreImportNormalizationFile(
-                path=f"test/path_{i}.csv",
+                path=GcsfsFilePath.from_absolute_path(f"test/path_{i}.csv"),
                 chunk_boundaries=self._generate_chunk_boundaries(count=4),
-                normalization_type=PreImportNormalizationType.ENCODING_UPDATE_ONLY,
+                pre_import_normalization_type=PreImportNormalizationType.ENCODING_UPDATE_ONLY,
                 headers=["ID", "Name", "Age"],
             )
             for i in range(5)
@@ -178,9 +174,9 @@ class TestCreateChunkBatches(unittest.TestCase):
     def test_split_chunk_between_batches(self) -> None:
         chunks = [
             RequiresPreImportNormalizationFile(
-                path=f"test/path_{i}.csv",
+                path=GcsfsFilePath.from_absolute_path(f"test/path_{i}.csv"),
                 chunk_boundaries=self._generate_chunk_boundaries(count=3),
-                normalization_type=PreImportNormalizationType.ENCODING_UPDATE_ONLY,
+                pre_import_normalization_type=PreImportNormalizationType.ENCODING_UPDATE_ONLY,
                 headers=["ID", "Name", "Age"],
             )
             for i in range(5)
@@ -195,9 +191,9 @@ class TestCreateChunkBatches(unittest.TestCase):
     def test_more_batches_than_chunks(self) -> None:
         chunks = [
             RequiresPreImportNormalizationFile(
-                path=f"test/path_{i}.csv",
+                path=GcsfsFilePath.from_absolute_path(f"test/path_{i}.csv"),
                 chunk_boundaries=self._generate_chunk_boundaries(count=3),
-                normalization_type=PreImportNormalizationType.ENCODING_UPDATE_ONLY,
+                pre_import_normalization_type=PreImportNormalizationType.ENCODING_UPDATE_ONLY,
                 headers=["ID", "Name", "Age"],
             )
             for i in range(2)
@@ -235,21 +231,29 @@ class TestRegroupAndVerifyFileChunks(unittest.TestCase):
         self.addCleanup(fs_patcher.stop)
 
         self.normalized_chunks = [
-            NormalizedCsvChunkResult(
-                input_file_path="test_bucket/file1",
-                output_file_path="test_bucket/file1_0",
+            PreImportNormalizedCsvChunkResult(
+                input_file_path=GcsfsFilePath.from_absolute_path("test_bucket/file1"),
+                output_file_path=GcsfsFilePath.from_absolute_path(
+                    "test_bucket/file1_0"
+                ),
                 chunk_boundary=CsvChunkBoundary(0, 10, 0),
                 crc32c=self._get_checksum_int(b"these are "),
             ),
-            NormalizedCsvChunkResult(
-                input_file_path="test_bucket/file1",
-                output_file_path="test_bucket/file1_1",
+            PreImportNormalizedCsvChunkResult(
+                input_file_path=GcsfsFilePath.from_absolute_path("test_bucket/file1"),
+                output_file_path=GcsfsFilePath.from_absolute_path(
+                    "test_bucket/file1_1"
+                ),
                 chunk_boundary=CsvChunkBoundary(10, 20, 1),
                 crc32c=self._get_checksum_int(b"file bytes"),
             ),
         ]
 
-        self.file_to_normalized_chunks = {"test_bucket/file1": self.normalized_chunks}
+        self.file_to_normalized_chunks = {
+            GcsfsFilePath.from_absolute_path(
+                "test_bucket/file1"
+            ): self.normalized_chunks
+        }
 
     def test_regroup_normalized_file_chunks(self) -> None:
         file_to_normalized_chunks = regroup_normalized_file_chunks(
@@ -257,22 +261,24 @@ class TestRegroupAndVerifyFileChunks(unittest.TestCase):
         )
 
         self.assertEqual(len(file_to_normalized_chunks), 1)
-        self.assertIn("test_bucket/file1", file_to_normalized_chunks)
+
+        file1 = GcsfsFilePath.from_absolute_path("test_bucket/file1")
+        self.assertIn(file1, file_to_normalized_chunks)
         self.assertEqual(
-            file_to_normalized_chunks["test_bucket/file1"],
+            file_to_normalized_chunks[file1],
             self.normalized_chunks,
         )
 
     def test_regroup_normalized_file_chunks_unsorted(self) -> None:
-        chunk0 = NormalizedCsvChunkResult(
-            input_file_path="test_bucket/file1",
-            output_file_path="test_bucket/file1_1",
+        chunk0 = PreImportNormalizedCsvChunkResult(
+            input_file_path=GcsfsFilePath.from_absolute_path("test_bucket/file1"),
+            output_file_path=GcsfsFilePath.from_absolute_path("test_bucket/file1_1"),
             chunk_boundary=CsvChunkBoundary(0, 10, 0),
             crc32c=self._get_checksum_int(b"these are "),
         )
-        chunk1 = NormalizedCsvChunkResult(
-            input_file_path="test_bucket/file1",
-            output_file_path="test_bucket/file1_0",
+        chunk1 = PreImportNormalizedCsvChunkResult(
+            input_file_path=GcsfsFilePath.from_absolute_path("test_bucket/file1"),
+            output_file_path=GcsfsFilePath.from_absolute_path("test_bucket/file1_0"),
             chunk_boundary=CsvChunkBoundary(10, 20, 1),
             crc32c=self._get_checksum_int(b"file bytes"),
         )
@@ -281,10 +287,14 @@ class TestRegroupAndVerifyFileChunks(unittest.TestCase):
             normalized_chunks_result=[chunk1, chunk0], normalized_chunks_errors=[]
         )
 
+        file1 = GcsfsFilePath.from_absolute_path("test_bucket/file1")
         self.assertEqual(len(file_to_normalized_chunks), 1)
-        self.assertIn("test_bucket/file1", file_to_normalized_chunks)
+        self.assertIn(
+            file1,
+            file_to_normalized_chunks,
+        )
         self.assertEqual(
-            file_to_normalized_chunks["test_bucket/file1"],
+            file_to_normalized_chunks[file1],
             [
                 chunk0,
                 chunk1,
@@ -295,10 +305,14 @@ class TestRegroupAndVerifyFileChunks(unittest.TestCase):
         errors, results = verify_file_checksums(self.file_to_normalized_chunks)
 
         self.assertEqual(len(results), 1)
-        assert "test_bucket/file1" in results
+        path = GcsfsFilePath.from_absolute_path("test_bucket/file1")
+        assert path in results
         self.assertEqual(
-            [result.output_file_path for result in results["test_bucket/file1"]],
-            ["test_bucket/file1_0", "test_bucket/file1_1"],
+            [result.output_file_path for result in results[path]],
+            [
+                GcsfsFilePath.from_absolute_path("test_bucket/file1_0"),
+                GcsfsFilePath.from_absolute_path("test_bucket/file1_1"),
+            ],
         )
         self.assertEqual(errors, [])
 
@@ -321,46 +335,46 @@ class TestRegroupAndVerifyFileChunks(unittest.TestCase):
 
     def test_build_import_ready_files_failures_no_skips(self) -> None:
         results = {
-            "path/a.csv": [
-                NormalizedCsvChunkResult(
-                    input_file_path="path/a.csv",
-                    output_file_path="outpath/a.csv",
+            GcsfsFilePath.from_absolute_path("path/a.csv"): [
+                PreImportNormalizedCsvChunkResult(
+                    input_file_path=GcsfsFilePath.from_absolute_path("path/a.csv"),
+                    output_file_path=GcsfsFilePath.from_absolute_path("outpath/a.csv"),
                     chunk_boundary=CsvChunkBoundary(0, 1, 0),
                     crc32c=1,
                 ),
-                NormalizedCsvChunkResult(
-                    input_file_path="path/a.csv",
-                    output_file_path="outpath/a1.csv",
+                PreImportNormalizedCsvChunkResult(
+                    input_file_path=GcsfsFilePath.from_absolute_path("path/a.csv"),
+                    output_file_path=GcsfsFilePath.from_absolute_path("outpath/a1.csv"),
                     chunk_boundary=CsvChunkBoundary(1, 2, 1),
                     crc32c=2,
                 ),
-                NormalizedCsvChunkResult(
-                    input_file_path="path/a.csv",
-                    output_file_path="outpath/a2.csv",
+                PreImportNormalizedCsvChunkResult(
+                    input_file_path=GcsfsFilePath.from_absolute_path("path/a.csv"),
+                    output_file_path=GcsfsFilePath.from_absolute_path("outpath/a2.csv"),
                     chunk_boundary=CsvChunkBoundary(2, 3, 2),
                     crc32c=3,
                 ),
             ],
-            "path/aa.csv": [
-                NormalizedCsvChunkResult(
-                    input_file_path="path/aa.csv",
-                    output_file_path="outpath/aa.csv",
+            GcsfsFilePath.from_absolute_path("path/aa.csv"): [
+                PreImportNormalizedCsvChunkResult(
+                    input_file_path=GcsfsFilePath.from_absolute_path("path/aa.csv"),
+                    output_file_path=GcsfsFilePath.from_absolute_path("outpath/aa.csv"),
                     chunk_boundary=CsvChunkBoundary(0, 1, 0),
                     crc32c=1,
                 ),
             ],
-            "path/b.csv": [
-                NormalizedCsvChunkResult(
-                    input_file_path="path/b.csv",
-                    output_file_path="outpath/b.csv",
+            GcsfsFilePath.from_absolute_path("path/b.csv"): [
+                PreImportNormalizedCsvChunkResult(
+                    input_file_path=GcsfsFilePath.from_absolute_path("path/b.csv"),
+                    output_file_path=GcsfsFilePath.from_absolute_path("outpath/b.csv"),
                     chunk_boundary=CsvChunkBoundary(2, 3, 2),
                     crc32c=3,
                 ),
             ],
-            "path/c.csv": [
-                NormalizedCsvChunkResult(
-                    input_file_path="path/c.csv",
-                    output_file_path="outpath/c.csv",
+            GcsfsFilePath.from_absolute_path("path/c.csv"): [
+                PreImportNormalizedCsvChunkResult(
+                    input_file_path=GcsfsFilePath.from_absolute_path("path/c.csv"),
+                    output_file_path=GcsfsFilePath.from_absolute_path("outpath/c.csv"),
                     chunk_boundary=CsvChunkBoundary(2, 3, 2),
                     crc32c=3,
                 ),
@@ -420,10 +434,7 @@ class TestRegroupAndVerifyFileChunks(unittest.TestCase):
         created_files = [
             ImportReadyFile.from_bq_metadata_and_normalized_chunk_result(
                 metadata,
-                {
-                    file.path.abs_path(): results[file.path.abs_path()]
-                    for file in metadata.gcs_files
-                },
+                {file.path: results[file.path] for file in metadata.gcs_files},
             )
             for metadata in bq_metadata
         ]
@@ -439,39 +450,47 @@ class TestRegroupAndVerifyFileChunks(unittest.TestCase):
 
     def test_build_import_ready_files_failures_with_skips(self) -> None:
         results = {
-            "path/a.csv": [
-                NormalizedCsvChunkResult(
-                    input_file_path="path/a.csv",
-                    output_file_path="outpath/a.csv",
+            GcsfsFilePath.from_absolute_path("path/a.csv"): [
+                PreImportNormalizedCsvChunkResult(
+                    input_file_path=GcsfsFilePath.from_absolute_path("path/a.csv"),
+                    output_file_path=GcsfsFilePath.from_absolute_path("outpath/a.csv"),
                     chunk_boundary=CsvChunkBoundary(0, 1, 0),
                     crc32c=1,
                 ),
-                # this result failed, so we need to have all of a.csv fail :/
-                # NormalizedCsvChunkResult(
-                #     input_file_path="path/a.csv",
-                #     output_file_path="outpath/a1.csv",
-                #     chunk_boundary=CsvChunkBoundary(1, 2, 1),
-                #     crc32c=2,
-                # ),
-                NormalizedCsvChunkResult(
-                    input_file_path="path/a.csv",
-                    output_file_path="outpath/a2.csv",
+                PreImportNormalizedCsvChunkResult(
+                    input_file_path=GcsfsFilePath.from_absolute_path("path/a.csv"),
+                    output_file_path=GcsfsFilePath.from_absolute_path("outpath/a1.csv"),
+                    chunk_boundary=CsvChunkBoundary(1, 2, 1),
+                    crc32c=2,
+                ),
+                PreImportNormalizedCsvChunkResult(
+                    input_file_path=GcsfsFilePath.from_absolute_path("path/a.csv"),
+                    output_file_path=GcsfsFilePath.from_absolute_path("outpath/a2.csv"),
                     chunk_boundary=CsvChunkBoundary(2, 3, 2),
                     crc32c=3,
                 ),
             ],
-            "path/b.csv": [
-                NormalizedCsvChunkResult(
-                    input_file_path="path/b.csv",
-                    output_file_path="outpath/b.csv",
+            # since this file is missing, a and aa will fail
+            # GcsfsFilePath.from_absolute_path("path/aa.csv"): [
+            #     PreImportNormalizedCsvChunkResult(
+            #         input_file_path=GcsfsFilePath.from_absolute_path("path/aa.csv"),
+            #         output_file_path=GcsfsFilePath.from_absolute_path("outpath/aa.csv"),
+            #         chunk_boundary=CsvChunkBoundary(0, 1, 0),
+            #         crc32c=1,
+            #     ),
+            # ],
+            GcsfsFilePath.from_absolute_path("path/b.csv"): [
+                PreImportNormalizedCsvChunkResult(
+                    input_file_path=GcsfsFilePath.from_absolute_path("path/b.csv"),
+                    output_file_path=GcsfsFilePath.from_absolute_path("outpath/b.csv"),
                     chunk_boundary=CsvChunkBoundary(2, 3, 2),
                     crc32c=3,
                 ),
             ],
-            "path/c.csv": [
-                NormalizedCsvChunkResult(
-                    input_file_path="path/c.csv",
-                    output_file_path="outpath/c.csv",
+            GcsfsFilePath.from_absolute_path("path/c.csv"): [
+                PreImportNormalizedCsvChunkResult(
+                    input_file_path=GcsfsFilePath.from_absolute_path("path/c.csv"),
+                    output_file_path=GcsfsFilePath.from_absolute_path("outpath/c.csv"),
                     chunk_boundary=CsvChunkBoundary(2, 3, 2),
                     crc32c=3,
                 ),
@@ -490,12 +509,7 @@ class TestRegroupAndVerifyFileChunks(unittest.TestCase):
                     RawGCSFileMetadataSummary(
                         gcs_file_id=2,
                         file_id=1,
-                        path=GcsfsFilePath(bucket_name="path", blob_name="a1.csv"),
-                    ),
-                    RawGCSFileMetadataSummary(
-                        gcs_file_id=3,
-                        file_id=1,
-                        path=GcsfsFilePath(bucket_name="path", blob_name="a2.csv"),
+                        path=GcsfsFilePath(bucket_name="path", blob_name="aa.csv"),
                     ),
                 ],
                 update_datetime=datetime.datetime(
@@ -535,10 +549,7 @@ class TestRegroupAndVerifyFileChunks(unittest.TestCase):
         created_files = [
             ImportReadyFile.from_bq_metadata_and_normalized_chunk_result(
                 metadata,
-                {
-                    file.path.abs_path(): results[file.path.abs_path()]
-                    for file in metadata.gcs_files
-                },
+                {file.path: results[file.path] for file in metadata.gcs_files},
             )
             for i, metadata in enumerate(bq_metadata)
             if i != 0

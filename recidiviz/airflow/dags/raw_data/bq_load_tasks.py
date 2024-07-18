@@ -65,8 +65,8 @@ def load_and_prep_paths_for_batch(
     serialized_import_ready_files: List[str],
     region_module_override: Optional[ModuleType] = None,
 ) -> str:
-    """Given a batch of |serialized_import_ready_files|, asyncronously loads
-    each file in parallel into it's own temporary table, applying pre-migration
+    """Given a batch of |serialized_import_ready_files|, asynchronously loads
+    each file in parallel into it's own table, applying pre-migration
     transformations and raw data migrations.
 
     Batches files together within a single process to restrain parallelism across

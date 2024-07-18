@@ -22,16 +22,16 @@ from airflow.decorators import task
 
 from recidiviz.airflow.dags.raw_data.metadata import (
     IMPORT_READY_FILES,
-    REQUIRES_NORMALIZATION_FILES,
-    REQUIRES_NORMALIZATION_FILES_BQ_METADATA,
+    REQUIRES_PRE_IMPORT_NORMALIZATION_FILES,
+    REQUIRES_PRE_IMPORT_NORMALIZATION_FILES_BQ_METADATA,
 )
 from recidiviz.airflow.dags.raw_data.utils import get_direct_ingest_region_raw_config
+from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.ingest.direct.types.raw_data_import_types import (
     ImportReadyFile,
     PreImportNormalizationType,
     RawBigQueryFileMetadataSummary,
     RawFileProcessingError,
-    RequiresNormalizationFile,
 )
 from recidiviz.utils.airflow_types import BatchedTaskInstanceOutput
 
@@ -46,8 +46,8 @@ def split_by_pre_import_normalization_type(
     |serialized_bq_metadata|, returning a dictionary with three keys:
         - import_ready_files: list of serialized ImportReadyFile that will skip the
             pre-import normalization steps
-        - requires_normalization_files: list of RequiresNormalizationFile to be
-            processed in parallel by pre-import normalization step
+        - requires_pre_normalization_files: list of GcsfsFilePath objects
+            to be processed in parallel by pre-import normalization step
         - requires_normalization_files_big_query_metadata: list of serialized
             RawBigQueryFileMetadataSummary that will be combined downstream with the
             resultant ImportReadyNormalizedFile objects to to build ImportReadyFile
@@ -67,7 +67,7 @@ def split_by_pre_import_normalization_type(
     pre_import_normalization_required_big_query_metadata: List[
         RawBigQueryFileMetadataSummary
     ] = []
-    pre_import_normalization_required_files: List[RequiresNormalizationFile] = []
+    pre_import_normalization_required_files: List[GcsfsFilePath] = []
 
     for metadata in bq_metadata:
         pre_import_normalization_type = (
@@ -79,24 +79,18 @@ def split_by_pre_import_normalization_type(
         if pre_import_normalization_type:
             pre_import_normalization_required_big_query_metadata.append(metadata)
             for gcs_file in metadata.gcs_files:
-                pre_import_normalization_required_files.append(
-                    # TODO(#30170) switch to using pre-import normalization
-                    RequiresNormalizationFile(
-                        path=gcs_file.path.abs_path(),
-                        normalization_type=pre_import_normalization_type,
-                    )
-                )
+                pre_import_normalization_required_files.append(gcs_file.path)
         else:
             import_ready_files.append(ImportReadyFile.from_bq_metadata(metadata))
 
     return {
         IMPORT_READY_FILES: [file.serialize() for file in import_ready_files],
-        REQUIRES_NORMALIZATION_FILES_BQ_METADATA: [
+        REQUIRES_PRE_IMPORT_NORMALIZATION_FILES_BQ_METADATA: [
             metadata.serialize()
             for metadata in pre_import_normalization_required_big_query_metadata
         ],
-        REQUIRES_NORMALIZATION_FILES: [
-            file.serialize() for file in pre_import_normalization_required_files
+        REQUIRES_PRE_IMPORT_NORMALIZATION_FILES: [
+            file.abs_path() for file in pre_import_normalization_required_files
         ],
     }
 

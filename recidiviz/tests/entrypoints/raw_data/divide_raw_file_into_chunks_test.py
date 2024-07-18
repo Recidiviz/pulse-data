@@ -20,6 +20,7 @@ from unittest.mock import MagicMock, patch
 
 from recidiviz.cloud_storage.gcs_file_system import GCSFileSystem
 from recidiviz.cloud_storage.gcsfs_csv_chunk_boundary_finder import CsvChunkBoundary
+from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.constants.states import StateCode
 from recidiviz.entrypoints.raw_data.divide_raw_file_into_chunks import (
     FILE_LIST_DELIMITER,
@@ -32,9 +33,9 @@ from recidiviz.ingest.direct.raw_data.raw_file_configs import (
 from recidiviz.ingest.direct.types.raw_data_import_types import (
     PreImportNormalizationType,
     RawFileProcessingError,
-    RequiresNormalizationFile,
     RequiresPreImportNormalizationFile,
 )
+from recidiviz.tests.ingest.direct import fake_regions
 from recidiviz.utils.airflow_types import BatchedTaskInstanceOutput
 
 
@@ -47,30 +48,16 @@ class TestExtractFileChunksConcurrently(unittest.TestCase):
 
     @classmethod
     def _formatted_raw_file_path(cls, file_tag: str) -> str:
-        return f"{cls.TEST_BUCKET}/{cls.INGEST_PREFIX}{file_tag}{cls.INGEST_SUFFIX}"
+        return GcsfsFilePath.from_absolute_path(
+            f"{cls.TEST_BUCKET}/{cls.INGEST_PREFIX}{file_tag}{cls.INGEST_SUFFIX}"
+        ).abs_path()
 
     def setUp(self) -> None:
         self.state_code = StateCode("US_XX")
         self.requires_normalization_files = [
-            RequiresNormalizationFile(
-                path=self._formatted_raw_file_path("test1"),
-                normalization_type=PreImportNormalizationType.ENCODING_UPDATE_ONLY,
-            ).serialize(),
-            RequiresNormalizationFile(
-                path=self._formatted_raw_file_path("test2"),
-                normalization_type=PreImportNormalizationType.ENCODING_UPDATE_ONLY,
-            ).serialize(),
+            self._formatted_raw_file_path("singlePrimaryKey"),
+            self._formatted_raw_file_path("tagDoubleDaggerWINDOWS1252"),
         ]
-        self.region_raw_file_config = MagicMock()
-        self.region_raw_file_config.raw_file_configs = {
-            "test1": "example_config",
-            "test2": "example_config",
-        }
-        patch_region_config = patch(
-            "recidiviz.entrypoints.raw_data.divide_raw_file_into_chunks.DirectIngestRegionRawFileConfig",
-            return_value=self.region_raw_file_config,
-        ).start()
-        self.addCleanup(patch_region_config.stop)
 
         self.fs = MagicMock()
         patch_gcsfs_build = patch(
@@ -97,7 +84,9 @@ class TestExtractFileChunksConcurrently(unittest.TestCase):
 
     def test_successful_processing(self) -> None:
         serialized_result = extract_file_chunks_concurrently(
-            self.requires_normalization_files, self.state_code
+            self.requires_normalization_files,
+            self.state_code,
+            region_module_override=fake_regions,
         )
         result = BatchedTaskInstanceOutput.deserialize(
             serialized_result,
@@ -110,18 +99,19 @@ class TestExtractFileChunksConcurrently(unittest.TestCase):
     def test_partial_failures(self) -> None:
         def side_effect(
             _fs: GCSFileSystem,
-            requires_normalization_file: RequiresNormalizationFile,
+            requires_pre_import_normalization_file_path: GcsfsFilePath,
             _region_raw_file_config: DirectIngestRegionRawFileConfig,
         ) -> RequiresPreImportNormalizationFile:
-            if requires_normalization_file.path == self._formatted_raw_file_path(
-                "test2"
+            if (
+                requires_pre_import_normalization_file_path.abs_path()
+                == self._formatted_raw_file_path("singlePrimaryKey")
             ):
                 raise RuntimeError("Error processing file")
 
             return RequiresPreImportNormalizationFile(
-                path=requires_normalization_file.path,
+                path=requires_pre_import_normalization_file_path,
                 chunk_boundaries=[],
-                normalization_type=requires_normalization_file.normalization_type,
+                pre_import_normalization_type=PreImportNormalizationType.ENCODING_UPDATE_ONLY,
                 headers=["ID", "Name", "Age"],
             )
 
@@ -130,7 +120,9 @@ class TestExtractFileChunksConcurrently(unittest.TestCase):
             side_effect=side_effect,
         ):
             serialized_result = extract_file_chunks_concurrently(
-                self.requires_normalization_files, self.state_code
+                self.requires_normalization_files,
+                self.state_code,
+                region_module_override=fake_regions,
             )
         result = BatchedTaskInstanceOutput.deserialize(
             serialized_result,

@@ -25,25 +25,25 @@ RESOURCE_LOCKS_NEEDED = [
     DirectIngestRawDataResourceLockResource.BUCKET,
     DirectIngestRawDataResourceLockResource.OPERATIONS_DATABASE,
 ]
-RESOURCE_LOCK_AQUISITION_DESCRIPTION = (
+RESOURCE_LOCK_ACQUISITION_DESCRIPTION = (
     "Lock held for the duration of the raw data import dag"
 )
 RESOURCE_LOCK_TTL_SECONDS_PRIMARY = 3 * 60 * 60  # 3 hours
 RESOURCE_LOCK_TTL_SECONDS_SECONDARY = 3 * 60 * 60  # 6 hours
 
 
-SKIPPED_FILE_ERRORS: str = "skkipped_file_errors"
+SKIPPED_FILE_ERRORS: str = "skipped_file_errors"
 APPEND_READY_FILE_BATCHES: str = "append_ready_file_batches"
 IMPORT_READY_FILES: str = "import_ready_files"
-REQUIRES_NORMALIZATION_FILES_BQ_METADATA = (
-    "requires_normalization_files_big_query_metadata"
+REQUIRES_PRE_IMPORT_NORMALIZATION_FILES_BQ_METADATA = (
+    "requires_pre_import_normalization_files_big_query_metadata"
 )
-REQUIRES_NORMALIZATION_FILES = "requires_normalization_files"
+REQUIRES_PRE_IMPORT_NORMALIZATION_FILES = "requires_pre_import_normalization_files"
 
 
 def get_resource_lock_ttl(raw_data_instance: DirectIngestInstance) -> int:
     """Returns the ttl in seconds for the resources listed in RESOURCE_LOCKS_NEEDED. We
-    bifurcate bewteen primary and secondary as we expect secondary runs to take longer
+    bifurcate between primary and secondary as we expect secondary runs to take longer
     and don't want to the ttl to permit other processes to acquire the resource lock
     without the raw data import DAG actually being finished with it.
     """

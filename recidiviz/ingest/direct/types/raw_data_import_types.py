@@ -83,6 +83,14 @@ class PreImportNormalizationType(Enum):
 
 @attr.define
 class RawDataImportError(BaseError):
+    """The base error type for all errors that exist in the raw data import dag.
+
+    Attributes:
+        error_type (DirectIngestRawDataImportSessionStatus): the error type that
+            corresponds to where the error occurred within the raw data import dag
+        error_msg (str): an error message, including any relevant stack traces.
+
+    """
 
     error_type: DirectIngestRawDataImportSessionStatus = attr.ib(
         validator=attr.validators.instance_of(DirectIngestRawDataImportSessionStatus)
@@ -101,14 +109,23 @@ class RawDataImportError(BaseError):
 
 @attr.define
 class RawFileProcessingError(RawDataImportError):
-    """Represents an error that occured during a raw data pre-import normalization
+    """Represents an error that occurred during a raw data pre-import normalization
     import task.
+
+    Attributes:
+        file_path (GcsfsFilePath): the file_path where the error occurred
+        error_type (DirectIngestRawDataImportSessionStatus): defaults to
+            FAILED_PRE_IMPORT_NORMALIZATION_STEP.
+        error_msg (str): an error message, including any relevant stack traces.
+
     """
 
-    file_path: str
+    file_path: GcsfsFilePath = attr.ib(
+        validator=attr.validators.instance_of(GcsfsFilePath)
+    )
     error_type: DirectIngestRawDataImportSessionStatus = attr.ib(
         default=DirectIngestRawDataImportSessionStatus.FAILED_PRE_IMPORT_NORMALIZATION_STEP,
-        validator=attr.validators.instance_of(DirectIngestRawDataImportSessionStatus),
+        validator=attr.validators.in_(DirectIngestRawDataImportSessionStatus),
     )
 
     def __str__(self) -> str:
@@ -116,7 +133,7 @@ class RawFileProcessingError(RawDataImportError):
 
     def serialize(self) -> str:
         result_dict = {
-            "file_path": self.file_path,
+            "file_path": self.file_path.abs_path(),
             "error_msg": self.error_msg,
             "error_type": self.error_type.value,
         }
@@ -127,23 +144,34 @@ class RawFileProcessingError(RawDataImportError):
         data = json.loads(json_str)
         return RawFileProcessingError(
             error_type=DirectIngestRawDataImportSessionStatus(data["error_type"]),
-            file_path=data["file_path"],
+            file_path=GcsfsFilePath.from_absolute_path(data["file_path"]),
             error_msg=data["error_msg"],
         )
 
 
 @attr.define
 class RawFileLoadAndPrepError(RawDataImportError):
-    """Represents an error that occured during a raw data big query load step, specifically
-    durring the load and prep stage where we load raw data files into big query.
+    """Represents an error that occurred during a raw data big query load step, specifically
+    during the load and prep stage where we load raw data files into big query.
+
+    Attributes:
+        file_tag (str): file_tag associated with the file_paths
+        update_datetime(datetime.datetime): update_datetime associated with the
+            file_paths
+        file_paths (List[GcsfsFilePath]): file paths that failed to successfully load
+            into temporary tables
+        error_type (DirectIngestRawDataImportSessionStatus): defaults to FAILED_LOAD_STEP
+        error_msg (str): an error message, including any relevant stack traces.
     """
 
-    file_tag: str
-    update_datetime: datetime.datetime
+    file_tag: str = attr.ib(validator=attr_validators.is_str)
+    update_datetime: datetime.datetime = attr.ib(
+        validator=attr_validators.is_utc_timezone_aware_datetime
+    )
     file_paths: List[GcsfsFilePath]
     error_type: DirectIngestRawDataImportSessionStatus = attr.ib(
         default=DirectIngestRawDataImportSessionStatus.FAILED_LOAD_STEP,
-        validator=attr.validators.instance_of(DirectIngestRawDataImportSessionStatus),
+        validator=attr.validators.in_(DirectIngestRawDataImportSessionStatus),
     )
 
     def __str__(self) -> str:
@@ -173,14 +201,22 @@ class RawFileLoadAndPrepError(RawDataImportError):
 
 @attr.define
 class RawDataAppendImportError(RawDataImportError):
-    """Represents an error that occured during the big query load step of the raw data
+    """Represents an error that occurred during the big query load step of the raw data
     import dag, specifically during the append stage.
+
+    Attributes:
+        raw_temp_table (BigQueryAddress): the address of the temp big query address that
+            stores the raw data that failed append to the raw data table
+        error_type (DirectIngestRawDataImportSessionStatus): defaults to FAILED_LOAD_STEP
+        error_msg (str): an error message, including any relevant stack traces.
     """
 
-    raw_temp_table: BigQueryAddress
+    raw_temp_table: BigQueryAddress = attr.ib(
+        validator=attr.validators.instance_of(BigQueryAddress)
+    )
     error_type: DirectIngestRawDataImportSessionStatus = attr.ib(
         default=DirectIngestRawDataImportSessionStatus.FAILED_LOAD_STEP,
-        validator=attr.validators.instance_of(DirectIngestRawDataImportSessionStatus),
+        validator=attr.validators.in_(DirectIngestRawDataImportSessionStatus),
     )
 
     def __str__(self) -> str:
@@ -205,54 +241,37 @@ class RawDataAppendImportError(RawDataImportError):
 
 
 @attr.define
-class RequiresPreImportNormalizationFileChunk(BaseResult):
-    """Encapsulates the path, the chunk boundary and the type of normalization required
-    for the CSV to conform to BigQuery's load job standards."""
-
-    path: str
-    normalization_type: Optional[PreImportNormalizationType]
-    chunk_boundary: CsvChunkBoundary
-    headers: List[str]
-
-    def serialize(self) -> str:
-        return json.dumps(
-            {
-                "path": self.path,
-                "normalization_type": (
-                    self.normalization_type.value if self.normalization_type else ""
-                ),
-                "chunk_boundary": self.chunk_boundary.serialize(),
-                "headers": self.headers,
-            }
-        )
-
-    @staticmethod
-    def deserialize(json_str: str) -> "RequiresPreImportNormalizationFileChunk":
-        data = json.loads(json_str)
-        return RequiresPreImportNormalizationFileChunk(
-            path=data["path"],
-            normalization_type=PreImportNormalizationType(data["normalization_type"]),
-            chunk_boundary=CsvChunkBoundary.deserialize(data["chunk_boundary"]),
-            headers=data["headers"],
-        )
-
-
-@attr.define
 class RequiresPreImportNormalizationFile(BaseResult):
     """Encapsulates the path, the headers, the chunk boundaries for the file
     and the type of normalization required for the CSV to conform to
-    BigQuery's load job standards."""
+    BigQuery's load job standards.
 
-    path: str
-    normalization_type: PreImportNormalizationType
-    chunk_boundaries: List[CsvChunkBoundary]
-    headers: List[str]
+    Attributes:
+        path (GcsfsFilePath): file path for the raw data file sent by the state that
+            requires pre-import normalization
+        pre_import_normalization_type (PreImportNormalizationType): the type of
+            pre-import normalization required to make this raw data file readable by
+            big query's load job.
+        chunk_boundaries (List[CsvChunkBoundary]): the start_inclusive and end_exclusive
+            byte offsets that specifies where each pre-import normalization process should
+            start and stop reading from.
+        headers (List[str]): the column headers for path
+    """
+
+    path: GcsfsFilePath = attr.ib(validator=attr.validators.instance_of(GcsfsFilePath))
+    pre_import_normalization_type: PreImportNormalizationType = attr.ib(
+        validator=attr.validators.in_(PreImportNormalizationType)
+    )
+    chunk_boundaries: List[CsvChunkBoundary] = attr.ib(
+        validator=attr_validators.is_list_of(CsvChunkBoundary)
+    )
+    headers: List[str] = attr.ib(validator=attr_validators.is_list_of(str))
 
     def serialize(self) -> str:
         return json.dumps(
             {
-                "path": self.path,
-                "normalization_type": (self.normalization_type.value),
+                "path": self.path.abs_path(),
+                "normalization_type": (self.pre_import_normalization_type.value),
                 "chunk_boundaries": [
                     boundary.serialize() for boundary in self.chunk_boundaries
                 ],
@@ -264,8 +283,10 @@ class RequiresPreImportNormalizationFile(BaseResult):
     def deserialize(json_str: str) -> "RequiresPreImportNormalizationFile":
         data = json.loads(json_str)
         return RequiresPreImportNormalizationFile(
-            path=data["path"],
-            normalization_type=PreImportNormalizationType(data["normalization_type"]),
+            path=GcsfsFilePath.from_absolute_path(data["path"]),
+            pre_import_normalization_type=PreImportNormalizationType(
+                data["normalization_type"]
+            ),
             chunk_boundaries=[
                 CsvChunkBoundary.deserialize(boundary)
                 for boundary in data["chunk_boundaries"]
@@ -273,17 +294,15 @@ class RequiresPreImportNormalizationFile(BaseResult):
             headers=data["headers"],
         )
 
-    def to_file_chunks(
-        self,
-    ) -> List[RequiresPreImportNormalizationFileChunk]:
-        """
-        Extract individual RequiresPreImportNormalizationFileChunk objects from list of CSVBoundary objects.
+    def to_file_chunks(self) -> List["RequiresPreImportNormalizationFileChunk"]:
+        """Generates a list of RequiresPreImportNormalizationFileChunk objects, one per
+        chunk_boundary.
         """
         individual_chunks = []
         for chunk_boundary in self.chunk_boundaries:
             chunk = RequiresPreImportNormalizationFileChunk(
                 path=self.path,
-                normalization_type=self.normalization_type,
+                pre_import_normalization_type=self.pre_import_normalization_type,
                 chunk_boundary=chunk_boundary,
                 headers=self.headers,
             )
@@ -292,73 +311,144 @@ class RequiresPreImportNormalizationFile(BaseResult):
 
 
 @attr.define
-class NormalizedCsvChunkResult(BaseResult):
-    """Encapsulates the output path, chunk boundary and checksum of the CSV chunk. This
-    should relate 1-1 to a RequiresPreImportNormalizationFileChunk."""
+class RequiresPreImportNormalizationFileChunk(BaseResult):
+    """Encapsulates the path, the chunk boundary and the type of normalization required
+    for the CSV to conform to BigQuery's load job standards.
 
-    input_file_path: str
-    output_file_path: str
-    chunk_boundary: CsvChunkBoundary
-    crc32c: int
+    Attributes:
+        path (GcsfsFilePath): file path for the raw data file sent by the state that
+            requires pre-import normalization
+        pre_import_normalization_type (PreImportNormalizationType | None): the type
+            of pre-import normalization required to make this raw data file readable
+            by big query's load job.
+        chunk_boundary (CsvChunkBoundary): the start_inclusive and end_exclusive byte
+            offsets that specifies where the pre-import normalization process should
+            start and stop reading from.
+        headers (List[str]): the column headers for path
+
+    """
+
+    path: GcsfsFilePath = attr.ib(validator=attr.validators.instance_of(GcsfsFilePath))
+    pre_import_normalization_type: Optional[PreImportNormalizationType]
+    chunk_boundary: CsvChunkBoundary = attr.ib(
+        validator=attr.validators.instance_of(CsvChunkBoundary)
+    )
+    headers: List[str] = attr.ib(validator=attr_validators.is_list_of(str))
+
+    def serialize(self) -> str:
+        return json.dumps(
+            {
+                "path": self.path.abs_path(),
+                "normalization_type": (
+                    self.pre_import_normalization_type.value
+                    if self.pre_import_normalization_type
+                    else ""
+                ),
+                "chunk_boundary": self.chunk_boundary.serialize(),
+                "headers": self.headers,
+            }
+        )
+
+    @staticmethod
+    def deserialize(json_str: str) -> "RequiresPreImportNormalizationFileChunk":
+        data = json.loads(json_str)
+        return RequiresPreImportNormalizationFileChunk(
+            path=GcsfsFilePath.from_absolute_path(data["path"]),
+            pre_import_normalization_type=PreImportNormalizationType(
+                data["normalization_type"]
+            ),
+            chunk_boundary=CsvChunkBoundary.deserialize(data["chunk_boundary"]),
+            headers=data["headers"],
+        )
+
+
+@attr.define
+class PreImportNormalizedCsvChunkResult(BaseResult):
+    """Encapsulates the output path, chunk boundary and checksum of the CSV chunk. This
+    should relate 1-1 to a RequiresPreImportNormalizationFileChunk.
+
+    Attributes:
+        input_file_path (GcsfsFilePath): file path for the raw data file sent by the
+            state that requires pre-import normalization
+        output_file_path (GcsfsFilePath): file path for the chunk of normalized data from
+            input_file_path that was specified in chunk_boundary
+        chunk_boundary (CsvChunkBoundary): the start_inclusive and end_exclusive byte
+            offsets that specifies where the pre-import normalization process should
+            start and stop reading from input_file_path
+        crc32c (int): the checksum of the bytes read from input_file_path
+    """
+
+    input_file_path: GcsfsFilePath = attr.ib(
+        validator=attr.validators.instance_of(GcsfsFilePath)
+    )
+    output_file_path: GcsfsFilePath = attr.ib(
+        validator=attr.validators.instance_of(GcsfsFilePath)
+    )
+    chunk_boundary: CsvChunkBoundary = attr.ib(
+        validator=attr.validators.instance_of(CsvChunkBoundary)
+    )
+    crc32c: int = attr.ib(validator=attr_validators.is_int)
 
     def get_chunk_boundary_size(self) -> int:
         return self.chunk_boundary.get_chunk_size()
 
     def serialize(self) -> str:
         result_dict = {
-            "input_file_path": self.input_file_path,
-            "output_file_path": self.output_file_path,
+            "input_file_path": self.input_file_path.abs_path(),
+            "output_file_path": self.output_file_path.abs_path(),
             "chunk_boundary": self.chunk_boundary.serialize(),
             "crc32c": self.crc32c,
         }
         return json.dumps(result_dict)
 
     @staticmethod
-    def deserialize(json_str: str) -> "NormalizedCsvChunkResult":
+    def deserialize(json_str: str) -> "PreImportNormalizedCsvChunkResult":
         data = json.loads(json_str)
-        return NormalizedCsvChunkResult(
-            input_file_path=data["input_file_path"],
-            output_file_path=data["output_file_path"],
+        return PreImportNormalizedCsvChunkResult(
+            input_file_path=GcsfsFilePath.from_absolute_path(data["input_file_path"]),
+            output_file_path=GcsfsFilePath.from_absolute_path(data["output_file_path"]),
             chunk_boundary=CsvChunkBoundary.deserialize(data["chunk_boundary"]),
             crc32c=data["crc32c"],
         )
 
 
 @attr.define
-class RequiresNormalizationFile:
-    path: str
-    normalization_type: PreImportNormalizationType
+class PreImportNormalizedFileResult(BaseResult):
+    """The end result of the pre-import normalization process, containing both the
+    original input file path, as well as a list of all normalized file chunk output
+    paths
 
-    def serialize(self) -> str:
-        data = [self.path, self.normalization_type.value]
-        return json.dumps(data)
+    Attributes:
+        input_file_path (GcsfsFilePath): file path for the raw data file sent by the
+            state that required pre-import normalization
+        output_file_paths (List[GcsfsFilePath]): list of file paths for the chunks of
+            normalized data from input_file_path that were normalized to be readable by
+            the big query load job
+    """
 
-    @staticmethod
-    def deserialize(json_str: str) -> "RequiresNormalizationFile":
-        data = json.loads(json_str)
-        return RequiresNormalizationFile(
-            path=data[0], normalization_type=PreImportNormalizationType(data[1])
-        )
-
-
-@attr.define
-class ImportReadyNormalizedFile(BaseResult):
-    input_file_path: str
-    output_file_paths: List[str]
+    input_file_path: GcsfsFilePath = attr.ib(
+        validator=attr.validators.instance_of(GcsfsFilePath)
+    )
+    output_file_paths: List[GcsfsFilePath] = attr.ib(
+        validator=attr_validators.is_list_of(GcsfsFilePath)
+    )
 
     def serialize(self) -> str:
         result_dict = {
-            "input_file_path": self.input_file_path,
-            "output_file_paths": self.output_file_paths,
+            "input_file_path": self.input_file_path.abs_path(),
+            "output_file_paths": [path.abs_path() for path in self.output_file_paths],
         }
         return json.dumps(result_dict)
 
     @staticmethod
-    def deserialize(json_str: str) -> "ImportReadyNormalizedFile":
+    def deserialize(json_str: str) -> "PreImportNormalizedFileResult":
         data = json.loads(json_str)
-        return ImportReadyNormalizedFile(
-            input_file_path=data["input_file_path"],
-            output_file_paths=data["output_file_paths"],
+        return PreImportNormalizedFileResult(
+            input_file_path=GcsfsFilePath.from_absolute_path(data["input_file_path"]),
+            output_file_paths=[
+                GcsfsFilePath.from_absolute_path(path)
+                for path in data["output_file_paths"]
+            ],
         )
 
 
@@ -366,19 +456,22 @@ class ImportReadyNormalizedFile(BaseResult):
 class ImportReadyFile(BaseResult):
     """Base information required for all tasks in the big query load step.
 
-    file_id (int): file_id of the conceptual file being loaded
-    file_tag (str): file_tag of the file being loaded
-    update_datetime (datetime.datetime): the update_datetime associated with this file_id
-    file_paths (List[GcsfsFilePath]): the raw file paths in GCS associated with this
-        file_id to be loaded into BigQuery
-    original_file_paths (Optional[List[GcsfsFilePath]]): if pre-import normalization was
-        required, the list file paths of the files sent to us by the state before
-        pre-import normalization was performed. Otherwise, None.
+    Attributes:
+        file_id (int): file_id of the conceptual file being loaded
+        file_tag (str): file_tag of the file being loaded
+        update_datetime (datetime.datetime): the update_datetime associated with this file_id
+        file_paths (List[GcsfsFilePath]): the raw file paths in GCS associated with this
+            file_id to be loaded into BigQuery
+        original_file_paths (Optional[List[GcsfsFilePath]]): if pre-import normalization was
+            required, the list file paths of the files sent to us by the state before
+            pre-import normalization was performed. Otherwise, None.
     """
 
     file_id: int = attr.ib(validator=attr_validators.is_int)
     file_tag: str = attr.ib(validator=attr_validators.is_str)
-    update_datetime: datetime.datetime = attr.ib(validator=attr_validators.is_datetime)
+    update_datetime: datetime.datetime = attr.ib(
+        validator=attr_validators.is_utc_timezone_aware_datetime
+    )
     file_paths: List[GcsfsFilePath] = attr.ib(
         validator=attr_validators.is_list_of(GcsfsFilePath)
     )
@@ -438,35 +531,33 @@ class ImportReadyFile(BaseResult):
         cls,
         bq_metadata: "RawBigQueryFileMetadataSummary",
         input_path_to_normalized_chunk_results: Dict[
-            str, List[NormalizedCsvChunkResult]
+            GcsfsFilePath, List[PreImportNormalizedCsvChunkResult]
         ],
     ) -> "ImportReadyFile":
         return ImportReadyFile(
             file_id=assert_type(bq_metadata.file_id, int),
             file_tag=bq_metadata.file_tag,
             file_paths=[
-                GcsfsFilePath.from_absolute_path(normalized_chunk.output_file_path)
+                normalized_chunk.output_file_path
                 for normalized_chunks in input_path_to_normalized_chunk_results.values()
                 for normalized_chunk in normalized_chunks
             ],
             update_datetime=bq_metadata.update_datetime,
-            original_file_paths=[
-                GcsfsFilePath.from_absolute_path(input_path)
-                for input_path in input_path_to_normalized_chunk_results
-            ],
+            original_file_paths=list(input_path_to_normalized_chunk_results),
         )
 
 
 @attr.define
 class AppendReadyFile(BaseResult):
     """Summary from DirectIngestRawFileLoadManager.load_and_prep_paths step that will
-    be combined with AppendSummary to build a row in direct_ingest_raw_data_import_session
+    be combined with AppendSummary to build a row in the
+    direct_ingest_raw_data_import_session operations table.
 
-
-    append_ready_table_address (str): temp BQ address of loaded, transformed and migrated
-        raw data
-    raw_rows_count (int): number of raw rows loaded from raw file paths before any
-        transformations or filtering occured
+    Attributes:
+        append_ready_table_address (str): temp BQ address of loaded, transformed and
+            migrated raw data
+        raw_rows_count (int): number of raw rows loaded from raw file paths before any
+            transformations or filtering occurred
     """
 
     import_ready_file: ImportReadyFile
@@ -496,14 +587,16 @@ class AppendReadyFile(BaseResult):
 
 @attr.define
 class AppendSummary(BaseResult):
-    """Summary from DirectIngestRawFileLoadManager.append_to_raw_data_table step that will
-    be combined with AppendReadyFile to build a row in direct_ingest_raw_data_import_session
+    """Summary from DirectIngestRawFileLoadManager.append_to_raw_data_table step that
+    will be combined with AppendReadyFile to build a row in the
+    direct_ingest_raw_data_import_session operations table.
 
-    file_id (int): file_id associated with this append summary
-    net_new_or_updated_rows(int | None): the number of net new or updated rows added
-        during the diffing process
-    deleted_rows(int | None): the number of rows added with is_deleted as True during the
-        historical diffing process
+    Attributes:
+        file_id (int): file_id associated with this append summary
+        net_new_or_updated_rows(int | None): the number of net new or updated rows added
+            during the diffing process
+        deleted_rows(int | None): the number of rows added with is_deleted as True during
+            the historical diffing process
 
     """
 
@@ -538,21 +631,24 @@ class AppendSummary(BaseResult):
 class AppendReadyFileBatch(BaseResult):
     """Contains "batches" of AppendReadyFile objects grouped by file_tag.
 
-    append_ready_files_by_tag (Dict[str, List[AppendReadyFile]]): AppendReadyFiles grouped
-        by file tags to be consumed by a single task.
+    Attributes:
+        append_ready_files_by_tag (Dict[str, List[AppendReadyFile]]): AppendReadyFile
+            objects grouped by file tags to be consumed by a single task.
 
     """
 
-    append_ready_files_by_tag: Dict[str, List[AppendReadyFile]] = attr.ib()
+    append_ready_files_by_tag: Dict[str, List[AppendReadyFile]] = attr.ib(
+        validator=attr_validators.is_dict
+    )
 
     def serialize(self) -> str:
         return json.dumps(
             {
                 file_tag: [
                     append_ready_file.serialize()
-                    for append_ready_file in append_ready_files
+                    for append_ready_file in append_ready_files_for_tag
                 ]
-                for file_tag, append_ready_files in self.append_ready_files_by_tag.items()
+                for file_tag, append_ready_files_for_tag in self.append_ready_files_by_tag.items()
             }
         )
 
@@ -576,15 +672,15 @@ class RawGCSFileMetadataSummary(BaseResult):
     in GCS
 
     Attributes:
-        gcs_file_id (int): An id that corresponds to the literal file in Google Cloud
+        gcs_file_id (int): an id that corresponds to the literal file in Google Cloud
             Storage in direct_ingest_raw_gcs_file_metadata. A single file will always
             have a single gcs_file_id.
-        file_id (int | None): A "conceptual" file id that corresponds to a single,
+        file_id (int | None): a "conceptual" file id that corresponds to a single,
             conceptual file sent to us by the state. For raw files states send us in
             chunks (such as ContactNoteComment), each literal CSV that makes up the
             whole file will have a different gcs_file_id, but all of those entries will
             have the same file_id.
-        path (GcsfsFilePath): The path in Google Cloud Storage of the file.
+        path (GcsfsFilePath): the path in Google Cloud Storage of the file.
     """
 
     gcs_file_id: int = attr.ib(validator=attr_validators.is_int)
@@ -625,8 +721,8 @@ class RawBigQueryFileMetadataSummary(BaseResult):
         gcs_files (list[RawGCSFileMetadataSummary]): a list of RawGCSFileMetadataSummary
             objects that correspond to the literal csv files that comprise this single,
             conceptual file.
-        file_tag (str): The shared file_tag from |gcs_files| cached on this object.
-        file_id (int | None): A "conceptual" file id that corresponds to a single,
+        file_tag (str): the shared file_tag from |gcs_files| cached on this object.
+        file_id (int | None): a "conceptual" file id that corresponds to a single,
             conceptual file sent to us by the state. For raw files states send us in
             chunks (such as ContactNoteComment), each literal CSV that makes up the
             whole file will have a different gcs_file_id, but all of those entries will
@@ -638,7 +734,9 @@ class RawBigQueryFileMetadataSummary(BaseResult):
         validator=attr_validators.is_list_of(RawGCSFileMetadataSummary)
     )
     file_tag: str = attr.ib(validator=attr_validators.is_str)
-    update_datetime: datetime.datetime = attr.ib(validator=attr_validators.is_datetime)
+    update_datetime: datetime.datetime = attr.ib(
+        validator=attr_validators.is_utc_timezone_aware_datetime
+    )
     file_id: Optional[int] = attr.ib(default=None, validator=attr_validators.is_opt_int)
 
     def serialize(self) -> str:

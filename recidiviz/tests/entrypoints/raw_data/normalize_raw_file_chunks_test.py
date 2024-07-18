@@ -19,6 +19,7 @@ import unittest
 from unittest.mock import MagicMock, patch
 
 from recidiviz.cloud_storage.gcsfs_csv_chunk_boundary_finder import CsvChunkBoundary
+from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.constants.states import StateCode
 from recidiviz.entrypoints.raw_data.normalize_raw_file_chunks import (
     FILE_CHUNK_LIST_DELIMITER,
@@ -26,8 +27,8 @@ from recidiviz.entrypoints.raw_data.normalize_raw_file_chunks import (
     normalize_raw_file_chunks,
 )
 from recidiviz.ingest.direct.types.raw_data_import_types import (
-    NormalizedCsvChunkResult,
     PreImportNormalizationType,
+    PreImportNormalizedCsvChunkResult,
     RawFileProcessingError,
     RequiresPreImportNormalizationFile,
     RequiresPreImportNormalizationFileChunk,
@@ -42,11 +43,11 @@ class TestRawDataChunkNormalization(unittest.TestCase):
         self.mock_fs = MagicMock()
         self.mock_normalizer_instance = MagicMock()
 
-        self.file_path = "test_bucket/test_file.csv"
+        self.file_path = GcsfsFilePath.from_absolute_path("test_bucket/test_file.csv")
         self.chunk_boundary = CsvChunkBoundary(0, 100, 0)
         self.requires_normalization_chunk = RequiresPreImportNormalizationFileChunk(
             path=self.file_path,
-            normalization_type=PreImportNormalizationType.ENCODING_UPDATE_ONLY,
+            pre_import_normalization_type=PreImportNormalizationType.ENCODING_UPDATE_ONLY,
             chunk_boundary=self.chunk_boundary,
             headers=["ID", "Name", "DOB"],
         )
@@ -54,8 +55,10 @@ class TestRawDataChunkNormalization(unittest.TestCase):
             self.requires_normalization_chunk.serialize()
         ]
 
-        self.output_file_path = "temp_bucket/temp_test_file_0.csv"
-        self.normalized_chunk = NormalizedCsvChunkResult(
+        self.output_file_path = GcsfsFilePath.from_absolute_path(
+            "temp_bucket/temp_test_file_0.csv"
+        )
+        self.normalized_chunk = PreImportNormalizedCsvChunkResult(
             input_file_path=self.file_path,
             output_file_path=self.output_file_path,
             chunk_boundary=self.chunk_boundary,
@@ -86,7 +89,7 @@ class TestRawDataChunkNormalization(unittest.TestCase):
             json_str=normalize_raw_file_chunks(
                 self.serialized_requires_normalization_chunks, self.state_code
             ),
-            result_cls=NormalizedCsvChunkResult,
+            result_cls=PreImportNormalizedCsvChunkResult,
             error_cls=RawFileProcessingError,
         )
 

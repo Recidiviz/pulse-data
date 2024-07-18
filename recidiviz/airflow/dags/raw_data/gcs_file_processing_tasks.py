@@ -23,7 +23,7 @@ from typing import Dict, List, Tuple
 
 from airflow.decorators import task
 from airflow.exceptions import AirflowException
-from more_itertools import distribute, one
+from more_itertools import distribute
 
 from recidiviz.airflow.dags.operators.recidiviz_kubernetes_pod_operator import (
     ENTRYPOINT_ARGUMENTS,
@@ -35,10 +35,9 @@ from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.types.raw_data_import_types import (
     ImportReadyFile,
-    NormalizedCsvChunkResult,
+    PreImportNormalizedCsvChunkResult,
     RawBigQueryFileMetadataSummary,
     RawFileProcessingError,
-    RequiresNormalizationFile,
     RequiresPreImportNormalizationFile,
     RequiresPreImportNormalizationFileChunk,
 )
@@ -55,7 +54,9 @@ ENTRYPOINT_ARG_LIST_DELIMITER = "^"
 
 @task
 def generate_file_chunking_pod_arguments(
-    state_code: StateCode, requires_normalization_files: List[str], num_batches: int
+    state_code: StateCode,
+    serialized_requires_pre_import_normalization_file_paths: List[str],
+    num_batches: int,
 ) -> List[List[str]]:
     return [
         [
@@ -64,47 +65,54 @@ def generate_file_chunking_pod_arguments(
             f"--state_code={state_code.value}",
             f"--requires_normalization_files={ENTRYPOINT_ARG_LIST_DELIMITER.join(batch)}",
         ]
-        for batch in create_file_batches(requires_normalization_files, num_batches)
+        for batch in create_file_batches(
+            serialized_requires_pre_import_normalization_file_paths,
+            num_batches,
+        )
     ]
 
 
 def create_file_batches(
-    requires_normalization_files: List[str], num_batches: int
+    serialized_requires_pre_import_normalization_file_paths: List[str], num_batches: int
 ) -> List[List[str]]:
     fs = GcsfsFactory.build()
-    deserialized_files = [
-        RequiresNormalizationFile.deserialize(f) for f in requires_normalization_files
+    requires_pre_import_normalization_file_paths = [
+        GcsfsFilePath.from_absolute_path(path)
+        for path in serialized_requires_pre_import_normalization_file_paths
     ]
 
-    batches = _batch_files_by_size(fs, deserialized_files, num_batches)
-    serialized_batches = [[f.serialize() for f in batch] for batch in batches]
+    batches = _batch_files_by_size(
+        fs, requires_pre_import_normalization_file_paths, num_batches
+    )
+    serialized_batches = [[path.abs_path() for path in batch] for batch in batches]
 
     return serialized_batches
 
 
 def _batch_files_by_size(
     fs: GCSFileSystem,
-    requires_normalization_files: List[RequiresNormalizationFile],
+    requires_pre_import_normalization_file_paths: List[GcsfsFilePath],
     num_batches: int,
-) -> List[List[RequiresNormalizationFile]]:
+) -> List[List[GcsfsFilePath]]:
     """Divide files into batches with approximately equal cumulative size"""
     # If get_file_size returns None, set size to 0 and don't worry about sorting correctly
     # If the file doesn't exist we'll return an error downstream
     files_with_sizes = _get_files_with_sizes_concurrently(
-        fs, requires_normalization_files
+        fs, requires_pre_import_normalization_file_paths
     )
     return n_evenly_weighted_buckets(files_with_sizes, num_batches)
 
 
 def _get_files_with_sizes_concurrently(
-    fs: GCSFileSystem, requires_normalization_files: List[RequiresNormalizationFile]
-) -> List[Tuple[RequiresNormalizationFile, int]]:
-    files_with_sizes: List[Tuple[RequiresNormalizationFile, int]] = []
+    fs: GCSFileSystem,
+    requires_normalization_files: List[GcsfsFilePath],
+) -> List[Tuple[GcsfsFilePath, int]]:
+    files_with_sizes: List[Tuple[GcsfsFilePath, int]] = []
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=MAX_THREADS) as executor:
         future_to_file_path = {
             executor.submit(
-                _get_file_size, fs, requires_normalization_file.path
+                _get_file_size, fs, requires_normalization_file
             ): requires_normalization_file
             for requires_normalization_file in requires_normalization_files
         }
@@ -120,8 +128,8 @@ def _get_files_with_sizes_concurrently(
     return files_with_sizes
 
 
-def _get_file_size(fs: GCSFileSystem, file_path: str) -> int:
-    return fs.get_file_size(GcsfsFilePath.from_absolute_path(file_path)) or 0
+def _get_file_size(fs: GCSFileSystem, file_path: GcsfsFilePath) -> int:
+    return fs.get_file_size(file_path) or 0
 
 
 @task
@@ -189,14 +197,20 @@ def regroup_and_verify_file_chunks(
     serialized_requires_pre_import_normalization_files_bq_metadata: List[str],
 ) -> str:
     """Task organizes normalized chunks by file and compares their collective checksum
-    against the full file checksum to ensure all file bytes were read correctly"""
+    against the full file checksum to ensure all file bytes were read correctly.
+    """
     mapped_task_output = MappedBatchedTaskOutput.deserialize(
         normalized_chunks_result,
-        result_cls=NormalizedCsvChunkResult,
+        result_cls=PreImportNormalizedCsvChunkResult,
         error_cls=RawFileProcessingError,
     )
-    all_results: List[NormalizedCsvChunkResult] = mapped_task_output.flatten_results()
+    all_results: List[
+        PreImportNormalizedCsvChunkResult
+    ] = mapped_task_output.flatten_results()
     upstream_errors: List[RawFileProcessingError] = mapped_task_output.flatten_errors()
+    file_path_to_normalized_chunks = regroup_normalized_file_chunks(
+        all_results, upstream_errors
+    )
 
     requires_pre_import_normalization_files_bq_metadata = [
         RawBigQueryFileMetadataSummary.deserialize(
@@ -225,17 +239,22 @@ def regroup_and_verify_file_chunks(
 
 
 def verify_file_checksums(
-    file_path_to_normalized_chunks: Dict[str, List[NormalizedCsvChunkResult]],
-) -> Tuple[List[RawFileProcessingError], Dict[str, List[NormalizedCsvChunkResult]]]:
+    file_path_to_normalized_chunks: Dict[
+        GcsfsFilePath, List[PreImportNormalizedCsvChunkResult]
+    ],
+) -> Tuple[
+    List[RawFileProcessingError],
+    Dict[GcsfsFilePath, List[PreImportNormalizedCsvChunkResult]],
+]:
     """Verifies the checksum of the normalized file chunks against the full file checksum
     and returns the list errors from non-matching files and a mapping of input file paths
-    to their corresponding NormalizedCsvChunkResults.
+    to their corresponding PreImportNormalizedCsvChunkResults.
     """
 
     fs = GcsfsFactory.build()
     errors: List[RawFileProcessingError] = []
     filtered_file_path_to_normalized_chunks: Dict[
-        str, List[NormalizedCsvChunkResult]
+        GcsfsFilePath, List[PreImportNormalizedCsvChunkResult]
     ] = {}
 
     for file_path, chunks in file_path_to_normalized_chunks.items():
@@ -249,7 +268,7 @@ def verify_file_checksums(
             "utf-8"
         )
 
-        full_file_checksum = fs.get_crc32c(GcsfsFilePath.from_absolute_path(file_path))
+        full_file_checksum = fs.get_crc32c(file_path)
 
         if chunk_combined_checksum != full_file_checksum:
             # TODO(#30169) add input and output file paths so we can clean
@@ -257,7 +276,7 @@ def verify_file_checksums(
             errors.append(
                 RawFileProcessingError(
                     file_path=file_path,
-                    error_msg=f"Checksum mismatch for {file_path}: {chunk_combined_checksum} != {full_file_checksum}",
+                    error_msg=f"Checksum mismatch for {file_path.abs_path()}: {chunk_combined_checksum} != {full_file_checksum}",
                 )
             )
         else:
@@ -267,16 +286,16 @@ def verify_file_checksums(
 
 
 def regroup_normalized_file_chunks(
-    normalized_chunks_result: List[NormalizedCsvChunkResult],
+    normalized_chunks_result: List[PreImportNormalizedCsvChunkResult],
     normalized_chunks_errors: List[RawFileProcessingError],
-) -> Dict[str, List[NormalizedCsvChunkResult]]:
+) -> Dict[GcsfsFilePath, List[PreImportNormalizedCsvChunkResult]]:
     """Returns dictionary of filepath: [normalized_chunk_results]"""
     file_path_to_normalized_chunks: Dict[
-        str, List[NormalizedCsvChunkResult]
+        GcsfsFilePath, List[PreImportNormalizedCsvChunkResult]
     ] = defaultdict(list)
 
     files_with_previous_errors = set(
-        one(error.file_path) for error in normalized_chunks_errors
+        error.file_path for error in normalized_chunks_errors
     )
 
     for chunk in normalized_chunks_result:
@@ -295,7 +314,9 @@ def regroup_normalized_file_chunks(
 
 
 def build_import_ready_files(
-    filtered_file_path_to_normalized_chunks: Dict[str, List[NormalizedCsvChunkResult]],
+    filtered_file_path_to_normalized_chunks: Dict[
+        GcsfsFilePath, List[PreImportNormalizedCsvChunkResult]
+    ],
     requires_pre_import_normalization_files_bq_metadata: List[
         RawBigQueryFileMetadataSummary
     ],
@@ -308,16 +329,16 @@ def build_import_ready_files(
     # --- first, create mapping of original file path to associated bq metadata --------
 
     path_to_requires_normalization_files_bq_metadata: Dict[
-        str, RawBigQueryFileMetadataSummary
+        GcsfsFilePath, RawBigQueryFileMetadataSummary
     ] = {
-        gcs_metadata.path.abs_path(): bq_metadata
+        gcs_metadata.path: bq_metadata
         for bq_metadata in requires_pre_import_normalization_files_bq_metadata
         for gcs_metadata in bq_metadata.gcs_files
     }
 
     # --- next, group input files by file_id -------------------------------------------
 
-    file_id_to_input_paths: Dict[int, List[str]] = defaultdict(list)
+    file_id_to_input_paths: Dict[int, List[GcsfsFilePath]] = defaultdict(list)
     for valid_input_file in filtered_file_path_to_normalized_chunks:
         bq_metadata = path_to_requires_normalization_files_bq_metadata[valid_input_file]
         file_id_to_input_paths[assert_type(bq_metadata.file_id, int)].append(
@@ -331,9 +352,7 @@ def build_import_ready_files(
         successful_input_paths = set(
             file_id_to_input_paths[assert_type(bq_metadata.file_id, int)]
         )
-        all_input_paths = {
-            gcs_file.path.abs_path() for gcs_file in bq_metadata.gcs_files
-        }
+        all_input_paths = {gcs_file.path for gcs_file in bq_metadata.gcs_files}
 
         if all_input_paths != successful_input_paths:
             # we are logging this error, but not creating a new error because the error
@@ -376,7 +395,7 @@ def raise_file_chunking_errors(file_chunking_output: List[str]) -> None:
 def raise_chunk_normalization_errors(chunk_normalization_output: str) -> None:
     errors = BatchedTaskInstanceOutput.deserialize(
         chunk_normalization_output,
-        result_cls=NormalizedCsvChunkResult,
+        result_cls=PreImportNormalizedCsvChunkResult,
         error_cls=RawFileProcessingError,
     ).errors
     _raise_task_errors(errors)
@@ -385,4 +404,4 @@ def raise_chunk_normalization_errors(chunk_normalization_output: str) -> None:
 def _raise_task_errors(task_errors: List[RawFileProcessingError]) -> None:
     if task_errors:
         error_msg = "\n\n".join([str(error) for error in task_errors])
-        raise AirflowException(f"Error(s) occured in file processing:\n{error_msg}")
+        raise AirflowException(f"Error(s) occurred in file processing:\n{error_msg}")
