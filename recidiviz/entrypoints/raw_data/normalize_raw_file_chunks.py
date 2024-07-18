@@ -67,7 +67,11 @@ def _normalize_chunks(
         except Exception as e:
             errors.append(
                 RawFileProcessingError(
-                    file_path=chunk.path,
+                    original_file_path=chunk.path,
+                    # even though this file might not exist, in case there was a partial
+                    # upload, let's provide this path just to make sure it gets cleaned
+                    # up
+                    temporary_file_paths=[normalizer.output_path_for_chunk(chunk)],
                     error_msg=f"Error for file {chunk.path} chunk {chunk.chunk_boundary}: {str(e)}\n{traceback.format_exc()}",
                 )
             )

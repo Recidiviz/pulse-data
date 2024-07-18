@@ -238,8 +238,8 @@ class TestDirectIngestRawFileLoadManager(BigQueryEmulatorTestCase):
             file_id=1,
             file_tag=file_tag,
             update_datetime=datetime.datetime(2024, 1, 1, 1, 1, 1, tzinfo=datetime.UTC),
-            file_paths=input_paths,
-            original_file_paths=None,
+            original_file_paths=input_paths,
+            pre_import_normalized_file_paths=None,
         )
         append_ready_file = self.manager.load_and_prep_paths(irf)
 
@@ -257,7 +257,7 @@ class TestDirectIngestRawFileLoadManager(BigQueryEmulatorTestCase):
             )
         )
 
-        self.assertTrue(len(self.fs.all_paths) == 0)
+        self.assertTrue(len(self.fs.all_paths) == 1)
 
         self.compare_output_against_expected(
             append_ready_file.append_ready_table_address, prep_output
@@ -304,8 +304,8 @@ class TestDirectIngestRawFileLoadManager(BigQueryEmulatorTestCase):
             update_datetime=datetime.datetime(
                 2020, 6, 10, 0, 0, 0, tzinfo=datetime.UTC
             ),
-            file_paths=input_paths,
-            original_file_paths=None,
+            original_file_paths=input_paths,
+            pre_import_normalized_file_paths=None,
         )
         append_ready_file = self.manager.load_and_prep_paths(irf)
 
@@ -328,8 +328,8 @@ class TestDirectIngestRawFileLoadManager(BigQueryEmulatorTestCase):
             file_id=10,
             file_tag=file_tag,
             update_datetime=datetime.datetime(2023, 4, 8, 0, 0, 1, tzinfo=datetime.UTC),
-            file_paths=input_paths,
-            original_file_paths=None,
+            original_file_paths=input_paths,
+            pre_import_normalized_file_paths=None,
         )
         append_ready_file = self.manager.load_and_prep_paths(irf)
 
@@ -357,8 +357,36 @@ class TestDirectIngestRawFileLoadManager(BigQueryEmulatorTestCase):
                     update_datetime=datetime.datetime(
                         2023, 4, 8, 0, 0, 1, tzinfo=datetime.UTC
                     ),
-                    file_paths=input_paths,
-                    original_file_paths=None,
+                    original_file_paths=input_paths,
+                    pre_import_normalized_file_paths=None,
+                )
+            )
+
+        self.assertTrue(len(self.fs.all_paths) == 1)
+        self.assertFalse(
+            self.bq_client.table_exists(
+                self.bq_client.dataset_ref_for_id("us_xx_primary_raw_data_temp_load"),
+                "singlePrimaryKey__1",
+            )
+        )
+
+    def test_fail_load_failure_to_start_with_normalized(self) -> None:
+        file_tag, input_paths, *_ = self._prep_test(
+            "no_migrations_no_changes_single_file"
+        )
+
+        self.load_job_mock.side_effect = self._mock_fail
+
+        with self.assertRaisesRegex(ValueError, "We hit an error!"):
+            _ = self.manager.load_and_prep_paths(
+                ImportReadyFile(
+                    file_id=10,
+                    file_tag=file_tag,
+                    update_datetime=datetime.datetime(
+                        2023, 4, 8, 0, 0, 1, tzinfo=datetime.UTC
+                    ),
+                    original_file_paths=input_paths,
+                    pre_import_normalized_file_paths=input_paths,
                 )
             )
 
@@ -385,8 +413,8 @@ class TestDirectIngestRawFileLoadManager(BigQueryEmulatorTestCase):
                     update_datetime=datetime.datetime(
                         2023, 4, 8, 0, 0, 1, tzinfo=datetime.UTC
                     ),
-                    file_paths=input_paths,
-                    original_file_paths=None,
+                    original_file_paths=input_paths,
+                    pre_import_normalized_file_paths=input_paths,
                 )
             )
 
@@ -417,8 +445,8 @@ class TestDirectIngestRawFileLoadManager(BigQueryEmulatorTestCase):
                         update_datetime=datetime.datetime(
                             2023, 4, 8, 0, 0, 1, tzinfo=datetime.UTC
                         ),
-                        file_paths=input_paths,
-                        original_file_paths=None,
+                        original_file_paths=input_paths,
+                        pre_import_normalized_file_paths=input_paths,
                     )
                 )
 
@@ -454,12 +482,12 @@ class TestDirectIngestRawFileLoadManager(BigQueryEmulatorTestCase):
                         update_datetime=datetime.datetime(
                             2023, 4, 8, 0, 0, 1, tzinfo=datetime.UTC
                         ),
-                        file_paths=input_paths,
-                        original_file_paths=None,
+                        original_file_paths=input_paths,
+                        pre_import_normalized_file_paths=None,
                     )
                 )
 
-        self.assertTrue(len(self.fs.all_paths) == 0)
+        self.assertTrue(len(self.fs.all_paths) == 1)
         self.assertFalse(
             self.bq_client.table_exists(
                 self.bq_client.dataset_ref_for_id("us_xx_primary_raw_data_temp_load"),
@@ -493,8 +521,8 @@ class TestDirectIngestRawFileLoadManager(BigQueryEmulatorTestCase):
                             update_datetime=datetime.datetime(
                                 2023, 4, 8, 0, 0, 1, tzinfo=datetime.UTC
                             ),
-                            file_paths=[],
-                            original_file_paths=None,
+                            original_file_paths=[],
+                            pre_import_normalized_file_paths=None,
                         ),
                         append_ready_table_address=BigQueryAddress.from_str(
                             '"us_xx_primary_raw_data_temp_load.singlePrimaryKey__1__transformed"'

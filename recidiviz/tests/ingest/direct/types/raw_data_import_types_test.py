@@ -42,6 +42,8 @@ from recidiviz.ingest.direct.types.raw_data_import_types import (
     PreImportNormalizedCsvChunkResult,
     PreImportNormalizedFileResult,
     RawBigQueryFileMetadataSummary,
+    RawDataAppendImportError,
+    RawFileLoadAndPrepError,
     RawFileProcessingError,
     RawGCSFileMetadataSummary,
     RequiresPreImportNormalizationFile,
@@ -152,6 +154,52 @@ class PreImportNormalizationTypeTest(unittest.TestCase):
 class TestSerialization(unittest.TestCase):
     """Test serialization and deserialization methods for raw data import types"""
 
+    def test_raw_file_processing_error(self) -> None:
+        no_temp = RawFileProcessingError(
+            original_file_path=GcsfsFilePath.from_absolute_path("path/to/file.csv"),
+            temporary_file_paths=None,
+            error_msg="oooooo!",
+        )
+        self._validate_serialization(no_temp, RawFileProcessingError)
+        with_temp = attr.evolve(
+            no_temp,
+            temporary_file_paths=[
+                GcsfsFilePath.from_absolute_path("path/to/file_one.csv"),
+                GcsfsFilePath.from_absolute_path("path/to/file_two.csv"),
+            ],
+        )
+        self._validate_serialization(with_temp, RawFileProcessingError)
+
+    def test_raw_file_load_and_prep_error(self) -> None:
+        no_temp = RawFileLoadAndPrepError(
+            file_tag="tag",
+            update_datetime=datetime.datetime(2024, 1, 1, 1, 1, 1, tzinfo=datetime.UTC),
+            original_file_paths=[
+                GcsfsFilePath.from_absolute_path("path/to/file_one.csv"),
+                GcsfsFilePath.from_absolute_path("path/to/file_two.csv"),
+            ],
+            pre_import_normalized_file_paths=None,
+            error_msg="aaaaaaaaa",
+        )
+
+        self._validate_serialization(no_temp, RawFileLoadAndPrepError)
+        with_temp = attr.evolve(
+            no_temp,
+            pre_import_normalized_file_paths=[
+                GcsfsFilePath.from_absolute_path("path/to/file_one.csv"),
+                GcsfsFilePath.from_absolute_path("path/to/file_two.csv"),
+            ],
+        )
+        self._validate_serialization(with_temp, RawFileLoadAndPrepError)
+
+    def test_raw_data_import_append_error(self) -> None:
+        error = RawDataAppendImportError(
+            raw_temp_table=BigQueryAddress(dataset_id="data", table_id="set"),
+            error_msg="eeeeeeeee",
+        )
+
+        self._validate_serialization(error, RawDataAppendImportError)
+
     def test_requires_pre_import_normalization_file_chunk(self) -> None:
         chunk_boundary = CsvChunkBoundary(
             start_inclusive=0, end_exclusive=100, chunk_num=0
@@ -205,7 +253,9 @@ class TestSerialization(unittest.TestCase):
             file_id=1,
             file_tag="fake_tag",
             update_datetime=datetime.datetime(2024, 1, 1, 1, 1, 1, tzinfo=datetime.UTC),
-            file_paths=[GcsfsFilePath(bucket_name="bucket_temp", blob_name="blob.csv")],
+            pre_import_normalized_file_paths=[
+                GcsfsFilePath(bucket_name="bucket_temp", blob_name="blob.csv")
+            ],
             original_file_paths=[
                 GcsfsFilePath(bucket_name="bucket", blob_name="blob.csv")
             ],
@@ -220,7 +270,7 @@ class TestSerialization(unittest.TestCase):
                 update_datetime=datetime.datetime(
                     2024, 1, 1, 1, 1, 1, tzinfo=datetime.UTC
                 ),
-                file_paths=[
+                pre_import_normalized_file_paths=[
                     GcsfsFilePath(bucket_name="bucket_temp", blob_name="blob.csv")
                 ],
                 original_file_paths=[
@@ -249,7 +299,7 @@ class TestSerialization(unittest.TestCase):
                             update_datetime=datetime.datetime(
                                 2024, 1, 1, 1, 1, 1, tzinfo=datetime.UTC
                             ),
-                            file_paths=[
+                            pre_import_normalized_file_paths=[
                                 GcsfsFilePath(
                                     bucket_name="bucket_temp", blob_name="blob1.csv"
                                 )
@@ -272,7 +322,7 @@ class TestSerialization(unittest.TestCase):
                             update_datetime=datetime.datetime(
                                 2024, 1, 2, 1, 1, 1, tzinfo=datetime.UTC
                             ),
-                            file_paths=[
+                            pre_import_normalized_file_paths=[
                                 GcsfsFilePath(
                                     bucket_name="bucket_temp", blob_name="blob2.csv"
                                 )
@@ -297,12 +347,12 @@ class TestSerialization(unittest.TestCase):
                             update_datetime=datetime.datetime(
                                 2024, 1, 1, 1, 1, 1, tzinfo=datetime.UTC
                             ),
-                            file_paths=[
+                            original_file_paths=[
                                 GcsfsFilePath(
                                     bucket_name="bucket", blob_name="blob3.csv"
                                 )
                             ],
-                            original_file_paths=None,
+                            pre_import_normalized_file_paths=None,
                         ),
                         append_ready_table_address=BigQueryAddress(
                             dataset_id="dataset", table_id="table3"

@@ -46,8 +46,8 @@ from recidiviz.ingest.direct.types.raw_data_import_types import (
     AppendSummary,
     ImportReadyFile,
     RawDataAppendImportError,
-    RawFileLoadAndPrepError,
     RawDataImportError,
+    RawFileLoadAndPrepError,
 )
 from recidiviz.utils.airflow_types import (
     BatchedTaskInstanceOutput,
@@ -109,7 +109,12 @@ def load_and_prep_paths_for_batch(
             except Exception as e:
                 failed_loads.append(
                     RawFileLoadAndPrepError(
-                        file_paths=future_to_metadata[future].file_paths,
+                        original_file_paths=future_to_metadata[
+                            future
+                        ].original_file_paths,
+                        pre_import_normalized_file_paths=future_to_metadata[
+                            future
+                        ].pre_import_normalized_file_paths,
                         file_tag=future_to_metadata[future].file_tag,
                         update_datetime=future_to_metadata[future].update_datetime,
                         error_msg=f"{str(e)}\n{traceback.format_exc()}",
@@ -239,10 +244,11 @@ def _filter_load_results_based_on_errors(
             ]
             skipped_files.append(
                 RawFileLoadAndPrepError(
-                    file_paths=successful_load.import_ready_file.file_paths,
+                    original_file_paths=successful_load.import_ready_file.original_file_paths,
+                    pre_import_normalized_file_paths=successful_load.import_ready_file.pre_import_normalized_file_paths,
                     update_datetime=successful_load.import_ready_file.update_datetime,
                     file_tag=successful_load.import_ready_file.file_tag,
-                    error_msg=f"Blocked Import: failed due to import-blocking failure from {blocking_error.file_paths} \n\n: {blocking_error.error_msg}",
+                    error_msg=f"Blocked Import: failed due to import-blocking failure from {blocking_error.original_file_paths} \n\n: {blocking_error.error_msg}",
                 )
             )
         else:

@@ -443,9 +443,11 @@ class TestRegroupAndVerifyFileChunks(unittest.TestCase):
             assert output_file.file_id == created_files[i].file_id
             assert output_file.file_tag == created_files[i].file_tag
             assert output_file.update_datetime == created_files[i].update_datetime
-            assert set(output_file.file_paths) == set(created_files[i].file_paths)
-            assert set(output_file.original_file_paths or []) == set(
-                created_files[i].original_file_paths or []
+            assert set(output_file.original_file_paths) == set(
+                created_files[i].original_file_paths
+            )
+            assert set(output_file.pre_import_normalized_file_paths or []) == set(
+                created_files[i].pre_import_normalized_file_paths or []
             )
 
     def test_build_import_ready_files_failures_with_skips(self) -> None:
@@ -559,7 +561,9 @@ class TestRegroupAndVerifyFileChunks(unittest.TestCase):
             assert output_file.file_id == created_files[i].file_id
             assert output_file.file_tag == created_files[i].file_tag
             assert output_file.update_datetime == created_files[i].update_datetime
-            assert set(output_file.file_paths) == set(created_files[i].file_paths)
-            assert set(output_file.original_file_paths or []) == set(
-                created_files[i].original_file_paths or []
+            assert set(output_file.original_file_paths) == set(
+                created_files[i].original_file_paths
+            )
+            assert set(output_file.pre_import_normalized_file_paths or []) == set(
+                created_files[i].pre_import_normalized_file_paths or []
             )

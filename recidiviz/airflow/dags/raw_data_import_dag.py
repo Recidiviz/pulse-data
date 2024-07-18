@@ -268,7 +268,7 @@ def create_single_state_code_ingest_instance_raw_data_import_branch(
 
         # ------------------------------------------------------------------------------
 
-        # --- step 5: cleanup & storage ----------------------------------------------
+        # --- step 5: cleanup & storage ------------------------------------------------
         # inputs: [ AppendReadyFile ], [ AppendSummary ]
         # execution layer: celery
         # outputs:

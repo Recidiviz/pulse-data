@@ -122,8 +122,8 @@ class CoalesceImportReadyFiles(TestCase):
                 update_datetime=datetime.datetime(
                     2024, 1, 1, 1, 1, 1, tzinfo=datetime.UTC
                 ),
-                file_paths=[GcsfsFilePath.from_absolute_path("test/123.csv")],
-                original_file_paths=None,
+                original_file_paths=[GcsfsFilePath.from_absolute_path("test/123.csv")],
+                pre_import_normalized_file_paths=None,
             ),
             ImportReadyFile(
                 file_id=1,
@@ -131,8 +131,10 @@ class CoalesceImportReadyFiles(TestCase):
                 update_datetime=datetime.datetime(
                     2024, 1, 1, 1, 1, 1, tzinfo=datetime.UTC
                 ),
-                file_paths=[GcsfsFilePath.from_absolute_path("test/123.csv")],
-                original_file_paths=[GcsfsFilePath.from_absolute_path("test/456.csv")],
+                original_file_paths=[GcsfsFilePath.from_absolute_path("test/123.csv")],
+                pre_import_normalized_file_paths=[
+                    GcsfsFilePath.from_absolute_path("test/456.csv")
+                ],
             ),
         ]
 
