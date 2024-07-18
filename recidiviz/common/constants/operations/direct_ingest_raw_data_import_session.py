@@ -28,7 +28,7 @@ class DirectIngestRawDataImportSessionStatus(OperationsEnum):
 
     STARTED = operations_enum_strings.direct_ingest_import_session_status_started
     SUCCEEDED = operations_enum_strings.direct_ingest_import_session_status_succeeded
-    FAILED_UNKNWON = (
+    FAILED_UNKNOWN = (
         operations_enum_strings.direct_ingest_import_session_status_failed_unknown
     )
     FAILED_LOAD_STEP = (
@@ -60,7 +60,7 @@ _DIRECT_INGEST_IMPORT_SESSION_STATUS_VALUE_DESCRIPTIONS: Dict[OperationsEnum, st
         "well as the rows added to the updated table and the raw data files associated "
         "with the file_id have been moved to storage."
     ),
-    DirectIngestRawDataImportSessionStatus.FAILED_UNKNWON: (
+    DirectIngestRawDataImportSessionStatus.FAILED_UNKNOWN: (
         "The FAILED_UNKNWON status is a catch-all for an import failing without the "
         "import DAG identifying what the specfic issue is."
     ),

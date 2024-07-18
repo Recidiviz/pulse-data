@@ -273,6 +273,7 @@ class GenerateAppendBatchesTest(TestCase):
         _in = BatchedTaskInstanceOutput[AppendReadyFile, RawFileLoadAndPrepError](
             errors=[
                 RawFileLoadAndPrepError(
+                    file_id=1,
                     error_msg="Error!",
                     file_tag="tagFullHistoricalExport",
                     original_file_paths=[],
@@ -280,6 +281,7 @@ class GenerateAppendBatchesTest(TestCase):
                     update_datetime=datetime.datetime(
                         2024, 1, 10, 1, 1, tzinfo=datetime.UTC
                     ),
+                    temp_table=None,
                 )
             ],
             results=summaries,
@@ -299,11 +301,13 @@ class GenerateAppendBatchesTest(TestCase):
     def test_failures_blocking(self) -> None:
         summaries = self.get_summaries("tagFullHistoricalExport")
         f = RawFileLoadAndPrepError(
+            file_id=1,
             error_msg="Error!",
             file_tag="tagFullHistoricalExport",
             original_file_paths=[],
             pre_import_normalized_file_paths=None,
             update_datetime=datetime.datetime(2024, 1, 2, 1, 1, tzinfo=datetime.UTC),
+            temp_table=None,
         )
 
         _in = BatchedTaskInstanceOutput[AppendReadyFile, RawFileLoadAndPrepError](
@@ -336,6 +340,7 @@ class GenerateAppendBatchesTest(TestCase):
             self.get_summaries("tagFullHistoricalExport"),
             [
                 RawFileLoadAndPrepError(
+                    file_id=1,
                     error_msg="yikes!",
                     file_tag="tagFullHistoricalExport",
                     update_datetime=datetime.datetime(
@@ -343,6 +348,7 @@ class GenerateAppendBatchesTest(TestCase):
                     ),
                     original_file_paths=[],
                     pre_import_normalized_file_paths=None,
+                    temp_table=None,
                 )
             ],
         ) == (self.get_summaries("tagFullHistoricalExport"), [])
@@ -353,6 +359,7 @@ class GenerateAppendBatchesTest(TestCase):
             results_input,
             [
                 RawFileLoadAndPrepError(
+                    file_id=1,
                     error_msg="yikes!",
                     file_tag="tagFullHistoricalExport",
                     update_datetime=datetime.datetime(
@@ -360,6 +367,7 @@ class GenerateAppendBatchesTest(TestCase):
                     ),
                     original_file_paths=[],
                     pre_import_normalized_file_paths=None,
+                    temp_table=None,
                 )
             ],
         )
@@ -467,7 +475,7 @@ class AppendToRawDataTableForRegionTest(TestCase):
 
         def return_success(lps: AppendReadyFile) -> AppendSummary:
             append = AppendSummary(
-                file_id=lps.import_ready_file.file_id,
+                file_id=lps.import_ready_file.file_id, historical_diffs_active=True
             )
             expected_results.append(append)
             return append
@@ -509,7 +517,7 @@ class AppendToRawDataTableForRegionTest(TestCase):
                 raise ValueError("oops!")
 
             append = AppendSummary(
-                file_id=lps.import_ready_file.file_id,
+                file_id=lps.import_ready_file.file_id, historical_diffs_active=False
             )
             expected_results.append(append)
             return append
@@ -553,7 +561,7 @@ class AppendToRawDataTableForRegionTest(TestCase):
                 raise ValueError("oops!")
 
             append = AppendSummary(
-                file_id=lps.import_ready_file.file_id,
+                file_id=lps.import_ready_file.file_id, historical_diffs_active=False
             )
             expected_results.append(append)
             return append

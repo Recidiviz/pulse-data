@@ -157,7 +157,7 @@ class DirectIngestRawDataImportSessionManagerTest(TestCase):
             file_id=file_metadata.file_id,
             import_start=frozen_time,
             historical_diffs_active=False,
-            import_status=DirectIngestRawDataImportSessionStatus.FAILED_UNKNWON,
+            import_status=DirectIngestRawDataImportSessionStatus.FAILED_UNKNOWN,
             region_code=StateCode.US_XX.value,
             raw_data_instance=DirectIngestInstance.PRIMARY,
         )
@@ -166,7 +166,7 @@ class DirectIngestRawDataImportSessionManagerTest(TestCase):
             import_session = self.us_xx_manager.start_import_session(
                 file_metadata.file_id,
                 False,
-                import_status=DirectIngestRawDataImportSessionStatus.FAILED_UNKNWON,
+                import_status=DirectIngestRawDataImportSessionStatus.FAILED_UNKNOWN,
             )
 
         self.assertEqual(expected_import_session, import_session)
@@ -241,7 +241,7 @@ class DirectIngestRawDataImportSessionManagerTest(TestCase):
 
         self.us_xx_manager.update_import_session_by_id(
             import_session.import_session_id,
-            import_status=DirectIngestRawDataImportSessionStatus.FAILED_UNKNWON,
+            import_status=DirectIngestRawDataImportSessionStatus.FAILED_UNKNOWN,
         )
 
         new_import_session = self.us_xx_manager.get_import_session_by_id(
@@ -250,7 +250,7 @@ class DirectIngestRawDataImportSessionManagerTest(TestCase):
 
         assert (
             new_import_session.import_status
-            == DirectIngestRawDataImportSessionStatus.FAILED_UNKNWON
+            == DirectIngestRawDataImportSessionStatus.FAILED_UNKNOWN
         )
 
         with self.assertRaisesRegex(
@@ -312,7 +312,7 @@ class DirectIngestRawDataImportSessionManagerTest(TestCase):
 
         self.us_xx_manager.update_import_session_by_id(
             import_session.import_session_id,
-            import_status=DirectIngestRawDataImportSessionStatus.FAILED_UNKNWON,
+            import_status=DirectIngestRawDataImportSessionStatus.FAILED_UNKNOWN,
         )
 
         new_import_session = self.us_xx_manager.get_import_session_by_id(
@@ -321,7 +321,7 @@ class DirectIngestRawDataImportSessionManagerTest(TestCase):
 
         assert (
             new_import_session.import_status
-            == DirectIngestRawDataImportSessionStatus.FAILED_UNKNWON
+            == DirectIngestRawDataImportSessionStatus.FAILED_UNKNOWN
         )
 
         with self.assertRaisesRegex(
@@ -430,7 +430,7 @@ class DirectIngestRawDataImportSessionManagerTest(TestCase):
 
         self.us_xx_manager.update_most_recent_import_session_for_file_id(
             file_metadata.file_id,
-            import_status=DirectIngestRawDataImportSessionStatus.FAILED_UNKNWON,
+            import_status=DirectIngestRawDataImportSessionStatus.FAILED_UNKNOWN,
         )
 
         older_import_session = self.us_xx_manager.get_import_session_by_id(
@@ -448,7 +448,7 @@ class DirectIngestRawDataImportSessionManagerTest(TestCase):
 
         assert (
             new_import_session.import_status
-            == DirectIngestRawDataImportSessionStatus.FAILED_UNKNWON
+            == DirectIngestRawDataImportSessionStatus.FAILED_UNKNOWN
         )
 
         with self.assertRaisesRegex(
@@ -526,7 +526,7 @@ class DirectIngestRawDataImportSessionManagerTest(TestCase):
                 file_id=file_metadata.file_id,
                 import_start=frozen_time,
                 historical_diffs_active=False,
-                import_status=DirectIngestRawDataImportSessionStatus.FAILED_UNKNWON,
+                import_status=DirectIngestRawDataImportSessionStatus.FAILED_UNKNOWN,
                 region_code=StateCode.US_XX.value,
                 raw_data_instance=DirectIngestInstance.PRIMARY,
             ),
@@ -543,7 +543,7 @@ class DirectIngestRawDataImportSessionManagerTest(TestCase):
             _ = self.us_xx_manager.start_import_session(
                 file_metadata.file_id,
                 False,
-                import_status=DirectIngestRawDataImportSessionStatus.FAILED_UNKNWON,
+                import_status=DirectIngestRawDataImportSessionStatus.FAILED_UNKNOWN,
             )
             _ = self.us_xx_manager.start_import_session(
                 file_metadata.file_id,

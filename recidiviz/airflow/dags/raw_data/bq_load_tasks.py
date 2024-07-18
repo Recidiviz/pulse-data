@@ -109,6 +109,7 @@ def load_and_prep_paths_for_batch(
             except Exception as e:
                 failed_loads.append(
                     RawFileLoadAndPrepError(
+                        file_id=future_to_metadata[future].file_id,
                         original_file_paths=future_to_metadata[
                             future
                         ].original_file_paths,
@@ -118,6 +119,7 @@ def load_and_prep_paths_for_batch(
                         file_tag=future_to_metadata[future].file_tag,
                         update_datetime=future_to_metadata[future].update_datetime,
                         error_msg=f"{str(e)}\n{traceback.format_exc()}",
+                        temp_table=None,
                     )
                 )
 
@@ -244,6 +246,8 @@ def _filter_load_results_based_on_errors(
             ]
             skipped_files.append(
                 RawFileLoadAndPrepError(
+                    file_id=successful_load.import_ready_file.file_id,
+                    temp_table=successful_load.append_ready_table_address,
                     original_file_paths=successful_load.import_ready_file.original_file_paths,
                     pre_import_normalized_file_paths=successful_load.import_ready_file.pre_import_normalized_file_paths,
                     update_datetime=successful_load.import_ready_file.update_datetime,
@@ -348,6 +352,7 @@ def _append_to_raw_data_table_for_file_tag(
             )
             failures.append(
                 RawDataAppendImportError(
+                    file_id=append_ready_file.import_ready_file.file_id,
                     raw_temp_table=append_ready_file.append_ready_table_address,
                     error_msg=f"Blocked Import: failed due to import-blocking failure from {failures[0].raw_temp_table.to_str()}",
                 )
@@ -358,6 +363,7 @@ def _append_to_raw_data_table_for_file_tag(
         except Exception as e:
             failures.append(
                 RawDataAppendImportError(
+                    file_id=append_ready_file.import_ready_file.file_id,
                     raw_temp_table=append_ready_file.append_ready_table_address,
                     error_msg=f"{str(e)}\n{traceback.format_exc()}",
                 )
