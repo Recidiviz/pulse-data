@@ -172,6 +172,13 @@ US_IX_SUPERVISION_TASKS_RECORD_QUERY_TEMPLATE = f"""
         WHERE start_date >= supervision_start_date
         group by 1
     ),
+    unable_to_work AS (
+        SELECT person_id
+        FROM `{{project_id}}.normalized_state.state_employment_period`
+        WHERE state_code = 'US_IX'
+          AND employment_status = 'UNABLE_TO_WORK'
+          AND end_date IS NULL
+    ),
     case_compliances_with_income_verification AS (
     select cc.* EXCEPT(most_recent_employment_verification_date, next_recommended_employment_verification_date),
         CASE 
@@ -183,15 +190,21 @@ US_IX_SUPERVISION_TASKS_RECORD_QUERY_TEMPLATE = f"""
                 most_recent_employment_verification_date)
             ELSE COALESCE(most_recent_income_verification_date, most_recent_employment_verification_date)
             END AS most_recent_employment_verification_date,
-        next_recommended_employment_verification_date AS orig_next_recommended_employment_verification_date
+        next_recommended_employment_verification_date AS orig_next_recommended_employment_verification_date,
+        (u.person_id IS NOT NULL) as unable_to_work
     FROM `{{project_id}}.{{dataflow_metrics_materialized}}.most_recent_supervision_case_compliance_metrics_materialized` cc
     LEFT JOIN income_verification USING(person_id)
+    LEFT JOIN unable_to_work u ON cc.person_id = u.person_id
     WHERE state_code = 'US_IX'
     ),
     case_compliance_with_next_recommended_recalculated AS (
-        SELECT *,
+        SELECT * EXCEPT(unable_to_work),
+            CASE 
+            -- When this person has an open employment period with status = 'UNABLE_TO_WORK', we do not recommend an employment verification
+            WHEN unable_to_work = True
+                THEN NULL
             -- If no further employment verification was originally recommended, then leave as is because that means that standards were fulfilled regardless of any new info from income verifications
-            CASE WHEN orig_next_recommended_employment_verification_date IS NULL
+            WHEN orig_next_recommended_employment_verification_date IS NULL
                 THEN orig_next_recommended_employment_verification_date
             -- Else if it's a GENERAL case and we do now see a most_recent_employment_verification_date, then no further employment verification is needed
             WHEN case_type = 'GENERAL' AND most_recent_employment_verification_date is NOT NULL
