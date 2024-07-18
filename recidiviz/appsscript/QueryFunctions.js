@@ -18,7 +18,7 @@
 
 /**
  * Construct supervision district column chart
- * Given parameters provided by the user, constructs a query string and calls RunQuery
+ * Given parameters provided by the user, constructs a query string and calls runQuery
  * to query the BiqQuery database. After fetching the data from the database, populates
  * a new supervision column chart.
  * @param {string} stateCode The state code passed in from the Google Form (ex: 'US_MI')
@@ -26,13 +26,13 @@
  * @param {string} endDateString The end date passed from the connected Google Form on form submit (ex: '2023-03-01')
  * @returns {Chart} The built/populated column chart
  */
-function ConstructSupervisionDistrictColumnChart(
+function constructSupervisionDistrictColumnChart(
   stateCode,
   timePeriod,
   endDateString
 ) {
   // TODO(#5805): parameterize this function for any workflow
-  var queryString = `
+  const queryString = `
     SELECT
       district_name,
       task_completions_early_discharge,
@@ -43,20 +43,20 @@ function ConstructSupervisionDistrictColumnChart(
     AND end_date = '${endDateString}';
   `;
 
-  supervisionDistrictData = RunQuery((queryString = queryString));
+  supervisionDistrictData = runQuery(queryString);
 
-  var title = `${stateCode} Early Discharges by District - ${timePeriod.toLowerCase()} ending ${endDateString}`;
+  const title = `${stateCode} Early Discharges by District - ${timePeriod.toLowerCase()} ending ${endDateString}`;
 
-  var chartData = Charts.newDataTable()
+  const chartData = Charts.newDataTable()
     .addColumn(Charts.ColumnType.STRING, "district_name")
     .addColumn(Charts.ColumnType.NUMBER, "task_completions_early_discharge");
 
-  supervisionColumnChart = CreateColumnChart(
-    (data = supervisionDistrictData),
-    (chartData = chartData),
-    (title = title),
-    (xAxis = "District"),
-    (yAxis = "Early Discharges")
+  supervisionColumnChart = createColumnChart(
+    supervisionDistrictData,
+    chartData,
+    title,
+    "District",
+    "Early Discharges"
   );
 
   return supervisionColumnChart;
