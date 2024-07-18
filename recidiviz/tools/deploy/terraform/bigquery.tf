@@ -223,7 +223,7 @@ resource "google_bigquery_table" "insights_supervision_officers_archive" {
     ignore_unknown_values = true
     max_bad_records       = 0
     source_format         = "NEWLINE_DELIMITED_JSON"
-    source_uris           = ["gs://${var.project_id}-outliers-etl-data-archive/*/supervision_officers.json"]
+    source_uris           = ["gs://${var.project_id}-insights-etl-data-archive/*/supervision_officers.json"]
   }
   schema = jsonencode(yamldecode(file("${local.source_tables}/${module.export_archives_dataset.dataset_id}/insights_supervision_officers_archive.yaml"))["schema"])
 }
