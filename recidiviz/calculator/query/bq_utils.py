@@ -411,3 +411,94 @@ def get_pseudonymized_id_query_str(hash_value_query_str: str) -> str:
             1, 
             16
         )"""
+
+
+def merge_permissions_query_str(column_name: str, table_name: str) -> str:
+    """
+    Returns a string fragment to merge/reconcile permissions for users with multiple roles.
+    Note: this must be kept in sync with recidiviz.auth.helpers.merge_permissions
+    """
+
+    if column_name == "routes":
+        split_kv_pairs_query_str = """
+            TRIM(REGEXP_EXTRACT(key_value, r'^\\s*"([^"]+)"'), '"') AS key,
+            TRIM(REGEXP_EXTRACT(key_value, r':\\s*("[^"]*"|\\S*)'), '"') AS value
+        """
+
+        # For routes, select by priority: 1) true, 2) false
+        prioritize_permissions_query_str = """
+            MAX(value) AS value
+        """
+    elif column_name == "feature_variants":
+        split_kv_pairs_query_str = """
+            TRIM(REGEXP_EXTRACT(key_value, r'^\\s*"([^"]+)"'), '"') AS key,
+            TRIM(REGEXP_EXTRACT(key_value, r':\\s*(false|{{.*}})'), '"') AS value
+        """
+
+        # For feature variants, select by priority: 1) always on (value of variant will be empty object/not have an activeDate attribute), 2) earliest active date, 3) false
+        prioritize_permissions_query_str = """
+            ARRAY_AGG(
+                IFNULL(value, '{{}}')
+                ORDER BY
+                    CASE
+                        WHEN JSON_EXTRACT(value, '$.activeDate') IS NULL AND value != 'false' THEN 1
+                        WHEN JSON_EXTRACT(value, '$.activeDate') IS NOT NULL THEN 2
+                        WHEN value = 'false' THEN 3
+                        ELSE 4
+                    END,
+                    JSON_EXTRACT(value, '$.activeDate') ASC
+            )[OFFSET(0)] AS value
+        """
+    else:
+        raise ValueError(
+            f"Merging is not currently supported for column: {column_name}"
+        )
+
+    return f"""
+        -- Separate each permission into key and value columns
+        {column_name}_kv_pairs AS (
+            SELECT
+                email_address,
+                {split_kv_pairs_query_str}
+            FROM (
+                SELECT
+                    email_address,
+                    key_value
+                FROM
+                    {table_name},
+                    UNNEST({column_name}) AS col_value,
+                    UNNEST(SPLIT(REGEXP_REPLACE(col_value, r'^{{{{|}}}}$', ''), ',')) AS key_value
+            )
+        ),
+        -- Select only one value for each column based on priority
+        {column_name}_prioritized_permissions AS (
+            SELECT
+                email_address,
+                key,
+                {prioritize_permissions_query_str}
+            FROM
+                {column_name}_kv_pairs
+            GROUP BY
+                email_address, key
+        ),
+        -- Merge permissions into single object
+        merged_{column_name} AS (
+            SELECT
+                email_address,
+                COALESCE(
+                    CONCAT(
+                        '{{{{',
+                        STRING_AGG(
+                            CONCAT('"', key, '": ', value),
+                            ', '
+                        ),
+                        '}}}}'
+                    ),
+                    '{{{{}}}}'
+                ) AS {column_name}
+            FROM
+                {column_name}_prioritized_permissions
+            GROUP BY
+                email_address
+        )
+    """

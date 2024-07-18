@@ -83,7 +83,7 @@ def _bq_schema_column_type_for_type(
 ) -> bigquery.enums.SqlTypeNames:
     """Returns the schema column type that should be used to store the value of the
     provided |field_type| in a BigQuery table."""
-    if field_type is Enum or field_type is str:
+    if field_type is Enum or field_type is str or field_type is list:
         return bigquery.enums.SqlTypeNames.STRING
     if field_type is int:
         return bigquery.enums.SqlTypeNames.INTEGER
@@ -102,7 +102,9 @@ def schema_field_for_type(field_name: str, field_type: Type) -> bigquery.SchemaF
     """Returns a BigQuery SchemaField object with the information needed for a column
     with the name of |field_name| storing the values in the |field_type|."""
     return bigquery.SchemaField(
-        field_name, _bq_schema_column_type_for_type(field_type).value, mode="NULLABLE"
+        field_name,
+        _bq_schema_column_type_for_type(field_type).value,
+        mode="REPEATED" if field_type is list else "NULLABLE",
     )
 
 

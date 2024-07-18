@@ -16,7 +16,8 @@
 # =============================================================================
 """Implements helper functions for use in Auth endpoint tests."""
 
-from typing import List, Optional
+import json
+from typing import Any, List, Optional, Union
 
 from sqlalchemy import sql
 
@@ -116,3 +117,19 @@ def generate_fake_permissions_overrides(
         routes=routes,
         feature_variants=feature_variants,
     )
+
+
+def convert_value_to_json(value: Any) -> Union[str, list[str]]:
+    if isinstance(value, list):
+        return [json.dumps(item) for item in value]
+
+    return json.dumps(value)
+
+
+def convert_list_values_to_json(
+    data: list[dict[str, Any]]
+) -> list[dict[str, Union[str, list[str]]]]:
+    return [
+        {key: convert_value_to_json(value) for key, value in row.items()}
+        for row in data
+    ]

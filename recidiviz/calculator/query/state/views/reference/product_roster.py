@@ -17,6 +17,7 @@
 """View of all users that may have access to Polaris products"""
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+from recidiviz.calculator.query.bq_utils import merge_permissions_query_str
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.case_triage.views.dataset_config import CASE_TRIAGE_FEDERATED_DATASET
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
@@ -27,27 +28,72 @@ PRODUCT_ROSTER_VIEW_NAME = "product_roster"
 PRODUCT_ROSTER_DESCRIPTION = """View of all users that may have access to Polaris products.
 Pulls data from roster Cloud SQL tables. Should only be used for Polaris product-related views."""
 
-PRODUCT_ROSTER_QUERY_TEMPLATE = """
-    WITH product_roster_permissions AS (
+PRODUCT_ROSTER_QUERY_TEMPLATE = f"""
+    -- Unnest user roles into separate rows
+    WITH user_roles AS (
         SELECT
-            {columns_query}
+            COALESCE(user_override.email_address, roster.email_address) AS email_address,
+            COALESCE(user_override.state_code, roster.state_code) AS state_code,
+            role
         FROM
-            `{project_id}.{case_triage_federated_dataset_id}.roster` roster
+            `{{project_id}}.{{case_triage_federated_dataset_id}}.roster` roster
         FULL OUTER JOIN
-            `{project_id}.{case_triage_federated_dataset_id}.user_override` user_override
+            `{{project_id}}.{{case_triage_federated_dataset_id}}.user_override` user_override
+        USING (email_address)
+        CROSS JOIN
+            UNNEST(COALESCE(user_override.roles, roster.roles)) AS role
+    ),
+    -- Combine the permissions from each role into arrays
+    aggregated_permissions AS (
+        SELECT
+            user_roles.email_address AS email_address,
+            ARRAY_AGG(state_role.routes) AS routes,
+            ARRAY_AGG(state_role.feature_variants) AS feature_variants
+        FROM
+            user_roles
+        FULL OUTER JOIN
+            `{{project_id}}.{{case_triage_federated_dataset_id}}.state_role_permissions` state_role
+        ON
+            user_roles.state_code = state_role.state_code
+            AND user_roles.role = state_role.role 
+        GROUP BY
+            email_address,
+            user_roles.state_code    
+    ),
+    {merge_permissions_query_str("routes", "aggregated_permissions")},
+    {merge_permissions_query_str("feature_variants", "aggregated_permissions")},
+    final_permissions AS (
+        SELECT
+            aggregated_permissions.email_address,
+            merged_routes.routes,
+            merged_feature_variants.feature_variants
+        FROM
+            aggregated_permissions
+        FULL OUTER JOIN
+            merged_routes
+        USING(email_address)
+        FULL OUTER JOIN
+            merged_feature_variants
+        USING(email_address)
+    ),
+    product_roster_permissions AS (
+        SELECT
+            {{columns_query}}
+        FROM
+            `{{project_id}}.{{case_triage_federated_dataset_id}}.roster` roster
+        FULL OUTER JOIN
+            `{{project_id}}.{{case_triage_federated_dataset_id}}.user_override` user_override
         USING (email_address)
         FULL OUTER JOIN
-            `{project_id}.{case_triage_federated_dataset_id}.state_role_permissions` state_role
-        ON
-            COALESCE(user_override.state_code, roster.state_code) = state_role.state_code
-            AND COALESCE(user_override.role, roster.role) = state_role.role
+            final_permissions
+        USING(email_address)
         FULL OUTER JOIN
-            `{project_id}.{case_triage_federated_dataset_id}.permissions_override` permissions_override
+            `{{project_id}}.{{case_triage_federated_dataset_id}}.permissions_override` permissions_override
         USING(email_address)
     )
     SELECT
-        {joined_columns},
-        {expanded_routes}
+        {{joined_columns}},
+        {{expanded_routes}}
     FROM product_roster_permissions
 """
 
@@ -56,6 +102,7 @@ ROSTER_COLUMNS = [
     "external_id",
     "email_address",
     "role",
+    "roles",
     "district",
     "user_hash",
     "pseudonymized_id",
@@ -96,7 +143,7 @@ PRODUCT_ROSTER_VIEW_BUILDER = SimpleBigQueryViewBuilder(
             for col in ROSTER_COLUMNS
         ]
         + [
-            f"""state_role.{col} AS default_{col},
+            f"""final_permissions.{col} AS default_{col},
             permissions_override.{col} AS override_{col},"""
             for col in PERMISSIONS_COLUMNS
         ]
