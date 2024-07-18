@@ -48,6 +48,9 @@ from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.source_tables.dataflow_output_table_collector import (
     get_dataflow_output_source_table_collections,
 )
+from recidiviz.source_tables.sentencing_source_table_collection import (
+    collect_sentencing_source_tables,
+)
 from recidiviz.source_tables.source_table_config import (
     RawDataSourceTableLabel,
     SchemaTypeSourceTableLabel,
@@ -226,6 +229,7 @@ def build_source_table_repository_for_collected_schemata(
             *get_dataflow_output_source_table_collections(),
             build_unioned_state_source_table_collection(),
             *build_unioned_normalized_state_source_table_collections(),
+            *collect_sentencing_source_tables(),
         ],
     )
 

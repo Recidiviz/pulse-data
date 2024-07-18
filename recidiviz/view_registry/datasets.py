@@ -105,6 +105,8 @@ NORMALIZED_DATASETS = set(NORMALIZED_DATASETS_TO_DESCRIPTIONS.keys())
 
 VERA_DATASET: str = "vera_data"
 
+SENTENCING_DATASET: str = "sentencing"
+
 OTHER_SOURCE_TABLE_DATASETS_TO_DESCRIPTIONS = {
     AUTH0_EVENTS: "Stores legacy events logged from Auth0 actions via Segment",
     AUTH0_PROD_ACTION_LOGS: "Stores events logged from Auth0 actions via Segment",
@@ -129,6 +131,7 @@ OTHER_SOURCE_TABLE_DATASETS_TO_DESCRIPTIONS = {
     " May need to be updated manually for new states.",
     SUPPLEMENTAL_DATA_DATASET: "Stores datasets generated not by traditional ingest or calc pipelines in BigQuery.",
     VERA_DATASET: "Stores data calculated outside of our codebase by Vera. Used only by Vera.",
+    SENTENCING_DATASET: "Stores data calculated for sentencing views",
     VIEW_UPDATE_METADATA_DATASET: "Stores metadata about our view update operations.",
 }
 OTHER_SOURCE_TABLE_DATASETS = set(OTHER_SOURCE_TABLE_DATASETS_TO_DESCRIPTIONS.keys())

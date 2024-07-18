@@ -19,7 +19,7 @@ to be called only within the Airflow DAG's KubernetesPodOperator."""
 import argparse
 import datetime
 import json
-from typing import Tuple
+from typing import Dict, List, Tuple
 
 import numpy as np
 import pandas as pd
@@ -74,6 +74,10 @@ class WriteRecidivismRatesToBQEntrypoint(EntrypointInterface):
     @staticmethod
     def run_entrypoint(args: argparse.Namespace) -> None:
         write_case_insights_data_to_bq(project_id=args.project_id)
+
+
+def return_schema() -> List[Dict[str, str]]:
+    return CASE_INSIGHTS_RATES_SCHEMA
 
 
 def get_gendered_assessment_score_bucket_range(

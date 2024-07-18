@@ -18,6 +18,9 @@
 from typing import List
 
 from recidiviz.big_query.big_query_view import BigQueryViewBuilder
+from recidiviz.calculator.query.state.views.sentencing.case_insights_record import (
+    SENTENCING_CASE_INSIGHTS_RECORD_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.sentencing.case_record import (
     SENTENCING_CASE_RECORD_VIEW_BUILDER,
 )
@@ -27,14 +30,14 @@ from recidiviz.calculator.query.state.views.sentencing.charge_record import (
 from recidiviz.calculator.query.state.views.sentencing.client_record import (
     SENTENCING_CLIENT_RECORD_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.sentencing.community_opportunity_record import (
+    SENTENCING_COMMUNITY_OPPORTUNITY_RECORD_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.sentencing.recidivism_event import (
     RECIDIVISM_EVENT_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.sentencing.sentence_cohort import (
     SENTENCE_COHORT_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.sentencing.community_opportunity_record import (
-    SENTENCING_COMMUNITY_OPPORTUNITY_RECORD_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.sentencing.staff_record import (
     SENTENCING_STAFF_RECORD_VIEW_BUILDER,
@@ -51,4 +54,5 @@ SENTENCING_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
     SENTENCING_STAFF_RECORD_VIEW_BUILDER,
     SENTENCING_COMMUNITY_OPPORTUNITY_RECORD_VIEW_BUILDER,
     SENTENCING_CHARGE_RECORD_VIEW_BUILDER,
+    SENTENCING_CASE_INSIGHTS_RECORD_VIEW_BUILDER,
 ]
