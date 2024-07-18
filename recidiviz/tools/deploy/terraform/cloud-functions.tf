@@ -166,3 +166,43 @@ resource "google_cloudfunctions2_function" "handle_zipfile" {
     }
   }
 }
+
+resource "google_cloudfunctions2_function" "filename_normalization" {
+  name        = "ingest_filename_normalization"
+  location    = "us-central1"
+  description = "Normalize ingest file names for raw data buckets"
+  build_config {
+    runtime     = "python311"
+    entry_point = "normalize_filename"
+    environment_variables = {
+      # Hacky workaround since source directory option is broken https://issuetracker.google.com/issues/248110968
+      GOOGLE_INTERNAL_REQUIREMENTS_FILES = "recidiviz/cloud_functions/requirements.txt"
+      GOOGLE_FUNCTION_SOURCE             = "recidiviz/cloud_functions/ingest_filename_normalization.py"
+    }
+    source {
+      repo_source {
+        repo_name  = "github_Recidiviz_pulse-data"
+        commit_sha = var.git_hash
+      }
+    }
+  }
+
+  labels = {
+    "deployment-tool" = "terraform"
+  }
+
+  event_trigger {
+    event_type   = "google.cloud.pubsub.topic.publish"
+    pubsub_topic = google_pubsub_topic.raw_data_storage_notification_topic.id
+  }
+
+  service_config {
+    max_instance_count = 50
+    available_memory   = "512M"
+    timeout_seconds    = 540
+    environment_variables = {
+      PYTHONPATH                   = "/workspace" # directory recidiviz/ lives in
+      ZIPFILE_HANDLER_FUNCTION_URL = google_cloudfunctions2_function.handle_zipfile.url
+    }
+  }
+}

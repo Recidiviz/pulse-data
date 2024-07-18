@@ -63,7 +63,7 @@ variable "storage_notification_endpoint_base_url" {
   type = string
 }
 
-variable "git_hash" {
+variable "raw_data_storage_notification_topic_id" {
   type = string
 }
 

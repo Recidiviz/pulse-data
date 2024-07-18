@@ -35,6 +35,13 @@ resource "google_storage_bucket" "direct-ingest-bucket" {
   }
 }
 
+resource "google_storage_notification" "direct-ingest-bucket-notification" {
+  bucket = google_storage_bucket.direct-ingest-bucket.name
+  topic  = var.raw_data_storage_notification_topic_id
+  event_types = ["OBJECT_FINALIZE"]
+  payload_format = "JSON_API_V1"
+}
+
 resource "google_storage_bucket" "prod-only-testing-direct-ingest-bucket" {
   count                       = var.is_production ? 1 : 0
   name                        = "recidiviz-123-${local.direct_ingest_formatted_str}-upload-testing"
@@ -61,6 +68,13 @@ module "secondary-direct-ingest-bucket" {
   project_id  = var.project_id
   name_suffix = "${local.direct_ingest_formatted_str}-secondary"
   location    = var.region
+}
+
+resource "google_storage_notification" "secondary-direct-ingest-bucket-notification" {
+  bucket = module.secondary-direct-ingest-bucket.name
+  topic  = var.raw_data_storage_notification_topic_id
+  event_types = ["OBJECT_FINALIZE"]
+  payload_format = "JSON_API_V1"
 }
 
 # Bucket used to store any supplemental data provided by the state that is not run

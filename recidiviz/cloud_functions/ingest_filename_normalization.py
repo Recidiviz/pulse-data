@@ -18,7 +18,6 @@
 import logging
 import os
 from datetime import date
-from distutils.util import strtobool
 from http import HTTPStatus
 from typing import Optional, Tuple
 
@@ -32,9 +31,11 @@ from flask import Request
 from recidiviz.cloud_functions.cloud_function_utils import cloud_functions_log
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath, GcsfsFilePath, GcsfsPath
+from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.direct_ingest_bucket_name_utils import (
     get_region_code_from_direct_ingest_bucket,
 )
+from recidiviz.ingest.direct.gating import is_raw_data_import_dag_enabled
 from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
     DirectIngestGCSFileSystem,
 )
@@ -88,16 +89,27 @@ def normalize_filename(cloud_event: CloudEvent) -> None:
         )
         return
 
-    dry_run = strtobool(os.getenv("DRY_RUN", "False"))
-
     global fs
     if fs is None:
         fs = DirectIngestGCSFileSystem(GcsfsFactory.build())
 
+    region_code = get_region_code_from_direct_ingest_bucket(bucket)
+    if region_code is None:
+        error_msg = f"Invalid ingest bucket [{bucket}]"
+        cloud_functions_log(severity="ERROR", message=error_msg)
+        return
+
+    ingest_instance = DirectIngestInstanceFactory.for_ingest_bucket(
+        GcsfsBucketPath(bucket)
+    )
+
     if not has_normalized_filename:
-        if dry_run:
+        if not is_raw_data_import_dag_enabled(
+            StateCode(region_code.upper()), ingest_instance
+        ):
             cloud_functions_log(
-                severity="INFO", message="Dry run enabled. Skipping normalization."
+                severity="INFO",
+                message=f"Raw data import dag disabled for [{region_code}] and instance [{ingest_instance.value}]. Normalization will occur via the /direct/handle_new_files endpoint.",
             )
             return
         try:
@@ -116,9 +128,12 @@ def normalize_filename(cloud_event: CloudEvent) -> None:
         return
 
     if is_zipfile:
-        if dry_run:
+        if not is_raw_data_import_dag_enabled(
+            StateCode(region_code.upper()), ingest_instance
+        ):
             cloud_functions_log(
-                severity="INFO", message="Dry run enabled. Skipping unzip."
+                severity="INFO",
+                message=f"Raw data import dag disabled for [{region_code}] and instance [{ingest_instance.value}]. Unzipping will occur via the /direct/handle_new_files endpoint.",
             )
             return
         response = _invoke_zipfile_handler(bucket, relative_file_path)
