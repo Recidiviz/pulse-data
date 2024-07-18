@@ -28,4 +28,11 @@ def cloud_sql_conn_id_for_schema_type(schema_type: SchemaType) -> str:
 
 
 def postgres_formatted_current_datetime_utc_str() -> str:
-    return datetime.datetime.now(tz=datetime.UTC).strftime("%Y-%m-%d %H:%M:%S.%f %Z")
+    return postgres_formatted_datetime_with_tz(datetime.datetime.now(tz=datetime.UTC))
+
+
+def postgres_formatted_datetime_with_tz(dt: datetime.datetime) -> str:
+    if not dt.tzinfo:
+        raise ValueError(f"Must provide a timezone, none found on {dt}")
+
+    return dt.strftime("%Y-%m-%d %H:%M:%S.%f %Z")

@@ -411,7 +411,9 @@ class DirectIngestRawFileLoadManager:
 
         try:
 
-            if self._should_generate_historical_diffs(file.file_tag):
+            if historical_diffs_active := self._should_generate_historical_diffs(
+                file.file_tag
+            ):
 
                 self._generate_historical_diff(
                     file_tag=file.file_tag,
@@ -436,5 +438,8 @@ class DirectIngestRawFileLoadManager:
 
         # TODO(#28694) add additional query to grab these stats
         return AppendSummary(
-            file_id=file.file_id, net_new_or_updated_rows=None, deleted_rows=None
+            file_id=file.file_id,
+            net_new_or_updated_rows=None,
+            deleted_rows=None,
+            historical_diffs_active=historical_diffs_active,
         )

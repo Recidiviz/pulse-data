@@ -176,6 +176,7 @@ class RawFileLoadAndPrepError(RawDataImportError):
     during the load and prep stage where we load raw data files into big query.
 
     Attributes:
+        file_id (int): file_id for the file paths that failed to import to big query
         file_tag (str): file_tag associated with the file_paths
         update_datetime(datetime.datetime): update_datetime associated with the
             file_paths
@@ -183,10 +184,13 @@ class RawFileLoadAndPrepError(RawDataImportError):
             us by the state associated with this error
         pre_import_normalized_file_paths (Optional[List[GcsfsFilePath]]): temporary files
             created during pre-import normalization
+        temp_table (Optional[BigQueryAddress]): temporary big query table created during
+            the load step
         error_type (DirectIngestRawDataImportSessionStatus): defaults to FAILED_LOAD_STEP
         error_msg (str): an error message, including any relevant stack traces.
     """
 
+    file_id: int = attr.ib(validator=attr_validators.is_int)
     file_tag: str = attr.ib(validator=attr_validators.is_str)
     update_datetime: datetime.datetime = attr.ib(
         validator=attr_validators.is_utc_timezone_aware_datetime
@@ -196,6 +200,9 @@ class RawFileLoadAndPrepError(RawDataImportError):
     )
     original_file_paths: List[GcsfsFilePath] = attr.ib(
         validator=attr_validators.is_list_of(GcsfsFilePath)
+    )
+    temp_table: Optional[BigQueryAddress] = attr.ib(
+        validator=attr.validators.optional(attr.validators.instance_of(BigQueryAddress))
     )
     error_type: DirectIngestRawDataImportSessionStatus = attr.ib(
         default=DirectIngestRawDataImportSessionStatus.FAILED_LOAD_STEP,
@@ -207,6 +214,7 @@ class RawFileLoadAndPrepError(RawDataImportError):
 
     def serialize(self) -> str:
         result_dict = {
+            "file_id": self.file_id,
             "original_paths": [path.uri() for path in self.original_file_paths],
             "normalized_paths": (
                 None
@@ -217,6 +225,7 @@ class RawFileLoadAndPrepError(RawDataImportError):
             "update_datetime": self.update_datetime.isoformat(),
             "error_msg": self.error_msg,
             "error_type": self.error_type.value,
+            "temp_table": None if self.temp_table is None else self.temp_table.to_str(),
         }
         return json.dumps(result_dict)
 
@@ -224,7 +233,13 @@ class RawFileLoadAndPrepError(RawDataImportError):
     def deserialize(json_str: str) -> "RawFileLoadAndPrepError":
         data = json.loads(json_str)
         return RawFileLoadAndPrepError(
+            file_id=data["file_id"],
             error_type=DirectIngestRawDataImportSessionStatus(data["error_type"]),
+            temp_table=(
+                None
+                if data["temp_table"] is None
+                else BigQueryAddress.from_str(data["temp_table"])
+            ),
             file_tag=data["file_tag"],
             update_datetime=datetime.datetime.fromisoformat(data["update_datetime"]),
             original_file_paths=[
@@ -249,12 +264,14 @@ class RawDataAppendImportError(RawDataImportError):
     import dag, specifically during the append stage.
 
     Attributes:
+        file_id (int): file_id that failed to append to the raw data table
         raw_temp_table (BigQueryAddress): the address of the temp big query address that
             stores the raw data that failed append to the raw data table
         error_type (DirectIngestRawDataImportSessionStatus): defaults to FAILED_LOAD_STEP
         error_msg (str): an error message, including any relevant stack traces.
     """
 
+    file_id: int = attr.ib(validator=attr_validators.is_int)
     raw_temp_table: BigQueryAddress = attr.ib(
         validator=attr.validators.instance_of(BigQueryAddress)
     )
@@ -268,6 +285,7 @@ class RawDataAppendImportError(RawDataImportError):
 
     def serialize(self) -> str:
         result_dict = {
+            "file_id": self.file_id,
             "raw_temp_table": self.raw_temp_table.to_str(),
             "error_msg": self.error_msg,
             "error_type": self.error_type.value,
@@ -281,6 +299,7 @@ class RawDataAppendImportError(RawDataImportError):
             error_type=DirectIngestRawDataImportSessionStatus(data["error_type"]),
             raw_temp_table=BigQueryAddress.from_str(data["raw_temp_table"]),
             error_msg=data["error_msg"],
+            file_id=data["file_id"],
         )
 
 
@@ -658,10 +677,13 @@ class AppendSummary(BaseResult):
             during the diffing process
         deleted_rows(int | None): the number of rows added with is_deleted as True during
             the historical diffing process
+        historical_diffs_active (bool): whether or not a historical diff was executed
+            during the append process
 
     """
 
     file_id: int = attr.ib(validator=attr_validators.is_int)
+    historical_diffs_active: bool = attr.ib(validator=attr_validators.is_bool)
     net_new_or_updated_rows: Optional[int] = attr.ib(
         default=None, validator=attr_validators.is_opt_int
     )
@@ -675,6 +697,7 @@ class AppendSummary(BaseResult):
                 self.file_id,
                 self.net_new_or_updated_rows,
                 self.deleted_rows,
+                self.historical_diffs_active,
             ]
         )
 
@@ -685,6 +708,7 @@ class AppendSummary(BaseResult):
             file_id=data[0],
             net_new_or_updated_rows=data[1],
             deleted_rows=data[2],
+            historical_diffs_active=bool(data[3]),
         )
 
 

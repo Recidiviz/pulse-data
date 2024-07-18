@@ -172,6 +172,7 @@ class TestSerialization(unittest.TestCase):
 
     def test_raw_file_load_and_prep_error(self) -> None:
         no_temp = RawFileLoadAndPrepError(
+            file_id=1,
             file_tag="tag",
             update_datetime=datetime.datetime(2024, 1, 1, 1, 1, 1, tzinfo=datetime.UTC),
             original_file_paths=[
@@ -180,6 +181,7 @@ class TestSerialization(unittest.TestCase):
             ],
             pre_import_normalized_file_paths=None,
             error_msg="aaaaaaaaa",
+            temp_table=BigQueryAddress(dataset_id="d", table_id="t"),
         )
 
         self._validate_serialization(no_temp, RawFileLoadAndPrepError)
@@ -194,6 +196,7 @@ class TestSerialization(unittest.TestCase):
 
     def test_raw_data_import_append_error(self) -> None:
         error = RawDataAppendImportError(
+            file_id=1,
             raw_temp_table=BigQueryAddress(dataset_id="data", table_id="set"),
             error_msg="eeeeeeeee",
         )
@@ -285,7 +288,12 @@ class TestSerialization(unittest.TestCase):
         self._validate_serialization(original, AppendReadyFile)
 
     def test_append_summary(self) -> None:
-        original = AppendSummary(file_id=1, net_new_or_updated_rows=2, deleted_rows=3)
+        original = AppendSummary(
+            file_id=1,
+            net_new_or_updated_rows=2,
+            deleted_rows=3,
+            historical_diffs_active=True,
+        )
         self._validate_serialization(original, AppendSummary)
 
     def test_append_ready_file_batches(self) -> None:
