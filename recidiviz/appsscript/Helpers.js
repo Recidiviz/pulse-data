@@ -23,7 +23,7 @@
  * @param {string} queryString The SQL query string to run in BigQuery
  * @returns {array} An array containing arrays (that represent rows) of data
  */
-function RunQuery(queryString) {
+function runQuery(queryString) {
   const request = {
     query: queryString,
     useLegacySql: false,
@@ -75,17 +75,22 @@ function RunQuery(queryString) {
  * @param {string} yAxis The y-axis lable of the chart
  * @returns {Chart} The built/populated column chart
  */
-function CreateColumnChart(data, chartData, title, xAxis, yAxis) {
+function createColumnChart(data, chartData, title, xAxis, yAxis) {
   data.forEach((newRow) => {
     chartData.addRow(newRow);
   });
   chartData.build();
 
-  var chart = Charts.newColumnChart()
+  const chart = Charts.newColumnChart()
     .setDataTable(chartData)
     .setTitle(title)
     .setXAxisTitle(xAxis)
     .setYAxisTitle(yAxis)
+    .setLegendPosition(Charts.Position.NONE)
+    .setDimensions(639, 455)
+    .setXAxisTextStyle(Charts.newTextStyle().setFontSize(10))
+    .setOption('chartArea.top', 50)
+    .setOption('chartArea.width', '80%')
     .build();
 
   return chart;

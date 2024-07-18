@@ -32,24 +32,21 @@ function main(e) {
 
   const itemResponses = response.getItemResponses();
 
-  var stateCode = itemResponses[0].getResponse();
-  var timePeriod = itemResponses[1].getResponse();
-  var endDateString = itemResponses[2].getResponse();
+  const stateCode = itemResponses[0].getResponse();
+  const timePeriod = itemResponses[1].getResponse();
+  const endDateString = itemResponses[2].getResponse();
 
   Logger.log("stateCode: %s", stateCode);
   Logger.log("timePeriod: %s", timePeriod);
   Logger.log("endDateString: %s", endDateString);
 
-  supervisionColumnChart = ConstructSupervisionDistrictColumnChart(
-    (stateCode = stateCode),
-    (timePeriod = timePeriod),
-    (endDateString = endDateString)
+  supervisionColumnChart = constructSupervisionDistrictColumnChart(
+    stateCode,
+    timePeriod,
+    endDateString
   );
 
-  copyTemplateDoc(
-    (supervisionColumnChart = supervisionColumnChart),
-    (stateCode = stateCode)
-  );
+  copyTemplateDoc(supervisionColumnChart, stateCode);
 }
 
 /**
@@ -68,7 +65,7 @@ function copyTemplateDoc(supervisionColumnChart, stateCode) {
     "1UzFS4GsbgIqoLBUv0Z314-51pxQznHaJ"
   );
 
-  var today = Utilities.formatDate(new Date(), "GMT-5", "MM/dd/yyyy");
+  const today = Utilities.formatDate(new Date(), "GMT-5", "MM/dd/yyyy");
 
   const copy = template.makeCopy(
     `${stateCode} ${today} Impact Report`,
@@ -77,9 +74,16 @@ function copyTemplateDoc(supervisionColumnChart, stateCode) {
   const doc = DocumentApp.openById(copy.getId());
   const body = doc.getBody();
 
+  // Removes the warning note from the top of the document
+  const rangeElementToRemove = body.findText("{{NOTE: .*}}");
+  const startOffset = rangeElementToRemove.getStartOffset();
+  // Adding 1 to the endOffset to include the new line character
+  const endOffset = rangeElementToRemove.getEndOffsetInclusive() + 1
+  body.editAsText().deleteText(startOffset, endOffset);
+
   body.replaceText("{{today_date}}", today);
 
-  var images = body.getImages();
+  const images = body.getImages();
   var imageToReplace = null;
   images.forEach((img) => {
     const altTitle = img.getAltTitle();
@@ -87,7 +91,7 @@ function copyTemplateDoc(supervisionColumnChart, stateCode) {
       imageToReplace = img;
     }
   });
-  var imageParent = imageToReplace.getParent();
+  const imageParent = imageToReplace.getParent();
 
   imageToReplace.removeFromParent();
   imageParent.appendInlineImage(supervisionColumnChart);
