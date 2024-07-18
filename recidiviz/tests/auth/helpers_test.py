@@ -17,13 +17,17 @@
 """Tests for auth/helpers.py"""
 
 
-from typing import Any, Dict, List
-from unittest import TestCase
+from typing import Any, cast
 
 from recidiviz.auth.helpers import generate_pseudonymized_id, merge_permissions
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_utils import schema_field_for_type
-from recidiviz.calculator.query.bq_utils import get_pseudonymized_id_query_str
+from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+from recidiviz.calculator.query.bq_utils import (
+    get_pseudonymized_id_query_str,
+    merge_permissions_query_str,
+)
+from recidiviz.tests.auth.helpers import convert_list_values_to_json
 from recidiviz.tests.big_query.big_query_emulator_test_case import (
     BigQueryEmulatorTestCase,
 )
@@ -31,6 +35,9 @@ from recidiviz.tests.big_query.big_query_emulator_test_case import (
 
 class BQHelpersTest(BigQueryEmulatorTestCase):
     """BQ tests for auth/helpers.py"""
+
+    dataset_id = "foo"
+    address = BigQueryAddress(dataset_id=dataset_id, table_id="foo")
 
     pseudonymized_id_test_data = [
         {"state_code": "US_XX", "external_id": "12345"},
@@ -43,6 +50,69 @@ class BQHelpersTest(BigQueryEmulatorTestCase):
         {"state_code": "US_MI", "external_id": "XYZ"},
         {"state_code": "US_TN", "external_id": "new"},
     ]
+
+    active_date1 = "2024-04-30T14:45:09.865Z"
+    active_date2 = "2024-05-03T15:37:07.119Z"
+
+    permissions_single_role_test_data = [
+        {
+            "email_address": "leadership@domain.org",
+            "routes": [{"A": True, "B": False}],
+            "feature_variants": [
+                {"feature1": {}, "feature2": {"activeDate": f"{active_date1}"}}
+            ],
+        },
+    ]
+
+    permissions_multiple_roles_no_conflict_test_data = [
+        {
+            "email_address": "leadership@domain.org",
+            "routes": [{"A": True, "B": False}, {"C": True}],
+            "feature_variants": [{"feature1": False}, {"feature2": {}}],
+        }
+    ]
+
+    permissions_multiple_roles_with_conflicts_test_data = [
+        {
+            "email_address": "leadership@domain.org",
+            "routes": [{"A": True, "B": False}, {"A": False, "C": True}],
+            "feature_variants": [
+                {
+                    "feature1": False,
+                    "feature2": {"activeDate": f"{active_date1}"},
+                    "feature3": False,
+                    "feature4": {"activeDate": f"{active_date2}"},
+                    "feature5": {},
+                    "feature6": {"activeDate": f"{active_date1}"},
+                },
+                {
+                    "feature1": {},
+                    "feature2": {},
+                    "feature3": {"activeDate": f"{active_date2}"},
+                    "feature4": {"activeDate": f"{active_date1}"},
+                    "feature5": {"activeDate": f"{active_date2}"},
+                    "feature6": False,
+                },
+            ],
+        }
+    ]
+
+    permissions_bq_query = f"""
+                WITH 
+                    {merge_permissions_query_str("routes", address.to_str())},
+                    {merge_permissions_query_str("feature_variants", address.to_str())}
+                SELECT
+                    merged_routes.routes AS default_routes,
+                    merged_feature_variants.feature_variants AS default_feature_variants
+                FROM
+                    `{address.to_str()}`
+                FULL OUTER JOIN
+                    merged_routes
+                USING(email_address)
+                FULL OUTER JOIN
+                    merged_feature_variants
+                USING(email_address)
+            """
 
     def test_generate_pseudonymized_id(self) -> None:
         # Generated in BQ using:
@@ -101,111 +171,216 @@ class BQHelpersTest(BigQueryEmulatorTestCase):
             for data in self.pseudonymized_id_test_data
         ]
 
-        address = BigQueryAddress(dataset_id="foo", table_id="foo")
         self.create_mock_table(
-            address=address,
+            address=self.address,
             schema=[
                 schema_field_for_type("state_code", str),
                 schema_field_for_type("external_id", str),
             ],
         )
 
-        self.load_rows_into_table(address, self.pseudonymized_id_test_data)
+        self.load_rows_into_table(self.address, self.pseudonymized_id_test_data)
 
-        query = f"SELECT {get_pseudonymized_id_query_str('state_code || external_id')} AS pseudo_id FROM `{address.to_str()}`"
+        query = f"SELECT {get_pseudonymized_id_query_str('state_code || external_id')} AS pseudo_id FROM `{self.address.to_str()}`"
         self.run_query_test(query_str=query, expected_result=generated)
 
+    def test_merge_permissions_single_role(self) -> None:
+        processed_permissions = [
+            {
+                "routes": merge_permissions(
+                    cast(list[dict[str, Any]], data["routes"])
+                ),  # cast to prevent mypy error
+                "feature_variants": merge_permissions(
+                    cast(list[dict[str, Any]], data["feature_variants"])
+                ),
+            }
+            for data in self.permissions_single_role_test_data
+        ]
 
-class HelpersTest(TestCase):
-    """Tests for auth/helpers.py"""
-
-    def setUp(self) -> None:
-        self.active_date1 = "2024-04-30T14:45:09.865Z"
-        self.active_date2 = "2024-05-03T15:37:07.119Z"
-
-    def test_merge_permissions_permissions_single_role(self) -> None:
-        permissions: Dict[str, List[Dict[str, Any]]] = {
-            "routes": [{"A": True, "B": False}],
-            "feature_variants": [
-                {"feature1": {}, "feature2": {"activeDate": f"{self.active_date1}"}}
-            ],
-        }
-
-        processed_permissions = {}
-        processed_permissions["routes"] = merge_permissions(permissions["routes"])
-        processed_permissions["feature_variants"] = merge_permissions(
-            permissions["feature_variants"]
-        )
-
-        expected = {
-            "routes": {"A": True, "B": False},
-            "feature_variants": {
-                "feature1": {},
-                "feature2": {"activeDate": f"{self.active_date1}"},
-            },
-        }
+        expected = [
+            {
+                "routes": {"A": True, "B": False},
+                "feature_variants": {
+                    "feature1": {},
+                    "feature2": {"activeDate": f"{self.active_date1}"},
+                },
+            }
+        ]
 
         self.assertEqual(expected, processed_permissions)
+
+    def test_merge_permissions_single_role_matches_bq_emulator(self) -> None:
+        generated = convert_list_values_to_json(
+            [
+                {
+                    "default_routes": merge_permissions(
+                        cast(list[dict[str, Any]], data["routes"])
+                    ),  # cast to prevent mypy error
+                    "default_feature_variants": merge_permissions(
+                        cast(list[dict[str, Any]], data["feature_variants"])
+                    ),
+                }
+                for data in self.permissions_single_role_test_data
+            ]
+        )
+
+        self.create_mock_table(
+            address=self.address,
+            schema=[
+                schema_field_for_type("email_address", str),
+                schema_field_for_type("routes", list),
+                schema_field_for_type("feature_variants", list),
+            ],
+        )
+
+        self.load_rows_into_table(
+            self.address,
+            convert_list_values_to_json(self.permissions_single_role_test_data),
+        )
+
+        query_builder = SimpleBigQueryViewBuilder(
+            dataset_id=self.dataset_id,
+            view_id="test_merge_permissions_single_role",
+            description="View to test permissions merging for a user with a single role",
+            view_query_template=self.permissions_bq_query,
+        )
+        self.run_query_test(
+            query_str=query_builder.build().view_query, expected_result=generated
+        )
 
     def test_merge_permissions_multiple_roles_no_conflict(self) -> None:
-        permissions: Dict[str, List[Dict[str, Any]]] = {
-            "routes": [{"A": True, "B": False}, {"C": True}],
-            "feature_variants": [{"feature1": False}, {"feature2": {}}],
-        }
+        processed_permissions = [
+            {
+                "routes": merge_permissions(
+                    cast(list[dict[str, Any]], data["routes"])
+                ),  # cast to prevent mypy error
+                "feature_variants": merge_permissions(
+                    cast(list[dict[str, Any]], data["feature_variants"])
+                ),
+            }
+            for data in self.permissions_multiple_roles_no_conflict_test_data
+        ]
 
-        processed_permissions = {}
-        processed_permissions["routes"] = merge_permissions(permissions["routes"])
-        processed_permissions["feature_variants"] = merge_permissions(
-            permissions["feature_variants"]
-        )
-
-        expected = {
-            "routes": {"A": True, "B": False, "C": True},
-            "feature_variants": {"feature1": False, "feature2": {}},
-        }
+        expected = [
+            {
+                "routes": {"A": True, "B": False, "C": True},
+                "feature_variants": {"feature1": False, "feature2": {}},
+            }
+        ]
 
         self.assertEqual(expected, processed_permissions)
 
-    def test_merge_permissions_multiple_roles_with_conflicts(self) -> None:
+    def test_merge_permissions_multiple_roles_no_conflict_matches_bq_emulator(
+        self,
+    ) -> None:
+        generated = convert_list_values_to_json(
+            [
+                {
+                    "default_routes": merge_permissions(
+                        cast(list[dict[str, Any]], data["routes"])
+                    ),  # cast to prevent mypy error
+                    "default_feature_variants": merge_permissions(
+                        cast(list[dict[str, Any]], data["feature_variants"])
+                    ),
+                }
+                for data in self.permissions_multiple_roles_no_conflict_test_data
+            ]
+        )
 
-        permissions: Dict[str, List[Dict[str, Any]]] = {
-            "routes": [{"A": True, "B": False}, {"A": False, "C": True}],
-            "feature_variants": [
-                {
-                    "feature1": False,
-                    "feature2": {"activeDate": f"{self.active_date1}"},
-                    "feature3": False,
-                    "feature4": {"activeDate": f"{self.active_date2}"},
-                    "feature5": {},
-                    "feature6": {"activeDate": f"{self.active_date1}"},
-                },
-                {
+        self.create_mock_table(
+            address=self.address,
+            schema=[
+                schema_field_for_type("email_address", str),
+                schema_field_for_type("routes", list),
+                schema_field_for_type("feature_variants", list),
+            ],
+        )
+
+        self.load_rows_into_table(
+            self.address,
+            convert_list_values_to_json(
+                self.permissions_multiple_roles_no_conflict_test_data
+            ),
+        )
+
+        query_builder = SimpleBigQueryViewBuilder(
+            dataset_id=self.dataset_id,
+            view_id="test_merge_permissions_multiple_roles_no_conflict",
+            description="View to test permissions merging for a user with multiple roles that don't conflict",
+            view_query_template=self.permissions_bq_query,
+        )
+        self.run_query_test(
+            query_str=query_builder.build().view_query, expected_result=generated
+        )
+
+    def test_merge_permissions_multiple_roles_with_conflicts(self) -> None:
+        processed_permissions = [
+            {
+                "routes": merge_permissions(
+                    cast(list[dict[str, Any]], data["routes"])
+                ),  # cast to prevent mypy error
+                "feature_variants": merge_permissions(
+                    cast(list[dict[str, Any]], data["feature_variants"])
+                ),
+            }
+            for data in self.permissions_multiple_roles_with_conflicts_test_data
+        ]
+
+        expected = [
+            {
+                "routes": {"A": True, "B": False, "C": True},
+                "feature_variants": {
                     "feature1": {},
                     "feature2": {},
                     "feature3": {"activeDate": f"{self.active_date2}"},
                     "feature4": {"activeDate": f"{self.active_date1}"},
-                    "feature5": {"activeDate": f"{self.active_date2}"},
-                    "feature6": False,
+                    "feature5": {},
+                    "feature6": {"activeDate": f"{self.active_date1}"},
                 },
-            ],
-        }
-
-        processed_permissions = {}
-        processed_permissions["routes"] = merge_permissions(permissions["routes"])
-        processed_permissions["feature_variants"] = merge_permissions(
-            permissions["feature_variants"]
-        )
-
-        expected = {
-            "routes": {"A": True, "B": False, "C": True},
-            "feature_variants": {
-                "feature1": {},
-                "feature2": {},
-                "feature3": {"activeDate": f"{self.active_date2}"},
-                "feature4": {"activeDate": f"{self.active_date1}"},
-                "feature5": {},
-                "feature6": {"activeDate": f"{self.active_date1}"},
-            },
-        }
+            }
+        ]
 
         self.assertEqual(expected, processed_permissions)
+
+    def test_merge_permissions_multiple_roles_with_conflicts_matches_bq_emulator(
+        self,
+    ) -> None:
+        generated = convert_list_values_to_json(
+            [
+                {
+                    "default_routes": merge_permissions(
+                        cast(list[dict[str, Any]], data["routes"])
+                    ),  # cast to prevent mypy error
+                    "default_feature_variants": merge_permissions(
+                        cast(list[dict[str, Any]], data["feature_variants"])
+                    ),
+                }
+                for data in self.permissions_multiple_roles_with_conflicts_test_data
+            ]
+        )
+
+        self.create_mock_table(
+            address=self.address,
+            schema=[
+                schema_field_for_type("email_address", str),
+                schema_field_for_type("routes", list),
+                schema_field_for_type("feature_variants", list),
+            ],
+        )
+
+        self.load_rows_into_table(
+            self.address,
+            convert_list_values_to_json(
+                self.permissions_multiple_roles_with_conflicts_test_data
+            ),
+        )
+
+        query_builder = SimpleBigQueryViewBuilder(
+            dataset_id=self.dataset_id,
+            view_id="test_merge_permissions_multiple_roles_with_conflicts",
+            description="View to test permissions merging for a user with multiple roles that do conflict",
+            view_query_template=self.permissions_bq_query,
+        )
+        self.run_query_test(
+            query_str=query_builder.build().view_query, expected_result=generated
+        )
