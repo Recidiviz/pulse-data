@@ -867,10 +867,6 @@ class TestControllerWithIngestManifestCollection(unittest.TestCase):
                 # TODO(#19835): Write tests for this view and remove exemption
                 "supervision_violation_response",
             },
-            StateCode.US_TN: {
-                # TODO(#27742): Write tests for this view and remove exemption
-                "VantagePointAssessments"
-            },
         }
 
         for state_code in get_existing_direct_ingest_states():
