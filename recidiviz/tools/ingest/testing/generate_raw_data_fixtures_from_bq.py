@@ -75,6 +75,7 @@ def main(
     overwrite: bool = False,
 ) -> None:
     """Generate raw data fixtures from the latest views in BQ to be used as mock data in view query tests."""
+
     fixtures_generator = RawDataFixturesGenerator(
         project_id=project_id,
         region_code=region_code,

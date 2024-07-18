@@ -27,6 +27,7 @@ from faker import Faker
 from google.cloud import bigquery
 from more_itertools import first
 from pandas import DataFrame
+from tabulate import tabulate
 
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.common.constants.states import StateCode
@@ -45,6 +46,7 @@ from recidiviz.ingest.direct.views.direct_ingest_view_query_builder_collector im
 )
 from recidiviz.ingest.direct.views.raw_table_query_builder import RawTableQueryBuilder
 from recidiviz.tests.ingest.direct.fixture_util import DirectIngestTestFixturePath
+from recidiviz.tools.utils.script_helpers import prompt_for_confirmation
 
 Faker.seed(0)
 FAKE = Faker(locale=["en-US"])
@@ -101,8 +103,6 @@ class RawDataFixturesGenerator:
         randomized_values_map: Dict[str, str],
         datetime_format: str,
         overwrite: Optional[bool] = False,
-        # TODO(#29995) Show the tables, columns, and filters if True
-        preview: bool = False,
         # TODO(#29994) Add functionality to get columns via a regex.
         root_entity_external_id_column_regex: Optional[str] = None,
     ):
@@ -117,7 +117,6 @@ class RawDataFixturesGenerator:
         self.randomized_values_map = randomized_values_map
         self.datetime_format = datetime_format
         self.overwrite = overwrite
-        self.preview = preview
 
         self.bq_client = BigQueryClientImpl(project_id=project_id)
 
@@ -136,6 +135,16 @@ class RawDataFixturesGenerator:
             for column in raw_config.columns
             if column.is_pii or column.name in columns_to_randomize
         ]
+
+        self.columns_to_randomize_by_table = {
+            raw_config.file_tag: [
+                column
+                for column in raw_config.columns
+                if column.is_pii or column.name in columns_to_randomize
+            ]
+            for raw_config in self.ingest_view_raw_table_dependency_configs
+        }
+
         # Only look at primary instance to find the raw data
         self.raw_data_source_instance = DirectIngestInstance.PRIMARY
         self.query_builder = RawTableQueryBuilder(
@@ -310,8 +319,78 @@ class RawDataFixturesGenerator:
         )
         return randomized_results[original_column_order]
 
+    def preview_generation(self) -> None:
+        """
+        Displays a preview of the actions that will be performed by the generate_raw_data_fixtures_from_bq script,
+        based on the configuration settings passed in by the user
+        """
+
+        print("Preview Mode: Based on the following settings...")
+        print(f"Region code: {self.region_code}")
+        print(
+            f"Root entity external id columns: {self.root_entity_external_id_columns}"
+        )
+        print(f"Ingest view tag: {self.ingest_view_tag}")
+        print(f"Output filename: {self.output_filename}")
+        print(f"Root entity external ids {self.root_entity_external_ids}")
+
+        print("\nThe script will pull data from the following tables:")
+        table_data = []
+        warnings = []
+        for (
+            raw_table_dependency_config
+        ) in self.ingest_view_raw_table_dependency_configs:
+            root_entity_external_id_columns = [
+                column.name
+                for column in raw_table_dependency_config.columns
+                if column.name in self.root_entity_external_id_columns
+            ]
+
+            columns_to_randomize = [
+                column_info.name
+                for column_info in self.columns_to_randomize_by_table[
+                    raw_table_dependency_config.raw_file_config.file_tag
+                ]
+            ]
+
+            table_data.append(
+                [
+                    raw_table_dependency_config.raw_file_config.file_tag,
+                    ", ".join(root_entity_external_id_columns) or "None",
+                    ", ".join(columns_to_randomize) or "None",
+                ]
+            )
+
+            if not root_entity_external_id_columns:
+                warnings.append(
+                    f"No external ID columns found for table {raw_table_dependency_config.raw_file_config.file_tag}. This table will not be filtered."
+                )
+
+        print(
+            tabulate(
+                table_data,
+                headers=[
+                    "Raw Table",
+                    "Root Entity External ID Columns",
+                    "Columns to Randomize",
+                ],
+                tablefmt="fancy_grid",
+            )
+        )
+
+        if warnings:
+            print("\nWarnings:")
+            for warning in warnings:
+                print(warning)
+
+        input_prompt = "\nDo you want to proceed with these settings?"
+        prompt_for_confirmation(input_prompt)
+
     def generate_fixtures_for_ingest_view(self) -> None:
         """Queries BigQuery for the provided raw table and writes the results to CSV."""
+
+        self.preview_generation()
+
         for (
             raw_table_dependency_config
         ) in self.ingest_view_raw_table_dependency_configs:
