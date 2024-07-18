@@ -14,26 +14,37 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Script for validating that a sandbox `state` dataset is equivalent to a reference
-state dataset, even if they have different root entity id schemes.
+"""Script for validating that a sandbox `state` or `normalized_state` dataset is
+equivalent to a reference state dataset, even if they have different root entity id
+schemes.
 
 Usage:
     python -m recidiviz.tools.ingest.testing.validate_state_dataset \
         --output_sandbox_prefix PREFIX \
         --state_code_filter STATE_CODE
+        --reference_state_dataset DATASET_ID \
         --sandbox_state_dataset DATASET_ID \
-        [--reference_state_dataset DATASET_ID] \
         [--sandbox_state_project_id PROJECT_ID] \
         [--reference_state_project_id PROJECT_ID]
 
 
+Examples:
     python -m recidiviz.tools.ingest.testing.validate_state_dataset \
         --output_sandbox_prefix my_prefix \
         --state_code_filter US_CA \
-        --sandbox_state_dataset another_prefix_us_ca_state
+        --reference_state_dataset us_ca_state \
+        --sandbox_state_dataset another_prefix_us_ca_state \
+        --schema_type state
 
+    python -m recidiviz.tools.ingest.testing.validate_state_dataset \
+        --output_sandbox_prefix ageiduschek \
+        --state_code_filter US_MO \
+        --reference_state_dataset us_ca_normalized_state \
+        --sandbox_state_dataset another_prefix_us_ca_normalized_state \
+        --schema_type normalized_state
 """
 import argparse
+from types import ModuleType
 from typing import Dict, List, Optional, Set, Type, cast
 
 import attr
@@ -44,11 +55,9 @@ from more_itertools import one
 from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
 from recidiviz.big_query.big_query_address import ProjectSpecificBigQueryAddress
 from recidiviz.big_query.big_query_client import BigQueryClient, BigQueryClientImpl
-from recidiviz.calculator.query.state.dataset_config import STATE_BASE_DATASET
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.database.database_entity import DatabaseEntity
 from recidiviz.persistence.database.schema.state import schema
-from recidiviz.persistence.database.schema.state import schema as state_schema
 from recidiviz.persistence.database.schema_utils import (
     get_database_entities_by_association_table,
     get_database_entity_by_table_name,
@@ -59,11 +68,18 @@ from recidiviz.persistence.entity.entity_utils import (
     CoreEntityFieldIndex,
     EntityFieldType,
     get_entity_class_in_module_with_name,
+    get_entity_class_in_module_with_table_id,
 )
 from recidiviz.persistence.entity.root_entity_utils import (
     get_root_entity_class_for_entity,
 )
 from recidiviz.persistence.entity.state import entities
+from recidiviz.persistence.entity.state.entities import (
+    StatePerson,
+    StatePersonExternalId,
+    StateStaff,
+    StateStaffExternalId,
+)
 from recidiviz.tools.calculator.compare_views import compare_table_or_view
 from recidiviz.tools.calculator.create_or_update_dataflow_sandbox import (
     TEMP_DATAFLOW_DATASET_DEFAULT_TABLE_EXPIRATION_MS,
@@ -80,6 +96,7 @@ from recidiviz.tools.utils.compare_tables_helper import (
 from recidiviz.tools.utils.script_helpers import prompt_for_confirmation
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.utils.string import StrictStringFormatter
+from recidiviz.utils.types import assert_subclass
 
 REFERENCE_DATASET_NAME = "reference"
 SANDBOX_DATASET_NAME = "sandbox"
@@ -163,12 +180,18 @@ def root_entity_external_ids_address(
     root_entity_cls: Type[Entity],
     dataset: DatasetReference,
 ) -> ProjectSpecificBigQueryAddress:
-    if root_entity_cls is entities.StatePerson:
-        table_id = schema.StatePersonExternalId.__tablename__
-    elif root_entity_cls is entities.StateStaff:
-        table_id = schema.StateStaffExternalId.__tablename__
+    if root_entity_cls in {
+        # TODO(#30075): Add NormalizedStatePerson
+        StatePerson
+    }:
+        table_id = StatePersonExternalId.get_table_id()
+    elif root_entity_cls in {
+        # TODO(#30075): Add NormalizedStateStaff
+        StateStaff
+    }:
+        table_id = StateStaffExternalId.get_table_id()
     else:
-        raise ValueError(f"Unexpected root entity type: {root_entity_cls}")
+        raise ValueError(f"Unexpected root entity: {root_entity_cls}")
 
     return ProjectSpecificBigQueryAddress(
         project_id=dataset.project,
@@ -190,6 +213,7 @@ class StateDatasetValidator:
         sandbox_state_project_id: str,
         output_sandbox_prefix: str,
         state_code_filter: StateCode,
+        entities_module: ModuleType,
     ) -> None:
         self.field_index = CoreEntityFieldIndex()
         self.state_code_filter = state_code_filter
@@ -206,6 +230,7 @@ class StateDatasetValidator:
             dataset_id=f"state_validation_results_{state_code_filter.value.lower()}",
         )
         self.bq_client = BigQueryClientImpl(project_id=self.output_project_id)
+        self.entities_module = entities_module
 
     def _is_enum_entity(self, table_name: str) -> bool:
         if is_association_table(table_name):
@@ -213,7 +238,7 @@ class StateDatasetValidator:
         db_entity_cls = get_database_entity_by_table_name(schema, table_name)
 
         entity_cls = get_entity_class_in_module_with_name(
-            entities, db_entity_cls.__name__
+            self.entities_module, db_entity_cls.__name__
         )
         return issubclass(entity_cls, EnumEntity)
 
@@ -362,8 +387,8 @@ class StateDatasetValidator:
         return f"""SELECT * EXCEPT ({columns_to_exclude_str})
 FROM ({filtered_with_new_cols})"""
 
-    @staticmethod
     def _get_direct_enum_entity_child_classes(
+        self,
         state_entity_cls: Type[DatabaseEntity],
     ) -> Set[Type[EnumEntity]]:
         """Returns the set of EnumEntity classes that are direct children of the
@@ -374,7 +399,7 @@ FROM ({filtered_with_new_cols})"""
             for relationship_property in state_entity_cls.get_relationship_property_names()
         }
         direct_child_classes = {
-            get_entity_class_in_module_with_name(entities, cls_name)
+            get_entity_class_in_module_with_name(self.entities_module, cls_name)
             for cls_name in direct_child_class_names
         }
 
@@ -396,7 +421,7 @@ FROM ({filtered_with_new_cols})"""
             Type[Entity],
             get_root_entity_class_for_entity(
                 get_entity_class_in_module_with_name(
-                    entities, state_entity_cls.__name__
+                    self.entities_module, state_entity_cls.__name__
                 )
             ),
         )
@@ -471,9 +496,7 @@ FROM ({filtered_with_new_cols})"""
         (
             associated_entity_1_cls,
             associated_entity_2_cls,
-        ) = get_database_entities_by_association_table(
-            state_schema, association_table_id
-        )
+        ) = get_database_entities_by_association_table(schema, association_table_id)
 
         associated_entity_1_pk = associated_entity_1_cls.get_primary_key_column_name()
         associated_entity_2_pk = associated_entity_2_cls.get_primary_key_column_name()
@@ -482,7 +505,7 @@ FROM ({filtered_with_new_cols})"""
             Type[Entity],
             get_root_entity_class_for_entity(
                 get_entity_class_in_module_with_name(
-                    entities, associated_entity_1_cls.__name__
+                    self.entities_module, associated_entity_1_cls.__name__
                 )
             ),
         )
@@ -631,20 +654,21 @@ USING({associated_entity_2_pk})
         )
 
         root_entity_errors = {}
-        for root_entity_cls in RootEntity.__subclasses__():
-            if not issubclass(root_entity_cls, Entity):
-                raise ValueError(
-                    f"Expected root_entity_cls to be an Entity subclass, "
-                    f"found: {root_entity_cls}"
-                )
+        for root_entity_table_id in {
+            assert_subclass(e, Entity).get_table_id()
+            for e in RootEntity.__subclasses__()
+        }:
+            print(f"Building {root_entity_table_id} mapping...")
 
-            print(f"Building {root_entity_cls.__name__} mapping...")
-            self.build_root_entity_id_mapping(root_entity_cls=root_entity_cls)  # type: ignore
+            root_entity_cls = get_entity_class_in_module_with_table_id(
+                self.entities_module, root_entity_table_id
+            )
+            self.build_root_entity_id_mapping(root_entity_cls=root_entity_cls)
 
             root_entity_errors[
                 root_entity_cls
             ] = self.output_root_entity_id_mapping_errors(
-                root_entity_cls=root_entity_cls  # type: ignore
+                root_entity_cls=root_entity_cls
             )
 
         print("Outputting table-specific validation results...")
@@ -669,7 +693,7 @@ USING({associated_entity_2_pk})
         }
 
         validation_result = ValidationResult(
-            root_entity_errors=root_entity_errors,  # type: ignore
+            root_entity_errors=root_entity_errors,
             table_to_comparison_result=table_to_comparison_result,
         )
 
@@ -701,17 +725,17 @@ class ValidationResult:
 
     def print(self) -> None:
         for root_entity_cls, errors in self.root_entity_errors.items():
-            root_entity_name = root_entity_cls.__name__
+            root_entity_table_id = root_entity_cls.get_table_id()
             if not errors:
                 print(
-                    f"✅ All {root_entity_name} have an exact corresponding "
-                    f"{root_entity_name} in the reference dataset."
+                    f"✅ All {root_entity_table_id} have an exact corresponding row in "
+                    f"the reference dataset."
                 )
             else:
                 output_dataset_id = one({a.dataset_id for a in errors})
                 print(
-                    f"⚠️ Found the following {root_entity_name} inconsistencies (see "
-                    f"corresponding table in the {output_dataset_id} dataset):"
+                    f"⚠️ Found the following {root_entity_table_id} inconsistencies "
+                    f"(see corresponding table in the {output_dataset_id} dataset):"
                 )
                 for address in sorted(errors):
                     print(f"  * {address.table_id}: {errors[address]}")
@@ -732,8 +756,19 @@ def parse_arguments() -> argparse.Namespace:
     parser.add_argument(
         "--reference_state_dataset",
         type=str,
-        default=STATE_BASE_DATASET,
-        help="Reference dataset containing tables for the STATE schema.",
+        required=True,
+        help="Reference dataset containing tables for the STATE schema. For example, "
+        "`us_xx_state` or `normalized_state`.",
+    )
+    parser.add_argument(
+        "--schema_type",
+        type=str,
+        default="state",
+        choices=["state", "normalized_state"],
+        required=True,
+        help="Choose 'state' if you are comparing datasets with the schema defined in "
+        "state/entities.py. Choose 'normalized_state' if you are comparing datsets "
+        "with the schema defined in state/normalized_entities.py",
     )
     parser.add_argument(
         "--reference_state_project_id",
@@ -784,6 +819,24 @@ if __name__ == "__main__":
             f"this is the correct dataset?"
         )
 
+    if args.schema_type == "state":
+        if (
+            "normalized" in args.reference_state_dataset
+            or "normalized" in args.sandbox_state_dataset
+        ):
+            prompt_for_confirmation(
+                f"Found schema_type [{args.schema_type}], but one of the input "
+                f"datasets has 'normalized' in the name. Are you sure you didn't mean "
+                f"to set '--schema_type=normalized_state'?"
+            )
+        entities_definitions_module = entities
+    elif args.schema_type == "normalized_state":
+        # TODO(#30075): Switch to normalized_entities when we migrate to v2 normalized
+        #  entities.
+        entities_definitions_module = entities
+    else:
+        raise ValueError(f"Unexpected schema_type: {args.schema_type}")
+
     StateDatasetValidator(
         reference_state_dataset=args.reference_state_dataset,
         reference_state_project_id=args.reference_state_project_id,
@@ -791,4 +844,5 @@ if __name__ == "__main__":
         sandbox_state_project_id=args.sandbox_state_project_id,
         output_sandbox_prefix=args.output_sandbox_prefix,
         state_code_filter=args.state_code_filter,
+        entities_module=entities_definitions_module,
     ).run_validation()

@@ -20,7 +20,7 @@ import inspect
 import json
 from collections import defaultdict
 from enum import Enum, auto
-from functools import lru_cache
+from functools import cache, lru_cache
 from io import TextIOWrapper
 from types import ModuleType
 from typing import Any, Dict, List, Optional, Sequence, Set, Tuple, Type, Union, cast
@@ -394,7 +394,7 @@ def get_all_entity_factory_classes_in_module(
     return expected_classes
 
 
-@lru_cache(maxsize=None)
+@cache
 def get_entity_class_in_module_with_name(
     entities_module: ModuleType, class_name: str
 ) -> Type[Entity]:
@@ -404,8 +404,21 @@ def get_entity_class_in_module_with_name(
         if entity_class.__name__ == class_name:
             return entity_class
 
+    raise LookupError(f"Entity class {class_name} does not exist in {entities_module}.")
+
+
+@cache
+def get_entity_class_in_module_with_table_id(
+    entities_module: ModuleType, table_id: str
+) -> Type[Entity]:
+    entity_classes = get_all_entity_classes_in_module(entities_module)
+
+    for entity_class in entity_classes:
+        if entity_class.get_table_id() == table_id:
+            return entity_class
+
     raise LookupError(
-        f"Entity class {class_name} does not exist in" f"{entities_module}."
+        f"Entity class with table_id {table_id} does not exist in {entities_module}."
     )
 
 

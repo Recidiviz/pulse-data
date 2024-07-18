@@ -85,11 +85,15 @@ from recidiviz.persistence.entity.entity_utils import (
     SchemaEdgeDirectionChecker,
     deep_entity_update,
     get_all_entities_from_tree,
+    get_entity_class_in_module_with_table_id,
     get_many_to_many_relationships,
     is_reference_only_entity,
     set_backedges,
 )
+from recidiviz.persistence.entity.state import entities as state_entities
+from recidiviz.persistence.entity.state import normalized_entities
 from recidiviz.persistence.entity.state.entities import (
+    StateAssessment,
     StateCharge,
     StateChargeV2,
     StateIncarcerationSentence,
@@ -100,6 +104,9 @@ from recidiviz.persistence.entity.state.entities import (
     StateSupervisionSentence,
     StateSupervisionViolation,
     StateSupervisionViolationResponse,
+)
+from recidiviz.persistence.entity.state.normalized_entities import (
+    NormalizedStateAssessment,
 )
 from recidiviz.tests.persistence.entity.state.entities_test_utils import (
     generate_full_graph_state_person,
@@ -1124,6 +1131,24 @@ class TestEntityUtils(TestCase):
 
     def setUp(self) -> None:
         self.field_index = CoreEntityFieldIndex()
+
+    def test_get_entity_class_in_module_with_table_id(self) -> None:
+        self.assertEqual(
+            StatePerson,
+            get_entity_class_in_module_with_table_id(state_entities, "state_person"),
+        )
+        self.assertEqual(
+            StateAssessment,
+            get_entity_class_in_module_with_table_id(
+                state_entities, "state_assessment"
+            ),
+        )
+        self.assertEqual(
+            NormalizedStateAssessment,
+            get_entity_class_in_module_with_table_id(
+                normalized_entities, "state_assessment"
+            ),
+        )
 
     def test_schemaEdgeDirectionChecker_isHigherRanked_higherRank(self) -> None:
         direction_checker = SchemaEdgeDirectionChecker.state_direction_checker()
