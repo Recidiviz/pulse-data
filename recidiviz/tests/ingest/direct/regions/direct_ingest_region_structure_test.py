@@ -839,10 +839,6 @@ class TestControllerWithIngestManifestCollection(unittest.TestCase):
         ingest_views/view_{ingest_view_name}_test.py file.
         """
         exemptions_by_state_code = {
-            StateCode.US_MI: {
-                # TODO(#27743): Write tests for this view and remove exemption
-                "person_external_ids"
-            },
             StateCode.US_MO: {
                 # TODO(#19825): Write tests for this view and remove exemption
                 "tak028_tak042_tak076_tak024_violation_reports",
