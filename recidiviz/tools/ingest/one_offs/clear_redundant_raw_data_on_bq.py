@@ -25,10 +25,12 @@ Example Usage:
 import argparse
 import logging
 import sys
+from enum import Enum, auto
 from typing import Dict, List, Tuple
 
 import sqlalchemy
 from google.cloud import exceptions
+from tabulate import tabulate
 
 from recidiviz.big_query.big_query_client import BigQueryClient, BigQueryClientImpl
 from recidiviz.common.constants.states import StateCode
@@ -58,6 +60,12 @@ RAW_FILE_QUERY_TEMPLATE = (
 )
 
 POSTGRES_FILE_ID_IN_BQ = """SELECT DISTINCT file_id FROM `{table}` WHERE file_id in ({min_file_id}, {max_file_id})"""
+
+
+class PruningStatus(Enum):
+    PRUNED = auto()
+    NOT_ELIGIBLE = auto()
+    SKIPPED = auto()
 
 
 def get_postgres_min_and_max_update_datetime_by_file_tag(
@@ -103,12 +111,14 @@ def postgres_file_ids_present_in_bq(
         f"AND file_tag = '{file_tag}' "
         f"AND update_datetime in ('{min_datetimes_contained}', "
         f"'{max_datetimes_contained}')"
-        "AND raw_data_instance = 'PRIMARY';"
+        "AND is_invalidated is FALSE "
+        "AND raw_data_instance = 'PRIMARY'"
+        "order by file_id asc;"
     )
     postgres_results = session.execute(sqlalchemy.text(command))
     logging.info("[%s] %s", file_tag, command)
     postgres_file_ids = [result[0] for result in postgres_results]
-    if len(postgres_file_ids) < 2:
+    if len(postgres_file_ids) != 2:
         return []
 
     logging.info(
@@ -189,7 +199,9 @@ def get_raw_file_configs_for_state(
 
 
 # TODO(#14127): delete this script once raw data pruning is live.
-def main(dry_run: bool, state_code: StateCode, project_id: str) -> None:
+def main(
+    dry_run: bool, state_code: StateCode, project_id: str
+) -> Dict[PruningStatus, Dict[str, str]]:
     """Executes the main flow of the script.
 
     Iterates through each raw data table in the project and state specific raw data dataset
@@ -207,6 +219,12 @@ def main(dry_run: bool, state_code: StateCode, project_id: str) -> None:
         state_code.value, DirectIngestInstance.PRIMARY
     )
 
+    results: Dict[PruningStatus, Dict[str, str]] = {
+        PruningStatus.PRUNED: {},
+        PruningStatus.NOT_ELIGIBLE: {},
+        PruningStatus.SKIPPED: {},
+    }
+
     with SessionFactory.for_proxy(database_key) as session:
         file_tag_to_min_and_max_update_datetimes: Dict[
             str, Tuple[str, str]
@@ -215,11 +233,15 @@ def main(dry_run: bool, state_code: StateCode, project_id: str) -> None:
             min_update_datetime,
             max_update_datetime,
         ) in file_tag_to_min_and_max_update_datetimes.items():
+
             if file_tag not in raw_file_configs.keys():
                 logging.info(
                     "[%s][Skipping] File tag found in Postgres but not in raw YAML files.",
                     file_tag,
                 )
+                results[PruningStatus.NOT_ELIGIBLE][
+                    file_tag
+                ] = "File tag found in Postgres but not in raw YAML files"
                 continue
 
             if raw_file_configs[file_tag].always_historical_export is False:
@@ -227,6 +249,9 @@ def main(dry_run: bool, state_code: StateCode, project_id: str) -> None:
                     "[%s][Skipping] `always_historical_export` set to False.",
                     file_tag,
                 )
+                results[PruningStatus.NOT_ELIGIBLE][
+                    file_tag
+                ] = "`always_historical_export` set to False."
                 continue
             logging.info(
                 "[%s] `always_historical_export` set to True. Moving forward with raw data pruning.",
@@ -264,6 +289,9 @@ def main(dry_run: bool, state_code: StateCode, project_id: str) -> None:
                     "were not found on BQ.",
                     file_tag,
                 )
+                results[PruningStatus.SKIPPED][
+                    file_tag
+                ] = "file_ids identified as min and max on Postgres were not found on BQ."
                 continue
 
             deletion_query = StrictStringFormatter().format(
@@ -300,6 +328,8 @@ def main(dry_run: bool, state_code: StateCode, project_id: str) -> None:
                     raw_data_metadata_manager.mark_file_as_invalidated_by_file_id(
                         session, file_id
                     )
+            results[PruningStatus.PRUNED][file_tag] = str(len(file_ids_to_delete))
+        return results
 
 
 def create_parser() -> argparse.ArgumentParser:
@@ -353,7 +383,38 @@ if __name__ == "__main__":
 
     with local_project_id_override(args.project_id):
         with cloudsql_proxy_control.connection(schema_type=SchemaType.OPERATIONS):
-            main(args.dry_run, args.state_code, args.project_id)
+            run_results = main(args.dry_run, args.state_code, args.project_id)
+
+    tabulated_results = [
+        ["PRUNED", len(run_results[PruningStatus.PRUNED]), ""],
+        [
+            "SKIPPED - FILE_IDS MISSING IN BQ",
+            len(run_results[PruningStatus.SKIPPED]),
+            list(run_results[PruningStatus.SKIPPED].keys()),
+        ],
+        [
+            "NOT ELIGIBLE",
+            len(run_results[PruningStatus.NOT_ELIGIBLE]),
+            "",
+        ],
+    ]
+    logging.info(
+        tabulate(
+            tabulated_results,
+            headers=["Status", "# File Tags", "File Tag List"],
+            tablefmt="fancy_grid",
+            maxcolwidths=[30, 30, 90],
+        )
+    )
+
+    if run_results[PruningStatus.SKIPPED]:
+        prompt_for_confirmation(
+            f"The {len(run_results[PruningStatus.SKIPPED])} file tags that were skipped "
+            "due to a mismatch between the operations database and big query and "
+            "require manual intervention before they are able to be pruned. Please "
+            "either post in the relevant state channel, the raw data pruning thread or "
+            "attempt to resolve it yourself :-)"
+        )
 
     if not args.dry_run:
         prompt_for_confirmation(
