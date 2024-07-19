@@ -37,9 +37,6 @@ from recidiviz.common.constants.state.state_supervision_violation import (
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.entity_utils import CoreEntityFieldIndex
-from recidiviz.persistence.entity.normalized_entities_utils import (
-    clear_entity_id_index_cache,
-)
 from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
 from recidiviz.persistence.entity.state.normalized_entities import (
     NormalizedStateSupervisionPeriod,
@@ -63,15 +60,17 @@ class TestUsTnIncarcerationNormalizationDelegate(unittest.TestCase):
 
     def setUp(self) -> None:
         self.delegate = UsTnIncarcerationNormalizationDelegate()
-        self.person_id = 42000001234
+        self.person_id = 4700000000000000123
 
-        clear_entity_id_index_cache()
         self.unique_id_patcher = mock.patch(
             "recidiviz.persistence.entity."
-            "normalized_entities_utils._fixed_length_object_id_for_entity"
+            "normalized_entities_utils.generate_primary_key"
         )
         self.mock_unique_id = self.unique_id_patcher.start()
-        self.mock_unique_id.return_value = 12345
+        self.mock_unique_id.return_value = 4700000000012312345
+
+    def tearDown(self) -> None:
+        self.unique_id_patcher.stop()
 
     def test_get_incarceration_admission_violation_type_technical(self) -> None:
         incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
@@ -339,7 +338,7 @@ class TestUsTnIncarcerationNormalizationDelegate(unittest.TestCase):
         )
 
         new_period = StateIncarcerationPeriod.new_with_defaults(
-            incarceration_period_id=4200000123412345,
+            incarceration_period_id=4700000000012312345,
             external_id="sp1-0-IN-CUSTODY",
             state_code="US_TN",
             incarceration_type=StateIncarcerationType.INTERNAL_UNKNOWN,
@@ -377,7 +376,7 @@ class TestUsTnIncarcerationNormalizationDelegate(unittest.TestCase):
         )
 
         new_period = StateIncarcerationPeriod.new_with_defaults(
-            incarceration_period_id=4200000123412345,
+            incarceration_period_id=4700000000012312345,
             external_id="sp1-0-IN-CUSTODY",
             state_code="US_TN",
             incarceration_type=StateIncarcerationType.INTERNAL_UNKNOWN,
@@ -438,7 +437,7 @@ class TestUsTnIncarcerationNormalizationDelegate(unittest.TestCase):
         )
 
         new_inferred_period = StateIncarcerationPeriod.new_with_defaults(
-            incarceration_period_id=4200000123412345,
+            incarceration_period_id=4700000000012312345,
             external_id="sp1-0-IN-CUSTODY",
             state_code="US_TN",
             incarceration_type=StateIncarcerationType.INTERNAL_UNKNOWN,
@@ -503,7 +502,7 @@ class TestUsTnIncarcerationNormalizationDelegate(unittest.TestCase):
         )
 
         new_inferred_period = StateIncarcerationPeriod.new_with_defaults(
-            incarceration_period_id=4200000123412345,
+            incarceration_period_id=4700000000012312345,
             external_id="sp1-0-IN-CUSTODY",
             state_code="US_TN",
             incarceration_type=StateIncarcerationType.INTERNAL_UNKNOWN,
@@ -568,7 +567,7 @@ class TestUsTnIncarcerationNormalizationDelegate(unittest.TestCase):
         )
 
         new_inferred_period = StateIncarcerationPeriod.new_with_defaults(
-            incarceration_period_id=4200000123412345,
+            incarceration_period_id=4700000000012312345,
             external_id="sp1-0-IN-CUSTODY",
             state_code="US_TN",
             incarceration_type=StateIncarcerationType.INTERNAL_UNKNOWN,
@@ -603,13 +602,17 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
     is provided."""
 
     def setUp(self) -> None:
-        clear_entity_id_index_cache()
+        self.person_id = 4700000000000000123
+
         self.unique_id_patcher = mock.patch(
             "recidiviz.persistence.entity."
-            "normalized_entities_utils._fixed_length_object_id_for_entity"
+            "normalized_entities_utils.generate_primary_key"
         )
         self.mock_unique_id = self.unique_id_patcher.start()
-        self.mock_unique_id.return_value = 12345
+        self.mock_unique_id.return_value = 4700000000012312345
+
+    def tearDown(self) -> None:
+        self.unique_id_patcher.stop()
 
     @staticmethod
     def _normalized_incarceration_periods_for_calculations(
@@ -657,7 +660,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
         )
 
         new_period = StateIncarcerationPeriod.new_with_defaults(
-            incarceration_period_id=4200000123412345,
+            incarceration_period_id=4700000000012312345,
             external_id="sp1-0-IN-CUSTODY",
             state_code="US_TN",
             incarceration_type=StateIncarcerationType.INTERNAL_UNKNOWN,

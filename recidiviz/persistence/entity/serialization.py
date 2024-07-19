@@ -17,68 +17,108 @@
 """Utilities for serializing entities into JSON-serializable dictionaries."""
 import datetime
 from enum import Enum
-from typing import Any, Callable, Dict, List, Optional
+from types import ModuleType
+from typing import Any, Callable, Dict, List, Optional, Type
 
-from recidiviz.common.attr_mixins import attr_field_referenced_cls_name_for_field_name
-from recidiviz.persistence.entity.base_entity import CoreEntity
+from recidiviz.common.attr_mixins import attribute_field_type_reference_for_class
+from recidiviz.persistence.entity.base_entity import Entity, RootEntity
 from recidiviz.persistence.entity.entity_utils import (
-    CoreEntityFieldIndex,
-    EntityFieldType,
+    entities_have_direct_relationship,
     get_entity_class_in_module_with_name,
-    get_many_to_many_relationships,
-    is_one_to_one_relationship,
+    is_many_to_many_relationship,
+    is_many_to_one_relationship,
+    is_one_to_many_relationship,
 )
 from recidiviz.persistence.entity.state import entities as state_entities
+from recidiviz.persistence.entity.state.normalized_entities import (
+    state_base_entity_class_for_entity_class,
+)
+from recidiviz.utils.types import assert_type
+
+
+def _related_entity_id_field_lives_on_entity(
+    entity_cls: Type[Entity], referenced_entity_cls: Type[Entity]
+) -> bool:
+    """For a class |entity_cls| and class |referenced_entity_cls| that is referenced by
+    one of the fields on |entity_cls|, returns True if the relationship between
+    these two entities is encoded as an id field on the table for |entity_cls|.
+
+    For example, for entity_cls=StatePerson, referenced_entity_cls=StateAssessment,
+    returns False because the relationship between StatePerson and StateAssessment is
+    one-to-many, meaning there is no assessment_id field stored on the state_person
+    table. For entity_cls=StateAssessment, referenced_entity_cls=StatePerson, this would
+    return True because there is a person_id field on the state_assessment table.
+    """
+    # TODO(#30075): Once we move to v2 normalization, we should be able to just use
+    #  entity_cls and referenced_entity_cls directly to determine relationship type.
+    entity_cls_for_comparison = state_base_entity_class_for_entity_class(entity_cls)
+    referenced_entity_cls_for_comparison = state_base_entity_class_for_entity_class(
+        referenced_entity_cls
+    )
+    if entities_have_direct_relationship(
+        entity_cls_for_comparison, referenced_entity_cls_for_comparison
+    ):
+        if is_many_to_many_relationship(
+            entity_cls_for_comparison, referenced_entity_cls_for_comparison
+        ) or is_one_to_many_relationship(
+            entity_cls_for_comparison, referenced_entity_cls_for_comparison
+        ):
+            return False
+
+        if is_many_to_one_relationship(
+            entity_cls_for_comparison, referenced_entity_cls_for_comparison
+        ):
+            # For many-to-one relationships, we expect the id field of the related
+            # entity to be stored on the table for this entity.
+            return True
+        raise ValueError(
+            f"Found unexpected relationship type between "
+            f"[{entity_cls.__name__}] and [{referenced_entity_cls.__name__}]."
+        )
+    if issubclass(referenced_entity_cls_for_comparison, RootEntity):
+        # For indirect relationships to the root entity, we expect the root entity
+        # id to be set on this entity.
+        return True
+
+    raise ValueError(
+        f"Found relationship between [{entity_cls.__name__}] and "
+        f"[{referenced_entity_cls.__name__}] which is neither a direct "
+        f"relationship or root entity reference."
+    )
 
 
 def serialize_entity_into_json(
-    entity: CoreEntity,
-    field_index: CoreEntityFieldIndex,
-    back_edge_values: Optional[Dict[str, int]] = None,
+    entity: Entity,
+    # TODO(#30075): Make this a required field and set to normalized_entities where
+    #  appropriate.
+    entities_module: ModuleType = state_entities,
 ) -> Dict[str, Any]:
-    """Generate a JSON string of an entity's serialized flat field and backedge values.
+    """Generate a JSON dictionary that represents the table row values for this entity."""
+    entity_field_dict: Dict[str, Any] = {}
 
-    If |back_edge_values| is given, this means that the entity itself may not have its backedges
-    populated, but that we have values for its backedges to be filled in at a later time.
-    This is only used for serialization of new entities that are generated at normalization
-    time.
-    """
-    flat_fields = field_index.get_all_core_entity_fields(
-        entity.__class__, EntityFieldType.FLAT_FIELD
-    )
-    back_edges = field_index.get_all_core_entity_fields(
-        entity.__class__, EntityFieldType.BACK_EDGE
-    )
-    for back_edge in back_edges:
-        if is_one_to_one_relationship(entity.__class__, back_edge):
-            raise ValueError(
-                f"Unexpected one-to-one relationship here: {entity.__class__} {back_edge}"
-            )
-
-    many_to_many_relationships = get_many_to_many_relationships(
-        entity.__class__, field_index
-    )
-
-    entity_field_dict: Dict[str, Any] = {
-        **{field_name: getattr(entity, field_name) for field_name in flat_fields}
-    }
-
-    for field_name in back_edges:
-        if field_name in many_to_many_relationships:
+    entity_cls = entity.__class__
+    for field_name, field_info in attribute_field_type_reference_for_class(
+        entity_cls
+    ).items():
+        if not field_info.referenced_cls_name:
+            # This is a flat field
+            entity_field_dict[field_name] = getattr(entity, field_name)
             continue
-        id_field = get_entity_class_in_module_with_name(
-            entities_module=state_entities,
-            class_name=attr_field_referenced_cls_name_for_field_name(
-                entity.__class__, field_name
-            ),
-        ).get_class_id_name()
 
-        if getattr(entity, field_name):
-            entity_field_dict[id_field] = getattr(entity, field_name).get_id()
-        elif back_edge_values and field_name in back_edge_values:
-            entity_field_dict[id_field] = back_edge_values[field_name]
-        else:
-            entity_field_dict[id_field] = None
+        referenced_entity_cls = get_entity_class_in_module_with_name(
+            entities_module, field_info.referenced_cls_name
+        )
+
+        if not _related_entity_id_field_lives_on_entity(
+            entity_cls, referenced_entity_cls
+        ):
+            continue
+
+        id_field = referenced_entity_cls.get_class_id_name()
+        id_value = None
+        if referenced_entity := getattr(entity, field_name):
+            id_value = assert_type(referenced_entity, Entity).get_id()
+        entity_field_dict[id_field] = id_value
 
     return json_serializable_dict(entity_field_dict)
 

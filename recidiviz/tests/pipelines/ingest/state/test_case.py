@@ -251,7 +251,6 @@ class BaseStateIngestPipelineTestCase(unittest.TestCase):
         expected_entity_association_type_to_associations: Dict[
             str, Set[Tuple[str, str]]
         ],
-        field_index: CoreEntityFieldIndex = CoreEntityFieldIndex(),
     ) -> Dict[BigQueryAddress, Iterable[Dict[str, Any]]]:
         """Forms a BigQueryAddress to expected output mapping for the pipeline to validate"""
         expected_output: Dict[BigQueryAddress, Iterable[Dict[str, Any]]] = {}
@@ -266,7 +265,7 @@ class BaseStateIngestPipelineTestCase(unittest.TestCase):
                 BigQueryAddress(
                     dataset_id=self.expected_state_dataset(), table_id=entity_type
                 )
-            ] = [serialize_entity_into_json(entity, field_index) for entity in entities]
+            ] = [serialize_entity_into_json(entity) for entity in entities]
         for (
             entity_association,
             associations,

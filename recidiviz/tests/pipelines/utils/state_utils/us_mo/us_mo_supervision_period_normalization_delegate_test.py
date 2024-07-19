@@ -35,9 +35,6 @@ from recidiviz.common.constants.state.state_supervision_period import (
 from recidiviz.common.constants.state.state_supervision_sentence import (
     StateSupervisionSentenceSupervisionType,
 )
-from recidiviz.persistence.entity.normalized_entities_utils import (
-    clear_entity_id_index_cache,
-)
 from recidiviz.persistence.entity.state.entities import (
     StateSupervisionCaseTypeEntry,
     StateSupervisionPeriod,
@@ -57,17 +54,19 @@ class TestUsMoSupervisionPeriodNormalizationDelegate(unittest.TestCase):
     """Unit tests for UsMoSupervisionPeriodNormalizationDelegate"""
 
     def setUp(self) -> None:
-        self.person_id = 290000700089
+        self.person_id = 2900000000000000123
 
-        clear_entity_id_index_cache()
         self.unique_id_patcher = mock.patch(
             "recidiviz.persistence.entity."
-            "normalized_entities_utils._fixed_length_object_id_for_entity"
+            "normalized_entities_utils.generate_primary_key"
         )
         self.mock_unique_id = self.unique_id_patcher.start()
-        self.mock_unique_id.return_value = 12345
+        self.mock_unique_id.return_value = 2900000000012312345
 
         self.validation_date = datetime.date(year=2019, month=10, day=31)
+
+    def tearDown(self) -> None:
+        self.unique_id_patcher.stop()
 
     @classmethod
     def _get_overlapping_supervision_type_span_index(
@@ -203,10 +202,10 @@ class TestUsMoSupervisionPeriodNormalizationDelegate(unittest.TestCase):
                 termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
                 termination_reason_raw_text="15I1000,99O2010",
                 supervision_site=None,
-                supervision_period_id=29000070008912345,
+                supervision_period_id=2900000000012312345,
                 case_type_entries=[
                     StateSupervisionCaseTypeEntry(
-                        supervision_case_type_entry_id=29000070008912345,
+                        supervision_case_type_entry_id=2900000000012312345,
                         state_code="US_MO",
                         case_type=StateSupervisionCaseType.DOMESTIC_VIOLENCE,
                     )
@@ -225,10 +224,10 @@ class TestUsMoSupervisionPeriodNormalizationDelegate(unittest.TestCase):
                 termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
                 termination_reason_raw_text="99O1000",
                 supervision_site=None,
-                supervision_period_id=29000070008912346,
+                supervision_period_id=2900000000012312345,
                 case_type_entries=[
                     StateSupervisionCaseTypeEntry(
-                        supervision_case_type_entry_id=29000070008912346,
+                        supervision_case_type_entry_id=2900000000012312345,
                         state_code="US_MO",
                         case_type=StateSupervisionCaseType.DOMESTIC_VIOLENCE,
                     )
@@ -305,7 +304,7 @@ class TestUsMoSupervisionPeriodNormalizationDelegate(unittest.TestCase):
                 termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
                 termination_reason_raw_text="15I1000,99O2010",
                 supervision_site=None,
-                supervision_period_id=29000070008912345,
+                supervision_period_id=2900000000012312345,
             ),
             StateSupervisionPeriod.new_with_defaults(
                 state_code="US_MO",
@@ -318,7 +317,7 @@ class TestUsMoSupervisionPeriodNormalizationDelegate(unittest.TestCase):
                 termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
                 termination_reason_raw_text="99O1000",
                 supervision_site=None,
-                supervision_period_id=29000070008912346,
+                supervision_period_id=2900000000012312345,
             ),
         ]
 
@@ -391,7 +390,7 @@ class TestUsMoSupervisionPeriodNormalizationDelegate(unittest.TestCase):
                 termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
                 termination_reason_raw_text="15I1000,99O2010",
                 supervision_site=None,
-                supervision_period_id=29000070008912345,
+                supervision_period_id=2900000000012312345,
                 supervising_officer_staff_external_id="ABCDE",
                 supervising_officer_staff_external_id_type="MO_STAFF",
             ),
@@ -406,7 +405,7 @@ class TestUsMoSupervisionPeriodNormalizationDelegate(unittest.TestCase):
                 termination_reason=None,
                 termination_reason_raw_text=None,
                 supervision_site=None,
-                supervision_period_id=29000070008912346,
+                supervision_period_id=2900000000012312345,
                 supervising_officer_staff_external_id="ABCDE",
                 supervising_officer_staff_external_id_type="MO_STAFF",
             ),
@@ -490,13 +489,13 @@ class TestUsMoSupervisionPeriodNormalizationDelegate(unittest.TestCase):
             attr.evolve(
                 supervision_period_1,
                 external_id=f"{self.person_id}-0-NORMALIZED",
-                supervision_period_id=29000070008912345,
+                supervision_period_id=2900000000012312345,
                 supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             ),
             attr.evolve(
                 supervision_period_2,
                 external_id=f"{self.person_id}-1-NORMALIZED",
-                supervision_period_id=29000070008912346,
+                supervision_period_id=2900000000012312345,
                 supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             ),
         ]

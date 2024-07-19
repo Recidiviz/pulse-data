@@ -30,9 +30,6 @@ from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionLevel,
 )
 from recidiviz.common.constants.states import StateCode
-from recidiviz.persistence.entity.normalized_entities_utils import (
-    clear_entity_id_index_cache,
-)
 from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
 from recidiviz.persistence.entity.state.normalized_entities import (
     NormalizedStateSupervisionPeriod,
@@ -52,15 +49,17 @@ class TestUsCaIncarcerationNormalizationDelegate(unittest.TestCase):
 
     def setUp(self) -> None:
         self.delegate = UsCaIncarcerationNormalizationDelegate()
-        self.person_id = 42000001234
+        self.person_id = 600000000000000123
 
-        clear_entity_id_index_cache()
         self.unique_id_patcher = mock.patch(
             "recidiviz.persistence.entity."
-            "normalized_entities_utils._fixed_length_object_id_for_entity"
+            "normalized_entities_utils.generate_primary_key"
         )
         self.mock_unique_id = self.unique_id_patcher.start()
-        self.mock_unique_id.return_value = 12345
+        self.mock_unique_id.return_value = 600000000012312345
+
+    def tearDown(self) -> None:
+        self.unique_id_patcher.stop()
 
     # ~~ Add new tests here ~~
     def test_infer_temp_IPs_for_in_custody_SPs(self) -> None:
@@ -75,7 +74,7 @@ class TestUsCaIncarcerationNormalizationDelegate(unittest.TestCase):
         )
 
         new_period = StateIncarcerationPeriod.new_with_defaults(
-            incarceration_period_id=4200000123412345,
+            incarceration_period_id=600000000012312345,
             external_id="sp1-0-IN-CUSTODY",
             state_code=_STATE_CODE,
             incarceration_type=StateIncarcerationType.INTERNAL_UNKNOWN,

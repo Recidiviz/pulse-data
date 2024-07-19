@@ -28,7 +28,7 @@ from recidiviz.persistence.database.base_schema import StateBase
 from recidiviz.persistence.database.schema_utils import (
     get_state_database_entity_with_name,
 )
-from recidiviz.persistence.entity.normalized_entities_utils import (
+from recidiviz.persistence.entity.state.normalized_entities import (
     state_base_entity_class_for_entity_class,
 )
 from recidiviz.pipelines.base_pipeline import BasePipeline
@@ -182,6 +182,7 @@ def default_data_dict_for_pipeline_class(
     empty lists.
     """
     required_base_entities = [
+        # TODO(#30075): Delete this usage of state_base_entity_class_for_entity_class
         state_base_entity_class_for_entity_class(entity_class)
         for entity_class in pipeline_class.required_entities()
     ]

@@ -1329,26 +1329,152 @@ def get_many_to_many_relationships(
     return many_to_many_relationships
 
 
-def is_one_to_one_relationship(entity_cls: Type[CoreEntity], back_edge: str) -> bool:
-    """Returns whether a certain backedge on a entity class indicates a one-to-one
-    relationship with the parent (aka, the parent has the corresponding forward edge
-    be a forward ref)."""
-    relationship_field_type = attr_field_type_for_field_name(entity_cls, back_edge)
-    parent_cls = get_entity_class_in_module_with_name(
-        entities_module=state_entities,
-        class_name=attr_field_referenced_cls_name_for_field_name(entity_cls, back_edge),
+def is_many_to_many_relationship(
+    parent_cls: Type[Entity], child_cls: Type[Entity]
+) -> bool:
+    """Returns True if there's a many-to-many relationship between these the provided
+    parent and child entities. Entity classes must be directly related otherwise this
+    will throw.
+    """
+    if not entities_have_direct_relationship(parent_cls, child_cls):
+        raise ValueError(
+            f"Entities [{parent_cls.__name__}] and [{child_cls.__name__}] are not "
+            f"directly related - can't call is_many_to_many_relationship()."
+        )
+
+    reference_field = attr_field_name_storing_referenced_cls_name(
+        parent_cls, child_cls.__name__
     )
 
-    inverse_relationship_field_name = attr_field_name_storing_referenced_cls_name(
-        base_cls=parent_cls,
-        referenced_cls_name=entity_cls.__name__,
+    if not reference_field:
+        raise ValueError(
+            f"Expected to find relationship between [{parent_cls.__name__}] and "
+            f"[{child_cls.__name__}] but found none."
+        )
+
+    reverse_reference_field = attr_field_name_storing_referenced_cls_name(
+        child_cls, parent_cls.__name__
     )
-    inverse_relationship_field_type = (
-        attr_field_type_for_field_name(parent_cls, inverse_relationship_field_name)
-        if inverse_relationship_field_name
-        else None
-    )
+
+    if not reverse_reference_field:
+        raise ValueError(
+            f"Expected to find relationship between [{child_cls.__name__}] and "
+            f"[{parent_cls.__name__}] but found none."
+        )
+
     return (
-        relationship_field_type != BuildableAttrFieldType.LIST
-        and inverse_relationship_field_type == BuildableAttrFieldType.FORWARD_REF
+        attr_field_type_for_field_name(parent_cls, reference_field)
+        == BuildableAttrFieldType.LIST
+    ) and (
+        attr_field_type_for_field_name(child_cls, reverse_reference_field)
+        == BuildableAttrFieldType.LIST
     )
+
+
+def is_one_to_many_relationship(
+    parent_cls: Type[Entity], child_cls: Type[Entity]
+) -> bool:
+    """Returns True if there's a one-to-many relationship between these the provided
+    parent and child entities.
+    """
+    if not entities_have_direct_relationship(parent_cls, child_cls):
+        raise ValueError(
+            f"Entities [{parent_cls.__name__}] and [{child_cls.__name__}] are not "
+            f"directly related - can't call is_one_to_many_relationship()."
+        )
+
+    reference_field = attr_field_name_storing_referenced_cls_name(
+        parent_cls, child_cls.__name__
+    )
+
+    if not reference_field:
+        raise ValueError(
+            f"Expected to find relationship between [{parent_cls.__name__}] and "
+            f"[{child_cls.__name__}] but found none."
+        )
+
+    reverse_reference_field = attr_field_name_storing_referenced_cls_name(
+        child_cls, parent_cls.__name__
+    )
+
+    if not reverse_reference_field:
+        raise ValueError(
+            f"Expected to find relationship between [{child_cls.__name__}] and "
+            f"[{parent_cls.__name__}] but found none."
+        )
+
+    return (
+        attr_field_type_for_field_name(parent_cls, reference_field)
+        == BuildableAttrFieldType.LIST
+    ) and (
+        attr_field_type_for_field_name(child_cls, reverse_reference_field)
+        != BuildableAttrFieldType.LIST
+    )
+
+
+def is_many_to_one_relationship(
+    parent_cls: Type[Entity], child_cls: Type[Entity]
+) -> bool:
+    """Returns True if there's a many-to-one relationship between these the provided
+    parent and child entities.
+    """
+    if not entities_have_direct_relationship(parent_cls, child_cls):
+        raise ValueError(
+            f"Entities [{parent_cls.__name__}] and [{child_cls.__name__}] are not "
+            f"directly related - can't call is_many_to_one_relationship()."
+        )
+    return is_one_to_many_relationship(parent_cls=child_cls, child_cls=parent_cls)
+
+
+def entities_have_direct_relationship(
+    entity_cls_a: Type[Entity], entity_cls_b: Type[Entity]
+) -> bool:
+    """Returns True if the two provided entity types are directly related in the schema
+    entity tree. For example, StatePerson and StateAssessment are directly related, but
+    StatePerson and StateSupervisionViolationResponse are not.
+    """
+    reference_field = attr_field_name_storing_referenced_cls_name(
+        entity_cls_a, entity_cls_b.__name__
+    )
+    reverse_reference_field = attr_field_name_storing_referenced_cls_name(
+        entity_cls_b, entity_cls_a.__name__
+    )
+    return reference_field is not None and reverse_reference_field is not None
+
+
+def get_association_table_id(parent_cls: Type[Entity], child_cls: Type[Entity]) -> str:
+    """For two classes that have a many to many relationship between them,
+    returns the name of the association table that can be used to hydrate
+    relationships between the classes.
+    """
+    if not is_many_to_many_relationship(parent_cls, child_cls):
+        raise ValueError(
+            f"Classes [{parent_cls.__name__}] and [{child_cls.__name__}] do not have a "
+            f"many-to-many relationship - cannot get an association table."
+        )
+
+    # TODO(#10389): Remove this custom handling for legacy sentence association tables
+    #  once we remove these classes from the schema.
+    if {parent_cls, child_cls} == {
+        state_entities.StateSupervisionSentence,
+        state_entities.StateCharge,
+    } or {parent_cls, child_cls} == {
+        normalized_entities.NormalizedStateSupervisionSentence,
+        normalized_entities.NormalizedStateCharge,
+    }:
+        return "state_charge_supervision_sentence_association"
+
+    if {parent_cls, child_cls} == {
+        state_entities.StateIncarcerationSentence,
+        state_entities.StateCharge,
+    } or {parent_cls, child_cls} == {
+        normalized_entities.NormalizedStateIncarcerationSentence,
+        normalized_entities.NormalizedStateCharge,
+    }:
+        return "state_charge_incarceration_sentence_association"
+
+    parts = [
+        *sorted([parent_cls.get_table_id(), child_cls.get_table_id()]),
+        "association",
+    ]
+    return "_".join(parts)
