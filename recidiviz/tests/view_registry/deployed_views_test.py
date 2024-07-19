@@ -40,6 +40,9 @@ from recidiviz.calculator.query.state.dataset_config import (
 from recidiviz.calculator.query.state.views.analyst_data.all_task_eligibility_spans import (
     ALL_TASK_ELIGIBILITY_SPANS_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.analyst_data.all_task_type_ineligible_criteria_sessions import (
+    ALL_TASK_TYPE_INELIGIBLE_CRITERIA_SESSIONS_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.analyst_data.workflows_person_impact_funnel_status_sessions import (
     WORKFLOWS_PERSON_IMPACT_FUNNEL_STATUS_SESSIONS_VIEW_BUILDER,
 )
@@ -343,6 +346,7 @@ class ViewDagInvariantTests(unittest.TestCase):
             #  all_task_eligibility_sessions) to a UnionAllBigQueryViewBuilder view and
             #  remove all downstream direct usages.
             ALL_TASK_ELIGIBILITY_SPANS_VIEW_BUILDER.address,
+            ALL_TASK_TYPE_INELIGIBLE_CRITERIA_SESSIONS_VIEW_BUILDER.address,
         }
 
         for parent_address, node in self.dag_walker.nodes_by_address.items():
