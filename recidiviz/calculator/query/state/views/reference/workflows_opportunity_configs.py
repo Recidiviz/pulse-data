@@ -191,7 +191,7 @@ WORKFLOWS_OPPORTUNITY_CONFIGS = [
         task_completion_event=TaskCompletionEventType.GRANTED_WORK_RELEASE,
         source_filename="us_me_work_release_form_record.json",
         export_collection_name="US_ME-workReleaseReferrals",
-        opportunity_type_path_str="WorkRelease",
+        opportunity_type_path_str="workRelease",
         person_record_type=PersonRecordType.RESIDENT,
     ),
     WorkflowsOpportunityConfig(
@@ -202,7 +202,7 @@ WORKFLOWS_OPPORTUNITY_CONFIGS = [
         task_completion_event=TaskCompletionEventType.GRANTED_FURLOUGH,
         source_filename="us_me_furlough_release_form_record.json",
         export_collection_name="US_ME-furloughReleaseReferrals",
-        opportunity_type_path_str="FurloughRelease",
+        opportunity_type_path_str="furloughRelease",
         person_record_type=PersonRecordType.RESIDENT,
     ),
     WorkflowsOpportunityConfig(
@@ -224,7 +224,7 @@ WORKFLOWS_OPPORTUNITY_CONFIGS = [
         task_completion_event=TaskCompletionEventType.INCARCERATION_ASSESSMENT_COMPLETED,
         source_filename="us_me_custody_reclassification_review_form_record.json",
         export_collection_name="US_ME-reclassificationReviewReferrals",
-        opportunity_type_path_str="reclassificationReview",
+        opportunity_type_path_str="annualReclassification",
         person_record_type=PersonRecordType.RESIDENT,
     ),
     WorkflowsOpportunityConfig(
