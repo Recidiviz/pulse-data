@@ -243,9 +243,13 @@ output:
                         - Interstate Compact
               - $else_if:
                   $and:
-                    - $equal:
-                        - DOCLocationToName
-                        - $literal("Parole Commission")
+                    - $or:
+                        - $equal:
+                            - DOCLocationToName
+                            - $literal("Parole Commission")
+                        - $equal:
+                            - DOCLocationToName
+                            - $literal("Idaho Commission of Parole and Pardons")
                     - $equal:
                         - RequestedSupervisionAssignmentLevel
                         - $literal("Interstate")
@@ -260,6 +264,7 @@ output:
                     $mappings:
                       StateCustodialAuthority.OTHER_STATE:
                         - Parole Commission##Interstate
+                        - Idaho Commission of Pardons and Parole##Interstate
               - $else_if:
                   $equal:
                     - RequestedSupervisionAssignmentLevel
