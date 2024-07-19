@@ -956,8 +956,13 @@ SELECT
     t.is_eligible,
     IF(t.is_eligible, DATE_DIFF(e.completion_event_date, t.start_date, DAY), NULL) AS days_eligible,
     f.is_almost_eligible,
+    CASE
+    -- If no TES spans overlap with this completion event, the reason for ineligibility is that the person was not included in the candidate population
+        WHEN (t.is_eligible = False OR t.is_eligible IS NULL) AND a_t.ineligible_criteria IS NULL THEN 'NOT_IN_CANDIDATE_POPULATION'
+        ELSE a_t.ineligible_criteria
+    END AS ineligible_criteria,
     -- Flag if someone has experienced at least one tool action before task completion
-    COALESCE(f.surfaced, FALSE) AS after_tool_action,
+    COALESCE(f.surfaced, FALSE) AS after_tool_action
 FROM
     `{{project_id}}.task_eligibility.all_completion_events_materialized` e
 -- Get information about continuous spans of eligibility
@@ -967,6 +972,14 @@ ON
     e.person_id = t.person_id
     AND e.completion_event_type = t.task_type
     AND e.completion_event_date BETWEEN t.start_date AND {nonnull_end_date_clause("t.end_date")}
+
+LEFT JOIN 
+    `{{project_id}}.analyst_data.all_task_type_ineligible_criteria_sessions_materialized` a_t
+ON
+    e.completion_event_type = a_t.completion_event_type
+    AND e.state_code = a_t.state_code
+    AND e.person_id = a_t.person_id
+    AND e.completion_event_date BETWEEN a_t.start_date AND {nonnull_end_date_clause("a_t.end_date")}
 -- Get information about impact funnel status.
 -- We convert the completion event date to a timestamp having the last time (23:59:59) on that date,
 -- to account for any usage events that may have occurred on the same date.
@@ -984,7 +997,7 @@ ON
 QUALIFY
     RANK() OVER (
         PARTITION BY e.person_id, e.completion_event_date, e.completion_event_type
-        ORDER BY t.start_date, f.start_date
+        ORDER BY t.start_date, f.start_date, a_t.start_date
     ) = 1
 """,
         attribute_cols=[
@@ -993,6 +1006,7 @@ QUALIFY
             "days_eligible",
             "is_almost_eligible",
             "after_tool_action",
+            "ineligible_criteria",
         ],
         event_date_col="completion_event_date",
     ),

@@ -24,6 +24,9 @@ from recidiviz.calculator.query.state.views.analyst_data.all_task_eligibility_sp
 from recidiviz.calculator.query.state.views.analyst_data.all_task_type_eligibility_spans import (
     ALL_TASK_TYPE_ELIGIBILITY_SPANS_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.analyst_data.all_task_type_ineligible_criteria_sessions import (
+    ALL_TASK_TYPE_INELIGIBLE_CRITERIA_SESSIONS_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.analyst_data.all_task_type_marked_ineligible_spans import (
     ALL_TASK_TYPE_MARKED_INELIGIBLE_SPANS_VIEW_BUILDER,
 )
@@ -298,9 +301,11 @@ from recidiviz.calculator.query.state.views.analyst_data.workflows_user_signups 
     WORKFLOWS_USER_SIGNUPS_VIEW_BUILDER,
 )
 
+
 ANALYST_DATA_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     ALL_TASK_ELIGIBILITY_SPANS_VIEW_BUILDER,
     ALL_TASK_TYPE_ELIGIBILITY_SPANS_VIEW_BUILDER,
+    ALL_TASK_TYPE_INELIGIBLE_CRITERIA_SESSIONS_VIEW_BUILDER,
     ALL_TASK_TYPE_MARKED_INELIGIBLE_SPANS_VIEW_BUILDER,
     EARLY_DISCHARGE_SESSIONS_VIEW_BUILDER,
     EARLY_DISCHARGE_SESSIONS_WITH_OFFICER_AND_SUPERVISOR_VIEW_BUILDER,
