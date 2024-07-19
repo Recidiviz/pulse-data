@@ -9,3 +9,4 @@ attrs==23.2.0
 pytz==2024.1
 functions-framework==3.6.0
 cloudevents==1.10.1
+us==3.1.1
