@@ -278,6 +278,23 @@ class Configuration(InsightsBase):
     exclusion_reason_description = Column(String, nullable=False)
     slightly_worse_than_rate_label = Column(String, nullable=False)
     at_or_below_rate_label = Column(String, nullable=False)
+    # When adding new columns below, be sure to set a default value with the
+    # server_default parameter and autogenerate a migration so that existing values
+    # in the database have this column hydrated.
+    supervisor_has_no_outlier_officers_label = Column(
+        String, nullable=False, server_default="Supervisor has no outlier officers"
+    )
+    officer_has_no_outlier_metrics_label = Column(
+        String, nullable=False, server_default="Officer has no outlier metrics"
+    )
+    supervisor_has_no_officers_with_eligible_clients_label = Column(
+        String,
+        nullable=False,
+        server_default="Supervisor has no officers with eligible clients",
+    )
+    officer_has_no_eligible_clients_label = Column(
+        String, nullable=False, server_default="Officer has no eligible clients"
+    )
     absconders_label = Column(String, nullable=False, server_default="absconders")
     at_or_above_rate_label = Column(
         String, nullable=False, server_default="At or above statewide rate"
@@ -288,9 +305,6 @@ class Configuration(InsightsBase):
         server_default="Has a rate on any metric significantly higher than peers - over 1 Interquartile Range above the statewide rate.",
     )
     doc_label = Column(String, nullable=False, server_default="DOC")
-    # When adding new columns below, be sure to set a default value with the
-    # server_default parameter and autogenerate a migration so that existing values
-    # in the database have this column hydrated.
     # Be sure to add this column to the below:
     #     - recidiviz/admin_panel/line_staff_tools/outliers_api_schemas.py::ConfigurationSchema
     #     - recidiviz/outliers/types.py::OutliersProductConfiguration

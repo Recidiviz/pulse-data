@@ -26,6 +26,13 @@ export const rawInsightsConfigurationFixture: Array<InsightsConfiguration> = [
     supervisionSupervisorLabel: "supervisor",
     supervisionDistrictManagerLabel: "manager",
     supervisionJiiLabel: "client",
+    supervisorHasNoOutlierOfficersLabel:
+      "Nice! No officers are outliers on any metrics this month.",
+    officerHasNoOutlierMetricsLabel: "Nice! No outlying metrics this month.",
+    supervisorHasNoOfficersWithEligibleClientsLabel:
+      "Nice! No outstanding opportunities for now.",
+    officerHasNoEligibleClientsLabel:
+      "Nice! No outstanding opportunities for now.",
     learnMoreUrl: "my-learn-more-url.org",
     atOrBelowRateLabel: "At or below statewide rate",
     exclusionReasonDescription: null,
@@ -50,6 +57,13 @@ export const rawInsightsConfigurationFixture: Array<InsightsConfiguration> = [
     supervisionSupervisorLabel: "supervisor",
     supervisionDistrictManagerLabel: "manager",
     supervisionJiiLabel: "client",
+    supervisorHasNoOutlierOfficersLabel:
+      "Nice! No officers are outliers on any metrics this month.",
+    officerHasNoOutlierMetricsLabel: "Nice! No outlying metrics this month.",
+    supervisorHasNoOfficersWithEligibleClientsLabel:
+      "Nice! No outstanding opportunities for now.",
+    officerHasNoEligibleClientsLabel:
+      "Nice! No outstanding opportunities for now.",
     learnMoreUrl: "other-learn-more-url.org",
     atOrBelowRateLabel: "At or below statewide rate",
     exclusionReasonDescription: "not eligible",
@@ -75,6 +89,13 @@ export const rawInsightsConfigurationFixture: Array<InsightsConfiguration> = [
     supervisionSupervisorLabel: "supervisor",
     supervisionDistrictManagerLabel: "manager",
     supervisionJiiLabel: "client",
+    supervisorHasNoOutlierOfficersLabel:
+      "Nice! No officers are outliers on any metrics this month.",
+    officerHasNoOutlierMetricsLabel: "Nice! No outlying metrics this month.",
+    supervisorHasNoOfficersWithEligibleClientsLabel:
+      "Nice! No outstanding opportunities for now.",
+    officerHasNoEligibleClientsLabel:
+      "Nice! No outstanding opportunities for now.",
     learnMoreUrl: "other-learn-more-url.org",
     atOrBelowRateLabel: "At or below statewide rate",
     exclusionReasonDescription: "not eligible",
