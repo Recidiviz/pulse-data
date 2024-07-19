@@ -14,6 +14,9 @@ columns:
   - name: ROOT_OFFENDER_ID
     description: |-
       External id for a unique person from the Elite system.
+    is_pii: True
+    field_type: person_external_id
+    external_id_type: US_ND_ELITE
   - name: LAST_NAME
     is_pii: True
     description: |-
@@ -209,3 +212,13 @@ columns:
   - name: ALIAS_NAME_TYPE
     description: Type of alias.
 always_historical_export: True
+
+table_relationships:
+  - foreign_table: elite_offenders
+    join_logic:
+      - elite_offenders.ROOT_OFFENDER_ID = elite_offense_in_custody_and_pos_report_data.ROOT_OFFENDER_ID
+    transforms:
+      - column: elite_offenders.ROOT_OFFENDER_ID
+        transform: REPLACE(REPLACE({col_name},',',''), '.00', '')
+      - column: elite_offense_in_custody_and_pos_report_data.ROOT_OFFENDER_ID
+        transform: REPLACE(REPLACE({col_name},',',''), '.00', '')

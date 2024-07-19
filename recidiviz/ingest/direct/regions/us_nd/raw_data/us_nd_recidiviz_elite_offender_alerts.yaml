@@ -62,7 +62,19 @@ columns:
   - name: ROOT_OFFENDER_ID
     description: The Elite ID of the person who the alert concerns.
     is_pii: True
+    field_type: person_external_id
+    external_id_type: US_ND_ELITE
   - name: SEAL_FLAG
     description: Unknown
   - name: VERIFIED_FLAG
     description: Unknown
+
+table_relationships:
+  - foreign_table: elite_offenders
+    join_logic:
+      - elite_offenders.ROOT_OFFENDER_ID = recidiviz_elite_offender_alerts.ROOT_OFFENDER_ID
+    transforms:
+      - column: elite_offenders.ROOT_OFFENDER_ID
+        transform: REPLACE(REPLACE({col_name},',',''), '.00', '')
+      - column: recidiviz_elite_offender_alerts.ROOT_OFFENDER_ID
+        transform: REPLACE(REPLACE({col_name},',',''), '.00', '')
