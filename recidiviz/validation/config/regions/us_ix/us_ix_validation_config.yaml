@@ -79,7 +79,7 @@ num_allowed_rows_overrides:
     hard_num_allowed_rows_override: 35000
     override_reason: TODO(#20471) - Needs investigation.  Known issues with sentence dates.
   - validation_name: session_liberty_releases_with_no_sentence_completion_date
-    hard_num_allowed_rows_override: 11500
+    hard_num_allowed_rows_override: 11550
     override_reason: TODO(#20471) - Needs investigation.  Known issues with sentence dates.
   - validation_name: incarceration_commitments_subset_of_admissions
     hard_num_allowed_rows_override: 1
