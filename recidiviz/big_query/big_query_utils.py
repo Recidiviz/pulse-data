@@ -16,6 +16,7 @@
 # =============================================================================
 """Helper functions for creating BigQuery views and manipulating BigQuery contents"""
 import datetime
+import enum
 import logging
 import string
 from enum import Enum
@@ -50,6 +51,14 @@ from recidiviz.utils.encoding import to_python_standard
 
 # Maximum value of an integer stored in BigQuery
 MAX_BQ_INT = (2**63) - 1
+
+
+class BigQueryDateInterval(enum.Enum):
+    DAY = "DAY"
+    WEEK = "WEEK"
+    MONTH = "MONTH"
+    QUARTER = "QUARTER"
+    YEAR = "YEAR"
 
 
 def _schema_column_type_for_attribute(attribute: attr.Attribute) -> str:

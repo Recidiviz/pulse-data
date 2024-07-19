@@ -159,7 +159,6 @@ class BigQueryEmulatorTestCase(unittest.TestCase, BigQueryTestHelper):
         contents_iterator: Iterable[Dict[str, Any]] = BigQueryResultsContentsHandle(
             query_job
         ).get_contents_iterator()
-
         self.assertEqual(expected_result, list(contents_iterator))
 
     def create_mock_table(

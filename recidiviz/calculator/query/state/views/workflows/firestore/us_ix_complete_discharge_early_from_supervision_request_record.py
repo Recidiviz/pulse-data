@@ -35,10 +35,6 @@ from recidiviz.pipelines.supplemental.dataset_config import SUPPLEMENTAL_DATA_DA
 from recidiviz.task_eligibility.dataset_config import (
     task_eligibility_spans_state_specific_dataset,
 )
-from recidiviz.task_eligibility.utils.almost_eligible_query_fragments import (
-    one_criteria_away_from_eligibility,
-    x_time_away_from_eligibility,
-)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -117,15 +113,20 @@ US_IX_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_REQUEST_RECORD_QUERY_TEMPLATE = 
       --if this sentence is consecutive to a parent sentence that is open, than do not include this sentence 
       AND (cs.consecutive_sentence_id IS NULL OR cs.consecutive_sentence_id NOT IN (SELECT sentence_id FROM open_consecutive_sentences))
       AND sent.projected_completion_date_max >= CURRENT_DATE('US/Pacific')
-      --Pick one record per person, sentence type and ChargeId, selecting the lowest sentence sequence number
-      # TODO(#18731): remove the uppercase extract and the coalesce once prod uses lowercase
-      QUALIFY ROW_NUMBER() OVER(PARTITION BY sent.person_id, sent.sentence_type, 
-            SPLIT(COALESCE(JSON_VALUE(PARSE_JSON(sent.sentence_metadata), '$.sentence_sequence'),
-                            JSON_VALUE(PARSE_JSON(sent.sentence_metadata), '$.SENTENCE_SEQUENCE')), '-')[SAFE_OFFSET(0)] 
-      ORDER BY SPLIT(COALESCE(JSON_VALUE(PARSE_JSON(sentence_metadata), '$.sentence_sequence'), 
-                                JSON_VALUE(PARSE_JSON(sentence_metadata), '$.SENTENCE_SEQUENCE')), '-')[SAFE_OFFSET(1)], 
-                SPLIT(COALESCE(JSON_VALUE(PARSE_JSON(sentence_metadata), '$.sentence_sequence'), 
-                                JSON_VALUE(PARSE_JSON(sentence_metadata), '$.SENTENCE_SEQUENCE')),'-')[SAFE_OFFSET(2)])=1
+      --Pick one record per person, sentence type and ChargeId, selecting the lowest sentence sequence number and
+      --prioritizing amendments over initial sentence event type that have the same sequence number
+      QUALIFY ROW_NUMBER() OVER(
+        PARTITION BY sent.person_id, sent.sentence_type,
+          SPLIT(JSON_VALUE(sent.sentence_metadata, '$.sentence_sequence'), '-')[SAFE_OFFSET(0)]
+        ORDER BY SPLIT(JSON_VALUE(sentence_metadata, '$.sentence_sequence'), '-')[SAFE_OFFSET(1)],
+          SPLIT(JSON_VALUE(sentence_metadata, '$.sentence_sequence'),'-')[SAFE_OFFSET(2)],
+          -- If all else is the same pick the sentence with the latest effective date
+          sent.effective_date DESC,
+          -- If all else is the same pick the sentence with the latest date imposed
+          sent.date_imposed DESC,
+          -- Prioritizing amendments over initial sentences will be handled by state sentence length under the v2 schema
+          JSON_VALUE(sentence_metadata, "$.sentence_event_type")
+      ) = 1
     ),
     sentence_charge_description_aggregated AS (
       SELECT 
@@ -330,10 +331,9 @@ US_IX_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_REQUEST_RECORD_QUERY_TEMPLATE = 
         TO_JSON(ARRAY_AGG(IF(n.note_title IS NOT NULL, STRUCT(n.note_title, n.note_body, n.event_date, n.criteria),NULL) IGNORE NULLS ORDER BY n.event_date)) AS case_notes,
     FROM dedup_notes n
     GROUP BY 1,2
-    ),
-    client_notes AS (
+    )
         SELECT
-            tes.is_eligible, 
+            tes.is_eligible,
             pei.external_id AS external_id,
             tes.state_code,
             tes.start_date AS eligible_start_date,
@@ -356,7 +356,6 @@ US_IX_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_REQUEST_RECORD_QUERY_TEMPLATE = 
             score.first_assessment_date AS form_information_first_assessment_date,
             score.first_assessment_score AS form_information_first_assessment_score,
             DATE_DIFF(proj.projected_completion_date_max, CURRENT_DATE('US/Pacific'), DAY) AS days_remaining_on_supervision,
-            JSON_QUERY_ARRAY(tes.reasons) AS array_reasons,
             tes.reasons AS reasons,
             n.case_notes AS case_notes,
             -- Almost eligible if there is only 1 ineligible_criteria present
@@ -407,36 +406,7 @@ US_IX_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_REQUEST_RECORD_QUERY_TEMPLATE = 
             AND DATE_ADD(review_date, INTERVAL 90 DAY) >= CURRENT_DATE('US/Pacific')
         WHERE CURRENT_DATE('US/Pacific') BETWEEN tes.start_date AND {nonnull_end_date_exclusive_clause('tes.end_date')}
             AND tes.state_code = 'US_IX'
-    ),
-        
-    eligible_and_almost_eligible AS (
-        SELECT * EXCEPT(array_reasons)
-        FROM client_notes
-        
-        WHERE is_eligible 
-        
-       UNION ALL
-       
-       -- ALMOST ELIGIBLE <income verified within 3 months>
-        {one_criteria_away_from_eligibility('US_IX_INCOME_VERIFIED_WITHIN_3_MONTHS',
-                                        from_cte_table_name = "client_notes")}
-        
-        UNION ALL
-        
-            -- ALMOST ELIGIBLE (<3mo remaining before early discharge date)
-            {x_time_away_from_eligibility(time_interval= 3, date_part= 'MONTH',
-                criteria_name= 'US_IX_PAROLE_DUAL_SUPERVISION_PAST_EARLY_DISCHARGE_DATE',
-                from_cte_table_name = "client_notes")}
-        
-        UNION ALL
-        
-        -- ALMOST ELIGIBLE <<3 month left on supervision>
-                {x_time_away_from_eligibility(time_interval= 3, date_part= 'MONTH',
-                criteria_name= 'ON_PROBATION_AT_LEAST_ONE_YEAR',
-                from_cte_table_name = "client_notes")}
-    )           
-   
-   SELECT * FROM eligible_and_almost_eligible
+            AND (tes.is_eligible OR tes.is_almost_eligible)
 """
 
 US_IX_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_REQUEST_RECORD_VIEW_BUILDER = SimpleBigQueryViewBuilder(

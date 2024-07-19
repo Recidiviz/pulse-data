@@ -18,6 +18,7 @@
 someone in ID is eligible to request early discharge from parole or dual supervision
 through the parole board.
 """
+from recidiviz.big_query.big_query_utils import BigQueryDateInterval
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.candidate_populations.general import (
     parole_dual_active_supervision_population,
@@ -32,6 +33,7 @@ from recidiviz.task_eligibility.criteria.state_specific.us_ix import (
     lsir_level_low_moderate_for_x_days,
     parole_dual_supervision_past_early_discharge_date,
 )
+from recidiviz.task_eligibility.criteria_condition import TimeDependentCriteriaCondition
 from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
 )
@@ -55,6 +57,13 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         no_felony_within_24_months.VIEW_BUILDER,
     ],
     completion_event_builder=early_discharge.VIEW_BUILDER,
+    almost_eligible_condition=TimeDependentCriteriaCondition(
+        criteria=parole_dual_supervision_past_early_discharge_date.VIEW_BUILDER,
+        reasons_date_field="eligible_date",
+        interval_length=3,
+        interval_date_part=BigQueryDateInterval.MONTH,
+        description="Within 3 months of early discharge date",
+    ),
 )
 
 if __name__ == "__main__":

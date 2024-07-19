@@ -34,11 +34,6 @@ from recidiviz.task_eligibility.dataset_config import (
     completion_event_state_specific_dataset,
     task_eligibility_spans_state_specific_dataset,
 )
-from recidiviz.task_eligibility.utils.almost_eligible_query_fragments import (
-    clients_eligible,
-    json_to_array_cte,
-    x_time_away_from_eligibility,
-)
 from recidiviz.task_eligibility.utils.us_me_query_fragments import (
     FURLOUGH_NOTE_TX_REGEX,
     PROGRAM_ENROLLMENT_NOTE_TX_REGEX,
@@ -61,11 +56,13 @@ US_ME_RECLASSIFICATION_REVIEW_FORM_RECORD_DESCRIPTION = """
     """
 
 US_ME_RECLASSIFICATION_REVIEW_FORM_RECORD_QUERY_TEMPLATE = f"""
-WITH current_incarceration_pop_cte AS (
+WITH eligible_and_almost_eligible_clients AS (
 {join_current_task_eligibility_spans_with_external_id(
     state_code= "'US_ME'", 
     tes_task_query_view = 'custody_reclassification_review_form_materialized',
-    id_type = "'US_ME_DOC'")}
+    id_type = "'US_ME_DOC'",
+    eligible_and_almost_eligible_only=True,
+)}
 ),
 # Arrival at the Current Facility
 arrival_date_cte AS (
@@ -297,26 +294,6 @@ probation_term_cte AS (
       AND status = 'PENDING'
   GROUP BY 1,2
 ),
-json_to_array_cte AS (
-        {json_to_array_cte('current_incarceration_pop_cte')}
-    ),
-eligible_and_almost_eligible_clients AS (
-
-    -- ELIGIBLE
-    {clients_eligible(from_cte = 'current_incarceration_pop_cte')}
-    
-    UNION ALL
-    
-    -- Almost Eligible - 1 month away from reclassification reset date
-        -- Function uses strictly less than and we want 1 months inclusive so time_interval=2
-        {x_time_away_from_eligibility(
-            time_interval= 2,
-            date_part= 'MONTH',
-            criteria_name= 'US_ME_INCARCERATION_PAST_RELEVANT_CLASSIFICATION_DATE',
-            from_cte_table_name = "json_to_array_cte",
-        )}
-
-),
 
 case_notes_cte AS (
 -- Get together all case_notes
@@ -355,7 +332,7 @@ array_case_notes_cte AS (
 )
 
 SELECT
-  *
+  * EXCEPT (is_almost_eligible)
 FROM
   eligible_and_almost_eligible_clients
 LEFT JOIN

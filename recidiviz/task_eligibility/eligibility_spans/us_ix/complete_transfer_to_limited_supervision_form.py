@@ -37,6 +37,10 @@ from recidiviz.task_eligibility.criteria.state_specific.us_ix import (
     no_active_nco,
     supervision_level_raw_text_is_not_so,
 )
+from recidiviz.task_eligibility.criteria_condition import (
+    NotEligibleCriteriaCondition,
+    PickNCompositeCriteriaCondition,
+)
 from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
 )
@@ -64,6 +68,19 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         supervision_level_raw_text_is_not_so.VIEW_BUILDER,
     ],
     completion_event_builder=transfer_to_limited_supervision.VIEW_BUILDER,
+    almost_eligible_condition=PickNCompositeCriteriaCondition(
+        sub_conditions_list=[
+            NotEligibleCriteriaCondition(
+                criteria=income_verified_within_3_months.VIEW_BUILDER,
+                description="Only missing income verification",
+            ),
+            NotEligibleCriteriaCondition(
+                criteria=on_supervision_at_least_one_year.VIEW_BUILDER,
+                description="Only missing a year on supervision criteria",
+            ),
+        ],
+        at_most_n_conditions_true=1,
+    ),
 )
 
 if __name__ == "__main__":

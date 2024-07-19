@@ -17,6 +17,7 @@
 """Builder for a task eligiblity spans view that shows the spans of time during which
 someone in ID is eligible to request early discharge from probation supervision.
 """
+from recidiviz.big_query.big_query_utils import BigQueryDateInterval
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.candidate_populations.general import (
     probation_active_supervision_population,
@@ -31,6 +32,7 @@ from recidiviz.task_eligibility.criteria.general import (
 from recidiviz.task_eligibility.criteria.state_specific.us_ix import (
     lsir_level_low_moderate_for_x_days,
 )
+from recidiviz.task_eligibility.criteria_condition import TimeDependentCriteriaCondition
 from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
 )
@@ -54,6 +56,13 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         no_felony_within_24_months.VIEW_BUILDER,
     ],
     completion_event_builder=early_discharge.VIEW_BUILDER,
+    almost_eligible_condition=TimeDependentCriteriaCondition(
+        criteria=on_probation_at_least_one_year.VIEW_BUILDER,
+        reasons_date_field="minimum_time_served_date",
+        interval_length=3,
+        interval_date_part=BigQueryDateInterval.MONTH,
+        description="Within 3 months of probation 1 year date",
+    ),
 )
 
 if __name__ == "__main__":

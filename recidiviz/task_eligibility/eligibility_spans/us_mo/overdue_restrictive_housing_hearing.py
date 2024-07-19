@@ -18,6 +18,7 @@
 someone in MO has an upcoming restrictive housing hearing.
 TODO(#26722): Deprecate once new opportunities are live.
 """
+from recidiviz.big_query.big_query_utils import BigQueryDateInterval
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.candidate_populations.general import (
     incarceration_population,
@@ -29,6 +30,7 @@ from recidiviz.task_eligibility.criteria.state_specific.us_mo import (
     in_restrictive_housing,
     overdue_for_hearing,
 )
+from recidiviz.task_eligibility.criteria_condition import TimeDependentCriteriaCondition
 from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
 )
@@ -47,6 +49,13 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         overdue_for_hearing.VIEW_BUILDER,
     ],
     completion_event_builder=hearing_occurred.VIEW_BUILDER,
+    almost_eligible_condition=TimeDependentCriteriaCondition(
+        criteria=overdue_for_hearing.VIEW_BUILDER,
+        reasons_date_field="next_review_date",
+        interval_length=7,
+        interval_date_part=BigQueryDateInterval.DAY,
+        description="Within 7 days of next restrictive housing hearing date",
+    ),
 )
 
 if __name__ == "__main__":

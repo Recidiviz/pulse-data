@@ -18,7 +18,7 @@
 Shows the spans of time during which someone in ME is eligible
 for a reclassification
 """
-
+from recidiviz.big_query.big_query_utils import BigQueryDateInterval
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.candidate_populations.general import (
     general_incarceration_population,
@@ -30,6 +30,7 @@ from recidiviz.task_eligibility.criteria.state_specific.us_me import (
     incarceration_past_annual_classification_date,
     incarceration_past_semi_annual_classification_date,
 )
+from recidiviz.task_eligibility.criteria_condition import TimeDependentCriteriaCondition
 from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
 )
@@ -43,27 +44,38 @@ _DESCRIPTION = """Shows the spans of time during which someone in ME is eligible
 for a reclassification
 """
 
+INCARCERATION_PAST_RELEVANT_CLASSIFICATION_DATE_VIEW_BUILDER: OrTaskCriteriaGroup = (
+    OrTaskCriteriaGroup(
+        criteria_name="US_ME_INCARCERATION_PAST_RELEVANT_CLASSIFICATION_DATE",
+        sub_criteria_list=[
+            incarceration_past_annual_classification_date.VIEW_BUILDER,
+            incarceration_past_semi_annual_classification_date.VIEW_BUILDER,
+        ],
+        allowed_duplicate_reasons_keys=[
+            "reclass_type",
+            "reclasses_needed",
+            "latest_classification_date",
+            "eligible_date",
+        ],
+    )
+)
+
 VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     state_code=StateCode.US_ME,
     task_name="CUSTODY_RECLASSIFICATION_REVIEW_FORM",
     description=_DESCRIPTION,
     candidate_population_view_builder=general_incarceration_population.VIEW_BUILDER,
     criteria_spans_view_builders=[
-        OrTaskCriteriaGroup(
-            criteria_name="US_ME_INCARCERATION_PAST_RELEVANT_CLASSIFICATION_DATE",
-            sub_criteria_list=[
-                incarceration_past_annual_classification_date.VIEW_BUILDER,
-                incarceration_past_semi_annual_classification_date.VIEW_BUILDER,
-            ],
-            allowed_duplicate_reasons_keys=[
-                "reclass_type",
-                "reclasses_needed",
-                "latest_classification_date",
-                "eligible_date",
-            ],
-        ),
+        INCARCERATION_PAST_RELEVANT_CLASSIFICATION_DATE_VIEW_BUILDER,
     ],
     completion_event_builder=incarceration_assessment_completed.VIEW_BUILDER,
+    almost_eligible_condition=TimeDependentCriteriaCondition(
+        criteria=INCARCERATION_PAST_RELEVANT_CLASSIFICATION_DATE_VIEW_BUILDER,
+        reasons_date_field="eligible_date",
+        interval_length=1,
+        interval_date_part=BigQueryDateInterval.MONTH,
+        description="Within 1 month of reclassification reset date",
+    ),
 )
 
 if __name__ == "__main__":

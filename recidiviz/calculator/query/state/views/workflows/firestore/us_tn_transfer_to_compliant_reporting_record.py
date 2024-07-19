@@ -33,11 +33,6 @@ from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestIns
 from recidiviz.task_eligibility.dataset_config import (
     task_eligibility_spans_state_specific_dataset,
 )
-from recidiviz.task_eligibility.utils.almost_eligible_query_fragments import (
-    json_to_array_cte,
-    one_criteria_away_from_eligibility,
-    x_time_away_from_eligibility,
-)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -54,11 +49,9 @@ US_TN_TRANSFER_TO_COMPLIANT_REPORTING_RECORD_QUERY_TEMPLATE = f"""
     {join_current_task_eligibility_spans_with_external_id(
         state_code= "'US_TN'", 
         tes_task_query_view = 'transfer_to_compliant_reporting_with_discretion_materialized',
-        id_type = "'US_TN_DOC'"
+        id_type = "'US_TN_DOC'",
+        eligible_and_almost_eligible_only=True,
     )}
-    ),
-    json_to_array_cte AS (
-        {json_to_array_cte('eligible_with_discretion')}
     ),
     eligible_discretion_and_almost AS (
         -- Eligible with discretion
@@ -71,7 +64,6 @@ US_TN_TRANSFER_TO_COMPLIANT_REPORTING_RECORD_QUERY_TEMPLATE = f"""
             is_eligible
         FROM
             eligible_with_discretion
-        WHERE is_eligible
         
         UNION ALL
         
@@ -87,56 +79,9 @@ US_TN_TRANSFER_TO_COMPLIANT_REPORTING_RECORD_QUERY_TEMPLATE = f"""
             ({join_current_task_eligibility_spans_with_external_id(
                 state_code= "'US_TN'", 
                 tes_task_query_view = 'transfer_to_compliant_reporting_no_discretion_materialized',
-                id_type = "'US_TN_DOC'"
+                id_type = "'US_TN_DOC'",
+                eligible_only=True,
             )})
-        WHERE is_eligible
-        
-        UNION ALL 
-        
-        -- Almost eligible - 3 months away from enough time on minimum/medium
-        -- Function uses strictly less than and we want 3 months inclusive so time_interval=4
-        {x_time_away_from_eligibility(
-            time_interval= 4,
-            date_part= 'MONTH',
-            criteria_name= 'US_TN_ON_ELIGIBLE_LEVEL_FOR_SUFFICIENT_TIME',
-            from_cte_table_name = "json_to_array_cte",
-        )}
-        
-        UNION ALL
-        
-        -- Almost eligible - recent CR rejections (not permanent)
-        {one_criteria_away_from_eligibility(
-            criteria_name = 'US_TN_NO_RECENT_COMPLIANT_REPORTING_REJECTIONS',
-            from_cte_table_name = "json_to_array_cte",
-        )}
-        
-        UNION ALL
-
-        -- Almost eligible - fines and fees
-        {one_criteria_away_from_eligibility(
-            criteria_name = 'US_TN_FINES_FEES_ELIGIBLE',
-            criteria_condition = '<= 2000',
-            field_name_in_reasons_blob = 'amount_owed',
-            nested=True,
-            criteria_name_nested='HAS_FINES_FEES_BALANCE_BELOW_500',
-            from_cte_table_name = "json_to_array_cte",
-        )}
-        
-        UNION ALL
-        
-        /* Almost eligible - within 3 months of latest highest sanction being 1+ year old. The eligible_date here
-        is the date of the last high sanction, rather than a future date where the last high sanction no longer applies.
-        Since the x_time_away_from_eligibility function does 
-        WHERE DATE_DIFF(eligible_date, CURRENT_DATE('US/Pacific'), MONTH) < time_interval, we use a negative time
-        interval i.e. where latest_high_sanction_date is strictly more than 8 months old */ 
-         
-        {x_time_away_from_eligibility(
-            time_interval= -8, 
-            date_part= 'MONTH',
-            criteria_name= 'US_TN_NO_HIGH_SANCTIONS_IN_PAST_YEAR',
-            eligible_date='latest_high_sanction_date',
-            from_cte_table_name = "json_to_array_cte",
-        )}
     ),
     /*
     We have two views, transfer_to_compliant_reporting_no_discretion and transfer_to_compliant_reporting_with_discretion to help identify people
@@ -209,7 +154,7 @@ US_TN_TRANSFER_TO_COMPLIANT_REPORTING_RECORD_QUERY_TEMPLATE = f"""
             person_id,
             SUM(COALESCE(CAST(vic.TotalRestitution AS FLOAT64),0)) AS restitution_amt,
             SUM(COALESCE(CAST(vic.MonthlyRestitution AS FLOAT64 ),0)) AS restitution_monthly_payment,
-            ARRAY_AGG(DISTINCT vic.VictimName IGNORE NULLS) AS restitution_monthly_payment_to,
+            ARRAY_AGG(DISTINCT vic.VictimName IGNORE NULLS ORDER BY vic.VictimName) AS restitution_monthly_payment_to,
         FROM `{{project_id}}.{{sessions_dataset}}.sentences_preprocessed_materialized` pp
         LEFT JOIN
             `{{project_id}}.{{us_tn_raw_data_up_to_date_dataset}}.JOVictim_latest` vic
@@ -335,7 +280,10 @@ US_TN_TRANSFER_TO_COMPLIANT_REPORTING_RECORD_QUERY_TEMPLATE = f"""
         ( 
             SELECT
                 person_id,
-                ARRAY_AGG(DISTINCT JSON_EXTRACT_SCALAR(ineligible_offenses)) AS ineligible_offenses_expired
+                ARRAY_AGG(
+                    DISTINCT JSON_EXTRACT_SCALAR(ineligible_offenses)
+                    ORDER BY JSON_EXTRACT_SCALAR(ineligible_offenses)
+                ) AS ineligible_offenses_expired
             FROM `{{project_id}}.task_eligibility_criteria_us_tn.ineligible_offenses_expired_materialized`,
             UNNEST(JSON_EXTRACT_ARRAY(reason,"$.ineligible_offenses")) AS ineligible_offenses
             GROUP BY 1

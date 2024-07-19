@@ -18,7 +18,7 @@
 Shows the spans of time during which someone in ME is eligible
 for a transfer to SCCP (Supervised Community Confinement Program)
 """
-
+from recidiviz.big_query.big_query_utils import BigQueryDateInterval
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.candidate_populations.general import (
     general_incarceration_population,
@@ -32,6 +32,11 @@ from recidiviz.task_eligibility.criteria.state_specific.us_me import (
     no_detainers_warrants_or_other,
     served_x_portion_of_sentence,
     x_months_remaining_on_sentence,
+)
+from recidiviz.task_eligibility.criteria_condition import (
+    NotEligibleCriteriaCondition,
+    PickNCompositeCriteriaCondition,
+    TimeDependentCriteriaCondition,
 )
 from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
@@ -56,6 +61,29 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         no_class_a_or_b_violation_for_90_days.VIEW_BUILDER,
     ],
     completion_event_builder=release_to_community_confinement_supervision.VIEW_BUILDER,
+    almost_eligible_condition=PickNCompositeCriteriaCondition(
+        sub_conditions_list=[
+            TimeDependentCriteriaCondition(
+                criteria=x_months_remaining_on_sentence.VIEW_BUILDER,
+                reasons_date_field="eligible_date",
+                interval_length=6,
+                interval_date_part=BigQueryDateInterval.MONTH,
+                description="Within 6 months of 30/24 month eligibility date",
+            ),
+            TimeDependentCriteriaCondition(
+                criteria=served_x_portion_of_sentence.VIEW_BUILDER,
+                reasons_date_field="eligible_date",
+                interval_length=6,
+                interval_date_part=BigQueryDateInterval.MONTH,
+                description="Within 6 months of 1/2 or 2/3 of sentence served",
+            ),
+            NotEligibleCriteriaCondition(
+                criteria=no_class_a_or_b_violation_for_90_days.VIEW_BUILDER,
+                description="One disciplinary violation away from eligibility",
+            ),
+        ],
+        at_most_n_conditions_true=1,
+    ),
 )
 
 if __name__ == "__main__":

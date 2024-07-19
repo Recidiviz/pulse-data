@@ -34,6 +34,7 @@ from recidiviz.task_eligibility.criteria.state_specific.us_me import (
     served_half_of_sentence,
     three_years_remaining_on_sentence,
 )
+from recidiviz.task_eligibility.criteria_condition import NotEligibleCriteriaCondition
 from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
 )
@@ -58,6 +59,13 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         no_class_a_or_b_violation_for_90_days.VIEW_BUILDER,
     ],
     completion_event_builder=granted_furlough.VIEW_BUILDER,
+    almost_eligible_condition=NotEligibleCriteriaCondition(
+        criteria=served_half_of_sentence.VIEW_BUILDER,
+        description=(
+            "Have not served 1/2 of sentence: folks without this condition may request a furlough, but not for family "
+            "purposes"
+        ),
+    ),
 )
 
 if __name__ == "__main__":
