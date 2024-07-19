@@ -23,6 +23,9 @@ from recidiviz.calculator.query.state.dataset_config import (
     NORMALIZED_STATE_DATASET,
     SESSIONS_DATASET,
 )
+from recidiviz.task_eligibility.utils.critical_date_query_fragments import (
+    critical_date_has_passed_spans_cte,
+)
 from recidiviz.task_eligibility.utils.state_dataset_query_fragments import (
     sentence_attributes,
 )
@@ -66,28 +69,86 @@ US_OR_STATUTE_ELIGIBLE_QUERY_TEMPLATE = f"""
             state_code,
             person_id,
             sentence_id,
+            -- the statement below will return FALSE if the 137.635 flag is missing
             JSON_VALUE(sentence_metadata, '$.FLAG_137635')='Y' AS sentenced_under_137635,
         FROM `{{project_id}}.{{sessions_dataset}}.sentences_preprocessed_materialized`
         WHERE state_code='US_OR' AND sentence_type='SUPERVISION'
-    )
-    SELECT DISTINCT
+    ),
+    sentence_statute_eligibility AS (
+        /* Here, we determine whether sentences fall under eligible statutes (according
+        to the policy outlined in ORS 137.633, as of early 2024). We explicitly handle
+        cases where the statute is missing, allowing these cases to pass through as
+        eligible. */
+        SELECT DISTINCT
+            state_code,
+            person_id,
+            sentence_id,
+            (
+            -- check that statute isn't universally ineligible
+            IFNULL((statute NOT IN ({list_to_query_string(OR_EARNED_DISCHARGE_INELIGIBLE_STATUTES, quoted=True)})), TRUE)
+            -- exclude sentences imposed under ORS 137.635, which is a sentencing enhancement
+            AND (NOT sentenced_under_137635)
+            -- check that if post-prison, statute isn't ineligible for post-prison cases
+            AND NOT ((supervision_type_raw_text='O') AND IFNULL(statute IN ({list_to_query_string(OR_EARNED_DISCHARGE_INELIGIBLE_STATUTES_POST_PRISON, quoted=True)}), FALSE))
+            ) AS sentenced_under_eligible_statute,
+        FROM sentences
+        LEFT JOIN sentence_supervision_types
+            USING (state_code, person_id, sentence_id)
+        LEFT JOIN sentence_enhancements
+            USING (state_code, person_id, sentence_id)
+    ),
+    critical_date_spans AS (
+        /* While the statute exclusions list has been constant (as far as we know) since
+        its introduction, this introduction of these exclusions did happen partway
+        through the existence of the EDIS program. Here, we account for these historical
+        changes. NB: here, we're creating spans of INELIGIBILITY (and will flip these to
+        spans of eligibility later). */
+        SELECT
+            state_code,
+            person_id,
+            sentence_id,
+            start_date AS start_datetime,
+            end_date AS end_datetime,
+            CASE
+                /* The original bill (House Bill 3194 [2013]) that established EDIS was
+                effective 2013-07-25 and does not appear to have specified any statute
+                exclusions.
+                This means that if someone was sentenced under an eligible statute, that
+                sentence has been eligible for EDIS since the introduction of the
+                program (and so has/will never become ineligible). */
+                WHEN (sentenced_under_eligible_statute) THEN DATE('9999-12-31')
+                /* The bill (House Bill 2172 [2021]) that expanded EDIS to post-prison
+                sentences was effective 2022-01-01, applied to sentences imposed on or
+                after 2022-01-01, and appears to have introduced the
+                statute exclusions.
+                This means that if someone was sentenced under an ineligible statute
+                (and that sentence was imposed on or after 2022-01-01), they became
+                ineligible starting on 2022-01-01. (In effect, they will never be
+                eligible.) */
+                WHEN ((NOT sentenced_under_eligible_statute) AND (date_imposed>='2022-01-01')) THEN DATE('2022-01-01')
+                /* A later bill (Senate Bill 581 [2023], which was effective 2024-01-01)
+                applied the changes from the 2021 bill to all sentences imposed before
+                2022-01-01 as well.
+                This means that if someone was sentenced under an ineligible statute
+                (and that sentence was imposed before 2022-01-01), they became
+                ineligible starting on 2024-01-01. */
+                WHEN ((NOT sentenced_under_eligible_statute) AND (date_imposed<'2022-01-01')) THEN DATE('2024-01-01')
+            END AS critical_date,
+        FROM sentences
+        LEFT JOIN sentence_statute_eligibility
+            USING (state_code, person_id, sentence_id)
+    ),
+    {critical_date_has_passed_spans_cte(attributes=['sentence_id'])}
+    SELECT
         state_code,
         person_id,
         sentence_id,
         start_date,
         end_date,
-        -- check that statute isn't universally ineligible
-        ((statute NOT IN ({list_to_query_string(OR_EARNED_DISCHARGE_INELIGIBLE_STATUTES, quoted=True)}))
-        -- exclude sentences imposed under ORS 137.635, which is a sentencing enhancement
-        AND (NOT sentenced_under_137635)
-        -- check that if post-prison, statute isn't ineligible for post-prison cases
-        AND NOT ((supervision_type_raw_text='O') AND (statute IN ({list_to_query_string(OR_EARNED_DISCHARGE_INELIGIBLE_STATUTES_POST_PRISON, quoted=True)})))
-        ) AS meets_criteria,
-    FROM sentences
-    LEFT JOIN sentence_supervision_types
-        USING (state_code, person_id, sentence_id)
-    LEFT JOIN sentence_enhancements
-        USING (state_code, person_id, sentence_id)
+        /* Recall that we created spans of INELIGIBILITY so far, so we need to use the
+        NOT here to flip those around and get spans of eligibility. */
+        NOT critical_date_has_passed AS meets_criteria,
+    FROM critical_date_has_passed_spans
 """
 
 US_OR_STATUTE_ELIGIBLE_VIEW_BUILDER = SimpleBigQueryViewBuilder(
