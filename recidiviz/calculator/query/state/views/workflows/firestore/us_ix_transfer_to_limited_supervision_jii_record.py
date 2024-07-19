@@ -88,7 +88,7 @@ eligible_and_almost_eligible AS (
     SELECT
         * 
     FROM (SELECT
-            * EXCEPT(array_reasons),
+            * EXCEPT(array_reasons, is_almost_eligible),
             
         FROM json_to_array_cte
         WHERE 

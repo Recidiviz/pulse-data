@@ -44,15 +44,22 @@ def us_tn_fines_fees_info() -> str:
 def us_tn_get_offense_information(in_projected_completion_array: bool = True) -> str:
     return f"""
         SELECT person_id,
-         ARRAY_AGG(DISTINCT off.docket_number IGNORE NULLS) AS docket_numbers,
-         ARRAY_AGG(off.offense IGNORE NULLS) AS current_offenses,
+         ARRAY_AGG(DISTINCT off.docket_number IGNORE NULLS ORDER BY off.docket_number) AS docket_numbers,
+         ARRAY_AGG(off.offense IGNORE NULLS ORDER BY off.offense) AS current_offenses,
          ARRAY_AGG(
                 DISTINCT
                 CASE WHEN codes.Decode IS NOT NULL THEN CONCAT(off.conviction_county, ' - ', codes.Decode)
                     ELSE off.conviction_county END
                 IGNORE NULLS
+                ORDER BY
+                    CASE WHEN codes.Decode IS NOT NULL THEN CONCAT(off.conviction_county, ' - ', codes.Decode)
+                        ELSE off.conviction_county END
                 ) AS conviction_counties,
-        ARRAY_AGG(NULLIF(off.judicial_district, "EXTERNAL_UNKNOWN") IGNORE NULLS) AS judicial_district,
+        ARRAY_AGG(
+            NULLIF(off.judicial_district, "EXTERNAL_UNKNOWN")
+            IGNORE NULLS
+            ORDER BY NULLIF(off.judicial_district, "EXTERNAL_UNKNOWN")
+        ) AS judicial_district,
         MIN(off.sentence_start_date) AS sentence_start_date,
         MAX(off.expiration_date) AS expiration_date,
       FROM 

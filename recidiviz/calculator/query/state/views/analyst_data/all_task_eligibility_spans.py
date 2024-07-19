@@ -39,8 +39,7 @@ ALL_TASK_ELIGIBILITY_SPANS_QUERY_TEMPLATE = f"""
         start_date,
         end_date,
         is_eligible,
-        #TODO(#21350): Refactor once almost eligible flag is available in all_tasks.
-        FALSE AS is_almost_eligible,
+        is_almost_eligible,
     FROM
         `{{project_id}}.task_eligibility.all_tasks_materialized`
     INNER JOIN

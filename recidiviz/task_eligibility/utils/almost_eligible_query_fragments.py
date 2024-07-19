@@ -20,6 +20,7 @@ Helper SQL queries to find almost eligible individuals
 from typing import Optional
 
 
+# TODO(#21350): Deprecate this file once all opportunities are migrated to almost eligible in TES
 def json_to_array_cte(
     from_table: str,
 ) -> str:
@@ -109,13 +110,13 @@ def one_criteria_away_from_eligibility(
         """
 
         criteria_value_except_clause = """
-        EXCEPT(criteria_value)
+        EXCEPT(criteria_value, is_almost_eligible)
         """
 
     return f"""    SELECT
             * {criteria_value_except_clause}
         FROM (SELECT
-                * EXCEPT(array_reasons),
+                * EXCEPT(array_reasons, is_almost_eligible),
                 {criteria_value_query_fragment}
             FROM {from_cte_table_name}
             WHERE 
@@ -152,7 +153,7 @@ def x_time_away_from_eligibility(
         from_cte_table_name (str): Name of the CTE that contains the eligibility spans
     """
 
-    return f"""SELECT * EXCEPT({eligible_date})
+    return f"""SELECT * EXCEPT({eligible_date}, is_almost_eligible)
     FROM   (SELECT
                 * EXCEPT(array_reasons),
                 -- only keep {eligible_date} for the relevant criteria
@@ -180,6 +181,19 @@ def clients_eligible(from_cte: str) -> str:
             containing all the current eligibility spans of the relevant population
 
     """
-    return f"""    SELECT *
+    return f"""    SELECT * EXCEPT(is_almost_eligible)
         FROM {from_cte}
         WHERE is_eligible"""
+
+
+def clients_eligible_and_almost_eligible(from_cte: str) -> str:
+    """Returns a SELECT statement that outputs all the currently eligible or almost eligible population.
+
+    Args:
+        from_cte (str): View/CTE to use after the FROM clause. Usually the one
+            containing all the current eligibility spans of the relevant population
+
+    """
+    return f"""    SELECT *
+        FROM {from_cte}
+        WHERE is_eligible OR is_almost_eligible"""

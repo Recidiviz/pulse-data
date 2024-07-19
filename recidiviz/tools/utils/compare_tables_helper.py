@@ -267,6 +267,7 @@ def compare_table_or_view(
     primary_keys: Optional[List[str]],
     grouping_columns: Optional[List[str]],
     ignore_case: bool = False,
+    ignore_columns: Optional[List[str]] = None,
 ) -> CompareTablesResult:
     """Compares the data at two different BigQuery addresses, emits a full comparison
     table and a differences table, and returns a result that includes statistics about
@@ -288,6 +289,21 @@ def compare_table_or_view(
     all_column_names = columns_df["column_name"].tolist()
     new_columns_df = _get_columns_info_df(address_new)
     new_all_column_names = new_columns_df["column_name"].tolist()
+
+    if ignore_columns:
+        for ignore_col in ignore_columns:
+            # Raise an error if the ignore column is not found in at least one of the tables
+            if (ignore_col not in all_column_names) or (
+                ignore_col not in new_all_column_names
+            ):
+                raise ValueError(
+                    f"Column to ignore [{ignore_col}] not found in either table"
+                )
+            all_column_names.remove(ignore_col)
+            new_all_column_names.remove(ignore_col)
+
+        # Drop the ignore columns before generating the comparison queries below
+        columns_df = columns_df[~columns_df["column_name"].isin(ignore_columns)]
 
     if sorted(all_column_names) != sorted(new_all_column_names):
         raise ValueError(

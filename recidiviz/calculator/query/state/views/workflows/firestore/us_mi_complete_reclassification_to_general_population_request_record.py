@@ -60,6 +60,7 @@ It also associates the current span with the reasons for the next eligible span 
         tes.next_reasons,
         tes.ineligible_criteria,
         tes.is_eligible,
+        tes.is_almost_eligible,
     FROM (
         SELECT 
             c.*,
@@ -108,7 +109,7 @@ eligible_and_almost_eligible AS (
     UNION ALL
     -- ALMOST ELIGIBLE (7 days in temporary segregation)
     SELECT
-        *
+        * EXCEPT (is_almost_eligible)
     FROM reasons_for_eligibility
     --add ineligible spans where the next span is eligible because the resident is overdue in temporary
     --and their overdue_in_temporary_date is < 23 days away 

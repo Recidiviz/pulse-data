@@ -14,10 +14,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""View builder that auto-generates task eligiblity spans view from component criteria
+"""View builder that auto-generates task eligibility spans view from component criteria
 and candidate population views.
 """
-from typing import Dict, List, Sequence, Union
+from textwrap import indent
+from typing import List, Optional, Sequence, Union
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.bq_utils import (
@@ -25,9 +26,11 @@ from recidiviz.calculator.query.bq_utils import (
     revert_nonnull_end_date_clause,
 )
 from recidiviz.calculator.query.sessions_query_fragments import (
+    create_intersection_spans,
     create_sub_sessions_with_attributes,
 )
 from recidiviz.common.constants.states import StateCode
+from recidiviz.task_eligibility.criteria_condition import CriteriaCondition
 from recidiviz.task_eligibility.dataset_config import (
     task_eligibility_spans_state_specific_dataset,
 )
@@ -46,6 +49,9 @@ from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder impor
     InvertedTaskCriteriaBigQueryViewBuilder,
     TaskCriteriaGroupBigQueryViewBuilder,
 )
+from recidiviz.task_eligibility.utils.critical_date_query_fragments import (
+    critical_date_has_passed_spans_cte,
+)
 from recidiviz.utils.string import StrictStringFormatter
 
 # Query fragment that can be formatted with criteria-specific naming. Once formatted,
@@ -53,14 +59,16 @@ from recidiviz.utils.string import StrictStringFormatter
 #         SELECT
 #             *,
 #             "my_criteria" AS criteria_name
-#         FROM `{project_id}.{task_eligibility_criteria_xxx_dataset}.my_criteria_materialized`
+#         FROM `{project_id}.task_eligibility_criteria_xxx.my_criteria_materialized`
 #         WHERE state_code = "US_XX"
 #     )
+# Use this query fragment for criteria that do not have an almost eligible
+# criteria condition. Otherwise, use `CriteriaCondition.get_criteria_query_fragment()`.
 STATE_SPECIFIC_CRITERIA_FRAGMENT = """
     SELECT
         *,
         "{criteria_name}" AS criteria_name
-    FROM `{{project_id}}.{{{criteria_dataset_id}_dataset}}.{criteria_view_id}`
+    FROM `{{project_id}}.{criteria_dataset_id}.{criteria_view_id}`
     WHERE state_code = "{state_code}"
 """
 
@@ -69,13 +77,13 @@ STATE_SPECIFIC_CRITERIA_FRAGMENT = """
 #     candidate_population AS (
 #         SELECT
 #             *,
-#         FROM `{project_id}.{task_eligibility_candidates_xxx_dataset}.my_population_materialized`
+#         FROM `{project_id}.task_eligibility_candidates_general.my_population_materialized`
 #         WHERE state_code = "US_XX"
 #     )
 STATE_SPECIFIC_POPULATION_CTE = """candidate_population AS (
     SELECT
         *
-    FROM `{{project_id}}.{{{population_dataset_id}_dataset}}.{population_view_id}`
+    FROM `{{project_id}}.{population_dataset_id}.{population_view_id}`
     WHERE state_code = "{state_code}"
 )"""
 
@@ -91,14 +99,14 @@ CRITERIA_INFO_STRUCT_FRAGMENT = """STRUCT(
 #         SELECT
 #             * EXCEPT(completion_date),
 #             completion_date AS end_date,
-#         FROM `{project_id}.{task_eligibility_completion_events_dataset}.my_event_materialized`
+#         FROM `{project_id}.task_eligibility_completion_events_general.my_event_materialized`
 #         WHERE state_code = "US_XX"
 #     )
 TASK_COMPLETION_EVENT_CTE = """task_completion_events AS (
     SELECT
         * EXCEPT(completion_event_date),
         completion_event_date AS end_date,
-    FROM `{{project_id}}.{{{completion_events_dataset_id}_dataset}}.{completion_events_view_id}`
+    FROM `{{project_id}}.{completion_events_dataset_id}.{completion_events_view_id}`
     WHERE state_code = "{state_code}"
 )"""
 
@@ -153,9 +161,12 @@ class SingleTaskEligibilitySpansBigQueryViewBuilder(SimpleBigQueryViewBuilder):
             ]
         ],
         completion_event_builder: TaskCompletionEventBigQueryViewBuilder,
+        almost_eligible_condition: Optional[CriteriaCondition] = None,
     ) -> None:
         self._validate_builder_state_codes(
-            state_code, candidate_population_view_builder, criteria_spans_view_builders
+            state_code,
+            candidate_population_view_builder,
+            criteria_spans_view_builders,
         )
         view_query_template = self._build_query_template(
             state_code,
@@ -163,11 +174,7 @@ class SingleTaskEligibilitySpansBigQueryViewBuilder(SimpleBigQueryViewBuilder):
             candidate_population_view_builder,
             criteria_spans_view_builders,
             completion_event_builder,
-        )
-        query_format_kwargs = self._dataset_query_format_args(
-            candidate_population_view_builder,
-            criteria_spans_view_builders,
-            completion_event_builder,
+            almost_eligible_condition,
         )
         super().__init__(
             dataset_id=task_eligibility_spans_state_specific_dataset(state_code),
@@ -179,13 +186,14 @@ class SingleTaskEligibilitySpansBigQueryViewBuilder(SimpleBigQueryViewBuilder):
             projects_to_deploy=None,
             should_deploy_predicate=None,
             clustering_fields=None,
-            **query_format_kwargs,
         )
         self.state_code = state_code
         self.task_name = task_name
         self.candidate_population_view_builder = candidate_population_view_builder
         self.criteria_spans_view_builders = criteria_spans_view_builders
         self.completion_event_builder = completion_event_builder
+        # TODO(#31443): split almost eligible spans into a separate view
+        self.almost_eligible_condition = almost_eligible_condition
 
     @staticmethod
     def _build_query_template(
@@ -200,6 +208,7 @@ class SingleTaskEligibilitySpansBigQueryViewBuilder(SimpleBigQueryViewBuilder):
             ]
         ],
         completion_event_builder: TaskCompletionEventBigQueryViewBuilder,
+        almost_eligible_criteria_condition: Optional[CriteriaCondition],
     ) -> str:
         """Builds the view query template that does span collapsing logic to generate
         task eligibility spans from component criteria and population spans views.
@@ -216,14 +225,56 @@ class SingleTaskEligibilitySpansBigQueryViewBuilder(SimpleBigQueryViewBuilder):
         )
         criteria_info_structs = []
         criteria_span_ctes = []
+        # Track all the criteria that are not included in the almost eligible condition since any spans with
+        # unsupported criteria are automatically not almost eligible
+        # TODO(#31443): split almost eligible spans into a separate view
+        unsupported_almost_eligible_criteria: List[
+            Union[
+                TaskCriteriaBigQueryViewBuilder,
+                TaskCriteriaGroupBigQueryViewBuilder,
+                InvertedTaskCriteriaBigQueryViewBuilder,
+            ]
+        ] = []
+        if almost_eligible_criteria_condition:
+            criteria_to_critical_date_query_fragment_map = (
+                almost_eligible_criteria_condition.get_critical_dates()
+            )
+        else:
+            criteria_to_critical_date_query_fragment_map = None
         for criteria_view_builder in criteria_spans_view_builders:
             if not criteria_view_builder.materialized_address:
                 raise ValueError(
                     f"Expected materialized_address for view [{criteria_view_builder.address}]"
                 )
+
+            criteria_query_fragment = STATE_SPECIFIC_CRITERIA_FRAGMENT
+
+            # If there is an almost eligible condition for this criteria then apply it to the criteria query fragment
+            # TODO(#31443): split almost eligible spans into a separate view
+            if almost_eligible_criteria_condition:
+                # If the criteria is covered by the almost eligible criteria condition
+                if (
+                    criteria_view_builder
+                    in almost_eligible_criteria_condition.get_criteria_builders()
+                ):
+                    # If there is a time dependent condition on this criteria then split the criteria spans along
+                    # the relevant critical date
+                    if criteria_to_critical_date_query_fragment_map and (
+                        criteria_view_builder.criteria_name
+                        in criteria_to_critical_date_query_fragment_map
+                    ):
+                        criteria_query_fragment = SingleTaskEligibilitySpansBigQueryViewBuilder._split_criteria_by_critical_date_query_fragment(
+                            criteria_to_critical_date_query_fragment_map[
+                                criteria_view_builder.criteria_name
+                            ]
+                        )
+                else:
+                    # Collect all criteria that are not covered by an almost eligible criteria condition
+                    unsupported_almost_eligible_criteria.append(criteria_view_builder)
+
             criteria_span_ctes.append(
                 StrictStringFormatter().format(
-                    STATE_SPECIFIC_CRITERIA_FRAGMENT,
+                    criteria_query_fragment,
                     state_code=state_code.value,
                     criteria_name=criteria_view_builder.criteria_name,
                     criteria_dataset_id=criteria_view_builder.materialized_address.dataset_id,
@@ -257,10 +308,77 @@ class SingleTaskEligibilitySpansBigQueryViewBuilder(SimpleBigQueryViewBuilder):
             completion_events_view_id=completion_event_builder.materialized_address.table_id,
         )
 
+        # Create the query fragments to insert the almost eligible logic into the eligibility spans query
+        # TODO(#31443): split almost eligible spans into a separate view
+        total_almost_eligible_query_fragment = """
+    SELECT
+        *,
+        FALSE AS is_almost_eligible
+    FROM eligibility_sub_spans
+"""
+        if almost_eligible_criteria_condition:
+            ae_query_fragment = (
+                almost_eligible_criteria_condition.get_criteria_query_fragment()
+            )
+            if len(unsupported_almost_eligible_criteria) > 0:
+                potential_ae_condition = (
+                    "-- Include all criteria that are not part of an almost eligible criteria condition\n"
+                    + ",\n".join(
+                        indent(f'"{criteria.criteria_name}"', " " * 16)
+                        for criteria in unsupported_almost_eligible_criteria
+                    )
+                )
+            else:
+                # Insert an empty string if all criteria are supported by almost eligible criteria conditions
+                potential_ae_condition = '""'
+
+            total_almost_eligible_query_fragment = f"""
+    WITH potential_almost_eligible AS (
+        SELECT
+            eligibility_sub_spans.*
+        FROM eligibility_sub_spans
+        INNER JOIN (
+            SELECT
+                state_code, person_id, start_date,
+                -- If any ineligible criteria are in the unsupported criteria list then the span is not
+                -- potentially almost eligible
+                LOGICAL_AND(criteria_name != unsupported_criteria) AS no_unsupported_criteria,
+            FROM eligibility_sub_spans,
+            UNNEST(ineligible_criteria) AS criteria_name,
+            UNNEST([
+                {potential_ae_condition}
+            ]) AS unsupported_criteria
+            GROUP BY 1, 2, 3
+        )
+        USING (state_code, person_id, start_date)
+        WHERE
+            NOT is_eligible
+            AND no_unsupported_criteria
+    ),
+    spans_with_almost_eligible_flag AS ({indent(ae_query_fragment, " " * 4)}
+    ),
+    almost_eligible_and_eligible_intersection AS ({indent(create_intersection_spans(
+            table_1_name="eligibility_sub_spans",
+            table_2_name="spans_with_almost_eligible_flag",
+            index_columns=["state_code", "person_id"],
+            use_left_join=True,
+            table_1_columns=["is_eligible", "reasons", "reasons_v2", "ineligible_criteria"],
+            table_2_columns=["is_almost_eligible"],
+            table_1_end_date_field_name="end_date",
+            table_2_end_date_field_name="end_date",
+        ), " " * 4)}
+    )
+    SELECT
+        * EXCEPT(end_date_exclusive, is_almost_eligible),
+        end_date_exclusive AS end_date,
+        IFNULL(is_almost_eligible, FALSE) AS is_almost_eligible
+    FROM almost_eligible_and_eligible_intersection
+"""
+
         return f"""
 WITH
 all_criteria AS (
-    SELECT state_code, criteria_name, meets_criteria_default
+    SELECT state_code, criteria_name, meets_criteria_default,
     FROM UNNEST([
         {criteria_info_structs_str}
     ])
@@ -301,7 +419,7 @@ sub-span represents an eligible or ineligible period for each individual.
         )) AS reasons,
         -- Assemble the reasons array from all the overlapping criteria reasons
         TO_JSON(ARRAY_AGG(
-            TO_JSON(STRUCT(all_criteria.criteria_name AS criteria_name, reason_v2 AS reason_v2))
+            TO_JSON(STRUCT(all_criteria.criteria_name AS criteria_name, reason_v2 AS reason))
             -- Make the array order deterministic
             ORDER BY all_criteria.criteria_name
         )) AS reasons_v2,
@@ -328,6 +446,10 @@ sub-span represents an eligible or ineligible period for each individual.
         AND all_criteria.criteria_name = criteria.criteria_name
     GROUP BY 1,2,3,4
 ),
+-- TODO(#31443): split almost eligible spans into a separate view
+eligibility_sub_spans_with_almost_eligible AS (
+    {total_almost_eligible_query_fragment}
+),
 eligibility_sub_spans_with_id AS
 /*
 Create an eligibility_span_id to help collapse adjacent spans with the same
@@ -337,13 +459,20 @@ type switches.
 (
     SELECT
         *,
-        SUM(IF(is_date_gap OR is_eligibility_change OR is_ineligible_criteria_change OR is_reasons_change, 1, 0)) OVER 
-            (PARTITION BY state_code, person_id ORDER BY start_date ASC) AS task_eligibility_span_id,
+        SUM(
+            IF(is_date_gap OR is_eligibility_change OR is_almost_eligibility_change
+               OR is_ineligible_criteria_change OR is_reasons_change,
+               1,
+               0
+            )
+        ) OVER (PARTITION BY state_code, person_id ORDER BY start_date ASC) AS task_eligibility_span_id,
     FROM (
         SELECT
         * EXCEPT(ineligible_reasons_str, full_reasons_str),
         COALESCE(start_date != LAG(end_date) OVER state_person_window, TRUE) AS is_date_gap,
         COALESCE(is_eligible != LAG(is_eligible) OVER state_person_window, TRUE) AS is_eligibility_change,
+        -- TODO(#31443): split almost eligible spans into a separate view
+        COALESCE(is_almost_eligible != LAG(is_almost_eligible) OVER state_person_window, TRUE) AS is_almost_eligibility_change,
         COALESCE(ineligible_reasons_str != LAG(ineligible_reasons_str) OVER state_person_window, TRUE)
             AS is_ineligible_criteria_change,
         COALESCE(full_reasons_str != LAG(full_reasons_str) OVER state_person_window, TRUE) AS is_reasons_change
@@ -353,7 +482,7 @@ type switches.
                 COALESCE(ARRAY_TO_STRING(ineligible_criteria, ","), "") AS ineligible_reasons_str,
                 #TODO(#25910): Sort all arrays in reasons json to avoid non-determinism in sub-sessionization  
                 TO_JSON_STRING(reasons) AS full_reasons_str
-            FROM eligibility_sub_spans
+            FROM eligibility_sub_spans_with_almost_eligible
         )
         WINDOW state_person_window AS (PARTITION BY state_code, person_id
             ORDER BY start_date ASC)
@@ -367,6 +496,7 @@ SELECT
     MIN(start_date) OVER (PARTITION BY state_code, person_id, task_eligibility_span_id) AS start_date,
     {revert_nonnull_end_date_clause("eligibility_sub_spans_with_id.end_date")} AS end_date,
     is_eligible,
+    is_almost_eligible,
     reasons,
     reasons_v2,
     ineligible_criteria,
@@ -382,12 +512,16 @@ SELECT
             CASE
                 -- Became eligible
                 WHEN LEAD(is_eligible) OVER w THEN "BECAME_ELIGIBLE"
+                -- Became almost eligible
+                WHEN NOT is_almost_eligible AND LEAD(is_almost_eligible) OVER w THEN "BECAME_ALMOST_ELIGIBLE"
                 WHEN LEAD(is_ineligible_criteria_change) over w THEN "INELIGIBLE_CRITERIA_CHANGED"
                 WHEN LEAD(is_reasons_change) OVER w THEN "INELIGIBLE_REASONS_CHANGED"
                 ELSE "UNKNOWN_NOT_ELIGIBLE"
             END
         WHEN is_eligible THEN
             CASE
+                -- Became almost eligible
+                WHEN LEAD(is_almost_eligible) OVER w THEN "BECAME_ALMOST_ELIGIBLE"
                 -- Became ineligible
                 WHEN NOT LEAD(is_eligible) OVER w THEN "BECAME_INELIGIBLE"
                 WHEN LEAD(is_reasons_change) OVER w THEN "ELIGIBLE_REASONS_CHANGED"
@@ -408,28 +542,29 @@ WINDOW w AS (PARTITION BY state_code, person_id ORDER BY start_date ASC)
 """
 
     @staticmethod
-    def _dataset_query_format_args(
-        candidate_population_view_builder: TaskCandidatePopulationBigQueryViewBuilder,
-        criteria_spans_view_builders: List[
-            Union[
-                TaskCriteriaBigQueryViewBuilder,
-                TaskCriteriaGroupBigQueryViewBuilder,
-                InvertedTaskCriteriaBigQueryViewBuilder,
-            ]
-        ],
-        completion_event_builder: TaskCompletionEventBigQueryViewBuilder,
-    ) -> Dict[str, str]:
-        """Returns the query format args for the datasets in the query template. All
-        datasets are injected as query format args so that these views work when
-        deployed to sandbox datasets.
-        """
-        datasets = (
-            [candidate_population_view_builder.dataset_id]
-            + [vb.dataset_id for vb in criteria_spans_view_builders]
-            + [completion_event_builder.dataset_id]
-        )
+    def _split_criteria_by_critical_date_query_fragment(
+        critical_date_extract_string: str,
+    ) -> str:
+        """Split any criteria spans that overlap a critical date to handle time dependent criteria conditions"""
 
-        return {f"{dataset_id}_dataset": dataset_id for dataset_id in datasets}
+        return f"""
+(
+    WITH critical_date_spans AS (
+        SELECT
+            * EXCEPT (start_date, end_date),
+            start_date AS start_datetime,
+            end_date AS end_datetime,
+            -- Parse out the critical date relevant for almost eligibility
+            {critical_date_extract_string} AS critical_date
+        FROM `{{{{project_id}}}}.{{criteria_dataset_id}}.{{criteria_view_id}}`
+        WHERE state_code = "{{state_code}}"
+    ),{critical_date_has_passed_spans_cte(attributes=["meets_criteria", "reason", "reason_v2"])}
+    SELECT
+        * EXCEPT(critical_date, critical_date_has_passed),
+        "{{criteria_name}}" AS criteria_name
+    FROM critical_date_has_passed_spans
+)
+"""
 
     def all_descendant_criteria_builders(
         self,

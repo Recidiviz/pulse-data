@@ -68,11 +68,7 @@ US_MO_OVERDUE_RESTRICTIVE_HOUSING_HEARING_RECORD_QUERY_TEMPLATE = f"""
                 is_eligible,
                 "OVERDUE",
                 IF(
-                    DATE_DIFF(
-                        DATE(COALESCE(JSON_EXTRACT_SCALAR(reasons[1], '$.reason.next_review_date'), '9999-12-31')),
-                        CURRENT_DATE('US/Pacific'),
-                        DAY
-                    ) BETWEEN 0 and {US_MO_UPCOMING_HEARING_NUM_DAYS},
+                    is_almost_eligible,
                     "UPCOMING",
                     "OTHER"
                 )

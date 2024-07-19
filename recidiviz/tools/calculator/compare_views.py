@@ -93,6 +93,11 @@ def parse_arguments(argv: List[str]) -> Tuple[argparse.Namespace, List[str]]:
         help="A comma-separated list of columns to group final statistics by.",
     )
     parser.add_argument(
+        "--ignore_columns",
+        type=str_to_list,
+        help="A comma-separated list of columns where changes should be ignored.",
+    )
+    parser.add_argument(
         "--ignore_case",
         action="store_true",
         help="Compare all columns case-insensitively",
@@ -136,6 +141,7 @@ def main() -> None:
         primary_keys=known_args.primary_keys,
         grouping_columns=known_args.grouping_columns,
         ignore_case=known_args.ignore_case,
+        ignore_columns=known_args.ignore_columns,
     )
 
     print(

@@ -114,7 +114,7 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
         reasons_fields=[
             ReasonsField(
                 name="amount_owed",
-                type=bigquery.enums.SqlTypeNames.FLOAT,
+                type=bigquery.enums.StandardSqlTypeNames.FLOAT64,
                 description="#TODO(#29059): Add reasons field description",
             ),
             ReasonsField(

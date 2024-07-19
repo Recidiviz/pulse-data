@@ -30,12 +30,6 @@ from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestIns
 from recidiviz.task_eligibility.dataset_config import (
     task_eligibility_spans_state_specific_dataset,
 )
-from recidiviz.task_eligibility.utils.almost_eligible_query_fragments import (
-    clients_eligible,
-    json_to_array_cte,
-    one_criteria_away_from_eligibility,
-    x_time_away_from_eligibility,
-)
 from recidiviz.task_eligibility.utils.us_me_query_fragments import (
     PROGRAM_ENROLLMENT_NOTE_TX_REGEX,
     cis_201_case_plan_case_notes,
@@ -64,10 +58,13 @@ _DROP_REPEATED_SCCP_NOTES = """(SELECT *
 
 US_ME_TRANSFER_TO_SCCP_RECORD_QUERY_TEMPLATE = f"""
 
-WITH current_incarceration_pop_cte AS (
-{join_current_task_eligibility_spans_with_external_id(state_code= "'US_ME'", 
+WITH eligible_and_almost_eligible AS (
+{join_current_task_eligibility_spans_with_external_id(
+    state_code= "'US_ME'",
     tes_task_query_view = 'transfer_to_sccp_form_materialized',
-    id_type = "'US_ME_DOC'")}
+    id_type = "'US_ME_DOC'",
+    eligible_and_almost_eligible_only=True,
+)}
 ),
 
 case_notes_cte AS (
@@ -127,35 +124,6 @@ case_notes_cte AS (
 
     -- Relevant property
     {cis_300_relevant_property_case_notes()}
-), 
-json_to_array_cte AS (
-    {json_to_array_cte('current_incarceration_pop_cte')}
-),
-
-eligible_and_almost_eligible AS (
-
-    -- ELIGIBLE
-    {clients_eligible(from_cte = 'current_incarceration_pop_cte')}
-
-    UNION ALL 
-
-    -- ALMOST ELIGIBLE (<6mo remaining before 30/24mo)
-    {x_time_away_from_eligibility(time_interval= 6, date_part= 'MONTH',
-        criteria_name= 'US_ME_X_MONTHS_REMAINING_ON_SENTENCE',
-        from_cte_table_name = "json_to_array_cte")}
-
-    UNION ALL
-
-    -- ALMOST ELIGIBLE (<6mo remaining before 1/2 or 2/3 of sentence served)
-    {x_time_away_from_eligibility(time_interval= 6, date_part= 'MONTH',
-        criteria_name= 'US_ME_SERVED_X_PORTION_OF_SENTENCE',
-        from_cte_table_name = "json_to_array_cte")}
-
-    UNION ALL
-
-    -- ALMOST ELIGIBLE (one discipline away)
-    {one_criteria_away_from_eligibility('US_ME_NO_CLASS_A_OR_B_VIOLATION_FOR_90_DAYS',
-                                        from_cte_table_name = "json_to_array_cte")}
 ),
 
 array_case_notes_cte AS (

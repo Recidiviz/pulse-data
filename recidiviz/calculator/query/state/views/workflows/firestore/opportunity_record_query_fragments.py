@@ -27,16 +27,32 @@ def join_current_task_eligibility_spans_with_external_id(
     tes_task_query_view: str,
     id_type: str,
     additional_columns: str = "",
+    eligible_only: bool = False,
+    eligible_and_almost_eligible_only: bool = False,
 ) -> str:
     """
     It joins a task eligibility span view with the state_person_external_id to retrieve external ids.
     It also filters out spans of time that aren't current.
+
+    If |eligible_only| is True return only the clients marked currently eligible in the task eligibility span. If
+    |eligible_and_almost_eligible_only| is True return only the clients currently marked eligible OR almost eligible.
+    Only one argument can be True and an error is thrown if they are both set to True.
 
     Returns:
         state_code (str): State code. The final statement will filter out all other states.
         tes_task_query_view (str): The task query view that we're interested in querying.
             E.g. 'work_release_materialized'.
     """
+    if eligible_only and eligible_and_almost_eligible_only:
+        raise ValueError(
+            f"|eligible_only| and |eligible_and_almost_eligible_only| cannot both be true for [{tes_task_query_view}]"
+        )
+    eligible_condition = ""
+    if eligible_only:
+        eligible_condition = "AND tes.is_eligible"
+    elif eligible_and_almost_eligible_only:
+        eligible_condition = "AND (tes.is_eligible OR tes.is_almost_eligible)"
+
     return f"""SELECT
         pei.external_id,
         tes.person_id,
@@ -44,6 +60,7 @@ def join_current_task_eligibility_spans_with_external_id(
         tes.reasons,
         tes.ineligible_criteria,
         tes.is_eligible,
+        tes.is_almost_eligible,
         {additional_columns}
     FROM `{{project_id}}.{{task_eligibility_dataset}}.{tes_task_query_view}` tes
     LEFT JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
@@ -53,6 +70,7 @@ def join_current_task_eligibility_spans_with_external_id(
                                          {nonnull_end_date_exclusive_clause('tes.end_date')}
       AND tes.state_code = {state_code}
       AND pei.id_type = {id_type}
+      {eligible_condition}
     """
 
 

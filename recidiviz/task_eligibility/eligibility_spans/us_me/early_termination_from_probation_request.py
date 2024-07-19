@@ -34,6 +34,11 @@ from recidiviz.task_eligibility.criteria.state_specific.us_me import (
     supervision_is_not_ic_in,
     supervision_past_half_full_term_release_date_from_probation_start,
 )
+from recidiviz.task_eligibility.criteria_condition import (
+    LessThanCriteriaCondition,
+    NotEligibleCriteriaCondition,
+    PickNCompositeCriteriaCondition,
+)
 from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
 )
@@ -58,6 +63,21 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         no_pending_violations_while_supervised.VIEW_BUILDER,
     ],
     completion_event_builder=early_discharge.VIEW_BUILDER,
+    almost_eligible_condition=PickNCompositeCriteriaCondition(
+        sub_conditions_list=[
+            LessThanCriteriaCondition(
+                criteria=paid_all_owed_restitution.VIEW_BUILDER,
+                reasons_numerical_field="amount_owed",
+                value=1000,
+                description="< $1000 in owed restitutions",
+            ),
+            NotEligibleCriteriaCondition(
+                criteria=no_pending_violations_while_supervised.VIEW_BUILDER,
+                description="At least one pending violation away from eligibility",
+            ),
+        ],
+        at_most_n_conditions_true=1,
+    ),
 )
 
 if __name__ == "__main__":

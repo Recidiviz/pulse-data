@@ -34,11 +34,6 @@ from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestIns
 from recidiviz.task_eligibility.dataset_config import (
     task_eligibility_spans_state_specific_dataset,
 )
-from recidiviz.task_eligibility.utils.almost_eligible_query_fragments import (
-    clients_eligible,
-    json_to_array_cte,
-    one_criteria_away_from_eligibility,
-)
 from recidiviz.task_eligibility.utils.us_me_query_fragments import (
     cis_204_notes_cte,
     cis_408_violations_notes_cte,
@@ -128,9 +123,12 @@ US_ME_COMPLETE_EARLY_TERMINATION_RECORD_QUERY_TEMPLATE = f"""
 
 WITH current_supervision_pop_cte AS (
     -- Keep only the most current span per probation client
-{join_current_task_eligibility_spans_with_external_id(state_code= "'US_ME'", 
+{join_current_task_eligibility_spans_with_external_id(
+    state_code= "'US_ME'",
     tes_task_query_view = 'early_termination_from_probation_request_materialized',
-    id_type = "'US_ME_DOC'")}
+    id_type = "'US_ME_DOC'",
+    eligible_and_almost_eligible_only=True,
+)}
 ),
 
 case_notes_cte AS (
@@ -241,37 +239,11 @@ case_notes_cte AS (
         note_body = 'pr.DESCRIPTION_TX',)}
 ),
 
-json_to_array_cte AS (
-    {json_to_array_cte('current_supervision_pop_cte')}
-),
-
-eligible_and_almost_eligible AS (
-
-    -- ELIGIBLE
-    {clients_eligible(from_cte = 'current_supervision_pop_cte')}
-
-    UNION ALL
-    
-    -- ALMOST ELIGIBLE (<1000$ in owed restitutions)
-    {one_criteria_away_from_eligibility(
-        criteria_name = 'US_ME_PAID_ALL_OWED_RESTITUTION',
-        criteria_condition = '< 1000',
-        field_name_in_reasons_blob = 'amount_owed',
-        from_cte_table_name = "json_to_array_cte")}
-
-    UNION ALL
-
-    -- ALMOST ELIGIBLE (At least one pending violation away from eligibility)
-    {one_criteria_away_from_eligibility(
-        criteria_name = 'US_ME_NO_PENDING_VIOLATIONS_WHILE_SUPERVISED',
-        from_cte_table_name = "json_to_array_cte")}
-),
-
 array_case_notes_cte AS (
-  {array_agg_case_notes_by_external_id()}
+  {array_agg_case_notes_by_external_id(from_cte="current_supervision_pop_cte")}
 )
 
-{opportunity_query_final_select_with_case_notes()}
+{opportunity_query_final_select_with_case_notes(from_cte="current_supervision_pop_cte")}
 """
 
 US_ME_COMPLETE_EARLY_TERMINATION_RECORD_VIEW_BUILDER = SimpleBigQueryViewBuilder(

@@ -40,6 +40,7 @@ from recidiviz.utils.metadata import local_project_id_override
 _DESCRIPTION = """Shows the spans of time during which someone in MI is eligible for
                     a security classification committee review"""
 
+# TODO(#31413): use a 7 day time dependent criteria condition here once the `next_scc_date` reason is properly hydrated
 VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     state_code=StateCode.US_MI,
     task_name="COMPLETE_SECURITY_CLASSIFICATION_COMMITTEE_REVIEW_FORM",

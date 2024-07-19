@@ -38,11 +38,6 @@ from recidiviz.pipelines.supplemental.dataset_config import SUPPLEMENTAL_DATA_DA
 from recidiviz.task_eligibility.dataset_config import (
     task_eligibility_spans_state_specific_dataset,
 )
-from recidiviz.task_eligibility.utils.almost_eligible_query_fragments import (
-    clients_eligible,
-    json_to_array_cte,
-    one_criteria_away_from_eligibility,
-)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -111,7 +106,10 @@ US_IX_COMPLETE_TRANSFER_TO_LIMITED_SUPERVISION_FORM_RECORD_QUERY_TEMPLATE = f"""
     SELECT
         charge.state_code,
         charge.person_id,
-        ARRAY_AGG(DISTINCT charge.description IGNORE NULLS) AS form_information_charge_descriptions,
+        ARRAY_AGG(
+            DISTINCT charge.description IGNORE NULLS
+            ORDER BY charge.description
+        ) AS form_information_charge_descriptions,
         ARRAY_AGG(charge.case_number IGNORE NULLS ORDER BY 
             charge.date_imposed, charge.projected_completion_date_max, charge.sentences_preprocessed_id) 
             AS form_information_case_numbers,
@@ -310,8 +308,7 @@ US_IX_COMPLETE_TRANSFER_TO_LIMITED_SUPERVISION_FORM_RECORD_QUERY_TEMPLATE = f"""
         alcohol_drug_total
       FROM `{{project_id}}.{{sessions_dataset}}.us_ix_raw_lsir_assessments` 
       QUALIFY ROW_NUMBER() OVER(PARTITION BY person_id ORDER BY assessment_date DESC)=1
-    ),
-    form AS (
+    )
       SELECT
           tes.external_id,
           tes.is_eligible,
@@ -400,26 +397,7 @@ US_IX_COMPLETE_TRANSFER_TO_LIMITED_SUPERVISION_FORM_RECORD_QUERY_TEMPLATE = f"""
         AND tes.person_id = n.person_id
       WHERE CURRENT_DATE('US/Pacific') BETWEEN tes.start_date AND {nonnull_end_date_exclusive_clause('tes.end_date')}
         AND tes.state_code = 'US_IX'
-     ),
-
-json_to_array_cte AS (
-    {json_to_array_cte('form')}
-)
-
-    -- ELIGIBLE
-    {clients_eligible(from_cte = 'form')}
-     
-     UNION ALL
-     
-    -- ALMOST ELIGIBLE (only missing income verification)
-    {one_criteria_away_from_eligibility('US_IX_INCOME_VERIFIED_WITHIN_3_MONTHS',
-                                        from_cte_table_name = "json_to_array_cte")}
-    
-    UNION ALL
-
-    -- ALMOST ELIGIBLE (only missing a year in supervision criteria)
-    {one_criteria_away_from_eligibility('ON_SUPERVISION_AT_LEAST_ONE_YEAR',
-                                        from_cte_table_name = "json_to_array_cte")}
+        AND (tes.is_eligible OR tes.is_almost_eligible)
 """
 
 US_IX_COMPLETE_TRANSFER_TO_LIMITED_SUPERVISION_FORM_RECORD_VIEW_BUILDER = SimpleBigQueryViewBuilder(
