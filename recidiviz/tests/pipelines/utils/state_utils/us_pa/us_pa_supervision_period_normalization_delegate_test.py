@@ -31,9 +31,6 @@ from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodTerminationReason,
 )
 from recidiviz.common.constants.states import StateCode
-from recidiviz.persistence.entity.normalized_entities_utils import (
-    clear_entity_id_index_cache,
-)
 from recidiviz.persistence.entity.state.entities import (
     StateIncarcerationPeriod,
     StateSupervisionPeriod,
@@ -47,15 +44,17 @@ class TestUsPaSupervisionNormalizationDelegate(unittest.TestCase):
     """Unit tests for UsPaSupervisionPreProcdessingDelegate"""
 
     def setUp(self) -> None:
-        self.person_id = 4200000123
+        self.person_id = 4200000000000000123
 
-        clear_entity_id_index_cache()
         self.unique_id_patcher = mock.patch(
             "recidiviz.persistence.entity."
-            "normalized_entities_utils._fixed_length_object_id_for_entity"
+            "normalized_entities_utils.generate_primary_key"
         )
         self.mock_unique_id = self.unique_id_patcher.start()
-        self.mock_unique_id.return_value = 12345
+        self.mock_unique_id.return_value = 4200000000012312345
+
+    def tearDown(self) -> None:
+        self.unique_id_patcher.stop()
 
     def test_infer_additional_periods(self) -> None:
         supervision_period_absconsion = StateSupervisionPeriod.new_with_defaults(
@@ -90,7 +89,7 @@ class TestUsPaSupervisionNormalizationDelegate(unittest.TestCase):
         expected_periods = [
             supervision_period_absconsion,
             StateSupervisionPeriod.new_with_defaults(
-                supervision_period_id=420000012312345,
+                supervision_period_id=4200000000012312345,
                 external_id="sp1-2-INFERRED",
                 state_code=StateCode.US_PA.value,
                 start_date=date(2010, 3, 1),
@@ -129,7 +128,7 @@ class TestUsPaSupervisionNormalizationDelegate(unittest.TestCase):
         expected_periods = [
             supervision_period_absconsion,
             StateSupervisionPeriod.new_with_defaults(
-                supervision_period_id=420000012312345,
+                supervision_period_id=4200000000012312345,
                 external_id="sp1-2-INFERRED",
                 state_code=StateCode.US_PA.value,
                 start_date=date(2010, 3, 1),
@@ -179,7 +178,7 @@ class TestUsPaSupervisionNormalizationDelegate(unittest.TestCase):
         expected_periods = [
             supervision_period_absconsion,
             StateSupervisionPeriod.new_with_defaults(
-                supervision_period_id=420000012312345,
+                supervision_period_id=4200000000012312345,
                 external_id="sp1-2-INFERRED",
                 state_code=StateCode.US_PA.value,
                 start_date=date(2010, 3, 1),
@@ -241,7 +240,7 @@ class TestUsPaSupervisionNormalizationDelegate(unittest.TestCase):
         expected_periods = [
             supervision_period_absconsion,
             StateSupervisionPeriod.new_with_defaults(
-                supervision_period_id=420000012312345,
+                supervision_period_id=4200000000012312345,
                 external_id="sp1-2-INFERRED",
                 state_code=StateCode.US_PA.value,
                 start_date=date(2010, 3, 1),

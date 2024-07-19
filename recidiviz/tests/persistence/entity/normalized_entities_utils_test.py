@@ -20,7 +20,6 @@ import unittest
 from typing import Optional
 
 import attr
-import mock
 
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateSpecializedPurposeForIncarceration,
@@ -39,7 +38,6 @@ from recidiviz.persistence.entity.entity_utils import get_all_entity_classes_in_
 from recidiviz.persistence.entity.normalized_entities_utils import (
     LEGACY_NORMALIZATION_ENTITY_CLASSES,
     AdditionalAttributesMap,
-    clear_entity_id_index_cache,
     copy_entities_and_add_unique_ids,
     get_shared_additional_attributes_map_for_entities,
     merge_additional_attributes_maps,
@@ -423,21 +421,9 @@ def get_normalized_violation_tree(
 class TestUpdateNormalizedEntityWithGloballyUniqueId(unittest.TestCase):
     """Tests the update_normalized_entity_with_globally_unique_id function."""
 
-    def setUp(self) -> None:
-        clear_entity_id_index_cache()
-        self.mock_safe_object_id_patcher = mock.patch(
-            "recidiviz.persistence.entity."
-            "normalized_entities_utils._fixed_length_object_id_for_entity",
-            return_value=88888,
-        )
-        self.mock_safe_object_id = self.mock_safe_object_id_patcher.start()
-
-    def tearDown(self) -> None:
-        self.mock_safe_object_id_patcher.stop()
-
     def test_update_normalized_entity_with_globally_unique_id(self) -> None:
         state_code = StateCode.US_XX
-        person_id = 990000012345
+        person_id = 9000000000000012345
 
         entity = entities.StateSupervisionViolationTypeEntry.new_with_defaults(
             supervision_violation_type_entry_id=456,
@@ -450,106 +436,15 @@ class TestUpdateNormalizedEntityWithGloballyUniqueId(unittest.TestCase):
             person_id=person_id, entity=entity, state_code=StateCode.US_XX
         )
 
-        expected_id_value = 99000001234588888
+        expected_id_value = 9025479639710676476
 
         self.assertEqual(expected_id_value, entity.get_id())
-
-    @mock.patch(
-        "recidiviz.persistence.entity.normalized_entities_utils"
-        "._get_entity_id_index_for_person_id_entity"
-    )
-    def test_update_normalized_entity_with_globally_unique_id_id_taken(
-        self, mock_id_index: mock.MagicMock
-    ) -> None:
-        """Tests that when the first two id values created have already been assigned
-        to an entity of the same type for the person that the value is incremented
-        until a unique value is found."""
-        mock_id_index.return_value = {88888, 88889}
-
-        state_code = StateCode.US_XX
-        person_id = 990000012345
-
-        entity = entities.StateSupervisionViolationTypeEntry.new_with_defaults(
-            supervision_violation_type_entry_id=456,
-            state_code=state_code.value,
-            violation_type=entities.StateSupervisionViolationType.TECHNICAL,
-            violation_type_raw_text="TECHNICAL",
-        )
-
-        update_normalized_entity_with_globally_unique_id(
-            person_id=person_id, entity=entity, state_code=StateCode.US_XX
-        )
-
-        expected_id_value = 99000001234588890
-
-        self.assertEqual(expected_id_value, entity.get_id())
-
-    @mock.patch(
-        "recidiviz.persistence.entity"
-        ".normalized_entities_utils._get_entity_id_index_for_person_id_entity"
-    )
-    def test_update_normalized_entity_with_globally_unique_id_id_taken_over_5_digits(
-        self, mock_id_index: mock.MagicMock
-    ) -> None:
-        """Tests that when the first id value has already been assigned to an entity
-        of the same type for the person, and the incremented value is over 5 digits,
-        that the value chosen is still within 5 digits."""
-        self.mock_safe_object_id.return_value = 99999
-        mock_id_index.return_value = {99999}
-
-        state_code = StateCode.US_XX
-        person_id = 990000012345
-
-        entity = entities.StateSupervisionViolationTypeEntry.new_with_defaults(
-            supervision_violation_type_entry_id=456,
-            state_code=state_code.value,
-            violation_type=entities.StateSupervisionViolationType.TECHNICAL,
-            violation_type_raw_text="TECHNICAL",
-        )
-
-        update_normalized_entity_with_globally_unique_id(
-            person_id=person_id, entity=entity, state_code=StateCode.US_XX
-        )
-
-        expected_id_value = 9900000123450
-
-        self.assertEqual(expected_id_value, entity.get_id())
-
-    @mock.patch(
-        "recidiviz.persistence.entity."
-        "normalized_entities_utils._add_entity_id_to_cache"
-    )
-    def test_update_normalized_entity_with_globally_unique_id_assert_added_to_index(
-        self, mock_add_to_id_index: mock.MagicMock
-    ) -> None:
-        state_code = StateCode.US_XX
-        person_id = 990000012345
-
-        entity = entities.StateSupervisionViolationTypeEntry.new_with_defaults(
-            supervision_violation_type_entry_id=456,
-            state_code=state_code.value,
-            violation_type=entities.StateSupervisionViolationType.TECHNICAL,
-            violation_type_raw_text="TECHNICAL",
-        )
-
-        update_normalized_entity_with_globally_unique_id(
-            person_id=person_id, entity=entity, state_code=StateCode.US_XX
-        )
-
-        expected_id_value = 99000001234588888
-
-        self.assertEqual(expected_id_value, entity.get_id())
-        mock_add_to_id_index.assert_called_with(
-            person_id=person_id,
-            entity_name="StateSupervisionViolationTypeEntry",
-            entity_id=88888,
-        )
 
     def test_update_normalized_entity_with_globally_unique_id_multiple(self) -> None:
         """Tests that the entity_id_index is working to ensure unique entity ids
         within the same entity type."""
         state_code = StateCode.US_XX
-        person_id = 990000012345
+        person_id = 9000000000000012345
 
         entity = entities.StateSupervisionViolationTypeEntry.new_with_defaults(
             supervision_violation_type_entry_id=456,
@@ -562,7 +457,7 @@ class TestUpdateNormalizedEntityWithGloballyUniqueId(unittest.TestCase):
             person_id=person_id, entity=entity, state_code=StateCode.US_XX
         )
 
-        expected_id_value = 99000001234588888
+        expected_id_value = 9025479639710676476
         self.assertEqual(expected_id_value, entity.get_id())
 
         # Entity of the same type, so should get incremented id value
@@ -577,7 +472,7 @@ class TestUpdateNormalizedEntityWithGloballyUniqueId(unittest.TestCase):
             person_id=person_id, entity=entity_2, state_code=StateCode.US_XX
         )
 
-        expected_id_value_2 = 99000001234588889
+        expected_id_value_2 = 9043888946852247817
         self.assertEqual(expected_id_value_2, entity_2.get_id())
 
         # Entity of a new type, so can get un-incremented value
@@ -592,28 +487,16 @@ class TestUpdateNormalizedEntityWithGloballyUniqueId(unittest.TestCase):
             person_id=person_id, entity=entity_3, state_code=StateCode.US_XX
         )
 
-        expected_id_value_3 = 99000001234588888
+        expected_id_value_3 = 9066562055195085033
         self.assertEqual(expected_id_value_3, entity_3.get_id())
 
 
 class TestCopyEntitiesAndAddUniqueIds(unittest.TestCase):
     """Tests the copy_entities_and_add_unique_ids function."""
 
-    def setUp(self) -> None:
-        clear_entity_id_index_cache()
-        self.mock_safe_object_id_patcher = mock.patch(
-            "recidiviz.persistence.entity."
-            "normalized_entities_utils._fixed_length_object_id_for_entity",
-            return_value=88888,
-        )
-        self.mock_safe_object_id_patcher.start()
-
-    def tearDown(self) -> None:
-        self.mock_safe_object_id_patcher.stop()
-
     def test_copy_entities_and_add_unique_ids(self) -> None:
         state_code = StateCode.US_XX
-        person_id = 990000012345
+        person_id = 9000000000000012345
 
         entity_1 = entities.StateSupervisionViolationTypeEntry.new_with_defaults(
             supervision_violation_type_entry_id=456,
@@ -635,10 +518,10 @@ class TestCopyEntitiesAndAddUniqueIds(unittest.TestCase):
 
         expected_entities = [
             attr.evolve(
-                entity_1, supervision_violation_type_entry_id=99000001234588888
+                entity_1, supervision_violation_type_entry_id=9025479639710676476
             ),
             attr.evolve(
-                entity_2, supervision_violation_type_entry_id=99000001234588889
+                entity_2, supervision_violation_type_entry_id=9043888946852247817
             ),
         ]
 

@@ -25,7 +25,7 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.database.schema_utils import (
     get_state_database_association_with_names,
 )
-from recidiviz.persistence.entity.base_entity import CoreEntity, Entity, RootEntity
+from recidiviz.persistence.entity.base_entity import Entity, RootEntity
 from recidiviz.persistence.entity.entity_utils import (
     CoreEntityFieldIndex,
     get_all_entities_from_tree,
@@ -80,7 +80,5 @@ class SerializeEntities(beam.DoFn):
 
             yield beam.pvalue.TaggedOutput(
                 entity.get_entity_name(),
-                serialize_entity_into_json(
-                    cast(CoreEntity, entity), field_index=self._field_index
-                ),
+                serialize_entity_into_json(entity),
             )

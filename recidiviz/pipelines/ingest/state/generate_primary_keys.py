@@ -21,7 +21,6 @@ from typing import List, Set, Union, cast
 from recidiviz.common.attr_mixins import attr_field_referenced_cls_name_for_field_name
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.base_entity import (
-    CoreEntity,
     Entity,
     ExternalIdEntity,
     HasExternalIdEntity,
@@ -102,9 +101,7 @@ def generate_primary_keys_for_root_entity_tree(
             entity.set_id(
                 generate_primary_key(
                     json.dumps(
-                        serialize_entity_into_json(
-                            assert_type(entity, CoreEntity), field_index
-                        ),
+                        serialize_entity_into_json(entity),
                         sort_keys=True,
                     ),
                     state_code,

@@ -18,6 +18,7 @@
 from typing import Any, Callable, Dict, List, Optional, Type
 
 import attr
+from more_itertools import one
 
 from recidiviz.common.attr_utils import get_non_flat_attribute_class_name, is_list
 from recidiviz.common.constants.state.state_supervision_violation import (
@@ -67,6 +68,24 @@ def get_entity_class_names_excluded_from_normalization() -> List[str]:
         state_entities.StatePerson.__name__,
         state_entities.StateStaff.__name__,
     ]
+
+
+def state_base_entity_class_for_entity_class(
+    entity_class: Type[Entity],
+) -> Type[Entity]:
+    """Returns the state Entity type of the provided |entity_class|."""
+    if issubclass(entity_class, NormalizedStateEntity):
+        if not issubclass(entity_class, Entity):
+            raise ValueError(
+                f"Found entity_class [{entity_class}] that is not a subclass of "
+                f"Entity."
+            )
+        return one(b for b in entity_class.__bases__ if issubclass(b, Entity))
+
+    if issubclass(entity_class, Entity):
+        return entity_class
+
+    raise ValueError(f"Unexpected entity_class [{entity_class}]")
 
 
 def _get_ref_fields_with_reference_class_names(

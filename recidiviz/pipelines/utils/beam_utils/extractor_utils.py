@@ -50,10 +50,10 @@ from recidiviz.persistence.database.database_entity import DatabaseEntity
 from recidiviz.persistence.entity import entity_utils
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.entity_utils import SchemaEdgeDirectionChecker
-from recidiviz.persistence.entity.normalized_entities_utils import (
+from recidiviz.persistence.entity.state import entities as state_entities
+from recidiviz.persistence.entity.state.normalized_entities import (
     state_base_entity_class_for_entity_class,
 )
-from recidiviz.persistence.entity.state import entities as state_entities
 from recidiviz.persistence.entity.state.normalized_state_entity import (
     NormalizedStateEntity,
 )

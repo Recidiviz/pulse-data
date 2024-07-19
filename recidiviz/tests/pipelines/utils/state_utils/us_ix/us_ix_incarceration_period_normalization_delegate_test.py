@@ -35,9 +35,6 @@ from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodSupervisionType,
 )
 from recidiviz.persistence.entity.entity_utils import CoreEntityFieldIndex
-from recidiviz.persistence.entity.normalized_entities_utils import (
-    clear_entity_id_index_cache,
-)
 from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
 from recidiviz.persistence.entity.state.normalized_entities import (
     NormalizedStateSupervisionPeriod,
@@ -61,14 +58,17 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
 
     def setUp(self) -> None:
         self.delegate = UsIxIncarcerationNormalizationDelegate()
-        self.person_id = 42000001234
-        clear_entity_id_index_cache()
+        self.person_id = 9000000000000000123
+
         self.unique_id_patcher = mock.patch(
             "recidiviz.persistence.entity."
-            "normalized_entities_utils._fixed_length_object_id_for_entity"
+            "normalized_entities_utils.generate_primary_key"
         )
         self.mock_unique_id = self.unique_id_patcher.start()
-        self.mock_unique_id.return_value = 12345
+        self.mock_unique_id.return_value = 9000000000012312345
+
+    def tearDown(self) -> None:
+        self.unique_id_patcher.stop()
 
     @staticmethod
     def _normalized_incarceration_periods_for_calculations(
@@ -832,7 +832,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
         )
 
         new_period = StateIncarcerationPeriod.new_with_defaults(
-            incarceration_period_id=4200000123412345,
+            incarceration_period_id=9000000000012312345,
             external_id="sp1-0-IN-CUSTODY",
             state_code="US_IX",
             incarceration_type=StateIncarcerationType.INTERNAL_UNKNOWN,
@@ -870,7 +870,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
         )
 
         new_period = StateIncarcerationPeriod.new_with_defaults(
-            incarceration_period_id=4200000123412345,
+            incarceration_period_id=9000000000012312345,
             external_id="sp1-0-IN-CUSTODY",
             state_code="US_IX",
             incarceration_type=StateIncarcerationType.INTERNAL_UNKNOWN,
@@ -929,7 +929,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
         )
 
         new_inferred_period = StateIncarcerationPeriod.new_with_defaults(
-            incarceration_period_id=4200000123412345,
+            incarceration_period_id=9000000000012312345,
             external_id="sp1-0-IN-CUSTODY",
             state_code="US_IX",
             incarceration_type=StateIncarcerationType.INTERNAL_UNKNOWN,
@@ -992,7 +992,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
         )
 
         new_inferred_period = StateIncarcerationPeriod.new_with_defaults(
-            incarceration_period_id=4200000123412345,
+            incarceration_period_id=9000000000012312345,
             external_id="sp1-0-IN-CUSTODY",
             state_code="US_IX",
             incarceration_type=StateIncarcerationType.INTERNAL_UNKNOWN,
@@ -1055,7 +1055,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
         )
 
         new_inferred_period = StateIncarcerationPeriod.new_with_defaults(
-            incarceration_period_id=4200000123412345,
+            incarceration_period_id=9000000000012312345,
             external_id="sp1-0-IN-CUSTODY",
             state_code="US_IX",
             incarceration_type=StateIncarcerationType.INTERNAL_UNKNOWN,

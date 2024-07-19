@@ -37,9 +37,6 @@ from recidiviz.common.constants.state.state_supervision_violation import (
     StateSupervisionViolationType,
 )
 from recidiviz.common.constants.states import StateCode
-from recidiviz.persistence.entity.normalized_entities_utils import (
-    clear_entity_id_index_cache,
-)
 from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
 from recidiviz.persistence.entity.state.normalized_entities import (
     NormalizedStateSupervisionPeriod,
@@ -59,15 +56,17 @@ class TestUsMiIncarcerationNormalizationDelegate(unittest.TestCase):
 
     def setUp(self) -> None:
         self.delegate = UsMiIncarcerationNormalizationDelegate()
-        self.person_id = 26000001234
+        self.person_id = 2600000000000000123
 
-        clear_entity_id_index_cache()
         self.unique_id_patcher = mock.patch(
             "recidiviz.persistence.entity."
-            "normalized_entities_utils._fixed_length_object_id_for_entity"
+            "normalized_entities_utils.generate_primary_key"
         )
         self.mock_unique_id = self.unique_id_patcher.start()
-        self.mock_unique_id.return_value = 5678
+        self.mock_unique_id.return_value = 2600000000012312345
+
+    def tearDown(self) -> None:
+        self.unique_id_patcher.stop()
 
     @staticmethod
     def _build_delegate() -> UsMiIncarcerationNormalizationDelegate:
@@ -129,7 +128,7 @@ class TestUsMiIncarcerationNormalizationDelegate(unittest.TestCase):
             incarceration_period_1,
             incarceration_period_2,
             StateIncarcerationPeriod.new_with_defaults(
-                incarceration_period_id=260000012345678,
+                incarceration_period_id=2600000000012312345,
                 external_id="ip-1-TEMPORARY_RELEASE",
                 state_code=_STATE_CODE,
                 admission_date=date(2022, 7, 1),
@@ -331,7 +330,7 @@ class TestUsMiIncarcerationNormalizationDelegate(unittest.TestCase):
 
         incarceration_period_0 = StateIncarcerationPeriod.new_with_defaults(
             state_code=_STATE_CODE,
-            incarceration_period_id=260000012345678,
+            incarceration_period_id=2600000000012312345,
             admission_date=date(2021, 7, 15),
             release_date=date(2021, 8, 1),
             admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
@@ -447,7 +446,7 @@ class TestUsMiIncarcerationNormalizationDelegate(unittest.TestCase):
 
         incarceration_period_new_a = StateIncarcerationPeriod.new_with_defaults(
             state_code=_STATE_CODE,
-            incarceration_period_id=260000012345678,
+            incarceration_period_id=2600000000012312345,
             admission_date=date(2021, 7, 5),
             release_date=date(2021, 7, 15),
             admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
@@ -462,7 +461,7 @@ class TestUsMiIncarcerationNormalizationDelegate(unittest.TestCase):
 
         incarceration_period_new_b = StateIncarcerationPeriod.new_with_defaults(
             state_code=_STATE_CODE,
-            incarceration_period_id=260000012345679,
+            incarceration_period_id=2600000000012312345,
             admission_date=date(2021, 7, 25),
             release_date=date(2021, 8, 1),
             admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
@@ -608,7 +607,7 @@ class TestUsMiIncarcerationNormalizationDelegate(unittest.TestCase):
 
         incarceration_period_0 = StateIncarcerationPeriod.new_with_defaults(
             state_code=_STATE_CODE,
-            incarceration_period_id=260000012345678,
+            incarceration_period_id=2600000000012312345,
             admission_date=date(2021, 7, 15),
             release_date=date(2021, 8, 1),
             admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
@@ -713,7 +712,7 @@ class TestUsMiIncarcerationNormalizationDelegate(unittest.TestCase):
 
     #     new_incarceration_period = StateIncarcerationPeriod.new_with_defaults(
     #         state_code=_STATE_CODE,
-    #         incarceration_period_id=260000012345678,
+    #         incarceration_period_id=2600000000012312345,
     #         admission_date=date(2021, 3, 5),
     #         release_date=date(2021, 5, 1),
     #         admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
@@ -809,7 +808,7 @@ class TestUsMiIncarcerationNormalizationDelegate(unittest.TestCase):
 
         new_incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             state_code=_STATE_CODE,
-            incarceration_period_id=260000012345678,
+            incarceration_period_id=2600000000012312345,
             admission_date=date(2021, 3, 5),
             release_date=date(2021, 5, 1),
             admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
@@ -872,7 +871,7 @@ class TestUsMiIncarcerationNormalizationDelegate(unittest.TestCase):
 
         new_incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
             state_code=_STATE_CODE,
-            incarceration_period_id=260000012345678,
+            incarceration_period_id=2600000000012312345,
             admission_date=date(2021, 7, 15),
             release_date=date(2021, 8, 1),
             admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
@@ -885,7 +884,7 @@ class TestUsMiIncarcerationNormalizationDelegate(unittest.TestCase):
 
         new_incarceration_period_2 = StateIncarcerationPeriod.new_with_defaults(
             state_code=_STATE_CODE,
-            incarceration_period_id=260000012345679,
+            incarceration_period_id=2600000000012312345,
             admission_date=date(2022, 8, 15),
             release_date=date(2022, 9, 1),
             admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,

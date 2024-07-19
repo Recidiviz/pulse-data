@@ -34,9 +34,6 @@ from recidiviz.common.constants.state.state_supervision_period import (
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.entity_utils import deep_entity_update
-from recidiviz.persistence.entity.normalized_entities_utils import (
-    clear_entity_id_index_cache,
-)
 from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
 from recidiviz.persistence.entity.state.normalized_entities import (
     NormalizedStateSupervisionPeriod,
@@ -56,16 +53,18 @@ class TestUsArIncarcerationNormalizationDelegate(unittest.TestCase):
 
     def setUp(self) -> None:
         self.delegate = UsArIncarcerationNormalizationDelegate()
-        self.person_id = 20000000000
-        self.maxDiff = None
 
-        clear_entity_id_index_cache()
+        self.person_id = 500000000000000123
+
         self.unique_id_patcher = mock.patch(
             "recidiviz.persistence.entity."
-            "normalized_entities_utils._fixed_length_object_id_for_entity"
+            "normalized_entities_utils.generate_primary_key"
         )
         self.mock_unique_id = self.unique_id_patcher.start()
-        self.mock_unique_id.return_value = 5678
+        self.mock_unique_id.return_value = 500000000012312345
+
+    def tearDown(self) -> None:
+        self.unique_id_patcher.stop()
 
     @staticmethod
     def _build_delegate() -> UsArIncarcerationNormalizationDelegate:

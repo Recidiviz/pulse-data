@@ -29,9 +29,6 @@ from recidiviz.common.constants.state.state_supervision_violation import (
 from recidiviz.common.constants.state.state_supervision_violation_response import (
     StateSupervisionViolationResponseType,
 )
-from recidiviz.persistence.entity.normalized_entities_utils import (
-    clear_entity_id_index_cache,
-)
 from recidiviz.persistence.entity.state.entities import (
     StateSupervisionViolation,
     StateSupervisionViolationResponse,
@@ -61,15 +58,17 @@ class TestPrepareViolationResponsesForCalculations(unittest.TestCase):
     def setUp(self) -> None:
         self.state_code = "US_ND"
         self.delegate = UsNdViolationResponseNormalizationDelegate()
-        self.person_id = 380000123
+        self.person_id = 3800000000000000123
 
-        clear_entity_id_index_cache()
         self.unique_id_patcher = mock.patch(
             "recidiviz.persistence.entity."
-            "normalized_entities_utils._fixed_length_object_id_for_entity"
+            "normalized_entities_utils.generate_primary_key"
         )
         self.mock_unique_id = self.unique_id_patcher.start()
-        self.mock_unique_id.return_value = 12345
+        self.mock_unique_id.return_value = 3800000000012312345
+
+    def tearDown(self) -> None:
+        self.unique_id_patcher.stop()
 
     def _normalized_violation_responses_for_calculations(
         self,
@@ -139,12 +138,12 @@ class TestPrepareViolationResponsesForCalculations(unittest.TestCase):
         expected_response = attr.evolve(
             ssvr,
             supervision_violation=StateSupervisionViolation.new_with_defaults(
-                supervision_violation_id=38000012312345,
+                supervision_violation_id=3800000000012312345,
                 external_id="sv1",
                 state_code=self.state_code,
                 supervision_violation_types=[
                     StateSupervisionViolationTypeEntry.new_with_defaults(
-                        supervision_violation_type_entry_id=38000012312345,
+                        supervision_violation_type_entry_id=3800000000012312345,
                         state_code=self.state_code,
                         violation_type=StateSupervisionViolationType.FELONY,
                     ),
@@ -212,16 +211,16 @@ class TestPrepareViolationResponsesForCalculations(unittest.TestCase):
             ssvr,
             supervision_violation=attr.evolve(
                 supervision_violation,
-                supervision_violation_id=38000012312345,
+                supervision_violation_id=3800000000012312345,
                 supervision_violation_types=[
                     StateSupervisionViolationTypeEntry.new_with_defaults(
                         state_code=self.state_code,
-                        supervision_violation_type_entry_id=38000012312345,
+                        supervision_violation_type_entry_id=3800000000012312345,
                         violation_type=StateSupervisionViolationType.ABSCONDED,
                     ),
                     StateSupervisionViolationTypeEntry.new_with_defaults(
                         state_code=self.state_code,
-                        supervision_violation_type_entry_id=38000012312346,
+                        supervision_violation_type_entry_id=3800000000012312345,
                         violation_type=StateSupervisionViolationType.FELONY,
                     ),
                 ],
@@ -289,11 +288,11 @@ class TestPrepareViolationResponsesForCalculations(unittest.TestCase):
                 ssvr,
                 supervision_violation=attr.evolve(
                     supervision_violation,
-                    supervision_violation_id=38000012312345,
+                    supervision_violation_id=3800000000012312345,
                     supervision_violation_types=[
                         StateSupervisionViolationTypeEntry.new_with_defaults(
                             state_code=self.state_code,
-                            supervision_violation_type_entry_id=38000012312345,
+                            supervision_violation_type_entry_id=3800000000012312345,
                             violation_type=StateSupervisionViolationType.ABSCONDED,
                         ),
                     ],
@@ -303,11 +302,11 @@ class TestPrepareViolationResponsesForCalculations(unittest.TestCase):
                 other_ssvr,
                 supervision_violation=attr.evolve(
                     other_supervision_violation,
-                    supervision_violation_id=38000012312346,
+                    supervision_violation_id=3800000000012312345,
                     supervision_violation_types=[
                         StateSupervisionViolationTypeEntry.new_with_defaults(
                             state_code=self.state_code,
-                            supervision_violation_type_entry_id=38000012312346,
+                            supervision_violation_type_entry_id=3800000000012312345,
                             violation_type=StateSupervisionViolationType.FELONY,
                         ),
                     ],

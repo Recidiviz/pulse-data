@@ -18,6 +18,7 @@
 import unittest
 from datetime import date
 from typing import List
+from unittest import mock
 
 from recidiviz.common.constants.state.state_supervision_violation import (
     StateSupervisionViolationType,
@@ -36,6 +37,16 @@ _STATE_CODE = StateCode.US_TN.value
 
 class TestUsTnViolationResponseNormalizationDelegate(unittest.TestCase):
     """Tests functions in UsTnViolationResponseNormalizationDelegate."""
+
+    def setUp(self) -> None:
+        self.person_id = 4700000000000000123
+
+        self.unique_id_patcher = mock.patch(
+            "recidiviz.persistence.entity."
+            "normalized_entities_utils.generate_primary_key"
+        )
+        self.mock_unique_id = self.unique_id_patcher.start()
+        self.mock_unique_id.return_value = 4700000000012312345
 
     @staticmethod
     def _build_delegate(
