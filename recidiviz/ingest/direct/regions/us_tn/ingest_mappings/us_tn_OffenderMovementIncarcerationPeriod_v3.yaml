@@ -383,6 +383,10 @@ output:
                         - DEATH-DEATH # Generated when the EndDate of a period is the same as the DeathDate in the OffenderAttributes table
                       StateIncarcerationPeriodReleaseReason.RELEASED_TO_SUPERVISION:
                         # The following are all movements from facility to probation (FAPR).
+                        - CTPR-NEWAD # Court to probation for a new admission
+                        - CTCC-NEWAD # Court to community corrections for a new admission
+                        - CTDV-COURT # Court to diversion; court ordered
+                        - CTPR-MISPR # Court to probation (misdemeanor probation)
                         - FAPR-REINS # Reinstatement
                         - FAPR-DETRE # Determinate release
                         - FAPR-RETSP # Return from split confinement
@@ -603,9 +607,3 @@ output:
                         # These started appearing in Feb 2022 and appear to be new codes
                         - PAFA-PTVOS # Parole to facility
                         - PRFA-PTVOS # Probation to facility
-                    $ignore:
-                      # TODO(#20102): Remap these values to RELEASED_FROM_SUPERVISION
-                      - "CTPR-NEWAD"
-                      - "CTCC-NEWAD"
-                      - "CTDV-COURT"
-                      - "CTPR-MISPR"
