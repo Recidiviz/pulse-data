@@ -258,6 +258,9 @@ output:
                         - "16" # Terminated - CCC
                         - "17" # Terminated - Returned to Original State-Violation
                         - "29" # Early Termination
+                        - "23" # Not Guilty
+                        - "24" # Dismissed
+                        - "30" # No Conditions Imposed
                       StateSupervisionPeriodTerminationReason.EXPIRATION:
                         - "4" # Terminated - Expiration (Susp. Sentence)
                         - "7" # Terminated - Expiration (Parole)
@@ -270,13 +273,10 @@ output:
                         #  remove this termination reason
                         - "21" # Guilty
                         - "22" # Guilty of Lesser Charge
-                        - "23" # Not Guilty
-                        - "24" # Dismissed
                         - "25" # Mistrial
                         - "26" # Deferred Prosecution
                         - "27" # Post-Conviction Supervision
                         - "28" # Closed with Active FTA
-                        - "30" # No Conditions Imposed
                       StateSupervisionPeriodTerminationReason.REVOCATION:
                         - "9" # Terminated - Revocation
                         - "10" # Terminated - Revocation with Continuation
