@@ -414,7 +414,7 @@ output:
                         - FAPA-PBNPA # Probationary parole
                         - FAPA-MANDE # Mandatory detainer
                         - FAPA-MEDFU # Facility to Parole for Medical Furlough
-                        - FAPA-MSELG # Released to Parole with unknown code
+                        - FAPA-MSELG # Released to Parole with MANDATORY SUPERVISION ELIGIBLE (MSELG) code
 
                       StateIncarcerationPeriodReleaseReason.COMMUTED:
                         - FAPA-COMMT # Facility to parole - Commutation
