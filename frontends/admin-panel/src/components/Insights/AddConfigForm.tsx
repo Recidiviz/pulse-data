@@ -190,6 +190,54 @@ const AddConfigForm = ({
           <Input />
         </Form.Item>
         <Form.Item
+          name="supervisorHasNoOutlierOfficersLabel"
+          label="Supervisor Has No Outlier Officers Label"
+          rules={[
+            {
+              required: true,
+              message: `Please input the string indicating the supervisor has no outlier officers`,
+            },
+          ]}
+        >
+          <Input />
+        </Form.Item>
+        <Form.Item
+          name="officerHasNoOutlierMetricsLabel"
+          label="Officer Has No Outlier Metrics Label"
+          rules={[
+            {
+              required: true,
+              message: `Please input the string indicating the officer has no outlier metrics`,
+            },
+          ]}
+        >
+          <Input />
+        </Form.Item>
+        <Form.Item
+          name="supervisorHasNoOfficersWithEligibleClientsLabel"
+          label="Supervisor Has No Officers With Eligible Clients Label"
+          rules={[
+            {
+              required: true,
+              message: `Please input the string indicating the supervisor has no officers with clients eligible for opportunities`,
+            },
+          ]}
+        >
+          <Input />
+        </Form.Item>
+        <Form.Item
+          name="officerHasNoEligibleClientsLabel"
+          label="Officer Has No Eligible Clients Label"
+          rules={[
+            {
+              required: true,
+              message: `Please input the string indicating the officer has no clients eligible for opportunities`,
+            },
+          ]}
+        >
+          <Input />
+        </Form.Item>
+        <Form.Item
           name="learnMoreUrl"
           label="Learn More URL"
           rules={[

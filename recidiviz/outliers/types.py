@@ -452,6 +452,18 @@ class OutliersProductConfiguration:
     # The string that represents what a state calls a justice-impacted individual on supervision, e.g. "client"
     supervision_jii_label: str = attr.ib()
 
+    # The string shown when supervisor is missing outlier officers
+    supervisor_has_no_outlier_officers_label: str = attr.ib()
+
+    # The string shown when officer has no outlier metrics
+    officer_has_no_outlier_metrics_label: str = attr.ib()
+
+    # The string shown when supervisor has no officers with clients eligible for opportunities
+    supervisor_has_no_officers_with_eligible_clients_label: str = attr.ib()
+
+    # The string shown when officer has no clients eligible
+    officer_has_no_eligible_clients_label: str = attr.ib()
+
     # The string that goes in "None of the X on Y's unit ______. Keep checking back" when there are no outliers
     # TODO(#27414): Allow for template strings in copy and replace this with a template that has more of the string.
     none_are_outliers_label: str = attr.ib(default="")
