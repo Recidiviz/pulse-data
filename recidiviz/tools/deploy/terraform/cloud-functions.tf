@@ -192,7 +192,7 @@ resource "google_cloudfunctions2_function" "filename_normalization" {
   }
 
   event_trigger {
-    event_type   = "google.cloud.pubsub.topic.publish"
+    event_type   = "google.cloud.pubsub.topic.v1.messagePublished"
     pubsub_topic = google_pubsub_topic.raw_data_storage_notification_topic.id
   }
 
