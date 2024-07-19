@@ -42,6 +42,9 @@ from recidiviz.calculator.query.state.views.outliers.outliers_views import (
     OUTLIERS_ARCHIVE_VIEW_BUILDERS,
     OUTLIERS_VIEW_BUILDERS,
 )
+from recidiviz.calculator.query.state.views.outliers.supervision_district_managers import (
+    SUPERVISION_DISTRICT_MANAGERS_VIEW_BUILDER,
+)
 from recidiviz.case_triage.pathways.enabled_metrics import get_metrics_for_entity
 from recidiviz.case_triage.pathways.metric_cache import PathwaysMetricCache
 from recidiviz.case_triage.pathways.pathways_database_manager import (
@@ -329,7 +332,11 @@ def _import_insights(state_code: str, filename: str) -> Tuple[str, HTTPStatus]:
             HTTPStatus.BAD_REQUEST,
         )
 
-    if view_builder in OUTLIERS_ARCHIVE_VIEW_BUILDERS:
+    # Skip importing archive files and the district managers file for non-email states
+    if view_builder in OUTLIERS_ARCHIVE_VIEW_BUILDERS or (
+        view_builder.view_id == SUPERVISION_DISTRICT_MANAGERS_VIEW_BUILDER.view_id
+        and StateCode(state_code.upper()) != "US_PA"
+    ):
         return (
             "",
             HTTPStatus.OK,

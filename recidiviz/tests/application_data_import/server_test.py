@@ -566,6 +566,22 @@ class TestApplicationDataImportInsightsRoutes(TestCase):
 
             self.assertEqual(HTTPStatus.OK, response.status_code)
 
+    @patch(
+        "recidiviz.application_data_import.server.import_gcs_csv_to_cloud_sql",
+        autospec=True,
+    )
+    def test_import_insights_successful_district_manager_skip(
+        self,
+        mock_import_csv: MagicMock,
+    ) -> None:
+        with self.app.test_request_context():
+            response = self.client.post(
+                "/import/insights/US_MI/supervision_district_managers.json",
+            )
+            mock_import_csv.assert_not_called()
+
+            self.assertEqual(HTTPStatus.OK, response.status_code)
+
     def test_import_insights_invalid_state(self) -> None:
         with self.app.test_request_context():
             response = self.client.post(
