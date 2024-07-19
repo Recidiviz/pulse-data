@@ -82,8 +82,10 @@ def parse_custodial_authority(raw_text: str) -> StateCustodialAuthority:
     start_movement_type, start_movement_reason, site_type, site = raw_text.split("-")
 
     if (
-        start_movement_type == "FAOJ" and start_movement_reason == "OUTCT"
-    ) or start_movement_type == "FACT":
+        (start_movement_type == "FAOJ" and start_movement_reason == "OUTCT")
+        or start_movement_type == "FACT"
+        or start_movement_type == "FAFH"
+    ):
         return StateCustodialAuthority.STATE_PRISON
     if (
         # The following sites are all courts.
