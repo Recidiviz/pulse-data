@@ -87,9 +87,6 @@ table_relationships:
   - foreign_table: elite_offendersentenceterms
     join_logic:
       - elite_offenderbookingstable.OFFENDER_BOOK_ID = elite_offendersentenceterms.OFFENDER_BOOK_ID
-  - foreign_table: elite_offense_in_custody_and_pos_report_data
-    join_logic:
-      - elite_offenderbookingstable.OFFENDER_BOOK_ID = elite_offense_in_custody_and_pos_report_data.OFFENDER_BOOK_ID
   - foreign_table: elite_orderstable
     join_logic:
       - elite_offenderbookingstable.OFFENDER_BOOK_ID = elite_orderstable.OFFENDER_BOOK_ID

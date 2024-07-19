@@ -49,6 +49,16 @@ table_relationships:
   - foreign_table: elite_alias
     join_logic:
       - elite_offenders.ROOT_OFFENDER_ID = elite_alias.ROOT_OFFENDER_ID
+    transforms:
+      - column: elite_offenders.ROOT_OFFENDER_ID
+        transform: REPLACE(REPLACE({col_name},',',''), '.00', '')
+      - column: elite_alias.ROOT_OFFENDER_ID
+        transform: REPLACE(REPLACE({col_name},',',''), '.00', '')
   - foreign_table: elite_offenderbookingstable
     join_logic:
       - elite_offenders.ROOT_OFFENDER_ID = elite_offenderbookingstable.ROOT_OFFENDER_ID
+    transforms:
+      - column: elite_offenders.ROOT_OFFENDER_ID
+        transform: REPLACE(REPLACE({col_name},',',''), '.00', '')
+      - column: elite_offenderbookingstable.ROOT_OFFENDER_ID
+        transform: REPLACE(REPLACE({col_name},',',''), '.00', '')
