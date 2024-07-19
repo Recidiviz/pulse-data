@@ -42,19 +42,31 @@ from recidiviz.big_query.big_query_query_provider import (
     BigQueryQueryProvider,
     StateFilteredQueryProvider,
 )
-from recidiviz.common.attr_mixins import BuildableAttr
+from recidiviz.common.attr_mixins import (
+    BuildableAttr,
+    attr_field_name_storing_referenced_cls_name,
+    attr_field_referenced_cls_name_for_field_name,
+)
 from recidiviz.common.constants.states import StateCode
-from recidiviz.persistence.database import schema_utils
-from recidiviz.persistence.database.base_schema import StateBase
-from recidiviz.persistence.database.database_entity import DatabaseEntity
 from recidiviz.persistence.entity import entity_utils
 from recidiviz.persistence.entity.base_entity import Entity
-from recidiviz.persistence.entity.entity_utils import SchemaEdgeDirectionChecker
+from recidiviz.persistence.entity.entity_utils import (
+    CoreEntityFieldIndex,
+    EntityFieldType,
+    SchemaEdgeDirectionChecker,
+    get_association_table_id,
+    get_entity_class_in_module_with_name,
+    is_many_to_many_relationship,
+    is_many_to_one_relationship,
+    is_one_to_many_relationship,
+)
 from recidiviz.persistence.entity.state import entities as state_entities
+from recidiviz.persistence.entity.state import normalized_entities
 from recidiviz.persistence.entity.state.normalized_entities import (
     state_base_entity_class_for_entity_class,
 )
 from recidiviz.persistence.entity.state.normalized_state_entity import (
+    NORMALIZED_PREFIX,
     NormalizedStateEntity,
 )
 from recidiviz.pipelines.utils.beam_utils.bigquery_io_utils import ReadFromBigQuery
@@ -79,6 +91,7 @@ ROOT_ENTITY_ID_KEY = "root_entity_id"
 EntityRelationshipDetails = NamedTuple(
     "EntityRelationshipDetails",
     [
+        ("entity_class", Type[Entity]),
         ("property_name", str),
         ("property_entity_class", Type[Entity]),
         ("is_forward_ref", bool),
@@ -160,19 +173,30 @@ class ExtractRootEntityDataForPipeline(beam.PTransform):
                 f"{required_entity_classes}."
             )
 
-        self._entity_class_to_hydrated_entity_class: Dict[
-            Type[Entity],
-            # This could be a normalized or non-normalized entity
-            Type[Entity],
-        ] = {}
+        self._entity_classes_to_hydrate: List[Type[Entity]] = (
+            required_entity_classes or []
+        )
 
-        for entity_class in required_entity_classes or []:
+        # TODO(#30075): Delete this when we migrate to v2 normalized entities
+        # Maps from normalized entity or regular entity class to -> the class in the
+        # unified schema
+        self._unified_schema_class: Dict[Type[Entity], Type[Entity]] = {}
+        for entity_class in self._entity_classes_to_hydrate:
             base_entity_class = state_base_entity_class_for_entity_class(entity_class)
-            self._entity_class_to_hydrated_entity_class[
-                base_entity_class
-            ] = entity_class
+            self._unified_schema_class[entity_class] = base_entity_class
+            self._unified_schema_class[base_entity_class] = base_entity_class
 
-        self._direction_checker = SchemaEdgeDirectionChecker.state_direction_checker()
+        # TODO(#30075): update this to be sometimes normalized_state_entities based on input root entity
+        self._entities_module = state_entities
+
+        if issubclass(root_entity_cls, NormalizedStateEntity):
+            direction_checker = (
+                SchemaEdgeDirectionChecker.normalized_state_direction_checker()
+            )
+        else:
+            direction_checker = SchemaEdgeDirectionChecker.state_direction_checker()
+
+        self._field_index = CoreEntityFieldIndex(direction_checker)
 
         if not root_entity_cls:
             raise ValueError("No valid root_entity_cls passed to the pipeline.")
@@ -180,106 +204,142 @@ class ExtractRootEntityDataForPipeline(beam.PTransform):
         self._root_entity_id_field = root_entity_cls.get_class_id_name()
         self._root_entity_id_field_filter_set = root_entity_id_filter_set
 
+    def _get_relationship_details_for_classes(
+        self, parent_cls: Type[Entity], parent_field: str, child_cls: Type[Entity]
+    ) -> EntityRelationshipDetails:
+        """Returns a EntityRelationshipDetails object for the specified parent <> child
+        entity class relationship.
+        """
+        if is_many_to_many_relationship(
+            parent_cls=self._unified_schema_class[parent_cls],
+            child_cls=self._unified_schema_class[child_cls],
+        ):
+            association_table = get_association_table_id(
+                parent_cls=parent_cls, child_cls=child_cls
+            )
+            association_table_entity_id_field = child_cls.get_class_id_name()
+        elif is_one_to_many_relationship(
+            parent_cls=self._unified_schema_class[parent_cls],
+            child_cls=self._unified_schema_class[child_cls],
+        ):
+            association_table = child_cls.get_table_id()
+            association_table_entity_id_field = child_cls.get_class_id_name()
+        elif is_many_to_one_relationship(
+            parent_cls=self._unified_schema_class[parent_cls],
+            child_cls=self._unified_schema_class[child_cls],
+        ):
+            association_table = parent_cls.get_table_id()
+            association_table_entity_id_field = parent_cls.get_class_id_name()
+        else:
+            raise ValueError(
+                f"Unable to identify relationship type between [{parent_cls.__name__}] "
+                f"and [{child_cls.__name__}]"
+            )
+
+        is_forward_ref = not self._field_index.direction_checker.is_back_edge(
+            from_cls=self._unified_schema_class[parent_cls], to_field_name=parent_field
+        )
+        return EntityRelationshipDetails(
+            entity_class=self._unified_schema_class[parent_cls],
+            property_name=parent_field,
+            property_entity_class=self._unified_schema_class[child_cls],
+            is_forward_ref=is_forward_ref,
+            association_table=association_table,
+            association_table_entity_id_field=association_table_entity_id_field,
+        )
+
     def _get_relationships_to_hydrate(
         self,
     ) -> Dict[EntityClassName, List[EntityRelationshipDetails]]:
         """Determines the set of relationships that need to be hydrated between the
         list of required entities. Returns the information that we need to query for
         the values to hydrate each relationship."""
+
+        if not self._entity_classes_to_hydrate:
+            return {}
+
         relationships_to_hydrate: Dict[
             EntityClassName, List[EntityRelationshipDetails]
-        ] = {}
+        ] = defaultdict(list)
 
-        for root_entity_class in self._entity_class_to_hydrated_entity_class:
-            root_entity_class_name = root_entity_class.__name__
-            if root_entity_class_name not in relationships_to_hydrate:
-                relationships_to_hydrate[root_entity_class_name] = []
-
-            root_schema_class = schema_utils.get_state_database_entity_with_name(
-                root_entity_class_name
-            )
-
-            # This is to enforce typing for mypy
-            if not issubclass(root_schema_class, (DatabaseEntity, StateBase)):
-                raise ValueError(
-                    "Expected root_schema_class to be subclass of "
-                    f"DatabaseEntity and StateBase: {root_schema_class}."
+        for entity_class in self._entity_classes_to_hydrate:
+            for field in self._field_index.get_all_core_entity_fields(
+                self._unified_schema_class[entity_class], EntityFieldType.FORWARD_EDGE
+            ):
+                referenced_class_name = attr_field_referenced_cls_name_for_field_name(
+                    entity_class, field
                 )
-
-            names_to_properties = (
-                root_schema_class.get_relationship_property_names_and_properties()
-            )
-            for property_name, property_object in names_to_properties.items():
-                property_class_name = (
-                    root_schema_class.get_relationship_property_class_name(
-                        property_name
+                if not referenced_class_name:
+                    raise ValueError(
+                        f"Expected a referenced class to exist for field [{field}] on "
+                        f"class [{entity_class.__name__}]"
                     )
-                )
 
-                property_entity_class = (
+                referenced_entity_class = (
                     entity_utils.get_entity_class_in_module_with_name(
-                        state_entities, property_class_name
+                        self._entities_module, referenced_class_name
                     )
                 )
 
-                property_schema_class = (
-                    schema_utils.get_state_database_entity_with_name(
-                        property_entity_class.__name__
+                # TODO(#30075): Remove this normalized_referenced_entity_class logic
+                #  once we migrate to v2 normalized entities.
+                try:
+                    normalized_referenced_entity_class = (
+                        get_entity_class_in_module_with_name(
+                            normalized_entities,
+                            f"{NORMALIZED_PREFIX}{referenced_entity_class.__name__}",
+                        )
                     )
-                )
+                except LookupError:
+                    normalized_referenced_entity_class = None
 
-                if property_entity_class == state_entities.StatePerson:
-                    # Since all person-level entities are connected to StatePerson,
-                    # not hydrating this relationship significantly reduces the size
-                    # of the python objects.
+                if referenced_entity_class not in self._entity_classes_to_hydrate and (
+                    not normalized_referenced_entity_class
+                    or normalized_referenced_entity_class
+                    not in self._entity_classes_to_hydrate
+                ):
                     continue
 
-                if property_entity_class in self._entity_class_to_hydrated_entity_class:
-                    is_property_forward_edge = self._direction_checker.is_higher_ranked(
-                        root_schema_class, property_schema_class
+                forward_relationship = self._get_relationship_details_for_classes(
+                    parent_cls=self._unified_schema_class[entity_class],
+                    parent_field=field,
+                    child_cls=self._unified_schema_class[referenced_entity_class],
+                )
+
+                reverse_reference_field = attr_field_name_storing_referenced_cls_name(
+                    self._unified_schema_class[referenced_entity_class],
+                    self._unified_schema_class[entity_class].__name__,
+                )
+                if not reverse_reference_field:
+                    raise ValueError(
+                        f"Found no field on [{self._unified_schema_class[referenced_entity_class]}] "
+                        f"storing [{self._unified_schema_class[entity_class].__name__}] entities."
                     )
+                reverse_relationship = self._get_relationship_details_for_classes(
+                    parent_cls=self._unified_schema_class[referenced_entity_class],
+                    parent_field=reverse_reference_field,
+                    child_cls=self._unified_schema_class[entity_class],
+                )
 
-                    # Many-to-many relationship
-                    if property_object.secondary is not None:
-                        association_table = property_object.secondary.name
-                        association_table_entity_id_field = (
-                            property_entity_class.get_class_id_name()
-                        )
-                    elif is_property_forward_edge:
-                        # 1-to-many relationship
-                        if property_object.uselist:
-                            association_table = property_schema_class.__tablename__
-                            association_table_entity_id_field = (
-                                property_entity_class.get_class_id_name()
-                            )
+                for relationship in [forward_relationship, reverse_relationship]:
+                    # TODO(#30075): Update this to include NormalizedStatePerson when
+                    #  that exists.
+                    if relationship.property_entity_class == state_entities.StatePerson:
+                        # Since all person-level entities are connected to StatePerson,
+                        # not hydrating this relationship significantly reduces the size
+                        # of the python objects.
+                        continue
 
-                        # 1-to-1 relationship (from parent class perspective)
-                        else:
-                            association_table = root_schema_class.__tablename__
-                            association_table_entity_id_field = (
-                                property_object.key + "_id"
-                            )
-                    else:
-                        association_table = root_schema_class.__tablename__
-                        association_table_entity_id_field = (
-                            property_entity_class.get_class_id_name()
-                        )
+                    relationships_to_hydrate[
+                        self._unified_schema_class[relationship.entity_class].__name__
+                    ].append(relationship)
 
-                    relationships_to_hydrate[root_entity_class_name].append(
-                        EntityRelationshipDetails(
-                            property_name=property_name,
-                            property_entity_class=property_entity_class,
-                            is_forward_ref=is_property_forward_edge,
-                            association_table=association_table,
-                            association_table_entity_id_field=association_table_entity_id_field,
-                        )
-                    )
         return relationships_to_hydrate
 
-    def _get_associations_for_root_entity_class(
+    def _get_associations_for_entity_class(
         self,
         pipeline: PBegin,
-        root_entity_class: Type[Entity],
+        entity_class: Type[Entity],
         hydrated_association_info: Dict[
             EntityClassName, PCollection[Tuple[RootEntityId, EntityAssociation]]
         ],
@@ -292,16 +352,14 @@ class ExtractRootEntityDataForPipeline(beam.PTransform):
             related_entity_class = relationship_property.property_entity_class
             related_entity_class_name = related_entity_class.__name__
 
-            if self._root_entity_cls in (related_entity_class, root_entity_class):
+            if self._root_entity_cls in (related_entity_class, entity_class):
                 # All entities will be grouped with the root entity class that they are
                 # related to, so there's no need to query for these relationships
                 continue
 
-            relationship_key = (
-                f"{root_entity_class.__name__}.{related_entity_class_name}"
-            )
+            relationship_key = f"{entity_class.__name__}.{related_entity_class_name}"
             reverse_relationship_key = (
-                f"{related_entity_class_name}.{root_entity_class.__name__}"
+                f"{related_entity_class_name}.{entity_class.__name__}"
             )
 
             if (
@@ -312,26 +370,19 @@ class ExtractRootEntityDataForPipeline(beam.PTransform):
                 # determined
                 continue
 
-            root_entity_class_being_hydrated = (
-                self._entity_class_to_hydrated_entity_class[root_entity_class]
-            )
-            related_entity_class_being_hydrated = (
-                self._entity_class_to_hydrated_entity_class[related_entity_class]
-            )
-
-            root_entity_is_normalized = issubclass(
-                root_entity_class_being_hydrated,
+            entity_is_normalized = issubclass(
+                entity_class,
                 NormalizedStateEntity,
             )
 
             related_entity_is_normalized = issubclass(
-                related_entity_class_being_hydrated,
+                related_entity_class,
                 NormalizedStateEntity,
             )
 
             # Assert that either both entities are Normalized versions or neither
             # of them are
-            if root_entity_is_normalized != related_entity_is_normalized:
+            if entity_is_normalized != related_entity_is_normalized:
                 raise NotImplementedError(
                     "Hydrating Normalized entities that have "
                     "relationships to other non-normalized entities in the "
@@ -341,13 +392,13 @@ class ExtractRootEntityDataForPipeline(beam.PTransform):
             # Get the association values for this relationship
             association_values = (
                 pipeline | f"Extract association values for "
-                f"{root_entity_class_being_hydrated.__name__} to "
-                f"{related_entity_class_being_hydrated.__name__} relationship."
+                f"{entity_class.__name__} to "
+                f"{related_entity_class.__name__} relationship."
                 >> _ExtractAssociationValues(
                     project_id=self._project_id,
                     entities_dataset=self._entities_dataset,
-                    entity_class=root_entity_class_being_hydrated,
-                    related_entity_class=related_entity_class_being_hydrated,
+                    entity_class=entity_class,
+                    related_entity_class=related_entity_class,
                     root_entity_id_field=self._root_entity_id_field,
                     association_table=relationship_property.association_table,
                     related_id_field=relationship_property.association_table_entity_id_field,
@@ -389,16 +440,16 @@ class ExtractRootEntityDataForPipeline(beam.PTransform):
         hydrated_association_info: Dict[
             EntityClassName, PCollection[Tuple[RootEntityId, EntityAssociation]]
         ] = {}
-        for root_entity_class in self._entity_class_to_hydrated_entity_class:
+        for entity_class in self._entity_classes_to_hydrate:
             # Populate relationships_to_hydrate with the relationships between all
             # required entities that require hydrating, and add association values
             # for these relationships to the entities_and_associations dict
-            self._get_associations_for_root_entity_class(
+            self._get_associations_for_entity_class(
                 pipeline,
-                root_entity_class=root_entity_class,
+                entity_class=self._unified_schema_class[entity_class],
                 hydrated_association_info=hydrated_association_info,
                 relationships_to_hydrate=relationships_to_hydrate[
-                    root_entity_class.__name__
+                    self._unified_schema_class[entity_class].__name__
                 ],
             )
         return hydrated_association_info
@@ -419,15 +470,11 @@ class ExtractRootEntityDataForPipeline(beam.PTransform):
             EntityClassName, PCollection[Tuple[RootEntityId, Entity]]
         ] = {}
 
-        for (
-            entity_class,
-            entity_class_for_hydration,
-        ) in self._entity_class_to_hydrated_entity_class.items():
+        for entity_class in self._entity_classes_to_hydrate:
             shallow_hydrated_entities[
-                entity_class.__name__
+                self._unified_schema_class[entity_class].__name__
             ] = self.get_shallow_hydrated_entity_pcollection(
-                pipeline=input_or_inputs,
-                entity_class=entity_class_for_hydration,
+                pipeline=input_or_inputs, entity_class=entity_class
             )
 
         relationships_to_hydrate = self._get_relationships_to_hydrate()
@@ -684,7 +731,7 @@ class _ConnectHydratedRelatedEntities(beam.DoFn):
                 for list_element in list_elements:
                     if not isinstance(list_element, Dict):
                         raise ValueError(
-                            "Expected list to contain all elements of "
+                            f"Expected list for key [{key}] to contain all elements of "
                             f"type Dict[str, str]. Found: {list_element}."
                         )
                     reference_table_data[key].append(list_element)
@@ -724,13 +771,13 @@ class _ConnectHydratedRelatedEntities(beam.DoFn):
         )
 
         for (
-            root_entity_class_name,
+            entity_class_name,
             relationships,
         ) in self._relationships_to_hydrate.items():
             fully_connected_hydrated_entities[
-                root_entity_class_name
+                entity_class_name
             ] = self._get_fully_hydrated_entities_of_type(
-                entity_class_name=root_entity_class_name,
+                entity_class_name=entity_class_name,
                 relationships_to_hydrate=relationships,
                 entities=entities,
                 associations=associations,

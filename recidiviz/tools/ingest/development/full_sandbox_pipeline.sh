@@ -64,7 +64,7 @@ Examples:
   
   # Run all metrics for Idaho
   bash recidiviz/tools/ingest/development/full_sandbox_pipeline.sh \\
-    --project_id recidiviz-staging --sandbox_prefix zbrenda --state_code US_ID \\
+    --project_id recidiviz-staging --sandbox_prefix zbrenda --state_code US_IX \\
     --incarceration_metrics "INCARCERATION_ADMISSION,INCARCERATION_COMMITMENT_FROM_SUPERVISION,INCARCERATION_RELEASE" \\
     --supervision_metrics "SUPERVISION_COMPLIANCE,SUPERVISION_POPULATION,SUPERVISION_OUT_OF_STATE_POPULATION,SUPERVISION_START,SUPERVISION_SUCCESS,SUPERVISION_TERMINATION" \\
     --population_span_metrics "INCARCERATION_POPULATION_SPAN,SUPERVISION_POPULATION_SPAN" \\
@@ -243,7 +243,7 @@ confirm_cmd python -m recidiviz.tools.calculator.run_sandbox_calculation_pipelin
 	--project "${PROJECT_ID}" \
 	--output_sandbox_prefix "${SANDBOX_PREFIX}" \
 	--state_code "${STATE_CODE}" \
-	--input_dataset_overrides_json "'{\"${STANDARD_STATE_SPECIFIC_STATE_DATASET}\": \"${SANDBOX_STATE_DATASET}\"}'"
+	--input_dataset_overrides_json "{\"state\": \"${SANDBOX_STATE_DATASET}\"}"
 
 echo "If applicable, you should confirm that the normalization pipeline is complete before proceeding."
 
@@ -266,7 +266,7 @@ for pipeline in "${!PIPELINES[@]}"; do
 		--project "${PROJECT_ID}" \
 		--output_sandbox_prefix "${SANDBOX_PREFIX}" \
 		--state_code "${STATE_CODE}" \
-		--input_dataset_overrides_json "'{\"${STANDARD_NORMALIZED_STATE_DATASET}\": \"${SANDBOX_NORMALIZED_DATASET}\"}'" \
+		--input_dataset_overrides_json "{\"${STANDARD_NORMALIZED_STATE_DATASET}\": \"${SANDBOX_NORMALIZED_DATASET}\"}" \
 		--metric_types "${metric_types[*]}"
 done
 

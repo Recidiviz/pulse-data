@@ -1507,6 +1507,7 @@ class TestConnectHydratedRelatedEntities(unittest.TestCase):
         relationships_to_hydrate = {
             entities.StatePerson.__name__: [
                 extractor_utils.EntityRelationshipDetails(
+                    entity_class=entities.StatePerson,
                     property_name="races",
                     property_entity_class=entities.StatePersonRace,
                     is_forward_ref=True,
@@ -1514,6 +1515,7 @@ class TestConnectHydratedRelatedEntities(unittest.TestCase):
                     association_table_entity_id_field="person_race_id",
                 ),
                 extractor_utils.EntityRelationshipDetails(
+                    entity_class=entities.StatePerson,
                     property_name="assessments",
                     property_entity_class=entities.StateAssessment,
                     is_forward_ref=True,
@@ -1523,6 +1525,7 @@ class TestConnectHydratedRelatedEntities(unittest.TestCase):
             ],
             entities.StatePersonRace.__name__: [
                 extractor_utils.EntityRelationshipDetails(
+                    entity_class=entities.StatePerson,
                     property_name="person",
                     property_entity_class=entities.StatePerson,
                     is_forward_ref=False,
@@ -1532,6 +1535,7 @@ class TestConnectHydratedRelatedEntities(unittest.TestCase):
             ],
             entities.StateAssessment.__name__: [
                 extractor_utils.EntityRelationshipDetails(
+                    entity_class=entities.StatePerson,
                     property_name="person",
                     property_entity_class=entities.StatePerson,
                     is_forward_ref=False,
