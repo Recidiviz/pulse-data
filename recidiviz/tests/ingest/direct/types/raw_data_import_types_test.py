@@ -28,6 +28,9 @@ from recidiviz.common.constants.csv import (
     DEFAULT_CSV_ENCODING,
     DEFAULT_CSV_LINE_TERMINATOR,
 )
+from recidiviz.common.constants.operations.direct_ingest_raw_data_import_session import (
+    DirectIngestRawDataImportSessionStatus,
+)
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRawFileConfig,
     RawDataClassification,
@@ -38,6 +41,7 @@ from recidiviz.ingest.direct.types.raw_data_import_types import (
     AppendReadyFileBatch,
     AppendSummary,
     ImportReadyFile,
+    ImportSessionSummary,
     PreImportNormalizationType,
     PreImportNormalizedCsvChunkResult,
     PreImportNormalizedFileResult,
@@ -400,6 +404,17 @@ class TestSerialization(unittest.TestCase):
             update_datetime=datetime.datetime(2024, 1, 1, 1, 1, 1, tzinfo=datetime.UTC),
         )
         self._validate_serialization(original, RawBigQueryFileMetadataSummary)
+
+    def test_import_session_summary(self) -> None:
+        original = ImportSessionSummary(
+            file_id=1,
+            import_status=DirectIngestRawDataImportSessionStatus.FAILED_UNKNOWN,
+            raw_rows=1,
+            historical_diffs_active=True,
+            net_new_or_updated_rows=None,
+            deleted_rows=1,
+        )
+        self._validate_serialization(original, ImportSessionSummary)
 
     def test_task_result(self) -> None:
         result = PreImportNormalizedFileResult(
