@@ -110,9 +110,18 @@ class Auth0Config:
         return Auth0Config(config_json, jwks)
 
 
-def get_token_auth_header() -> str:
-    """Obtains the Access Token from the Authorization Header"""
-    auth = request.headers.get("Authorization", None)
+def get_token_auth_header(auth_header: Optional[str] = None) -> str:
+    """Obtains the Access Token from the Authorization Header.
+
+    Parameters:
+        - auth: The authorization header of the request. If not provided, uses the
+            header from Flask.request.
+    """
+    auth = (
+        auth_header
+        if auth_header is not None
+        else request.headers.get("Authorization", None)
+    )
     if not auth:
         raise AuthorizationError(
             code="authorization_header_missing",
@@ -142,7 +151,9 @@ def get_token_auth_header() -> str:
 
 
 def build_auth0_authorization_handler(
-    authorization_config: Auth0Config, on_successful_authorization: Callable
+    authorization_config: Auth0Config,
+    on_successful_authorization: Callable,
+    auth_header: Optional[Any] = None,
 ) -> Callable:
     """Builds a callable which processes Auth0 authorization"""
 
@@ -153,7 +164,7 @@ def build_auth0_authorization_handler(
         If it is valid, call our `on_successful_authorization` callback before executing the decorated route
         """
         try:
-            token = get_token_auth_header()
+            token = get_token_auth_header(auth_header=auth_header)
             unverified_header = jwt.get_unverified_header(token)
             rsa_key = authorization_config.get_key(unverified_header["kid"])
 
