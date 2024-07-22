@@ -208,7 +208,6 @@ output:
                         - Reinstate Parole
                         - Return From Bond
                         - Return From Court
-                        - Pre-Release Assignment # TODO(#29641)
                       StateSupervisionPeriodTerminationReason.RETURN_FROM_ABSCONSION:
                         - Return from Escape
                       StateSupervisionPeriodTerminationReason.TRANSFER_TO_OTHER_JURISDICTION:
@@ -223,6 +222,7 @@ output:
                         - Serving Other Jurisdiction
                       StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE:
                         - Offender Moves Location
+                        - Pre-Release Assignment
                       StateSupervisionPeriodTerminationReason.ABSCONSION:
                         - Escape
               - $else_if:
