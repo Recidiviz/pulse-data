@@ -92,7 +92,10 @@ def get_invalid_dependencies_for_entrypoint(
             )
 
         valid_callers = [
-            c for c in callers if is_valid_module_dependency(c, valid_module_prefixes)
+            c
+            for c in callers
+            if is_valid_module_dependency(c, valid_module_prefixes)
+            or c == entrypoint_module
         ]
 
         if valid_callers:
@@ -446,14 +449,17 @@ def main() -> int:
                 "recidiviz.cloud_storage.verifiable_bytes_reader",
                 "recidiviz.cloud_storage.gcsfs_path",
                 "recidiviz.common.attr_validators",
+                "recidiviz.common.constants.states",
                 "recidiviz.common.io.contents_handle",
                 "recidiviz.common.io.file_contents_handle",
                 "recidiviz.common.io.local_file_contents_handle",
                 "recidiviz.common.io.zip_file_contents_handle",
                 "recidiviz.common.retry_predicate",
                 "recidiviz.ingest.direct.direct_ingest_bucket_name_utils",
+                "recidiviz.ingest.direct.gating",
                 "recidiviz.ingest.direct.gcs.filename_parts",
                 "recidiviz.ingest.direct.types.direct_ingest_constants",
+                "recidiviz.ingest.direct.types.direct_ingest_instance_factory",
                 "recidiviz.ingest.direct.types.errors",
                 "recidiviz.utils.environment",
                 "recidiviz.utils.metadata",
@@ -610,10 +616,13 @@ def main() -> int:
         valid_module_prefixes=make_module_matcher(
             {
                 "recidiviz.aggregated_metrics",
+                "recidiviz.application_data_import",
                 "recidiviz.big_query",
                 "recidiviz.calculator",
+                "recidiviz.case_triage",
                 "recidiviz.cloud_sql",
                 "recidiviz.cloud_storage",
+                "recidiviz.cloud_memorystore",
                 "recidiviz.common",
                 "recidiviz.datasets",
                 "recidiviz.ingest",

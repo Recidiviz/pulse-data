@@ -45,9 +45,26 @@ class ValidateSourceVisibilityTest(unittest.TestCase):
                 "recidiviz.tests.tools.fixtures.a.b.d",
                 valid_module_prefixes=make_module_matcher(
                     {
-                        "recidiviz.tests.tools.fixtures.a.b.d",
                         "recidiviz.tests.tools.fixtures.a.b.i",  # imported from __init__
                     }
+                ),
+            )
+        )
+
+    def test_validate_is_invalid_only_from_entrypoint(self) -> None:
+        self.assertFalse(
+            check_dependencies_for_entrypoint(
+                "recidiviz.tests.tools.fixtures.single_import",
+                valid_module_prefixes=make_module_matcher(set()),
+            )
+        )
+
+    def test_validate_is_valid_only_from_entrypoint(self) -> None:
+        self.assertTrue(
+            check_dependencies_for_entrypoint(
+                "recidiviz.tests.tools.fixtures.single_import",
+                valid_module_prefixes=make_module_matcher(
+                    {"recidiviz.tests.tools.fixtures.no_imports"}
                 ),
             )
         )
