@@ -26,6 +26,9 @@ docker exec pulse-data_case_triage_backend_1 pipenv run python -m recidiviz.tool
 
 Usage against default development database (docker-compose v2):
 docker exec pulse-data-case_triage_backend-1 pipenv run python -m recidiviz.tools.case_triage.load_fixtures
+
+Usage against default development database (docker-compose v2):
+docker exec pulse-data-admin_panel_backend-1 pipenv run python -m recidiviz.tools.case_triage.load_fixtures
 """
 import logging
 import os

@@ -46,9 +46,14 @@ export const PATHWAYS_PERMISSIONS_LABELS = {
   system_supervisionToLiberty: "Supervision to Liberty",
 };
 
+export const PSI_PERMISSIONS_LABELS = {
+  psi: "PSI",
+};
+
 export const ROUTES_PERMISSIONS_LABELS = {
   ...WORKFLOWS_PERMISSIONS_LABELS,
   ...VITALS_PERMISSIONS_LABELS,
   ...OUTLIERS_PERMISSIONS_LABELS,
   ...PATHWAYS_PERMISSIONS_LABELS,
+  ...PSI_PERMISSIONS_LABELS,
 };

@@ -128,6 +128,7 @@ ROUTES = [
     "workflowsFacilities",
     "insights",
     "insights_supervision_supervisors-list",
+    "psi",
 ]
 
 PRODUCT_ROSTER_VIEW_BUILDER = SimpleBigQueryViewBuilder(
