@@ -1,17 +1,22 @@
 # yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: DPP_INTAKE_ASSIGNMENT
 file_description: |-
-  Unknown at this time.
+  This table contains information about a person's supervision stint, including updates
+  made to certain aspects of their supervision over time. Officer and location reassignments
+  appear in this table, and are not necessarily updated in other tables to match the latest
+  updates that appear here.
 data_classification: source
 primary_key_cols: [INTAKE_ASSIGNMENT_ID]
 columns:
   - name: INTAKE_ASSIGNMENT_ID
     description: PK
   - name: AGENT_ID
-    description: Agent PERSON_ID. FK to PERSON.
+    description: |-
+      Agent PERSON_ID. FK to PERSON. Updated in place when a person is reassigned
+      to a different officer's caseload.
     is_pii: True
   - name: DPP_ID
-    description: DPP_ID of person on supervision. FK to DPP_EPISODE
+    description: FK to DPP_EPISODE. Unique to each stint on supervision.
     is_pii: True
   - name: ASSIGNED_FROM
     description: Date the person was given this assignment
@@ -30,7 +35,9 @@ columns:
   - name: CHANGE_ID
     description: References CHANGE_HISTORY table
   - name: OFFICE_LOCATION_ID
-    description: Location of supervision
+    description: |-
+      Location of supervision. This is only updated in this table if and when it changes
+      over the course of a person's supervision.
   - name: ACTIVE_FLAG
     description: Is the record deleted Y/N
   - name: CREATE_USERID
@@ -39,7 +46,9 @@ columns:
     is_pii: True
   - name: CREATE_DTM
     description: |-
-      Date When Record Created
+      Date When Record Created. All rows created before 11/30/2019 have either the date
+      of the system migration or '0001-01-01' as their CREATE_DTM. Not a reliable field
+      prior to 2019.
     field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S %p', {col_name})"
@@ -49,7 +58,9 @@ columns:
       - "SAFE.PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%S', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
   - name: UPDT_DTM
     description: |-
-      Date When Record Last Updated
+      Date When Record Last Updated. All rows last updated before 11/30/2019 have either the date
+      of the system migration or '0001-01-01' as their UPDT_DTM. Not a reliable field
+      prior to 2019.
     field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S %p', {col_name})"

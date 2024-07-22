@@ -52,13 +52,15 @@ columns:
   - name: PERSON_TYPE_OTHER
     description: Other person type
   - name: DOC_FACILITY_ID
-    description: Lookup category = DOC_FACILITY
+    description: Lookup category = DOC_FACILITY.
   - name: HOUSING_STATUS_ID
     description: foreign key to lookups
   - name: DATE_STATUS_CHANGED
     description: date the status changed
   - name: OFFICE_LOCATION_ID
-    description: ID of the Community Corrections office.  FK to DPP_OFFICE_LOCATION
+    description: |-
+      ID of the Community Corrections office where a person completed their supervision intake.
+      FK to DPP_OFFICE_LOCATION. Not updated over time.
   - name: MAIDEN_NAME
     description: free text
     is_pii: True

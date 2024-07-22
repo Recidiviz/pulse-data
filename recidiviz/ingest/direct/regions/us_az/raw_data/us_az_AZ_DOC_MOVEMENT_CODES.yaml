@@ -1,7 +1,9 @@
 # yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: AZ_DOC_MOVEMENT_CODES
 file_description: |-
-  TODO(#25890): FILL IN
+  This table decodes movement codes found across other tables in the ADCRR database. It
+  contains descriptions of movements as well as instruction on what action should be taken 
+  with regard to incarceration and supervision periods as a result of each movement.
 data_classification: source
 primary_key_cols:
   - MOVEMENT_CODE_ID
