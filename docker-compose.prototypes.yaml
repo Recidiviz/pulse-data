@@ -11,5 +11,9 @@ services:
       - "~/.config:/root/.config" # use user's credentials to access GCP APIs
     ports:
       - "8080:8080"
-    command: pipenv run hypercorn recidiviz.prototypes.app:app --bind 0.0.0.0:8080
+    command: pipenv run hypercorn recidiviz.prototypes.app:app --bind 0.0.0.0:8080 --reload
     working_dir: /app
+    environment:
+      - AUTH0_CLAIM_NAMESPACE=https://dashboard-staging.recidiviz.org
+      - GOOGLE_CLOUD_PROJECT=recidiviz-staging
+      - IS_DEV=true

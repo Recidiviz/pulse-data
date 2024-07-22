@@ -49,7 +49,9 @@ def build_auth_config(secret_name: str) -> Auth0Config:
 
 
 def build_authorization_handler(
-    on_successful_authorization: Callable, secret_name: str
+    on_successful_authorization: Callable,
+    secret_name: str,
+    auth_header: Optional[Any] = None,
 ) -> Callable:
     """Loads Auth0 configuration secret and builds the middleware"""
 
@@ -60,7 +62,9 @@ def build_authorization_handler(
     authorization_config = build_auth_config(secret_name)
 
     return build_auth0_authorization_handler(
-        authorization_config, on_successful_authorization
+        authorization_config,
+        on_successful_authorization,
+        auth_header=auth_header,
     )
 
 
