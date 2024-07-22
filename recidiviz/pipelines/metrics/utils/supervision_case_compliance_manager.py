@@ -37,12 +37,10 @@ from recidiviz.common.constants.state.state_supervision_contact import (
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionLevel,
 )
-from recidiviz.persistence.entity.state.entities import (
-    StatePerson,
-    StateSupervisionContact,
-)
 from recidiviz.persistence.entity.state.normalized_entities import (
     NormalizedStateAssessment,
+    NormalizedStatePerson,
+    NormalizedStateSupervisionContact,
     NormalizedStateSupervisionPeriod,
     NormalizedStateSupervisionViolationResponse,
 )
@@ -69,7 +67,7 @@ class ContactFilter:
     locations: Optional[Set[StateSupervisionContactLocation]] = attr.ib(default=None)
     verified_employment: Optional[bool] = attr.ib(default=None)
 
-    def matches(self, contact: StateSupervisionContact) -> bool:
+    def matches(self, contact: NormalizedStateSupervisionContact) -> bool:
         if self.contact_types and contact.contact_type not in self.contact_types:
             return False
         if self.statuses and contact.status not in self.statuses:
@@ -89,12 +87,14 @@ class StateSupervisionCaseComplianceManager:
 
     def __init__(
         self,
-        person: StatePerson,
+        person: NormalizedStatePerson,
         supervision_period: NormalizedStateSupervisionPeriod,
         case_type: StateSupervisionCaseType,
         start_of_supervision: date,
         assessments_by_date: RangeQuerier[date, NormalizedStateAssessment],
-        supervision_contacts_by_date: RangeQuerier[date, StateSupervisionContact],
+        supervision_contacts_by_date: RangeQuerier[
+            date, NormalizedStateSupervisionContact
+        ],
         violation_responses: List[NormalizedStateSupervisionViolationResponse],
         incarceration_period_index: NormalizedIncarcerationPeriodIndex,
         supervision_delegate: StateSpecificSupervisionDelegate,
@@ -389,7 +389,7 @@ class StateSupervisionCaseComplianceManager:
         end_inclusive: date,
         contact_filter: ContactFilter,
         most_recent_n: Optional[int],
-    ) -> Iterator[StateSupervisionContact]:
+    ) -> Iterator[NormalizedStateSupervisionContact]:
         """Gets contacts between two dates ordered from most recent to oldest.
 
         The date parameters are inclusive, so to get contacts for a single date, the

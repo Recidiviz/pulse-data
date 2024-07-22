@@ -31,11 +31,10 @@ from recidiviz.common.constants.state.state_program_assignment import (
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodSupervisionType,
 )
-from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.base_entity import Entity
-from recidiviz.persistence.entity.state.entities import StatePerson
 from recidiviz.persistence.entity.state.normalized_entities import (
     NormalizedStateAssessment,
+    NormalizedStatePerson,
     NormalizedStateProgramAssignment,
     NormalizedStateSupervisionPeriod,
 )
@@ -57,9 +56,7 @@ class TestFindProgramEvents(unittest.TestCase):
 
     def setUp(self) -> None:
         self.identifier = identifier.ProgramIdentifier()
-        self.person = StatePerson.new_with_defaults(
-            state_code="US_XX", person_id=99000123
-        )
+        self.person = NormalizedStatePerson(state_code="US_XX", person_id=99000123)
 
     def _test_find_program_events(
         self,
@@ -69,9 +66,9 @@ class TestFindProgramEvents(unittest.TestCase):
     ) -> List[ProgramEvent]:
         """Helper for testing the find_events function on the identifier."""
         all_kwargs: Dict[str, Union[Sequence[Entity], List[TableRow]]] = {
-            NormalizedStateProgramAssignment.base_class_name(): program_assignments,
-            NormalizedStateSupervisionPeriod.base_class_name(): supervision_periods,
-            NormalizedStateAssessment.base_class_name(): assessments,
+            NormalizedStateProgramAssignment.__name__: program_assignments,
+            NormalizedStateSupervisionPeriod.__name__: supervision_periods,
+            NormalizedStateAssessment.__name__: assessments,
         }
 
         return self.identifier.identify(

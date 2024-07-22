@@ -16,6 +16,7 @@
 # =============================================================================
 """Tests for entity_utils.py"""
 import datetime
+from functools import cmp_to_key
 from typing import Dict, List, Set, Type
 from unittest import TestCase
 from unittest.mock import call, patch
@@ -93,14 +94,17 @@ from recidiviz.persistence.entity.entity_utils import (
     get_all_entities_from_tree,
     get_all_entity_classes_in_module,
     get_association_table_id,
+    get_entity_class_in_module_with_name,
     get_entity_class_in_module_with_table_id,
     get_many_to_many_relationships,
+    get_module_for_entity_class,
     is_many_to_many_relationship,
     is_many_to_one_relationship,
     is_one_to_many_relationship,
     is_reference_only_entity,
     set_backedges,
 )
+from recidiviz.persistence.entity.operations import entities as operations_entities
 from recidiviz.persistence.entity.state import entities as state_entities
 from recidiviz.persistence.entity.state import normalized_entities
 from recidiviz.persistence.entity.state.entities import (
@@ -119,12 +123,23 @@ from recidiviz.persistence.entity.state.entities import (
 )
 from recidiviz.persistence.entity.state.normalized_entities import (
     NormalizedStateAssessment,
+    NormalizedStateCharge,
+    NormalizedStateChargeV2,
+    NormalizedStateIncarcerationSentence,
+    NormalizedStatePerson,
+    NormalizedStateSentence,
+    NormalizedStateSupervisionSentence,
+    NormalizedStateSupervisionViolation,
     NormalizedStateSupervisionViolationResponse,
+)
+from recidiviz.persistence.entity.state.normalized_state_entity import (
+    NormalizedStateEntity,
 )
 from recidiviz.tests.persistence.entity.state.entities_test_utils import (
     generate_full_graph_state_person,
     generate_full_graph_state_staff,
 )
+from recidiviz.utils.types import assert_subclass
 
 _ID = 1
 _STATE_CODE = "US_XX"
@@ -1163,6 +1178,15 @@ class TestEntityUtils(TestCase):
             ),
         )
 
+    def test_get_module_for_entity_cls(self) -> None:
+        self.assertEqual(
+            normalized_entities, get_module_for_entity_class(NormalizedStateSentence)
+        )
+        self.assertEqual(
+            normalized_entities, get_module_for_entity_class(NormalizedStateAssessment)
+        )
+        self.assertEqual(state_entities, get_module_for_entity_class(StatePerson))
+
     def test_schemaEdgeDirectionChecker_isHigherRanked_higherRank(self) -> None:
         direction_checker = SchemaEdgeDirectionChecker.state_direction_checker()
         self.assertTrue(
@@ -1189,6 +1213,73 @@ class TestEntityUtils(TestCase):
                 StateSupervisionViolation, StateSupervisionViolation
             )
         )
+
+    def test_schemaEdgeDirectionChecker_covers_all_entities_operations(self) -> None:
+        entity_classes = get_all_entity_classes_in_module(operations_entities)
+        direction_checker = SchemaEdgeDirectionChecker.operations_direction_checker()
+        for entity_cls_a in entity_classes:
+            for entity_cls_b in entity_classes:
+                if entity_cls_a == entity_cls_b:
+                    continue
+                # If this doesn't crash, the class is covered
+                _ = direction_checker.is_higher_ranked(entity_cls_a, entity_cls_b)
+
+    def test_schemaEdgeDirectionChecker_covers_all_entities_state(self) -> None:
+        entity_classes = get_all_entity_classes_in_module(state_entities)
+        direction_checker = SchemaEdgeDirectionChecker.state_direction_checker()
+        for entity_cls_a in entity_classes:
+            for entity_cls_b in entity_classes:
+                if entity_cls_a == entity_cls_b:
+                    continue
+                # If this doesn't crash, the class is covered
+                _ = direction_checker.is_higher_ranked(entity_cls_a, entity_cls_b)
+
+    def test_schemaEdgeDirectionChecker_covers_all_entities_normalized_state(
+        self,
+    ) -> None:
+        entity_classes = get_all_entity_classes_in_module(normalized_entities)
+        direction_checker = (
+            SchemaEdgeDirectionChecker.normalized_state_direction_checker()
+        )
+        for entity_cls_a in entity_classes:
+            for entity_cls_b in entity_classes:
+                if entity_cls_a == entity_cls_b:
+                    continue
+                # If this doesn't crash, the class is covered
+                _ = direction_checker.is_higher_ranked(entity_cls_a, entity_cls_b)
+
+    def test_normalized_and_state_have_same_class_hierarchy(self) -> None:
+        """If this test fails _NORMALIZED_STATE_CLASS_HIERARCHY and
+        _STATE_CLASS_HIERARCHY are not sorted in the same way for equivalent classes.
+        """
+        equivalent_state_classes_list = []
+        normalized_state_direction_checker = (
+            SchemaEdgeDirectionChecker.normalized_state_direction_checker()
+        )
+
+        def sort_fn(a: Type[Entity], b: Type[Entity]) -> int:
+            return (
+                -1
+                if not normalized_state_direction_checker.is_higher_ranked(a, b)
+                else 1
+            )
+
+        sorted_normalized_by_rank = sorted(
+            get_all_entity_classes_in_module(normalized_state_direction_checker),
+            key=cmp_to_key(sort_fn),
+        )
+        for normalized_entity_cls in sorted_normalized_by_rank:
+            equivalent_state_class = get_entity_class_in_module_with_name(
+                state_entities,
+                assert_subclass(
+                    normalized_entity_cls, NormalizedStateEntity
+                ).base_class_name(),
+            )
+            if not equivalent_state_class:
+                continue
+            equivalent_state_classes_list.append(equivalent_state_class)
+        state_direction_checker = SchemaEdgeDirectionChecker.state_direction_checker()
+        state_direction_checker.assert_sorted(equivalent_state_classes_list)
 
     def test_is_reference_only_entity(self) -> None:
         field_index = CoreEntityFieldIndex()
@@ -1229,7 +1320,37 @@ class TestEntityUtils(TestCase):
                 StatePerson, StateSupervisionViolationResponse
             )
 
-        # TODO(#30075): Add tests for comparison between normalized entities
+    def test_is_many_to_many_relationship_normalized(self) -> None:
+        self.assertTrue(
+            is_many_to_many_relationship(
+                NormalizedStateSentence, NormalizedStateChargeV2
+            )
+        )
+        self.assertTrue(
+            is_many_to_many_relationship(
+                NormalizedStateChargeV2, NormalizedStateSentence
+            )
+        )
+        self.assertFalse(
+            is_many_to_many_relationship(
+                NormalizedStateSupervisionViolation,
+                NormalizedStateSupervisionViolationResponse,
+            )
+        )
+        self.assertFalse(
+            is_many_to_many_relationship(
+                NormalizedStatePerson, NormalizedStateAssessment
+            )
+        )
+
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Entities \[NormalizedStatePerson\] and \[NormalizedStateSupervisionViolationResponse\] are "
+            "not directly related",
+        ):
+            _ = is_many_to_one_relationship(
+                NormalizedStatePerson, NormalizedStateSupervisionViolationResponse
+            )
 
     def test_is_one_to_many_relationship(self) -> None:
         self.assertFalse(is_one_to_many_relationship(StateSentence, StateChargeV2))
@@ -1255,7 +1376,43 @@ class TestEntityUtils(TestCase):
                 StatePerson, StateSupervisionViolationResponse
             )
 
-        # TODO(#30075): Add tests for comparison between normalized entities
+    def test_is_one_to_many_relationship_normalized(self) -> None:
+        self.assertFalse(
+            is_one_to_many_relationship(
+                NormalizedStateSentence, NormalizedStateChargeV2
+            )
+        )
+        self.assertFalse(
+            is_one_to_many_relationship(
+                NormalizedStateChargeV2, NormalizedStateSentence
+            )
+        )
+        self.assertTrue(
+            is_one_to_many_relationship(
+                NormalizedStateSupervisionViolation,
+                NormalizedStateSupervisionViolationResponse,
+            )
+        )
+        self.assertFalse(
+            is_one_to_many_relationship(
+                NormalizedStateSupervisionViolationResponse,
+                NormalizedStateSupervisionViolation,
+            )
+        )
+        self.assertTrue(
+            is_one_to_many_relationship(
+                NormalizedStatePerson, NormalizedStateAssessment
+            )
+        )
+
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Entities \[NormalizedStatePerson\] and \[NormalizedStateSupervisionViolationResponse\] are "
+            "not directly related",
+        ):
+            _ = is_many_to_one_relationship(
+                NormalizedStatePerson, NormalizedStateSupervisionViolationResponse
+            )
 
     def test_is_many_to_one_relationship(self) -> None:
         self.assertFalse(is_many_to_one_relationship(StateSentence, StateChargeV2))
@@ -1280,7 +1437,44 @@ class TestEntityUtils(TestCase):
             _ = is_many_to_one_relationship(
                 StatePerson, StateSupervisionViolationResponse
             )
-        # TODO(#30075): Add tests for comparison between normalized entities
+
+    def test_is_many_to_one_relationship_normalized(self) -> None:
+        self.assertFalse(
+            is_many_to_one_relationship(
+                NormalizedStateSentence, NormalizedStateChargeV2
+            )
+        )
+        self.assertFalse(
+            is_many_to_one_relationship(
+                NormalizedStateChargeV2, NormalizedStateSentence
+            )
+        )
+        self.assertFalse(
+            is_many_to_one_relationship(
+                NormalizedStateSupervisionViolation,
+                NormalizedStateSupervisionViolationResponse,
+            )
+        )
+        self.assertTrue(
+            is_many_to_one_relationship(
+                NormalizedStateSupervisionViolationResponse,
+                NormalizedStateSupervisionViolation,
+            )
+        )
+        self.assertFalse(
+            is_many_to_one_relationship(
+                NormalizedStatePerson, NormalizedStateAssessment
+            )
+        )
+
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Entities \[NormalizedStatePerson\] and \[NormalizedStateSupervisionViolationResponse\] are "
+            "not directly related",
+        ):
+            _ = is_many_to_one_relationship(
+                NormalizedStatePerson, NormalizedStateSupervisionViolationResponse
+            )
 
     def test_entities_have_direct_relationship(self) -> None:
         self.assertTrue(entities_have_direct_relationship(StateSentence, StateChargeV2))
@@ -1302,12 +1496,46 @@ class TestEntityUtils(TestCase):
                 StatePerson, StateSupervisionViolationResponse
             )
         )
+        # No direct relationship because these are part of different schemas
         self.assertFalse(
             entities_have_direct_relationship(
                 StateSupervisionViolation, NormalizedStateSupervisionViolationResponse
             )
         )
-        # TODO(#30075): Add tests for comparison between normalized entities
+
+        self.assertTrue(
+            entities_have_direct_relationship(
+                NormalizedStateSentence, NormalizedStateChargeV2
+            )
+        )
+        self.assertTrue(
+            entities_have_direct_relationship(
+                NormalizedStateChargeV2, NormalizedStateSentence
+            )
+        )
+        self.assertTrue(
+            entities_have_direct_relationship(
+                NormalizedStateSupervisionViolation,
+                NormalizedStateSupervisionViolationResponse,
+            )
+        )
+        self.assertTrue(
+            entities_have_direct_relationship(
+                NormalizedStateSupervisionViolationResponse,
+                NormalizedStateSupervisionViolation,
+            )
+        )
+        self.assertTrue(
+            entities_have_direct_relationship(
+                NormalizedStatePerson, NormalizedStateAssessment
+            )
+        )
+
+        self.assertFalse(
+            entities_have_direct_relationship(
+                NormalizedStatePerson, NormalizedStateSupervisionViolationResponse
+            )
+        )
 
     def test_get_association_table_id(self) -> None:
         self.assertEqual(
@@ -1326,7 +1554,28 @@ class TestEntityUtils(TestCase):
             "state_charge_incarceration_sentence_association",
             get_association_table_id(StateCharge, StateIncarcerationSentence),
         )
-        # TODO(#30075): Add test cases for normalized entities
+
+    def test_get_association_table_id_normalized(self) -> None:
+        self.assertEqual(
+            "state_charge_v2_state_sentence_association",
+            get_association_table_id(NormalizedStateSentence, NormalizedStateChargeV2),
+        )
+        self.assertEqual(
+            "state_charge_v2_state_sentence_association",
+            get_association_table_id(NormalizedStateChargeV2, NormalizedStateSentence),
+        )
+        self.assertEqual(
+            "state_charge_supervision_sentence_association",
+            get_association_table_id(
+                NormalizedStateSupervisionSentence, NormalizedStateCharge
+            ),
+        )
+        self.assertEqual(
+            "state_charge_incarceration_sentence_association",
+            get_association_table_id(
+                NormalizedStateCharge, NormalizedStateIncarcerationSentence
+            ),
+        )
 
     def test_get_association_table_id_agrees_with_schema(self) -> None:
         state_tables = get_all_table_classes_in_schema(SchemaType.STATE)
@@ -1351,8 +1600,28 @@ class TestEntityUtils(TestCase):
         #  of association tables defined in schema.py
         self.assertEqual(schema_association_tables, association_tables)
 
-        # TODO(#30075): Add tests that does the same but for the normalized_state_entities
-        #  module.
+    def test_get_association_table_id_agrees_with_schema_normalized(self) -> None:
+        state_tables = get_all_table_classes_in_schema(SchemaType.STATE)
+        schema_association_tables = {
+            table.name for table in state_tables if is_association_table(table.name)
+        }
+
+        association_tables = set()
+        for entity_cls_a in get_all_entity_classes_in_module(normalized_entities):
+            for entity_cls_b in get_all_entity_classes_in_module(normalized_entities):
+                if entity_cls_a == entity_cls_b:
+                    continue
+                if not entities_have_direct_relationship(entity_cls_a, entity_cls_b):
+                    continue
+                if not is_many_to_many_relationship(entity_cls_a, entity_cls_b):
+                    continue
+                association_tables.add(
+                    get_association_table_id(entity_cls_a, entity_cls_b)
+                )
+
+        # Check that the set of association tables defined in schema.py matches the set
+        #  of association tables defined in schema.py
+        self.assertEqual(schema_association_tables, association_tables)
 
 
 class TestBidirectionalUpdates(TestCase):

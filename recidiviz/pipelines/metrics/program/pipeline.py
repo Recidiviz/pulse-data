@@ -21,7 +21,7 @@ from typing import List, Type
 
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.base_entity import Entity
-from recidiviz.persistence.entity.state import entities, normalized_entities
+from recidiviz.persistence.entity.state import normalized_entities
 from recidiviz.pipelines.metrics.base_identifier import BaseIdentifier
 from recidiviz.pipelines.metrics.base_metric_pipeline import MetricPipeline
 from recidiviz.pipelines.metrics.base_metric_producer import BaseMetricProducer
@@ -34,9 +34,9 @@ class ProgramMetricsPipeline(MetricPipeline):
     @classmethod
     def required_entities(cls) -> List[Type[Entity]]:
         return [
-            entities.StatePerson,
-            entities.StatePersonRace,
-            entities.StatePersonEthnicity,
+            normalized_entities.NormalizedStatePerson,
+            normalized_entities.NormalizedStatePersonRace,
+            normalized_entities.NormalizedStatePersonEthnicity,
             normalized_entities.NormalizedStateAssessment,
             normalized_entities.NormalizedStateProgramAssignment,
             normalized_entities.NormalizedStateSupervisionPeriod,

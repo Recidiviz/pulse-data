@@ -23,6 +23,10 @@ import attr
 
 from recidiviz.big_query.big_query_query_provider import BigQueryQueryProvider
 from recidiviz.persistence.entity.state import entities as state_entities
+from recidiviz.persistence.entity.state.normalized_entities import (
+    NormalizedStatePerson,
+    NormalizedStateStaff,
+)
 
 
 @attr.define(frozen=True, kw_only=True)
@@ -35,7 +39,10 @@ class RootEntityIdFilteredQueryProvider(BigQueryQueryProvider):
 
     original_query: str | BigQueryQueryProvider
     root_entity_cls: (
-        Type[state_entities.StatePerson] | Type[state_entities.StateStaff]
+        Type[state_entities.StatePerson]
+        | Type[state_entities.StateStaff]
+        | Type[NormalizedStatePerson]
+        | Type[NormalizedStateStaff]
     )
     root_entity_id_filter_set: Set[int] = attr.ib(default=None)
 

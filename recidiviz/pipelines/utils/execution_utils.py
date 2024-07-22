@@ -23,7 +23,7 @@ from more_itertools import one
 from oauth2client.client import GoogleCredentials
 
 from recidiviz.persistence.entity.base_entity import Entity
-from recidiviz.persistence.entity.state.entities import StatePerson
+from recidiviz.persistence.entity.state.normalized_entities import NormalizedStatePerson
 
 # The name of an entity, e.g. StatePerson.
 EntityClassName = str
@@ -163,7 +163,7 @@ def person_and_kwargs_for_identifier(
         Union[EntityClassName, TableName], Union[Iterable[Entity], Iterable[TableRow]]
     ]
 ) -> Tuple[
-    StatePerson,
+    NormalizedStatePerson,
     Dict[Union[EntityClassName, TableName], Union[Sequence[Entity], List[TableRow]]],
 ]:
     """In the calculation pipelines we use the CoGroupByKey function to group StatePerson entities with their associated
@@ -178,7 +178,7 @@ def person_and_kwargs_for_identifier(
     """
     entity_dict = kwargs_for_entity_lists(arg_to_entities_map)
 
-    person_values = entity_dict.pop(StatePerson.__name__)
+    person_values = entity_dict.pop(NormalizedStatePerson.__name__)
 
     if not person_values:
         raise ValueError(
@@ -192,11 +192,11 @@ def person_and_kwargs_for_identifier(
             f"No StatePerson associated with these entities: {arg_to_entities_map}"
         )
 
-    if not isinstance(person, StatePerson):
+    if not isinstance(person, NormalizedStatePerson):
         raise ValueError(
             "The value in the entity dictionary for key "
-            f"[{StatePerson.__name__}] should be of type StatePerson. "
-            f"Found: {person}."
+            f"[{NormalizedStatePerson.base_class_name()}] should be of type "
+            f"NormalizedStatePerson. Found: {person}."
         )
 
     return person, entity_dict

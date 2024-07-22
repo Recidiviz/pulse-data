@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2022 Recidiviz, Inc.
+# Copyright (C) 2024 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,255 +14,430 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Tests for normalized_entities.py"""
-import datetime
+"""Tests the classes defined in normalized_entities_v2.py"""
+
 import unittest
-from typing import List, Set, Type
+from typing import Dict, ForwardRef, List, Set, Type
 
 import attr
 
-from recidiviz.common.attr_mixins import attr_field_referenced_cls_name_for_field_name
-from recidiviz.common.attr_utils import is_flat_field
-from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
+from recidiviz.common.attr_mixins import (
+    CachedAttributeInfo,
+    attribute_field_type_reference_for_class,
+)
+from recidiviz.common.attr_utils import (
+    get_non_optional_type,
+    get_referenced_class_name_from_type,
+    is_flat_field,
+    is_list_type,
+    is_optional_type,
+)
+from recidiviz.common.attr_validators import IsListOfValidator, IsOptionalValidator
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.entity_utils import (
+    SchemaEdgeDirectionChecker,
     get_all_entity_classes_in_module,
-    get_entity_class_in_module_with_name,
-)
-from recidiviz.persistence.entity.normalized_entities_utils import (
-    LEGACY_NORMALIZATION_ENTITY_CLASSES,
 )
 from recidiviz.persistence.entity.state import entities as state_entities
 from recidiviz.persistence.entity.state import normalized_entities
+from recidiviz.persistence.entity.state.entity_field_validators import (
+    PreNormOptionalValidator,
+)
 from recidiviz.persistence.entity.state.normalized_entities import (
-    NormalizedStateSupervisionCaseTypeEntry,
-    NormalizedStateSupervisionPeriod,
-    NormalizedStateSupervisionViolationResponse,
-    get_entity_class_names_excluded_from_normalization,
+    EntityBackedgeValidator,
 )
 from recidiviz.persistence.entity.state.normalized_state_entity import (
-    NORMALIZED_PREFIX,
     NormalizedStateEntity,
 )
-from recidiviz.pipelines.normalization.utils.entity_normalization_manager_utils import (
-    NORMALIZATION_MANAGERS,
-)
-from recidiviz.pipelines.normalization.utils.normalized_entity_conversion_utils import (
-    fields_unique_to_normalized_class,
-)
+from recidiviz.utils.types import non_optional
 
-STATE_CODE = "US_XX"
+EXPECTED_MISSING_NORMALIZED_FIELDS: Dict[Type[Entity], Set[str]] = {
+    # TODO(#15559): Add NormalizedStateCharge / NormalizedStateChargeV2 fields that we
+    #  plan to delete here.
+}
+
+NORMALIZED_PREFIX = "Normalized"
 
 
 class TestNormalizedEntities(unittest.TestCase):
-    """Tests the classes defined in normalized_entities.py"""
+    """Tests the classes defined in normalized_entities_v2.py"""
 
     def setUp(self) -> None:
-        self.normalized_entity_classes: List[Type[NormalizedStateEntity]] = [
-            entity_class
-            for entity_class in get_all_entity_classes_in_module(normalized_entities)
-            if issubclass(entity_class, NormalizedStateEntity)
-        ]
+        self.normalized_entity_classes: List[Type[Entity]] = list(
+            get_all_entity_classes_in_module(normalized_entities)
+        )
 
-        self.normalized_entity_bases = {
-            entity_class.__base__ for entity_class in self.normalized_entity_classes
+        self.normalized_entity_classes_by_name = {
+            c.__name__: c for c in self.normalized_entity_classes
         }
 
-    def test_normalized_class_naming(self) -> None:
-        """Tests that the name of all normalized classes is 'Normalized' + the name
-        of the base entity class being normalized."""
+    def _assert_valid_default(
+        self,
+        entity_class: Type[Entity],
+        field_name: str,
+        field_info: CachedAttributeInfo,
+    ) -> None:
+        """Assert that the given field has an appropriate default value set."""
+        entity_class_name = entity_class.__name__
+        field_type = non_optional(field_info.attribute.type)
+        field_default = field_info.attribute.default
+        has_default = field_default != attr.NOTHING
+        if is_optional_type(field_type):
+            if has_default:
+                self.assertIsNone(
+                    field_default,
+                    f"Found invalid default for optional field [{field_name}]: "
+                    f"{field_name}. Should be `None`.",
+                )
+            return
+
+        if is_list_type(field_type):
+            default_is_list_factory = field_default is not None and (
+                hasattr(field_default, "factory") and field_default.factory is list
+            )
+            if not default_is_list_factory:
+                raise ValueError(
+                    f"Found list field [{field_name}] on class "
+                    f"[{entity_class_name}] with invalid default "
+                    f"value set: {field_info.attribute.default}."
+                    f"All list fields should have `factory=list` defaults "
+                    f"set.",
+                )
+            return
+
+        direction_checker = (
+            SchemaEdgeDirectionChecker.normalized_state_direction_checker()
+        )
+        is_backedge_field = direction_checker.is_back_edge(entity_class, field_name)
+        if is_backedge_field and field_default is None:
+            default_ok = True
+        else:
+            default_ok = not has_default
+
+        if not default_ok:
+            raise ValueError(
+                f"Found non-optional [{field_name}] on class "
+                f"[{entity_class_name}] with invalid default "
+                f"value set: {field_info.attribute.default}",
+            )
+
+    def _assert_valid_validator(
+        self,
+        entity_class: Type[Entity],
+        field_name: str,
+        field_info: CachedAttributeInfo,
+    ) -> None:
+        """Assert that the given field has an appropriate validator set."""
+        entity_class_name = entity_class.__name__
+        field_validator = field_info.attribute.validator
+        if not field_validator:
+            self.fail(
+                f"Found field [{field_name}] on class [{entity_class_name}] which does "
+                f"not have a validator"
+            )
+        field_type = non_optional(field_info.attribute.type)
+        if not is_optional_type(field_type):
+            self.assertFalse(
+                isinstance(field_validator, IsOptionalValidator),
+                f"Found non-optional [{field_name}] on class [{entity_class_name}] "
+                f"which has a validator that allows for optional values.",
+            )
+
+        direction_checker = (
+            SchemaEdgeDirectionChecker.normalized_state_direction_checker()
+        )
+        is_backedge_field = direction_checker.is_back_edge(entity_class, field_name)
+
+        if is_backedge_field:
+            # Backedges use EntityBackedgeValidator which also validate that the
+            # value is a list.
+            self.assertTrue(
+                isinstance(field_validator, EntityBackedgeValidator),
+                f"Found backedge field [{field_name}] on class [{entity_class_name}] "
+                f"which does not use an EntityBackedgeValidator validator.",
+            )
+        elif is_list_type(field_type):
+            self.assertTrue(
+                isinstance(field_validator, IsListOfValidator),
+                f"Found list field [{field_name}] on class [{entity_class_name}] "
+                f"which does not use an is_list_of() validator.",
+            )
+
+    def test_normalized_entities_correct_setup(self) -> None:
         for normalized_entity_class in self.normalized_entity_classes:
-            entity_name = str(normalized_entity_class.__name__)
-            self.assertTrue(NORMALIZED_PREFIX in entity_name)
-            self.assertEqual(
-                normalized_entity_class.base_class_name(),
-                entity_name[len(NORMALIZED_PREFIX) :],
+            normalized_entity_class_name = normalized_entity_class.__name__
+            normalized_entity_fields = attribute_field_type_reference_for_class(
+                normalized_entity_class
             )
-            self.assertEqual(
-                normalized_entity_class.base_class_name(),
-                entity_name.replace(NORMALIZED_PREFIX, ""),
+            self.assertTrue(
+                issubclass(normalized_entity_class, Entity),
+                f"Class [{normalized_entity_class}] is not a subclass of Entity",
             )
-
-    # TODO(#30075) Test that all state entities have a normalized entity.
-    def test_normalization_manager_subtree_coverage(self) -> None:
-        """
-        Tests all entities managed by NormalizationManagers in
-        the legacy normalization implementation. We check that
-        subtrees of the root entities that get normalized have
-        NormalizedStateEntity counterparts.
-        """
-        classes_in_subtrees: Set[Type[Entity]] = set()
-
-        for normalization_manager in NORMALIZATION_MANAGERS:
-            for entity in normalization_manager.normalized_entity_classes():
-                classes_in_subtrees.update(classes_in_normalized_entity_subtree(entity))
-
-        managed_normalized_entity_bases = {
-            e.__base__ for e in LEGACY_NORMALIZATION_ENTITY_CLASSES
-        }
-
-        self.assertEqual(managed_normalized_entity_bases, classes_in_subtrees)
-
-    def test_not_normalized_entity_in_ref(self) -> None:
-        # This should raise an error because we are trying to store a
-        # StateSupervisionViolation in the supervision_violation field instead of a
-        # NormalizedStateSupervisionViolation
-        with self.assertRaises(TypeError) as e:
-            _ = NormalizedStateSupervisionViolationResponse(
-                state_code=STATE_CODE,
-                external_id="external_id",
-                sequence_num=1,
-                supervision_violation=state_entities.StateSupervisionViolation(
-                    state_code=STATE_CODE,
-                    external_id="external_id",
-                ),
+            self.assertTrue(
+                issubclass(normalized_entity_class, NormalizedStateEntity),
+                f"Class [{normalized_entity_class}] is not a subclass of "
+                f"NormalizedStateEntity",
             )
-
-        expected_error = (
-            "The supervision_violation field on the "
-            "NormalizedStateSupervisionViolationResponse class must store the "
-            "Normalized version of the entity. Found: StateSupervisionViolation."
-        )
-
-        self.assertEqual(expected_error, e.exception.args[0])
-
-    def test_not_normalized_entity_in_list_ref(self) -> None:
-        # This should raise an error because we are trying to store a
-        # StateSupervisionCaseTypeEntry in the case_type_entries field instead of a
-        # NormalizedStateSupervisionCaseTypeEntry
-        with self.assertRaises(TypeError) as e:
-            _ = NormalizedStateSupervisionPeriod(
-                state_code=STATE_CODE,
-                external_id="external_id",
-                start_date=datetime.date(2020, 1, 1),
-                sequence_num=1,
-                case_type_entries=[
-                    state_entities.StateSupervisionCaseTypeEntry(
-                        state_code=STATE_CODE,
-                        case_type=StateSupervisionCaseType.DRUG_COURT,
+            self.assertTrue(
+                normalized_entity_class_name.startswith(NORMALIZED_PREFIX),
+                f"Class [{normalized_entity_class_name}] does not start with the "
+                f"{NORMALIZED_PREFIX} prefix",
+            )
+            for field_name, normalized_field_info in normalized_entity_fields.items():
+                if normalized_field_info.referenced_cls_name:
+                    self.assertTrue(
+                        normalized_field_info.referenced_cls_name.startswith(
+                            NORMALIZED_PREFIX
+                        ),
+                        f"Referenced class [{normalized_field_info.referenced_cls_name}] "
+                        f"is not a Normalized* entity",
                     )
-                ],
-            )
 
-        expected_error = (
-            "The case_type_entries field on the "
-            "NormalizedStateSupervisionPeriod class must store the "
-            "Normalized version of the entity. Found: StateSupervisionCaseTypeEntry."
+                self._assert_valid_default(
+                    entity_class=normalized_entity_class,
+                    field_name=field_name,
+                    field_info=normalized_field_info,
+                )
+                self._assert_valid_validator(
+                    entity_class=normalized_entity_class,
+                    field_name=field_name,
+                    field_info=normalized_field_info,
+                )
+                field_type = non_optional(normalized_field_info.attribute.type)
+                primary_key_col_name = normalized_entity_class.get_class_id_name()
+                if field_name == primary_key_col_name:
+                    self.assertFalse(
+                        is_optional_type(field_type),
+                        f"Found primary key [{field_name}] which has optional type "
+                        f"[{field_type}]",
+                    )
+                    self.assertEqual(int, get_non_optional_type(field_type))
+
+    def test_state_entities_and_normalized_entities_parity(self) -> None:
+        entity_classes: Set[Type[Entity]] = get_all_entity_classes_in_module(
+            state_entities
         )
 
-        self.assertEqual(expected_error, e.exception.args[0])
+        for entity_class in entity_classes:
+            entity_class_name = entity_class.__name__
+            entity_fields = attribute_field_type_reference_for_class(entity_class)
 
-    def test_not_list_in_list_ref(self) -> None:
-        """Tests that the original validators are also kept on the attributes,
-        so that this raises an error for case_type_entries not being a list."""
-        with self.assertRaisesRegex(
-            TypeError,
-            r"'NormalizedStateSupervisionCaseTypeEntry' object is not iterable",
-        ):
-            _ = NormalizedStateSupervisionPeriod(
-                state_code=STATE_CODE,
-                external_id="external_id",
-                start_date=datetime.date(2020, 1, 1),
-                sequence_num=1,
-                case_type_entries=NormalizedStateSupervisionCaseTypeEntry(  # type: ignore[arg-type]
-                    state_code=STATE_CODE,
-                    case_type=StateSupervisionCaseType.DRUG_COURT,
-                ),
+            normalized_entity_class_name = f"{NORMALIZED_PREFIX}{entity_class_name}"
+            if (
+                normalized_entity_class_name
+                not in self.normalized_entity_classes_by_name
+            ):
+                raise ValueError(
+                    f"Did not find class [{normalized_entity_class_name}]. Expected to "
+                    f"find a normalized entity corresponding to [{entity_class_name}]."
+                )
+
+            normalized_entity_class = self.normalized_entity_classes_by_name[
+                normalized_entity_class_name
+            ]
+            normalized_entity_fields = attribute_field_type_reference_for_class(
+                normalized_entity_class
             )
 
-    def test_ref_is_unset(self) -> None:
-        # Assert that this does not fail when case_type_entries is unset
-        _ = NormalizedStateSupervisionPeriod(
-            state_code=STATE_CODE,
-            external_id="external_id",
-            start_date=datetime.date(2020, 1, 1),
-            sequence_num=1,
-        )
+            missing_normalized_entity_fields = (
+                set(entity_fields)
+                - set(normalized_entity_fields)
+                - EXPECTED_MISSING_NORMALIZED_FIELDS.get(normalized_entity_class, set())
+            )
+            if missing_normalized_entity_fields:
+                raise ValueError(
+                    f"Found fields on class [{entity_class_name}] which are not "
+                    f"present on [{normalized_entity_class_name}]: "
+                    f"{missing_normalized_entity_fields}"
+                )
 
-    def test_new_fields_are_all_flat_fields(self) -> None:
-        """Tests that all attributes added to NormalizedStateEntity classes are flat
-        fields."""
-        for entity_cls in self.normalized_entity_classes:
-            unique_fields = fields_unique_to_normalized_class(entity_cls)
+            for field_name, normalized_field_info in normalized_entity_fields.items():
+                if field_name not in entity_fields:
+                    # This is a new field only present on the normalized entity
+                    attribute = normalized_field_info.attribute
+                    if not is_flat_field(attribute):
+                        raise ValueError(
+                            "Only flat fields are supported as additional fields on "
+                            f"NormalizedStateEntities. Found: {attribute} in field "
+                            f"{field_name}."
+                        )
 
-            fields_dict = attr.fields_dict(entity_cls)  # type: ignore[arg-type]
-            for field, attribute in fields_dict.items():
-                if field not in unique_fields:
                     continue
+                entity_field_info = entity_fields[field_name]
+                self.assertEqual(
+                    normalized_field_info.field_type,
+                    entity_field_info.field_type,
+                    f"Field type for field [{field_name}] differs on class "
+                    f"[{normalized_entity_class_name}] and [{entity_class_name}]",
+                )
+                self.assertEqual(
+                    normalized_field_info.enum_cls, entity_field_info.enum_cls
+                )
 
-                if not is_flat_field(attribute):
-                    raise ValueError(
-                        "Only flat fields are supported as additional fields on "
-                        f"NormalizedStateEntities. Found: {attribute} in field "
-                        f"{field}."
+                entity_field_type = non_optional(entity_field_info.attribute.type)
+                entity_type_is_optional = is_optional_type(entity_field_type)
+                normalized_entity_field_type = non_optional(
+                    normalized_field_info.attribute.type
+                )
+
+                normalized_entity_type_is_optional = is_optional_type(
+                    normalized_entity_field_type
+                )
+
+                if not entity_type_is_optional:
+                    self.assertFalse(
+                        normalized_entity_type_is_optional,
+                        f"Field [{field_name}] is non-optional on the "
+                        f"{entity_class_name} but optional on "
+                        f"{normalized_entity_class_name} ",
                     )
 
+                self._check_field_types(
+                    field_name=field_name,
+                    entity_class_name=entity_class_name,
+                    entity_field_type=entity_field_type,
+                    normalized_entity_class_name=normalized_entity_class_name,
+                    normalized_entity_field_type=normalized_entity_field_type,
+                )
 
-def classes_in_normalized_entity_subtree(
-    entity_cls: Type[Entity],
-) -> Set[Type[Entity]]:
-    """Returns all classes in the subtree of the given entity class that could
-    potentially be impacted by normalization. A subtree is defined as any entity that
-    can be reached from a given entity without traversing an edge to StatePerson.
+                entity_validator = entity_field_info.attribute.validator
+                normalized_entity_validator = normalized_field_info.attribute.validator
 
-    Excludes any classes that cannot be hydrated in calculation pipelines,
-    since these classes cannot be impacted by normalization.
-    """
-    explored_nodes: Set[Type[Entity]] = set()
-    unexplored_nodes: Set[Type[Entity]] = {entity_cls}
+                if isinstance(entity_validator, PreNormOptionalValidator):
+                    self.assertFalse(
+                        isinstance(
+                            normalized_entity_validator,
+                            IsOptionalValidator,
+                        ),
+                        f"Found [{field_name}] which has a validator that "
+                        f"allows for optional values even though it is marked as "
+                        f"pre_norm_opt() in state/entities.py.",
+                    )
+                if not issubclass(normalized_entity_class, Entity):
+                    raise ValueError(
+                        f"Expected normalized entity class [{normalized_entity_class}] "
+                        f"to be subclass of Entity"
+                    )
 
-    class_names_to_ignore = get_entity_class_names_excluded_from_normalization()
+                missing_global_constraints = set(
+                    entity_class.global_unique_constraints()
+                ) - set(normalized_entity_class.global_unique_constraints())
+                if missing_global_constraints:
+                    raise ValueError(
+                        f"Found global constraints defined on [{entity_class_name}] "
+                        f"which are not defined for [{normalized_entity_class_name}]: "
+                        f"{missing_global_constraints}"
+                    )
 
-    while unexplored_nodes:
-        node_entity_class = unexplored_nodes.pop()
-        for field in attr.fields_dict(node_entity_class):  # type: ignore[arg-type]
-            related_class_name = attr_field_referenced_cls_name_for_field_name(
-                node_entity_class, field
-            )
-            if not related_class_name or related_class_name in class_names_to_ignore:
-                continue
+                missing_entity_tree_constraints = set(
+                    entity_class.entity_tree_unique_constraints()
+                ) - set(normalized_entity_class.entity_tree_unique_constraints())
+                if missing_entity_tree_constraints:
+                    raise ValueError(
+                        f"Found entity_tree constraints defined on [{entity_class_name}] "
+                        f"which are not defined for [{normalized_entity_class_name}]: "
+                        f"{missing_entity_tree_constraints}"
+                    )
 
-            related_class = get_entity_class_in_module_with_name(
-                state_entities, related_class_name
-            )
-
-            if related_class not in explored_nodes:
-                unexplored_nodes.add(related_class)
-
-        explored_nodes.add(node_entity_class)
-
-    return explored_nodes
-
-
-class TestClassesInNormalizedEntitySubtree(unittest.TestCase):
-    """Tests the classes_in_normalized_entity_subtree helper function."""
-
-    def test_classes_in_normalized_entity_subtree(self) -> None:
-        entity_class = state_entities.StateSupervisionSentence
-
-        # StateSupervisionSentence can be connected to any of the following without
-        # traversing a StatePerson edge
-        expected_subtree = {
-            state_entities.StateSupervisionSentence,
-            state_entities.StateCharge,
-            state_entities.StateEarlyDischarge,
-            state_entities.StateIncarcerationSentence,
-        }
-
-        self.assertEqual(
-            expected_subtree, classes_in_normalized_entity_subtree(entity_class)
+    def _check_field_types(
+        self,
+        *,
+        field_name: str,
+        entity_class_name: str,
+        entity_field_type: Type,
+        normalized_entity_class_name: str,
+        normalized_entity_field_type: Type,
+    ) -> None:
+        """Checks that the types for field |field_name| are comparable in the
+        non-normalized and normalized versions of the given classes.
+        """
+        entity_type_is_optional = is_optional_type(entity_field_type)
+        normalized_entity_type_is_optional = is_optional_type(
+            normalized_entity_field_type
         )
 
-    def test_classes_in_normalized_entity_subtree_leaf_node(self) -> None:
-        entity_class = state_entities.StateIncarcerationPeriod
+        if not entity_type_is_optional:
+            self.assertFalse(
+                normalized_entity_type_is_optional,
+                f"Field [{field_name}] is non-optional on the "
+                f"{entity_class_name} but optional on "
+                f"{normalized_entity_class_name} ",
+            )
 
-        # StateIncarcerationPeriod is a leaf node
-        expected_subtree = {state_entities.StateIncarcerationPeriod}
+        if entity_type_is_optional and is_list_type(
+            get_non_optional_type(entity_field_type)
+        ):
+            raise ValueError(
+                f"Schema should not have optional list types. Found type "
+                f"[{entity_field_type}] on field [{field_name}] of "
+                f"[{entity_class_name}]."
+            )
+
+        if normalized_entity_type_is_optional and is_list_type(
+            get_non_optional_type(normalized_entity_field_type)
+        ):
+            raise ValueError(
+                f"Schema should not have optional list types. Found type "
+                f"[{normalized_entity_field_type}] on field [{field_name}] of "
+                f"[{normalized_entity_class_name}]."
+            )
+
+        entity_type_is_list = is_list_type(entity_field_type)
+        normalized_entity_type_is_list = is_list_type(normalized_entity_field_type)
+
+        self.assertEqual(entity_type_is_list, normalized_entity_type_is_list)
+
+        entity_type_to_compare: Type | str
+        if entity_type_is_optional:
+            entity_type_to_compare = get_non_optional_type(entity_field_type)
+        elif entity_type_is_list:
+            entity_type_to_compare = non_optional(
+                get_referenced_class_name_from_type(entity_field_type)
+            )
+        else:
+            entity_type_to_compare = entity_field_type
+
+        normalized_entity_type_to_compare: Type | str
+        if normalized_entity_type_is_optional:
+            normalized_entity_type_to_compare = get_non_optional_type(
+                normalized_entity_field_type
+            )
+        elif normalized_entity_type_is_list:
+            normalized_entity_type_to_compare = non_optional(
+                get_referenced_class_name_from_type(normalized_entity_field_type)
+            )
+        else:
+            normalized_entity_type_to_compare = normalized_entity_field_type
+
+        if isinstance(entity_type_to_compare, ForwardRef):
+            entity_type_to_compare = entity_type_to_compare.__forward_arg__
+
+        if isinstance(normalized_entity_type_to_compare, ForwardRef):
+            normalized_entity_type_to_compare = (
+                normalized_entity_type_to_compare.__forward_arg__
+            )
+            if not isinstance(normalized_entity_type_to_compare, str):
+                raise ValueError(
+                    f"Expected ForwardRef arg to return a string, found "
+                    f"[{normalized_entity_type_to_compare}] for field [{field_name}]"
+                )
+
+        if isinstance(normalized_entity_type_to_compare, str):
+            if not normalized_entity_type_to_compare.startswith(NORMALIZED_PREFIX):
+                raise ValueError(
+                    f"Found field [{field_name}] on class "
+                    f"[{normalized_entity_class_name}] that references class "
+                    f"[{normalized_entity_type_to_compare}], which is not a normalized "
+                    f"type."
+                )
+            normalized_entity_type_to_compare = normalized_entity_type_to_compare[
+                len(NORMALIZED_PREFIX) :
+            ]
 
         self.assertEqual(
-            expected_subtree, classes_in_normalized_entity_subtree(entity_class)
+            entity_type_to_compare,
+            normalized_entity_type_to_compare,
+            f"Field [{field_name}] has non-equivalent type "
+            f"[{normalized_entity_field_type}] on {normalized_entity_class_name}. Type "
+            f"on {entity_class_name}: {entity_field_type}",
         )
-
-    def test_classes_in_normalized_entity_subtree_valid_for_all_entities(self) -> None:
-        for entity_class in get_all_entity_classes_in_module(state_entities):
-            _ = classes_in_normalized_entity_subtree(entity_class)

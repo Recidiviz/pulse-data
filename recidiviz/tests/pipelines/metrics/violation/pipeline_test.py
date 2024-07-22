@@ -40,10 +40,15 @@ from recidiviz.common.constants.state.state_supervision_violation import (
 )
 from recidiviz.common.constants.state.state_supervision_violation_response import (
     StateSupervisionViolationResponseDecision,
+    StateSupervisionViolationResponseType,
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.database.schema.state import schema
-from recidiviz.persistence.entity.state import entities, normalized_entities
+from recidiviz.persistence.entity.state import normalized_entities
+from recidiviz.persistence.entity.state.normalized_entities import (
+    NormalizedStatePerson,
+    NormalizedStateSupervisionViolation,
+)
 from recidiviz.pipelines.metrics.base_metric_pipeline import (
     ClassifyResults,
     ProduceMetrics,
@@ -154,7 +159,7 @@ class TestViolationPipeline(unittest.TestCase):
             state_code="US_XX",
             external_id="svr1",
             supervision_violation_response_id=1234,
-            response_type=entities.StateSupervisionViolationResponseType.VIOLATION_REPORT,
+            response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
             response_date=date(2021, 1, 4),
             is_draft=False,
             supervision_violation_response_decisions=[violation_decision],
@@ -285,7 +290,7 @@ class TestClassifyViolationEvents(unittest.TestCase):
         self.fake_person_id = 12345
         self.fake_supervision_violation_id = 23456
 
-        self.fake_person = entities.StatePerson.new_with_defaults(
+        self.fake_person = NormalizedStatePerson(
             state_code="US_XX",
             person_id=self.fake_person_id,
             gender=StateGender.FEMALE,
@@ -312,15 +317,17 @@ class TestClassifyViolationEvents(unittest.TestCase):
             state_code="US_XX",
             decision=StateSupervisionViolationResponseDecision.SHOCK_INCARCERATION,
         )
-        violation_response = normalized_entities.NormalizedStateSupervisionViolationResponse(
-            supervision_violation_response_id=1,
-            state_code="US_XX",
-            external_id="svr1",
-            response_type=entities.StateSupervisionViolationResponseType.VIOLATION_REPORT,
-            response_date=date(2021, 1, 4),
-            is_draft=False,
-            supervision_violation_response_decisions=[violation_decision],
-            sequence_num=0,
+        violation_response = (
+            normalized_entities.NormalizedStateSupervisionViolationResponse(
+                supervision_violation_response_id=1,
+                state_code="US_XX",
+                external_id="svr1",
+                response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
+                response_date=date(2021, 1, 4),
+                is_draft=False,
+                supervision_violation_response_decisions=[violation_decision],
+                sequence_num=0,
+            )
         )
         violation = normalized_entities.NormalizedStateSupervisionViolation(
             state_code="US_XX",
@@ -354,12 +361,12 @@ class TestClassifyViolationEvents(unittest.TestCase):
         ]
 
         correct_output: Iterable[
-            Tuple[entities.StatePerson, Iterable[ViolationWithResponseEvent]]
+            Tuple[NormalizedStatePerson, Iterable[ViolationWithResponseEvent]]
         ] = [(self.fake_person, violation_events)]
 
         person_violations = {
-            entities.StatePerson.__name__: [self.fake_person],
-            entities.StateSupervisionViolation.__name__: [violation],
+            NormalizedStatePerson.__name__: [self.fake_person],
+            NormalizedStateSupervisionViolation.__name__: [violation],
         }
         test_pipeline = TestPipeline()
         output = (
@@ -380,12 +387,12 @@ class TestClassifyViolationEvents(unittest.TestCase):
         """Tests the ClassifyViolationEvents DoFn with no violations for a person."""
 
         correct_output: Iterable[
-            Tuple[entities.StatePerson, Iterable[ViolationWithResponseEvent]]
+            Tuple[NormalizedStatePerson, Iterable[ViolationWithResponseEvent]]
         ] = []
 
         person_violations = {
-            entities.StatePerson.__name__: [self.fake_person],
-            entities.StateSupervisionViolation.__name__: [],
+            NormalizedStatePerson.__name__: [self.fake_person],
+            NormalizedStateSupervisionViolation.__name__: [],
         }
         test_pipeline = TestPipeline()
         output = (
@@ -422,12 +429,12 @@ class TestClassifyViolationEvents(unittest.TestCase):
         violation_type.supervision_violation = violation
 
         correct_output: Iterable[
-            Tuple[entities.StatePerson, Iterable[ViolationWithResponseEvent]]
+            Tuple[NormalizedStatePerson, Iterable[ViolationWithResponseEvent]]
         ] = []
 
         person_violations = {
-            entities.StatePerson.__name__: [self.fake_person],
-            entities.StateSupervisionViolation.__name__: [violation],
+            NormalizedStatePerson.__name__: [self.fake_person],
+            NormalizedStateSupervisionViolation.__name__: [violation],
         }
         test_pipeline = TestPipeline()
         output = (
@@ -472,7 +479,7 @@ class TestProduceViolationMetrics(unittest.TestCase):
     def testProduceViolationMetrics(self) -> None:
         """Tests the ProduceViolationMetrics DoFn."""
 
-        fake_person = entities.StatePerson.new_with_defaults(
+        fake_person = NormalizedStatePerson(
             state_code="US_XX",
             person_id=self.fake_person_id,
             gender=StateGender.FEMALE,

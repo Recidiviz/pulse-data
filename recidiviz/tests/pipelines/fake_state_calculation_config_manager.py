@@ -30,10 +30,11 @@ from recidiviz.persistence.entity.state.entities import (
     StateIncarcerationPeriod,
     StatePerson,
     StateStaffSupervisorPeriod,
-    StateSupervisionContact,
 )
 from recidiviz.persistence.entity.state.normalized_entities import (
     NormalizedStateAssessment,
+    NormalizedStatePerson,
+    NormalizedStateSupervisionContact,
     NormalizedStateSupervisionPeriod,
     NormalizedStateSupervisionViolationResponse,
 )
@@ -171,12 +172,12 @@ def get_state_specific_assessment_normalization_delegate(
 
 
 def get_state_specific_case_compliance_manager(
-    person: StatePerson,
+    person: NormalizedStatePerson,
     supervision_period: NormalizedStateSupervisionPeriod,
     case_type: StateSupervisionCaseType,
     start_of_supervision: date,
     assessments_by_date: RangeQuerier[date, NormalizedStateAssessment],
-    supervision_contacts_by_date: RangeQuerier[date, StateSupervisionContact],
+    supervision_contacts_by_date: RangeQuerier[date, NormalizedStateSupervisionContact],
     violation_responses: List[NormalizedStateSupervisionViolationResponse],
     incarceration_period_index: NormalizedIncarcerationPeriodIndex,
     supervision_delegate: StateSpecificSupervisionDelegate,

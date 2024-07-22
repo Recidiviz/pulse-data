@@ -39,12 +39,10 @@ from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodTerminationReason,
 )
 from recidiviz.common.constants.states import StateCode
-from recidiviz.persistence.entity.state.entities import (
-    StatePerson,
-    StateSupervisionContact,
-)
 from recidiviz.persistence.entity.state.normalized_entities import (
     NormalizedStateAssessment,
+    NormalizedStatePerson,
+    NormalizedStateSupervisionContact,
     NormalizedStateSupervisionPeriod,
 )
 from recidiviz.pipelines.normalization.utils.normalization_managers.assessment_normalization_manager import (
@@ -103,7 +101,7 @@ class TestAssessmentsInComplianceMonth(unittest.TestCase):
     """Tests for _completed_assessments_on_date."""
 
     def setUp(self) -> None:
-        self.person = StatePerson.new_with_defaults(state_code="US_IX")
+        self.person = NormalizedStatePerson(state_code="US_IX", person_id=12345)
         self.empty_ip_index = default_normalized_ip_index_for_tests(
             incarceration_delegate=UsIxIncarcerationDelegate()
         )
@@ -206,49 +204,55 @@ class TestFaceToFaceContactsInComplianceMonth(unittest.TestCase):
     """Tests for _face_to_face_contacts_on_dates."""
 
     def setUp(self) -> None:
-        self.person = StatePerson.new_with_defaults(state_code="US_IX")
+        self.person = NormalizedStatePerson(state_code="US_IX", person_id=12345)
         self.empty_ip_index = default_normalized_ip_index_for_tests(
             incarceration_delegate=UsIxIncarcerationDelegate()
         )
 
     def test_face_to_face_contacts_in_compliance_month(self) -> None:
         evaluation_date = date(2018, 4, 30)
-        contact_1 = StateSupervisionContact.new_with_defaults(
+        contact_1 = NormalizedStateSupervisionContact(
+            supervision_contact_id=12345,
             state_code="US_IX",
             external_id="c1",
             contact_date=date(2018, 4, 1),
             contact_type=StateSupervisionContactType.DIRECT,
             status=StateSupervisionContactStatus.COMPLETED,
         )
-        contact_2 = StateSupervisionContact.new_with_defaults(
+        contact_2 = NormalizedStateSupervisionContact(
+            supervision_contact_id=12345,
             state_code="US_IX",
             external_id="c2",
             contact_date=date(2018, 4, 15),
             contact_type=StateSupervisionContactType.DIRECT,
             status=StateSupervisionContactStatus.COMPLETED,
         )
-        contact_3 = StateSupervisionContact.new_with_defaults(
+        contact_3 = NormalizedStateSupervisionContact(
+            supervision_contact_id=12345,
             state_code="US_IX",
             external_id="c3",
             contact_date=date(2018, 4, 30),
             contact_type=StateSupervisionContactType.DIRECT,
             status=StateSupervisionContactStatus.COMPLETED,
         )
-        contact_out_of_range = StateSupervisionContact.new_with_defaults(
+        contact_out_of_range = NormalizedStateSupervisionContact(
+            supervision_contact_id=12345,
             state_code="US_IX",
             external_id="c3",
             contact_date=date(2018, 3, 30),
             contact_type=StateSupervisionContactType.DIRECT,
             status=StateSupervisionContactStatus.COMPLETED,
         )
-        contact_incomplete = StateSupervisionContact.new_with_defaults(
+        contact_incomplete = NormalizedStateSupervisionContact(
+            supervision_contact_id=12345,
             state_code="US_IX",
             external_id="c4",
             contact_date=date(2018, 4, 30),
             contact_type=StateSupervisionContactType.DIRECT,
             status=StateSupervisionContactStatus.ATTEMPTED,
         )
-        contact_wrong_type = StateSupervisionContact.new_with_defaults(
+        contact_wrong_type = NormalizedStateSupervisionContact(
+            supervision_contact_id=12345,
             state_code="US_IX",
             external_id="c5",
             contact_date=date(2018, 4, 30),
@@ -311,7 +315,7 @@ class TestNextRecommendedContactDate(unittest.TestCase):
     function."""
 
     def setUp(self) -> None:
-        self.person = StatePerson.new_with_defaults(state_code="US_IX")
+        self.person = NormalizedStatePerson(state_code="US_IX", person_id=12345)
         self.empty_ip_index = default_normalized_ip_index_for_tests(
             incarceration_delegate=UsIxIncarcerationDelegate()
         )
@@ -336,7 +340,8 @@ class TestNextRecommendedContactDate(unittest.TestCase):
         )
 
         supervision_contacts = [
-            StateSupervisionContact.new_with_defaults(
+            NormalizedStateSupervisionContact(
+                supervision_contact_id=12345,
                 state_code="US_IX",
                 external_id="c1",
                 contact_date=supervision_period.start_date,
@@ -393,7 +398,8 @@ class TestNextRecommendedContactDate(unittest.TestCase):
         )
 
         supervision_contacts = [
-            StateSupervisionContact.new_with_defaults(
+            NormalizedStateSupervisionContact(
+                supervision_contact_id=12345,
                 state_code="US_IX",
                 external_id="c1",
                 # Only contact happened before supervision started
@@ -451,7 +457,8 @@ class TestNextRecommendedContactDate(unittest.TestCase):
         )
 
         supervision_contacts = [
-            StateSupervisionContact.new_with_defaults(
+            NormalizedStateSupervisionContact(
+                supervision_contact_id=12345,
                 state_code="US_IX",
                 external_id="c1",
                 contact_date=supervision_period.start_date,
@@ -509,7 +516,8 @@ class TestNextRecommendedContactDate(unittest.TestCase):
         )
 
         supervision_contacts = [
-            StateSupervisionContact.new_with_defaults(
+            NormalizedStateSupervisionContact(
+                supervision_contact_id=12345,
                 state_code="US_IX",
                 external_id="c1",
                 contact_date=supervision_period.start_date,
@@ -788,7 +796,8 @@ class TestNextRecommendedContactDate(unittest.TestCase):
         )
 
         supervision_contacts = [
-            StateSupervisionContact.new_with_defaults(
+            NormalizedStateSupervisionContact(
+                supervision_contact_id=12345,
                 state_code="US_IX",
                 external_id=f"c_{contact_date.isoformat()}",
                 contact_date=contact_date,
@@ -839,7 +848,7 @@ class TestNextRecommendedContactDate(unittest.TestCase):
             sequence_num=0,
         )
 
-        supervision_contacts: List[StateSupervisionContact] = []
+        supervision_contacts: List[NormalizedStateSupervisionContact] = []
 
         evaluation_date = start_of_supervision + relativedelta(
             days=NEW_SUPERVISION_CONTACT_DEADLINE_BUSINESS_DAYS + 1
@@ -886,7 +895,7 @@ class TestNextRecommendedContactDate(unittest.TestCase):
             sequence_num=0,
         )
 
-        supervision_contacts: List[StateSupervisionContact] = []
+        supervision_contacts: List[NormalizedStateSupervisionContact] = []
 
         evaluation_date = start_of_supervision + relativedelta(
             days=NEW_SUPERVISION_CONTACT_DEADLINE_BUSINESS_DAYS + 1
@@ -1034,7 +1043,8 @@ class TestNextRecommendedContactDate(unittest.TestCase):
         )
 
         supervision_contacts = [
-            StateSupervisionContact.new_with_defaults(
+            NormalizedStateSupervisionContact(
+                supervision_contact_id=12345,
                 state_code="US_IX",
                 contact_date=contact_date,
                 external_id=f"c_{contact_date.isoformat()}",
@@ -1132,7 +1142,8 @@ class TestNextRecommendedContactDate(unittest.TestCase):
         )
 
         supervision_contacts = [
-            StateSupervisionContact.new_with_defaults(
+            NormalizedStateSupervisionContact(
+                supervision_contact_id=12345,
                 state_code="US_IX",
                 external_id="c1",
                 contact_date=previous_contact_date,
@@ -1276,7 +1287,8 @@ class TestNextRecommendedContactDate(unittest.TestCase):
         # For US_IX, both collateral and direct contacts at location of residence
         # count as home visits
         supervision_contacts = [
-            StateSupervisionContact.new_with_defaults(
+            NormalizedStateSupervisionContact(
+                supervision_contact_id=12345,
                 state_code="US_IX",
                 external_id="c1",
                 contact_date=date(2018, 4, 1),
@@ -1284,7 +1296,8 @@ class TestNextRecommendedContactDate(unittest.TestCase):
                 status=StateSupervisionContactStatus.COMPLETED,
                 location=StateSupervisionContactLocation.RESIDENCE,
             ),
-            StateSupervisionContact.new_with_defaults(
+            NormalizedStateSupervisionContact(
+                supervision_contact_id=12345,
                 state_code="US_IX",
                 external_id="c2",
                 contact_date=date(2019, 4, 1),
@@ -1360,7 +1373,8 @@ class TestNextRecommendedContactDate(unittest.TestCase):
         )
 
         supervision_contacts = [
-            StateSupervisionContact.new_with_defaults(
+            NormalizedStateSupervisionContact(
+                supervision_contact_id=12345,
                 state_code="US_IX",
                 external_id="c1",
                 contact_date=previous_contact_date,
@@ -1519,7 +1533,7 @@ class TestGuidelinesApplicableForCase(unittest.TestCase):
     """Tests the guidelines_applicable_for_case function."""
 
     def setUp(self) -> None:
-        self.person = StatePerson.new_with_defaults(state_code="US_IX")
+        self.person = NormalizedStatePerson(state_code="US_IX", person_id=12345)
         self.empty_ip_index = default_normalized_ip_index_for_tests(
             incarceration_delegate=UsIxIncarcerationDelegate()
         )
@@ -1895,7 +1909,7 @@ class TestReassessmentRequirementAreMet(unittest.TestCase):
     """Tests the reassessment_requirements_are_met function."""
 
     def setUp(self) -> None:
-        self.person = StatePerson.new_with_defaults(state_code="US_IX")
+        self.person = NormalizedStatePerson(state_code="US_IX", person_id=12345)
         self.empty_ip_index = default_normalized_ip_index_for_tests(
             incarceration_delegate=UsIxIncarcerationDelegate()
         )
@@ -2155,8 +2169,8 @@ class TestSupervisionDowngrades(unittest.TestCase):
             incarceration_delegate=UsIxIncarcerationDelegate()
         )
 
-    def _person_with_gender(self, gender: StateGender) -> StatePerson:
-        return StatePerson.new_with_defaults(state_code="US_IX", gender=gender)
+    def _person_with_gender(self, gender: StateGender) -> NormalizedStatePerson:
+        return NormalizedStatePerson(state_code="US_IX", person_id=12345, gender=gender)
 
     def _supervision_period_with_level(
         self, supervision_level: StateSupervisionLevel

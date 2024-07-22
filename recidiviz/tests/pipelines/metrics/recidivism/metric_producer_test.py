@@ -31,11 +31,11 @@ from recidiviz.common.constants.state.state_person import (
     StateGender,
     StateRace,
 )
-from recidiviz.persistence.entity.state.entities import (
-    StatePerson,
-    StatePersonEthnicity,
-    StatePersonExternalId,
-    StatePersonRace,
+from recidiviz.persistence.entity.state.normalized_entities import (
+    NormalizedStatePerson,
+    NormalizedStatePersonEthnicity,
+    NormalizedStatePersonExternalId,
+    NormalizedStatePersonRace,
 )
 from recidiviz.pipelines.metrics.recidivism import metric_producer, pipeline
 from recidiviz.pipelines.metrics.recidivism.events import (
@@ -344,21 +344,23 @@ class TestProduceMetrics(unittest.TestCase):
     def test_produce_recidivism_metrics(self) -> None:
         """Tests the produce_recidivism_metrics function where there is
         recidivism."""
-        person = StatePerson.new_with_defaults(
+        person = NormalizedStatePerson(
             state_code="US_XX",
             person_id=12345,
             birthdate=date(1984, 8, 31),
             gender=StateGender.FEMALE,
         )
 
-        race = StatePersonRace.new_with_defaults(
-            state_code="US_XX", race=StateRace.WHITE
+        race = NormalizedStatePersonRace(
+            state_code="US_XX", person_race_id=12345, race=StateRace.WHITE
         )
 
         person.races = [race]
 
-        ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code="US_XX", ethnicity=StateEthnicity.NOT_HISPANIC
+        ethnicity = NormalizedStatePersonEthnicity(
+            state_code="US_XX",
+            person_ethnicity_id=12345,
+            ethnicity=StateEthnicity.NOT_HISPANIC,
         )
 
         person.ethnicities = [ethnicity]
@@ -402,20 +404,22 @@ class TestProduceMetrics(unittest.TestCase):
     def test_produce_recidivism_metrics_multiple_in_period(self) -> None:
         """Tests the produce_recidivism_metrics function where there are multiple instances of recidivism within a
         follow-up period."""
-        person = StatePerson.new_with_defaults(
+        person = NormalizedStatePerson(
             state_code="US_XX",
             person_id=12345,
             birthdate=date(1984, 8, 31),
             gender=StateGender.FEMALE,
         )
 
-        race = StatePersonRace.new_with_defaults(
-            state_code="US_XX", race=StateRace.BLACK
+        race = NormalizedStatePersonRace(
+            state_code="US_XX", person_race_id=12345, race=StateRace.BLACK
         )
         person.races = [race]
 
-        ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code="US_XX", ethnicity=StateEthnicity.NOT_HISPANIC
+        ethnicity = NormalizedStatePersonEthnicity(
+            state_code="US_XX",
+            person_ethnicity_id=12345,
+            ethnicity=StateEthnicity.NOT_HISPANIC,
         )
 
         person.ethnicities = [ethnicity]
@@ -477,20 +481,22 @@ class TestProduceMetrics(unittest.TestCase):
     ) -> None:
         """Tests the produce_recidivism_metrics function where there are multiple instances of recidivism within a
         follow-up period with different return type information"""
-        person = StatePerson.new_with_defaults(
+        person = NormalizedStatePerson(
             state_code="US_XX",
             person_id=12345,
             birthdate=date(1984, 8, 31),
             gender=StateGender.FEMALE,
         )
 
-        race = StatePersonRace.new_with_defaults(
-            state_code="US_XX", race=StateRace.BLACK
+        race = NormalizedStatePersonRace(
+            state_code="US_XX", person_race_id=12345, race=StateRace.BLACK
         )
         person.races = [race]
 
-        ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code="US_XX", ethnicity=StateEthnicity.NOT_HISPANIC
+        ethnicity = NormalizedStatePersonEthnicity(
+            state_code="US_XX",
+            person_ethnicity_id=12345,
+            ethnicity=StateEthnicity.NOT_HISPANIC,
         )
 
         person.ethnicities = [ethnicity]
@@ -544,20 +550,22 @@ class TestProduceMetrics(unittest.TestCase):
 
     def test_produce_recidivism_metrics_multiple_releases_in_year(self) -> None:
         """Tests the produce_recidivism_metrics function where there are multiple releases in the same year."""
-        person = StatePerson.new_with_defaults(
+        person = NormalizedStatePerson(
             state_code="US_XX",
             person_id=12345,
             birthdate=date(1984, 8, 31),
             gender=StateGender.FEMALE,
         )
 
-        race = StatePersonRace.new_with_defaults(
-            state_code="US_XX", race=StateRace.BLACK
+        race = NormalizedStatePersonRace(
+            state_code="US_XX", person_race_id=12345, race=StateRace.BLACK
         )
         person.races = [race]
 
-        ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code="US_XX", ethnicity=StateEthnicity.NOT_HISPANIC
+        ethnicity = NormalizedStatePersonEthnicity(
+            state_code="US_XX",
+            person_ethnicity_id=12345,
+            ethnicity=StateEthnicity.NOT_HISPANIC,
         )
 
         person.ethnicities = [ethnicity]
@@ -610,20 +618,22 @@ class TestProduceMetrics(unittest.TestCase):
     ) -> None:
         """Tests the produce_recidivism_metrics function where there are multiple releases that have identified the
         same admission as the next valid reincarceration."""
-        person = StatePerson.new_with_defaults(
+        person = NormalizedStatePerson(
             state_code="US_XX",
             person_id=12345,
             birthdate=date(1984, 8, 31),
             gender=StateGender.FEMALE,
         )
 
-        race = StatePersonRace.new_with_defaults(
-            state_code="US_XX", race=StateRace.BLACK
+        race = NormalizedStatePersonRace(
+            state_code="US_XX", person_race_id=12345, race=StateRace.BLACK
         )
         person.races = [race]
 
-        ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code="US_XX", ethnicity=StateEthnicity.NOT_HISPANIC
+        ethnicity = NormalizedStatePersonEthnicity(
+            state_code="US_XX",
+            person_ethnicity_id=12345,
+            ethnicity=StateEthnicity.NOT_HISPANIC,
         )
 
         person.ethnicities = [ethnicity]
@@ -680,21 +690,23 @@ class TestProduceMetrics(unittest.TestCase):
     def test_produce_recidivism_metrics_return_one_year_later(self) -> None:
         """Tests the produce_recidivism_metrics function where the person returned to prison exactly one year after
         they were released."""
-        person = StatePerson.new_with_defaults(
+        person = NormalizedStatePerson(
             state_code="US_XX",
             person_id=12345,
             birthdate=date(1984, 8, 31),
             gender=StateGender.FEMALE,
         )
 
-        race = StatePersonRace.new_with_defaults(
-            state_code="US_XX", race=StateRace.WHITE
+        race = NormalizedStatePersonRace(
+            state_code="US_XX", person_race_id=12345, race=StateRace.WHITE
         )
 
         person.races = [race]
 
-        ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code="US_XX", ethnicity=StateEthnicity.NOT_HISPANIC
+        ethnicity = NormalizedStatePersonEthnicity(
+            state_code="US_XX",
+            person_ethnicity_id=12345,
+            ethnicity=StateEthnicity.NOT_HISPANIC,
         )
 
         person.ethnicities = [ethnicity]
@@ -738,20 +750,22 @@ class TestProduceMetrics(unittest.TestCase):
     def test_produce_recidivism_metrics_no_recidivism(self) -> None:
         """Tests the produce_recidivism_metrics function where there is no
         recidivism."""
-        person = StatePerson.new_with_defaults(
+        person = NormalizedStatePerson(
             state_code="US_XX",
             person_id=12345,
             birthdate=date(1984, 8, 31),
             gender=StateGender.FEMALE,
         )
 
-        race = StatePersonRace.new_with_defaults(
-            state_code="US_XX", race=StateRace.BLACK
+        race = NormalizedStatePersonRace(
+            state_code="US_XX", person_race_id=12345, race=StateRace.BLACK
         )
         person.races = [race]
 
-        ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code="US_XX", ethnicity=StateEthnicity.NOT_HISPANIC
+        ethnicity = NormalizedStatePersonEthnicity(
+            state_code="US_XX",
+            person_ethnicity_id=12345,
+            ethnicity=StateEthnicity.NOT_HISPANIC,
         )
 
         person.ethnicities = [ethnicity]
@@ -791,20 +805,22 @@ class TestProduceMetrics(unittest.TestCase):
     def test_produce_recidivism_metrics_recidivated_after_last_period(self) -> None:
         """Tests the produce_recidivism_metrics function where there is
         recidivism but it occurred after the last follow-up period we track."""
-        person = StatePerson.new_with_defaults(
+        person = NormalizedStatePerson(
             state_code="US_XX",
             person_id=12345,
             birthdate=date(1984, 8, 31),
             gender=StateGender.FEMALE,
         )
 
-        race = StatePersonRace.new_with_defaults(
-            state_code="US_XX", race=StateRace.BLACK
+        race = NormalizedStatePersonRace(
+            state_code="US_XX", person_race_id=12345, race=StateRace.BLACK
         )
         person.races = [race]
 
-        ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code="US_XX", ethnicity=StateEthnicity.NOT_HISPANIC
+        ethnicity = NormalizedStatePersonEthnicity(
+            state_code="US_XX",
+            person_ethnicity_id=12345,
+            ethnicity=StateEthnicity.NOT_HISPANIC,
         )
 
         person.ethnicities = [ethnicity]
@@ -847,25 +863,27 @@ class TestProduceMetrics(unittest.TestCase):
     def test_produce_recidivism_metrics_multiple_races(self) -> None:
         """Tests the produce_recidivism_metrics function where there is
         recidivism, and the person has more than one race."""
-        person = StatePerson.new_with_defaults(
+        person = NormalizedStatePerson(
             state_code="US_XX",
             person_id=12345,
             birthdate=date(1984, 8, 31),
             gender=StateGender.FEMALE,
         )
 
-        race_white = StatePersonRace.new_with_defaults(
-            state_code="US_XX", race=StateRace.WHITE
+        race_white = NormalizedStatePersonRace(
+            state_code="US_XX", person_race_id=12345, race=StateRace.WHITE
         )
 
-        race_black = StatePersonRace.new_with_defaults(
-            state_code="MT", race=StateRace.BLACK
+        race_black = NormalizedStatePersonRace(
+            state_code="US_XX", person_race_id=123345, race=StateRace.BLACK
         )
 
         person.races = [race_white, race_black]
 
-        ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code="US_XX", ethnicity=StateEthnicity.NOT_HISPANIC
+        ethnicity = NormalizedStatePersonEthnicity(
+            state_code="US_XX",
+            person_ethnicity_id=12345,
+            ethnicity=StateEthnicity.NOT_HISPANIC,
         )
 
         person.ethnicities = [ethnicity]
@@ -909,24 +927,28 @@ class TestProduceMetrics(unittest.TestCase):
     def test_produce_recidivism_metrics_multiple_ethnicities(self) -> None:
         """Tests the produce_recidivism_metrics function where there is
         recidivism, and the person has more than one ethnicity."""
-        person = StatePerson.new_with_defaults(
+        person = NormalizedStatePerson(
             state_code="US_XX",
             person_id=12345,
             birthdate=date(1984, 8, 31),
             gender=StateGender.FEMALE,
         )
 
-        race = StatePersonRace.new_with_defaults(
-            state_code="US_XX", race=StateRace.BLACK
+        race = NormalizedStatePersonRace(
+            state_code="US_XX", person_race_id=12345, race=StateRace.BLACK
         )
         person.races = [race]
 
-        ethnicity_hispanic = StatePersonEthnicity.new_with_defaults(
-            state_code="US_XX", ethnicity=StateEthnicity.HISPANIC
+        ethnicity_hispanic = NormalizedStatePersonEthnicity(
+            state_code="US_XX",
+            person_ethnicity_id=12345,
+            ethnicity=StateEthnicity.HISPANIC,
         )
 
-        ethnicity_not_hispanic = StatePersonEthnicity.new_with_defaults(
-            state_code="MT", ethnicity=StateEthnicity.NOT_HISPANIC
+        ethnicity_not_hispanic = NormalizedStatePersonEthnicity(
+            state_code="US_XX",
+            person_ethnicity_id=12345,
+            ethnicity=StateEthnicity.NOT_HISPANIC,
         )
 
         person.ethnicities = [ethnicity_hispanic, ethnicity_not_hispanic]
@@ -971,29 +993,33 @@ class TestProduceMetrics(unittest.TestCase):
         """Tests the produce_recidivism_metrics function where there is
         recidivism, and the person has multiple races and multiple
         ethnicities."""
-        person = StatePerson.new_with_defaults(
+        person = NormalizedStatePerson(
             state_code="US_XX",
             person_id=12345,
             birthdate=date(1984, 8, 31),
             gender=StateGender.FEMALE,
         )
 
-        race_white = StatePersonRace.new_with_defaults(
-            state_code="US_XX", race=StateRace.WHITE
+        race_white = NormalizedStatePersonRace(
+            state_code="US_XX", person_race_id=12345, race=StateRace.WHITE
         )
 
-        race_black = StatePersonRace.new_with_defaults(
-            state_code="MT", race=StateRace.BLACK
+        race_black = NormalizedStatePersonRace(
+            state_code="US_XX", person_race_id=123345, race=StateRace.BLACK
         )
 
         person.races = [race_white, race_black]
 
-        ethnicity_hispanic = StatePersonEthnicity.new_with_defaults(
-            state_code="US_XX", ethnicity=StateEthnicity.HISPANIC
+        ethnicity_hispanic = NormalizedStatePersonEthnicity(
+            state_code="US_XX",
+            person_ethnicity_id=12345,
+            ethnicity=StateEthnicity.HISPANIC,
         )
 
-        ethnicity_not_hispanic = StatePersonEthnicity.new_with_defaults(
-            state_code="MT", ethnicity=StateEthnicity.NOT_HISPANIC
+        ethnicity_not_hispanic = NormalizedStatePersonEthnicity(
+            state_code="US_XX",
+            person_ethnicity_id=12345,
+            ethnicity=StateEthnicity.NOT_HISPANIC,
         )
 
         person.ethnicities = [ethnicity_hispanic, ethnicity_not_hispanic]
@@ -1037,21 +1063,23 @@ class TestProduceMetrics(unittest.TestCase):
     def test_produce_recidivism_metrics_revocation_parole(self) -> None:
         """Tests the produce_recidivism_metrics function where there is
         recidivism, and they returned from a revocation of parole."""
-        person = StatePerson.new_with_defaults(
+        person = NormalizedStatePerson(
             state_code="US_XX",
             person_id=12345,
             birthdate=date(1984, 8, 31),
             gender=StateGender.FEMALE,
         )
 
-        race = StatePersonRace.new_with_defaults(
-            state_code="US_XX", race=StateRace.WHITE
+        race = NormalizedStatePersonRace(
+            state_code="US_XX", person_race_id=12345, race=StateRace.WHITE
         )
 
         person.races = [race]
 
-        ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code="US_XX", ethnicity=StateEthnicity.NOT_HISPANIC
+        ethnicity = NormalizedStatePersonEthnicity(
+            state_code="US_XX",
+            person_ethnicity_id=12345,
+            ethnicity=StateEthnicity.NOT_HISPANIC,
         )
 
         person.ethnicities = [ethnicity]
@@ -1094,21 +1122,23 @@ class TestProduceMetrics(unittest.TestCase):
     def test_produce_recidivism_metrics_revocation_probation(self) -> None:
         """Tests the produce_recidivism_metrics function where there is
         recidivism, and they returned from a revocation of parole."""
-        person = StatePerson.new_with_defaults(
+        person = NormalizedStatePerson(
             state_code="US_XX",
             person_id=12345,
             birthdate=date(1984, 8, 31),
             gender=StateGender.FEMALE,
         )
 
-        race = StatePersonRace.new_with_defaults(
-            state_code="US_XX", race=StateRace.WHITE
+        race = NormalizedStatePersonRace(
+            state_code="US_XX", person_race_id=12345, race=StateRace.WHITE
         )
 
         person.races = [race]
 
-        ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code="US_XX", ethnicity=StateEthnicity.NOT_HISPANIC
+        ethnicity = NormalizedStatePersonEthnicity(
+            state_code="US_XX",
+            person_ethnicity_id=12345,
+            ethnicity=StateEthnicity.NOT_HISPANIC,
         )
 
         person.ethnicities = [ethnicity]
@@ -1153,21 +1183,23 @@ class TestProduceMetrics(unittest.TestCase):
         """Tests the produce_recidivism_metrics function where there is
         recidivism, and they returned from a technical violation that resulted
         in the revocation of parole."""
-        person = StatePerson.new_with_defaults(
+        person = NormalizedStatePerson(
             state_code="US_XX",
             person_id=12345,
             birthdate=date(1984, 8, 31),
             gender=StateGender.FEMALE,
         )
 
-        race = StatePersonRace.new_with_defaults(
-            state_code="US_XX", race=StateRace.WHITE
+        race = NormalizedStatePersonRace(
+            state_code="US_XX", person_race_id=12345, race=StateRace.WHITE
         )
 
         person.races = [race]
 
-        ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code="US_XX", ethnicity=StateEthnicity.NOT_HISPANIC
+        ethnicity = NormalizedStatePersonEthnicity(
+            state_code="US_XX",
+            person_ethnicity_id=12345,
+            ethnicity=StateEthnicity.NOT_HISPANIC,
         )
 
         person.ethnicities = [ethnicity]
@@ -1209,21 +1241,23 @@ class TestProduceMetrics(unittest.TestCase):
                     self.assertTrue(metric.did_recidivate)
 
     def test_produce_recidivism_metrics_count_metric_no_recidivism(self) -> None:
-        person = StatePerson.new_with_defaults(
+        person = NormalizedStatePerson(
             state_code="US_XX",
             person_id=12345,
             birthdate=date(1984, 8, 31),
             gender=StateGender.FEMALE,
         )
 
-        race = StatePersonRace.new_with_defaults(
-            state_code="US_XX", race=StateRace.WHITE
+        race = NormalizedStatePersonRace(
+            state_code="US_XX", person_race_id=12345, race=StateRace.WHITE
         )
 
         person.races = [race]
 
-        ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code="US_XX", ethnicity=StateEthnicity.NOT_HISPANIC
+        ethnicity = NormalizedStatePersonEthnicity(
+            state_code="US_XX",
+            person_ethnicity_id=12345,
+            ethnicity=StateEthnicity.NOT_HISPANIC,
         )
 
         person.ethnicities = [ethnicity]
@@ -1257,24 +1291,27 @@ class TestProduceMetrics(unittest.TestCase):
     def test_produce_recidivism_metrics_external_id(self) -> None:
         """Tests the produce_recidivism_metrics function where there is
         recidivism."""
-        person = StatePerson.new_with_defaults(
+        person = NormalizedStatePerson(
             state_code="US_ND",
             person_id=12345,
             birthdate=date(1984, 8, 31),
             gender=StateGender.FEMALE,
             races=[
-                StatePersonRace.new_with_defaults(
-                    state_code="US_ND", race=StateRace.WHITE
+                NormalizedStatePersonRace(
+                    state_code="US_ND", person_race_id=12345, race=StateRace.WHITE
                 )
             ],
             ethnicities=[
-                StatePersonEthnicity.new_with_defaults(
-                    state_code="US_ND", ethnicity=StateEthnicity.NOT_HISPANIC
+                NormalizedStatePersonEthnicity(
+                    state_code="US_ND",
+                    person_ethnicity_id=12345,
+                    ethnicity=StateEthnicity.NOT_HISPANIC,
                 )
             ],
             external_ids=[
-                StatePersonExternalId.new_with_defaults(
+                NormalizedStatePersonExternalId(
                     state_code="US_ND",
+                    person_external_id_id=12345,
                     external_id="ABC",
                     id_type=US_ND_ELITE,
                 )

@@ -30,10 +30,10 @@ from recidiviz.common.constants.state.state_person import (
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodSupervisionType,
 )
-from recidiviz.persistence.entity.state.entities import (
-    StatePerson,
-    StatePersonEthnicity,
-    StatePersonRace,
+from recidiviz.persistence.entity.state.normalized_entities import (
+    NormalizedStatePerson,
+    NormalizedStatePersonEthnicity,
+    NormalizedStatePersonRace,
 )
 from recidiviz.pipelines.metrics.program import metric_producer, pipeline
 from recidiviz.pipelines.metrics.program.events import (
@@ -58,21 +58,23 @@ class TestProduceProgramMetrics(unittest.TestCase):
 
     @freeze_time("2030-11-02")
     def test_produce_program_metrics(self) -> None:
-        person = StatePerson.new_with_defaults(
+        person = NormalizedStatePerson(
             state_code="US_ND",
             person_id=12345,
             birthdate=date(1984, 8, 31),
             gender=StateGender.FEMALE,
         )
 
-        race = StatePersonRace.new_with_defaults(
-            state_code="US_ND", race=StateRace.WHITE
+        race = NormalizedStatePersonRace(
+            state_code="US_ND", person_race_id=12345, race=StateRace.WHITE
         )
 
         person.races = [race]
 
-        ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code="US_ND", ethnicity=StateEthnicity.NOT_HISPANIC
+        ethnicity = NormalizedStatePersonEthnicity(
+            state_code="US_ND",
+            person_ethnicity_id=12345,
+            ethnicity=StateEthnicity.NOT_HISPANIC,
         )
 
         person.ethnicities = [ethnicity]
@@ -98,21 +100,23 @@ class TestProduceProgramMetrics(unittest.TestCase):
 
     @freeze_time("2009-10-01")
     def test_produce_program_metrics_full_info(self) -> None:
-        person = StatePerson.new_with_defaults(
+        person = NormalizedStatePerson(
             state_code="US_ND",
             person_id=12345,
             birthdate=date(1984, 8, 31),
             gender=StateGender.FEMALE,
         )
 
-        race = StatePersonRace.new_with_defaults(
-            state_code="US_ND", race=StateRace.WHITE
+        race = NormalizedStatePersonRace(
+            state_code="US_ND", person_race_id=12345, race=StateRace.WHITE
         )
 
         person.races = [race]
 
-        ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code="US_ND", ethnicity=StateEthnicity.NOT_HISPANIC
+        ethnicity = NormalizedStatePersonEthnicity(
+            state_code="US_ND",
+            person_ethnicity_id=12345,
+            ethnicity=StateEthnicity.NOT_HISPANIC,
         )
 
         person.ethnicities = [ethnicity]
@@ -143,21 +147,23 @@ class TestProduceProgramMetrics(unittest.TestCase):
         self.assertEqual(expected_count, len(metrics))
 
     def test_produce_program_metrics_full_info_probation(self) -> None:
-        person = StatePerson.new_with_defaults(
+        person = NormalizedStatePerson(
             state_code="US_ND",
             person_id=12345,
             birthdate=date(1984, 8, 31),
             gender=StateGender.FEMALE,
         )
 
-        race = StatePersonRace.new_with_defaults(
-            state_code="US_ND", race=StateRace.WHITE
+        race = NormalizedStatePersonRace(
+            state_code="US_ND", person_race_id=12345, race=StateRace.WHITE
         )
 
         person.races = [race]
 
-        ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code="US_ND", ethnicity=StateEthnicity.NOT_HISPANIC
+        ethnicity = NormalizedStatePersonEthnicity(
+            state_code="US_ND",
+            person_ethnicity_id=12345,
+            ethnicity=StateEthnicity.NOT_HISPANIC,
         )
 
         person.ethnicities = [ethnicity]
@@ -188,21 +194,23 @@ class TestProduceProgramMetrics(unittest.TestCase):
         self.assertEqual(expected_count, len(metrics))
 
     def test_produce_program_metrics_multiple_supervision_types(self) -> None:
-        person = StatePerson.new_with_defaults(
+        person = NormalizedStatePerson(
             state_code="US_ND",
             person_id=12345,
             birthdate=date(1984, 8, 31),
             gender=StateGender.FEMALE,
         )
 
-        race = StatePersonRace.new_with_defaults(
-            state_code="US_ND", race=StateRace.WHITE
+        race = NormalizedStatePersonRace(
+            state_code="US_ND", person_race_id=12345, race=StateRace.WHITE
         )
 
         person.races = [race]
 
-        ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code="US_ND", ethnicity=StateEthnicity.NOT_HISPANIC
+        ethnicity = NormalizedStatePersonEthnicity(
+            state_code="US_ND",
+            person_ethnicity_id=12345,
+            ethnicity=StateEthnicity.NOT_HISPANIC,
         )
 
         person.ethnicities = [ethnicity]

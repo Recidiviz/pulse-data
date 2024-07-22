@@ -20,6 +20,7 @@ import unittest
 from datetime import date
 from typing import List, Optional
 
+from recidiviz.common.constants.state.external_id_types import US_PA_PBPP_EMPLOYEE_NUM
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_period import (
@@ -248,6 +249,8 @@ class TestGetCommitmentDetails(unittest.TestCase):
             supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
             supervision_level=StateSupervisionLevel.MINIMUM,
             supervision_level_raw_text="LOW",
+            supervising_officer_staff_external_id="OFFICER_ID_1",
+            supervising_officer_staff_external_id_type=US_PA_PBPP_EMPLOYEE_NUM,
             supervising_officer_staff_id=12345,
         )
 
@@ -343,6 +346,8 @@ class TestGetCommitmentDetails(unittest.TestCase):
             supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
             start_date=date(2019, 8, 3),
             termination_date=shock_period.admission_date,
+            supervising_officer_staff_external_id="OFFICER_ID_1",
+            supervising_officer_staff_external_id_type=US_PA_PBPP_EMPLOYEE_NUM,
             supervising_officer_staff_id=12345,
         )
 
@@ -423,6 +428,8 @@ class TestGetCommitmentDetails(unittest.TestCase):
             supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
             start_date=date(2010, 12, 1),
             termination_date=board_hold.admission_date,
+            supervising_officer_staff_external_id="OFFICER_ID_1",
+            supervising_officer_staff_external_id_type=US_PA_PBPP_EMPLOYEE_NUM,
             supervising_officer_staff_id=12345,
         )
 

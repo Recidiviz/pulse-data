@@ -28,8 +28,8 @@ from recidiviz.persistence.entity.entity_utils import CoreEntityFieldIndex
 from recidiviz.persistence.entity.normalized_entities_utils import (
     sort_normalized_entities_by_sequence_num,
 )
-from recidiviz.persistence.entity.state.entities import StatePerson
 from recidiviz.persistence.entity.state.normalized_entities import (
+    NormalizedStatePerson,
     NormalizedStateProgramAssignment,
     NormalizedStateSupervisionPeriod,
 )
@@ -61,7 +61,7 @@ class ProgramIdentifier(BaseIdentifier[List[ProgramEvent]]):
 
     def identify(
         self,
-        _person: StatePerson,
+        _person: NormalizedStatePerson,
         identifier_context: IdentifierContext,
         included_result_classes: Set[Type[IdentifierResult]],
     ) -> List[ProgramEvent]:
@@ -72,10 +72,10 @@ class ProgramIdentifier(BaseIdentifier[List[ProgramEvent]]):
 
         return self._find_program_events(
             program_assignments=identifier_context[
-                NormalizedStateProgramAssignment.base_class_name()
+                NormalizedStateProgramAssignment.__name__
             ],
             supervision_periods=identifier_context[
-                NormalizedStateSupervisionPeriod.base_class_name()
+                NormalizedStateSupervisionPeriod.__name__
             ],
         )
 

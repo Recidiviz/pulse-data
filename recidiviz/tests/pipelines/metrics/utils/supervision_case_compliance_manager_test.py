@@ -41,12 +41,10 @@ from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodTerminationReason,
 )
 from recidiviz.common.constants.states import StateCode
-from recidiviz.persistence.entity.state.entities import (
-    StatePerson,
-    StateSupervisionContact,
-)
 from recidiviz.persistence.entity.state.normalized_entities import (
     NormalizedStateAssessment,
+    NormalizedStatePerson,
+    NormalizedStateSupervisionContact,
     NormalizedStateSupervisionPeriod,
 )
 from recidiviz.pipelines.metrics.supervision.supervision_case_compliance import (
@@ -82,7 +80,7 @@ class TestCaseCompliance(unittest.TestCase):
     """Tests the get_case_compliance_on_date function."""
 
     def setUp(self) -> None:
-        self.person = StatePerson.new_with_defaults(state_code="US_XX")
+        self.person = NormalizedStatePerson(state_code="US_IX", person_id=12345)
         self.empty_ip_index = default_normalized_ip_index_for_tests()
 
     @patch.object(UsNdSupervisionCaseCompliance, "_guidelines_applicable_for_case")
@@ -463,14 +461,16 @@ class TestCaseCompliance(unittest.TestCase):
         ]
 
         supervision_contacts = [
-            StateSupervisionContact.new_with_defaults(
+            NormalizedStateSupervisionContact(
+                supervision_contact_id=12345,
                 state_code=StateCode.US_IX.value,
                 external_id="c1",
                 contact_date=date(2018, 3, 6),
                 contact_type=StateSupervisionContactType.DIRECT,
                 status=StateSupervisionContactStatus.COMPLETED,
             ),
-            StateSupervisionContact.new_with_defaults(
+            NormalizedStateSupervisionContact(
+                supervision_contact_id=12345,
                 state_code=StateCode.US_IX.value,
                 external_id="c2",
                 contact_date=date(2018, 4, 30),
@@ -551,7 +551,8 @@ class TestCaseCompliance(unittest.TestCase):
         ]
 
         supervision_contacts = [
-            StateSupervisionContact.new_with_defaults(
+            NormalizedStateSupervisionContact(
+                supervision_contact_id=12345,
                 state_code=StateCode.US_IX.value,
                 external_id="c1",
                 contact_date=date(2018, 3, 6),
@@ -559,7 +560,8 @@ class TestCaseCompliance(unittest.TestCase):
                 contact_method=StateSupervisionContactMethod.VIRTUAL,
                 status=StateSupervisionContactStatus.COMPLETED,
             ),
-            StateSupervisionContact.new_with_defaults(
+            NormalizedStateSupervisionContact(
+                supervision_contact_id=12345,
                 state_code=StateCode.US_IX.value,
                 external_id="c2",
                 contact_date=date(2018, 4, 6),
@@ -691,7 +693,8 @@ class TestCaseCompliance(unittest.TestCase):
         ]
 
         supervision_contacts = [
-            StateSupervisionContact.new_with_defaults(
+            NormalizedStateSupervisionContact(
+                supervision_contact_id=12345,
                 state_code=StateCode.US_IX.value,
                 external_id="c1",
                 contact_date=date(2018, 3, 31),
@@ -815,7 +818,8 @@ class TestCaseCompliance(unittest.TestCase):
         case_type = StateSupervisionCaseType.GENERAL
 
         supervision_contacts = [
-            StateSupervisionContact.new_with_defaults(
+            NormalizedStateSupervisionContact(
+                supervision_contact_id=12345,
                 state_code=StateCode.US_IX.value,
                 external_id="c1",
                 contact_date=date(2018, 3, 6),
@@ -823,7 +827,8 @@ class TestCaseCompliance(unittest.TestCase):
                 status=StateSupervisionContactStatus.COMPLETED,
                 location=StateSupervisionContactLocation.PLACE_OF_EMPLOYMENT,
             ),
-            StateSupervisionContact.new_with_defaults(
+            NormalizedStateSupervisionContact(
+                supervision_contact_id=12345,
                 state_code=StateCode.US_IX.value,
                 external_id="c2",
                 contact_date=date(2018, 4, 30),
@@ -890,7 +895,8 @@ class TestCaseCompliance(unittest.TestCase):
         case_type = StateSupervisionCaseType.GENERAL
 
         supervision_contacts = [
-            StateSupervisionContact.new_with_defaults(
+            NormalizedStateSupervisionContact(
+                supervision_contact_id=12345,
                 state_code=StateCode.US_IX.value,
                 external_id="c1",
                 contact_date=date(2018, 3, 6),
@@ -898,7 +904,8 @@ class TestCaseCompliance(unittest.TestCase):
                 status=StateSupervisionContactStatus.COMPLETED,
                 location=StateSupervisionContactLocation.RESIDENCE,
             ),
-            StateSupervisionContact.new_with_defaults(
+            NormalizedStateSupervisionContact(
+                supervision_contact_id=12345,
                 state_code=StateCode.US_IX.value,
                 external_id="c2",
                 contact_date=date(2018, 4, 30),
@@ -964,7 +971,8 @@ class TestCaseCompliance(unittest.TestCase):
         case_type = StateSupervisionCaseType.GENERAL
 
         supervision_contacts = [
-            StateSupervisionContact.new_with_defaults(
+            NormalizedStateSupervisionContact(
+                supervision_contact_id=12345,
                 state_code=StateCode.US_IX.value,
                 external_id="c1",
                 contact_date=date(2018, 3, 6),
@@ -972,7 +980,8 @@ class TestCaseCompliance(unittest.TestCase):
                 status=StateSupervisionContactStatus.COMPLETED,
                 location=StateSupervisionContactLocation.RESIDENCE,
             ),
-            StateSupervisionContact.new_with_defaults(
+            NormalizedStateSupervisionContact(
+                supervision_contact_id=12345,
                 state_code=StateCode.US_IX.value,
                 external_id="c2",
                 contact_date=date(2018, 4, 30),
@@ -1056,7 +1065,8 @@ class TestCaseCompliance(unittest.TestCase):
         case_type = StateSupervisionCaseType.GENERAL
 
         supervision_contacts_1 = [
-            StateSupervisionContact.new_with_defaults(
+            NormalizedStateSupervisionContact(
+                supervision_contact_id=12345,
                 state_code=StateCode.US_IX.value,
                 external_id="c1",
                 contact_date=date(2018, 3, 6),
@@ -1064,7 +1074,8 @@ class TestCaseCompliance(unittest.TestCase):
                 status=StateSupervisionContactStatus.COMPLETED,
                 location=StateSupervisionContactLocation.RESIDENCE,
             ),
-            StateSupervisionContact.new_with_defaults(
+            NormalizedStateSupervisionContact(
+                supervision_contact_id=12345,
                 state_code=StateCode.US_IX.value,
                 external_id="c2",
                 contact_date=date(2018, 4, 30),
@@ -1075,7 +1086,8 @@ class TestCaseCompliance(unittest.TestCase):
         ]
 
         supervision_contacts_2 = [
-            StateSupervisionContact.new_with_defaults(
+            NormalizedStateSupervisionContact(
+                supervision_contact_id=12345,
                 state_code=StateCode.US_IX.value,
                 external_id="c3",
                 contact_date=date(2019, 3, 6),
@@ -1083,7 +1095,8 @@ class TestCaseCompliance(unittest.TestCase):
                 status=StateSupervisionContactStatus.COMPLETED,
                 location=StateSupervisionContactLocation.RESIDENCE,
             ),
-            StateSupervisionContact.new_with_defaults(
+            NormalizedStateSupervisionContact(
+                supervision_contact_id=12345,
                 state_code=StateCode.US_IX.value,
                 external_id="c4",
                 contact_date=date(2019, 4, 30),
@@ -1206,7 +1219,8 @@ class TestCaseCompliance(unittest.TestCase):
         case_type = StateSupervisionCaseType.GENERAL
 
         supervision_contacts_1 = [
-            StateSupervisionContact.new_with_defaults(
+            NormalizedStateSupervisionContact(
+                supervision_contact_id=12345,
                 state_code=StateCode.US_IX.value,
                 external_id="c1",
                 contact_date=date(2019, 3, 6),
@@ -1214,7 +1228,8 @@ class TestCaseCompliance(unittest.TestCase):
                 status=StateSupervisionContactStatus.COMPLETED,
                 location=StateSupervisionContactLocation.RESIDENCE,
             ),
-            StateSupervisionContact.new_with_defaults(
+            NormalizedStateSupervisionContact(
+                supervision_contact_id=12345,
                 state_code=StateCode.US_IX.value,
                 external_id="c2",
                 contact_date=date(2019, 4, 30),
@@ -1225,7 +1240,8 @@ class TestCaseCompliance(unittest.TestCase):
         ]
 
         supervision_contacts_2 = [
-            StateSupervisionContact.new_with_defaults(
+            NormalizedStateSupervisionContact(
+                supervision_contact_id=12345,
                 state_code=StateCode.US_IX.value,
                 external_id="c3",
                 contact_date=date(2018, 3, 6),
@@ -1233,7 +1249,8 @@ class TestCaseCompliance(unittest.TestCase):
                 status=StateSupervisionContactStatus.COMPLETED,
                 location=StateSupervisionContactLocation.RESIDENCE,
             ),
-            StateSupervisionContact.new_with_defaults(
+            NormalizedStateSupervisionContact(
+                supervision_contact_id=12345,
                 state_code=StateCode.US_IX.value,
                 external_id="c4",
                 contact_date=date(2018, 4, 30),
@@ -1323,7 +1340,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
     """Tests the _next_recommended_assessment_date function."""
 
     def setUp(self) -> None:
-        self.person = StatePerson.new_with_defaults(state_code="US_XX")
+        self.person = NormalizedStatePerson(state_code="US_IX", person_id=12345)
         self.empty_ip_index = default_normalized_ip_index_for_tests()
 
     def test_us_ix_next_recommended_assessment_date(self) -> None:
@@ -2500,14 +2517,16 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
         ]
 
         supervision_contacts = [
-            StateSupervisionContact.new_with_defaults(
+            NormalizedStateSupervisionContact(
+                supervision_contact_id=12345,
                 state_code=StateCode.US_IX.value,
                 external_id="c1",
                 contact_date=date(2018, 3, 6),
                 contact_type=StateSupervisionContactType.DIRECT,
                 status=StateSupervisionContactStatus.COMPLETED,
             ),
-            StateSupervisionContact.new_with_defaults(
+            NormalizedStateSupervisionContact(
+                supervision_contact_id=12345,
                 state_code=StateCode.US_IX.value,
                 external_id="c2",
                 contact_date=date(2018, 4, 30),
@@ -2590,7 +2609,8 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
         ]
 
         supervision_contacts = [
-            StateSupervisionContact.new_with_defaults(
+            NormalizedStateSupervisionContact(
+                supervision_contact_id=12345,
                 state_code=StateCode.US_IX.value,
                 external_id="c1",
                 contact_date=date(2018, 3, 6),
@@ -2598,7 +2618,8 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
                 status=StateSupervisionContactStatus.COMPLETED,
                 verified_employment=True,
             ),
-            StateSupervisionContact.new_with_defaults(
+            NormalizedStateSupervisionContact(
+                supervision_contact_id=12345,
                 state_code=StateCode.US_IX.value,
                 external_id="c2",
                 contact_date=date(2018, 4, 30),

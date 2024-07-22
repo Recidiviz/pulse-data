@@ -39,10 +39,10 @@ from recidiviz.common.constants.state.state_supervision_violation_response impor
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.base_entity import Entity
-from recidiviz.persistence.entity.state.entities import StateAssessment, StatePerson
 from recidiviz.persistence.entity.state.normalized_entities import (
     NormalizedStateAssessment,
     NormalizedStateIncarcerationPeriod,
+    NormalizedStatePerson,
     NormalizedStateSupervisionPeriod,
     NormalizedStateSupervisionViolation,
     NormalizedStateSupervisionViolationResponse,
@@ -92,9 +92,7 @@ class TestFindIncarcerationEvents(unittest.TestCase):
             incarceration_identifier
         )
         self.identifier = IncarcerationIdentifier(StateCode.US_XX)
-        self.person = StatePerson.new_with_defaults(
-            state_code="US_XX", person_id=99000123
-        )
+        self.person = NormalizedStatePerson(state_code="US_XX", person_id=99000123)
 
     def tearDown(self) -> None:
         for patcher in self.delegate_patchers:
@@ -106,19 +104,17 @@ class TestFindIncarcerationEvents(unittest.TestCase):
             List[NormalizedStateIncarcerationPeriod]
         ] = None,
         supervision_periods: Optional[List[NormalizedStateSupervisionPeriod]] = None,
-        assessments: Optional[List[StateAssessment]] = None,
+        assessments: Optional[List[NormalizedStateAssessment]] = None,
         violation_responses: Optional[
             List[NormalizedStateSupervisionViolationResponse]
         ] = None,
     ) -> List[IncarcerationEvent]:
         """Helper for testing the find_events function on the identifier."""
         all_kwargs: Dict[str, Union[Sequence[Entity], List[TableRow]]] = {
-            NormalizedStateIncarcerationPeriod.base_class_name(): incarceration_periods
-            or [],
-            NormalizedStateSupervisionPeriod.base_class_name(): supervision_periods
-            or [],
-            StateAssessment.__name__: assessments or [],
-            NormalizedStateSupervisionViolationResponse.base_class_name(): violation_responses
+            NormalizedStateIncarcerationPeriod.__name__: incarceration_periods or [],
+            NormalizedStateSupervisionPeriod.__name__: supervision_periods or [],
+            NormalizedStateAssessment.__name__: assessments or [],
+            NormalizedStateSupervisionViolationResponse.__name__: violation_responses
             or [],
         }
 

@@ -35,7 +35,11 @@ from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.persistence.entity.base_entity import Entity
-from recidiviz.persistence.entity.state import entities
+from recidiviz.persistence.entity.state.normalized_entities import (
+    NormalizedStatePerson,
+    NormalizedStatePersonEthnicity,
+    NormalizedStatePersonRace,
+)
 from recidiviz.pipelines.ingest.state.pipeline import StateIngestPipeline
 from recidiviz.pipelines.metrics.base_metric_pipeline import MetricPipeline
 from recidiviz.pipelines.normalization.comprehensive.pipeline import (
@@ -157,9 +161,9 @@ class TestPipelineValidations(unittest.TestCase):
                 self.assertTrue("NORMALIZATION" in pipeline_class.pipeline_name())
             elif issubclass(pipeline_class, MetricPipeline):
                 default_entities: Set[Type[Entity]] = {
-                    entities.StatePerson,
-                    entities.StatePersonRace,
-                    entities.StatePersonEthnicity,
+                    NormalizedStatePerson,
+                    NormalizedStatePersonRace,
+                    NormalizedStatePersonEthnicity,
                 }
                 self.assertFalse(len(pipeline_class.required_entities()) == 0)
                 missing_default_entities = default_entities.difference(

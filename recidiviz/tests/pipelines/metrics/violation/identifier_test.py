@@ -34,8 +34,8 @@ from recidiviz.common.constants.state.state_supervision_violation_response impor
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.base_entity import Entity
-from recidiviz.persistence.entity.state.entities import StatePerson
 from recidiviz.persistence.entity.state.normalized_entities import (
+    NormalizedStatePerson,
     NormalizedStateSupervisionViolatedConditionEntry,
     NormalizedStateSupervisionViolation,
     NormalizedStateSupervisionViolationResponse,
@@ -64,9 +64,7 @@ class TestFindViolationEvents(unittest.TestCase):
             violation_identifier
         )
         self.identifier = ViolationIdentifier(StateCode.US_XX)
-        self.person = StatePerson.new_with_defaults(
-            state_code="US_XX", person_id=99000123
-        )
+        self.person = NormalizedStatePerson(state_code="US_XX", person_id=99000123)
 
     def tearDown(self) -> None:
         for patcher in self.delegate_patchers:
@@ -78,7 +76,7 @@ class TestFindViolationEvents(unittest.TestCase):
         """Helper function for testing the find_events function."""
 
         all_kwargs: Dict[str, Union[Sequence[Entity], List[TableRow]]] = {
-            NormalizedStateSupervisionViolation.base_class_name(): violations,
+            NormalizedStateSupervisionViolation.__name__: violations,
         }
 
         return self.identifier.identify(
@@ -231,16 +229,6 @@ class TestFindViolationWithResponseEvents(unittest.TestCase):
         ]
 
         self.assertEqual(expected, violation_with_response_events)
-
-    def test_find_violation_with_response_events_needs_violation_id(
-        self,
-    ) -> None:
-        self.violation.supervision_violation_id = None
-
-        with self.assertRaises(ValueError):
-            _ = self.identifier._find_violation_with_response_events(
-                violation=self.violation
-            )
 
     def test_find_violation_with_response_events_needs_response_date(
         self,

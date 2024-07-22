@@ -35,9 +35,9 @@ from recidiviz.common.date import (
     tomorrow,
 )
 from recidiviz.persistence.entity.entity_utils import CoreEntityFieldIndex
-from recidiviz.persistence.entity.state.entities import StatePerson
 from recidiviz.persistence.entity.state.normalized_entities import (
     NormalizedStateIncarcerationPeriod,
+    NormalizedStatePerson,
     NormalizedStateSupervisionPeriod,
 )
 from recidiviz.pipelines.metrics.base_identifier import (
@@ -82,7 +82,7 @@ class PopulationSpanIdentifier(BaseIdentifier[List[Span]]):
 
     def identify(
         self,
-        _person: StatePerson,
+        _person: NormalizedStatePerson,
         identifier_context: IdentifierContext,
         included_result_classes: Set[Type[IdentifierResult]],
     ) -> List[Span]:
@@ -91,7 +91,7 @@ class PopulationSpanIdentifier(BaseIdentifier[List[Span]]):
             spans.extend(
                 self._find_incarceration_spans(
                     incarceration_periods=identifier_context[
-                        NormalizedStateIncarcerationPeriod.base_class_name()
+                        NormalizedStateIncarcerationPeriod.__name__
                     ],
                 )
             )
@@ -99,10 +99,10 @@ class PopulationSpanIdentifier(BaseIdentifier[List[Span]]):
             spans.extend(
                 self._find_supervision_spans(
                     supervision_periods=identifier_context[
-                        NormalizedStateSupervisionPeriod.base_class_name()
+                        NormalizedStateSupervisionPeriod.__name__
                     ],
                     incarceration_periods=identifier_context[
-                        NormalizedStateIncarcerationPeriod.base_class_name()
+                        NormalizedStateIncarcerationPeriod.__name__
                     ],
                 )
             )

@@ -25,10 +25,9 @@ from apache_beam.typehints.decorators import with_input_types, with_output_types
 from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
 from recidiviz.big_query.big_query_query_provider import StateFilteredQueryProvider
 from recidiviz.common.constants.states import StateCode
-from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.serialization import json_serializable_dict
-from recidiviz.persistence.entity.state import entities
+from recidiviz.persistence.entity.state.normalized_entities import NormalizedStatePerson
 from recidiviz.pipelines.base_pipeline import BasePipeline
 from recidiviz.pipelines.dataflow_config import (
     DATAFLOW_METRICS_TO_TABLES,
@@ -112,14 +111,6 @@ class MetricPipeline(
         output to a specific set of months. Should be overwritten by subclasses."""
 
     def run_pipeline(self, p: PBegin) -> None:
-        # Workaround to load SQLAlchemy objects at start of pipeline. This is
-        # necessary because the BuildRootEntity function tries to access attributes
-        # of relationship properties on the SQLAlchemy room_schema_class before they
-        # have been loaded. However, if *any* SQLAlchemy objects have been instantiated,
-        # then the relationship properties are loaded and their attributes can be
-        # successfully accessed.
-        _ = schema.StatePerson()
-
         pipeline_parameters = self.pipeline_parameters
         state_code = StateCode(pipeline_parameters.state_code.upper())
         person_id_filter_set = (
@@ -142,7 +133,7 @@ class MetricPipeline(
                 entities_dataset=self.pipeline_parameters.normalized_input,
                 required_entity_classes=self.required_entities(),
                 reference_data_queries_by_name={},
-                root_entity_cls=entities.StatePerson,
+                root_entity_cls=NormalizedStatePerson,
                 root_entity_id_filter_set=person_id_filter_set,
             )
         )
@@ -219,7 +210,7 @@ class MetricPipeline(
 
 @with_input_types(
     beam.typehints.Tuple[
-        entities.StatePerson,
+        NormalizedStatePerson,
         Union[Dict[int, Iterable[IdentifierResult]], Iterable[IdentifierResult]],
     ],
     beam.typehints.Optional[str],
@@ -232,7 +223,7 @@ class MetricPipeline(
 )
 @with_output_types(RecidivizMetric)
 class ProduceMetrics(beam.DoFn):
-    """A DoFn that produces metrics given a StatePerson, metadata and associated events."""
+    """A DoFn that produces metrics given a NormalizedStatePerson, metadata and associated events."""
 
     # Silence `Method 'process_batch' is abstract in class 'DoFn' but is not overridden (abstract-method)`
     # pylint: disable=W0223
@@ -241,7 +232,7 @@ class ProduceMetrics(beam.DoFn):
     def process(
         self,
         element: Tuple[
-            entities.StatePerson,
+            NormalizedStatePerson,
             Union[Dict[int, Iterable[IdentifierResult]], Iterable[IdentifierResult]],
         ],
         project_id: str,
@@ -253,7 +244,7 @@ class ProduceMetrics(beam.DoFn):
         metric_producer: BaseMetricProducer,
     ) -> Generator[RecidivizMetric, None, None]:
         """Produces various metrics.
-        Sends the metric_producer the StatePerson entity and their corresponding events for mapping all metrics.
+        Sends the metric_producer the NormalizedStatePerson entity and their corresponding events for mapping all metrics.
         Args:
             element: Dictionary containing the person and events
             pipeline_job_args: Object storing information about the calculation
@@ -295,7 +286,7 @@ class ProduceMetrics(beam.DoFn):
 )
 @with_output_types(
     beam.typehints.Tuple[
-        entities.StatePerson,
+        NormalizedStatePerson,
         Union[Dict[int, Iterable[IdentifierResult]], Iterable[IdentifierResult]],
     ]
 )
@@ -313,7 +304,7 @@ class ClassifyResults(beam.DoFn):
         included_result_classes: Set[Type[IdentifierResult]],
     ) -> Generator[
         Tuple[
-            entities.StatePerson,
+            NormalizedStatePerson,
             Union[Dict[int, Iterable[IdentifierResult]], Iterable[IdentifierResult]],
         ],
         None,

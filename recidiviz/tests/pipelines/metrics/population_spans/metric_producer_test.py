@@ -38,11 +38,11 @@ from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionLevel,
     StateSupervisionPeriodSupervisionType,
 )
-from recidiviz.persistence.entity.state.entities import (
-    StatePerson,
-    StatePersonEthnicity,
-    StatePersonExternalId,
-    StatePersonRace,
+from recidiviz.persistence.entity.state.normalized_entities import (
+    NormalizedStatePerson,
+    NormalizedStatePersonEthnicity,
+    NormalizedStatePersonExternalId,
+    NormalizedStatePersonRace,
 )
 from recidiviz.pipelines.metrics.population_spans import metric_producer
 from recidiviz.pipelines.metrics.population_spans.metrics import (
@@ -81,27 +81,35 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
 
     def setUp(self) -> None:
         self.metric_producer = metric_producer.PopulationSpanMetricProducer()
-        self.person = StatePerson.new_with_defaults(
+        self.person = NormalizedStatePerson(
             state_code="US_XX",
             person_id=12345,
             birthdate=date(1982, 8, 31),
             gender=StateGender.FEMALE,
             races=[
-                StatePersonRace.new_with_defaults(
-                    state_code="US_XX", race=StateRace.WHITE
+                NormalizedStatePersonRace(
+                    state_code="US_XX", person_race_id=12345, race=StateRace.WHITE
                 )
             ],
             external_ids=[
-                StatePersonExternalId.new_with_defaults(
-                    external_id="DOC1341", id_type="US_XX_DOC", state_code="US_XX"
+                NormalizedStatePersonExternalId(
+                    external_id="DOC1341",
+                    id_type="US_XX_DOC",
+                    state_code="US_XX",
+                    person_external_id_id=12345,
                 ),
-                StatePersonExternalId.new_with_defaults(
-                    external_id="SID9889", id_type="US_XX_SID", state_code="US_XX"
+                NormalizedStatePersonExternalId(
+                    external_id="SID9889",
+                    id_type="US_XX_SID",
+                    state_code="US_XX",
+                    person_external_id_id=12345,
                 ),
             ],
             ethnicities=[
-                StatePersonEthnicity.new_with_defaults(
-                    state_code="US_XX", ethnicity=StateEthnicity.NOT_HISPANIC
+                NormalizedStatePersonEthnicity(
+                    state_code="US_XX",
+                    person_ethnicity_id=12345,
+                    ethnicity=StateEthnicity.NOT_HISPANIC,
                 )
             ],
         )

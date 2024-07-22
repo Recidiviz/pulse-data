@@ -73,12 +73,16 @@ from recidiviz.persistence.entity.entity_utils import (
 from recidiviz.persistence.entity.root_entity_utils import (
     get_root_entity_class_for_entity,
 )
-from recidiviz.persistence.entity.state import entities
+from recidiviz.persistence.entity.state import entities, normalized_entities
 from recidiviz.persistence.entity.state.entities import (
     StatePerson,
     StatePersonExternalId,
     StateStaff,
     StateStaffExternalId,
+)
+from recidiviz.persistence.entity.state.normalized_entities import (
+    NormalizedStatePerson,
+    NormalizedStateStaff,
 )
 from recidiviz.tools.calculator.compare_views import compare_table_or_view
 from recidiviz.tools.calculator.create_or_update_dataflow_sandbox import (
@@ -180,15 +184,9 @@ def root_entity_external_ids_address(
     root_entity_cls: Type[Entity],
     dataset: DatasetReference,
 ) -> ProjectSpecificBigQueryAddress:
-    if root_entity_cls in {
-        # TODO(#30075): Add NormalizedStatePerson
-        StatePerson
-    }:
+    if root_entity_cls in {StatePerson, NormalizedStatePerson}:
         table_id = StatePersonExternalId.get_table_id()
-    elif root_entity_cls in {
-        # TODO(#30075): Add NormalizedStateStaff
-        StateStaff
-    }:
+    elif root_entity_cls in {StateStaff, NormalizedStateStaff}:
         table_id = StateStaffExternalId.get_table_id()
     else:
         raise ValueError(f"Unexpected root entity: {root_entity_cls}")
@@ -829,11 +827,9 @@ if __name__ == "__main__":
                 f"datasets has 'normalized' in the name. Are you sure you didn't mean "
                 f"to set '--schema_type=normalized_state'?"
             )
-        entities_definitions_module = entities
+        entities_definitions_module: ModuleType = entities
     elif args.schema_type == "normalized_state":
-        # TODO(#30075): Switch to normalized_entities when we migrate to v2 normalized
-        #  entities.
-        entities_definitions_module = entities
+        entities_definitions_module = normalized_entities
     else:
         raise ValueError(f"Unexpected schema_type: {args.schema_type}")
 

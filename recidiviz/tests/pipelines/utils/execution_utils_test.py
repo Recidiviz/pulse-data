@@ -19,7 +19,10 @@
 import unittest
 from typing import Any, Dict, Iterable
 
-from recidiviz.persistence.entity.state.entities import StateAssessment, StatePerson
+from recidiviz.persistence.entity.state.normalized_entities import (
+    NormalizedStateAssessment,
+    NormalizedStatePerson,
+)
 from recidiviz.pipelines.utils.execution_utils import (
     person_and_kwargs_for_identifier,
     select_all_by_person_query,
@@ -31,54 +34,50 @@ class TestPersonAndKwargsForIdentifier(unittest.TestCase):
     """Tests the person_and_kwargs_for_identifier function."""
 
     def test_person_and_kwargs_for_identifier(self) -> None:
-        person_input = StatePerson.new_with_defaults(state_code="US_XX", person_id=123)
+        person_input = NormalizedStatePerson(state_code="US_XX", person_id=123)
 
-        assessment = StateAssessment.new_with_defaults(
-            state_code="US_XX", external_id="a1"
+        assessment = NormalizedStateAssessment(
+            state_code="US_XX", assessment_id=1, sequence_num=1, external_id="a1"
         )
 
         arg_to_entities_map: Dict[str, Iterable[Any]] = {
-            StatePerson.__name__: iter([person_input]),
-            StateAssessment.__name__: iter([assessment]),
+            NormalizedStatePerson.__name__: iter([person_input]),
+            NormalizedStateAssessment.__name__: iter([assessment]),
         }
 
         person, kwargs = person_and_kwargs_for_identifier(arg_to_entities_map)
 
-        expected_kwargs = {StateAssessment.__name__: [assessment]}
+        expected_kwargs = {NormalizedStateAssessment.__name__: [assessment]}
 
         self.assertEqual(person, person_input)
         self.assertEqual(expected_kwargs, kwargs)
 
     def test_person_and_kwargs_for_identifier_two_people_same_id(self) -> None:
-        person_input_1 = StatePerson.new_with_defaults(
-            state_code="US_XX", person_id=123
-        )
+        person_input_1 = NormalizedStatePerson(state_code="US_XX", person_id=123)
 
-        person_input_2 = StatePerson.new_with_defaults(
-            state_code="US_XX", person_id=123
-        )
+        person_input_2 = NormalizedStatePerson(state_code="US_XX", person_id=123)
 
-        assessment = StateAssessment.new_with_defaults(
-            state_code="US_XX", external_id="a1"
+        assessment = NormalizedStateAssessment(
+            state_code="US_XX", assessment_id=1, sequence_num=1, external_id="a1"
         )
 
         arg_to_entities_map: Dict[str, Iterable[Any]] = {
             # There should never be two StatePerson entities with the same person_id. This should fail loudly.
-            StatePerson.__name__: iter([person_input_1, person_input_2]),
-            StateAssessment.__name__: iter([assessment]),
+            NormalizedStatePerson.__name__: iter([person_input_1, person_input_2]),
+            NormalizedStateAssessment.__name__: iter([assessment]),
         }
 
         with self.assertRaises(ValueError):
             _ = person_and_kwargs_for_identifier(arg_to_entities_map)
 
     def test_person_and_kwargs_for_identifier_no_person(self) -> None:
-        assessment = StateAssessment.new_with_defaults(
-            state_code="US_XX", external_id="a1"
+        assessment = NormalizedStateAssessment(
+            state_code="US_XX", assessment_id=1, sequence_num=1, external_id="a1"
         )
 
         arg_to_entities_map: Dict[str, Iterable[Any]] = {
             # There should never be two StatePerson entities with the same person_id. This should fail loudly.
-            StateAssessment.__name__: iter([assessment])
+            NormalizedStateAssessment.__name__: iter([assessment])
         }
 
         with self.assertRaises(KeyError):

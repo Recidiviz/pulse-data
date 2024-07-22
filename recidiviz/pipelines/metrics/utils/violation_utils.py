@@ -310,6 +310,9 @@ def get_violation_and_response_history(
             violation_date=incarceration_period.admission_date,
             supervision_violation_types=[
                 normalized_entities.NormalizedStateSupervisionViolationTypeEntry(
+                    # This primary key is set arbitrarily - this violation type entry
+                    # is never actually committed.
+                    supervision_violation_type_entry_id=0,
                     state_code=incarceration_period.state_code,
                     violation_type=incarceration_period.incarceration_admission_violation_type,
                 ),
