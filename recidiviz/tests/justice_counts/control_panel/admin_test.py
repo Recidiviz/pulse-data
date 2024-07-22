@@ -814,7 +814,7 @@ class TestJusticePublisherAdminPanelAPI(JusticeCountsDatabaseTestCase):
         MetricSettingInterface.add_or_update_agency_metric_setting(
             session=self.session,
             agency=super_agency,
-            agency_metric=MetricInterface(
+            agency_metric_updates=MetricInterface(
                 key=law_enforcement.funding.key,
                 is_metric_enabled=False,
             ),
@@ -822,7 +822,7 @@ class TestJusticePublisherAdminPanelAPI(JusticeCountsDatabaseTestCase):
         MetricSettingInterface.add_or_update_agency_metric_setting(
             session=self.session,
             agency=super_agency,
-            agency_metric=MetricInterface(
+            agency_metric_updates=MetricInterface(
                 key=law_enforcement.expenses.key,
                 custom_reporting_frequency=CustomReportingFrequency(
                     frequency=schema.ReportingFrequency.ANNUAL, starting_month=2

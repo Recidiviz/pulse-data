@@ -24,6 +24,7 @@ from recidiviz.justice_counts.metrics.custom_reporting_frequency import (
 from recidiviz.justice_counts.metrics.metric_interface import MetricInterface
 from recidiviz.persistence.database.schema.justice_counts.schema import (
     MetricSetting,
+    MetricSettingHistory,
     ReportingFrequency,
 )
 from recidiviz.persistence.database.session_factory import SessionFactory
@@ -54,7 +55,7 @@ class TestMetricSettingInterface(JusticeCountsDatabaseTestCase):
             MetricSettingInterface.new_add_or_update_agency_metric_setting(
                 session=session,
                 agency=agency,
-                agency_metric=funding_metric,
+                agency_metric_updates=funding_metric,
             )
             session.commit()
 
@@ -81,7 +82,7 @@ class TestMetricSettingInterface(JusticeCountsDatabaseTestCase):
             MetricSettingInterface.new_add_or_update_agency_metric_setting(
                 session=session,
                 agency=agency,
-                agency_metric=MetricInterface(
+                agency_metric_updates=MetricInterface(
                     key=law_enforcement.funding.key,
                     custom_reporting_frequency=CustomReportingFrequency(
                         frequency=ReportingFrequency.ANNUAL, starting_month=7
@@ -94,7 +95,7 @@ class TestMetricSettingInterface(JusticeCountsDatabaseTestCase):
             MetricSettingInterface.new_add_or_update_agency_metric_setting(
                 session=session,
                 agency=agency,
-                agency_metric=MetricInterface(
+                agency_metric_updates=MetricInterface(
                     key=law_enforcement.funding.key,
                     custom_reporting_frequency=CustomReportingFrequency(
                         frequency=ReportingFrequency.MONTHLY, starting_month=None
@@ -122,7 +123,7 @@ class TestMetricSettingInterface(JusticeCountsDatabaseTestCase):
             MetricSettingInterface.new_add_or_update_agency_metric_setting(
                 session=session,
                 agency=agency,
-                agency_metric=MetricInterface(
+                agency_metric_updates=MetricInterface(
                     key=law_enforcement.funding.key,
                     is_metric_enabled=True,
                 ),
@@ -140,7 +141,7 @@ class TestMetricSettingInterface(JusticeCountsDatabaseTestCase):
             MetricSettingInterface.new_add_or_update_agency_metric_setting(
                 session=session,
                 agency=agency,
-                agency_metric=MetricInterface(
+                agency_metric_updates=MetricInterface(
                     key=law_enforcement.funding.key,
                     is_metric_enabled=False,
                 ),
@@ -181,7 +182,7 @@ class TestMetricSettingInterface(JusticeCountsDatabaseTestCase):
             MetricSettingInterface.new_add_or_update_agency_metric_setting(
                 session=session,
                 agency=agency,
-                agency_metric=MetricInterface(
+                agency_metric_updates=MetricInterface(
                     key=supervision.funding.key,
                     disaggregated_by_supervision_subsystems=False,
                     is_metric_enabled=True,
@@ -190,7 +191,7 @@ class TestMetricSettingInterface(JusticeCountsDatabaseTestCase):
             MetricSettingInterface.new_add_or_update_agency_metric_setting(
                 session=session,
                 agency=agency,
-                agency_metric=MetricInterface(
+                agency_metric_updates=MetricInterface(
                     key=parole_funding_key,
                     is_metric_enabled=False,
                 ),
@@ -198,7 +199,7 @@ class TestMetricSettingInterface(JusticeCountsDatabaseTestCase):
             MetricSettingInterface.new_add_or_update_agency_metric_setting(
                 session=session,
                 agency=agency,
-                agency_metric=MetricInterface(
+                agency_metric_updates=MetricInterface(
                     key=probation_funding_key,
                     is_metric_enabled=False,
                 ),
@@ -210,7 +211,7 @@ class TestMetricSettingInterface(JusticeCountsDatabaseTestCase):
             MetricSettingInterface.new_add_or_update_agency_metric_setting(
                 session=session,
                 agency=agency,
-                agency_metric=MetricInterface(
+                agency_metric_updates=MetricInterface(
                     key=parole_funding_key,
                     disaggregated_by_supervision_subsystems=True,
                 ),
@@ -280,7 +281,7 @@ class TestMetricSettingInterface(JusticeCountsDatabaseTestCase):
             MetricSettingInterface.new_add_or_update_agency_metric_setting(
                 session=session,
                 agency=agency,
-                agency_metric=MetricInterface(
+                agency_metric_updates=MetricInterface(
                     key=supervision.funding.key,
                     disaggregated_by_supervision_subsystems=True,
                     is_metric_enabled=False,
@@ -289,7 +290,7 @@ class TestMetricSettingInterface(JusticeCountsDatabaseTestCase):
             MetricSettingInterface.new_add_or_update_agency_metric_setting(
                 session=session,
                 agency=agency,
-                agency_metric=MetricInterface(
+                agency_metric_updates=MetricInterface(
                     key=parole_funding_key,
                     is_metric_enabled=True,
                 ),
@@ -297,7 +298,7 @@ class TestMetricSettingInterface(JusticeCountsDatabaseTestCase):
             MetricSettingInterface.new_add_or_update_agency_metric_setting(
                 session=session,
                 agency=agency,
-                agency_metric=MetricInterface(
+                agency_metric_updates=MetricInterface(
                     key=probation_funding_key,
                     is_metric_enabled=True,
                 ),
@@ -309,7 +310,7 @@ class TestMetricSettingInterface(JusticeCountsDatabaseTestCase):
             MetricSettingInterface.new_add_or_update_agency_metric_setting(
                 session=session,
                 agency=agency,
-                agency_metric=MetricInterface(
+                agency_metric_updates=MetricInterface(
                     key=parole_funding_key,
                     disaggregated_by_supervision_subsystems=False,
                 ),
@@ -386,7 +387,7 @@ class TestMetricSettingInterface(JusticeCountsDatabaseTestCase):
             MetricSettingInterface.new_add_or_update_agency_metric_setting(
                 session=session,
                 agency=supervision_agency,
-                agency_metric=MetricInterface(
+                agency_metric_updates=MetricInterface(
                     key=supervision.funding.key,
                     disaggregated_by_supervision_subsystems=True,
                 ),
@@ -410,3 +411,37 @@ class TestMetricSettingInterface(JusticeCountsDatabaseTestCase):
                     self.assertEqual(
                         metric.disaggregated_by_supervision_subsystems, True
                     )
+
+    def test_add_metric_setting_history(self) -> None:
+        """Test that the correct metric setting history entry is added when we add a
+        metric setting to the database."""
+        agency = self.test_schema_objects.test_agency_A
+        funding_metric = self.test_schema_objects.funding_metric
+        user = self.test_schema_objects.test_user_A
+        with SessionFactory.using_database(self.database_key) as session:
+            # Add agency to the database.
+            session.add(agency)
+            session.commit()
+            session.refresh(agency)
+
+            # Add user to the database.
+            session.add(user)
+            session.commit()
+            session.refresh(user)
+
+            # Write the metric setting to the database.
+            MetricSettingInterface.add_or_update_agency_metric_setting(
+                session=session,
+                agency=agency,
+                agency_metric_updates=funding_metric,
+                user_account=user,
+            )
+            session.commit()
+
+            metric_settings = session.query(MetricSettingHistory).one()
+            self.assertEqual(metric_settings.agency_id, agency.id)
+            self.assertEqual(metric_settings.metric_definition_key, funding_metric.key)
+            self.assertDictEqual(
+                metric_settings.updates, funding_metric.to_storage_json()
+            )
+            self.assertEqual(metric_settings.user_account_id, user.id)

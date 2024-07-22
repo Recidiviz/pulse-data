@@ -824,6 +824,38 @@ class MetricSetting(JusticeCountsBase):
     )
 
 
+class MetricSettingHistory(JusticeCountsBase):
+    """Records a change made to a Metric Setting. This table can be used for analytics
+    or for reconstructing an agency's metric settings configuration according to a past
+    timestamp."""
+
+    __tablename__ = "metric_setting_history"
+
+    id = Column(Integer, autoincrement=True)
+
+    agency_id = Column(Integer, nullable=False)
+
+    metric_definition_key = Column(String(255), nullable=False)
+
+    # The portion of the Metric Interface that was updated.
+    updates = Column(JSONB, nullable=True)
+
+    # The user who made these changes.
+    user_account_id = Column(Integer, nullable=True)
+
+    # The datetime this change occurred.
+    timestamp = Column(DateTime, nullable=True)
+
+    __table_args__ = tuple(
+        [
+            PrimaryKeyConstraint(id),
+            ForeignKeyConstraint(
+                [agency_id], [Agency.id], name="agency_foreign_key_constraint"
+            ),
+        ]
+    )
+
+
 class ReportTableInstance(JusticeCountsBase):
     """An instance of a table that contains an actual set of data points along a shared set of dimensions.
 

@@ -767,7 +767,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                 is_metric_enabled=False
             )
             MetricSettingInterface.add_or_update_agency_metric_setting(
-                agency_metric=agency_metric,
+                agency_metric_updates=agency_metric,
                 agency=agency,
                 session=session,
                 user_account=user,
@@ -815,7 +815,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                 disaggregated_by_supervision_subsystems=True,
             )
             MetricSettingInterface.add_or_update_agency_metric_setting(
-                session=session, agency=agency, agency_metric=metric_interface
+                session=session, agency=agency, agency_metric_updates=metric_interface
             )
             session.commit()
 

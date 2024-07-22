@@ -16,6 +16,7 @@
 # =============================================================================
 """Interface for working with the MetricSetting model."""
 
+import datetime
 import logging
 from copy import deepcopy
 from typing import Any, Dict, List, Optional, Set
@@ -104,7 +105,8 @@ class MetricSettingInterface:
     def update_metric_setting(
         session: Session,
         agency: schema.Agency,
-        agency_metric: MetricInterface,
+        agency_metric_updates: MetricInterface,
+        user_account: Optional[schema.UserAccount] = None,
     ) -> None:
         """Overwrite an agency's metric setting with the given metric interface."""
 
@@ -112,30 +114,40 @@ class MetricSettingInterface:
             MetricSettingInterface.get_metric_setting_by_agency_id_and_metric_key(
                 session=session,
                 agency_id=agency.id,
-                metric_definition_key=agency_metric.key,
+                metric_definition_key=agency_metric_updates.key,
             )
         )
-
         if existing_setting is not None:
             if existing_setting.metric_interface is None:
                 raise ValueError(
-                    f"metric_interface column in MetricSetting table should never be null, but is null for agency {agency.name} and metric definition key {agency_metric.key}."
+                    f"metric_interface column in MetricSetting table should never be null, but is null for agency {agency.name} and metric definition key {agency_metric_updates.key}."
                 )
 
-            updates = agency_metric.to_storage_json()
+            updates = agency_metric_updates.to_storage_json()
             # Using deepcopy so that the existing metric interface is only modified once
             # apply_updates returns.
             existing_setting.metric_interface = handle_invariants(
                 apply_updates(deepcopy(existing_setting.metric_interface), updates)
             )
+
         else:
             session.add(
                 schema.MetricSetting(
                     agency_id=agency.id,
-                    metric_definition_key=agency_metric.key,
-                    metric_interface=agency_metric.to_storage_json(),
+                    metric_definition_key=agency_metric_updates.key,
+                    metric_interface=agency_metric_updates.to_storage_json(),
                 )
             )
+        # Add metric setting history entry.
+        session.add(
+            schema.MetricSettingHistory(
+                agency_id=agency.id,
+                metric_definition_key=agency_metric_updates.key,
+                updates=handle_invariants(agency_metric_updates.to_storage_json()),
+                user_account_id=(user_account.id if user_account is not None else None),
+                timestamp=datetime.datetime.now(tz=datetime.timezone.utc),
+            )
+        )
         session.commit()
 
     # TODO(#28469): Remove "new" from this method once we deprecate the existing
@@ -144,7 +156,8 @@ class MetricSettingInterface:
     def new_add_or_update_agency_metric_setting(
         session: Session,
         agency: schema.Agency,
-        agency_metric: MetricInterface,
+        agency_metric_updates: MetricInterface,
+        user_account: Optional[schema.UserAccount] = None,
     ) -> None:
         """Add or update an agency's metric setting with the given metric interface.
 
@@ -155,12 +168,12 @@ class MetricSettingInterface:
         example of this behavior.
         """
         agency_systems = {schema.System[s] for s in agency.systems}
-        current_system = agency_metric.metric_definition.system.value
+        current_system = agency_metric_updates.metric_definition.system.value
         # First, modify the disaggregated_by_supervision_subsystems and is_metric_enabled
         # fields for all supervision subsystems for this agency if
         # disaggregated_by_supervision_subsystems is modified.
         if (
-            agency_metric.disaggregated_by_supervision_subsystems is not None
+            agency_metric_updates.disaggregated_by_supervision_subsystems is not None
             and agency_systems.intersection(schema.System.supervision_subsystems())
         ):
             for system in agency.systems:
@@ -173,33 +186,37 @@ class MetricSettingInterface:
                     continue
 
                 metric_definition_key = (
-                    agency_metric.key
+                    agency_metric_updates.key
                     if system == current_system
-                    else agency_metric.key.replace(current_system, system, 1)
+                    else agency_metric_updates.key.replace(current_system, system, 1)
                 )
                 MetricSettingInterface.update_metric_setting(
                     session=session,
                     agency=agency,
-                    agency_metric=MetricInterface(
+                    agency_metric_updates=MetricInterface(
                         key=metric_definition_key,
-                        disaggregated_by_supervision_subsystems=agency_metric.disaggregated_by_supervision_subsystems,
-                        is_metric_enabled=agency_metric.disaggregated_by_supervision_subsystems
+                        disaggregated_by_supervision_subsystems=agency_metric_updates.disaggregated_by_supervision_subsystems,
+                        is_metric_enabled=agency_metric_updates.disaggregated_by_supervision_subsystems
                         if schema.System[system]
                         in schema.System.supervision_subsystems()
-                        else not agency_metric.disaggregated_by_supervision_subsystems,
+                        else not agency_metric_updates.disaggregated_by_supervision_subsystems,
                     ),
+                    user_account=user_account,
                 )
         # Update the metric interface as-given if disaggregated_by_supervision_subsystems
         # is not being updated, or if the agency does not have supervision subsystems.
         MetricSettingInterface.update_metric_setting(
-            session=session, agency=agency, agency_metric=agency_metric
+            session=session,
+            agency=agency,
+            agency_metric_updates=agency_metric_updates,
+            user_account=user_account,
         )
 
     @staticmethod
     def add_or_update_agency_metric_setting(
         session: Session,
         agency: schema.Agency,
-        agency_metric: MetricInterface,
+        agency_metric_updates: MetricInterface,
         user_account: Optional[schema.UserAccount] = None,
     ) -> None:
         """Add the agency metric interface to the MetricSetting table as a lightweight
@@ -212,7 +229,7 @@ class MetricSettingInterface:
         DatapointInterface.add_or_update_agency_datapoints(
             session=session,
             agency=agency,
-            agency_metric=agency_metric,
+            agency_metric=agency_metric_updates,
             user_account=user_account,
         )
         # TODO(#28469): Remove this try-except block once we deprecate the above method.
@@ -230,7 +247,8 @@ class MetricSettingInterface:
             MetricSettingInterface.new_add_or_update_agency_metric_setting(
                 session=session,
                 agency=agency,
-                agency_metric=agency_metric,
+                agency_metric_updates=agency_metric_updates,
+                user_account=user_account,
             )
         except Exception as e:
             # Logging an error here should show up in Sentry, but will not cause issues
@@ -238,7 +256,7 @@ class MetricSettingInterface:
             logging.error(
                 "[MetricSetting Migration] The new_add_or_update_agency_metric_setting method failed for agency %s and metric key %s. Error: %s",
                 agency.name,
-                agency_metric.key,
+                agency_metric_updates.key,
                 e,
             )
 
