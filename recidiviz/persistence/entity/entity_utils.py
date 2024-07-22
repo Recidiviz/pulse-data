@@ -116,25 +116,21 @@ _STATE_CLASS_HIERARCHY = [
 ]
 
 
-# TODO(#30075): Uncomment all remaining entities once we've migrated to v2 entities where
-#  there is an entity for each class.
-# TODO(#30075): Add a test to make sure this is a superset of the entities in
-#  _STATE_CLASS_HIERARCHY and that the orders don't change.
 _NORMALIZED_STATE_CLASS_HIERARCHY = [
     # NormalizedStatePerson hierarchy
-    # normalized_entities.NormalizedStatePerson.__name__,
-    # normalized_entities.NormalizedStatePersonExternalId.__name__,
-    # normalized_entities.NormalizedStatePersonAddressPeriod.__name__,
-    # normalized_entities.NormalizedStatePersonHousingStatusPeriod.__name__,
-    # normalized_entities.NormalizedStatePersonAlias.__name__,
-    # normalized_entities.NormalizedStatePersonRace.__name__,
-    # normalized_entities.NormalizedStatePersonEthnicity.__name__,
+    normalized_entities.NormalizedStatePerson.__name__,
+    normalized_entities.NormalizedStatePersonExternalId.__name__,
+    normalized_entities.NormalizedStatePersonAddressPeriod.__name__,
+    normalized_entities.NormalizedStatePersonHousingStatusPeriod.__name__,
+    normalized_entities.NormalizedStatePersonAlias.__name__,
+    normalized_entities.NormalizedStatePersonRace.__name__,
+    normalized_entities.NormalizedStatePersonEthnicity.__name__,
     normalized_entities.NormalizedStateIncarcerationSentence.__name__,
     normalized_entities.NormalizedStateSupervisionSentence.__name__,
     normalized_entities.NormalizedStateCharge.__name__,
     normalized_entities.NormalizedStateIncarcerationPeriod.__name__,
-    # normalized_entities.NormalizedStateIncarcerationIncident.__name__,
-    # normalized_entities.NormalizedStateIncarcerationIncidentOutcome.__name__,
+    normalized_entities.NormalizedStateIncarcerationIncident.__name__,
+    normalized_entities.NormalizedStateIncarcerationIncidentOutcome.__name__,
     normalized_entities.NormalizedStateSupervisionPeriod.__name__,
     normalized_entities.NormalizedStateSupervisionContact.__name__,
     normalized_entities.NormalizedStateSupervisionCaseTypeEntry.__name__,
@@ -146,24 +142,24 @@ _NORMALIZED_STATE_CLASS_HIERARCHY = [
     normalized_entities.NormalizedStateAssessment.__name__,
     normalized_entities.NormalizedStateProgramAssignment.__name__,
     normalized_entities.NormalizedStateEarlyDischarge.__name__,
-    # normalized_entities.NormalizedStateEmploymentPeriod.__name__,
-    # normalized_entities.NormalizedStateDrugScreen.__name__,
-    # normalized_entities.NormalizedStateTaskDeadline.__name__,
-    # normalized_entities.NormalizedStateSentence.__name__,
-    # normalized_entities.NormalizedStateSentenceServingPeriod.__name__,
-    # TODO(#26240): Replace StateCharge with this entity
-    # normalized_entities.NormalizedStateChargeV2.__name__,
-    # normalized_entities.NormalizedStateSentenceStatusSnapshot.__name__,
-    # normalized_entities.NormalizedStateSentenceLength.__name__,
-    # normalized_entities.NormalizedStateSentenceGroup.__name__,
-    # normalized_entities.NormalizedStateSentenceGroupLength.__name__,
+    normalized_entities.NormalizedStateEmploymentPeriod.__name__,
+    normalized_entities.NormalizedStateDrugScreen.__name__,
+    normalized_entities.NormalizedStateTaskDeadline.__name__,
+    normalized_entities.NormalizedStateSentence.__name__,
+    normalized_entities.NormalizedStateSentenceServingPeriod.__name__,
+    # TODO(#26240): Replace NormalizedStateCharge with this entity
+    normalized_entities.NormalizedStateChargeV2.__name__,
+    normalized_entities.NormalizedStateSentenceStatusSnapshot.__name__,
+    normalized_entities.NormalizedStateSentenceLength.__name__,
+    normalized_entities.NormalizedStateSentenceGroup.__name__,
+    normalized_entities.NormalizedStateSentenceGroupLength.__name__,
     # StateStaff hierarchy
-    # normalized_entities.NormalizedStateStaff.__name__,
-    # normalized_entities.NormalizedStateStaffExternalId.__name__,
+    normalized_entities.NormalizedStateStaff.__name__,
+    normalized_entities.NormalizedStateStaffExternalId.__name__,
     normalized_entities.NormalizedStateStaffRolePeriod.__name__,
-    # normalized_entities.NormalizedStateStaffSupervisorPeriod.__name__,
-    # normalized_entities.NormalizedStateStaffLocationPeriod.__name__,
-    # normalized_entities.NormalizedStateStaffCaseloadTypePeriod.__name__,
+    normalized_entities.NormalizedStateStaffSupervisorPeriod.__name__,
+    normalized_entities.NormalizedStateStaffLocationPeriod.__name__,
+    normalized_entities.NormalizedStateStaffCaseloadTypePeriod.__name__,
 ]
 
 _OPERATIONS_CLASS_HIERARCHY = [
@@ -343,6 +339,7 @@ def _check_class_hierarchy_includes_all_expected_classes(
         raise PersistenceError(msg)
 
 
+@cache
 def get_all_entity_classes_in_module(entities_module: ModuleType) -> Set[Type[Entity]]:
     """Returns a set of all subclasses of Entity that are
     defined in the given module."""
@@ -361,6 +358,14 @@ def get_all_entity_classes_in_module(entities_module: ModuleType) -> Set[Type[En
                 expected_classes.add(attribute)
 
     return expected_classes
+
+
+def get_module_for_entity_class(entity_cls: Type[Entity]) -> ModuleType:
+    if entity_cls in get_all_entity_classes_in_module(state_entities):
+        return state_entities
+    if entity_cls in get_all_entity_classes_in_module(normalized_entities):
+        return normalized_entities
+    raise ValueError(f"Unexpected entity_cls [{entity_cls}]")
 
 
 def get_all_enum_classes_in_module(enums_module: ModuleType) -> Set[Type[Enum]]:

@@ -48,8 +48,13 @@ from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodTerminationReason,
 )
 from recidiviz.persistence.database.schema.state import schema
-from recidiviz.persistence.entity.state import entities, normalized_entities
-from recidiviz.persistence.entity.state.entities import StatePerson
+from recidiviz.persistence.entity.state import normalized_entities
+from recidiviz.persistence.entity.state.normalized_entities import (
+    NormalizedStateAssessment,
+    NormalizedStatePerson,
+    NormalizedStateProgramAssignment,
+    NormalizedStateSupervisionPeriod,
+)
 from recidiviz.pipelines.metrics.base_metric_pipeline import (
     ClassifyResults,
     ProduceMetrics,
@@ -417,7 +422,7 @@ class TestClassifyProgramAssignments(unittest.TestCase):
         """Tests the ClassifyProgramAssignments DoFn."""
         fake_person_id = 12345
 
-        fake_person = entities.StatePerson.new_with_defaults(
+        fake_person = NormalizedStatePerson(
             state_code="US_XX",
             person_id=fake_person_id,
             gender=StateGender.MALE,
@@ -460,10 +465,10 @@ class TestClassifyProgramAssignments(unittest.TestCase):
         )
 
         person_periods = {
-            entities.StatePerson.__name__: [fake_person],
-            entities.StateProgramAssignment.__name__: [program_assignment],
-            entities.StateAssessment.__name__: [assessment],
-            entities.StateSupervisionPeriod.__name__: [supervision_period],
+            NormalizedStatePerson.__name__: [fake_person],
+            NormalizedStateProgramAssignment.__name__: [program_assignment],
+            NormalizedStateAssessment.__name__: [assessment],
+            NormalizedStateSupervisionPeriod.__name__: [supervision_period],
         }
 
         assert program_assignment.program_id is not None
@@ -503,7 +508,7 @@ class TestClassifyProgramAssignments(unittest.TestCase):
         """Tests the ClassifyProgramAssignments DoFn."""
         fake_person_id = 12345
 
-        fake_person = entities.StatePerson.new_with_defaults(
+        fake_person = NormalizedStatePerson(
             state_code="US_ND",
             person_id=fake_person_id,
             gender=StateGender.MALE,
@@ -546,10 +551,10 @@ class TestClassifyProgramAssignments(unittest.TestCase):
         )
 
         person_periods = {
-            entities.StatePerson.__name__: [fake_person],
-            entities.StateProgramAssignment.__name__: [program_assignment],
-            entities.StateAssessment.__name__: [assessment],
-            entities.StateSupervisionPeriod.__name__: [supervision_period],
+            NormalizedStatePerson.__name__: [fake_person],
+            NormalizedStateProgramAssignment.__name__: [program_assignment],
+            NormalizedStateAssessment.__name__: [assessment],
+            NormalizedStateSupervisionPeriod.__name__: [supervision_period],
         }
 
         assert program_assignment.program_id is not None
@@ -588,7 +593,7 @@ class TestClassifyProgramAssignments(unittest.TestCase):
         """Tests the ClassifyProgramAssignments DoFn."""
         fake_person_id = 12345
 
-        fake_person = entities.StatePerson.new_with_defaults(
+        fake_person = NormalizedStatePerson(
             state_code="US_XX",
             person_id=fake_person_id,
             gender=StateGender.MALE,
@@ -619,10 +624,10 @@ class TestClassifyProgramAssignments(unittest.TestCase):
         )
 
         person_periods = {
-            entities.StatePerson.__name__: [fake_person],
-            entities.StateProgramAssignment.__name__: [],
-            entities.StateAssessment.__name__: [assessment],
-            entities.StateSupervisionPeriod.__name__: [supervision_period],
+            NormalizedStatePerson.__name__: [fake_person],
+            NormalizedStateProgramAssignment.__name__: [],
+            NormalizedStateAssessment.__name__: [assessment],
+            NormalizedStateSupervisionPeriod.__name__: [supervision_period],
         }
 
         test_pipeline = TestPipeline()
@@ -646,7 +651,7 @@ class TestClassifyProgramAssignments(unittest.TestCase):
         """Tests the ClassifyProgramAssignments DoFn."""
         fake_person_id = 12345
 
-        fake_person = entities.StatePerson.new_with_defaults(
+        fake_person = NormalizedStatePerson(
             state_code="US_XX",
             person_id=fake_person_id,
             gender=StateGender.MALE,
@@ -676,10 +681,10 @@ class TestClassifyProgramAssignments(unittest.TestCase):
         )
 
         person_periods = {
-            entities.StatePerson.__name__: [fake_person],
-            entities.StateProgramAssignment.__name__: [program_assignment],
-            entities.StateAssessment.__name__: [assessment],
-            entities.StateSupervisionPeriod.__name__: [],
+            NormalizedStatePerson.__name__: [fake_person],
+            NormalizedStateProgramAssignment.__name__: [program_assignment],
+            NormalizedStateAssessment.__name__: [assessment],
+            NormalizedStateSupervisionPeriod.__name__: [],
         }
 
         assert program_assignment.program_id is not None
@@ -733,7 +738,7 @@ class TestProduceProgramMetrics(unittest.TestCase):
     def testProduceProgramMetrics(self) -> None:
         """Tests the ProduceProgramMetrics DoFn."""
 
-        fake_person = StatePerson.new_with_defaults(
+        fake_person = NormalizedStatePerson(
             state_code="US_XX",
             person_id=123,
             gender=StateGender.MALE,
@@ -785,7 +790,7 @@ class TestProduceProgramMetrics(unittest.TestCase):
         """Tests the ProduceProgramMetrics when there are
         no supervision months. This should never happen because any person
         without program events is dropped entirely from the pipeline."""
-        fake_person = StatePerson.new_with_defaults(
+        fake_person = NormalizedStatePerson(
             state_code="US_XX",
             person_id=123,
             gender=StateGender.MALE,
@@ -795,7 +800,7 @@ class TestProduceProgramMetrics(unittest.TestCase):
 
         test_pipeline = TestPipeline()
 
-        inputs: list[tuple[StatePerson, list[ProgramParticipationMetric]]] = [
+        inputs: list[tuple[NormalizedStatePerson, list[ProgramParticipationMetric]]] = [
             (fake_person, [])
         ]
 

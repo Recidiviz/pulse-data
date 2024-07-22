@@ -24,7 +24,7 @@ from recidiviz.common.constants.state.state_person import StateGender
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionLevel,
 )
-from recidiviz.persistence.entity.state.entities import StatePerson
+from recidiviz.persistence.entity.state.normalized_entities import NormalizedStatePerson
 
 
 @attr.s
@@ -47,7 +47,7 @@ class SupervisionLevelPolicy:
     pre_assessment_level: Optional[StateSupervisionLevel] = attr.ib(default=None)
 
     def recommended_supervision_level_from_score(
-        self, person: StatePerson, last_assessment_score: int
+        self, person: NormalizedStatePerson, last_assessment_score: int
     ) -> Optional[StateSupervisionLevel]:
         if not (gender := person.gender) or not (
             policy := self.level_mapping.get(gender)

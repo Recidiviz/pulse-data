@@ -24,6 +24,7 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.schema_utils import get_all_table_classes_in_schema
 from recidiviz.persistence.entity.entity_utils import CoreEntityFieldIndex
+from recidiviz.persistence.entity.state import entities
 from recidiviz.pipelines.ingest.state import pipeline
 from recidiviz.tests.persistence.entity.state.entities_test_utils import (
     generate_full_graph_state_person,
@@ -58,7 +59,9 @@ class TestSerializeEntities(StateIngestPipelineTestCase):
             | beam.Create(root_entities)
             | beam.ParDo(
                 pipeline.SerializeEntities(
-                    state_code=StateCode.US_DD, field_index=self.field_index
+                    state_code=StateCode.US_DD,
+                    field_index=self.field_index,
+                    entities_module=entities,
                 )
             ).with_outputs(*state_table_names)
         )
@@ -72,3 +75,6 @@ class TestSerializeEntities(StateIngestPipelineTestCase):
             )
 
         self.test_pipeline.run()
+
+    # TODO(#29517): Add test for serializing NormalizedStatePerson (add
+    #  generate_full_graph_normalized_state_person() helper as well).

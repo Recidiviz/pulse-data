@@ -20,7 +20,7 @@ This contains the core logic for calculating population span metrics on a person
 basis. It transforms Spans into PopulationSpanMetrics."""
 from typing import Dict, List, Optional, Sequence, Set, Type
 
-from recidiviz.persistence.entity.state.entities import StatePerson
+from recidiviz.persistence.entity.state.normalized_entities import NormalizedStatePerson
 from recidiviz.pipelines.metrics.base_metric_producer import BaseMetricProducer
 from recidiviz.pipelines.metrics.population_spans.metrics import (
     IncarcerationPopulationSpanMetric,
@@ -78,17 +78,17 @@ class PopulationSpanMetricProducer(
 
     def produce_metrics(
         self,
-        person: StatePerson,
+        person: NormalizedStatePerson,
         identifier_results: Sequence[Span],
         metric_inclusions: Set[PopulationSpanMetricType],
         pipeline_job_id: str,
         metrics_producer_delegates: Dict[str, StateSpecificMetricsProducerDelegate],
         calculation_month_count: int = -1,
     ) -> List[PopulationSpanMetric]:
-        """Transforms the events and a StatePerson into RecidivizMetrics.
+        """Transforms the events and a NormalizedStatePerson into RecidivizMetrics.
         Args:
-            person: the StatePerson
-            identifier_results: A list of IdentifierResults for the given StatePerson.
+            person: the NormalizedStatePerson
+            identifier_results: A list of IdentifierResults for the given NormalizedStatePerson.
             metric_inclusions: A dictionary where the keys are each Metric type and the values are boolean
                 flags for whether or not to include that metric type in the calculations.
             calculation_month_count: The number of months (including the month of the calculation_month_upper_bound) to

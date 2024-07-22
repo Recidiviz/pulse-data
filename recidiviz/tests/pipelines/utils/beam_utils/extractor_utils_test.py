@@ -48,6 +48,13 @@ from recidiviz.persistence.database.schema_entity_converter.state.schema_entity_
 )
 from recidiviz.persistence.entity import entity_utils
 from recidiviz.persistence.entity.state import entities, normalized_entities
+from recidiviz.persistence.entity.state.normalized_entities import (
+    NormalizedStatePerson,
+    NormalizedStatePersonAlias,
+    NormalizedStatePersonEthnicity,
+    NormalizedStatePersonExternalId,
+    NormalizedStatePersonRace,
+)
 from recidiviz.pipelines.utils.beam_utils import extractor_utils
 from recidiviz.tests.persistence.database import database_test_utils
 from recidiviz.tests.pipelines.calculator_test_utils import (
@@ -1218,11 +1225,17 @@ class TestExtractDataForPipeline(unittest.TestCase):
         external_ids_data = [normalized_database_base_dict(schema_external_id)]
 
         schema_race_1 = schema.StatePersonRace(
-            race=StateRace.WHITE, state_code="US_XX", person_id=person_id
+            person_race_id=1234,
+            race=StateRace.WHITE,
+            state_code="US_XX",
+            person_id=person_id,
         )
 
         schema_race_2 = schema.StatePersonRace(
-            race=StateRace.BLACK, state_code="US_XX", person_id=person_id
+            person_race_id=1235,
+            race=StateRace.BLACK,
+            state_code="US_XX",
+            person_id=person_id,
         )
 
         races_data = [
@@ -1231,6 +1244,7 @@ class TestExtractDataForPipeline(unittest.TestCase):
         ]
 
         schema_program_assignment = schema.StateProgramAssignment(
+            program_assignment_id=1234,
             state_code="US_XX",
             external_id="pa1",
             participation_status=StateProgramAssignmentParticipationStatus.IN_PROGRESS,
@@ -1254,25 +1268,56 @@ class TestExtractDataForPipeline(unittest.TestCase):
         }
         data_dict.update(data_dict_overrides)
 
-        entity_converter = StateSchemaToEntityConverter()
-
-        entity_person = entity_converter.convert(schema_person)
-        entity_ethnicity = entity_converter.convert(schema_ethnicity)
-        entity_alias = entity_converter.convert(schema_alias)
-        entity_external_id = entity_converter.convert(schema_external_id)
-        entity_races = entity_converter.convert_all([schema_race_1, schema_race_2])
-        entity_program = normalized_entities.NormalizedStateProgramAssignment(
+        expected_entity_person = NormalizedStatePerson(
+            person_id=person_id,
+            current_address="123 Street",
+            full_name="Bernard Madoff",
+            birthdate=date(1970, 1, 1),
+            gender=StateGender.MALE,
+            residency_status=StateResidencyStatus.PERMANENT,
+            state_code="US_XX",
+        )
+        expected_entity_ethnicity = NormalizedStatePersonEthnicity(
+            state_code="US_XX",
+            ethnicity=StateEthnicity.NOT_HISPANIC,
+            person_ethnicity_id=234,
+        )
+        expected_entity_alias = NormalizedStatePersonAlias(
+            state_code="US_XX",
+            full_name="Bernie Madoff",
+            person_alias_id=18615,
+        )
+        expected_entity_external_id = NormalizedStatePersonExternalId(
+            person_external_id_id=999,
+            external_id="888",
+            state_code="US_XX",
+            id_type="US_XX_TYPE",
+        )
+        expected_entity_races = [
+            NormalizedStatePersonRace(
+                person_race_id=1234,
+                race=StateRace.WHITE,
+                state_code="US_XX",
+            ),
+            NormalizedStatePersonRace(
+                person_race_id=1235,
+                race=StateRace.BLACK,
+                state_code="US_XX",
+            ),
+        ]
+        expected_entity_program = normalized_entities.NormalizedStateProgramAssignment(
+            program_assignment_id=1234,
             state_code="US_XX",
             external_id="pa1",
             participation_status=StateProgramAssignmentParticipationStatus.IN_PROGRESS,
             sequence_num=0,
         )
 
-        entity_person.ethnicities = [entity_ethnicity]
-        entity_person.aliases = [entity_alias]
-        entity_person.external_ids = [entity_external_id]
-        entity_person.races = entity_races
-        entity_person.program_assignments = [entity_program]
+        expected_entity_person.ethnicities = [expected_entity_ethnicity]
+        expected_entity_person.aliases = [expected_entity_alias]
+        expected_entity_person.external_ids = [expected_entity_external_id]
+        expected_entity_person.races = expected_entity_races
+        expected_entity_person.program_assignments = [expected_entity_program]
 
         project = "project"
         normalized_dataset = "us_xx_normalized_state"
@@ -1290,15 +1335,15 @@ class TestExtractDataForPipeline(unittest.TestCase):
                 project_id=project,
                 entities_dataset=normalized_dataset,
                 required_entity_classes=[
-                    entities.StatePerson,
-                    entities.StatePersonRace,
-                    entities.StatePersonEthnicity,
-                    entities.StatePersonAlias,
-                    entities.StatePersonExternalId,
+                    normalized_entities.NormalizedStatePerson,
+                    normalized_entities.NormalizedStatePersonRace,
+                    normalized_entities.NormalizedStatePersonEthnicity,
+                    normalized_entities.NormalizedStatePersonAlias,
+                    normalized_entities.NormalizedStatePersonExternalId,
                     normalized_entities.NormalizedStateProgramAssignment,
                 ],
                 reference_data_queries_by_name={},
-                root_entity_cls=entities.StatePerson,
+                root_entity_cls=normalized_entities.NormalizedStatePerson,
                 root_entity_id_filter_set=None,
             )
 
@@ -1309,17 +1354,21 @@ class TestExtractDataForPipeline(unittest.TestCase):
                         (
                             12345,
                             {
-                                entities.StatePerson.__name__: [entity_person],
-                                entities.StatePersonRace.__name__: entity_races,
-                                entities.StatePersonEthnicity.__name__: [
-                                    entity_ethnicity
+                                normalized_entities.NormalizedStatePerson.__name__: [
+                                    expected_entity_person
                                 ],
-                                entities.StatePersonAlias.__name__: [entity_alias],
-                                entities.StatePersonExternalId.__name__: [
-                                    entity_external_id
+                                normalized_entities.NormalizedStatePersonRace.__name__: expected_entity_races,
+                                normalized_entities.NormalizedStatePersonEthnicity.__name__: [
+                                    expected_entity_ethnicity
                                 ],
-                                entities.StateProgramAssignment.__name__: [
-                                    entity_program
+                                normalized_entities.NormalizedStatePersonAlias.__name__: [
+                                    expected_entity_alias
+                                ],
+                                normalized_entities.NormalizedStatePersonExternalId.__name__: [
+                                    expected_entity_external_id
+                                ],
+                                normalized_entities.NormalizedStateProgramAssignment.__name__: [
+                                    expected_entity_program
                                 ],
                             },
                         )
@@ -1387,26 +1436,36 @@ class TestExtractDataForPipeline(unittest.TestCase):
         }
         data_dict.update(data_dict_overrides)
 
-        entity_converter = StateSchemaToEntityConverter()
-
-        entity_person = entity_converter.convert(schema_person)
-        entity_violation = normalized_entities.NormalizedStateSupervisionViolation(
-            supervision_violation_id=321,
+        expected_entity_person = normalized_entities.NormalizedStatePerson(
+            person_id=person_id,
+            current_address="123 Street",
+            full_name="Bernard Madoff",
+            birthdate=date(1970, 1, 1),
+            gender=StateGender.MALE,
+            residency_status=StateResidencyStatus.PERMANENT,
             state_code="US_XX",
-            external_id="external_id",
         )
-        entity_violation_response = (
+        expected_entity_violation = (
+            normalized_entities.NormalizedStateSupervisionViolation(
+                supervision_violation_id=321,
+                state_code="US_XX",
+                external_id="external_id",
+            )
+        )
+        expected_entity_violation_response = (
             normalized_entities.NormalizedStateSupervisionViolationResponse(
                 supervision_violation_response_id=456,
                 external_id="external_id",
                 state_code="US_XX",
                 response_date=datetime.date(2000, 1, 1),
-                supervision_violation=entity_violation,
+                supervision_violation=expected_entity_violation,
                 sequence_num=0,
             )
         )
-        entity_person.supervision_violations = [entity_violation]
-        entity_violation.supervision_violation_responses = [entity_violation_response]
+        expected_entity_person.supervision_violations = [expected_entity_violation]
+        expected_entity_violation.supervision_violation_responses = [
+            expected_entity_violation_response
+        ]
 
         project = "project"
         normalized_dataset = "us_xx_normalized_state"
@@ -1420,16 +1479,16 @@ class TestExtractDataForPipeline(unittest.TestCase):
             test_pipeline = TestPipeline()
 
             output = test_pipeline | extractor_utils.ExtractRootEntityDataForPipeline(
-                state_code=StateCode(entity_person.state_code),
+                state_code=StateCode(expected_entity_person.state_code),
                 project_id=project,
                 entities_dataset=normalized_dataset,
                 required_entity_classes=[
-                    entities.StatePerson,
+                    normalized_entities.NormalizedStatePerson,
                     normalized_entities.NormalizedStateSupervisionViolation,
                     normalized_entities.NormalizedStateSupervisionViolationResponse,
                 ],
                 reference_data_queries_by_name={},
-                root_entity_cls=entities.StatePerson,
+                root_entity_cls=normalized_entities.NormalizedStatePerson,
                 root_entity_id_filter_set=None,
             )
 
@@ -1440,12 +1499,14 @@ class TestExtractDataForPipeline(unittest.TestCase):
                         (
                             12345,
                             {
-                                entities.StatePerson.__name__: [entity_person],
-                                entities.StateSupervisionViolation.__name__: [
-                                    entity_violation
+                                normalized_entities.NormalizedStatePerson.__name__: [
+                                    expected_entity_person
                                 ],
-                                entities.StateSupervisionViolationResponse.__name__: [
-                                    entity_violation_response
+                                normalized_entities.NormalizedStateSupervisionViolation.__name__: [
+                                    expected_entity_violation
+                                ],
+                                normalized_entities.NormalizedStateSupervisionViolationResponse.__name__: [
+                                    expected_entity_violation_response
                                 ],
                             },
                         )

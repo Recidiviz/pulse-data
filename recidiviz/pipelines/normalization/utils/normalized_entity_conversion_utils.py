@@ -55,10 +55,11 @@ from recidiviz.persistence.entity.entity_utils import (
 from recidiviz.persistence.entity.normalized_entities_utils import (
     AdditionalAttributesMap,
     NormalizedStateEntityT,
+    get_base_entity_class_for_normalized_entity,
     normalized_entity_class_with_base_class_name,
     update_forward_references_on_updated_entity,
 )
-from recidiviz.persistence.entity.state import entities as state_entities
+from recidiviz.persistence.entity.state import normalized_entities
 from recidiviz.persistence.entity.state.normalized_state_entity import (
     NormalizedStateEntity,
 )
@@ -130,6 +131,8 @@ def convert_entity_trees_to_normalized_versions(
     while len(stack) > 0:
         (normalized_base_entity_class, base_entity) = stack.popleft()
 
+        normalized_base_entity_class_name = normalized_base_entity_class.__name__
+
         # Verify the base entity and normalized entity are compatible
         base_entity_cls = type(base_entity)
         base_entity_cls_name = base_entity_cls.__name__
@@ -186,9 +189,12 @@ def convert_entity_trees_to_normalized_versions(
             if not related_entity_cls_name:
                 continue
 
-            referenced_normalized_class: Type[
-                NormalizedStateEntity
-            ] = normalized_entity_class_with_base_class_name(related_entity_cls_name)
+            referenced_normalized_class: Type[NormalizedStateEntity] = assert_subclass(
+                get_entity_class_in_module_with_name(
+                    normalized_entities, related_entity_cls_name
+                ),
+                NormalizedStateEntity,
+            )
 
             if issubclass(referenced_normalized_class, RootEntity):
                 continue
@@ -200,7 +206,7 @@ def convert_entity_trees_to_normalized_versions(
 
             reverse_relationship_field = attr_field_name_storing_referenced_cls_name(
                 base_cls=referenced_normalized_class,
-                referenced_cls_name=base_entity_cls_name,
+                referenced_cls_name=normalized_base_entity_class_name,
             )
 
             reverse_relationship_field_type = (
@@ -303,6 +309,10 @@ def convert_entities_to_normalized_dicts(
     for entity in entities:
         entity_cls = type(entity)
         entity_cls_name = entity_cls.__name__
+        normalized_entity_cls = normalized_entity_class_with_base_class_name(
+            entity_cls_name
+        )
+        normalized_entity_cls_name = normalized_entity_cls.__name__
 
         forward_fields = field_index.get_all_core_entity_fields(
             type(entity), EntityFieldType.FORWARD_EDGE
@@ -326,7 +336,7 @@ def convert_entities_to_normalized_dicts(
             field_is_list = isinstance(field_value, list)
             reverse_relationship_field = attr_field_name_storing_referenced_cls_name(
                 base_cls=referenced_normalized_class,
-                referenced_cls_name=entity_cls_name,
+                referenced_cls_name=normalized_entity_cls_name,
             )
             reverse_relationship_field_type = (
                 attr_field_type_for_field_name(
@@ -513,16 +523,6 @@ def _get_unique_fields_reference() -> Dict[Type[NormalizedStateEntity], Set[str]
     if not _unique_fields_reference:
         _unique_fields_reference = {}
     return _unique_fields_reference
-
-
-def get_base_entity_class_for_normalized_entity(
-    entity_cls: Type[NormalizedStateEntity],
-) -> Type[Entity]:
-    """For the given NormalizeStateEntity, returns the base Entity class for this class.
-    For example: for NormalizedStatePerson, returns `StatePerson`.
-    """
-    base_class_name = entity_cls.base_class_name()
-    return get_entity_class_in_module_with_name(state_entities, base_class_name)
 
 
 def _get_fields_unique_to_normalized_class(

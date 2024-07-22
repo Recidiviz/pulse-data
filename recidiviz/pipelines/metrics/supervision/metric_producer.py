@@ -22,7 +22,7 @@ basis. It transforms SupervisionEvents into SupervisionMetrics.
 from operator import attrgetter
 from typing import Dict, List, Set, Type
 
-from recidiviz.persistence.entity.state.entities import StatePerson
+from recidiviz.persistence.entity.state.normalized_entities import NormalizedStatePerson
 from recidiviz.pipelines.metrics.base_metric_producer import (
     BaseMetricProducer,
     metric_type_for_metric_class,
@@ -96,21 +96,21 @@ class SupervisionMetricProducer(
 
     def produce_metrics(
         self,
-        person: StatePerson,
+        person: NormalizedStatePerson,
         identifier_results: List[SupervisionEvent],
         metric_inclusions: Set[SupervisionMetricType],
         pipeline_job_id: str,
         metrics_producer_delegates: Dict[str, StateSpecificMetricsProducerDelegate],
         calculation_month_count: int = -1,
     ) -> List[SupervisionMetric]:
-        """Transforms SupervisionEvents and a StatePerson into SupervisionMetrics.
+        """Transforms SupervisionEvents and a NormalizedStatePerson into SupervisionMetrics.
 
-        Takes in a StatePerson and all of their SupervisionEvents and returns an array
+        Takes in a NormalizedStatePerson and all of their SupervisionEvents and returns an array
         of SupervisionMetrics.
 
         Args:
-            person: the StatePerson
-            identifier_events: A list of SupervisionEvents for the given StatePerson.
+            person: the NormalizedStatePerson
+            identifier_events: A list of SupervisionEvents for the given NormalizedStatePerson.
             metric_inclusions: A dictionary where the keys are each SupervisionMetricType, and the values are boolean
                     flags for whether or not to include that metric type in the calculations
             calculation_month_count: The number of months to limit the monthly calculation output to.

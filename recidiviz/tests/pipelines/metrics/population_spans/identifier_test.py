@@ -36,9 +36,9 @@ from recidiviz.common.constants.state.state_supervision_period import (
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.base_entity import Entity
-from recidiviz.persistence.entity.state.entities import StatePerson
 from recidiviz.persistence.entity.state.normalized_entities import (
     NormalizedStateIncarcerationPeriod,
+    NormalizedStatePerson,
     NormalizedStateSupervisionCaseTypeEntry,
     NormalizedStateSupervisionPeriod,
 )
@@ -75,9 +75,7 @@ class TestFindPopulationSpans(unittest.TestCase):
             population_spans_identifier
         )
         self.identifier = identifier.PopulationSpanIdentifier(StateCode.US_XX)
-        self.person = StatePerson.new_with_defaults(
-            state_code="US_XX", person_id=99000123
-        )
+        self.person = NormalizedStatePerson(state_code="US_XX", person_id=99000123)
 
     def tearDown(self) -> None:
         for patcher in self.delegate_patchers:
@@ -93,10 +91,8 @@ class TestFindPopulationSpans(unittest.TestCase):
     ) -> List[Span]:
         """Helper for testing the identify function on the identifier."""
         all_kwargs: Dict[str, Union[Sequence[Entity], List[TableRow]]] = {
-            NormalizedStateIncarcerationPeriod.base_class_name(): incarceration_periods
-            or [],
-            NormalizedStateSupervisionPeriod.base_class_name(): supervision_periods
-            or [],
+            NormalizedStateIncarcerationPeriod.__name__: incarceration_periods or [],
+            NormalizedStateSupervisionPeriod.__name__: supervision_periods or [],
         }
         return self.identifier.identify(
             self.person,

@@ -129,6 +129,8 @@ class TestGetCommitmentDetails(unittest.TestCase):
             termination_date=date(2018, 5, 19),
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_site="DISTRICT 999",
+            supervising_officer_staff_external_id="OFFICER_ID_1",
+            supervising_officer_staff_external_id_type="US_XX_OFFICER_ID",
             supervising_officer_staff_id=12345,
         )
 
@@ -183,6 +185,8 @@ class TestGetCommitmentDetails(unittest.TestCase):
             termination_date=date(2018, 8, 20),
             supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
             supervision_site="DISTRICT X",
+            supervising_officer_staff_external_id="OFFICER_ID_1",
+            supervising_officer_staff_external_id_type="US_XX_OFFICER_ID",
             supervising_officer_staff_id=12345,
         )
 
@@ -246,6 +250,8 @@ class TestGetCommitmentDetails(unittest.TestCase):
             termination_date=date(2018, 5, 19),
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_site="DISTRICT 999",
+            supervising_officer_staff_external_id="OFFICER_ID_1",
+            supervising_officer_staff_external_id_type="US_XX_OFFICER_ID",
             supervising_officer_staff_id=12345,
         )
 
@@ -351,6 +357,8 @@ class TestGetCommitmentDetails(unittest.TestCase):
             termination_date=date(2018, 5, 19),
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_site="X",
+            supervising_officer_staff_external_id="OFFICER_ID_1",
+            supervising_officer_staff_external_id_type="US_XX_OFFICER_ID",
             supervising_officer_staff_id=12345,
             sequence_num=0,
         )
@@ -439,6 +447,8 @@ class TestGetCommitmentDetails(unittest.TestCase):
             supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
             supervision_level=StateSupervisionLevel.MINIMUM,
             supervision_level_raw_text="LOW",
+            supervising_officer_staff_external_id="OFFICER_ID_1",
+            supervising_officer_staff_external_id_type="US_XX_OFFICER_ID",
             supervising_officer_staff_id=12345,
         )
 
@@ -512,6 +522,8 @@ class TestGetCommitmentDetails(unittest.TestCase):
             supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
             start_date=date(2010, 12, 1),
             termination_date=incarceration_period.admission_date,
+            supervising_officer_staff_external_id="OFFICER_ID_1",
+            supervising_officer_staff_external_id_type="US_XX_OFFICER_ID",
             supervising_officer_staff_id=12345,
         )
 
@@ -555,6 +567,8 @@ class TestGetCommitmentDetails(unittest.TestCase):
             termination_date=date(2016, 5, 19),
             supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
             supervision_site="DISTRICT 999",
+            supervising_officer_staff_external_id="OFFICER_ID_1",
+            supervising_officer_staff_external_id_type="US_XX_OFFICER_ID",
             supervising_officer_staff_id=12345,
             sequence_num=0,
         )

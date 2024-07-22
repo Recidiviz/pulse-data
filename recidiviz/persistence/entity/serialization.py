@@ -29,10 +29,6 @@ from recidiviz.persistence.entity.entity_utils import (
     is_many_to_one_relationship,
     is_one_to_many_relationship,
 )
-from recidiviz.persistence.entity.state import entities as state_entities
-from recidiviz.persistence.entity.state.normalized_entities import (
-    state_base_entity_class_for_entity_class,
-)
 from recidiviz.utils.types import assert_type
 
 
@@ -49,25 +45,13 @@ def _related_entity_id_field_lives_on_entity(
     table. For entity_cls=StateAssessment, referenced_entity_cls=StatePerson, this would
     return True because there is a person_id field on the state_assessment table.
     """
-    # TODO(#30075): Once we move to v2 normalization, we should be able to just use
-    #  entity_cls and referenced_entity_cls directly to determine relationship type.
-    entity_cls_for_comparison = state_base_entity_class_for_entity_class(entity_cls)
-    referenced_entity_cls_for_comparison = state_base_entity_class_for_entity_class(
-        referenced_entity_cls
-    )
-    if entities_have_direct_relationship(
-        entity_cls_for_comparison, referenced_entity_cls_for_comparison
-    ):
+    if entities_have_direct_relationship(entity_cls, referenced_entity_cls):
         if is_many_to_many_relationship(
-            entity_cls_for_comparison, referenced_entity_cls_for_comparison
-        ) or is_one_to_many_relationship(
-            entity_cls_for_comparison, referenced_entity_cls_for_comparison
-        ):
+            entity_cls, referenced_entity_cls
+        ) or is_one_to_many_relationship(entity_cls, referenced_entity_cls):
             return False
 
-        if is_many_to_one_relationship(
-            entity_cls_for_comparison, referenced_entity_cls_for_comparison
-        ):
+        if is_many_to_one_relationship(entity_cls, referenced_entity_cls):
             # For many-to-one relationships, we expect the id field of the related
             # entity to be stored on the table for this entity.
             return True
@@ -75,7 +59,7 @@ def _related_entity_id_field_lives_on_entity(
             f"Found unexpected relationship type between "
             f"[{entity_cls.__name__}] and [{referenced_entity_cls.__name__}]."
         )
-    if issubclass(referenced_entity_cls_for_comparison, RootEntity):
+    if issubclass(referenced_entity_cls, RootEntity):
         # For indirect relationships to the root entity, we expect the root entity
         # id to be set on this entity.
         return True
@@ -88,10 +72,7 @@ def _related_entity_id_field_lives_on_entity(
 
 
 def serialize_entity_into_json(
-    entity: Entity,
-    # TODO(#30075): Make this a required field and set to normalized_entities where
-    #  appropriate.
-    entities_module: ModuleType = state_entities,
+    entity: Entity, entities_module: ModuleType
 ) -> Dict[str, Any]:
     """Generate a JSON dictionary that represents the table row values for this entity."""
     entity_field_dict: Dict[str, Any] = {}

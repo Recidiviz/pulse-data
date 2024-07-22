@@ -64,12 +64,11 @@ from recidiviz.common.constants.state.state_supervision_violation_response impor
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.database.schema.state import schema
-from recidiviz.persistence.entity.state import entities
-from recidiviz.persistence.entity.state.entities import StatePerson
 from recidiviz.persistence.entity.state.normalized_entities import (
     NormalizedStateAssessment,
     NormalizedStateIncarcerationPeriod,
     NormalizedStateIncarcerationSentence,
+    NormalizedStatePerson,
     NormalizedStateSupervisionContact,
     NormalizedStateSupervisionPeriod,
     NormalizedStateSupervisionSentence,
@@ -188,6 +187,7 @@ class TestSupervisionPipeline(unittest.TestCase):
         persons_data = [normalized_database_base_dict(fake_person)]
 
         fake_person_race = schema.StatePersonRace(
+            person_race_id=1,
             state_code=state_code,
             person_id=fake_person_id,
             race=StateRace.BLACK,
@@ -283,6 +283,7 @@ class TestSupervisionPipeline(unittest.TestCase):
         )
 
         supervision_contact = schema.StateSupervisionContact(
+            supervision_contact_id=1,
             state_code=state_code,
             external_id="c1",
             contact_date=supervision_period.start_date,
@@ -572,6 +573,7 @@ class TestSupervisionPipeline(unittest.TestCase):
         )
 
         supervision_violation_type = schema.StateSupervisionViolationTypeEntry(
+            supervision_violation_type_entry_id=1,
             person_id=fake_person_id,
             state_code="US_XX",
             violation_type=StateSupervisionViolationType.FELONY,
@@ -893,7 +895,7 @@ class TestClassifyEvents(unittest.TestCase):
 
     @staticmethod
     def load_person_entities_dict(
-        person: StatePerson,
+        person: NormalizedStatePerson,
         supervision_periods: Optional[
             Iterable[NormalizedStateSupervisionPeriod]
         ] = None,
@@ -915,24 +917,24 @@ class TestClassifyEvents(unittest.TestCase):
         ] = None,
     ) -> Dict[str, Iterable[Any]]:
         return {
-            entities.StatePerson.__name__: [person],
-            entities.StateSupervisionPeriod.__name__: (
+            NormalizedStatePerson.__name__: [person],
+            NormalizedStateSupervisionPeriod.__name__: (
                 supervision_periods if supervision_periods else []
             ),
-            entities.StateAssessment.__name__: assessments if assessments else [],
-            entities.StateIncarcerationPeriod.__name__: (
+            NormalizedStateAssessment.__name__: assessments if assessments else [],
+            NormalizedStateIncarcerationPeriod.__name__: (
                 incarceration_periods if incarceration_periods else []
             ),
-            entities.StateIncarcerationSentence.__name__: (
+            NormalizedStateIncarcerationSentence.__name__: (
                 incarceration_sentences if incarceration_sentences else []
             ),
-            entities.StateSupervisionSentence.__name__: (
+            NormalizedStateSupervisionSentence.__name__: (
                 supervision_sentences if supervision_sentences else []
             ),
-            entities.StateSupervisionViolationResponse.__name__: (
+            NormalizedStateSupervisionViolationResponse.__name__: (
                 violation_responses if violation_responses else []
             ),
-            entities.StateSupervisionContact.__name__: (
+            NormalizedStateSupervisionContact.__name__: (
                 supervision_contacts if supervision_contacts else []
             ),
         }
@@ -941,7 +943,7 @@ class TestClassifyEvents(unittest.TestCase):
         """Tests the ClassifyEvents DoFn."""
         fake_person_id = 12345
 
-        fake_person = StatePerson.new_with_defaults(
+        fake_person = NormalizedStatePerson(
             state_code="US_XX",
             person_id=fake_person_id,
             gender=StateGender.MALE,
@@ -1121,7 +1123,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
 
     def testProduceSupervisionMetrics(self) -> None:
         """Tests the ProduceSupervisionMetrics DoFn."""
-        fake_person = StatePerson.new_with_defaults(
+        fake_person = NormalizedStatePerson(
             state_code="US_XX",
             person_id=self.fake_person_id,
             gender=StateGender.MALE,
@@ -1185,7 +1187,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
         """Tests the ProduceSupervisionMetrics when there are
         no supervision months. This should never happen because any person
         without supervision time is dropped entirely from the pipeline."""
-        fake_person = StatePerson.new_with_defaults(
+        fake_person = NormalizedStatePerson(
             state_code="US_XX",
             person_id=self.fake_person_id,
             gender=StateGender.MALE,
@@ -1193,7 +1195,9 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             residency_status=StateResidencyStatus.PERMANENT,
         )
 
-        inputs: list[tuple[StatePerson, list[SupervisionMetric]]] = [(fake_person, [])]
+        inputs: list[tuple[NormalizedStatePerson, list[SupervisionMetric]]] = [
+            (fake_person, [])
+        ]
 
         test_pipeline = TestPipeline()
 

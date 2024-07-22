@@ -35,10 +35,10 @@ from recidiviz.persistence.entity.entity_utils import CoreEntityFieldIndex
 from recidiviz.persistence.entity.normalized_entities_utils import (
     sort_normalized_entities_by_sequence_num,
 )
-from recidiviz.persistence.entity.state.entities import StatePerson
 from recidiviz.persistence.entity.state.normalized_entities import (
     NormalizedStateAssessment,
     NormalizedStateIncarcerationPeriod,
+    NormalizedStatePerson,
     NormalizedStateSupervisionPeriod,
     NormalizedStateSupervisionViolationResponse,
 )
@@ -111,7 +111,7 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
 
     def identify(
         self,
-        _person: StatePerson,
+        _person: NormalizedStatePerson,
         identifier_context: IdentifierContext,
         included_result_classes: Set[Type[IdentifierResult]],
     ) -> List[IncarcerationEvent]:
@@ -126,14 +126,14 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
 
         return self._find_incarceration_events(
             incarceration_periods=identifier_context[
-                NormalizedStateIncarcerationPeriod.base_class_name()
+                NormalizedStateIncarcerationPeriod.__name__
             ],
             supervision_periods=identifier_context[
-                NormalizedStateSupervisionPeriod.base_class_name()
+                NormalizedStateSupervisionPeriod.__name__
             ],
-            assessments=identifier_context[NormalizedStateAssessment.base_class_name()],
+            assessments=identifier_context[NormalizedStateAssessment.__name__],
             violation_responses=identifier_context[
-                NormalizedStateSupervisionViolationResponse.base_class_name()
+                NormalizedStateSupervisionViolationResponse.__name__
             ],
         )
 

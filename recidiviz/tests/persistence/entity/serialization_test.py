@@ -29,6 +29,7 @@ from recidiviz.persistence.entity.serialization import (
     json_serializable_dict,
     serialize_entity_into_json,
 )
+from recidiviz.persistence.entity.state import entities, normalized_entities
 from recidiviz.persistence.entity.state.entities import (
     StateAssessment,
     StateChargeV2,
@@ -39,6 +40,7 @@ from recidiviz.persistence.entity.state.normalized_entities import (
     NormalizedStateAssessment,
     NormalizedStateCharge,
     NormalizedStateIncarcerationSentence,
+    NormalizedStatePerson,
 )
 from recidiviz.pipelines.metrics.utils.metric_utils import (
     json_serializable_list_value_handler,
@@ -177,7 +179,7 @@ class TestJsonSerializableDict(unittest.TestCase):
                 "residency_status_raw_text": None,
                 "state_code": "US_XX",
             },
-            serialize_entity_into_json(person),
+            serialize_entity_into_json(person, entities),
         )
 
         # Simple entity with one-to-many relationship with root
@@ -199,7 +201,7 @@ class TestJsonSerializableDict(unittest.TestCase):
                 "person_id": 123,
                 "state_code": "US_XX",
             },
-            serialize_entity_into_json(assessment),
+            serialize_entity_into_json(assessment, entities),
         )
 
         # Entity with many-to-many relationship with child
@@ -224,7 +226,7 @@ class TestJsonSerializableDict(unittest.TestCase):
                 "sentencing_authority_raw_text": None,
                 "state_code": "US_XX",
             },
-            serialize_entity_into_json(sentence),
+            serialize_entity_into_json(sentence, entities),
         )
 
         # Entity with indirect connection to root entity
@@ -258,11 +260,11 @@ class TestJsonSerializableDict(unittest.TestCase):
                 "status_raw_text": None,
                 "statute": None,
             },
-            serialize_entity_into_json(charge),
+            serialize_entity_into_json(charge, entities),
         )
 
     def test_serialize_entity_into_json_normalized(self) -> None:
-        person = StatePerson(
+        person = NormalizedStatePerson(
             person_id=123, state_code="US_XX", gender=StateGender.FEMALE
         )
 
@@ -309,7 +311,7 @@ class TestJsonSerializableDict(unittest.TestCase):
                 "residency_status_raw_text": None,
                 "state_code": "US_XX",
             },
-            serialize_entity_into_json(person),
+            serialize_entity_into_json(person, normalized_entities),
         )
 
         # Simple entity with one-to-many relationship with root
@@ -334,7 +336,7 @@ class TestJsonSerializableDict(unittest.TestCase):
                 "sequence_num": 1,
                 "state_code": "US_XX",
             },
-            serialize_entity_into_json(assessment),
+            serialize_entity_into_json(assessment, normalized_entities),
         )
 
         # Entity with many-to-many relationship with child
@@ -366,7 +368,7 @@ class TestJsonSerializableDict(unittest.TestCase):
                 "status": "PENDING",
                 "status_raw_text": None,
             },
-            serialize_entity_into_json(sentence),
+            serialize_entity_into_json(sentence, normalized_entities),
         )
 
         # Entity with indirect connection to root entity
@@ -406,7 +408,7 @@ class TestJsonSerializableDict(unittest.TestCase):
                 "status_raw_text": None,
                 "statute": None,
             },
-            serialize_entity_into_json(charge),
+            serialize_entity_into_json(charge, normalized_entities),
         )
 
     def test_serialize_entity_into_json_null_person(self) -> None:
@@ -437,5 +439,5 @@ class TestJsonSerializableDict(unittest.TestCase):
                 "person_id": None,
                 "state_code": "US_XX",
             },
-            serialize_entity_into_json(assessment),
+            serialize_entity_into_json(assessment, entities),
         )

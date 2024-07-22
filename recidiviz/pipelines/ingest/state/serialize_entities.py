@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """A DoFn that serializes entities into JSON-serializable dictionaries for writing to BQ."""
+from types import ModuleType
 from typing import Any, Dict, Generator, cast
 
 import apache_beam as beam
@@ -42,10 +43,16 @@ class SerializeEntities(beam.DoFn):
     writing to BQ, where each one represents an entity in that root entity tree.
     """
 
-    def __init__(self, state_code: StateCode, field_index: CoreEntityFieldIndex):
+    def __init__(
+        self,
+        state_code: StateCode,
+        field_index: CoreEntityFieldIndex,
+        entities_module: ModuleType,
+    ):
         super().__init__()
         self._state_code = state_code
         self._field_index = field_index
+        self._entities_module = entities_module
 
     def process(self, element: RootEntity) -> Generator[Dict[str, Any], None, None]:
         """Generates appropriate dictionaries for all elements and association tables."""
@@ -80,5 +87,7 @@ class SerializeEntities(beam.DoFn):
 
             yield beam.pvalue.TaggedOutput(
                 entity.get_entity_name(),
-                serialize_entity_into_json(entity),
+                serialize_entity_into_json(
+                    entity, entities_module=self._entities_module
+                ),
             )

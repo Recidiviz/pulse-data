@@ -54,6 +54,7 @@ from recidiviz.persistence.entity.generate_primary_key import (
     PrimaryKey,
     generate_primary_key,
 )
+from recidiviz.persistence.entity.state import entities as state_entities
 from recidiviz.pipelines.base_pipeline import BasePipeline
 from recidiviz.pipelines.ingest.pipeline_parameters import IngestPipelineParameters
 from recidiviz.pipelines.ingest.state.associate_with_primary_keys import (
@@ -299,7 +300,11 @@ class StateIngestPipeline(BasePipeline[IngestPipelineParameters]):
                 state_code=state_code,
             )
             | beam.ParDo(
-                SerializeEntities(state_code=state_code, field_index=field_index)
+                SerializeEntities(
+                    state_code=state_code,
+                    field_index=field_index,
+                    entities_module=state_entities,
+                )
             ).with_outputs(*output_state_tables)
         )
 

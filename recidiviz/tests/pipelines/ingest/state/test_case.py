@@ -74,6 +74,7 @@ from recidiviz.persistence.entity.entity_utils import (
     CoreEntityFieldIndex,
     get_all_entities_from_tree,
     get_all_entity_associations_from_tree,
+    get_module_for_entity_class,
 )
 from recidiviz.pipelines.base_pipeline import BasePipeline
 from recidiviz.pipelines.ingest.dataset_config import (
@@ -265,7 +266,12 @@ class BaseStateIngestPipelineTestCase(unittest.TestCase):
                 BigQueryAddress(
                     dataset_id=self.expected_state_dataset(), table_id=entity_type
                 )
-            ] = [serialize_entity_into_json(entity) for entity in entities]
+            ] = [
+                serialize_entity_into_json(
+                    entity, entities_module=get_module_for_entity_class(type(entity))
+                )
+                for entity in entities
+            ]
         for (
             entity_association,
             associations,

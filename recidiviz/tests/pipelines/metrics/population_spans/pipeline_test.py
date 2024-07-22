@@ -52,9 +52,10 @@ from recidiviz.common.constants.state.state_supervision_period import (
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.database.schema.state import schema
-from recidiviz.persistence.entity.state import entities, normalized_entities
+from recidiviz.persistence.entity.state import normalized_entities
 from recidiviz.persistence.entity.state.normalized_entities import (
     NormalizedStateIncarcerationPeriod,
+    NormalizedStatePerson,
     NormalizedStateSupervisionPeriod,
 )
 from recidiviz.pipelines.metrics.base_metric_pipeline import (
@@ -330,7 +331,7 @@ class TestClassifyResults(unittest.TestCase):
         self.fake_person_id = 12345
         self.fake_incarceration_period_id = 23456
 
-        self.fake_person = entities.StatePerson.new_with_defaults(
+        self.fake_person = NormalizedStatePerson(
             state_code="US_XX",
             person_id=self.fake_person_id,
             gender=StateGender.FEMALE,
@@ -349,18 +350,18 @@ class TestClassifyResults(unittest.TestCase):
 
     @staticmethod
     def load_person_entities_dict(
-        person: entities.StatePerson,
+        person: NormalizedStatePerson,
         incarceration_periods: Optional[
             List[NormalizedStateIncarcerationPeriod]
         ] = None,
         supervision_periods: Optional[List[NormalizedStateSupervisionPeriod]] = None,
     ) -> Dict[str, List]:
         return {
-            entities.StatePerson.__name__: [person],
-            entities.StateIncarcerationPeriod.__name__: (
+            NormalizedStatePerson.__name__: [person],
+            NormalizedStateIncarcerationPeriod.__name__: (
                 incarceration_periods if incarceration_periods else []
             ),
-            entities.StateSupervisionPeriod.__name__: (
+            NormalizedStateSupervisionPeriod.__name__: (
                 supervision_periods if supervision_periods else []
             ),
         }
@@ -464,7 +465,7 @@ class TestClassifyResults(unittest.TestCase):
 
     def test_classify_results_no_periods(self) -> None:
         """Tests the ClassifyResults DoFn with no periods for a person."""
-        correct_output: List[Tuple[entities.StatePerson, List[Span]]] = []
+        correct_output: List[Tuple[NormalizedStatePerson, List[Span]]] = []
 
         person_entities = self.load_person_entities_dict(
             person=self.fake_person,
@@ -531,7 +532,7 @@ class TestProduceMetrics(unittest.TestCase):
 
     def test_produce_metrics(self) -> None:
         """Tests the ProduceMetrics DoFn."""
-        fake_person = entities.StatePerson.new_with_defaults(
+        fake_person = NormalizedStatePerson(
             state_code="US_XX",
             person_id=self.fake_person_id,
             gender=StateGender.FEMALE,

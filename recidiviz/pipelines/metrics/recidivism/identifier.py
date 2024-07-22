@@ -42,9 +42,9 @@ from recidiviz.common.constants.state.state_incarceration_period import (
 from recidiviz.common.constants.states import StateCode
 from recidiviz.common.date import DateRange, DateRangeDiff
 from recidiviz.persistence.entity.entity_utils import CoreEntityFieldIndex
-from recidiviz.persistence.entity.state.entities import StatePerson
 from recidiviz.persistence.entity.state.normalized_entities import (
     NormalizedStateIncarcerationPeriod,
+    NormalizedStatePerson,
 )
 from recidiviz.pipelines.metrics.base_identifier import (
     BaseIdentifier,
@@ -76,12 +76,14 @@ class RecidivismIdentifier(BaseIdentifier[Dict[int, List[ReleaseEvent]]]):
 
     def identify(
         self,
-        person: StatePerson,
+        person: NormalizedStatePerson,
         identifier_context: IdentifierContext,
         included_result_classes: Set[Type[IdentifierResult]],
     ) -> Dict[int, List[ReleaseEvent]]:
         if not person.person_id:
-            raise ValueError(f"Found StatePerson with unset person_id value: {person}.")
+            raise ValueError(
+                f"Found NormalizedStatePerson with unset person_id value: {person}."
+            )
 
         if included_result_classes != {
             NonRecidivismReleaseEvent,
@@ -93,7 +95,7 @@ class RecidivismIdentifier(BaseIdentifier[Dict[int, List[ReleaseEvent]]]):
 
         return self._find_release_events(
             incarceration_periods=identifier_context[
-                NormalizedStateIncarcerationPeriod.base_class_name()
+                NormalizedStateIncarcerationPeriod.__name__
             ]
         )
 

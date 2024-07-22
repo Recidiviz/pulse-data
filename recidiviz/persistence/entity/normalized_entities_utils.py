@@ -29,8 +29,15 @@ from recidiviz.common.constants.states import StateCode
 
 # All entity classes that have Normalized versions
 from recidiviz.persistence.entity.base_entity import CoreEntity, Entity, EntityT
+from recidiviz.persistence.entity.entity_utils import (
+    get_all_entity_classes_in_module,
+    get_entity_class_in_module_with_name,
+    get_module_for_entity_class,
+)
 from recidiviz.persistence.entity.generate_primary_key import generate_primary_key
 from recidiviz.persistence.entity.serialization import serialize_entity_into_json
+from recidiviz.persistence.entity.state import entities as state_entities
+from recidiviz.persistence.entity.state import normalized_entities
 from recidiviz.persistence.entity.state.normalized_entities import (
     NormalizedStateAssessment,
     NormalizedStateCharge,
@@ -98,15 +105,34 @@ def normalized_entity_class_with_base_class_name(
     base_class_name: str,
 ) -> Type[NormalizedStateEntity]:
     """Returns the NormalizedStateEntity class that has a base class with the name
-    matching the provided |base_class_name|."""
-    for normalized_entity_cls in LEGACY_NORMALIZATION_ENTITY_CLASSES:
-        if normalized_entity_cls.base_class_name() == base_class_name:
-            return normalized_entity_cls
+    matching the provided |base_class_name|.
+    """
+
+    normalized_entity_classes = get_all_entity_classes_in_module(normalized_entities)
+
+    for normalized_entity_class in normalized_entity_classes:
+        if not issubclass(normalized_entity_class, NormalizedStateEntity):
+            raise ValueError(
+                f"Found normalized entity class which is not a NormalizedStateEntity: "
+                f"{normalized_entity_class} "
+            )
+        if normalized_entity_class.base_class_name() == base_class_name:
+            return normalized_entity_class
 
     raise ValueError(
         "No NormalizedStateEntity class corresponding with a base class name of: "
         f"{base_class_name}."
     )
+
+
+def get_base_entity_class_for_normalized_entity(
+    entity_cls: Type[NormalizedStateEntity],
+) -> Type[Entity]:
+    """For the given NormalizeStateEntity, returns the base Entity class for this class.
+    For example: for NormalizedStatePerson, returns StatePerson.
+    """
+    base_class_name = entity_cls.base_class_name()
+    return get_entity_class_in_module_with_name(state_entities, base_class_name)
 
 
 def merge_additional_attributes_maps(
@@ -195,7 +221,9 @@ def _unique_object_id_for_entity(
     """Returns an object id value that is globally unique for all entities of this
     type for this person_id.
     """
-    entity_json = serialize_entity_into_json(entity)
+    entity_json = serialize_entity_into_json(
+        entity, entities_module=get_module_for_entity_class(entity.__class__)
+    )
     extra_json_fields = {}
     # At this point in normalization we may not have set the backedges to person
     # on this entity - if we have not, add a field with person_id so the generated

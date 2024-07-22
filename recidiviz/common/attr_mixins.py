@@ -140,6 +140,10 @@ def attr_field_name_storing_referenced_cls_name(
     |referenced_cls_name| class. Raises an error if there exists more than one field
     storing the class.
     """
+    if not isinstance(referenced_cls_name, str):
+        raise ValueError(
+            f"Expected a referenced_cls_name with type str, found: {referenced_cls_name}"
+        )
     fields_storing_referenced_cls = [
         field
         for field, info in attribute_field_type_reference_for_class(base_cls).items()

@@ -35,6 +35,7 @@ from recidiviz.persistence.entity.generate_primary_key import (
     generate_primary_key,
 )
 from recidiviz.persistence.entity.serialization import serialize_entity_into_json
+from recidiviz.persistence.entity.state import entities
 from recidiviz.persistence.entity.state.entities import StatePerson, StateStaff
 from recidiviz.pipelines.ingest.state.constants import ExternalIdKey
 from recidiviz.utils.types import assert_type, non_optional
@@ -101,7 +102,7 @@ def generate_primary_keys_for_root_entity_tree(
             entity.set_id(
                 generate_primary_key(
                     json.dumps(
-                        serialize_entity_into_json(entity),
+                        serialize_entity_into_json(entity, entities_module=entities),
                         sort_keys=True,
                     ),
                     state_code,

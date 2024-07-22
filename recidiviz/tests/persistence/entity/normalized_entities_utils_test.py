@@ -34,16 +34,14 @@ from recidiviz.common.constants.state.state_supervision_violation_response impor
     StateSupervisionViolationResponseDecision,
 )
 from recidiviz.common.constants.states import StateCode
-from recidiviz.persistence.entity.entity_utils import get_all_entity_classes_in_module
 from recidiviz.persistence.entity.normalized_entities_utils import (
-    LEGACY_NORMALIZATION_ENTITY_CLASSES,
     AdditionalAttributesMap,
     copy_entities_and_add_unique_ids,
     get_shared_additional_attributes_map_for_entities,
     merge_additional_attributes_maps,
     update_normalized_entity_with_globally_unique_id,
 )
-from recidiviz.persistence.entity.state import entities, normalized_entities
+from recidiviz.persistence.entity.state import entities
 from recidiviz.persistence.entity.state.entities import (
     StateIncarcerationPeriod,
     StateSupervisionViolation,
@@ -56,28 +54,9 @@ from recidiviz.persistence.entity.state.normalized_entities import (
     NormalizedStateSupervisionViolationResponseDecisionEntry,
     NormalizedStateSupervisionViolationTypeEntry,
 )
-from recidiviz.persistence.entity.state.normalized_state_entity import (
-    NormalizedStateEntity,
-)
 from recidiviz.tests.pipelines.normalization.utils.normalization_managers.supervision_violation_responses_normalization_manager_test import (
     hydrate_bidirectional_relationships_on_expected_response,
 )
-
-
-class TestNormalizedEntityClassesCoverage(unittest.TestCase):
-    """Tests that all entity classes with Normalized versions are listed in
-    NORMALIZED_ENTITY_CLASSES."""
-
-    # TODO(#30075) Test that all state entities have a normalized entity,
-    # regardless of usage w/ legacy normalization setup.
-    def test_normalized_entity_classes_coverage(self) -> None:
-        entity_classes = [
-            entity_class
-            for entity_class in get_all_entity_classes_in_module(normalized_entities)
-            if issubclass(entity_class, NormalizedStateEntity)
-        ]
-
-        self.assertCountEqual(entity_classes, LEGACY_NORMALIZATION_ENTITY_CLASSES)
 
 
 class TestMergeAdditionalAttributesMaps(unittest.TestCase):
@@ -333,6 +312,30 @@ def get_violation_tree(
     return supervision_violation
 
 
+def _hydrate_bidirectional_relationships_on_expected_normalized_response(
+    expected_response: NormalizedStateSupervisionViolationResponse,
+) -> None:
+    """Hydrates all bi-directional relationships in the
+    NormalizedStateSupervisionViolationResponse subtree. For use in tests that need the
+    full entity graph to be connected."""
+    if expected_response.supervision_violation:
+        for (
+            type_entry
+        ) in expected_response.supervision_violation.supervision_violation_types:
+            type_entry.supervision_violation = expected_response.supervision_violation
+        for (
+            condition
+        ) in expected_response.supervision_violation.supervision_violated_conditions:
+            condition.supervision_violation = expected_response.supervision_violation
+
+        expected_response.supervision_violation.supervision_violation_responses = [
+            expected_response
+        ]
+
+    for decision in expected_response.supervision_violation_response_decisions:
+        decision.supervision_violation_response = expected_response
+
+
 def get_normalized_violation_tree(
     starting_id_value: Optional[int] = 0, starting_sequence_num: Optional[int] = 0
 ) -> NormalizedStateSupervisionViolation:
@@ -403,10 +406,10 @@ def get_normalized_violation_tree(
         ],
     )
 
-    hydrate_bidirectional_relationships_on_expected_response(
+    _hydrate_bidirectional_relationships_on_expected_normalized_response(
         supervision_violation_response_1
     )
-    hydrate_bidirectional_relationships_on_expected_response(
+    _hydrate_bidirectional_relationships_on_expected_normalized_response(
         supervision_violation_response_2
     )
 

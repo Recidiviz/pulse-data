@@ -21,7 +21,7 @@ from typing import Dict, Generic, List, Set, Type, TypeVar
 
 import attr
 
-from recidiviz.persistence.entity.state.entities import StatePerson
+from recidiviz.persistence.entity.state.normalized_entities import NormalizedStatePerson
 from recidiviz.pipelines.dataflow_config import (
     DATAFLOW_METRICS_TO_TABLES,
     DATAFLOW_TABLES_TO_METRIC_TYPES,
@@ -91,17 +91,17 @@ class BaseMetricProducer(
 
     def produce_metrics(
         self,
-        person: StatePerson,
+        person: NormalizedStatePerson,
         identifier_results: IdentifierResultsT,
         metric_inclusions: Set[RecidivizMetricTypeT],
         pipeline_job_id: str,
         metrics_producer_delegates: Dict[str, StateSpecificMetricsProducerDelegate],
         calculation_month_count: int = -1,
     ) -> List[RecidivizMetricT]:
-        """Transforms the events and a StatePerson into RecidivizMetrics.
+        """Transforms the events and a NormalizedStatePerson into RecidivizMetrics.
         Args:
-            person: the StatePerson
-            identifier_results: A list of IdentifierResults for the given StatePerson.
+            person: the NormalizedStatePerson
+            identifier_results: A list of IdentifierResults for the given NormalizedStatePerson.
             metric_inclusions: A dictionary where the keys are each Metric type and the values are boolean
                 flags for whether or not to include that metric type in the calculations.
             calculation_month_count: The number of months (including the month of the calculation_month_upper_bound) to

@@ -53,11 +53,10 @@ from recidiviz.common.constants.state.state_supervision_period import (
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.database.schema.state import schema
-from recidiviz.persistence.entity.state import entities
-from recidiviz.persistence.entity.state.entities import StatePerson
 from recidiviz.persistence.entity.state.normalized_entities import (
     NormalizedStateAssessment,
     NormalizedStateIncarcerationPeriod,
+    NormalizedStatePerson,
     NormalizedStateSupervisionPeriod,
     NormalizedStateSupervisionViolationResponse,
 )
@@ -466,7 +465,7 @@ class TestClassifyIncarcerationEvents(unittest.TestCase):
 
     @staticmethod
     def load_person_entities_dict(
-        person: StatePerson,
+        person: NormalizedStatePerson,
         incarceration_periods: Optional[
             List[NormalizedStateIncarcerationPeriod]
         ] = None,
@@ -477,15 +476,15 @@ class TestClassifyIncarcerationEvents(unittest.TestCase):
         assessments: Optional[List[NormalizedStateAssessment]] = None,
     ) -> Dict[str, List]:
         return {
-            StatePerson.__name__: [person],
-            entities.StateAssessment.__name__: assessments or [],
-            entities.StateSupervisionPeriod.__name__: (
+            NormalizedStatePerson.__name__: [person],
+            NormalizedStateAssessment.__name__: assessments or [],
+            NormalizedStateSupervisionPeriod.__name__: (
                 supervision_periods if supervision_periods else []
             ),
-            entities.StateIncarcerationPeriod.__name__: (
+            NormalizedStateIncarcerationPeriod.__name__: (
                 incarceration_periods if incarceration_periods else []
             ),
-            entities.StateSupervisionViolationResponse.__name__: (
+            NormalizedStateSupervisionViolationResponse.__name__: (
                 violation_responses if violation_responses else []
             ),
         }
@@ -494,7 +493,7 @@ class TestClassifyIncarcerationEvents(unittest.TestCase):
         """Tests the ClassifyIncarcerationEvents DoFn."""
         fake_person_id = 12345
 
-        fake_person = StatePerson.new_with_defaults(
+        fake_person = NormalizedStatePerson(
             state_code=self.state_code.value,
             person_id=fake_person_id,
             gender=StateGender.MALE,
@@ -598,7 +597,7 @@ class TestClassifyIncarcerationEvents(unittest.TestCase):
 
     def testClassifyIncarcerationEvents_NoSentenceGroups(self) -> None:
         """Tests the ClassifyIncarcerationEvents DoFn when the person has no sentence groups."""
-        fake_person = StatePerson.new_with_defaults(
+        fake_person = NormalizedStatePerson(
             state_code=self.state_code.value,
             person_id=123,
             gender=StateGender.MALE,
@@ -669,7 +668,7 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
 
     def testProduceIncarcerationMetrics(self) -> None:
         """Tests the ProduceIncarcerationMetrics DoFn."""
-        fake_person = StatePerson.new_with_defaults(
+        fake_person = NormalizedStatePerson(
             state_code="US_XX",
             person_id=123,
             gender=StateGender.MALE,
@@ -735,7 +734,7 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
         """Tests the ProduceIncarcerationMetrics when there are
         no incarceration_events. This should never happen because any person
         without incarceration events is dropped entirely from the pipeline."""
-        fake_person = StatePerson.new_with_defaults(
+        fake_person = NormalizedStatePerson(
             state_code="US_XX",
             person_id=123,
             gender=StateGender.MALE,
@@ -745,7 +744,7 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
 
         test_pipeline = TestPipeline()
 
-        inputs: list[tuple[StatePerson, list[IncarcerationMetric]]] = [
+        inputs: list[tuple[NormalizedStatePerson, list[IncarcerationMetric]]] = [
             (fake_person, [])
         ]
 

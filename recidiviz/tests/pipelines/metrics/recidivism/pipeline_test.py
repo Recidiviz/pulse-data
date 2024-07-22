@@ -50,9 +50,10 @@ from recidiviz.common.constants.state.state_person import (
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.database.schema.state import schema
-from recidiviz.persistence.entity.state import entities
 from recidiviz.persistence.entity.state.normalized_entities import (
     NormalizedStateIncarcerationPeriod,
+    NormalizedStatePerson,
+    NormalizedStateSupervisionPeriod,
 )
 from recidiviz.pipelines.metrics.base_metric_pipeline import (
     ClassifyResults,
@@ -445,7 +446,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
 
         fake_person_id = 12345
 
-        fake_person = entities.StatePerson.new_with_defaults(
+        fake_person = NormalizedStatePerson(
             state_code="US_XX",
             person_id=fake_person_id,
             gender=StateGender.MALE,
@@ -488,9 +489,9 @@ class TestClassifyReleaseEvents(unittest.TestCase):
         )
 
         person_incarceration_periods = {
-            entities.StatePerson.__name__: [fake_person],
-            entities.StateSupervisionPeriod.__name__: [],
-            NormalizedStateIncarcerationPeriod.base_class_name(): [
+            NormalizedStatePerson.__name__: [fake_person],
+            NormalizedStateSupervisionPeriod.__name__: [],
+            NormalizedStateIncarcerationPeriod.__name__: [
                 initial_incarceration,
                 first_reincarceration,
                 subsequent_reincarceration,
@@ -560,7 +561,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
 
         fake_person_id = 12345
 
-        fake_person = entities.StatePerson.new_with_defaults(
+        fake_person = NormalizedStatePerson(
             state_code="US_XX",
             person_id=fake_person_id,
             gender=StateGender.MALE,
@@ -581,9 +582,9 @@ class TestClassifyReleaseEvents(unittest.TestCase):
         )
 
         person_incarceration_periods = {
-            entities.StatePerson.__name__: [fake_person],
-            entities.StateSupervisionPeriod.__name__: [],
-            NormalizedStateIncarcerationPeriod.base_class_name(): [only_incarceration],
+            NormalizedStatePerson.__name__: [fake_person],
+            NormalizedStateSupervisionPeriod.__name__: [],
+            NormalizedStateIncarcerationPeriod.__name__: [only_incarceration],
         }
 
         assert only_incarceration.admission_date is not None
@@ -629,7 +630,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
 
         fake_person_id = 12345
 
-        fake_person = entities.StatePerson.new_with_defaults(
+        fake_person = NormalizedStatePerson(
             state_code="US_XX",
             person_id=fake_person_id,
             gender=StateGender.MALE,
@@ -638,9 +639,9 @@ class TestClassifyReleaseEvents(unittest.TestCase):
         )
 
         person_incarceration_periods = {
-            entities.StatePerson.__name__: [fake_person],
-            entities.StateSupervisionPeriod.__name__: [],
-            NormalizedStateIncarcerationPeriod.base_class_name(): [],
+            NormalizedStatePerson.__name__: [fake_person],
+            NormalizedStateSupervisionPeriod.__name__: [],
+            NormalizedStateIncarcerationPeriod.__name__: [],
         }
 
         test_pipeline = TestPipeline()
@@ -706,7 +707,7 @@ class TestProduceRecidivismMetrics(unittest.TestCase):
     @freeze_time("2020-12-03")
     def testProduceRecidivismMetrics(self) -> None:
         """Tests the ProduceRecidivismMetrics DoFn in the pipeline."""
-        fake_person = entities.StatePerson.new_with_defaults(
+        fake_person = NormalizedStatePerson(
             state_code="US_XX",
             person_id=self.fake_person_id,
             gender=StateGender.MALE,
@@ -793,14 +794,14 @@ class TestProduceRecidivismMetrics(unittest.TestCase):
     def testProduceRecidivismMetrics_NoResults(self) -> None:
         """Tests the ProduceRecidivismMetrics DoFn in the pipeline
         when there are no ReleaseEvents associated with the entities.StatePerson."""
-        fake_person = entities.StatePerson.new_with_defaults(
+        fake_person = NormalizedStatePerson(
             state_code="US_XX",
             person_id=self.fake_person_id,
             gender=StateGender.MALE,
             residency_status=StateResidencyStatus.PERMANENT,
         )
 
-        person_release_events: Iterable[Tuple[entities.StatePerson, Dict]] = [
+        person_release_events: Iterable[Tuple[NormalizedStatePerson, Dict]] = [
             (fake_person, {})
         ]
 

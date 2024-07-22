@@ -25,6 +25,7 @@ from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
 )
 from recidiviz.persistence.entity.state.entities import StatePerson
 from recidiviz.persistence.entity.state.normalized_entities import (
+    NormalizedStatePerson,
     NormalizedStateSupervisionPeriod,
 )
 from recidiviz.pipelines.utils.entity_normalization.normalized_incarceration_period_index import (
@@ -128,9 +129,7 @@ class TestStateCalculationConfigManager(unittest.TestCase):
                 sequence_num=1,
             )
             _ = get_state_specific_case_compliance_manager(
-                person=StatePerson.new_with_defaults(
-                    state_code=state_code.value, person_id=1
-                ),
+                person=NormalizedStatePerson(state_code=state_code.value, person_id=1),
                 supervision_period=test_sp,
                 case_type=StateSupervisionCaseType.INTERNAL_UNKNOWN,
                 start_of_supervision=datetime.date(2020, 1, 1),

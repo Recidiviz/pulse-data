@@ -20,7 +20,7 @@ from typing import Any, Dict, Generic, Set, Type, TypeVar
 
 import attr
 
-from recidiviz.persistence.entity.state.entities import StatePerson
+from recidiviz.persistence.entity.state.normalized_entities import NormalizedStatePerson
 from recidiviz.pipelines.utils.identifier_models import IdentifierResult
 
 IdentifierResultT = TypeVar("IdentifierResultT")
@@ -36,7 +36,7 @@ class BaseIdentifier(abc.ABC, Generic[IdentifierResultT]):
     @abc.abstractmethod
     def identify(
         self,
-        person: StatePerson,
+        person: NormalizedStatePerson,
         identifier_context: IdentifierContext,
         included_result_classes: Set[Type[IdentifierResult]],
     ) -> IdentifierResultT:

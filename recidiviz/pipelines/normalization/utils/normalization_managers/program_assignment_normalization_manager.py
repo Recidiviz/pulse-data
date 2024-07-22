@@ -95,6 +95,8 @@ class ProgramAssignmentNormalizationManager(EntityNormalizationManager):
         """Sorts the program assignments first by referral date, then by start date,
         then by discharge date, depending on whichever is present."""
         program_assignments.sort(
+            # TODO(#31377): This sorting is non-deterministic when, for example, two
+            #  program assignments have the same referral_date.
             key=lambda b: b.referral_date
             or b.start_date
             or b.discharge_date

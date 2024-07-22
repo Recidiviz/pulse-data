@@ -27,7 +27,7 @@ from recidiviz.common.date import (
     split_range_by_birthdate,
     year_and_month_for_today,
 )
-from recidiviz.persistence.entity.state.entities import StatePerson
+from recidiviz.persistence.entity.state.normalized_entities import NormalizedStatePerson
 from recidiviz.pipelines.metrics.utils.metric_utils import RecidivizMetric
 from recidiviz.pipelines.utils.identifier_models import Event, IdentifierResult, Span
 from recidiviz.pipelines.utils.state_utils.state_specific_metrics_producer_delegate import (
@@ -38,7 +38,7 @@ RecidivizMetricT = TypeVar("RecidivizMetricT", bound=RecidivizMetric)
 
 
 def person_characteristics(
-    person: StatePerson,
+    person: NormalizedStatePerson,
     person_age: Optional[int],
     metrics_producer_delegate: Optional[StateSpecificMetricsProducerDelegate] = None,
 ) -> Dict[str, Any]:
@@ -78,15 +78,17 @@ def person_characteristics(
     return characteristics
 
 
-def age_at_date(person: StatePerson, check_date: datetime.date) -> Optional[int]:
-    """Calculates the age of the StatePerson at the given date.
+def age_at_date(
+    person: NormalizedStatePerson, check_date: datetime.date
+) -> Optional[int]:
+    """Calculates the age of the NormalizedStatePerson at the given date.
 
     Args:
-        person: the StatePerson
+        person: the NormalizedStatePerson
         check_date: the date to check
 
     Returns:
-        The age of the StatePerson at the given date. None if no birthdate is
+        The age of the NormalizedStatePerson at the given date. None if no birthdate is
          known.
     """
     birthdate = person.birthdate
@@ -101,7 +103,7 @@ def age_at_date(person: StatePerson, check_date: datetime.date) -> Optional[int]
 
 def person_external_id_to_include(
     state_code: str,
-    person: StatePerson,
+    person: NormalizedStatePerson,
     secondary: bool = False,
     metrics_producer_delegate: Optional[StateSpecificMetricsProducerDelegate] = None,
 ) -> Optional[str]:
@@ -206,7 +208,7 @@ def safe_list_index(list_of_values: List[Any], value: Any, default: int) -> int:
 
 
 def produce_standard_event_metrics(
-    person: StatePerson,
+    person: NormalizedStatePerson,
     identifier_results: Sequence[Event],
     calculation_month_count: int,
     event_to_metric_classes: Mapping[
@@ -267,7 +269,7 @@ def produce_standard_event_metrics(
 
 
 def produce_standard_span_metrics(
-    person: StatePerson,
+    person: NormalizedStatePerson,
     identifier_results: Sequence[Span],
     event_to_metric_classes: Mapping[
         Type[Span],
@@ -329,7 +331,7 @@ def produce_standard_span_metrics(
 def build_metric(
     result: IdentifierResult,
     metric_class: Type[RecidivizMetricT],
-    person: StatePerson,
+    person: NormalizedStatePerson,
     person_age: Optional[int],
     pipeline_job_id: str,
     additional_attributes: Optional[Dict[str, Any]] = None,

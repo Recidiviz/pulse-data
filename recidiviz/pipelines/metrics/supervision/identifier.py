@@ -41,14 +41,12 @@ from recidiviz.persistence.entity.entity_utils import CoreEntityFieldIndex
 from recidiviz.persistence.entity.normalized_entities_utils import (
     sort_normalized_entities_by_sequence_num,
 )
-from recidiviz.persistence.entity.state.entities import (
-    StatePerson,
-    StateSupervisionContact,
-)
 from recidiviz.persistence.entity.state.normalized_entities import (
     NormalizedStateAssessment,
     NormalizedStateIncarcerationPeriod,
     NormalizedStateIncarcerationSentence,
+    NormalizedStatePerson,
+    NormalizedStateSupervisionContact,
     NormalizedStateSupervisionPeriod,
     NormalizedStateSupervisionSentence,
     NormalizedStateSupervisionViolationResponse,
@@ -122,7 +120,7 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
 
     def identify(
         self,
-        person: StatePerson,
+        person: NormalizedStatePerson,
         identifier_context: IdentifierContext,
         included_result_classes: Set[Type[IdentifierResult]],
     ) -> List[SupervisionEvent]:
@@ -130,35 +128,37 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
             included_result_classes=included_result_classes,
             person=person,
             supervision_sentences=identifier_context[
-                NormalizedStateSupervisionSentence.base_class_name()
+                NormalizedStateSupervisionSentence.__name__
             ],
             incarceration_sentences=identifier_context[
-                NormalizedStateIncarcerationSentence.base_class_name()
+                NormalizedStateIncarcerationSentence.__name__
             ],
             supervision_periods=identifier_context[
-                NormalizedStateSupervisionPeriod.base_class_name()
+                NormalizedStateSupervisionPeriod.__name__
             ],
             incarceration_periods=identifier_context[
-                NormalizedStateIncarcerationPeriod.base_class_name()
+                NormalizedStateIncarcerationPeriod.__name__
             ],
-            assessments=identifier_context[NormalizedStateAssessment.base_class_name()],
+            assessments=identifier_context[NormalizedStateAssessment.__name__],
             violation_responses=identifier_context[
-                NormalizedStateSupervisionViolationResponse.base_class_name()
+                NormalizedStateSupervisionViolationResponse.__name__
             ],
-            supervision_contacts=identifier_context[StateSupervisionContact.__name__],
+            supervision_contacts=identifier_context[
+                NormalizedStateSupervisionContact.__name__
+            ],
         )
 
     def _find_supervision_events(
         self,
         included_result_classes: Set[Type[IdentifierResult]],
-        person: StatePerson,
+        person: NormalizedStatePerson,
         supervision_sentences: List[NormalizedStateSupervisionSentence],
         incarceration_sentences: List[NormalizedStateIncarcerationSentence],
         supervision_periods: List[NormalizedStateSupervisionPeriod],
         incarceration_periods: List[NormalizedStateIncarcerationPeriod],
         assessments: List[NormalizedStateAssessment],
         violation_responses: List[NormalizedStateSupervisionViolationResponse],
-        supervision_contacts: List[StateSupervisionContact],
+        supervision_contacts: List[NormalizedStateSupervisionContact],
     ) -> List[SupervisionEvent]:
         """Identifies various events related to being on supervision.
 
@@ -174,7 +174,9 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
             A list of SupervisionEvents for the person.
         """
         if not person.person_id:
-            raise ValueError(f"Found StatePerson with unset person_id value: {person}.")
+            raise ValueError(
+                f"Found NormalizedStatePerson with unset person_id value: {person}."
+            )
 
         if not supervision_periods and not incarceration_periods:
             return []
@@ -264,7 +266,7 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
 
     def _find_population_events_for_supervision_period(
         self,
-        person: StatePerson,
+        person: NormalizedStatePerson,
         supervision_period: NormalizedStateSupervisionPeriod,
         supervision_period_index: NormalizedSupervisionPeriodIndex,
         incarceration_period_index: NormalizedIncarcerationPeriodIndex,
@@ -272,13 +274,15 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
         violation_responses_for_history: List[
             NormalizedStateSupervisionViolationResponse
         ],
-        supervision_contacts_by_date: RangeQuerier[date, StateSupervisionContact],
+        supervision_contacts_by_date: RangeQuerier[
+            date, NormalizedStateSupervisionContact
+        ],
     ) -> List[SupervisionPopulationEvent]:
         """Finds days that this person was on supervision for the given
         StateSupervisionPeriod.
 
         Args:
-            - person: StatePerson encoding of the person under supervision
+            - person: NormalizedStatePerson encoding of the person under supervision
             - supervision_period: The supervision period the person was on
             - supervision_period_index: Class containing information about this person's supervision periods
             - incarceration_period_index: Class containing information about this person's incarceration periods

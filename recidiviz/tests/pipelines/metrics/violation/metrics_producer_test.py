@@ -34,10 +34,10 @@ from recidiviz.common.constants.state.state_supervision_violation import (
 from recidiviz.common.constants.state.state_supervision_violation_response import (
     StateSupervisionViolationResponseDecision,
 )
-from recidiviz.persistence.entity.state.entities import (
-    StatePerson,
-    StatePersonEthnicity,
-    StatePersonRace,
+from recidiviz.persistence.entity.state.normalized_entities import (
+    NormalizedStatePerson,
+    NormalizedStatePersonEthnicity,
+    NormalizedStatePersonRace,
 )
 from recidiviz.pipelines.metrics.violation import metric_producer, pipeline
 from recidiviz.pipelines.metrics.violation.events import (
@@ -60,21 +60,23 @@ class TestProduceViolationMetrics(unittest.TestCase):
 
     def setUp(self) -> None:
         self.state_code = "US_ND"
-        self.person = StatePerson.new_with_defaults(
+        self.person = NormalizedStatePerson(
             state_code=self.state_code,
             person_id=12345,
             birthdate=date(1984, 8, 31),
             gender=StateGender.FEMALE,
         )
 
-        self.race = StatePersonRace.new_with_defaults(
-            state_code=self.state_code, race=StateRace.WHITE
+        self.race = NormalizedStatePersonRace(
+            state_code=self.state_code, person_race_id=12345, race=StateRace.WHITE
         )
 
         self.person.races = [self.race]
 
-        self.ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code=self.state_code, ethnicity=StateEthnicity.NOT_HISPANIC
+        self.ethnicity = NormalizedStatePersonEthnicity(
+            state_code=self.state_code,
+            person_ethnicity_id=12345,
+            ethnicity=StateEthnicity.NOT_HISPANIC,
         )
 
         self.person.ethnicities = [self.ethnicity]

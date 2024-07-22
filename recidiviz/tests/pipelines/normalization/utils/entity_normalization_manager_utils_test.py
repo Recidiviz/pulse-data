@@ -21,6 +21,9 @@ import inspect
 import unittest
 from typing import Dict, Set, Type
 
+import attr
+
+from recidiviz.common.attr_mixins import attr_field_referenced_cls_name_for_field_name
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
@@ -32,8 +35,12 @@ from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodTerminationReason,
 )
 from recidiviz.common.constants.states import StateCode
-from recidiviz.persistence.entity.base_entity import Entity
-from recidiviz.persistence.entity.entity_utils import CoreEntityFieldIndex
+from recidiviz.persistence.entity.base_entity import Entity, RootEntity
+from recidiviz.persistence.entity.entity_utils import (
+    CoreEntityFieldIndex,
+    get_entity_class_in_module_with_name,
+)
+from recidiviz.persistence.entity.state import entities as state_entities
 from recidiviz.persistence.entity.state.entities import (
     StateIncarcerationPeriod,
     StateSupervisionPeriod,
@@ -65,9 +72,6 @@ from recidiviz.tests.persistence.entity.normalized_entities_utils_test import (
     get_normalized_violation_tree,
     get_violation_tree,
 )
-from recidiviz.tests.persistence.entity.state.normalized_entities_test import (
-    classes_in_normalized_entity_subtree,
-)
 
 STATE_PERSON_TO_STATE_STAFF_LIST = [
     {
@@ -89,6 +93,42 @@ STATE_PERSON_TO_STATE_STAFF_LIST = [
         "staff_external_id_type": "US_XX_STAFF_ID",
     },
 ]
+
+
+def classes_in_normalized_entity_subtree(
+    entity_cls: Type[Entity],
+) -> Set[Type[Entity]]:
+    """Returns all classes in the subtree of the given entity class that could
+    potentially be impacted by normalization. A subtree is defined as any entity that
+    can be reached from a given entity without traversing an edge to StatePerson.
+
+    Excludes any classes that cannot be hydrated in calculation pipelines,
+    since these classes cannot be impacted by normalization.
+    """
+    explored_nodes: Set[Type[Entity]] = set()
+    unexplored_nodes: Set[Type[Entity]] = {entity_cls}
+
+    while unexplored_nodes:
+        node_entity_class = unexplored_nodes.pop()
+        for field in attr.fields_dict(node_entity_class):  # type: ignore[arg-type]
+            related_class_name = attr_field_referenced_cls_name_for_field_name(
+                node_entity_class, field
+            )
+            if not related_class_name:
+                continue
+
+            related_class = get_entity_class_in_module_with_name(
+                state_entities, related_class_name
+            )
+            if issubclass(related_class, RootEntity):
+                continue
+
+            if related_class not in explored_nodes:
+                unexplored_nodes.add(related_class)
+
+        explored_nodes.add(node_entity_class)
+
+    return explored_nodes
 
 
 class TestNormalizedPeriodsForCalculations(unittest.TestCase):

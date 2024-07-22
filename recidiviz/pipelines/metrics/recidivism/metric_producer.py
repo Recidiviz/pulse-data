@@ -29,7 +29,7 @@ from typing import Any, Dict, List, Optional, Set, Type
 
 from dateutil.relativedelta import relativedelta
 
-from recidiviz.persistence.entity.state.entities import StatePerson
+from recidiviz.persistence.entity.state.normalized_entities import NormalizedStatePerson
 from recidiviz.pipelines.metrics.base_metric_producer import BaseMetricProducer
 from recidiviz.pipelines.metrics.recidivism.events import (
     NonRecidivismReleaseEvent,
@@ -83,17 +83,17 @@ class RecidivismMetricProducer(
 
     def produce_metrics(
         self,
-        person: StatePerson,
+        person: NormalizedStatePerson,
         identifier_results: Dict[int, List[ReleaseEvent]],
         metric_inclusions: Set[ReincarcerationRecidivismMetricType],
         pipeline_job_id: str,
         metrics_producer_delegates: Dict[str, StateSpecificMetricsProducerDelegate],
         calculation_month_count: int = -1,
     ) -> List[ReincarcerationRecidivismMetric]:
-        """Transforms ReleaseEvents and a StatePerson into
+        """Transforms ReleaseEvents and a NormalizedStatePerson into
         ReincarcerationRecidivismMetrics.
 
-        Takes in a StatePerson and all of their ReleaseEvents and returns a list of
+        Takes in a NormalizedStatePerson and all of their ReleaseEvents and returns a list of
         ReincarcerationRecidivismMetrics.
         """
         metrics: List[ReincarcerationRecidivismMetric] = []
@@ -283,7 +283,7 @@ class RecidivismMetricProducer(
     def reincarceration_rate_metrics_for_release_event(
         self,
         release_event: ReleaseEvent,
-        person: StatePerson,
+        person: NormalizedStatePerson,
         all_reincarcerations: Dict[date, RecidivismReleaseEvent],
         pipeline_job_id: str,
         metrics_producer_delegate: Optional[

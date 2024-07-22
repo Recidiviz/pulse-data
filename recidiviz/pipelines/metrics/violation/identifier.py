@@ -29,8 +29,8 @@ from recidiviz.persistence.entity.entity_utils import CoreEntityFieldIndex
 from recidiviz.persistence.entity.normalized_entities_utils import (
     sort_normalized_entities_by_sequence_num,
 )
-from recidiviz.persistence.entity.state.entities import StatePerson
 from recidiviz.persistence.entity.state.normalized_entities import (
+    NormalizedStatePerson,
     NormalizedStateSupervisionViolation,
     NormalizedStateSupervisionViolationResponse,
 )
@@ -72,7 +72,7 @@ class ViolationIdentifier(BaseIdentifier[List[ViolationEvent]]):
 
     def identify(
         self,
-        _person: StatePerson,
+        _person: NormalizedStatePerson,
         identifier_context: IdentifierContext,
         included_result_classes: Set[Type[IdentifierResult]],
     ) -> List[ViolationEvent]:
@@ -82,9 +82,7 @@ class ViolationIdentifier(BaseIdentifier[List[ViolationEvent]]):
             )
 
         return self._find_violation_events(
-            violations=identifier_context[
-                NormalizedStateSupervisionViolation.base_class_name()
-            ],
+            violations=identifier_context[NormalizedStateSupervisionViolation.__name__],
         )
 
     def _find_violation_events(

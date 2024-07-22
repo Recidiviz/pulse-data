@@ -41,10 +41,10 @@ from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodTerminationReason,
 )
 from recidiviz.common.constants.states import StateCode
-from recidiviz.persistence.entity.state.entities import (
-    StatePerson,
-    StatePersonEthnicity,
-    StatePersonRace,
+from recidiviz.persistence.entity.state.normalized_entities import (
+    NormalizedStatePerson,
+    NormalizedStatePersonEthnicity,
+    NormalizedStatePersonRace,
 )
 from recidiviz.pipelines.metrics.supervision import identifier
 from recidiviz.pipelines.metrics.supervision import identifier as supervision_identifier
@@ -99,21 +99,23 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
 
     def test_produce_supervision_metrics(self) -> None:
         """Tests the produce_supervision_metrics function."""
-        person = StatePerson.new_with_defaults(
+        person = NormalizedStatePerson(
             state_code="US_XX",
             person_id=12345,
             birthdate=date(1984, 8, 31),
             gender=StateGender.FEMALE,
         )
 
-        race = StatePersonRace.new_with_defaults(
-            state_code="US_XX", race=StateRace.WHITE
+        race = NormalizedStatePersonRace(
+            state_code="US_XX", person_race_id=12345, race=StateRace.WHITE
         )
 
         person.races = [race]
 
-        ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code="US_XX", ethnicity=StateEthnicity.NOT_HISPANIC
+        ethnicity = NormalizedStatePersonEthnicity(
+            state_code="US_XX",
+            person_ethnicity_id=12345,
+            ethnicity=StateEthnicity.NOT_HISPANIC,
         )
 
         person.ethnicities = [ethnicity]
@@ -158,21 +160,23 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
 
     def test_produce_supervision_metrics_assessment(self) -> None:
         """Tests the produce_supervision_metrics function when there is assessment data present."""
-        person = StatePerson.new_with_defaults(
+        person = NormalizedStatePerson(
             state_code="US_XX",
             person_id=12345,
             birthdate=date(1984, 8, 31),
             gender=StateGender.FEMALE,
         )
 
-        race = StatePersonRace.new_with_defaults(
-            state_code="US_XX", race=StateRace.WHITE
+        race = NormalizedStatePersonRace(
+            state_code="US_XX", person_race_id=12345, race=StateRace.WHITE
         )
 
         person.races = [race]
 
-        ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code="US_XX", ethnicity=StateEthnicity.NOT_HISPANIC
+        ethnicity = NormalizedStatePersonEthnicity(
+            state_code="US_XX",
+            person_ethnicity_id=12345,
+            ethnicity=StateEthnicity.NOT_HISPANIC,
         )
 
         person.ethnicities = [ethnicity]
@@ -220,21 +224,23 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
     def test_produce_supervision_metrics_exclude_assessment(self) -> None:
         """Tests the produce_supervision_metrics function when there is assessment data present, but it should not
         be included for this state and pipeline type."""
-        person = StatePerson.new_with_defaults(
+        person = NormalizedStatePerson(
             state_code="US_XX",
             person_id=12345,
             birthdate=date(1984, 8, 31),
             gender=StateGender.FEMALE,
         )
 
-        race = StatePersonRace.new_with_defaults(
-            state_code="US_XX", race=StateRace.WHITE
+        race = NormalizedStatePersonRace(
+            state_code="US_XX", person_race_id=12345, race=StateRace.WHITE
         )
 
         person.races = [race]
 
-        ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code="US_XX", ethnicity=StateEthnicity.NOT_HISPANIC
+        ethnicity = NormalizedStatePersonEthnicity(
+            state_code="US_XX",
+            person_ethnicity_id=12345,
+            ethnicity=StateEthnicity.NOT_HISPANIC,
         )
 
         person.ethnicities = [ethnicity]
@@ -282,21 +288,23 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
     def test_produce_supervision_metrics_supervising_officer_district(self) -> None:
         """Tests the produce_supervision_metrics function when there is supervising officer and district data
         present."""
-        person = StatePerson.new_with_defaults(
+        person = NormalizedStatePerson(
             state_code="US_XX",
             person_id=12345,
             birthdate=date(1984, 8, 31),
             gender=StateGender.FEMALE,
         )
 
-        race = StatePersonRace.new_with_defaults(
-            state_code="US_XX", race=StateRace.WHITE
+        race = NormalizedStatePersonRace(
+            state_code="US_XX", person_race_id=12345, race=StateRace.WHITE
         )
 
         person.races = [race]
 
-        ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code="US_XX", ethnicity=StateEthnicity.NOT_HISPANIC
+        ethnicity = NormalizedStatePersonEthnicity(
+            state_code="US_XX",
+            person_ethnicity_id=12345,
+            ethnicity=StateEthnicity.NOT_HISPANIC,
         )
 
         person.ethnicities = [ethnicity]
@@ -345,21 +353,23 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
 
     def test_produce_supervision_metrics_supervision_success(self) -> None:
         """Tests the produce_supervision_metrics function when there is a ProjectedSupervisionCompletionEvent."""
-        person = StatePerson.new_with_defaults(
+        person = NormalizedStatePerson(
             state_code="US_XX",
             person_id=12345,
             birthdate=date(1984, 8, 31),
             gender=StateGender.FEMALE,
         )
 
-        race = StatePersonRace.new_with_defaults(
-            state_code="US_XX", race=StateRace.WHITE
+        race = NormalizedStatePersonRace(
+            state_code="US_XX", person_race_id=12345, race=StateRace.WHITE
         )
 
         person.races = [race]
 
-        ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code="US_XX", ethnicity=StateEthnicity.NOT_HISPANIC
+        ethnicity = NormalizedStatePersonEthnicity(
+            state_code="US_XX",
+            person_ethnicity_id=12345,
+            ethnicity=StateEthnicity.NOT_HISPANIC,
         )
 
         person.ethnicities = [ethnicity]
@@ -416,21 +426,23 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
     def test_produce_supervision_metrics_supervision_unsuccessful(self) -> None:
         """Tests the produce_supervision_metrics function when there is a ProjectedSupervisionCompletionEvent
         and the supervision is not successfully completed."""
-        person = StatePerson.new_with_defaults(
+        person = NormalizedStatePerson(
             state_code="US_XX",
             person_id=12345,
             birthdate=date(1984, 8, 31),
             gender=StateGender.FEMALE,
         )
 
-        race = StatePersonRace.new_with_defaults(
-            state_code="US_XX", race=StateRace.WHITE
+        race = NormalizedStatePersonRace(
+            state_code="US_XX", person_race_id=12345, race=StateRace.WHITE
         )
 
         person.races = [race]
 
-        ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code="US_XX", ethnicity=StateEthnicity.NOT_HISPANIC
+        ethnicity = NormalizedStatePersonEthnicity(
+            state_code="US_XX",
+            person_ethnicity_id=12345,
+            ethnicity=StateEthnicity.NOT_HISPANIC,
         )
 
         person.ethnicities = [ethnicity]
@@ -492,21 +504,23 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
     def test_produce_supervision_metrics_supervision_mixed_success(self) -> None:
         """Tests the produce_supervision_metrics function when there is a ProjectedSupervisionCompletionEvent and the
         supervision is not successfully completed."""
-        person = StatePerson.new_with_defaults(
+        person = NormalizedStatePerson(
             state_code="US_XX",
             person_id=12345,
             birthdate=date(1984, 8, 31),
             gender=StateGender.FEMALE,
         )
 
-        race = StatePersonRace.new_with_defaults(
-            state_code="US_XX", race=StateRace.WHITE
+        race = NormalizedStatePersonRace(
+            state_code="US_XX", person_race_id=12345, race=StateRace.WHITE
         )
 
         person.races = [race]
 
-        ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code="US_XX", ethnicity=StateEthnicity.NOT_HISPANIC
+        ethnicity = NormalizedStatePersonEthnicity(
+            state_code="US_XX",
+            person_ethnicity_id=12345,
+            ethnicity=StateEthnicity.NOT_HISPANIC,
         )
 
         person.ethnicities = [ethnicity]
@@ -587,21 +601,23 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
     ) -> None:
         """Tests the produce_supervision_metrics function when there is a mix of missing & non-null district/officer
         data for one person over many ProjectedSupervisionCompletionEvents."""
-        person = StatePerson.new_with_defaults(
+        person = NormalizedStatePerson(
             state_code="US_XX",
             person_id=12345,
             birthdate=date(1993, 4, 2),
             gender=StateGender.FEMALE,
         )
 
-        race = StatePersonRace.new_with_defaults(
-            state_code="US_XX", race=StateRace.WHITE
+        race = NormalizedStatePersonRace(
+            state_code="US_XX", person_race_id=12345, race=StateRace.WHITE
         )
 
         person.races = [race]
 
-        ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code="US_XX", ethnicity=StateEthnicity.NOT_HISPANIC
+        ethnicity = NormalizedStatePersonEthnicity(
+            state_code="US_XX",
+            person_ethnicity_id=12345,
+            ethnicity=StateEthnicity.NOT_HISPANIC,
         )
 
         person.ethnicities = [ethnicity]
@@ -652,21 +668,23 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
 
     def test_produce_supervision_metrics_multiple_months(self) -> None:
         """Tests the produce_supervision_metrics function where the person was on supervision for multiple months."""
-        person = StatePerson.new_with_defaults(
+        person = NormalizedStatePerson(
             state_code="US_XX",
             person_id=12345,
             birthdate=date(1984, 8, 31),
             gender=StateGender.FEMALE,
         )
 
-        race = StatePersonRace.new_with_defaults(
-            state_code="US_XX", race=StateRace.WHITE
+        race = NormalizedStatePersonRace(
+            state_code="US_XX", person_race_id=12345, race=StateRace.WHITE
         )
 
         person.races = [race]
 
-        ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code="US_XX", ethnicity=StateEthnicity.NOT_HISPANIC
+        ethnicity = NormalizedStatePersonEthnicity(
+            state_code="US_XX",
+            person_ethnicity_id=12345,
+            ethnicity=StateEthnicity.NOT_HISPANIC,
         )
 
         person.ethnicities = [ethnicity]
@@ -727,21 +745,23 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
     def test_produce_supervision_metrics_overlapping_days(self) -> None:
         """Tests the produce_supervision_metrics function where the person was serving multiple supervision sentences
         simultaneously in a given month."""
-        person = StatePerson.new_with_defaults(
+        person = NormalizedStatePerson(
             state_code="US_XX",
             person_id=12345,
             birthdate=date(1984, 8, 31),
             gender=StateGender.FEMALE,
         )
 
-        race = StatePersonRace.new_with_defaults(
-            state_code="US_XX", race=StateRace.WHITE
+        race = NormalizedStatePersonRace(
+            state_code="US_XX", person_race_id=12345, race=StateRace.WHITE
         )
 
         person.races = [race]
 
-        ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code="US_XX", ethnicity=StateEthnicity.NOT_HISPANIC
+        ethnicity = NormalizedStatePersonEthnicity(
+            state_code="US_XX",
+            person_ethnicity_id=12345,
+            ethnicity=StateEthnicity.NOT_HISPANIC,
         )
 
         person.ethnicities = [ethnicity]
@@ -788,21 +808,23 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
     def test_produce_supervision_metrics_overlapping_months_types(self) -> None:
         """Tests the produce_supervision_metrics function where the person was serving multiple supervision sentences
         simultaneously in a given month, but the supervisions are of different types."""
-        person = StatePerson.new_with_defaults(
+        person = NormalizedStatePerson(
             state_code="US_XX",
             person_id=12345,
             birthdate=date(1984, 8, 31),
             gender=StateGender.FEMALE,
         )
 
-        race = StatePersonRace.new_with_defaults(
-            state_code="US_XX", race=StateRace.WHITE
+        race = NormalizedStatePersonRace(
+            state_code="US_XX", person_race_id=12345, race=StateRace.WHITE
         )
 
         person.races = [race]
 
-        ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code="US_XX", ethnicity=StateEthnicity.NOT_HISPANIC
+        ethnicity = NormalizedStatePersonEthnicity(
+            state_code="US_XX",
+            person_ethnicity_id=12345,
+            ethnicity=StateEthnicity.NOT_HISPANIC,
         )
 
         person.ethnicities = [ethnicity]
@@ -858,21 +880,23 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
     def test_produce_supervision_metrics_overlapping_months_types_dual(self) -> None:
         """Tests the produce_supervision_metrics function where the person was serving multiple supervision sentences
         simultaneously in a given month, but the supervisions are of different types."""
-        person = StatePerson.new_with_defaults(
+        person = NormalizedStatePerson(
             state_code="US_XX",
             person_id=12345,
             birthdate=date(1984, 8, 31),
             gender=StateGender.FEMALE,
         )
 
-        race = StatePersonRace.new_with_defaults(
-            state_code="US_XX", race=StateRace.WHITE
+        race = NormalizedStatePersonRace(
+            state_code="US_XX", person_race_id=12345, race=StateRace.WHITE
         )
 
         person.races = [race]
 
-        ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code="US_XX", ethnicity=StateEthnicity.NOT_HISPANIC
+        ethnicity = NormalizedStatePersonEthnicity(
+            state_code="US_XX",
+            person_ethnicity_id=12345,
+            ethnicity=StateEthnicity.NOT_HISPANIC,
         )
 
         person.ethnicities = [ethnicity]
@@ -941,18 +965,20 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
 
     def test_produce_supervision_metrics_start_event(self) -> None:
         """Tests the produce_supervision_metrics when there are SupervisionStartEvents sent to the metric_producer."""
-        person = StatePerson.new_with_defaults(
+        person = NormalizedStatePerson(
             state_code="US_XX",
             person_id=12345,
             birthdate=date(1984, 8, 31),
             gender=StateGender.FEMALE,
         )
-        race = StatePersonRace.new_with_defaults(
-            state_code="US_XX", race=StateRace.WHITE
+        race = NormalizedStatePersonRace(
+            state_code="US_XX", person_race_id=12345, race=StateRace.WHITE
         )
         person.races = [race]
-        ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code="US_XX", ethnicity=StateEthnicity.NOT_HISPANIC
+        ethnicity = NormalizedStatePersonEthnicity(
+            state_code="US_XX",
+            person_ethnicity_id=12345,
+            ethnicity=StateEthnicity.NOT_HISPANIC,
         )
         person.ethnicities = [ethnicity]
 
@@ -989,21 +1015,23 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
     def test_produce_supervision_metrics_termination_event(self) -> None:
         """Tests the produce_supervision_metrics when there are SupervisionTerminationEvents sent to the
         metric_producer."""
-        person = StatePerson.new_with_defaults(
+        person = NormalizedStatePerson(
             state_code="US_XX",
             person_id=12345,
             birthdate=date(1984, 8, 31),
             gender=StateGender.FEMALE,
         )
 
-        race = StatePersonRace.new_with_defaults(
-            state_code="US_XX", race=StateRace.WHITE
+        race = NormalizedStatePersonRace(
+            state_code="US_XX", person_race_id=12345, race=StateRace.WHITE
         )
 
         person.races = [race]
 
-        ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code="US_XX", ethnicity=StateEthnicity.NOT_HISPANIC
+        ethnicity = NormalizedStatePersonEthnicity(
+            state_code="US_XX",
+            person_ethnicity_id=12345,
+            ethnicity=StateEthnicity.NOT_HISPANIC,
         )
 
         person.ethnicities = [ethnicity]
@@ -1047,21 +1075,23 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
     ) -> None:
         """Tests the produce_supervision_metrics when there are SupervisionTerminationEvents sent to the metric_producer,
         but the event doesn't have an assessment_score_change."""
-        person = StatePerson.new_with_defaults(
+        person = NormalizedStatePerson(
             state_code="US_XX",
             person_id=12345,
             birthdate=date(1984, 8, 31),
             gender=StateGender.FEMALE,
         )
 
-        race = StatePersonRace.new_with_defaults(
-            state_code="US_XX", race=StateRace.WHITE
+        race = NormalizedStatePersonRace(
+            state_code="US_XX", person_race_id=12345, race=StateRace.WHITE
         )
 
         person.races = [race]
 
-        ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code="US_XX", ethnicity=StateEthnicity.NOT_HISPANIC
+        ethnicity = NormalizedStatePersonEthnicity(
+            state_code="US_XX",
+            person_ethnicity_id=12345,
+            ethnicity=StateEthnicity.NOT_HISPANIC,
         )
 
         person.ethnicities = [ethnicity]
@@ -1103,21 +1133,23 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
     def test_produce_supervision_metrics_termination_events(self) -> None:
         """Tests the produce_supervision_metrics when there are SupervisionTerminationEvents sent to the metric_producer
         that end in the same month."""
-        person = StatePerson.new_with_defaults(
+        person = NormalizedStatePerson(
             state_code="US_XX",
             person_id=12345,
             birthdate=date(1984, 8, 31),
             gender=StateGender.FEMALE,
         )
 
-        race = StatePersonRace.new_with_defaults(
-            state_code="US_XX", race=StateRace.WHITE
+        race = NormalizedStatePersonRace(
+            state_code="US_XX", person_race_id=12345, race=StateRace.WHITE
         )
 
         person.races = [race]
 
-        ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code="US_XX", ethnicity=StateEthnicity.NOT_HISPANIC
+        ethnicity = NormalizedStatePersonEthnicity(
+            state_code="US_XX",
+            person_ethnicity_id=12345,
+            ethnicity=StateEthnicity.NOT_HISPANIC,
         )
 
         person.ethnicities = [ethnicity]
@@ -1173,21 +1205,23 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
 
     @freeze_time("2010-12-01")
     def test_produce_supervision_metrics_only_terminations(self) -> None:
-        person = StatePerson.new_with_defaults(
+        person = NormalizedStatePerson(
             state_code="US_XX",
             person_id=12345,
             birthdate=date(1984, 8, 31),
             gender=StateGender.FEMALE,
         )
 
-        race = StatePersonRace.new_with_defaults(
-            state_code="US_XX", race=StateRace.WHITE
+        race = NormalizedStatePersonRace(
+            state_code="US_XX", person_race_id=12345, race=StateRace.WHITE
         )
 
         person.races = [race]
 
-        ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code="US_XX", ethnicity=StateEthnicity.NOT_HISPANIC
+        ethnicity = NormalizedStatePersonEthnicity(
+            state_code="US_XX",
+            person_ethnicity_id=12345,
+            ethnicity=StateEthnicity.NOT_HISPANIC,
         )
 
         person.ethnicities = [ethnicity]
@@ -1234,21 +1268,23 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
 
     @freeze_time("2010-12-01")
     def test_produce_supervision_metrics_only_success(self) -> None:
-        person = StatePerson.new_with_defaults(
+        person = NormalizedStatePerson(
             state_code="US_XX",
             person_id=12345,
             birthdate=date(1984, 8, 31),
             gender=StateGender.FEMALE,
         )
 
-        race = StatePersonRace.new_with_defaults(
-            state_code="US_XX", race=StateRace.WHITE
+        race = NormalizedStatePersonRace(
+            state_code="US_XX", person_race_id=12345, race=StateRace.WHITE
         )
 
         person.races = [race]
 
-        ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code="US_XX", ethnicity=StateEthnicity.NOT_HISPANIC
+        ethnicity = NormalizedStatePersonEthnicity(
+            state_code="US_XX",
+            person_ethnicity_id=12345,
+            ethnicity=StateEthnicity.NOT_HISPANIC,
         )
 
         person.ethnicities = [ethnicity]
@@ -1293,21 +1329,23 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
 
     @freeze_time("2010-12-01")
     def test_produce_supervision_metrics_only_population(self) -> None:
-        person = StatePerson.new_with_defaults(
+        person = NormalizedStatePerson(
             state_code="US_XX",
             person_id=12345,
             birthdate=date(1984, 8, 31),
             gender=StateGender.FEMALE,
         )
 
-        race = StatePersonRace.new_with_defaults(
-            state_code="US_XX", race=StateRace.WHITE
+        race = NormalizedStatePersonRace(
+            state_code="US_XX", person_race_id=12345, race=StateRace.WHITE
         )
 
         person.races = [race]
 
-        ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code="US_XX", ethnicity=StateEthnicity.NOT_HISPANIC
+        ethnicity = NormalizedStatePersonEthnicity(
+            state_code="US_XX",
+            person_ethnicity_id=12345,
+            ethnicity=StateEthnicity.NOT_HISPANIC,
         )
 
         person.ethnicities = [ethnicity]
@@ -1348,21 +1386,23 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
 
     @freeze_time("2010-12-01")
     def test_produce_supervision_metrics_only_population_extra_events(self) -> None:
-        person = StatePerson.new_with_defaults(
+        person = NormalizedStatePerson(
             state_code="US_XX",
             person_id=12345,
             birthdate=date(1984, 8, 31),
             gender=StateGender.FEMALE,
         )
 
-        race = StatePersonRace.new_with_defaults(
-            state_code="US_XX", race=StateRace.WHITE
+        race = NormalizedStatePersonRace(
+            state_code="US_XX", person_race_id=12345, race=StateRace.WHITE
         )
 
         person.races = [race]
 
-        ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code="US_XX", ethnicity=StateEthnicity.NOT_HISPANIC
+        ethnicity = NormalizedStatePersonEthnicity(
+            state_code="US_XX",
+            person_ethnicity_id=12345,
+            ethnicity=StateEthnicity.NOT_HISPANIC,
         )
 
         person.ethnicities = [ethnicity]
@@ -1413,21 +1453,23 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
 
     def test_produce_supervision_metrics_compliance_metrics(self) -> None:
         """Tests the produce_supervision_metrics function when there are compliance metrics to be generated."""
-        person = StatePerson.new_with_defaults(
+        person = NormalizedStatePerson(
             state_code="US_XX",
             person_id=12345,
             birthdate=date(1984, 8, 31),
             gender=StateGender.FEMALE,
         )
 
-        race = StatePersonRace.new_with_defaults(
-            state_code="US_XX", race=StateRace.WHITE
+        race = NormalizedStatePersonRace(
+            state_code="US_XX", person_race_id=12345, race=StateRace.WHITE
         )
 
         person.races = [race]
 
-        ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code="US_XX", ethnicity=StateEthnicity.NOT_HISPANIC
+        ethnicity = NormalizedStatePersonEthnicity(
+            state_code="US_XX",
+            person_ethnicity_id=12345,
+            ethnicity=StateEthnicity.NOT_HISPANIC,
         )
 
         person.ethnicities = [ethnicity]
@@ -1484,21 +1526,23 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
     def test_produce_supervision_metrics_US_IX_supervision_out_of_state_population_metrics_is_out_of_state(
         self,
     ) -> None:
-        person = StatePerson.new_with_defaults(
+        person = NormalizedStatePerson(
             state_code="US_IX",
             person_id=12345,
             birthdate=date(1984, 8, 31),
             gender=StateGender.FEMALE,
         )
 
-        race = StatePersonRace.new_with_defaults(
-            state_code="US_IX", race=StateRace.WHITE
+        race = NormalizedStatePersonRace(
+            state_code="US_IX", person_race_id=123345, race=StateRace.WHITE
         )
 
         person.races = [race]
 
-        ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code="US_IX", ethnicity=StateEthnicity.NOT_HISPANIC
+        ethnicity = NormalizedStatePersonEthnicity(
+            state_code="US_IX",
+            person_ethnicity_id=12345,
+            ethnicity=StateEthnicity.NOT_HISPANIC,
         )
 
         person.ethnicities = [ethnicity]
@@ -1547,21 +1591,23 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
     def test_produce_supervision_metrics_US_IX_supervision_out_of_state_population_metrics_is_out_of_state_by_authority(
         self,
     ) -> None:
-        person = StatePerson.new_with_defaults(
+        person = NormalizedStatePerson(
             state_code="US_IX",
             person_id=12345,
             birthdate=date(1984, 8, 31),
             gender=StateGender.FEMALE,
         )
 
-        race = StatePersonRace.new_with_defaults(
-            state_code="US_IX", race=StateRace.WHITE
+        race = NormalizedStatePersonRace(
+            state_code="US_IX", person_race_id=123345, race=StateRace.WHITE
         )
 
         person.races = [race]
 
-        ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code="US_IX", ethnicity=StateEthnicity.NOT_HISPANIC
+        ethnicity = NormalizedStatePersonEthnicity(
+            state_code="US_IX",
+            person_ethnicity_id=12345,
+            ethnicity=StateEthnicity.NOT_HISPANIC,
         )
 
         person.ethnicities = [ethnicity]
@@ -1610,21 +1656,23 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
     def test_produce_supervision_metrics_US_IX_supervision_out_of_state_population_metrics_not_out_of_state(
         self,
     ) -> None:
-        person = StatePerson.new_with_defaults(
+        person = NormalizedStatePerson(
             state_code="US_IX",
             person_id=12345,
             birthdate=date(1984, 8, 31),
             gender=StateGender.FEMALE,
         )
 
-        race = StatePersonRace.new_with_defaults(
-            state_code="US_IX", race=StateRace.WHITE
+        race = NormalizedStatePersonRace(
+            state_code="US_IX", person_race_id=123345, race=StateRace.WHITE
         )
 
         person.races = [race]
 
-        ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code="US_IX", ethnicity=StateEthnicity.NOT_HISPANIC
+        ethnicity = NormalizedStatePersonEthnicity(
+            state_code="US_IX",
+            person_ethnicity_id=12345,
+            ethnicity=StateEthnicity.NOT_HISPANIC,
         )
 
         person.ethnicities = [ethnicity]
@@ -1661,21 +1709,23 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
     def test_produce_supervision_metrics_US_IX_supervision_out_of_state_population_metrics_not_out_of_state_by_authority(
         self,
     ) -> None:
-        person = StatePerson.new_with_defaults(
+        person = NormalizedStatePerson(
             state_code="US_IX",
             person_id=12345,
             birthdate=date(1984, 8, 31),
             gender=StateGender.FEMALE,
         )
 
-        race = StatePersonRace.new_with_defaults(
-            state_code="US_IX", race=StateRace.WHITE
+        race = NormalizedStatePersonRace(
+            state_code="US_IX", person_race_id=123345, race=StateRace.WHITE
         )
 
         person.races = [race]
 
-        ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code="US_IX", ethnicity=StateEthnicity.NOT_HISPANIC
+        ethnicity = NormalizedStatePersonEthnicity(
+            state_code="US_IX",
+            person_ethnicity_id=12345,
+            ethnicity=StateEthnicity.NOT_HISPANIC,
         )
 
         person.ethnicities = [ethnicity]
@@ -1711,21 +1761,23 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
     def test_map_supervision_downgrade_metrics(self) -> None:
         """Tests the produce_supervision_metrics function when there are supervision downgrade metrics to be
         generated."""
-        person = StatePerson.new_with_defaults(
+        person = NormalizedStatePerson(
             state_code="US_XX",
             person_id=12345,
             birthdate=date(1984, 8, 31),
             gender=StateGender.FEMALE,
         )
 
-        race = StatePersonRace.new_with_defaults(
-            state_code="US_XX", race=StateRace.WHITE
+        race = NormalizedStatePersonRace(
+            state_code="US_XX", person_race_id=12345, race=StateRace.WHITE
         )
 
         person.races = [race]
 
-        ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code="US_XX", ethnicity=StateEthnicity.NOT_HISPANIC
+        ethnicity = NormalizedStatePersonEthnicity(
+            state_code="US_XX",
+            person_ethnicity_id=12345,
+            ethnicity=StateEthnicity.NOT_HISPANIC,
         )
 
         person.ethnicities = [ethnicity]

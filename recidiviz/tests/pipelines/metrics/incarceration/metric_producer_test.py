@@ -40,11 +40,11 @@ from recidiviz.common.constants.state.state_person import (
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodSupervisionType,
 )
-from recidiviz.persistence.entity.state.entities import (
-    StatePerson,
-    StatePersonEthnicity,
-    StatePersonExternalId,
-    StatePersonRace,
+from recidiviz.persistence.entity.state.normalized_entities import (
+    NormalizedStatePerson,
+    NormalizedStatePersonEthnicity,
+    NormalizedStatePersonExternalId,
+    NormalizedStatePersonRace,
 )
 from recidiviz.pipelines.metrics.incarceration import metric_producer, pipeline
 from recidiviz.pipelines.metrics.incarceration.events import (
@@ -79,21 +79,23 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
 
     @freeze_time("2000-03-01")
     def test_produce_incarceration_metrics(self) -> None:
-        person = StatePerson.new_with_defaults(
+        person = NormalizedStatePerson(
             state_code="US_XX",
             person_id=12345,
             birthdate=date(1984, 8, 31),
             gender=StateGender.FEMALE,
         )
 
-        race = StatePersonRace.new_with_defaults(
-            state_code="US_XX", race=StateRace.WHITE
+        race = NormalizedStatePersonRace(
+            state_code="US_XX", person_race_id=12345, race=StateRace.WHITE
         )
 
         person.races = [race]
 
-        ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code="US_XX", ethnicity=StateEthnicity.NOT_HISPANIC
+        ethnicity = NormalizedStatePersonEthnicity(
+            state_code="US_XX",
+            person_ethnicity_id=12345,
+            ethnicity=StateEthnicity.NOT_HISPANIC,
         )
 
         person.ethnicities = [ethnicity]
@@ -127,21 +129,23 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
             assert metric.year == 2000
 
     def test_produce_incarceration_metrics_all_types(self) -> None:
-        person = StatePerson.new_with_defaults(
+        person = NormalizedStatePerson(
             state_code="US_XX",
             person_id=12345,
             birthdate=date(1984, 8, 31),
             gender=StateGender.FEMALE,
         )
 
-        race = StatePersonRace.new_with_defaults(
-            state_code="US_XX", race=StateRace.WHITE
+        race = NormalizedStatePersonRace(
+            state_code="US_XX", person_race_id=12345, race=StateRace.WHITE
         )
 
         person.races = [race]
 
-        ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code="US_XX", ethnicity=StateEthnicity.NOT_HISPANIC
+        ethnicity = NormalizedStatePersonEthnicity(
+            state_code="US_XX",
+            person_ethnicity_id=12345,
+            ethnicity=StateEthnicity.NOT_HISPANIC,
         )
 
         person.ethnicities = [ethnicity]
@@ -188,21 +192,23 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
         self.assertEqual(expected_count, len(metrics))
 
     def test_produce_incarceration_metrics_two_admissions_same_month(self) -> None:
-        person = StatePerson.new_with_defaults(
+        person = NormalizedStatePerson(
             state_code="US_XX",
             person_id=12345,
             birthdate=date(1984, 8, 31),
             gender=StateGender.FEMALE,
         )
 
-        race = StatePersonRace.new_with_defaults(
-            state_code="US_XX", race=StateRace.WHITE
+        race = NormalizedStatePersonRace(
+            state_code="US_XX", person_race_id=12345, race=StateRace.WHITE
         )
 
         person.races = [race]
 
-        ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code="US_XX", ethnicity=StateEthnicity.NOT_HISPANIC
+        ethnicity = NormalizedStatePersonEthnicity(
+            state_code="US_XX",
+            person_ethnicity_id=12345,
+            ethnicity=StateEthnicity.NOT_HISPANIC,
         )
 
         person.ethnicities = [ethnicity]
@@ -238,21 +244,23 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
         self.assertEqual(expected_count, len(metrics))
 
     def test_produce_incarceration_metrics_commitment_from_supervision(self) -> None:
-        person = StatePerson.new_with_defaults(
+        person = NormalizedStatePerson(
             state_code="US_XX",
             person_id=12345,
             birthdate=date(1984, 8, 31),
             gender=StateGender.FEMALE,
         )
 
-        race = StatePersonRace.new_with_defaults(
-            state_code="US_XX", race=StateRace.WHITE
+        race = NormalizedStatePersonRace(
+            state_code="US_XX", person_race_id=12345, race=StateRace.WHITE
         )
 
         person.races = [race]
 
-        ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code="US_XX", ethnicity=StateEthnicity.NOT_HISPANIC
+        ethnicity = NormalizedStatePersonEthnicity(
+            state_code="US_XX",
+            person_ethnicity_id=12345,
+            ethnicity=StateEthnicity.NOT_HISPANIC,
         )
 
         person.ethnicities = [ethnicity]
@@ -301,21 +309,23 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
         self.assertEqual(expected_count, len(metrics))
 
     def test_produce_incarceration_metrics_two_releases_same_month(self) -> None:
-        person = StatePerson.new_with_defaults(
+        person = NormalizedStatePerson(
             state_code="US_XX",
             person_id=12345,
             birthdate=date(1984, 8, 31),
             gender=StateGender.FEMALE,
         )
 
-        race = StatePersonRace.new_with_defaults(
-            state_code="US_XX", race=StateRace.WHITE
+        race = NormalizedStatePersonRace(
+            state_code="US_XX", person_race_id=12345, race=StateRace.WHITE
         )
 
         person.races = [race]
 
-        ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code="US_XX", ethnicity=StateEthnicity.NOT_HISPANIC
+        ethnicity = NormalizedStatePersonEthnicity(
+            state_code="US_XX",
+            person_ethnicity_id=12345,
+            ethnicity=StateEthnicity.NOT_HISPANIC,
         )
 
         person.ethnicities = [ethnicity]
@@ -350,21 +360,23 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
 
     @freeze_time("2000-03-30")
     def test_produce_incarceration_metrics_calculation_month_count(self) -> None:
-        person = StatePerson.new_with_defaults(
+        person = NormalizedStatePerson(
             state_code="US_XX",
             person_id=12345,
             birthdate=date(1984, 8, 31),
             gender=StateGender.FEMALE,
         )
 
-        race = StatePersonRace.new_with_defaults(
-            state_code="US_XX", race=StateRace.WHITE
+        race = NormalizedStatePersonRace(
+            state_code="US_XX", person_race_id=12345, race=StateRace.WHITE
         )
 
         person.races = [race]
 
-        ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code="US_XX", ethnicity=StateEthnicity.NOT_HISPANIC
+        ethnicity = NormalizedStatePersonEthnicity(
+            state_code="US_XX",
+            person_ethnicity_id=12345,
+            ethnicity=StateEthnicity.NOT_HISPANIC,
         )
 
         person.ethnicities = [ethnicity]
@@ -399,21 +411,23 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
     def test_produce_incarceration_metrics_calculation_month_count_exclude(
         self,
     ) -> None:
-        person = StatePerson.new_with_defaults(
+        person = NormalizedStatePerson(
             state_code="US_XX",
             person_id=12345,
             birthdate=date(1984, 8, 31),
             gender=StateGender.FEMALE,
         )
 
-        race = StatePersonRace.new_with_defaults(
-            state_code="US_XX", race=StateRace.WHITE
+        race = NormalizedStatePersonRace(
+            state_code="US_XX", person_race_id=12345, race=StateRace.WHITE
         )
 
         person.races = [race]
 
-        ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code="US_XX", ethnicity=StateEthnicity.NOT_HISPANIC
+        ethnicity = NormalizedStatePersonEthnicity(
+            state_code="US_XX",
+            person_ethnicity_id=12345,
+            ethnicity=StateEthnicity.NOT_HISPANIC,
         )
 
         person.ethnicities = [ethnicity]
@@ -443,21 +457,23 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
     def test_produce_incarceration_metrics_calculation_month_count_include_one(
         self,
     ) -> None:
-        person = StatePerson.new_with_defaults(
+        person = NormalizedStatePerson(
             state_code="US_XX",
             person_id=12345,
             birthdate=date(1984, 8, 31),
             gender=StateGender.FEMALE,
         )
 
-        race = StatePersonRace.new_with_defaults(
-            state_code="US_XX", race=StateRace.WHITE
+        race = NormalizedStatePersonRace(
+            state_code="US_XX", person_race_id=12345, race=StateRace.WHITE
         )
 
         person.races = [race]
 
-        ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code="US_XX", ethnicity=StateEthnicity.NOT_HISPANIC
+        ethnicity = NormalizedStatePersonEthnicity(
+            state_code="US_XX",
+            person_ethnicity_id=12345,
+            ethnicity=StateEthnicity.NOT_HISPANIC,
         )
 
         person.ethnicities = [ethnicity]
@@ -501,21 +517,23 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
     def test_produce_incarceration_metrics_calculation_month_count_include_monthly(
         self,
     ) -> None:
-        person = StatePerson.new_with_defaults(
+        person = NormalizedStatePerson(
             state_code="US_XX",
             person_id=12345,
             birthdate=date(1984, 8, 31),
             gender=StateGender.FEMALE,
         )
 
-        race = StatePersonRace.new_with_defaults(
-            state_code="US_XX", race=StateRace.WHITE
+        race = NormalizedStatePersonRace(
+            state_code="US_XX", person_race_id=12345, race=StateRace.WHITE
         )
 
         person.races = [race]
 
-        ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code="US_XX", ethnicity=StateEthnicity.NOT_HISPANIC
+        ethnicity = NormalizedStatePersonEthnicity(
+            state_code="US_XX",
+            person_ethnicity_id=12345,
+            ethnicity=StateEthnicity.NOT_HISPANIC,
         )
 
         person.ethnicities = [ethnicity]
@@ -547,27 +565,35 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
             assert metric.year == 2007
 
     def test_produce_incarceration_metrics_secondary_person_external_id(self) -> None:
-        person = StatePerson.new_with_defaults(
+        person = NormalizedStatePerson(
             state_code="US_XX",
             person_id=12345,
             birthdate=date(1984, 8, 31),
             gender=StateGender.FEMALE,
             races=[
-                StatePersonRace.new_with_defaults(
-                    state_code="US_XX", race=StateRace.WHITE
+                NormalizedStatePersonRace(
+                    state_code="US_XX", person_race_id=12345, race=StateRace.WHITE
                 )
             ],
             ethnicities=[
-                StatePersonEthnicity.new_with_defaults(
-                    state_code="US_XX", ethnicity=StateEthnicity.NOT_HISPANIC
+                NormalizedStatePersonEthnicity(
+                    state_code="US_XX",
+                    person_ethnicity_id=12345,
+                    ethnicity=StateEthnicity.NOT_HISPANIC,
                 )
             ],
             external_ids=[
-                StatePersonExternalId.new_with_defaults(
-                    external_id="DOC1341", id_type="US_XX_DOC", state_code="US_XX"
+                NormalizedStatePersonExternalId(
+                    external_id="DOC1341",
+                    id_type="US_XX_DOC",
+                    state_code="US_XX",
+                    person_external_id_id=12345,
                 ),
-                StatePersonExternalId.new_with_defaults(
-                    external_id="SID9889", id_type="US_XX_SID", state_code="US_XX"
+                NormalizedStatePersonExternalId(
+                    external_id="SID9889",
+                    id_type="US_XX_SID",
+                    state_code="US_XX",
+                    person_external_id_id=12345,
                 ),
             ],
         )
@@ -605,27 +631,35 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
                 self.assertEqual("SID9889", metric.secondary_person_external_id)
 
     def test_produce_incarceration_metrics_supervising_officer_staff_id(self) -> None:
-        person = StatePerson.new_with_defaults(
+        person = NormalizedStatePerson(
             state_code="US_XX",
             person_id=12345,
             birthdate=date(1984, 8, 31),
             gender=StateGender.FEMALE,
             races=[
-                StatePersonRace.new_with_defaults(
-                    state_code="US_XX", race=StateRace.WHITE
+                NormalizedStatePersonRace(
+                    state_code="US_XX", person_race_id=12345, race=StateRace.WHITE
                 )
             ],
             ethnicities=[
-                StatePersonEthnicity.new_with_defaults(
-                    state_code="US_XX", ethnicity=StateEthnicity.NOT_HISPANIC
+                NormalizedStatePersonEthnicity(
+                    state_code="US_XX",
+                    person_ethnicity_id=12345,
+                    ethnicity=StateEthnicity.NOT_HISPANIC,
                 )
             ],
             external_ids=[
-                StatePersonExternalId.new_with_defaults(
-                    external_id="DOC1341", id_type="US_XX_DOC", state_code="US_XX"
+                NormalizedStatePersonExternalId(
+                    external_id="DOC1341",
+                    id_type="US_XX_DOC",
+                    state_code="US_XX",
+                    person_external_id_id=12345,
                 ),
-                StatePersonExternalId.new_with_defaults(
-                    external_id="SID9889", id_type="US_XX_SID", state_code="US_XX"
+                NormalizedStatePersonExternalId(
+                    external_id="SID9889",
+                    id_type="US_XX_SID",
+                    state_code="US_XX",
+                    person_external_id_id=12345,
                 ),
             ],
         )

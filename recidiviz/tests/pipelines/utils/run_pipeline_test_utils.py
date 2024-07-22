@@ -28,8 +28,8 @@ from recidiviz.persistence.database.base_schema import StateBase
 from recidiviz.persistence.database.schema_utils import (
     get_state_database_entity_with_name,
 )
-from recidiviz.persistence.entity.state.normalized_entities import (
-    state_base_entity_class_for_entity_class,
+from recidiviz.persistence.entity.state.normalized_state_entity import (
+    NormalizedStateEntity,
 )
 from recidiviz.pipelines.base_pipeline import BasePipeline
 from recidiviz.pipelines.ingest.state.pipeline import StateIngestPipeline
@@ -181,16 +181,17 @@ def default_data_dict_for_pipeline_class(
     Returns a dictionary where the keys are the required tables, and the values are
     empty lists.
     """
-    required_base_entities = [
-        # TODO(#30075): Delete this usage of state_base_entity_class_for_entity_class
-        state_base_entity_class_for_entity_class(entity_class)
+    required_base_entity_class_names = [
+        entity_class.base_class_name()
+        if issubclass(entity_class, NormalizedStateEntity)
+        else entity_class.__name__
         for entity_class in pipeline_class.required_entities()
     ]
 
     return default_data_dict_for_root_schema_classes(
         [
-            get_state_database_entity_with_name(base_entity_class.__name__)
-            for base_entity_class in required_base_entities
+            get_state_database_entity_with_name(base_entity_class_name)
+            for base_entity_class_name in required_base_entity_class_names
         ]
     )
 
