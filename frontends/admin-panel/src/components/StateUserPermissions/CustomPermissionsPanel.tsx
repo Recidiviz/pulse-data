@@ -20,6 +20,7 @@ import { Route, StateUserPermissionsResponse } from "../../types";
 import {
   OUTLIERS_PERMISSIONS_LABELS,
   PATHWAYS_PERMISSIONS_LABELS,
+  PSI_PERMISSIONS_LABELS,
   VITALS_PERMISSIONS_LABELS,
   WORKFLOWS_PERMISSIONS_LABELS,
 } from "../constants";
@@ -161,6 +162,25 @@ export const CustomPermissionsPanel = ({
     {(
       Object.entries(PATHWAYS_PERMISSIONS_LABELS) as [
         keyof typeof PATHWAYS_PERMISSIONS_LABELS,
+        string
+      ][]
+    ).map(([name, label]) => {
+      return (
+        <PermissionSelect
+          permission={{ name, label }}
+          key={name}
+          disabled={hidePermissions}
+          placeholder={
+            hidePermissions ? undefined : routePlaceholder(name, selectedUsers)
+          }
+        />
+      );
+    })}
+
+    <h4>PSI Pages:</h4>
+    {(
+      Object.entries(PSI_PERMISSIONS_LABELS) as [
+        keyof typeof PSI_PERMISSIONS_LABELS,
         string
       ][]
     ).map(([name, label]) => {
