@@ -1,7 +1,8 @@
 # yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: DOC_EPISODE
 file_description: |-
-  TODO(#25890): FILL IN
+  This table contains information about periods of incarceration. Fields are updated in place
+  over time as conditions of an incarceration stint change.
 data_classification: source
 primary_key_cols:
   - DOC_ID

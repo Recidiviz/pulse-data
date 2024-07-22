@@ -14,7 +14,32 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Query containing supervision period information."""
+"""Query containing supervision period information.
+
+The data sources in this view are the same as those in the 960 report generated in ACIS,
+which is the most reliable source of information about the current supervision population
+available to ADCRR. This ingest view query is an adaptation of the query used to generate
+that report, so that the report can be historical and contain more detailed start and end
+reasons.
+
+In the DPP_EPISODE raw data table, the logical definition of "Active DPP Period" is:
+- STATUS_ID = '1747' (Active), 
+- SUPERVISION_LEVEL_ENDDATE IS NULL or 'NULL', 
+- ACTIVE_FLAG = 'Y'
+
+However, there are many cases where a period is inactive but still meets some or all of those criteria.
+This view uses the following methods to identify and close periods in those circumstances. Each of these
+approaches has been approved by ACIS administrators at ADCRR. 
+1) Periods have a SUPERVISION_LEVEL_ENDDATE in DPPE but no case closure tracked in the movements table.
+   - Use the SUPERVISION_LEVEL_ENDDATE as the end_date for the period.
+   - Only do this where the start_reason of the final period is not 'Releasee Abscond', since DPPE considers an absconsion a period-closing event.
+2) DPPE.ACTIVE_FLAG = 'N' and STATUS_ID = '1748'(Inactive), even if there is no SUPERVISION_LEVEL_ENDDATE. 
+   - Use previous start date as the end date (create only zero-day periods). 
+3) Periods that fulfill all of the logical "Active DPP Period" criteria listed above, but either: 
+   a) Had intake completed at an office for which DPP_OFFICE_LOCATION.ACTIVE_FLAG = 'N' (the office no longer exists)
+   b) The officer who completed their intake does not exist in DPP_CASE_AGENT. TODO(#31546): update this source to MEA_PROFILES
+   - Use previous start date as the end date (create only zero-day periods). 
+"""
 
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
     DirectIngestViewQueryBuilder,
@@ -23,140 +48,247 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 VIEW_QUERY_TEMPLATE = """
-WITH 
--- This CTE collects all dates on which any relevant action or status change took place.
--- These dates will later be used to construct periods. 
--- Each row contains one critical date, and the actions that were taken or attributes that
--- changed for a given person on that date. 
-critical_dates AS (
-SELECT DISTINCT
--- critical dates from movements table
-  NULLIF(COALESCE(doc_episode_by_doc_id.PERSON_ID, doc_episode_by_dpp_id.PERSON_ID, dpp_episode_by_dpp_id.PERSON_ID), 'NULL') AS PERSON_ID,
-  NULLIF(traffic.DOC_ID, 'NULL') AS DOC_ID,
-  NULLIF(traffic.DPP_ID, 'NULL') AS DPP_ID,
-  -- Do not include timestamp because same-day movements are often logged out of order.
-  CAST(CAST(MOVEMENT_DATE AS DATETIME) AS DATE) AS CRITICAL_DATE,
-  mvmt_codes.MOVEMENT_DESCRIPTION,
-  CAST(NULL AS STRING) AS supervision_level,
-  action_lookup.OTHER_2 AS sup_period_action,
-FROM {AZ_DOC_INMATE_TRAFFIC_HISTORY} traffic
--- some movements are attached only to the person's DPP_ID, not their DOC_ID, so we join
--- this table twice to make sure we pull the PERSON_ID attached to each DPP_ID and each DOC_ID,
--- even if only one of the DPP_ID or DOC_IDs exist
-LEFT JOIN {DOC_EPISODE} doc_episode_by_doc_id
-ON(traffic.DOC_ID = doc_episode_by_doc_id.DOC_ID)
-LEFT JOIN {DOC_EPISODE} doc_episode_by_dpp_id
-ON(traffic.DPP_ID = doc_episode_by_dpp_id.DPP_ID)
--- A person's DPP_ID is sometimes only logged in the DPP_EPISODE table instead of the 
--- DOC_EPISODE table. These are partially overlapping sets of IDs, so I have to include
--- every source to make sure I track all of a person's movements.
-LEFT JOIN {DPP_EPISODE} dpp_episode_by_dpp_id
-ON(traffic.DPP_ID = dpp_episode_by_dpp_id.DPP_ID)
-LEFT JOIN {AZ_DOC_MOVEMENT_CODES} mvmt_codes
-USING(MOVEMENT_CODE_ID) 
-LEFT JOIN {LOOKUPS} action_lookup
--- This field establishes what the right course of action is regarding the period as a 
--- result of this movement (close, open, or reopen)
-ON(PRSN_CMM_SUPV_EPSD_LOGIC_ID = action_lookup.LOOKUP_ID)
-WHERE traffic.MOVEMENT_DATE IS NOT NULL
-AND MOVEMENT_CODE_ID IS NOT NULL AND MOVEMENT_CODE_ID != 'NULL'
--- Only include rows with some supervision-related action (Create, Close, or Re-Open)
-AND (action_lookup.OTHER_2 IS NOT NULL
-OR action_lookup.OTHER IS NOT NULL)
-
+WITH
+-- Get start date and supervision level assigned on that date 
+get_start_date AS (
+    SELECT DISTINCT
+        DPPE.PERSON_ID,
+        DPPE.DPP_ID,
+        SUBSTR(UPPER(COALESCE(LLEVEL.CODE, 'UNK')), 1, 3) AS SUPV_LEVEL,
+        CAST(NULL AS STRING) AS OFFICE_NAME, 
+        CAST(NULL AS STRING) AS OFFICER,
+        CASE 
+            WHEN NULLIF(LRELTYPE.DESCRIPTION, 'NULL') IS NOT NULL THEN CONCAT('START - ', LRELTYPE.DESCRIPTION)
+            ELSE 'DPPE START'
+        END AS MOVEMENT_DESCRIPTION,
+        CAST(DPPE.SUPERVISION_LEVEL_STARTDATE AS DATETIME) AS BEGAN_DATE,
+        CAST(NULL AS DATETIME) as INTAKE_DATE,
+        CAST(NULL AS DATETIME) AS DATE_ASSESSMENT,
+        CAST(NULL AS DATETIME) AS CRITICAL_MOVEMENT_DATE,
+    FROM {DPP_EPISODE} DPPE 
+    LEFT JOIN {LOOKUPS} LLEVEL ON DPPE.SUPERVISION_LEVEL_ID = LLEVEL.LOOKUP_ID
+    LEFT JOIN {LOOKUPS} LRELTYPE ON DPPE.RELEASE_TYPE_ID = LRELTYPE.LOOKUP_ID
+),
+-- Get dates that supervising officer changed
+get_officer_change_dates AS (
+    SELECT DISTINCT
+        DIA.PERSON_ID,
+        DIA.DPP_ID,
+        CAST(NULL AS STRING) AS SUPV_LEVEL,
+        -- Sometimes two officers or locations are assigned at the exact same time. This chooses one randomly but deterministically.
+        FIRST_VALUE(DOL.LOCATION_NAME) OVER location_agent_window AS OFFICE_NAME, 
+        FIRST_VALUE(DIA.AGENT_ID) OVER location_agent_window AS OFFICER,
+        'OFFICER CHANGE' AS MOVEMENT_DESCRIPTION,
+        CAST(NULL AS DATETIME) AS BEGAN_DATE,
+        CAST(DIA.ASSIGNED_FROM AS DATETIME) AS INTAKE_DATE,
+        CAST(NULL AS DATETIME) AS DATE_ASSESSMENT,
+        CAST(NULL AS DATETIME) AS CRITICAL_MOVEMENT_DATE,
+    FROM {DPP_INTAKE_ASSIGNMENT} DIA
+    JOIN {DPP_EPISODE} DPPE ON(DIA.DPP_ID = DPPE.DPP_ID)
+    LEFT JOIN {DPP_OFFICE_LOCATION} DOL ON DIA.OFFICE_LOCATION_ID = DOL.OFFICE_LOCATION_ID
+    WINDOW location_agent_window AS (PARTITION BY DIA.PERSON_ID, DIA.DPP_ID, DIA.ASSIGNED_FROM 
+    ORDER BY INTAKE_ASSIGNMENT_ID ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING)
+),
+-- Get dates that supervision level changed
+get_level_change_dates AS (
+    SELECT DISTINCT
+        DPPE.PERSON_ID,
+        ACCAT.DPP_ID,
+        SUBSTR(UPPER(COALESCE(LLEVEL.CODE, 'UNK')), 1, 3) AS SUPV_LEVEL,
+        CAST(NULL AS STRING) AS OFFICE_NAME, 
+        CAST(NULL AS STRING) AS OFFICER,
+        'SUPV LEVEL ASSESSMENT' AS MOVEMENT_DESCRIPTION,
+        CAST(NULL AS DATETIME) AS BEGAN_DATE,
+        CAST(NULL AS DATETIME) AS INTAKE_DATE,
+        CAST(DATE_ASSESSMENT AS DATETIME) AS DATE_ASSESSMENT,
+        CAST(NULL AS DATETIME) AS CRITICAL_MOVEMENT_DATE,
+    FROM {AZ_CS_OMS_ACCAT} ACCAT
+    JOIN {DPP_EPISODE} DPPE ON DPPE.DPP_ID = ACCAT.DPP_ID
+    LEFT JOIN {LOOKUPS} LLEVEL ON ACCAT.LEVEL_ID = LLEVEL.LOOKUP_ID
+    WHERE ACCAT.DATE_ASSESSMENT IS NOT NULL
+),
+-- Get dates that particular period-ending movements happened and their descriptions, 
+-- This is the first method by which we close periods. The remaining methods are included
+-- in the "infer_ends" CTE.
+get_dates_from_movements AS (
+    SELECT DISTINCT
+        COALESCE(DPPE.PERSON_ID, DOCE.PERSON_ID) AS PERSON_ID, 
+        COALESCE(NULLIF(ADITH.DPP_ID,'NULL'), DOCE.DPP_ID) AS DPP_ID,
+        CAST(NULL AS STRING) AS SUPV_LEVEL,
+        CAST(NULL AS STRING) AS OFFICE_NAME, 
+        CAST(NULL AS STRING) AS OFFICER,
+        CASE WHEN
+            UPPER(MV.MOVEMENT_DESCRIPTION) IN('RELEASEE ABSCOND', 'WARRANT QUASHED') THEN MV.MOVEMENT_DESCRIPTION
+            ELSE CONCAT('END - ', MV.MOVEMENT_DESCRIPTION) 
+        END AS MOVEMENT_DESCRIPTION,
+        CAST(NULL AS DATETIME) AS BEGAN_DATE,
+        CAST(NULL AS DATETIME) AS INTAKE_DATE,
+        CAST(NULL AS DATETIME) AS DATE_ASSESSMENT,
+        CAST(MOVEMENT_DATE AS DATETIME) AS CRITICAL_MOVEMENT_DATE,
+    FROM {AZ_DOC_INMATE_TRAFFIC_HISTORY} ADITH
+    LEFT JOIN {DPP_EPISODE} DPPE 
+    USING (DPP_ID)
+    LEFT JOIN {DOC_EPISODE} DOCE
+    USING(DOC_ID)
+    LEFT JOIN {AZ_DOC_MOVEMENT_CODES} MV
+    USING(MOVEMENT_CODE_ID)
+    LEFT JOIN {LOOKUPS} LOGIC_LOOKUP
+    ON(MV.PRSN_CMM_SUPV_EPSD_LOGIC_ID = LOGIC_LOOKUP.LOOKUP_ID)
+    -- a period ended (includes absconsions)
+    WHERE LOGIC_LOOKUP.OTHER_2 = 'Close' 
+    -- the final three of these can all signify a return from absconsion
+    OR UPPER(MOVEMENT_DESCRIPTION) IN (
+        'RELEASEE ABSCOND', 
+        'ADMIN ACTION CASE CLOSED', 
+        'RETURN FROM ABSCOND', 
+        'TEMPORARY PLACEMENT', 
+        'IN CUSTODY - OTHER', 
+        'WARRANT QUASHED'
+        )
+),
+-- Collect all critical dates 
+all_dates AS (
+SELECT * FROM get_start_date
 UNION ALL 
-
--- critical dates from DPP episode table (supervision level tracking)
--- TODO(#30235): Understand how changes or updates to supervision levels are tracked
--- to make sure they are all accounted for in this view. 
-SELECT DISTINCT
-  NULLIF(dpp_episode.PERSON_ID, 'NULL') AS PERSON_ID,
-  CAST(NULL AS STRING) AS DOC_ID,
-  NULLIF(DPP_ID, 'NULL') AS DPP_ID,
-  -- Do not include timestamp because same-day movements are often logged out of order.
-  CAST(CAST(SUPERVISION_LEVEL_STARTDATE AS DATETIME) AS DATE) AS CRITICAL_DATE,
-  'Supervision Level Change' AS MOVEMENT_DESCRIPTION,
-  level_lookup.DESCRIPTION AS supervision_level,
-  'Maintain' AS sup_period_action
-FROM {DPP_EPISODE@ALL} dpp_episode
-LEFT JOIN {LOOKUPS} level_lookup
-ON(dpp_episode.SUPERVISION_LEVEL_ID = LOOKUP_ID)
-),
--- This CTE uses the critical dates from the critical_dates CTE to create periods
--- in which specific sets of attributes were true. The output contains a specific set of 
--- movements that started and ended a period, the start and end dates themselves, and the
--- attributes that were true for a given person during that period. 
-periods AS (
-SELECT DISTINCT
-  PERSON_ID, 
-  DOC_ID,
-  DPP_ID,
-  CRITICAL_DATE AS START_DATE,
-  LEAD(CRITICAL_DATE) OVER person_window AS END_DATE,
-  sup_period_action AS start_action,
-  LEAD(sup_period_action) OVER person_window AS end_action,
-  MOVEMENT_DESCRIPTION AS START_REASON,
-  LEAD(MOVEMENT_DESCRIPTION) OVER person_window AS END_REASON,
-  supervision_level
-FROM critical_dates
-WINDOW person_window AS (PARTITION BY PERSON_ID ORDER BY CRITICAL_DATE, DPP_ID, 
-    CASE
-        WHEN sup_period_action = 'Create' THEN 1
-        WHEN MOVEMENT_DESCRIPTION = 'Releasee Abscond' AND sup_period_action = 'Close' THEN 2
-        WHEN sup_period_action = 'Re-Open' THEN 3
-        WHEN sup_period_action = 'Maintain' THEN 4
-        WHEN MOVEMENT_DESCRIPTION != 'Releasee Abscond' AND sup_period_action = 'Close' THEN 5
-    END,
-    MOVEMENT_DESCRIPTION)
-),
--- This CTE takes all the attributes that were true on a given date and carries them
--- forward in a given person's supervision stint, until they change. As of 2024-05-29, the 
--- only attribute being tracked in this way by this view is supervision level.
+SELECT * FROM get_officer_change_dates
+UNION ALL
+SELECT * FROM get_level_change_dates
+UNION ALL
+SELECT * FROM get_dates_from_movements
+), 
+-- Since each row in this CTE is associated with a change to either the assigned office,
+-- officer, or supervision level, we assume that whatever attributes are not changed in 
+-- a given row are the same as they were the last time they were assigned. This CTE 
+-- carries forward the last assigned values of unaltered attributes to rows tracking a 
+-- change to another attribute.
 carry_forward_attributes AS (
-  SELECT DISTINCT
+SELECT 
     PERSON_ID,
     DPP_ID,
-    START_DATE,
-    END_DATE,
-    start_action,
-    end_action,
-    start_reason,
-    end_reason,
-    LAST_VALUE(supervision_level IGNORE NULLS) OVER (PARTITION BY PERSON_ID, DPP_ID ORDER BY START_DATE, IFNULL(END_DATE, CAST('9999-01-01' AS DATE))) AS supervision_level
-    FROM periods
-)
--- The final subquery in this view filters the existing queries to exclude those that
--- start with a transition to liberty, but include those that represent a period of 
--- absconsion or a period spent in custody. It also prevents supervision periods from 
--- being opened before a person is released from prison just because their supervision
--- level was assigned for their later release. 
-SELECT * FROM (
-  SELECT DISTINCT
-  PERSON_ID, 
-  START_DATE,
-  END_DATE,
-  START_REASON,
-  END_REASON,
-  SUPERVISION_LEVEL,
-  ROW_NUMBER() OVER (PARTITION BY PERSON_ID ORDER BY START_DATE, IFNULL(END_DATE, CAST('9999-01-01' AS DATE)), START_REASON, END_REASON NULLS LAST, DPP_ID) AS period_seq
+    -- When a supervision officer / office was assigned before a person was released from 
+    -- prison, we want to carry that officer's information forward. We also want to attach
+    -- this information to supervision level changes that do not have an officer associated, 
+    -- because the officer has not changed.
+    LAST_VALUE(OFFICE_NAME IGNORE NULLS) OVER person_window AS OFFICE_NAME,
+    LAST_VALUE(OFFICER IGNORE NULLS) OVER person_window AS OFFICER,
+    LAST_VALUE(SUPV_LEVEL IGNORE NULLS) OVER person_window AS SUPV_LEVEL,
+    COALESCE(BEGAN_DATE, INTAKE_DATE, DATE_ASSESSMENT, CRITICAL_MOVEMENT_DATE) AS period_start_date,
+    LAST_VALUE(BEGAN_DATE IGNORE NULLS) OVER person_window AS BEGAN_DATE,
+    INTAKE_DATE,
+    DATE_ASSESSMENT,
+    CRITICAL_MOVEMENT_DATE,
+    MOVEMENT_DESCRIPTION
+FROM all_dates
+WINDOW person_window AS (PARTITION BY PERSON_ID, DPP_ID ORDER BY COALESCE(BEGAN_DATE, INTAKE_DATE, DATE_ASSESSMENT, CRITICAL_MOVEMENT_DATE), 
+CASE 
+    WHEN MOVEMENT_DESCRIPTION LIKE 'START - %' OR MOVEMENT_DESCRIPTION = 'DPPE START' THEN 1
+    WHEN MOVEMENT_DESCRIPTION IN ('OFFICER CHANGE', 'SUPV LEVEL ASSESSMENT') THEN 2
+    WHEN MOVEMENT_DESCRIPTION IN ('Releasee Abscond', 'Warrant Quashed') THEN 3
+    WHEN MOVEMENT_DESCRIPTION LIKE 'END - %' OR MOVEMENT_DESCRIPTION = 'DPPE END' THEN 4
+END
+ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW)
+), 
+-- Create periods based on the critical dates with all attributes carried forward as appropriate.
+periods AS (
+SELECT
+    PERSON_ID, 
+    DPP_ID,
+    OFFICE_NAME,
+    OFFICER,
+    SUPV_LEVEL,
+    period_start_date AS start_date,
+    LEAD(period_start_date) OVER person_window AS end_date,
+    MOVEMENT_DESCRIPTION AS start_reason,
+    LEAD(MOVEMENT_DESCRIPTION) OVER person_window AS end_reason,
 FROM carry_forward_attributes
-WHERE PERSON_ID IS NOT NULL
--- only keep zero-day periods if they are overall period admissions or releases, to preserve
--- admission and release reasons
-AND (start_date != end_date 
-  OR (start_date=end_date AND start_action IN ("Create", "Re-Open"))
-  OR (start_date=end_date AND end_action = "Close")
-  OR end_date IS NULL)
--- Only allow periods to start with a "close" action if they reflect situations that we consider
--- a part of a supervision period rather than an incarceration (investigations & absconsions)
--- NOTE: only do this when the in-custody period falls after the start of a supervision period
-AND (start_action != 'Close' OR (start_action = 'Close' AND start_reason IN ('Releasee Abscond', 'Temporary Placement', 'In Custody - Other')))
+WHERE period_start_date >= BEGAN_DATE
+WINDOW person_window AS (PARTITION BY PERSON_ID, DPP_ID ORDER BY period_start_date, 
+CASE 
+    WHEN MOVEMENT_DESCRIPTION LIKE 'START - %' OR MOVEMENT_DESCRIPTION = 'DPPE START' THEN 1
+    WHEN MOVEMENT_DESCRIPTION IN ('OFFICER CHANGE', 'SUPV LEVEL ASSESSMENT') THEN 2
+    WHEN MOVEMENT_DESCRIPTION = 'Releasee Abscond' THEN 3
+    WHEN MOVEMENT_DESCRIPTION LIKE 'END - %' OR MOVEMENT_DESCRIPTION = 'DPPE END' THEN 4
+END)
+),
+-- This CTE takes the logical definition of "Active DPP Period" (DPPE.STATUS_ID = '1747' (Active), 
+-- SUPERVISION_LEVEL_ENDDATE IS NULL or 'NULL', DPPE.ACTIVE_FLAG = 'Y') and closes periods
+-- that fulfill all of those criteria. It also infers ends to periods. There are a few ways
+-- to infer that a period is actually not active:
+-- 1) Periods have a SUPERVISION_LEVEL_ENDDATE in DPPE but no end_date to account for missing case closures in the movements table.
+--    - Only do this where the start_reason of the final period is not 'Releasee Abscond', since DPPE considers an absconsion a period-closing event.
+-- 2) DPPE.ACTIVE_FLAG = 'N' and STATUS_ID = '1748'(Inactive), even if there is no SUPERVISION_LEVEL_ENDDATE. 
+--    - Use previous start date as the end date (create only zero-day periods). 
+-- 3) Periods that fulfill all of the logical "Active DPP Period" criteria listed above, but either: 
+--    a) Had intake completed at an office for which DPP_OFFICE_LOCATION.ACTIVE_FLAG = 'N' (the office no longer exists)
+--    b) The officer who completed their intake does not exist in DPP_CASE_AGENT. TODO(#31546): update this source to MEA_PROFILES
+infer_ends AS (
+SELECT
+ periods.* EXCEPT(end_date, start_reason, end_reason),
+ CASE
+   -- case has no end date but is marked as inactive
+  WHEN end_date IS NULL AND start_reason != 'Releasee Abscond' AND NULLIF(DPPE.SUPERVISION_LEVEL_ENDDATE,'NULL') IS NULL AND DPPE.STATUS_ID = '1748' THEN start_date
+  -- intake happened in an office that no longer exists
+  WHEN end_date IS NULL AND DOL.ACTIVE_FLAG = 'N' THEN start_date
+  -- officer does not appear in DPP_CASE_AGENT
+  -- TODO(#31546): update this when we have MEA_PROFILES to be "officer is inactive in MEA_PROFILES and start date is > x number of years ago"
+  WHEN end_date IS NULL AND DCA.AGENT_ID IS NULL THEN start_date
+  -- actual period closures, as expected - use SUPERVISION_LEVEL_ENDDATE, where there is one that is not the start of a period of absconsion
+  WHEN end_date IS NULL AND start_reason != 'Releasee Abscond' THEN CAST(NULLIF(DPPE.SUPERVISION_LEVEL_ENDDATE,'NULL') AS DATETIME)
+  -- always NULL until this point
+   ELSE end_date
+ END AS end_date,
+ start_reason,
+ CASE
+  -- actual period closures, as expected
+  WHEN end_date IS NULL AND start_reason != 'Releasee Abscond' AND NULLIF(DPPE.SUPERVISION_LEVEL_ENDDATE,'NULL') IS NOT NULL THEN 'DPPE END'
+  -- case has no end date but is marked as inactive
+  WHEN end_date IS NULL AND start_reason != 'Releasee Abscond' AND NULLIF(DPPE.SUPERVISION_LEVEL_ENDDATE,'NULL') IS NULL AND DPPE.STATUS_ID = '1748' THEN 'END - INFERRED MIGRATION ERROR'
+  -- intake happened in an office that no longer exists
+  WHEN end_date IS NULL AND DOL.ACTIVE_FLAG = 'N' THEN 'END - INFERRED MIGRATION ERROR'
+  -- officer does not appear in DPP_CASE_AGENT
+  -- TODO(#31546): update this when we have MEA_PROFILES to be "officer is inactive in MEA_PROFILES and start date is > x number of years ago"
+  WHEN end_date IS NULL AND DCA.AGENT_ID IS NULL THEN 'END - INFERRED MIGRATION ERROR'
+  -- always NULL until this point
+   ELSE end_reason
+ END AS end_reason,
+FROM periods
+LEFT JOIN {DPP_EPISODE} DPPE USING(DPP_ID)
+LEFT JOIN {DPP_OFFICE_LOCATION} DOL ON(periods.OFFICE_NAME = DOL.LOCATION_NAME)
+LEFT JOIN {DPP_CASE_AGENT} DCA ON (periods.OFFICER = DCA.agent_id)
 )
--- exclude subspans that are a supervision level being assigned before an actual supervision stint has started, since the assignment will be carried forward over the stint.
--- This assumes that a person's supervision level will not be assigned more than once
--- before they are actually released from prison.
-WHERE (NOT (start_reason = 'Supervision Level Change' AND period_seq = 1))
-
+SELECT * FROM (
+SELECT 
+    PERSON_ID, 
+    DPP_ID,
+    OFFICE_NAME,
+    OFFICER,
+    SUPV_LEVEL,
+    -- in the DPP_EPISODE table, 0001-01-01 is used in place of NULL. 
+    -- When there are legitimate episodes associated with those dates based on data in other tables,
+    -- we want to update that date to be the closest real date we know to be a part of the period. 
+    -- Otherwise, we need to exclude the row. 
+    CASE 
+        WHEN end_date IS NOT NULL AND start_date = '0001-01-01' THEN end_date
+        ELSE start_date
+    END AS start_date,
+    CASE 
+        WHEN start_date != '0001-01-01' AND end_date = '0001-01-01' THEN start_date
+        ELSE end_date
+    END AS end_date,
+    REGEXP_REPLACE(start_reason, r'START - ', '') AS start_reason,
+    REGEXP_REPLACE(end_reason, r'^END - ', '') AS end_reason,
+    ROW_NUMBER() OVER (PARTITION BY PERSON_ID, DPP_ID ORDER BY START_DATE, END_DATE NULLS LAST, 
+    CASE 
+        WHEN start_reason LIKE 'START - %' OR start_reason = 'DPPE START' THEN 1
+        WHEN start_reason IN ('OFFICER CHANGE', 'SUPV LEVEL ASSESSMENT') THEN 2
+        WHEN start_reason = 'Releasee Abscond' THEN 3
+        WHEN end_reason LIKE 'END - %' OR end_reason = 'DPPE END' THEN 4
+    END) AS period_seq
+FROM infer_ends
+WHERE start_reason NOT LIKE "END - %"
+AND start_reason NOT LIKE '%DPPE END'
+)
+WHERE start_date != '0001-01-01'
 """
 
 VIEW_BUILDER = DirectIngestViewQueryBuilder(

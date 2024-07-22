@@ -1,30 +1,33 @@
 # yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: DPP_EPISODE
 file_description: |-
-  TODO(#25890): FILL IN
+  This table contains information that was true at the time of intake for each stint a person
+  spends on supervision. Some fields are updated once a person is released to liberty. This 
+  table can be used to deduce the active supervision population, and serves as a base table
+  for our supervision periods ingest view query and ADCRR's 960 report.
 data_classification: source
 primary_key_cols:
   - DPP_ID
 columns:
   - name: DPP_ID
     description: |-
-      primary key for the table
+      Primary key for the table. Unique to each stint on supervision.
     is_pii: True
   - name: PERSON_ID
     description: |-
-      foreign key to person Table
+      Foreign key to PERSON. Stable over time.
     is_pii: True
     field_type: person_external_id
     external_id_type: US_AZ_PERSON_ID
   - name: DPP_NUMBER
     description: |-
-      the generated dpp-number
+      The total count of stints this person has served on supervision.
   - name: CASE_TYPE
     description: |-
-      the case type
+      The case type
   - name: INTERVIEW_DATE
     description: |-
-      the interview date
+      The interview date
     field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S %p', {col_name})"
@@ -34,11 +37,12 @@ columns:
       - "SAFE.PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%S', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
   - name: REVIEWER_ID
     description: |-
-      the id of the user who created the episode
+      The id of the user who created the episode
     is_pii: True
   - name: STATUS_ID
     description: |-
-      the status of the episode, foreign key to lookups
+      The status of the episode, foreign key to lookups. Not always reliable - sometimes
+      says a period is active when it is not.
   - name: CHANGE_ID
     description: |-
       References CHANGE_HISTORY table
@@ -51,7 +55,7 @@ columns:
       Interview status id mapped to lookup table
   - name: DATE_COMPLETED
     description: |-
-      user input date
+      user input date. Not the date the person finished supervision.
     field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S %p', {col_name})"
@@ -114,7 +118,8 @@ columns:
       FK Lookups
   - name: SUPERVISION_LEVEL_STARTDATE
     description: |-
-      SUPERVISION_LEVEL_STARTDATE
+      The overall date this supervision stint began. Not the beginning of the most recent supervision
+      level assignment - the name of this field is misleading.
     field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S %p', {col_name})"
@@ -124,7 +129,9 @@ columns:
       - "SAFE.PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%S', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
   - name: SUPERVISION_LEVEL_ENDDATE
     description: |-
-      SUPERVISION_LEVEL_ENDDATE
+      The overall date that this supervision stint ended.  Not the end of the most recent supervision
+      level assignment - the name of this field is misleading. This field can be used as 
+      a proxy for knowing that a stint is not active despite having a STATUS_ID that suggests it is.
     field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S %p', {col_name})"

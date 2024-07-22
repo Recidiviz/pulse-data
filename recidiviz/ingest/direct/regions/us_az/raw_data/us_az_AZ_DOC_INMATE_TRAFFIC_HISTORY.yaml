@@ -1,7 +1,13 @@
 # yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: AZ_DOC_INMATE_TRAFFIC_HISTORY
 file_description: |-
-  TODO(#25890): FILL IN
+  This table is designed to contain one row for each movement a person makes in the ADCRR
+  system, including facilities and supervision data. There are often rows missing as a result
+  of errors in the AIMS to ACIS system migration that took place on 11/30/2019. This table
+  cannot generate reliable supervision periods as a result of those migration errors, but it can 
+  be used in conjunction with DPP_EPISODE to construct as accurate an
+  image as possible of the ADCRR supervision population over time. It tends to be more
+  accurate for incarceration data, but should be used with caution.
 data_classification: source
 primary_key_cols:
   - INMATE_TRAFFIC_HISTORY_ID

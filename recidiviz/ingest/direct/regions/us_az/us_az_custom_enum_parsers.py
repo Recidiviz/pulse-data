@@ -328,14 +328,16 @@ def parse_supervision_level(
     # If neither of the above cases are true, then base supervision level off of the
     # supervision_level field directly.
     if supervision_level:
-        if supervision_level in ("Low(Minimum)", "Minimum"):
+        if supervision_level == "MIN":
             return StateSupervisionLevel.MINIMUM
-        if supervision_level in ("Medium(Moderate)", "Medium"):
+        if supervision_level == "MED":
             return StateSupervisionLevel.MEDIUM
-        if supervision_level in ("Intensive", "High (Intense)"):
+        if supervision_level == "INT":
             return StateSupervisionLevel.HIGH
-        if supervision_level in ("Moderate/ High(Maximum)", "Maximum"):
+        if supervision_level == "MAX":
             return StateSupervisionLevel.MAXIMUM
+        if supervision_level == "UNK":
+            return StateSupervisionLevel.EXTERNAL_UNKNOWN
         return StateSupervisionLevel.INTERNAL_UNKNOWN
 
     # If none of the above cases are true, we do not know this person's supervision level.

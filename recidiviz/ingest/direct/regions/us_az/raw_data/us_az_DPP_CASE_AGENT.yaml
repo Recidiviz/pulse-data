@@ -1,7 +1,9 @@
 # yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: DPP_CASE_AGENT
 file_description: |-
-  Unknown at this time.
+  Seems to contain information only for currently active DPP employees. Consider using
+  MEA_PROFILES in place of this whenever possible, since it contains historical information
+  and includes an ACTIVE_FLAG field to denote which employees are currently active.
 data_classification: source
 primary_key_cols: [AGENT_ID]
 columns:
