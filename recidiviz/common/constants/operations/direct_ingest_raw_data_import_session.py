@@ -61,8 +61,8 @@ _DIRECT_INGEST_IMPORT_SESSION_STATUS_VALUE_DESCRIPTIONS: Dict[OperationsEnum, st
         "with the file_id have been moved to storage."
     ),
     DirectIngestRawDataImportSessionStatus.FAILED_UNKNOWN: (
-        "The FAILED_UNKNWON status is a catch-all for an import failing without the "
-        "import DAG identifying what the specfic issue is."
+        "The FAILED_UNKNOWN status is a catch-all for an import failing without the "
+        "import DAG identifying what the specific issue is."
     ),
     DirectIngestRawDataImportSessionStatus.FAILED_LOAD_STEP: (
         "The FAILED_LOAD_STEP status means that the import failed during the load step, "

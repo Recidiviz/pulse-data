@@ -860,3 +860,78 @@ class RawBigQueryFileMetadataSummary(BaseResult):
                 key=lambda x: x.parts.utc_upload_datetime,
             ).parts.utc_upload_datetime,
         )
+
+
+@attr.define
+class ImportSessionSummary(BaseResult):
+    """Metadata about an import session needed to write a new row to the
+    direct_ingest_raw_data_import_session table.
+
+    Attributes:
+        file_id (int): conceptual file_id associated with the import
+        import_status (DirectIngestRawDataImportSessionStatus): the imports status
+        historical_diffs_active (Optional[bool]): whether or not historical diffs were
+            or would have been performed during this import
+        raw_rows (Optional[int]): total number of rows sent by the state across all files
+            for this file_id
+        net_new_or_updated_rows (Optional[int]): if |historical_diffs_active| is True,
+            the number of new or updated rows added to the raw data table by the
+            historical diffing process
+        deleted_rows (Optional[int]): if |historical_diffs_active| is True, the number
+            of rows with is_deleted=True added to the raw data table by the historical
+            diffing process
+    """
+
+    file_id: int = attr.ib(validator=attr_validators.is_int)
+    import_status: DirectIngestRawDataImportSessionStatus = attr.ib(
+        validator=attr.validators.in_(DirectIngestRawDataImportSessionStatus)
+    )
+    historical_diffs_active: Optional[bool] = attr.ib(
+        default=None, validator=attr_validators.is_opt_bool
+    )
+    raw_rows: Optional[int] = attr.ib(
+        default=None, validator=attr_validators.is_opt_int
+    )
+    net_new_or_updated_rows: Optional[int] = attr.ib(
+        default=None, validator=attr_validators.is_opt_int
+    )
+    deleted_rows: Optional[int] = attr.ib(
+        default=None, validator=attr_validators.is_opt_int
+    )
+
+    def serialize(self) -> str:
+        return json.dumps(
+            {
+                "file_id": self.file_id,
+                "import_status": self.import_status.value,
+                "historical_diffs_active": self.historical_diffs_active,
+                "raw_rows": self.raw_rows,
+                "net_new_or_updated_rows": self.net_new_or_updated_rows,
+                "deleted_rows": self.deleted_rows,
+            }
+        )
+
+    @staticmethod
+    def deserialize(json_str: str) -> "ImportSessionSummary":
+        data = assert_type(json.loads(json_str), dict)
+        return ImportSessionSummary(
+            file_id=data["file_id"],
+            import_status=DirectIngestRawDataImportSessionStatus(data["import_status"]),
+            historical_diffs_active=data["historical_diffs_active"],
+            raw_rows=data["raw_rows"],
+            net_new_or_updated_rows=data["net_new_or_updated_rows"],
+            deleted_rows=data["deleted_rows"],
+        )
+
+    @classmethod
+    def from_load_results(
+        cls, append_ready_file: AppendReadyFile, append_summary: AppendSummary
+    ) -> "ImportSessionSummary":
+        return ImportSessionSummary(
+            import_status=DirectIngestRawDataImportSessionStatus.SUCCEEDED,
+            file_id=append_ready_file.import_ready_file.file_id,
+            raw_rows=append_ready_file.raw_rows_count,
+            net_new_or_updated_rows=append_summary.net_new_or_updated_rows,
+            deleted_rows=append_summary.deleted_rows,
+            historical_diffs_active=append_summary.historical_diffs_active,
+        )

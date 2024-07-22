@@ -18,19 +18,41 @@
 import datetime
 from unittest import TestCase
 
+from more_itertools import one
+
 from recidiviz.airflow.dags.raw_data.file_metadata_tasks import (
     coalesce_import_ready_files,
+    _build_import_sessions_for_errors,
+    _build_import_sessions_for_results,
+    _reconcile_import_sessions_and_bq_metadata,
+    coalesce_results_and_errors,
     split_by_pre_import_normalization_type,
 )
 from recidiviz.airflow.dags.raw_data.metadata import (
+    APPEND_READY_FILE_BATCHES,
     IMPORT_READY_FILES,
+    IMPORT_SESSION_SUMMARIES,
+    PROCESSED_PATHS_TO_RENAME,
     REQUIRES_PRE_IMPORT_NORMALIZATION_FILES,
     REQUIRES_PRE_IMPORT_NORMALIZATION_FILES_BQ_METADATA,
+    SKIPPED_FILE_ERRORS,
+    TEMPORARY_PATHS_TO_CLEAN,
+    TEMPORARY_TABLES_TO_CLEAN,
 )
+from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
+from recidiviz.common.constants.operations.direct_ingest_raw_data_import_session import (
+    DirectIngestRawDataImportSessionStatus,
+)
 from recidiviz.ingest.direct.types.raw_data_import_types import (
+    AppendReadyFile,
+    AppendReadyFileBatch,
+    AppendSummary,
     ImportReadyFile,
+    ImportSessionSummary,
     RawBigQueryFileMetadataSummary,
+    RawDataAppendImportError,
+    RawFileLoadAndPrepError,
     RawFileProcessingError,
     RawGCSFileMetadataSummary,
 )
@@ -147,3 +169,626 @@ class CoalesceImportReadyFiles(TestCase):
         assert coalesce_import_ready_files.function(
             serialized_files, output.serialize()
         ) == [*serialized_files, *serialized_files]
+
+
+class CoalesceResultsAndErrorsTest(TestCase):
+    """Tests for coalesce_results_and_errors"""
+
+    def test_none(self) -> None:
+        serialized_empty_batched_task_instance = BatchedTaskInstanceOutput(
+            errors=[], results=[]
+        ).serialize()
+
+        assert coalesce_results_and_errors.function(
+            [],
+            [],
+            serialized_empty_batched_task_instance,
+            [],
+            {SKIPPED_FILE_ERRORS: [], APPEND_READY_FILE_BATCHES: []},
+            [],
+        ) == {
+            IMPORT_SESSION_SUMMARIES: [],
+            PROCESSED_PATHS_TO_RENAME: [],
+            TEMPORARY_PATHS_TO_CLEAN: [],
+            TEMPORARY_TABLES_TO_CLEAN: [],
+        }
+
+    def test_build_import_sessions_for_results_all_matching(self) -> None:
+        summaries = [
+            AppendSummary(file_id=1, historical_diffs_active=False),
+            AppendSummary(file_id=2, historical_diffs_active=False),
+            AppendSummary(
+                file_id=3,
+                historical_diffs_active=True,
+                net_new_or_updated_rows=1,
+                deleted_rows=2,
+            ),
+        ]
+        append_ready_file_batches = [
+            AppendReadyFileBatch(
+                append_ready_files_by_tag={
+                    "tag_a": [
+                        AppendReadyFile(
+                            import_ready_file=ImportReadyFile(
+                                file_id=1,
+                                file_tag="tag_a",
+                                update_datetime=datetime.datetime(
+                                    2024, 1, 1, 1, 1, 1, tzinfo=datetime.UTC
+                                ),
+                                pre_import_normalized_file_paths=[
+                                    GcsfsFilePath(bucket_name="temp", blob_name="a.csv")
+                                ],
+                                original_file_paths=[
+                                    GcsfsFilePath(
+                                        bucket_name="original", blob_name="a.csv"
+                                    )
+                                ],
+                            ),
+                            append_ready_table_address=BigQueryAddress(
+                                dataset_id="temp", table_id="tag_a__1"
+                            ),
+                            raw_rows_count=3,
+                        ),
+                        AppendReadyFile(
+                            import_ready_file=ImportReadyFile(
+                                file_id=2,
+                                file_tag="tag_a",
+                                update_datetime=datetime.datetime(
+                                    2024, 1, 1, 1, 1, 1, tzinfo=datetime.UTC
+                                ),
+                                pre_import_normalized_file_paths=[
+                                    GcsfsFilePath(bucket_name="temp", blob_name="a.csv")
+                                ],
+                                original_file_paths=[
+                                    GcsfsFilePath(
+                                        bucket_name="original", blob_name="a.csv"
+                                    )
+                                ],
+                            ),
+                            append_ready_table_address=BigQueryAddress(
+                                dataset_id="temp", table_id="tag_a__2"
+                            ),
+                            raw_rows_count=3,
+                        ),
+                    ],
+                    "tag_b": [
+                        AppendReadyFile(
+                            import_ready_file=ImportReadyFile(
+                                file_id=3,
+                                file_tag="tag_b",
+                                update_datetime=datetime.datetime(
+                                    2024, 1, 1, 1, 1, 1, tzinfo=datetime.UTC
+                                ),
+                                pre_import_normalized_file_paths=[
+                                    GcsfsFilePath(bucket_name="temp", blob_name="b.csv")
+                                ],
+                                original_file_paths=[
+                                    GcsfsFilePath(
+                                        bucket_name="original", blob_name="b.csv"
+                                    )
+                                ],
+                            ),
+                            append_ready_table_address=BigQueryAddress(
+                                dataset_id="temp", table_id="tag_b__3"
+                            ),
+                            raw_rows_count=3,
+                        ),
+                    ],
+                }
+            )
+        ]
+
+        import_sessions, files = _build_import_sessions_for_results(
+            summaries, append_ready_file_batches
+        )
+
+        append_ready_files = [
+            file
+            for batch in append_ready_file_batches[0].append_ready_files_by_tag.values()
+            for file in batch
+        ]
+
+        for i, session in enumerate(import_sessions.values()):
+            assert session == ImportSessionSummary.from_load_results(
+                append_ready_files[i], summaries[i]
+            )
+
+        assert set(files) == set(
+            path
+            for metadata in append_ready_files
+            for path in metadata.import_ready_file.original_file_paths
+        )
+
+    def test_build_import_sessions_for_results_missing(self) -> None:
+        summaries = [
+            AppendSummary(file_id=1, historical_diffs_active=False),
+            AppendSummary(file_id=2, historical_diffs_active=False),
+            AppendSummary(
+                file_id=4,
+                historical_diffs_active=True,
+                net_new_or_updated_rows=1,
+                deleted_rows=2,
+            ),
+        ]
+        append_ready_file_batches = [
+            AppendReadyFileBatch(
+                append_ready_files_by_tag={
+                    "tag_a": [
+                        AppendReadyFile(
+                            import_ready_file=ImportReadyFile(
+                                file_id=1,
+                                file_tag="tag_a",
+                                update_datetime=datetime.datetime(
+                                    2024, 1, 1, 1, 1, 1, tzinfo=datetime.UTC
+                                ),
+                                pre_import_normalized_file_paths=[
+                                    GcsfsFilePath(bucket_name="temp", blob_name="a.csv")
+                                ],
+                                original_file_paths=[
+                                    GcsfsFilePath(
+                                        bucket_name="original", blob_name="a.csv"
+                                    )
+                                ],
+                            ),
+                            append_ready_table_address=BigQueryAddress(
+                                dataset_id="temp", table_id="tag_a__1"
+                            ),
+                            raw_rows_count=3,
+                        ),
+                        AppendReadyFile(
+                            import_ready_file=ImportReadyFile(
+                                file_id=2,
+                                file_tag="tag_a",
+                                update_datetime=datetime.datetime(
+                                    2024, 1, 1, 1, 1, 1, tzinfo=datetime.UTC
+                                ),
+                                pre_import_normalized_file_paths=[
+                                    GcsfsFilePath(bucket_name="temp", blob_name="a.csv")
+                                ],
+                                original_file_paths=[
+                                    GcsfsFilePath(
+                                        bucket_name="original", blob_name="a.csv"
+                                    )
+                                ],
+                            ),
+                            append_ready_table_address=BigQueryAddress(
+                                dataset_id="temp", table_id="tag_a__2"
+                            ),
+                            raw_rows_count=3,
+                        ),
+                    ],
+                    "tag_b": [
+                        AppendReadyFile(
+                            import_ready_file=ImportReadyFile(
+                                file_id=3,
+                                file_tag="tag_b",
+                                update_datetime=datetime.datetime(
+                                    2024, 1, 1, 1, 1, 1, tzinfo=datetime.UTC
+                                ),
+                                pre_import_normalized_file_paths=[
+                                    GcsfsFilePath(bucket_name="temp", blob_name="b.csv")
+                                ],
+                                original_file_paths=[
+                                    GcsfsFilePath(
+                                        bucket_name="original", blob_name="b.csv"
+                                    )
+                                ],
+                            ),
+                            append_ready_table_address=BigQueryAddress(
+                                dataset_id="temp", table_id="tag_b__3"
+                            ),
+                            raw_rows_count=3,
+                        ),
+                    ],
+                }
+            )
+        ]
+
+        import_sessions, files = _build_import_sessions_for_results(
+            summaries, append_ready_file_batches
+        )
+
+        append_ready_files = [
+            file
+            for batch in append_ready_file_batches[0].append_ready_files_by_tag.values()
+            for file in batch
+        ]
+
+        assert 3 not in import_sessions
+        assert 4 not in import_sessions
+
+        assert len(import_sessions) == 2
+        for i, session in enumerate(import_sessions.values()):
+            assert session == ImportSessionSummary.from_load_results(
+                append_ready_files[i], summaries[i]
+            )
+
+        assert set(files) == set(
+            path
+            for metadata in append_ready_files[:2]
+            for path in metadata.import_ready_file.original_file_paths
+        )
+
+    def test_build_import_sessions_for_errors_bq_errors(self) -> None:
+        load_errors = [
+            # no temp files, no temp table
+            RawFileLoadAndPrepError(
+                file_id=1,
+                file_tag="tagBasicData",
+                update_datetime=datetime.datetime(
+                    2024, 1, 1, 1, 1, 1, tzinfo=datetime.UTC
+                ),
+                pre_import_normalized_file_paths=None,
+                original_file_paths=[],
+                temp_table=None,
+                error_msg="yikes!",
+            ),
+            # temp files
+            RawFileLoadAndPrepError(
+                file_id=2,
+                file_tag="tagBasicData",
+                update_datetime=datetime.datetime(
+                    2024, 1, 2, 1, 1, 1, tzinfo=datetime.UTC
+                ),
+                pre_import_normalized_file_paths=[
+                    GcsfsFilePath.from_absolute_path("temp/needs-clean.csv")
+                ],
+                original_file_paths=[],
+                temp_table=None,
+                error_msg="yikes!",
+            ),
+            # temp table
+            RawFileLoadAndPrepError(
+                file_id=3,
+                file_tag="tagBasicData",
+                update_datetime=datetime.datetime(
+                    2024, 1, 3, 1, 1, 1, tzinfo=datetime.UTC
+                ),
+                pre_import_normalized_file_paths=None,
+                original_file_paths=[],
+                temp_table=BigQueryAddress.from_str("temp.table"),
+                error_msg="yikes!",
+            ),
+        ]
+        append_errors = [
+            RawDataAppendImportError(
+                file_id=4,
+                raw_temp_table=BigQueryAddress.from_str("temp.table2"),
+                error_msg="yikes!",
+            ),
+        ]
+
+        import_sessions, temp_files, temp_tables = _build_import_sessions_for_errors(
+            [], [], load_errors, append_errors
+        )
+
+        assert len(import_sessions) == 4
+        assert (
+            one({session.import_status for session in import_sessions.values()})
+            == DirectIngestRawDataImportSessionStatus.FAILED_LOAD_STEP
+        )
+
+        assert temp_files == load_errors[1].pre_import_normalized_file_paths
+        assert temp_tables == [
+            append_errors[0].raw_temp_table,
+            load_errors[2].temp_table,
+        ]
+
+    def test_build_import_sessions_for_errors_processing_errors_single(self) -> None:
+        bq_metadata = [
+            RawBigQueryFileMetadataSummary(
+                file_id=1,
+                file_tag="tagBasicData",
+                gcs_files=[
+                    RawGCSFileMetadataSummary(
+                        gcs_file_id=1,
+                        file_id=1,
+                        path=GcsfsFilePath(bucket_name="bucket", blob_name="blob.csv"),
+                    )
+                ],
+                update_datetime=datetime.datetime(
+                    2024, 1, 1, 1, 1, 1, tzinfo=datetime.UTC
+                ),
+            ),
+            RawBigQueryFileMetadataSummary(
+                file_id=2,
+                file_tag="tagCustomLineTerminatorNonUTF8",
+                gcs_files=[
+                    RawGCSFileMetadataSummary(
+                        gcs_file_id=2,
+                        file_id=2,
+                        path=GcsfsFilePath(
+                            bucket_name="bucket", blob_name="blob1_1.csv"
+                        ),
+                    ),
+                    RawGCSFileMetadataSummary(
+                        gcs_file_id=3,
+                        file_id=2,
+                        path=GcsfsFilePath(
+                            bucket_name="bucket", blob_name="blob1_2.csv"
+                        ),
+                    ),
+                ],
+                update_datetime=datetime.datetime(
+                    2024, 1, 1, 1, 1, 1, tzinfo=datetime.UTC
+                ),
+            ),
+        ]
+
+        processing_errors = [
+            RawFileProcessingError(
+                original_file_path=GcsfsFilePath(
+                    bucket_name="bucket", blob_name="blob1_1.csv"
+                ),
+                temporary_file_paths=[
+                    GcsfsFilePath(bucket_name="temp", blob_name="temp_blob1_1_1.csv"),
+                    GcsfsFilePath(bucket_name="temp", blob_name="temp_blob1_1_2.csv"),
+                ],
+                error_msg="yike!",
+            )
+        ]
+
+        import_sessions, temp_files, temp_tables = _build_import_sessions_for_errors(
+            bq_metadata, processing_errors, [], []
+        )
+
+        assert len(import_sessions) == 1
+        assert 2 in import_sessions
+        assert (
+            import_sessions[2].import_status
+            == DirectIngestRawDataImportSessionStatus.FAILED_PRE_IMPORT_NORMALIZATION_STEP
+        )
+        assert not temp_tables
+        assert temp_files == processing_errors[0].temporary_file_paths
+
+    def test_build_import_sessions_for_errors_processing_errors_both(self) -> None:
+        bq_metadata = [
+            RawBigQueryFileMetadataSummary(
+                file_id=1,
+                file_tag="tagBasicData",
+                gcs_files=[
+                    RawGCSFileMetadataSummary(
+                        gcs_file_id=1,
+                        file_id=1,
+                        path=GcsfsFilePath(bucket_name="bucket", blob_name="blob.csv"),
+                    )
+                ],
+                update_datetime=datetime.datetime(
+                    2024, 1, 1, 1, 1, 1, tzinfo=datetime.UTC
+                ),
+            ),
+            RawBigQueryFileMetadataSummary(
+                file_id=2,
+                file_tag="tagCustomLineTerminatorNonUTF8",
+                gcs_files=[
+                    RawGCSFileMetadataSummary(
+                        gcs_file_id=2,
+                        file_id=2,
+                        path=GcsfsFilePath(
+                            bucket_name="bucket", blob_name="blob1_1.csv"
+                        ),
+                    ),
+                    RawGCSFileMetadataSummary(
+                        gcs_file_id=3,
+                        file_id=2,
+                        path=GcsfsFilePath(
+                            bucket_name="bucket", blob_name="blob1_2.csv"
+                        ),
+                    ),
+                ],
+                update_datetime=datetime.datetime(
+                    2024, 1, 1, 1, 1, 1, tzinfo=datetime.UTC
+                ),
+            ),
+        ]
+
+        processing_errors = [
+            RawFileProcessingError(
+                original_file_path=GcsfsFilePath(
+                    bucket_name="bucket", blob_name="blob1_1.csv"
+                ),
+                temporary_file_paths=[
+                    GcsfsFilePath(bucket_name="temp", blob_name="temp_blob1_1_1.csv"),
+                    GcsfsFilePath(bucket_name="temp", blob_name="temp_blob1_1_2.csv"),
+                ],
+                error_msg="yike!",
+            ),
+            RawFileProcessingError(
+                original_file_path=GcsfsFilePath(
+                    bucket_name="bucket", blob_name="blob1_2.csv"
+                ),
+                temporary_file_paths=[
+                    GcsfsFilePath(bucket_name="temp", blob_name="temp_blob1_2_1.csv"),
+                    GcsfsFilePath(bucket_name="temp", blob_name="temp_blob1_2_2.csv"),
+                ],
+                error_msg="yike!",
+            ),
+        ]
+
+        import_sessions, temp_files, temp_tables = _build_import_sessions_for_errors(
+            bq_metadata, processing_errors, [], []
+        )
+
+        assert len(import_sessions) == 1
+        assert 2 in import_sessions
+        assert (
+            import_sessions[2].import_status
+            == DirectIngestRawDataImportSessionStatus.FAILED_PRE_IMPORT_NORMALIZATION_STEP
+        )
+        assert not temp_tables
+        assert temp_files == [
+            path
+            for error in processing_errors
+            for path in error.temporary_file_paths or []
+        ]
+
+    def test__reconcile_import_sessions_and_bq_metadata_all_accounted_for(self) -> None:
+        bq_metadata = [
+            RawBigQueryFileMetadataSummary(
+                file_id=1,
+                file_tag="tagBasicData",
+                gcs_files=[
+                    RawGCSFileMetadataSummary(
+                        gcs_file_id=1,
+                        file_id=1,
+                        path=GcsfsFilePath(bucket_name="bucket", blob_name="blob.csv"),
+                    )
+                ],
+                update_datetime=datetime.datetime(
+                    2024, 1, 1, 1, 1, 1, tzinfo=datetime.UTC
+                ),
+            ),
+            RawBigQueryFileMetadataSummary(
+                file_id=2,
+                file_tag="tagCustomLineTerminatorNonUTF8",
+                gcs_files=[
+                    RawGCSFileMetadataSummary(
+                        gcs_file_id=2,
+                        file_id=2,
+                        path=GcsfsFilePath(
+                            bucket_name="bucket", blob_name="blob1_1.csv"
+                        ),
+                    ),
+                    RawGCSFileMetadataSummary(
+                        gcs_file_id=3,
+                        file_id=2,
+                        path=GcsfsFilePath(
+                            bucket_name="bucket", blob_name="blob1_2.csv"
+                        ),
+                    ),
+                ],
+                update_datetime=datetime.datetime(
+                    2024, 1, 1, 1, 1, 1, tzinfo=datetime.UTC
+                ),
+            ),
+            RawBigQueryFileMetadataSummary(
+                file_id=3,
+                file_tag="tagCustomLineTerminatorNonUTF8",
+                gcs_files=[
+                    RawGCSFileMetadataSummary(
+                        gcs_file_id=4,
+                        file_id=3,
+                        path=GcsfsFilePath(
+                            bucket_name="bucket", blob_name="blob2_1.csv"
+                        ),
+                    ),
+                    RawGCSFileMetadataSummary(
+                        gcs_file_id=5,
+                        file_id=3,
+                        path=GcsfsFilePath(
+                            bucket_name="bucket", blob_name="blob2_2.csv"
+                        ),
+                    ),
+                ],
+                update_datetime=datetime.datetime(
+                    2024, 1, 2, 1, 1, 1, tzinfo=datetime.UTC
+                ),
+            ),
+        ]
+
+        successful_imports = {
+            1: ImportSessionSummary(
+                file_id=1,
+                import_status=DirectIngestRawDataImportSessionStatus.SUCCEEDED,
+            ),
+            2: ImportSessionSummary(
+                file_id=2,
+                import_status=DirectIngestRawDataImportSessionStatus.SUCCEEDED,
+            ),
+        }
+
+        failed_imports = {
+            3: ImportSessionSummary(
+                file_id=3,
+                import_status=DirectIngestRawDataImportSessionStatus.FAILED_LOAD_STEP,
+            )
+        }
+
+        missing_import_sessions = _reconcile_import_sessions_and_bq_metadata(
+            bq_metadata, successful_imports, failed_imports
+        )
+
+        assert not missing_import_sessions
+
+    def test__reconcile_import_sessions_and_bq_metadata_some_missing(self) -> None:
+        bq_metadata = [
+            RawBigQueryFileMetadataSummary(
+                file_id=1,
+                file_tag="tagBasicData",
+                gcs_files=[
+                    RawGCSFileMetadataSummary(
+                        gcs_file_id=1,
+                        file_id=1,
+                        path=GcsfsFilePath(bucket_name="bucket", blob_name="blob.csv"),
+                    )
+                ],
+                update_datetime=datetime.datetime(
+                    2024, 1, 1, 1, 1, 1, tzinfo=datetime.UTC
+                ),
+            ),
+            RawBigQueryFileMetadataSummary(
+                file_id=2,
+                file_tag="tagCustomLineTerminatorNonUTF8",
+                gcs_files=[
+                    RawGCSFileMetadataSummary(
+                        gcs_file_id=2,
+                        file_id=2,
+                        path=GcsfsFilePath(
+                            bucket_name="bucket", blob_name="blob1_1.csv"
+                        ),
+                    ),
+                    RawGCSFileMetadataSummary(
+                        gcs_file_id=3,
+                        file_id=2,
+                        path=GcsfsFilePath(
+                            bucket_name="bucket", blob_name="blob1_2.csv"
+                        ),
+                    ),
+                ],
+                update_datetime=datetime.datetime(
+                    2024, 1, 1, 1, 1, 1, tzinfo=datetime.UTC
+                ),
+            ),
+            RawBigQueryFileMetadataSummary(
+                file_id=3,
+                file_tag="tagCustomLineTerminatorNonUTF8",
+                gcs_files=[
+                    RawGCSFileMetadataSummary(
+                        gcs_file_id=4,
+                        file_id=3,
+                        path=GcsfsFilePath(
+                            bucket_name="bucket", blob_name="blob2_1.csv"
+                        ),
+                    ),
+                    RawGCSFileMetadataSummary(
+                        gcs_file_id=5,
+                        file_id=3,
+                        path=GcsfsFilePath(
+                            bucket_name="bucket", blob_name="blob2_2.csv"
+                        ),
+                    ),
+                ],
+                update_datetime=datetime.datetime(
+                    2024, 1, 2, 1, 1, 1, tzinfo=datetime.UTC
+                ),
+            ),
+        ]
+
+        successful_imports = {
+            1: ImportSessionSummary(
+                file_id=1,
+                import_status=DirectIngestRawDataImportSessionStatus.SUCCEEDED,
+            ),
+        }
+
+        missing_import_sessions = _reconcile_import_sessions_and_bq_metadata(
+            bq_metadata, successful_imports, {}
+        )
+
+        assert len(missing_import_sessions) == 2
+        assert missing_import_sessions[0].file_id == 2
+        assert missing_import_sessions[1].file_id == 3
+        assert (
+            one({session.import_status for session in missing_import_sessions})
+            == DirectIngestRawDataImportSessionStatus.FAILED_UNKNOWN
+        )
