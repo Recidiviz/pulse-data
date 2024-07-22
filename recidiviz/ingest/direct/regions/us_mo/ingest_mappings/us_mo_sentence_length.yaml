@@ -1,0 +1,25 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_offender_sentence_institution` to
+#  corresponding Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  - person_external_id
+  - sentence_external_id
+  - critical_date
+  - BS_PD # projected completion max
+  - BT_PC # projected completion min
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: person_external_id
+          id_type: $literal("US_MO_DOC")
+    sentences:
+      - StateSentence:
+          external_id: sentence_external_id
+          sentence_lengths:
+            - StateSentenceLength:
+                length_update_datetime: critical_date
+                projected_completion_date_max_external: BS_PD
+                projected_completion_date_min_external: BT_PC
