@@ -115,7 +115,7 @@ class TestEmails(JusticeCountsDatabaseTestCase):
             MetricSettingInterface.add_or_update_agency_metric_setting(
                 session=session,
                 agency=agency,
-                agency_metric=MetricInterface(
+                agency_metric_updates=MetricInterface(
                     key=metric_definition.key, is_metric_enabled=is_metric_enabled
                 ),
             )
@@ -132,7 +132,7 @@ class TestEmails(JusticeCountsDatabaseTestCase):
             MetricSettingInterface.add_or_update_agency_metric_setting(
                 session=session,
                 agency=agency,
-                agency_metric=MetricInterface(
+                agency_metric_updates=MetricInterface(
                     key=metric_definition.key,
                     disaggregated_by_supervision_subsystems=disaggregated_by_supervision_subsystems,
                 ),
@@ -150,7 +150,7 @@ class TestEmails(JusticeCountsDatabaseTestCase):
             MetricSettingInterface.add_or_update_agency_metric_setting(
                 session=session,
                 agency=agency,
-                agency_metric=MetricInterface(
+                agency_metric_updates=MetricInterface(
                     key=metric_definition.key,
                     custom_reporting_frequency=CustomReportingFrequency(
                         starting_month=starting_month,

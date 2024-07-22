@@ -1158,7 +1158,7 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
             MetricSettingInterface.add_or_update_agency_metric_setting(
                 session=session,
                 agency=agency,
-                agency_metric=MetricInterface(
+                agency_metric_updates=MetricInterface(
                     key=law_enforcement.calls_for_service.key,
                     custom_reporting_frequency=CustomReportingFrequency(
                         frequency=schema.ReportingFrequency.ANNUAL, starting_month=2
@@ -1277,7 +1277,7 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
             MetricSettingInterface.add_or_update_agency_metric_setting(
                 session=session,
                 agency=agency,
-                agency_metric=self.test_schema_objects.reported_calls_for_service_metric,
+                agency_metric_updates=self.test_schema_objects.reported_calls_for_service_metric,
             )
             DatapointInterface.flush_report_datapoints(
                 session=session,
@@ -1328,7 +1328,7 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
             MetricSettingInterface.add_or_update_agency_metric_setting(
                 session=session,
                 agency=agency,
-                agency_metric=reported_calls_for_service_metric,
+                agency_metric_updates=reported_calls_for_service_metric,
             )
             session.commit()
             # Calls for service reporting frequency should still appear in the
@@ -1354,7 +1354,7 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
             MetricSettingInterface.add_or_update_agency_metric_setting(
                 session=session,
                 agency=agency,
-                agency_metric=MetricInterface(
+                agency_metric_updates=MetricInterface(
                     key=law_enforcement.civilian_complaints_sustained.key,
                     custom_reporting_frequency=CustomReportingFrequency(
                         frequency=schema.ReportingFrequency.MONTHLY,

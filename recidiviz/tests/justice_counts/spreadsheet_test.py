@@ -158,7 +158,7 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
             MetricSettingInterface.add_or_update_agency_metric_setting(
                 session=session,
                 agency=agency,
-                agency_metric=MetricInterface(
+                agency_metric_updates=MetricInterface(
                     key=supervision.funding.key,
                     disaggregated_by_supervision_subsystems=True,
                 ),
@@ -168,7 +168,7 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
             MetricSettingInterface.add_or_update_agency_metric_setting(
                 session=session,
                 agency=agency,
-                agency_metric=MetricInterface(
+                agency_metric_updates=MetricInterface(
                     key=supervision.expenses.key,
                     is_metric_enabled=True,
                 ),
@@ -178,7 +178,7 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
             MetricSettingInterface.add_or_update_agency_metric_setting(
                 session=session,
                 agency=agency,
-                agency_metric=MetricInterface(
+                agency_metric_updates=MetricInterface(
                     key=supervision.discharges.key,
                     is_metric_enabled=False,
                 ),
@@ -292,14 +292,14 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
                 MetricSettingInterface.add_or_update_agency_metric_setting(
                     session=session,
                     agency=prison_super_agency,
-                    agency_metric=metric_interface,
+                    agency_metric_updates=metric_interface,
                 )
             # Modify prison admissions metric setting so that it is enabled with a
             # custom reporting frequency.
             MetricSettingInterface.add_or_update_agency_metric_setting(
                 session=session,
                 agency=prison_super_agency,
-                agency_metric=MetricInterface(
+                agency_metric_updates=MetricInterface(
                     key=prisons.admissions.key,
                     is_metric_enabled=True,
                     custom_reporting_frequency=CustomReportingFrequency(

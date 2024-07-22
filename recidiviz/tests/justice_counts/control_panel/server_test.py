@@ -818,7 +818,9 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         metric_interfaces = self.test_schema_objects.get_test_metric_interfaces()
         for metric_interface in metric_interfaces:
             MetricSettingInterface.add_or_update_agency_metric_setting(
-                session=self.session, agency=agency, agency_metric=metric_interface
+                session=self.session,
+                agency=agency,
+                agency_metric_updates=metric_interface,
             )
         self.session.commit()
         with self.app.test_request_context():
@@ -891,7 +893,9 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         metric_interfaces = self.test_schema_objects.get_test_metric_interfaces()
         for metric_interface in metric_interfaces:
             MetricSettingInterface.add_or_update_agency_metric_setting(
-                session=self.session, agency=agency, agency_metric=metric_interface
+                session=self.session,
+                agency=agency,
+                agency_metric_updates=metric_interface,
             )
         self.session.commit()
 
@@ -3206,7 +3210,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         MetricSettingInterface.add_or_update_agency_metric_setting(
             session=self.session,
             agency=super_agency,
-            agency_metric=MetricInterface(
+            agency_metric_updates=MetricInterface(
                 key=prisons.funding.key,
                 custom_reporting_frequency=CustomReportingFrequency(
                     frequency=schema.ReportingFrequency.ANNUAL,
@@ -3216,7 +3220,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         MetricSettingInterface.add_or_update_agency_metric_setting(
             session=self.session,
             agency=super_agency,
-            agency_metric=MetricInterface(
+            agency_metric_updates=MetricInterface(
                 key=prisons.staff.key,
                 custom_reporting_frequency=CustomReportingFrequency(
                     frequency=schema.ReportingFrequency.MONTHLY,
@@ -3226,7 +3230,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         MetricSettingInterface.add_or_update_agency_metric_setting(
             session=self.session,
             agency=super_agency,
-            agency_metric=MetricInterface(
+            agency_metric_updates=MetricInterface(
                 key=prisons.grievances_upheld.key,
                 custom_reporting_frequency=CustomReportingFrequency(
                     frequency=schema.ReportingFrequency.ANNUAL,
@@ -3241,7 +3245,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         MetricSettingInterface.add_or_update_agency_metric_setting(
             session=self.session,
             agency=super_agency,
-            agency_metric=MetricInterface(
+            agency_metric_updates=MetricInterface(
                 key=prisons.funding.key,
                 custom_reporting_frequency=CustomReportingFrequency(
                     frequency=schema.ReportingFrequency.MONTHLY,
@@ -3251,7 +3255,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         MetricSettingInterface.add_or_update_agency_metric_setting(
             session=self.session,
             agency=super_agency,
-            agency_metric=MetricInterface(
+            agency_metric_updates=MetricInterface(
                 key=prisons.staff.key,
                 custom_reporting_frequency=CustomReportingFrequency(
                     frequency=schema.ReportingFrequency.ANNUAL,
@@ -3261,7 +3265,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         MetricSettingInterface.add_or_update_agency_metric_setting(
             session=self.session,
             agency=super_agency,
-            agency_metric=MetricInterface(
+            agency_metric_updates=MetricInterface(
                 key=prisons.grievances_upheld.key,
                 custom_reporting_frequency=CustomReportingFrequency(
                     frequency=schema.ReportingFrequency.MONTHLY,

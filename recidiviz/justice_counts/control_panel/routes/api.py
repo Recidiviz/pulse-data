@@ -1236,13 +1236,13 @@ def get_api_blueprint(
                 session=current_session, agency_id=agency_id
             )
             for metric_json in request_json.get("metrics", []):
-                agency_metric = MetricInterface.from_json(
+                agency_metric_updates = MetricInterface.from_json(
                     json=metric_json,
                     entry_point=DatapointGetRequestEntryPoint.METRICS_TAB,
                 )
                 MetricSettingInterface.add_or_update_agency_metric_setting(
                     session=current_session,
-                    agency_metric=agency_metric,
+                    agency_metric_updates=agency_metric_updates,
                     agency=agency,
                     user_account=user,
                 )

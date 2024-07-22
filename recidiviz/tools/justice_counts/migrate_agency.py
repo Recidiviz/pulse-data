@@ -209,7 +209,7 @@ def migrate_agency_data(
                         MetricSettingInterface.add_or_update_agency_metric_setting(
                             session=session,
                             agency=curr_agency,
-                            agency_metric=metric_setting,
+                            agency_metric_updates=metric_setting,
                         )
                     logger.info("Migrating Reports...")
                     for report_json in agency_name_id_to_report_json[

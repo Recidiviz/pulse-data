@@ -262,7 +262,7 @@ def copy_metric_settings(
             MetricSettingInterface.add_or_update_agency_metric_setting(
                 session=current_session,
                 agency=child_agency,
-                agency_metric=metric_setting,
+                agency_metric_updates=metric_setting,
             )
             copied_metric_system_and_display_name.add(
                 (
