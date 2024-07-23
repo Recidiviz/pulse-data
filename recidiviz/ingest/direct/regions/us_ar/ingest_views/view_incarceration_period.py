@@ -50,7 +50,7 @@ facility_locs AS (
   -- supervision, which often have a parent department of C1 (ACC Director's Office) but 
   -- don't yet indicate incarceration. Therefore, extra conditions are added for periods 
   -- with a C1 department to only include community correction center locations, thus 
-  -- excluding field supervision. 
+  -- excluding field supervision.
 
   -- This list of incarceration-specific locations is also used to determine whether or
   -- not a final outgoing movement should be interpreted as the end of an incarceration term. 
@@ -68,14 +68,16 @@ facility_locs AS (
 -- STEP I. IDENTIFYING TRANSITIONS
 
 external_movements AS (
-  -- Movements into, from, or between facilities are recorded in the EXTERNALMOVEMENT table.
-  -- Movement codes lower than 40 indicate moves into a facility, whereas movement codes 40
-  -- and higher (along with alphanumeric codes) indicate moves out of a facility. Movements
-  -- from one facility to another will often show up in the data as 2 moves: the outgoing
-  -- movement from one facility and then the incoming movement into another, usually on the 
-  -- same day. In these codes, the second movement code will usually be the converse of the
-  -- first, such as a 90 ('Transferred to Another Facility') followed by a 30 ('Received 
-  -- from Another Facility').
+  /*
+  Movements into, from, or between facilities are recorded in the EXTERNALMOVEMENT table.
+  Movement codes lower than 40, along with 2A and 2B, indicate moves into a facility,
+  whereas movement codes 40 and higher (excepting 38), along with 8A, 8B, and 8J, indicate 
+  moves out of a facility.  Movements from one facility to another will often show up in 
+  the data as 2 moves: the outgoing movement from one facility and then the incoming movement 
+  into another, usually on the same day. In these codes, the second movement code will usually 
+  be the converse of the first, such as a 90 ('Transferred to Another Facility') followed 
+  by a 30 ('Received from Another Facility').
+  */
   SELECT DISTINCT
     OFFENDERID,
     CAST(
@@ -90,7 +92,11 @@ external_movements AS (
     LOCATIONREPORTMOVEMENT,
     OTHERLOCATIONCODE,
     CASE 
-      WHEN EXTERNALMOVEMENTCODE < '40' AND NOT REGEXP_CONTAINS(EXTERNALMOVEMENTCODE, '[[:alpha:]]') THEN 'IN' 
+      WHEN 
+        (EXTERNALMOVEMENTCODE < '40' OR EXTERNALMOVEMENTCODE IN ('2A','2B')) AND
+          EXTERNALMOVEMENTCODE NOT IN ('8A','8B','8J') AND
+          EXTERNALMOVEMENTCODE != '38'
+      THEN 'IN' 
       WHEN EXTERNALMOVEMENTCODE IS NULL THEN NULL 
       ELSE 'OUT' 
     END AS direction
