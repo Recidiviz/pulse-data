@@ -17,6 +17,7 @@
 """Tests for the Path Normalization in DirectIngestGCSFileSystem."""
 import datetime
 import os
+import re
 from unittest import TestCase
 
 from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath, GcsfsFilePath
@@ -27,6 +28,7 @@ from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
     to_normalized_unprocessed_file_path_from_normalized_path,
     to_normalized_unprocessed_raw_file_name,
 )
+from recidiviz.ingest.direct.types.errors import DirectIngestError
 
 
 class TestDirectIngestGcsFileSystem(TestCase):
@@ -173,6 +175,79 @@ class TestDirectIngestGcsFileSystem(TestCase):
 
         self.assertTrue(found_first_file)
         self.assertTrue(found_second_file)
+
+    def test_mv_unprocessed_path_to_processed_path_in_storage_one_file(self) -> None:
+        dt = datetime.datetime(2024, 1, 1, 1, 1, 1)
+
+        starting_path = GcsfsFilePath(bucket_name="my_bucket", blob_name="tag.csv")
+        self.fs.gcs_file_system.test_add_path(starting_path, local_path=None)
+
+        normalized = self.fs.mv_raw_file_to_normalized_path(starting_path, dt)
+
+        self.fs.mv_unprocessed_path_to_processed_path_in_storage(
+            normalized, self.STORAGE_DIR_PATH
+        )
+
+        assert set(self.fs.gcs_file_system.all_paths) == set(
+            [
+                GcsfsFilePath.from_absolute_path(
+                    f"{self.STORAGE_DIR_PATH.abs_path()}/raw/2024/01/01/processed_2024-01-01T01:01:01:000000_raw_tag.csv"
+                )
+            ]
+        )
+
+    def test_mv_unprocessed_path_to_processed_path_in_storage_duplicates(self) -> None:
+        dt = datetime.datetime(2024, 1, 1, 1, 1, 1)
+
+        starting_path = GcsfsFilePath(bucket_name="my_bucket", blob_name="tag.csv")
+        self.fs.gcs_file_system.test_add_path(starting_path, local_path=None)
+
+        assert set(self.fs.gcs_file_system.all_paths) == {starting_path}
+
+        normalized = self.fs.mv_raw_file_to_normalized_path(starting_path, dt)
+
+        self.fs.mv_unprocessed_path_to_processed_path_in_storage(
+            normalized, self.STORAGE_DIR_PATH
+        )
+
+        assert set(self.fs.gcs_file_system.all_paths) == {
+            GcsfsFilePath.from_absolute_path(
+                f"{self.STORAGE_DIR_PATH.abs_path()}/raw/2024/01/01/processed_2024-01-01T01:01:01:000000_raw_tag.csv"
+            )
+        }
+
+        self.fs.gcs_file_system.test_add_path(starting_path, local_path=None)
+
+        assert set(self.fs.gcs_file_system.all_paths) == {
+            starting_path,
+            GcsfsFilePath.from_absolute_path(
+                f"{self.STORAGE_DIR_PATH.abs_path()}/raw/2024/01/01/processed_2024-01-01T01:01:01:000000_raw_tag.csv"
+            ),
+        }
+
+        normalized = self.fs.mv_raw_file_to_normalized_path(starting_path, dt)
+
+        self.fs.mv_unprocessed_path_to_processed_path_in_storage(
+            normalized, self.STORAGE_DIR_PATH
+        )
+        assert set(self.fs.gcs_file_system.all_paths) == {
+            GcsfsFilePath.from_absolute_path(
+                f"{self.STORAGE_DIR_PATH.abs_path()}/raw/2024/01/01/processed_2024-01-01T01:01:01:000000_raw_tag.csv"
+            ),
+            GcsfsFilePath.from_absolute_path(
+                f"{self.STORAGE_DIR_PATH.abs_path()}/raw/2024/01/01/processed_2024-01-01T01:01:01:000000_raw_tag-(1).csv"
+            ),
+        }
+
+        with self.assertRaisesRegex(
+            DirectIngestError,
+            re.escape(
+                "Could not parse upload_ts, file_tag, extension from path [my_bucket/tag.csv]"
+            ),
+        ):
+            self.fs.mv_unprocessed_path_to_processed_path_in_storage(
+                starting_path, self.STORAGE_DIR_PATH
+            )
 
 
 class TestPathNormalization(TestCase):
