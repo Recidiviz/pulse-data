@@ -944,9 +944,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                 auth0_user_id=self.test_schema_objects.test_user_A.auth0_user_id,
             )
 
-            response = self.client.get(
-                f"/api/agencies/{agency.id}/agency%20prison/published_data"
-            )
+            response = self.client.get(f"/api/agencies/{agency.id}/published_data")
 
         self.assertEqual(response.status_code, 200)
         result = assert_type(response.json, dict)

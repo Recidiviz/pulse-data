@@ -1845,19 +1845,16 @@ def get_api_blueprint(
         except Exception as e:
             raise _get_error(error=e) from e
 
-    @api_blueprint.route(
-        "/agencies/<agency_id>/<agency_slug>/published_data", methods=["GET"]
-    )
-    def get_agency_published_data(agency_id: int, agency_slug: str) -> Response:
+    @api_blueprint.route("/agencies/<agency_id>/published_data", methods=["GET"])
+    def get_agency_published_data(agency_id: int) -> Response:
         try:
-            # Agency slug will be encoded (e.g "Washington%20Department%20of%20Corrections")
             agency = AgencyInterface.get_agency_by_id(
                 session=current_session, agency_id=agency_id, with_settings=True
             )
             if not agency:
                 raise JusticeCountsServerError(
                     code="agency_not_found",
-                    description=f"No agency exists with the slug {agency_slug}",
+                    description=f"No agency exists with the id {agency_id}",
                 )
 
             agency_id = agency.id
@@ -1909,6 +1906,7 @@ def get_api_blueprint(
                 datapoint_json = DatapointInterface.to_json_response(
                     datapoint=datapoint,
                     is_published=True,
+                    agency_name=agency.name,
                     frequency=report_id_to_frequency[datapoint.report_id],
                 )
 
