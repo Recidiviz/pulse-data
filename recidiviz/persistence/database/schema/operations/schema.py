@@ -87,6 +87,7 @@ OperationsBase: DeclarativeMeta = declarative_base(
     cls=DatabaseEntity, name="OperationsBase"
 )
 
+
 # TODO(#28239) remove this table once raw data import dag is fully rolled out, not used
 class DirectIngestInstanceStatus(OperationsBase):
     """Represents the status and various metadata about an ingest instance over time. Allows us to track the duration
@@ -483,7 +484,8 @@ class DirectIngestRawDataImportSession(OperationsBase):
     # The instance that this raw data was imported to.
     raw_data_instance = Column(direct_ingest_instance, nullable=False, index=True)
 
-    # Denotes if, during this import, we performed historical diffs for this file_id
+    # Whether or not historical diffs were performed during the import of this file (or
+    # would have been had the import successfully made it to that stage)
     historical_diffs_active = Column(Boolean, nullable=False)
 
     # The number of rows included in the raw data file. If historical_diffs_active,

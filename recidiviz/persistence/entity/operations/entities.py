@@ -274,7 +274,8 @@ class DirectIngestRawDataImportSession(Entity, BuildableAttr, DefaultableAttr):
     region_code: str = attr.ib()
     # The instance that this raw data was imported to.
     raw_data_instance: DirectIngestInstance = attr.ib()
-    # Denotes if, during this import, we performed historical diffs for this file_id
+    # Whether or not historical diffs were performed during the import of this file (or
+    # would have been had the import successfully made it to that stage)
     historical_diffs_active: bool = attr.ib()
     # The number of rows included in the raw data file. If historical_diffs_active,
     # this number will not be equal to the number of rows added to the raw data table.
