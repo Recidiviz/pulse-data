@@ -841,18 +841,26 @@ class AuthEndpointTests(TestCase):
             self.assertEqual(HTTPStatus.NOT_FOUND, response.status_code)
 
     def test_states_delete_role_with_active_roster_user(self) -> None:
-        state_role = generate_fake_default_permissions(
+        leadership_role = generate_fake_default_permissions(
             state="US_MO",
             role="leadership_role",
             routes={"A": True, "B": True, "C": False},
+        )
+        supervision_role = generate_fake_default_permissions(
+            state="US_MO",
+            role="supervision_staff_role",
+            routes={"A": True, "B": False, "C": False},
+            feature_variants={"D": True},
         )
         user = generate_fake_rosters(
             email="parameter@domain.org",
             region_code="US_MO",
             role="leadership_role",
-            roles=["leadership_role"],
+            roles=["leadership_role", "supervision_staff_role"],
         )
-        add_entity_to_database_session(self.database_key, [state_role, user])
+        add_entity_to_database_session(
+            self.database_key, [leadership_role, supervision_role, user]
+        )
         with self.app.test_request_context():
             response = self.client.delete(
                 self.delete_state_role("US_MO", "leadership_role"),
@@ -870,6 +878,7 @@ class AuthEndpointTests(TestCase):
             email="parameter@domain.org",
             region_code="US_MO",
             role="leadership_role",
+            roles=["leadership_role"],
         )
         add_entity_to_database_session(self.database_key, [state_role, user])
         with self.app.test_request_context():
@@ -968,15 +977,15 @@ class AuthEndpointTests(TestCase):
             expected_users = [
                 {
                     "emailAddress": "supervision_staff@domain.org",
-                    "role": "supervision_staff_role",
+                    "roles": ["supervision_staff_role"],
                 },
                 {
                     "emailAddress": "supervision_staff_2@domain.org",
-                    "role": "supervision_staff_role",
+                    "roles": ["supervision_staff_role"],
                 },
             ]
             actual_users = [
-                {"emailAddress": user["emailAddress"], "role": user["role"]}
+                {"emailAddress": user["emailAddress"], "roles": user["roles"]}
                 for user in json.loads(response.data)
             ]
             self.assertCountEqual(expected_users, actual_users)
