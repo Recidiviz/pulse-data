@@ -61,23 +61,7 @@ from recidiviz.common.str_field_utils import snake_to_title
 from recidiviz.task_eligibility.task_completion_event_big_query_view_collector import (
     TaskCompletionEventBigQueryViewCollector,
 )
-
-# List of incarceration-specific Workflows opportunities
-_TASK_TYPE_NAME_INCARCERATION = [
-    "INCARCERATION_ASSESSMENT_COMPLETED",
-    "CUSTODY_LEVEL_DOWNGRADE",
-    "RELEASE_TO_COMMUNITY_CONFINEMENT_SUPERVISION",
-    "RELEASE_TO_PAROLE",
-    "HEARING_OCCURRED",
-    "TRANSFER_OUT_OF_SOLITARY_CONFINEMENT",
-    "GRANTED_WORK_RELEASE",
-    "GRANTED_FURLOUGH",
-    "TRANSFER_TO_REENTRY_CENTER",
-    "SECURITY_CLASSIFICATION_COMMITTEE_REVIEW",
-    "ADD_IN_PERSON_SECURITY_CLASSIFICATION_COMMITTEE_REVIEW",
-    "WARDEN_IN_PERSON_SECURITY_CLASSIFICATION_COMMITTEE_REVIEW",
-    "TRANSFER_OUT_OF_DISCIPLINARY_OR_TEMPORARY_SOLITARY_CONFINEMENT",
-]
+from recidiviz.workflows.types import WorkflowsSystemType
 
 _VIOLATION_CATEGORY_TO_TYPES_DICT: Dict[str, List[str]] = {
     "ABSCONSION": [StateSupervisionViolationType.ABSCONDED.name],
@@ -746,7 +730,7 @@ AVG_DAILY_POPULATION_TASK_ELIGIBLE_METRICS_INCARCERATION = [
         ],
     )
     for b in DEDUPED_TASK_COMPLETION_EVENT_VB
-    if b.task_type_name in _TASK_TYPE_NAME_INCARCERATION
+    if b.completion_event_type.system_type == WorkflowsSystemType.INCARCERATION
 ]
 
 AVG_DAILY_POPULATION_TASK_ELIGIBLE_METRICS_SUPERVISION = [
@@ -766,7 +750,7 @@ AVG_DAILY_POPULATION_TASK_ELIGIBLE_METRICS_SUPERVISION = [
         ],
     )
     for b in DEDUPED_TASK_COMPLETION_EVENT_VB
-    if b.task_type_name not in _TASK_TYPE_NAME_INCARCERATION
+    if b.completion_event_type.system_type == WorkflowsSystemType.SUPERVISION
 ]
 
 AVG_DAILY_POPULATION_TREATMENT_IN_PRISON = DailyAvgSpanCountMetric(
@@ -1738,7 +1722,7 @@ LATE_OPPORTUNITY_METRICS_INCARCERATION = [
         ],
     )
     for b in DEDUPED_TASK_COMPLETION_EVENT_VB
-    if b.task_type_name in _TASK_TYPE_NAME_INCARCERATION
+    if b.completion_event_type.system_type == WorkflowsSystemType.INCARCERATION
     for num_days in [7, 30]
 ]
 
@@ -1756,7 +1740,7 @@ LATE_OPPORTUNITY_METRICS_SUPERVISION = [
         ],
     )
     for b in DEDUPED_TASK_COMPLETION_EVENT_VB
-    if b.task_type_name not in _TASK_TYPE_NAME_INCARCERATION
+    if b.completion_event_type.system_type == WorkflowsSystemType.SUPERVISION
     for num_days in [7, 30]
 ]
 
@@ -2073,7 +2057,7 @@ PERSON_DAYS_TASK_ELIGIBLE_METRICS_INCARCERATION = [
         ],
     )
     for b in DEDUPED_TASK_COMPLETION_EVENT_VB
-    if b.task_type_name in _TASK_TYPE_NAME_INCARCERATION
+    if b.completion_event_type.system_type == WorkflowsSystemType.INCARCERATION
 ]
 
 PERSON_DAYS_TASK_ELIGIBLE_METRICS_SUPERVISION = [
@@ -2093,7 +2077,7 @@ PERSON_DAYS_TASK_ELIGIBLE_METRICS_SUPERVISION = [
         ],
     )
     for b in DEDUPED_TASK_COMPLETION_EVENT_VB
-    if b.task_type_name not in _TASK_TYPE_NAME_INCARCERATION
+    if b.completion_event_type.system_type == WorkflowsSystemType.SUPERVISION
 ]
 
 PROP_PERIOD_WITH_CRITICAL_CASELOAD = MiscAggregatedMetric(
@@ -2339,7 +2323,7 @@ TASK_COMPLETED_METRICS_INCARCERATION = [
         ],
     )
     for b in DEDUPED_TASK_COMPLETION_EVENT_VB
-    if b.task_type_name in _TASK_TYPE_NAME_INCARCERATION
+    if b.completion_event_type.system_type == WorkflowsSystemType.INCARCERATION
 ]
 
 TASK_COMPLETED_METRICS_SUPERVISION = [
@@ -2355,7 +2339,7 @@ TASK_COMPLETED_METRICS_SUPERVISION = [
         ],
     )
     for b in DEDUPED_TASK_COMPLETION_EVENT_VB
-    if b.task_type_name not in _TASK_TYPE_NAME_INCARCERATION
+    if b.completion_event_type.system_type == WorkflowsSystemType.SUPERVISION
 ]
 
 TASK_COMPLETED_WHILE_ELIGIBLE_METRICS_INCARCERATION = [
@@ -2375,7 +2359,7 @@ TASK_COMPLETED_WHILE_ELIGIBLE_METRICS_INCARCERATION = [
         ],
     )
     for b in DEDUPED_TASK_COMPLETION_EVENT_VB
-    if b.task_type_name in _TASK_TYPE_NAME_INCARCERATION
+    if b.completion_event_type.system_type == WorkflowsSystemType.INCARCERATION
 ]
 
 TASK_COMPLETED_WHILE_ELIGIBLE_METRICS_SUPERVISION = [
@@ -2395,7 +2379,7 @@ TASK_COMPLETED_WHILE_ELIGIBLE_METRICS_SUPERVISION = [
         ],
     )
     for b in DEDUPED_TASK_COMPLETION_EVENT_VB
-    if b.task_type_name not in _TASK_TYPE_NAME_INCARCERATION
+    if b.completion_event_type.system_type == WorkflowsSystemType.SUPERVISION
 ]
 
 DAYS_ELIGIBLE_AT_TASK_COMPLETION_METRICS_INCARCERATION = [
@@ -2418,7 +2402,7 @@ DAYS_ELIGIBLE_AT_TASK_COMPLETION_METRICS_INCARCERATION = [
         ),
     )
     for b in DEDUPED_TASK_COMPLETION_EVENT_VB
-    if b.task_type_name in _TASK_TYPE_NAME_INCARCERATION
+    if b.completion_event_type.system_type == WorkflowsSystemType.INCARCERATION
 ]
 
 DAYS_ELIGIBLE_AT_TASK_COMPLETION_METRICS_SUPERVISION = [
@@ -2441,7 +2425,7 @@ DAYS_ELIGIBLE_AT_TASK_COMPLETION_METRICS_SUPERVISION = [
         ),
     )
     for b in DEDUPED_TASK_COMPLETION_EVENT_VB
-    if b.task_type_name not in _TASK_TYPE_NAME_INCARCERATION
+    if b.completion_event_type.system_type == WorkflowsSystemType.SUPERVISION
 ]
 
 TREATMENT_REFERRALS = EventCountMetric(

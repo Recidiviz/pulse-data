@@ -573,6 +573,7 @@ def main() -> int:
                 "recidiviz.ingest.views",
                 "recidiviz.validation",
                 "recidiviz.outliers",
+                "recidiviz.workflows",
             }
         ),
         # TODO(#3828): We won't have to explicitly disallow apache_beam once we've
@@ -635,6 +636,7 @@ def main() -> int:
                 "recidiviz.task_eligibility",
                 "recidiviz.utils",
                 "recidiviz.validation",
+                "recidiviz.workflows",
             }
         ),
     )
@@ -664,6 +666,7 @@ def main() -> int:
                 "recidiviz.tools.analyst",
                 "recidiviz.utils",
                 "recidiviz.validation",
+                "recidiviz.workflows",
             },
         ),
         explicitly_invalid_package_dependencies=["apache_beam"],

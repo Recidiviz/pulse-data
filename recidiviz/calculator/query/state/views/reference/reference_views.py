@@ -21,6 +21,9 @@ from recidiviz.big_query.big_query_view import BigQueryViewBuilder
 from recidiviz.calculator.query.state.views.reference.cleaned_offense_description_to_labels import (
     CLEANED_OFFENSE_DESCRIPTION_TO_LABELS_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.reference.completion_event_type_metadata import (
+    get_completion_event_metadata_view_builder,
+)
 from recidiviz.calculator.query.state.views.reference.current_staff import (
     CURRENT_STAFF_VIEW_BUILDER,
 )
@@ -104,4 +107,5 @@ REFERENCE_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
     CURRENT_STAFF_VIEW_BUILDER,
     US_AR_LOCATION_METADATA_VIEW_BUILDER,
     US_AZ_LOCATION_METADATA_VIEW_BUILDER,
+    get_completion_event_metadata_view_builder(),
 ]

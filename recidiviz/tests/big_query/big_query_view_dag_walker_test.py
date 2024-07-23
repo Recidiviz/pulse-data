@@ -1139,6 +1139,10 @@ class TestBigQueryViewDagWalkerBase(unittest.TestCase):
                 dataset_id="reference_views",
                 table_id="task_to_completion_event",
             ),
+            BigQueryAddress(
+                dataset_id="reference_views",
+                table_id="completion_event_type_metadata",
+            ),
             # Generate data using pure date functions
             BigQueryAddress(
                 dataset_id="reference_views", table_id="covid_report_weeks"
