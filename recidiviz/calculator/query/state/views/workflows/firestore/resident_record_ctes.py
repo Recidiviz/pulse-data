@@ -27,7 +27,12 @@ from recidiviz.calculator.query.bq_utils import (
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.utils.us_mo_query_fragments import current_bed_stay_cte
 
-STATES_WITH_RESIDENT_METADATA = [StateCode.US_AR, StateCode.US_MO, StateCode.US_ME]
+STATES_WITH_RESIDENT_METADATA = [
+    StateCode.US_AR,
+    StateCode.US_MO,
+    StateCode.US_ME,
+    StateCode.US_IX,
+]
 
 _RESIDENT_RECORD_INCARCERATION_CTE = """
     incarceration_cases AS (
