@@ -57,6 +57,7 @@ US_CO_INCARCERATION_POPULATION_METRICS_PREPROCESSED_QUERY_TEMPLATE = """
             CAST(NULL AS STRING) AS case_type,
             prioritized_race_or_ethnicity,
             gender,
+            custodial_authority,
         FROM
             `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_population_span_metrics_materialized`
         WHERE
@@ -85,6 +86,7 @@ US_CO_INCARCERATION_POPULATION_METRICS_PREPROCESSED_QUERY_TEMPLATE = """
         pop.case_type,
         pop.prioritized_race_or_ethnicity,
         pop.gender,
+        pop.custodial_authority
     FROM incarceration_population_cte pop
     LEFT JOIN (
       --- TODO(#14601): Replace with common facility reference table

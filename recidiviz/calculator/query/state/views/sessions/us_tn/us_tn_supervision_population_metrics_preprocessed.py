@@ -59,6 +59,7 @@ US_TN_SUPERVISION_POPULATION_METRICS_PREPROCESSED_QUERY_TEMPLATE = """
         case_type,
         prioritized_race_or_ethnicity,
         gender,
+        custodial_authority,
     FROM `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_population_span_metrics_materialized` df
     LEFT JOIN
         `{project_id}.sessions.state_staff_id_to_legacy_supervising_officer_external_id_materialized` staff

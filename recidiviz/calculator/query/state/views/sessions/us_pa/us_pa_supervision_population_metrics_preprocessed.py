@@ -64,6 +64,7 @@ US_PA_SUPERVISION_POPULATION_METRICS_PREPROCESSED_QUERY_TEMPLATE = rf"""
         case_type,
         prioritized_race_or_ethnicity,
         gender,
+        custodial_authority,
     FROM `{{project_id}}.{{materialized_metrics_dataset}}.most_recent_supervision_population_span_metrics_materialized` s
     LEFT JOIN
         `{{project_id}}.sessions.state_staff_id_to_legacy_supervising_officer_external_id_materialized` staff
@@ -95,6 +96,7 @@ US_PA_SUPERVISION_POPULATION_METRICS_PREPROCESSED_QUERY_TEMPLATE = rf"""
         CAST(NULL AS STRING) AS case_type,
         CAST(NULL AS STRING) AS prioritized_race_or_ethnicity,
         CAST(NULL AS STRING) AS gender,
+        custodial_authority,
     FROM `{{project_id}}.{{materialized_metrics_dataset}}.most_recent_incarceration_population_span_metrics_materialized` s
     WHERE state_code = 'US_PA'
         AND NOT included_in_state_population
@@ -146,6 +148,7 @@ US_PA_SUPERVISION_POPULATION_METRICS_PREPROCESSED_QUERY_TEMPLATE = rf"""
         case_type,
         prioritized_race_or_ethnicity,
         gender,
+        custodial_authority
     FROM sub_sessions_with_attributes_dedup
 """
 
