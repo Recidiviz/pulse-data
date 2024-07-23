@@ -139,3 +139,9 @@ class TestTaskCompletionEventBigQueryViewCollector(unittest.TestCase):
                             f"referenced from state-agnostic completion event view "
                             f"[{view.address}]."
                         )
+
+    def test_system_type_for_all_completion_event_types(self) -> None:
+        collector = TaskCompletionEventBigQueryViewCollector()
+        all_completion_event_builders = collector.collect_view_builders()
+        for builder in all_completion_event_builders:
+            _ = builder.completion_event_type.system_type

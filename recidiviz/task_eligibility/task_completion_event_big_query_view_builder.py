@@ -26,6 +26,7 @@ from recidiviz.task_eligibility.dataset_config import (
     TASK_COMPLETION_EVENTS_DATASET_ID,
     completion_event_state_specific_dataset,
 )
+from recidiviz.workflows.types import WorkflowsSystemType
 
 
 class TaskCompletionEventType(Enum):
@@ -78,6 +79,46 @@ class TaskCompletionEventType(Enum):
         "TRANSFER_TO_SPECIAL_CIRCUMSTANCES_SUPERVISION"
     )
     ADMINISTRATIVE_TRANSFER = "ADMINISTRATIVE_TRANSFER"
+
+    @property
+    def system_type(self) -> WorkflowsSystemType:
+        """The system type (e.g., FACILITIES vs. SUPERVISION) associated with a completion event type"""
+        if self in [
+            TaskCompletionEventType.ADD_IN_PERSON_SECURITY_CLASSIFICATION_COMMITTEE_REVIEW,
+            TaskCompletionEventType.ADMINISTRATIVE_TRANSFER,
+            TaskCompletionEventType.CUSTODY_LEVEL_DOWNGRADE,
+            TaskCompletionEventType.CUSTODY_LEVEL_DOWNGRADE_TO_MEDIUM_TRUSTEE,
+            TaskCompletionEventType.GRANTED_FURLOUGH,
+            TaskCompletionEventType.GRANTED_WORK_RELEASE,
+            TaskCompletionEventType.HEARING_OCCURRED,
+            TaskCompletionEventType.INCARCERATION_ASSESSMENT_COMPLETED,
+            TaskCompletionEventType.RELEASE_FROM_RESTRICTIVE_HOUSING,
+            TaskCompletionEventType.RELEASE_TO_COMMUNITY_CONFINEMENT_SUPERVISION,
+            TaskCompletionEventType.RELEASE_TO_PAROLE,
+            TaskCompletionEventType.REVIEW_HEARING_OCCURRED,
+            TaskCompletionEventType.SECURITY_CLASSIFICATION_COMMITTEE_REVIEW,
+            TaskCompletionEventType.TRANSFER_OUT_OF_ADMINISTRATIVE_SOLITARY_CONFINEMENT,
+            TaskCompletionEventType.TRANSFER_OUT_OF_DISCIPLINARY_OR_TEMPORARY_SOLITARY_CONFINEMENT,
+            TaskCompletionEventType.TRANSFER_OUT_OF_SOLITARY_CONFINEMENT,
+            TaskCompletionEventType.TRANSFER_TO_REENTRY_CENTER,
+            TaskCompletionEventType.TRANSFER_TO_TREATMENT_IN_PRISON,
+            TaskCompletionEventType.WARDEN_IN_PERSON_SECURITY_CLASSIFICATION_COMMITTEE_REVIEW,
+        ]:
+            return WorkflowsSystemType.INCARCERATION
+        if self in [
+            TaskCompletionEventType.EARLY_DISCHARGE,
+            TaskCompletionEventType.FULL_TERM_DISCHARGE,
+            TaskCompletionEventType.KUDOS_SMS_SENT,
+            TaskCompletionEventType.SUPERVISION_LEVEL_DOWNGRADE,
+            TaskCompletionEventType.SUPERVISION_LEVEL_DOWNGRADE_AFTER_INITIAL_CLASSIFICATION_REVIEW_DATE,
+            TaskCompletionEventType.SUPERVISION_LEVEL_DOWNGRADE_BEFORE_INITIAL_CLASSIFICATION_REVIEW_DATE,
+            TaskCompletionEventType.TRANSFER_TO_LIMITED_SUPERVISION,
+            TaskCompletionEventType.TRANSFER_TO_SPECIAL_CIRCUMSTANCES_SUPERVISION,
+        ]:
+            return WorkflowsSystemType.SUPERVISION
+        raise ValueError(
+            f"No system type configured for completion event type {self.value}"
+        )
 
 
 class StateSpecificTaskCompletionEventBigQueryViewBuilder(SimpleBigQueryViewBuilder):
