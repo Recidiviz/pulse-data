@@ -137,6 +137,10 @@ class RawFileProcessingError(RawDataImportError):
     def __str__(self) -> str:
         return f"{self.error_type.value} with {self.original_file_path} failed with:\n\n{self.error_msg}"
 
+    @property
+    def file_tag(self) -> str:
+        return filename_parts_from_path(self.original_file_path).file_tag
+
     def serialize(self) -> str:
         result_dict = {
             "original_file_path": self.original_file_path.abs_path(),
@@ -282,6 +286,10 @@ class RawDataAppendImportError(RawDataImportError):
 
     def __str__(self) -> str:
         return f"{self.error_type.value} writing from {self.raw_temp_table.to_str()} to raw data table failed with:\n\n{self.error_msg}"
+
+    @property
+    def file_tag(self) -> str:
+        return self.raw_temp_table.table_id.split("_")[0]
 
     def serialize(self) -> str:
         result_dict = {
@@ -870,8 +878,9 @@ class ImportSessionSummary(BaseResult):
     Attributes:
         file_id (int): conceptual file_id associated with the import
         import_status (DirectIngestRawDataImportSessionStatus): the imports status
-        historical_diffs_active (Optional[bool]): whether or not historical diffs were
-            or would have been performed during this import
+        historical_diffs_active (bool): whether or not historical diffs were performed
+            during the import of this file (or would have been had the import
+            successfully made it to that stage)
         raw_rows (Optional[int]): total number of rows sent by the state across all files
             for this file_id
         net_new_or_updated_rows (Optional[int]): if |historical_diffs_active| is True,
@@ -886,9 +895,7 @@ class ImportSessionSummary(BaseResult):
     import_status: DirectIngestRawDataImportSessionStatus = attr.ib(
         validator=attr.validators.in_(DirectIngestRawDataImportSessionStatus)
     )
-    historical_diffs_active: Optional[bool] = attr.ib(
-        default=None, validator=attr_validators.is_opt_bool
-    )
+    historical_diffs_active: bool = attr.ib(validator=attr_validators.is_bool)
     raw_rows: Optional[int] = attr.ib(
         default=None, validator=attr_validators.is_opt_int
     )

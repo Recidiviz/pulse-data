@@ -38,6 +38,14 @@ from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.constants.operations.direct_ingest_raw_data_import_session import (
     DirectIngestRawDataImportSessionStatus,
 )
+from recidiviz.common.constants.states import StateCode
+from recidiviz.ingest.direct.direct_ingest_regions import (
+    raw_data_pruning_enabled_in_state_and_instance,
+)
+from recidiviz.ingest.direct.raw_data.raw_file_configs import (
+    DirectIngestRegionRawFileConfig,
+)
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.direct.types.raw_data_import_types import (
     AppendReadyFile,
     AppendReadyFileBatch,
@@ -140,12 +148,15 @@ def coalesce_import_ready_files(
 
 @task
 def coalesce_results_and_errors(
+    region_code: str,
+    raw_data_instance: DirectIngestInstance,
     serialized_bq_metadata: List[str],
     serialized_divide_files_into_chunks: List[str],
     serialized_pre_import_normalization_result: str,
     serialized_load_prep_results: List[str],
     serialized_append_batches: Dict[str, List[str]],
     serialized_append_result: List[str],
+    region_module_override: Optional[ModuleType] = None,
 ) -> Dict[str, List[str]]:
     """Reconciles the RawBigQueryFileMetadataSummary against the results and errors of
     the pre-import normalization and big query load steps, returning a dictionary with
@@ -160,6 +171,10 @@ def coalesce_results_and_errors(
         - temporary_tables_to_clean: a list of BigQueryAddress objects that need to be
             deleted
     """
+
+    region_raw_config = get_direct_ingest_region_raw_config(
+        region_code, region_module_override=region_module_override
+    )
 
     (
         bq_metadata,
@@ -183,9 +198,13 @@ def coalesce_results_and_errors(
         failed_import_sessions_for_file_id,
         temporary_file_paths_to_clean,
         temporary_tables_to_clean,
-    ) = _build_import_sessions_for_errors(bq_metadata, *import_errors)
+    ) = _build_import_sessions_for_errors(
+        region_raw_config, raw_data_instance, bq_metadata, *import_errors
+    )
 
     missing_import_sessions = _reconcile_import_sessions_and_bq_metadata(
+        region_raw_config,
+        raw_data_instance,
         bq_metadata,
         successful_import_sessions_for_file_id,
         failed_import_sessions_for_file_id,
@@ -213,6 +232,8 @@ def coalesce_results_and_errors(
 
 
 def _reconcile_import_sessions_and_bq_metadata(
+    raw_region_config: DirectIngestRegionRawFileConfig,
+    raw_data_instance: DirectIngestInstance,
     bq_metadata: List[RawBigQueryFileMetadataSummary],
     successful_import_sessions_for_file_id: Dict[int, ImportSessionSummary],
     failed_import_sessions_for_file_id: Dict[int, ImportSessionSummary],
@@ -240,13 +261,36 @@ def _reconcile_import_sessions_and_bq_metadata(
                 ImportSessionSummary(
                     file_id=assert_type(metadata.file_id, int),
                     import_status=DirectIngestRawDataImportSessionStatus.FAILED_UNKNOWN,
+                    historical_diffs_active=_historical_diffs_active_for_tag(
+                        raw_region_config, raw_data_instance, metadata.file_tag
+                    ),
                 )
             )
 
     return missing_file_ids
 
 
+# TODO(#12390): Delete once raw data pruning is live.
+def _historical_diffs_active_for_tag(
+    raw_region_config: DirectIngestRegionRawFileConfig,
+    raw_data_instance: DirectIngestInstance,
+    file_tag: str,
+) -> bool:
+    """Boolean return for if the raw file_tag will have historical diffs active"""
+    raw_data_pruning_enabled = raw_data_pruning_enabled_in_state_and_instance(
+        StateCode(raw_region_config.region_code.upper()), raw_data_instance
+    )
+    if not raw_data_pruning_enabled:
+        return False
+
+    return not raw_region_config.raw_file_configs[
+        file_tag
+    ].is_exempt_from_raw_data_pruning()
+
+
 def _build_import_sessions_for_errors(
+    raw_region_config: DirectIngestRegionRawFileConfig,
+    raw_data_instance: DirectIngestInstance,
     bq_metadata: List[RawBigQueryFileMetadataSummary],
     processing_errors: List[RawFileProcessingError],
     load_and_prep_errors: List[RawFileLoadAndPrepError],
@@ -267,6 +311,9 @@ def _build_import_sessions_for_errors(
         failed_import_sessions[append_error.file_id] = ImportSessionSummary(
             file_id=append_error.file_id,
             import_status=append_error.error_type,
+            historical_diffs_active=_historical_diffs_active_for_tag(
+                raw_region_config, raw_data_instance, append_error.file_tag
+            ),
         )
         temporary_tables_to_clean.append(append_error.raw_temp_table)
 
@@ -274,6 +321,9 @@ def _build_import_sessions_for_errors(
         failed_import_sessions[load_and_prep_error.file_id] = ImportSessionSummary(
             file_id=load_and_prep_error.file_id,
             import_status=load_and_prep_error.error_type,
+            historical_diffs_active=_historical_diffs_active_for_tag(
+                raw_region_config, raw_data_instance, load_and_prep_error.file_tag
+            ),
         )
         if load_and_prep_error.pre_import_normalized_file_paths:
             temporary_file_paths_to_clean.extend(
@@ -296,6 +346,11 @@ def _build_import_sessions_for_errors(
         failed_import_sessions[file_id] = ImportSessionSummary(
             file_id=file_id,
             import_status=processing_error.error_type,
+            historical_diffs_active=_historical_diffs_active_for_tag(
+                raw_region_config,
+                raw_data_instance,
+                processing_error.file_tag,
+            ),
         )
         if processing_error.temporary_file_paths:
             temporary_file_paths_to_clean.extend(processing_error.temporary_file_paths)
