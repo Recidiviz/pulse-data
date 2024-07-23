@@ -390,6 +390,29 @@ class DirectIngestGCSFileSystem(Generic[GCSFileSystemType], GCSFileSystem):
         )
         self.mv(path, storage_path)
 
+    def mv_unprocessed_path_to_processed_path_in_storage(
+        self, path: GcsfsFilePath, storage_directory_path: GcsfsDirectoryPath
+    ) -> GcsfsFilePath:
+        """Renames and moves an unprocessed file path to its appropriate storage
+        location with a processed prefix. For example,
+
+        ingest-bucket/unprocessed_2024-01-25T16:35:33:617135_raw_tag.csv
+        --------->
+        storage-bucket/2024/01/25/processed_2024-01-25T16:35:33:617135_raw_test_file_tag.csv
+        """
+        processed_path = self._to_processed_file_path(path)
+        storage_path = self._raw_file_storage_path(
+            storage_directory_path, processed_path
+        )
+
+        logging.info(
+            "Moving [%s] to storage path [%s].",
+            path.abs_path(),
+            storage_path.abs_path(),
+        )
+        self.mv(path, storage_path)
+        return storage_path
+
     def unzip(
         self, zip_file_path: GcsfsFilePath, destination_dir: GcsfsDirectoryPath
     ) -> List[GcsfsFilePath]:
