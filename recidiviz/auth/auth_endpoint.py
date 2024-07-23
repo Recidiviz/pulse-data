@@ -428,7 +428,7 @@ def delete_state_role(
                 .where(
                     func.coalesce(UserOverride.state_code, Roster.state_code)
                     == state_code,
-                    func.coalesce(UserOverride.role, Roster.role) == role,
+                    func.coalesce(UserOverride.roles, Roster.roles).any(role),
                 )
                 .all()
             )
