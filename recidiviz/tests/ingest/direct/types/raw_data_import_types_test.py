@@ -46,6 +46,7 @@ from recidiviz.ingest.direct.types.raw_data_import_types import (
     PreImportNormalizedCsvChunkResult,
     PreImportNormalizedFileResult,
     RawBigQueryFileMetadataSummary,
+    RawBigQueryFileProcessedTime,
     RawDataAppendImportError,
     RawFileLoadAndPrepError,
     RawFileProcessingError,
@@ -415,6 +416,15 @@ class TestSerialization(unittest.TestCase):
             deleted_rows=1,
         )
         self._validate_serialization(original, ImportSessionSummary)
+
+    def test_update_ready_metadata(self) -> None:
+        original = RawBigQueryFileProcessedTime(
+            file_id=1,
+            file_processed_time=datetime.datetime(
+                2024, 1, 1, 1, 1, 1, tzinfo=datetime.UTC
+            ),
+        )
+        self._validate_serialization(original, RawBigQueryFileProcessedTime)
 
     def test_task_result(self) -> None:
         result = PreImportNormalizedFileResult(

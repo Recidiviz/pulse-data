@@ -942,3 +942,43 @@ class ImportSessionSummary(BaseResult):
             deleted_rows=append_summary.deleted_rows,
             historical_diffs_active=append_summary.historical_diffs_active,
         )
+
+
+@attr.define
+class RawBigQueryFileProcessedTime(BaseResult):
+    """Metadata for successfully imported files needed to set the proper
+    file_processed_time on direct_ingest_raw_big_query_file_metadata table
+
+    Attributes:
+        file_id (int): conceptual file_id to update with |file_processed_time|
+        file_processed_time (datetime.datetime): time at which the file import finished
+    """
+
+    file_id: int = attr.ib(validator=attr_validators.is_int)
+    file_processed_time: datetime.datetime = attr.ib(
+        validator=attr_validators.is_utc_timezone_aware_datetime
+    )
+
+    def serialize(self) -> str:
+        return json.dumps(
+            {
+                "file_id": self.file_id,
+                "file_processed_time": self.file_processed_time.isoformat(),
+            }
+        )
+
+    @staticmethod
+    def deserialize(json_str: str) -> "RawBigQueryFileProcessedTime":
+        data = assert_type(json.loads(json_str), dict)
+        return RawBigQueryFileProcessedTime(
+            file_id=data["file_id"],
+            file_processed_time=datetime.datetime.fromisoformat(
+                data["file_processed_time"]
+            ),
+        )
+
+    @classmethod
+    def from_new_import_session_row(
+        cls, row: Tuple[int, str, datetime.datetime]
+    ) -> "RawBigQueryFileProcessedTime":
+        return RawBigQueryFileProcessedTime(file_id=row[0], file_processed_time=row[2])
