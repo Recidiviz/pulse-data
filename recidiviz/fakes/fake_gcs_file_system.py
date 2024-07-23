@@ -274,7 +274,12 @@ class FakeGCSFileSystem(GCSFileSystem):
     def delete(self, path: GcsfsFilePath) -> None:
         with self.mutex:
             if not self.delegate or self.delegate.on_file_delete(path):
-                self.files.pop(path.abs_path())
+                try:
+                    self.files.pop(path.abs_path())
+                except KeyError:
+                    # mimics behavior of catching GCSBlobDoesNotExistError and not
+                    # re-raising
+                    pass
 
     def ls_with_blob_prefix(
         self, bucket_name: str, blob_prefix: str
