@@ -17,9 +17,13 @@
 """Tests for Airflow tasks for the clean up and storage step of the raw data import dag"""
 import re
 from unittest import TestCase
-from unittest.mock import patch
+from unittest.mock import call, patch
 
-from recidiviz.airflow.dags.raw_data.clean_up_tasks import clean_up_temporary_files
+from recidiviz.airflow.dags.raw_data.clean_up_tasks import (
+    clean_up_temporary_files,
+    clean_up_temporary_tables,
+)
+from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.fakes.fake_gcs_file_system import (
     FakeGCSFileSystem,
@@ -106,3 +110,65 @@ class CleanUpTemporaryFilesTest(TestCase):
         ):
             clean_up_temporary_files.function([p.abs_path() for p in paths])
         assert self.fs.all_paths == [paths[0]]
+
+
+class CleanUpTemporaryTables(TestCase):
+    """Unit tests for clean_up_temporary_files task"""
+
+    def setUp(self) -> None:
+        self.bq_patch = patch(
+            "recidiviz.airflow.dags.raw_data.clean_up_tasks.BigQueryClientImpl",
+        )
+        self.bq_mock = self.bq_patch.start()
+
+    def tearDown(self) -> None:
+        self.bq_patch.stop()
+
+    def test_no_tables(self) -> None:
+        clean_up_temporary_tables.function([])
+
+    def test_tables(self) -> None:
+        tables = [
+            BigQueryAddress(dataset_id="temp", table_id="table1"),
+            BigQueryAddress(dataset_id="temp", table_id="table2"),
+            BigQueryAddress(dataset_id="temp", table_id="table3"),
+        ]
+
+        clean_up_temporary_tables.function([a.to_str() for a in tables])
+
+        self.bq_mock.assert_has_calls(
+            [
+                call().delete_table(a.dataset_id, a.table_id, not_found_ok=True)
+                for a in tables
+            ]
+        )
+
+    def test_tables_with_errors(self) -> None:
+        tables = [
+            BigQueryAddress(dataset_id="temp", table_id="table1"),
+            BigQueryAddress(dataset_id="temp", table_id="table2"),
+            BigQueryAddress(dataset_id="temp", table_id="table3"),
+        ]
+
+        def _delete_table(
+            _dataset_id: str,
+            table_id: str,
+            not_found_ok: bool = False,  # pylint: disable=unused-argument
+        ) -> None:
+            if table_id == "table1":
+                raise ValueError("oops!")
+
+        self.bq_mock().delete_table.side_effect = _delete_table
+
+        with self.assertRaisesRegex(
+            ExceptionGroup,
+            re.escape("Errors occurred during table deletion (1 sub-exception)"),
+        ):
+            clean_up_temporary_tables.function([a.to_str() for a in tables])
+
+        self.bq_mock.assert_has_calls(
+            [
+                call().delete_table(a.dataset_id, a.table_id, not_found_ok=True)
+                for a in tables
+            ]
+        )
