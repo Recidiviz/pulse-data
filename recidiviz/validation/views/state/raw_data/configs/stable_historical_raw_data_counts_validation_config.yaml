@@ -59,3 +59,20 @@ DATE_RANGE:
         This is a small file with only ~1000 rows, so even small fluctuations cause this
         to fail on % change. This date had a reasonable change of 22 rows, so we exclude
         it from the failures.
+  US_AR:
+    - file_tag: RELEASEDATECHANGE
+      datetime_start_inclusive: "2024-06-12T00:00:00Z"
+      datetime_end_exclusive: "2024-07-18T00:00:00Z"
+      exclusion_reason:
+        This is the date range between when this file was first copied to prod and when
+        SFTP was configured to start directly uploading AR tables to the prod bucket.
+        There's about a month between these transfers, so it's expected for some tables
+        to have more rows as of the first SFTP transfer.
+    - file_tag: SUPVINCENTIVE
+      datetime_start_inclusive: "2024-06-12T00:00:00Z"
+      datetime_end_exclusive: "2024-07-18T00:00:00Z"
+      exclusion_reason:
+        This is the date range between when this file was first copied to prod and when
+        SFTP was configured to start directly uploading AR tables to the prod bucket.
+        There's about a month between these transfers, so it's expected for some tables
+        to have more rows as of the first SFTP transfer.
