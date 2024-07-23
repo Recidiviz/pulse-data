@@ -21,6 +21,8 @@ from typing import List
 
 from airflow.decorators import task
 
+from recidiviz.big_query.big_query_address import BigQueryAddress
+from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 
@@ -56,3 +58,42 @@ def clean_up_temporary_files(serialized_temporary_paths: List[str]) -> None:
 
     if failed:
         raise ExceptionGroup("Errors occurred during path deletion", failed)
+
+
+@task
+def clean_up_temporary_tables(serialized_temporary_tables: List[str]) -> None:
+    """Concurrently deletes |serialized_temporary_tables| from BigQuery, if they exist."""
+    temporary_tables = [
+        BigQueryAddress.from_str(serialized_temporary_table)
+        for serialized_temporary_table in serialized_temporary_tables
+    ]
+
+    bq_client = BigQueryClientImpl()
+
+    with futures.ThreadPoolExecutor(max_workers=MAX_DELETE_THREADS) as executor:
+        delete_futures = [
+            executor.submit(
+                bq_client.delete_table,
+                table.dataset_id,
+                table.table_id,
+                not_found_ok=True,
+            )
+            for table in temporary_tables
+        ]
+
+        failed: List[Exception] = []
+        completed: int = 0
+
+        for f in futures.as_completed(delete_futures):
+            try:
+                f.result()
+                completed += 1
+            except Exception as e:
+                failed.append(e)
+
+    logging.info(
+        "Confirmed [%s/%s] tables are deleted", completed, len(temporary_tables)
+    )
+
+    if failed:
+        raise ExceptionGroup("Errors occurred during table deletion", failed)
