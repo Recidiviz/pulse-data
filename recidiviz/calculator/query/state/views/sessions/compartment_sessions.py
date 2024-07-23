@@ -206,6 +206,8 @@ COMPARTMENT_SESSIONS_QUERY_TEMPLATE = """
         ARRAY_AGG(case_type IGNORE NULLS ORDER BY sub_session_id ASC LIMIT 1)[SAFE_OFFSET(0)] AS case_type_start,
         ARRAY_AGG(case_type IGNORE NULLS ORDER BY sub_session_id DESC LIMIT 1)[SAFE_OFFSET(0)] AS case_type_end,
         ANY_VALUE(gender) AS gender,
+        ARRAY_AGG(custodial_authority IGNORE NULLS ORDER BY sub_session_id ASC LIMIT 1)[SAFE_OFFSET(0)] AS custodial_authority_start,
+        ARRAY_AGG(custodial_authority IGNORE NULLS ORDER BY sub_session_id DESC LIMIT 1)[SAFE_OFFSET(0)] AS custodial_authority_end,
         ANY_VALUE(prioritized_race_or_ethnicity) AS prioritized_race_or_ethnicity,
         ARRAY_AGG(age RESPECT NULLS ORDER BY sub_session_id ASC LIMIT 1)[SAFE_OFFSET(0)] AS age_start,
         --Null out the age_end for active inferred sub-sessions
@@ -280,6 +282,8 @@ COMPARTMENT_SESSIONS_QUERY_TEMPLATE = """
         housing_unit_type_end,
         case_type_start,
         case_type_end,
+        custodial_authority_start,
+        custodial_authority_end,
         CASE WHEN age_start <=24 THEN '<25'
             WHEN age_start <=29 THEN '25-29'
             WHEN age_start <=39 THEN '30-39'

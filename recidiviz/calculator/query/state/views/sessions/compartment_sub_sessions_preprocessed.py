@@ -66,6 +66,7 @@ COMPARTMENT_SUB_SESSIONS_PREPROCESSED_QUERY_TEMPLATE = """
         session_attributes.case_type,
         COALESCE(session_attributes.prioritized_race_or_ethnicity,'EXTERNAL_UNKNOWN') AS prioritized_race_or_ethnicity,
         session_attributes.gender,
+        session_attributes.custodial_authority,
         last_day_of_data,
     FROM `{project_id}.{sessions_dataset}.dataflow_sessions_materialized`,
     UNNEST(session_attributes) session_attributes
@@ -100,6 +101,7 @@ COMPARTMENT_SUB_SESSIONS_PREPROCESSED_QUERY_TEMPLATE = """
         case_type,
         prioritized_race_or_ethnicity,
         gender,
+        custodial_authority,
         metric_source,
         last_day_of_data,
     FROM
@@ -146,6 +148,7 @@ COMPARTMENT_SUB_SESSIONS_PREPROCESSED_QUERY_TEMPLATE = """
             ORDER BY IF(cte.compartment_level_1 LIKE 'SUPERVISION%', cl2_dedup.priority, 999) ASC) AS open_supervision_type,
         cte.prioritized_race_or_ethnicity,
         cte.gender,
+        cte.custodial_authority,
         cte.start_date,
         cte.end_date_exclusive,
         cte.last_day_of_data,
@@ -209,6 +212,7 @@ COMPARTMENT_SUB_SESSIONS_PREPROCESSED_QUERY_TEMPLATE = """
         CAST(NULL AS STRING) AS open_supervision_type,
         prioritized_race_or_ethnicity,
         gender,
+        CAST(NULL AS STRING) AS custodial_authority,
         start_date,
         end_date_exclusive,
         MIN(last_day_of_data) OVER(PARTITION BY state_code) AS last_day_of_data
@@ -447,6 +451,7 @@ COMPARTMENT_SUB_SESSIONS_PREPROCESSED_QUERY_TEMPLATE = """
         case_type,
         prioritized_race_or_ethnicity,
         gender,
+        custodial_authority,
         start_date,
         end_date_exclusive,
         start_reason,

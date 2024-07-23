@@ -75,6 +75,9 @@ from recidiviz.calculator.query.state.views.sessions.compartment_sub_sessions_pr
 from recidiviz.calculator.query.state.views.sessions.consecutive_sentences_preprocessed import (
     CONSECUTIVE_SENTENCES_PREPROCESSED_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.sessions.custodial_authority_sessions import (
+    CUSTODIAL_AUTHORITY_SESSIONS_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.sessions.custody_level_dedup_priority import (
     CUSTODY_LEVEL_DEDUP_PRIORITY_VIEW_BUILDER,
 )
@@ -412,4 +415,5 @@ SESSIONS_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     PERSON_CASELOAD_LOCATION_SESSIONS_VIEW_BUILDER,
     LOCATION_TYPE_SESSIONS_VIEW_BUILDER,
     HOUSING_UNIT_TYPE_NON_PROTECTIVE_CUSTODY_SOLITARY_SESSIONS_VIEW_BUILDER,
+    CUSTODIAL_AUTHORITY_SESSIONS_VIEW_BUILDER,
 ]

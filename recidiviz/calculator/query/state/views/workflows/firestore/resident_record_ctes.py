@@ -105,16 +105,17 @@ _RESIDENT_RECORD_INCARCERATION_DATES_CTE = f"""
             ic.*,
             MAX(t.projected_completion_date_max) 
                     OVER(w) AS release_date,
+            -- TODO(#31703): Make this a state agnostic field
             MAX(c.start_date) 
                     OVER(w) AS us_tn_facility_admission_date,
         FROM
             incarceration_cases ic
         LEFT JOIN (
             SELECT person_id, state_code, start_date
-            FROM `{{project_id}}.sessions.location_type_sessions_materialized`
+            FROM `{{project_id}}.sessions.custodial_authority_sessions_materialized`
             WHERE CURRENT_DATE('US/Eastern') BETWEEN start_date
                 AND {nonnull_end_date_exclusive_clause('end_date_exclusive')}
-                AND location_type = "STATE_PRISON"
+                AND custodial_authority = "STATE_PRISON"
         ) c
             USING(person_id, state_code)
         LEFT JOIN `{{project_id}}.{{sessions_dataset}}.incarceration_projected_completion_date_spans_materialized` t
