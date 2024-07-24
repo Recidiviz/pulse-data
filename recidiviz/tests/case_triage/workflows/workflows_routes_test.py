@@ -1819,6 +1819,7 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
                 system_type=WorkflowsSystemType.SUPERVISION,
                 url_section="urlSection",
                 firestore_collection="firestoreCollection",
+                homepage_position=1,
             )
         ]
 

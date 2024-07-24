@@ -42,6 +42,7 @@ class OpportunityInfo:
     system_type: WorkflowsSystemType = attr.ib()
     url_section: str = attr.ib()
     firestore_collection: str = attr.ib()
+    homepage_position: int = attr.ib()
 
     def to_dict(self) -> Dict[str, Any]:
         return cattrs.unstructure(self)
@@ -181,6 +182,7 @@ class OpportunityConfigResponse(OpportunityInfo, OpportunityConfig):
             system_type=opportunity.system_type,
             url_section=opportunity.url_section,
             firestore_collection=opportunity.firestore_collection,
+            homepage_position=opportunity.homepage_position,
             display_name=config.display_name,
             methodology_url=config.methodology_url,
             initial_header=config.initial_header,

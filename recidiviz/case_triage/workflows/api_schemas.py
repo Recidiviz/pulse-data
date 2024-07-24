@@ -231,6 +231,7 @@ class WorkflowsFullConfigSchema(WorkflowsConfigSchema):
     system_type = fields.Str()
     url_section = fields.Str()
     firestore_collection = fields.Str()
+    homepage_position = fields.Int()
 
 
 class WorkflowsConfigurationsResponseSchema(CamelCaseSchema):
