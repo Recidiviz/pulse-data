@@ -8,7 +8,7 @@ input_columns:
   - PARTYRELEND
   - WORKASSIGNMENT
   - PRIMARYSITEIND
-  - ORGREGIONCODE
+  - RELATEDPARTYID
   - loc_seq
   - role_seq
 unused_columns: []
@@ -54,7 +54,7 @@ output:
                 - $equal:
                     - PRIMARYSITEIND
                     - $literal("Y")
-                - $not_null: ORGREGIONCODE
+                - $not_null: RELATEDPARTYID
             $then:
               StateStaffLocationPeriod:
                 external_id:
@@ -65,4 +65,4 @@ output:
                       - loc_seq
                 start_date: PARTYRELSTART
                 end_date: PARTYRELEND
-                location_external_id: ORGREGIONCODE
+                location_external_id: RELATEDPARTYID
