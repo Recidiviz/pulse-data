@@ -162,7 +162,11 @@ class MetricBenchmark(InsightsBase):
     # The threshold for the given metric, specifically the IQR
     threshold = Column(Float, nullable=False)
     # Caseload type, if applicable. 'ALL' indicates the metric benchmark is statewide.
+    # TODO(#31634): Rename to caseload_category.
     caseload_type = Column(String, primary_key=True)
+    # Category this caseload type is part of, e.g. SEX_OFFENSE_BINARY. 'ALL' indicates the metric
+    # benchmark is statewide.
+    category_type = Column(String, primary_key=True)
     # If it exists, the top x% of officers to highlight for this metric
     top_x_pct = Column(Integer)
     # The percentile value to compare an individual rate to and determine if they are in the top_x_pct

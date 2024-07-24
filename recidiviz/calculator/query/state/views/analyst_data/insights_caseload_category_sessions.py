@@ -28,6 +28,8 @@ from recidiviz.calculator.query.state.dataset_config import ANALYST_VIEWS_DATASE
 from recidiviz.common.constants.state.state_staff_caseload_type import (
     StateStaffCaseloadType,
 )
+from recidiviz.utils.environment import GCP_PROJECT_STAGING
+from recidiviz.utils.metadata import local_project_id_override
 
 _VIEW_NAME = "insights_caseload_category_sessions"
 _VIEW_DESCRIPTION = """Sessionized view assigning clients to a caseload type category based on
@@ -38,6 +40,7 @@ class InsightsCaseloadCategoryType(Enum):
     """Types of caseload categorization logic supported by Insights"""
 
     SEX_OFFENSE_BINARY = "SEX_OFFENSE_BINARY"
+    ALL = "ALL"
 
 
 def get_caseload_category_query_fragment(
@@ -48,12 +51,7 @@ def get_caseload_category_query_fragment(
 
     # Specify the CASE-WHEN logic for each InsightsCaseloadCategoryType
     if category_type == InsightsCaseloadCategoryType.SEX_OFFENSE_BINARY:
-        query_fragment = f"""
-    SELECT
-        state_code,
-        person_id,
-        start_date,
-        end_date_exclusive,
+        return f"""
         CASE
             # Only categorize as SEX_OFFENSE if SEX_OFFENSE is the only caseload type in the person's caseload type array
             WHEN 
@@ -67,16 +65,13 @@ def get_caseload_category_query_fragment(
 
             # All other non-null caseload types are categorized as "NOT_SEX_OFFENSE"
             ELSE "NOT_{StateStaffCaseloadType.SEX_OFFENSE.name}"
-        END AS caseload_category,
-        "{category_type.name}" AS category_type,
-    FROM
-        intersection_spans
+        END
 """
-    else:
-        raise TypeError(
-            f"Caseload categorization has not been configured for {category_type.name} category type."
-        )
-    return query_fragment
+    if category_type == InsightsCaseloadCategoryType.ALL:
+        return '"ALL"'
+    raise TypeError(
+        f"Caseload categorization has not been configured for {category_type.name} category type."
+    )
 
 
 def get_insights_caseload_category_sessions_view_builder() -> SimpleBigQueryViewBuilder:
@@ -84,7 +79,17 @@ def get_insights_caseload_category_sessions_view_builder() -> SimpleBigQueryView
     caseload type category of their officer, for every configured category type."""
     unioned_query_fragments = "\n    UNION ALL\n".join(
         [
-            get_caseload_category_query_fragment(category_type)
+            f"""
+    SELECT
+        state_code,
+        person_id,
+        start_date,
+        end_date_exclusive,
+        {get_caseload_category_query_fragment(category_type)} AS caseload_category,
+        "{category_type.name}" AS category_type,
+    FROM
+        intersection_spans
+"""
             for category_type in InsightsCaseloadCategoryType
         ]
     )
@@ -164,3 +169,12 @@ sub_sessions_dedup AS (
         clustering_fields=["state_code", "category_type"],
         should_materialize=True,
     )
+
+
+INSIGHTS_CASELOAD_CATEGORY_SESSIONS_VIEW_BUILDER = (
+    get_insights_caseload_category_sessions_view_builder()
+)
+
+if __name__ == "__main__":
+    with local_project_id_override(GCP_PROJECT_STAGING):
+        INSIGHTS_CASELOAD_CATEGORY_SESSIONS_VIEW_BUILDER.build_and_print()

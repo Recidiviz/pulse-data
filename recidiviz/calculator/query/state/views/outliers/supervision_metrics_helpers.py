@@ -17,6 +17,7 @@
 """Helpers for building supervision metrics views """
 from typing import Optional
 
+from recidiviz.aggregated_metrics.dataset_config import AGGREGATED_METRICS_DATASET_ID
 from recidiviz.calculator.query.bq_utils import list_to_query_string
 from recidiviz.calculator.query.state.views.analyst_data.models.metric_unit_of_analysis_type import (
     MetricUnitOfAnalysis,
@@ -31,12 +32,13 @@ from recidiviz.outliers.types import OutliersMetricValueType
 def supervision_metric_query_template(
     unit_of_analysis: MetricUnitOfAnalysis,
     cte_source: Optional[str] = None,
+    dataset_id: Optional[str] = AGGREGATED_METRICS_DATASET_ID,
 ) -> str:
     """
     Helper for querying supervision_<unit_of_analysis>_aggregated_metrics views
     """
     source_table = (
-        f"`{{project_id}}.aggregated_metrics.supervision_{unit_of_analysis.type.short_name}_aggregated_metrics_materialized`"
+        f"`{{project_id}}.{dataset_id}.supervision_{unit_of_analysis.type.short_name}_aggregated_metrics_materialized`"
         if not cte_source
         else cte_source
     )

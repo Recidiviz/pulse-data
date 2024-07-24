@@ -29,6 +29,9 @@ from sqlalchemy.dialects.postgresql import aggregate_order_by, insert
 from sqlalchemy.orm import Session, aliased, sessionmaker
 
 from recidiviz.aggregated_metrics.metric_time_periods import MetricTimePeriod
+from recidiviz.calculator.query.state.views.analyst_data.insights_caseload_category_sessions import (
+    InsightsCaseloadCategoryType,
+)
 from recidiviz.calculator.query.state.views.outliers.outliers_enabled_states import (
     get_outliers_enabled_states,
 )
@@ -370,18 +373,15 @@ class OutliersQuerier:
         session: Session,
         metric: OutliersMetricConfig,
         end_date: date,
-        caseload_type: Optional[str] = None,
     ) -> Tuple[float, TargetStatusStrategy]:
         target_query = session.query(MetricBenchmark).filter(
             MetricBenchmark.metric_id == metric.name,
             MetricBenchmark.end_date == end_date,
             MetricBenchmark.period == MetricTimePeriod.YEAR.value,
+            # TODO(#31552): Return benchmarks for a configured category
+            MetricBenchmark.category_type == InsightsCaseloadCategoryType.ALL.value,
+            MetricBenchmark.caseload_type == "ALL",
         )
-
-        if caseload_type:
-            target_query.filter(MetricBenchmark.caseload_type == caseload_type)
-        else:
-            target_query.filter(MetricBenchmark.caseload_type is None)
 
         metric_benchmark = target_query.scalar()
         target = metric_benchmark.target
@@ -631,6 +631,10 @@ class OutliersQuerier:
                 .filter(
                     # Get the benchmarks for all periods between requested or latest end_date and earliest end date
                     MetricBenchmark.end_date.between(earliest_end_date, end_date),
+                    # TODO(#31552): Return benchmarks for a configured category
+                    MetricBenchmark.category_type
+                    == InsightsCaseloadCategoryType.ALL.value,
+                    MetricBenchmark.caseload_type == "ALL",
                 )
                 .group_by(
                     MetricBenchmark.metric_id,

@@ -19,6 +19,13 @@ from recidiviz.big_query.selected_columns_big_query_view import (
     SelectedColumnsBigQueryViewBuilder,
 )
 from recidiviz.calculator.query.state import dataset_config
+from recidiviz.calculator.query.state.views.analyst_data.models.metric_unit_of_analysis_type import (
+    METRIC_UNITS_OF_ANALYSIS_BY_TYPE,
+    MetricUnitOfAnalysisType,
+)
+from recidiviz.calculator.query.state.views.outliers.supervision_metrics_helpers import (
+    supervision_metric_query_template,
+)
 from recidiviz.calculator.query.state.views.outliers.utils import (
     get_highlight_percentile_value_query,
 )
@@ -48,25 +55,49 @@ statewide_iqrs AS (
 )
 -- TODO(#24119): Add highlight calculation by caseload type
 -- TODO(#24119): Add iqr calculation by caseload type
+, metrics_by_caseload_type AS (
+    SELECT
+        state_code,
+        -- "ALL" indicates the metric is statewide.
+        -- Pull statewide metrics from here instead of using the "ALL" category type in the
+        -- insights caseload category metrics because the statewide metrics count clients who
+        -- don't have an officer assignment, whereas the caseload category metrics only count
+        -- clients that do.
+        "ALL" AS caseload_category,
+        "ALL" AS category_type,
+        period,
+        end_date,
+        metric_id,
+        metric_value,
+        value_type
+        -- TODO(#31711): Bring the `supervision_state_metrics` query inline
+        FROM `{{project_id}}.{{outliers_views_dataset}}.supervision_state_metrics_materialized`
+    
+    UNION ALL
+    
+    SELECT * FROM (
+        {supervision_metric_query_template(unit_of_analysis=METRIC_UNITS_OF_ANALYSIS_BY_TYPE[MetricUnitOfAnalysisType.INSIGHTS_CASELOAD_CATEGORY], dataset_id=dataset_config.OUTLIERS_VIEWS_DATASET)}
+    )
+    WHERE category_type != "ALL"
+)
 , metric_benchmarks AS (
     SELECT 
         m.state_code,
         m.metric_id,
         m.period,
         m.end_date,
-        -- Keep an entry where caseload type is ALL to indicate that the benchmark is statewide
-        'ALL' AS caseload_type,
+        caseload_category AS caseload_type,
+        category_type,
         m.metric_value AS target,
         statewide_iqrs.iqr AS threshold,
         statewide_highlight_values.top_x_pct AS top_x_pct,
         statewide_highlight_values.top_x_pct_percentile_value
-    FROM `{{project_id}}.{{outliers_views_dataset}}.supervision_state_metrics_materialized` m
+    FROM metrics_by_caseload_type m
     LEFT JOIN statewide_iqrs
         USING (state_code, metric_id, end_date)
     LEFT JOIN statewide_highlight_values
         USING (state_code, metric_id, end_date)
     WHERE m.value_type = 'RATE'
--- TODO(#24119): Add metrics aggregated by caseload type
 )
 
 SELECT 
@@ -87,6 +118,7 @@ METRIC_BENCHMARKS_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
         "period",
         "end_date",
         "caseload_type",
+        "category_type",
         "target",
         "threshold",
         "top_x_pct",

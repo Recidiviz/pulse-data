@@ -47,7 +47,6 @@ from recidiviz.calculator.query.externally_shared_views.dataset_config import (
 )
 from recidiviz.calculator.query.state.dataset_config import (
     DATAFLOW_METRICS_MATERIALIZED_DATASET,
-    OUTLIERS_VIEWS_DATASET,
     POPULATION_PROJECTION_DATASET,
     REFERENCE_VIEWS_DATASET,
     SPARK_OUTPUT_DATASET_MOST_RECENT,
@@ -358,12 +357,6 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
     ),
     SENTENCE_COHORT_VIEW_BUILDER.address: (
         "Referenced by PSI Case Insights BigQuery writer (see #30876) (Ben Packer 7/9/24) "
-    ),
-    BigQueryAddress(
-        dataset_id=OUTLIERS_VIEWS_DATASET,
-        table_id="supervision_insights_caseload_category_aggregated_metrics",
-    ): (
-        "Will be used for disaggregated caseload types in Insights (see #31550) (Dana Hoffman 7/18/24)"
     ),
     BigQueryAddress(
         dataset_id=REFERENCE_VIEWS_DATASET,
