@@ -55,18 +55,16 @@ from more_itertools import one
 from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
 from recidiviz.big_query.big_query_address import ProjectSpecificBigQueryAddress
 from recidiviz.big_query.big_query_client import BigQueryClient, BigQueryClientImpl
+from recidiviz.calculator.query.state.dataset_config import NORMALIZED_STATE_DATASET
+from recidiviz.common.attr_mixins import attribute_field_type_reference_for_class
 from recidiviz.common.constants.states import StateCode
-from recidiviz.persistence.database.database_entity import DatabaseEntity
-from recidiviz.persistence.database.schema.state import schema
-from recidiviz.persistence.database.schema_utils import (
-    get_database_entities_by_association_table,
-    get_database_entity_by_table_name,
-    is_association_table,
-)
+from recidiviz.persistence.database.schema_utils import is_association_table
 from recidiviz.persistence.entity.base_entity import Entity, EnumEntity, RootEntity
 from recidiviz.persistence.entity.entity_utils import (
     CoreEntityFieldIndex,
     EntityFieldType,
+    SchemaEdgeDirectionChecker,
+    get_entities_by_association_table_id,
     get_entity_class_in_module_with_name,
     get_entity_class_in_module_with_table_id,
 )
@@ -84,6 +82,16 @@ from recidiviz.persistence.entity.state.normalized_entities import (
     NormalizedStatePerson,
     NormalizedStateStaff,
 )
+from recidiviz.source_tables.ingest_pipeline_output_table_collector import (
+    build_ingest_pipeline_output_source_table_collections,
+)
+from recidiviz.source_tables.source_table_config import (
+    IngestPipelineEntitySourceTableLabel,
+    SourceTableCollection,
+)
+from recidiviz.source_tables.union_tables_output_table_collector import (
+    build_unioned_normalized_state_source_table_collections,
+)
 from recidiviz.tools.calculator.compare_views import compare_table_or_view
 from recidiviz.tools.calculator.create_or_update_dataflow_sandbox import (
     TEMP_DATAFLOW_DATASET_DEFAULT_TABLE_EXPIRATION_MS,
@@ -99,6 +107,7 @@ from recidiviz.tools.utils.compare_tables_helper import (
 )
 from recidiviz.tools.utils.script_helpers import prompt_for_confirmation
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
+from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.utils.string import StrictStringFormatter
 from recidiviz.utils.types import assert_subclass
 
@@ -212,8 +221,18 @@ class StateDatasetValidator:
         output_sandbox_prefix: str,
         state_code_filter: StateCode,
         entities_module: ModuleType,
+        schema_type: str,
     ) -> None:
-        self.field_index = CoreEntityFieldIndex()
+        if schema_type == "normalized_state":
+            direction_checker = (
+                SchemaEdgeDirectionChecker.normalized_state_direction_checker()
+            )
+        elif schema_type == "state":
+            direction_checker = SchemaEdgeDirectionChecker.state_direction_checker()
+        else:
+            raise ValueError(f"Unexpected schema_type: {schema_type}")
+
+        self.field_index = CoreEntityFieldIndex(direction_checker)
         self.state_code_filter = state_code_filter
         self.reference_dataset = DatasetReference.from_string(
             reference_state_dataset, default_project=reference_state_project_id
@@ -230,13 +249,39 @@ class StateDatasetValidator:
         self.bq_client = BigQueryClientImpl(project_id=self.output_project_id)
         self.entities_module = entities_module
 
+        with local_project_id_override(reference_state_project_id):
+            self.source_table_collection = self.get_source_table_collection(
+                state_code_filter, schema_type
+            )
+
+    def get_source_table_collection(
+        self, state_code: StateCode, schema_type: str
+    ) -> SourceTableCollection:
+        if schema_type == "state":
+            return one(
+                c
+                for c in build_ingest_pipeline_output_source_table_collections()
+                if c.has_label(
+                    IngestPipelineEntitySourceTableLabel(state_code=state_code)
+                )
+            )
+        if schema_type == "normalized_state":
+            return SourceTableCollection(
+                dataset_id=NORMALIZED_STATE_DATASET,
+                source_tables_by_address={
+                    table.address: table
+                    for collection in build_unioned_normalized_state_source_table_collections()
+                    for table in collection.source_tables
+                },
+            )
+        raise ValueError(f"Unexpected schema_type: {schema_type}")
+
     def _is_enum_entity(self, table_name: str) -> bool:
         if is_association_table(table_name):
             return False
-        db_entity_cls = get_database_entity_by_table_name(schema, table_name)
 
-        entity_cls = get_entity_class_in_module_with_name(
-            self.entities_module, db_entity_cls.__name__
+        entity_cls = get_entity_class_in_module_with_table_id(
+            self.entities_module, table_name
         )
         return issubclass(entity_cls, EnumEntity)
 
@@ -246,7 +291,9 @@ class StateDatasetValidator:
         """
         if is_association_table(state_table_id):
             return []
-        state_entity_cls = get_database_entity_by_table_name(schema, state_table_id)
+        state_entity_cls = get_entity_class_in_module_with_table_id(
+            self.entities_module, state_table_id
+        )
 
         # If an external_id column exists, don't null it out in the `differences`
         # output.
@@ -367,7 +414,7 @@ class StateDatasetValidator:
     def _build_comparable_entity_rows_query(
         self,
         dataset: DatasetReference,
-        state_entity_cls: Type[DatabaseEntity],
+        entity_cls: Type[Entity],
     ) -> str:
         """Returns a formatted query that queries the provided state entity in the
         provided |dataset|, which can be used to compare against the same table in
@@ -375,38 +422,58 @@ class StateDatasetValidator:
         """
 
         filtered_with_new_cols = self._filtered_table_rows_clause_for_entity_table(
-            dataset=dataset, state_entity_cls=state_entity_cls
+            dataset=dataset, entity_cls=entity_cls
         )
+
+        source_tables = [
+            t
+            for t in self.source_table_collection.source_tables
+            if t.address.table_id == entity_cls.get_table_id()
+        ]
+        if len(source_tables) != 1:
+            raise ValueError(
+                f"Found incorrect number of source tables for {entity_cls.get_table_id()}: [{[t.address for t in self.source_table_collection.source_tables]}]"
+            )
+        source_table = one(
+            t
+            for t in self.source_table_collection.source_tables
+            if t.address.table_id == entity_cls.get_table_id()
+        )
+
+        source_table_columns = {f.name for f in source_table.schema_fields}
+        entity_fields = set(attribute_field_type_reference_for_class(entity_cls))
+
+        # The only columns that live on the source table but do not match attribute
+        # names on the entity are foreign key columns.
+        foreign_key_columns = source_table_columns - entity_fields
+
         columns_to_exclude = [
-            state_entity_cls.get_primary_key_column_name(),
-            *state_entity_cls.get_foreign_key_names(),
+            entity_cls.get_primary_key_column_name(),
+            *sorted(foreign_key_columns),
         ]
         columns_to_exclude_str = ",".join(columns_to_exclude)
         return f"""SELECT * EXCEPT ({columns_to_exclude_str})
 FROM ({filtered_with_new_cols})"""
 
     def _get_direct_enum_entity_child_classes(
-        self,
-        state_entity_cls: Type[DatabaseEntity],
+        self, entity_cls: Type[Entity]
     ) -> Set[Type[EnumEntity]]:
         """Returns the set of EnumEntity classes that are direct children of the
-        provided |state_entity_cls|.
+        provided |entity_cls|.
         """
-        direct_child_class_names = {
-            state_entity_cls.get_relationship_property_class_name(relationship_property)
-            for relationship_property in state_entity_cls.get_relationship_property_names()
-        }
-        direct_child_classes = {
-            get_entity_class_in_module_with_name(self.entities_module, cls_name)
-            for cls_name in direct_child_class_names
-        }
-
-        return {cls for cls in direct_child_classes if issubclass(cls, EnumEntity)}
+        enum_classes = set()
+        for attr_info in attribute_field_type_reference_for_class(entity_cls).values():
+            if not attr_info.referenced_cls_name:
+                continue
+            entity_cls = get_entity_class_in_module_with_name(
+                self.entities_module, attr_info.referenced_cls_name
+            )
+            if issubclass(entity_cls, EnumEntity):
+                enum_classes.add(entity_cls)
+        return enum_classes
 
     def _filtered_table_rows_clause_for_entity_table(
-        self,
-        dataset: DatasetReference,
-        state_entity_cls: Type[DatabaseEntity],
+        self, dataset: DatasetReference, entity_cls: Type[Entity]
     ) -> str:
         """Returns a formatted query clause that filters the table in |dataset| for the
         provided |state_entity_cls| down to only rows that are connected to a root
@@ -419,14 +486,14 @@ FROM ({filtered_with_new_cols})"""
             Type[Entity],
             get_root_entity_class_for_entity(
                 get_entity_class_in_module_with_name(
-                    self.entities_module, state_entity_cls.__name__
+                    self.entities_module, entity_cls.__name__
                 )
             ),
         )
         table_address = ProjectSpecificBigQueryAddress(
             project_id=dataset.project,
             dataset_id=dataset.dataset_id,
-            table_id=state_entity_cls.get_entity_name(),
+            table_id=entity_cls.get_table_id(),
         )
         root_entity_id_col = root_entity_cls.get_primary_key_column_name()
         mapping_address = self.root_entity_id_mappings_address(
@@ -437,28 +504,26 @@ FROM ({filtered_with_new_cols})"""
         root_entity_ids_mapping_table = mapping_address.format_address_for_query()
 
         enum_entity_child_join_clauses = []
-        for enum_entity_cls in self._get_direct_enum_entity_child_classes(
-            state_entity_cls
-        ):
+        for enum_entity_cls in self._get_direct_enum_entity_child_classes(entity_cls):
             enum_table_address = ProjectSpecificBigQueryAddress(
                 project_id=dataset.project,
                 dataset_id=dataset.dataset_id,
-                table_id=enum_entity_cls.get_entity_name(),
+                table_id=enum_entity_cls.get_table_id(),
             )
             enum_field_name = enum_entity_cls.get_enum_field_name()
             raw_text_field_name = enum_entity_cls.get_raw_text_field_name()
             enum_entity_child_join_clauses.append(
                 f"""LEFT OUTER JOIN (
     SELECT 
-      {state_entity_cls.get_primary_key_column_name()}, 
+      {entity_cls.get_primary_key_column_name()}, 
       TO_JSON_STRING(
         ARRAY_AGG(STRUCT({enum_field_name}, {raw_text_field_name})
         ORDER BY {enum_field_name}, {raw_text_field_name})
-      ) AS {enum_entity_cls.get_entity_name()}_json
+      ) AS {enum_entity_cls.get_table_id()}_json
     FROM {enum_table_address.format_address_for_query()} 
-    GROUP BY {state_entity_cls.get_primary_key_column_name()}
+    GROUP BY {entity_cls.get_primary_key_column_name()}
   )
-  USING ({state_entity_cls.get_primary_key_column_name()})
+  USING ({entity_cls.get_primary_key_column_name()})
 """
             )
         enum_entity_column_join_clauses_str = "".join(enum_entity_child_join_clauses)
@@ -494,18 +559,16 @@ FROM ({filtered_with_new_cols})"""
         (
             associated_entity_1_cls,
             associated_entity_2_cls,
-        ) = get_database_entities_by_association_table(schema, association_table_id)
+        ) = get_entities_by_association_table_id(
+            self.entities_module, association_table_id
+        )
 
         associated_entity_1_pk = associated_entity_1_cls.get_primary_key_column_name()
         associated_entity_2_pk = associated_entity_2_cls.get_primary_key_column_name()
 
         root_entity_cls = cast(
             Type[Entity],
-            get_root_entity_class_for_entity(
-                get_entity_class_in_module_with_name(
-                    self.entities_module, associated_entity_1_cls.__name__
-                )
-            ),
+            get_root_entity_class_for_entity(associated_entity_1_cls),
         )
         root_entity_id_col = root_entity_cls.get_primary_key_column_name()
 
@@ -515,13 +578,13 @@ FROM ({filtered_with_new_cols})"""
             table_id=association_table_id,
         )
 
-        t1_name = associated_entity_1_cls.get_entity_name()
+        t1_name = associated_entity_1_cls.get_table_id()
         t1_clause = self._filtered_table_rows_clause_for_entity_table(
-            dataset=dataset, state_entity_cls=associated_entity_1_cls
+            dataset=dataset, entity_cls=associated_entity_1_cls
         )
-        t2_name = associated_entity_2_cls.get_entity_name()
+        t2_name = associated_entity_2_cls.get_table_id()
         t2_clause = self._filtered_table_rows_clause_for_entity_table(
-            dataset=dataset, state_entity_cls=associated_entity_2_cls
+            dataset=dataset, entity_cls=associated_entity_2_cls
         )
 
         comparable_root_entity_id_col = f"comparable_{root_entity_id_col}"
@@ -561,10 +624,12 @@ USING({associated_entity_2_pk})
             table_id=state_table_id,
         )
         if not is_association_table(state_table_id):
-            state_entity_cls = get_database_entity_by_table_name(schema, state_table_id)
+            entity_cls = get_entity_class_in_module_with_table_id(
+                self.entities_module, state_table_id
+            )
             comparable_rows_query = self._build_comparable_entity_rows_query(
                 dataset=dataset,
-                state_entity_cls=state_entity_cls,
+                entity_cls=entity_cls,
             )
         else:
             comparable_rows_query = self._build_comparable_association_table_rows_query(
@@ -587,17 +652,17 @@ USING({associated_entity_2_pk})
         ).result()
         return comparable_table_address
 
-    def _root_is_direct_parent(self, state_entity_cls: Type[DatabaseEntity]) -> bool:
+    def _root_is_direct_parent(self, entity_cls: Type[Entity]) -> bool:
         """Returns True if this entity is directly connected to the root entity
         in the entity tree, False if it is connected via an intermediate entity /
         intermediate entities.
         """
         back_edge_fields = self.field_index.get_all_core_entity_fields(
-            state_entity_cls, EntityFieldType.BACK_EDGE
+            entity_cls, EntityFieldType.BACK_EDGE
         )
 
         non_root_back_edges = back_edge_fields - {
-            get_root_entity_class_for_entity(state_entity_cls).back_edge_field_name()
+            get_root_entity_class_for_entity(entity_cls).back_edge_field_name()
         }
         if non_root_back_edges:
             # If this entity has back edges other than to the root entity, then the
@@ -618,8 +683,10 @@ USING({associated_entity_2_pk})
         """
         state_table_id = reference_table_address.table_id
         if self._is_enum_entity(table_name=state_table_id):
-            state_entity_cls = get_database_entity_by_table_name(schema, state_table_id)
-            if not self._root_is_direct_parent(state_entity_cls):
+            entity_cls = get_entity_class_in_module_with_table_id(
+                self.entities_module, state_table_id
+            )
+            if not self._root_is_direct_parent(entity_cls):
                 # It doesn't make sense to compare enum entities that are connected to
                 # non-root entities the way we compare other entities because we expect
                 # to see many duplicate enum entities where the only difference is the
@@ -841,4 +908,5 @@ if __name__ == "__main__":
         output_sandbox_prefix=args.output_sandbox_prefix,
         state_code_filter=args.state_code_filter,
         entities_module=entities_definitions_module,
+        schema_type=args.schema_type,
     ).run_validation()
