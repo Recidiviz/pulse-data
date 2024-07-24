@@ -94,6 +94,7 @@ from recidiviz.persistence.entity.entity_utils import (
     get_all_entities_from_tree,
     get_all_entity_classes_in_module,
     get_association_table_id,
+    get_entities_by_association_table_id,
     get_entity_class_in_module_with_name,
     get_entity_class_in_module_with_table_id,
     get_many_to_many_relationships,
@@ -1622,6 +1623,62 @@ class TestEntityUtils(TestCase):
         # Check that the set of association tables defined in schema.py matches the set
         #  of association tables defined in schema.py
         self.assertEqual(schema_association_tables, association_tables)
+
+    def test_get_entities_by_association_table_id(self) -> None:
+        self.assertEqual(
+            (StateChargeV2, StateSentence),
+            get_entities_by_association_table_id(
+                state_entities, "state_charge_v2_state_sentence_association"
+            ),
+        )
+        self.assertEqual(
+            (StateCharge, StateSupervisionSentence),
+            get_entities_by_association_table_id(
+                state_entities, "state_charge_supervision_sentence_association"
+            ),
+        )
+
+        self.assertEqual(
+            (StateCharge, StateIncarcerationSentence),
+            get_entities_by_association_table_id(
+                state_entities, "state_charge_incarceration_sentence_association"
+            ),
+        )
+
+    def test_get_entities_by_association_table_id_normalized(self) -> None:
+
+        self.assertEqual(
+            (NormalizedStateChargeV2, NormalizedStateSentence),
+            get_entities_by_association_table_id(
+                normalized_entities, "state_charge_v2_state_sentence_association"
+            ),
+        )
+        self.assertEqual(
+            (NormalizedStateCharge, NormalizedStateSupervisionSentence),
+            get_entities_by_association_table_id(
+                normalized_entities, "state_charge_supervision_sentence_association"
+            ),
+        )
+
+        self.assertEqual(
+            (NormalizedStateCharge, NormalizedStateIncarcerationSentence),
+            get_entities_by_association_table_id(
+                normalized_entities, "state_charge_incarceration_sentence_association"
+            ),
+        )
+
+    def test_get_entities_by_association_table_id_works_for_all_schema_tables(
+        self,
+    ) -> None:
+        state_tables = get_all_table_classes_in_schema(SchemaType.STATE)
+        schema_association_tables = {
+            table.name for table in state_tables if is_association_table(table.name)
+        }
+
+        for table_id in schema_association_tables:
+            # These shouldn't crash
+            _ = get_entities_by_association_table_id(state_entities, table_id)
+            _ = get_entities_by_association_table_id(normalized_entities, table_id)
 
 
 class TestBidirectionalUpdates(TestCase):

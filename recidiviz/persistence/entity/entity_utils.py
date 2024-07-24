@@ -18,6 +18,7 @@
 import importlib
 import inspect
 import json
+import re
 from collections import defaultdict
 from enum import Enum, auto
 from functools import cache, lru_cache
@@ -1483,3 +1484,47 @@ def get_association_table_id(parent_cls: Type[Entity], child_cls: Type[Entity]) 
         "association",
     ]
     return "_".join(parts)
+
+
+def get_entities_by_association_table_id(
+    entities_module: ModuleType, association_table_id: str
+) -> Tuple[Type[Entity], Type[Entity]]:
+    """For the given association table id, returns the classes for the two entities that
+    this table associates.
+    """
+    # TODO(#10389): Remove this custom handling for legacy sentence association tables
+    #  once we remove these classes from the schema.
+    if association_table_id == "state_charge_supervision_sentence_association":
+        if entities_module == state_entities:
+            return state_entities.StateCharge, state_entities.StateSupervisionSentence
+        if entities_module == normalized_entities:
+            return (
+                normalized_entities.NormalizedStateCharge,
+                normalized_entities.NormalizedStateSupervisionSentence,
+            )
+        raise ValueError(f"Unexpected module {entities_module}")
+    if association_table_id == "state_charge_incarceration_sentence_association":
+        if entities_module == state_entities:
+            return state_entities.StateCharge, state_entities.StateIncarcerationSentence
+        if entities_module == normalized_entities:
+            return (
+                normalized_entities.NormalizedStateCharge,
+                normalized_entities.NormalizedStateIncarcerationSentence,
+            )
+        raise ValueError(f"Unexpected module {entities_module}")
+
+    if not (
+        match := re.match(
+            r"(?P<table_id_1>state_[a-z0-9_]+)_(?P<table_id_2>state_[a-z0-9_]+)_association",
+            association_table_id,
+        )
+    ):
+        raise ValueError(
+            f"Association table [{association_table_id}] does not match expected format."
+        )
+
+    return get_entity_class_in_module_with_table_id(
+        entities_module, match.group("table_id_1")
+    ), get_entity_class_in_module_with_table_id(
+        entities_module, match.group("table_id_2")
+    )
