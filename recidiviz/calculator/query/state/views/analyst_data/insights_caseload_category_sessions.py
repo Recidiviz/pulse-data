@@ -43,6 +43,15 @@ class InsightsCaseloadCategoryType(Enum):
     ALL = "ALL"
 
 
+CASELOAD_CATEGORIES_BY_CATEGORY_TYPE: dict[InsightsCaseloadCategoryType, list[str]] = {
+    InsightsCaseloadCategoryType.SEX_OFFENSE_BINARY: [
+        StateStaffCaseloadType.SEX_OFFENSE.name,
+        f"NOT_{StateStaffCaseloadType.SEX_OFFENSE.name}",
+    ],
+    InsightsCaseloadCategoryType.ALL: ["ALL"],
+}
+
+
 def get_caseload_category_query_fragment(
     category_type: InsightsCaseloadCategoryType,
 ) -> str:
@@ -74,7 +83,9 @@ def get_caseload_category_query_fragment(
     )
 
 
-def get_insights_caseload_category_sessions_view_builder() -> SimpleBigQueryViewBuilder:
+def _get_insights_caseload_category_sessions_view_builder() -> (
+    SimpleBigQueryViewBuilder
+):
     """Generates a SimpleBigQueryViewBuilder that associates clients with the insights
     caseload type category of their officer, for every configured category type."""
     unioned_query_fragments = "\n    UNION ALL\n".join(
@@ -172,7 +183,7 @@ sub_sessions_dedup AS (
 
 
 INSIGHTS_CASELOAD_CATEGORY_SESSIONS_VIEW_BUILDER = (
-    get_insights_caseload_category_sessions_view_builder()
+    _get_insights_caseload_category_sessions_view_builder()
 )
 
 if __name__ == "__main__":

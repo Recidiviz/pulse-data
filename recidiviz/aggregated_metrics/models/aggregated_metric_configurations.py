@@ -33,6 +33,9 @@ from recidiviz.aggregated_metrics.models.aggregated_metric import (
     MiscAggregatedMetric,
     SumSpanDaysMetric,
 )
+from recidiviz.calculator.query.state.views.analyst_data.insights_caseload_category_sessions import (
+    CASELOAD_CATEGORIES_BY_CATEGORY_TYPE,
+)
 from recidiviz.calculator.query.state.views.analyst_data.models.event_selector import (
     EventSelector,
 )
@@ -870,7 +873,6 @@ AVG_DAILY_POPULATION_MINIMUM_CUSTODY_JUSTICE_IMPACT = DailyAvgSpanCountMetric(
     ],
 )
 
-
 AVG_LSIR_SCORE = DailyAvgSpanValueMetric(
     name="avg_lsir_score",
     display_name="Average LSI-R Score",
@@ -883,6 +885,29 @@ AVG_LSIR_SCORE = DailyAvgSpanValueMetric(
     ],
     span_value_numeric="assessment_score",
 )
+
+AVG_NUM_SUPERVISION_OFFICERS_INSIGHTS_CASELOAD_CATEGORY_METRICS = [
+    DailyAvgSpanCountMetric(
+        name=f"avg_num_supervision_officers_insights_{category_type.value.lower()}_category_type_{category.lower()}",
+        display_name=f"Average Daily Count of Supervision Officers: {snake_to_title(category_type.value)} Insights category type, {snake_to_title(category)} category",
+        description=f"""Average daily count of officers with the {snake_to_title(category)} category
+        in the {snake_to_title(category_type.value)} Insights category type. When the unit of
+        analysis is OFFICER, this counts the fraction of an officer that spent that time period
+        with the given category for that category type, which is equivalent to the proportion of time
+        in the analysis period they spent with that type.""",
+        span_selectors=[
+            SpanSelector(
+                span_type=SpanType.INSIGHTS_SUPERVISION_OFFICER_CASELOAD_CATEGORY_SESSION,
+                span_conditions_dict={
+                    "category_type": [category_type.value],
+                    "caseload_category": [category],
+                },
+            )
+        ],
+    )
+    for [category_type, categories] in CASELOAD_CATEGORIES_BY_CATEGORY_TYPE.items()
+    for category in categories
+]
 
 COMMUNITY_CONFINEMENT_SUPERVISION_STARTS = EventCountMetric(
     name="community_confinement_supervision_starts",
