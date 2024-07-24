@@ -15,11 +15,9 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests for Dataflow BigQuery source tables"""
-import json
 import unittest
 
 import mock
-import pytest
 
 from recidiviz.common.constants.states import StateCode
 from recidiviz.pipelines.pipeline_names import (
@@ -38,7 +36,6 @@ from recidiviz.source_tables.source_table_config import (
 from recidiviz.source_tables.source_table_repository import SourceTableRepository
 
 
-@pytest.mark.usefixtures("snapshottest_snapshot")
 class TestDataflowOutputTableCollector(unittest.TestCase):
     """Test for collecting dataflow source tables"""
 
@@ -59,8 +56,7 @@ class TestDataflowOutputTableCollector(unittest.TestCase):
         self.direct_ingest_patcher.stop()
 
     def test_normalization_tables(self) -> None:
-        """Tests the expected output of normalization pipelines. If the test fails, update snapshots by running:
-        pytest recidiviz/tests/source_tables/dataflow_output_table_collector_test.py --snapshot-update"""
+        """Tests the expected output schema of normalization pipelines."""
         pipeline_output_label = DataflowPipelineSourceTableLabel(
             NORMALIZATION_PIPELINE_NAME
         )
@@ -97,16 +93,53 @@ class TestDataflowOutputTableCollector(unittest.TestCase):
 
         self.assert_source_tables_match(
             us_xx_normalized_collection,
-            snapshot_name="us_xx_normalized_collection.json",
+            expected_addresses=[
+                "us_xx_normalized_state.state_assessment",
+                "us_xx_normalized_state.state_charge",
+                "us_xx_normalized_state.state_charge_incarceration_sentence_association",
+                "us_xx_normalized_state.state_charge_supervision_sentence_association",
+                "us_xx_normalized_state.state_early_discharge",
+                "us_xx_normalized_state.state_incarceration_period",
+                "us_xx_normalized_state.state_incarceration_sentence",
+                "us_xx_normalized_state.state_program_assignment",
+                "us_xx_normalized_state.state_staff_role_period",
+                "us_xx_normalized_state.state_supervision_case_type_entry",
+                "us_xx_normalized_state.state_supervision_contact",
+                "us_xx_normalized_state.state_supervision_period",
+                "us_xx_normalized_state.state_supervision_sentence",
+                "us_xx_normalized_state.state_supervision_violated_condition_entry",
+                "us_xx_normalized_state.state_supervision_violation",
+                "us_xx_normalized_state.state_supervision_violation_response",
+                "us_xx_normalized_state.state_supervision_violation_response_decision_entry",
+                "us_xx_normalized_state.state_supervision_violation_type_entry",
+            ],
         )
         self.assert_source_tables_match(
             us_yy_normalized_collection,
-            snapshot_name="us_yy_normalized_collection.json",
+            expected_addresses=[
+                "us_yy_normalized_state.state_assessment",
+                "us_yy_normalized_state.state_charge",
+                "us_yy_normalized_state.state_charge_incarceration_sentence_association",
+                "us_yy_normalized_state.state_charge_supervision_sentence_association",
+                "us_yy_normalized_state.state_early_discharge",
+                "us_yy_normalized_state.state_incarceration_period",
+                "us_yy_normalized_state.state_incarceration_sentence",
+                "us_yy_normalized_state.state_program_assignment",
+                "us_yy_normalized_state.state_staff_role_period",
+                "us_yy_normalized_state.state_supervision_case_type_entry",
+                "us_yy_normalized_state.state_supervision_contact",
+                "us_yy_normalized_state.state_supervision_period",
+                "us_yy_normalized_state.state_supervision_sentence",
+                "us_yy_normalized_state.state_supervision_violated_condition_entry",
+                "us_yy_normalized_state.state_supervision_violation",
+                "us_yy_normalized_state.state_supervision_violation_response",
+                "us_yy_normalized_state.state_supervision_violation_response_decision_entry",
+                "us_yy_normalized_state.state_supervision_violation_type_entry",
+            ],
         )
 
     def test_supplemental(self) -> None:
-        """Tests the expected output of supplemental pipelines. If the test fails, update snapshots by running:
-        pytest recidiviz/tests/source_tables/dataflow_output_table_collector_test.py --snapshot-update"""
+        """Tests the expected output schema of supplemental pipelines."""
         supplemental_collection = self.source_table_repository.get_collection(
             labels=[
                 DataflowPipelineSourceTableLabel(
@@ -116,32 +149,69 @@ class TestDataflowOutputTableCollector(unittest.TestCase):
         )
 
         self.assert_source_tables_match(
-            supplemental_collection, snapshot_name="supplemental.json"
+            supplemental_collection,
+            expected_addresses=[
+                "supplemental_data.us_ix_case_note_matched_entities",
+            ],
         )
 
     def test_metrics(self) -> None:
-        """Tests the expected output of metrics pipelines. If the test fails, update snapshots by running:
-        pytest recidiviz/tests/source_tables/dataflow_output_table_collector_test.py --snapshot-update"""
+        """Tests the expected output schema of metrics pipelines."""
         metric_collection = self.source_table_repository.get_collection(
             labels=[
                 DataflowPipelineSourceTableLabel(pipeline_name=METRICS_PIPELINE_NAME)
             ]
         )
 
-        self.assert_source_tables_match(metric_collection, snapshot_name="metrics.json")
+        self.assert_source_tables_match(
+            metric_collection,
+            expected_addresses=[
+                "dataflow_metrics.incarceration_admission_metrics",
+                "dataflow_metrics.incarceration_commitment_from_supervision_metrics",
+                "dataflow_metrics.incarceration_population_span_metrics",
+                "dataflow_metrics.incarceration_release_metrics",
+                "dataflow_metrics.program_participation_metrics",
+                "dataflow_metrics.recidivism_rate_metrics",
+                "dataflow_metrics.supervision_case_compliance_metrics",
+                "dataflow_metrics.supervision_out_of_state_population_metrics",
+                "dataflow_metrics.supervision_population_metrics",
+                "dataflow_metrics.supervision_population_span_metrics",
+                "dataflow_metrics.supervision_start_metrics",
+                "dataflow_metrics.supervision_success_metrics",
+                "dataflow_metrics.supervision_termination_metrics",
+                "dataflow_metrics.violation_with_response_metrics",
+            ],
+        )
 
     def assert_source_tables_match(
-        self, normalized_collection: SourceTableCollection, snapshot_name: str
+        self,
+        normalized_collection: SourceTableCollection,
+        expected_addresses: list[str],
     ) -> None:
-        self.snapshot.assert_match(  # type: ignore[attr-defined]
-            json.dumps(
-                sorted(
-                    [
-                        source_table.address.to_str()
-                        for source_table in normalized_collection.source_tables
-                    ]
-                ),
-                indent=4,
-            ),
-            name=snapshot_name,
+        found_bq_tables = sorted(
+            [
+                source_table.address.to_str()
+                for source_table in normalized_collection.source_tables
+            ]
+        )
+
+        self.assertEqual(
+            len(expected_addresses),
+            len(set(expected_addresses)),
+            f"Found duplicate values in expected_addresses: {expected_addresses}",
+        )
+
+        self.assertEqual(
+            set(found_bq_tables),
+            set(expected_addresses),
+            f"The list of expected output tables for all of our Dataflow pipelines "
+            f"has changed. If this test fails due to a newly added / deleted table "
+            f"(e.g. a newly added ingest view), update the the "
+            f"expected_addresses list accordingly: {expected_addresses}",
+        )
+
+        self.assertEqual(
+            expected_addresses,
+            sorted(expected_addresses),
+            "The expected_addresses should be alphabetically sorted",
         )
