@@ -93,6 +93,7 @@ from recidiviz.aggregated_metrics.models.aggregated_metric_configurations import
     AVG_DAILY_POPULATION_UNKNOWN_CASE_TYPE,
     AVG_DAILY_POPULATION_VIOLENT_OFFENSE_SENTENCE,
     AVG_LSIR_SCORE,
+    AVG_NUM_SUPERVISION_OFFICERS_INSIGHTS_CASELOAD_CATEGORY_METRICS,
     COMMUNITY_CONFINEMENT_SUPERVISION_STARTS,
     CONTACTS_ATTEMPTED,
     CUSTODY_LEVEL_DOWNGRADES,
@@ -315,6 +316,8 @@ METRICS_BY_POPULATION_TYPE: Dict[MetricPopulationType, List[AggregatedMetric]] =
         AVG_DAILY_POPULATION_HIGH_RISK_LEVEL,
         AVG_DAILY_POPULATION_LOW_RISK_LEVEL,
         AVG_LSIR_SCORE,
+        # Average daily population, caseload category and type
+        *AVG_NUM_SUPERVISION_OFFICERS_INSIGHTS_CASELOAD_CATEGORY_METRICS,
         # Events
         ## Session transitions
         ABSCONSIONS_BENCH_WARRANTS,

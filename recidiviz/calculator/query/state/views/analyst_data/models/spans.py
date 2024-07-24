@@ -22,6 +22,9 @@ from recidiviz.aggregated_metrics.models.aggregated_metric_configurations import
     DEDUPED_TASK_COMPLETION_EVENT_VB,
 )
 from recidiviz.calculator.query.bq_utils import list_to_query_string
+from recidiviz.calculator.query.state.views.analyst_data.insights_supervision_officer_caseload_category_sessions import (
+    INSIGHTS_SUPERVISION_OFFICER_CASELOAD_CATEGORY_SESSIONS_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.analyst_data.models.span_query_builder import (
     SpanQueryBuilder,
 )
@@ -197,6 +200,14 @@ FROM
 WHERE
     housing_unit_type_collapsed_solitary IS NOT NULL""",
         attribute_cols=["housing_unit_type_collapsed_solitary"],
+        span_start_date_col="start_date",
+        span_end_date_col="end_date_exclusive",
+    ),
+    SpanQueryBuilder(
+        span_type=SpanType.INSIGHTS_SUPERVISION_OFFICER_CASELOAD_CATEGORY_SESSION,
+        description="Spans of insights caseload category of an officer for each category type",
+        sql_source=INSIGHTS_SUPERVISION_OFFICER_CASELOAD_CATEGORY_SESSIONS_VIEW_BUILDER.table_for_query,
+        attribute_cols=["caseload_category", "category_type"],
         span_start_date_col="start_date",
         span_end_date_col="end_date_exclusive",
     ),

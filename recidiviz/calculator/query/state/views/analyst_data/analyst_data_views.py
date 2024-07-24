@@ -52,7 +52,10 @@ from recidiviz.calculator.query.state.views.analyst_data.incarceration_incidents
     INCARCERATION_INCIDENTS_PREPROCESSED_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.analyst_data.insights_caseload_category_sessions import (
-    get_insights_caseload_category_sessions_view_builder,
+    INSIGHTS_CASELOAD_CATEGORY_SESSIONS_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.analyst_data.insights_supervision_officer_caseload_category_sessions import (
+    INSIGHTS_SUPERVISION_OFFICER_CASELOAD_CATEGORY_SESSIONS_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.analyst_data.invoices_preprocessed import (
     INVOICES_PREPROCESSED_VIEW_BUILDER,
@@ -396,5 +399,6 @@ ANALYST_DATA_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     US_AR_OVG_TIMELINE_VIEW_BUILDER,
     US_AR_OVG_EVENTS_PREPROCESSED_VIEW_BUILDER,
     WORKFLOWS_USER_SIGNUPS_VIEW_BUILDER,
-    get_insights_caseload_category_sessions_view_builder(),
+    INSIGHTS_CASELOAD_CATEGORY_SESSIONS_VIEW_BUILDER,
+    INSIGHTS_SUPERVISION_OFFICER_CASELOAD_CATEGORY_SESSIONS_VIEW_BUILDER,
 ]
