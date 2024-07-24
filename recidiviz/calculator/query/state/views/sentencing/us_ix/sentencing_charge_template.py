@@ -21,5 +21,5 @@ US_IX_SENTENCING_CHARGE_TEMPLATE = """
         most_severe_description AS charge,
         "US_IX" AS state_code
     FROM `{project_id}.{sessions_dataset}.sentence_imposed_group_summary_materialized`
-    WHERE state_code = "US_IX"
+    WHERE state_code = "US_IX" and most_severe_description IS NOT NULL
 """
