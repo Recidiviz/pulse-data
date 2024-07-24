@@ -1,0 +1,967 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: BOARDHEARING
+file_description: |-
+  Board Hearing
+data_classification: source
+primary_key_cols:
+  - OFFENDERID
+  - ADMINEVENTDATE
+  - ADMINEVENTTIME
+columns:
+  - name: OFFENDERID
+    description: |-
+      Offender ID
+    field_type: person_external_id
+    external_id_type: US_AR_OFFENDERID
+    is_pii: True
+  - name: ADMINEVENTDATE
+    description: |-
+      Admin event date
+    field_type: datetime
+  - name: ADMINEVENTTIME
+    description: |-
+      Admin event time
+  - name: BOARDHEARINGTYPE
+    description: |-
+      PAROLE BOARD HEARING TYPE CODE
+    known_values:
+      - value: "13"
+        description: Schedule Hearing
+      - value: "14"
+        description: Boot Camp Release
+      - value: G2
+        description: For Transfer Dockets Batch
+      - value: "59"
+        description: Transfer Board Hearing - Discretionary Felony
+      - value: "10"
+        description: Pardon (Governor)
+      - value: "15"
+        description: Act 94 Screening
+      - value: "16"
+        description: Act 94 Parole Hearing
+      - value: "17"
+        description: Act 230 Parole Hearing
+      - value: "18"
+        description: Act 230 Screening
+      - value: "19"
+        description: Act 378 Screening-Section C
+      - value: "20"
+        description: Act 378 Hearing
+      - value: "21"
+        description: Act 378 Director Review
+      - value: "23"
+        description: Act 814 Screening
+      - value: "24"
+        description: Act 309 Screening
+      - value: "25"
+        description: 378 Revocation Hearing
+      - value: "26"
+        description: Act 814 Hearing
+      - value: "32"
+        description: Parole (PV) Hearing
+      - value: "34"
+        description: Transfer (PVNT) Hearing
+      - value: "35"
+        description: Rescind (PE) Screening
+      - value: "38"
+        description: Technical PV Program
+      - value: "39"
+        description: Parole (PVNT) Hearing
+      - value: "40"
+        description: TE Reconsideration Hearing
+      - value: "41"
+        description: Progress Report
+      - value: "42"
+        description: TE (492 Violator) Hearing
+      - value: "43"
+        description: PE (492 Violator) Hearing
+      - value: "44"
+        description: TE (492 Violator N/T) Hearing
+      - value: "45"
+        description: PE (492 Violator N/T) Hearing
+      - value: "46"
+        description: TE Technical Violator
+      - value: "47"
+        description: PE Technical Violator
+      - value: "50"
+        description: TE Class III/IV Hearing
+      - value: "52"
+        description: Pardon (Screening)
+      - value: "53"
+        description: Special Rescind
+      - value: "54"
+        description: Act 682
+      - value: "55"
+        description: Transitional Living for Women and Children
+      - value: "56"
+        description: Act 679
+      - value: "57"
+        description: Act 363 Hearing
+      - value: "60"
+        description: Act 825 Hearing
+      - value: "62"
+        description: TE (492 Violator) Screening
+      - value: "30"
+        description: Transfer Revocation Hearing
+      - value: "1"
+        description: Parole Hearing
+      - value: "2"
+        description: Revocation Hearing
+      - value: "3"
+        description: Preliminary Hearing
+      - value: "4"
+        description: Rescind Hearing
+      - value: "5"
+        description: Special Consideration
+      - value: "6"
+        description: Executive Clemency (Screening)
+      - value: "7"
+        description: Executive Clemency (Board)
+      - value: "8"
+        description: Executive Clemency (Governor)
+      - value: "9"
+        description: Pardon (Board)
+      - value: "11"
+        description: Courtesy Hearing (FOS Parole)
+      - value: "12"
+        description: Reconsideration Hearing
+      - value: "22"
+        description: Reconsideration Screening
+      - value: "27"
+        description: Revocation Appeal Hearing
+      - value: "28"
+        description: Transfer Screening
+      - value: "29"
+        description: Transfer Board Hearing
+      - value: "31"
+        description: Act 290 Hearing
+      - value: "33"
+        description: Transfer (PV) Hearing
+      - value: "36"
+        description: Rescind Screening
+      - value: "37"
+        description: Rescind Hearing
+      - value: "48"
+        description: TE Violator Screening
+      - value: "49"
+        description: TE Violator N/T Hearing
+      - value: "51"
+        description: EPA Screening (1 year)
+      - value: "58"
+        description: Act 1029 Revocation Hearing
+      - value: "61"
+        description: SSP Sanction Hearing
+      - value: "63"
+        description: Act 146 (Re-Entry Program) Screening
+      - value: "64"
+        description: Act 146 (Active Re-Entry Participant) Screening
+      - value: "65"
+        description: Violation Report Review
+      - value: "66"
+        description: Act 539 Parole Board Hearing
+      - value: "67"
+        description: Act 423
+  - name: PROPOSEDPBA1
+    description: |-
+      Proposed parole board action 1
+  - name: PROPOSEDPBA2
+    description: |-
+      Proposed parole board action 2
+  - name: PROPOSEDPBA3
+    description: |-
+      Proposed parole board action 3
+  - name: PROPOSEDPBA4
+    description: |-
+      Proposed parole board action 4
+  - name: PROPOSEDDETTYPE
+    description: |-
+      Proposed DET (?) type
+  - name: PROPOSEDRELDATE
+    description: |-
+      Proposed release date
+    field_type: datetime
+  - name: PROPOSEDSTATERESTRICT
+    description: |-
+      Proposed state restrict (?)
+  - name: TARGETHEARINGYEAR
+    description: |-
+      Target hearing year
+  - name: TARGETHEARINGMONTH
+    description: |-
+      Target hearing month
+  - name: TARGETHEARINGTYPE
+    description: |-
+      Target hearing type
+  - name: PAROLEBOARDACTIONRSN
+    description: |-
+      PAROLE BOARD ACTION REASON 1
+    known_values:
+      - value: 5V
+        description: Denied Due to Not Receiving 5 Votes
+      - value: AT
+        description: Per Attorney
+      - value: AV
+        description: Age Of Victim
+      - value: CR
+        description: Clemency To PE Recommended
+      - value: DI
+        description: Death Involved
+      - value: DO
+        description: Detainer Only
+      - value: DT
+        description: Deny - Detriment to the Community
+      - value: DU
+        description: Duration of Offense(s)
+      - value: DW
+        description: DWI History
+      - value: EL
+        description: TE/PE Eligible
+      - value: EM
+        description: Endangering Life Of Minor
+      - value: ER
+        description: Probation Revocation
+      - value: ES
+        description: Escape Record
+      - value: FA
+        description: FailSTILL ACTIVETo Appear
+      - value: FB
+        description: Fail To Turn Self In To ADC
+      - value: HV
+        description: Handicapped Victim
+      - value: IR
+        description: Institutional Record
+      - value: IV
+        description: Injury To Victim
+      - value: LE
+        description: Offense While Law Enfor Off
+      - value: MC
+        description: Multiple Counts
+      - value: MI
+        description: Mentally Ill Victim
+      - value: N3
+        description: Not Eligible-378
+      - value: ND
+        description: Nature Of Disciplinary
+      - value: NE
+        description: Not Eligible
+      - value: NS
+        description: Nature & Seriousness Crime
+      - value: NT
+        description: New Time
+      - value: NW
+        description: Nature Of Violation
+      - value: OC
+        description: Out To Court
+      - value: OO
+        description: Out Of State Only
+      - value: PA
+        description: Nearness Of PE Date
+      - value: PB
+        description: Past PE Date
+      - value: PC
+        description: Prior Criminal History
+      - value: PV
+        description: Parole/Probation Violation
+      - value: RH
+        description: Previous Release History
+      - value: RQ
+        description: Inmates Request
+      - value: RS
+        description: Revocation Of SSTILL ACTIVEISTILL ACTIVESSTILL ACTIVE
+      - value: RV
+        description: Relationship to Victim(s)
+      - value: SN
+        description: SentSTILL ACTIVENot Consid Excessive
+      - value: ST
+        description: Short Time Served
+      - value: VC
+        description: Voided Per Court Order
+      - value: VH
+        description: Violent History
+      - value: VL
+        description: Victim Was Law Enforcement
+      - value: WP
+        description: Weapon Involved
+      - value: ZA
+        description: Reporting
+      - value: ZB
+        description: Employment/Education
+      - value: ZC
+        description: Residence/Travel
+      - value: ZD
+        description: Laws
+      - value: ZE
+        description: Weapons
+      - value: ZF
+        description: Alcohol/Controlled Substance
+      - value: ZG
+        description: Association
+      - value: ZI
+        description: Cooperation
+      - value: ZJ
+        description: Search and Seizure
+      - value: ZK
+        description: Waiver of extradition
+      - value: ZL
+        description: Special
+      - value: ZM
+        description: Other/Miscellaneous
+      - value: ZN
+        description: Financial Obligations
+      - value: "25"
+        description: Rewrite 1 Month
+      - value: "26"
+        description: Rewrite 2 Months
+      - value: "27"
+        description: Rewrite 3 Months
+      - value: "28"
+        description: Rewrite 4 Months
+      - value: "29"
+        description: Rewrite 5 Months
+      - value: "30"
+        description: Rewrite 6 Months
+      - value: "31"
+        description: Rewrite 7 Months
+      - value: "32"
+        description: Rewrite 8 Months
+      - value: "33"
+        description: Rewrite 9 Months
+      - value: "34"
+        description: Rewrite 10 Months
+      - value: "35"
+        description: Rewrite 11 Months
+      - value: "40"
+        description: Hear Cont At Inmate Request
+      - value: "41"
+        description: Hear Continued Other Reason
+      - value: "58"
+        description: Pass 30 Days
+      - value: "45"
+        description: Not Eligible For Parole
+      - value: 6M
+        description: In 6 Months
+      - value: A1
+        description: Arrested While On Bond
+      - value: AB
+        description: Absconded
+      - value: AP
+        description: Appeal Pending
+      - value: BC
+        description: Waived Enrolled Boot Camp
+      - value: BV
+        description: Boot Camp Violator
+      - value: CB
+        description: Completion Of Boot Camp
+      - value: D8
+        description: DWI On Act 814
+      - value: DA
+        description: H/O Decision Affirmed
+      - value: DC
+        description: Discharged
+      - value: DF
+        description: Disc While On Furlough
+      - value: FP
+        description: Failure To Provide Informat
+      - value: I3
+        description: 30 Day In-Patient
+      - value: LI
+        description: Lack Of Info To Board
+      - value: MN
+        description: Minors
+      - value: MV
+        description: Multiple Parole Violations
+      - value: N2
+        description: Not Eligible-230
+      - value: N9
+        description: Not Eligible-94
+      - value: NB
+        description: No Basis
+      - value: NV
+        description: Number Of Parole Violations
+      - value: O3
+        description: Or Act 378
+      - value: O9
+        description: Or Act 94
+      - value: OD
+        description: Out To Doctor
+      - value: OP
+        description: Or Regular Parole
+      - value: OR
+        description: Or Residential Plan
+      - value: OS
+        description: Out Of State
+      - value: P2
+        description: Poten Personal Harm To Vict
+      - value: PD
+        description: Potential Death Involved
+      - value: PF
+        description: Physical Force
+      - value: QV
+        description: Quorum Vote
+      - value: R1
+        description: Refused Drug Program
+      - value: R8
+        description: Reprimand On Act 814
+      - value: R9
+        description: To Regular P.E.Date
+      - value: RA
+        description: Recent Arrest On Act 814
+      - value: RD
+        description: Request Pass Until Det Disp
+      - value: SB
+        description: School Bus Involved
+      - value: SP
+        description: See In Person
+      - value: SR
+        description: Revocation Of S.I.S.
+      - value: TV
+        description: Transfer Violator
+      - value: UT
+        description: Use Of Threats Or Intimidat
+      - value: V2
+        description: Act 230 Violation
+      - value: V3
+        description: Act 378 Violation
+      - value: V8
+        description: Act 814 Violation
+      - value: V9
+        description: Act 94 Violation
+      - value: VI
+        description: Value/Amt Property Involved
+      - value: VP
+        description: Victim Was A Police Officer
+      - value: WR
+        description: Poor Work History
+      - value: ZH
+        description: Supervision Fees
+  - name: PAROLEBOARDACTIONRSN2
+    description: |-
+      Parole board action reason 2
+  - name: PAROLEBOARDACTIONRSN3
+    description: |-
+      Parole board action reason 3
+  - name: PAROLEBOARDACTIONRSN4
+    description: |-
+      Parole board action reason 4
+  - name: BOARDPRERELEASECOND1
+    description: |-
+      Board prerelease condition 1
+  - name: BOARDPRERELEASECOND2
+    description: |-
+      Board prerelease condition 2
+  - name: BOARDPRERELEASECOND3
+    description: |-
+      Board prerelease condition 3
+  - name: BOARDPRERELEASECOND4
+    description: |-
+      Board prerelease condition 4
+  - name: CONDOFSUPERVISIONCODE
+    description: |-
+      Condition of supervision code 1
+  - name: CONDOFSUPERVISIONCODE2
+    description: |-
+      Condition of supervision code 2
+  - name: CONDOFSUPERVISIONCODE3
+    description: |-
+      Condition of supervision code 3
+  - name: CONDOFSUPERVISIONCODE4
+    description: |-
+      Condition of supervision code 4
+  - name: CONDOFSUPERVISIONCODE5
+    description: |-
+      Condition of supervision code 5
+  - name: CONDOFSUPERVISIONCODE6
+    description: |-
+      Condition of supervision code 6
+  - name: CONDOFSUPERVISIONCODE7
+    description: |-
+      Condition of supervision code 7
+  - name: CONDOFSUPERVISIONCODE8
+    description: |-
+      Condition of supervision code 8
+  - name: CONDOFSUPERVISIONCODE9
+    description: |-
+      Condition of supervision code 9
+  - name: CONDOFSUPERVISIONCODE10
+    description: |-
+      Condition of supervision code 10
+  - name: PAROLEBOARDFINALACTION1
+    description: |-
+      Parole board final action 1
+    known_values:
+      - value: "01"
+        description: Regular Parole Approved
+      - value: "02"
+        description: RegSTILL ACTIVEParSTILL ACTIVE (Out-of-State Only)
+      - value: "03"
+        description: Parole Act 230
+      - value: "04"
+        description: Parole Act 94
+      - value: "05"
+        description: Parole Act 50
+      - value: "06"
+        description: Act 230 or Regular Parole
+      - value: "07"
+        description: Regular Parole Out of State
+      - value: "08"
+        description: Reinstate
+      - value: "09"
+        description: Release Act 814
+      - value: "10"
+        description: Release Act 682
+      - value: "15"
+        description: Transfer To ACC Supervision
+      - value: "23"
+        description: Passed Out Of Class
+      - value: "24"
+        description: Pass For More Information
+      - value: "25"
+        description: Rewrite 1 Month
+      - value: "26"
+        description: Rewrite 2 Months
+      - value: "27"
+        description: Rewrite 3 Months
+      - value: "28"
+        description: Rewrite 4 Months
+      - value: "29"
+        description: Rewrite 5 Months
+      - value: "30"
+        description: Rewrite 6 Months
+      - value: "36"
+        description: Denied 1 Year
+      - value: "38"
+        description: Denial Inmate Request
+      - value: "40"
+        description: Hear Continued at Inmate Reqst
+      - value: "41"
+        description: Hear Continued - Other Reason
+      - value: "44"
+        description: Hearing Scheduled
+      - value: "45"
+        description: Denied 2 Years
+      - value: "50"
+        description: Parole Revoked
+      - value: "53"
+        description: ProbSTILL ACTIVECause Not Found-Reins
+      - value: "54"
+        description: Appeal Denied
+      - value: "55"
+        description: Appeal Granted
+      - value: "56"
+        description: InsufficSTILL ACTIVE Evidence - Reinstate
+      - value: "59"
+        description: Waived Hearing/ParSTILL ACTIVERevoked
+      - value: "60"
+        description: Board Recommend Grant PardSTILL ACTIVE
+      - value: "61"
+        description: Board Recommend Deny Pardon
+      - value: "62"
+        description: Governor Approve Pardon
+      - value: "63"
+        description: Governor Deny Pardon
+      - value: "69"
+        description: Parole Rescinded (Pre-January 1994)
+      - value: "70"
+        description: Screen CommSTILL ACTIVEW/Merit Ex Cl
+      - value: "71"
+        description: Screen CommSTILL ACTIVEW/O Merit Ex Cl
+      - value: "72"
+        description: Board with Merit - Exec ClemSTILL ACTIVE
+      - value: "73"
+        description: Board w/o Merit - Exec Clem
+      - value: "74"
+        description: Governor Denied ExecSTILL ACTIVEClemSTILL ACTIVE
+      - value: "75"
+        description: Governor Approved ExecSTILL ACTIVECle
+      - value: "76"
+        description: Schedule Bd Review Ex Clem
+      - value: "78"
+        description: Board Deferral-Exec Clem
+      - value: "92"
+        description: PSTILL ACTIVESSTILL ACTIVEWhen Class II
+      - value: 1A
+        description: Parole Act 290
+      - value: 1C
+        description: Favorable Recommendation Executive Clemency/Pardon
+      - value: 1D
+        description: Unfavorable Recommendation Clemency/Pardon
+      - value: 1E
+        description: No Recommendation Clemency/Pardon
+      - value: 1F
+        description: Approved for Parole Act 539
+      - value: 4A
+        description: Transfer Rescinded
+      - value: 5A
+        description: Transfer Revoked
+      - value: 5C
+        description: Revoke Supervision Sanction Pgm
+      - value: 5D
+        description: Supervision Sanction Program
+      - value: 5E
+        description: 90 Day PV
+      - value: 5F
+        description: 90 Day PV Removal
+      - value: 5G
+        description: Issue Warrant
+      - value: 5H
+        description: Return to Active Supervision*
+      - value: 5I
+        description: 90 Day SSP Sanction
+      - value: 5J
+        description: 180 Day SSP Sanction
+      - value: 5K
+        description: Warrant Issuance Deferred****
+      - value: 5L
+        description: Waived SSP 90 Days
+      - value: 5M
+        description: Waived SSP 180 Days
+      - value: 5N
+        description: Refer to SSP
+      - value: 5O
+        description: 60 Day SSP Sanction
+      - value: 5P
+        description: 120 Day SSP Sanction
+      - value: 5Q
+        description: Waived SSP 60 Days
+      - value: 5R
+        description: Waived SSP 120 Days
+      - value: 6A
+        description: Waived Hearing/TrfSTILL ACTIVE Revoked
+      - value: 6B
+        description: 90 Day Removal New Time
+      - value: 6C
+        description: 90 Day Removal New 1029 Offense
+      - value: 6D
+        description: Administrative Revocation
+      - value: AS
+        description: Prior(Screening)Action Stands
+      - value: BI
+        description: Board Imposed Release Date
+      - value: D0
+        description: Deferred
+      - value: D9
+        description: Defer To Complete RSVP Prog
+      - value: DB
+        description: Defer to complete SATP
+      - value: DD
+        description: Defer until Complete CTE
+      - value: DE
+        description: Defer until Outcome of Pending Charges
+      - value: DM
+        description: Defer for Mental Health Evaluation
+      - value: DN
+        description: Defer for completion of SOCNA
+      - value: DP
+        description: Denied Act 290
+      - value: DR
+        description: Deny Reconsideration Screen
+      - value: DS
+        description: Deny 6 Months
+      - value: DT
+        description: Defer Until Complete TC Prog
+      - value: DU
+        description: Defer until Complete SURS
+      - value: GA
+        description: Governor took No Action
+      - value: PS
+        description: Prior(Hearing)Action Stands
+      - value: RF
+        description: Revocation Affirmed
+      - value: RG
+        description: Returned From Governor
+      - value: RR
+        description: Reverse Revocation
+      - value: T2
+        description: Transfer Cls II As Normal
+      - value: TC
+        description: Act 146 Transfer Denied
+      - value: TD
+        description: To Detainer
+      - value: TF
+        description: Act 146 Transfer to Community Supervision
+      - value: TX
+        description: Return to ADC - Act 146 Participant
+      - value: NR
+        description: No Action Recorded
+      - value: "11"
+        description: Parole To Detainer
+      - value: "12"
+        description: Parole To Detainer OOS
+      - value: "13"
+        description: Parole To Det Only
+      - value: "14"
+        description: Parole To Det OOS Only
+      - value: "16"
+        description: Transfer To CP For Detainer
+      - value: "17"
+        description: Transfer Cls.III As Normal
+      - value: "18"
+        description: Transfer To ACC Center
+      - value: "19"
+        description: Favorable Rec Courtesy
+      - value: "20"
+        description: Approved Act 378 Release
+      - value: "21"
+        description: Parole Act 378
+      - value: "22"
+        description: Parole Act 814
+      - value: "31"
+        description: Rewrite 7 Months
+      - value: "32"
+        description: Rewrite 8 Months
+      - value: "33"
+        description: Rewrite 9 Months
+      - value: "34"
+        description: Rewrite 10 Months
+      - value: "35"
+        description: Rewrite 11 Months
+      - value: "37"
+        description: Par approved on compl SATP
+      - value: "39"
+        description: Parole Rescinded
+      - value: "42"
+        description: No Further Consideration
+      - value: "43"
+        description: Waived Appearance Denied
+      - value: "46"
+        description: To Board - Spec Consideration
+      - value: "47"
+        description: Denied Act 230
+      - value: "48"
+        description: Denied Act 94
+      - value: "49"
+        description: Deny Act 378
+      - value: "51"
+        description: Revoke Loss Of Time
+      - value: "52"
+        description: Revoke W/O Loss Of Time
+      - value: "57"
+        description: Act 378 Revoked
+      - value: "58"
+        description: Pass 30 Days
+      - value: "65"
+        description: Favorable Recommendation
+      - value: "66"
+        description: Unfavorable Recommendation
+      - value: "67"
+        description: No Recommendation
+      - value: "68"
+        description: Schedule Act 94 Hearing
+      - value: "79"
+        description: Recommend To P.E.Date
+      - value: "81"
+        description: Parole Subject 1 Month
+      - value: "82"
+        description: Parole Subject 2 Months
+      - value: "83"
+        description: Parole Subject 3 Months
+      - value: "84"
+        description: Parole Subject 4 Months
+      - value: "85"
+        description: Parole Subject 5 Months
+      - value: "86"
+        description: Parole Subject 6 Months
+      - value: "87"
+        description: Parole Subject 7 Months
+      - value: "88"
+        description: Parole Subject 8 Months
+      - value: "89"
+        description: Parole Subject 9 Months
+      - value: "90"
+        description: Parole Subject 10 Months
+      - value: "91"
+        description: Parole Subject 11 Months
+      - value: "93"
+        description: TR Delayed
+      - value: "94"
+        description: TR Delayed 1 Month
+      - value: "95"
+        description: TR Delayed 2 Months
+      - value: "96"
+        description: TR Delayed 3 Months
+      - value: "99"
+        description: Next Hearing Scheduled
+      - value: 1B
+        description: Release Transitional Lvng for Women & Children
+      - value: 5B
+        description: Revocation Susp.Comp ACC
+      - value: CT
+        description: Change to Board
+      - value: D1
+        description: Defer Act 94
+      - value: D2
+        description: Defer 230 1 Year
+      - value: D3
+        description: Defer 378 One Year
+      - value: D4
+        description: Defer Act 230 2 Weeks
+      - value: D5
+        description: Defer 378 To Reg.PE
+      - value: D6
+        description: Defer 230 6 Months
+      - value: D7
+        description: Defer Act 378
+      - value: NA
+        description: No Action Needed
+      - value: P4
+        description: Pass - see again
+      - value: P5
+        description: Pass
+      - value: P6
+        description: Pass 1 Week
+      - value: P8
+        description: Pass 2 Weeks
+      - value: P9
+        description: Pass 3 Weeks
+      - value: PO
+        description: Or Out Of State Only
+      - value: R2
+        description: Revoke Act 814
+      - value: RE
+        description: Rescind Act 230
+      - value: RI
+        description: Reschedule If Not Incarcera
+      - value: RN
+        description: Release Normal
+      - value: RP
+        description: Recommend Parole
+      - value: DG
+        description: Defer Until GED Completion
+      - value: DV
+        description: Defer to complete Vo-Tech
+  - name: PAROLEBOARDFINALACTION2
+    description: |-
+      Parole board final action 2
+  - name: PAROLEBOARDFINALACTION3
+    description: |-
+      Parole board final action 3
+  - name: PAROLEBOARDFINALACTION4
+    description: |-
+      Parole board final action 4
+  - name: FINALDETTYPE
+    description: |-
+      Final DET (?) type
+  - name: RELEASEDATE2
+    description: |-
+      Release date 2
+    field_type: datetime
+  - name: FINALSTATERESTRICTION
+    description: |-
+      Final state restriction (?)
+  - name: FINALHEARINGYEAR
+    description: |-
+      Final hearing year
+  - name: FINALHEARINGMONTH
+    description: |-
+      Final hearing month
+  - name: FINALHEARINGTYPE
+    description: |-
+      Final hearing type
+  - name: PAROLEBOARDHEARINGSTATUS
+    description: |-
+      Parole board hearing status
+  - name: BOARDHEARINGSTATUSDT
+    description: |-
+      Board hearing status date
+    field_type: datetime
+  - name: DATELASTUPDATE
+    description: |-
+      Date last updated
+    field_type: datetime
+  - name: TIMELASTUPDATE
+    description: |-
+      Time last updated
+  - name: STAFFLASTUPDATE
+    description: |-
+      Staff last updated
+    is_pii: True
+  - name: ARRESTCASENUM
+    description: |-
+      Arrest case number
+    is_pii: True
+  - name: DATEPAROLEVIOLATORRETURN
+    description: |-
+      Date of parole violator return
+    field_type: datetime
+  - name: APPEALDATE
+    description: |-
+      Appeal date
+    field_type: datetime
+  - name: APPEALATTORNEY
+    description: |-
+      Appeal Attorney
+    is_pii: True
+  - name: PROPOSEDPBA5
+    description: |-
+      Proposed parole board action 5
+  - name: PROPOSEDPBA6
+    description: |-
+      Proposed parole board action 6
+  - name: CONDOFSUPERVISIONCODE11
+    description: |-
+      Condition of supervision code 11
+  - name: CONDOFSUPERVISIONCODE12
+    description: |-
+      Condition of supervision code 12
+  - name: CONDOFSUPERVISIONCODE13
+    description: |-
+      Condition of supervision code 13
+  - name: CONDOFSUPERVISIONCODE14
+    description: |-
+      Condition of supervision code 14
+  - name: CONDOFSUPERVISIONCODE15
+    description: |-
+      Condition of supervision code 15
+  - name: CONDOFSUPERVISIONCODE16
+    description: |-
+      Condition of supervision code 16
+  - name: CONDOFSUPERVISIONCODE17
+    description: |-
+      Condition of supervision code 17
+  - name: CONDOFSUPERVISIONCODE18
+    description: |-
+      Condition of supervision code 18
+  - name: CONDOFSUPERVISIONCODE19
+    description: |-
+      Condition of supervision code 19
+  - name: CONDOFSUPERVISIONCODE20
+    description: |-
+      Condition of supervision code 20
+  - name: PAROLEBOARDFINALACTION5
+    description: |-
+      Parole board final action 5
+  - name: PAROLEBOARDFINALACTION6
+    description: |-
+      Parole board final action 6
+  - name: PAROLEBOARDACTIONRSN5
+    description: |-
+      Parole board action reason 5
+  - name: PAROLEBOARDACTIONRSN6
+    description: |-
+      Parole board action reason 6
+  - name: PAROLEELIGIBILITYDATE
+    description: |-
+      Parole eligibility date
+    field_type: datetime
+  - name: PAROLEBOARDACTIONRSN7
+    description: |-
+      Parole board action reason 7
+  - name: PAROLEBOARDACTIONRSN8
+    description: |-
+      Parole board action reason 8
+  - name: PAROLEBOARDACTIONRSN9
+    description: |-
+      Parole board action reason 9
+  - name: PAROLEBOARDACTIONRSN10
+    description: |-
+      Parole board action reason 10
+  - name: PAROLEBOARDACTIONRSN11
+    description: |-
+      Parole board action reason 11
+  - name: PAROLEBOARDACTIONRSN12
+    description: |-
+      Parole board action reason 12
+table_relationships:
+  - foreign_table: OFFENDERPROFILE
+    join_logic:
+      - BOARDHEARING.OFFENDERID = OFFENDERPROFILE.OFFENDERID
