@@ -169,6 +169,7 @@ class WorkflowsAdminPanelEndpointTests(TestCase):
                 "url_section": "url-path",
                 "completion_event": "event_id",
                 "experiment_id": "experiment_id",
+                "homepage_position": 1,
                 "last_updated_at": datetime.datetime(2024, 4, 15),
                 "last_updated_by": "bob",
             }
@@ -184,6 +185,7 @@ class WorkflowsAdminPanelEndpointTests(TestCase):
                 "urlSection": "url-path",
                 "completionEvent": "event_id",
                 "experimentId": "experiment_id",
+                "homepagePosition": 1,
                 "lastUpdatedBy": "bob",
                 "lastUpdatedAt": "2024-04-15 00:00:00",
             }

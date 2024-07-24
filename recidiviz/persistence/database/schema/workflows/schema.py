@@ -53,6 +53,7 @@ class Opportunity(WorkflowsBase):
     updated_by = Column(String, nullable=False)
     updated_at = Column(DateTime, nullable=False)
     gating_feature_variant = Column(String, nullable=True)
+    homepage_position = Column(Integer, nullable=False)
     # TODO(#27733): Migrate fields from WorkflowsOpportunityConfig
 
 

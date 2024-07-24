@@ -124,8 +124,9 @@ WORK_RELEASE_INFO = FullOpportunityInfo(
     firestore_collection="work_release_collection",
     experiment_id="work_release_experiment_id",
     completion_event="work_release_event",
+    homepage_position=1,
     last_updated_at=datetime.datetime(2023, 4, 26),
-    last_updated_by="tony@recidivizors.org",
+    last_updated_by="tony@recidiviz.org",
 )
 
 FAST_FTRD_INFO = FullOpportunityInfo(
@@ -137,8 +138,9 @@ FAST_FTRD_INFO = FullOpportunityInfo(
     firestore_collection="fast_collection",
     experiment_id="fast_experiment_id",
     completion_event="fast_event",
+    homepage_position=2,
     last_updated_at=datetime.datetime(2023, 4, 27),
-    last_updated_by="daniel@recizens.org",
+    last_updated_by="daniel@recidiviz.org",
 )
 
 SLD_INFO = FullOpportunityInfo(
@@ -150,8 +152,9 @@ SLD_INFO = FullOpportunityInfo(
     firestore_collection="sld_collection",
     experiment_id="sld_experiment_id",
     completion_event="sld_event",
+    homepage_position=3,
     last_updated_at=datetime.datetime(2023, 4, 28),
-    last_updated_by="ken@redidiviz.org",
+    last_updated_by="ken@recidiviz.org",
 )
 
 
@@ -189,6 +192,8 @@ class TestWorkflowsQuerier(TestCase):
 
     # Stores the location of the postgres DB for this test run
     temp_db_dir: Optional[str]
+
+    maxDiff = None
 
     @classmethod
     def setUpClass(cls) -> None:

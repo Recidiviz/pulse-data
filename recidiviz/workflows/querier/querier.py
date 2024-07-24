@@ -73,6 +73,7 @@ class WorkflowsQuerier:
                 Opportunity.state_code,
                 Opportunity.opportunity_type,
                 Opportunity.gating_feature_variant,
+                Opportunity.homepage_position,
                 Opportunity.updated_at,
                 Opportunity.updated_by,
             )
@@ -92,6 +93,7 @@ class WorkflowsQuerier:
                         system_type=get_system_for_opportunity(
                             opportunity.opportunity_type
                         ),
+                        homepage_position=opportunity.homepage_position,
                         completion_event=str(config.task_completion_event),
                         experiment_id=config.experiment_id,
                         last_updated_at=opportunity.updated_at,

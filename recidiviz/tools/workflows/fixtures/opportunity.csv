@@ -1,4 +1,4 @@
-state_code,opportunity_type,updated_by,updated_at,gating_feature_variant
-US_ID,usIdCRCWorkRelease,tony@recidivizors.org,2023-04-26,
-US_ID,pastFTRD,daniel@recizens.org,2023-04-27,someFeatureVariant
-US_ID,usIdSupervisionLevelDowngrade,ken@redidiviz.org,2023-04-28,someOtherFeatureVariant
+state_code,opportunity_type,updated_by,updated_at,gating_feature_variant,homepage_position
+US_ID,usIdCRCWorkRelease,tony@recidiviz.org,2023-04-26,,1
+US_ID,pastFTRD,daniel@recidiviz.org,2023-04-27,someFeatureVariant,2
+US_ID,usIdSupervisionLevelDowngrade,ken@recidiviz.org,2023-04-28,someOtherFeatureVariant,3

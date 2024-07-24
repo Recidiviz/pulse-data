@@ -45,6 +45,7 @@ class OpportunitySchema(CamelCaseSchema):
     last_updated_at = fields.Str(required=True)
     last_updated_by = fields.Str(required=True)
 
+    homepage_position = fields.Int(required=True)
     gating_feature_variant = fields.Str(required=False)
 
 
