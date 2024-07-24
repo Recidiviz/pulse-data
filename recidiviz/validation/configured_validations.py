@@ -148,6 +148,9 @@ from recidiviz.validation.views.state.overlapping_incarceration_periods import (
 from recidiviz.validation.views.state.overlapping_supervision_periods import (
     OVERLAPPING_SUPERVISION_PERIODS_VIEW_BUILDER,
 )
+from recidiviz.validation.views.state.parole_officer_badge_changes import (
+    PA_BADGE_NUMBER_CHANGES_VIEW_BUILDER,
+)
 from recidiviz.validation.views.state.population_projection_data_validation.population_projection_monthly_population_external_comparison import (
     POPULATION_PROJECTION_MONTHLY_POPULATION_EXTERNAL_COMPARISON_VIEW_BUILDER,
 )
@@ -501,6 +504,10 @@ def get_all_validations() -> List[DataValidationCheck]:
         ),
         ExistenceDataValidationCheck(
             view_builder=EXPERIMENT_ASSIGNMENTS_UNIT_OF_ANALYSIS_VALIDATION_VIEW_BUILDER,
+            validation_category=ValidationCategory.INVARIANT,
+        ),
+        ExistenceDataValidationCheck(
+            view_builder=PA_BADGE_NUMBER_CHANGES_VIEW_BUILDER,
             validation_category=ValidationCategory.INVARIANT,
         ),
         SamenessDataValidationCheck(
