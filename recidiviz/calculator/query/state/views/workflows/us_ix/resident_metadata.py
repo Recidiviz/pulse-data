@@ -20,7 +20,10 @@ from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.bq_utils import (
     today_between_start_date_and_nullable_end_date_exclusive_clause,
 )
-from recidiviz.calculator.query.state.dataset_config import WORKFLOWS_VIEWS_DATASET
+from recidiviz.calculator.query.state.dataset_config import (
+    ANALYST_VIEWS_DATASET,
+    WORKFLOWS_VIEWS_DATASET,
+)
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.dataset_config import raw_latest_views_dataset_for_region
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
@@ -38,7 +41,7 @@ US_IX_RESIDENT_METADATA_VIEW_QUERY_TEMPLATE = f"""
 WITH crc_facility AS (
     SELECT
         cs.person_id,
-        r.CRC_FACILITY AS metadata_crc_facility
+        r.CRC_FACILITY AS crc_facility
     FROM `{{project_id}}.sessions.compartment_sessions_materialized` cs
     LEFT JOIN `{{project_id}}.normalized_state.state_person_external_id` pei
         ON cs.person_id = pei.person_id
@@ -54,8 +57,19 @@ WITH crc_facility AS (
         AND cs.compartment_level_1 = 'INCARCERATION'
         AND cs.state_code = "US_IX"
     )
-SELECT *
-FROM crc_facility
+SELECT 
+    c.person_id,
+    c.crc_facility,
+    tentative_parole_date AS tentative_parole_date,
+    initial_parole_hearing_date,
+    next_parole_hearing_date
+FROM crc_facility c
+LEFT JOIN `{{project_id}}.{{analyst_views_dataset}}.us_ix_parole_dates_spans_preprocessing_materialized` i
+    ON c.person_id = i.person_id
+WHERE {today_between_start_date_and_nullable_end_date_exclusive_clause(
+            start_date_column="i.start_date",
+            end_date_column="i.end_date"
+        )}
 """
 
 US_IX_RESIDENT_METADATA_VIEW_BUILDER = SimpleBigQueryViewBuilder(
@@ -67,6 +81,7 @@ US_IX_RESIDENT_METADATA_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_id=US_IX_RESIDENT_METADATA_VIEW_NAME,
     view_query_template=US_IX_RESIDENT_METADATA_VIEW_QUERY_TEMPLATE,
     description=US_IX_RESIDENT_METADATA_VIEW_DESCRIPTION,
+    analyst_views_dataset=ANALYST_VIEWS_DATASET,
     should_materialize=True,
 )
 
