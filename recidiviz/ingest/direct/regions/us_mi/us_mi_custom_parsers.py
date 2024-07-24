@@ -24,6 +24,7 @@ my_flat_field:
             arg_1: <expression>
             arg_2: <expression>
 """
+import datetime
 from re import findall, search
 from typing import Optional
 
@@ -265,3 +266,11 @@ def bondable_offenses(offense_codes: str) -> str:
     offense_codes_list = offense_codes.split("@@")
 
     return ",".join(sorted(set(offense_codes_list) - set(nonbondable_offense_code)))
+
+
+def period_before_COMS_migration(period_start_date: str) -> bool:
+    """Returns whether the period start date was before the COMS migration on 8/14/2023"""
+    parsedDate = parse_datetime(period_start_date)
+    if parsedDate is not None and parsedDate < datetime.datetime(2023, 8, 14):
+        return True
+    return False
