@@ -213,7 +213,19 @@ WITH status_bw AS (
             BN_CYC,
             BN_HS,
             NULLIF(BN_HE, '0') AS BN_HE,
-            BN_LRU
+            BN_LRU,
+            CASE BN_LRU
+                WHEN 'TAS' THEN 1
+                WHEN 'ADS' THEN 2
+                WHEN 'DIS' THEN 3
+                WHEN 'NOC' THEN 4
+                WHEN 'PRC' THEN 5
+                WHEN 'HOS' THEN 6
+                WHEN 'INF' THEN 7
+                WHEN 'GNP' THEN 8
+                WHEN '***' THEN 9
+                ELSE 10
+            END AS housing_type_rank
         FROM {LBAKRDTA_TAK017} housing
         WHERE BN_HS != '0' AND BN_LRU IS NOT NULL
     ),
@@ -242,8 +254,7 @@ WITH status_bw AS (
             BN_HS AS StartDate,
             BN_HE AS EndDate,
         FROM cleaned_housing_details
-    )
-    ,
+    ),
     start_date_cte AS (
         /*
         Generate full list of the period start dates. This will include those dates currently labeled as start dates as
@@ -388,8 +399,16 @@ WITH status_bw AS (
             SELECT 
                 se.*,
                 h.BN_LRU,
-                ROW_NUMBER() OVER (PARTITION BY se.DOC, se.CYC, se.StartDate, se.EndDate 
-                ORDER BY ((CAST(BN_HE AS INT64)) - CAST(BN_HS AS INT64)) ASC NULLS LAST) as h_rn
+                -- When multiple housing periods overlap, prioritize the housing type 
+                -- with the highest priority rank (assigned in cleaned_housing_details); 
+                -- if there are multiple, use the type from the shortest period.
+                ROW_NUMBER() OVER (
+                    PARTITION BY se.DOC, se.CYC, se.StartDate, se.EndDate 
+                    ORDER BY
+                        housing_type_rank ASC,
+                        CAST(BN_HE AS INT64) - CAST(BN_HS AS INT64) ASC 
+                        NULLS LAST
+                ) as h_rn
             FROM start_end_facility se
             LEFT JOIN cleaned_housing_details h
             ON se.DOC = h.BN_DOC
