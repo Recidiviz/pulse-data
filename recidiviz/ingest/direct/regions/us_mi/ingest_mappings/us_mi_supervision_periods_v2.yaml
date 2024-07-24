@@ -94,13 +94,19 @@ output:
                         - "WARRANT-supervision_level-7483" # Probation Absconder Warrant Status
                         - "WARRANT-supervision_level-7482" # Parole Absconder Warrant Status
                         - "WARRANT-supervision_level-2394" # Absconder Warrant Status
-              # If the movements data indicate that the individual has absconded, then we're going to mark supervision type as ABSCONSION
+              # If the movements data indicate that the individual has absconded, and this is a period that started before the COMS migration
+              # (aka before they had Absconsion modifiers) then we're going to mark supervision type as ABSCONSION
               - $else_if:
-                  $in:
-                    $value: movement_reason_id
-                    $options:
-                      - $literal("112") # Absconder from Parole
-                      - $literal("119") # Absconder from Probation
+                  $and:
+                    - $custom:
+                        $function: us_mi_custom_parsers.period_before_COMS_migration
+                        $args:
+                          period_start_date: period_start
+                    - $in:
+                        $value: movement_reason_id
+                        $options:
+                          - $literal("112") # Absconder from Parole
+                          - $literal("119") # Absconder from Probation
                 $then:
                   $enum_mapping:
                     $raw_text:
