@@ -37,6 +37,7 @@ from recidiviz.ingest.direct.types.raw_data_import_types import (
     PreImportNormalizationType,
     PreImportNormalizedCsvChunkResult,
     RawBigQueryFileMetadata,
+    RawFileProcessingError,
     RawGCSFileMetadata,
     RequiresPreImportNormalizationFile,
 )
@@ -256,11 +257,15 @@ class TestRegroupAndVerifyFileChunks(unittest.TestCase):
         }
 
     def test_regroup_normalized_file_chunks(self) -> None:
-        file_to_normalized_chunks = regroup_normalized_file_chunks(
+        (
+            files_with_previous_errors,
+            file_to_normalized_chunks,
+        ) = regroup_normalized_file_chunks(
             self.normalized_chunks, normalized_chunks_errors=[]
         )
 
         self.assertEqual(len(file_to_normalized_chunks), 1)
+        self.assertFalse(files_with_previous_errors)
 
         file1 = GcsfsFilePath.from_absolute_path("test_bucket/file1")
         self.assertIn(file1, file_to_normalized_chunks)
@@ -283,7 +288,10 @@ class TestRegroupAndVerifyFileChunks(unittest.TestCase):
             crc32c=self._get_checksum_int(b"file bytes"),
         )
 
-        file_to_normalized_chunks = regroup_normalized_file_chunks(
+        (
+            files_with_previous_errors,
+            file_to_normalized_chunks,
+        ) = regroup_normalized_file_chunks(
             normalized_chunks_result=[chunk1, chunk0], normalized_chunks_errors=[]
         )
 
@@ -299,6 +307,74 @@ class TestRegroupAndVerifyFileChunks(unittest.TestCase):
                 chunk0,
                 chunk1,
             ],
+        )
+        self.assertFalse(files_with_previous_errors)
+
+    def test_regroup_normalized_file_chunks_with_errors(self) -> None:
+        file1_chunk0 = PreImportNormalizedCsvChunkResult(
+            input_file_path=GcsfsFilePath.from_absolute_path("test_bucket/file1"),
+            output_file_path=GcsfsFilePath.from_absolute_path("test_bucket/file1_1"),
+            chunk_boundary=CsvChunkBoundary(0, 10, 0),
+            crc32c=self._get_checksum_int(b"these are "),
+        )
+        file1_chunk1 = PreImportNormalizedCsvChunkResult(
+            input_file_path=GcsfsFilePath.from_absolute_path("test_bucket/file1"),
+            output_file_path=GcsfsFilePath.from_absolute_path("test_bucket/file1_0"),
+            chunk_boundary=CsvChunkBoundary(10, 20, 1),
+            crc32c=self._get_checksum_int(b"file bytes"),
+        )
+        file2_chunk0 = PreImportNormalizedCsvChunkResult(
+            input_file_path=GcsfsFilePath.from_absolute_path("test_bucket/file2"),
+            output_file_path=GcsfsFilePath.from_absolute_path("test_bucket/file2_0"),
+            chunk_boundary=CsvChunkBoundary(10, 20, 1),
+            crc32c=self._get_checksum_int(b"file bytes"),
+        )
+        file2_chunk1 = PreImportNormalizedCsvChunkResult(
+            input_file_path=GcsfsFilePath.from_absolute_path("test_bucket/file2"),
+            output_file_path=GcsfsFilePath.from_absolute_path("test_bucket/file2_0"),
+            chunk_boundary=CsvChunkBoundary(10, 20, 1),
+            crc32c=self._get_checksum_int(b"file bytes"),
+        )
+        error = RawFileProcessingError(
+            original_file_path=GcsfsFilePath.from_absolute_path("test_bucket/file2"),
+            temporary_file_paths=[],
+            error_msg="this is an error",
+        )
+
+        (
+            files_with_previous_errors,
+            file_to_normalized_chunks,
+        ) = regroup_normalized_file_chunks(
+            normalized_chunks_result=[
+                file1_chunk0,
+                file1_chunk1,
+                file2_chunk0,
+                file2_chunk1,
+            ],
+            normalized_chunks_errors=[error],
+        )
+
+        file1 = GcsfsFilePath.from_absolute_path("test_bucket/file1")
+        self.assertEqual(len(file_to_normalized_chunks), 1)
+        self.assertIn(
+            file1,
+            file_to_normalized_chunks,
+        )
+        self.assertEqual(
+            file_to_normalized_chunks[file1],
+            [
+                file1_chunk0,
+                file1_chunk1,
+            ],
+        )
+        self.assertEqual(len(files_with_previous_errors), 2)
+        self.assertEqual(
+            files_with_previous_errors[0].temporary_file_paths,
+            [file2_chunk0.output_file_path],
+        )
+        self.assertEqual(
+            files_with_previous_errors[1].temporary_file_paths,
+            [file2_chunk1.output_file_path],
         )
 
     def test_verify_checksum_success(self) -> None:
@@ -331,7 +407,7 @@ class TestRegroupAndVerifyFileChunks(unittest.TestCase):
         return int.from_bytes(checksum.digest(), byteorder="big")
 
     def test_build_import_ready_files_none(self) -> None:
-        assert not build_import_ready_files({}, [])
+        assert build_import_ready_files({}, []) == ([], [])
 
     def test_build_import_ready_files_failures_no_skips(self) -> None:
         results = {
@@ -429,7 +505,11 @@ class TestRegroupAndVerifyFileChunks(unittest.TestCase):
                 ),
             ),
         ]
-        output = build_import_ready_files(results, bq_metadata)
+        conceptual_file_incomplete_errors, output = build_import_ready_files(
+            results, bq_metadata
+        )
+
+        assert not conceptual_file_incomplete_errors
 
         created_files = [
             ImportReadyFile.from_bq_metadata_and_normalized_chunk_result(
@@ -547,7 +627,9 @@ class TestRegroupAndVerifyFileChunks(unittest.TestCase):
                 ),
             ),
         ]
-        output = build_import_ready_files(results, bq_metadata)
+        conceptual_file_incomplete_errors, output = build_import_ready_files(
+            results, bq_metadata
+        )
         created_files = [
             ImportReadyFile.from_bq_metadata_and_normalized_chunk_result(
                 metadata,
@@ -567,3 +649,13 @@ class TestRegroupAndVerifyFileChunks(unittest.TestCase):
             assert set(output_file.pre_import_normalized_file_paths or []) == set(
                 created_files[i].pre_import_normalized_file_paths or []
             )
+
+        assert len(conceptual_file_incomplete_errors) == 1
+        assert conceptual_file_incomplete_errors[
+            0
+        ].original_file_path == GcsfsFilePath.from_absolute_path("path/a.csv")
+        assert conceptual_file_incomplete_errors[0].temporary_file_paths == [
+            GcsfsFilePath.from_absolute_path("outpath/a.csv"),
+            GcsfsFilePath.from_absolute_path("outpath/a1.csv"),
+            GcsfsFilePath.from_absolute_path("outpath/a2.csv"),
+        ]
