@@ -51,8 +51,7 @@ for metric_class in ALL_METRICS:
     }
     if any(
         field.name == "group"
-        # TODO(python/mypy#16254): Remove type: ignore
-        for field in attr.fields(metric_class.get_params_class())  # type: ignore
+        for field in list(attr.fields(metric_class.get_params_class()))
     ):
         schema_fields["group"] = EnumField(
             Dimension,

@@ -72,6 +72,8 @@ def build_normalization_pipeline_output_table_id_to_schemas() -> dict[
     return table_id_to_schema_map
 
 
+# TODO(#31741): Delete this collection once we have deleted the legacy normalization
+#  pipeline.
 def build_normalization_pipeline_output_source_table_collections() -> list[
     SourceTableCollection
 ]:

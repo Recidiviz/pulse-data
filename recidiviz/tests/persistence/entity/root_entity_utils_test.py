@@ -17,17 +17,12 @@
 """Tests for root_entity_utils.py"""
 import unittest
 
-from recidiviz.persistence.database.schema.state import schema
-from recidiviz.persistence.database.schema_entity_converter import (
-    schema_entity_converter as converter,
-)
 from recidiviz.persistence.entity.root_entity_utils import (
     get_entity_class_name_to_root_entity_class_name,
     get_root_entity_class_for_entity,
     get_root_entity_id,
 )
-from recidiviz.persistence.entity.state import entities
-from recidiviz.utils.types import assert_type
+from recidiviz.persistence.entity.state import entities, normalized_entities
 
 
 class RootEntityUtilsTest(unittest.TestCase):
@@ -38,10 +33,36 @@ class RootEntityUtilsTest(unittest.TestCase):
             entities.StatePerson, get_root_entity_class_for_entity(entities.StatePerson)
         )
         self.assertEqual(
-            entities.StatePerson, get_root_entity_class_for_entity(schema.StatePerson)
+            entities.StatePerson,
+            get_root_entity_class_for_entity(entities.StateAssessment),
         )
         self.assertEqual(
-            entities.StateStaff, get_root_entity_class_for_entity(schema.StateStaff)
+            entities.StateStaff,
+            get_root_entity_class_for_entity(entities.StateStaffRolePeriod),
+        )
+
+    def test_get_root_entity_class_normalized(self) -> None:
+        self.assertEqual(
+            normalized_entities.NormalizedStatePerson,
+            get_root_entity_class_for_entity(normalized_entities.NormalizedStatePerson),
+        )
+        self.assertEqual(
+            normalized_entities.NormalizedStatePerson,
+            get_root_entity_class_for_entity(
+                normalized_entities.NormalizedStateAssessment
+            ),
+        )
+        self.assertEqual(
+            normalized_entities.NormalizedStatePerson,
+            get_root_entity_class_for_entity(
+                normalized_entities.NormalizedStateAssessment
+            ),
+        )
+        self.assertEqual(
+            normalized_entities.NormalizedStateStaff,
+            get_root_entity_class_for_entity(
+                normalized_entities.NormalizedStateStaffRolePeriod
+            ),
         )
 
     def test_get_root_entity_id_person(self) -> None:
@@ -60,12 +81,6 @@ class RootEntityUtilsTest(unittest.TestCase):
         self.assertEqual(123, get_root_entity_id(external_id))
         self.assertEqual(123, get_root_entity_id(person))
 
-        db_person = assert_type(
-            converter.convert_entity_to_schema_object(person), schema.StatePerson
-        )
-        self.assertEqual(123, get_root_entity_id(db_person.external_ids[0]))
-        self.assertEqual(123, get_root_entity_id(db_person))
-
     def test_get_root_entity_id_staff(self) -> None:
         staff = entities.StateStaff.new_with_defaults(staff_id=789, state_code="US_XX")
         staff_external_id = entities.StateStaffExternalId.new_with_defaults(
@@ -79,12 +94,6 @@ class RootEntityUtilsTest(unittest.TestCase):
 
         self.assertEqual(789, get_root_entity_id(staff_external_id))
         self.assertEqual(789, get_root_entity_id(staff))
-
-        db_staff = assert_type(
-            converter.convert_entity_to_schema_object(staff), schema.StateStaff
-        )
-        self.assertEqual(789, get_root_entity_id(db_staff.external_ids[0]))
-        self.assertEqual(789, get_root_entity_id(db_staff))
 
     def test_get_entity_class_name_to_root_entity_class_name(self) -> None:
         root_entity_mapping = get_entity_class_name_to_root_entity_class_name(

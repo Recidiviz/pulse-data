@@ -26,6 +26,10 @@ from recidiviz.persistence.database.bq_refresh.big_query_table_manager import (
 )
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.schema_utils import get_all_table_classes_in_schema
+from recidiviz.persistence.entity.entities_bq_schema import (
+    get_bq_schema_for_entities_module,
+)
+from recidiviz.persistence.entity.state import entities as state_entities
 from recidiviz.source_tables.normalization_pipeline_output_table_collector import (
     build_normalization_pipeline_output_table_id_to_schemas,
 )
@@ -47,9 +51,9 @@ def build_unioned_state_source_table_collection() -> SourceTableCollection:
             UnionedStateAgnosticSourceTableLabel(STATE_BASE_DATASET),
         ],
     )
-    for table in list(get_all_table_classes_in_schema(SchemaType.STATE)):
-        table_id = table.name
-        schema_fields = bq_schema_for_sqlalchemy_table(SchemaType.STATE, table)
+    for table_id, schema_fields in get_bq_schema_for_entities_module(
+        state_entities
+    ).items():
         state_agnostic_collection.add_source_table(
             table_id=table_id, schema_fields=schema_fields
         )

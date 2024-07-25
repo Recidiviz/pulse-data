@@ -34,6 +34,7 @@ from recidiviz.big_query.constants import BQ_TABLE_COLUMN_DESCRIPTION_MAX_LENGTH
 from recidiviz.common.attr_utils import (
     is_bool,
     is_date,
+    is_datetime,
     is_enum,
     is_float,
     is_int,
@@ -70,6 +71,8 @@ def _schema_column_type_for_attribute(attribute: attr.Attribute) -> str:
         return bigquery.enums.SqlTypeNames.INTEGER.value
     if is_float(attribute):
         return bigquery.enums.SqlTypeNames.FLOAT.value
+    if is_datetime(attribute):
+        return bigquery.enums.SqlTypeNames.DATETIME.value
     if is_date(attribute):
         return bigquery.enums.SqlTypeNames.DATE.value
     if is_bool(attribute):
