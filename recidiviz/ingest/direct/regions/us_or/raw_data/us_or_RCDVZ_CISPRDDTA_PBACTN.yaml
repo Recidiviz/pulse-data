@@ -70,7 +70,7 @@ columns:
       A unique identifier for each Adult in Custody (AIC).
     is_pii: True
     field_type: person_external_id
-    external_id_type: US_OR_ID
+    external_id_type: US_OR_RECORD_KEY
   - name: LAST_UPDATED_WHEN
     field_type: datetime
     description: |-

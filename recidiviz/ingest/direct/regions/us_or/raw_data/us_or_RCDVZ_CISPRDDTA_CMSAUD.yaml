@@ -13,7 +13,7 @@ columns:
       A unique number generated for each person.
     is_pii: True
     field_type: person_external_id
-    external_id_type: US_OR_ID
+    external_id_type: US_OR_RECORD_KEY
   - name: SANC_NUMBER
     description: |-
       Unique number for each sanction.
