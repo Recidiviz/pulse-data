@@ -10,7 +10,7 @@ columns:
   - name: RECORD_KEY
     is_pii: True
     field_type: person_external_id
-    external_id_type: US_OR_ID
+    external_id_type: US_OR_RECORD_KEY
   - name: SUBFILE_KEY
   - name: MARK_SCAR_OR_TATTOO
   - name: LAST_UPDATED_WHEN
