@@ -34,8 +34,8 @@ from recidiviz.airflow.tests.test_utils import CloudSqlQueryGeneratorUnitTest
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.direct.types.raw_data_import_types import (
-    RawBigQueryFileMetadataSummary,
-    RawGCSFileMetadataSummary,
+    RawBigQueryFileMetadata,
+    RawGCSFileMetadata,
 )
 from recidiviz.persistence.database.schema.operations.schema import OperationsBase
 from recidiviz.tests.ingest.direct import fake_regions
@@ -67,11 +67,9 @@ class TestGetAllUnprocessedBQFileMetadataSqlQueryGenerator(
         self.mock_context = create_autospec(Context)
 
     def _validate_results(
-        self, _results: List[str], _inputs: List[RawGCSFileMetadataSummary]
+        self, _results: List[str], _inputs: List[RawGCSFileMetadata]
     ) -> None:
-        metadata = [
-            RawBigQueryFileMetadataSummary.deserialize(result) for result in _results
-        ]
+        metadata = [RawBigQueryFileMetadata.deserialize(result) for result in _results]
 
         assert {p.path for m in metadata for p in m.gcs_files} == {
             i.path for i in _inputs
@@ -90,9 +88,7 @@ class TestGetAllUnprocessedBQFileMetadataSqlQueryGenerator(
             for name in record[1]:
                 assert f"testing/{name}" in ps
 
-    def _insert_rows_into_gcs(
-        self, paths: List[str]
-    ) -> List[RawGCSFileMetadataSummary]:
+    def _insert_rows_into_gcs(self, paths: List[str]) -> List[RawGCSFileMetadata]:
         p = [GcsfsFilePath.from_absolute_path(path) for path in paths]
         results = self.mock_pg_hook.get_records(
             # pylint: disable=protected-access
@@ -100,7 +96,7 @@ class TestGetAllUnprocessedBQFileMetadataSqlQueryGenerator(
         )
 
         return [
-            RawGCSFileMetadataSummary.from_gcs_metadata_table_row(result, p[i])
+            RawGCSFileMetadata.from_gcs_metadata_table_row(result, p[i])
             for i, result in enumerate(results)
         ]
 
@@ -116,21 +112,21 @@ class TestGetAllUnprocessedBQFileMetadataSqlQueryGenerator(
 
     def test_all_pre_registered(self) -> None:
         inputs = [
-            RawGCSFileMetadataSummary(
+            RawGCSFileMetadata(
                 gcs_file_id=1,
                 file_id=2,
                 path=GcsfsFilePath.from_absolute_path(
                     "testing/unprocessed_2024-01-25T16:35:33:617135_raw_test_file_tag.csv"
                 ),
             ),
-            RawGCSFileMetadataSummary(
+            RawGCSFileMetadata(
                 gcs_file_id=3,
                 file_id=4,
                 path=GcsfsFilePath.from_absolute_path(
                     "testing/unprocessed_2024-01-25T16:35:33:617135_raw_test_file_tag-1.csv",
                 ),
             ),
-            RawGCSFileMetadataSummary(
+            RawGCSFileMetadata(
                 gcs_file_id=5,
                 file_id=6,
                 path=GcsfsFilePath.from_absolute_path(
@@ -145,7 +141,7 @@ class TestGetAllUnprocessedBQFileMetadataSqlQueryGenerator(
             self.mock_operator, mock_postgres, self.mock_context
         )
         metadata_results = [
-            RawBigQueryFileMetadataSummary.deserialize(result) for result in results
+            RawBigQueryFileMetadata.deserialize(result) for result in results
         ]
 
         assert len(metadata_results) == len(inputs)
@@ -159,14 +155,14 @@ class TestGetAllUnprocessedBQFileMetadataSqlQueryGenerator(
 
     def test_no_recognized_paths(self) -> None:
         inputs = [
-            RawGCSFileMetadataSummary(
+            RawGCSFileMetadata(
                 gcs_file_id=1,
                 file_id=None,
                 path=GcsfsFilePath.from_absolute_path(
                     "testing/unprocessed_2024-01-25T16:35:33:617135_raw_tagThatDoesNotExist.csv",
                 ),
             ),
-            RawGCSFileMetadataSummary(
+            RawGCSFileMetadata(
                 gcs_file_id=3,
                 file_id=None,
                 path=GcsfsFilePath.from_absolute_path(
@@ -355,8 +351,7 @@ class TestGetAllUnprocessedBQFileMetadataSqlQueryGenerator(
         )
 
         metadata = [
-            RawBigQueryFileMetadataSummary.deserialize(result_str)
-            for result_str in results
+            RawBigQueryFileMetadata.deserialize(result_str) for result_str in results
         ]
 
         assert len({meta.file_id for meta in metadata}) == 3

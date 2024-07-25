@@ -36,7 +36,7 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.types.raw_data_import_types import (
     ImportReadyFile,
     PreImportNormalizedCsvChunkResult,
-    RawBigQueryFileMetadataSummary,
+    RawBigQueryFileMetadata,
     RawFileProcessingError,
     RequiresPreImportNormalizationFile,
     RequiresPreImportNormalizationFileChunk,
@@ -213,7 +213,7 @@ def regroup_and_verify_file_chunks(
     )
 
     requires_pre_import_normalization_files_bq_metadata = [
-        RawBigQueryFileMetadataSummary.deserialize(
+        RawBigQueryFileMetadata.deserialize(
             serialized_requires_normalization_file_bq_metadata
         )
         for serialized_requires_normalization_file_bq_metadata in serialized_requires_pre_import_normalization_files_bq_metadata
@@ -318,9 +318,7 @@ def build_import_ready_files(
     filtered_file_path_to_normalized_chunks: Dict[
         GcsfsFilePath, List[PreImportNormalizedCsvChunkResult]
     ],
-    requires_pre_import_normalization_files_bq_metadata: List[
-        RawBigQueryFileMetadataSummary
-    ],
+    requires_pre_import_normalization_files_bq_metadata: List[RawBigQueryFileMetadata],
 ) -> List[ImportReadyFile]:
     """Uses |filtered_file_path_to_normalized_chunks| to determine which candidates from
     |requires_pre_import_normalization_files_bq_metadata| will be used to create import
@@ -330,7 +328,7 @@ def build_import_ready_files(
     # --- first, create mapping of original file path to associated bq metadata --------
 
     path_to_requires_normalization_files_bq_metadata: Dict[
-        GcsfsFilePath, RawBigQueryFileMetadataSummary
+        GcsfsFilePath, RawBigQueryFileMetadata
     ] = {
         gcs_metadata.path: bq_metadata
         for bq_metadata in requires_pre_import_normalization_files_bq_metadata

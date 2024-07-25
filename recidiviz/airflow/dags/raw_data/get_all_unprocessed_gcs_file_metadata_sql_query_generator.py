@@ -28,9 +28,7 @@ from recidiviz.airflow.dags.operators.cloud_sql_query_operator import (
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.ingest.direct.gcs.filename_parts import filename_parts_from_path
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
-from recidiviz.ingest.direct.types.raw_data_import_types import (
-    RawGCSFileMetadataSummary,
-)
+from recidiviz.ingest.direct.types.raw_data_import_types import RawGCSFileMetadata
 from recidiviz.utils.string import StrictStringFormatter
 
 GET_EXISTING_FILES_BY_PATH = """
@@ -98,10 +96,10 @@ class GetAllUnprocessedGCSFileMetadataSqlQueryGenerator(
             path.blob_name: path for path in unprocessed_paths_in_bucket
         }
 
-        # --- first, deteremine which files we've seen before --------------------------
+        # --- first, determine which files we've seen before --------------------------
 
-        alredy_seen_gcs_metadata = [
-            RawGCSFileMetadataSummary.from_gcs_metadata_table_row(
+        already_seen_gcs_metadata = [
+            RawGCSFileMetadata.from_gcs_metadata_table_row(
                 metadata_row, unprocessed_blob_names_to_path[metadata_row[2]]
             )
             for metadata_row in postgres_hook.get_records(
@@ -109,8 +107,8 @@ class GetAllUnprocessedGCSFileMetadataSqlQueryGenerator(
             )
         ]
 
-        alredy_seen_paths_in_bucket = {
-            metadata.path.blob_name for metadata in alredy_seen_gcs_metadata
+        already_seen_paths_in_bucket = {
+            metadata.path.blob_name for metadata in already_seen_gcs_metadata
         }
 
         # --- then, register new files in gcs metadata table ---------------------------
@@ -118,7 +116,7 @@ class GetAllUnprocessedGCSFileMetadataSqlQueryGenerator(
         new_paths_in_bucket = [
             path
             for path in unprocessed_paths_in_bucket
-            if path.blob_name not in alredy_seen_paths_in_bucket
+            if path.blob_name not in already_seen_paths_in_bucket
         ]
 
         new_metadata_table_rows = (
@@ -130,7 +128,7 @@ class GetAllUnprocessedGCSFileMetadataSqlQueryGenerator(
         )
 
         new_gcs_metadata = [
-            RawGCSFileMetadataSummary.from_gcs_metadata_table_row(
+            RawGCSFileMetadata.from_gcs_metadata_table_row(
                 metadata_row, unprocessed_blob_names_to_path[metadata_row[2]]
             )
             for metadata_row in new_metadata_table_rows
@@ -140,7 +138,7 @@ class GetAllUnprocessedGCSFileMetadataSqlQueryGenerator(
 
         return [
             metadata.serialize()
-            for metadata in alredy_seen_gcs_metadata + new_gcs_metadata
+            for metadata in already_seen_gcs_metadata + new_gcs_metadata
         ]
 
     def _get_existing_files_by_path_sql_query(

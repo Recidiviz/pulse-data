@@ -25,7 +25,7 @@ from recidiviz.airflow.dags.operators.cloud_sql_query_operator import (
     CloudSqlQueryGenerator,
     CloudSqlQueryOperator,
 )
-from recidiviz.airflow.dags.raw_data.metadata import IMPORT_SESSION_SUMMARIES
+from recidiviz.airflow.dags.raw_data.metadata import IMPORT_SUMMARIES
 from recidiviz.airflow.dags.utils.cloud_sql import (
     postgres_formatted_current_datetime_utc_str,
     postgres_formatted_datetime_with_tz,
@@ -35,7 +35,7 @@ from recidiviz.common.constants.operations.direct_ingest_raw_data_import_session
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.direct.types.raw_data_import_types import (
-    ImportSessionSummary,
+    RawBigQueryFileImportSummary,
     RawBigQueryFileProcessedTime,
 )
 from recidiviz.utils.string import StrictStringFormatter
@@ -48,7 +48,9 @@ RETURNING file_id, import_status, import_end;"""
 
 
 class WriteImportSessionSqlQueryGenerator(CloudSqlQueryGenerator[List[str]]):
-    """Custom query generator that write import session info to the operations db"""
+    """Custom query generator that writes import summaries to the import sessions
+    operations table
+    """
 
     def __init__(
         self,
@@ -68,16 +70,16 @@ class WriteImportSessionSqlQueryGenerator(CloudSqlQueryGenerator[List[str]]):
         context: Context,
     ) -> List[str]:
 
-        import_session_summaries = [
-            ImportSessionSummary.deserialize(import_session_str)
-            for import_session_str in operator.xcom_pull(
+        import_summaries = [
+            RawBigQueryFileImportSummary.deserialize(import_summary_str)
+            for import_summary_str in operator.xcom_pull(
                 context,
-                key=IMPORT_SESSION_SUMMARIES,
+                key=IMPORT_SUMMARIES,
                 task_ids=self._coalesce_results_and_errors_task_id,
             )
         ]
 
-        if not import_session_summaries:
+        if not import_summaries:
             return []
 
         dag_run = context["dag_run"]
@@ -91,7 +93,7 @@ class WriteImportSessionSqlQueryGenerator(CloudSqlQueryGenerator[List[str]]):
         # once and instead do batches?
         records = postgres_hook.get_records(
             self._create_insert_into_import_session_sql_query(
-                import_session_summaries,
+                import_summaries,
                 assert_type(dag_run.start_date, datetime.datetime),
             )
         )
@@ -109,22 +111,22 @@ class WriteImportSessionSqlQueryGenerator(CloudSqlQueryGenerator[List[str]]):
 
     def _import_session_row_from_summary(
         self,
-        import_session_summary: ImportSessionSummary,
+        import_summary: RawBigQueryFileImportSummary,
         import_start: datetime.datetime,
     ) -> str:
         # n.b. the order of the values in this column MUST match the order of the columns
         # specified in ADD_IMPORT_SESSION_SQL_QUERY
         row = [
-            import_session_summary.file_id,
-            f"'{import_session_summary.import_status.value}'",
+            import_summary.file_id,
+            f"'{import_summary.import_status.value}'",
             f"'{postgres_formatted_datetime_with_tz(import_start)}'",
             f"'{postgres_formatted_current_datetime_utc_str()}'",
             f"'{self._region_code}'",
             f"'{self._raw_data_instance.value}'",
-            import_session_summary.historical_diffs_active,
-            import_session_summary.raw_rows,
-            import_session_summary.net_new_or_updated_rows,
-            import_session_summary.deleted_rows,
+            import_summary.historical_diffs_active,
+            import_summary.raw_rows,
+            import_summary.net_new_or_updated_rows,
+            import_summary.deleted_rows,
         ]
         row_as_str = [str(value) if not value is None else "NULL" for value in row]
 
@@ -132,13 +134,13 @@ class WriteImportSessionSqlQueryGenerator(CloudSqlQueryGenerator[List[str]]):
 
     def _create_insert_into_import_session_sql_query(
         self,
-        import_session_summaries: List[ImportSessionSummary],
+        import_summaries: List[RawBigQueryFileImportSummary],
         import_start: datetime.datetime,
     ) -> str:
 
         import_session_strings = ",".join(
-            self._import_session_row_from_summary(import_session_summary, import_start)
-            for import_session_summary in import_session_summaries
+            self._import_session_row_from_summary(import_summary, import_start)
+            for import_summary in import_summaries
         )
 
         return StrictStringFormatter().format(

@@ -24,7 +24,7 @@ from airflow.decorators import task
 from recidiviz.airflow.dags.raw_data.metadata import (
     APPEND_READY_FILE_BATCHES,
     IMPORT_READY_FILES,
-    IMPORT_SESSION_SUMMARIES,
+    IMPORT_SUMMARIES,
     PROCESSED_PATHS_TO_RENAME,
     REQUIRES_PRE_IMPORT_NORMALIZATION_FILES,
     REQUIRES_PRE_IMPORT_NORMALIZATION_FILES_BQ_METADATA,
@@ -51,10 +51,10 @@ from recidiviz.ingest.direct.types.raw_data_import_types import (
     AppendReadyFileBatch,
     AppendSummary,
     ImportReadyFile,
-    ImportSessionSummary,
     PreImportNormalizationType,
     PreImportNormalizedCsvChunkResult,
-    RawBigQueryFileMetadataSummary,
+    RawBigQueryFileImportSummary,
+    RawBigQueryFileMetadata,
     RawDataAppendImportError,
     RawFileLoadAndPrepError,
     RawFileProcessingError,
@@ -80,13 +80,13 @@ def split_by_pre_import_normalization_type(
         - requires_pre_normalization_files: list of GcsfsFilePath objects
             to be processed in parallel by pre-import normalization step
         - requires_normalization_files_big_query_metadata: list of serialized
-            RawBigQueryFileMetadataSummary that will be combined downstream with the
+            RawBigQueryFileMetadata that will be combined downstream with the
             resultant ImportReadyNormalizedFile objects to to build ImportReadyFile
             objects
     """
 
     bq_metadata = [
-        RawBigQueryFileMetadataSummary.deserialize(serialized_metadata)
+        RawBigQueryFileMetadata.deserialize(serialized_metadata)
         for serialized_metadata in serialized_bq_metadata
     ]
 
@@ -96,7 +96,7 @@ def split_by_pre_import_normalization_type(
 
     import_ready_files: List[ImportReadyFile] = []
     pre_import_normalization_required_big_query_metadata: List[
-        RawBigQueryFileMetadataSummary
+        RawBigQueryFileMetadata
     ] = []
     pre_import_normalization_required_files: List[GcsfsFilePath] = []
 
@@ -158,10 +158,10 @@ def coalesce_results_and_errors(
     serialized_append_result: List[str],
     region_module_override: Optional[ModuleType] = None,
 ) -> Dict[str, List[str]]:
-    """Reconciles the RawBigQueryFileMetadataSummary against the results and errors of
-    the pre-import normalization and big query load steps, returning a dictionary with
-    four keys:
-        - import_session_summaries: a list of ImportSessionSummary objects to be
+    """Reconciles RawBigQueryFileMetadata objects against the results and errors
+    of the pre-import normalization and big query load steps, returning a dictionary
+    with four keys:
+        - import_summaries: a list of RawBigQueryFileImportSummary objects to be
             persisted to the operations database
         - processed_paths_to_rename: a list of GcsfsFilePath objects that need their
             processed state renamed from unprocessed to processed after successfully
@@ -190,33 +190,33 @@ def coalesce_results_and_errors(
     )
 
     (
-        successful_import_sessions_for_file_id,
+        successful_import_summaries_for_file_id,
         successfully_imported_paths,
-    ) = _build_import_sessions_for_results(*import_results)
+    ) = _build_import_summaries_for_results(*import_results)
 
     (
-        failed_import_sessions_for_file_id,
+        failed_import_summaries_for_file_id,
         temporary_file_paths_to_clean,
         temporary_tables_to_clean,
-    ) = _build_import_sessions_for_errors(
+    ) = _build_import_summaries_for_errors(
         region_raw_config, raw_data_instance, bq_metadata, *import_errors
     )
 
-    missing_import_sessions = _reconcile_import_sessions_and_bq_metadata(
+    missing_import_summaries = _reconcile_import_summaries_and_bq_metadata(
         region_raw_config,
         raw_data_instance,
         bq_metadata,
-        successful_import_sessions_for_file_id,
-        failed_import_sessions_for_file_id,
+        successful_import_summaries_for_file_id,
+        failed_import_summaries_for_file_id,
     )
 
     return {
-        IMPORT_SESSION_SUMMARIES: [
+        IMPORT_SUMMARIES: [
             summary.serialize()
             for summary in [
-                *successful_import_sessions_for_file_id.values(),
-                *failed_import_sessions_for_file_id.values(),
-                *missing_import_sessions,
+                *successful_import_summaries_for_file_id.values(),
+                *failed_import_summaries_for_file_id.values(),
+                *missing_import_summaries,
             ]
         ],
         PROCESSED_PATHS_TO_RENAME: [
@@ -231,26 +231,26 @@ def coalesce_results_and_errors(
     }
 
 
-def _reconcile_import_sessions_and_bq_metadata(
+def _reconcile_import_summaries_and_bq_metadata(
     raw_region_config: DirectIngestRegionRawFileConfig,
     raw_data_instance: DirectIngestInstance,
-    bq_metadata: List[RawBigQueryFileMetadataSummary],
-    successful_import_sessions_for_file_id: Dict[int, ImportSessionSummary],
-    failed_import_sessions_for_file_id: Dict[int, ImportSessionSummary],
-) -> List[ImportSessionSummary]:
+    bq_metadata: List[RawBigQueryFileMetadata],
+    successful_import_summaries_for_file_id: Dict[int, RawBigQueryFileImportSummary],
+    failed_import_summaries_for_file_id: Dict[int, RawBigQueryFileImportSummary],
+) -> List[RawBigQueryFileImportSummary]:
     """Validates that for every file_id in |bq_metadata|, there is either a
-    corresponding success in |successful_import_sessions_for_file_id| or failure
-    in |failed_import_sessions_for_file_id|; in theory this should never happen
+    corresponding success in |successful_import_summaries_for_file_id| or failure
+    in |failed_import_summaries_for_file_id|; in theory this should never happen
     but let's just backstop against it in case an upstream task failed without writing
-    its results to xcom. For all "missing" file_ids, returns an ImportSessionSummary
+    its results to xcom. For all "missing" file_ids, returns an RawBigQueryFileImportSummary
     object with an import_status of FAILED_UNKNOWN.
     """
 
-    missing_file_ids: List[ImportSessionSummary] = []
+    missing_file_ids: List[RawBigQueryFileImportSummary] = []
     for metadata in bq_metadata:
         if (
-            metadata.file_id not in successful_import_sessions_for_file_id
-            and metadata.file_id not in failed_import_sessions_for_file_id
+            metadata.file_id not in successful_import_summaries_for_file_id
+            and metadata.file_id not in failed_import_summaries_for_file_id
         ):
             logging.error(
                 "Found bq metadata entry with file id [%s] without a corresponding "
@@ -258,7 +258,7 @@ def _reconcile_import_sessions_and_bq_metadata(
                 metadata.file_id,
             )
             missing_file_ids.append(
-                ImportSessionSummary(
+                RawBigQueryFileImportSummary(
                     file_id=assert_type(metadata.file_id, int),
                     import_status=DirectIngestRawDataImportSessionStatus.FAILED_UNKNOWN,
                     historical_diffs_active=_historical_diffs_active_for_tag(
@@ -288,27 +288,29 @@ def _historical_diffs_active_for_tag(
     ].is_exempt_from_raw_data_pruning()
 
 
-def _build_import_sessions_for_errors(
+def _build_import_summaries_for_errors(
     raw_region_config: DirectIngestRegionRawFileConfig,
     raw_data_instance: DirectIngestInstance,
-    bq_metadata: List[RawBigQueryFileMetadataSummary],
+    bq_metadata: List[RawBigQueryFileMetadata],
     processing_errors: List[RawFileProcessingError],
     load_and_prep_errors: List[RawFileLoadAndPrepError],
     append_errors: List[RawDataAppendImportError],
-) -> Tuple[Dict[int, ImportSessionSummary], List[GcsfsFilePath], List[BigQueryAddress]]:
-    """Builds ImportSessionSummary objects for all errors seen during the import process,
-    additionally returning temporary file paths and temporary big query tables that we
-    want to make sure are cleaned up
+) -> Tuple[
+    Dict[int, RawBigQueryFileImportSummary], List[GcsfsFilePath], List[BigQueryAddress]
+]:
+    """Builds RawBigQueryFileImportSummary objects for all errors seen during the import
+    process, additionally returning temporary file paths and temporary big query tables
+    that we want to make sure are cleaned up
     """
 
-    failed_import_sessions: Dict[int, ImportSessionSummary] = {}
+    failed_import_summaries: Dict[int, RawBigQueryFileImportSummary] = {}
     temporary_file_paths_to_clean: List[GcsfsFilePath] = []
     temporary_tables_to_clean: List[BigQueryAddress] = []
 
     # --- simple case: append_errors and load_and_prep_errors have file_id -------------
 
     for append_error in append_errors:
-        failed_import_sessions[append_error.file_id] = ImportSessionSummary(
+        failed_import_summaries[append_error.file_id] = RawBigQueryFileImportSummary(
             file_id=append_error.file_id,
             import_status=append_error.error_type,
             historical_diffs_active=_historical_diffs_active_for_tag(
@@ -318,7 +320,9 @@ def _build_import_sessions_for_errors(
         temporary_tables_to_clean.append(append_error.raw_temp_table)
 
     for load_and_prep_error in load_and_prep_errors:
-        failed_import_sessions[load_and_prep_error.file_id] = ImportSessionSummary(
+        failed_import_summaries[
+            load_and_prep_error.file_id
+        ] = RawBigQueryFileImportSummary(
             file_id=load_and_prep_error.file_id,
             import_status=load_and_prep_error.error_type,
             historical_diffs_active=_historical_diffs_active_for_tag(
@@ -334,7 +338,7 @@ def _build_import_sessions_for_errors(
 
     # --- complex case: map file path back to file_id ----------------------------------
 
-    path_to_bq_metadata: Dict[GcsfsFilePath, RawBigQueryFileMetadataSummary] = {
+    path_to_bq_metadata: Dict[GcsfsFilePath, RawBigQueryFileMetadata] = {
         gcs_metadata.path: metadata
         for metadata in bq_metadata
         for gcs_metadata in metadata.gcs_files
@@ -343,7 +347,7 @@ def _build_import_sessions_for_errors(
     for processing_error in processing_errors:
         bq_metadata_for_error = path_to_bq_metadata[processing_error.original_file_path]
         file_id = assert_type(bq_metadata_for_error.file_id, int)
-        failed_import_sessions[file_id] = ImportSessionSummary(
+        failed_import_summaries[file_id] = RawBigQueryFileImportSummary(
             file_id=file_id,
             import_status=processing_error.error_type,
             historical_diffs_active=_historical_diffs_active_for_tag(
@@ -356,22 +360,22 @@ def _build_import_sessions_for_errors(
             temporary_file_paths_to_clean.extend(processing_error.temporary_file_paths)
 
     return (
-        failed_import_sessions,
+        failed_import_summaries,
         temporary_file_paths_to_clean,
         temporary_tables_to_clean,
     )
 
 
-def _build_import_sessions_for_results(
+def _build_import_summaries_for_results(
     append_summaries: List[AppendSummary],
     append_ready_file_batches: List[AppendReadyFileBatch],
-) -> Tuple[Dict[int, ImportSessionSummary], List[GcsfsFilePath]]:
+) -> Tuple[Dict[int, RawBigQueryFileImportSummary], List[GcsfsFilePath]]:
     """Groups |append_summaries| and |append_ready_file_batches| by file_id and builds
-    ImportSessionSummary objects for file_ids that have results from both stages of
-    big query load step.
+    RawBigQueryFileImportSummary objects for file_ids that have results from both stages
+    of big query load step.
     """
 
-    successful_import_sessions: Dict[int, ImportSessionSummary] = {}
+    successful_import_summaries: Dict[int, RawBigQueryFileImportSummary] = {}
     successfully_imported_paths: List[GcsfsFilePath] = []
 
     append_summary_by_file_id = {
@@ -386,16 +390,16 @@ def _build_import_sessions_for_results(
                 if append_summary := append_summary_by_file_id.get(
                     append_ready_file.import_ready_file.file_id
                 ):
-                    successful_import_sessions[
+                    successful_import_summaries[
                         append_summary.file_id
-                    ] = ImportSessionSummary.from_load_results(
+                    ] = RawBigQueryFileImportSummary.from_load_results(
                         append_ready_file, append_summary
                     )
                     successfully_imported_paths.extend(
                         append_ready_file.import_ready_file.original_file_paths
                     )
 
-    return successful_import_sessions, successfully_imported_paths
+    return successful_import_summaries, successfully_imported_paths
 
 
 def _deserialize_coalesce_results_and_errors_inputs(
@@ -406,7 +410,7 @@ def _deserialize_coalesce_results_and_errors_inputs(
     serialized_append_batches: Dict[str, List[str]],
     serialized_append_result: List[str],
 ) -> Tuple[
-    List[RawBigQueryFileMetadataSummary],
+    List[RawBigQueryFileMetadata],
     Tuple[List[AppendSummary], List[AppendReadyFileBatch]],
     Tuple[
         List[RawFileProcessingError],
@@ -416,7 +420,7 @@ def _deserialize_coalesce_results_and_errors_inputs(
 ]:
     """Deserialize and group inputs of coalesce_results_and_errors"""
     bq_metadata = [
-        RawBigQueryFileMetadataSummary.deserialize(serialized_bq_metadata)
+        RawBigQueryFileMetadata.deserialize(serialized_bq_metadata)
         for serialized_bq_metadata in serialized_bq_metadata
     ]
 

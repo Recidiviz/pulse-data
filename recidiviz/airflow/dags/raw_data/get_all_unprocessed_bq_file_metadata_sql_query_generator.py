@@ -40,8 +40,8 @@ from recidiviz.ingest.direct.raw_data.raw_file_configs import (
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.direct.types.raw_data_import_types import (
-    RawBigQueryFileMetadataSummary,
-    RawGCSFileMetadataSummary,
+    RawBigQueryFileMetadata,
+    RawGCSFileMetadata,
 )
 from recidiviz.utils.string import StrictStringFormatter
 from recidiviz.utils.types import assert_type
@@ -97,16 +97,16 @@ class GetAllUnprocessedBQFileMetadataSqlQueryGenerator(
         postgres_hook: PostgresHook,
         context: Context,
     ) -> List[str]:
-        """After pulling in a list of RawGCSFileMetadataSummary frin xcom, processes and
-        registers all RawGCSFileMetadataSummary not yet registered in the raw bq file
+        """After pulling in a list of RawGCSFileMetadata from xcom, processes and
+        registers all RawGCSFileMetadata not yet registered in the raw bq file
         metadata table (i.e. does not yet have a file_id). Returns serialized
-        RawBigQueryFileMetadataSummary for successfully processed and grouped
-        RawGCSFileMetadataSummary.
+        RawBigQueryFileMetadata for successfully processed and grouped
+        RawGCSFileMetadata.
         """
         # --- get existing file info from xcom -----------------------------------------
 
-        unprocessed_gcs_file_metadata: List[RawGCSFileMetadataSummary] = [
-            RawGCSFileMetadataSummary.deserialize(xcom_metadata)
+        unprocessed_gcs_file_metadata: List[RawGCSFileMetadata] = [
+            RawGCSFileMetadata.deserialize(xcom_metadata)
             for xcom_metadata in operator.xcom_pull(
                 context,
                 key="return_value",
@@ -134,7 +134,7 @@ class GetAllUnprocessedBQFileMetadataSqlQueryGenerator(
         # TODO(#30170) add another query to fetch to make sure we have all files registered
         # with group present (i.e. reconcile w/ operations db)?
         already_bq_registered_bq_metadata = [
-            RawBigQueryFileMetadataSummary.from_gcs_files(list(conceptual_file_group))
+            RawBigQueryFileMetadata.from_gcs_files(list(conceptual_file_group))
             for _, conceptual_file_group in groupby(
                 sorted(
                     already_bq_registered_gcs_metadata,
@@ -155,10 +155,10 @@ class GetAllUnprocessedBQFileMetadataSqlQueryGenerator(
     def _register_bq_unregistered_metadata(
         self,
         postgres_hook: PostgresHook,
-        bq_unregistered_gcs_metadata: List[RawGCSFileMetadataSummary],
-    ) -> List[RawBigQueryFileMetadataSummary]:
-        """Uses |bq_unregistered_gcs_metadata| to build a list of RawBigQueryFileMetadataSummary
-        objecst, not registering unrecognized file tags
+        bq_unregistered_gcs_metadata: List[RawGCSFileMetadata],
+    ) -> List[RawBigQueryFileMetadata]:
+        """Uses |bq_unregistered_gcs_metadata| to build a list of RawBigQueryFileMetadata
+        objects, not registering unrecognized file tags
         """
         # --- first, parse and filter to just recognized file tags ---------------------
 
@@ -198,7 +198,7 @@ class GetAllUnprocessedBQFileMetadataSqlQueryGenerator(
         # --- last, update bq metadata & gcs table w/ newly created objs ---------------
 
         # here we assume bq_file_ids is returned in the order that we inserted the values
-        registered_bq_metadata: List[RawBigQueryFileMetadataSummary] = []
+        registered_bq_metadata: List[RawBigQueryFileMetadata] = []
         for i, metadata in enumerate(unregistered_recognized_bq_metadata):
             metadata.file_id = one(bq_file_ids[i])
             registered_bq_metadata.append(metadata)
@@ -211,17 +211,17 @@ class GetAllUnprocessedBQFileMetadataSqlQueryGenerator(
 
     def _group_unregistered_conceptual_files(
         self,
-        bq_unregistered_recognized_gcs_metadata: List[RawGCSFileMetadataSummary],
-    ) -> List[RawBigQueryFileMetadataSummary]:
+        bq_unregistered_recognized_gcs_metadata: List[RawGCSFileMetadata],
+    ) -> List[RawBigQueryFileMetadata]:
         """Uses |bq_unregistered_recognized_gcs_metadata| to build 'conceptual'
-        RawBigQueryFileMetadataSummary by grouping files whose raw file config indicates
+        RawBigQueryFileMetadata by grouping files whose raw file config indicates
         that they are a 'chunked file' by upload_date.
         """
         # --- group chunked files by (file_tag, upload_date) ---------------------------
 
-        conceptual_files: List[RawBigQueryFileMetadataSummary] = []
+        conceptual_files: List[RawBigQueryFileMetadata] = []
         chunked_files: Dict[
-            str, Dict[datetime.date, List[RawGCSFileMetadataSummary]]
+            str, Dict[datetime.date, List[RawGCSFileMetadata]]
         ] = defaultdict(lambda: defaultdict(list))
 
         for metadata in bq_unregistered_recognized_gcs_metadata:
@@ -235,7 +235,7 @@ class GetAllUnprocessedBQFileMetadataSqlQueryGenerator(
                 continue
 
             conceptual_files.append(
-                RawBigQueryFileMetadataSummary(
+                RawBigQueryFileMetadata(
                     gcs_files=[metadata],
                     file_tag=metadata.parts.file_tag,
                     update_datetime=metadata.parts.utc_upload_datetime,
@@ -254,7 +254,7 @@ class GetAllUnprocessedBQFileMetadataSqlQueryGenerator(
 
                 # if there is a chunked file tag that we cannot successfully chunk, we
                 # also want to fail all groups more recent dates to ensure that ascending
-                # insertion order for raw data remains guaranted
+                # insertion order for raw data remains guaranteed
 
                 incomplete_group_date: Optional[datetime.date] = None
 
@@ -283,7 +283,7 @@ class GetAllUnprocessedBQFileMetadataSqlQueryGenerator(
                             [f.path.file_name for f in gcs_files],
                         )
                         conceptual_files.append(
-                            RawBigQueryFileMetadataSummary(
+                            RawBigQueryFileMetadata(
                                 gcs_files=gcs_files,
                                 file_tag=file_tag,
                                 update_datetime=max(
@@ -309,7 +309,7 @@ class GetAllUnprocessedBQFileMetadataSqlQueryGenerator(
         return conceptual_files
 
     def _build_insert_row_for_conceptual_file(
-        self, metadata: RawBigQueryFileMetadataSummary
+        self, metadata: RawBigQueryFileMetadata
     ) -> str:
         row_contents = [
             self._region_code,
@@ -323,7 +323,7 @@ class GetAllUnprocessedBQFileMetadataSqlQueryGenerator(
 
     def _register_new_conceptual_files_sql_query(
         self,
-        unregistered_recognized_bq_metadata: List[RawBigQueryFileMetadataSummary],
+        unregistered_recognized_bq_metadata: List[RawBigQueryFileMetadata],
     ) -> str:
         values = ",".join(
             [
@@ -335,13 +335,13 @@ class GetAllUnprocessedBQFileMetadataSqlQueryGenerator(
 
     @staticmethod
     def _build_gcs_update_rows_for_bq_file(
-        metadata: RawBigQueryFileMetadataSummary,
+        metadata: RawBigQueryFileMetadata,
     ) -> Iterator[str]:
         for gcs_file in metadata.gcs_files:
             yield f"({gcs_file.gcs_file_id}, {metadata.file_id})"
 
     def _add_file_id_to_gcs_table_sql_query(
-        self, registered_bq_metadata: List[RawBigQueryFileMetadataSummary]
+        self, registered_bq_metadata: List[RawBigQueryFileMetadata]
     ) -> str:
 
         values = ",".join(

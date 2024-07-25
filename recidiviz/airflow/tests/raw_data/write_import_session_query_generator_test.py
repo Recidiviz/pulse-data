@@ -37,7 +37,7 @@ from recidiviz.common.constants.operations.direct_ingest_raw_data_import_session
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.direct.types.raw_data_import_types import (
-    ImportSessionSummary,
+    RawBigQueryFileImportSummary,
     RawBigQueryFileProcessedTime,
 )
 from recidiviz.persistence.database.schema.operations.schema import OperationsBase
@@ -84,11 +84,13 @@ class WriteImportSessionSqlQueryGeneratorTest(CloudSqlQueryGeneratorUnitTest):
         assert not result
         assert mock_hook.get_records.assert_not_called
 
-    def _seed_bq_metadata(self, import_sessions: List[ImportSessionSummary]) -> None:
+    def _seed_bq_metadata(
+        self, import_summaries: List[RawBigQueryFileImportSummary]
+    ) -> None:
         dt = datetime.datetime(2024, 1, 1, 1, 1, 1, tzinfo=datetime.UTC)
         values = [
-            f"({session.file_id},'US_XX','PRIMARY','tag_a','{postgres_formatted_datetime_with_tz(dt)}',False)"
-            for session in import_sessions
+            f"({summary.file_id},'US_XX','PRIMARY','tag_a','{postgres_formatted_datetime_with_tz(dt)}',False)"
+            for summary in import_summaries
         ]
         self.mock_pg_hook.run(
             f""" INSERT INTO direct_ingest_raw_big_query_file_metadata (file_id, region_code, raw_data_instance, file_tag, update_datetime, is_invalidated)
@@ -104,8 +106,8 @@ class WriteImportSessionSqlQueryGeneratorTest(CloudSqlQueryGeneratorUnitTest):
         dag_run.start_date = start_time
         self.mock_context.__getitem__.return_value = dag_run
 
-        import_sessions = [
-            ImportSessionSummary(
+        import_summaries = [
+            RawBigQueryFileImportSummary(
                 file_id=1,
                 import_status=DirectIngestRawDataImportSessionStatus.SUCCEEDED,
                 historical_diffs_active=True,
@@ -113,33 +115,33 @@ class WriteImportSessionSqlQueryGeneratorTest(CloudSqlQueryGeneratorUnitTest):
                 net_new_or_updated_rows=2,
                 deleted_rows=2,
             ),
-            ImportSessionSummary(
+            RawBigQueryFileImportSummary(
                 file_id=2,
                 import_status=DirectIngestRawDataImportSessionStatus.SUCCEEDED,
                 historical_diffs_active=False,
                 raw_rows=1,
             ),
-            ImportSessionSummary(
+            RawBigQueryFileImportSummary(
                 file_id=3,
                 import_status=DirectIngestRawDataImportSessionStatus.FAILED_LOAD_STEP,
                 historical_diffs_active=True,
             ),
-            ImportSessionSummary(
+            RawBigQueryFileImportSummary(
                 file_id=4,
                 import_status=DirectIngestRawDataImportSessionStatus.FAILED_PRE_IMPORT_NORMALIZATION_STEP,
                 historical_diffs_active=True,
             ),
-            ImportSessionSummary(
+            RawBigQueryFileImportSummary(
                 file_id=5,
                 import_status=DirectIngestRawDataImportSessionStatus.FAILED_UNKNOWN,
                 historical_diffs_active=True,
             ),
         ]
 
-        self._seed_bq_metadata(import_sessions)
+        self._seed_bq_metadata(import_summaries)
 
         self.mock_operator.xcom_pull.return_value = [
-            session.serialize() for session in import_sessions
+            s.serialize() for s in import_summaries
         ]
 
         with freeze_time(end_time):
@@ -178,13 +180,13 @@ class WriteImportSessionSqlQueryGeneratorTest(CloudSqlQueryGeneratorUnitTest):
 
         for i, record in enumerate(persisted_records):
             assert isinstance(record.import_session_id, int)
-            assert record.file_id == import_sessions[i].file_id
-            assert record.import_status == import_sessions[i].import_status.value
+            assert record.file_id == import_summaries[i].file_id
+            assert record.import_status == import_summaries[i].import_status.value
             assert record.import_start == start_time
             assert record.import_end == end_time
             assert record.region_code == "US_XX"
             assert record.raw_data_instance == "PRIMARY"
             assert (
                 record.historical_diffs_active
-                == import_sessions[i].historical_diffs_active
+                == import_summaries[i].historical_diffs_active
             )

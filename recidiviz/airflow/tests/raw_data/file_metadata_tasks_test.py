@@ -22,9 +22,9 @@ from unittest.mock import patch
 from more_itertools import one
 
 from recidiviz.airflow.dags.raw_data.file_metadata_tasks import (
-    _build_import_sessions_for_errors,
-    _build_import_sessions_for_results,
-    _reconcile_import_sessions_and_bq_metadata,
+    _build_import_summaries_for_errors,
+    _build_import_summaries_for_results,
+    _reconcile_import_summaries_and_bq_metadata,
     coalesce_import_ready_files,
     coalesce_results_and_errors,
     split_by_pre_import_normalization_type,
@@ -32,7 +32,7 @@ from recidiviz.airflow.dags.raw_data.file_metadata_tasks import (
 from recidiviz.airflow.dags.raw_data.metadata import (
     APPEND_READY_FILE_BATCHES,
     IMPORT_READY_FILES,
-    IMPORT_SESSION_SUMMARIES,
+    IMPORT_SUMMARIES,
     PROCESSED_PATHS_TO_RENAME,
     REQUIRES_PRE_IMPORT_NORMALIZATION_FILES,
     REQUIRES_PRE_IMPORT_NORMALIZATION_FILES_BQ_METADATA,
@@ -52,12 +52,12 @@ from recidiviz.ingest.direct.types.raw_data_import_types import (
     AppendReadyFileBatch,
     AppendSummary,
     ImportReadyFile,
-    ImportSessionSummary,
-    RawBigQueryFileMetadataSummary,
+    RawBigQueryFileImportSummary,
+    RawBigQueryFileMetadata,
     RawDataAppendImportError,
     RawFileLoadAndPrepError,
     RawFileProcessingError,
-    RawGCSFileMetadataSummary,
+    RawGCSFileMetadata,
 )
 from recidiviz.tests.ingest.direct import fake_regions
 from recidiviz.tests.ingest.direct import fake_regions as fake_regions_module
@@ -77,11 +77,11 @@ class SplitByPreImportNormalizationTest(TestCase):
 
     def test_splits_output_correctly(self) -> None:
         inputs = [
-            RawBigQueryFileMetadataSummary(
+            RawBigQueryFileMetadata(
                 file_id=1,
                 file_tag="tagBasicData",
                 gcs_files=[
-                    RawGCSFileMetadataSummary(
+                    RawGCSFileMetadata(
                         gcs_file_id=1,
                         file_id=1,
                         path=GcsfsFilePath(bucket_name="bucket", blob_name="blob.csv"),
@@ -91,18 +91,18 @@ class SplitByPreImportNormalizationTest(TestCase):
                     2024, 1, 1, 1, 1, 1, tzinfo=datetime.UTC
                 ),
             ),
-            RawBigQueryFileMetadataSummary(
+            RawBigQueryFileMetadata(
                 file_id=2,
                 file_tag="tagCustomLineTerminatorNonUTF8",
                 gcs_files=[
-                    RawGCSFileMetadataSummary(
+                    RawGCSFileMetadata(
                         gcs_file_id=2,
                         file_id=2,
                         path=GcsfsFilePath(
                             bucket_name="bucket", blob_name="blob1_1.csv"
                         ),
                     ),
-                    RawGCSFileMetadataSummary(
+                    RawGCSFileMetadata(
                         gcs_file_id=3,
                         file_id=2,
                         path=GcsfsFilePath(
@@ -120,7 +120,7 @@ class SplitByPreImportNormalizationTest(TestCase):
         )
 
         assert [
-            RawBigQueryFileMetadataSummary.deserialize(r)
+            RawBigQueryFileMetadata.deserialize(r)
             for r in results[REQUIRES_PRE_IMPORT_NORMALIZATION_FILES_BQ_METADATA]
         ] == inputs[1:]
         assert {
@@ -204,13 +204,13 @@ class CoalesceResultsAndErrorsTest(TestCase):
             [],
             region_module_override=fake_regions_module,
         ) == {
-            IMPORT_SESSION_SUMMARIES: [],
+            IMPORT_SUMMARIES: [],
             PROCESSED_PATHS_TO_RENAME: [],
             TEMPORARY_PATHS_TO_CLEAN: [],
             TEMPORARY_TABLES_TO_CLEAN: [],
         }
 
-    def test_build_import_sessions_for_results_all_matching(self) -> None:
+    def test_build_import_summaries_for_results_all_matching(self) -> None:
         summaries = [
             AppendSummary(file_id=1, historical_diffs_active=False),
             AppendSummary(file_id=2, historical_diffs_active=False),
@@ -295,7 +295,7 @@ class CoalesceResultsAndErrorsTest(TestCase):
             )
         ]
 
-        import_sessions, files = _build_import_sessions_for_results(
+        import_summaries, files = _build_import_summaries_for_results(
             summaries, append_ready_file_batches
         )
 
@@ -305,8 +305,8 @@ class CoalesceResultsAndErrorsTest(TestCase):
             for file in batch
         ]
 
-        for i, session in enumerate(import_sessions.values()):
-            assert session == ImportSessionSummary.from_load_results(
+        for i, summary in enumerate(import_summaries.values()):
+            assert summary == RawBigQueryFileImportSummary.from_load_results(
                 append_ready_files[i], summaries[i]
             )
 
@@ -316,7 +316,7 @@ class CoalesceResultsAndErrorsTest(TestCase):
             for path in metadata.import_ready_file.original_file_paths
         )
 
-    def test_build_import_sessions_for_results_missing(self) -> None:
+    def test_build_import_summaries_for_results_missing(self) -> None:
         summaries = [
             AppendSummary(file_id=1, historical_diffs_active=False),
             AppendSummary(file_id=2, historical_diffs_active=False),
@@ -401,7 +401,7 @@ class CoalesceResultsAndErrorsTest(TestCase):
             )
         ]
 
-        import_sessions, files = _build_import_sessions_for_results(
+        import_summaries, files = _build_import_summaries_for_results(
             summaries, append_ready_file_batches
         )
 
@@ -411,12 +411,12 @@ class CoalesceResultsAndErrorsTest(TestCase):
             for file in batch
         ]
 
-        assert 3 not in import_sessions
-        assert 4 not in import_sessions
+        assert 3 not in import_summaries
+        assert 4 not in import_summaries
 
-        assert len(import_sessions) == 2
-        for i, session in enumerate(import_sessions.values()):
-            assert session == ImportSessionSummary.from_load_results(
+        assert len(import_summaries) == 2
+        for i, summary in enumerate(import_summaries.values()):
+            assert summary == RawBigQueryFileImportSummary.from_load_results(
                 append_ready_files[i], summaries[i]
             )
 
@@ -426,7 +426,7 @@ class CoalesceResultsAndErrorsTest(TestCase):
             for path in metadata.import_ready_file.original_file_paths
         )
 
-    def test_build_import_sessions_for_errors_bq_errors(self) -> None:
+    def test_build_import_summaries_for_errors_bq_errors(self) -> None:
         load_errors = [
             # no temp files, no temp table
             RawFileLoadAndPrepError(
@@ -479,7 +479,7 @@ class CoalesceResultsAndErrorsTest(TestCase):
             "US_XX", region_module_override=fake_regions_module
         )
 
-        import_sessions, temp_files, temp_tables = _build_import_sessions_for_errors(
+        import_summaries, temp_files, temp_tables = _build_import_summaries_for_errors(
             raw_region_config,
             DirectIngestInstance.PRIMARY,
             [],
@@ -488,9 +488,9 @@ class CoalesceResultsAndErrorsTest(TestCase):
             append_errors,
         )
 
-        assert len(import_sessions) == 4
+        assert len(import_summaries) == 4
         assert (
-            one({session.import_status for session in import_sessions.values()})
+            one({summary.import_status for summary in import_summaries.values()})
             == DirectIngestRawDataImportSessionStatus.FAILED_LOAD_STEP
         )
 
@@ -500,15 +500,15 @@ class CoalesceResultsAndErrorsTest(TestCase):
             load_errors[2].temp_table,
         ]
 
-    def test_build_import_sessions_for_errors_processing_errors_single_chunk_fail_all_fail(
+    def test_build_import_summaries_for_errors_processing_errors_single_chunk_fail_all_fail(
         self,
     ) -> None:
         bq_metadata = [
-            RawBigQueryFileMetadataSummary(
+            RawBigQueryFileMetadata(
                 file_id=1,
                 file_tag="tagBasicData",
                 gcs_files=[
-                    RawGCSFileMetadataSummary(
+                    RawGCSFileMetadata(
                         gcs_file_id=1,
                         file_id=1,
                         path=GcsfsFilePath(bucket_name="bucket", blob_name="blob.csv"),
@@ -518,18 +518,18 @@ class CoalesceResultsAndErrorsTest(TestCase):
                     2024, 1, 1, 1, 1, 1, tzinfo=datetime.UTC
                 ),
             ),
-            RawBigQueryFileMetadataSummary(
+            RawBigQueryFileMetadata(
                 file_id=2,
                 file_tag="tagCustomLineTerminatorNonUTF8",
                 gcs_files=[
-                    RawGCSFileMetadataSummary(
+                    RawGCSFileMetadata(
                         gcs_file_id=2,
                         file_id=2,
                         path=GcsfsFilePath.from_absolute_path(
                             "testing/unprocessed_2024-01-25T16:35:33:617135_raw_test_file_tag.csv"
                         ),
                     ),
-                    RawGCSFileMetadataSummary(
+                    RawGCSFileMetadata(
                         gcs_file_id=3,
                         file_id=2,
                         path=GcsfsFilePath(
@@ -560,7 +560,7 @@ class CoalesceResultsAndErrorsTest(TestCase):
             "US_XX", region_module_override=fake_regions_module
         )
 
-        import_sessions, temp_files, temp_tables = _build_import_sessions_for_errors(
+        import_summaries, temp_files, temp_tables = _build_import_summaries_for_errors(
             raw_region_config,
             DirectIngestInstance.PRIMARY,
             bq_metadata,
@@ -569,22 +569,22 @@ class CoalesceResultsAndErrorsTest(TestCase):
             [],
         )
 
-        assert len(import_sessions) == 1
-        assert 2 in import_sessions
+        assert len(import_summaries) == 1
+        assert 2 in import_summaries
         assert (
-            import_sessions[2].import_status
+            import_summaries[2].import_status
             == DirectIngestRawDataImportSessionStatus.FAILED_PRE_IMPORT_NORMALIZATION_STEP
         )
         assert not temp_tables
         assert temp_files == processing_errors[0].temporary_file_paths
 
-    def test_build_import_sessions_for_errors_processing_errors_both(self) -> None:
+    def test_build_import_summaries_for_errors_processing_errors_both(self) -> None:
         bq_metadata = [
-            RawBigQueryFileMetadataSummary(
+            RawBigQueryFileMetadata(
                 file_id=1,
                 file_tag="tagBasicData",
                 gcs_files=[
-                    RawGCSFileMetadataSummary(
+                    RawGCSFileMetadata(
                         gcs_file_id=1,
                         file_id=1,
                         path=GcsfsFilePath(bucket_name="bucket", blob_name="blob.csv"),
@@ -594,18 +594,18 @@ class CoalesceResultsAndErrorsTest(TestCase):
                     2024, 1, 1, 1, 1, 1, tzinfo=datetime.UTC
                 ),
             ),
-            RawBigQueryFileMetadataSummary(
+            RawBigQueryFileMetadata(
                 file_id=2,
                 file_tag="tagCustomLineTerminatorNonUTF8",
                 gcs_files=[
-                    RawGCSFileMetadataSummary(
+                    RawGCSFileMetadata(
                         gcs_file_id=2,
                         file_id=2,
                         path=GcsfsFilePath.from_absolute_path(
                             "testing/unprocessed_2024-01-25T16:35:33:617135_raw_test_file_tag_1.csv"
                         ),
                     ),
-                    RawGCSFileMetadataSummary(
+                    RawGCSFileMetadata(
                         gcs_file_id=3,
                         file_id=2,
                         path=GcsfsFilePath.from_absolute_path(
@@ -646,7 +646,7 @@ class CoalesceResultsAndErrorsTest(TestCase):
             "US_XX", region_module_override=fake_regions_module
         )
 
-        import_sessions, temp_files, temp_tables = _build_import_sessions_for_errors(
+        import_summaries, temp_files, temp_tables = _build_import_summaries_for_errors(
             raw_region_config,
             DirectIngestInstance.PRIMARY,
             bq_metadata,
@@ -655,10 +655,10 @@ class CoalesceResultsAndErrorsTest(TestCase):
             [],
         )
 
-        assert len(import_sessions) == 1
-        assert 2 in import_sessions
+        assert len(import_summaries) == 1
+        assert 2 in import_summaries
         assert (
-            import_sessions[2].import_status
+            import_summaries[2].import_status
             == DirectIngestRawDataImportSessionStatus.FAILED_PRE_IMPORT_NORMALIZATION_STEP
         )
         assert not temp_tables
@@ -668,16 +668,16 @@ class CoalesceResultsAndErrorsTest(TestCase):
             for path in error.temporary_file_paths or []
         ]
 
-    def test_build_import_sessions_for_errors_processing_pruning_propagated(
+    def test_build_import_summaries_for_errors_processing_pruning_propagated(
         self,
     ) -> None:
         self.pruning_mock.return_value = True
         bq_metadata = [
-            RawBigQueryFileMetadataSummary(
+            RawBigQueryFileMetadata(
                 file_id=1,
                 file_tag="tagBasicData",
                 gcs_files=[
-                    RawGCSFileMetadataSummary(
+                    RawGCSFileMetadata(
                         gcs_file_id=1,
                         file_id=1,
                         path=GcsfsFilePath.from_absolute_path(
@@ -689,18 +689,18 @@ class CoalesceResultsAndErrorsTest(TestCase):
                     2024, 1, 1, 1, 1, 1, tzinfo=datetime.UTC
                 ),
             ),
-            RawBigQueryFileMetadataSummary(
+            RawBigQueryFileMetadata(
                 file_id=2,
                 file_tag="tagCustomLineTerminatorNonUTF8",
                 gcs_files=[
-                    RawGCSFileMetadataSummary(
+                    RawGCSFileMetadata(
                         gcs_file_id=2,
                         file_id=2,
                         path=GcsfsFilePath.from_absolute_path(
                             "testing/unprocessed_2024-01-25T16:35:33:617135_raw_tagCustomLineTerminatorNonUTF8.csv"
                         ),
                     ),
-                    RawGCSFileMetadataSummary(
+                    RawGCSFileMetadata(
                         gcs_file_id=3,
                         file_id=2,
                         path=GcsfsFilePath.from_absolute_path(
@@ -712,11 +712,11 @@ class CoalesceResultsAndErrorsTest(TestCase):
                     2024, 1, 1, 1, 1, 1, tzinfo=datetime.UTC
                 ),
             ),
-            RawBigQueryFileMetadataSummary(
+            RawBigQueryFileMetadata(
                 file_id=3,
                 file_tag="multipleColPrimaryKeyHistorical",
                 gcs_files=[
-                    RawGCSFileMetadataSummary(
+                    RawGCSFileMetadata(
                         gcs_file_id=1,
                         file_id=1,
                         path=GcsfsFilePath.from_absolute_path(
@@ -728,11 +728,11 @@ class CoalesceResultsAndErrorsTest(TestCase):
                     2024, 1, 25, 1, 1, 1, tzinfo=datetime.UTC
                 ),
             ),
-            RawBigQueryFileMetadataSummary(
+            RawBigQueryFileMetadata(
                 file_id=4,
                 file_tag="multipleColPrimaryKeyHistorical",
                 gcs_files=[
-                    RawGCSFileMetadataSummary(
+                    RawGCSFileMetadata(
                         gcs_file_id=1,
                         file_id=1,
                         path=GcsfsFilePath.from_absolute_path(
@@ -807,10 +807,10 @@ class CoalesceResultsAndErrorsTest(TestCase):
             region_module_override=fake_regions_module,
         )
 
-        assert len(result[IMPORT_SESSION_SUMMARIES]) == len(bq_metadata)
+        assert len(result[IMPORT_SUMMARIES]) == len(bq_metadata)
         summaries = [
-            ImportSessionSummary.deserialize(s)
-            for s in result[IMPORT_SESSION_SUMMARIES]
+            RawBigQueryFileImportSummary.deserialize(s)
+            for s in result[IMPORT_SUMMARIES]
         ]
         assert summaries[0].file_id == 3
         assert summaries[0].historical_diffs_active is True
@@ -837,13 +837,13 @@ class CoalesceResultsAndErrorsTest(TestCase):
             == DirectIngestRawDataImportSessionStatus.FAILED_UNKNOWN
         )
 
-    def test_reconcile_import_sessions_and_bq_metadata_all_accounted_for(self) -> None:
+    def test_reconcile_import_summaries_and_bq_metadata_all_accounted_for(self) -> None:
         bq_metadata = [
-            RawBigQueryFileMetadataSummary(
+            RawBigQueryFileMetadata(
                 file_id=1,
                 file_tag="tagBasicData",
                 gcs_files=[
-                    RawGCSFileMetadataSummary(
+                    RawGCSFileMetadata(
                         gcs_file_id=1,
                         file_id=1,
                         path=GcsfsFilePath(bucket_name="bucket", blob_name="blob.csv"),
@@ -853,18 +853,18 @@ class CoalesceResultsAndErrorsTest(TestCase):
                     2024, 1, 1, 1, 1, 1, tzinfo=datetime.UTC
                 ),
             ),
-            RawBigQueryFileMetadataSummary(
+            RawBigQueryFileMetadata(
                 file_id=2,
                 file_tag="tagCustomLineTerminatorNonUTF8",
                 gcs_files=[
-                    RawGCSFileMetadataSummary(
+                    RawGCSFileMetadata(
                         gcs_file_id=2,
                         file_id=2,
                         path=GcsfsFilePath(
                             bucket_name="bucket", blob_name="blob1_1.csv"
                         ),
                     ),
-                    RawGCSFileMetadataSummary(
+                    RawGCSFileMetadata(
                         gcs_file_id=3,
                         file_id=2,
                         path=GcsfsFilePath(
@@ -876,18 +876,18 @@ class CoalesceResultsAndErrorsTest(TestCase):
                     2024, 1, 1, 1, 1, 1, tzinfo=datetime.UTC
                 ),
             ),
-            RawBigQueryFileMetadataSummary(
+            RawBigQueryFileMetadata(
                 file_id=3,
                 file_tag="tagCustomLineTerminatorNonUTF8",
                 gcs_files=[
-                    RawGCSFileMetadataSummary(
+                    RawGCSFileMetadata(
                         gcs_file_id=4,
                         file_id=3,
                         path=GcsfsFilePath(
                             bucket_name="bucket", blob_name="blob2_1.csv"
                         ),
                     ),
-                    RawGCSFileMetadataSummary(
+                    RawGCSFileMetadata(
                         gcs_file_id=5,
                         file_id=3,
                         path=GcsfsFilePath(
@@ -902,12 +902,12 @@ class CoalesceResultsAndErrorsTest(TestCase):
         ]
 
         successful_imports = {
-            1: ImportSessionSummary(
+            1: RawBigQueryFileImportSummary(
                 file_id=1,
                 import_status=DirectIngestRawDataImportSessionStatus.SUCCEEDED,
                 historical_diffs_active=False,
             ),
-            2: ImportSessionSummary(
+            2: RawBigQueryFileImportSummary(
                 file_id=2,
                 import_status=DirectIngestRawDataImportSessionStatus.SUCCEEDED,
                 historical_diffs_active=False,
@@ -915,7 +915,7 @@ class CoalesceResultsAndErrorsTest(TestCase):
         }
 
         failed_imports = {
-            3: ImportSessionSummary(
+            3: RawBigQueryFileImportSummary(
                 file_id=3,
                 import_status=DirectIngestRawDataImportSessionStatus.FAILED_LOAD_STEP,
                 historical_diffs_active=False,
@@ -926,7 +926,7 @@ class CoalesceResultsAndErrorsTest(TestCase):
             "US_XX", region_module_override=fake_regions_module
         )
 
-        missing_import_sessions = _reconcile_import_sessions_and_bq_metadata(
+        missing_import_summaries = _reconcile_import_summaries_and_bq_metadata(
             raw_region_config,
             DirectIngestInstance.PRIMARY,
             bq_metadata,
@@ -934,15 +934,15 @@ class CoalesceResultsAndErrorsTest(TestCase):
             failed_imports,
         )
 
-        assert not missing_import_sessions
+        assert not missing_import_summaries
 
-    def test__reconcile_import_sessions_and_bq_metadata_some_missing(self) -> None:
+    def test__reconcile_import_summaries_and_bq_metadata_some_missing(self) -> None:
         bq_metadata = [
-            RawBigQueryFileMetadataSummary(
+            RawBigQueryFileMetadata(
                 file_id=1,
                 file_tag="tagBasicData",
                 gcs_files=[
-                    RawGCSFileMetadataSummary(
+                    RawGCSFileMetadata(
                         gcs_file_id=1,
                         file_id=1,
                         path=GcsfsFilePath(bucket_name="bucket", blob_name="blob.csv"),
@@ -952,18 +952,18 @@ class CoalesceResultsAndErrorsTest(TestCase):
                     2024, 1, 1, 1, 1, 1, tzinfo=datetime.UTC
                 ),
             ),
-            RawBigQueryFileMetadataSummary(
+            RawBigQueryFileMetadata(
                 file_id=2,
                 file_tag="tagCustomLineTerminatorNonUTF8",
                 gcs_files=[
-                    RawGCSFileMetadataSummary(
+                    RawGCSFileMetadata(
                         gcs_file_id=2,
                         file_id=2,
                         path=GcsfsFilePath(
                             bucket_name="bucket", blob_name="blob1_1.csv"
                         ),
                     ),
-                    RawGCSFileMetadataSummary(
+                    RawGCSFileMetadata(
                         gcs_file_id=3,
                         file_id=2,
                         path=GcsfsFilePath(
@@ -975,18 +975,18 @@ class CoalesceResultsAndErrorsTest(TestCase):
                     2024, 1, 1, 1, 1, 1, tzinfo=datetime.UTC
                 ),
             ),
-            RawBigQueryFileMetadataSummary(
+            RawBigQueryFileMetadata(
                 file_id=3,
                 file_tag="tagCustomLineTerminatorNonUTF8",
                 gcs_files=[
-                    RawGCSFileMetadataSummary(
+                    RawGCSFileMetadata(
                         gcs_file_id=4,
                         file_id=3,
                         path=GcsfsFilePath(
                             bucket_name="bucket", blob_name="blob2_1.csv"
                         ),
                     ),
-                    RawGCSFileMetadataSummary(
+                    RawGCSFileMetadata(
                         gcs_file_id=5,
                         file_id=3,
                         path=GcsfsFilePath(
@@ -1001,7 +1001,7 @@ class CoalesceResultsAndErrorsTest(TestCase):
         ]
 
         successful_imports = {
-            1: ImportSessionSummary(
+            1: RawBigQueryFileImportSummary(
                 file_id=1,
                 import_status=DirectIngestRawDataImportSessionStatus.SUCCEEDED,
                 historical_diffs_active=False,
@@ -1012,7 +1012,7 @@ class CoalesceResultsAndErrorsTest(TestCase):
             "US_XX", region_module_override=fake_regions_module
         )
 
-        missing_import_sessions = _reconcile_import_sessions_and_bq_metadata(
+        missing_import_summaries = _reconcile_import_summaries_and_bq_metadata(
             raw_region_config,
             DirectIngestInstance.PRIMARY,
             bq_metadata,
@@ -1020,10 +1020,10 @@ class CoalesceResultsAndErrorsTest(TestCase):
             {},
         )
 
-        assert len(missing_import_sessions) == 2
-        assert missing_import_sessions[0].file_id == 2
-        assert missing_import_sessions[1].file_id == 3
+        assert len(missing_import_summaries) == 2
+        assert missing_import_summaries[0].file_id == 2
+        assert missing_import_summaries[1].file_id == 3
         assert (
-            one({session.import_status for session in missing_import_sessions})
+            one({summary.import_status for summary in missing_import_summaries})
             == DirectIngestRawDataImportSessionStatus.FAILED_UNKNOWN
         )

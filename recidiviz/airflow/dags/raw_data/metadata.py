@@ -39,7 +39,7 @@ REQUIRES_PRE_IMPORT_NORMALIZATION_FILES_BQ_METADATA: str = (
     "requires_pre_import_normalization_files_big_query_metadata"
 )
 REQUIRES_PRE_IMPORT_NORMALIZATION_FILES: str = "requires_pre_import_normalization_files"
-IMPORT_SESSION_SUMMARIES: str = "import_session_summaries"
+IMPORT_SUMMARIES: str = "import_summaries"
 PROCESSED_PATHS_TO_RENAME: str = "processed_paths_to_rename"
 TEMPORARY_PATHS_TO_CLEAN: str = "temporary_paths_to_clean"
 TEMPORARY_TABLES_TO_CLEAN: str = "temporary_tables_to_clean"
