@@ -21,6 +21,7 @@ from recidiviz.case_triage.authorization_utils import build_authorization_handle
 from recidiviz.prototypes.case_note_search.case_note_authorization import (
     on_successful_authorization,
 )
+from recidiviz.prototypes.case_note_search.case_note_search import case_note_search
 
 app = Quart(__name__)
 
@@ -41,4 +42,18 @@ async def validate_authentication() -> None:
 
 @app.route("/search", methods=["GET"])
 async def search_case_notes() -> Response:
-    return jsonify({"search": "results"})
+    query = request.args.get("query", type=str)
+    if query is None:
+        response = jsonify({"error": "Missing required parameter 'query'"})
+        response.status_code = 400
+        return response
+
+    page_size = request.args.get("page_size", default=20, type=int)
+    with_snippet = request.args.get("with_snippet", default=True, type=bool)
+
+    case_note_response = case_note_search(
+        query=query,
+        page_size=page_size,
+        with_snippet=with_snippet,
+    )
+    return jsonify(case_note_response)
