@@ -98,18 +98,23 @@ class RawDataImportDagSequencingTest(AirflowIntegrationTest):
             include_downstream=True,
         )
         step_2_task_ids = [
-            "get_all_unprocessed_gcs_file_metadata",
-            "get_all_unprocessed_bq_file_metadata",
-            "split_by_pre_import_normalization_type",
+            ["get_all_unprocessed_gcs_file_metadata"],
+            ["get_all_unprocessed_bq_file_metadata"],
+            ["coalesce_results_and_errors", "split_by_pre_import_normalization_type"],
         ]
 
         for root in step_2_root.roots:
             assert "list_normalized_unprocessed_gcs_file_paths" in root.task_id
             curr_task = root
             for step_2_task_id in step_2_task_ids:
-                assert len(curr_task.downstream_list) == 1
-                next_task = curr_task.downstream_list[0]
-                assert step_2_task_id in next_task.task_id
+                next_task = None
+                assert len(curr_task.downstream_list) == len(step_2_task_id)
+                for downstream_task in curr_task.downstream_list:
+                    assert any(
+                        task_id in downstream_task.task_id for task_id in step_2_task_id
+                    )
+                    if step_2_task_id[-1] in downstream_task.task_id:
+                        next_task = downstream_task
                 curr_task = next_task
 
     def test_step_3_sequencing(self) -> None:
@@ -126,10 +131,18 @@ class RawDataImportDagSequencingTest(AirflowIntegrationTest):
                 "generate_file_chunking_pod_arguments",
             ],
             "raw_data_file_chunking",
-            ["raise_file_chunking_errors", "generate_chunk_processing_pod_arguments"],
+            [
+                "coalesce_results_and_errors",
+                "raise_file_chunking_errors",
+                "generate_chunk_processing_pod_arguments",
+            ],
             "raw_data_chunk_normalization",
             "regroup_and_verify_file_chunks",
-            ["coalesce_import_ready_files", "raise_chunk_normalization_errors"],
+            [
+                "coalesce_results_and_errors",
+                "coalesce_import_ready_files",
+                "raise_chunk_normalization_errors",
+            ],
         ]
         for root in step_3_root.roots:
             assert "split_by_pre_import_normalization_type" in root.task_id
@@ -163,13 +176,18 @@ class RawDataImportDagSequencingTest(AirflowIntegrationTest):
         ordered_step_4_task_ids = [
             ["coalesce_import_ready_files"],
             ["load_and_prep_paths_for_batch"],
-            ["raise_load_prep_errors", "generate_append_batches"],
             [
+                "coalesce_results_and_errors",
+                "raise_load_prep_errors",
+                "generate_append_batches",
+            ],
+            [
+                "coalesce_results_and_errors",
                 "raise_load_prep_errors",
                 "append_ready_file_batches_from_generate_append_batches",
             ],
             ["append_to_raw_data_table_for_batch"],
-            ["raise_append_errors"],
+            ["coalesce_results_and_errors", "raise_append_errors"],
         ]
 
         for root in step_4_root.roots:
@@ -179,16 +197,73 @@ class RawDataImportDagSequencingTest(AirflowIntegrationTest):
                 next_task = None
                 assert len(curr_task.downstream_list) == len(step_4_task_id)
                 for downstream_task in curr_task.downstream_list:
-                    if not any(
-                        task_id in downstream_task.task_id for task_id in step_4_task_id
-                    ):
-                        print()
                     assert any(
                         task_id in downstream_task.task_id for task_id in step_4_task_id
                     )
                     if step_4_task_id[-1] in downstream_task.task_id:
                         next_task = downstream_task
                 curr_task = next_task
+
+    def test_step_5_sequencing(self) -> None:
+        dag = DagBag(dag_folder=DAG_FOLDER, include_examples=False).dags[self.dag_id]
+        step_5_root = dag.partial_subset(
+            task_ids_or_regex=r"coalesce_results_and_errors",
+            include_upstream=False,
+            include_downstream=True,
+        )
+        ordered_step_5_task_ids_paths = [
+            [
+                [
+                    "move_successfully_imported_paths_to_storage",
+                    "clean_up_temporary_files",
+                    "clean_up_temporary_tables",
+                    "write_import_sessions",
+                ],
+                ["write_file_processed_time"],
+                ["release_raw_data_resource_locks"],
+            ],
+            [
+                [
+                    "move_successfully_imported_paths_to_storage",
+                    "write_import_sessions",
+                    "clean_up_temporary_tables",
+                    "clean_up_temporary_files",
+                ],
+                ["release_raw_data_resource_locks"],
+            ],
+            [
+                [
+                    "move_successfully_imported_paths_to_storage",
+                    "write_import_sessions",
+                    "clean_up_temporary_files",
+                    "clean_up_temporary_tables",
+                ],
+                ["release_raw_data_resource_locks"],
+            ],
+        ]
+
+        for root in step_5_root.roots:
+            assert "coalesce_results_and_errors" in root.task_id
+            for step_5_path in ordered_step_5_task_ids_paths:
+                curr_task = root
+                for step_5_task_ids in step_5_path:
+                    next_task = None
+                    assert len(curr_task.downstream_list) == len(step_5_task_ids)
+                    for downstream_task in curr_task.downstream_list:
+                        print(
+                            downstream_task,
+                            any(
+                                task_id in downstream_task.task_id
+                                for task_id in step_5_task_ids
+                            ),
+                        )
+                        assert any(
+                            task_id in downstream_task.task_id
+                            for task_id in step_5_task_ids
+                        )
+                        if step_5_task_ids[-1] in downstream_task.task_id:
+                            next_task = downstream_task
+                    curr_task = next_task
 
 
 class RawDataImportDagIntegrationTest(AirflowIntegrationTest):
@@ -276,6 +351,21 @@ class RawDataImportDagIntegrationTest(AirflowIntegrationTest):
             side_effect=fake_task_function_with_return_value([]),
         )
         self.coalesce_files.start()
+        self.clean_temp_files = patch(
+            "recidiviz.airflow.dags.raw_data_import_dag.clean_up_temporary_files.function",
+            side_effect=fake_task_function_with_return_value(None),
+        )
+        self.clean_temp_files.start()
+        self.clean_temp_tables = patch(
+            "recidiviz.airflow.dags.raw_data_import_dag.clean_up_temporary_tables.function",
+            side_effect=fake_task_function_with_return_value(None),
+        )
+        self.clean_temp_tables.start()
+        self.rename_paths = patch(
+            "recidiviz.airflow.dags.raw_data_import_dag.move_successfully_imported_paths_to_storage.function",
+            side_effect=fake_task_function_with_return_value(None),
+        )
+        self.rename_paths.start()
 
     def tearDown(self) -> None:
         self.environment_patcher.stop()
@@ -291,6 +381,9 @@ class RawDataImportDagIntegrationTest(AirflowIntegrationTest):
         self.raise_errors_patcher.stop()
         self.split_by_norm.stop()
         self.coalesce_files.stop()
+        self.clean_temp_files.stop()
+        self.clean_temp_tables.stop()
+        self.rename_paths.stop()
         super().tearDown()
 
     def _create_dag(self) -> DAG:
@@ -311,9 +404,11 @@ class RawDataImportDagIntegrationTest(AirflowIntegrationTest):
                 },
                 expected_skipped_ids=[
                     r".*_secondary_import_branch",
-                    # TODO(#30168) remove once files are combined upstream
+                    # these steps are skipped as mapped tasks (and downstream tasks)
+                    # are skipped when the input is an empty list
                     r"raw_data_branching.*_primary_import_branch.biq_query_load.*",
-                    # TODO(#30169) make cleanup happen no matter what happens in previous steps
+                    r"raw_data_branching.*_primary_import_branch.cleanup_and_storage.*",
+                    # TODO(#30169) ensure locks release no matter what
                     r"raw_data_branching.*_primary_import_branch.release_raw_data_resource_locks",
                 ],
             )
@@ -331,9 +426,11 @@ class RawDataImportDagIntegrationTest(AirflowIntegrationTest):
                 expected_skipped_ids=[
                     r".*_primary_import_branch",
                     "us_yy_secondary_import_branch",
-                    # TODO(#30168) remove once files are combined upstream
-                    r"raw_data_branching.us_xx_secondary_import_branch.biq_query_load..*",
-                    # TODO(#30169) make cleanup happen no matter what happens in previous steps
+                    # these steps are skipped as mapped tasks (and downstream tasks)
+                    # are skipped when the input is an empty list
+                    r"raw_data_branching.us_xx_secondary_import_branch.biq_query_load.*",
+                    r"raw_data_branching.us_xx_secondary_import_branch.cleanup_and_storage.*",
+                    # TODO(#30169) ensure locks release no matter what
                     "raw_data_branching.us_xx_secondary_import_branch.release_raw_data_resource_locks",
                 ],
             )
@@ -356,13 +453,15 @@ class RawDataImportDagIntegrationTest(AirflowIntegrationTest):
                 expected_failure_ids=[
                     r".*_primary_import_branch\.acquire_raw_data_resource_locks",
                     r".*_primary_import_branch\.list_normalized_unprocessed_gcs_file_paths",
-                    r".*_primary_import_branch\.release_raw_data_resource_locks",
                     r".*_primary_import_branch\.get_all_unprocessed_gcs_file_metadata",
                     r".*_primary_import_branch\.get_all_unprocessed_bq_file_metadata",
                     r".*_primary_import_branch\.split_by_pre_import_normalization_type",
                     r".*_primary_import_branch\.coalesce_import_ready_files",
                     r".*_primary_import_branch\.pre_import_normalization\.*",
                     r".*_primary_import_branch\.biq_query_load\.*",
+                    r".*_primary_import_branch\.cleanup_and_storage.*",
+                    # TODO(#30169) ensure locks release no matter what
+                    r".*_primary_import_branch\.release_raw_data_resource_locks",
                     BRANCH_END_TASK_NAME,
                 ],
                 expected_skipped_ids=[

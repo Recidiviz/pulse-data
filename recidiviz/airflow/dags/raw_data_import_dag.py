@@ -42,8 +42,14 @@ from recidiviz.airflow.dags.raw_data.bq_load_tasks import (
     raise_append_errors,
     raise_load_prep_errors,
 )
+from recidiviz.airflow.dags.raw_data.clean_up_tasks import (
+    clean_up_temporary_files,
+    clean_up_temporary_tables,
+    move_successfully_imported_paths_to_storage,
+)
 from recidiviz.airflow.dags.raw_data.file_metadata_tasks import (
     coalesce_import_ready_files,
+    coalesce_results_and_errors,
     split_by_pre_import_normalization_type,
 )
 from recidiviz.airflow.dags.raw_data.gcs_file_processing_tasks import (
@@ -64,11 +70,14 @@ from recidiviz.airflow.dags.raw_data.initialize_raw_data_dag_group import (
 )
 from recidiviz.airflow.dags.raw_data.metadata import (
     IMPORT_READY_FILES,
+    PROCESSED_PATHS_TO_RENAME,
     REQUIRES_PRE_IMPORT_NORMALIZATION_FILES,
     REQUIRES_PRE_IMPORT_NORMALIZATION_FILES_BQ_METADATA,
     RESOURCE_LOCK_ACQUISITION_DESCRIPTION,
     RESOURCE_LOCKS_NEEDED,
     SKIPPED_FILE_ERRORS,
+    TEMPORARY_PATHS_TO_CLEAN,
+    TEMPORARY_TABLES_TO_CLEAN,
     get_resource_lock_ttl,
 )
 from recidiviz.airflow.dags.raw_data.raw_data_branching import (
@@ -78,6 +87,12 @@ from recidiviz.airflow.dags.raw_data.raw_data_branching import (
 )
 from recidiviz.airflow.dags.raw_data.release_resource_lock_sql_query_generator import (
     ReleaseRawDataResourceLockSqlQueryGenerator,
+)
+from recidiviz.airflow.dags.raw_data.write_file_processed_time_to_bq_file_metadata_sql_query_generator import (
+    WriteFileProcessedTimeToBQFileMetadataSqlQueryGenerator,
+)
+from recidiviz.airflow.dags.raw_data.write_import_session_query_generator import (
+    WriteImportSessionSqlQueryGenerator,
 )
 from recidiviz.airflow.dags.utils.branching_by_key import create_branching_by_key
 from recidiviz.airflow.dags.utils.cloud_sql import cloud_sql_conn_id_for_schema_type
@@ -103,7 +118,7 @@ def create_single_state_code_ingest_instance_raw_data_import_branch(
     state_code: StateCode,
     raw_data_instance: DirectIngestInstance,
 ) -> TaskGroup:
-    """Given a |state_code| and |raw_data_instance|, will create a task group that
+    """Given a |state_code| and |raw_data_instance|, creates a task group that
     executes the necessary steps to import all relevant files in the ingest bucket into
     BigQuery.
     """
@@ -269,13 +284,64 @@ def create_single_state_code_ingest_instance_raw_data_import_branch(
         # ------------------------------------------------------------------------------
 
         # --- step 5: cleanup & storage ------------------------------------------------
-        # inputs: [ AppendReadyFile ], [ AppendSummary ]
+        # inputs: [ AppendReadyFile ], [ AppendSummary ], [ RawBigQueryFileMetadataSummary ]
         # execution layer: celery
         # outputs:
 
-        # TODO(#30169) implement writes to file metadata & import sessions, as well as
-        # file cleanup
+        with TaskGroup("cleanup_and_storage") as cleanup_and_storage:
 
+            clean_and_storage_jobs = coalesce_results_and_errors(
+                state_code.value,
+                raw_data_instance,
+                get_all_unprocessed_bq_file_metadata.output,
+                divide_files_into_chunks.output,
+                pre_import_normalization_result,
+                load_and_prep_results,
+                append_batches_output,
+                append_results,
+            )
+
+            write_import_sessions = CloudSqlQueryOperator(
+                task_id="write_import_sessions",
+                cloud_sql_conn_id=operations_cloud_sql_conn_id,
+                query_generator=WriteImportSessionSqlQueryGenerator(
+                    region_code=state_code.value,
+                    raw_data_instance=raw_data_instance,
+                    coalesce_results_and_errors_task_id=clean_and_storage_jobs.operator.task_id,
+                ),
+            )
+
+            write_file_processed_times = CloudSqlQueryOperator(
+                task_id="write_file_processed_time",
+                cloud_sql_conn_id=operations_cloud_sql_conn_id,
+                query_generator=WriteFileProcessedTimeToBQFileMetadataSqlQueryGenerator(
+                    write_import_session_task_id=write_import_sessions.task_id
+                ),
+            )
+
+            cleaned_temporary_files = clean_up_temporary_files(
+                clean_and_storage_jobs[TEMPORARY_PATHS_TO_CLEAN]
+            )
+            cleaned_temporary_tables = clean_up_temporary_tables(
+                clean_and_storage_jobs[TEMPORARY_TABLES_TO_CLEAN]
+            )
+            renamed_imported_paths = move_successfully_imported_paths_to_storage(
+                state_code.value,
+                raw_data_instance,
+                clean_and_storage_jobs[PROCESSED_PATHS_TO_RENAME],
+            )
+            clean_and_storage_jobs >> [
+                write_import_sessions,
+                cleaned_temporary_files,
+                cleaned_temporary_tables,
+                renamed_imported_paths,
+            ]
+
+            write_import_sessions >> write_file_processed_times
+
+        big_query_load >> cleanup_and_storage
+
+        # TODO(#30169) ensure locks release no matter what
         release_locks = CloudSqlQueryOperator(
             task_id="release_raw_data_resource_locks",
             cloud_sql_conn_id=operations_cloud_sql_conn_id,
@@ -286,7 +352,7 @@ def create_single_state_code_ingest_instance_raw_data_import_branch(
             ),
         )
 
-        big_query_load >> release_locks
+        cleanup_and_storage >> release_locks
 
         # ------------------------------------------------------------------------------
 
