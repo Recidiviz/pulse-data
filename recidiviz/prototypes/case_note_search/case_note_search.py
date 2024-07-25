@@ -130,7 +130,7 @@ def case_note_search(
     page_size: int = 10,
     filter_conditions: Optional[Dict[str, List[str]]] = None,
     with_snippet: bool = False,
-) -> Optional[List[Dict[str, Any]]]:
+) -> List[Dict[str, Any]]:
     """
     Perform a case note search using the Discovery Engine interface.
 
@@ -143,7 +143,7 @@ def case_note_search(
         with_snippet: Include snippets in the search results. Defaults to False.
 
     Returns:
-        Optional[List[Dict[str, Any]]]: A list of dictionaries containing case note information.
+        List[Dict[str, Any]]: A list of dictionaries containing case note information.
         Each dictionary contains the following keys:
             - 'document_id' (str): The ID of the document.
             - 'date' (Optional[str]): The date associated with the document.
@@ -153,6 +153,8 @@ def case_note_search(
             - 'extractive_answer' (Optional[str]): An extractive answer. Is null if snippet is populated.
             - 'snippet' (Optional[str]): A snippet extracted from the document, if requested.
             - 'case_note' (Optional[str]): The full case note content downloaded from GCS.
+
+        In the case of an error, this instead returns [{"error": "description"}].
     """
     try:
         discovery_interface = DiscoveryEngineInterface(
