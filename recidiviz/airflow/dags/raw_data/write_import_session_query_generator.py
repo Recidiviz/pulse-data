@@ -25,6 +25,7 @@ from recidiviz.airflow.dags.operators.cloud_sql_query_operator import (
     CloudSqlQueryGenerator,
     CloudSqlQueryOperator,
 )
+from recidiviz.airflow.dags.raw_data.metadata import IMPORT_SESSION_SUMMARIES
 from recidiviz.airflow.dags.utils.cloud_sql import (
     postgres_formatted_current_datetime_utc_str,
     postgres_formatted_datetime_with_tz,
@@ -71,7 +72,7 @@ class WriteImportSessionSqlQueryGenerator(CloudSqlQueryGenerator[List[str]]):
             ImportSessionSummary.deserialize(import_session_str)
             for import_session_str in operator.xcom_pull(
                 context,
-                key="return_value",
+                key=IMPORT_SESSION_SUMMARIES,
                 task_ids=self._coalesce_results_and_errors_task_id,
             )
         ]
