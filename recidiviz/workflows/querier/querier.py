@@ -178,7 +178,7 @@ class WorkflowsQuerier:
             else:
                 default_configs = [c for c in configs if c.feature_variant is None]
                 if len(default_configs) == 0:
-                    logging.error("No default config set for  %s", opportunity_type)
+                    logging.warning("No default config set for  %s", opportunity_type)
                 elif len(default_configs) > 1:
                     logging.error(
                         "Multiple (%d) default configs found for %s. Using most recent.",

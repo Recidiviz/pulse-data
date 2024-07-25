@@ -781,6 +781,7 @@ def create_workflows_api_blueprint() -> Blueprint:
                 opp, enabled_configs[opp.opportunity_type]
             ).to_dict()
             for opp in opps
+            if opp.opportunity_type in enabled_configs
         }
 
         return {"enabled_configs": config_response}
