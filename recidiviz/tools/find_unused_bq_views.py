@@ -167,6 +167,9 @@ from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.metrics.export.export_config import VIEW_COLLECTION_EXPORT_INDEX
 from recidiviz.pipelines.utils.pipeline_run_utils import collect_all_pipeline_classes
+from recidiviz.task_eligibility.candidate_populations.general.non_temporary_custody_incarceration_population import (
+    VIEW_BUILDER as NON_TEMPORARY_CUSTODY_INCARCERATION_POPULATION_VIEW_BUILDER,
+)
 from recidiviz.utils.environment import GCP_PROJECTS
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.validation.views.dataset_config import EXTERNAL_ACCURACY_DATASET
@@ -357,6 +360,9 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
     ),
     SENTENCE_COHORT_VIEW_BUILDER.address: (
         "Referenced by PSI Case Insights BigQuery writer (see #30876) (Ben Packer 7/9/24) "
+    ),
+    NON_TEMPORARY_CUSTODY_INCARCERATION_POPULATION_VIEW_BUILDER.address: (
+        "Will be used for MO RH eligibility spans (see #31337) (Daniel Allen 7/24/24)"
     ),
     BigQueryAddress(
         dataset_id=REFERENCE_VIEWS_DATASET,
