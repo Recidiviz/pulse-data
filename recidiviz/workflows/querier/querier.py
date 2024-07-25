@@ -271,6 +271,7 @@ class WorkflowsQuerier:
         tab_groups: Optional[Dict[str, List[str]]],
         compare_by: Optional[List[Any]],
         notifications: List[Any],
+        staging_id: Optional[str] = None,
     ) -> int:
         """
         Given an opportunity type and a config, adds that config to the database,
@@ -307,6 +308,7 @@ class WorkflowsQuerier:
                     tab_groups=tab_groups,
                     compare_by=compare_by,
                     notifications=notifications,
+                    staging_id=staging_id,
                 )
                 .returning(OpportunityConfiguration.id)
             )

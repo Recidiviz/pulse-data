@@ -20,6 +20,7 @@ import logging
 from http import HTTPStatus
 from typing import Any, Dict, List
 
+import requests
 from flask.views import MethodView
 from flask_smorest import Blueprint, abort
 
@@ -31,11 +32,14 @@ from recidiviz.admin_panel.line_staff_tools.workflows_api_schemas import (
     OpportunitySchema,
     StateCodeSchema,
 )
+from recidiviz.admin_panel.utils import auth_header_for_request_to_prod
 from recidiviz.auth.helpers import get_authenticated_user_email
 from recidiviz.calculator.query.state.views.outliers.workflows_enabled_states import (
     get_workflows_enabled_states,
 )
+from recidiviz.common.common_utils import convert_nested_dictionary_keys
 from recidiviz.common.constants.states import StateCode
+from recidiviz.common.str_field_utils import snake_to_camel
 from recidiviz.workflows.querier.querier import WorkflowsQuerier
 from recidiviz.workflows.types import FullOpportunityConfig, FullOpportunityInfo
 
@@ -127,9 +131,16 @@ class OpportunityConfigurationsAPI(MethodView):
             logging.error("Error determining logged-in user: %s", error_str)
             abort(HTTPStatus.BAD_REQUEST, message=error_str)
 
+        # Use the email in the request dict if provided, otherwise infer the email
+        created_by = (
+            user_email
+            if body_args.get("created_by") is None
+            else str(body_args.get("created_by"))
+        )
+
         new_config_id = WorkflowsQuerier(state_code).add_config(
             opportunity_type,
-            created_by=user_email,
+            created_by=created_by,
             created_at=datetime.datetime.now(),
             description=body_args["description"],
             feature_variant=body_args.get("feature_variant"),
@@ -152,6 +163,7 @@ class OpportunityConfigurationsAPI(MethodView):
             tab_groups=body_args.get("tab_groups"),
             compare_by=body_args.get("compare_by"),
             notifications=body_args["notifications"],
+            staging_id=body_args.get("staging_id"),
         )
         return new_config_id
 
@@ -221,3 +233,59 @@ class OpportunitySingleConfigurationActivateAPI(MethodView):
             abort(HTTPStatus.BAD_REQUEST, message=str(error))
 
         return f"Created new activate config {str(active_config_id)} from deactived config{str(config_id)}"
+
+
+@workflows_blueprint.route(
+    "<state_code_str>/opportunities/<opportunity_type>/configurations/<int:config_id>/promote"
+)
+class OpportunitySingleConfigurationPromoteAPI(MethodView):
+    """Endpoint to promote a configuration to production given an id."""
+
+    @workflows_blueprint.response(HTTPStatus.OK)
+    def post(self, state_code_str: str, opportunity_type: str, config_id: int) -> str:
+        """
+        Promotes the staging Configuration with id: config_id for opportunity: opportunity_type
+        to production by making a POST request to <state_code_str>/opportunities/<opportunity_type>/configurations
+        in production.
+        """
+        state_code = refine_state_code(state_code_str)
+        config = WorkflowsQuerier(state_code).get_config_for_id(
+            opportunity_type, config_id
+        )
+
+        if config is None:
+            abort(
+                HTTPStatus.BAD_REQUEST,
+                message=f"No config matching {opportunity_type=} {config_id=}",
+            )
+
+        config_dict = config.to_dict()
+
+        # The created_by of the promoted config should be the email of the user,
+        # and if this wasn't specified here, we'd get the staging CR service account.
+        user_email, error_str = get_authenticated_user_email()
+        if error_str:
+            logging.error("Error determining logged-in user: %s", error_str)
+        config_dict["created_by"] = user_email
+
+        # Remove these fields because the new request body should follow the OpportunityConfigurationRequestSchema type
+        config_dict.pop("status")
+        config_dict.pop("created_at")
+
+        # Hydrate the staging_id field in production to identify which configuration
+        # in staging the new configuration in production corresponds to
+        config_dict["staging_id"] = config_dict.pop("id")
+
+        # Make request
+        response = requests.post(
+            f"https://admin-panel-prod.recidiviz.org/admin/workflows/{state_code_str.upper()}/opportunities/{opportunity_type}/configurations",
+            headers=auth_header_for_request_to_prod(),
+            json=convert_nested_dictionary_keys(
+                config_dict,
+                snake_to_camel,
+            ),
+            timeout=60,
+        )
+
+        response.raise_for_status()
+        return f"Configuration {str(config_id)} successfully promoted to production"

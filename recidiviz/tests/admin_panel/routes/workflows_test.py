@@ -19,10 +19,12 @@
 import datetime
 import json
 from http import HTTPStatus
+from typing import Any, Dict
 from unittest import TestCase
 from unittest.mock import MagicMock, patch
 
 import pytest
+import responses
 from flask import Flask, url_for
 from flask_smorest import Api
 from freezegun import freeze_time
@@ -30,6 +32,7 @@ from freezegun import freeze_time
 from recidiviz.admin_panel.all_routes import admin_panel_blueprint
 from recidiviz.admin_panel.routes.workflows import workflows_blueprint
 from recidiviz.persistence.database.schema.workflows.schema import OpportunityStatus
+from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION
 from recidiviz.workflows.types import FullOpportunityConfig
 
 TEST_WORKFLOW_TYPE = "usIdSLD"
@@ -92,6 +95,8 @@ class WorkflowsAdminPanelEndpointTests(TestCase):
         api.register_blueprint(workflows_blueprint, url_prefix="/admin/workflows")
         self.client = self.app.test_client()
 
+        self.headers: Dict[str, Dict[Any, Any]] = {"x-goog-iap-jwt-assertion": {}}
+
         with self.app.test_request_context():
             self.enabled_states_url = url_for("workflows.EnabledStatesAPI")
             self.opportunities_url = url_for(
@@ -123,6 +128,12 @@ class WorkflowsAdminPanelEndpointTests(TestCase):
             )
             self.single_opportunity_configuration_activate_url = url_for(
                 "workflows.OpportunitySingleConfigurationActivateAPI",
+                state_code_str="US_ID",
+                opportunity_type=TEST_WORKFLOW_TYPE,
+                config_id=TEST_CONFIG_ID,
+            )
+            self.single_opportunity_configuration_promote_url = url_for(
+                "workflows.OpportunitySingleConfigurationPromoteAPI",
                 state_code_str="US_ID",
                 opportunity_type=TEST_WORKFLOW_TYPE,
                 config_id=TEST_CONFIG_ID,
@@ -329,6 +340,7 @@ class WorkflowsAdminPanelEndpointTests(TestCase):
                 tab_groups=req_body["tabGroups"],
                 compare_by=req_body["compareBy"],
                 notifications=req_body["notifications"],
+                staging_id=None,
             )
 
     ########
@@ -456,3 +468,114 @@ class WorkflowsAdminPanelEndpointTests(TestCase):
 
         self.assertEqual(HTTPStatus.BAD_REQUEST, response.status_code)
         self.assertEqual("Config does not exist", json.loads(response.data)["message"])
+
+    ########
+    # POST /workflows/<state_code_str>/opportunities/<opportunity_type>/configurations/<int:config_id>/promote
+    ########
+
+    @patch("recidiviz.admin_panel.utils.fetch_id_token")
+    @patch("recidiviz.admin_panel.utils.in_gcp")
+    @patch("recidiviz.admin_panel.utils.get_secret")
+    @patch(
+        "recidiviz.admin_panel.routes.workflows.get_workflows_enabled_states",
+    )
+    @patch(
+        "recidiviz.admin_panel.routes.workflows.WorkflowsQuerier",
+    )
+    @patch(
+        "recidiviz.admin_panel.routes.workflows.get_authenticated_user_email",
+    )
+    def test_promote_configuration_success(
+        self,
+        mock_get_email: MagicMock,
+        mock_querier: MagicMock,
+        mock_enabled_states: MagicMock,
+        mock_get_secret: MagicMock,
+        in_gcp_mock: MagicMock,
+        fetch_id_token_mock: MagicMock,
+    ) -> None:
+        mock_enabled_states.return_value = ["US_ID"]
+        mock_get_email.return_value = ("email@fake.com", None)
+
+        test_token = "test-token-value"
+        in_gcp_mock.return_value = True
+        fetch_id_token_mock.return_value = test_token
+        mock_get_secret.return_value = "audience"
+
+        mock_querier.return_value.get_config_for_id.return_value = generate_config(
+            TEST_CONFIG_ID, datetime.datetime(2024, 5, 12), is_active=True
+        )
+
+        with self.app.test_request_context(), responses.RequestsMock() as rsps:
+            rsps.post(
+                f"https://admin-panel-prod.recidiviz.org/admin/workflows/US_ID/opportunities/{TEST_WORKFLOW_TYPE}/configurations",
+                status=200,
+                match=[
+                    responses.matchers.header_matcher(
+                        {"Authorization": f"Bearer {test_token}"}
+                    ),
+                    responses.matchers.json_params_matcher(
+                        {
+                            "stateCode": "US_ID",
+                            "opportunityType": "usIdSLD",
+                            "displayName": "display",
+                            "methodologyUrl": "url",
+                            "initialHeader": "header",
+                            "denialReasons": {"DENY": "Denied"},
+                            "eligibleCriteriaCopy": {},
+                            "ineligibleCriteriaCopy": {},
+                            "dynamicEligibilityText": "text",
+                            "eligibilityDateText": "date text",
+                            "hideDenialRevert": True,
+                            "tooltipEligibilityText": "Eligible",
+                            "callToAction": "do something",
+                            "subheading": "this is what the policy does",
+                            "snooze": {"defaultSnoozeDays": 30, "maxSnoozeDays": 180},
+                            "isAlert": False,
+                            "sidebarComponents": ["someComponent"],
+                            "denialText": "Deny",
+                            "tabGroups": {},
+                            "compareBy": [],
+                            "notifications": [],
+                            "description": "A config",
+                            "featureVariant": "feature_variant",
+                            "stagingId": TEST_CONFIG_ID,
+                            "createdBy": "email@fake.com",
+                        }
+                    ),
+                ],
+            )
+
+            result = self.client.post(
+                self.single_opportunity_configuration_promote_url,
+                headers=self.headers,
+            )
+            self.assertEqual(result.status_code, HTTPStatus.OK)
+            self.assertEqual(
+                json.loads(result.data),
+                f"Configuration {TEST_CONFIG_ID} successfully promoted to production",
+            )
+            mock_get_secret.assert_called_once_with(
+                "iap_client_id", GCP_PROJECT_PRODUCTION
+            )
+
+    @patch(
+        "recidiviz.admin_panel.routes.workflows.WorkflowsQuerier",
+    )
+    @patch(
+        "recidiviz.admin_panel.routes.workflows.get_workflows_enabled_states",
+    )
+    def test_promote_config_bad_request(
+        self, mock_enabled_states: MagicMock, mock_querier: MagicMock
+    ) -> None:
+        mock_enabled_states.return_value = ["US_ID"]
+
+        mock_querier.return_value.get_config_for_id.return_value = None
+
+        response = self.client.post(self.single_opportunity_configuration_promote_url)
+
+        self.assertEqual(HTTPStatus.BAD_REQUEST, response.status_code)
+        self.assertEqual(
+            f"No config matching opportunity_type='{TEST_WORKFLOW_TYPE}' config_id={TEST_CONFIG_ID}",
+            json.loads(response.data)["message"],
+        )

@@ -47,7 +47,7 @@ def clear_sm() -> None:
 CACHED_SECRETS: Dict[Tuple[str, str], str] = {}
 
 
-def get_secret(secret_id: str) -> Optional[str]:
+def get_secret(secret_id: str, project_id: Optional[str] = None) -> Optional[str]:
     """Retrieve secret from local cache or the Secret Manager.
 
     A helper function for processes to retrieve secrets. First checks a local cache: if not found, this will pull from
@@ -62,12 +62,13 @@ def get_secret(secret_id: str) -> Optional[str]:
             logging.error("Couldn't locate local secret %s", secret_id)
             return None
 
-    secret_value = CACHED_SECRETS.get((secret_id, metadata.project_id()))
+    project_id = metadata.project_id() if project_id is None else project_id
+
+    secret_value = CACHED_SECRETS.get((secret_id, project_id))
 
     if secret_value:
         return secret_value
 
-    project_id = metadata.project_id()
     secret_name = f"projects/{project_id}/secrets/{secret_id}/versions/latest"
 
     try:
@@ -91,7 +92,7 @@ def get_secret(secret_id: str) -> Optional[str]:
     if secret_value is None:
         logging.error("Couldn't decode secret: [%s].", secret_id)
         return None
-    CACHED_SECRETS[(secret_id, metadata.project_id())] = secret_value
+    CACHED_SECRETS[(secret_id, project_id)] = secret_value
     return secret_value
 
 

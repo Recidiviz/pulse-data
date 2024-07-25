@@ -310,24 +310,21 @@ class OutliersAdminPanelEndpointTests(InsightsDbTestCase):
     ########
 
     @patch("recidiviz.admin_panel.routes.outliers.get_gcp_environment")
-    @patch("recidiviz.admin_panel.routes.outliers.fetch_id_token")
-    @patch("recidiviz.admin_panel.routes.outliers.in_gcp")
+    @patch("recidiviz.admin_panel.routes.outliers.auth_header_for_request_to_prod")
     def test_promote_configuration_success(
-        self, in_gcp_mock: MagicMock, fetch_id_token_mock: MagicMock, get_env: MagicMock
+        self, mock_auth_headers: MagicMock, get_env: MagicMock
     ) -> None:
         get_env.return_value = "staging"
-        test_token = "test-token-value"
-        in_gcp_mock.return_value = True
-        fetch_id_token_mock.return_value = test_token
+
+        auth_headers = {"Authorization": "Bearer test-token-value"}
+        mock_auth_headers.return_value = auth_headers
         config_id = 1
         with self.app.test_request_context(), responses.RequestsMock() as rsps:
             rsps.post(
                 "https://admin-panel-prod.recidiviz.org/admin/outliers/US_PA/configurations",
                 status=200,
                 match=[
-                    responses.matchers.header_matcher(
-                        {"Authorization": f"Bearer {test_token}"}
-                    ),
+                    responses.matchers.header_matcher(auth_headers),
                     responses.matchers.json_params_matcher(
                         {
                             "learnMoreUrl": "fake.com",
