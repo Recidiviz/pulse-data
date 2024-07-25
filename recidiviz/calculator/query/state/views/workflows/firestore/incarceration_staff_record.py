@@ -22,6 +22,9 @@ from recidiviz.calculator.query.state import dataset_config
 from recidiviz.calculator.query.state.views.workflows.us_me.staff_template import (
     build_us_me_staff_template,
 )
+from recidiviz.calculator.query.state.views.workflows.us_nd.staff_template import (
+    build_us_nd_staff_template,
+)
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.dataset_config import raw_latest_views_dataset_for_region
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
@@ -33,11 +36,18 @@ INCARCERATION_STAFF_RECORD_VIEW_NAME = "incarceration_staff_record"
 INCARCERATION_STAFF_RECORD_DESCRIPTION = """
     Incarceration staff records to be exported to Firestore to power Workflows.
     """
+_CASELOAD_SOURCE_TABLE = "resident_record_materialized"
 
 INCARCERATION_STAFF_RECORD_QUERY_TEMPLATE = f"""
     WITH 
-          me_staff AS ({build_us_me_staff_template("resident_record_materialized")})
+        me_staff AS ({build_us_me_staff_template(_CASELOAD_SOURCE_TABLE)}),
+        nd_staff AS ({build_us_nd_staff_template(_CASELOAD_SOURCE_TABLE)})
+    
     SELECT {{columns}} FROM me_staff
+
+    UNION ALL
+    
+    SELECT {{columns}} FROM nd_staff
 """
 
 INCARCERATION_STAFF_RECORD_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
@@ -57,6 +67,9 @@ INCARCERATION_STAFF_RECORD_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
     workflows_dataset=dataset_config.WORKFLOWS_VIEWS_DATASET,
     us_me_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
         state_code=StateCode.US_ME, instance=DirectIngestInstance.PRIMARY
+    ),
+    us_nd_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
+        state_code=StateCode.US_ND, instance=DirectIngestInstance.PRIMARY
     ),
     should_materialize=True,
 )

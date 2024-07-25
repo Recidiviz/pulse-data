@@ -14,49 +14,38 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""View logic to prepare US_ME supervision staff data for Workflows"""
+"""View logic to prepare US_ND supervision staff data for Workflows"""
 
 from typing import Optional
 
-
-def get_caseload_staff_ids_query(caseload_source_table: str, state_code: str) -> str:
-    """Returns the query to get the caseload staff ids.
-    Args:
-        caseload_source_table: The table containing the caseload data.
-        state_code: The state code for the caseload staff."""
-    return f"""
-            SELECT DISTINCT
-                officer_id AS id,
-                state_code,
-            FROM `{{project_id}}.{{workflows_dataset}}.{caseload_source_table}`
-            WHERE state_code = "{state_code}"
-            AND officer_id IS NOT NULL
-    """
+from recidiviz.calculator.query.state.views.workflows.us_me.staff_template import (
+    get_caseload_staff_ids_query,
+)
 
 
-def build_us_me_staff_template(
+def build_us_nd_staff_template(
     caseload_source_table: str,
     columns_minus_supervisor_id: Optional[str] = "{columns}",
 ) -> str:
-    """Builds the US_ME incarceration and supervision staff templates."""
+    """Builds the US_ND incarceration staff templates."""
     return f"""
-        WITH 
+        WITH
         caseload_staff_ids AS (
-            {get_caseload_staff_ids_query(caseload_source_table, 'US_ME')}
+            {get_caseload_staff_ids_query(caseload_source_table, 'US_ND')}
         ),
         caseload_staff AS (
             SELECT DISTINCT
                 ids.id,
                 ids.state_code,
                 CAST(NULL AS STRING) AS district,
-                LOWER(state_table.Email_Tx) AS email,
-                UPPER(state_table.First_Name) as given_names,
-                UPPER(state_table.Last_Name) as surname,
+                CAST(NULL AS STRING) AS email,
+                UPPER(state_table.FIRST_NAME) as given_names,
+                UPPER(state_table.LAST_NAME) as surname,
                 CAST(NULL AS STRING) AS role_subtype,
             FROM caseload_staff_ids ids
-            LEFT JOIN `{{project_id}}.{{us_me_raw_data_up_to_date_dataset}}.CIS_900_EMPLOYEE_latest` state_table
-                ON state_table.Employee_Id = ids.id
-                    AND ids.state_code = 'US_ME'
+            INNER JOIN `{{project_id}}.{{us_nd_raw_data_up_to_date_dataset}}.recidiviz_elite_staff_members_latest` state_table
+                ON REPLACE(REPLACE(state_table.STAFF_ID, '.00',''), ',', '') = ids.id
+                    AND ids.state_code = 'US_ND'
         )
         SELECT 
             {columns_minus_supervisor_id}

@@ -267,7 +267,7 @@ _RESIDENT_RECORD_OFFICER_ASSIGNMENTS_CTE = """
             person_external_id
         FROM `{project_id}.{sessions_dataset}.incarceration_staff_assignment_sessions_preprocessed_materialized`
         WHERE
-            state_code = 'US_ME'
+            state_code IN ('US_ME', 'US_ND')
             AND end_date_exclusive IS NULL
             AND case_priority = 1
     ),

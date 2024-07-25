@@ -33,7 +33,10 @@ INCARCERATION_STAFF_ASSIGNMENT_SESSIONS_PREPROCESSED_QUERY_TEMPLATE = """
     FROM `{project_id}.sessions.us_tn_incarceration_staff_assignment_sessions_preprocessed` 
     UNION ALL
     SELECT *
-    FROM `{project_id}.sessions.us_me_incarceration_staff_assignment_sessions_preprocessed` 
+    FROM `{project_id}.sessions.us_me_incarceration_staff_assignment_sessions_preprocessed`
+    UNION ALL
+    SELECT *
+    FROM `{project_id}.sessions.us_nd_incarceration_staff_assignment_sessions_preprocessed` 
 """
 
 INCARCERATION_STAFF_ASSIGNMENT_SESSIONS_PREPROCESSED_VIEW_BUILDER = SimpleBigQueryViewBuilder(

@@ -207,6 +207,8 @@ def get_program_assignments_as_case_notes() -> str:
     WHERE spa.state_code = 'US_ND'
         AND spa.program_id IS NOT NULL
         AND spa.participation_status IN ('IN_PROGRESS', 'PENDING', 'DISCHARGED')
+        -- Don't surface case manager assignments
+        AND NOT REGEXP_CONTAINS(spa.program_id, r'ASSIGNED CASE MANAGER')
     GROUP BY 1,2,3,4,5
     HAVING note_body IS NOT NULL
     """
