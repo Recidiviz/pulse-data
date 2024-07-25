@@ -5,7 +5,7 @@ version: "3"
 
 services:
   admin_panel_backend:
-    image: us.gcr.io/recidiviz-staging/appengine/default:latest
+    image: us-docker.pkg.dev/recidiviz-staging/appengine/default:latest
     volumes:
       - "./recidiviz:/app/recidiviz/"
       - "~/.config:/root/.config"
@@ -36,7 +36,7 @@ services:
       - ASSET_GENERATION_URL=http://asset-generation-service:5174
 
   admin_panel_cache_hydration:
-    image: us.gcr.io/recidiviz-staging/appengine/default:latest
+    image: us-docker.pkg.dev/recidiviz-staging/appengine/default:latest
     volumes:
       - "./recidiviz:/app/recidiviz/"
       - "~/.config:/root/.config"

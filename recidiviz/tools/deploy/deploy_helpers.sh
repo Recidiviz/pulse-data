@@ -185,6 +185,20 @@ function pre_deploy_configure_infrastructure {
     deploy_migrations "${PROJECT}" "${COMMIT_HASH}"
 }
 
+function copy_docker_image_to_repository {
+  # Copies a Docker image from one repository to another
+  # It takes two arguments which must be Container Registry or Artifact Registry image URLS
+  # crane is a tool for interacting with remote images and registries. gcrane supports GCP-specifc commands
+  # https://github.com/google/go-containerregistry/blob/main/cmd/gcrane/README.md
+  local IMAGE_FROM=$1
+  local IMAGE_TO=$2
+  run_cmd docker run \
+    -v ~/.config/gcloud:/.config/gcloud \
+    -e GOOGLE_APPLICATION_CREDENTIALS=/.config/gcloud/application_default_credentials.json \
+    --rm gcr.io/go-containerregistry/gcrane \
+    cp "${IMAGE_FROM}" "${IMAGE_TO}"
+}
+
 function check_running_in_pipenv_shell {
     if [[ -z $(printenv PIPENV_ACTIVE) ]]; then
         echo_error "Must be running inside the pipenv shell to deploy."

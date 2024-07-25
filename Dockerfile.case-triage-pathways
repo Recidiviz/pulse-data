@@ -1,4 +1,4 @@
-FROM us.gcr.io/recidiviz-staging/recidiviz-base:latest
+FROM us-docker.pkg.dev/recidiviz-staging/recidiviz-base/default:latest
 
 WORKDIR /app/recidiviz
 

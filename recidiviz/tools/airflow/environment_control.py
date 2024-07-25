@@ -54,7 +54,7 @@ from recidiviz.tools.airflow.utils import (
 from recidiviz.tools.utils.script_helpers import prompt_for_confirmation
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 
-COMPOSER_EXPERIMENT_APPENGINE_IMAGE_NAME = f"us.gcr.io/recidiviz-staging/appengine/composer-gke-test-{get_gcloud_auth_user()}:latest"
+COMPOSER_EXPERIMENT_APPENGINE_IMAGE_NAME = f"us-docker.pkg.dev/recidiviz-staging/appengine/composer-gke-test-{get_gcloud_auth_user()}:latest"
 
 COMPOSER_SMALL_WORKLOADS_CONFIG = types.WorkloadsConfig(
     scheduler=types.WorkloadsConfig.SchedulerResource(
@@ -197,7 +197,7 @@ def action_destroy() -> None:
 
 def action_update_image() -> None:
     """Prints commands to update experiment image"""
-    latest_image = "us.gcr.io/recidiviz-staging/appengine/default:latest"
+    latest_image = "us-docker.pkg.dev/recidiviz-staging/appengine/default:latest"
     print(
         "\n".join(
             [

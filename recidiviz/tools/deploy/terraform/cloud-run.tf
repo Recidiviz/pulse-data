@@ -153,7 +153,7 @@ resource "google_cloud_run_service" "case-triage" {
   template {
     spec {
       containers {
-        image   = "us.gcr.io/${var.registry_project_id}/appengine/default:${var.docker_image_tag}"
+        image   = "us-docker.pkg.dev/${var.registry_project_id}/appengine/default:${var.docker_image_tag}"
         command = ["pipenv"]
         args = [
           "run", "gunicorn", "-c", "gunicorn.conf.py", "--log-file=-", "-b", ":$PORT",
@@ -240,7 +240,7 @@ resource "google_cloud_run_service" "application-data-import" {
       timeout_seconds = 600
 
       containers {
-        image   = "us.gcr.io/${var.registry_project_id}/appengine/default:${var.docker_image_tag}"
+        image   = "us-docker.pkg.dev/${var.registry_project_id}/appengine/default:${var.docker_image_tag}"
         command = ["pipenv"]
         args = [
           "run", "gunicorn", "-c", "gunicorn.conf.py", "--log-file=-", "-b", ":$PORT",

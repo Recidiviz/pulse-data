@@ -13,11 +13,12 @@ jobs:
         uses: actions/checkout@ee0669bd1cc54295c223e0bb666b733df41de1c5 # v2
       - name: Build an image from Dockerfile
         run: |
-          docker build . -t us.gcr.io/recidiviz-staging/appengine/default:latest
+          docker build . -t us-docker.pkg.dev/recidiviz-staging/appengine/default:latest
+
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@841fb371db7b5cd339e5b2d55c92f5dbd730ac9f # master
         with:
-          image-ref: "us.gcr.io/recidiviz-staging/appengine/default:latest"
+          image-ref: "us-docker.pkg.dev/recidiviz-staging/appengine/default:latest"
           format: "sarif"
           ignore-unfixed: true
           output: "trivy-results.sarif"
@@ -28,7 +29,7 @@ jobs:
       - name: Run Dockle
         uses: erzz/dockle-action@69369bc745ee29813f730231a821bcd4f71cd290 # v1
         with:
-          image: "us.gcr.io/recidiviz-staging/appengine/default:latest"
+          image: "us-docker.pkg.dev/recidiviz-staging/appengine/default:latest"
           report-format: json
           report-name: dockle-report
       - name: Upload Report

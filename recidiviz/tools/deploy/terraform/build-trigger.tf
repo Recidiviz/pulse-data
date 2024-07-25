@@ -27,27 +27,26 @@ resource "google_cloudbuild_trigger" "staging_release_build_trigger" {
     }
   }
 
-  # TODO(#18537): move images from container registry (us.gcr.io) to artifact registry (us-docker.pkg.dev)
   build {
     step {
-      name = "gcr.io/kaniko-project/executor:v1.8.1"
-      args = ["--destination=us.gcr.io/$PROJECT_ID/appengine/build:$COMMIT_SHA", "--cache=true", "--target=recidiviz-app", "--skip-unused-stages=true"]
+      name = "gcr.io/kaniko-project/executor:latest"
+      args = ["--destination=us-docker.pkg.dev/$PROJECT_ID/appengine/build:$COMMIT_SHA", "--cache=true", "--target=recidiviz-app", "--skip-unused-stages=true"]
       id   = "recidiviz"
     }
     step {
-      name     = "gcr.io/kaniko-project/executor:v1.8.1"
-      args     = ["--destination=us.gcr.io/$PROJECT_ID/recidiviz-base:latest", "--cache=true", "--dockerfile=Dockerfile.recidiviz-base"]
+      name     = "gcr.io/kaniko-project/executor:latest"
+      args     = ["--destination=us-docker.pkg.dev/$PROJECT_ID/recidiviz-base/default:latest", "--cache=true", "--dockerfile=Dockerfile.recidiviz-base"]
       id       = "recidiviz-base"
       wait_for = ["-"] # Run this step in parallel with the previous one
     }
     step {
-      name     = "gcr.io/kaniko-project/executor:v1.8.1"
+      name     = "gcr.io/kaniko-project/executor:latest"
       args     = ["--destination=us-docker.pkg.dev/$PROJECT_ID/asset-generation/build:$COMMIT_SHA", "--cache=true", "--dockerfile=Dockerfile.asset-generation"]
       id       = "asset-generation"
       wait_for = ["-"] # Run this step in parallel with the previous one
     }
     step {
-      name     = "gcr.io/kaniko-project/executor:v1.8.1"
+      name     = "gcr.io/kaniko-project/executor:latest"
       args     = ["--destination=us-docker.pkg.dev/$PROJECT_ID/case-triage-pathways/case-triage-pathways:latest", "--cache=true", "--dockerfile=Dockerfile.case-triage-pathways"]
       id       = "case-triage-pathways"
       wait_for = ["recidiviz-base"]
@@ -58,5 +57,7 @@ resource "google_cloudbuild_trigger" "staging_release_build_trigger" {
     timeout = "3600s"
   }
 
-  depends_on = [google_artifact_registry_repository.repositories["asset_generation"]]
+  depends_on = [
+    google_artifact_registry_repository.repositories
+  ]
 }
