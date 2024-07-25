@@ -31,9 +31,7 @@ from recidiviz.airflow.dags.raw_data.get_all_unprocessed_gcs_file_metadata_sql_q
 )
 from recidiviz.airflow.tests.test_utils import CloudSqlQueryGeneratorUnitTest
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
-from recidiviz.ingest.direct.types.raw_data_import_types import (
-    RawGCSFileMetadataSummary,
-)
+from recidiviz.ingest.direct.types.raw_data_import_types import RawGCSFileMetadata
 from recidiviz.persistence.database.schema.operations.schema import OperationsBase
 
 
@@ -81,7 +79,7 @@ class TestGetAllUnprocessedGCSFileMetadataSqlQueryGenerator(
             )
 
         for i, result in enumerate(results):
-            gcs = RawGCSFileMetadataSummary.deserialize(result)
+            gcs = RawGCSFileMetadata.deserialize(result)
             assert gcs.file_id is None
             assert gcs.path.abs_path() == normalized_fns[i]
 
@@ -116,7 +114,7 @@ class TestGetAllUnprocessedGCSFileMetadataSqlQueryGenerator(
         )
 
         for i, result in enumerate(results):
-            gcs = RawGCSFileMetadataSummary.deserialize(result)
+            gcs = RawGCSFileMetadata.deserialize(result)
             assert gcs.file_id is None
             assert gcs.path.abs_path() == normalized_fns_batch_1[i]
 
@@ -126,7 +124,7 @@ class TestGetAllUnprocessedGCSFileMetadataSqlQueryGenerator(
         )
 
         for i, result in enumerate(results):
-            gcs = RawGCSFileMetadataSummary.deserialize(result)
+            gcs = RawGCSFileMetadata.deserialize(result)
             assert gcs.file_id is None
             assert gcs.path.abs_path() == normalized_fns_batch_2[i]
 
@@ -141,7 +139,7 @@ class TestGetAllUnprocessedGCSFileMetadataSqlQueryGenerator(
 
         def _validate(_results: List[str]) -> None:
             for i, result in enumerate(_results):
-                gcs = RawGCSFileMetadataSummary.deserialize(result)
+                gcs = RawGCSFileMetadata.deserialize(result)
                 assert gcs.file_id is None
                 assert gcs.path.abs_path() == normalized_fns[i]
 
@@ -168,7 +166,7 @@ class TestGetAllUnprocessedGCSFileMetadataSqlQueryGenerator(
             )
 
             for i, result in enumerate(results):
-                gcs = RawGCSFileMetadataSummary.deserialize(result)
+                gcs = RawGCSFileMetadata.deserialize(result)
                 assert gcs.file_id is None
                 assert gcs.path.abs_path() == normalized_fns[i]
 
@@ -195,7 +193,7 @@ class TestGetAllUnprocessedGCSFileMetadataSqlQueryGenerator(
         )
 
         for i, result in enumerate(results):
-            gcs = RawGCSFileMetadataSummary.deserialize(result)
+            gcs = RawGCSFileMetadata.deserialize(result)
             assert gcs.file_id == i
             assert gcs.gcs_file_id == i
             assert gcs.path.abs_path() == normalized_fns[i]

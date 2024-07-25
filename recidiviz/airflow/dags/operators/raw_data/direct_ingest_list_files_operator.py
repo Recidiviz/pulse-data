@@ -14,7 +14,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Custom operators that wrap google's GCSListObjectsOperator to proide some extra filtering"""
+"""Custom operators that wrap google's GCSListObjectsOperator to provide some extra 
+filtering
+"""
 from typing import Any, List
 
 from airflow.providers.google.cloud.operators.gcs import GCSListObjectsOperator

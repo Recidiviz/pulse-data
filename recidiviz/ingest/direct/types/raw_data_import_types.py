@@ -45,40 +45,9 @@ from recidiviz.ingest.direct.raw_data.raw_file_configs import DirectIngestRawFil
 from recidiviz.utils.airflow_types import BaseError, BaseResult
 from recidiviz.utils.types import assert_type
 
-
-class PreImportNormalizationType(Enum):
-    """The type of normalization needed to make a CSV conform to BigQuery's load job
-    standards
-    """
-
-    # The encoding, delimiter, and/or line terminator must be updated to make this CSV BigQuery import compatible
-    ENCODING_DELIMITER_AND_TERMINATOR_UPDATE = auto()
-
-    # Only the encoding must be updated to make this CSV BQ import compatible
-    ENCODING_UPDATE_ONLY = auto()
-
-    @staticmethod
-    def required_pre_import_normalization_type(
-        config: DirectIngestRawFileConfig,
-    ) -> Optional["PreImportNormalizationType"]:
-        """Given a raw data |config|, returns the pre-import normalization type required
-        to make this CSV conform to BigQuery's load job standards. If no normalization
-        is needed, will return None."""
-
-        requires_encoding_translation = not is_big_query_valid_encoding(config.encoding)
-        final_encoding = (
-            DEFAULT_CSV_ENCODING if requires_encoding_translation else config.encoding
-        )
-
-        if not is_big_query_valid_line_terminator(
-            config.line_terminator
-        ) or not is_big_query_valid_delimiter(config.separator, final_encoding):
-            return PreImportNormalizationType.ENCODING_DELIMITER_AND_TERMINATOR_UPDATE
-
-        if requires_encoding_translation:
-            return PreImportNormalizationType.ENCODING_UPDATE_ONLY
-
-        return None
+# --------------------------------------------------------------------------------------
+# v                        raw data import error types                                 v
+# --------------------------------------------------------------------------------------
 
 
 @attr.define
@@ -311,6 +280,170 @@ class RawDataAppendImportError(RawDataImportError):
         )
 
 
+# --------------------------------------------------------------------------------------
+# ^                        raw data import error types                                 ^
+# --------------------------------------------------------------------------------------
+
+# --------------------------------------------------------------------------------------
+# v                        step 2: processing logic types                              v
+# --------------------------------------------------------------------------------------
+
+
+@attr.define
+class RawGCSFileMetadata(BaseResult):
+    """This represents metadata about a single literal file (e.g. a CSV) that is stored
+    in GCS
+
+    Attributes:
+        gcs_file_id (int): an id that corresponds to the literal file in Google Cloud
+            Storage in direct_ingest_raw_gcs_file_metadata. A single file will always
+            have a single gcs_file_id.
+        file_id (int | None): a "conceptual" file id that corresponds to a single,
+            conceptual file sent to us by the state. For raw files states send us in
+            chunks (such as ContactNoteComment), each literal CSV that makes up the
+            whole file will have a different gcs_file_id, but all of those entries will
+            have the same file_id.
+        path (GcsfsFilePath): the path in Google Cloud Storage of the file.
+    """
+
+    gcs_file_id: int = attr.ib(validator=attr_validators.is_int)
+    file_id: Optional[int] = attr.ib(validator=attr_validators.is_opt_int)
+    path: GcsfsFilePath = attr.ib(validator=attr.validators.instance_of(GcsfsFilePath))
+
+    @cached_property
+    def parts(self) -> DirectIngestRawFilenameParts:
+        return filename_parts_from_path(self.path)
+
+    def serialize(self) -> str:
+        return json.dumps([self.gcs_file_id, self.file_id, self.path.abs_path()])
+
+    @staticmethod
+    def deserialize(json_str: str) -> "RawGCSFileMetadata":
+        data = assert_type(json.loads(json_str), list)
+        return RawGCSFileMetadata(
+            gcs_file_id=data[0],
+            file_id=data[1],
+            path=GcsfsFilePath.from_absolute_path(assert_type(data[2], str)),
+        )
+
+    @classmethod
+    def from_gcs_metadata_table_row(
+        cls, db_record: Tuple[int, Optional[int], str], abs_path: GcsfsFilePath
+    ) -> "RawGCSFileMetadata":
+        return RawGCSFileMetadata(
+            gcs_file_id=db_record[0], file_id=db_record[1], path=abs_path
+        )
+
+
+@attr.define
+class RawBigQueryFileMetadata(BaseResult):
+    """This represents metadata about a "conceptual" file_id that exists in BigQuery,
+    made up of at least one literal csv file |gcs_files|.
+
+    Attributes:
+        gcs_files (List[RawGCSFileMetadata]): a list of RawGCSFileMetadata
+            objects that correspond to the literal csv files that comprise this single,
+            conceptual file.
+        file_tag (str): the shared file_tag from |gcs_files| cached on this object.
+        file_id (int | None): a "conceptual" file id that corresponds to a single,
+            conceptual file sent to us by the state. For raw files states send us in
+            chunks (such as ContactNoteComment), each literal CSV that makes up the
+            whole file will have a different gcs_file_id, but all of those entries will
+            have the same file_id.
+        update_datetime (datetime.datetime): the max update_datetime from |gcs_files|
+    """
+
+    gcs_files: List[RawGCSFileMetadata] = attr.ib(
+        validator=attr_validators.is_list_of(RawGCSFileMetadata)
+    )
+    file_tag: str = attr.ib(validator=attr_validators.is_str)
+    update_datetime: datetime.datetime = attr.ib(
+        validator=attr_validators.is_utc_timezone_aware_datetime
+    )
+    file_id: Optional[int] = attr.ib(default=None, validator=attr_validators.is_opt_int)
+
+    def serialize(self) -> str:
+        return json.dumps(
+            {
+                "file_tag": self.file_tag,
+                "file_id": self.file_id,
+                "gcs_files": [file.serialize() for file in self.gcs_files],
+                "update_datetime": self.update_datetime.isoformat(),
+            }
+        )
+
+    @staticmethod
+    def deserialize(json_str: str) -> "RawBigQueryFileMetadata":
+        data = assert_type(json.loads(json_str), dict)
+        return RawBigQueryFileMetadata(
+            file_tag=data["file_tag"],
+            file_id=data["file_id"],
+            gcs_files=[
+                RawGCSFileMetadata.deserialize(gcs_file_str)
+                for gcs_file_str in data["gcs_files"]
+            ],
+            update_datetime=datetime.datetime.fromisoformat(data["update_datetime"]),
+        )
+
+    @classmethod
+    def from_gcs_files(
+        cls, gcs_files: List[RawGCSFileMetadata]
+    ) -> "RawBigQueryFileMetadata":
+        return RawBigQueryFileMetadata(
+            file_id=gcs_files[0].file_id,
+            file_tag=gcs_files[0].parts.file_tag,
+            gcs_files=gcs_files,
+            update_datetime=max(
+                gcs_files,
+                key=lambda x: x.parts.utc_upload_datetime,
+            ).parts.utc_upload_datetime,
+        )
+
+
+# --------------------------------------------------------------------------------------
+# ^                        step 2: processing logic types                              ^
+# --------------------------------------------------------------------------------------
+
+# --------------------------------------------------------------------------------------
+# v                   step 3: pre-import normalization types                           v
+# --------------------------------------------------------------------------------------
+
+
+class PreImportNormalizationType(Enum):
+    """The type of normalization needed to make a CSV conform to BigQuery's load job
+    standards
+    """
+
+    # The encoding, delimiter, and/or line terminator must be updated to make this CSV BigQuery import compatible
+    ENCODING_DELIMITER_AND_TERMINATOR_UPDATE = auto()
+
+    # Only the encoding must be updated to make this CSV BQ import compatible
+    ENCODING_UPDATE_ONLY = auto()
+
+    @staticmethod
+    def required_pre_import_normalization_type(
+        config: DirectIngestRawFileConfig,
+    ) -> Optional["PreImportNormalizationType"]:
+        """Given a raw data |config|, returns the pre-import normalization type required
+        to make this CSV conform to BigQuery's load job standards. If no normalization
+        is needed, will return None."""
+
+        requires_encoding_translation = not is_big_query_valid_encoding(config.encoding)
+        final_encoding = (
+            DEFAULT_CSV_ENCODING if requires_encoding_translation else config.encoding
+        )
+
+        if not is_big_query_valid_line_terminator(
+            config.line_terminator
+        ) or not is_big_query_valid_delimiter(config.separator, final_encoding):
+            return PreImportNormalizationType.ENCODING_DELIMITER_AND_TERMINATOR_UPDATE
+
+        if requires_encoding_translation:
+            return PreImportNormalizationType.ENCODING_UPDATE_ONLY
+
+        return None
+
+
 @attr.define
 class RequiresPreImportNormalizationFile(BaseResult):
     """Encapsulates the path, the headers, the chunk boundaries for the file
@@ -400,7 +533,11 @@ class RequiresPreImportNormalizationFileChunk(BaseResult):
     """
 
     path: GcsfsFilePath = attr.ib(validator=attr.validators.instance_of(GcsfsFilePath))
-    pre_import_normalization_type: Optional[PreImportNormalizationType]
+    pre_import_normalization_type: Optional[PreImportNormalizationType] = attr.ib(
+        validator=attr.validators.optional(
+            attr.validators.in_(PreImportNormalizationType)
+        )
+    )
     chunk_boundary: CsvChunkBoundary = attr.ib(
         validator=attr.validators.instance_of(CsvChunkBoundary)
     )
@@ -523,16 +660,26 @@ class PreImportNormalizedFileResult(BaseResult):
         )
 
 
+# --------------------------------------------------------------------------------------
+# ^                   step 3: pre-import normalization types                           ^
+# --------------------------------------------------------------------------------------
+
+# --------------------------------------------------------------------------------------
+# v                       step 4: big query load types                                 v
+# --------------------------------------------------------------------------------------
+
+
 @attr.define
 class ImportReadyFile(BaseResult):
-    """Base information required for all tasks in the big query load step.
+    """Encapsulates the information required for the big query load step. At this stage,
+    |paths_to_load| is guaranteed to conform to big query load job's standards.
 
     Attributes:
         file_id (int): file_id of the conceptual file being loaded
         file_tag (str): file_tag of the file being loaded
         update_datetime (datetime.datetime): the update_datetime associated with this
             file_id
-        pre_import_normalized_file_paths (Optional[List[GcsfsFilePath]]): if pre-import
+        pre_import_normalized_file_paths (List[GcsfsFilePath] | None): if pre-import
             normalization was required, these paths will be loaded into big query;
             otherwise |original_file_paths| will be loaded into big query and this will
             be None.
@@ -559,7 +706,7 @@ class ImportReadyFile(BaseResult):
         """Returns the paths to load into big query. If pre-import normalization was
         required (i.e. |pre_import_normalized_file_paths| is populated), returns
         |pre_import_normalized_file_paths|. Otherwise, returns |original_file_paths|.
-        load those file paths; otherwise,"""
+        """
         return (
             self.pre_import_normalized_file_paths
             if self.pre_import_normalized_file_paths
@@ -604,7 +751,7 @@ class ImportReadyFile(BaseResult):
 
     @classmethod
     def from_bq_metadata(
-        cls, bq_metadata: "RawBigQueryFileMetadataSummary"
+        cls, bq_metadata: "RawBigQueryFileMetadata"
     ) -> "ImportReadyFile":
         return ImportReadyFile(
             file_id=assert_type(bq_metadata.file_id, int),
@@ -617,7 +764,7 @@ class ImportReadyFile(BaseResult):
     @classmethod
     def from_bq_metadata_and_normalized_chunk_result(
         cls,
-        bq_metadata: "RawBigQueryFileMetadataSummary",
+        bq_metadata: "RawBigQueryFileMetadata",
         input_path_to_normalized_chunk_results: Dict[
             GcsfsFilePath, List[PreImportNormalizedCsvChunkResult]
         ],
@@ -642,13 +789,16 @@ class AppendReadyFile(BaseResult):
     direct_ingest_raw_data_import_session operations table.
 
     Attributes:
+        import_ready_file (ImportReadyFile): metadata required for load_and_prep_paths
         append_ready_table_address (str): temp BQ address of loaded, transformed and
             migrated raw data
         raw_rows_count (int): number of raw rows loaded from raw file paths before any
             transformations or filtering occurred
     """
 
-    import_ready_file: ImportReadyFile
+    import_ready_file: ImportReadyFile = attr.ib(
+        validator=attr.validators.instance_of(ImportReadyFile)
+    )
     append_ready_table_address: BigQueryAddress = attr.ib(
         validator=attr.validators.instance_of(BigQueryAddress)
     )
@@ -759,119 +909,17 @@ class AppendReadyFileBatch(BaseResult):
         return AppendReadyFileBatch(append_ready_files_by_tag=append_ready_files_by_tag)
 
 
-@attr.define
-class RawGCSFileMetadataSummary(BaseResult):
-    """This represents metadata about a single literal file (e.g. a CSV) that is stored
-    in GCS
+# --------------------------------------------------------------------------------------
+# ^                       step 4: big query load types                                 ^
+# --------------------------------------------------------------------------------------
 
-    Attributes:
-        gcs_file_id (int): an id that corresponds to the literal file in Google Cloud
-            Storage in direct_ingest_raw_gcs_file_metadata. A single file will always
-            have a single gcs_file_id.
-        file_id (int | None): a "conceptual" file id that corresponds to a single,
-            conceptual file sent to us by the state. For raw files states send us in
-            chunks (such as ContactNoteComment), each literal CSV that makes up the
-            whole file will have a different gcs_file_id, but all of those entries will
-            have the same file_id.
-        path (GcsfsFilePath): the path in Google Cloud Storage of the file.
-    """
-
-    gcs_file_id: int = attr.ib(validator=attr_validators.is_int)
-    file_id: Optional[int] = attr.ib(validator=attr_validators.is_opt_int)
-    path: GcsfsFilePath = attr.ib(validator=attr.validators.instance_of(GcsfsFilePath))
-
-    @cached_property
-    def parts(self) -> DirectIngestRawFilenameParts:
-        return filename_parts_from_path(self.path)
-
-    def serialize(self) -> str:
-        return json.dumps([self.gcs_file_id, self.file_id, self.path.abs_path()])
-
-    @staticmethod
-    def deserialize(json_str: str) -> "RawGCSFileMetadataSummary":
-        data = assert_type(json.loads(json_str), list)
-        return RawGCSFileMetadataSummary(
-            gcs_file_id=data[0],
-            file_id=data[1],
-            path=GcsfsFilePath.from_absolute_path(assert_type(data[2], str)),
-        )
-
-    @classmethod
-    def from_gcs_metadata_table_row(
-        cls, db_record: Tuple[int, Optional[int], str], abs_path: GcsfsFilePath
-    ) -> "RawGCSFileMetadataSummary":
-        return RawGCSFileMetadataSummary(
-            gcs_file_id=db_record[0], file_id=db_record[1], path=abs_path
-        )
+# --------------------------------------------------------------------------------------
+# v                      step 5: clean and storage types                               v
+# --------------------------------------------------------------------------------------
 
 
 @attr.define
-class RawBigQueryFileMetadataSummary(BaseResult):
-    """This represents metadata about a "conceptual" file_id that exists in BigQuery,
-    made up of at least one literal csv file |gcs_files|.
-
-    Attributes:
-        gcs_files (list[RawGCSFileMetadataSummary]): a list of RawGCSFileMetadataSummary
-            objects that correspond to the literal csv files that comprise this single,
-            conceptual file.
-        file_tag (str): the shared file_tag from |gcs_files| cached on this object.
-        file_id (int | None): a "conceptual" file id that corresponds to a single,
-            conceptual file sent to us by the state. For raw files states send us in
-            chunks (such as ContactNoteComment), each literal CSV that makes up the
-            whole file will have a different gcs_file_id, but all of those entries will
-            have the same file_id.
-        update_datetime (datetime.datetime): the max update_datetime from |gcs_files|
-    """
-
-    gcs_files: List[RawGCSFileMetadataSummary] = attr.ib(
-        validator=attr_validators.is_list_of(RawGCSFileMetadataSummary)
-    )
-    file_tag: str = attr.ib(validator=attr_validators.is_str)
-    update_datetime: datetime.datetime = attr.ib(
-        validator=attr_validators.is_utc_timezone_aware_datetime
-    )
-    file_id: Optional[int] = attr.ib(default=None, validator=attr_validators.is_opt_int)
-
-    def serialize(self) -> str:
-        return json.dumps(
-            {
-                "file_tag": self.file_tag,
-                "file_id": self.file_id,
-                "gcs_files": [file.serialize() for file in self.gcs_files],
-                "update_datetime": self.update_datetime.isoformat(),
-            }
-        )
-
-    @staticmethod
-    def deserialize(json_str: str) -> "RawBigQueryFileMetadataSummary":
-        data = assert_type(json.loads(json_str), dict)
-        return RawBigQueryFileMetadataSummary(
-            file_tag=data["file_tag"],
-            file_id=data["file_id"],
-            gcs_files=[
-                RawGCSFileMetadataSummary.deserialize(gcs_file_str)
-                for gcs_file_str in data["gcs_files"]
-            ],
-            update_datetime=datetime.datetime.fromisoformat(data["update_datetime"]),
-        )
-
-    @classmethod
-    def from_gcs_files(
-        cls, gcs_files: List[RawGCSFileMetadataSummary]
-    ) -> "RawBigQueryFileMetadataSummary":
-        return RawBigQueryFileMetadataSummary(
-            file_id=gcs_files[0].file_id,
-            file_tag=gcs_files[0].parts.file_tag,
-            gcs_files=gcs_files,
-            update_datetime=max(
-                gcs_files,
-                key=lambda x: x.parts.utc_upload_datetime,
-            ).parts.utc_upload_datetime,
-        )
-
-
-@attr.define
-class ImportSessionSummary(BaseResult):
+class RawBigQueryFileImportSummary(BaseResult):
     """Metadata about an import session needed to write a new row to the
     direct_ingest_raw_data_import_session table.
 
@@ -881,12 +929,12 @@ class ImportSessionSummary(BaseResult):
         historical_diffs_active (bool): whether or not historical diffs were performed
             during the import of this file (or would have been had the import
             successfully made it to that stage)
-        raw_rows (Optional[int]): total number of rows sent by the state across all files
+        raw_rows (int | None): total number of rows sent by the state across all files
             for this file_id
-        net_new_or_updated_rows (Optional[int]): if |historical_diffs_active| is True,
+        net_new_or_updated_rows (int | None): if |historical_diffs_active| is True,
             the number of new or updated rows added to the raw data table by the
             historical diffing process
-        deleted_rows (Optional[int]): if |historical_diffs_active| is True, the number
+        deleted_rows (int | None): if |historical_diffs_active| is True, the number
             of rows with is_deleted=True added to the raw data table by the historical
             diffing process
     """
@@ -919,9 +967,9 @@ class ImportSessionSummary(BaseResult):
         )
 
     @staticmethod
-    def deserialize(json_str: str) -> "ImportSessionSummary":
+    def deserialize(json_str: str) -> "RawBigQueryFileImportSummary":
         data = assert_type(json.loads(json_str), dict)
-        return ImportSessionSummary(
+        return RawBigQueryFileImportSummary(
             file_id=data["file_id"],
             import_status=DirectIngestRawDataImportSessionStatus(data["import_status"]),
             historical_diffs_active=data["historical_diffs_active"],
@@ -933,8 +981,8 @@ class ImportSessionSummary(BaseResult):
     @classmethod
     def from_load_results(
         cls, append_ready_file: AppendReadyFile, append_summary: AppendSummary
-    ) -> "ImportSessionSummary":
-        return ImportSessionSummary(
+    ) -> "RawBigQueryFileImportSummary":
+        return RawBigQueryFileImportSummary(
             import_status=DirectIngestRawDataImportSessionStatus.SUCCEEDED,
             file_id=append_ready_file.import_ready_file.file_id,
             raw_rows=append_ready_file.raw_rows_count,
@@ -982,3 +1030,8 @@ class RawBigQueryFileProcessedTime(BaseResult):
         cls, row: Tuple[int, str, datetime.datetime]
     ) -> "RawBigQueryFileProcessedTime":
         return RawBigQueryFileProcessedTime(file_id=row[0], file_processed_time=row[2])
+
+
+# --------------------------------------------------------------------------------------
+# ^                      step 5: clean and storage types                               ^
+# --------------------------------------------------------------------------------------

@@ -36,8 +36,8 @@ from recidiviz.ingest.direct.types.raw_data_import_types import (
     ImportReadyFile,
     PreImportNormalizationType,
     PreImportNormalizedCsvChunkResult,
-    RawBigQueryFileMetadataSummary,
-    RawGCSFileMetadataSummary,
+    RawBigQueryFileMetadata,
+    RawGCSFileMetadata,
     RequiresPreImportNormalizationFile,
 )
 
@@ -381,16 +381,16 @@ class TestRegroupAndVerifyFileChunks(unittest.TestCase):
             ],
         }
         bq_metadata = [
-            RawBigQueryFileMetadataSummary(
+            RawBigQueryFileMetadata(
                 file_id=1,
                 file_tag="tagBasicData",
                 gcs_files=[
-                    RawGCSFileMetadataSummary(
+                    RawGCSFileMetadata(
                         gcs_file_id=1,
                         file_id=1,
                         path=GcsfsFilePath(bucket_name="path", blob_name="a.csv"),
                     ),
-                    RawGCSFileMetadataSummary(
+                    RawGCSFileMetadata(
                         gcs_file_id=2,
                         file_id=1,
                         path=GcsfsFilePath(bucket_name="path", blob_name="aa.csv"),
@@ -400,11 +400,11 @@ class TestRegroupAndVerifyFileChunks(unittest.TestCase):
                     2024, 1, 1, 1, 1, 1, tzinfo=datetime.UTC
                 ),
             ),
-            RawBigQueryFileMetadataSummary(
+            RawBigQueryFileMetadata(
                 file_id=2,
                 file_tag="tagBasicData",
                 gcs_files=[
-                    RawGCSFileMetadataSummary(
+                    RawGCSFileMetadata(
                         gcs_file_id=4,
                         file_id=2,
                         path=GcsfsFilePath(bucket_name="path", blob_name="b.csv"),
@@ -414,11 +414,11 @@ class TestRegroupAndVerifyFileChunks(unittest.TestCase):
                     2024, 1, 2, 1, 1, 1, tzinfo=datetime.UTC
                 ),
             ),
-            RawBigQueryFileMetadataSummary(
+            RawBigQueryFileMetadata(
                 file_id=3,
                 file_tag="tagBasicData",
                 gcs_files=[
-                    RawGCSFileMetadataSummary(
+                    RawGCSFileMetadata(
                         gcs_file_id=5,
                         file_id=3,
                         path=GcsfsFilePath(bucket_name="path", blob_name="c.csv"),
@@ -499,16 +499,16 @@ class TestRegroupAndVerifyFileChunks(unittest.TestCase):
             ],
         }
         bq_metadata = [
-            RawBigQueryFileMetadataSummary(
+            RawBigQueryFileMetadata(
                 file_id=1,
                 file_tag="tagBasicData",
                 gcs_files=[
-                    RawGCSFileMetadataSummary(
+                    RawGCSFileMetadata(
                         gcs_file_id=1,
                         file_id=1,
                         path=GcsfsFilePath(bucket_name="path", blob_name="a.csv"),
                     ),
-                    RawGCSFileMetadataSummary(
+                    RawGCSFileMetadata(
                         gcs_file_id=2,
                         file_id=1,
                         path=GcsfsFilePath(bucket_name="path", blob_name="aa.csv"),
@@ -518,11 +518,11 @@ class TestRegroupAndVerifyFileChunks(unittest.TestCase):
                     2024, 1, 1, 1, 1, 1, tzinfo=datetime.UTC
                 ),
             ),
-            RawBigQueryFileMetadataSummary(
+            RawBigQueryFileMetadata(
                 file_id=2,
                 file_tag="tagBasicData",
                 gcs_files=[
-                    RawGCSFileMetadataSummary(
+                    RawGCSFileMetadata(
                         gcs_file_id=4,
                         file_id=2,
                         path=GcsfsFilePath(bucket_name="path", blob_name="b.csv"),
@@ -532,11 +532,11 @@ class TestRegroupAndVerifyFileChunks(unittest.TestCase):
                     2024, 1, 2, 1, 1, 1, tzinfo=datetime.UTC
                 ),
             ),
-            RawBigQueryFileMetadataSummary(
+            RawBigQueryFileMetadata(
                 file_id=3,
                 file_tag="tagBasicData",
                 gcs_files=[
-                    RawGCSFileMetadataSummary(
+                    RawGCSFileMetadata(
                         gcs_file_id=5,
                         file_id=3,
                         path=GcsfsFilePath(bucket_name="path", blob_name="c.csv"),

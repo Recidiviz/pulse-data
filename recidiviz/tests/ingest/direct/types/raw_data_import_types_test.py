@@ -41,16 +41,16 @@ from recidiviz.ingest.direct.types.raw_data_import_types import (
     AppendReadyFileBatch,
     AppendSummary,
     ImportReadyFile,
-    ImportSessionSummary,
     PreImportNormalizationType,
     PreImportNormalizedCsvChunkResult,
     PreImportNormalizedFileResult,
-    RawBigQueryFileMetadataSummary,
+    RawBigQueryFileImportSummary,
+    RawBigQueryFileMetadata,
     RawBigQueryFileProcessedTime,
     RawDataAppendImportError,
     RawFileLoadAndPrepError,
     RawFileProcessingError,
-    RawGCSFileMetadataSummary,
+    RawGCSFileMetadata,
     RequiresPreImportNormalizationFile,
     RequiresPreImportNormalizationFileChunk,
 )
@@ -377,26 +377,26 @@ class TestSerialization(unittest.TestCase):
         )
         self._validate_serialization(original, AppendReadyFileBatch)
 
-    def test_raw_gcs_file_metadata_summary(self) -> None:
-        original = RawGCSFileMetadataSummary(
+    def test_raw_gcs_file_metadata(self) -> None:
+        original = RawGCSFileMetadata(
             gcs_file_id=1,
             file_id=2,
             path=GcsfsFilePath(bucket_name="bucket", blob_name="blob.csv"),
         )
-        self._validate_serialization(original, RawGCSFileMetadataSummary)
-        original_two = RawGCSFileMetadataSummary(
+        self._validate_serialization(original, RawGCSFileMetadata)
+        original_two = RawGCSFileMetadata(
             gcs_file_id=1,
             file_id=None,
             path=GcsfsFilePath(bucket_name="bucket", blob_name="blob.csv"),
         )
-        self._validate_serialization(original_two, RawGCSFileMetadataSummary)
+        self._validate_serialization(original_two, RawGCSFileMetadata)
 
-    def test_raw_bq_file_metadata_summary(self) -> None:
-        original = RawBigQueryFileMetadataSummary(
+    def test_raw_bq_file_metadata(self) -> None:
+        original = RawBigQueryFileMetadata(
             file_tag="tag1",
             file_id=1,
             gcs_files=[
-                RawGCSFileMetadataSummary(
+                RawGCSFileMetadata(
                     gcs_file_id=1,
                     file_id=1,
                     path=GcsfsFilePath(bucket_name="bucket", blob_name="blob.csv"),
@@ -404,10 +404,10 @@ class TestSerialization(unittest.TestCase):
             ],
             update_datetime=datetime.datetime(2024, 1, 1, 1, 1, 1, tzinfo=datetime.UTC),
         )
-        self._validate_serialization(original, RawBigQueryFileMetadataSummary)
+        self._validate_serialization(original, RawBigQueryFileMetadata)
 
-    def test_import_session_summary(self) -> None:
-        original = ImportSessionSummary(
+    def test_import_summary(self) -> None:
+        original = RawBigQueryFileImportSummary(
             file_id=1,
             import_status=DirectIngestRawDataImportSessionStatus.FAILED_UNKNOWN,
             raw_rows=1,
@@ -415,7 +415,7 @@ class TestSerialization(unittest.TestCase):
             net_new_or_updated_rows=None,
             deleted_rows=1,
         )
-        self._validate_serialization(original, ImportSessionSummary)
+        self._validate_serialization(original, RawBigQueryFileImportSummary)
 
     def test_update_ready_metadata(self) -> None:
         original = RawBigQueryFileProcessedTime(
