@@ -26,7 +26,18 @@ import re
 import time
 from collections import defaultdict
 from concurrent import futures
-from typing import IO, Any, Callable, Dict, Iterator, List, Optional, Sequence, Tuple
+from typing import (
+    IO,
+    Any,
+    Callable,
+    Dict,
+    Iterator,
+    List,
+    Optional,
+    Sequence,
+    Set,
+    Tuple,
+)
 
 import __main__
 import pandas as pd
@@ -72,6 +83,14 @@ BQ_CLIENT_MAX_POOL_CONNECTIONS = 128
 BQ_CLIENT_MAX_POOL_SIZE = 128
 
 DEFAULT_VANTA_DATASET_OWNER = "joshua"
+
+# This is copied from protected variable pandas_gbq.schema._TYPE_ALIASES
+_TYPE_ALIASES = {
+    "BOOL": "BOOLEAN",
+    "FLOAT64": "FLOAT",
+    "INT64": "INTEGER",
+    "STRUCT": "RECORD",
+}
 
 
 def client(project_id: str, region: str) -> bigquery.Client:
@@ -2044,13 +2063,20 @@ class BigQueryClientImpl(BigQueryClient):
             use_query_cache=False,
         )
 
+    @staticmethod
+    def _valid_field_types(schema_field: bigquery.SchemaField) -> Set[str]:
+        """Returns the field type and an alias for that type if applicable."""
+        if schema_field.field_type in _TYPE_ALIASES:
+            return {schema_field.field_type, _TYPE_ALIASES[schema_field.field_type]}
+        return {schema_field.field_type}
+
     def _assert_is_valid_schema_field_update(
         self,
         table_address: BigQueryAddress,
         old_schema_field: bigquery.SchemaField,
         new_schema_field: bigquery.SchemaField,
     ) -> None:
-        if old_schema_field.field_type != new_schema_field.field_type:
+        if old_schema_field.field_type not in self._valid_field_types(new_schema_field):
             raise ValueError(
                 f"Trying to change the field type of an existing field in "
                 f"{table_address.dataset_id}.{table_address.table_id}. Existing "

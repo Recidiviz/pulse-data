@@ -2760,6 +2760,33 @@ class BigQueryClientImplEmulatorTest(BigQueryEmulatorTestCase):
 
         self.run_query_test(f"select * from `{destination.to_str()}`", fake_output)
 
+    def test_valid_field_types(self) -> None:
+        # STRING doesn't map to any alias
+        valid_field_types = BigQueryClientImpl._valid_field_types(
+            bigquery.SchemaField(field_type="STRING", name="col_1")
+        )
+        self.assertSetEqual({"STRING"}, valid_field_types)
+
+        valid_field_types = BigQueryClientImpl._valid_field_types(
+            bigquery.SchemaField(field_type="BOOL", name="col_1")
+        )
+        self.assertSetEqual({"BOOLEAN", "BOOL"}, valid_field_types)
+
+        valid_field_types = BigQueryClientImpl._valid_field_types(
+            bigquery.SchemaField(field_type="FLOAT64", name="col_1")
+        )
+        self.assertSetEqual({"FLOAT", "FLOAT64"}, valid_field_types)
+
+        valid_field_types = BigQueryClientImpl._valid_field_types(
+            bigquery.SchemaField(field_type="INT64", name="col_1")
+        )
+        self.assertSetEqual({"INTEGER", "INT64"}, valid_field_types)
+
+        valid_field_types = BigQueryClientImpl._valid_field_types(
+            bigquery.SchemaField(field_type="STRUCT", name="col_1")
+        )
+        self.assertSetEqual({"RECORD", "STRUCT"}, valid_field_types)
+
     # TODO(#31105) un-underscore when emulator rejects null values in required fields
     def _test_insert_into_table_from_table_async_dest_required(self) -> None:
         """Test that should fail as the rows being loaded are nullable in the source
