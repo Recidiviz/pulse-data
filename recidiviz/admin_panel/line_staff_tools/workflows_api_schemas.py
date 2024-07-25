@@ -56,6 +56,7 @@ class OpportunityConfigurationRequestSchema(WorkflowsConfigSchema):
     """
 
     description = fields.Str(required=True)
+    created_by = fields.Str(allow_none=True)
 
 
 class OpportunityConfigurationResponseSchema(OpportunityConfigurationRequestSchema):
@@ -67,7 +68,6 @@ class OpportunityConfigurationResponseSchema(OpportunityConfigurationRequestSche
     id = fields.Int(required=True)
     status = fields.Enum(OpportunityStatus, required=True)
     created_at = fields.Str(required=True)
-    created_by = fields.Str(required=True)
 
 
 class OpportunityConfigurationsQueryArgs(CamelOrSnakeCaseSchema):

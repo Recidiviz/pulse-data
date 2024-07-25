@@ -131,6 +131,10 @@ class FullOpportunityConfig(OpportunityConfig):
     description: str = attr.ib()
     status: OpportunityStatus = attr.ib()
     feature_variant: str = attr.ib(default=None)
+    staging_id: int = attr.ib(default=None)
+
+    def to_dict(self) -> Dict[str, Any]:
+        return cattrs.unstructure(self)
 
     @classmethod
     def from_db_entry(cls, config: OpportunityConfiguration) -> "FullOpportunityConfig":
@@ -162,6 +166,7 @@ class FullOpportunityConfig(OpportunityConfig):
             tab_groups=config.tab_groups,
             compare_by=config.compare_by,
             notifications=config.notifications,
+            staging_id=config.staging_id,
         )
 
 

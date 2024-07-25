@@ -24,8 +24,6 @@ from typing import Any, Dict, List
 import requests
 from flask.views import MethodView
 from flask_smorest import Blueprint, abort
-from google.auth.transport.requests import Request
-from google.oauth2.id_token import fetch_id_token
 from sqlalchemy.engine.row import Row
 from sqlalchemy.exc import IntegrityError, NoResultFound
 
@@ -35,6 +33,7 @@ from recidiviz.admin_panel.line_staff_tools.outliers_api_schemas import (
     FullConfigurationSchema,
     StateCodeSchema,
 )
+from recidiviz.admin_panel.utils import auth_header_for_request_to_prod
 from recidiviz.auth.helpers import get_authenticated_user_email
 from recidiviz.calculator.query.state.views.outliers.outliers_enabled_states import (
     get_outliers_enabled_states,
@@ -45,23 +44,9 @@ from recidiviz.common.str_field_utils import snake_to_camel
 from recidiviz.outliers.querier.querier import OutliersQuerier
 from recidiviz.outliers.types import ConfigurationStatus
 from recidiviz.persistence.database.schema.insights.schema import Configuration
-from recidiviz.utils.environment import get_gcp_environment, in_gcp
+from recidiviz.utils.environment import get_gcp_environment
 
 outliers_blueprint = Blueprint("outliers", "outliers")
-
-
-def _auth_header() -> Dict[str, str]:
-    if not in_gcp():
-        return {}
-
-    _id_token = fetch_id_token(
-        request=Request(),
-        # The audience is the IAP's client id
-        audience="688733534196-uol4tvqcb345md66joje9gfgm26ufqj6.apps.googleusercontent.com",
-    )
-    return {
-        "Authorization": f"Bearer {_id_token}",
-    }
 
 
 @outliers_blueprint.route("enabled_state_codes")
@@ -201,7 +186,7 @@ class PromoteToProdConfigurationsAPI(MethodView):
         # Make request
         response = requests.post(
             f"https://admin-panel-prod.recidiviz.org/admin/outliers/{state_code_str.upper()}/configurations",
-            headers=_auth_header(),
+            headers=auth_header_for_request_to_prod(),
             json=convert_nested_dictionary_keys(
                 config_dict,
                 snake_to_camel,

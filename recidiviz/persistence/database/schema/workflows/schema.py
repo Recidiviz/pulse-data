@@ -151,3 +151,7 @@ class OpportunityConfiguration(WorkflowsBase):
 
     # Notification blob
     notifications = Column(JSON, nullable=True)
+
+    # Hydrated in production to indicate which configuration in staging this
+    # entity corresponds to
+    staging_id = Column(Integer, nullable=True)
