@@ -21,7 +21,7 @@ import json
 import re
 from collections import defaultdict
 from enum import Enum, auto
-from functools import cache, lru_cache
+from functools import cache
 from io import TextIOWrapper
 from types import ModuleType
 from typing import Any, Dict, List, Optional, Sequence, Set, Tuple, Type, Union, cast
@@ -1133,8 +1133,8 @@ def update_reverse_references_on_related_entities(
             reverse_relationship_list.append(updated_entity)
 
 
-@lru_cache(maxsize=None)
-def _module_for_module_name(module_name: str) -> ModuleType:
+@cache
+def module_for_module_name(module_name: str) -> ModuleType:
     """Returns the module with the module name."""
     return importlib.import_module(module_name)
 
@@ -1174,7 +1174,7 @@ def deep_entity_update(
             continue
 
         related_class = get_entity_class_in_module_with_name(
-            entities_module=_module_for_module_name(
+            entities_module=module_for_module_name(
                 original_entity.__class__.__module__
             ),
             class_name=related_class_name,

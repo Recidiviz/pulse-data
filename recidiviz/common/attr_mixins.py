@@ -63,6 +63,8 @@ class CachedAttributeInfo:
     field_type: BuildableAttrFieldType = attr.ib()
     enum_cls: Optional[Type[Enum]] = attr.ib()
     referenced_cls_name: Optional[str] = attr.ib()
+    # The order of this field as declared in the attr class definition
+    seq_number: int = attr.ib()
 
 
 # Cached _class_structure_reference value
@@ -183,7 +185,7 @@ def _map_attr_to_type_for_class(
     """
     attr_field_types: Dict[str, CachedAttributeInfo] = {}
 
-    for attribute in attr.fields_dict(cls).values():
+    for i, attribute in enumerate(attr.fields(cls)):
         field_name = attribute.name
         if is_forward_ref(attribute):
             referenced_cls_name = get_non_flat_attribute_class_name(attribute)
@@ -193,6 +195,7 @@ def _map_attr_to_type_for_class(
                 field_type=BuildableAttrFieldType.FORWARD_REF,
                 enum_cls=None,
                 referenced_cls_name=referenced_cls_name,
+                seq_number=i,
             )
         elif is_list(attribute):
             # If the list stores forward references, get the name of the class stored
@@ -204,6 +207,7 @@ def _map_attr_to_type_for_class(
                 field_type=BuildableAttrFieldType.LIST,
                 enum_cls=None,
                 referenced_cls_name=referenced_cls_name,
+                seq_number=i,
             )
         elif is_enum(attribute):
             enum_cls = get_enum_cls(attribute)
@@ -218,6 +222,7 @@ def _map_attr_to_type_for_class(
                 field_type=BuildableAttrFieldType.ENUM,
                 enum_cls=enum_cls,
                 referenced_cls_name=None,
+                seq_number=i,
             )
         elif is_datetime(attribute):
             attr_field_types[field_name] = CachedAttributeInfo(
@@ -225,6 +230,7 @@ def _map_attr_to_type_for_class(
                 field_type=BuildableAttrFieldType.DATETIME,
                 enum_cls=None,
                 referenced_cls_name=None,
+                seq_number=i,
             )
         elif is_date(attribute):
             attr_field_types[field_name] = CachedAttributeInfo(
@@ -232,6 +238,7 @@ def _map_attr_to_type_for_class(
                 field_type=BuildableAttrFieldType.DATE,
                 enum_cls=None,
                 referenced_cls_name=None,
+                seq_number=i,
             )
         elif is_str(attribute):
             attr_field_types[field_name] = CachedAttributeInfo(
@@ -239,6 +246,7 @@ def _map_attr_to_type_for_class(
                 field_type=BuildableAttrFieldType.STRING,
                 enum_cls=None,
                 referenced_cls_name=None,
+                seq_number=i,
             )
         elif is_int(attribute):
             attr_field_types[field_name] = CachedAttributeInfo(
@@ -246,6 +254,7 @@ def _map_attr_to_type_for_class(
                 field_type=BuildableAttrFieldType.INTEGER,
                 enum_cls=None,
                 referenced_cls_name=None,
+                seq_number=i,
             )
         elif is_float(attribute):
             attr_field_types[field_name] = CachedAttributeInfo(
@@ -253,6 +262,7 @@ def _map_attr_to_type_for_class(
                 field_type=BuildableAttrFieldType.FLOAT,
                 enum_cls=None,
                 referenced_cls_name=None,
+                seq_number=i,
             )
         elif is_bool(attribute):
             attr_field_types[field_name] = CachedAttributeInfo(
@@ -260,6 +270,7 @@ def _map_attr_to_type_for_class(
                 field_type=BuildableAttrFieldType.BOOLEAN,
                 enum_cls=None,
                 referenced_cls_name=None,
+                seq_number=i,
             )
         else:
             raise ValueError(

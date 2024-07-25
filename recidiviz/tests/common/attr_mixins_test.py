@@ -396,10 +396,10 @@ class CachedClassStructureReferenceTests(unittest.TestCase):
         # Clear the _class_structure_reference cache
         _clear_class_structure_reference()
 
-        attributes = attr.fields_dict(FakeBuildableAttrDeluxe).values()
+        attributes: List[attr.Attribute] = list(attr.fields(FakeBuildableAttrDeluxe))
 
         expected_attr_field_type_ref: Dict[str, CachedAttributeInfo] = {}
-        for attribute in attributes:
+        for i, attribute in enumerate(attributes):
             name = attribute.name
             if "enum" in name:
                 enum_cls = FakeEnum
@@ -409,6 +409,7 @@ class CachedClassStructureReferenceTests(unittest.TestCase):
                     field_type=BuildableAttrFieldType.ENUM,
                     enum_cls=enum_cls,
                     referenced_cls_name=None,
+                    seq_number=i,
                 )
             elif "datetime" in attribute.name:
                 expected_attr_field_type_ref[name] = CachedAttributeInfo(
@@ -416,6 +417,7 @@ class CachedClassStructureReferenceTests(unittest.TestCase):
                     field_type=BuildableAttrFieldType.DATETIME,
                     enum_cls=None,
                     referenced_cls_name=None,
+                    seq_number=i,
                 )
             elif "date" in attribute.name:
                 expected_attr_field_type_ref[name] = CachedAttributeInfo(
@@ -423,6 +425,7 @@ class CachedClassStructureReferenceTests(unittest.TestCase):
                     field_type=BuildableAttrFieldType.DATE,
                     enum_cls=None,
                     referenced_cls_name=None,
+                    seq_number=i,
                 )
             elif "bool" in attribute.name:
                 expected_attr_field_type_ref[name] = CachedAttributeInfo(
@@ -430,6 +433,7 @@ class CachedClassStructureReferenceTests(unittest.TestCase):
                     field_type=BuildableAttrFieldType.BOOLEAN,
                     enum_cls=None,
                     referenced_cls_name=None,
+                    seq_number=i,
                 )
             elif "int" in attribute.name:
                 expected_attr_field_type_ref[name] = CachedAttributeInfo(
@@ -437,6 +441,7 @@ class CachedClassStructureReferenceTests(unittest.TestCase):
                     field_type=BuildableAttrFieldType.INTEGER,
                     enum_cls=None,
                     referenced_cls_name=None,
+                    seq_number=i,
                 )
             elif "float" in attribute.name:
                 expected_attr_field_type_ref[name] = CachedAttributeInfo(
@@ -444,6 +449,7 @@ class CachedClassStructureReferenceTests(unittest.TestCase):
                     field_type=BuildableAttrFieldType.FLOAT,
                     enum_cls=None,
                     referenced_cls_name=None,
+                    seq_number=i,
                 )
             elif "forward_ref" in attribute.name:
                 expected_attr_field_type_ref[name] = CachedAttributeInfo(
@@ -451,6 +457,7 @@ class CachedClassStructureReferenceTests(unittest.TestCase):
                     field_type=BuildableAttrFieldType.FORWARD_REF,
                     enum_cls=None,
                     referenced_cls_name="FakeBuildableAttr",
+                    seq_number=i,
                 )
             elif "list" in attribute.name:
                 expected_attr_field_type_ref[name] = CachedAttributeInfo(
@@ -458,6 +465,7 @@ class CachedClassStructureReferenceTests(unittest.TestCase):
                     field_type=BuildableAttrFieldType.LIST,
                     enum_cls=None,
                     referenced_cls_name=None,
+                    seq_number=i,
                 )
             elif "required" in attribute.name:
                 expected_attr_field_type_ref[name] = CachedAttributeInfo(
@@ -465,6 +473,7 @@ class CachedClassStructureReferenceTests(unittest.TestCase):
                     field_type=BuildableAttrFieldType.STRING,
                     enum_cls=None,
                     referenced_cls_name=None,
+                    seq_number=i,
                 )
             else:
                 raise ValueError(f"Unexpected attribute [{attribute.name}]")

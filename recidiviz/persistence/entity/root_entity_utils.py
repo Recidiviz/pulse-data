@@ -15,8 +15,11 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Utils for managing root entities."""
+from functools import cache
 from types import ModuleType
-from typing import Dict, Type, cast
+from typing import Dict, Set, Type
+
+from more_itertools import one
 
 from recidiviz.persistence.database.database_entity import DatabaseEntity
 from recidiviz.persistence.database.schema.state import schema as state_schema
@@ -24,12 +27,15 @@ from recidiviz.persistence.database.schema_entity_converter.schema_to_entity_cla
     SchemaToEntityClassMapper,
 )
 from recidiviz.persistence.entity.base_entity import Entity, RootEntity
-from recidiviz.persistence.entity.core_entity import CoreEntity
-from recidiviz.persistence.entity.entity_utils import get_all_entity_classes_in_module
+from recidiviz.persistence.entity.entity_utils import (
+    get_all_entity_classes_in_module,
+    module_for_module_name,
+)
 from recidiviz.persistence.entity.state import entities as state_entities
+from recidiviz.utils.types import assert_subclass
 
 
-def is_root_entity(entity_cls: Type[CoreEntity]) -> bool:
+def is_root_entity(entity_cls: Type[Entity]) -> bool:
     """Returns whether the provided class is a root entity type."""
     if issubclass(entity_cls, DatabaseEntity):
         class_mapper = SchemaToEntityClassMapper.get(
@@ -41,7 +47,7 @@ def is_root_entity(entity_cls: Type[CoreEntity]) -> bool:
     return issubclass(entity_cls, RootEntity)
 
 
-def get_root_entity_id(entity: CoreEntity) -> int:
+def get_root_entity_id(entity: Entity) -> int:
     """Returns the id of the root entity the entity is associated with."""
 
     entity_cls = type(entity)
@@ -52,25 +58,41 @@ def get_root_entity_id(entity: CoreEntity) -> int:
     return entity.get_field(root_entity_cls.back_edge_field_name()).get_id()
 
 
-def get_root_entity_class_for_entity(entity_cls: Type[CoreEntity]) -> Type[RootEntity]:
+def get_root_entity_classes_in_module(
+    entities_module: ModuleType,
+) -> Set[Type[RootEntity]]:
+    return {
+        e
+        for e in get_all_entity_classes_in_module(entities_module)
+        if issubclass(e, RootEntity)
+    }
+
+
+def get_root_entity_class_for_entity(entity_cls: Type[Entity]) -> Type[RootEntity]:
     """Returns the RootEntity class the provided |entity_cls| is associated with."""
 
-    for root_entity_cls in RootEntity.__subclasses__():
+    found_root_entities = []
+    for root_entity_cls in get_root_entity_classes_in_module(
+        module_for_module_name(entity_cls.__module__)
+    ):
         associated_fields = [
             root_entity_cls.back_edge_field_name(),
-            cast(CoreEntity, root_entity_cls).get_class_id_name(),
+            assert_subclass(root_entity_cls, Entity).get_class_id_name(),
         ]
 
         for field in associated_fields:
             if entity_cls.has_field(field):
-                return root_entity_cls
+                found_root_entities.append(root_entity_cls)
 
-    raise ValueError(
-        f"Expected non root entity {entity_cls} to have a field associated with a root "
-        f"entity type but found none."
-    )
+    if not found_root_entities:
+        raise ValueError(
+            f"Expected non root entity {entity_cls} to have a field associated with a root "
+            f"entity type but found none."
+        )
+    return one(found_root_entities)
 
 
+@cache
 def get_entity_class_name_to_root_entity_class_name(
     entities_module: ModuleType,
 ) -> Dict[str, str]:
