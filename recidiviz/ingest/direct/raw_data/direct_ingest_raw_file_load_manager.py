@@ -281,6 +281,13 @@ class DirectIngestRawFileLoadManager:
                 temp_raw_file_with_transformations_address,
             )
 
+        except Exception as e:
+            # if we fail during the above, we want to make sure that the transformed
+            # temp table is deleted, as the finally will always ensure that
+            # temp_raw_file_address is deleted
+            self._clean_up_temp_tables(temp_raw_file_with_transformations_address)
+            raise e
+
         finally:
             self._clean_up_temp_tables(temp_raw_file_address)
 
@@ -377,7 +384,9 @@ class DirectIngestRawFileLoadManager:
         for address in addresses:
             try:
                 logging.info("Deleting [%s]", address)
-                self.big_query_client.delete_table(address.dataset_id, address.table_id)
+                self.big_query_client.delete_table(
+                    address.dataset_id, address.table_id, not_found_ok=True
+                )
             except Exception as e:
                 logging.error(
                     "Error: failed to clean up [%s] with [%s]: %s",

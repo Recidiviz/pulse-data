@@ -369,6 +369,12 @@ class TestDirectIngestRawFileLoadManager(BigQueryEmulatorTestCase):
                 "singlePrimaryKey__1",
             )
         )
+        self.assertFalse(
+            self.bq_client.table_exists(
+                self.bq_client.dataset_ref_for_id("us_xx_primary_raw_data_temp_load"),
+                "singlePrimaryKey__1__transformed",
+            )
+        )
 
     def test_fail_load_failure_to_start_with_normalized(self) -> None:
         file_tag, input_paths, *_ = self._prep_test(
@@ -397,6 +403,12 @@ class TestDirectIngestRawFileLoadManager(BigQueryEmulatorTestCase):
                 "singlePrimaryKey__1",
             )
         )
+        self.assertFalse(
+            self.bq_client.table_exists(
+                self.bq_client.dataset_ref_for_id("us_xx_primary_raw_data_temp_load"),
+                "singlePrimaryKey__1__transformed",
+            )
+        )
 
     def test_fail_load_result_failure(self) -> None:
         file_tag, input_paths, *_ = self._prep_test(
@@ -423,6 +435,12 @@ class TestDirectIngestRawFileLoadManager(BigQueryEmulatorTestCase):
             self.bq_client.table_exists(
                 self.bq_client.dataset_ref_for_id("us_xx_primary_raw_data_temp_load"),
                 "singlePrimaryKey__1",
+            )
+        )
+        self.assertFalse(
+            self.bq_client.table_exists(
+                self.bq_client.dataset_ref_for_id("us_xx_primary_raw_data_temp_load"),
+                "singlePrimaryKey__1__transformed",
             )
         )
 
