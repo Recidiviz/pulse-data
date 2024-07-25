@@ -23,7 +23,6 @@ from airflow.utils.state import DagRunState
 from sqlalchemy.orm import Session
 
 from recidiviz.airflow.dags.monitoring.dag_registry import get_raw_data_import_dag_id
-from recidiviz.airflow.dags.utils.branching_by_key import BRANCH_END_TASK_NAME
 from recidiviz.airflow.tests.test_utils import DAG_FOLDER, AirflowIntegrationTest
 from recidiviz.airflow.tests.utils.dag_helper_functions import (
     FakeFailureOperator,
@@ -220,6 +219,7 @@ class RawDataImportDagSequencingTest(AirflowIntegrationTest):
                     "write_import_sessions",
                 ],
                 ["write_file_processed_time"],
+                ["ensure_release_resource_locks_release_if_acquired"],
                 ["release_raw_data_resource_locks"],
             ],
             [
@@ -229,6 +229,7 @@ class RawDataImportDagSequencingTest(AirflowIntegrationTest):
                     "clean_up_temporary_tables",
                     "clean_up_temporary_files",
                 ],
+                ["ensure_release_resource_locks_release_if_acquired"],
                 ["release_raw_data_resource_locks"],
             ],
             [
@@ -238,6 +239,7 @@ class RawDataImportDagSequencingTest(AirflowIntegrationTest):
                     "clean_up_temporary_files",
                     "clean_up_temporary_tables",
                 ],
+                ["ensure_release_resource_locks_release_if_acquired"],
                 ["release_raw_data_resource_locks"],
             ],
         ]
@@ -250,13 +252,6 @@ class RawDataImportDagSequencingTest(AirflowIntegrationTest):
                     next_task = None
                     assert len(curr_task.downstream_list) == len(step_5_task_ids)
                     for downstream_task in curr_task.downstream_list:
-                        print(
-                            downstream_task,
-                            any(
-                                task_id in downstream_task.task_id
-                                for task_id in step_5_task_ids
-                            ),
-                        )
                         assert any(
                             task_id in downstream_task.task_id
                             for task_id in step_5_task_ids
@@ -403,13 +398,12 @@ class RawDataImportDagIntegrationTest(AirflowIntegrationTest):
                     "ingest_instance": "PRIMARY",
                 },
                 expected_skipped_ids=[
-                    r".*_secondary_import_branch",
+                    "_secondary_import_branch_start",
+                    r".*_secondary_import_branch\.(?!ensure_release_resource_locks_release_if_acquired)",
                     # these steps are skipped as mapped tasks (and downstream tasks)
                     # are skipped when the input is an empty list
                     r"raw_data_branching.*_primary_import_branch.biq_query_load.*",
                     r"raw_data_branching.*_primary_import_branch.cleanup_and_storage.*",
-                    # TODO(#30169) ensure locks release no matter what
-                    r"raw_data_branching.*_primary_import_branch.release_raw_data_resource_locks",
                 ],
             )
             self.assertEqual(DagRunState.SUCCESS, result.dag_run_state)
@@ -424,14 +418,14 @@ class RawDataImportDagIntegrationTest(AirflowIntegrationTest):
                     "state_code_filter": StateCode.US_XX.value,
                 },
                 expected_skipped_ids=[
-                    r".*_primary_import_branch",
-                    "us_yy_secondary_import_branch",
+                    r".*_primary_import_branch_start",
+                    r".*_primary_import_branch\.(?!ensure_release_resource_locks_release)",
+                    "us_yy_secondary_import_branch_start",
+                    r".*us_yy_secondary_import_branch\.(?!ensure_release_resource_locks_release_if_acquired)",
                     # these steps are skipped as mapped tasks (and downstream tasks)
                     # are skipped when the input is an empty list
                     r"raw_data_branching.us_xx_secondary_import_branch.biq_query_load.*",
                     r"raw_data_branching.us_xx_secondary_import_branch.cleanup_and_storage.*",
-                    # TODO(#30169) ensure locks release no matter what
-                    "raw_data_branching.us_xx_secondary_import_branch.release_raw_data_resource_locks",
                 ],
             )
             self.assertEqual(DagRunState.SUCCESS, result.dag_run_state)
@@ -460,12 +454,10 @@ class RawDataImportDagIntegrationTest(AirflowIntegrationTest):
                     r".*_primary_import_branch\.pre_import_normalization\.*",
                     r".*_primary_import_branch\.biq_query_load\.*",
                     r".*_primary_import_branch\.cleanup_and_storage.*",
-                    # TODO(#30169) ensure locks release no matter what
-                    r".*_primary_import_branch\.release_raw_data_resource_locks",
-                    BRANCH_END_TASK_NAME,
                 ],
                 expected_skipped_ids=[
-                    r".*_secondary_import_branch",
+                    "_secondary_import_branch_start",
+                    r".*_secondary_import_branch\.(?!ensure_release_resource_locks_release_if_acquired)",
                 ],
             )
-            self.assertEqual(DagRunState.FAILED, result.dag_run_state)
+            self.assertEqual(DagRunState.SUCCESS, result.dag_run_state)

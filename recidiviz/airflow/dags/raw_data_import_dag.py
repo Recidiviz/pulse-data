@@ -18,7 +18,9 @@
 
 
 from airflow.decorators import dag
+from airflow.operators.empty import EmptyOperator
 from airflow.utils.task_group import TaskGroup
+from airflow.utils.trigger_rule import TriggerRule
 
 from recidiviz.airflow.dags.monitoring.dag_registry import get_raw_data_import_dag_id
 from recidiviz.airflow.dags.operators.cloud_sql_query_operator import (
@@ -341,6 +343,11 @@ def create_single_state_code_ingest_instance_raw_data_import_branch(
 
         big_query_load >> cleanup_and_storage
 
+        ensure_release_resource_locks_release_if_acquired = EmptyOperator(
+            task_id="ensure_release_resource_locks_release_if_acquired",
+            trigger_rule=TriggerRule.ALL_DONE,
+        )
+
         # TODO(#30169) ensure locks release no matter what
         release_locks = CloudSqlQueryOperator(
             task_id="release_raw_data_resource_locks",
@@ -350,9 +357,15 @@ def create_single_state_code_ingest_instance_raw_data_import_branch(
                 raw_data_instance=raw_data_instance,
                 acquire_resource_lock_task_id=acquire_locks.task_id,
             ),
+            trigger_rule=TriggerRule.NONE_SKIPPED,
         )
 
-        cleanup_and_storage >> release_locks
+        cleanup_and_storage >> ensure_release_resource_locks_release_if_acquired
+
+        [
+            ensure_release_resource_locks_release_if_acquired,
+            acquire_locks,
+        ] >> release_locks
 
         # ------------------------------------------------------------------------------
 
