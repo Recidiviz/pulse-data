@@ -58,3 +58,4 @@ columns:
     description: TODO(#15329)
   - name: CollegeGradeId
     description: TODO(#15329)
+update_cadence: IRREGULAR
