@@ -5,7 +5,7 @@ version: "3"
 
 services:
   case_triage_migrations:
-    image: us.gcr.io/recidiviz-staging/appengine/default:latest
+    image: us-docker.pkg.dev/recidiviz-staging/appengine/default:latest
     volumes:
       - "./recidiviz:/app/recidiviz/"
     depends_on:
@@ -43,7 +43,7 @@ services:
       - justice_counts_db_socket:/var/run/postgresql/
 
   justice_counts_migrations:
-    image: us.gcr.io/recidiviz-staging/appengine/default:latest
+    image: us-docker.pkg.dev/recidiviz-staging/appengine/default:latest
     volumes:
       - "./recidiviz:/app/recidiviz/"
     depends_on:
@@ -69,7 +69,7 @@ services:
       - operations_db_socket:/var/run/postgresql/
 
   operations_migrations:
-    image: us.gcr.io/recidiviz-staging/appengine/default:latest
+    image: us-docker.pkg.dev/recidiviz-staging/appengine/default:latest
     volumes:
       - "./recidiviz:/app/recidiviz/"
     depends_on:

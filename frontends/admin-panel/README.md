@@ -20,7 +20,7 @@ brew install node
 1. Navigate to the root of the repo.
 2. Make sure you have launched the `Docker` application.
 3. If you haven't yet, run `gcloud auth configure-docker`.
-4. Run `docker pull us.gcr.io/recidiviz-staging/appengine/default:latest` to pull the
+4. Run `docker pull us-docker.pkg.dev/recidiviz-staging/appengine/default:latest` to pull the
 latest Docker image for `main` if you have not done so recently.
 5. Run `./recidiviz/tools/admin_panel/initialize_development_environment.sh` (if you 
 have not done so recently or the script has changed). 
@@ -37,7 +37,7 @@ As needed:
    cached admin store data
 
 If your local development environment is failing to build properly on main, try
-running `docker build . -t us.gcr.io/recidiviz-staging/appengine/default:latest`
+running `docker build . -t us-docker.pkg.dev/recidiviz-staging/appengine/default:latest`
 to ensure that you have the latest dependencies in your docker image. If it’s still not
 working, ping `#eng`.
 

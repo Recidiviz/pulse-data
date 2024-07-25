@@ -89,10 +89,10 @@ GAE_VERSION=$(echo "$VERSION_TAG" | tr '.' '-')
 update_deployment_status "${DEPLOYMENT_STATUS_STARTED}" "${PROJECT_ID}" "${COMMIT_HASH:0:7}" "${VERSION_TAG}"
 
 # app engine deploy paths
-APP_ENGINE_IMAGE_BASE=us.gcr.io/$PROJECT_ID/appengine/default
+APP_ENGINE_IMAGE_BASE=us-docker.pkg.dev/$PROJECT_ID/appengine/default
 APP_ENGINE_IMAGE_URL=$APP_ENGINE_IMAGE_BASE:${DOCKER_IMAGE_TAG} || exit_on_fail
 
-APP_ENGINE_REMOTE_BUILD_BASE=us.gcr.io/$PROJECT_ID/appengine/build
+APP_ENGINE_REMOTE_BUILD_BASE=us-docker.pkg.dev/$PROJECT_ID/appengine/build
 APP_ENGINE_REMOTE_BUILD_URL=$APP_ENGINE_REMOTE_BUILD_BASE:${COMMIT_HASH}
 
 # dataflow deploy paths
@@ -183,30 +183,30 @@ else
     fi
 
     echo "Found remote App Engine build, proceeding to use image ${APP_ENGINE_REMOTE_BUILD_URL} for the release, tagging to ${APP_ENGINE_IMAGE_URL}"
-    run_cmd gcloud -q container images add-tag "${APP_ENGINE_REMOTE_BUILD_URL}" "${APP_ENGINE_IMAGE_URL}"
+    copy_docker_image_to_repository "${APP_ENGINE_REMOTE_BUILD_URL}" "${APP_ENGINE_IMAGE_URL}"
 
     echo "Found Dataflow build, proceeding to use image ${DATAFLOW_BUILD_URL} for the release, tagging to ${DATAFLOW_IMAGE_URL}"
-    run_cmd gcloud -q container images add-tag "${DATAFLOW_BUILD_URL}" "${DATAFLOW_IMAGE_URL}"
+    copy_docker_image_to_repository "${DATAFLOW_BUILD_URL}" "${DATAFLOW_IMAGE_URL}"
 
     echo "Found Asset Generation service build, proceeding to use image ${ASSET_GENERATION_BUILD_URL} for the release, tagging to ${ASSET_GENERATION_IMAGE_URL}"
-    run_cmd gcloud -q container images add-tag "${ASSET_GENERATION_BUILD_URL}" "${ASSET_GENERATION_IMAGE_URL}"
+    copy_docker_image_to_repository "${ASSET_GENERATION_BUILD_URL}" "${ASSET_GENERATION_IMAGE_URL}"
 fi
 
 if [[ -n ${PROMOTE} ]]; then
     # Update latest tag to reflect staging as well
     echo "Updating :latest tag on remote app engine docker image."
     verify_hash "$COMMIT_HASH"
-    run_cmd gcloud -q container images add-tag "${APP_ENGINE_IMAGE_URL}" "$APP_ENGINE_IMAGE_BASE":latest
+    copy_docker_image_to_repository "${APP_ENGINE_IMAGE_URL}" "${APP_ENGINE_IMAGE_BASE}:latest"
 
     # Update latest tag to reflect staging as well
     echo "Updating :latest tag on remote dataflow docker image."
     verify_hash "$COMMIT_HASH"
-    run_cmd gcloud -q container images add-tag "${DATAFLOW_IMAGE_URL}" "$DATAFLOW_IMAGE_BASE":latest
+    copy_docker_image_to_repository "${DATAFLOW_IMAGE_URL}" "${DATAFLOW_IMAGE_BASE}:latest"
 
     # Update latest tag to reflect staging as well
     echo "Updating :latest tag on remote asset generation service docker image."
     verify_hash "$COMMIT_HASH"
-    run_cmd gcloud -q container images add-tag "${ASSET_GENERATION_IMAGE_URL}" "$ASSET_GENERATION_IMAGE_BASE":latest
+    copy_docker_image_to_repository "${ASSET_GENERATION_IMAGE_URL}" "${ASSET_GENERATION_IMAGE_BASE}:latest"
 fi
 
 if [[ -n ${PROMOTE} ]]; then

@@ -89,31 +89,13 @@ DATAFLOW_BUILD_URL="us-docker.pkg.dev/recidiviz-123/dataflow/build:${TAG_COMMIT_
 DATAFLOW_PROD_IMAGE_URL="us-docker.pkg.dev/recidiviz-123/dataflow/default:${GIT_VERSION_TAG}" || exit_on_fail
 
 echo "Tagging dataflow image for deploy"
-{
-    run_cmd_no_exiting gcloud -q container images add-tag "${DATAFLOW_BUILD_URL}" "${DATAFLOW_PROD_IMAGE_URL}"
-} || {
-    echo "Falling back to manual docker tag commands"
-    # We are running these fallback commands in case the add-tag command above times out
-    # (likely due to network bandwidth)
-    run_cmd docker pull "${DATAFLOW_BUILD_URL}"
-    run_cmd docker tag "${DATAFLOW_BUILD_URL}" "${DATAFLOW_PROD_IMAGE_URL}"
-    run_cmd docker push "${DATAFLOW_PROD_IMAGE_URL}"
-}
+copy_docker_image_to_repository "${DATAFLOW_BUILD_URL}" "${DATAFLOW_PROD_IMAGE_URL}"
 
-APP_ENGINE_STAGING_IMAGE_URL="us.gcr.io/recidiviz-staging/appengine/default:${GIT_VERSION_TAG}" || exit_on_fail
-APP_ENGINE_PROD_IMAGE_URL="us.gcr.io/recidiviz-123/appengine/default:${GIT_VERSION_TAG}" || exit_on_fail
+APP_ENGINE_STAGING_IMAGE_URL="us-docker.pkg.dev/recidiviz-staging/appengine/default:${GIT_VERSION_TAG}" || exit_on_fail
+APP_ENGINE_PROD_IMAGE_URL="us-docker.pkg.dev/recidiviz-123/appengine/default:${GIT_VERSION_TAG}" || exit_on_fail
 
 echo "Starting deploy of main app - default"
-{
-    run_cmd_no_exiting gcloud -q container images add-tag "${APP_ENGINE_STAGING_IMAGE_URL}" "${APP_ENGINE_PROD_IMAGE_URL}"
-} || {
-    echo "Falling back to manual docker tag commands"
-    # We are running these fallback commands in case the add-tag command above times out
-    # (likely due to network bandwidth)
-    run_cmd docker pull "${APP_ENGINE_STAGING_IMAGE_URL}"
-    run_cmd docker tag "${APP_ENGINE_STAGING_IMAGE_URL}" "${APP_ENGINE_PROD_IMAGE_URL}"
-    run_cmd docker push "${APP_ENGINE_PROD_IMAGE_URL}"
-}
+copy_docker_image_to_repository "${APP_ENGINE_STAGING_IMAGE_URL}" "${APP_ENGINE_PROD_IMAGE_URL}"
 
 
 # TODO(#3928): Migrate deploy of app engine services to terraform.

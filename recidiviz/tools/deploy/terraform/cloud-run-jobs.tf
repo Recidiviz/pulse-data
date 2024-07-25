@@ -22,7 +22,7 @@ resource "google_cloud_run_v2_job" "admin_panel_hydrate_cache" {
   template {
     template {
       containers {
-        image   = "us.gcr.io/${var.registry_project_id}/appengine/default:${var.docker_image_tag}"
+        image   = "us-docker.pkg.dev/${var.registry_project_id}/appengine/default:${var.docker_image_tag}"
         command = ["pipenv"]
         args    = ["run", "python", "-m", "recidiviz.admin_panel.entrypoints.hydrate_cache"]
         env {

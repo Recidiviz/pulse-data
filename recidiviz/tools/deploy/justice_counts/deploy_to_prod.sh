@@ -70,7 +70,7 @@ PROD_IMAGE_URL="${PROD_IMAGE_BASE}:latest"
 PROD_IMAGE_TAG="${PROD_IMAGE_BASE}:${TAG}"
 
 echo "Moving Docker image ${STAGING_IMAGE_URL} to ${PROD_IMAGE_URL}..."
-run_cmd docker run -v ~/.config/gcloud:/.config/gcloud -e GOOGLE_APPLICATION_CREDENTIALS=/.config/gcloud/application_default_credentials.json --rm gcr.io/go-containerregistry/gcrane cp "${STAGING_IMAGE_URL}" "${PROD_IMAGE_URL}"
+run_cmd copy_docker_image_to_repository "${STAGING_IMAGE_URL}" "${PROD_IMAGE_URL}"
 
 echo "Tagging Docker image with ${PROD_IMAGE_TAG}..."
 run_cmd gcloud artifacts docker tags add "${PROD_IMAGE_URL}" "${PROD_IMAGE_TAG}"
