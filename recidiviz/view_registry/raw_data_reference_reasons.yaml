@@ -1109,9 +1109,13 @@ US_ND:
     workflows_views.supervision_staff_record: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
   elite_OffenderProgramProfiles:
+    sessions.us_nd_incarceration_staff_assignment_sessions_preprocessed: |-
+      Get CM staff assignments to residents.
     sessions.us_nd_work_release_sessions_preprocessing: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
   elite_ProgramServices:
+    sessions.us_nd_incarceration_staff_assignment_sessions_preprocessed: |-
+      Get CM staff assignments to residents.
     sessions.us_nd_work_release_sessions_preprocessing: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
   elite_offender_medical_screenings_6i:
@@ -1140,11 +1144,19 @@ US_ND:
   elite_offense_in_custody_and_pos_report_data:
     task_eligibility_criteria_us_nd.no_level_2_or_3_infractions_for_6_months: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
+  recidiviz_elite_CourseActivities:
+    sessions.us_nd_incarceration_staff_assignment_sessions_preprocessed: |-
+      Get CM staff assignments to residents.
   recidiviz_elite_offender_alerts:
     task_eligibility_criteria_us_nd.has_registration_requirements: |-
       Alerts are not ingested.
     workflows_views.us_nd_transfer_to_atp_form_record: |-
       Alerts are not ingested.
+  recidiviz_elite_staff_members:
+    sessions.us_nd_incarceration_staff_assignment_sessions_preprocessed: |-
+      Get CM staff assignments to residents.
+    workflows_views.incarceration_staff_record: |-
+      Get CM staff assignments to residents.
 US_OR:
   RCDVZ_CISPRDDTA_CMOFFT:
     workflows_views.us_or_earned_discharge_record: |-
