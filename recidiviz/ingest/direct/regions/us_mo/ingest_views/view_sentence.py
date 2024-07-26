@@ -28,6 +28,7 @@ Raw data files include:
 """
 from recidiviz.ingest.direct.regions.us_mo.ingest_views.templates_sentences import (
     BS_BT_BU_IMPOSITION_FILTER,
+    IS_PRETRIAL_OR_BOND_STATUS,
     VALID_STATUS_CODES,
     VALID_SUPERVISION_SENTENCE_INITIAL_INFO,
 )
@@ -84,10 +85,15 @@ WITH
     -- This CTE provides charge level information
     base_sentence_info AS ({BASE_SENTENCE_INFO}),
 
+    -- These are all statuses beginning from the
+    -- the first non-pre-trial and non-bond status
+    valid_status_codes AS ({VALID_STATUS_CODES}),
+
     -- This gives the status code and description of the first status. 
     -- We use both to infer sentence type and sentencing authority
     earliest_status_code AS (
-        {VALID_STATUS_CODES}
+        SELECT * FROM valid_status_codes
+        WHERE NOT ({IS_PRETRIAL_OR_BOND_STATUS})
         -- The Status Sequence (SSO) is not necessarily chronological, so
         -- we order by the status change date instead
         QUALIFY (
