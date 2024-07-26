@@ -227,3 +227,23 @@ resource "google_bigquery_table" "insights_supervision_officers_archive" {
   }
   schema = jsonencode(yamldecode(file("${local.source_tables}/${module.export_archives_dataset.dataset_id}/insights_supervision_officers_archive.yaml"))["schema"])
 }
+
+
+
+resource "google_bigquery_table" "workflows_launch_metadata" {
+  dataset_id          = module.static_reference_tables.dataset_id
+  table_id            = "workflows_launch_metadata"
+  description         = "This table contains information about each fully launched Workflows opportunity in our states"
+  deletion_protection = false
+  external_data_configuration {
+    autodetect    = false
+    source_format = "GOOGLE_SHEETS"
+    google_sheets_options {
+      skip_leading_rows = 3
+    }
+    source_uris = [
+      "https://docs.google.com/spreadsheets/d/1LW_wd4IzFXwUHgGSVAE2NCUHgNjccAAw_dUkg3qcXGE",
+    ]
+    schema = jsonencode(yamldecode(file("${local.source_tables}/${module.static_reference_tables.dataset_id}/workflows_launch_metadata.yaml"))["schema"])
+  }
+}
