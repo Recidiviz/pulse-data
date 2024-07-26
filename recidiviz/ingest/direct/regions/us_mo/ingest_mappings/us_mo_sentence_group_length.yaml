@@ -1,0 +1,31 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_offender_sentence_institution` to
+#  corresponding Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  - CG_DOC # unique for each person
+  - CG_CYC # unique for each sentence group
+  - group_update_datetime
+  - CG_MD # parole eligibility
+  - CG_MM # parole release
+unused_columns: []
+variables:
+  - sentence_group_external_id:
+      $concat:
+        $values:
+          - CG_DOC
+          - CG_CYC
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: CG_DOC
+          id_type: $literal("US_MO_DOC")
+    sentence_groups:
+      - StateSentenceGroup:
+          external_id: $variable(sentence_group_external_id)
+          sentence_group_lengths:
+            - StateSentenceGroupLength:
+                group_update_datetime: group_update_datetime
+                parole_eligibility_date_external: CG_MD
+                projected_parole_release_date_external: CG_MM
