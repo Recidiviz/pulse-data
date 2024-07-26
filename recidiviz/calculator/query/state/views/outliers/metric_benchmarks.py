@@ -45,16 +45,17 @@ statewide_iqrs AS (
         state_code,
         end_date,
         metric_id,
+        caseload_category,
+        category_type,
         APPROX_QUANTILES(metric_value, 4)[OFFSET(3)] - APPROX_QUANTILES(metric_value, 4)[OFFSET(1)] AS iqr
     FROM `{{project_id}}.{{outliers_views_dataset}}.supervision_officer_metrics_materialized`
     WHERE value_type = 'RATE' AND period = 'YEAR'
-    GROUP BY 1, 2, 3
+    GROUP BY 1, 2, 3, 4, 5
 )
 , statewide_highlight_values AS (
     {get_highlight_percentile_value_query()}
 )
 -- TODO(#24119): Add highlight calculation by caseload type
--- TODO(#24119): Add iqr calculation by caseload type
 , metrics_by_caseload_type AS (
     SELECT
         state_code,
@@ -94,10 +95,22 @@ statewide_iqrs AS (
         statewide_highlight_values.top_x_pct_percentile_value
     FROM metrics_by_caseload_type m
     LEFT JOIN statewide_iqrs
-        USING (state_code, metric_id, end_date)
+        USING (state_code, metric_id, end_date, caseload_category, category_type)
     LEFT JOIN statewide_highlight_values
         USING (state_code, metric_id, end_date)
-    WHERE m.value_type = 'RATE'
+    WHERE
+        m.value_type = 'RATE'
+        -- It's possible for us to have a target for a category but not a threshold for it because
+        -- of the way these metrics are produced. When calculating the metrics for each category, we
+        -- calculate them based on the officer's caseload category as of each day of the calculation
+        -- period, but when comparing the officers (at least for the SEX_OFFENSE_BINARY category
+        -- type) we do it based on whether or not they had that category for the entire year. This
+        -- means that, for example, if the earliest data we have for a SEX_OFFENSE caseload is from
+        -- April 2023, then the period from 2023-03-01 to 2024-03-01 will have a target for that
+        -- caseload type (because during the year prior there were officers with that type), but not
+        -- a threshold for it (because nobody had the SEX_OFFENSE caseload type for the whole year-
+        -- the March 2023 data is missing)
+        AND statewide_iqrs.iqr IS NOT NULL
 )
 
 SELECT 

@@ -123,6 +123,12 @@ class SupervisionOfficerMetric(MetricBase, InsightsBase):
 
     # The id of the officer the metric is measured for
     officer_id = Column(String, primary_key=True)
+    # Category this caseload type is part of, e.g. SEX_OFFENSE_BINARY. 'ALL' indicates the metric
+    # benchmark is statewide.
+    category_type = Column(String, primary_key=True)
+    # Caseload type of the officer within category_type during the period during which this metric was measured
+    # TODO(#31634): Rename to caseload_category.
+    caseload_type = Column(String)
 
     __tableargs__ = (
         ForeignKeyConstraint(
@@ -181,8 +187,12 @@ class SupervisionOfficerOutlierStatus(InsightsBase):
     state_code = Column(String, primary_key=True)
     # The id of the officer the metric is measured for
     officer_id = Column(String, primary_key=True)
-    # Caseload type, if applicable. 'ALL' value indicates the status is compared to a statewide metric.
+    # Caseload type within the category_type. 'ALL' value indicates the status is compared to a statewide metric.
+    # TODO(#31634): Rename to caseload_category.
     caseload_type = Column(String, primary_key=True)
+    # Category this caseload type is part of, e.g. SEX_OFFENSE_BINARY. 'ALL' indicates the status
+    # is compared to a statewide metric.
+    category_type = Column(String, primary_key=True)
     # The name of the metric, which corresponds to a column in the supervision_x_aggregated_metrics_materialized table
     metric_id = Column(String, primary_key=True)
     # The period that this metric applies to (see recidiviz.aggregated_metrics.metric_time_periods.py)

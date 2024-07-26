@@ -46,12 +46,11 @@ officer_metrics_with_caseload_type AS (
     m.period,
     m.end_date,
     m.metric_value AS metric_rate,
-    -- Keep an entry for each officer that compares to the statewide target, e.g. benchmark where caseload type is 'ALL'
-    'ALL' AS caseload_type
+    category_type,
+    caseload_category AS caseload_type
   FROM `{{project_id}}.{{outliers_views_dataset}}.supervision_officer_metrics_materialized` m 
   WHERE
     m.value_type = 'RATE'
-  -- TODO(#24119): Add comparison to metrics aggregated by caseload type
 )
 , outlier_status_statewide AS (
   SELECT
@@ -92,7 +91,7 @@ officer_metrics_with_caseload_type AS (
     END AS is_top_x_pct
   FROM officer_metrics_with_caseload_type m
   INNER JOIN `{{project_id}}.{{outliers_views_dataset}}.metric_benchmarks_materialized` b 
-    USING (state_code, end_date, period, metric_id, caseload_type)
+    USING (state_code, end_date, period, metric_id, category_type, caseload_type)
 )
 
 SELECT 
@@ -113,6 +112,7 @@ SUPERVISION_OFFICER_OUTLIER_STATUS_VIEW_BUILDER = SelectedColumnsBigQueryViewBui
         "period",
         "end_date",
         "metric_rate",
+        "category_type",
         "caseload_type",
         "target",
         "threshold",
