@@ -17,11 +17,11 @@
 """Tests for DirectIngestRawFileLoadManager"""
 import datetime
 import os
-import re
 from typing import Any, List, Tuple
 from unittest.mock import create_autospec, patch
 
 import pandas as pd
+from google.api_core.exceptions import InternalServerError
 from google.cloud.bigquery import LoadJob, LoadJobConfig, TableReference
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
@@ -293,6 +293,95 @@ class TestDirectIngestRawFileLoadManager(BigQueryEmulatorTestCase):
         assert not list(self.bq_client.list_tables("us_xx_primary_raw_data_temp_load"))
         assert len(list(self.bq_client.list_tables("us_xx_raw_data"))) == 1
 
+    def test_duplicate_rows_in_raw_data_table(self) -> None:
+        (
+            file_tag,
+            input_paths,
+            prep_output,
+            append_output,
+            raw_data_table,
+        ) = self._prep_test("no_migrations_no_changes_single_file")
+        irf = ImportReadyFile(
+            file_id=1,
+            file_tag=file_tag,
+            update_datetime=datetime.datetime(2024, 1, 1, 1, 1, 1, tzinfo=datetime.UTC),
+            original_file_paths=input_paths,
+            pre_import_normalized_file_paths=None,
+        )
+        append_ready_file = self.manager.load_and_prep_paths(irf)
+
+        assert append_ready_file.import_ready_file == irf
+        assert append_ready_file.raw_rows_count == 2
+        assert (
+            append_ready_file.append_ready_table_address.to_str()
+            == "us_xx_primary_raw_data_temp_load.singlePrimaryKey__1__transformed"
+        )
+
+        self.assertFalse(
+            self.bq_client.table_exists(
+                self.bq_client.dataset_ref_for_id("us_xx_primary_raw_data_temp_load"),
+                "singlePrimaryKey__1",
+            )
+        )
+
+        self.assertTrue(len(self.fs.all_paths) == 1)
+
+        self.compare_output_against_expected(
+            append_ready_file.append_ready_table_address, prep_output
+        )
+
+        # load duplicate rows first
+        raw_data_table = BigQueryAddress(
+            dataset_id=raw_tables_dataset_for_region(
+                StateCode.US_XX, DirectIngestInstance.PRIMARY
+            ),
+            table_id=file_tag,
+        )
+        self.manager._append_data_to_raw_table(  # pylint: disable=protected-access
+            append_ready_file.append_ready_table_address, raw_data_table
+        )
+
+        # TODO(#31751) add logs asserts back once num_dml_affected_rows is populated
+        # by the emulator
+
+        # with self.assertLogs(level="ERROR") as logs:
+
+        _ = self.manager.append_to_raw_data_table(append_ready_file)
+
+        # assert len(logs.output) == 1
+        # self.assertRegex(
+        #     logs.output[0],
+        #     re.escape(
+        #         "Found [2] already existing rows with file id [1] in [us_xx_raw_data.singlePrimaryKey]"
+        #     ),
+        # )
+
+        self.compare_output_against_expected(raw_data_table, append_output)
+
+        self.assertFalse(
+            self.bq_client.table_exists(
+                self.bq_client.dataset_ref_for_id("us_xx_primary_raw_data_temp_load"),
+                "singlePrimaryKey__1__transformed",
+            )
+        )
+
+        self.assertFalse(
+            self.bq_client.dataset_exists(
+                self.bq_client.dataset_ref_for_id(
+                    "pruning_us_xx_raw_data_diff_results_primary"
+                )
+            )
+        )
+
+        self.assertFalse(
+            self.bq_client.dataset_exists(
+                self.bq_client.dataset_ref_for_id("pruning_us_xx_new_raw_data_primary")
+            )
+        )
+
+        assert not list(self.bq_client.list_tables("us_xx_primary_raw_data_temp_load"))
+        assert len(list(self.bq_client.list_tables("us_xx_raw_data"))) == 1
+
     # TODO(#30788) add integration test back once struct in works in emulator
     def _test_migration_depends_on_transforms(self) -> None:
         file_tag, input_paths, output_df, *_ = self._prep_test(
@@ -526,10 +615,8 @@ class TestDirectIngestRawFileLoadManager(BigQueryEmulatorTestCase):
             return_value=self.fake_job,
         ):
             with self.assertRaisesRegex(
-                ValueError,
-                re.escape(
-                    r"Destination table [recidiviz-bq-emulator-project.us_xx_raw_data.tagBasicData] does not exist!"
-                ),
+                InternalServerError,
+                r"500 failed to analyze: INVALID_ARGUMENT: Table not found: `recidiviz-bq-emulator-project.us_xx_raw_data.tagBasicData` .*",
             ):
                 _ = self.manager.append_to_raw_data_table(
                     AppendReadyFile(
