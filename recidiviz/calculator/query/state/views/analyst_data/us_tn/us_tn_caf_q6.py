@@ -50,12 +50,13 @@ US_TN_CAF_Q6_QUERY_TEMPLATE = f"""
     */
     WITH critical_dates AS (
       SELECT
+        DISTINCT
         state_code,
         person_id,
         incident_date AS critical_date,
         incident_date,
         CAST(NULL AS DATE) AS session_start_date,
-        COUNT(*) AS disciplinary,
+        1 AS disciplinary,
       FROM 
             `{{project_id}}.{{analyst_dataset}}.incarceration_incidents_preprocessed_materialized` dis
         WHERE
@@ -63,7 +64,6 @@ US_TN_CAF_Q6_QUERY_TEMPLATE = f"""
             AND disposition = 'GU' 
             AND incident_details NOT LIKE "%VERBAL WARNING%"
             AND incident_class IS NOT NULL
-      GROUP BY 1,2,3,4,5
       
       UNION DISTINCT 
          
