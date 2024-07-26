@@ -94,11 +94,17 @@ class TestDirectIngestControl(unittest.TestCase):
         self.storage_client_patcher.start()
         self.fs_patcher.start()
 
-        self.raw_data_dag_patcher = patch(
-            f"{CONTROL_PACKAGE_NAME}.is_raw_data_import_dag_enabled",
-            Mock(return_value=False),
-        )
-        self.mock_raw_data_dag = self.raw_data_dag_patcher.start()
+        self.raw_data_dag_patchers = [
+            patch(path, Mock(return_value=False))
+            for path in [
+                f"{CONTROL_PACKAGE_NAME}.is_raw_data_import_dag_enabled",
+                "recidiviz.ingest.direct.controllers.ingest_raw_file_import_controller_factory.is_raw_data_import_dag_enabled",
+                "recidiviz.ingest.direct.controllers.ingest_raw_file_import_controller.is_raw_data_import_dag_enabled",
+            ]
+        ]
+        self.raw_data_dag_enabled_mock = [
+            patcher.start() for patcher in self.raw_data_dag_patchers
+        ]
 
         self.controller_factory_patcher: Any = patch(
             f"{CONTROL_PACKAGE_NAME}.IngestRawFileImportControllerFactory"
@@ -113,7 +119,8 @@ class TestDirectIngestControl(unittest.TestCase):
         )
 
     def tearDown(self) -> None:
-        self.raw_data_dag_patcher.stop()
+        for patcher in self.raw_data_dag_patchers:
+            patcher.stop()
         self.project_id_patcher.stop()
         self.bq_client_patcher.stop()
         self.storage_client_patcher.stop()
@@ -167,7 +174,8 @@ class TestDirectIngestControl(unittest.TestCase):
         self.mock_controller_factory.build.return_value = mock_controller
         mock_region.return_value = fake_region(environment="production")
         mock_environment.return_value = "production"
-        self.mock_raw_data_dag.return_value = True
+        for mocked in self.raw_data_dag_enabled_mock:
+            mocked.return_value = True
 
         request_args = {
             "region": self.region_code,
@@ -312,7 +320,8 @@ class TestDirectIngestControl(unittest.TestCase):
         mock_region.return_value = fake_region(
             region_code=self.region_code, environment="production"
         )
-        self.mock_raw_data_dag.return_value = True
+        for mocked in self.raw_data_dag_enabled_mock:
+            mocked.return_value = True
 
         path = GcsfsFilePath.from_directory_and_file_name(
             self.primary_bucket, "elite_offenders.csv"
@@ -693,7 +702,8 @@ class TestDirectIngestControl(unittest.TestCase):
         ) -> bool:
             return state_code.value == "us_xx"
 
-        self.mock_raw_data_dag.side_effect = fake_is_enabled
+        for mocked in self.raw_data_dag_enabled_mock:
+            mocked.side_effect = fake_is_enabled
 
         headers = APP_ENGINE_HEADERS
         response = self.client.get(
@@ -811,7 +821,9 @@ class TestDirectIngestControl(unittest.TestCase):
         mock_environment.return_value = "staging"
         mock_controller = create_autospec(IngestRawFileImportController)
         self.mock_controller_factory.build.return_value = mock_controller
-        self.mock_raw_data_dag.return_value = True
+        for mocked in self.raw_data_dag_enabled_mock:
+            mocked.return_value = True
+
         mock_region.return_value = fake_region(
             region_code=region_code, environment="staging"
         )
@@ -973,7 +985,8 @@ class TestDirectIngestControl(unittest.TestCase):
         ) -> bool:
             return state_code == StateCode.US_MO
 
-        self.mock_raw_data_dag.side_effect = fake_is_enabled
+        for mocked in self.raw_data_dag_enabled_mock:
+            mocked.side_effect = fake_is_enabled
 
         mock_cloud_task_manager = create_autospec(DirectIngestCloudTaskQueueManager)
         region_to_mock_controller = defaultdict(list)
