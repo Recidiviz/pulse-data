@@ -15,9 +15,19 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Query produces a view for sentence status snapshots—points in time where a sentence status changes.
+
 This includes:
   - Time of update
   - Type of status (COMPLETED, SERVING, REVOKED, COMMUTED, etc.)
+
+We ingest status codes beginning with the first status 
+that is NOT a pretrial status or a bond status. This allows us
+to capture closing statuses that may be affiliated with a bond but 
+also close a serving sentence.
+
+sequence_num is hydrated from _SSO. They globally are not in order,
+but do maintain a good order for statuses on the same date. We will
+update sequence_num in normalization to be monotonically increasing
 
 Raw data files include:
   - LBAKRDTA_TAK022 relates sentences to charges

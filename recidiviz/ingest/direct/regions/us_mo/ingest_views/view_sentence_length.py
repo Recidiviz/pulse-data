@@ -45,7 +45,7 @@ WITH
 -- entities with no parent sentence.
 valid_sentences AS (
 
-    SELECT 
+    SELECT DISTINCT
         -- We concat because the a later view has to UNION ALL
         -- and every table has a different prefix :/
         CONCAT(BS_DOC, '-', BS_CYC, '-', BS_SEO) AS sentence_external_id
@@ -65,14 +65,6 @@ valid_sentences AS (
         BS_SEO = BU_SEO
     JOIN (
         {VALID_STATUS_CODES}
-        -- The Status Sequence (SSO) is not necessarily chronological, so
-        -- we order by the status change date instead
-        QUALIFY (
-            ROW_NUMBER() OVER(
-                PARTITION BY BS_DOC, BS_CYC, BS_SEO 
-                ORDER BY CAST(BW_SY AS INT64)
-            ) = 1)
-
     ) AS earliest_status_code
     USING (BS_DOC, BS_CYC, BS_SEO)
     WHERE

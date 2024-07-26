@@ -79,15 +79,7 @@ sentence_groups_from_valid_sentences AS (
         BS_SEO = BU_SEO
     JOIN (
         {VALID_STATUS_CODES}
-        -- The Status Sequence (SSO) is not necessarily chronological, so
-        -- we order by the status change date instead
-        QUALIFY (
-            ROW_NUMBER() OVER(
-                PARTITION BY BS_DOC, BS_CYC, BS_SEO 
-                ORDER BY CAST(BW_SY AS INT64)
-            ) = 1)
-
-    ) AS earliest_status_code
+    ) AS valid_status_codes
     USING (BS_DOC, BS_CYC, BS_SEO)
     WHERE
         {BS_BT_BU_IMPOSITION_FILTER}

@@ -134,34 +134,6 @@ INTERSTATE_COMPACT_STATUSES = (
 )
 
 
-# Filters out pretrial and future status codes from {{LBAKRDTA_TAK026}}
-STATUS_CODE_FILTERS = f"""
--- sentences with only pre-trial investigation statuses get dropped
-NOT (
-  -- Investigation start code prefixes
-  BW_SCD LIKE '10I5%' OR
-  BW_SCD LIKE '30I5%' OR
-  BW_SCD LIKE '%5I5%' OR
-  -- Investigation end code prefixes
-  BW_SCD LIKE '%5O5%' OR
-  BW_SCD LIKE '99O5%'
-) 
--- sentences with only pre-trial bond statuses get dropped
-AND (
-    BW_SCD NOT IN {BOND_STATUSES}
-)
--- We get weekly data with expected statuses for the (future) week,
--- so this ensures we only get statuses that have happened
-AND (
-    CAST(BW_SY AS INT64) <= CAST(FORMAT_DATE('%Y%m%d', CURRENT_TIMESTAMP()) AS INT64)
-)
--- Warrant / abscosion statuses (65N*/65L*) are tracked in the statuses table, but don't
--- impact the *sentence* status. Filter these out.
-AND (
-    BW_SCD NOT LIKE '65N%' AND BW_SCD NOT LIKE '65L%'
-)
-"""
-
 BS_BT_BU_IMPOSITION_FILTER = f"""
     (BU_SF NOT IN {INVALID_IMPOSED_DATE} AND BU_SF IS NOT NULL)
 OR
@@ -210,39 +182,15 @@ OR
 )
 """
 
-# Used to query supervision sentences that are not
-# pretrial bond or investigation (decided by status).
-# Available tables are aliased as BU, BS, BV, and BW -
-# referring to their respective column prefix (e.g. BU_DOC)
-# We join to BS to ensure every sentence is affiliated with a charge,
-# because there are some BU rows with BU_SEO = 0 (administrative cruft)
-
-FROM_BU_BS_BV_BW_WHERE_NOT_PRETRIAL = f"""
-FROM
-    {{LBAKRDTA_TAK024}} AS BU
-JOIN
-    {{LBAKRDTA_TAK022}} AS BS
-ON
-    BU.BU_DOC = BS.BS_DOC AND
-    BU.BU_CYC = BS.BS_CYC AND
-    BU.BU_SEO = BS.BS_SEO
-JOIN
-    {{LBAKRDTA_TAK025}} AS BV
-ON
-    BU.BU_DOC = BV.BV_DOC AND
-    BU.BU_CYC = BV.BV_CYC AND
-    BU.BU_SEO = BV.BV_SEO AND
-    BU.BU_FSO = BV.BV_FSO
-JOIN
-    {{LBAKRDTA_TAK026}} AS BW
-ON
-    BV.BV_DOC = BW.BW_DOC AND
-    BV.BV_CYC = BW.BW_CYC AND
-    BV.BV_SSO = BW.BW_SSO
-WHERE
-    {VALID_IMPOSITON}
-AND 
-    {STATUS_CODE_FILTERS}
+IS_PRETRIAL_OR_BOND_STATUS = f"""
+    -- Investigation start code prefixes
+    BW_SCD LIKE '10I5%' OR
+    BW_SCD LIKE '30I5%' OR
+    BW_SCD LIKE '%5I5%' OR
+    -- Investigation end code prefixes
+    BW_SCD LIKE '%5O5%' OR
+    BW_SCD LIKE '99O5%' OR
+    BW_SCD IN {BOND_STATUSES}
 """
 
 VALID_STATUS_CODES = f"""
@@ -274,5 +222,26 @@ LEFT OUTER JOIN
 ON
     FH.FH_SCD = BW.BW_SCD
 WHERE
-    {STATUS_CODE_FILTERS}
+    -- We get weekly data with expected statuses for the (future) week,
+    -- so this ensures we only get statuses that have happened
+    CAST(BW_SY AS INT64) <= CAST(FORMAT_DATE('%Y%m%d', CURRENT_TIMESTAMP()) AS INT64)
+-- Warrant / abscosion statuses (65N*/65L*) are tracked in the statuses table, but don't
+-- impact the *sentence* status. Filter these out.
+AND 
+    BW_SCD NOT LIKE '65N%' 
+AND 
+    BW_SCD NOT LIKE '65L%'
+AND
+    true
+-- Get every status after the first non-pretrial non-bond status code
+QUALIFY 
+    BW_SY >= MIN(
+        CASE WHEN {IS_PRETRIAL_OR_BOND_STATUS}
+        THEN NULL ELSE BW_SY END
+    ) OVER (PARTITION BY BS_DOC, BS_CYC, BS_SEO)
+AND
+    BW_SSO >= MIN(
+        CASE WHEN {IS_PRETRIAL_OR_BOND_STATUS}
+        THEN NULL ELSE BW_SSO END
+    ) OVER (PARTITION BY BS_DOC, BS_CYC, BS_SEO)
 """
