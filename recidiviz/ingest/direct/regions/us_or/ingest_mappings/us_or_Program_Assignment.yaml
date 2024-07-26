@@ -29,14 +29,28 @@ output:
           program_id: TREAT_ID
           participation_status:
             $enum_mapping:
-              $raw_text:
-                $concat:
-                  $separator: "@@"
-                  $values:
-                    - ENTRY_DATE
-                    - EXIT_DATE
-                  $include_nulls: True
-              $custom_parser: us_or_custom_enum_parsers.parse_participation_status
+              $raw_text: EXIT_CODE
+              $mappings:
+                StateProgramAssignmentParticipationStatus.DISCHARGED_SUCCESSFUL:
+                  - SUCC # Successful completion
+                StateProgramAssignmentParticipationStatus.DISCHARGED_SUCCESSFUL_WITH_DISCRETION:
+                  - MXBN # Max Benefit
+                  - ADMN # Administrative Closure
+                  - EXPI # Expired
+                StateProgramAssignmentParticipationStatus.DISCHARGED_UNSUCCESSFUL:
+                  - ADMI # Administrative removal
+                  - UNSU # Unsuccessful Termination
+                  - ABSC # Absconded (work release)
+                StateProgramAssignmentParticipationStatus.DISCHARGED_OTHER:
+                  - MOVE #???
+                  - CHNG # Change in STTL Eligibility
+                  - AUTO # Closed by transfer program
+                StateProgramAssignmentParticipationStatus.DENIED:
+                  - RJIN # Rejected at Intake
+                StateProgramAssignmentParticipationStatus.REFUSED:
+                  - REFU # AIC Refused to Enter
+                  - DENL # Denial
+                  - NOSH # No show
           start_date: ENTRY_DATE
           referral_date: REFER_DATE
           program_location_id: LOCATION
