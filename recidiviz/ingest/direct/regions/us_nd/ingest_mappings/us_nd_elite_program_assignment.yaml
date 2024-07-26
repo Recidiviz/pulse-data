@@ -42,7 +42,7 @@ output:
                   $equal:
                     - OFFENDER_PROGRAM_STATUS
                     - $literal("END")
-                $then: $literal_enum(StateProgramAssignmentParticipationStatus.DISCHARGED)
+                $then: $literal_enum(StateProgramAssignmentParticipationStatus.DISCHARGED_UNKNOWN)
               - $else_if:
                   $and:
                     - $not_null: OFFENDER_START_DATE

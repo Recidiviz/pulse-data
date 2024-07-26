@@ -54,7 +54,7 @@ output:
               $mappings:
                 StateProgramAssignmentParticipationStatus.DENIED:
                   - Denied
-                StateProgramAssignmentParticipationStatus.DISCHARGED:
+                StateProgramAssignmentParticipationStatus.DISCHARGED_UNKNOWN:
                   - Discharged
                 StateProgramAssignmentParticipationStatus.PENDING:
                   - Pending
