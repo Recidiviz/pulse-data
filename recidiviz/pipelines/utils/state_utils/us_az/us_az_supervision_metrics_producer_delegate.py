@@ -28,4 +28,4 @@ class UsAzSupervisionMetricsProducerDelegate(
     """US_AZ implementation of the StateSpecificSupervisionMetricsProducerDelegate."""
 
     def primary_person_external_id_to_include(self) -> Optional[str]:
-        return "US_AZ_SID"
+        return "US_AZ_PERSON_ID"
