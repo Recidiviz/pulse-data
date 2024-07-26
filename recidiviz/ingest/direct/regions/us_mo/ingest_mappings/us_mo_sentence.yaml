@@ -41,6 +41,9 @@ output:
       - StatePersonExternalId:
           external_id: BS_DOC
           id_type: $literal("US_MO_DOC")
+    sentence_groups:
+      - StateSentenceGroup:
+          external_id: $variable(sentence_group_external_id)
     sentences:
       - StateSentence:
           external_id: $variable(sentence_external_id)
