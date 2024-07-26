@@ -13,4 +13,11 @@ max_allowed_error_overrides:
     override_reason: |-
       1% hard threshold bump until we can get person-level validation 
       data for debugging. TODO(#30582)
-num_allowed_rows_overrides: []
+num_allowed_rows_overrides:
+  - validation_name: invalid_release_reasons_for_temporary_custody
+    hard_num_allowed_rows_override: 17
+    override_reason: |-
+      These failing rows are all from 1992 or earlier and all relate to periods that have
+      been closed for many years. They are likely due to data entry errors. This validation
+      is worth investigating if we have a more recent example or one related to an open 
+      period, but these old examples are okay to ignore.
