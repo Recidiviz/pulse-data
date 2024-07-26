@@ -1,0 +1,18 @@
+address:
+  dataset_id: static_reference_tables
+  table_id: workflows_launch_metadata
+description: "This table contains information about each fully launched Workflows opportunity in our states"
+schema:
+  - name: state_code
+    type: STRING
+    mode: REQUIRED
+  - name: workflow_name
+    type: STRING
+    mode: REQUIRED
+  - name: completion_event_type
+    type: STRING
+    mode: REQUIRED
+  - name: system_type
+    type: STRING
+    mode: REQUIRED
+clustering_fields: null
