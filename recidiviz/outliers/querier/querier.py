@@ -26,7 +26,8 @@ import cattrs
 from dateutil.relativedelta import relativedelta
 from sqlalchemy import and_, case, func
 from sqlalchemy.dialects.postgresql import aggregate_order_by, insert
-from sqlalchemy.orm import Session, aliased, sessionmaker
+from sqlalchemy.exc import ProgrammingError
+from sqlalchemy.orm import Query, Session, aliased, sessionmaker
 
 from recidiviz.aggregated_metrics.metric_time_periods import MetricTimePeriod
 from recidiviz.calculator.query.state.views.analyst_data.insights_caseload_category_sessions import (
@@ -288,25 +289,51 @@ class OutliersQuerier:
         )
 
         # Get officer metrics for the given metric_id for the current and previous period
-        combined_period_officer_metrics = (
-            session.query(SupervisionOfficerOutlierStatus)
-            .filter(
-                SupervisionOfficerOutlierStatus.metric_id == metric.name,
-                SupervisionOfficerOutlierStatus.end_date.in_([end_date, prev_end_date]),
-                SupervisionOfficerOutlierStatus.period == MetricTimePeriod.YEAR.value,
-                # TODO(#31552): Return metrics for a configured category
-                SupervisionOfficerOutlierStatus.category_type
-                == InsightsCaseloadCategoryType.ALL.value,
+        # TODO(#31818): remove this try/except
+        try:
+            combined_period_officer_metrics = (
+                session.query(SupervisionOfficerOutlierStatus)
+                .filter(
+                    SupervisionOfficerOutlierStatus.metric_id == metric.name,
+                    SupervisionOfficerOutlierStatus.end_date.in_(
+                        [end_date, prev_end_date]
+                    ),
+                    SupervisionOfficerOutlierStatus.period
+                    == MetricTimePeriod.YEAR.value,
+                    # TODO(#31552): Return metrics for a configured category
+                    SupervisionOfficerOutlierStatus.category_type
+                    == InsightsCaseloadCategoryType.ALL.value,
+                )
+                .with_entities(
+                    SupervisionOfficerOutlierStatus.officer_id,
+                    SupervisionOfficerOutlierStatus.metric_id,
+                    SupervisionOfficerOutlierStatus.end_date,
+                    SupervisionOfficerOutlierStatus.metric_rate,
+                    SupervisionOfficerOutlierStatus.status,
+                )
+                .all()
             )
-            .with_entities(
-                SupervisionOfficerOutlierStatus.officer_id,
-                SupervisionOfficerOutlierStatus.metric_id,
-                SupervisionOfficerOutlierStatus.end_date,
-                SupervisionOfficerOutlierStatus.metric_rate,
-                SupervisionOfficerOutlierStatus.status,
+        except ProgrammingError:
+            session.rollback()
+            combined_period_officer_metrics = (
+                session.query(SupervisionOfficerOutlierStatus)
+                .filter(
+                    SupervisionOfficerOutlierStatus.metric_id == metric.name,
+                    SupervisionOfficerOutlierStatus.end_date.in_(
+                        [end_date, prev_end_date]
+                    ),
+                    SupervisionOfficerOutlierStatus.period
+                    == MetricTimePeriod.YEAR.value,
+                )
+                .with_entities(
+                    SupervisionOfficerOutlierStatus.officer_id,
+                    SupervisionOfficerOutlierStatus.metric_id,
+                    SupervisionOfficerOutlierStatus.end_date,
+                    SupervisionOfficerOutlierStatus.metric_rate,
+                    SupervisionOfficerOutlierStatus.status,
+                )
+                .all()
             )
-            .all()
-        )
 
         current_period_officer_metrics = list(
             filter(
@@ -377,16 +404,27 @@ class OutliersQuerier:
         metric: OutliersMetricConfig,
         end_date: date,
     ) -> Tuple[float, TargetStatusStrategy]:
-        target_query = session.query(MetricBenchmark).filter(
-            MetricBenchmark.metric_id == metric.name,
-            MetricBenchmark.end_date == end_date,
-            MetricBenchmark.period == MetricTimePeriod.YEAR.value,
-            # TODO(#31552): Return benchmarks for a configured category
-            MetricBenchmark.category_type == InsightsCaseloadCategoryType.ALL.value,
-            MetricBenchmark.caseload_type == "ALL",
-        )
+        """Gets a target benchmark for a given metric from the DB"""
+        # TODO(#31818): remove this try/except
+        try:
+            target_query = session.query(MetricBenchmark).filter(
+                MetricBenchmark.metric_id == metric.name,
+                MetricBenchmark.end_date == end_date,
+                MetricBenchmark.period == MetricTimePeriod.YEAR.value,
+                # TODO(#31552): Return benchmarks for a configured category
+                MetricBenchmark.category_type == InsightsCaseloadCategoryType.ALL.value,
+                MetricBenchmark.caseload_type == "ALL",
+            )
+            metric_benchmark = target_query.scalar()
+        except ProgrammingError:
+            session.rollback()
+            target_query = session.query(MetricBenchmark).filter(
+                MetricBenchmark.metric_id == metric.name,
+                MetricBenchmark.end_date == end_date,
+                MetricBenchmark.period == MetricTimePeriod.YEAR.value,
+            )
+            metric_benchmark = target_query.scalar()
 
-        metric_benchmark = target_query.scalar()
         target = metric_benchmark.target
 
         target_status_strategy = (
@@ -629,124 +667,140 @@ class OutliersQuerier:
 
             earliest_end_date = end_date - relativedelta(months=num_lookback_periods)
 
-            benchmarks_cte = (
-                session.query(MetricBenchmark)
-                .filter(
-                    # Get the benchmarks for all periods between requested or latest end_date and earliest end date
-                    MetricBenchmark.end_date.between(earliest_end_date, end_date),
-                    # TODO(#31552): Return benchmarks for a configured category
-                    MetricBenchmark.category_type
-                    == InsightsCaseloadCategoryType.ALL.value,
-                    MetricBenchmark.caseload_type == "ALL",
-                )
-                .group_by(
-                    MetricBenchmark.metric_id,
-                    MetricBenchmark.caseload_type,
-                    MetricBenchmark.period,
-                )
-                .with_entities(
-                    MetricBenchmark.metric_id,
-                    MetricBenchmark.caseload_type,
-                    MetricBenchmark.period,
-                    # Get an array of JSON objects for the metric's targets and thresholds in the selected periods
-                    func.array_agg(
-                        aggregate_order_by(
-                            func.jsonb_build_object(
-                                "end_date",
-                                MetricBenchmark.end_date,
-                                "target",
-                                MetricBenchmark.target,
-                                "threshold",
-                                MetricBenchmark.threshold,
-                            ),
-                            MetricBenchmark.end_date.desc(),
-                        )
-                    ).label("benchmarks_over_time"),
-                )
-                .cte("benchmarks")
-            )
+            def get_benchmarks_query(include_caseload_type: bool) -> Query:
+                if include_caseload_type:
+                    benchmarks_filter_section = session.query(MetricBenchmark).filter(
+                        # Get the benchmarks for all periods between requested or latest end_date and earliest end date
+                        MetricBenchmark.end_date.between(earliest_end_date, end_date),
+                        # TODO(#31552): Return benchmarks for a configured category
+                        MetricBenchmark.category_type
+                        == InsightsCaseloadCategoryType.ALL.value,
+                        MetricBenchmark.caseload_type == "ALL",
+                    )
+                else:
+                    benchmarks_filter_section = session.query(MetricBenchmark).filter(
+                        # Get the benchmarks for all periods between requested or latest end_date and earliest end date
+                        MetricBenchmark.end_date.between(earliest_end_date, end_date)
+                    )
 
-            latest_period_rates_cte = (
-                session.query(SupervisionOfficerOutlierStatus)
-                .filter(
-                    SupervisionOfficerOutlierStatus.end_date == end_date,
+                benchmarks_cte = (
+                    benchmarks_filter_section.group_by(
+                        MetricBenchmark.metric_id,
+                        MetricBenchmark.caseload_type,
+                        MetricBenchmark.period,
+                    )
+                    .with_entities(
+                        MetricBenchmark.metric_id,
+                        MetricBenchmark.caseload_type,
+                        MetricBenchmark.period,
+                        # Get an array of JSON objects for the metric's targets and thresholds in the selected periods
+                        func.array_agg(
+                            aggregate_order_by(
+                                func.jsonb_build_object(
+                                    "end_date",
+                                    MetricBenchmark.end_date,
+                                    "target",
+                                    MetricBenchmark.target,
+                                    "threshold",
+                                    MetricBenchmark.threshold,
+                                ),
+                                MetricBenchmark.end_date.desc(),
+                            )
+                        ).label("benchmarks_over_time"),
+                    )
+                    .cte("benchmarks")
                 )
-                .group_by(
-                    SupervisionOfficerOutlierStatus.caseload_type,
-                    SupervisionOfficerOutlierStatus.metric_id,
-                    SupervisionOfficerOutlierStatus.period,
-                    SupervisionOfficerOutlierStatus.status,
-                )
-                .with_entities(
-                    SupervisionOfficerOutlierStatus.caseload_type,
-                    SupervisionOfficerOutlierStatus.metric_id,
-                    SupervisionOfficerOutlierStatus.period,
-                    SupervisionOfficerOutlierStatus.status,
-                    # Aggregate the rates by caseload type, metric, id, and status
-                    func.array_agg(
-                        aggregate_order_by(
-                            SupervisionOfficerOutlierStatus.metric_rate,
-                            SupervisionOfficerOutlierStatus.metric_rate.asc(),
-                        )
-                    ).label("rates"),
-                )
-                .cte("latest_period_rates")
-            )
 
-            # In order to get the aggregated arrays by metric and caseload type in a single row, join on
-            # the latest period CTEs repeatedly, once per status.
-            latest_period_rates_far = aliased(latest_period_rates_cte)
-            latest_period_rates_near = aliased(latest_period_rates_cte)
-            latest_period_rates_met = aliased(latest_period_rates_cte)
+                latest_period_rates_cte = (
+                    session.query(SupervisionOfficerOutlierStatus)
+                    .filter(
+                        SupervisionOfficerOutlierStatus.end_date == end_date,
+                    )
+                    .group_by(
+                        SupervisionOfficerOutlierStatus.caseload_type,
+                        SupervisionOfficerOutlierStatus.metric_id,
+                        SupervisionOfficerOutlierStatus.period,
+                        SupervisionOfficerOutlierStatus.status,
+                    )
+                    .with_entities(
+                        SupervisionOfficerOutlierStatus.caseload_type,
+                        SupervisionOfficerOutlierStatus.metric_id,
+                        SupervisionOfficerOutlierStatus.period,
+                        SupervisionOfficerOutlierStatus.status,
+                        # Aggregate the rates by caseload type, metric, id, and status
+                        func.array_agg(
+                            aggregate_order_by(
+                                SupervisionOfficerOutlierStatus.metric_rate,
+                                SupervisionOfficerOutlierStatus.metric_rate.asc(),
+                            )
+                        ).label("rates"),
+                    )
+                    .cte("latest_period_rates")
+                )
 
-            benchmarks = (
-                session.query(benchmarks_cte)
-                .join(
-                    latest_period_rates_far,
-                    and_(
-                        benchmarks_cte.c.caseload_type
-                        == latest_period_rates_far.c.caseload_type,
-                        benchmarks_cte.c.metric_id
-                        == latest_period_rates_far.c.metric_id,
-                        benchmarks_cte.c.period == latest_period_rates_far.c.period,
-                        latest_period_rates_far.c.status == "FAR",
-                    ),
-                    isouter=True,
+                # In order to get the aggregated arrays by metric and caseload type in a single row, join on
+                # the latest period CTEs repeatedly, once per status.
+                latest_period_rates_far = aliased(latest_period_rates_cte)
+                latest_period_rates_near = aliased(latest_period_rates_cte)
+                latest_period_rates_met = aliased(latest_period_rates_cte)
+
+                return (
+                    session.query(benchmarks_cte)
+                    .join(
+                        latest_period_rates_far,
+                        and_(
+                            benchmarks_cte.c.caseload_type
+                            == latest_period_rates_far.c.caseload_type,
+                            benchmarks_cte.c.metric_id
+                            == latest_period_rates_far.c.metric_id,
+                            benchmarks_cte.c.period == latest_period_rates_far.c.period,
+                            latest_period_rates_far.c.status == "FAR",
+                        ),
+                        isouter=True,
+                    )
+                    .join(
+                        latest_period_rates_near,
+                        and_(
+                            benchmarks_cte.c.caseload_type
+                            == latest_period_rates_near.c.caseload_type,
+                            benchmarks_cte.c.metric_id
+                            == latest_period_rates_near.c.metric_id,
+                            benchmarks_cte.c.period
+                            == latest_period_rates_near.c.period,
+                            latest_period_rates_near.c.status == "NEAR",
+                        ),
+                        isouter=True,
+                    )
+                    .join(
+                        latest_period_rates_met,
+                        and_(
+                            benchmarks_cte.c.caseload_type
+                            == latest_period_rates_met.c.caseload_type,
+                            benchmarks_cte.c.metric_id
+                            == latest_period_rates_met.c.metric_id,
+                            benchmarks_cte.c.period == latest_period_rates_met.c.period,
+                            latest_period_rates_met.c.status == "MET",
+                        ),
+                        isouter=True,
+                    )
+                    .with_entities(
+                        benchmarks_cte.c.caseload_type,
+                        benchmarks_cte.c.metric_id,
+                        benchmarks_cte.c.benchmarks_over_time,
+                        func.coalesce(latest_period_rates_far.c.rates, []).label("far"),
+                        func.coalesce(latest_period_rates_near.c.rates, []).label(
+                            "near"
+                        ),
+                        func.coalesce(latest_period_rates_met.c.rates, []).label("met"),
+                    )
                 )
-                .join(
-                    latest_period_rates_near,
-                    and_(
-                        benchmarks_cte.c.caseload_type
-                        == latest_period_rates_near.c.caseload_type,
-                        benchmarks_cte.c.metric_id
-                        == latest_period_rates_near.c.metric_id,
-                        benchmarks_cte.c.period == latest_period_rates_near.c.period,
-                        latest_period_rates_near.c.status == "NEAR",
-                    ),
-                    isouter=True,
-                )
-                .join(
-                    latest_period_rates_met,
-                    and_(
-                        benchmarks_cte.c.caseload_type
-                        == latest_period_rates_met.c.caseload_type,
-                        benchmarks_cte.c.metric_id
-                        == latest_period_rates_met.c.metric_id,
-                        benchmarks_cte.c.period == latest_period_rates_met.c.period,
-                        latest_period_rates_met.c.status == "MET",
-                    ),
-                    isouter=True,
-                )
-                .with_entities(
-                    benchmarks_cte.c.caseload_type,
-                    benchmarks_cte.c.metric_id,
-                    benchmarks_cte.c.benchmarks_over_time,
-                    func.coalesce(latest_period_rates_far.c.rates, []).label("far"),
-                    func.coalesce(latest_period_rates_near.c.rates, []).label("near"),
-                    func.coalesce(latest_period_rates_met.c.rates, []).label("met"),
-                )
-                .all()
-            )
+
+            # TODO(#31818): remove this try/except
+            try:
+                benchmarks = get_benchmarks_query(include_caseload_type=True).all()
+            except ProgrammingError:
+                session.rollback()
+                benchmarks = get_benchmarks_query(include_caseload_type=False).all()
 
             return [
                 {
@@ -937,7 +991,7 @@ class OutliersQuerier:
 
             earliest_end_date = end_date - relativedelta(months=num_lookback_periods)
 
-            avgs_subquery = (
+            avgs_subquery_with_caseload_type = (
                 session.query(
                     SupervisionOfficerMetric.officer_id,
                     func.array_agg(
@@ -957,27 +1011,72 @@ class OutliersQuerier:
                 .subquery()
             )
 
-            officer_status_query = (
-                session.query(SupervisionOfficer)
-                .join(
-                    avgs_subquery,
-                    avgs_subquery.c.officer_id == SupervisionOfficer.external_id,
+            avgs_subquery_without_caseload_type = (
+                session.query(
+                    SupervisionOfficerMetric.officer_id,
+                    func.array_agg(
+                        aggregate_order_by(
+                            SupervisionOfficerMetric.metric_value,
+                            SupervisionOfficerMetric.end_date.desc(),
+                        )
+                    )[1].label("avg_daily_population"),
                 )
-                .join(
-                    SupervisionOfficerOutlierStatus,
-                    SupervisionOfficer.external_id
-                    == SupervisionOfficerOutlierStatus.officer_id,
+                .filter(SupervisionOfficerMetric.metric_id == "avg_daily_population")
+                .group_by(SupervisionOfficerMetric.officer_id)
+                .subquery()
+            )
+
+            def get_officer_status_query(include_caseload_type: bool) -> Query:
+                avgs_subquery = (
+                    avgs_subquery_with_caseload_type
+                    if include_caseload_type
+                    else avgs_subquery_without_caseload_type
                 )
-                .filter(
-                    # Get the statuses for all periods between requested or latest end_date and earliest end date
-                    SupervisionOfficerOutlierStatus.end_date.between(
-                        earliest_end_date, end_date
-                    ),
-                    # TODO(#31552): Return metrics for a configured category
-                    SupervisionOfficerOutlierStatus.category_type
-                    == InsightsCaseloadCategoryType.ALL.value,
-                )
-                .group_by(
+                if include_caseload_type:
+                    officer_query_part = (
+                        session.query(SupervisionOfficer)
+                        .join(
+                            avgs_subquery,
+                            avgs_subquery.c.officer_id
+                            == SupervisionOfficer.external_id,
+                        )
+                        .join(
+                            SupervisionOfficerOutlierStatus,
+                            SupervisionOfficer.external_id
+                            == SupervisionOfficerOutlierStatus.officer_id,
+                        )
+                        .filter(
+                            # Get the statuses for all periods between requested or latest end_date and earliest end date
+                            SupervisionOfficerOutlierStatus.end_date.between(
+                                earliest_end_date, end_date
+                            ),
+                            # TODO(#31552): Return metrics for a configured category
+                            SupervisionOfficerOutlierStatus.category_type
+                            == InsightsCaseloadCategoryType.ALL.value,
+                        )
+                    )
+                else:
+                    officer_query_part = (
+                        session.query(SupervisionOfficer)
+                        .join(
+                            avgs_subquery_without_caseload_type,
+                            avgs_subquery_without_caseload_type.c.officer_id
+                            == SupervisionOfficer.external_id,
+                        )
+                        .join(
+                            SupervisionOfficerOutlierStatus,
+                            SupervisionOfficer.external_id
+                            == SupervisionOfficerOutlierStatus.officer_id,
+                        )
+                        .filter(
+                            # Get the statuses for all periods between requested or latest end_date and earliest end date
+                            SupervisionOfficerOutlierStatus.end_date.between(
+                                earliest_end_date, end_date
+                            ),
+                        )
+                    )
+
+                return officer_query_part.group_by(
                     SupervisionOfficer.external_id,
                     SupervisionOfficer.full_name,
                     SupervisionOfficer.pseudonymized_id,
@@ -987,8 +1086,7 @@ class OutliersQuerier:
                     SupervisionOfficer.specialized_caseload_type,
                     SupervisionOfficerOutlierStatus.metric_id,
                     avgs_subquery.c.avg_daily_population,
-                )
-                .with_entities(
+                ).with_entities(
                     SupervisionOfficer.external_id,
                     SupervisionOfficer.full_name,
                     SupervisionOfficer.pseudonymized_id,
@@ -1027,23 +1125,47 @@ class OutliersQuerier:
                     ).label("is_top_x_pct_over_time"),
                     avgs_subquery.c.avg_daily_population,
                 )
-            )
 
-            if officer_external_id:
-                # If the officer external id is specified, filter by the officer external id.
-                officer_status_query = officer_status_query.filter(
-                    SupervisionOfficer.external_id == officer_external_id
+            # TODO(#31818): remove this try/except
+            try:
+                officer_status_query = get_officer_status_query(
+                    include_caseload_type=True
                 )
-
-            if supervisor_external_id:
-                # If the supervisor external id is specified, filter by the supervisor external id.
-                officer_status_query = officer_status_query.filter(
-                    SupervisionOfficer.supervisor_external_ids.any(
-                        supervisor_external_id
+                if officer_external_id:
+                    # If the officer external id is specified, filter by the officer external id.
+                    officer_status_query = officer_status_query.filter(
+                        SupervisionOfficer.external_id == officer_external_id
                     )
-                )
 
-            officer_status_records = officer_status_query.all()
+                if supervisor_external_id:
+                    # If the supervisor external id is specified, filter by the supervisor external id.
+                    officer_status_query = officer_status_query.filter(
+                        SupervisionOfficer.supervisor_external_ids.any(
+                            supervisor_external_id
+                        )
+                    )
+
+                officer_status_records = officer_status_query.all()
+            except ProgrammingError:
+                session.rollback()
+                officer_status_query = get_officer_status_query(
+                    include_caseload_type=False
+                )
+                if officer_external_id:
+                    # If the officer external id is specified, filter by the officer external id.
+                    officer_status_query = officer_status_query.filter(
+                        SupervisionOfficer.external_id == officer_external_id
+                    )
+
+                if supervisor_external_id:
+                    # If the supervisor external id is specified, filter by the supervisor external id.
+                    officer_status_query = officer_status_query.filter(
+                        SupervisionOfficer.supervisor_external_ids.any(
+                            supervisor_external_id
+                        )
+                    )
+
+                officer_status_records = officer_status_query.all()
 
             officer_external_id_to_entity: Dict[str, SupervisionOfficerEntity] = {}
 
