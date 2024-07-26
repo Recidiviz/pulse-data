@@ -1642,7 +1642,9 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         response = self.test_client.patch(
             "/outliers/US_PA/user-info/hashhash",
             headers={"Origin": "http://localhost:3000"},
-            json={"hasSeenOnboarding": True},
+            json={
+                "hasSeenOnboarding": True,
+            },
         )
 
         self.assertEqual(response.status_code, HTTPStatus.OK)
@@ -1732,6 +1734,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         self,
         mock_enabled_states: MagicMock,
     ) -> None:
+        self.maxDiff = None
         self.mock_authorization_handler.side_effect = self.auth_side_effect(
             state_code="us_pa", external_id="101", pseudonymized_id="hashhash"
         )
@@ -1747,7 +1750,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         self.assertEqual(
             response.json,
             {
-                "message": "Invalid request body. Expected keys: ['hasSeenOnboarding']. Found keys: []",
+                "message": "Invalid request body. Expected keys: ['hasDismissedDataUnavailableNote', 'hasDismissedRateOver100PercentNote', 'hasSeenOnboarding']. Found keys: []",
             },
         )
 
@@ -1773,7 +1776,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         self.assertEqual(
             response.json,
             {
-                "message": "Invalid request body. Expected keys: ['hasSeenOnboarding']. Found keys: ['notARealKey']",
+                "message": "Invalid request body. Expected keys: ['hasDismissedDataUnavailableNote', 'hasDismissedRateOver100PercentNote', 'hasSeenOnboarding']. Found keys: ['notARealKey']",
             },
         )
 

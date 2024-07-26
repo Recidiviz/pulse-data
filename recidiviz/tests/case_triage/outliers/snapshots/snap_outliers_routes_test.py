@@ -1,9 +1,8 @@
-"""	
-Snapshots for recidiviz/tests/case_triage/outliers/outliers_routes_test.py	
-Update snapshots automatically by running `pytest recidiviz/tests/case_triage/outliers/outliers_routes_test.py --snapshot-update	
-Remember to include a docstring like this after updating the snapshots for Pylint purposes	
+"""    
+Snapshots for recidiviz/tests/case_triage/outliers/outliers_routes_test.py    
+Update snapshots automatically by running `pytest recidiviz/tests/case_triage/outliers/outliers_routes_test.py --snapshot-update    
+Remember to include a docstring like this after updating the snapshots for Pylint purposes    
 """
-
 # -*- coding: utf-8 -*-
 # snapshottest: v1 - https://goo.gl/zC4yUc
 from __future__ import unicode_literals
@@ -373,11 +372,11 @@ snapshots[
     "TestOutliersRoutes.TestOutliersRoutes test_get_state_configuration_success"
 ] = {
     "config": {
+        "absconderLabel": "absconder",
         "atOrAboveRateLabel": "label3",
         "atOrBelowRateLabel": "At or below statewide rate",
         "clientEvents": [{"displayName": "Sanctions", "name": "violation_responses"}],
         "docLabel": "DOC",
-        "absconderLabel": "absconder",
         "exclusionReasonDescription": "description",
         "featureVariant": None,
         "learnMoreUrl": "https://recidiviz.org",
@@ -409,18 +408,18 @@ Incarceration rate denominator description""",
             },
         ],
         "noneAreOutliersLabel": "label1",
+        "officerHasNoEligibleClientsLabel": "Nice! No outstanding opportunities for now.",
+        "officerHasNoOutlierMetricsLabel": "Nice! No outlying metrics this month.",
         "outliersHover": "Has a rate on any metric significantly higher than peers - over 1 Interquartile Range above the statewide rate.",
         "slightlyWorseThanRateLabel": "Slightly worse than statewide rate",
         "supervisionDistrictLabel": "district",
         "supervisionDistrictManagerLabel": "district manager",
         "supervisionJiiLabel": "client",
-        "supervisorHasNoOutlierOfficersLabel": "Nice! No officers are outliers on any metrics this month.",
-        "officerHasNoOutlierMetricsLabel": "Nice! No outlying metrics this month.",
-        "supervisorHasNoOfficersWithEligibleClientsLabel": "Nice! No outstanding opportunities for now.",
-        "officerHasNoEligibleClientsLabel": "Nice! No outstanding opportunities for now.",
         "supervisionOfficerLabel": "officer",
         "supervisionSupervisorLabel": "supervisor",
         "supervisionUnitLabel": "unit",
+        "supervisorHasNoOfficersWithEligibleClientsLabel": "Nice! No outstanding opportunities for now.",
+        "supervisorHasNoOutlierOfficersLabel": "Nice! No officers are outliers on any metrics this month.",
         "updatedAt": "Mon, 01 Jan 2024 00:00:00 GMT",
         "updatedBy": "alexa@recidiviz.org",
         "worseThanRateLabel": "label2",
@@ -461,6 +460,8 @@ snapshots[
         "pseudonymizedId": "hashhash",
         "supervisionDistrict": "2",
     },
+    "hasDismissedDataUnavailableNote": False,
+    "hasDismissedRateOver100PercentNote": False,
     "hasSeenOnboarding": True,
     "role": "supervision_officer_supervisor",
 }
@@ -479,6 +480,8 @@ snapshots["TestOutliersRoutes.TestOutliersRoutes test_user_info_for_recidiviz_us
         "pseudonymizedId": "hashhash",
         "supervisionDistrict": "2",
     },
+    "hasDismissedDataUnavailableNote": False,
+    "hasDismissedRateOver100PercentNote": False,
     "hasSeenOnboarding": False,
     "role": "supervision_officer_supervisor",
 }
@@ -499,6 +502,8 @@ snapshots[
         "pseudonymizedId": "hashhash",
         "supervisionDistrict": "2",
     },
+    "hasDismissedDataUnavailableNote": False,
+    "hasDismissedRateOver100PercentNote": False,
     "hasSeenOnboarding": False,
     "role": "supervision_officer_supervisor",
 }

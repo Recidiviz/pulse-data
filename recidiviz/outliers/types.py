@@ -405,6 +405,8 @@ class UserInfo:
     entity: Optional[SupervisionOfficerSupervisorEntity] = attr.ib()
     role: Optional[str] = attr.ib()
     has_seen_onboarding: bool = attr.ib()
+    has_dismissed_data_unavailable_note: bool = attr.ib()
+    has_dismissed_rate_over_100_percent_note: bool = attr.ib()
 
     def to_json(self) -> Dict[str, Any]:
         return cattrs.unstructure(self)
