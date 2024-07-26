@@ -504,11 +504,23 @@ state_supervision_violation_response_deciding_body_type_supervision_officer = (
 )
 
 # state_program_assignment.py
+state_program_assignment_participation_status_deceased = "DECEASED"
 state_program_assignment_participation_status_denied = "DENIED"
-state_program_assignment_participation_status_discharged = "DISCHARGED"
+state_program_assignment_participation_status_discharged_successful = (
+    "DISCHARGED_SUCCESSFUL"
+)
+state_program_assignment_participation_status_discharged_successful_with_discretion = (
+    "DISCHARGED_SUCCESSFUL_WITH_DISCRETION"
+)
+state_program_assignment_participation_status_discharged_unsuccessful = (
+    "DISCHARGED_UNSUCCESSFUL"
+)
+state_program_assignment_participation_status_discharged_other = "DISCHARGED_OTHER"
+state_program_assignment_participation_status_discharged_unknown = "DISCHARGED_UNKNOWN"
 state_program_assignment_participation_status_in_progress = "IN_PROGRESS"
 state_program_assignment_participation_status_pending = "PENDING"
 state_program_assignment_participation_status_refused = "REFUSED"
+state_program_assignment_participation_status_discharged = "DISCHARGED"
 
 
 # state_specialized_purpose_for_incarceration

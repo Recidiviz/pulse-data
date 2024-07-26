@@ -614,13 +614,19 @@ state_supervision_violation_response_deciding_body_type = Enum(
 
 state_program_assignment_participation_status = Enum(
     state_enum_strings.present_without_info,
+    state_enum_strings.state_program_assignment_participation_status_deceased,
     state_enum_strings.state_program_assignment_participation_status_denied,
-    state_enum_strings.state_program_assignment_participation_status_discharged,
+    state_enum_strings.state_program_assignment_participation_status_discharged_successful,
+    state_enum_strings.state_program_assignment_participation_status_discharged_successful_with_discretion,
+    state_enum_strings.state_program_assignment_participation_status_discharged_unsuccessful,
+    state_enum_strings.state_program_assignment_participation_status_discharged_other,
+    state_enum_strings.state_program_assignment_participation_status_discharged_unknown,
     state_enum_strings.state_program_assignment_participation_status_in_progress,
     state_enum_strings.state_program_assignment_participation_status_pending,
     state_enum_strings.state_program_assignment_participation_status_refused,
     state_enum_strings.internal_unknown,
     state_enum_strings.external_unknown,
+    state_enum_strings.state_program_assignment_participation_status_discharged,
     name="state_program_assignment_participation_status",
 )
 
