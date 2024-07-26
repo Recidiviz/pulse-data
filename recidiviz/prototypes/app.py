@@ -15,7 +15,13 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Prototype endpoints."""
-from quart import Quart, Response, jsonify, request
+import re
+from http import HTTPStatus
+from typing import Optional, Union
+
+from quart import Quart, Response, jsonify, make_response, request
+from werkzeug.http import parse_set_header
+from werkzeug.wrappers import Response as WerkzeugResponse
 
 from recidiviz.case_triage.authorization_utils import build_authorization_handler
 from recidiviz.prototypes.case_note_search.case_note_authorization import (
@@ -23,11 +29,25 @@ from recidiviz.prototypes.case_note_search.case_note_authorization import (
 )
 from recidiviz.prototypes.case_note_search.case_note_search import case_note_search
 
+ALLOWED_ORIGINS = [
+    r"http\://localhost:3000",
+    r"http\://localhost:5000",
+    r"https\://dashboard-staging\.recidiviz\.org$",
+    r"https\://dashboard-demo\.recidiviz\.org$",
+    r"https\://dashboard\.recidiviz\.org$",
+    r"https\://recidiviz-dashboard-stag-e1108--[^.]+?\.web\.app$",
+    r"https\://recidiviz-dashboard--[^.]+?\.web\.app$",
+]
+
 app = Quart(__name__)
 
 
 @app.before_request
 async def validate_authentication() -> None:
+    # OPTIONS requests do not require authentication
+    if request.method == "OPTIONS":
+        return
+
     # Bypass authentication for health check endpoint.
     if request.path == "/health":
         return
@@ -38,6 +58,36 @@ async def validate_authentication() -> None:
         auth_header=request.headers.get("Authorization", None),
     )
     handle_authorization()
+
+
+@app.before_request
+async def validate_cors() -> Optional[Union[Response, WerkzeugResponse]]:
+    origin_is_allowed = any(
+        re.match(allowed_origin, request.origin) for allowed_origin in ALLOWED_ORIGINS
+    )
+
+    if not origin_is_allowed:
+        response = await make_response()
+        response.status_code = HTTPStatus.FORBIDDEN
+        return response
+
+    return None
+
+
+@app.after_request
+async def add_cors_headers(
+    response: Response,
+) -> Response:
+    # Don't cache access control headers across origins
+    response.vary = "Origin"
+    response.access_control_allow_origin = request.origin
+    response.access_control_allow_headers = parse_set_header(
+        "authorization, sentry-trace, baggage, content-type"
+    )
+    response.access_control_allow_methods = parse_set_header("GET, PATCH")
+    # Cache preflight responses for 2 hours
+    response.access_control_max_age = 2 * 60 * 60
+    return response
 
 
 @app.route("/search", methods=["GET"])
