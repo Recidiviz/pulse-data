@@ -81,6 +81,17 @@ class TestIngestRawFileImportControllerFactory(unittest.TestCase):
         self.storage_client_patcher = patch("google.cloud.storage.Client")
         self.task_client_patcher = patch("google.cloud.tasks_v2.CloudTasksClient")
 
+        self.raw_data_dag_patchers = [
+            patch(path, Mock(return_value=False))
+            for path in [
+                f"{CONTROLLER_FACTORY_PACKAGE_NAME}.is_raw_data_import_dag_enabled",
+                "recidiviz.ingest.direct.controllers.ingest_raw_file_import_controller.is_raw_data_import_dag_enabled",
+            ]
+        ]
+        self.raw_data_dag_enabled_mock = [
+            patcher.start() for patcher in self.raw_data_dag_patchers
+        ]
+
         def mock_build_fs() -> FakeGCSFileSystem:
             return FakeGCSFileSystem()
 
@@ -101,6 +112,8 @@ class TestIngestRawFileImportControllerFactory(unittest.TestCase):
                 ).add_initial_status()
 
     def tearDown(self) -> None:
+        for patcher in self.raw_data_dag_patchers:
+            patcher.stop()
         self.project_id_patcher.stop()
         self.bq_client_patcher.stop()
         self.storage_client_patcher.stop()
@@ -238,14 +251,13 @@ class TestIngestRawFileImportControllerFactory(unittest.TestCase):
             )
 
     @patch(
-        f"{CONTROLLER_FACTORY_PACKAGE_NAME}.is_raw_data_import_dag_enabled",
-        Mock(return_value=True),
-    )
-    @patch(
         f"{CONTROLLER_FACTORY_PACKAGE_NAME}.get_direct_ingest_states_existing_in_env",
         Mock(return_value=[StateCode.US_XX]),
     )
-    def test_build_for_raw_data_dag_enabld(self) -> None:
+    def test_build_for_raw_data_dag_enabled(self) -> None:
+        for mocked in self.raw_data_dag_enabled_mock:
+            mocked.return_value = True
+
         with self.assertRaisesRegex(
             DirectIngestGatingError,
             r"^IngestRawFileImportControllerFactory for region \[US_XX\] and instance \[PRIMARY\] should not need to be called once raw data import DAG is active$",
