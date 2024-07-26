@@ -38,9 +38,15 @@ output:
             $enum_mapping:
               $raw_text: JOBPGMASSIGNMENTSTATUS
               $mappings:
-                StateProgramAssignmentParticipationStatus.DISCHARGED:
+                StateProgramAssignmentParticipationStatus.DISCHARGED_SUCCESSFUL:
                   - CMP # Completed
+                StateProgramAssignmentParticipationStatus.DISCHARGED_UNSUCCESSFUL:
                   - REL # Released
+                  - DRP # Dropped
+                StateProgramAssignmentParticipationStatus.DISCHARGED_OTHER:
+                  - HH # Hearing Held
+                  - REA # Re-Assigned
+                  - TRN # Transferred
                 StateProgramAssignmentParticipationStatus.IN_PROGRESS:
                   - ASG # Assigned (Permanent)
                   - EXT # Assigned (Extended)
@@ -48,11 +54,7 @@ output:
                   - TMP # Assigned (Temporary)
                 StateProgramAssignmentParticipationStatus.PENDING:
                   - PND # Pending Approval
-                StateProgramAssignmentParticipationStatus.INTERNAL_UNKNOWN:
-                  - DRP # Dropped
-                  - HH # Hearing Held
-                  - REA # Re-Assigned
-                  - TRN # Transferred
+                StateProgramAssignmentParticipationStatus.REFUSED:
                   - WTH # Withdrew
           start_date:
             $conditional:
