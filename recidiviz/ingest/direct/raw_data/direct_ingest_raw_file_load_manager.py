@@ -380,6 +380,29 @@ class DirectIngestRawFileLoadManager:
             )
             raise e
 
+    def _ensure_no_conflicting_rows_in_bigquery(
+        self, raw_data_table: BigQueryAddress, file_id: int
+    ) -> None:
+        """Delete any rows that have already been uploaded with this file_id.
+        These rows shouldn't exist and if they do that is indicative of some underlying
+        error. To prevent against duplicates, however, we will run the deletion query
+        just in case.
+        """
+
+        delete_job = self.big_query_client.delete_from_table_async(
+            dataset_id=raw_data_table.dataset_id,
+            table_id=raw_data_table.table_id,
+            filter_clause="WHERE file_id = " + str(file_id),
+        )
+        result = delete_job.result()
+        if result.num_dml_affected_rows:
+            logging.error(
+                "Found [%s] already existing rows with file id [%s] in [%s]",
+                result.num_dml_affected_rows,
+                file_id,
+                raw_data_table.to_str(),
+            )
+
     def _clean_up_temp_tables(self, *addresses: BigQueryAddress) -> None:
         for address in addresses:
             try:
@@ -436,6 +459,8 @@ class DirectIngestRawFileLoadManager:
                 append_source_table = temp_raw_data_diff_table_address
             else:
                 append_source_table = append_ready_file.append_ready_table_address
+
+            self._ensure_no_conflicting_rows_in_bigquery(raw_data_table, file.file_id)
 
             self._append_data_to_raw_table(
                 source_table=append_source_table, destination_table=raw_data_table
