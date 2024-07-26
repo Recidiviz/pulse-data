@@ -104,7 +104,12 @@ def get_highlight_percentile_value_query() -> str:
         {metric.top_x_pct if metric.top_x_pct else 'NULL'} AS top_x_pct,
         APPROX_QUANTILES(metric_value, 100)[OFFSET({percentile})] AS top_x_pct_percentile_value
     FROM `{{project_id}}.{{outliers_views_dataset}}.supervision_officer_metrics_materialized`
-    WHERE value_type = 'RATE' AND period = 'YEAR' AND metric_id = '{metric.name}' AND state_code = '{state_code}'
+    WHERE
+        value_type = 'RATE'
+        AND period = 'YEAR'
+        AND metric_id = '{metric.name}'
+        AND state_code = '{state_code}'
+        AND category_type = 'ALL' -- highlights are done statewide for now
     GROUP BY 1, 2, 3
 """
             )

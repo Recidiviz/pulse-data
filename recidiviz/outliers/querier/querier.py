@@ -294,6 +294,9 @@ class OutliersQuerier:
                 SupervisionOfficerOutlierStatus.metric_id == metric.name,
                 SupervisionOfficerOutlierStatus.end_date.in_([end_date, prev_end_date]),
                 SupervisionOfficerOutlierStatus.period == MetricTimePeriod.YEAR.value,
+                # TODO(#31552): Return metrics for a configured category
+                SupervisionOfficerOutlierStatus.category_type
+                == InsightsCaseloadCategoryType.ALL.value,
             )
             .with_entities(
                 SupervisionOfficerOutlierStatus.officer_id,
@@ -944,7 +947,12 @@ class OutliersQuerier:
                         )
                     )[1].label("avg_daily_population"),
                 )
-                .filter(SupervisionOfficerMetric.metric_id == "avg_daily_population")
+                .filter(
+                    SupervisionOfficerMetric.metric_id == "avg_daily_population",
+                    # TODO(#31552): Return metrics for a configured category
+                    SupervisionOfficerMetric.category_type
+                    == InsightsCaseloadCategoryType.ALL.value,
+                )
                 .group_by(SupervisionOfficerMetric.officer_id)
                 .subquery()
             )
@@ -965,6 +973,9 @@ class OutliersQuerier:
                     SupervisionOfficerOutlierStatus.end_date.between(
                         earliest_end_date, end_date
                     ),
+                    # TODO(#31552): Return metrics for a configured category
+                    SupervisionOfficerOutlierStatus.category_type
+                    == InsightsCaseloadCategoryType.ALL.value,
                 )
                 .group_by(
                     SupervisionOfficer.external_id,

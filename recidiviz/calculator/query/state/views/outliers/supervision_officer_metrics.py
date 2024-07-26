@@ -19,6 +19,9 @@ from recidiviz.big_query.selected_columns_big_query_view import (
     SelectedColumnsBigQueryViewBuilder,
 )
 from recidiviz.calculator.query.state import dataset_config
+from recidiviz.calculator.query.state.views.analyst_data.insights_caseload_category_sessions import (
+    InsightsCaseloadCategoryType,
+)
 from recidiviz.calculator.query.state.views.analyst_data.models.metric_unit_of_analysis_type import (
     METRIC_UNITS_OF_ANALYSIS_BY_TYPE,
     MetricUnitOfAnalysisType,
@@ -39,6 +42,47 @@ _DESCRIPTION = (
 )
 
 
+def _get_caseload_category_criteria_for_comparison(
+    category_type: InsightsCaseloadCategoryType,
+) -> str:
+    if category_type == InsightsCaseloadCategoryType.SEX_OFFENSE_BINARY:
+        # For this category type, we want to compare officers who had the SEX_OFFENSE category
+        # for the entirety of the comparison period against other officers who had the SEX_OFFENSE
+        # category for the entirety of the comparison period, and all others against each other.
+        # To determine this, check that the amount of time they spent with the SEX_OFFENSE category
+        # is the same as the amount of time they spent with the ALL category, that way if someone
+        # only spent part of the year with a caseload at all, they still count as having the
+        # SEX_OFFENSE type.
+        # Note: another option would be to check that the not_sex_offense version = 0, but this
+        # option felt more intuitive / avoids the double negative.
+        return """IF(avg_num_supervision_officers_insights_sex_offense_binary_category_type_sex_offense
+            = avg_num_supervision_officers_insights_all_category_type_all, "SEX_OFFENSE", "NOT_SEX_OFFENSE")
+"""
+    if category_type == InsightsCaseloadCategoryType.ALL:
+        return '"ALL"'
+    raise TypeError(
+        f"Caseload categorization has not been configured for {category_type.name} category type."
+    )
+
+
+_OFFICER_CASELOAD_CATEGORIES_CTE = "\n    UNION ALL\n".join(
+    [
+        f"""
+    SELECT
+        state_code,
+        officer_id,
+        end_date,
+        period,
+        "{category_type.name}" AS category_type,
+        {_get_caseload_category_criteria_for_comparison(category_type)} AS caseload_category,
+    FROM
+        `{{project_id}}.aggregated_metrics.supervision_officer_aggregated_metrics_materialized`
+"""
+        for category_type in InsightsCaseloadCategoryType
+    ]
+)
+
+
 _QUERY_TEMPLATE = f"""
 WITH 
 filtered_supervision_officer_aggregated_metrics AS (
@@ -46,11 +90,16 @@ filtered_supervision_officer_aggregated_metrics AS (
 ),
 supervision_officer_metrics AS (
     {supervision_metric_query_template(unit_of_analysis=METRIC_UNITS_OF_ANALYSIS_BY_TYPE[MetricUnitOfAnalysisType.SUPERVISION_OFFICER], cte_source="filtered_supervision_officer_aggregated_metrics")}
+),
+officer_caseload_categories AS (
+    {_OFFICER_CASELOAD_CATEGORIES_CTE}
 )
 
 SELECT 
     {{columns}}
 FROM supervision_officer_metrics
+INNER JOIN officer_caseload_categories
+USING (state_code, officer_id, end_date, period)
 """
 
 SUPERVISION_OFFICER_METRICS_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
@@ -67,6 +116,8 @@ SUPERVISION_OFFICER_METRICS_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
         "end_date",
         "officer_id",
         "value_type",
+        "category_type",
+        "caseload_category",
     ],
 )
 
