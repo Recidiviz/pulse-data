@@ -25,9 +25,24 @@ from recidiviz.common.constants.state.state_entity_enum import StateEntityEnum
 
 @unique
 class StateProgramAssignmentParticipationStatus(StateEntityEnum):
+    """The program assignment participation status of a person."""
+
+    DECEASED = state_enum_strings.state_program_assignment_participation_status_deceased
     DENIED = state_enum_strings.state_program_assignment_participation_status_denied
-    DISCHARGED = (
-        state_enum_strings.state_program_assignment_participation_status_discharged
+    DISCHARGED_SUCCESSFUL = (
+        state_enum_strings.state_program_assignment_participation_status_discharged_successful
+    )
+    DISCHARGED_SUCCESSFUL_WITH_DISCRETION = (
+        state_enum_strings.state_program_assignment_participation_status_discharged_successful_with_discretion
+    )
+    DISCHARGED_UNSUCCESSFUL = (
+        state_enum_strings.state_program_assignment_participation_status_discharged_unsuccessful
+    )
+    DISCHARGED_OTHER = (
+        state_enum_strings.state_program_assignment_participation_status_discharged_other
+    )
+    DISCHARGED_UNKNOWN = (
+        state_enum_strings.state_program_assignment_participation_status_discharged_unknown
     )
     IN_PROGRESS = (
         state_enum_strings.state_program_assignment_participation_status_in_progress
@@ -37,6 +52,9 @@ class StateProgramAssignmentParticipationStatus(StateEntityEnum):
     PRESENT_WITHOUT_INFO = state_enum_strings.present_without_info
     INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
     EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
+    DISCHARGED = (
+        state_enum_strings.state_program_assignment_participation_status_discharged
+    )
 
     @classmethod
     def get_enum_description(cls) -> str:
@@ -50,14 +68,29 @@ class StateProgramAssignmentParticipationStatus(StateEntityEnum):
 _STATE_PROGRAM_ASSIGNMENT_PARTICIPATION_VALUE_DESCRIPTIONS: Dict[
     StateEntityEnum, str
 ] = {
+    StateProgramAssignmentParticipationStatus.DECEASED: "Used when the person does not "
+    "complete the program due to being deceased.",
     StateProgramAssignmentParticipationStatus.DENIED: "Used when the referral for the "
     "person to participate in the program has been denied.",
-    StateProgramAssignmentParticipationStatus.DISCHARGED: "Used when a person has been "
-    "discharged from the program.",
+    StateProgramAssignmentParticipationStatus.DISCHARGED_SUCCESSFUL: "Used when a person "
+    "successfully completes the program.",
+    StateProgramAssignmentParticipationStatus.DISCHARGED_SUCCESSFUL_WITH_DISCRETION: "Used when a person has most likely completed the program successfully but it will"
+    "be at the discretion of a person (e.g. a parole officer) to decide. For example, 'Max Benefit' in US_OR.",
+    StateProgramAssignmentParticipationStatus.DISCHARGED_UNSUCCESSFUL: "Used when a person "
+    "fails the program.",
+    StateProgramAssignmentParticipationStatus.DISCHARGED_OTHER: "Used when a person stops"
+    "participating in a program for external circumstances that do not indicate that"
+    "they have either succeeded or failed. For example, if they transfer to a new location"
+    "that doesn't offer the program or the program is discontinued.",
+    StateProgramAssignmentParticipationStatus.DISCHARGED_UNKNOWN: "Used when a person"
+    "has been discharged from the program and we have no information about whether it"
+    "was a successful discharge or not.",
     StateProgramAssignmentParticipationStatus.IN_PROGRESS: "Used when a person is "
     "actively participating in the program.",
     StateProgramAssignmentParticipationStatus.PENDING: "Used when the referral for "
     "the person to participate in the program is pending approval.",
     StateProgramAssignmentParticipationStatus.REFUSED: "Used when the person has "
     "refused to participate in the program.",
+    StateProgramAssignmentParticipationStatus.DISCHARGED: "Used when a person has been discharged"
+    "from a program. DEPRECATED.",
 }
