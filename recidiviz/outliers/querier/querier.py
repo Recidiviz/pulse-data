@@ -1285,19 +1285,18 @@ class OutliersQuerier:
             )
 
     def update_user_metadata(
-        self, pseudonymized_id: str, has_seen_onboarding: bool
+        self,
+        pseudonymized_id: str,
+        request_json: dict,
     ) -> None:
         """Upserts a UserMetadata entity"""
         with self.insights_database_session() as session:
             upsert_stmt = (
                 insert(UserMetadata)
-                .values(
-                    pseudonymized_id=pseudonymized_id,
-                    has_seen_onboarding=has_seen_onboarding,
-                )
+                .values(pseudonymized_id=pseudonymized_id, **request_json)
                 .on_conflict_do_update(
                     index_elements=["pseudonymized_id"],
-                    set_={"has_seen_onboarding": has_seen_onboarding},
+                    set_=request_json,
                 )
             )
             session.execute(upsert_stmt)
@@ -1318,6 +1317,16 @@ class OutliersQuerier:
             role="supervision_officer_supervisor" if supervisor_entity else None,
             has_seen_onboarding=(
                 user_metadata.has_seen_onboarding if user_metadata else False
+            ),
+            has_dismissed_data_unavailable_note=(
+                user_metadata.has_dismissed_data_unavailable_note
+                if user_metadata
+                else False
+            ),
+            has_dismissed_rate_over_100_percent_note=(
+                user_metadata.has_dismissed_rate_over_100_percent_note
+                if user_metadata
+                else False
             ),
         )
 

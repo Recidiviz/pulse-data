@@ -508,18 +508,21 @@ def create_outliers_api_blueprint() -> Blueprint:
         request_json = convert_nested_dictionary_keys(
             assert_type(request.json, dict), to_snake_case
         )
-        expected_keys = {"has_seen_onboarding"}
+
+        expected_keys = {
+            "has_seen_onboarding",
+            "has_dismissed_data_unavailable_note",
+            "has_dismissed_rate_over_100_percent_note",
+        }
         if len(request_json) == 0 or not set(request_json.keys()).issubset(
             expected_keys
         ):
             return jsonify_response(
-                f"Invalid request body. Expected keys: {[snake_to_camel(k) for k in expected_keys]}. Found keys: {[snake_to_camel(k) for k in request_json]}",
+                f"Invalid request body. Expected keys: {[snake_to_camel(k) for k in sorted(expected_keys)]}. Found keys: {[snake_to_camel(k) for k in request_json]}",
                 HTTPStatus.BAD_REQUEST,
             )
 
-        querier.update_user_metadata(
-            pseudonymized_id, has_seen_onboarding=request_json["has_seen_onboarding"]
-        )
+        querier.update_user_metadata(pseudonymized_id, request_json)
 
         # Return updated user info
         user_info = querier.get_user_info(pseudonymized_id)
