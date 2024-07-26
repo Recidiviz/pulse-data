@@ -1,0 +1,43 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+manifest_language: 1.0.0
+input_columns:
+  - OffenderID #external_id
+  - AssessmentID #program_assignment_id
+  - StartDate #start date
+  - EndDate #discharge date
+  - Recommendation #referral metadata
+  - RecommendationDate # referral date
+  - TreatmentTerminatedReason # used in participation status
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: OffenderID
+          id_type: $literal("US_TN_DOC")
+    program_assignments:
+      - StateProgramAssignment:
+          external_id:
+            $concat:
+              $values:
+                - OffenderID
+                - AssessmentID
+          program_id: AssessmentID
+          participation_status:
+            $enum_mapping:
+              $raw_text:
+                $concat:
+                  $separator: "@@"
+                  $values:
+                    - StartDate
+                    - EndDate
+                    - RecommendationDate
+                    - TreatmentTerminatedReason
+                  $include_nulls: True
+              $custom_parser: us_tn_custom_enum_parsers.program_participation_status
+          referral_date: RecommendationDate
+          start_date: StartDate
+          discharge_date: EndDate
+          referral_metadata:
+            $json_dict:
+              Recommendation: Recommendation

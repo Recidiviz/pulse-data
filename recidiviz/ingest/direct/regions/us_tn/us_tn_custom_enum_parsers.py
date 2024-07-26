@@ -22,6 +22,9 @@ my_enum_field:
     $raw_text: MY_CSV_COL
     $custom_parser: us_tn_custom_enum_parsers.<function name>
 """
+from recidiviz.common.constants.state.state_program_assignment import (
+    StateProgramAssignmentParticipationStatus,
+)
 from recidiviz.common.constants.state.state_staff_role_period import (
     StateStaffRoleSubtype,
     StateStaffRoleType,
@@ -86,3 +89,45 @@ def staff_role_subtype_from_staff_title(
         return StateStaffRoleSubtype.SUPERVISION_OFFICER
 
     return StateStaffRoleSubtype.INTERNAL_UNKNOWN
+
+
+def program_participation_status(
+    raw_text: str,
+) -> StateProgramAssignmentParticipationStatus:
+    """
+    DISCHARGED_SUCCCESSFUL: CMP - Completed, SUC - Successful Completion, GED - GED Earned
+    DISCHARGED_UNSUCCESSFUL: PCD - Poor Conduct, UNC - Unsuccessful Completion, RLD - Released
+    DISCHARGED_OTHER: TRH - (Transfer, Revocation Hearing), DSP - Recommended on LIBK/LIBL,
+                    TRN - Transferred, HLT - HEALTH, STR - START TAP RECOMMENDED PROGRAM,
+                    CLC - CUSTODY LEVEL CHANGE
+    DECEASED: DCD - Deceased
+    REFUSED: STM - Self Termination
+    """
+    discharged_successful = {"CMP", "SUC", "GED"}
+    discharged_unsuccessful = {"PCD", "UNC", "RLD"}
+    discharged_other = {"TRH", "DSP", "TRN", "HLT", "STR", "CLC"}
+    deceased = {"DCD"}
+    refused = {"STM"}
+    (
+        start_date,
+        end_date,
+        recommendation_date,
+        treatment_terminated_reason,
+    ) = raw_text.split("@@")
+    if start_date != "NONE" and end_date == "NONE":
+        return StateProgramAssignmentParticipationStatus.IN_PROGRESS
+    if start_date == "NONE" and end_date == "NONE" and recommendation_date != "NONE":
+        return StateProgramAssignmentParticipationStatus.PENDING
+    if start_date == "NONE" and end_date == "NONE" and recommendation_date == "NONE":
+        return StateProgramAssignmentParticipationStatus.PRESENT_WITHOUT_INFO
+    if treatment_terminated_reason in discharged_successful:
+        return StateProgramAssignmentParticipationStatus.DISCHARGED_SUCCESSFUL
+    if treatment_terminated_reason in discharged_unsuccessful:
+        return StateProgramAssignmentParticipationStatus.DISCHARGED_UNSUCCESSFUL
+    if treatment_terminated_reason in discharged_other:
+        return StateProgramAssignmentParticipationStatus.DISCHARGED_OTHER
+    if treatment_terminated_reason in deceased:
+        return StateProgramAssignmentParticipationStatus.DECEASED
+    if treatment_terminated_reason in refused:
+        return StateProgramAssignmentParticipationStatus.REFUSED
+    return StateProgramAssignmentParticipationStatus.INTERNAL_UNKNOWN
