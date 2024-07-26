@@ -35,8 +35,34 @@ output:
             $enum_mapping:
               $raw_text: ENROLLMENT_STATUS_CD
               $mappings:
-                StateProgramAssignmentParticipationStatus.DISCHARGED:
+                StateProgramAssignmentParticipationStatus.DECEASED:
+                  - DEC
+                  - DED
+                StateProgramAssignmentParticipationStatus.DISCHARGED_SUCCESSFUL:
                   - CMP
+                StateProgramAssignmentParticipationStatus.DISCHARGED_UNSUCCESSFUL:
+                  - ADD
+                  - ADM
+                  - CBA
+                  - REL
+                StateProgramAssignmentParticipationStatus.DISCHARGED_OTHER:
+                  - CFS
+                  - CST
+                  - DET
+                  - EDN
+                  - LGL
+                  - MDL
+                  - MED
+                  - MHL
+                  - MNH
+                  - NLO
+                  - NOO
+                  - NST
+                  - PCN
+                  - STF
+                  - TAL
+                  - TRN
+                  - TRT
                 StateProgramAssignmentParticipationStatus.IN_PROGRESS:
                   - ENR
                 StateProgramAssignmentParticipationStatus.PENDING:
@@ -44,6 +70,10 @@ output:
                   - REF
                 StateProgramAssignmentParticipationStatus.DENIED:
                   - CAN
+                  - NEL
+                  - NEP
+                StateProgramAssignmentParticipationStatus.REFUSED:
+                  - EXA
           referral_date: REFERRAL_DT
           start_date: ACTUAL_START_DT
           discharge_date: ACTUAL_EXIT_DT
