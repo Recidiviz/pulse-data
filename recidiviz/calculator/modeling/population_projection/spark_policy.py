@@ -78,7 +78,7 @@ class SparkPolicy:
 
     @staticmethod
     def _build_policy_function(
-        policy_fn: Callable[[Any], Optional[pd.DataFrame]],
+        policy_fn: Callable,
         apply_retroactive: bool,
         alternate_transitions_data: pd.DataFrame,
     ) -> Callable:
