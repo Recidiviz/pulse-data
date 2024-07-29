@@ -52,6 +52,10 @@ export const EditUserForm = ({
   const [roles, setRoles] = useState([] as string[]);
   const [districts, setDistricts] = useState([] as string[]);
 
+  const selectedEmails = selectedUsers.map((u) => u.emailAddress);
+
+  const singleUserEdit = selectedEmails.length === 1;
+
   useEffect(() => {
     const stateCodesForUsers = selectedUsers
       .map((u) => u.stateCode)
@@ -65,7 +69,17 @@ export const EditUserForm = ({
     // Determine districts available for selected user(s)
     const districtsForState = getStateDistricts(stateCodesForUsers, userData);
     if (districtsForState) setDistricts(districtsForState);
-  }, [userData, selectedUsers, stateRoleData]);
+
+    // Make sure initial values are updated when modal is opened when editing a single user
+    if (editVisible && singleUserEdit) form.setFieldsValue(selectedUsers[0]);
+  }, [
+    userData,
+    selectedUsers,
+    stateRoleData,
+    form,
+    editVisible,
+    singleUserEdit,
+  ]);
 
   // control useCustomPermissions
   const [hidePermissions, setHidePermissions] = useState(true);
@@ -99,10 +113,6 @@ export const EditUserForm = ({
       handleRevokeAccess();
       resolve(null);
     });
-
-  const selectedEmails = selectedUsers.map((u) => u.emailAddress);
-
-  const singleUserEdit = selectedEmails.length === 1;
 
   return (
     <DraggableModal
@@ -140,17 +150,23 @@ export const EditUserForm = ({
       <Form form={form} layout="horizontal" onFinish={editOnCreate}>
         <ReasonInput label="Reason for modification" />
         <hr />
-        <Form.Item name="role" label="Role" labelCol={{ span: 5 }}>
+        <Form.Item
+          name="roles"
+          label="Roles"
+          labelCol={{ span: 5 }}
+          rules={[
+            {
+              required: singleUserEdit,
+              message: "Please input at least one role.",
+            },
+          ]}
+        >
           <Select
+            mode="multiple"
             options={roles.map((r) => {
               return { value: r, label: r };
             })}
             disabled={roles.length === 0 || stateCodes.length > 1}
-            placeholder={
-              singleUserEdit && selectedUsers[0].roles
-                ? selectedUsers[0].roles.join(", ")
-                : undefined
-            }
           />
         </Form.Item>
         <Form.Item name="externalId" label="External ID" labelCol={{ span: 5 }}>
@@ -176,18 +192,10 @@ export const EditUserForm = ({
           />
         </Form.Item>
         <Form.Item name="firstName" label="First Name" labelCol={{ span: 5 }}>
-          <Input
-            disabled={!singleUserEdit}
-            placeholder={
-              singleUserEdit ? selectedUsers[0].firstName : undefined
-            }
-          />
+          <Input disabled={!singleUserEdit} />
         </Form.Item>
         <Form.Item name="lastName" label="Last Name" labelCol={{ span: 5 }}>
-          <Input
-            disabled={!singleUserEdit}
-            placeholder={singleUserEdit ? selectedUsers[0].lastName : undefined}
-          />
+          <Input disabled={!singleUserEdit} />
         </Form.Item>
         <hr />
         <Note>

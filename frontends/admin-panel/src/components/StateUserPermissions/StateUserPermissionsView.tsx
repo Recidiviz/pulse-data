@@ -166,7 +166,7 @@ const StateUserPermissionsView = (): JSX.Element => {
     emailAddress,
     stateCode,
     externalId,
-    role,
+    roles,
     district,
     firstName,
     lastName,
@@ -177,14 +177,14 @@ const StateUserPermissionsView = (): JSX.Element => {
     const results: Promise<unknown>[] = [];
 
     // update user info as a bulk operation
-    if (role || district || externalId || firstName || lastName) {
+    if (roles || district || externalId || firstName || lastName) {
       const updatedUsers = await updateUsers(
         selectedRows.map((row) => {
           return {
             userHash: row.userHash,
             stateCode: row.stateCode,
             externalId,
-            role,
+            roles,
             district,
             firstName,
             lastName,

@@ -134,8 +134,8 @@ export const AddUserForm = ({
           </Col>
           <Col span={colSpan}>
             <Form.Item
-              name="role"
-              label="Role"
+              name="roles"
+              label="Roles"
               rules={[
                 {
                   required: true,
@@ -144,6 +144,7 @@ export const AddUserForm = ({
               ]}
             >
               <Select
+                mode="multiple"
                 options={roles.map((r) => {
                   return { value: r, label: r };
                 })}
