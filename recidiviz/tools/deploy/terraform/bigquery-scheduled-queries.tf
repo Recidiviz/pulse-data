@@ -89,6 +89,25 @@ EOT
   }
 }
 
+# `workflows_launch_metadata` contains information about each fully launched Workflows opportunity in our states.
+# The source data is located in a Google Sheet.
+resource "google_bigquery_data_transfer_config" "workflows_launch_metadata" {
+  display_name           = "workflows_launch_metadata"
+  location               = "US"
+  data_source_id         = "scheduled_query"
+  schedule               = "every day 08:00" # In UTC
+  service_account_name   = google_service_account.bigquery_scheduled_queries.email
+  destination_dataset_id = module.static_reference_tables.dataset_id
+  params = {
+    destination_table_name_template = "workflows_launch_metadata_materialized"
+    write_disposition               = "WRITE_TRUNCATE"
+    query                           = <<-EOT
+SELECT * 
+FROM `${var.project_id}.static_reference_tables.workflows_launch_metadata`
+EOT
+  }
+}
+
 resource "google_bigquery_data_transfer_config" "product_roster_archive" {
   display_name           = "product_roster_archive"
   location               = "US"
