@@ -27,8 +27,8 @@ class UsIdIncarcerationMetricsProducerDelegate(
 ):
     """US_ID implementation of the StateSpecificIncarcerationMetricsProducerDelegate."""
 
-    def primary_person_external_id_to_include(self) -> Optional[str]:
+    def primary_person_external_id_to_include(self) -> str:
         return "US_ID_DOC"
 
     def secondary_person_external_id_to_include(self) -> Optional[str]:
-        return "US_ID_SID"
+        return None

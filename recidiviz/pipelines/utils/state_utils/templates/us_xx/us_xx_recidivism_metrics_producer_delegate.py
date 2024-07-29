@@ -15,8 +15,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Contains US_XX implementation of the StateSpecificRecidivismMetricsProducerDelegate."""
-from typing import Optional
-
 from recidiviz.pipelines.utils.state_utils.state_specific_recidivism_metrics_producer_delegate import (
     StateSpecificRecidivismMetricsProducerDelegate,
 )
@@ -27,5 +25,8 @@ class UsXxRecidivismMetricsProducerDelegate(
 ):
     """US_XX implementation of the StateSpecificRecidivismMetricsProducerDelegate."""
 
-    def primary_person_external_id_to_include(self) -> Optional[str]:
-        return "US_XX_DOC"
+    def primary_person_external_id_to_include(self) -> str:
+        raise NotImplementedError(
+            "Must replace this with an external id type defined for US_XX in "
+            "external_id_types.py"
+        )

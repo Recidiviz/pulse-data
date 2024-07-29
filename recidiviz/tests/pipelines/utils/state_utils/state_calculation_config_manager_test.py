@@ -17,9 +17,12 @@
 """Tests that all states with defined state-specific delegates are supported in the
 state_calculation_config_manager functions."""
 import datetime
+import re
 import unittest
+from collections import defaultdict
 
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
+from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
     get_existing_direct_ingest_states,
 )
@@ -48,10 +51,25 @@ from recidiviz.pipelines.utils.state_utils.state_calculation_config_manager impo
 from recidiviz.pipelines.utils.state_utils.state_specific_metrics_producer_delegate import (
     StateSpecificMetricsProducerDelegate,
 )
+from recidiviz.tests.common.constants.state.external_id_types_test import (
+    get_external_id_types,
+)
 from recidiviz.tests.pipelines.fake_state_calculation_config_manager import (
     get_all_delegate_getter_fn_names,
 )
 from recidiviz.utils.range_querier import RangeQuerier
+
+
+def _external_id_types_by_state_code() -> dict[StateCode, list[str]]:
+    result = defaultdict(list)
+    for external_id_name in get_external_id_types():
+        match = re.match(r"^US_[A-Z]{2}", external_id_name)
+        if not match:
+            raise ValueError(
+                f"Expected external id name to match regex: {external_id_name}"
+            )
+        result[StateCode[match.group(0)]].append(external_id_name)
+    return result
 
 
 class TestStateCalculationConfigManager(unittest.TestCase):
@@ -71,11 +89,40 @@ class TestStateCalculationConfigManager(unittest.TestCase):
             )
 
     def test_get_required_state_specific_metrics_producer_delegates(self) -> None:
+        external_ids_by_state_code = _external_id_types_by_state_code()
         for state in get_existing_direct_ingest_states():
             for subclass in StateSpecificMetricsProducerDelegate.__subclasses__():
-                get_required_state_specific_metrics_producer_delegates(
+                delegates_map = get_required_state_specific_metrics_producer_delegates(
                     state.value, {subclass}
                 )
+                for delegate in delegates_map.values():
+                    if isinstance(delegate, StateSpecificMetricsProducerDelegate):
+                        try:
+                            primary_external_id = (
+                                delegate.primary_person_external_id_to_include()
+                            )
+                            secondary_external_id = (
+                                delegate.secondary_person_external_id_to_include()
+                            )
+                        except NotImplementedError as e:
+                            raise NotImplementedError(
+                                f"Found missing method implementation for {type(delegate).__name__}"
+                            ) from e
+                        self.assertIn(
+                            primary_external_id,
+                            external_ids_by_state_code[state],
+                            f"Unexpected primary_person_external_id_to_include() "
+                            f"on delegate {type(delegate).__name__}: "
+                            f"{primary_external_id}",
+                        )
+                        if secondary_external_id:
+                            self.assertIn(
+                                secondary_external_id,
+                                external_ids_by_state_code[state],
+                                f"Unexpected secondary_person_external_id_to_include() "
+                                f"on delegate {type(delegate).__name__}: "
+                                f"{secondary_external_id}",
+                            )
 
     def test_get_state_specific_staff_role_period_normalization_delegate(
         self,

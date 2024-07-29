@@ -30,6 +30,9 @@ source that actually creates the id in the real world.
 US_AR_OFFENDERID = "US_AR_OFFENDERID"
 US_AR_PARTYID = "US_AR_PARTYID"
 
+# Anonymized person-ID that maps to the ID from Iowa's public data tables
+US_IA_IGOV_DEIDENTIFIED = "US_IA_IGOV_DEIDENTIFIED"
+
 US_ID_DOC = "US_ID_DOC"
 # TODO(#10703): Remove US_IX once Atlas is merged into US_ID
 US_IX_DOC = "US_IX_DOC"

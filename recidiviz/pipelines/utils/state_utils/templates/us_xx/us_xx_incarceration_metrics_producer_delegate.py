@@ -27,8 +27,11 @@ class UsXxIncarcerationMetricsProducerDelegate(
 ):
     """US_XX implementation of the StateSpecificIncarcerationMetricsProducerDelegate."""
 
-    def primary_person_external_id_to_include(self) -> Optional[str]:
-        return "US_XX_DOC"
+    def primary_person_external_id_to_include(self) -> str:
+        raise NotImplementedError(
+            "Must replace this with an external id type defined for US_XX in "
+            "external_id_types.py"
+        )
 
     def secondary_person_external_id_to_include(self) -> Optional[str]:
-        return "US_XX_SID"
+        return None

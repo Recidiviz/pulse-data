@@ -29,9 +29,11 @@ from recidiviz.pipelines.utils.state_utils.state_specific_delegate import (
 class StateSpecificMetricsProducerDelegate(StateSpecificDelegate):
     """Base class for a class that defines state-specific metric specifications."""
 
-    def primary_person_external_id_to_include(self) -> Optional[str]:
-        """Determines the primary person_external_id type to include, if applicable."""
-        return None
+    def primary_person_external_id_to_include(self) -> str:
+        """Determines the primary person_external_id type to include."""
+        raise NotImplementedError(
+            "Must replace this with an external id type defined in external_id_types.py"
+        )
 
     def secondary_person_external_id_to_include(self) -> Optional[str]:
         """Determines the secondary person_external_id type to include, if applicable."""

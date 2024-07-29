@@ -64,6 +64,9 @@ from recidiviz.pipelines.utils.state_utils.state_specific_incarceration_metrics_
 from recidiviz.pipelines.utils.state_utils.templates.us_xx.us_xx_incarceration_metrics_producer_delegate import (
     UsXxIncarcerationMetricsProducerDelegate,
 )
+from recidiviz.tests.pipelines.metrics.utils.calculator_utils_test import (
+    UsXxIncarcerationMetricsProducerDelegateForTests,
+)
 
 ALL_METRICS_INCLUSIONS = set(IncarcerationMetricType)
 
@@ -117,7 +120,7 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
             calculation_month_count=1,
             pipeline_job_id=PIPELINE_JOB_ID,
             metrics_producer_delegates={
-                StateSpecificIncarcerationMetricsProducerDelegate.__name__: UsXxIncarcerationMetricsProducerDelegate()
+                StateSpecificIncarcerationMetricsProducerDelegate.__name__: UsXxIncarcerationMetricsProducerDelegateForTests()
             },
         )
 
@@ -183,7 +186,7 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
             calculation_month_count=-1,
             pipeline_job_id=PIPELINE_JOB_ID,
             metrics_producer_delegates={
-                StateSpecificIncarcerationMetricsProducerDelegate.__name__: UsXxIncarcerationMetricsProducerDelegate()
+                StateSpecificIncarcerationMetricsProducerDelegate.__name__: UsXxIncarcerationMetricsProducerDelegateForTests()
             },
         )
 
@@ -235,7 +238,7 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
             calculation_month_count=-1,
             pipeline_job_id=PIPELINE_JOB_ID,
             metrics_producer_delegates={
-                StateSpecificIncarcerationMetricsProducerDelegate.__name__: UsXxIncarcerationMetricsProducerDelegate()
+                StateSpecificIncarcerationMetricsProducerDelegate.__name__: UsXxIncarcerationMetricsProducerDelegateForTests()
             },
         )
 
@@ -284,7 +287,7 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
             calculation_month_count=-1,
             pipeline_job_id=PIPELINE_JOB_ID,
             metrics_producer_delegates={
-                StateSpecificIncarcerationMetricsProducerDelegate.__name__: UsXxIncarcerationMetricsProducerDelegate()
+                StateSpecificIncarcerationMetricsProducerDelegate.__name__: UsXxIncarcerationMetricsProducerDelegateForTests()
             },
         )
 
@@ -350,7 +353,7 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
             calculation_month_count=-1,
             pipeline_job_id=PIPELINE_JOB_ID,
             metrics_producer_delegates={
-                StateSpecificIncarcerationMetricsProducerDelegate.__name__: UsXxIncarcerationMetricsProducerDelegate()
+                StateSpecificIncarcerationMetricsProducerDelegate.__name__: UsXxIncarcerationMetricsProducerDelegateForTests()
             },
         )
 
@@ -396,7 +399,7 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
             calculation_month_count=1,
             pipeline_job_id=PIPELINE_JOB_ID,
             metrics_producer_delegates={
-                StateSpecificIncarcerationMetricsProducerDelegate.__name__: UsXxIncarcerationMetricsProducerDelegate()
+                StateSpecificIncarcerationMetricsProducerDelegate.__name__: UsXxIncarcerationMetricsProducerDelegateForTests()
             },
         )
 
@@ -447,7 +450,7 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
             calculation_month_count=1,
             pipeline_job_id=PIPELINE_JOB_ID,
             metrics_producer_delegates={
-                StateSpecificIncarcerationMetricsProducerDelegate.__name__: UsXxIncarcerationMetricsProducerDelegate()
+                StateSpecificIncarcerationMetricsProducerDelegate.__name__: UsXxIncarcerationMetricsProducerDelegateForTests()
             },
         )
 
@@ -502,7 +505,7 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
             calculation_month_count=36,
             pipeline_job_id=PIPELINE_JOB_ID,
             metrics_producer_delegates={
-                StateSpecificIncarcerationMetricsProducerDelegate.__name__: UsXxIncarcerationMetricsProducerDelegate()
+                StateSpecificIncarcerationMetricsProducerDelegate.__name__: UsXxIncarcerationMetricsProducerDelegateForTests()
             },
         )
 
@@ -553,7 +556,7 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
             calculation_month_count=37,
             pipeline_job_id=PIPELINE_JOB_ID,
             metrics_producer_delegates={
-                StateSpecificIncarcerationMetricsProducerDelegate.__name__: UsXxIncarcerationMetricsProducerDelegate()
+                StateSpecificIncarcerationMetricsProducerDelegate.__name__: UsXxIncarcerationMetricsProducerDelegateForTests()
             },
         )
 
@@ -617,7 +620,7 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
             calculation_month_count=-1,
             pipeline_job_id=PIPELINE_JOB_ID,
             metrics_producer_delegates={
-                StateSpecificIncarcerationMetricsProducerDelegate.__name__: UsXxIncarcerationMetricsProducerDelegate()
+                StateSpecificIncarcerationMetricsProducerDelegate.__name__: UsXxIncarcerationMetricsProducerDelegateForTests()
             },
         )
 
@@ -684,7 +687,7 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
             calculation_month_count=-1,
             pipeline_job_id=PIPELINE_JOB_ID,
             metrics_producer_delegates={
-                StateSpecificIncarcerationMetricsProducerDelegate.__name__: UsXxIncarcerationMetricsProducerDelegate()
+                StateSpecificIncarcerationMetricsProducerDelegate.__name__: UsXxIncarcerationMetricsProducerDelegateForTests()
             },
         )
 

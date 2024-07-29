@@ -28,7 +28,7 @@ class UsCoSupervisionMetricsProducerDelegate(
 ):
     """US_CO implementation of the StateSpecificSupervisionMetricsProducerDelegate."""
 
-    def primary_person_external_id_to_include(self) -> Optional[str]:
+    def primary_person_external_id_to_include(self) -> str:
         return US_CO_DOC
 
     def secondary_person_external_id_to_include(self) -> Optional[str]:
