@@ -150,7 +150,6 @@ class ProgramIdentifier(BaseIdentifier[List[ProgramEvent]]):
 
         if participation_status not in (
             StateProgramAssignmentParticipationStatus.IN_PROGRESS,
-            StateProgramAssignmentParticipationStatus.DISCHARGED,
             StateProgramAssignmentParticipationStatus.DISCHARGED_SUCCESSFUL,
             StateProgramAssignmentParticipationStatus.DISCHARGED_SUCCESSFUL_WITH_DISCRETION,
             StateProgramAssignmentParticipationStatus.DISCHARGED_UNSUCCESSFUL,

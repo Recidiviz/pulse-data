@@ -32,6 +32,6 @@ output:
                     - currently_assigned
                     - $literal("True")
                 $then: $literal_enum(StateProgramAssignmentParticipationStatus.IN_PROGRESS)
-              - $else: $literal_enum(StateProgramAssignmentParticipationStatus.DISCHARGED)
+              - $else: $literal_enum(StateProgramAssignmentParticipationStatus.DISCHARGED_UNKNOWN)
           start_date: Program_Start_Date
           discharge_date: Program_End_Date

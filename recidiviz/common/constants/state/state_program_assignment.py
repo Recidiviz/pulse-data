@@ -52,9 +52,6 @@ class StateProgramAssignmentParticipationStatus(StateEntityEnum):
     PRESENT_WITHOUT_INFO = state_enum_strings.present_without_info
     INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
     EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
-    DISCHARGED = (
-        state_enum_strings.state_program_assignment_participation_status_discharged
-    )
 
     @classmethod
     def get_enum_description(cls) -> str:
@@ -91,6 +88,4 @@ _STATE_PROGRAM_ASSIGNMENT_PARTICIPATION_VALUE_DESCRIPTIONS: Dict[
     "the person to participate in the program is pending approval.",
     StateProgramAssignmentParticipationStatus.REFUSED: "Used when the person has "
     "refused to participate in the program.",
-    StateProgramAssignmentParticipationStatus.DISCHARGED: "Used when a person has been discharged"
-    "from a program. DEPRECATED.",
 }
