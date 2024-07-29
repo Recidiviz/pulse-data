@@ -108,14 +108,9 @@ export const getStateRoleDefaultPermissions = async (): Promise<Response> => {
 export const createNewUser = async (
   request: AddUserRequest
 ): Promise<Response> => {
-  // TODO(#27969): Have "roles" as top level field, remove transformation
-  const transformedRequest = {
-    ...request,
-    roles: [request.role],
-  };
   return postAuthWithURLAndBody(
     `/users`,
-    transformedRequest as unknown as Record<string, unknown>
+    request as unknown as Record<string, unknown>
   );
 };
 
@@ -123,7 +118,7 @@ type UserUpdate = {
   userHash: string;
   stateCode: string;
   externalId?: string;
-  role?: string;
+  roles?: string[];
   district?: string;
   firstName?: string;
   lastName?: string;
@@ -135,9 +130,7 @@ export const updateUser = async (update: UserUpdate): Promise<Response> => {
   const { userHash, ...req } = update;
   const transformedRequest = {
     ...req,
-    // TODO(#27969): Have "roles" as top level field, remove transformation
     blocked: update.blocked ?? false,
-    roles: update.role ? [update.role] : undefined,
   };
   return patchAuthWithURLAndBody(
     `/users/${encodeURIComponent(userHash)}`,
@@ -148,12 +141,7 @@ export const updateUser = async (update: UserUpdate): Promise<Response> => {
 export const updateUsers = async (
   userUpdates: UserUpdate[]
 ): Promise<Response> => {
-  // TODO(#27969): Have "roles" as top level field, remove transformation
-  const transformedUserUpdates = userUpdates.map((update) => ({
-    ...update,
-    roles: update.role ? [update.role] : undefined,
-  }));
-  return patchAuthWithURLAndBody(`/users`, transformedUserUpdates);
+  return patchAuthWithURLAndBody(`/users`, userUpdates);
 };
 
 export const updateUserPermissions = async (
