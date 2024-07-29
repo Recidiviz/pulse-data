@@ -16,10 +16,15 @@
 # =============================================================================
 """A class that collects all defined ingest view query builders for a given region."""
 
-from typing import List
+from types import ModuleType
+from typing import List, Optional
 
+from recidiviz.common.constants.states import StateCode
 from recidiviz.common.module_collector_mixin import ModuleCollectorMixin
-from recidiviz.ingest.direct.direct_ingest_regions import DirectIngestRegion
+from recidiviz.ingest.direct.direct_ingest_regions import (
+    DirectIngestRegion,
+    get_direct_ingest_region,
+)
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
     DirectIngestViewQueryBuilder,
 )
@@ -32,14 +37,30 @@ _VIEW_BUILDER_EXPECTED_NAME = "VIEW_BUILDER"
 class DirectIngestViewQueryBuilderCollector(ModuleCollectorMixin):
     """A class that collects all defined ingest view query builders for a given region."""
 
-    def __init__(self, region: DirectIngestRegion, expected_ingest_views: List[str]):
+    def __init__(
+        self, region: DirectIngestRegion, expected_ingest_views: List[str] | None = None
+    ):
         self.region = region
-        # The list of views we expect to find during collection.
+
+        # We do a set difference against these views and raise
+        # a ValueError if there is one. If it is None we skip the check.
         self.expected_ingest_views = expected_ingest_views
 
         self._builders_by_view_name: dict[
             str, DirectIngestViewQueryBuilder
         ] | None = None
+
+    @classmethod
+    def from_state_code(
+        cls,
+        state_code: StateCode,
+        region_module_override: Optional[ModuleType] = None,
+        expected_ingest_views: Optional[List[str]] = None,
+    ) -> "DirectIngestViewQueryBuilderCollector":
+        return DirectIngestViewQueryBuilderCollector(
+            get_direct_ingest_region(state_code.value, region_module_override),
+            expected_ingest_views,
+        )
 
     def _collect_query_builders(self) -> List[DirectIngestViewQueryBuilder]:
         """Collect the ingest view query builders for this state from the file system."""
@@ -100,13 +121,12 @@ class DirectIngestViewQueryBuilderCollector(ModuleCollectorMixin):
                 f"Found duplicate ingest view names in the view directory. Found: "
                 f"[{found_ingest_view_names}]."
             )
-
-        expected_view_names_set = set(self.expected_ingest_views)
-        expected_names_no_view_defined = expected_view_names_set.difference(
-            found_ingest_view_names_set
-        )
-        if expected_names_no_view_defined:
-            raise ValueError(
-                f"Found expected ingest view names with no corresponding view "
-                f"defined: {expected_names_no_view_defined}"
+        if self.expected_ingest_views:
+            expected_names_no_view_defined = set(self.expected_ingest_views).difference(
+                found_ingest_view_names_set
             )
+            if expected_names_no_view_defined:
+                raise ValueError(
+                    f"Found expected ingest view names with no corresponding view "
+                    f"defined: {expected_names_no_view_defined}"
+                )

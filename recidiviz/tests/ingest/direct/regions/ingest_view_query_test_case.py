@@ -32,7 +32,6 @@ from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_client import BQ_CLIENT_MAX_POOL_SIZE
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.dataset_config import raw_tables_dataset_for_region
-from recidiviz.ingest.direct.direct_ingest_regions import get_direct_ingest_region
 from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager import (
     DirectIngestRawFileConfig,
     augment_raw_data_df_with_metadata_columns,
@@ -84,21 +83,26 @@ class IngestViewEmulatorQueryTestCase(BigQueryEmulatorTestCase):
     ingest view queries.
     """
 
-    @staticmethod
-    def ingest_view_for_tag(
-        region_code: str, ingest_view_name: str
-    ) -> DirectIngestViewQueryBuilder:
-        return DirectIngestViewQueryBuilderCollector(
-            get_direct_ingest_region(region_code), []
-        ).get_query_builder_by_view_name(ingest_view_name)
+    @property
+    def state_code(self) -> StateCode:
+        raise NotImplementedError(
+            "Set the state_code property on the state specific subclass."
+        )
+
+    @property
+    def ingest_view_name(self) -> str:
+        raise NotImplementedError(
+            "Set the ingest_view_name property on the test subclass."
+        )
 
     def setUp(self) -> None:
         super().setUp()
-        # TODO(#5508) Have region/state code be enum
-        self.region_code: str
-        # TODO(#19137): Get the view builder directly instead of requiring the test to
-        # do that.
-        self.ingest_view: DirectIngestViewQueryBuilder
+        self.ingest_view: DirectIngestViewQueryBuilder = (
+            DirectIngestViewQueryBuilderCollector.from_state_code(
+                self.state_code
+            ).get_query_builder_by_view_name(self.ingest_view_name)
+        )
+
         self.query_run_dt = DEFAULT_QUERY_RUN_DATETIME
         self.file_update_dt = DEFAULT_FILE_UPDATE_DATETIME
 
@@ -122,7 +126,7 @@ class IngestViewEmulatorQueryTestCase(BigQueryEmulatorTestCase):
             dataset_ref=DatasetReference(
                 project=self.project_id,
                 dataset_id=raw_tables_dataset_for_region(
-                    state_code=StateCode(self.region_code),
+                    state_code=self.state_code,
                     instance=DirectIngestInstance.PRIMARY,
                 ),
             )
@@ -137,7 +141,6 @@ class IngestViewEmulatorQueryTestCase(BigQueryEmulatorTestCase):
             )
 
         self._create_mock_raw_bq_tables_from_fixtures(
-            region_code=self.region_code,
             ingest_view=self.ingest_view,
             raw_fixtures_name=fixtures_files_name,
             file_update_dt=self.file_update_dt,
@@ -145,7 +148,7 @@ class IngestViewEmulatorQueryTestCase(BigQueryEmulatorTestCase):
 
         expected_output_fixture_path = (
             DirectIngestTestFixturePath.for_ingest_view_test_results_fixture(
-                region_code=self.region_code,
+                region_code=self.state_code.value,
                 ingest_view_name=self.ingest_view.ingest_view_name,
                 file_name=fixtures_files_name,
             ).full_path()
@@ -171,22 +174,21 @@ class IngestViewEmulatorQueryTestCase(BigQueryEmulatorTestCase):
         pd.options.display.max_colwidth = 999
         self.compare_results_to_fixture(results, expected_output_fixture_path)
         self.check_ingest_view_ctes_are_documented(
-            self.ingest_view, self.query_run_dt, self.region_code
+            self.ingest_view, self.query_run_dt, self.state_code
         )
 
     def load_mock_raw_table(
         self,
-        region_code: str,
         file_tag: str,
         mock_data: pd.DataFrame,
     ) -> None:
         address = BigQueryAddress(
             dataset_id=raw_tables_dataset_for_region(
-                state_code=StateCode(region_code), instance=DirectIngestInstance.PRIMARY
+                state_code=self.state_code, instance=DirectIngestInstance.PRIMARY
             ),
             table_id=file_tag,
         )
-        region_config = get_region_raw_file_config(region_code)
+        region_config = get_region_raw_file_config(self.state_code.value)
         self.create_mock_table(
             address=address,
             schema=RawDataTableBigQuerySchemaBuilder.build_bq_schmea_for_config(
@@ -227,7 +229,6 @@ class IngestViewEmulatorQueryTestCase(BigQueryEmulatorTestCase):
 
     def _create_mock_raw_bq_tables_from_fixtures(
         self,
-        region_code: str,
         ingest_view: DirectIngestViewQueryBuilder,
         raw_fixtures_name: str,
         file_update_dt: datetime.datetime,
@@ -266,7 +267,6 @@ class IngestViewEmulatorQueryTestCase(BigQueryEmulatorTestCase):
                     )
 
                 raw_data_df = self._get_raw_data(
-                    region_code,
                     raw_table_dependency_config,
                     raw_fixtures_name,
                     file_update_dt,
@@ -276,7 +276,6 @@ class IngestViewEmulatorQueryTestCase(BigQueryEmulatorTestCase):
             create_table_futures = {
                 executor.submit(
                     self.load_mock_raw_table,
-                    region_code=region_code,
                     file_tag=file_tag,
                     mock_data=raw_data_df,
                 )
@@ -303,7 +302,6 @@ class IngestViewEmulatorQueryTestCase(BigQueryEmulatorTestCase):
 
     def _get_raw_data(
         self,
-        region_code: str,
         raw_file_dependency_config: DirectIngestViewRawFileDependency,
         raw_fixtures_name: str,
         file_update_dt: datetime.datetime,
@@ -312,7 +310,7 @@ class IngestViewEmulatorQueryTestCase(BigQueryEmulatorTestCase):
         augmenting with extra metadata columns as appropriate.
         """
         raw_fixture_path = DirectIngestTestFixturePath.for_raw_file_fixture(
-            region_code=region_code,
+            region_code=self.state_code.value,
             raw_file_dependency_config=raw_file_dependency_config,
             file_name=raw_fixtures_name,
         ).full_path()
@@ -368,12 +366,11 @@ class IngestViewEmulatorQueryTestCase(BigQueryEmulatorTestCase):
         self,
         ingest_view: DirectIngestViewQueryBuilder,
         query_run_dt: datetime.datetime,
-        region_code: str,
+        state_code: StateCode,
     ) -> None:
         """Throws if the view has CTEs that are not properly documented with a comment,
         or if CTEs that are now documented are still listed in the exemptions list.
         """
-        state_code = StateCode(region_code.upper())
         query = ingest_view.build_query(
             config=DirectIngestViewQueryBuilder.QueryStructureConfig(
                 raw_data_source_instance=DirectIngestInstance.PRIMARY,
