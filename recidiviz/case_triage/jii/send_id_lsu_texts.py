@@ -249,13 +249,14 @@ def send_id_lsu_texts(
 
     firestore_client = FirestoreClientImpl(project_id="jii-pilots")
 
-    # Store current_batch_id in Firestore db
+    # Store current_batch_id and Big Query View in Firestore db
     if dry_run is False:
         store_batch_id(
             firestore_client=firestore_client,
             current_batch_id=current_batch_id,
             message_type=message_type,
             redeliver_failed_messages=redeliver_failed_messages,
+            bigquery_view=bigquery_view,
         )
 
     query = f"SELECT * FROM {bigquery_view}"
@@ -442,21 +443,24 @@ def store_batch_id(
     current_batch_id: str,
     message_type: str,
     redeliver_failed_messages: bool,
+    bigquery_view: str,
 ) -> None:
     """
-    Store the batch_id of the current launch in the Firestore database.
+    Store the batch_id and Big Query View of the current launch in the Firestore database.
     The batch_id will be stored as a document in the batch_ids collection.
     """
     firestore_batch_id_path = f"batch_ids/{current_batch_id}"
     logging.info(
-        "Storing batch_id %s in Firestore",
+        "Storing batch_id %s and Big Query View %s in Firestore",
         current_batch_id,
+        bigquery_view,
     )
     firestore_client.set_document(
         document_path=firestore_batch_id_path,
         data={
             "message_type": message_type.upper(),
             "redelivery": redeliver_failed_messages,
+            "bigquery_view": bigquery_view,
         },
     )
 
