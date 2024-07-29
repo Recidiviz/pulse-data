@@ -258,7 +258,7 @@ class BigQueryViewDagNode:
 _ProcessNodeQueueT = Union["_AsyncProcessNodeQueue", "_SyncProcessNodeQueue"]
 
 
-class _AsyncProcessNodeQueue:
+class _AsyncProcessNodeQueue(Generic[ViewResultT]):
     """
     Internal queue implementation that enqueues for
     asynchronous execution with executor.submit
@@ -325,7 +325,7 @@ class _AsyncProcessNodeQueue:
         return future.result, node, parent_results, entered_queue_time
 
 
-class _SyncProcessNodeQueue:
+class _SyncProcessNodeQueue(Generic[ViewResultT]):
     """
     Internal queue implementation adapter for synchronous
     processing with deque
