@@ -89,9 +89,26 @@ function createColumnChart(data, chartData, title, xAxis, yAxis) {
     .setLegendPosition(Charts.Position.NONE)
     .setDimensions(639, 455)
     .setXAxisTextStyle(Charts.newTextStyle().setFontSize(10))
-    .setOption('chartArea.top', 50)
-    .setOption('chartArea.width', '80%')
+    .setOption("chartArea.top", 50)
+    .setOption("chartArea.width", "80%")
     .build();
 
   return chart;
+}
+
+
+/**
+ * Clean string
+ * @param {string} dbString The string/label from the database
+ * @returns {string} cleanString The cleaned version of the string/label (camelCase)
+ */
+function CleanString(dbString) {
+  let cleanString = dbString.toLowerCase();
+  
+  cleanString = cleanString.replace("task_completions_", "");
+
+  cleanString = cleanString.split("_").map((word) => word.charAt(0).toUpperCase() +
+    word.slice(1)).join(" ");
+
+  return cleanString;
 }

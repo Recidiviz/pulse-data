@@ -17,15 +17,17 @@
 /* File to update the Automated Leadership Report Google Form Questions. */
 
 const form = FormApp.openById("13fUGObQutXrluX0IRDwRyQaueWbpOlawrh36nfty9tg");
-const sheet = SpreadsheetApp.openById("1LW_wd4IzFXwUHgGSVAE2NCUHgNjccAAw_dUkg3qcXGE").getSheets()[0];
+const sheet = SpreadsheetApp.openById(
+  "1LW_wd4IzFXwUHgGSVAE2NCUHgNjccAAw_dUkg3qcXGE"
+).getSheets()[0];
 
 /**
- * Main
- * This is the entry point of the script. The main function deletes the existing
+ * Update google form
+ * This is the entry point of the script. The updateGoogleForm function deletes the existing
  * items in the Google Form. It then builds/populates the Google Form Questions
  * using the data from the Google Sheet.
  */
-function main() {
+function updateGoogleForm() {
   deleteFormItems();
   populateFormOptions();
 }
@@ -43,7 +45,7 @@ function deleteFormItems() {
   allItems.forEach((itemToDelete) => {
     if (itemToDelete.getType() !== FormApp.ItemType.PAGE_BREAK) {
       form.deleteItem(itemToDelete);
-    };
+    }
   });
 
   // Then, delete page break items
@@ -61,7 +63,7 @@ function populateFormOptions() {
   // First, get distinct state values
   const uniqueStates = getUniqueStates();
   // Then Populate the State dropdown
-  createStateQuestion(uniqueStates)
+  createStateQuestion(uniqueStates);
 }
 
 /**
@@ -111,7 +113,7 @@ function createStateQuestion(currentStates) {
 
   currentStates.forEach((state) => {
     const nav = stateToNav[state];
-    
+
     // When a user selects a state, they will
     // navigate to that states nav item
     const choice = stateItem.createChoice(state, nav);
@@ -125,14 +127,14 @@ function createStateQuestion(currentStates) {
 /**
  * Create state nav items
  * For each unique state, creates a new navigation item.
- * Each nav item will cotain choices for the Workflows launched in 
+ * Each nav item will cotain choices for the Workflows launched in
  * the given state.
  * @returns {map} stateToNav A map of state codes to their nav items
  */
 function createStateNavItems() {
   const allValuesDict = getSheetValues();
   const stateToNav = {};
-  
+
   Object.entries(allValuesDict).forEach(([stateCode, columns]) => {
     const navTitle = `${stateCode} Workflows`;
 
@@ -148,14 +150,13 @@ function createStateNavItems() {
       const choice = pageItem.createChoice(value);
       choices.push(choice);
     });
-    
+
     pageItem.setChoices(choices);
     stateToNav[stateCode] = page;
   });
 
   return stateToNav;
 }
-
 
 /**
  * Get Sheet Values
@@ -175,7 +176,7 @@ function getSheetValues() {
   // first 3 rows
   const values = sheet.getSheetValues(4, 1, lastRowIdx - 3, lastColIdx);
 
-  var stateCodeToRows = {}
+  var stateCodeToRows = {};
 
   values.forEach((value) => {
     const stateCode = value[0];
@@ -195,5 +196,5 @@ function getSheetValues() {
     }
   });
 
-  return stateCodeToRows
+  return stateCodeToRows;
 }
