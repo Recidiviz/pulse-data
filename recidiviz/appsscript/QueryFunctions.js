@@ -24,20 +24,40 @@
  * @param {string} stateCode The state code passed in from the Google Form (ex: 'US_MI')
  * @param {string} timePeriod The time period passed in from the Google Form (ex: 'MONTH', 'QUARTER', or 'YEAR')
  * @param {string} endDateString The end date passed from the connected Google Form on form submit (ex: '2023-03-01')
+ * @param {string} workflow The name of the workflow
+ * @param {string} completionEventType The completion event type of the workflow (what we call it in the database)
+ * @param {string} system The system of the workflow (ex: 'SUPERVISION' or 'INCARCERATION')
  * @returns {Chart} The built/populated column chart
  */
 function constructSupervisionDistrictColumnChart(
   stateCode,
   timePeriod,
-  endDateString
+  endDateString,
+  workflow,
+  completionEventType,
+  system
 ) {
-  // TODO(#5805): parameterize this function for any workflow
+  var xAxisColumn = "";
+  var yAxisColumn = "";
+  var tableName = "";
+
+  if (system === "SUPERVISION") {
+    xAxisColumn = "district_name";
+    tableName = "supervision_district_aggregated_metrics_materialized";
+  } else if (system === "INCARCERATION") {
+    xAxisColumn = "facility_name";
+    tableName = "incarceration_facility_aggregated_metrics_materialized";
+  } else {
+    throw new Error( "Invalid system provided. Please check all Google Form Inputs." );
+  }
+  yAxisColumn = `task_completions_${completionEventType.toLowerCase()}`;
+
   const queryString = `
     SELECT
-      district_name,
-      task_completions_early_discharge,
+      ${xAxisColumn},
+      ${yAxisColumn},
     FROM
-    \`aggregated_metrics.supervision_district_aggregated_metrics_materialized\`
+    \`aggregated_metrics.${tableName}\`
     WHERE state_code = '${stateCode}'
     AND period = '${timePeriod}'
     AND end_date = '${endDateString}';
@@ -45,18 +65,21 @@ function constructSupervisionDistrictColumnChart(
 
   supervisionDistrictData = runQuery(queryString);
 
-  const title = `${stateCode} Early Discharges by District - ${timePeriod.toLowerCase()} ending ${endDateString}`;
+  const xAxisClean = CleanString(xAxisColumn);
+  const yAxisClean = CleanString(yAxisColumn);
+
+  const title = `${workflow} Impact`;
 
   const chartData = Charts.newDataTable()
-    .addColumn(Charts.ColumnType.STRING, "district_name")
-    .addColumn(Charts.ColumnType.NUMBER, "task_completions_early_discharge");
+    .addColumn(Charts.ColumnType.STRING, xAxisColumn)
+    .addColumn(Charts.ColumnType.NUMBER, yAxisColumn);
 
   supervisionColumnChart = createColumnChart(
     supervisionDistrictData,
     chartData,
     title,
-    "District",
-    "Early Discharges"
+    xAxisClean,
+    yAxisClean
   );
 
   return supervisionColumnChart;

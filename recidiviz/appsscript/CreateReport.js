@@ -23,7 +23,7 @@ const projectId = "recidiviz-staging";
  * This is the entry point of the script. The main function is triggered by the
  * submission of the connected Google Form. It takes in response items provided by the
  * user. It then calls ConstructSupervisionDistrictColumnChart to construct a column
- * chart. It then calls copyTemplateDoc to copy the template document and populate it
+ * chart. It then calls copyAndPopulateTemplateDoc to copy the template document and populate it
  * with the new column chart.
  * @param {object} e The object passed from the connected Google Form on form submit
  */
@@ -35,29 +35,71 @@ function main(e) {
   const stateCode = itemResponses[0].getResponse();
   const timePeriod = itemResponses[1].getResponse();
   const endDateString = itemResponses[2].getResponse();
+  const workflowsToInclude = itemResponses[3].getResponse();
 
   Logger.log("stateCode: %s", stateCode);
   Logger.log("timePeriod: %s", timePeriod);
   Logger.log("endDateString: %s", endDateString);
+  Logger.log("workflowsToInclude: %s", workflowsToInclude);
 
-  supervisionColumnChart = constructSupervisionDistrictColumnChart(
+  const workflowToDistrictOrFacilitiesColumnChart = {};
+
+  const stateCodeToRows = getSheetValues();
+  const stateRows = stateCodeToRows[stateCode];
+
+  workflowsToInclude.forEach((workflow) => {
+    var workflowRow = {};
+    stateRows.forEach((row) => {
+      if (row.workflow === workflow) {
+        workflowRow = row;
+      };
+    });
+    Logger.log("workflowRow: %s", workflowRow);
+    const completionEventType = workflowRow.completionEventType;
+    Logger.log("completionEventType: %s", completionEventType);
+    const system = workflowRow.system;
+    Logger.log("system: %s", system);
+
+    districtOrFacilitiesColumnChart = constructSupervisionDistrictColumnChart(
+      stateCode,
+      timePeriod,
+      endDateString,
+      workflow,
+      completionEventType,
+      system
+    );
+
+    workflowToDistrictOrFacilitiesColumnChart[workflow] = districtOrFacilitiesColumnChart;
+  });
+
+
+  copyAndPopulateTemplateDoc(
+    workflowToDistrictOrFacilitiesColumnChart,
     stateCode,
     timePeriod,
-    endDateString
+    endDateString,
+    workflowsToInclude
   );
-
-  copyTemplateDoc(supervisionColumnChart, stateCode);
 }
 
 /**
- * Copy template doc
+ * Copy and populate template doc
  * Copies the template document and stores it in the shared Google Drive folder.
  * Replaces all instances of {{today_date}} with the current date. Replaces the
  * placeholder column chart with the newly populated column chart.
- * @param {Chart} supervisionColumnChart The built/populated column chart
+ * @param {map} workflowToDistrictOrFacilitiesColumnChart An object that maps the workflow name to its districtOrFacilitiesColumnChart
  * @param {string} stateCode The state code passed in from the Google Form (ex: 'US_MI')
+ * @param {string} timePeriod The time period passed in from the Google Form (ex: 'MONTH', 'QUARTER', or 'YEAR')
+ * @param {string} endDateString The end date passed from the connected Google Form on form submit (ex: '2023-03-01')
+ * @param {array} workflowsToInclude A list of Workflows to be included in the report
  */
-function copyTemplateDoc(supervisionColumnChart, stateCode) {
+function copyAndPopulateTemplateDoc(
+  workflowToDistrictOrFacilitiesColumnChart,
+  stateCode,
+  timePeriod,
+  endDateString,
+  workflowsToInclude
+) {
   const template = DriveApp.getFileById(
     "1nsc_o2fTlldTQavxJveucWgDKkic_clKZjn0GuyF2N8"
   );
@@ -68,7 +110,7 @@ function copyTemplateDoc(supervisionColumnChart, stateCode) {
   const today = Utilities.formatDate(new Date(), "GMT-5", "MM/dd/yyyy");
 
   const copy = template.makeCopy(
-    `${stateCode} ${today} Impact Report`,
+    `${stateCode} ${timePeriod.toLowerCase()}ly Impact Report ending ${endDateString}`,
     destinationFolder
   );
   const doc = DocumentApp.openById(copy.getId());
@@ -78,21 +120,75 @@ function copyTemplateDoc(supervisionColumnChart, stateCode) {
   const rangeElementToRemove = body.findText("{{NOTE: .*}}");
   const startOffset = rangeElementToRemove.getStartOffset();
   // Adding 1 to the endOffset to include the new line character
-  const endOffset = rangeElementToRemove.getEndOffsetInclusive() + 1
+  const endOffset = rangeElementToRemove.getEndOffsetInclusive() + 1;
   body.editAsText().deleteText(startOffset, endOffset);
 
   body.replaceText("{{today_date}}", today);
 
-  const images = body.getImages();
-  var imageToReplace = null;
-  images.forEach((img) => {
-    const altTitle = img.getAltTitle();
-    if (altTitle === "Impact Column Chart") {
-      imageToReplace = img;
-    }
-  });
-  const imageParent = imageToReplace.getParent();
+  copyAndPopulateWorkflowSection(body, workflowsToInclude, workflowToDistrictOrFacilitiesColumnChart)
+}
 
-  imageToReplace.removeFromParent();
-  imageParent.appendInlineImage(supervisionColumnChart);
+/**
+ * Copy and populate workflow section
+ * The copyAndPopulateWorkflowSection identifies all elements we want to copy for each Workflow.
+ * It then copies each element and replaces relevant text and images. 
+ * @param {Body} body The template document body
+ * @param {array} workflowsToInclude A list of Workflows to be included in the report 
+ * @param {map} workflowToDistrictOrFacilitiesColumnChart An object that maps the workflow name to it's districtOrFacilitiesColumnChart
+ */
+function copyAndPopulateWorkflowSection(body, workflowsToInclude, workflowToDistrictOrFacilitiesColumnChart) {
+  const totalChildren = body.getNumChildren();
+
+  // First, find the index of the first element we want to copy
+  var childIdx = null;
+  for (let idx = 0; idx !== totalChildren; idx++) {
+    let child = body.getChild(idx);
+
+    if (child.getType() === DocumentApp.ElementType.PARAGRAPH) {
+      if (child.getText() === "{{workflow_name}} | Usage & Impact Report") {
+        // We found the start of where we want to copy
+        childIdx = idx;
+        break
+      }
+    }
+  };
+
+  // Now, create an array of elements we want to copy
+  var elementsToCopy = []
+  for (let idx = childIdx; idx !== totalChildren; idx++) {
+    let child = body.getChild(idx);
+    elementsToCopy.push(child)
+  }
+
+  // For each Workflow, copy the {{workflow_name}} | Usage & Impact Report section
+  workflowsToInclude.forEach((workflow) => {
+    // Append new line
+    body.appendParagraph("");
+
+    elementsToCopy.forEach((element) => {
+      const elementCopy = element.copy();
+      
+      if (elementCopy.getNumChildren() > 0 && elementCopy.getChild(0).getType() === DocumentApp.ElementType.INLINE_IMAGE) {
+        elementCopyChild = elementCopy.getChild(0).copy();
+        var imageToReplace = null;
+        const altTitle = elementCopyChild.getAltTitle();
+        if (altTitle === "Impact Column Chart") {
+          // Replace with generated chart
+          body.appendImage(workflowToDistrictOrFacilitiesColumnChart[workflow]);
+        } else {
+          // Put back original image
+          body.appendImage(elementCopyChild);
+        }
+      } else {
+        // Replace text
+        elementCopy.replaceText("{{workflow_name}}", workflow);
+        body.appendParagraph(elementCopy);
+      }
+    }); 
+  });
+
+  // Finally, delete the original elements that we copied
+  elementsToCopy.forEach((element) => {
+    body.removeChild(element);
+  });
 }
