@@ -17,7 +17,6 @@
 """Tests for calculator_utils.py."""
 import unittest
 from datetime import date, datetime
-from typing import Optional
 
 from freezegun import freeze_time
 
@@ -46,6 +45,34 @@ from recidiviz.pipelines.utils.state_utils.state_specific_supervision_metrics_pr
 from recidiviz.pipelines.utils.state_utils.templates.us_xx.us_xx_incarceration_metrics_producer_delegate import (
     UsXxIncarcerationMetricsProducerDelegate,
 )
+from recidiviz.pipelines.utils.state_utils.templates.us_xx.us_xx_supervision_metrics_producer_delegate import (
+    UsXxSupervisionMetricsProducerDelegate,
+)
+
+
+class TestUsXxMetricsProducerDelegate(StateSpecificMetricsProducerDelegate):
+    def primary_person_external_id_to_include(self) -> str:
+        return "US_XX_DOC"
+
+
+class UsXxIncarcerationMetricsProducerDelegateForTests(
+    UsXxIncarcerationMetricsProducerDelegate
+):
+    def primary_person_external_id_to_include(self) -> str:
+        return "US_XX_DOC"
+
+    def secondary_person_external_id_to_include(self) -> str:
+        return "US_XX_SID"
+
+
+class UsXxSupervisionMetricsProducerDelegateForTests(
+    UsXxSupervisionMetricsProducerDelegate
+):
+    def primary_person_external_id_to_include(self) -> str:
+        return "US_XX_SID"
+
+    def secondary_person_external_id_to_include(self) -> str | None:
+        return None
 
 
 class TestAgeAtDate(unittest.TestCase):
@@ -195,7 +222,7 @@ class TestPersonExternalIdToInclude(unittest.TestCase):
             _ = calculator_utils.person_external_id_to_include(
                 person_external_id_2.state_code,
                 person,
-                metrics_producer_delegate=UsXxIncarcerationMetricsProducerDelegate(),
+                metrics_producer_delegate=UsXxIncarcerationMetricsProducerDelegateForTests(),
             )
 
     def test_person_has_multiple_external_ids_of_the_same_type(self) -> None:
@@ -311,10 +338,6 @@ class TestAddPersonCharacteristics(unittest.TestCase):
 
         self.assertEqual(updated_characteristics, expected_output)
 
-    class TestUsXxMetricsProducerDelegate(StateSpecificMetricsProducerDelegate):
-        def primary_person_external_id_to_include(self) -> Optional[str]:
-            return "US_XX_DOC"
-
     def test_add_person_characteristics_include_external_id(self) -> None:
         person = NormalizedStatePerson(
             state_code="US_XX",
@@ -344,7 +367,7 @@ class TestAddPersonCharacteristics(unittest.TestCase):
         updated_characteristics = person_characteristics(
             person,
             age_at_date(person, event_date),
-            metrics_producer_delegate=self.TestUsXxMetricsProducerDelegate(),
+            metrics_producer_delegate=TestUsXxMetricsProducerDelegate(),
         )
 
         expected_output = {
@@ -385,7 +408,7 @@ class TestAddPersonCharacteristics(unittest.TestCase):
         updated_characteristics = person_characteristics(
             person,
             age_at_date(person, event_date),
-            metrics_producer_delegate=UsXxIncarcerationMetricsProducerDelegate(),
+            metrics_producer_delegate=UsXxIncarcerationMetricsProducerDelegateForTests(),
         )
 
         expected_output = {

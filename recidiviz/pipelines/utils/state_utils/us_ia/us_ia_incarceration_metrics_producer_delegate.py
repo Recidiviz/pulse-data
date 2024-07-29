@@ -17,6 +17,7 @@
 """Contains US_IA implementation of the StateSpecificIncarcerationMetricsProducerDelegate."""
 from typing import Optional
 
+from recidiviz.common.constants.state.external_id_types import US_IA_IGOV_DEIDENTIFIED
 from recidiviz.pipelines.utils.state_utils.state_specific_incarceration_metrics_producer_delegate import (
     StateSpecificIncarcerationMetricsProducerDelegate,
 )
@@ -27,8 +28,8 @@ class UsIaIncarcerationMetricsProducerDelegate(
 ):
     """US_IA implementation of the StateSpecificIncarcerationMetricsProducerDelegate."""
 
-    def primary_person_external_id_to_include(self) -> Optional[str]:
-        return "US_IA_DOC"
+    def primary_person_external_id_to_include(self) -> str:
+        return US_IA_IGOV_DEIDENTIFIED
 
     def secondary_person_external_id_to_include(self) -> Optional[str]:
-        return "US_IA_SID"
+        return None

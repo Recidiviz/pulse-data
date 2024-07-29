@@ -15,8 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Contains US_OZ implementation of the StateSpecificSupervisionMetricsProducerDelegate."""
-from typing import Optional
-
+from recidiviz.common.constants.state.external_id_types import US_OZ_LOTR_ID
 from recidiviz.pipelines.utils.state_utils.state_specific_supervision_metrics_producer_delegate import (
     StateSpecificSupervisionMetricsProducerDelegate,
 )
@@ -27,5 +26,5 @@ class UsOzSupervisionMetricsProducerDelegate(
 ):
     """US_OZ implementation of the StateSpecificSupervisionMetricsProducerDelegate."""
 
-    def primary_person_external_id_to_include(self) -> Optional[str]:
-        return "US_OZ_SID"
+    def primary_person_external_id_to_include(self) -> str:
+        return US_OZ_LOTR_ID

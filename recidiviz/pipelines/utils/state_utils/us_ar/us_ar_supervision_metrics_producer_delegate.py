@@ -15,8 +15,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Contains US_AR implementation of the StateSpecificSupervisionMetricsProducerDelegate."""
-from typing import Optional
-
 from recidiviz.common.constants.state.external_id_types import US_AR_OFFENDERID
 from recidiviz.pipelines.utils.state_utils.state_specific_supervision_metrics_producer_delegate import (
     StateSpecificSupervisionMetricsProducerDelegate,
@@ -28,5 +26,5 @@ class UsArSupervisionMetricsProducerDelegate(
 ):
     """US_AR implementation of the StateSpecificSupervisionMetricsProducerDelegate."""
 
-    def primary_person_external_id_to_include(self) -> Optional[str]:
+    def primary_person_external_id_to_include(self) -> str:
         return US_AR_OFFENDERID

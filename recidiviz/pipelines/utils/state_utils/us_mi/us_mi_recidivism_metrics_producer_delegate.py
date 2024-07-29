@@ -15,8 +15,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Contains US_MI implementation of the StateSpecificRecidivismMetricsProducerDelegate."""
-from typing import Optional
-
 from recidiviz.pipelines.utils.state_utils.state_specific_recidivism_metrics_producer_delegate import (
     StateSpecificRecidivismMetricsProducerDelegate,
 )
@@ -27,5 +25,5 @@ class UsMiRecidivismMetricsProducerDelegate(
 ):
     """US_MI implementation of the StateSpecificRecidivismMetricsProducerDelegate."""
 
-    def primary_person_external_id_to_include(self) -> Optional[str]:
+    def primary_person_external_id_to_include(self) -> str:
         return "US_MI_DOC"

@@ -15,8 +15,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Contains US_XX implementation of the StateSpecificSupervisionMetricsProducerDelegate."""
-from typing import Optional
-
 from recidiviz.pipelines.utils.state_utils.state_specific_supervision_metrics_producer_delegate import (
     StateSpecificSupervisionMetricsProducerDelegate,
 )
@@ -27,5 +25,8 @@ class UsXxSupervisionMetricsProducerDelegate(
 ):
     """US_XX implementation of the StateSpecificSupervisionMetricsProducerDelegate."""
 
-    def primary_person_external_id_to_include(self) -> Optional[str]:
-        return "US_XX_SID"
+    def primary_person_external_id_to_include(self) -> str:
+        raise NotImplementedError(
+            "Must replace this with an external id type defined for US_XX in "
+            "external_id_types.py"
+        )

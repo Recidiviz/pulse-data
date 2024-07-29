@@ -63,11 +63,9 @@ from recidiviz.pipelines.utils.state_utils.state_specific_metrics_producer_deleg
 from recidiviz.pipelines.utils.state_utils.state_specific_supervision_metrics_producer_delegate import (
     StateSpecificSupervisionMetricsProducerDelegate,
 )
-from recidiviz.pipelines.utils.state_utils.templates.us_xx.us_xx_incarceration_metrics_producer_delegate import (
-    UsXxIncarcerationMetricsProducerDelegate,
-)
-from recidiviz.pipelines.utils.state_utils.templates.us_xx.us_xx_supervision_metrics_producer_delegate import (
-    UsXxSupervisionMetricsProducerDelegate,
+from recidiviz.tests.pipelines.metrics.utils.calculator_utils_test import (
+    UsXxIncarcerationMetricsProducerDelegateForTests,
+    UsXxSupervisionMetricsProducerDelegateForTests,
 )
 
 ALL_METRICS_INCLUSIONS = set(PopulationSpanMetricType)
@@ -116,8 +114,8 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
         self.metrics_producer_delegates: Dict[
             str, StateSpecificMetricsProducerDelegate
         ] = {
-            StateSpecificIncarcerationMetricsProducerDelegate.__name__: UsXxIncarcerationMetricsProducerDelegate(),
-            StateSpecificSupervisionMetricsProducerDelegate.__name__: UsXxSupervisionMetricsProducerDelegate(),
+            StateSpecificIncarcerationMetricsProducerDelegate.__name__: UsXxIncarcerationMetricsProducerDelegateForTests(),
+            StateSpecificSupervisionMetricsProducerDelegate.__name__: UsXxSupervisionMetricsProducerDelegateForTests(),
         }
 
     @freeze_time(CURRENT_DATE)

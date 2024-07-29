@@ -89,9 +89,6 @@ from recidiviz.pipelines.utils.execution_utils import RootEntityId
 from recidiviz.pipelines.utils.state_utils.state_specific_incarceration_metrics_producer_delegate import (
     StateSpecificIncarcerationMetricsProducerDelegate,
 )
-from recidiviz.pipelines.utils.state_utils.templates.us_xx.us_xx_incarceration_metrics_producer_delegate import (
-    UsXxIncarcerationMetricsProducerDelegate,
-)
 from recidiviz.tests.persistence.database import database_test_utils
 from recidiviz.tests.pipelines.calculator_test_utils import (
     normalized_database_base_dict,
@@ -104,6 +101,9 @@ from recidiviz.tests.pipelines.fake_bigquery import (
 )
 from recidiviz.tests.pipelines.fake_state_calculation_config_manager import (
     start_pipeline_delegate_getter_patchers,
+)
+from recidiviz.tests.pipelines.metrics.utils.calculator_utils_test import (
+    UsXxIncarcerationMetricsProducerDelegateForTests,
 )
 from recidiviz.tests.pipelines.utils.run_pipeline_test_utils import (
     DEFAULT_TEST_PIPELINE_OUTPUT_SANDBOX_PREFIX,
@@ -146,7 +146,7 @@ class TestIncarcerationPipeline(unittest.TestCase):
         self.state_specific_metrics_producer_delegate_patcher = mock.patch(
             "recidiviz.pipelines.metrics.base_metric_pipeline.get_required_state_specific_metrics_producer_delegates",
             return_value={
-                StateSpecificIncarcerationMetricsProducerDelegate.__name__: UsXxIncarcerationMetricsProducerDelegate()
+                StateSpecificIncarcerationMetricsProducerDelegate.__name__: UsXxIncarcerationMetricsProducerDelegateForTests()
             },
         )
         self.mock_get_required_state_metrics_producer_delegate = (
@@ -647,7 +647,7 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
             self.state_specific_metrics_producer_delegate_patcher.start()
         )
         self.mock_state_specific_metrics_producer_delegate.return_value = {
-            StateSpecificIncarcerationMetricsProducerDelegate.__name__: UsXxIncarcerationMetricsProducerDelegate()
+            StateSpecificIncarcerationMetricsProducerDelegate.__name__: UsXxIncarcerationMetricsProducerDelegateForTests()
         }
 
         self.metric_producer = pipeline.metric_producer.IncarcerationMetricProducer()
