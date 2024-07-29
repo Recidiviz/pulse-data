@@ -41,6 +41,7 @@ from recidiviz.task_eligibility.criteria.state_specific.us_ix import (
     no_sex_offender_alert,
     tentative_parole_date_within_6_months,
 )
+from recidiviz.task_eligibility.criteria_condition import NotEligibleCriteriaCondition
 from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
 )
@@ -81,6 +82,10 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         not_serving_for_violent_offense.VIEW_BUILDER,
     ],
     completion_event_builder=release_to_community_confinement_supervision.VIEW_BUILDER,
+    almost_eligible_condition=NotEligibleCriteriaCondition(
+        criteria=in_crc_facility_or_pwcc_unit_1_for_60_days.VIEW_BUILDER,
+        description="In CRC but hasn't been there for 60 days",
+    ),
 )
 
 if __name__ == "__main__":

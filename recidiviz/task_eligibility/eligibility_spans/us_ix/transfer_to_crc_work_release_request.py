@@ -40,6 +40,7 @@ from recidiviz.task_eligibility.criteria.state_specific.us_ix import (
     not_serving_a_rider_sentence,
     tentative_parole_date_not_within_6_months,
 )
+from recidiviz.task_eligibility.criteria_condition import NotEligibleCriteriaCondition
 from recidiviz.task_eligibility.eligibility_spans.us_ix.transfer_to_crc_resident_worker_request import (
     US_IX_NOT_IN_CRC_FACILITY_VIEW_BUILDER,
 )
@@ -75,6 +76,10 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         not_serving_a_rider_sentence.VIEW_BUILDER,
     ],
     completion_event_builder=granted_work_release.VIEW_BUILDER,
+    almost_eligible_condition=NotEligibleCriteriaCondition(
+        criteria=not_serving_for_violent_offense.VIEW_BUILDER,
+        description="Serving a sentence for a violent offense",
+    ),
 )
 
 if __name__ == "__main__":

@@ -40,11 +40,6 @@ from recidiviz.task_eligibility.dataset_config import (
     task_eligibility_criteria_state_specific_dataset,
     task_eligibility_spans_state_specific_dataset,
 )
-from recidiviz.task_eligibility.utils.almost_eligible_query_fragments import (
-    clients_eligible,
-    json_to_array_cte,
-    one_criteria_away_from_eligibility,
-)
 from recidiviz.task_eligibility.utils.us_ix_query_fragments import (
     DOR_CASE_NOTES_COLUMNS,
     I9_NOTE_TX_REGEX,
@@ -73,27 +68,14 @@ Queries information needed to surface eligible folks for XCRC in ID.
 """
 
 US_IX_TRANSFER_TO_XCRC_QUERY_TEMPLATE = f"""
-WITH current_crc_population AS (
-    -- Keep only people currently in a CRC
+WITH eligible_and_almost_eligible AS (
+    -- Keep only people currently in a CRC who are eligible or almost eligible
     {join_current_task_eligibility_spans_with_external_id(
         state_code= "'US_IX'", 
         tes_task_query_view = 'transfer_to_xcrc_request_materialized',
-        id_type = "'US_IX_DOC'")}),
-
-    json_to_array_cte AS (
-        {json_to_array_cte('current_crc_population')}
-    ),
-
-    eligible_and_almost_eligible AS (
-        -- ELIGIBLE
-    {clients_eligible(from_cte = 'current_crc_population')}
-
-        UNION ALL
-
-        -- ALMOST ELIGIBLE (is in CRC but hasn't been there for 60 days)
-    {one_criteria_away_from_eligibility('US_IX_IN_CRC_FACILITY_FOR_60_DAYS',
-                                        from_cte_table_name = "json_to_array_cte")}
-    ),
+        id_type = "'US_IX_DOC'",
+        eligible_and_almost_eligible_only=True,
+    )}),
 
     case_notes_cte AS (
         -- Offender alerts (excluding victims)
