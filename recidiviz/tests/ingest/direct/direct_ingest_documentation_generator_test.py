@@ -47,18 +47,24 @@ from recidiviz.tests.utils.fake_region import fake_region
 class FakeDirectIngestViewQueryBuilderCollector(DirectIngestViewQueryBuilderCollector):
     """A test version of DirectIngestViewQueryBuilderCollector"""
 
-    def __init__(self, region: DirectIngestRegion, expected_ingest_views: List[str]):
+    def __init__(
+        self, region: DirectIngestRegion, expected_ingest_views: List[str] | None
+    ):
         super().__init__(region, expected_ingest_views)
 
     def _collect_query_builders(self) -> List[DirectIngestViewQueryBuilder]:
-        builders = [
-            DirectIngestViewQueryBuilder(
-                region=self.region.region_code,
-                ingest_view_name=tag,
-                view_query_template=(f"SELECT * FROM {{{tag}}}"),
-            )
-            for tag in self.expected_ingest_views
-        ]
+        builders = (
+            [
+                DirectIngestViewQueryBuilder(
+                    region=self.region.region_code,
+                    ingest_view_name=tag,
+                    view_query_template=(f"SELECT * FROM {{{tag}}}"),
+                )
+                for tag in self.expected_ingest_views
+            ]
+            if self.expected_ingest_views
+            else []
+        )
 
         builders.append(
             DirectIngestViewQueryBuilder(
