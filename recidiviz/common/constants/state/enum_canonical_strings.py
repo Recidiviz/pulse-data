@@ -520,7 +520,6 @@ state_program_assignment_participation_status_discharged_unknown = "DISCHARGED_U
 state_program_assignment_participation_status_in_progress = "IN_PROGRESS"
 state_program_assignment_participation_status_pending = "PENDING"
 state_program_assignment_participation_status_refused = "REFUSED"
-state_program_assignment_participation_status_discharged = "DISCHARGED"
 
 
 # state_specialized_purpose_for_incarceration

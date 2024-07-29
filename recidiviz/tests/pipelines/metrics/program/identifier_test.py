@@ -230,7 +230,7 @@ class TestFindProgramParticipationEvents(unittest.TestCase):
             sequence_num=0,
             program_id="PG3",
             referral_date=date(2009, 10, 3),
-            participation_status=StateProgramAssignmentParticipationStatus.DISCHARGED,
+            participation_status=StateProgramAssignmentParticipationStatus.DISCHARGED_UNKNOWN,
             program_location_id="LOCATION",
             start_date=date(2009, 11, 5),
             discharge_date=date(2009, 11, 8),
@@ -312,7 +312,7 @@ class TestFindProgramParticipationEvents(unittest.TestCase):
             program_id="PG3",
             referral_date=date(1999, 10, 3),
             # This program assignment has a DISCHARGED status, but it's missing a required discharge_date
-            participation_status=StateProgramAssignmentParticipationStatus.DISCHARGED,
+            participation_status=StateProgramAssignmentParticipationStatus.DISCHARGED_UNKNOWN,
             program_location_id="LOCATION",
             start_date=date(1999, 11, 2),
         )

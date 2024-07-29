@@ -626,7 +626,6 @@ state_program_assignment_participation_status = Enum(
     state_enum_strings.state_program_assignment_participation_status_refused,
     state_enum_strings.internal_unknown,
     state_enum_strings.external_unknown,
-    state_enum_strings.state_program_assignment_participation_status_discharged,
     name="state_program_assignment_participation_status",
 )
 

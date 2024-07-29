@@ -287,8 +287,8 @@ def generate_full_graph_state_person(
     program_assignment2 = StateProgramAssignment.new_with_defaults(
         external_id="program_assignment_external_id_2",
         state_code="US_XX",
-        participation_status=StateProgramAssignmentParticipationStatus.DISCHARGED,
-        participation_status_raw_text="DISCHARGED",
+        participation_status=StateProgramAssignmentParticipationStatus.DISCHARGED_UNKNOWN,
+        participation_status_raw_text="DISCHARGED_UNKNOWN",
         referral_date=datetime.date(year=2019, month=2, day=10),
         start_date=datetime.date(year=2019, month=2, day=11),
         discharge_date=datetime.date(year=2019, month=2, day=12),
