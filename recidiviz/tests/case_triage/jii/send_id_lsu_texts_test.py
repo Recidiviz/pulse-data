@@ -53,18 +53,21 @@ class TestSendIDLSUTexts(TestCase):
         current_batch_id = "01_01_2024_00_00_00"
         message_type = MessageType.INITIAL_TEXT.value.lower()
         redeliver_failed_messages = False
+        mock_view_name = "mock_view"
 
         store_batch_id(
             firestore_client=mock_firestore_impl,
             current_batch_id=current_batch_id,
             message_type=message_type,
             redeliver_failed_messages=redeliver_failed_messages,
+            bigquery_view=mock_view_name,
         )
         mock_firestore_impl.set_document.assert_called_once_with(
             document_path=f"batch_ids/{current_batch_id}",
             data={
                 "message_type": message_type.upper(),
                 "redelivery": redeliver_failed_messages,
+                "bigquery_view": mock_view_name,
             },
         )
 
