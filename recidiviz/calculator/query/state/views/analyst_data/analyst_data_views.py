@@ -304,7 +304,6 @@ from recidiviz.calculator.query.state.views.analyst_data.workflows_user_signups 
     WORKFLOWS_USER_SIGNUPS_VIEW_BUILDER,
 )
 
-
 ANALYST_DATA_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     ALL_TASK_ELIGIBILITY_SPANS_VIEW_BUILDER,
     ALL_TASK_TYPE_ELIGIBILITY_SPANS_VIEW_BUILDER,
