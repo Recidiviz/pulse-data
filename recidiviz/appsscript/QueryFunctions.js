@@ -17,6 +17,53 @@
 /* File containing functions that construct SQL Queries used in CreateReport.gs. */
 
 /**
+ * Construct opportunities granted text
+ * Given parameters provided by the user, constructs a query string and call RunQuery
+ * to query the BiqQuery database. After fetching the total number of supervision and
+ * facilities opportunities granted, adds them and returns the integer as a formatted
+ * string.
+ * @param {string} stateCode The state code passed in from the Google Form (ex: 'US_MI')
+ * @param {string} timePeriod The time period passed in from the Google Form (ex: 'MONTH', 'QUARTER', or 'YEAR')
+ * @param {string} endDateString The end date passed from the connected Google Form on form submit (ex: '2023-03-01')
+ * @param {string} completionEventType The completion event type of the workflow (what we call it in the database)
+ * @param {string} system The system of the workflow (ex: 'SUPERVISION' or 'INCARCERATION')
+ * @returns {number} opportunitiesGranted The number of opportunities granted for the given workflow
+ **/
+function constructOpportunitiesGrantedText(
+  stateCode,
+  timePeriod,
+  endDateString,
+  completionEventType,
+  system
+) {
+  const opportunityColumn = `task_completions_${completionEventType.toLowerCase()}`;
+  const opportunityTable = `${system.toLowerCase()}_state_aggregated_metrics_materialized`;
+
+  const queryString = `
+    SELECT ${opportunityColumn}
+    FROM \`aggregated_metrics.${opportunityTable}\`
+    WHERE state_code = '${stateCode}'
+    AND period = '${timePeriod}'
+    AND end_date = '${endDateString}'`;
+
+  const queryOutput = runQuery(queryString)[0]
+  const queryOutputLength = queryOutput.length
+  if (queryOutputLength !== 1) {
+    throw new Error(
+      `Expected 1 row in query output, but got length: ${queryOutputLength}. Query output: ${queryOutput}.`
+    );
+  }
+
+  const opportunitiesGranted = parseInt(queryOutput[0]);
+  Logger.log(
+    "Opportunities Granted: %s",
+    opportunitiesGranted
+  );
+
+  return opportunitiesGranted;
+}
+
+/**
  * Construct supervision district column chart
  * Given parameters provided by the user, constructs a query string and calls runQuery
  * to query the BiqQuery database. After fetching the data from the database, populates
@@ -48,7 +95,9 @@ function constructSupervisionDistrictColumnChart(
     xAxisColumn = "facility_name";
     tableName = "incarceration_facility_aggregated_metrics_materialized";
   } else {
-    throw new Error( "Invalid system provided. Please check all Google Form Inputs." );
+    throw new Error(
+      "Invalid system provided. Please check all Google Form Inputs."
+    );
   }
   yAxisColumn = `task_completions_${completionEventType.toLowerCase()}`;
 
@@ -65,8 +114,8 @@ function constructSupervisionDistrictColumnChart(
 
   supervisionDistrictData = runQuery(queryString);
 
-  const xAxisClean = CleanString(xAxisColumn);
-  const yAxisClean = CleanString(yAxisColumn);
+  const xAxisClean = cleanString(xAxisColumn);
+  const yAxisClean = cleanString(yAxisColumn);
 
   const title = `${workflow} Impact`;
 

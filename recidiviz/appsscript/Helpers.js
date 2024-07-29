@@ -96,19 +96,54 @@ function createColumnChart(data, chartData, title, xAxis, yAxis) {
   return chart;
 }
 
-
 /**
  * Clean string
  * @param {string} dbString The string/label from the database
  * @returns {string} cleanString The cleaned version of the string/label (camelCase)
  */
-function CleanString(dbString) {
+function cleanString(dbString) {
   let cleanString = dbString.toLowerCase();
-  
+
   cleanString = cleanString.replace("task_completions_", "");
 
-  cleanString = cleanString.split("_").map((word) => word.charAt(0).toUpperCase() +
-    word.slice(1)).join(" ");
+  cleanString = cleanString
+    .split("_")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
 
   return cleanString;
+}
+
+/**
+ * Get index of element to replace
+ * Find the index of the element we want to copy and replace
+ * @param {Body} body The template document body
+ * @param {Enum} elementType The type of element in which we are replacing text
+ * @param {string} textToMatch The string that we are replacing
+ * @returns {Number} childIdx The index of the child element in which we will copy and replace
+ */
+function getIndexOfElementToReplace(body, elementType, textToMatch) {
+  const totalChildren = body.getNumChildren();
+  var childIdx = null;
+
+  for (let idx = 0; idx !== totalChildren; idx++) {
+    let child = body.getChild(idx);
+
+    if (child.getType() === elementType) {
+      if (elementType === DocumentApp.ElementType.TABLE) {
+        // At this point, the template table is 3 rows by 2 columns
+        // We want to get the cell in the third row, second column
+        // Note that cells start at index 0
+        child = child.getCell(2, 1);
+      }
+      
+      if (child.getText() === textToMatch) {
+        // We found the start of where we want to copy
+        childIdx = idx;
+        break;
+      }
+    }
+  }
+
+  return childIdx
 }
