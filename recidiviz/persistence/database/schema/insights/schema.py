@@ -29,6 +29,7 @@ from sqlalchemy import (
     Identity,
     Integer,
     String,
+    sql,
 )
 from sqlalchemy.dialects.postgresql import ARRAY, JSONB
 from sqlalchemy.orm import DeclarativeMeta, declarative_base
@@ -340,8 +341,10 @@ class UserMetadata(InsightsBase):
     __table_args__ = {"info": {RUN_MIGRATIONS: True}}
 
     pseudonymized_id = Column(String, primary_key=True)
-    has_seen_onboarding = Column(Boolean, nullable=False, default=False)
-    has_dismissed_data_unavailable_note = Column(Boolean, nullable=False, default=False)
+    has_seen_onboarding = Column(Boolean, nullable=False, server_default=sql.false())
+    has_dismissed_data_unavailable_note = Column(
+        Boolean, nullable=False, server_default=sql.false()
+    )
     has_dismissed_rate_over_100_percent_note = Column(
-        Boolean, nullable=False, default=False
+        Boolean, nullable=False, server_default=sql.false()
     )
