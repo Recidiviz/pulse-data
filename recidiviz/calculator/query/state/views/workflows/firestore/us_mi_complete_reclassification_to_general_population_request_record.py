@@ -24,12 +24,12 @@ from recidiviz.calculator.query.state.dataset_config import (
     NORMALIZED_STATE_DATASET,
     SESSIONS_DATASET,
 )
+from recidiviz.calculator.query.state.views.workflows.firestore.opportunity_record_query_fragments import (
+    join_current_task_eligibility_spans_with_external_id,
+)
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.dataset_config import (
     task_eligibility_spans_state_specific_dataset,
-)
-from recidiviz.task_eligibility.utils.almost_eligible_query_fragments import (
-    clients_eligible,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -48,75 +48,14 @@ US_MI_COMPLETE_RECLASSIFICATION_TO_GENERAL_POPULATION_REQUEST_RECORD_DESCRIPTION
 
 US_MI_COMPLETE_RECLASSIFICATION_TO_GENERAL_POPULATION_REQUEST_RECORD_QUERY_TEMPLATE = f"""
 
-WITH current_population AS (
-/* Queries all current eligible spans, and all ineligible spans followed by an eligible span. 
-It also associates the current span with the reasons for the next eligible span */
-   SELECT
-        pei.external_id,
-        tes.person_id,
-        tes.state_code,
-        tes.reasons,
-        --pull reasons blob from the upcoming eligible span 
-        tes.next_reasons,
-        tes.ineligible_criteria,
-        tes.is_eligible,
-        tes.is_almost_eligible,
-    FROM (
-        SELECT 
-            c.*,
-            LEAD(is_eligible) OVER (PARTITION BY person_id ORDER BY start_date) AS next_eligibility,
-            LEAD(reasons) OVER (PARTITION BY person_id ORDER BY start_date) AS next_reasons,
-        FROM 
-            `{{project_id}}.{{task_eligibility_dataset}}.complete_reclassification_to_general_population_request_materialized` c
-        ) AS tes
-        LEFT JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
-            ON pei.person_id = tes.person_id 
-            AND pei.id_type = 'US_MI_DOC' 
-        WHERE 
-           CURRENT_DATE('US/Eastern') BETWEEN tes.start_date AND 
-                                         {nonnull_end_date_exclusive_clause('tes.end_date')}
-            --select spans of time where someone is either eligible, or their next span is eligible
-            AND (next_eligibility OR is_eligible)
-),
-reasons_for_eligibility AS (
-/* Queries the reasons for eligibility from the upcoming eligible span */
-    SELECT 
-        * EXCEPT(array_next_reasons),
-        CAST(
-                ARRAY(
-                SELECT JSON_VALUE(x.reason.overdue_in_temporary)
-                FROM UNNEST(array_next_reasons) AS x
-                WHERE STRING(x.criteria_name) = 'US_MI_ELIGIBLE_FOR_RECLASSIFICATION_FROM_SOLITARY_TO_GENERAL'
-                )[OFFSET(0)]
-        AS BOOL)  AS overdue_in_temporary,
-        CAST(
-                ARRAY(
-                SELECT JSON_VALUE(x.reason.overdue_in_temporary_date)
-                FROM UNNEST(array_next_reasons) AS x
-                WHERE STRING(x.criteria_name) = 'US_MI_ELIGIBLE_FOR_RECLASSIFICATION_FROM_SOLITARY_TO_GENERAL'
-                )[OFFSET(0)]
-        AS DATE)  AS overdue_in_temporary_date,
-    FROM 
-    ( SELECT 
-        *,
-        JSON_QUERY_ARRAY(next_reasons) AS array_next_reasons
-        FROM current_population)
-    WHERE ARRAY_LENGTH(array_next_reasons) > 0
-),
-eligible_and_almost_eligible AS (
-    -- ELIGIBLE
-    {clients_eligible(from_cte = 'reasons_for_eligibility')}
-    UNION ALL
-    -- ALMOST ELIGIBLE (7 days in temporary segregation)
-    SELECT
-        * EXCEPT (is_almost_eligible)
-    FROM reasons_for_eligibility
-    --add ineligible spans where the next span is eligible because the resident is overdue in temporary
-    --and their overdue_in_temporary_date is < 23 days away 
-    WHERE NOT is_eligible 
-        AND overdue_in_temporary
-        AND DATE_DIFF(overdue_in_temporary_date, CURRENT_DATE('US/Eastern'), DAY) < 23
-)
+WITH eligible_and_almost_eligible AS (
+/* Queries all current eligible or almost eligible spans */
+    {join_current_task_eligibility_spans_with_external_id(
+        state_code= "'US_MI'",
+        tes_task_query_view = 'complete_reclassification_to_general_population_request_materialized',
+        id_type = "'US_MI_DOC'",
+        eligible_and_almost_eligible_only=True,
+    )})
 SELECT 
     a.external_id,
     a.state_code,

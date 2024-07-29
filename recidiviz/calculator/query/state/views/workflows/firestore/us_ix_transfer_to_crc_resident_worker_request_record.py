@@ -41,11 +41,6 @@ from recidiviz.task_eligibility.dataset_config import (
     task_eligibility_criteria_state_specific_dataset,
     task_eligibility_spans_state_specific_dataset,
 )
-from recidiviz.task_eligibility.utils.almost_eligible_query_fragments import (
-    clients_eligible,
-    one_criteria_away_from_eligibility,
-    json_to_array_cte,
-)
 from recidiviz.task_eligibility.utils.us_ix_query_fragments import (
     CRC_INFORMATION_CONTACT_MODES,
     CRC_INFORMATION_STR,
@@ -83,34 +78,23 @@ permission to leave the facility for work purposes.
 """
 
 US_IX_TRANSFER_TO_CRC_RESIDENT_WORKER_REQUEST_RECORD_QUERY_TEMPLATE = f"""
-WITH current_incarcerated_population AS (
+WITH eligible_and_almost_eligible AS (
     -- Keep only current incarcerated individuals
     {join_current_task_eligibility_spans_with_external_id(
         state_code= "'US_IX'", 
         tes_task_query_view = 'transfer_to_crc_resident_worker_request_materialized',
-        id_type = "'US_IX_DOC'")}),
+        id_type = "'US_IX_DOC'",
+        eligible_and_almost_eligible_only=True,
+    )}),
 
     current_crc_work_release_eligible AS (
     -- Get folks eligible for CRC work-release
         {join_current_task_eligibility_spans_with_external_id(
             state_code= "'US_IX'", 
             tes_task_query_view = 'transfer_to_crc_work_release_request_materialized',
-            id_type = "'US_IX_DOC'")}  AND is_eligible),
-
-    json_to_array_cte AS (
-        {json_to_array_cte('current_incarcerated_population')}
-    ),
-
-    eligible_and_almost_eligible AS (
-        -- ELIGIBLE
-    {clients_eligible(from_cte = 'current_incarcerated_population')}
-
-        UNION ALL 
-
-        -- ALMOST ELIGIBLE: violent offnese
-    {one_criteria_away_from_eligibility('NOT_SERVING_FOR_VIOLENT_OFFENSE',
-                                        from_cte_table_name = "json_to_array_cte")}
-    ),
+            id_type = "'US_IX_DOC'",
+            eligible_only=True,
+        )}),
 
     eligible_and_almost_eligible_with_crc_work_release AS (
     -- Remove folks eligible for work-release from this list
