@@ -225,14 +225,6 @@ WHERE
     -- We get weekly data with expected statuses for the (future) week,
     -- so this ensures we only get statuses that have happened
     CAST(BW_SY AS INT64) <= CAST(FORMAT_DATE('%Y%m%d', CURRENT_TIMESTAMP()) AS INT64)
--- Warrant / abscosion statuses (65N*/65L*) are tracked in the statuses table, but don't
--- impact the *sentence* status. Filter these out.
-AND 
-    BW_SCD NOT LIKE '65N%' 
-AND 
-    BW_SCD NOT LIKE '65L%'
-AND
-    true
 -- Get every status after the first non-pretrial non-bond status code
 QUALIFY 
     BW_SY >= MIN(
