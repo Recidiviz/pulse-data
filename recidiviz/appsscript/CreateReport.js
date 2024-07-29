@@ -43,6 +43,7 @@ function main(e) {
   Logger.log("workflowsToInclude: %s", workflowsToInclude);
 
   const workflowToDistrictOrFacilitiesColumnChart = {};
+  const workflowToOpportunityGranted = {};
 
   const stateCodeToRows = getSheetValues();
   const stateRows = stateCodeToRows[stateCode];
@@ -52,7 +53,7 @@ function main(e) {
     stateRows.forEach((row) => {
       if (row.workflow === workflow) {
         workflowRow = row;
-      };
+      }
     });
     Logger.log("workflowRow: %s", workflowRow);
     const completionEventType = workflowRow.completionEventType;
@@ -60,25 +61,36 @@ function main(e) {
     const system = workflowRow.system;
     Logger.log("system: %s", system);
 
-    districtOrFacilitiesColumnChart = constructSupervisionDistrictColumnChart(
+    var opportunityGranted = constructOpportunitiesGrantedText(
       stateCode,
       timePeriod,
       endDateString,
-      workflow,
       completionEventType,
       system
     );
 
-    workflowToDistrictOrFacilitiesColumnChart[workflow] = districtOrFacilitiesColumnChart;
-  });
+    var districtOrFacilitiesColumnChart =
+      constructSupervisionDistrictColumnChart(
+        stateCode,
+        timePeriod,
+        endDateString,
+        workflow,
+        completionEventType,
+        system
+      );
 
+    workflowToDistrictOrFacilitiesColumnChart[workflow] =
+      districtOrFacilitiesColumnChart;
+    workflowToOpportunityGranted[workflow] = opportunityGranted;
+  });
 
   copyAndPopulateTemplateDoc(
     workflowToDistrictOrFacilitiesColumnChart,
     stateCode,
     timePeriod,
     endDateString,
-    workflowsToInclude
+    workflowsToInclude,
+    workflowToOpportunityGranted
   );
 }
 
@@ -92,13 +104,15 @@ function main(e) {
  * @param {string} timePeriod The time period passed in from the Google Form (ex: 'MONTH', 'QUARTER', or 'YEAR')
  * @param {string} endDateString The end date passed from the connected Google Form on form submit (ex: '2023-03-01')
  * @param {array} workflowsToInclude A list of Workflows to be included in the report
+ * @param {map} workflowToOpportunityGranted An object that maps the workflow name to the number of opportunities granted for that workflow
  */
 function copyAndPopulateTemplateDoc(
   workflowToDistrictOrFacilitiesColumnChart,
   stateCode,
   timePeriod,
   endDateString,
-  workflowsToInclude
+  workflowsToInclude,
+  workflowToOpportunityGranted
 ) {
   const template = DriveApp.getFileById(
     "1nsc_o2fTlldTQavxJveucWgDKkic_clKZjn0GuyF2N8"
@@ -125,39 +139,92 @@ function copyAndPopulateTemplateDoc(
 
   body.replaceText("{{today_date}}", today);
 
-  copyAndPopulateWorkflowSection(body, workflowsToInclude, workflowToDistrictOrFacilitiesColumnChart)
+  copyAndPopulateOpportunityGrants(body, workflowToOpportunityGranted);
+
+  copyAndPopulateWorkflowSection(
+    body,
+    workflowsToInclude,
+    workflowToDistrictOrFacilitiesColumnChart
+  );
+}
+
+/**
+ * Copy and populate opportunity grants
+ * Identifies, copies, and populates the total number of opportunuties granted (over all workflows) as well as the number of opportunities granted for each workflow.
+ * @param {Body} body The template document body
+ * @param {map} workflowToOpportunityGranted An object that maps the workflow name to the number of opportunities granted for that workflow
+ */
+function copyAndPopulateOpportunityGrants(body, workflowToOpportunityGranted) {
+  // First, populate the sum of all Opportunities Granted (for all Workflows)
+  var totalOpportunitiesGranted = 0;
+  Object.values(workflowToOpportunityGranted).forEach((opportunityGranted) => {
+    totalOpportunitiesGranted += opportunityGranted;
+  });
+  totalOpportunitiesGranted = totalOpportunitiesGranted.toLocaleString();
+  Logger.log("totalOpportunitiesGranted: %s", totalOpportunitiesGranted);
+  body.replaceText("{{opp_grants}}", totalOpportunitiesGranted);
+
+  // Next, populate the Opportunities Granted for each individual Workflow
+  const childIdx = getIndexOfElementToReplace(
+    body,
+    DocumentApp.ElementType.TABLE,
+    "{{grant_type}}: {{num_grants}} Grants"
+  );
+
+  const child = body.getChild(childIdx);
+  const cell = child.getCell(2, 1);
+  const textToReplace = cell.getChild(0);
+
+  // For each Workflow, copy the placeholder text and populate with the number of Opportunities Granted
+  var style = {};
+  style[DocumentApp.Attribute.BOLD] = true;
+
+  Object.entries(workflowToOpportunityGranted).forEach(
+    ([workflow, opportunityGranted]) => {
+      const textCopy = textToReplace.copy();
+
+      textCopy.replaceText(
+        "{{grant_type}}: {{num_grants}} Grants",
+        `${workflow}: ${opportunityGranted} Grants`
+      );
+      const startBoldIndex =
+        textCopy.findText(": ").getEndOffsetInclusive() + 1;
+      const endBoldIndex = textCopy.findText("Grants").getEndOffsetInclusive();
+      textCopy.editAsText().setAttributes(startBoldIndex, endBoldIndex, style);
+      cell.appendParagraph(textCopy);
+    }
+  );
+
+  // Finally, delete the original element that we copied
+  cell.removeChild(textToReplace);
 }
 
 /**
  * Copy and populate workflow section
  * The copyAndPopulateWorkflowSection identifies all elements we want to copy for each Workflow.
- * It then copies each element and replaces relevant text and images. 
+ * It then copies each element and replaces relevant text and images.
  * @param {Body} body The template document body
- * @param {array} workflowsToInclude A list of Workflows to be included in the report 
+ * @param {array} workflowsToInclude A list of Workflows to be included in the report
  * @param {map} workflowToDistrictOrFacilitiesColumnChart An object that maps the workflow name to it's districtOrFacilitiesColumnChart
  */
-function copyAndPopulateWorkflowSection(body, workflowsToInclude, workflowToDistrictOrFacilitiesColumnChart) {
+function copyAndPopulateWorkflowSection(
+  body,
+  workflowsToInclude,
+  workflowToDistrictOrFacilitiesColumnChart
+) {
+  const childIdx = getIndexOfElementToReplace(
+    body,
+    DocumentApp.ElementType.PARAGRAPH,
+    "{{workflow_name}} | Usage & Impact Report"
+  );
+
   const totalChildren = body.getNumChildren();
 
-  // First, find the index of the first element we want to copy
-  var childIdx = null;
-  for (let idx = 0; idx !== totalChildren; idx++) {
-    let child = body.getChild(idx);
-
-    if (child.getType() === DocumentApp.ElementType.PARAGRAPH) {
-      if (child.getText() === "{{workflow_name}} | Usage & Impact Report") {
-        // We found the start of where we want to copy
-        childIdx = idx;
-        break
-      }
-    }
-  };
-
   // Now, create an array of elements we want to copy
-  var elementsToCopy = []
+  var elementsToCopy = [];
   for (let idx = childIdx; idx !== totalChildren; idx++) {
     let child = body.getChild(idx);
-    elementsToCopy.push(child)
+    elementsToCopy.push(child);
   }
 
   // For each Workflow, copy the {{workflow_name}} | Usage & Impact Report section
@@ -167,10 +234,13 @@ function copyAndPopulateWorkflowSection(body, workflowsToInclude, workflowToDist
 
     elementsToCopy.forEach((element) => {
       const elementCopy = element.copy();
-      
-      if (elementCopy.getNumChildren() > 0 && elementCopy.getChild(0).getType() === DocumentApp.ElementType.INLINE_IMAGE) {
+
+      if (
+        elementCopy.getNumChildren() > 0 &&
+        elementCopy.getChild(0).getType() ===
+          DocumentApp.ElementType.INLINE_IMAGE
+      ) {
         elementCopyChild = elementCopy.getChild(0).copy();
-        var imageToReplace = null;
         const altTitle = elementCopyChild.getAltTitle();
         if (altTitle === "Impact Column Chart") {
           // Replace with generated chart
@@ -184,7 +254,7 @@ function copyAndPopulateWorkflowSection(body, workflowsToInclude, workflowToDist
         elementCopy.replaceText("{{workflow_name}}", workflow);
         body.appendParagraph(elementCopy);
       }
-    }); 
+    });
   });
 
   // Finally, delete the original elements that we copied
