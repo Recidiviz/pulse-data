@@ -18,7 +18,7 @@
 into a single `state` dataset."""
 from typing import List, Optional
 
-from sqlalchemy import Table
+from google.cloud.bigquery import SchemaField
 
 from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
 from recidiviz.big_query.big_query_address import (
@@ -40,28 +40,27 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
     get_direct_ingest_states_existing_in_env,
 )
-from recidiviz.persistence.database.bq_refresh.big_query_table_manager import (
-    bq_schema_for_sqlalchemy_table,
-)
-from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.pipelines.ingest.dataset_config import state_dataset_for_state_code
+from recidiviz.source_tables.union_tables_output_table_collector import (
+    build_unioned_state_source_table_collection,
+)
 from recidiviz.utils import metadata
 
 
 def _view_builder_for_table(
-    table: Table, states: List[StateCode]
+    table_address: BigQueryAddress,
+    table_schema: List[SchemaField],
+    states: List[StateCode],
 ) -> BigQueryViewBuilder:
     """Creates a view builder for the given state table that combines per state output
     from legacy ingest and ingest pipelines into a single view."""
-    table_schema = bq_schema_for_sqlalchemy_table(
-        schema_type=SchemaType.STATE, table=table
-    )
+    table_id = table_address.table_id
     column_names = [column.name for column in table_schema]
     dataflow_addresses = [
         ProjectSpecificBigQueryAddress(
             project_id=metadata.project_id(),
             dataset_id=state_dataset_for_state_code(state_code),
-            table_id=table.name,
+            table_id=table_id,
         )
         for state_code in states
     ]
@@ -75,29 +74,30 @@ def _view_builder_for_table(
 
     return SimpleBigQueryViewBuilder(
         dataset_id=STATE_BASE_VIEWS_DATASET,
-        view_id=f"{table.name}_view",
+        view_id=f"{table_id}_view",
         description=(
-            f"Output for {table.name} unioned from state-specific Dataflow "
+            f"Output for {table_id} unioned from state-specific Dataflow "
             f"ingest pipeline output datasets."
         ),
         view_query_template="UNION ALL\n".join(queries),
         should_materialize=True,
-        materialized_address_override=BigQueryAddress(
-            dataset_id=STATE_BASE_DATASET, table_id=table.name
-        ),
+        materialized_address_override=table_address,
     )
 
 
 # TODO(#29515): Delete this function when we move the `state` dataset refresh into the
 #  view graph.
 def combine_ingest_sources_into_single_state_dataset(
-    tables: List[Table], output_sandbox_prefix: Optional[str] = None
+    output_sandbox_prefix: Optional[str] = None,
 ) -> None:
     """Creates the `state` views for all tables, combining output from each individual
     ingest pipeline.
     """
     states = get_direct_ingest_states_existing_in_env()
-    view_builders = [_view_builder_for_table(table, states=states) for table in tables]
+    view_builders = [
+        _view_builder_for_table(table.address, table.schema_fields, states=states)
+        for table in build_unioned_state_source_table_collection().source_tables
+    ]
 
     address_overrides = None
     if output_sandbox_prefix:
