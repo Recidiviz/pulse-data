@@ -83,7 +83,7 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
             ReasonsField(
                 name="supervision_type",
                 type=bigquery.enums.SqlTypeNames.RECORD,
-                description="#TODO(#29059): Add reasons field description",
+                description="Raw-text supervision type(s)",
             ),
         ],
     )
