@@ -55,7 +55,6 @@ from more_itertools import one
 from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
 from recidiviz.big_query.big_query_address import ProjectSpecificBigQueryAddress
 from recidiviz.big_query.big_query_client import BigQueryClient, BigQueryClientImpl
-from recidiviz.calculator.query.state.dataset_config import NORMALIZED_STATE_DATASET
 from recidiviz.common.attr_mixins import attribute_field_type_reference_for_class
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.database.schema_utils import is_association_table
@@ -90,7 +89,7 @@ from recidiviz.source_tables.source_table_config import (
     SourceTableCollection,
 )
 from recidiviz.source_tables.union_tables_output_table_collector import (
-    build_unioned_normalized_state_source_table_collections,
+    build_unioned_normalized_state_source_table_collection,
 )
 from recidiviz.tools.calculator.compare_views import compare_table_or_view
 from recidiviz.tools.calculator.create_or_update_dataflow_sandbox import (
@@ -266,14 +265,7 @@ class StateDatasetValidator:
                 )
             )
         if schema_type == "normalized_state":
-            return SourceTableCollection(
-                dataset_id=NORMALIZED_STATE_DATASET,
-                source_tables_by_address={
-                    table.address: table
-                    for collection in build_unioned_normalized_state_source_table_collections()
-                    for table in collection.source_tables
-                },
-            )
+            return build_unioned_normalized_state_source_table_collection()
         raise ValueError(f"Unexpected schema_type: {schema_type}")
 
     def _is_enum_entity(self, table_name: str) -> bool:

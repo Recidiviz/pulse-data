@@ -17,49 +17,41 @@
 """Test for built source table collections"""
 import unittest
 
-from recidiviz.pipelines.pipeline_names import NORMALIZATION_PIPELINE_NAME
 from recidiviz.source_tables.collect_all_source_table_configs import (
     build_source_table_repository_for_collected_schemata,
 )
 from recidiviz.source_tables.source_table_config import (
-    DataflowPipelineSourceTableLabel,
+    IngestPipelineEntitySourceTableLabel,
     NormalizedStateAgnosticEntitySourceTableLabel,
+    NormalizedStateSpecificEntitySourceTableLabel,
+    UnionedStateAgnosticSourceTableLabel,
 )
 
 
 class CollectAllSourceTableConfigsTest(unittest.TestCase):
     """Test for built source table collections"""
 
-    def test_normalized_state_tables_have_state_code(self) -> None:
+    def test_state_schema_tables_have_state_code(self) -> None:
         source_table_repository = build_source_table_repository_for_collected_schemata(
             project_id=None
         )
-        normalization_datasets = (
-            source_table_repository.get_collections(
-                labels=[
-                    NormalizedStateAgnosticEntitySourceTableLabel(
-                        source_is_normalization_pipeline=True
-                    )
-                ]
+        datasets = (
+            source_table_repository.collections_labelled_with(
+                label_type=NormalizedStateAgnosticEntitySourceTableLabel
             )
-            + source_table_repository.get_collections(
-                labels=[
-                    NormalizedStateAgnosticEntitySourceTableLabel(
-                        source_is_normalization_pipeline=False
-                    )
-                ]
+            + source_table_repository.collections_labelled_with(
+                label_type=NormalizedStateSpecificEntitySourceTableLabel
             )
-            + source_table_repository.get_collections(
-                labels=[
-                    DataflowPipelineSourceTableLabel(
-                        pipeline_name=NORMALIZATION_PIPELINE_NAME
-                    )
-                ]
+            + source_table_repository.collections_labelled_with(
+                label_type=IngestPipelineEntitySourceTableLabel
+            )
+            + source_table_repository.collections_labelled_with(
+                label_type=UnionedStateAgnosticSourceTableLabel
             )
         )
 
-        for normalization_dataset in normalization_datasets:
-            for table in normalization_dataset.source_tables:
+        for dataset in datasets:
+            for table in dataset.source_tables:
                 self.assertIn(
                     "state_code",
                     {schema_field.name for schema_field in table.schema_fields},

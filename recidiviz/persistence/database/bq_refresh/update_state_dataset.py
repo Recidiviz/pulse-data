@@ -14,8 +14,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Functionality to union together dataflow (and legacy ingest) output for all states 
-into a single `state` dataset."""
+"""Functionality to union together dataflow ingest pipeline us_xx_state output for all
+states into a single `state` dataset.
+"""
 from typing import List, Optional
 
 from google.cloud.bigquery import SchemaField
@@ -77,7 +78,7 @@ def _view_builder_for_table(
         view_id=f"{table_id}_view",
         description=(
             f"Output for {table_id} unioned from state-specific Dataflow "
-            f"ingest pipeline output datasets."
+            f"ingest pipeline us_xx_state output datasets."
         ),
         view_query_template="UNION ALL\n".join(queries),
         should_materialize=True,

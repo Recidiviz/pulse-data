@@ -41,13 +41,17 @@ SHARED_METRIC_VIEWS_DATASET: str = "shared_metric_views"
 # pipelines, or which may be referenced by other views.
 REFERENCE_VIEWS_DATASET: str = "reference_views"
 
-# Views that are the union of the output from each state's PRIMARY Dataflow ingest
-# pipeline.
+# Views that are the union of the output from the us_xx_state datasets in each state's
+# Dataflow ingest pipeline.
 STATE_BASE_VIEWS_DATASET: str = "state_views"
 
 # The tables for the state schema, including output from each state's PRIMARY Dataflow
 # ingest pipeline.
 STATE_BASE_DATASET: str = "state"
+
+# Views that are the union of the output from the us_xx_normalized_state datasets in
+# each state's Dataflow ingest pipeline.
+NORMALIZED_STATE_VIEWS_DATASET: str = "normalized_state_views"
 
 # Where the normalized state tables live, with data from all states. For each entity
 # that is not normalized, these are a copy of the corresponding table in the `state`

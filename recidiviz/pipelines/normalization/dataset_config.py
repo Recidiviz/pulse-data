@@ -18,6 +18,8 @@
 from recidiviz.common.constants.states import StateCode
 
 
+# TODO(#31741): All usages of this should be eliminated once combined ingest and
+#  normalization pipelines are launched in all states.
 def normalized_state_dataset_for_state_code_legacy_normalization_output(
     state_code: StateCode,
 ) -> str:

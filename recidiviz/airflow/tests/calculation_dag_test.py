@@ -585,7 +585,6 @@ class TestCalculationPipelineDag(AirflowIntegrationTest):
             task.arguments[4:],
             [
                 "--entrypoint=UpdateNormalizedStateEntrypoint",
-                "--ingest_instance=SECONDARY",
                 "--sandbox_prefix=test_prefix",
                 # Assert uppercased
                 "--state_code_filter=US_CA",
@@ -607,7 +606,6 @@ class TestCalculationPipelineDag(AirflowIntegrationTest):
             task.arguments[4:],
             [
                 "--entrypoint=UpdateNormalizedStateEntrypoint",
-                "--ingest_instance=SECONDARY",
             ],
         )
 
@@ -621,7 +619,6 @@ class TestCalculationPipelineDag(AirflowIntegrationTest):
             task.arguments[4:],
             [
                 "--entrypoint=UpdateNormalizedStateEntrypoint",
-                "--ingest_instance=SECONDARY",
             ],
         )
 

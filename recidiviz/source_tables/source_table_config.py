@@ -158,14 +158,9 @@ class DataflowPipelineSourceTableLabel(SourceTableLabel[str]):
 class NormalizedStateAgnosticEntitySourceTableLabel(SourceTableLabel[bool]):
     """Label for source tables in the `normalized_state` dataset"""
 
-    # TODO(#29517): We should be able to remove this once the combined
-    #  ingest/normalization pipeline outputs ALL entities to its us_xx_normalized_state
-    #  dataset.
-    source_is_normalization_pipeline: bool = attr.ib(validator=attr_validators.is_bool)
-
     @property
     def value(self) -> bool:
-        return self.source_is_normalization_pipeline
+        return True
 
 
 @attr.define

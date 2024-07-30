@@ -139,7 +139,6 @@ def execute_update_normalized_state() -> RecidivizKubernetesPodOperator:
         container_name="update_normalized_state",
         arguments=[
             "--entrypoint=UpdateNormalizedStateEntrypoint",
-            INGEST_INSTANCE_JINJA_ARG,
             SANDBOX_PREFIX_JINJA_ARG,
             STATE_CODE_FILTER_JINJA_ARG,
         ],

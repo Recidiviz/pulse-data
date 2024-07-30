@@ -39,7 +39,7 @@ from recidiviz.source_tables.source_table_config import (
     NormalizedStateSpecificEntitySourceTableLabel,
 )
 from recidiviz.source_tables.union_tables_output_table_collector import (
-    build_unioned_normalized_state_source_table_collections,
+    build_unioned_normalized_state_source_table_collection,
     build_unioned_state_source_table_collection,
 )
 from recidiviz.tests.persistence.entity import fake_entities
@@ -225,24 +225,8 @@ class TestGetBqSchemaForEntitiesModule(unittest.TestCase):
     def test_parity_with_source_table_collection_normalized_state(self) -> None:
         expected_table_to_schema = {
             t.address.table_id: t.schema_fields
-            for collection in build_unioned_normalized_state_source_table_collections()
-            for t in collection.source_tables
+            for t in build_unioned_normalized_state_source_table_collection().source_tables
         }
-
-        # TODO(#31740): The unioned normalized_state dataset does not have these columns
-        #  in the state_charge_v2 table because the table is currently not normalized
-        #  so we pull directly from the `state` schema. We need to update the unioning
-        #  code to include these new columns and fill with NULLS for now until they are
-        #  hydrated at normalization time.
-        expected_table_to_schema["state_charge_v2"] = [
-            *expected_table_to_schema["state_charge_v2"],
-            SchemaField("description_external", "STRING", "NULLABLE"),
-            SchemaField("is_drug_external", "BOOLEAN", "NULLABLE"),
-            SchemaField("is_sex_offense_external", "BOOLEAN", "NULLABLE"),
-            SchemaField("is_violent_external", "BOOLEAN", "NULLABLE"),
-            SchemaField("ncic_category_external", "STRING", "NULLABLE"),
-            SchemaField("ncic_code_external", "STRING", "NULLABLE"),
-        ]
 
         table_to_schema = get_bq_schema_for_entities_module(normalized_state_entities)
 
