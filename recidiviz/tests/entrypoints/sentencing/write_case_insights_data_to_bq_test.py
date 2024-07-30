@@ -15,28 +15,17 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests for write_case_insights_data_to_bq.py"""
+import datetime
 import unittest
-import uuid
-from unittest import mock
-from unittest.mock import Mock, create_autospec
+from unittest.mock import Mock, call, patch
 
+import freezegun
 import pandas as pd
+from dateutil.tz import tzlocal
 
-from recidiviz.big_query.big_query_client import BigQueryClientImpl
-from recidiviz.entrypoints.ingest import update_state_dataset
 from recidiviz.entrypoints.sentencing import write_case_insights_data_to_bq
 
-REFRESH_ENTRYPOINT_PACKAGE_NAME = update_state_dataset.__name__
 
-
-@mock.patch(
-    f"{REFRESH_ENTRYPOINT_PACKAGE_NAME}.BigQueryClientImpl",
-    create_autospec(BigQueryClientImpl),
-)
-@mock.patch("time.sleep", Mock(side_effect=lambda _: None))
-@mock.patch(
-    "uuid.uuid4", Mock(return_value=uuid.UUID("8367379ff8674b04adfb9b595b277dc3"))
-)
 class TestWriteCaseInsightsDataToBQ(unittest.TestCase):
     """Tests for writing case insights data to BQ."""
 
@@ -46,7 +35,7 @@ class TestWriteCaseInsightsDataToBQ(unittest.TestCase):
     def tearDown(self) -> None:
         pass
 
-    def test_get_gendered_assessment_score_bucket(self) -> None:
+    def test_get_gendered_assessment_score_bucket_range(self) -> None:
         input_row = pd.Series({"gender": "FEMALE", "assessment_score": 0})
         (
             score_bucket_start,
@@ -320,6 +309,7 @@ class TestWriteCaseInsightsDataToBQ(unittest.TestCase):
                 "disposition_probation_pc": [1.0 / 2, 0.0, 1.0 / 3, 1.0],
                 "disposition_rider_pc": [1.0 / 2, 1.0 / 2, 1.0 / 3, 0.0],
                 "disposition_term_pc": [0.0, 1.0 / 2, 1.0 / 3, 0.0],
+                "disposition_num_records": [2, 2, 3, 2],
             }
         )
 
@@ -343,6 +333,795 @@ class TestWriteCaseInsightsDataToBQ(unittest.TestCase):
                     "most_severe_description",
                 ]
             ).reset_index(drop=True),
+        )
+
+    @patch(
+        "recidiviz.entrypoints.sentencing.write_case_insights_data_to_bq.add_attributes_to_index"
+    )
+    @patch(
+        "recidiviz.entrypoints.sentencing.write_case_insights_data_to_bq.get_recidivism_series_df_for_rollup_level"
+    )
+    def test_get_all_rollup_aggregated_df(
+        self,
+        mock_get_recidivism_series_df_for_rollup_level: Mock,
+        mock_add_attributes_to_index: Mock,
+    ) -> None:
+        mock_rollup_attributes = [
+            ["state_code", "most_severe_description"],
+            ["state_code", "most_severe_ncic_category_uniform"],
+        ]
+        recidivism_df = pd.DataFrame(
+            {
+                "state_code": ["US_IX", "US_IX"],
+                "most_severe_description": [
+                    "ASSAULT OR BATTERY",
+                    "MISUSE OF PUBLIC MONEY",
+                ],
+                "most_severe_ncic_category_uniform": ["Assault", "Bribery"],
+            }
+        )
+        returned_recidivism_series_dfs = [
+            pd.DataFrame(
+                index=pd.MultiIndex.from_arrays(
+                    [
+                        ["US_IX", "US_IX"],
+                        ["ASSAULT OR BATTERY", "MISUSE OF PUBLIC MONEY"],
+                    ],
+                    names=[
+                        "state_code",
+                        "most_severe_description",
+                    ],
+                ),
+                data=[
+                    [
+                        "fake_event_rate_dict_str1",
+                        "fake_event_rate_dict_str2",
+                        15,
+                        None,
+                        0.2,
+                        None,
+                    ],
+                    [
+                        "fake_event_rate_dict_str3",
+                        "fake_event_rate_dict_str4",
+                        10,
+                        20,
+                        0.5,
+                        0.1,
+                    ],
+                ],
+                columns=pd.MultiIndex.from_product(
+                    [
+                        ["event_rate_dict", "cohort_size", "final_ci_size"],
+                        ["PROBATION", "TERM"],
+                    ],
+                    names=["metric", "cohort_group"],
+                ),
+            ),
+            pd.DataFrame(
+                index=pd.MultiIndex.from_arrays(
+                    [
+                        ["US_IX", "US_IX"],
+                        ["ASSAULT OR BATTERY", "MISUSE OF PUBLIC MONEY"],
+                    ],
+                    names=[
+                        "state_code",
+                        "most_severe_description",
+                    ],
+                ),
+                data=[
+                    [
+                        "fake_event_rate_dict_str5",
+                        "fake_event_rate_dict_str6",
+                        20,
+                        10,
+                        0.1,
+                        0.2,
+                    ],
+                    [
+                        "fake_event_rate_dict_str7",
+                        "fake_event_rate_dict_str8",
+                        25,
+                        None,
+                        0.4,
+                        None,
+                    ],
+                ],
+                columns=pd.MultiIndex.from_product(
+                    [
+                        ["event_rate_dict", "cohort_size", "final_ci_size"],
+                        ["PROBATION", "TERM"],
+                    ],
+                    names=["metric", "cohort_group"],
+                ),
+            ),
+        ]
+        # These are the same as returned_recidivism_series_dfs but with indices added to the column names
+        recidivism_series_dfs_with_levels = [
+            pd.DataFrame(
+                index=pd.MultiIndex.from_arrays(
+                    [
+                        ["US_IX", "US_IX"],
+                        ["ASSAULT OR BATTERY", "MISUSE OF PUBLIC MONEY"],
+                    ],
+                    names=[
+                        "state_code",
+                        "most_severe_description",
+                    ],
+                ),
+                data=[
+                    [
+                        "fake_event_rate_dict_str1",
+                        "fake_event_rate_dict_str2",
+                        15,
+                        None,
+                        0.2,
+                        None,
+                    ],
+                    [
+                        "fake_event_rate_dict_str3",
+                        "fake_event_rate_dict_str4",
+                        10,
+                        20,
+                        0.5,
+                        0.1,
+                    ],
+                ],
+                columns=pd.MultiIndex.from_product(
+                    [
+                        ["cohort_size", "event_rate_dict", "final_ci_size"],
+                        ["PROBATION", "TERM"],
+                        [0],
+                    ],
+                    names=["metric", "cohort_group", "rollup_level"],
+                ),
+            ),
+            pd.DataFrame(
+                index=pd.MultiIndex.from_arrays(
+                    [
+                        ["US_IX", "US_IX"],
+                        ["ASSAULT OR BATTERY", "MISUSE OF PUBLIC MONEY"],
+                    ],
+                    names=[
+                        "state_code",
+                        "most_severe_description",
+                    ],
+                ),
+                data=[
+                    [
+                        "fake_event_rate_dict_str5",
+                        "fake_event_rate_dict_str6",
+                        20,
+                        10,
+                        0.1,
+                        0.2,
+                    ],
+                    [
+                        "fake_event_rate_dict_str7",
+                        "fake_event_rate_dict_str8",
+                        25,
+                        None,
+                        0.4,
+                        None,
+                    ],
+                ],
+                columns=pd.MultiIndex.from_product(
+                    [
+                        ["cohort_size", "event_rate_dict", "final_ci_size"],
+                        ["PROBATION", "TERM"],
+                        [1],
+                    ],
+                    names=["metric", "cohort_group", "rollup_level"],
+                ),
+            ),
+        ]
+        # These are the same as the first recidivism_series_dfs_with_levels but with NCIC categories added to the index
+        returned_add_attributes_df = pd.DataFrame(
+            index=pd.MultiIndex.from_arrays(
+                [
+                    ["US_IX", "US_IX"],
+                    ["ASSAULT OR BATTERY", "MISUSE OF PUBLIC MONEY"],
+                    ["Assault", "Fraud"],
+                ],
+                names=[
+                    "state_code",
+                    "most_severe_description",
+                    "most_severe_ncic_category_uniform",
+                ],
+            ),
+            data=[
+                [
+                    "fake_event_rate_dict_str1",
+                    "fake_event_rate_dict_str2",
+                    15,
+                    None,
+                    0.2,
+                    None,
+                ],
+                [
+                    "fake_event_rate_dict_str3",
+                    "fake_event_rate_dict_str4",
+                    10,
+                    20,
+                    0.5,
+                    0.1,
+                ],
+            ],
+            columns=pd.MultiIndex.from_product(
+                [
+                    ["cohort_size", "event_rate_dict", "final_ci_size"],
+                    ["PROBATION", "TERM"],
+                    [0],
+                ],
+                names=["metric", "cohort_group", "rollup_level"],
+            ),
+        )
+        mock_get_recidivism_series_df_for_rollup_level.side_effect = (
+            returned_recidivism_series_dfs
+        )
+        mock_add_attributes_to_index.return_value = returned_add_attributes_df
+
+        with patch(
+            "recidiviz.entrypoints.sentencing.write_case_insights_data_to_bq.ROLLUP_ATTRIBUTES",
+            mock_rollup_attributes,
+        ):
+            all_rollup_levels_df = (
+                write_case_insights_data_to_bq.get_all_rollup_aggregated_df(
+                    recidivism_df, [0, 3]
+                )
+            )
+
+        expected_all_rollup_levels_df = pd.DataFrame(
+            index=pd.MultiIndex.from_arrays(
+                [
+                    ["US_IX", "US_IX"],
+                    ["ASSAULT OR BATTERY", "MISUSE OF PUBLIC MONEY"],
+                    ["Assault", "Fraud"],
+                ],
+                names=[
+                    "state_code",
+                    "most_severe_description",
+                    "most_severe_ncic_category_uniform",
+                ],
+            ),
+            data=[
+                [
+                    "fake_event_rate_dict_str1",
+                    "fake_event_rate_dict_str2",
+                    15,
+                    None,
+                    0.2,
+                    None,
+                    "fake_event_rate_dict_str5",
+                    "fake_event_rate_dict_str6",
+                    20,
+                    10,
+                    0.1,
+                    0.2,
+                ],
+                [
+                    "fake_event_rate_dict_str3",
+                    "fake_event_rate_dict_str4",
+                    10,
+                    20,
+                    0.5,
+                    0.1,
+                    "fake_event_rate_dict_str7",
+                    "fake_event_rate_dict_str8",
+                    25,
+                    None,
+                    0.4,
+                    None,
+                ],
+            ],
+            columns=pd.MultiIndex.from_tuples(
+                [
+                    ("cohort_size", "PROBATION", 0),
+                    ("cohort_size", "TERM", 0),
+                    ("event_rate_dict", "PROBATION", 0),
+                    ("event_rate_dict", "TERM", 0),
+                    ("final_ci_size", "PROBATION", 0),
+                    ("final_ci_size", "TERM", 0),
+                    ("cohort_size", "PROBATION", 1),
+                    ("cohort_size", "TERM", 1),
+                    ("event_rate_dict", "PROBATION", 1),
+                    ("event_rate_dict", "TERM", 1),
+                    ("final_ci_size", "PROBATION", 1),
+                    ("final_ci_size", "TERM", 1),
+                ],
+                names=["metric", "cohort_group", "rollup_level"],
+            ),
+        )
+        mock_get_recidivism_series_df_for_rollup_level.assert_has_calls(
+            [
+                call(recidivism_df, [0, 3], ["state_code", "most_severe_description"]),
+                call(
+                    recidivism_df,
+                    [0, 3],
+                    ["state_code", "most_severe_ncic_category_uniform"],
+                ),
+            ]
+        )
+        # Use assert_frame_equal for add_attributes_to_index args because assert_called_with doesn't handle DataFrames
+        mock_add_attributes_to_index.assert_called_once()
+        pd.testing.assert_frame_equal(
+            recidivism_series_dfs_with_levels[0],
+            mock_add_attributes_to_index.call_args[1]["target_df"],
+        )
+        pd.testing.assert_frame_equal(
+            recidivism_df, mock_add_attributes_to_index.call_args[1]["reference_df"]
+        )
+
+        pd.testing.assert_frame_equal(
+            expected_all_rollup_levels_df, all_rollup_levels_df
+        )
+
+    def test_add_attributes_to_index(self) -> None:
+        reference_df = pd.DataFrame(
+            {
+                "state_code": [
+                    "US_IX",
+                    "US_IX",
+                    "US_IX",
+                    "US_IX",
+                    "US_IX",
+                    "US_IX",
+                    "US_IX",
+                    "US_IX",
+                ],
+                "gender": [
+                    "FEMALE",
+                    "FEMALE",
+                    "FEMALE",
+                    "FEMALE",
+                    "FEMALE",
+                    "MALE",
+                    "MALE",
+                    "MALE",
+                ],
+                "assessment_score_bucket_start": [0, 0, 0, 0, 0, 0, 0, 0],
+                "assessment_score_bucket_end": [20, 20, 20, 20, 20, 20, 20, 20],
+                "most_severe_description": [
+                    "DUI DRIVING",
+                    "DUI DRIVING",
+                    "FORGERY",
+                    "INSURANCE FRAUD",
+                    "ELUDING A POLICE OFFICER IN A MOTOR VEHICLE",
+                    "FORGERY",
+                    "INSURANCE FRAUD",
+                    "DUI DRIVING",
+                ],
+                "most_severe_ncic_category_uniform": [
+                    "Traffic Offenses",
+                    "Traffic Offenses",
+                    "Fraud",
+                    "Fraud",
+                    "Traffic Offenses",
+                    "Fraud",
+                    "Fraud",
+                    "Traffic Offenses",
+                ],
+            }
+        )
+        target_df = pd.DataFrame(
+            index=pd.MultiIndex.from_arrays(
+                [
+                    ["US_IX", "US_IX", "US_IX", "US_IX", "US_IX", "US_IX"],
+                    ["FEMALE", "FEMALE", "FEMALE", "FEMALE", "MALE", "MALE"],
+                    [0, 0, 0, 0, 0, 0],
+                    [20, 20, 20, 20, 20, 20],
+                    [
+                        "ELUDING A POLICE OFFICER IN A MOTOR VEHICLE",
+                        "DUI DRIVING",
+                        "FORGERY",
+                        "INSURANCE FRAUD",
+                        "FORGERY",
+                        "DUI DRIVING",
+                    ],
+                ],
+                names=[
+                    "state_code",
+                    "gender",
+                    "assessment_score_bucket_start",
+                    "assessment_score_bucket_end",
+                    "most_severe_description",
+                ],
+            ),
+            data=[5, 6, 7, 8, 9, 10],
+            columns=pd.MultiIndex.from_arrays(
+                [["cohort_size"], ["PROBATION"], [0]],
+                names=["metric", "cohort_group", "rollup_level"],
+            ),
+        )
+        added_attributes_df = write_case_insights_data_to_bq.add_attributes_to_index(
+            target_df, reference_df
+        )
+        expected_added_attributes_df = pd.DataFrame(
+            index=pd.MultiIndex.from_arrays(
+                [
+                    ["US_IX", "US_IX", "US_IX", "US_IX", "US_IX", "US_IX"],
+                    ["FEMALE", "FEMALE", "FEMALE", "FEMALE", "MALE", "MALE"],
+                    [0, 0, 0, 0, 0, 0],
+                    [20, 20, 20, 20, 20, 20],
+                    [
+                        "ELUDING A POLICE OFFICER IN A MOTOR VEHICLE",
+                        "DUI DRIVING",
+                        "FORGERY",
+                        "INSURANCE FRAUD",
+                        "FORGERY",
+                        "DUI DRIVING",
+                    ],
+                    [
+                        "Traffic Offenses",
+                        "Traffic Offenses",
+                        "Fraud",
+                        "Fraud",
+                        "Fraud",
+                        "Traffic Offenses",
+                    ],
+                ],
+                names=[
+                    "state_code",
+                    "gender",
+                    "assessment_score_bucket_start",
+                    "assessment_score_bucket_end",
+                    "most_severe_description",
+                    "most_severe_ncic_category_uniform",
+                ],
+            ),
+            data=[5, 6, 7, 8, 9, 10],
+            columns=pd.MultiIndex.from_product(
+                [["cohort_size"], ["PROBATION"], [0]],
+                names=["metric", "cohort_group", "rollup_level"],
+            ),
+        )
+
+        pd.testing.assert_frame_equal(expected_added_attributes_df, added_attributes_df)
+
+    def test_extract_rate_dicts_info(self) -> None:
+        event_rate_dicts_df = pd.DataFrame(
+            {
+                "event_rate_dicts": [
+                    {"event_rate": 0.5, "cohort_size": 10, "ci_size": 0.2},
+                    {"event_rate": 0.25, "cohort_size": 20, "ci_size": 0.1},
+                ]
+            }
+        )
+        extracted_info = write_case_insights_data_to_bq.extract_rate_dicts_info(
+            event_rate_dicts_df, "event_rate_dicts"
+        )
+        expected_extracted_info = {
+            "event_rate_dict": '[{"event_rate": 0.5, "cohort_size": 10, "ci_size": 0.2}, {"event_rate": 0.25, "cohort_size": 20, "ci_size": 0.1}]',
+            "cohort_size": 20,
+            "final_ci_size": 0.1,
+        }
+        self.assertDictEqual(expected_extracted_info, extracted_info)
+
+    @patch(
+        "recidiviz.entrypoints.sentencing.write_case_insights_data_to_bq.concatenate_recidivism_series"
+    )
+    @patch(
+        "recidiviz.entrypoints.sentencing.write_case_insights_data_to_bq.add_recidivism_rate_dicts"
+    )
+    @patch("recidiviz.entrypoints.sentencing.write_case_insights_data_to_bq.add_cis")
+    @patch(
+        "recidiviz.entrypoints.sentencing.write_case_insights_data_to_bq.gen_aggregated_cohort_event_df"
+    )
+    @freezegun.freeze_time(datetime.datetime(2024, 1, 1, 0, 0, 0, 0, tzinfo=tzlocal()))
+    def test_get_recidivism_series_df_for_rollup_level(
+        self,
+        mock_gen_aggregated_cohort_event_df: Mock,
+        mock_add_cis: Mock,
+        mock_add_recidivism_rate_dicts: Mock,
+        mock_concatenate_recidivism_series: Mock,
+    ) -> None:
+        recidivism_df = pd.DataFrame(
+            {
+                "state_code": ["US_IX", "US_IX"],
+                "most_severe_description": [
+                    "ASSAULT OR BATTERY",
+                    "MISUSE OF PUBLIC MONEY",
+                ],
+                "most_severe_ncic_category_uniform": ["Assault", "Bribery"],
+            }
+        )
+        returned_aggregated_df = pd.DataFrame(
+            index=pd.MultiIndex.from_arrays(
+                [
+                    [0, 3, 0, 3],
+                    ["US_IX", "US_IX", "US_IX", "US_IX"],
+                    [
+                        "ASSAULT OR BATTERY",
+                        "ASSAULT OR BATTERY",
+                        "MISUSE OF PUBLIC MONEY",
+                        "MISUSE OF PUBLIC MONEY",
+                    ],
+                ],
+                names=[
+                    "cohort_months",
+                    "state_code",
+                    "most_severe_description",
+                ],
+            ),
+            data={
+                "event_count": [0, 1, 0, 1],
+                "cohort_size": [1, 2, 1, 4],
+                "event_rate": [0, 0.5, 0, 0.25],
+            },
+        )
+        returned_concatenated_series_df = pd.DataFrame(
+            index=pd.MultiIndex.from_arrays(
+                [
+                    ["US_IX", "US_IX"],
+                    ["ASSAULT OR BATTERY", "MISUSE OF PUBLIC MONEY"],
+                ],
+                names=[
+                    "state_code",
+                    "most_severe_description",
+                ],
+            ),
+            data={
+                (("event_rate_dict", "PROBATION")): [
+                    "fake_event_rate_dict_str1",
+                    "fake_event_rate_dict_str2",
+                ],
+                (("event_rate_dict", "TERM")): [
+                    "fake_event_rate_dict_str3",
+                    "fake_event_rate_dict_str4",
+                ],
+                (("cohort_size", "PROBATION")): [15, 10],
+                (("cohort_size", "TERM")): [None, 20],
+                (("final_ci_size", "PROBATION")): [0.2, 0.5],
+                (("final_ci_size", "TERM")): [None, 0.1],
+            },
+        )
+        mock_gen_aggregated_cohort_event_df.return_value = returned_aggregated_df
+        # The Mock mock_add_cis just returns the same DataFrame as the input
+        mock_add_cis.return_value = returned_aggregated_df
+        # The Mock add_recidivism_rate_dicts just returns the same DataFrame as the input
+        mock_add_recidivism_rate_dicts.return_value = returned_aggregated_df
+        mock_concatenate_recidivism_series.return_value = (
+            returned_concatenated_series_df
+        )
+
+        concatenated_recidivism_series_df = (
+            write_case_insights_data_to_bq.get_recidivism_series_df_for_rollup_level(
+                recidivism_df, [0, 3], ["state_code", "cohort_group", "gender"]
+            )
+        )
+
+        mock_gen_aggregated_cohort_event_df.assert_called_with(
+            recidivism_df,
+            cohort_date_field="cohort_start_date",
+            event_date_field="recidivism_date",
+            time_index=[0, 3],
+            time_unit="months",
+            cohort_attribute_col=["state_code", "cohort_group", "gender"],
+            last_day_of_data=datetime.datetime.now(),
+        )
+        mock_add_cis.assert_called_with(df=returned_aggregated_df)
+        mock_add_recidivism_rate_dicts.assert_called_with(df=returned_aggregated_df)
+        mock_concatenate_recidivism_series.assert_called_with(
+            returned_aggregated_df, ["state_code", "cohort_group", "gender"]
+        )
+        pd.testing.assert_frame_equal(
+            returned_concatenated_series_df, concatenated_recidivism_series_df
+        )
+
+    def test_extract_rollup_columns(self) -> None:
+        mock_rollup_attributes = [
+            ["state_code", "most_severe_description"],
+            ["state_code"],
+        ]
+        # The second level should be extracted for each row
+        all_rollup_levels_df = pd.DataFrame(
+            index=pd.MultiIndex.from_arrays(
+                [
+                    ["US_IX", "US_IX"],
+                    ["ASSAULT OR BATTERY", "MISUSE OF PUBLIC MONEY"],
+                    ["Assault", "Fraud"],
+                ],
+                names=[
+                    "state_code",
+                    "most_severe_description",
+                    "most_severe_ncic_category_uniform",
+                ],
+            ),
+            data=[
+                [
+                    "fake_event_rate_dict_str1",
+                    "fake_event_rate_dict_str2",
+                    15,
+                    None,
+                    0.2,
+                    None,
+                    "fake_event_rate_dict_str5",
+                    "fake_event_rate_dict_str6",
+                    20,
+                    10,
+                    0.1,
+                    0.2,
+                ],
+                [
+                    "fake_event_rate_dict_str3",
+                    "fake_event_rate_dict_str4",
+                    10,
+                    20,
+                    0.5,
+                    0.1,
+                    "fake_event_rate_dict_str7",
+                    "fake_event_rate_dict_str8",
+                    25,
+                    None,
+                    0.4,
+                    None,
+                ],
+            ],
+            columns=pd.MultiIndex.from_tuples(
+                [
+                    ("cohort_size", "PROBATION", 0),
+                    ("cohort_size", "TERM", 0),
+                    ("event_rate_dict", "PROBATION", 0),
+                    ("event_rate_dict", "TERM", 0),
+                    ("final_ci_size", "PROBATION", 0),
+                    ("final_ci_size", "TERM", 0),
+                    ("cohort_size", "PROBATION", 1),
+                    ("cohort_size", "TERM", 1),
+                    ("event_rate_dict", "PROBATION", 1),
+                    ("event_rate_dict", "TERM", 1),
+                    ("final_ci_size", "PROBATION", 1),
+                    ("final_ci_size", "TERM", 1),
+                ],
+                names=["metric", "cohort_group", "rollup_level"],
+            ),
+        )
+        all_rollup_levels_df = pd.DataFrame(
+            index=pd.MultiIndex.from_arrays(
+                [
+                    ["US_IX", "US_IX"],
+                    ["ASSAULT OR BATTERY", "MISUSE OF PUBLIC MONEY"],
+                    ["Assault", "Fraud"],
+                ],
+                names=[
+                    "state_code",
+                    "most_severe_description",
+                    "most_severe_ncic_category_uniform",
+                ],
+            ),
+            data=[
+                [
+                    10,
+                    15,
+                    20,
+                    "event_rate_dict_probation_0_0",
+                    "event_rate_dict_rider_0_0",
+                    "event_rate_dict_term_0_0",
+                    0.25,
+                    0.1,
+                    0.05,
+                    15,
+                    20,
+                    25,
+                    "event_rate_dict_probation_0_1",
+                    "event_rate_dict_rider_0_1",
+                    "event_rate_dict_term_0_1",
+                    0.1,
+                    0.05,
+                    0.03,
+                ],
+                [
+                    11,
+                    16,
+                    21,
+                    "event_rate_dict_probation_1_0",
+                    "event_rate_dict_rider_1_0",
+                    "event_rate_dict_term_1_0",
+                    0.24,
+                    0.09,
+                    0.04,
+                    16,
+                    21,
+                    26,
+                    "event_rate_dict_probation_1_1",
+                    "event_rate_dict_rider_1_1",
+                    "event_rate_dict_term_1_1",
+                    0.09,
+                    0.04,
+                    0.02,
+                ],
+            ],
+            columns=pd.MultiIndex.from_tuples(
+                [
+                    ("cohort_size", "PROBATION", 0),
+                    ("cohort_size", "RIDER", 0),
+                    ("cohort_size", "TERM", 0),
+                    ("event_rate_dict", "PROBATION", 0),
+                    ("event_rate_dict", "RIDER", 0),
+                    ("event_rate_dict", "TERM", 0),
+                    ("final_ci_size", "PROBATION", 0),
+                    ("final_ci_size", "RIDER", 0),
+                    ("final_ci_size", "TERM", 0),
+                    ("cohort_size", "PROBATION", 1),
+                    ("cohort_size", "RIDER", 1),
+                    ("cohort_size", "TERM", 1),
+                    ("event_rate_dict", "PROBATION", 1),
+                    ("event_rate_dict", "RIDER", 1),
+                    ("event_rate_dict", "TERM", 1),
+                    ("final_ci_size", "PROBATION", 1),
+                    ("final_ci_size", "RIDER", 1),
+                    ("final_ci_size", "TERM", 1),
+                ],
+                names=["metric", "cohort_group", "rollup_level"],
+            ),
+        )
+
+        with patch(
+            "recidiviz.entrypoints.sentencing.write_case_insights_data_to_bq.ROLLUP_ATTRIBUTES",
+            mock_rollup_attributes,
+        ):
+            rollup_df_with_extracted_columns = (
+                write_case_insights_data_to_bq.extract_rollup_columns(
+                    all_rollup_levels_df
+                )
+            )
+
+        expected_rollup_df_with_extracted_columns = pd.DataFrame(
+            data=[
+                [
+                    "US_IX",
+                    "ASSAULT OR BATTERY",
+                    "Assault",
+                    1,
+                    15,
+                    20,
+                    25,
+                    "event_rate_dict_probation_0_1",
+                    "event_rate_dict_rider_0_1",
+                    "event_rate_dict_term_0_1",
+                    0.1,
+                    0.05,
+                    0.03,
+                    60,
+                    '{"state_code": "US_IX"}',
+                ],
+                [
+                    "US_IX",
+                    "MISUSE OF PUBLIC MONEY",
+                    "Fraud",
+                    1,
+                    16,
+                    21,
+                    26,
+                    "event_rate_dict_probation_1_1",
+                    "event_rate_dict_rider_1_1",
+                    "event_rate_dict_term_1_1",
+                    0.09,
+                    0.04,
+                    0.02,
+                    63,
+                    '{"state_code": "US_IX"}',
+                ],
+            ],
+            columns=[
+                "state_code",
+                "most_severe_description",
+                "most_severe_ncic_category_uniform",
+                "rollup_level",
+                ("cohort_size", "PROBATION"),
+                ("cohort_size", "RIDER"),
+                ("cohort_size", "TERM"),
+                "recidivism_probation_series",
+                "recidivism_rider_series",
+                "recidivism_term_series",
+                ("final_ci_size", "PROBATION"),
+                ("final_ci_size", "RIDER"),
+                ("final_ci_size", "TERM"),
+                "recidivism_num_records",
+                "recidivism_rollup",
+            ],
+        )
+        pd.testing.assert_frame_equal(
+            expected_rollup_df_with_extracted_columns, rollup_df_with_extracted_columns
         )
 
     def test_add_cis(self) -> None:
@@ -369,21 +1148,27 @@ class TestWriteCaseInsightsDataToBQ(unittest.TestCase):
 
     def test_add_recidivism_rate_dicts(self) -> None:
         df = pd.DataFrame(
-            {
-                "cohort_months": [0, 3, 6, 9, 12],
+            index=pd.MultiIndex.from_arrays(
+                [[0, 3, 6, 9, 12], ["US_IX", "US_IX", "US_IX", "US_IX", "US_IX"]],
+                names=["cohort_months", "state_code"],
+            ),
+            data={
                 "event_rate": [0.0, 0.2, 0.5, 0.9, 1.0],
                 "cohort_size": [10, 10, 100, 1000, 10],
                 "lower_ci": [0.0, 0.0, 0.402002, 0.881406, 1.0],
                 "upper_ci": [0.0, 0.447918, 0.597998, 0.918594, 1.0],
                 "ci_size": [0.0, 0.447918, 0.195996, 0.037188, 0.0],
-            }
+            },
         )
 
-        write_case_insights_data_to_bq.add_recidivism_rate_dicts(df)
+        df = write_case_insights_data_to_bq.add_recidivism_rate_dicts(df)
 
         expected_df_with_recidivism_rate_dicts = pd.DataFrame(
-            {
-                "cohort_months": [0, 3, 6, 9, 12],
+            index=pd.MultiIndex.from_arrays(
+                [[0, 3, 6, 9, 12], ["US_IX", "US_IX", "US_IX", "US_IX", "US_IX"]],
+                names=["cohort_months", "state_code"],
+            ),
+            data={
                 "event_rate": [0.0, 0.2, 0.5, 0.9, 1.0],
                 "cohort_size": [10, 10, 100, 1000, 10],
                 "lower_ci": [0.0, 0.0, 0.402002, 0.881406, 1.0],
@@ -395,38 +1180,48 @@ class TestWriteCaseInsightsDataToBQ(unittest.TestCase):
                         "event_rate": 0.0,
                         "lower_ci": 0.0,
                         "upper_ci": 0.0,
+                        "ci_size": 0.0,
+                        "cohort_size": 10,
                     },
                     {
                         "cohort_months": 3,
                         "event_rate": 0.2,
                         "lower_ci": 0.0,
                         "upper_ci": 0.447918,
+                        "ci_size": 0.447918,
+                        "cohort_size": 10,
                     },
                     {
                         "cohort_months": 6,
                         "event_rate": 0.5,
                         "lower_ci": 0.402002,
                         "upper_ci": 0.597998,
+                        "ci_size": 0.195996,
+                        "cohort_size": 100,
                     },
                     {
                         "cohort_months": 9,
                         "event_rate": 0.9,
                         "lower_ci": 0.881406,
                         "upper_ci": 0.918594,
+                        "ci_size": 0.037188,
+                        "cohort_size": 1000,
                     },
                     {
                         "cohort_months": 12,
                         "event_rate": 1.0,
                         "lower_ci": 1.0,
                         "upper_ci": 1.0,
+                        "ci_size": 0.0,
+                        "cohort_size": 10,
                     },
                 ],
-            }
+            },
         )
 
         pd.testing.assert_frame_equal(expected_df_with_recidivism_rate_dicts, df)
 
-    def test_get_recidivism_series(self) -> None:
+    def test_concatenate_recidivism_series(self) -> None:
         aggregated_df = pd.DataFrame(
             index=pd.MultiIndex.from_arrays(
                 [
@@ -459,38 +1254,58 @@ class TestWriteCaseInsightsDataToBQ(unittest.TestCase):
                         "cohort_months": 0,
                         "event_rate": 0.0,
                         "lower_ci": 0.0,
-                        "upper_ci": 0.0,
+                        "upper_ci": 0.5,
+                        "ci_size": 0.5,
+                        "cohort_size": 10,
                     },
                     {
                         "cohort_months": 0,
                         "event_rate": 0.0,
                         "lower_ci": 0.0,
-                        "upper_ci": 0.0,
+                        "upper_ci": 0.5,
+                        "ci_size": 0.5,
+                        "cohort_size": 15,
                     },
                     {
                         "cohort_months": 3,
                         "event_rate": 0.1,
                         "lower_ci": 0.0,
                         "upper_ci": 0.2,
+                        "ci_size": 0.2,
+                        "cohort_size": 15,
                     },
                     {
                         "cohort_months": 0,
                         "event_rate": 0.0,
                         "lower_ci": 0.0,
-                        "upper_ci": 0.0,
+                        "upper_ci": 0.5,
+                        "ci_size": 0.5,
+                        "cohort_size": 20,
                     },
                     {
                         "cohort_months": 3,
                         "event_rate": 0.2,
                         "lower_ci": 0.15,
                         "upper_ci": 0.25,
+                        "ci_size": 0.1,
+                        "cohort_size": 20,
                     },
                 ],
             },
         )
 
-        recidivism_series_df = write_case_insights_data_to_bq.get_recidivism_series(
-            aggregated_df
+        recidivism_series_df = (
+            write_case_insights_data_to_bq.concatenate_recidivism_series(
+                aggregated_df,
+                [
+                    "state_code",
+                    "cohort_group",
+                    "gender",
+                    "assessment_score_bucket_start",
+                    "assessment_score_bucket_end",
+                    "most_severe_description",
+                ],
+            )
         )
 
         expected_recidivism_series_df = pd.DataFrame(
@@ -510,127 +1325,193 @@ class TestWriteCaseInsightsDataToBQ(unittest.TestCase):
                     "most_severe_description",
                 ],
             ),
-            data={
-                "recidivism_probation_series": [
-                    '[{"cohort_months": 0, "event_rate": 0.0, "lower_ci": 0.0, "upper_ci": 0.0},'
-                    + ' {"cohort_months": 3, "event_rate": 0.1, "lower_ci": 0.0, "upper_ci": 0.2}]',
-                    '[{"cohort_months": 0, "event_rate": 0.0, "lower_ci": 0.0, "upper_ci": 0.0}]',
+            data=[
+                [
+                    '[{"cohort_months": 0, "event_rate": 0.0, "lower_ci": 0.0, "upper_ci": 0.5, "ci_size": 0.5, '
+                    + '"cohort_size": 15}, {"cohort_months": 3, "event_rate": 0.1, "lower_ci": 0.0, "upper_ci": 0.2, '
+                    + '"ci_size": 0.2, "cohort_size": 15}]',
+                    float("nan"),
+                    15,
+                    None,
+                    0.2,
                     None,
                 ],
-                "recidivism_term_series": [
+                [
+                    '[{"cohort_months": 0, "event_rate": 0.0, "lower_ci": 0.0, "upper_ci": 0.5, "ci_size": 0.5, '
+                    + '"cohort_size": 10}]',
+                    float("nan"),
+                    10,
                     None,
+                    0.5,
                     None,
-                    '[{"cohort_months": 0, "event_rate": 0.0, "lower_ci": 0.0, "upper_ci": 0.0},'
-                    + ' {"cohort_months": 3, "event_rate": 0.2, "lower_ci": 0.15, "upper_ci": 0.25}]',
                 ],
-            },
+                [
+                    float("nan"),
+                    '[{"cohort_months": 0, "event_rate": 0.0, "lower_ci": 0.0, "upper_ci": 0.5, "ci_size": 0.5, '
+                    + '"cohort_size": 20}, {"cohort_months": 3, "event_rate": 0.2, "lower_ci": 0.15, "upper_ci": 0.25, '
+                    + '"ci_size": 0.1, "cohort_size": 20}]',
+                    None,
+                    20,
+                    None,
+                    0.1,
+                ],
+            ],
+            columns=pd.MultiIndex.from_product(
+                [
+                    ["event_rate_dict", "cohort_size", "final_ci_size"],
+                    ["PROBATION", "TERM"],
+                ],
+                names=[None, "cohort_group"],
+            ),
         )
         pd.testing.assert_frame_equal(
             expected_recidivism_series_df, recidivism_series_df
         )
 
     def test_create_final_table(self) -> None:
+        mock_rollup_attributes = [
+            ["state_code", "cohort_group", "most_severe_description"],
+            ["state_code", "cohort_group"],
+        ]
         disposition_df = pd.DataFrame(
             {
-                "state_code": ["US_IX", "US_IX", "US_IX"],
-                "gender": ["FEMALE", "MALE", "MALE"],
-                "assessment_score_bucket_start": [0, 0, 0],
-                "assessment_score_bucket_end": [22, 20, 20],
-                "most_severe_description": ["Bribery", "Assault", "Burglary"],
-                "disposition_probation_pc": [0.9, 0.6, 0.0],
-                "disposition_rider_pc": [0.06, 0.3, 0.4],
-                "disposition_term_pc": [0.04, 0.1, 0.6],
+                "state_code": ["US_IX", "US_IX"],
+                "most_severe_description": [
+                    "ASSAULT OR BATTERY",
+                    "MISUSE OF PUBLIC MONEY",
+                ],
+                "disposition_probation_pc": [0.9, 0.0],
+                "disposition_rider_pc": [0.06, 0.4],
+                "disposition_term_pc": [0.04, 0.6],
             }
         )
 
-        aggregated_df = pd.DataFrame(
-            index=pd.MultiIndex.from_arrays(
+        rolled_up_recidivism_df = pd.DataFrame(
+            data=[
                 [
-                    ["US_IX", "US_IX", "US_IX", "US_IX", "US_IX"],
-                    ["PROBATION", "PROBATION", "PROBATION", "TERM", "TERM"],
-                    ["MALE", "FEMALE", "FEMALE", "MALE", "MALE"],
-                    [0, 0, 0, 0, 0],
-                    [20, 22, 22, 20, 20],
-                    ["Assault", "Bribery", "Bribery", "Burglary", "Burglary"],
+                    "US_IX",
+                    "ASSAULT OR BATTERY",
+                    "Assault",
+                    1,
+                    15,
+                    20,
+                    25,
+                    "event_rate_dict_probation_0_1",
+                    "event_rate_dict_rider_0_1",
+                    "event_rate_dict_term_0_1",
+                    0.1,
+                    0.05,
+                    0.03,
+                    60,
+                    '{"state_code": "US_IX"}',
                 ],
-                names=[
-                    "state_code",
-                    "cohort_group",
-                    "gender",
-                    "assessment_score_bucket_start",
-                    "assessment_score_bucket_end",
-                    "most_severe_description",
+                [
+                    "US_IX",
+                    "MISUSE OF PUBLIC MONEY",
+                    "Fraud",
+                    1,
+                    16,
+                    21,
+                    26,
+                    "event_rate_dict_probation_1_1",
+                    "event_rate_dict_rider_1_1",
+                    "event_rate_dict_term_1_1",
+                    0.09,
+                    0.04,
+                    0.02,
+                    63,
+                    '{"state_code": "US_IX"}',
                 ],
-            ),
-            data={
-                "cohort_months": [0, 0, 3, 0, 3],
-                "cohort_size": [50, 25, 25, 15, 15],
-                "event_rate_dict": [
-                    {
-                        "cohort_months": 0,
-                        "event_rate": 0.0,
-                        "lower_ci": 0.0,
-                        "upper_ci": 0.0,
-                    },
-                    {
-                        "cohort_months": 0,
-                        "event_rate": 0.0,
-                        "lower_ci": 0.0,
-                        "upper_ci": 0.0,
-                    },
-                    {
-                        "cohort_months": 3,
-                        "event_rate": 0.1,
-                        "lower_ci": 0.0,
-                        "upper_ci": 0.2,
-                    },
-                    {
-                        "cohort_months": 0,
-                        "event_rate": 0.0,
-                        "lower_ci": 0.0,
-                        "upper_ci": 0.0,
-                    },
-                    {
-                        "cohort_months": 3,
-                        "event_rate": 0.2,
-                        "lower_ci": 0.15,
-                        "upper_ci": 0.25,
-                    },
-                ],
-            },
+            ],
+            columns=[
+                "state_code",
+                "most_severe_description",
+                "most_severe_ncic_category_uniform",
+                "rollup_level",
+                ("cohort_size", "PROBATION"),
+                ("cohort_size", "RIDER"),
+                ("cohort_size", "TERM"),
+                "recidivism_probation_series",
+                "recidivism_rider_series",
+                "recidivism_term_series",
+                ("final_ci_size", "PROBATION"),
+                ("final_ci_size", "RIDER"),
+                ("final_ci_size", "TERM"),
+                "recidivism_num_records",
+                "recidivism_rollup",
+            ],
         )
-
-        final_table = write_case_insights_data_to_bq.create_final_table(
-            aggregated_df, disposition_df
-        )
+        with patch(
+            "recidiviz.entrypoints.sentencing.write_case_insights_data_to_bq.ROLLUP_ATTRIBUTES",
+            mock_rollup_attributes,
+        ):
+            final_table = write_case_insights_data_to_bq.create_final_table(
+                rolled_up_recidivism_df, disposition_df
+            )
 
         expected_final_table = pd.DataFrame(
-            {
-                "state_code": ["US_IX", "US_IX", "US_IX"],
-                "gender": ["FEMALE", "MALE", "MALE"],
-                "assessment_score_bucket_start": [0, 0, 0],
-                "assessment_score_bucket_end": [22, 20, 20],
-                "most_severe_description": ["Bribery", "Assault", "Burglary"],
-                "recidivism_probation_series": [
-                    '[{"cohort_months": 0, "event_rate": 0.0, "lower_ci": 0.0, "upper_ci": 0.0},'
-                    + ' {"cohort_months": 3, "event_rate": 0.1, "lower_ci": 0.0, "upper_ci": 0.2}]',
-                    '[{"cohort_months": 0, "event_rate": 0.0, "lower_ci": 0.0, "upper_ci": 0.0}]',
-                    float("nan"),
+            data=[
+                [
+                    "US_IX",
+                    "ASSAULT OR BATTERY",
+                    "Assault",
+                    1,
+                    15,
+                    20,
+                    25,
+                    "event_rate_dict_probation_0_1",
+                    "event_rate_dict_rider_0_1",
+                    "event_rate_dict_term_0_1",
+                    0.1,
+                    0.05,
+                    0.03,
+                    60,
+                    '{"state_code": "US_IX"}',
+                    0.9,
+                    0.06,
+                    0.04,
                 ],
-                "recidivism_term_series": [
-                    float("nan"),
-                    float("nan"),
-                    '[{"cohort_months": 0, "event_rate": 0.0, "lower_ci": 0.0, "upper_ci": 0.0},'
-                    + ' {"cohort_months": 3, "event_rate": 0.2, "lower_ci": 0.15, "upper_ci": 0.25}]',
+                [
+                    "US_IX",
+                    "MISUSE OF PUBLIC MONEY",
+                    "Fraud",
+                    1,
+                    16,
+                    21,
+                    26,
+                    "event_rate_dict_probation_1_1",
+                    "event_rate_dict_rider_1_1",
+                    "event_rate_dict_term_1_1",
+                    0.09,
+                    0.04,
+                    0.02,
+                    63,
+                    '{"state_code": "US_IX"}',
+                    0.0,
+                    0.4,
+                    0.6,
                 ],
-                "cohort_size": [25, 50, 15],
-                "disposition_probation_pc": [0.9, 0.6, 0.0],
-                "disposition_rider_pc": [0.06, 0.3, 0.4],
-                "disposition_term_pc": [0.04, 0.1, 0.6],
-                "disposition_num_records": [25, 50, 15],
-                "recidivism_num_records": [25, 50, 15],
-                "recidivism_rollup": ["Bribery", "Assault", "Burglary"],
-            }
+            ],
+            columns=[
+                "state_code",
+                "most_severe_description",
+                "most_severe_ncic_category_uniform",
+                "rollup_level",
+                ("cohort_size", "PROBATION"),
+                ("cohort_size", "RIDER"),
+                ("cohort_size", "TERM"),
+                "recidivism_probation_series",
+                "recidivism_rider_series",
+                "recidivism_term_series",
+                ("final_ci_size", "PROBATION"),
+                ("final_ci_size", "RIDER"),
+                ("final_ci_size", "TERM"),
+                "recidivism_num_records",
+                "recidivism_rollup",
+                "disposition_probation_pc",
+                "disposition_rider_pc",
+                "disposition_term_pc",
+            ],
         )
 
         pd.testing.assert_frame_equal(expected_final_table, final_table)

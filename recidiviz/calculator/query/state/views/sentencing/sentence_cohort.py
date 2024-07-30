@@ -164,6 +164,7 @@ SENTENCE_COHORT_QUERY_TEMPLATE = f"""
           cohort_start_cte.cohort_group,
           cohort_start_cte.cohort_start_date,
           imposed_summary.most_severe_description,
+          imposed_summary.most_severe_ncic_category_uniform,
           imposed_summary.any_is_drug_uniform,
           imposed_summary.any_is_violent_uniform,
           imposed_summary.any_is_sex_offense,
