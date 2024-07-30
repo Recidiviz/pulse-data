@@ -34,7 +34,9 @@ from recidiviz.common.constants import states
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct import regions as regions_module
 from recidiviz.ingest.direct import templates as ingest_templates_module
+from recidiviz.pipelines.ingest import pipeline_utils
 from recidiviz.pipelines.utils import state_utils as state_specific_calculation_module
+from recidiviz.pipelines.utils.state_utils import state_calculation_config_manager
 from recidiviz.pipelines.utils.state_utils import (
     templates as state_specific_calculation_templates_module,
 )
@@ -54,8 +56,16 @@ from recidiviz.tests.pipelines.utils.state_utils import (
 )
 from recidiviz.tools.docs.utils import PLACEHOLDER_TO_DO_STRING
 from recidiviz.tools.utils.script_helpers import prompt_for_confirmation
+from recidiviz.utils.log_helpers import RECIDIVIZ_ROOT
 from recidiviz.validation.config import regions as validation_config_module
 from recidiviz.validation.config import templates as validation_config_templates_module
+
+STATE_CALCULATION_CONFIG_MANAGER_RELATIVE_PATH = os.path.relpath(
+    state_calculation_config_manager.__file__, RECIDIVIZ_ROOT
+)
+PIPELINE_UTILS_RELATIVE_PATH = os.path.relpath(
+    pipeline_utils.__file__, start=RECIDIVIZ_ROOT
+)
 
 DEFAULT_WORKING_DIR: str = os.path.dirname(recidiviz.__file__)
 REGIONS_DIR_PATH = os.path.dirname(
@@ -209,7 +219,7 @@ class RegionFilesGenerator:
                     line,
                 )
                 line = re.sub(
-                    r"from recidiviz\.calculator\.pipeline\.utils\.state_utils\.templates",
+                    r"from recidiviz\.pipelines\.utils\.state_utils\.templates",
                     "from recidiviz.pipelines.utils.state_utils",
                     line,
                 )
@@ -242,8 +252,24 @@ class RegionFilesGenerator:
 
 
 def main(region_code: str) -> None:
+    logging.info("Generating files for [%s]...", region_code.upper())
     generator = RegionFilesGenerator(region_code)
     generator.generate_all_new_dirs_and_files()
+
+    prompt_for_confirmation(
+        f"Before committing, you will need to update "
+        f"[{STATE_CALCULATION_CONFIG_MANAGER_RELATIVE_PATH}] to return the appropriate "
+        f"delegate for [{region_code.upper()}] in each of the functions in that file.",
+        "OK",
+        exit_on_cancel=False,
+    )
+    prompt_for_confirmation(
+        f"Before committing, you will need to choose a default pipeline region for "
+        f"[{region_code.upper()}] and add it to DEFAULT_PIPELINE_REGIONS_BY_STATE_CODE "
+        f"in [{PIPELINE_UTILS_RELATIVE_PATH}].",
+        "OK",
+        exit_on_cancel=False,
+    )
 
     # TODO(#30008): Remove this confirmation once we figure out how to generate these
     #  Slack integrations via Terraform.

@@ -37,9 +37,9 @@ def prompt_for_confirmation(
     input_prompt = f"{input_text}"
     accepted_response = accepted_response_override or "Y"
     if accepted_response_override:
-        input_prompt += (
-            f'\nPlease type "{accepted_response}" to confirm. (Anything else exits): '
-        )
+        input_prompt += f'\nPlease type "{accepted_response}" to confirm:'
+        if exit_on_cancel:
+            input_prompt = input_prompt.rstrip(":") + ". (Anything else exits):"
     else:
         input_prompt += " [y/n]: "
 
