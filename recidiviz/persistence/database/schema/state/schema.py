@@ -3027,6 +3027,12 @@ class StateSupervisionContact(StateBase, _ReferencesStatePersonSharedColumns):
         "verified at this contact.",
     )
 
+    supervision_contact_metadata = Column(
+        Text,
+        comment="Arbitrary JSON-formatted metadata relevant to a fine understanding of "
+        "this supervision contact.",
+    )
+
 
 class StateEmploymentPeriod(StateBase, _ReferencesStatePersonSharedColumns):
     """Represents a StateEmploymentPeriod in the SQL schema."""

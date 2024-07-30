@@ -1770,6 +1770,10 @@ class StateSupervisionContact(HasExternalIdEntity, BuildableAttr, DefaultableAtt
         default=None, validator=attr_validators.is_opt_str
     )
 
+    supervision_contact_metadata: Optional[str] = attr.ib(
+        default=None, validator=attr_validators.is_opt_str
+    )
+
     #   - How
     contact_method: Optional[StateSupervisionContactMethod] = attr.ib(
         default=None, validator=attr_validators.is_opt(StateSupervisionContactMethod)
