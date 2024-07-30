@@ -26,11 +26,10 @@ from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.big_query.success_persister import RefreshBQDatasetSuccessPersister
 from recidiviz.entrypoints.entrypoint_interface import EntrypointInterface
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
-from recidiviz.persistence.database.bq_refresh.union_dataflow_ingest import (
+from recidiviz.persistence.database.bq_refresh.update_state_dataset import (
     combine_ingest_sources_into_single_state_dataset,
 )
 from recidiviz.persistence.database.schema_type import SchemaType
-from recidiviz.persistence.database.schema_utils import get_all_table_classes_in_schema
 from recidiviz.utils.environment import gcp_only
 
 LOCK_WAIT_SLEEP_MAXIMUM_TIMEOUT = 60 * 60 * 4  # 4 hours
@@ -47,7 +46,6 @@ def execute_state_dataset_refresh(sandbox_prefix: Optional[str]) -> None:
     start = datetime.datetime.now()
 
     combine_ingest_sources_into_single_state_dataset(
-        tables=list(get_all_table_classes_in_schema(SchemaType.STATE)),
         output_sandbox_prefix=sandbox_prefix,
     )
 
