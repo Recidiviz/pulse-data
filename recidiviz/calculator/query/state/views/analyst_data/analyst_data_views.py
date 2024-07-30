@@ -288,6 +288,9 @@ from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_sentence_lo
 from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_zero_tolerance_codes import (
     US_TN_ZERO_TOLERANCE_CODES_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.analyst_data.workflows_live_completion_event_types_by_state import (
+    WORKFLOWS_LIVE_COMPLETION_EVENT_TYPES_BY_STATE_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.analyst_data.workflows_officer_events import (
     WORKFLOWS_OFFICER_EVENTS_VIEW_BUILDER,
 )
@@ -400,4 +403,5 @@ ANALYST_DATA_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     WORKFLOWS_USER_SIGNUPS_VIEW_BUILDER,
     INSIGHTS_CASELOAD_CATEGORY_SESSIONS_VIEW_BUILDER,
     INSIGHTS_SUPERVISION_OFFICER_CASELOAD_CATEGORY_SESSIONS_VIEW_BUILDER,
+    WORKFLOWS_LIVE_COMPLETION_EVENT_TYPES_BY_STATE_VIEW_BUILDER,
 ]

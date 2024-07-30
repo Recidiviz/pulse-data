@@ -65,6 +65,12 @@ class EventType(Enum):
     VIOLATION = "VIOLATION"
     VIOLATION_RESPONSE = "VIOLATION_RESPONSE"
     WORKFLOWS_PERSON_USAGE_EVENT = "WORKFLOWS_PERSON_USAGE_EVENT"
+
+    # The following workflows user enums capture types of usage events in the
+    # Workflows tool. Any additional event types should be added to any downstream
+    # usage-related metrics or views that reference workflows_user_events.
+    # e.g., `analyst_data.workflows_live_completion_event_types_by_state`
+
     WORKFLOWS_USER_ACTION = "WORKFLOWS_USER_ACTION"
     WORKFLOWS_USER_CLIENT_STATUS_UPDATE = "WORKFLOWS_USER_CLIENT_STATUS_UPDATE"
     WORKFLOWS_USER_PAGE = "WORKFLOWS_USER_PAGE"
