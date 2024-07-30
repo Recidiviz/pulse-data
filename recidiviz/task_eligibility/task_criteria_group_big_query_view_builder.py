@@ -25,6 +25,7 @@ from textwrap import indent
 from typing import List, Optional, Union
 
 import attr
+from google.cloud import bigquery
 from more_itertools import one
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
@@ -107,15 +108,27 @@ class TaskCriteriaGroupBigQueryViewBuilder:
                 )
 
         for field_name, fields_list in reasons_fields_by_name.items():
-            if (
-                len(fields_list) == 1
-                or field_name in self.allowed_duplicate_reasons_keys
-            ):
+            # Skip if there is only 1 criterion with the reason field name
+            if len(fields_list) == 1:
                 continue
 
-            sub_criteria_names = [
-                sub_criteria_name for _field, sub_criteria_name in fields_list
-            ]
+            sub_criteria_names = ", ".join(
+                [sub_criteria_name for _, sub_criteria_name in fields_list]
+            )
+            # Check that none of the duplicate reasons fields have ARRAY type
+            for reasons_field, sub_criteria_name in fields_list:
+                if reasons_field.type == bigquery.enums.StandardSqlTypeNames.ARRAY:
+                    raise ValueError(
+                        f"Found ARRAY type reason fields with the name [{field_name}] in multiple "
+                        f"sub-criteria of criteria group [{self.criteria_name}]: "
+                        f"{sub_criteria_names}. Criteria groups do not support duplicate reasons keys "
+                        f"with type ARRAY because they cannot be easily deduplicated."
+                    )
+
+            # Skip if the reason field name is in the allowed keys list
+            if field_name in self.allowed_duplicate_reasons_keys:
+                continue
+
             raise ValueError(
                 f"Found reason fields with name [{field_name}] in multiple "
                 f"sub-criteria of criteria group [{self.criteria_name}]: "
@@ -132,11 +145,17 @@ class TaskCriteriaGroupBigQueryViewBuilder:
     def flatten_reasons_blob_clause(self) -> str:
         """Returns query fragment that combines all fields across sub-criteria
         reason blobs into a single flat json, with an aggregation function that
-        deterministically dedupes across any duplicate reasons keys.
+        deterministically dedupes across any duplicate reasons keys:
+            - ANY_VALUE() is used for ARRAY reason types since ARRAY duplicates are not allowed across sub-criteria
+            - MAX() is used for all other reason types
         """
         reasons_query_fragment = ", ".join(
             [
-                f"""MAX({extract_object_from_json(reason.name, reason.type.value, "reason_v2")}) AS {reason.name}"""
+                f"{'ANY_VALUE' if reason.type == bigquery.enums.StandardSqlTypeNames.ARRAY else 'MAX'}("
+                + extract_object_from_json(
+                    reason.name, str(reason.type.value), "reason_v2"
+                )
+                + f""") AS {reason.name}"""
                 for reason in self.reasons_fields
             ]
         )

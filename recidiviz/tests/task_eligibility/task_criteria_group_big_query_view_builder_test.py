@@ -102,9 +102,9 @@ CRITERIA_5_STATE_SPECIFIC = StateSpecificTaskCriteriaBigQueryViewBuilder(
             description="Amount of fees owed",
         ),
         ReasonsField(
-            name="offense_type",
-            type=bigquery.enums.SqlTypeNames("STRING"),
-            description="Offense type that person is serving",
+            name="offense_types",
+            type=bigquery.enums.StandardSqlTypeNames.ARRAY,
+            description="Offense types that person is serving",
         ),
     ],
 )
@@ -209,7 +209,7 @@ Combines the following criteria queries using AND logic:
         expected_reasons_field_names = [
             "fees_owed",
             "latest_violation_date",
-            "offense_type",
+            "offense_types",
             "violations",
         ]
         actual_reasons_field_names = [
@@ -236,8 +236,8 @@ SELECT
     LOGICAL_AND(
         COALESCE(meets_criteria, meets_criteria_default)
     ) AS meets_criteria,
-    TO_JSON(STRUCT(MAX(SAFE_CAST(JSON_VALUE(reason_v2, '$.fees_owed') AS FLOAT)) AS fees_owed, MAX(SAFE_CAST(JSON_VALUE(reason_v2, '$.latest_violation_date') AS DATE)) AS latest_violation_date, MAX(SAFE_CAST(JSON_VALUE(reason_v2, '$.offense_type') AS STRING)) AS offense_type, MAX(SAFE_CAST(JSON_VALUE(reason_v2, '$.violations') AS FLOAT)) AS violations)) AS reason,
-    MAX(SAFE_CAST(JSON_VALUE(reason_v2, '$.fees_owed') AS FLOAT)) AS fees_owed, MAX(SAFE_CAST(JSON_VALUE(reason_v2, '$.latest_violation_date') AS DATE)) AS latest_violation_date, MAX(SAFE_CAST(JSON_VALUE(reason_v2, '$.offense_type') AS STRING)) AS offense_type, MAX(SAFE_CAST(JSON_VALUE(reason_v2, '$.violations') AS FLOAT)) AS violations,
+    TO_JSON(STRUCT(MAX(SAFE_CAST(JSON_VALUE(reason_v2, '$.fees_owed') AS FLOAT)) AS fees_owed, MAX(SAFE_CAST(JSON_VALUE(reason_v2, '$.latest_violation_date') AS DATE)) AS latest_violation_date, ANY_VALUE(JSON_VALUE_ARRAY(reason_v2, '$.offense_types')) AS offense_types, MAX(SAFE_CAST(JSON_VALUE(reason_v2, '$.violations') AS FLOAT)) AS violations)) AS reason,
+    MAX(SAFE_CAST(JSON_VALUE(reason_v2, '$.fees_owed') AS FLOAT)) AS fees_owed, MAX(SAFE_CAST(JSON_VALUE(reason_v2, '$.latest_violation_date') AS DATE)) AS latest_violation_date, ANY_VALUE(JSON_VALUE_ARRAY(reason_v2, '$.offense_types')) AS offense_types, MAX(SAFE_CAST(JSON_VALUE(reason_v2, '$.violations') AS FLOAT)) AS violations,
 FROM
     sub_sessions_with_attributes
 GROUP BY 1, 2, 3, 4
@@ -339,7 +339,7 @@ Combines the following criteria queries using AND logic:
         self.assertEqual(criteria_group.description, expected_description)
 
         # Check that reasons fields are properly handled and combined
-        expected_reasons_field_names = ["fees_owed", "offense_type"]
+        expected_reasons_field_names = ["fees_owed", "offense_types"]
         actual_reasons_field_names = [
             field.name for field in criteria_group.reasons_fields
         ]
@@ -365,8 +365,8 @@ SELECT
     LOGICAL_AND(
         COALESCE(meets_criteria, meets_criteria_default)
     ) AS meets_criteria,
-    TO_JSON(STRUCT(MAX(SAFE_CAST(JSON_VALUE(reason_v2, '$.fees_owed') AS FLOAT64)) AS fees_owed, MAX(SAFE_CAST(JSON_VALUE(reason_v2, '$.offense_type') AS STRING)) AS offense_type)) AS reason,
-    MAX(SAFE_CAST(JSON_VALUE(reason_v2, '$.fees_owed') AS FLOAT64)) AS fees_owed, MAX(SAFE_CAST(JSON_VALUE(reason_v2, '$.offense_type') AS STRING)) AS offense_type,
+    TO_JSON(STRUCT(MAX(SAFE_CAST(JSON_VALUE(reason_v2, '$.fees_owed') AS FLOAT64)) AS fees_owed, ANY_VALUE(JSON_VALUE_ARRAY(reason_v2, '$.offense_types')) AS offense_types)) AS reason,
+    MAX(SAFE_CAST(JSON_VALUE(reason_v2, '$.fees_owed') AS FLOAT64)) AS fees_owed, ANY_VALUE(JSON_VALUE_ARRAY(reason_v2, '$.offense_types')) AS offense_types,
 FROM
     sub_sessions_with_attributes
 GROUP BY 1, 2, 3, 4
@@ -376,7 +376,7 @@ GROUP BY 1, 2, 3, 4
     def test_criteria_group_state_specific_and_state_agnostic_duplicate_reasons_missing_state(
         self,
     ) -> None:
-        """Checks that AND group between a state-specific and a state-agnostic criteria having overlapping reasons
+        """Checks that OR group between a state-specific and a state-agnostic criteria having overlapping reasons
         with a missing exemption for duplicate keys throws an error"""
 
         with self.assertRaises(ValueError):
@@ -390,8 +390,36 @@ GROUP BY 1, 2, 3, 4
             )
             print(criteria_query.reasons_fields)
 
+    def test_criteria_group_duplicate_array_reasons(
+        self,
+    ) -> None:
+        """Checks that OR group with duplicate keys with type ARRAY throws an error"""
+
+        with self.assertRaises(ValueError):
+            criteria_query = OrTaskCriteriaGroup(
+                criteria_name="CRITERIA_WITH_DUPLICATE_ARRAY_REASONS",
+                sub_criteria_list=[
+                    CRITERIA_5_STATE_SPECIFIC,
+                    StateAgnosticTaskCriteriaBigQueryViewBuilder(
+                        criteria_name="CRITERIA_WITH_ARRAY_2",
+                        description="Another state-agnostic criteria with array reasons",
+                        criteria_spans_query_template="SELECT * FROM `{project_id}.sessions.super_sessions_materialized`",
+                        meets_criteria_default=False,
+                        reasons_fields=[
+                            ReasonsField(
+                                name="offense_types",
+                                type=bigquery.enums.StandardSqlTypeNames.ARRAY,
+                                description="Offense types that person is serving",
+                            ),
+                        ],
+                    ),
+                ],
+                allowed_duplicate_reasons_keys=["ineligible_offenses"],
+            )
+            print(criteria_query.reasons_fields)
+
     def test_criteria_group_two_state_specific_criteria_error(self) -> None:
-        """Checks that AND group between state-specific criteria from two different states throws an error"""
+        """Checks that OR group between state-specific criteria from two different states throws an error"""
         with self.assertRaises(ValueError):
             criteria_query = OrTaskCriteriaGroup(
                 criteria_name="CRITERIA_3_AND_CRITERIA_4",
@@ -438,7 +466,7 @@ SELECT
     NOT meets_criteria AS meets_criteria,
     reason,
     SAFE_CAST(JSON_VALUE(reason_v2, '$.fees_owed') AS FLOAT) AS fees_owed,
-    SAFE_CAST(JSON_VALUE(reason_v2, '$.offense_type') AS STRING) AS offense_type,
+    JSON_VALUE_ARRAY(reason_v2, '$.offense_types') AS offense_types,
 FROM
     `{project_id}.task_eligibility_criteria_us_ky.criteria_5_materialized`
 """
@@ -557,7 +585,7 @@ Combines the following criteria queries using OR logic:
         self.assertEqual(criteria_group.description, expected_description)
 
         # Check that reasons fields are properly handled and combined
-        expected_reasons_field_names = ["fees_owed", "offense_type"]
+        expected_reasons_field_names = ["fees_owed", "offense_types"]
         actual_reasons_field_names = [
             field.name for field in criteria_group.reasons_fields
         ]
@@ -583,8 +611,8 @@ SELECT
     LOGICAL_OR(
         COALESCE(meets_criteria, meets_criteria_default)
     ) AS meets_criteria,
-    TO_JSON(STRUCT(MAX(SAFE_CAST(JSON_VALUE(reason_v2, '$.fees_owed') AS FLOAT64)) AS fees_owed, MAX(SAFE_CAST(JSON_VALUE(reason_v2, '$.offense_type') AS STRING)) AS offense_type)) AS reason,
-    MAX(SAFE_CAST(JSON_VALUE(reason_v2, '$.fees_owed') AS FLOAT64)) AS fees_owed, MAX(SAFE_CAST(JSON_VALUE(reason_v2, '$.offense_type') AS STRING)) AS offense_type,
+    TO_JSON(STRUCT(MAX(SAFE_CAST(JSON_VALUE(reason_v2, '$.fees_owed') AS FLOAT64)) AS fees_owed, ANY_VALUE(JSON_VALUE_ARRAY(reason_v2, '$.offense_types')) AS offense_types)) AS reason,
+    MAX(SAFE_CAST(JSON_VALUE(reason_v2, '$.fees_owed') AS FLOAT64)) AS fees_owed, ANY_VALUE(JSON_VALUE_ARRAY(reason_v2, '$.offense_types')) AS offense_types,
 FROM
     sub_sessions_with_attributes
 GROUP BY 1, 2, 3, 4
@@ -632,7 +660,7 @@ Combines the following criteria queries using AND logic:
         self.assertEqual(criteria_group.description, expected_description)
 
         # Check that reasons fields are properly handled and combined
-        expected_reasons_field_names = ["fees_owed", "offense_type"]
+        expected_reasons_field_names = ["fees_owed", "offense_types"]
         actual_reasons_field_names = [
             field.name for field in criteria_group.reasons_fields
         ]
@@ -658,8 +686,8 @@ SELECT
     LOGICAL_AND(
         COALESCE(meets_criteria, meets_criteria_default)
     ) AS meets_criteria,
-    TO_JSON(STRUCT(MAX(SAFE_CAST(JSON_VALUE(reason_v2, '$.fees_owed') AS FLOAT64)) AS fees_owed, MAX(SAFE_CAST(JSON_VALUE(reason_v2, '$.offense_type') AS STRING)) AS offense_type)) AS reason,
-    MAX(SAFE_CAST(JSON_VALUE(reason_v2, '$.fees_owed') AS FLOAT64)) AS fees_owed, MAX(SAFE_CAST(JSON_VALUE(reason_v2, '$.offense_type') AS STRING)) AS offense_type,
+    TO_JSON(STRUCT(MAX(SAFE_CAST(JSON_VALUE(reason_v2, '$.fees_owed') AS FLOAT64)) AS fees_owed, ANY_VALUE(JSON_VALUE_ARRAY(reason_v2, '$.offense_types')) AS offense_types)) AS reason,
+    MAX(SAFE_CAST(JSON_VALUE(reason_v2, '$.fees_owed') AS FLOAT64)) AS fees_owed, ANY_VALUE(JSON_VALUE_ARRAY(reason_v2, '$.offense_types')) AS offense_types,
 FROM
     sub_sessions_with_attributes
 GROUP BY 1, 2, 3, 4
