@@ -29,6 +29,7 @@ DEFAULT_PIPELINE_REGIONS_BY_STATE_CODE: Dict[StateCode, str] = {
     StateCode.US_ID: "us-west3",
     StateCode.US_IX: "us-west3",
     StateCode.US_MI: "us-central1",
+    StateCode.US_MA: "us-central1",
     StateCode.US_ME: "us-east1",
     StateCode.US_MO: "us-central1",
     StateCode.US_NC: "us-east1",
