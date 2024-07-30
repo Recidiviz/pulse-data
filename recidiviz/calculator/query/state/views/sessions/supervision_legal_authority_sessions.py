@@ -37,9 +37,10 @@ SUPERVISION_LEGAL_AUTHORITY_SESSIONS_QUERY_TEMPLATE = f"""
         person_id,
         start_date,
         end_date_exclusive,
-        open_supervision_type AS compartment_level_2,
+        open_supervision_cl1 AS compartment_level_1,
+        open_supervision_cl2 AS compartment_level_2,
     FROM `{{project_id}}.sessions.compartment_sub_sessions_materialized`
-    WHERE open_supervision_type IS NOT NULL
+    WHERE open_supervision_cl1 IS NOT NULL
     )
     SELECT
         person_id,
@@ -47,9 +48,10 @@ SUPERVISION_LEGAL_AUTHORITY_SESSIONS_QUERY_TEMPLATE = f"""
         supervision_legal_authority_session_id,
         start_date,
         end_date_exclusive,
+        compartment_level_1,
         compartment_level_2,
     FROM ({aggregate_adjacent_spans(table_name='sub_sessions_cte',
-                                    attribute='compartment_level_2',
+                                    attribute=['compartment_level_1','compartment_level_2'],
                                     session_id_output_name='supervision_legal_authority_session_id',
                                     end_date_field_name='end_date_exclusive')})
     """
