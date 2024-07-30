@@ -189,12 +189,12 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
             ReasonsField(
                 name="eligible_sentences",
                 type=bigquery.enums.SqlTypeNames.RECORD,
-                description="#TODO(#29059): Add reasons field description",
+                description="Sentences eligible for earned discharge",
             ),
             ReasonsField(
                 name="ineligible_sentences",
                 type=bigquery.enums.SqlTypeNames.RECORD,
-                description="#TODO(#29059): Add reasons field description",
+                description="Sentences ineligible for earned discharge",
             ),
         ],
     )
