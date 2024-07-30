@@ -110,25 +110,25 @@ US_TN_FINES_FEES_SESSIONS_PREPROCESSED_QUERY_TEMPLATE = f"""
             1,2,3
     ),
     -- TODO(#30816): Consider pulling this aggregation logic into its own view
-    legal_authority_sessions_cte AS
+    prioritized_supervision_sessions_cte AS
     (
     SELECT 
         state_code,
         person_id,
         start_date,
         end_date_exclusive,
-    FROM `{{project_id}}.sessions.supervision_legal_authority_sessions_materialized`
+    FROM `{{project_id}}.sessions.prioritized_supervision_sessions_materialized`
     ),
-    legal_authority_sessions_agg AS 
+    prioritized_supervision_sessions_agg AS 
     (
     SELECT
         person_id,
         state_code,
-        supervision_legal_authority_session_id,
+        prioritized_supervision_session_id,
         start_date,
         end_date_exclusive,
-    FROM ({aggregate_adjacent_spans(table_name='legal_authority_sessions_cte',
-                                    session_id_output_name='supervision_legal_authority_session_id',
+    FROM ({aggregate_adjacent_spans(table_name='prioritized_supervision_sessions_cte',
+                                    session_id_output_name='prioritized_supervision_session_id',
                                     end_date_field_name='end_date_exclusive')})
     ),
     time_agg_join AS (
@@ -137,7 +137,7 @@ US_TN_FINES_FEES_SESSIONS_PREPROCESSED_QUERY_TEMPLATE = f"""
             p.person_id,
             p.change_date AS start_date,
             p.transaction_type,
-            supervision_legal_authority_session_id,
+            prioritized_supervision_session_id,
             LEAD(change_date) OVER (PARTITION BY p.state_code,
                                                p.person_id
                                   ORDER BY change_date) AS end_date,
@@ -147,13 +147,13 @@ US_TN_FINES_FEES_SESSIONS_PREPROCESSED_QUERY_TEMPLATE = f"""
                                     ) AS unpaid_balance,
             SUM(activity_amount) OVER (PARTITION BY p.state_code, 
                                                     p.person_id,
-                                                    ss.supervision_legal_authority_session_id
+                                                    ss.prioritized_supervision_session_id
                                     ORDER BY change_date
             ) AS unpaid_balance_within_supervision_session,
         FROM
             population_change_dates_agg p
         LEFT JOIN
-            legal_authority_sessions_agg ss
+            prioritized_supervision_sessions_agg ss
         ON 
             p.person_id = ss.person_id
         AND 
@@ -164,7 +164,7 @@ US_TN_FINES_FEES_SESSIONS_PREPROCESSED_QUERY_TEMPLATE = f"""
         person_id,
         start_date,
         end_date,
-        supervision_legal_authority_session_id,
+        prioritized_supervision_session_id,
         "SUPERVISION_FEES" AS fee_type,
         transaction_type,
         unpaid_balance,

@@ -51,21 +51,21 @@ Officer sessions are unique on person_id, and officer_id, and may be overlapping
 
 SUPERVISION_OFFICER_TRANSITIONAL_CASELOAD_TYPE_SESSIONS_QUERY_TEMPLATE = f"""
     WITH supervision_officer_sessions_lookback AS (
-    /* This CTE associates the previous officer within a legal authority session for each supervision officer session,
+    /* This CTE associates the previous officer within a prioritized_supervision_session for each supervision officer session,
      if the previous officer session has no date gap. */
     SELECT 
         so.* EXCEPT (supervising_officer_external_id),
         supervising_officer_external_id AS officer_id,
-        --select the last non null officer within the same supervision_legal_authority_session_id
+        --select the last non null officer within the same prioritized_supervision_session_id
         LAST_VALUE(so.supervising_officer_external_id IGNORE NULLS) 
-            OVER (PARTITION BY so.person_id, supervision_legal_authority_session_id 
+            OVER (PARTITION BY so.person_id, prioritized_supervision_session_id 
                 ORDER BY so.start_date  ROWS BETWEEN UNBOUNDED PRECEDING AND 1 PRECEDING)
                                                                             AS previous_officer_id
     FROM `{{project_id}}.sessions.supervision_officer_sessions_materialized` so
-    INNER JOIN `{{project_id}}.sessions.supervision_legal_authority_sessions_materialized` ss
+    INNER JOIN `{{project_id}}.sessions.prioritized_supervision_sessions_materialized` ss
         ON so.person_id = ss.person_id 
         AND so.state_code = ss.state_code
-        --join all supervision officer sessions that start within the same legal authority session
+        --join all supervision officer sessions that start within the prioritized_supervision_session
         AND so.start_date BETWEEN ss.start_date AND {nonnull_end_date_exclusive_clause('ss.end_date_exclusive')}
     ),
     intersection_spans_cte AS (

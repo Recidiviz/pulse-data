@@ -100,7 +100,7 @@ def supervision_legal_authority_sessions_excluding_general_incarceration() -> st
                 start_date,
                 end_date_exclusive,
             FROM `{{project_id}}.{{sessions_dataset}}.compartment_sub_sessions_materialized`
-            WHERE open_supervision_type IS NOT NULL
+            WHERE open_supervision_cl2 IS NOT NULL
                 AND compartment_level_2 <> 'GENERAL' 
                 AND state_code = 'US_PA'
         )
