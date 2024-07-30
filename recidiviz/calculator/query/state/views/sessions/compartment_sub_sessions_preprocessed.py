@@ -143,9 +143,17 @@ COMPARTMENT_SUB_SESSIONS_PREPROCESSED_QUERY_TEMPLATE = """
         If there is an overlapping supervision period, hydrate this field with the prioritized supervision
         `compartment_level_2 value`
         */
+        
+        
+        FIRST_VALUE(IF(cte.compartment_level_1 LIKE 'SUPERVISION%', cte.compartment_level_1, NULL)) OVER(
+            PARTITION BY cte.person_id, cte.state_code, cte.dataflow_session_id
+            ORDER BY IF(cte.compartment_level_1 LIKE 'SUPERVISION%', cl1_dedup.priority, 999) ASC) AS open_supervision_cl1,
+        
         FIRST_VALUE(IF(cte.compartment_level_1 LIKE 'SUPERVISION%', cte.compartment_level_2, NULL)) OVER(
             PARTITION BY cte.person_id, cte.state_code, cte.dataflow_session_id
-            ORDER BY IF(cte.compartment_level_1 LIKE 'SUPERVISION%', cl2_dedup.priority, 999) ASC) AS open_supervision_type,
+            ORDER BY IF(cte.compartment_level_1 LIKE 'SUPERVISION%', cl1_dedup.priority, 999) ASC,
+                IF(cte.compartment_level_1 LIKE 'SUPERVISION%', cl2_dedup.priority, 999) ASC) AS open_supervision_cl2,
+        
         cte.prioritized_race_or_ethnicity,
         cte.gender,
         cte.custodial_authority,
@@ -209,7 +217,8 @@ COMPARTMENT_SUB_SESSIONS_PREPROCESSED_QUERY_TEMPLATE = """
         CAST(NULL AS STRING) AS housing_unit_type,
         CAST(NULL AS STRING) AS housing_unit_type_raw_text,
         CAST(NULL AS STRING) AS case_type,
-        CAST(NULL AS STRING) AS open_supervision_type,
+        CAST(NULL AS STRING) AS open_supervision_cl1,
+        CAST(NULL AS STRING) AS open_supervision_cl2,
         prioritized_race_or_ethnicity,
         gender,
         CAST(NULL AS STRING) AS custodial_authority,
@@ -465,7 +474,8 @@ COMPARTMENT_SUB_SESSIONS_PREPROCESSED_QUERY_TEMPLATE = """
         first_sub_session,
         last_sub_session,
         session_id_prelim,
-        open_supervision_type,
+        open_supervision_cl1,
+        open_supervision_cl2,
         /*
         The following field is calculated to tells us which sub-sessions are actually impacted by the inference. This is
         used so that we can enforce that any recategorization of a sub-session compartment is applied to all
