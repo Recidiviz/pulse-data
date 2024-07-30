@@ -226,12 +226,15 @@ def extract_object_from_json(
     Args:
         object_column (str): The name of the column in the BigQuery table to extract.
         object_type (str): The type of the object we want as output. E.g. 'STRING', 'DATE'.
+            TODO(#31856) switch the |object_type| argument type from `str` to `StandardSqlTypeNames`
         json_column (str): The name of the JSON column to extract from. Defaults to
             "reason".
 
     Returns:
         str: A formatted BigQuery SQL query that extracts an object from a JSON column.
     """
+    if object_type == "ARRAY":
+        return f"""JSON_VALUE_ARRAY({json_column}, '$.{object_column}')"""
 
     return f"""SAFE_CAST(JSON_VALUE({json_column}, '$.{object_column}') AS {object_type})"""
 
