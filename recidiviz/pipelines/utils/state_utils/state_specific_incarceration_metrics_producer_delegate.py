@@ -27,3 +27,9 @@ class StateSpecificIncarcerationMetricsProducerDelegate(
 ):
     """Interface for state-specific decisions involved in generating metrics regarding
     incarceration."""
+
+    def primary_person_external_id_to_include(self) -> str:
+        """Determines the primary person_external_id type to include."""
+        raise NotImplementedError(
+            "Must replace this with an external id type defined in external_id_types.py"
+        )
