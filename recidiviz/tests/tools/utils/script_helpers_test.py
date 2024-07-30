@@ -71,7 +71,7 @@ from recidiviz.tools.utils.script_helpers import (
                     mock.call(
                         "test input"
                         '\nPlease type "YES" to confirm. '
-                        "(Anything else exits): \n"
+                        "(Anything else exits):\n"
                     )
                 ],
                 "exit_mock_check": lambda m: not m.called,
