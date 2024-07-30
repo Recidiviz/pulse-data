@@ -22,11 +22,11 @@ from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-SUPERVISION_LEGAL_AUTHORITY_SESSIONS_VIEW_NAME = "supervision_legal_authority_sessions"
+PRIORITIZED_SUPERVISION_SESSIONS_VIEW_NAME = "prioritized_supervision_sessions"
 
-SUPERVISION_LEGAL_AUTHORITY_SESSIONS_VIEW_DESCRIPTION = """Sessionized view of non-overlapping periods of continuous stay within a supervision type within a supervision legal authority"""
+PRIORITIZED_SUPERVISION_SESSIONS_VIEW_DESCRIPTION = """Sessionized view of non-overlapping periods of continuous stay within a supervision type within a supervision legal authority"""
 
-SUPERVISION_LEGAL_AUTHORITY_SESSIONS_QUERY_TEMPLATE = f"""
+PRIORITIZED_SUPERVISION_SESSIONS_QUERY_TEMPLATE = f"""
     -- TODO(#30001): Use legal_authority once hydrated
     -- TODO(#30002): Deprecate supervision_super_sessions in favor of this view
     -- TODO(#30815): Consider refactoring this view to not dedup to a single supervision type
@@ -45,26 +45,26 @@ SUPERVISION_LEGAL_AUTHORITY_SESSIONS_QUERY_TEMPLATE = f"""
     SELECT
         person_id,
         state_code,
-        supervision_legal_authority_session_id,
+        prioritized_supervision_session_id,
         start_date,
         end_date_exclusive,
         compartment_level_1,
         compartment_level_2,
     FROM ({aggregate_adjacent_spans(table_name='sub_sessions_cte',
                                     attribute=['compartment_level_1','compartment_level_2'],
-                                    session_id_output_name='supervision_legal_authority_session_id',
+                                    session_id_output_name='prioritized_supervision_session_id',
                                     end_date_field_name='end_date_exclusive')})
     """
 
-SUPERVISION_LEGAL_AUTHORITY_SESSIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
+PRIORITIZED_SUPERVISION_SESSIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=SESSIONS_DATASET,
-    view_id=SUPERVISION_LEGAL_AUTHORITY_SESSIONS_VIEW_NAME,
-    view_query_template=SUPERVISION_LEGAL_AUTHORITY_SESSIONS_QUERY_TEMPLATE,
-    description=SUPERVISION_LEGAL_AUTHORITY_SESSIONS_VIEW_DESCRIPTION,
+    view_id=PRIORITIZED_SUPERVISION_SESSIONS_VIEW_NAME,
+    view_query_template=PRIORITIZED_SUPERVISION_SESSIONS_QUERY_TEMPLATE,
+    description=PRIORITIZED_SUPERVISION_SESSIONS_VIEW_DESCRIPTION,
     clustering_fields=["state_code", "person_id"],
     should_materialize=True,
 )
 
 if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
-        SUPERVISION_LEGAL_AUTHORITY_SESSIONS_VIEW_BUILDER.build_and_print()
+        PRIORITIZED_SUPERVISION_SESSIONS_VIEW_BUILDER.build_and_print()
