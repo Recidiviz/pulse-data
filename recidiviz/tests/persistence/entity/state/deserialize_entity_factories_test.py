@@ -347,6 +347,7 @@ class TestDeserializeEntityFactories(unittest.TestCase):
                 state_code="us_xx",
                 verified_employment="True",
                 resulted_in_arrest="False",
+                supervision_contact_metadata='{"MEASURABLE": "YES"}',
             )
         )
 
@@ -365,6 +366,7 @@ class TestDeserializeEntityFactories(unittest.TestCase):
             location_raw_text="R",
             verified_employment=True,
             resulted_in_arrest=False,
+            supervision_contact_metadata='{"MEASURABLE": "YES"}',
         )
 
         self.assertEqual(expected_result, result)
