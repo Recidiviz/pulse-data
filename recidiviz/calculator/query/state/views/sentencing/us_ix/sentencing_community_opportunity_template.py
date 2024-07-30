@@ -26,7 +26,7 @@ WITH community_opp_info AS (
        ProviderAddress,
        CapacityTotal,
        CapacityAvailable,
-       TO_JSON(STRUCT(NeedsAddressed AS NeedsAddressed)) AS NeedsAddressed,
+       SPLIT(NeedsAddressed) AS NeedsAddressed,
        REGEXP_REPLACE(ProviderPhoneNumber, r'[^0-9]', '') AS CleanedProviderPhoneNumber,
        CASE
             WHEN EligibilityCriteria LIKE "%Ages 18+%"
@@ -70,10 +70,10 @@ WITH community_opp_info AS (
         END AS veteranStatusCriterion,
         CASE
             WHEN EligibilityCriteria LIKE "%Prior criminal history - NONE%"
-            THEN "None"
+            THEN SPLIT("None")
             WHEN EligibilityCriteria LIKE "%Prior criminal history - SIGNIFICANT%"
-            THEN "Significant"
-            ELSE NULL
+            THEN SPLIT("Significant")
+            ELSE SPLIT(NULL)
         END AS priorCriminalHistoryCriterion,
         CONCAT(
             CASE WHEN mentalHealthDisorderCriteria LIKE '%Bipolar Disorder%' THEN 'BipolarDisorder, ' ELSE '' END,
@@ -84,7 +84,8 @@ WITH community_opp_info AS (
             CASE WHEN mentalHealthDisorderCriteria LIKE '%Schizophrenia%' THEN 'Schizophrenia, ' ELSE '' END,
             CASE WHEN mentalHealthDisorderCriteria LIKE '%Other%' THEN 'Other, ' ELSE '' END,
             CASE WHEN mentalHealthDisorderCriteria LIKE '%Schizoaffective Disorder%' THEN 'SchizoaffectiveDisorder, ' ELSE '' END,
-            CASE WHEN mentalHealthDisorderCriteria IS NULL THEN 'Any' ELSE '' END
+            CASE WHEN mentalHealthDisorderCriteria LIKE '%Any%' THEN 'Any' ELSE '' END,
+            CASE WHEN mentalHealthDisorderCriteria IS NULL THEN NULL ELSE '' END
         ) AS mentalHealthConcat,
         CONCAT(
             CASE WHEN ASAMLevelCriteria LIKE '%1.0 - Long-Term Remission Monitoring%' THEN 'LongTermRemissionMonitoring, ' ELSE '' END,
@@ -97,13 +98,16 @@ WITH community_opp_info AS (
             CASE WHEN ASAMLevelCriteria LIKE '%3.5 - Clinically Managed High-Intensity Residential%' THEN 'ClinicallyManagedHighIntensityResidential, ' ELSE '' END,
             CASE WHEN ASAMLevelCriteria LIKE '%3.7 - Medically Managed Residential%' THEN 'MedicallyManagedResidential, ' ELSE '' END,
             CASE WHEN ASAMLevelCriteria LIKE '%Medically Managed Inpatient%' THEN 'MedicallyManagedInpatient, ' ELSE '' END,
-            CASE WHEN ASAMLevelCriteria IS NULL THEN 'Any' ELSE '' END
+            CASE WHEN ASAMLevelCriteria LIKE "%Any%" THEN 'Any' ELSE '' END,
+            CASE WHEN ASAMLevelCriteria IS NULL THEN NULL ELSE '' END
+
           ) as ASAMLevelConcat,
           CONCAT(
             CASE WHEN substanceUseDisorderCriteria LIKE "%Mild%" THEN 'Mild, ' ELSE '' END,
             CASE WHEN substanceUseDisorderCriteria LIKE "%Moderate%" THEN 'Moderate, ' ELSE '' END,
             CASE WHEN substanceUseDisorderCriteria LIKE "%Severe%" THEN 'Severe, ' ELSE '' END,
-            CASE WHEN substanceUseDisorderCriteria IS NULL THEN 'Any' ELSE '' END
+            CASE WHEN substanceUseDisorderCriteria LIKE "%Any%" THEN 'Any' ELSE '' END,
+            CASE WHEN substanceUseDisorderCriteria IS NULL THEN NULL ELSE '' END
           ) AS substanceUseConcat,
         CAST(minLSIRScore AS INT64) AS minLSIRScoreCriterion,
         CAST(maxLSIRScore AS INT64) AS maxLsirScoreCriterion
@@ -112,23 +116,17 @@ WITH community_opp_info AS (
    SELECT 
         *,
         "US_IX" AS state_code,
-        TO_JSON(STRUCT(
             CASE 
-              WHEN mentalHealthConcat = 'Any' THEN mentalHealthConcat 
-              ELSE LEFT(mentalHealthConcat, LENGTH(mentalHealthConcat) - 2) 
-            END AS diagnosedMentalHealthDiagnosisCriterion
-        )) AS diagnosedMentalHealthDiagnosisCriterion,
-        TO_JSON(STRUCT(
+                WHEN mentalHealthConcat LIKE "%Any%" THEN SPLIT("Any")
+                WHEN mentalHealthConcat IS NOT NULL THEN SPLIT(LEFT(mentalHealthConcat, LENGTH(mentalHealthConcat)-2))
+            END AS diagnosedMentalHealthDiagnosisCriterion,
             CASE 
-              WHEN ASAMLevelConcat = 'Any' THEN ASAMLevelConcat 
-              ELSE LEFT(ASAMLevelConcat, LENGTH(ASAMLevelConcat) - 2) 
-            END AS asamLevelOfCareRecommendationCriterion
-        ))AS asamLevelOfCareRecommendationCriterion,
-        TO_JSON(STRUCT(
+                WHEN ASAMLevelConcat LIKE "%Any%" THEN SPLIT("Any")
+                WHEN ASAMLevelConcat IS NOT NULL THEN SPLIT(LEFT(ASAMLevelConcat, LENGTH(ASAMLevelConcat)-2))
+            END AS asamLevelOfCareRecommendationCriterion,
             CASE 
-              WHEN substanceUseConcat = 'Any' THEN substanceUseConcat 
-              ELSE LEFT(substanceUseConcat, LENGTH(substanceUseConcat) - 2) 
+                WHEN substanceUseConcat LIKE "%Any%" THEN SPLIT("Any")
+                WHEN substanceUseConcat IS NOT NULL THEN SPLIT(LEFT(substanceUseConcat, LENGTH(substanceUseConcat)-2))
             END AS diagnosedSubstanceUseDisorderCriterion
-          )) AS diagnosedSubstanceUseDisorderCriterion
     FROM community_opp_info
 """
