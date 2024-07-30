@@ -76,6 +76,7 @@ class TestCaseNoteFunctions(TestCase):
                 "date": "2024-03-28",
                 "contact_mode": "Phone",
                 "note_type": "Supervision",
+                "note_title": None,
                 "extractive_answer": "This is an extractive answer",
                 "case_note": "Full case note content.",
                 "snippet": None,

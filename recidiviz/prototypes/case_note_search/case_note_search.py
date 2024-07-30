@@ -108,6 +108,7 @@ def extract_case_notes_responses(pager: SearchPager) -> List[Dict[str, Any]]:
                         "contact_mode", None
                     ),
                     "note_type": result.document.struct_data.get("note_type", None),
+                    "note_title": None,
                     "extractive_answer": extractive_answer,
                     "snippet": snippet,
                     "preview": get_preview(
