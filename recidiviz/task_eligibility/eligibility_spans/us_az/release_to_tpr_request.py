@@ -21,16 +21,20 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.candidate_populations.general import (
     general_incarceration_population,
 )
-
+from recidiviz.task_eligibility.completion_events.general import early_discharge
 from recidiviz.task_eligibility.criteria.general import (
     custody_level_is_minimum,
+    not_serving_for_sexual_offense,
+    not_serving_for_violent_offense,
 )
-from recidiviz.task_eligibility.completion_events.general import (
-    early_discharge,
+from recidiviz.task_eligibility.criteria.state_specific.us_az import (
+    serving_assault_or_aggravated_assault_or_robbery,
 )
-
 from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
+)
+from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder import (
+    OrTaskCriteriaGroup,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -46,6 +50,16 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     candidate_population_view_builder=general_incarceration_population.VIEW_BUILDER,
     criteria_spans_view_builders=[
         custody_level_is_minimum.VIEW_BUILDER,
+        not_serving_for_sexual_offense.VIEW_BUILDER,
+        # TODO(#31768): we have to fix this bug
+        OrTaskCriteriaGroup(
+            criteria_name="US_AZ_SERVING_NONVIOLENT_OFFENSE_WITH_B1B_EXCEPTIONS",
+            sub_criteria_list=[
+                not_serving_for_violent_offense.VIEW_BUILDER,
+                serving_assault_or_aggravated_assault_or_robbery.VIEW_BUILDER,
+            ],
+            allowed_duplicate_reasons_keys=[],
+        ),
     ],
     completion_event_builder=early_discharge.VIEW_BUILDER,
 )
