@@ -27,13 +27,20 @@ from recidiviz.task_eligibility.completion_events.state_specific.us_pa import (
 from recidiviz.task_eligibility.criteria.general import supervision_level_is_not_limited
 from recidiviz.task_eligibility.criteria.state_specific.us_pa import (
     fulfilled_requirements,
-    meets_one_of_special_circumstances_criteria,
+    marked_ineligible_for_admin_supervision,
+    meets_special_circumstances_criteria_for_time_served,
     no_high_sanctions_in_past_year,
+    no_medium_sanctions_in_past_year,
     not_eligible_for_admin_supervision,
-    supervision_level_is_not_special_circumstances,
+    serving_special_case,
 )
 from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
+)
+from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder import (
+    AndTaskCriteriaGroup,
+    InvertedTaskCriteriaBigQueryViewBuilder,
+    OrTaskCriteriaGroup,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -48,15 +55,50 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     description=_DESCRIPTION,
     candidate_population_view_builder=probation_parole_dual_active_supervision_population.VIEW_BUILDER,
     criteria_spans_view_builders=[
-        supervision_level_is_not_limited.VIEW_BUILDER,
-        supervision_level_is_not_special_circumstances.VIEW_BUILDER,
-        no_high_sanctions_in_past_year.VIEW_BUILDER,
+        meets_special_circumstances_criteria_for_time_served.VIEW_BUILDER,
+        OrTaskCriteriaGroup(
+            criteria_name="US_PA_MEETS_SPECIAL_CIRCUMSTANCES_CRITERIA_FOR_SANCTIONS",
+            sub_criteria_list=[
+                AndTaskCriteriaGroup(
+                    criteria_name="US_PA_MEETS_SANCTION_CRITERIA_FOR_SPECIAL_CASE",
+                    sub_criteria_list=[
+                        serving_special_case.VIEW_BUILDER,
+                        no_medium_sanctions_in_past_year.VIEW_BUILDER,
+                        no_high_sanctions_in_past_year.VIEW_BUILDER,
+                    ],
+                    allowed_duplicate_reasons_keys=["latest_sanction_date"],
+                ),
+                AndTaskCriteriaGroup(
+                    criteria_name="US_PA_MEETS_SANCTION_CRITERIA_FOR_NON_SPECIAL_CASES",
+                    sub_criteria_list=[
+                        InvertedTaskCriteriaBigQueryViewBuilder(
+                            sub_criteria=serving_special_case.VIEW_BUILDER,
+                        ),
+                        no_high_sanctions_in_past_year.VIEW_BUILDER,
+                    ],
+                    allowed_duplicate_reasons_keys=[],
+                ),
+            ],
+            allowed_duplicate_reasons_keys=[
+                "case_type",
+                "sanction_type",
+                "latest_sanction_date",
+            ],
+        ),
         fulfilled_requirements.VIEW_BUILDER,
-        not_eligible_for_admin_supervision.VIEW_BUILDER,
-        meets_one_of_special_circumstances_criteria.VIEW_BUILDER,
+        OrTaskCriteriaGroup(
+            criteria_name="US_PA_NOT_ELIGIBLE_OR_MARKED_INELIGIBLE_FOR_ADMIN_SUPERVISION",
+            sub_criteria_list=[
+                not_eligible_for_admin_supervision.VIEW_BUILDER,
+                marked_ineligible_for_admin_supervision.VIEW_BUILDER,
+            ],
+            allowed_duplicate_reasons_keys=[],
+        ),
+        supervision_level_is_not_limited.VIEW_BUILDER,
     ],
     completion_event_builder=transfer_to_special_circumstances_supervision.VIEW_BUILDER,
 )
+
 
 if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):

@@ -37,7 +37,6 @@ SELECT
 FROM `{project_id}.{sessions_dataset}.supervision_level_raw_text_sessions_materialized`
 WHERE supervision_level_raw_text like '%SPC%' 
 """
-# this logic could change depending on what we decide to do with spc mapping to supervision level
 
 VIEW_BUILDER: StateSpecificTaskCompletionEventBigQueryViewBuilder = StateSpecificTaskCompletionEventBigQueryViewBuilder(
     state_code=StateCode.US_PA,

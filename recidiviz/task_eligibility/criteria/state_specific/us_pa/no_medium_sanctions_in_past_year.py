@@ -15,9 +15,15 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """
-Defines a criteria view that shows spans of time when clients have not incurred a high sanction
+Defines a criteria view that shows spans of time when clients have not incurred a medium sanction
 for 12 months
 """
+# note - ideally the reason below should be called latest medium sanction date instead of latest high
+# however i would like to aggregate no_medium_sanctions & no_high_sanctions via the new
+# AndCriteriaGroup, and display the latest medium OR high sanction. for that functionality
+# i think they have to be named the same thing, but i'll see once that logic is implemented if there's
+# a better way
+
 from google.cloud import bigquery
 
 from recidiviz.calculator.query.sessions_query_fragments import (
@@ -33,9 +39,9 @@ from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_CRITERIA_NAME = "US_PA_NO_HIGH_SANCTIONS_IN_PAST_YEAR"
+_CRITERIA_NAME = "US_PA_NO_MEDIUM_SANCTIONS_IN_PAST_YEAR"
 
-_DESCRIPTION = """Defines a criteria view that shows spans of time when clients have not incurred a high sanction
+_DESCRIPTION = """Defines a criteria view that shows spans of time when clients have not incurred a medium sanction
 for 12 months"""
 
 _REASON_QUERY = f"""
@@ -59,17 +65,17 @@ WITH sanctions_sessions_cte AS (
           (person_id, state_code, supervision_violation_response_id)
         WHERE
           vrd.decision_raw_text IN (
-            'IDOX', -- Placement in Drug and Alcohol Detoxification Facility
-            'CPCB', -- Placement in CCC Half Way Back
-            'IPAT', -- Placement in Inpatient Drug and Alcohol Facility 
-            'IPMH', -- Placement in a Mental Health Facility
-            'VCCF', -- Placement in Parole Violator CCC / CCF
-            'ARR2', -- Incarceration
-            'GARR', -- GPS House Arrest
-            'GCON', -- GPS Home Confinement
-            'SPB5', -- Swift, Predictable, and Brief 5 Days
-            'SPB7', -- Swift, Predictable, and Brief 7 Day
-            'HOTR' -- Other
+            'DFSE', -- Deadline for Securing Employment
+            'URIN', -- Imposition of Increased Urinalysis Testing
+            'ICRF', -- Imposition of Increased Curfew
+            'GVPB', -- Refer to Violence Prevention Booster
+            'COMS', -- Imposition of Community Service
+            'OPAT', -- Placement in Out-Patient D&A Treatment
+            'RECT', -- Refer to Re-Entry Program
+            'EMOS', -- Imposition of Electronic Monitoring
+            'MOTR', -- Other
+            'DRPT' -- Day Reporting Center
+            # WIP - there may be other medium sanction codes that will need to be added 
             )
           AND state_code = 'US_PA'
         ),
@@ -81,7 +87,7 @@ WITH sanctions_sessions_cte AS (
     If a person has more than 1 sanction in a 12 month period, they will have duplicate sub-sessions for the period of
     time where there were more than 1 sanction. For example, if a person has a sanction on Jan 1 and March 1
     there would be duplicate sessions for the period March 1 - Dec 31 because both sanctions are relevant at that time.
-    We deduplicate below so that we surface the most-recent sanction that as relevant at each time. 
+    We deduplicate below so that we surface the most-recent sanction that is relevant at each time. 
     */
     dedup_cte AS (
         SELECT
@@ -91,7 +97,7 @@ WITH sanctions_sessions_cte AS (
             ORDER BY latest_sanction_date DESC) = 1
         ),
     /*
-    Sessionize again so that we have continuous periods of time for which a person is not eligible due to a high sanction. A
+    Sessionize again so that we have continuous periods of time for which a person is not eligible due to a sanction. A
     new session exists either when a person becomes eligible, or if a person has an additional sanction within a 12-month
     period which changes the "latest_sanction_date" value.
     */
@@ -122,7 +128,7 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
             ReasonsField(
                 name="latest_sanction_date",
                 type=bigquery.enums.SqlTypeNames.DATE,
-                description="Date of latest high sanction",
+                description="Date of latest medium sanction",
             )
         ],
     )
