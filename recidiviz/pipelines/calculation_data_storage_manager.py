@@ -43,7 +43,7 @@ from recidiviz.pipelines.dataflow_orchestration_utils import (
     get_normalization_pipeline_enabled_states,
 )
 from recidiviz.pipelines.normalization.dataset_config import (
-    normalized_state_dataset_for_state_code,
+    normalized_state_dataset_for_state_code_legacy_normalization_output,
 )
 from recidiviz.source_tables.normalization_pipeline_output_table_collector import (
     build_normalization_pipeline_output_source_table_collections,
@@ -674,7 +674,11 @@ def build_address_overrides_for_update(
     )
     for state_code in states_to_override:
         overrides_builder.register_sandbox_override_for_entire_dataset(
-            normalized_state_dataset_for_state_code(state_code)
+            # TODO(#31740): Update this to provide the appropriate dataset based on
+            #  normalization in ingest rollout gating.
+            normalized_state_dataset_for_state_code_legacy_normalization_output(
+                state_code
+            )
         )
     overrides_builder.register_sandbox_override_for_entire_dataset(
         dataset_config.NORMALIZED_STATE_DATASET

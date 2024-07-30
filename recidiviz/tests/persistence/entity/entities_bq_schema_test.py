@@ -197,6 +197,31 @@ class TestGetBqSchemaForEntitiesModule(unittest.TestCase):
                 {table: expected_schema}, {table: table_to_schema[table]}
             )
 
+    def test_parity_with_source_table_collection_us_xx_normalized_state_new(
+        self,
+    ) -> None:
+        """Tests that get_bq_schema_for_entities_module() creates a schema that
+        matches the current schemas defined for our `us_xx_normalized_state*` ingest
+        pipeline output datasets.
+        """
+        state_collection = one(
+            c
+            for c in build_ingest_pipeline_output_source_table_collections()
+            if c.has_label(
+                # Pick an arbitrary state's ingest pipeline output schema to test
+                NormalizedStateSpecificEntitySourceTableLabel(
+                    state_code=StateCode.US_OZ
+                )
+            )
+        )
+        expected_table_to_schema = {
+            t.address.table_id: t.schema_fields for t in state_collection.source_tables
+        }
+
+        table_to_schema = get_bq_schema_for_entities_module(normalized_state_entities)
+
+        self._compare_schemas(expected_table_to_schema, table_to_schema)
+
     def test_parity_with_source_table_collection_normalized_state(self) -> None:
         expected_table_to_schema = {
             t.address.table_id: t.schema_fields

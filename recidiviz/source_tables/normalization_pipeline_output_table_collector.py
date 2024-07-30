@@ -27,7 +27,7 @@ from recidiviz.persistence.entity.normalized_entities_utils import (
     LEGACY_NORMALIZATION_ENTITY_CLASSES,
 )
 from recidiviz.pipelines.normalization.dataset_config import (
-    normalized_state_dataset_for_state_code,
+    normalized_state_dataset_for_state_code_legacy_normalization_output,
 )
 from recidiviz.pipelines.normalization.utils.entity_normalization_manager_utils import (
     NORMALIZATION_MANAGERS,
@@ -89,7 +89,9 @@ def build_normalization_pipeline_output_source_table_collections() -> list[
                 NormalizedStateSpecificEntitySourceTableLabel(state_code=state_code),
             ],
             update_config=SourceTableCollectionUpdateConfig.regenerable(),
-            dataset_id=normalized_state_dataset_for_state_code(state_code=state_code),
+            dataset_id=normalized_state_dataset_for_state_code_legacy_normalization_output(
+                state_code=state_code
+            ),
         )
         for state_code in get_direct_ingest_states_existing_in_env()
     ]

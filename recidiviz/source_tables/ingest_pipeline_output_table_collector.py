@@ -43,11 +43,10 @@ from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder_collector import (
     DirectIngestViewQueryBuilderCollector,
 )
-from recidiviz.persistence.database.bq_refresh.big_query_table_manager import (
-    bq_schema_for_sqlalchemy_table,
+from recidiviz.persistence.entity.entities_bq_schema import (
+    get_bq_schema_for_entities_module,
 )
-from recidiviz.persistence.database.schema_type import SchemaType
-from recidiviz.persistence.database.schema_utils import get_all_table_classes_in_schema
+from recidiviz.persistence.entity.state import entities, normalized_entities
 from recidiviz.pipelines.ingest.dataset_config import (
     ingest_view_materialization_results_dataset,
     state_dataset_for_state_code,
@@ -55,26 +54,22 @@ from recidiviz.pipelines.ingest.dataset_config import (
 from recidiviz.pipelines.ingest.state.constants import (
     INGEST_VIEW_RESULTS_SCHEMA_COLUMNS,
 )
+from recidiviz.pipelines.normalization.dataset_config import (
+    normalized_state_dataset_for_state_code_ingest_pipeline_output,
+)
 from recidiviz.pipelines.pipeline_names import INGEST_PIPELINE_NAME
 from recidiviz.source_tables.source_table_config import (
     DataflowPipelineSourceTableLabel,
     IngestPipelineEntitySourceTableLabel,
     IngestViewOutputSourceTableLabel,
+    NormalizedStateSpecificEntitySourceTableLabel,
     SourceTableCollection,
     SourceTableCollectionUpdateConfig,
 )
 from recidiviz.utils import metadata
 
 
-def build_ingest_pipeline_output_source_table_collections() -> list[
-    SourceTableCollection
-]:
-    """Builds the collection of source tables that are output by any ingest
-    pipeline.
-
-    # TODO(#30495): This function should eventually also return ingest_view datasets
-    #  once we can build those schemas from ingest mappings YAMLs.
-    """
+def _build_state_output_source_table_collections() -> list[SourceTableCollection]:
     state_specific_collections: list[SourceTableCollection] = [
         SourceTableCollection(
             dataset_id=state_dataset_for_state_code(state_code),
@@ -85,15 +80,47 @@ def build_ingest_pipeline_output_source_table_collections() -> list[
         )
         for state_code in get_direct_ingest_states_existing_in_env()
     ]
-    for table in list(get_all_table_classes_in_schema(SchemaType.STATE)):
-        table_id = table.name
-        schema_fields = bq_schema_for_sqlalchemy_table(SchemaType.STATE, table)
+    for table_id, schema_fields in get_bq_schema_for_entities_module(entities).items():
         for collection in state_specific_collections:
             collection.add_source_table(table_id=table_id, schema_fields=schema_fields)
-
-    # TODO(#29517): Add source tables for normalized output from ingest pipelines.
-
     return state_specific_collections
+
+
+def _build_normalized_state_output_source_table_collections() -> list[
+    SourceTableCollection
+]:
+    state_specific_collections: list[SourceTableCollection] = [
+        SourceTableCollection(
+            dataset_id=normalized_state_dataset_for_state_code_ingest_pipeline_output(
+                state_code
+            ),
+            labels=[
+                DataflowPipelineSourceTableLabel(INGEST_PIPELINE_NAME),
+                NormalizedStateSpecificEntitySourceTableLabel(state_code=state_code),
+            ],
+        )
+        for state_code in get_direct_ingest_states_existing_in_env()
+    ]
+    for table_id, schema_fields in get_bq_schema_for_entities_module(
+        normalized_entities
+    ).items():
+        for collection in state_specific_collections:
+            collection.add_source_table(table_id=table_id, schema_fields=schema_fields)
+    return state_specific_collections
+
+
+def build_ingest_pipeline_output_source_table_collections() -> list[
+    SourceTableCollection
+]:
+    """Builds the collection of source tables that are output by any ingest
+    pipeline.
+    """
+    return [
+        # TODO(#30495): This function should eventually also return ingest_view datasets
+        #  once we can build those schemas from ingest mappings YAMLs.
+        *_build_state_output_source_table_collections(),
+        *_build_normalized_state_output_source_table_collections(),
+    ]
 
 
 def _get_ingest_view_builders(
