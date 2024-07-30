@@ -19,47 +19,21 @@ import datetime
 import logging
 from collections import defaultdict
 from http import HTTPStatus
-from typing import Dict, FrozenSet, List, Optional, Tuple
+from typing import Dict, Tuple
 
 import flask
-from google.cloud.bigquery import CopyJob, QueryJob, WriteDisposition
+from google.cloud.bigquery import WriteDisposition
 from google.cloud.bigquery.table import TableListItem
 from more_itertools import one
 
-from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
-from recidiviz.big_query.big_query_address import BigQueryAddress
-from recidiviz.big_query.big_query_client import BigQueryClient, BigQueryClientImpl
-from recidiviz.big_query.constants import TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS
-from recidiviz.calculator.query.state import dataset_config
+from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.calculator.query.state.dataset_config import DATAFLOW_METRICS_DATASET
 from recidiviz.calculator.query.state.views.dataflow_metrics_materialized.most_recent_dataflow_metrics import (
     make_most_recent_metric_view_builders,
 )
-from recidiviz.common.constants.states import StateCode
-from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.pipelines import dataflow_config
 from recidiviz.pipelines.config_paths import PIPELINE_CONFIG_YAML_PATH
-from recidiviz.pipelines.dataflow_orchestration_utils import (
-    get_normalization_pipeline_enabled_states,
-)
-from recidiviz.pipelines.normalization.dataset_config import (
-    normalized_state_dataset_for_state_code_legacy_normalization_output,
-)
-from recidiviz.source_tables.normalization_pipeline_output_table_collector import (
-    build_normalization_pipeline_output_source_table_collections,
-)
-from recidiviz.source_tables.source_table_config import (
-    NormalizedStateAgnosticEntitySourceTableLabel,
-    NormalizedStateSpecificEntitySourceTableLabel,
-    UnionedStateAgnosticSourceTableLabel,
-)
-from recidiviz.source_tables.source_table_repository import SourceTableRepository
-from recidiviz.source_tables.union_tables_output_table_collector import (
-    build_unioned_normalized_state_source_table_collections,
-    build_unioned_state_source_table_collection,
-)
 from recidiviz.utils.auth.gae import requires_gae_auth
-from recidiviz.utils.environment import gcp_only
 from recidiviz.utils.string import StrictStringFormatter
 from recidiviz.utils.yaml_dict import YAMLDict
 
@@ -99,48 +73,6 @@ def delete_empty_or_temp_datasets() -> Tuple[str, HTTPStatus]:
     _delete_empty_or_temp_datasets()
 
     return "", HTTPStatus.OK
-
-
-@gcp_only
-def execute_update_normalized_state_dataset(
-    ingest_instance: DirectIngestInstance,
-    state_codes_filter: Optional[List[StateCode]],
-    sandbox_dataset_prefix: Optional[str],
-) -> None:
-    """Calls the _update_normalized_state_dataset function."""
-
-    if state_codes_filter and not sandbox_dataset_prefix:
-        raise ValueError(
-            "Must provide sandbox_dataset_prefix when providing state_codes_filter"
-        )
-
-    if ingest_instance == DirectIngestInstance.SECONDARY and not sandbox_dataset_prefix:
-        raise ValueError(
-            "Must provide sandbox_dataset_prefix when using SECONDARY ingest instance"
-        )
-
-    if sandbox_dataset_prefix and not state_codes_filter:
-        state_codes_filter_set: Optional[FrozenSet[StateCode]] = frozenset(
-            get_normalization_pipeline_enabled_states()
-        )
-    else:
-        state_codes_filter_set = (
-            frozenset({StateCode(state_code) for state_code in state_codes_filter})
-            if state_codes_filter
-            else None
-        )
-
-    address_overrides = (
-        build_address_overrides_for_update(
-            dataset_override_prefix=sandbox_dataset_prefix,
-            states_to_override=state_codes_filter_set,
-        )
-        if sandbox_dataset_prefix and state_codes_filter_set
-        else None
-    )
-    update_normalized_state_dataset(
-        state_codes_filter=state_codes_filter_set, address_overrides=address_overrides
-    )
 
 
 def _delete_empty_or_temp_datasets() -> None:
@@ -464,227 +396,6 @@ def move_old_dataflow_metrics_to_cold_storage(dry_run: bool = False) -> None:
 
             # Wait for the replace job to complete before moving on
             replace_job.result()
-
-
-def _load_normalized_state_dataset_into_empty_temp_dataset(
-    bq_client: BigQueryClient,
-    state_codes: FrozenSet[StateCode],
-    temp_dataset_id: str,
-    overrides: Optional[BigQueryAddressOverrides] = None,
-) -> None:
-    """Builds a full normalized_state dataset in the specified empty dataset location.
-    If the temp dataset does not exist, creates the dataset first with a table
-    expiration."""
-    if overrides is None:
-        overrides = BigQueryAddressOverrides.empty()
-
-    # Collect all `us_xx_normalized_state` source tables
-    normalization_pipeline_output_repository = SourceTableRepository(
-        source_table_collections=build_normalization_pipeline_output_source_table_collections()
-    )
-
-    # Build the `state` source tables collection
-    unioned_state_source_table_collection = (
-        build_unioned_state_source_table_collection()
-    )
-
-    # Build the `normalized_state` source tables collections
-    unioned_normalized_state_source_table_repository = SourceTableRepository(
-        source_table_collections=build_unioned_normalized_state_source_table_collections()
-    )
-
-    state_agnostic_normalized_collection = (
-        unioned_normalized_state_source_table_repository.get_collection(
-            labels=[
-                UnionedStateAgnosticSourceTableLabel(
-                    dataset_config.NORMALIZED_STATE_DATASET
-                ),
-                NormalizedStateAgnosticEntitySourceTableLabel(
-                    source_is_normalization_pipeline=True
-                ),
-            ],
-        )
-    )
-
-    state_specific_normalized_collections = [
-        collection
-        for collection in normalization_pipeline_output_repository.source_table_collections
-        if any(
-            collection.has_label(
-                NormalizedStateSpecificEntitySourceTableLabel(state_code=state_code)
-            )
-            for state_code in state_codes
-        )
-    ]
-
-    temporary_dataset_ref = bq_client.dataset_ref_for_id(
-        overrides.get_dataset(temp_dataset_id)
-    )
-
-    # Create temp dataset that unified tables will be staged in.
-    bq_client.create_dataset_if_necessary(
-        temporary_dataset_ref,
-        default_table_expiration_ms=TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS,
-    )
-
-    jobs: list[CopyJob | QueryJob] = []
-
-    # For tables that aren't updated by the normalization pipelines, we can just copy
-    # data for *all* states from the `state` dataset directly.
-    for source_table_config in unioned_state_source_table_collection.source_tables:
-        if state_agnostic_normalized_collection.has_table(
-            source_table_config.address.table_id
-        ):
-            continue
-
-        source_table_address = BigQueryAddress(
-            dataset_id=overrides.get_dataset(source_table_config.address.dataset_id),
-            table_id=source_table_config.address.table_id,
-        )
-
-        copy_job = bq_client.copy_table(
-            source_dataset_id=source_table_address.dataset_id,
-            source_table_id=source_table_address.table_id,
-            destination_dataset_id=temporary_dataset_ref.dataset_id,
-        )
-
-        if copy_job is not None:
-            jobs.append(copy_job)
-
-    # For tables that are updated by the normalization pipelines, we need to insert all
-    # the data from each individual state into a single table.
-    for source_table_config in state_agnostic_normalized_collection.source_tables:
-        temp_table_address = BigQueryAddress(
-            dataset_id=temporary_dataset_ref.dataset_id,
-            table_id=source_table_config.address.table_id,
-        )
-        bq_client.create_table_with_schema(
-            dataset_id=temp_table_address.dataset_id,
-            table_id=temp_table_address.table_id,
-            schema_fields=source_table_config.schema_fields,
-        )
-
-    for state_specific_collection in state_specific_normalized_collections:
-        for source_table_config in state_specific_collection.source_tables:
-            source_table_address = BigQueryAddress(
-                dataset_id=overrides.get_dataset(
-                    source_table_config.address.dataset_id
-                ),
-                table_id=source_table_config.address.table_id,
-            )
-            # This is a normalized entity. Insert the contents of this table from
-            # each of the state's us_xx_normalized_state datasets into the
-            # corresponding table in the temporary dataset
-            insert_job = bq_client.insert_into_table_from_table_async(
-                source_dataset_id=source_table_address.dataset_id,
-                source_table_id=source_table_address.table_id,
-                destination_dataset_id=temporary_dataset_ref.dataset_id,
-                destination_table_id=source_table_config.address.table_id,
-                use_query_cache=True,
-            )
-
-            jobs.append(insert_job)
-
-    for job in jobs:
-        job.result()  # Wait for the job to complete.
-
-
-# TODO(#25274): If we want to be able to run calc DAGs without a sandbox prefix for
-#  different states at the same time (e.g. refresh just CA and ND), we will need to add
-#  some locking mechanism that prevents this step (and other steps that read/write from
-#  the same state-agnositc datasets) from running at the same time and interfering
-#  with each other.
-def update_normalized_state_dataset(
-    state_codes_filter: Optional[FrozenSet[StateCode]] = None,
-    address_overrides: Optional[BigQueryAddressOverrides] = None,
-    bq_client: BigQueryClient | None = None,
-) -> None:
-    """Updates the normalized_state dataset with fresh data.
-
-    First, builds a temporary dataset called `temp_normalized_state_TIMESTAMP` with
-    data from each state's `us_xx_normalized_state` dataset (for each entity that is
-    normalized) and the `state` dataset (for each entity that is not normalized). Then,
-    replaces the `normalized_state` dataset with the contents of the temporary dataset.
-
-    If `state_codes_filter` is provided, then only copies data from
-    `us_xx_normalized_state` for that set of states, instead of all states with
-    normalization pipelines.
-    """
-    if bq_client is None:
-        bq_client = BigQueryClientImpl()
-
-    if state_codes_filter is None:
-        state_codes_filter = frozenset(get_normalization_pipeline_enabled_states())
-    elif address_overrides is None:
-        raise ValueError(
-            "Address overrides must be provided when only running for a subset of "
-            f"states: {state_codes_filter}"
-        )
-
-    temp_normalized_state_dataset_id = bq_client.add_timestamp_suffix_to_dataset_id(
-        f"temp_{dataset_config.NORMALIZED_STATE_DATASET}"
-    )
-
-    _load_normalized_state_dataset_into_empty_temp_dataset(
-        bq_client,
-        state_codes_filter,
-        temp_normalized_state_dataset_id,
-        overrides=address_overrides,
-    )
-
-    normalized_state_dataset_id = (
-        address_overrides.get_dataset(dataset_config.NORMALIZED_STATE_DATASET)
-        if address_overrides is not None
-        else dataset_config.NORMALIZED_STATE_DATASET
-    )
-    normalized_state_dataset_ref = bq_client.dataset_ref_for_id(
-        normalized_state_dataset_id
-    )
-    bq_client.create_dataset_if_necessary(normalized_state_dataset_ref)
-
-    # Copy the temporary dataset into normalized_state, overwriting the contents.
-    # The `copy_dataset_tables` call will delete all extra tables that don't exist in
-    # the source dataset because |overwrite_destination_tables| is set to True.
-    bq_client.copy_dataset_tables(
-        source_dataset_id=temp_normalized_state_dataset_id,
-        destination_dataset_id=normalized_state_dataset_id,
-        overwrite_destination_tables=True,
-    )
-
-    logging.info(
-        "Process of building [%s] dataset complete.",
-        normalized_state_dataset_id,
-    )
-
-    logging.info("Deleting temporary [%s] dataset.", temp_normalized_state_dataset_id)
-    bq_client.delete_dataset(
-        bq_client.dataset_ref_for_id(temp_normalized_state_dataset_id),
-        delete_contents=True,
-    )
-
-
-def build_address_overrides_for_update(
-    dataset_override_prefix: str, states_to_override: FrozenSet[StateCode]
-) -> BigQueryAddressOverrides:
-    overrides_builder = BigQueryAddressOverrides.Builder(
-        sandbox_prefix=dataset_override_prefix
-    )
-    overrides_builder.register_sandbox_override_for_entire_dataset(
-        dataset_config.STATE_BASE_DATASET
-    )
-    for state_code in states_to_override:
-        overrides_builder.register_sandbox_override_for_entire_dataset(
-            # TODO(#31740): Update this to provide the appropriate dataset based on
-            #  normalization in ingest rollout gating.
-            normalized_state_dataset_for_state_code_legacy_normalization_output(
-                state_code
-            )
-        )
-    overrides_builder.register_sandbox_override_for_entire_dataset(
-        dataset_config.NORMALIZED_STATE_DATASET
-    )
-
-    return overrides_builder.build()
 
 
 def _decommission_dataflow_metric_table(

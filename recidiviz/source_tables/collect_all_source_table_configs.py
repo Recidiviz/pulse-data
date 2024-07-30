@@ -62,7 +62,7 @@ from recidiviz.source_tables.source_table_config import (
 )
 from recidiviz.source_tables.source_table_repository import SourceTableRepository
 from recidiviz.source_tables.union_tables_output_table_collector import (
-    build_unioned_normalized_state_source_table_collections,
+    build_unioned_normalized_state_source_table_collection,
     build_unioned_state_source_table_collection,
 )
 from recidiviz.source_tables.us_mi_validation_oneoffs import (
@@ -228,7 +228,7 @@ def build_source_table_repository_for_collected_schemata(
             *collect_duplicative_us_mi_validation_oneoffs(),
             *get_dataflow_output_source_table_collections(),
             build_unioned_state_source_table_collection(),
-            *build_unioned_normalized_state_source_table_collections(),
+            build_unioned_normalized_state_source_table_collection(),
             *collect_sentencing_source_tables(),
         ],
     )

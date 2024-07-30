@@ -20,10 +20,26 @@ import argparse
 
 from recidiviz.common.constants.states import StateCode
 from recidiviz.entrypoints.entrypoint_interface import EntrypointInterface
-from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
-from recidiviz.pipelines.calculation_data_storage_manager import (
-    execute_update_normalized_state_dataset,
+from recidiviz.persistence.database.bq_refresh.update_normalized_state_dataset import (
+    combine_sources_into_single_normalized_state_dataset,
 )
+from recidiviz.utils.environment import gcp_only
+
+
+# TODO(#29519): Delete this endpoint when we move the `normalized_state` dataset refresh
+#  into the view graph.
+@gcp_only
+def execute_update_normalized_state_dataset(
+    output_sandbox_prefix: str | None,
+    state_codes_filter: list[StateCode] | None,
+) -> None:
+    combine_sources_into_single_normalized_state_dataset(
+        output_sandbox_prefix=output_sandbox_prefix,
+        # TODO(#26138): We will need to set something here in order to do
+        #  end-to-end sandbox runs.
+        input_dataset_overrides=None,
+        state_codes_filter=state_codes_filter,
+    )
 
 
 class UpdateNormalizedStateEntrypoint(EntrypointInterface):
@@ -38,13 +54,6 @@ class UpdateNormalizedStateEntrypoint(EntrypointInterface):
             choices=list(StateCode),
         )
         parser.add_argument(
-            "--ingest_instance",
-            help="The ingest instance data is from",
-            type=DirectIngestInstance,
-            choices=list(DirectIngestInstance),
-            required=True,
-        )
-        parser.add_argument(
             "--sandbox_prefix",
             help="The sandbox prefix for which the refresh needs to write to",
             type=str,
@@ -55,9 +64,8 @@ class UpdateNormalizedStateEntrypoint(EntrypointInterface):
     @staticmethod
     def run_entrypoint(args: argparse.Namespace) -> None:
         execute_update_normalized_state_dataset(
-            ingest_instance=args.ingest_instance,
             state_codes_filter=[args.state_code_filter]
             if args.state_code_filter
             else None,
-            sandbox_dataset_prefix=args.sandbox_prefix,
+            output_sandbox_prefix=args.sandbox_prefix,
         )

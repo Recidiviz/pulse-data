@@ -50,15 +50,16 @@ import argparse
 import logging
 
 from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
-from recidiviz.calculator.query.state.dataset_config import (
-    NORMALIZED_STATE_DATASET,
-    STATE_BASE_DATASET,
-)
 from recidiviz.common.constants.states import StateCode
-from recidiviz.pipelines.calculation_data_storage_manager import (
-    update_normalized_state_dataset,
+from recidiviz.persistence.database.bq_refresh.update_normalized_state_dataset import (
+    combine_sources_into_single_normalized_state_dataset,
+)
+from recidiviz.pipelines.ingest.dataset_config import state_dataset_for_state_code
+from recidiviz.pipelines.ingest.normalization_in_ingest_gating import (
+    is_combined_ingest_and_normalization_launched_in_env,
 )
 from recidiviz.pipelines.normalization.dataset_config import (
+    normalized_state_dataset_for_state_code_ingest_pipeline_output,
     normalized_state_dataset_for_state_code_legacy_normalization_output,
 )
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
@@ -124,22 +125,32 @@ if __name__ == "__main__":
         builder = BigQueryAddressOverrides.Builder(
             sandbox_prefix=args.output_sandbox_prefix,
         )
-        builder.register_custom_dataset_override(
-            # TODO(#31740): Update this to provide the appropriate dataset based on
-            #  normalization in ingest rollout gating.
-            normalized_state_dataset_for_state_code_legacy_normalization_output(
-                state_code
-            ),
-            args.input_normalized_state_dataset,
-            force_allow_custom=True,
-        )
-        builder.register_custom_dataset_override(
-            STATE_BASE_DATASET, args.input_state_dataset, force_allow_custom=True
-        )
-        builder.register_sandbox_override_for_entire_dataset(NORMALIZED_STATE_DATASET)
-        address_overrides = builder.build()
 
-        update_normalized_state_dataset(
-            state_codes_filter=frozenset({state_code}),
-            address_overrides=address_overrides,
+        if is_combined_ingest_and_normalization_launched_in_env(state_code):
+            builder.register_custom_dataset_override(
+                normalized_state_dataset_for_state_code_ingest_pipeline_output(
+                    state_code
+                ),
+                args.input_normalized_state_dataset,
+                force_allow_custom=True,
+            )
+        else:
+            builder.register_custom_dataset_override(
+                normalized_state_dataset_for_state_code_legacy_normalization_output(
+                    state_code
+                ),
+                args.input_normalized_state_dataset,
+                force_allow_custom=True,
+            )
+            builder.register_custom_dataset_override(
+                state_dataset_for_state_code(state_code),
+                args.input_state_dataset,
+                force_allow_custom=True,
+            )
+        input_dataset_overrides = builder.build()
+
+        combine_sources_into_single_normalized_state_dataset(
+            output_sandbox_prefix=args.output_sandbox_prefix,
+            state_codes_filter=[state_code],
+            input_dataset_overrides=input_dataset_overrides,
         )
