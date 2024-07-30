@@ -59,7 +59,7 @@ from recidiviz.pipelines.calculation_data_storage_manager import (
     update_normalized_state_dataset,
 )
 from recidiviz.pipelines.normalization.dataset_config import (
-    normalized_state_dataset_for_state_code,
+    normalized_state_dataset_for_state_code_legacy_normalization_output,
 )
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -125,7 +125,11 @@ if __name__ == "__main__":
             sandbox_prefix=args.output_sandbox_prefix,
         )
         builder.register_custom_dataset_override(
-            normalized_state_dataset_for_state_code(state_code),
+            # TODO(#31740): Update this to provide the appropriate dataset based on
+            #  normalization in ingest rollout gating.
+            normalized_state_dataset_for_state_code_legacy_normalization_output(
+                state_code
+            ),
             args.input_normalized_state_dataset,
             force_allow_custom=True,
         )

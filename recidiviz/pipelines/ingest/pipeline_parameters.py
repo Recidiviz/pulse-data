@@ -28,21 +28,13 @@ from recidiviz.pipelines.ingest.dataset_config import (
     ingest_view_materialization_results_dataset,
     state_dataset_for_state_code,
 )
+from recidiviz.pipelines.ingest.normalization_in_ingest_gating import (
+    should_run_normalization_in_ingest,
+)
 from recidiviz.pipelines.normalization.dataset_config import (
-    normalized_state_dataset_for_state_code,
+    normalized_state_dataset_for_state_code_ingest_pipeline_output,
 )
 from recidiviz.pipelines.pipeline_parameters import PipelineParameters
-from recidiviz.utils import environment
-
-
-def is_combined_ingest_and_normalization_launched_in_env(state_code: StateCode) -> bool:
-    # TODO(#29517): Add states here as we launch combined pipelines to prod
-    prod_launched_states: Set[StateCode] = set()
-    if environment.in_gcp_production():
-        return state_code in prod_launched_states
-    # TODO(#29517): Add states here as we launch combined pipelines to staging
-    staging_launched_states: Set[StateCode] = set()
-    return state_code in staging_launched_states
 
 
 @attr.define(kw_only=True)
@@ -61,9 +53,7 @@ class IngestPipelineParameters(PipelineParameters):
     def run_normalization(self) -> bool:
         if self.run_normalization_override is not None:
             return self.run_normalization_override
-        return is_combined_ingest_and_normalization_launched_in_env(
-            StateCode(self.state_code)
-        )
+        return should_run_normalization_in_ingest(StateCode(self.state_code))
 
     @property
     def raw_data_table_input(self) -> str:
@@ -91,10 +81,7 @@ class IngestPipelineParameters(PipelineParameters):
     @property
     def normalized_output(self) -> str:
         return self.get_output_dataset(
-            # TODO(#29517): Consider updating this to be a slightly different dataset
-            #  (e.g. us_xx_ingest_normalized_state) while we're rolling this out so we
-            #  can maintain two sets of source tables.
-            default_dataset_id=normalized_state_dataset_for_state_code(
+            default_dataset_id=normalized_state_dataset_for_state_code_ingest_pipeline_output(
                 StateCode(self.state_code)
             )
         )

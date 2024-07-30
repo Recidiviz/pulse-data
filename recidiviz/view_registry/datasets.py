@@ -46,7 +46,7 @@ from recidiviz.ingest.direct.dataset_config import (
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.pipelines.normalization.dataset_config import (
-    normalized_state_dataset_for_state_code,
+    normalized_state_dataset_for_state_code_legacy_normalization_output,
 )
 from recidiviz.pipelines.supplemental.dataset_config import SUPPLEMENTAL_DATA_DATASET
 from recidiviz.validation.views.dataset_config import (
@@ -90,7 +90,9 @@ VALIDATION_DATASETS = set(VALIDATION_ONEOFF_DATASETS_TO_DESCRIPTIONS.keys())
 
 NORMALIZED_DATASETS_TO_DESCRIPTIONS = {
     **{
-        normalized_state_dataset_for_state_code(
+        # TODO(#31740): Update this to provide the appropriate dataset based on
+        #  normalization in ingest rollout gating.
+        normalized_state_dataset_for_state_code_legacy_normalization_output(
             state_code
         ): "Contains normalized versions of the entities in the state dataset produced by the normalization pipeline for the state."
         for state_code in StateCode

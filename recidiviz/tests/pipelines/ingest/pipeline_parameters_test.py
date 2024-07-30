@@ -70,7 +70,7 @@ class TestIngestPipelineParameters(unittest.TestCase):
         )
         self.assertEqual("us_oz_state", pipeline_parameters.pre_normalization_output)
         self.assertEqual(
-            "us_oz_normalized_state", pipeline_parameters.normalized_output
+            "us_oz_normalized_state_new", pipeline_parameters.normalized_output
         )
         self.assertFalse(pipeline_parameters.is_sandbox_pipeline)
         self.assertFalse(pipeline_parameters.run_normalization)
@@ -200,7 +200,8 @@ class TestIngestPipelineParameters(unittest.TestCase):
             "my_prefix_us_oz_state", pipeline_parameters.pre_normalization_output
         )
         self.assertEqual(
-            "my_prefix_us_oz_normalized_state", pipeline_parameters.normalized_output
+            "my_prefix_us_oz_normalized_state_new",
+            pipeline_parameters.normalized_output,
         )
         self.assertTrue(pipeline_parameters.is_sandbox_pipeline)
 

@@ -278,6 +278,7 @@ def main() -> int:
         "recidiviz.pipelines.config_paths",
         "recidiviz.pipelines.dataflow_orchestration_utils",
         "recidiviz.pipelines.ingest.dataset_config",
+        "recidiviz.pipelines.ingest.normalization_in_ingest_gating",
         "recidiviz.pipelines.ingest.pipeline_parameters",
         "recidiviz.pipelines.ingest.pipeline_utils",
         "recidiviz.pipelines.metrics.pipeline_parameters",

@@ -23,7 +23,7 @@ from recidiviz.calculator.query.state.dataset_config import STATE_BASE_DATASET
 from recidiviz.common import attr_validators
 from recidiviz.common.constants.states import StateCode
 from recidiviz.pipelines.normalization.dataset_config import (
-    normalized_state_dataset_for_state_code,
+    normalized_state_dataset_for_state_code_legacy_normalization_output,
 )
 from recidiviz.pipelines.pipeline_names import NORMALIZATION_PIPELINE_NAME
 from recidiviz.pipelines.pipeline_parameters import PipelineParameters
@@ -49,7 +49,9 @@ class NormalizationPipelineParameters(PipelineParameters):
     @property
     def output(self) -> str:
         return self.get_output_dataset(
-            normalized_state_dataset_for_state_code(StateCode(self.state_code))
+            normalized_state_dataset_for_state_code_legacy_normalization_output(
+                StateCode(self.state_code)
+            )
         )
 
     @property

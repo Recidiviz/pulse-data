@@ -14,10 +14,24 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Helpers for getting normalization pipeline output datasets."""
+"""Helpers for getting pipeline output datasets for normalized entities."""
 from recidiviz.common.constants.states import StateCode
 
 
-def normalized_state_dataset_for_state_code(state_code: StateCode) -> str:
+def normalized_state_dataset_for_state_code_legacy_normalization_output(
+    state_code: StateCode,
+) -> str:
     """Where the output of state-specific entity normalization pipelines is stored."""
     return f"{state_code.value.lower()}_normalized_state"
+
+
+def normalized_state_dataset_for_state_code_ingest_pipeline_output(
+    state_code: StateCode,
+) -> str:
+    """Where the output of state-specific ingest pipeline normalized entities output is
+    stored.
+    """
+    # TODO(#31741): Rename this back to `us_xx_normalized_state` once we're only reading
+    #  from this dataset for all states and have deleted the legacy
+    #  `us_xx_normalized_state` source table collections.
+    return f"{state_code.value.lower()}_normalized_state_new"
