@@ -21,7 +21,7 @@ import re
 import sys
 import unittest
 from datetime import datetime
-from typing import Any, Dict, List, Optional, Set
+from typing import Any, Dict, List, Optional, Set, Union
 from unittest.mock import patch
 
 import attr
@@ -317,17 +317,27 @@ class AirflowIntegrationTest(unittest.TestCase):
         return TaskInstanceState(rows[0])
 
     def get_xcom_for_task_id(
-        self, task_id: str, session: Session, key: str = "return_value"
-    ) -> str:
-        return (
+        self,
+        task_id: str,
+        session: Session,
+        key: str = "return_value",
+        is_mapped: bool = False,
+    ) -> Union[bytes, List[bytes], None]:
+        # results are always tuples of size 1, so we need to index in
+        result = (
             session.query(XCom.value)
             .filter(
                 XCom.task_id == task_id,
                 XCom.key == key,
             )
             .order_by(XCom.dag_run_id.desc())
-            .first()
-        )[0]
+            .all()
+        )
+
+        if is_mapped:
+            return [r[0] for r in result]
+
+        return None if not result else result[0][0]
 
 
 def _find_task_ids_for_given_search_regexes(
