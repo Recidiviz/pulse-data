@@ -32,7 +32,6 @@ from recidiviz.airflow.dags.raw_data.utils import n_evenly_weighted_buckets
 from recidiviz.cloud_storage.gcs_file_system import GCSFileSystem
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
-from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.types.raw_data_import_types import (
     ImportReadyFile,
     PreImportNormalizedCsvChunkResult,
@@ -54,7 +53,7 @@ ENTRYPOINT_ARG_LIST_DELIMITER = "^"
 
 @task
 def generate_file_chunking_pod_arguments(
-    state_code: StateCode,
+    region_code: str,
     serialized_requires_pre_import_normalization_file_paths: List[str],
     num_batches: int,
 ) -> List[List[str]]:
@@ -62,7 +61,7 @@ def generate_file_chunking_pod_arguments(
         [
             *ENTRYPOINT_ARGUMENTS,
             "--entrypoint=RawDataFileChunkingEntrypoint",
-            f"--state_code={state_code.value}",
+            f"--state_code={region_code}",
             f"--requires_normalization_files={ENTRYPOINT_ARG_LIST_DELIMITER.join(batch)}",
         ]
         for batch in create_file_batches(
@@ -134,13 +133,13 @@ def _get_file_size(fs: GCSFileSystem, file_path: GcsfsFilePath) -> int:
 
 @task
 def generate_chunk_processing_pod_arguments(
-    state_code: StateCode, file_chunks: List[str], num_batches: int
+    region_code: str, file_chunks: List[str], num_batches: int
 ) -> List[List[str]]:
     return [
         [
             *ENTRYPOINT_ARGUMENTS,
             "--entrypoint=RawDataChunkNormalizationEntrypoint",
-            f"--state_code={state_code.value}",
+            f"--state_code={region_code}",
             f"--file_chunks={ENTRYPOINT_ARG_LIST_DELIMITER.join(batch)}",
         ]
         for batch in _divide_file_chunks_into_batches(file_chunks, num_batches)
@@ -423,7 +422,7 @@ def raise_file_chunking_errors(file_chunking_output: List[str]) -> None:
 def raise_chunk_normalization_errors(chunk_normalization_output: str) -> None:
     errors = BatchedTaskInstanceOutput.deserialize(
         chunk_normalization_output,
-        result_cls=PreImportNormalizedCsvChunkResult,
+        result_cls=ImportReadyFile,
         error_cls=RawFileProcessingError,
     ).errors
     _raise_task_errors(errors)

@@ -17,7 +17,7 @@
 """
 Helper functions for testing Airflow DAGs.
 """
-from typing import Any, Callable, List, Optional, Union
+from typing import Any, Callable, Dict, List, Optional, Union
 from unittest.mock import MagicMock, create_autospec
 
 from airflow.decorators import task
@@ -31,6 +31,7 @@ from airflow.utils.trigger_rule import TriggerRule
 from recidiviz.airflow.dags.operators.cloud_sql_query_operator import (
     CloudSqlQueryGenerator,
 )
+from recidiviz.persistence.database.schema_type import SchemaType
 
 
 def fake_operator_constructor(*_args: Any, **kwargs: Any) -> EmptyOperator:
@@ -156,3 +157,45 @@ class FakeCloudSqlOperator(BaseOperator):
         result = self._mock_pg_return[self._mock_pg_call_num]
         self._mock_pg_call_num += 1
         return result
+
+
+def fake_k8s_operator_with_return_value(
+    return_value: Any, is_mapped: bool
+) -> type[BaseOperator]:
+    """Returns a fake k8s operator that returns the specified values
+
+    because .partial and .mapped inspect the init signature of the operator and throws
+    if the parameters aren't present, we have to explicitly reflect the parameters of
+    KubernetesPodOperator.
+    """
+
+    call_count: int = 0
+
+    class FakeK8sOperator(BaseOperator):
+        # pylint: disable=unused-argument
+        def __init__(
+            self,
+            *args: Any,
+            arguments: Optional[List[str]] = None,
+            cloud_sql_connections: Optional[List[SchemaType]] = None,
+            name: Optional[str] = None,
+            cmds: Optional[str] = None,
+            env_vars: Optional[Dict] = None,
+            **kwargs: Any,
+        ) -> None:
+            super().__init__(
+                task_id=kwargs["task_id"],
+                trigger_rule=(
+                    kwargs["trigger_rule"]
+                    if "trigger_rule" in kwargs
+                    else TriggerRule.ALL_SUCCESS
+                ),
+            )
+
+        def execute(self, context: Context) -> Any:  # pylint: disable=unused-argument
+            nonlocal call_count
+            val = return_value[call_count] if is_mapped else return_value
+            call_count += 1
+            return val
+
+    return FakeK8sOperator
