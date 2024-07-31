@@ -63,7 +63,7 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
             ReasonsField(
                 name="wtru_start_date",
                 type=bigquery.StandardSqlTypeNames.DATE,
-                description="#TODO(#29059): Add reasons field description",
+                description="Date when the person was placed into the WTRU",
             ),
         ],
     )

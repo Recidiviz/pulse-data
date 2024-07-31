@@ -86,21 +86,19 @@ QUALIFY ROW_NUMBER() OVER (
 ) = 1
 """
 
-VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
-    StateSpecificTaskCriteriaBigQueryViewBuilder(
-        state_code=StateCode.US_ND,
-        criteria_name=_CRITERIA_NAME,
-        criteria_spans_query_template=_QUERY_TEMPLATE,
-        description=_DESCRIPTION,
-        normalized_state_dataset=NORMALIZED_STATE_DATASET,
-        reasons_fields=[
-            ReasonsField(
-                name="supervision_type",
-                type=bigquery.enums.SqlTypeNames.STRING,
-                description="#TODO(#29059): Add reasons field description",
-            ),
-        ],
-    )
+VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = StateSpecificTaskCriteriaBigQueryViewBuilder(
+    state_code=StateCode.US_ND,
+    criteria_name=_CRITERIA_NAME,
+    criteria_spans_query_template=_QUERY_TEMPLATE,
+    description=_DESCRIPTION,
+    normalized_state_dataset=NORMALIZED_STATE_DATASET,
+    reasons_fields=[
+        ReasonsField(
+            name="supervision_type",
+            type=bigquery.enums.SqlTypeNames.STRING,
+            description="The supervision type that may qualify the client for early termination.",
+        ),
+    ],
 )
 
 if __name__ == "__main__":

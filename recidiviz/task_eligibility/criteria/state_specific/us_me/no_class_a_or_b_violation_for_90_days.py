@@ -44,35 +44,33 @@ _QUERY_TEMPLATE = no_violations_for_x_time(
     x=90, date_part="DAY", violation_classes=("A", "B")
 )
 
-VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
-    StateSpecificTaskCriteriaBigQueryViewBuilder(
-        criteria_name=_CRITERIA_NAME,
-        description=_DESCRIPTION,
-        state_code=StateCode.US_ME,
-        criteria_spans_query_template=_QUERY_TEMPLATE,
-        us_me_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
-            state_code=StateCode.US_ME, instance=DirectIngestInstance.PRIMARY
+VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = StateSpecificTaskCriteriaBigQueryViewBuilder(
+    criteria_name=_CRITERIA_NAME,
+    description=_DESCRIPTION,
+    state_code=StateCode.US_ME,
+    criteria_spans_query_template=_QUERY_TEMPLATE,
+    us_me_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
+        state_code=StateCode.US_ME, instance=DirectIngestInstance.PRIMARY
+    ),
+    normalized_state_dataset=NORMALIZED_STATE_DATASET,
+    meets_criteria_default=True,
+    reasons_fields=[
+        ReasonsField(
+            name="highest_class_viol",
+            type=bigquery.enums.SqlTypeNames.STRING,
+            description="Violation class of the highest class violation within the 90 day window.",
         ),
-        normalized_state_dataset=NORMALIZED_STATE_DATASET,
-        meets_criteria_default=True,
-        reasons_fields=[
-            ReasonsField(
-                name="highest_class_viol",
-                type=bigquery.enums.SqlTypeNames.STRING,
-                description="#TODO(#29059): Add reasons field description",
-            ),
-            ReasonsField(
-                name="viol_type",
-                type=bigquery.enums.SqlTypeNames.STRING,
-                description="#TODO(#29059): Add reasons field description",
-            ),
-            ReasonsField(
-                name="eligible_date",
-                type=bigquery.enums.SqlTypeNames.DATE,
-                description="#TODO(#29059): Add reasons field description",
-            ),
-        ],
-    )
+        ReasonsField(
+            name="viol_type",
+            type=bigquery.enums.SqlTypeNames.STRING,
+            description="Type of violation within the 90 day window.",
+        ),
+        ReasonsField(
+            name="eligible_date",
+            type=bigquery.enums.SqlTypeNames.DATE,
+            description="Date when the resident is past 90 days of having received the violation.",
+        ),
+    ],
 )
 
 if __name__ == "__main__":

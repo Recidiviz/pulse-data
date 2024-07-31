@@ -406,7 +406,7 @@ def cis_112_custody_level_criteria(
             ReasonsField(
                 name="custody_level",
                 type=bigquery.enums.SqlTypeNames.STRING,
-                description="#TODO(#29059): Add reasons field description",
+                description="Custody level",
             ),
         ],
     )

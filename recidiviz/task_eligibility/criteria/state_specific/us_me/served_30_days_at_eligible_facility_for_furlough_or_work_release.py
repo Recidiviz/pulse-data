@@ -97,20 +97,18 @@ SELECT
 FROM critical_date_has_passed_spans cd
 """
 
-VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
-    StateSpecificTaskCriteriaBigQueryViewBuilder(
-        criteria_name=_CRITERIA_NAME,
-        description=_DESCRIPTION,
-        state_code=StateCode.US_ME,
-        criteria_spans_query_template=_QUERY_TEMPLATE,
-        reasons_fields=[
-            ReasonsField(
-                name="eligible_date",
-                type=bigquery.enums.SqlTypeNames.DATE,
-                description="#TODO(#29059): Add reasons field description",
-            ),
-        ],
-    )
+VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = StateSpecificTaskCriteriaBigQueryViewBuilder(
+    criteria_name=_CRITERIA_NAME,
+    description=_DESCRIPTION,
+    state_code=StateCode.US_ME,
+    criteria_spans_query_template=_QUERY_TEMPLATE,
+    reasons_fields=[
+        ReasonsField(
+            name="eligible_date",
+            type=bigquery.enums.SqlTypeNames.DATE,
+            description="Date when the client has served 30 days at an eligible facility.",
+        ),
+    ],
 )
 
 if __name__ == "__main__":

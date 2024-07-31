@@ -118,27 +118,27 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = StateSpecificTaskCr
         ReasonsField(
             name="full_term_completion_date",
             type=bigquery.enums.SqlTypeNames.DATE,
-            description="#TODO(#29059): Add reasons field description",
+            description="Full Term Release Date (FTRD)",
         ),
         ReasonsField(
             name="next_parole_hearing_date",
             type=bigquery.enums.SqlTypeNames.DATE,
-            description="#TODO(#29059): Add reasons field description",
+            description="Parole Hearing Date (PHD)",
         ),
         ReasonsField(
             name="parole_eligibility_date",
             type=bigquery.enums.SqlTypeNames.DATE,
-            description="#TODO(#29059): Add reasons field description",
+            description="Parole Eligibility Date (PED)",
         ),
         ReasonsField(
             name="tentative_parole_date",
             type=bigquery.enums.SqlTypeNames.DATE,
-            description="#TODO(#29059): Add reasons field description",
+            description="Tentative Parole Date (TPD)",
         ),
         ReasonsField(
             name="ineligible_offenses",
             type=bigquery.enums.SqlTypeNames.RECORD,
-            description="#TODO(#29059): Add reasons field description",
+            description="List of ineligible Offenses",
         ),
     ],
 )

@@ -98,12 +98,12 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
             ReasonsField(
                 name="current_status",
                 type=bigquery.enums.SqlTypeNames.STRING,
-                description="#TODO(#29059): Add reasons field description",
+                description="Current status of the violation",
             ),
             ReasonsField(
                 name="violation_date",
                 type=bigquery.enums.SqlTypeNames.DATE,
-                description="#TODO(#29059): Add reasons field description",
+                description="Date of the pending violation",
             ),
         ],
     )

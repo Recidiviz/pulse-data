@@ -43,21 +43,19 @@ _QUERY_TEMPLATE = f"""
                         date_part = 'YEAR')}
 """
 
-VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
-    StateSpecificTaskCriteriaBigQueryViewBuilder(
-        criteria_name=_CRITERIA_NAME,
-        criteria_spans_query_template=_QUERY_TEMPLATE,
-        description=_DESCRIPTION,
-        analyst_dataset=ANALYST_VIEWS_DATASET,
-        state_code=StateCode.US_IX,
-        reasons_fields=[
-            ReasonsField(
-                name="tentative_parole_date",
-                type=bigquery.enums.SqlTypeNames.DATE,
-                description="#TODO(#29059): Add reasons field description",
-            ),
-        ],
-    )
+VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = StateSpecificTaskCriteriaBigQueryViewBuilder(
+    criteria_name=_CRITERIA_NAME,
+    criteria_spans_query_template=_QUERY_TEMPLATE,
+    description=_DESCRIPTION,
+    analyst_dataset=ANALYST_VIEWS_DATASET,
+    state_code=StateCode.US_IX,
+    reasons_fields=[
+        ReasonsField(
+            name="tentative_parole_date",
+            type=bigquery.enums.SqlTypeNames.DATE,
+            description="The date on which the individual is tentatively scheduled to be released on parole.",
+        ),
+    ],
 )
 
 if __name__ == "__main__":

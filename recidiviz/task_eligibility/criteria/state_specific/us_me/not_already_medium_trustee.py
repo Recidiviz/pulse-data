@@ -95,25 +95,23 @@ FROM ({aggregate_adjacent_spans(table_name='deduped_sub_sessions',
       attribute=['is_medium_trustee'])})
 """
 
-VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
-    StateSpecificTaskCriteriaBigQueryViewBuilder(
-        criteria_name=_CRITERIA_NAME,
-        description=_DESCRIPTION,
-        state_code=StateCode.US_ME,
-        criteria_spans_query_template=_QUERY_TEMPLATE,
-        us_me_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
-            state_code=StateCode.US_ME, instance=DirectIngestInstance.PRIMARY
+VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = StateSpecificTaskCriteriaBigQueryViewBuilder(
+    criteria_name=_CRITERIA_NAME,
+    description=_DESCRIPTION,
+    state_code=StateCode.US_ME,
+    criteria_spans_query_template=_QUERY_TEMPLATE,
+    us_me_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
+        state_code=StateCode.US_ME, instance=DirectIngestInstance.PRIMARY
+    ),
+    normalized_state_dataset=NORMALIZED_STATE_DATASET,
+    meets_criteria_default=True,
+    reasons_fields=[
+        ReasonsField(
+            name="eligible_date",
+            type=bigquery.enums.SqlTypeNames.DATE,
+            description="Date when the client was designated as a 'Medium Trustee'.",
         ),
-        normalized_state_dataset=NORMALIZED_STATE_DATASET,
-        meets_criteria_default=True,
-        reasons_fields=[
-            ReasonsField(
-                name="eligible_date",
-                type=bigquery.enums.SqlTypeNames.DATE,
-                description="#TODO(#29059): Add reasons field description",
-            ),
-        ],
-    )
+    ],
 )
 
 if __name__ == "__main__":

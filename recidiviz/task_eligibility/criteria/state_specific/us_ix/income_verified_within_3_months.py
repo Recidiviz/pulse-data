@@ -87,22 +87,20 @@ SELECT
 FROM sub_sessions_with_attributes
 GROUP BY 1,2,3,4,5
 """
-VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
-    StateSpecificTaskCriteriaBigQueryViewBuilder(
-        criteria_name=_CRITERIA_NAME,
-        description=_DESCRIPTION,
-        state_code=StateCode.US_IX,
-        criteria_spans_query_template=_QUERY_TEMPLATE,
-        normalized_state_dataset=NORMALIZED_STATE_DATASET,
-        supplemental_dataset=SUPPLEMENTAL_DATA_DATASET,
-        reasons_fields=[
-            ReasonsField(
-                name="income_verified_date",
-                type=bigquery.enums.SqlTypeNames.DATE,
-                description="#TODO(#29059): Add reasons field description",
-            ),
-        ],
-    )
+VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = StateSpecificTaskCriteriaBigQueryViewBuilder(
+    criteria_name=_CRITERIA_NAME,
+    description=_DESCRIPTION,
+    state_code=StateCode.US_IX,
+    criteria_spans_query_template=_QUERY_TEMPLATE,
+    normalized_state_dataset=NORMALIZED_STATE_DATASET,
+    supplemental_dataset=SUPPLEMENTAL_DATA_DATASET,
+    reasons_fields=[
+        ReasonsField(
+            name="income_verified_date",
+            type=bigquery.enums.SqlTypeNames.DATE,
+            description="The date on which employment or nonemployment lawful income is verified within 3 months",
+        ),
+    ],
 )
 
 if __name__ == "__main__":

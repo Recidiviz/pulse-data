@@ -116,7 +116,7 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
             ReasonsField(
                 name="latest_rider_sentence_end_date",
                 type=bigquery.enums.SqlTypeNames.DATE,
-                description="#TODO(#29059): Add reasons field description",
+                description="The end date of the most recent rider sentence",
             ),
         ],
     )

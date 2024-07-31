@@ -53,21 +53,19 @@ WITH {spans_within_x_and_y_months_of_start_date(
     table_view= "housing_type_is_not_transient_materialized")}
 """
 
-VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
-    StateSpecificTaskCriteriaBigQueryViewBuilder(
-        criteria_name=_CRITERIA_NAME,
-        description=_DESCRIPTION,
-        state_code=StateCode.US_CA,
-        criteria_spans_query_template=_QUERY_TEMPLATE,
-        us_ca_criteria_dataset=_US_CA_CRITERIA_DATASET,
-        reasons_fields=[
-            ReasonsField(
-                name="twelve_months_sustainable_housing",
-                type=bigquery.enums.SqlTypeNames.DATE,
-                description="#TODO(#29059): Add reasons field description",
-            )
-        ],
-    )
+VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = StateSpecificTaskCriteriaBigQueryViewBuilder(
+    criteria_name=_CRITERIA_NAME,
+    description=_DESCRIPTION,
+    state_code=StateCode.US_CA,
+    criteria_spans_query_template=_QUERY_TEMPLATE,
+    us_ca_criteria_dataset=_US_CA_CRITERIA_DATASET,
+    reasons_fields=[
+        ReasonsField(
+            name="twelve_months_sustainable_housing",
+            type=bigquery.enums.SqlTypeNames.DATE,
+            description="Date when the person attained sustainable housing for 12 months.",
+        )
+    ],
 )
 
 if __name__ == "__main__":

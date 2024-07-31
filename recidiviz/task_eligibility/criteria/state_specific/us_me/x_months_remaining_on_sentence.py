@@ -166,26 +166,24 @@ SELECT
 FROM critical_date_has_passed_spans
 """
 
-VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
-    StateSpecificTaskCriteriaBigQueryViewBuilder(
-        criteria_name=_CRITERIA_NAME,
-        description=_DESCRIPTION,
-        state_code=StateCode.US_ME,
-        criteria_spans_query_template=_QUERY_TEMPLATE,
-        analyst_dataset=ANALYST_VIEWS_DATASET,
-        reasons_fields=[
-            ReasonsField(
-                name="eligible_date",
-                type=bigquery.enums.SqlTypeNames.DATE,
-                description="#TODO(#29059): Add reasons field description",
-            ),
-            ReasonsField(
-                name="months_remaining_based_on_caseload",
-                type=bigquery.enums.SqlTypeNames.FLOAT,
-                description="#TODO(#29059): Add reasons field description",
-            ),
-        ],
-    )
+VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = StateSpecificTaskCriteriaBigQueryViewBuilder(
+    criteria_name=_CRITERIA_NAME,
+    description=_DESCRIPTION,
+    state_code=StateCode.US_ME,
+    criteria_spans_query_template=_QUERY_TEMPLATE,
+    analyst_dataset=ANALYST_VIEWS_DATASET,
+    reasons_fields=[
+        ReasonsField(
+            name="eligible_date",
+            type=bigquery.enums.SqlTypeNames.DATE,
+            description="Date when the client is 30/24 months away from their release date.",
+        ),
+        ReasonsField(
+            name="months_remaining_based_on_caseload",
+            type=bigquery.enums.SqlTypeNames.FLOAT,
+            description="Number of months remaining on the sentence based on the statewide caseload.",
+        ),
+    ],
 )
 
 if __name__ == "__main__":

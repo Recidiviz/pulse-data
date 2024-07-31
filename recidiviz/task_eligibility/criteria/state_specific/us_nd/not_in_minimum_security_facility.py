@@ -56,27 +56,25 @@ WHERE state_code = 'US_ND'
 GROUP BY 1,2,3,4,5
 """
 
-VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
-    StateSpecificTaskCriteriaBigQueryViewBuilder(
-        state_code=StateCode.US_ND,
-        criteria_name=_CRITERIA_NAME,
-        criteria_spans_query_template=_QUERY_TEMPLATE,
-        description=_DESCRIPTION,
-        sessions_dataset=SESSIONS_DATASET,
-        meets_criteria_default=True,
-        reasons_fields=[
-            ReasonsField(
-                name="minimum_facility_start_date",
-                type=bigquery.enums.SqlTypeNames.DATE,
-                description="#TODO(#29059): Add reasons field description",
-            ),
-            ReasonsField(
-                name="minimum_facility",
-                type=bigquery.enums.SqlTypeNames.STRING,
-                description="#TODO(#29059): Add reasons field description",
-            ),
-        ],
-    )
+VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = StateSpecificTaskCriteriaBigQueryViewBuilder(
+    state_code=StateCode.US_ND,
+    criteria_name=_CRITERIA_NAME,
+    criteria_spans_query_template=_QUERY_TEMPLATE,
+    description=_DESCRIPTION,
+    sessions_dataset=SESSIONS_DATASET,
+    meets_criteria_default=True,
+    reasons_fields=[
+        ReasonsField(
+            name="minimum_facility_start_date",
+            type=bigquery.enums.SqlTypeNames.DATE,
+            description="Date when the person was admitted to a minimum security unit.",
+        ),
+        ReasonsField(
+            name="minimum_facility",
+            type=bigquery.enums.SqlTypeNames.STRING,
+            description="Facility where the person was in a minimum security unit.",
+        ),
+    ],
 )
 
 if __name__ == "__main__":

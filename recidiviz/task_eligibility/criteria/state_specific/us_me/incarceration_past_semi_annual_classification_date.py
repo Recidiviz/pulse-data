@@ -111,22 +111,22 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = StateSpecificTaskCr
         ReasonsField(
             name="reclass_type",
             type=bigquery.enums.SqlTypeNames.STRING,
-            description="#TODO(#29059): Add reasons field description",
+            description="Reclass type: annual or semi-annual",
         ),
         ReasonsField(
             name="reclasses_needed",
             type=bigquery.enums.StandardSqlTypeNames.FLOAT64,
-            description="#TODO(#29059): Add reasons field description",
+            description="Number of reclassifications needed by the resident",
         ),
         ReasonsField(
             name="latest_classification_date",
             type=bigquery.enums.SqlTypeNames.DATE,
-            description="#TODO(#29059): Add reasons field description",
+            description="Most recent classification date",
         ),
         ReasonsField(
             name="eligible_date",
             type=bigquery.enums.SqlTypeNames.DATE,
-            description="#TODO(#29059): Add reasons field description",
+            description="Date when the resident is past their annual/semi-annual reclassification date",
         ),
     ],
 )

@@ -72,7 +72,7 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
             ReasonsField(
                 name="ineligible_offenses",
                 type=bigquery.enums.SqlTypeNames.RECORD,
-                description="#TODO(#29059): Add reasons field description",
+                description="List of ineligible offenses for ATP Work Release",
             ),
         ],
     )
