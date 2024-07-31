@@ -236,6 +236,163 @@ class TestWriteCaseInsightsDataToBQ(unittest.TestCase):
         self.assertEqual(-1, score_bucket_start)
         self.assertEqual(-1, score_bucket_end)
 
+    def test_adjust_any_is_sex_offense(self) -> None:
+        input_row = pd.Series(
+            {
+                "any_is_sex_offense": True,
+                "most_severe_ncic_category_uniform": "General Crimes",
+            }
+        )
+        any_is_sex_offense = write_case_insights_data_to_bq.adjust_any_is_sex_offense(
+            input_row
+        )
+        self.assertEqual(True, any_is_sex_offense)
+
+        input_row = pd.Series(
+            {
+                "any_is_sex_offense": False,
+                "most_severe_ncic_category_uniform": "General Crimes",
+            }
+        )
+        any_is_sex_offense = write_case_insights_data_to_bq.adjust_any_is_sex_offense(
+            input_row
+        )
+        self.assertEqual(False, any_is_sex_offense)
+
+        input_row = pd.Series(
+            {
+                "any_is_sex_offense": False,
+                "most_severe_ncic_category_uniform": "Sexual Assault",
+            }
+        )
+        any_is_sex_offense = write_case_insights_data_to_bq.adjust_any_is_sex_offense(
+            input_row
+        )
+        self.assertEqual(True, any_is_sex_offense)
+
+        input_row = pd.Series(
+            {
+                "any_is_sex_offense": False,
+                "most_severe_ncic_category_uniform": "Sexual Assualt",
+            }
+        )
+        any_is_sex_offense = write_case_insights_data_to_bq.adjust_any_is_sex_offense(
+            input_row
+        )
+        self.assertEqual(True, any_is_sex_offense)
+
+        input_row = pd.Series(
+            {
+                "any_is_sex_offense": False,
+                "most_severe_ncic_category_uniform": "Sex Offense",
+            }
+        )
+        any_is_sex_offense = write_case_insights_data_to_bq.adjust_any_is_sex_offense(
+            input_row
+        )
+        self.assertEqual(True, any_is_sex_offense)
+
+    def test_get_combined_offense_category(self) -> None:
+        input_row = pd.Series(
+            {
+                "any_is_violent_uniform": True,
+                "any_is_drug_uniform": True,
+                "any_is_sex_offense": True,
+            }
+        )
+        combined_offense_category = (
+            write_case_insights_data_to_bq.get_combined_offense_category(input_row)
+        )
+        self.assertEqual(
+            "Violent offense, Drug offense, Sex offense", combined_offense_category
+        )
+
+        input_row = pd.Series(
+            {
+                "any_is_violent_uniform": True,
+                "any_is_drug_uniform": False,
+                "any_is_sex_offense": True,
+            }
+        )
+        combined_offense_category = (
+            write_case_insights_data_to_bq.get_combined_offense_category(input_row)
+        )
+        self.assertEqual("Violent offense, Sex offense", combined_offense_category)
+
+        input_row = pd.Series(
+            {
+                "any_is_violent_uniform": False,
+                "any_is_drug_uniform": True,
+                "any_is_sex_offense": True,
+            }
+        )
+        combined_offense_category = (
+            write_case_insights_data_to_bq.get_combined_offense_category(input_row)
+        )
+        self.assertEqual("Drug offense, Sex offense", combined_offense_category)
+
+        input_row = pd.Series(
+            {
+                "any_is_violent_uniform": True,
+                "any_is_drug_uniform": True,
+                "any_is_sex_offense": False,
+            }
+        )
+        combined_offense_category = (
+            write_case_insights_data_to_bq.get_combined_offense_category(input_row)
+        )
+        self.assertEqual("Violent offense, Drug offense", combined_offense_category)
+
+        input_row = pd.Series(
+            {
+                "any_is_violent_uniform": True,
+                "any_is_drug_uniform": False,
+                "any_is_sex_offense": False,
+            }
+        )
+        combined_offense_category = (
+            write_case_insights_data_to_bq.get_combined_offense_category(input_row)
+        )
+        self.assertEqual("Violent offense", combined_offense_category)
+
+        input_row = pd.Series(
+            {
+                "any_is_violent_uniform": False,
+                "any_is_drug_uniform": True,
+                "any_is_sex_offense": False,
+            }
+        )
+        combined_offense_category = (
+            write_case_insights_data_to_bq.get_combined_offense_category(input_row)
+        )
+        self.assertEqual("Drug offense", combined_offense_category)
+
+        input_row = pd.Series(
+            {
+                "any_is_violent_uniform": False,
+                "any_is_drug_uniform": False,
+                "any_is_sex_offense": True,
+            }
+        )
+        combined_offense_category = (
+            write_case_insights_data_to_bq.get_combined_offense_category(input_row)
+        )
+        self.assertEqual("Sex offense", combined_offense_category)
+
+        input_row = pd.Series(
+            {
+                "any_is_violent_uniform": False,
+                "any_is_drug_uniform": False,
+                "any_is_sex_offense": False,
+            }
+        )
+        combined_offense_category = (
+            write_case_insights_data_to_bq.get_combined_offense_category(input_row)
+        )
+        self.assertEqual(
+            "Non-drug, Non-violent, Non-sex offense", combined_offense_category
+        )
+
     def test_get_disposition_df(self) -> None:
         cohort_df = pd.DataFrame(
             {
@@ -701,6 +858,26 @@ class TestWriteCaseInsightsDataToBQ(unittest.TestCase):
                     "Fraud",
                     "Traffic Offenses",
                 ],
+                "combined_offense_category": [
+                    "Non-drug, non-violent, non-sex offense",
+                    "Non-drug, non-violent, non-sex offense",
+                    "Non-drug, non-violent, non-sex offense",
+                    "Non-drug, non-violent, non-sex offense",
+                    "Non-drug, non-violent, non-sex offense",
+                    "Non-drug, non-violent, non-sex offense",
+                    "Non-drug, non-violent, non-sex offense",
+                    "Non-drug, non-violent, non-sex offense",
+                ],
+                "any_is_violent_uniform": [
+                    False,
+                    False,
+                    False,
+                    False,
+                    False,
+                    False,
+                    False,
+                    False,
+                ],
             }
         )
         target_df = pd.DataFrame(
@@ -718,6 +895,15 @@ class TestWriteCaseInsightsDataToBQ(unittest.TestCase):
                         "FORGERY",
                         "DUI DRIVING",
                     ],
+                    [
+                        "Non-drug, non-violent, non-sex offense",
+                        "Non-drug, non-violent, non-sex offense",
+                        "Non-drug, non-violent, non-sex offense",
+                        "Non-drug, non-violent, non-sex offense",
+                        "Non-drug, non-violent, non-sex offense",
+                        "Non-drug, non-violent, non-sex offense",
+                    ],
+                    [False, False, False, False, False, False],
                 ],
                 names=[
                     "state_code",
@@ -725,6 +911,8 @@ class TestWriteCaseInsightsDataToBQ(unittest.TestCase):
                     "assessment_score_bucket_start",
                     "assessment_score_bucket_end",
                     "most_severe_description",
+                    "combined_offense_category",
+                    "any_is_violent_uniform",
                 ],
             ),
             data=[5, 6, 7, 8, 9, 10],
@@ -752,6 +940,15 @@ class TestWriteCaseInsightsDataToBQ(unittest.TestCase):
                         "DUI DRIVING",
                     ],
                     [
+                        "Non-drug, non-violent, non-sex offense",
+                        "Non-drug, non-violent, non-sex offense",
+                        "Non-drug, non-violent, non-sex offense",
+                        "Non-drug, non-violent, non-sex offense",
+                        "Non-drug, non-violent, non-sex offense",
+                        "Non-drug, non-violent, non-sex offense",
+                    ],
+                    [False, False, False, False, False, False],
+                    [
                         "Traffic Offenses",
                         "Traffic Offenses",
                         "Fraud",
@@ -766,6 +963,8 @@ class TestWriteCaseInsightsDataToBQ(unittest.TestCase):
                     "assessment_score_bucket_start",
                     "assessment_score_bucket_end",
                     "most_severe_description",
+                    "combined_offense_category",
+                    "any_is_violent_uniform",
                     "most_severe_ncic_category_uniform",
                 ],
             ),
@@ -776,6 +975,40 @@ class TestWriteCaseInsightsDataToBQ(unittest.TestCase):
             ),
         )
 
+        pd.testing.assert_frame_equal(expected_added_attributes_df, added_attributes_df)
+
+    def test_add_offense_attributes(self) -> None:
+        cohort_df = pd.DataFrame(
+            {
+                "gender": ["FEMALE", "MALE"],
+                "assessment_score": [5, 5],
+                "most_severe_ncic_category_uniform": ["Assault", "Sex Offense"],
+                "any_is_violent_uniform": [True, False],
+                "any_is_drug_uniform": [True, False],
+                "any_is_sex_offense": [False, True],
+            }
+        )
+
+        added_attributes_df = write_case_insights_data_to_bq.add_offense_attributes(
+            cohort_df
+        )
+
+        expected_added_attributes_df = pd.DataFrame(
+            {
+                "gender": ["FEMALE", "MALE"],
+                "assessment_score": [5, 5],
+                "most_severe_ncic_category_uniform": ["Assault", "Sex Offense"],
+                "any_is_violent_uniform": [True, False],
+                "any_is_drug_uniform": [True, False],
+                "any_is_sex_offense": [False, True],
+                "assessment_score_bucket_start": [0, 0],
+                "assessment_score_bucket_end": [22, 20],
+                "combined_offense_category": [
+                    "Violent offense, Drug offense",
+                    "Sex offense",
+                ],
+            }
+        )
         pd.testing.assert_frame_equal(expected_added_attributes_df, added_attributes_df)
 
     def test_extract_rate_dicts_info(self) -> None:

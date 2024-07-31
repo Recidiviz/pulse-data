@@ -78,6 +78,10 @@ ROLLUP_ATTRIBUTES = [
     ],
     # NCIC category
     ["state_code", "cohort_group", "most_severe_ncic_category_uniform"],
+    # Combined offense category
+    ["state_code", "cohort_group", "combined_offense_category"],
+    # Violent/non-violent
+    ["state_code", "cohort_group", "any_is_violent_uniform"],
     # All offenses
     ["state_code", "cohort_group"],
 ]
@@ -143,6 +147,61 @@ def get_gendered_assessment_score_bucket_range(
         return 31, -1
     # This doesn't handle EXTERNAL_UNKNOWN, TRANS_MALE, TRANS_FEMALE
     return -1, -1
+
+
+def adjust_any_is_sex_offense(cohort_df_row: pd.Series) -> bool:
+    """Adjust the any_is_sex_offense value for a given row.
+
+    There are some offenses that are not marked as is_sex_offense but should be.
+    We override any_is_sex_offense to be true if most_severe_ncic_category_uniform is "Sexual Assault",
+    "Sexual Assualt", or "Sex Offense".
+    Note the typo in "Sexual Assualt"; this is a known typo in our data for most_severe_ncic_category_uniform.
+    """
+    return cohort_df_row.any_is_sex_offense or (
+        not pd.isna(cohort_df_row.most_severe_ncic_category_uniform)
+        and cohort_df_row.most_severe_ncic_category_uniform
+        in ["Sexual Assault", "Sexual Assualt", "Sex Offense"]
+    )
+
+
+def get_combined_offense_category(cohort_df_row: pd.Series) -> str:
+    categories = []
+    if cohort_df_row.any_is_violent_uniform:
+        categories.append("Violent offense")
+    if cohort_df_row.any_is_drug_uniform:
+        categories.append("Drug offense")
+    if cohort_df_row.any_is_sex_offense:
+        categories.append("Sex offense")
+
+    if categories:
+        combined_str = ", ".join(categories)
+    else:
+        combined_str = "Non-drug, Non-violent, Non-sex offense"
+
+    return combined_str
+
+
+def add_offense_attributes(cohort_df: pd.DataFrame) -> pd.DataFrame:
+    cohort_df[
+        ["assessment_score_bucket_start", "assessment_score_bucket_end"]
+    ] = cohort_df.apply(
+        get_gendered_assessment_score_bucket_range, axis=1, result_type="expand"
+    )
+
+    cohort_df.any_is_violent_uniform = cohort_df.any_is_violent_uniform.fillna(False)
+    cohort_df.any_is_drug_uniform = cohort_df.any_is_violent_uniform.fillna(False)
+    cohort_df.any_is_sex_offense = cohort_df.any_is_sex_offense.fillna(False)
+    cohort_df.any_is_sex_offense = cohort_df.apply(
+        adjust_any_is_sex_offense,
+        axis=1,
+    )
+
+    cohort_df["combined_offense_category"] = cohort_df.apply(
+        get_combined_offense_category,
+        axis=1,
+    )
+
+    return cohort_df
 
 
 def get_cohort_df(project_id: str) -> pd.DataFrame:
@@ -453,11 +512,8 @@ def write_case_insights_data_to_bq(project_id: str) -> None:
     * The comma-separated values of the rollup level (recidivism_rollup)
     """
     cohort_df = get_cohort_df(project_id)
-    cohort_df[
-        ["assessment_score_bucket_start", "assessment_score_bucket_end"]
-    ] = cohort_df.apply(
-        get_gendered_assessment_score_bucket_range, axis=1, result_type="expand"
-    )
+    cohort_df = add_offense_attributes(cohort_df)
+
     event_df = get_recidivism_event_df(project_id)
     disposition_df = get_disposition_df(cohort_df)
 
