@@ -34,9 +34,6 @@ from recidiviz.calculator.query.state.views.analyst_data.models.span_type import
 from recidiviz.calculator.query.state.views.analyst_data.workflows_person_events import (
     USAGE_EVENTS_DICT,
 )
-from recidiviz.calculator.query.state.views.analyst_data.workflows_person_impact_funnel_status_sessions import (
-    WORKFLOWS_PERSON_IMPACT_FUNNEL_STATUS_SESSIONS_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.analyst_data.workflows_user_caseload_access_sessions import (
     WORKFLOWS_USER_CASELOAD_ACCESS_SESSIONS_VIEW_BUILDER,
 )
@@ -393,17 +390,38 @@ FROM
 INNER JOIN
     `{project_id}.reference_views.task_to_completion_event`
 USING
-    (task_name)""",
-        attribute_cols=["task_name", "task_type", "is_eligible", "ineligible_criteria"],
+    (task_name)
+INNER JOIN
+    `{project_id}.reference_views.completion_event_type_metadata_materialized` metadata
+USING
+    (completion_event_type)""",
+        attribute_cols=[
+            "task_name",
+            "task_type",
+            "system_type",
+            "is_eligible",
+            "ineligible_criteria",
+        ],
         span_start_date_col="start_date",
         span_end_date_col="end_date",
     ),
     SpanQueryBuilder(
         span_type=SpanType.WORKFLOWS_PERSON_IMPACT_FUNNEL_STATUS_SESSION,
         description="Spans of time over which a client had a specific usage and eligibility status for a task type",
-        sql_source=WORKFLOWS_PERSON_IMPACT_FUNNEL_STATUS_SESSIONS_VIEW_BUILDER.table_for_query,
+        sql_source="""
+SELECT
+    funnel.*,
+    metadata.system_type,
+FROM
+    `{project_id}.analyst_data.workflows_person_impact_funnel_status_sessions_materialized` funnel
+LEFT JOIN
+    `{project_id}.reference_views.completion_event_type_metadata_materialized` metadata
+ON
+    funnel.task_type = metadata.completion_event_type
+""",
         attribute_cols=[
             "task_type",
+            "system_type",
             "is_justice_involved",
             "is_eligible",
             "is_almost_eligible",

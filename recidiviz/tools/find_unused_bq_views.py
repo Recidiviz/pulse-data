@@ -48,7 +48,6 @@ from recidiviz.calculator.query.externally_shared_views.dataset_config import (
 from recidiviz.calculator.query.state.dataset_config import (
     DATAFLOW_METRICS_MATERIALIZED_DATASET,
     POPULATION_PROJECTION_DATASET,
-    REFERENCE_VIEWS_DATASET,
     SPARK_OUTPUT_DATASET_MOST_RECENT,
 )
 from recidiviz.calculator.query.state.views.analyst_data.early_discharge_reports_per_officer import (
@@ -360,12 +359,6 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
     ),
     NON_TEMPORARY_CUSTODY_INCARCERATION_POPULATION_VIEW_BUILDER.address: (
         "Will be used for MO RH eligibility spans (see #31337) (Daniel Allen 7/24/24)"
-    ),
-    BigQueryAddress(
-        dataset_id=REFERENCE_VIEWS_DATASET,
-        table_id="completion_event_type_metadata",
-    ): (
-        "Will be joined into TES related spans and events in a follow up PR (see #31666)"
     ),
     WORKFLOWS_LIVE_COMPLETION_EVENT_TYPES_BY_STATE_VIEW_BUILDER.address: (
         "Will be incorporated into person events and spans (see #31666) \
