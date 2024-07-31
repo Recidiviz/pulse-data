@@ -76,6 +76,11 @@ class ReleaseRawDataResourceLockSqlQueryGenerator(
             context, key="return_value", task_ids=self._acquire_resource_lock_task_id
         )
 
+        if locks_to_release is None:
+            # this mean we couldn't pull this info from xcom which probably means that
+            # lock acquisition failed. in case it didn't fail loudly so we know
+            raise ValueError("Couldn't retrieve locks to release from xcom")
+
         # get existing locks to make sure they are valid lock_ids and they are not
         # released
         existing_locks: List[LockSummary] = [

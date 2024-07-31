@@ -15,22 +15,36 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests for the raw data import DAG"""
-from typing import Dict
-from unittest.mock import patch
+import datetime
+import json
+from typing import Any, Dict
+from unittest.mock import create_autospec, patch
 
 from airflow.models import DAG, BaseOperator, DagBag
+from airflow.providers.postgres.hooks.postgres import PostgresHook
 from airflow.utils.state import DagRunState
 from sqlalchemy.orm import Session
 
 from recidiviz.airflow.dags.monitoring.dag_registry import get_raw_data_import_dag_id
+from recidiviz.airflow.dags.raw_data.metadata import (
+    IMPORT_READY_FILES,
+    REQUIRES_PRE_IMPORT_NORMALIZATION_FILES,
+    REQUIRES_PRE_IMPORT_NORMALIZATION_FILES_BQ_METADATA,
+)
 from recidiviz.airflow.tests.test_utils import DAG_FOLDER, AirflowIntegrationTest
 from recidiviz.airflow.tests.utils.dag_helper_functions import (
+    FakeCloudSqlOperator,
     FakeFailureOperator,
+    fake_failing_operator_constructor,
     fake_operator_with_return_value,
     fake_task_function_with_return_value,
 )
+from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.constants.states import StateCode
+from recidiviz.fakes.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.ingest.direct.types.raw_data_import_types import ImportReadyFile
+from recidiviz.tests.ingest.direct import fake_regions
 
 _PROJECT_ID = "recidiviz-testing"
 
@@ -266,6 +280,8 @@ class RawDataImportDagIntegrationTest(AirflowIntegrationTest):
 
     def setUp(self) -> None:
         super().setUp()
+        self.fs = FakeGCSFileSystem()
+        self.dag_id = get_raw_data_import_dag_id(_PROJECT_ID)
         self.environment_patcher = patch(
             "os.environ",
             {
@@ -304,63 +320,63 @@ class RawDataImportDagIntegrationTest(AirflowIntegrationTest):
             "recidiviz.airflow.dags.raw_data_import_dag.DirectIngestListNormalizedUnprocessedFilesOperator",
             side_effect=fake_operator_with_return_value([]),
         )
-        self.gcs_operator_patcher.start()
+        self.list_normalized_unprocessed_files_mock = self.gcs_operator_patcher.start()
         self.kpo_operator_patcher = patch(
             "recidiviz.airflow.dags.raw_data_import_dag.RecidivizKubernetesPodOperator",
             side_effect=fake_operator_with_return_value([]),
         )
-        self.kpo_operator_patcher.start()
+        self.kpo_operator_mock = self.kpo_operator_patcher.start()
 
         self.file_chunking_args_patcher = patch(
             "recidiviz.airflow.dags.raw_data_import_dag.generate_file_chunking_pod_arguments.function",
             side_effect=fake_task_function_with_return_value([]),
         )
-        self.file_chunking_args_patcher.start()
+        self.file_chunking_args_mock = self.file_chunking_args_patcher.start()
 
         self.chunk_processing_args_patcher = patch(
             "recidiviz.airflow.dags.raw_data_import_dag.generate_chunk_processing_pod_arguments.function",
             side_effect=fake_task_function_with_return_value([]),
         )
-        self.chunk_processing_args_patcher.start()
+        self.chunk_processing_args_mock = self.chunk_processing_args_patcher.start()
 
         self.verify_file_chunks_patcher = patch(
             "recidiviz.airflow.dags.raw_data_import_dag.regroup_and_verify_file_chunks.function",
             side_effect=fake_task_function_with_return_value([]),
         )
-        self.verify_file_chunks_patcher.start()
+        self.verify_file_chunks_mock = self.verify_file_chunks_patcher.start()
 
         self.raise_errors_patcher = patch(
             "recidiviz.airflow.dags.raw_data_import_dag.raise_chunk_normalization_errors.function",
             side_effect=fake_task_function_with_return_value(None),
         )
-        self.raise_errors_patcher.start()
+        self.raise_errors_mock = self.raise_errors_patcher.start()
 
         self.split_by_norm = patch(
             "recidiviz.airflow.dags.raw_data_import_dag.split_by_pre_import_normalization_type.function",
             side_effect=fake_task_function_with_return_value({}),
         )
-        self.split_by_norm.start()
+        self.split_by_norm_mock = self.split_by_norm.start()
 
         self.coalesce_files = patch(
             "recidiviz.airflow.dags.raw_data_import_dag.coalesce_import_ready_files.function",
             side_effect=fake_task_function_with_return_value([]),
         )
-        self.coalesce_files.start()
-        self.clean_temp_files = patch(
-            "recidiviz.airflow.dags.raw_data_import_dag.clean_up_temporary_files.function",
-            side_effect=fake_task_function_with_return_value(None),
+        self.coalesce_files_mock = self.coalesce_files.start()
+        self.clean_up_gcsfs_patcher = patch(
+            "recidiviz.airflow.dags.raw_data.clean_up_tasks.GcsfsFactory.build",
+            return_value=self.fs,
         )
-        self.clean_temp_files.start()
-        self.clean_temp_tables = patch(
-            "recidiviz.airflow.dags.raw_data_import_dag.clean_up_temporary_tables.function",
-            side_effect=fake_task_function_with_return_value(None),
+        self.clean_up_gcsfs_patcher.start()
+        self.clean_up_bq_patcher = patch(
+            "recidiviz.airflow.dags.raw_data.clean_up_tasks.BigQueryClientImpl",
         )
-        self.clean_temp_tables.start()
-        self.rename_paths = patch(
-            "recidiviz.airflow.dags.raw_data_import_dag.move_successfully_imported_paths_to_storage.function",
-            side_effect=fake_task_function_with_return_value(None),
+        self.clean_up_bq_mock = self.clean_up_bq_patcher.start()
+
+        self.region_module_patch = patch(
+            "recidiviz.airflow.dags.raw_data.utils.direct_ingest_regions_module",
+            fake_regions,
         )
-        self.rename_paths.start()
+        self.region_module_patch.start()
 
     def tearDown(self) -> None:
         self.environment_patcher.stop()
@@ -376,9 +392,9 @@ class RawDataImportDagIntegrationTest(AirflowIntegrationTest):
         self.raise_errors_patcher.stop()
         self.split_by_norm.stop()
         self.coalesce_files.stop()
-        self.clean_temp_files.stop()
-        self.clean_temp_tables.stop()
-        self.rename_paths.stop()
+        self.clean_up_gcsfs_patcher.stop()
+        self.clean_up_bq_patcher.stop()
+        self.region_module_patch.stop()
         super().tearDown()
 
     def _create_dag(self) -> DAG:
@@ -398,6 +414,8 @@ class RawDataImportDagIntegrationTest(AirflowIntegrationTest):
                     "ingest_instance": "PRIMARY",
                 },
                 expected_skipped_ids=[
+                    # we expect all SECONDARY branch tasks to be skipped except
+                    # ensure_release_resource_locks_release_if_acquired
                     "_secondary_import_branch_start",
                     r".*_secondary_import_branch\.(?!ensure_release_resource_locks_release_if_acquired)",
                     # these steps are skipped as mapped tasks (and downstream tasks)
@@ -418,6 +436,8 @@ class RawDataImportDagIntegrationTest(AirflowIntegrationTest):
                     "state_code_filter": StateCode.US_XX.value,
                 },
                 expected_skipped_ids=[
+                    # we expect all PRIMARY and US_YY SECONDARY branch tasks to be
+                    # skipped except ensure_release_resource_locks_release_if_acquired
                     r".*_primary_import_branch_start",
                     r".*_primary_import_branch\.(?!ensure_release_resource_locks_release)",
                     "us_yy_secondary_import_branch_start",
@@ -430,10 +450,12 @@ class RawDataImportDagIntegrationTest(AirflowIntegrationTest):
             )
             self.assertEqual(DagRunState.SUCCESS, result.dag_run_state)
 
-    def test_branching_resource_lock_fails(self) -> None:
-        def _resource_lock_fails(*args: Dict, **kwargs: Dict) -> BaseOperator:
+    def test_branching_resource_lock_acquisition_fails(self) -> None:
+        def _resource_lock_fails(*args: Dict, **kwargs: Any) -> BaseOperator:
             if "acquire_raw_data_resource_locks" in kwargs["task_id"]:
                 return FakeFailureOperator(*args, **kwargs)
+            if "release_raw_data_resource_locks" in kwargs["task_id"]:
+                return FakeCloudSqlOperator(*args, mock_pg_return=[], **kwargs)
             return fake_operator_with_return_value([])(*args, **kwargs)
 
         self.mock_cloud_sql_patcher.side_effect = _resource_lock_fails
@@ -445,8 +467,82 @@ class RawDataImportDagIntegrationTest(AirflowIntegrationTest):
                     "ingest_instance": "PRIMARY",
                 },
                 expected_failure_ids=[
+                    # intended tasks to fail
                     r".*_primary_import_branch\.acquire_raw_data_resource_locks",
+                    # since the task above failed, we had no lock_ids to pull from xcom
+                    r".*_primary_import_branch\.release_raw_data_resource_locks",
+                    # downstream failures
                     r".*_primary_import_branch\.list_normalized_unprocessed_gcs_file_paths",
+                    r".*_primary_import_branch\.get_all_unprocessed_gcs_file_metadata",
+                    r".*_primary_import_branch\.get_all_unprocessed_bq_file_metadata",
+                    r".*_primary_import_branch\.split_by_pre_import_normalization_type",
+                    r".*_primary_import_branch\.coalesce_import_ready_files",
+                    r".*_primary_import_branch\.pre_import_normalization\.*",
+                    r".*_primary_import_branch\.biq_query_load\.*",
+                    r".*_primary_import_branch\.cleanup_and_storage.*",
+                    r"raw_data_branching\.branch_end",
+                ],
+                expected_skipped_ids=[
+                    "_secondary_import_branch_start",
+                    r".*_secondary_import_branch\.(?!ensure_release_resource_locks_release_if_acquired)",
+                ],
+            )
+            # failed state will only happen when resource releasing failed
+            self.assertEqual(DagRunState.FAILED, result.dag_run_state)
+
+    def test_branching_resource_lock_acquisition_succeeds_but_we_fail_after(
+        self,
+    ) -> None:
+
+        acquire_mock_pg_hook = create_autospec(PostgresHook)
+        release_mock_pg_hook = create_autospec(PostgresHook)
+
+        def _resource_lock_fails(*args: Dict, **kwargs: Any) -> BaseOperator:
+            if "acquire_raw_data_resource_locks" in kwargs["task_id"]:
+                return FakeCloudSqlOperator(
+                    *args,
+                    mock_pg_return=[
+                        [
+                            None,
+                            [
+                                (1, "BUCKET"),
+                                (2, "OPERATIONS_DATABASE"),
+                                (3, "BIG_QUERY_RAW_DATA_DATASET"),
+                            ],
+                        ]
+                    ],
+                    mock_pg_hook=acquire_mock_pg_hook,
+                    **kwargs
+                )
+            if "release_raw_data_resource_locks" in kwargs["task_id"]:
+                return FakeCloudSqlOperator(
+                    *args,
+                    mock_pg_return=[
+                        [(1, False), (2, False), (3, False)],
+                        [(1, True), (2, True), (3, True)],
+                    ],
+                    mock_pg_hook=release_mock_pg_hook,
+                    **kwargs
+                )
+            return fake_operator_with_return_value([])(*args, **kwargs)
+
+        self.mock_cloud_sql_patcher.side_effect = _resource_lock_fails
+
+        self.list_normalized_unprocessed_files_mock.side_effect = (
+            fake_failing_operator_constructor
+        )
+
+        with Session(bind=self.engine) as session:
+            result = self.run_dag_test(
+                self._create_dag(),
+                session=session,
+                run_conf={
+                    "ingest_instance": "PRIMARY",
+                },
+                expected_failure_ids=[
+                    # intended failures
+                    r".*_primary_import_branch\.list_normalized_unprocessed_gcs_file_paths",
+                    # downstream failures
                     r".*_primary_import_branch\.get_all_unprocessed_gcs_file_metadata",
                     r".*_primary_import_branch\.get_all_unprocessed_bq_file_metadata",
                     r".*_primary_import_branch\.split_by_pre_import_normalization_type",
@@ -460,4 +556,148 @@ class RawDataImportDagIntegrationTest(AirflowIntegrationTest):
                     r".*_secondary_import_branch\.(?!ensure_release_resource_locks_release_if_acquired)",
                 ],
             )
+            # failed state will only happen when resource releasing failed
             self.assertEqual(DagRunState.SUCCESS, result.dag_run_state)
+
+            assert acquire_mock_pg_hook.get_records.call_count == 2
+            assert release_mock_pg_hook.get_records.call_count == 4
+
+    def test_file_discovery_and_registration_none_seen_same_tag(self) -> None:
+        self.split_by_norm.stop()
+
+        # step 2 input
+        self.list_normalized_unprocessed_files_mock.side_effect = fake_operator_with_return_value(
+            [
+                "testing/unprocessed_2024-01-25T16:35:33:617135_raw_tagBasicData.csv",
+                "testing/unprocessed_2024-01-26T16:35:33:617135_raw_tagBasicData.csv",
+                "testing/unprocessed_2024-01-27T16:35:33:617135_raw_tagBasicData.csv",
+            ]
+        )
+
+        # because partial_subset makes a deep copy of the whole dag, if we pass in a
+        # PostgresHook mock the calls wont be attributed to the mocks we create here
+        # so we dont
+        def _select_cloud_sql_output(*args: Dict, **kwargs: Any) -> BaseOperator:
+            if "get_all_unprocessed_gcs_file_metadata" in kwargs["task_id"]:
+                return FakeCloudSqlOperator(
+                    *args,
+                    mock_pg_return=[
+                        [],  # none already seen
+                        [
+                            (
+                                1,
+                                None,
+                                "unprocessed_2024-01-25T16:35:33:617135_raw_tagBasicData.csv",
+                            ),
+                            (
+                                2,
+                                None,
+                                "unprocessed_2024-01-26T16:35:33:617135_raw_tagBasicData.csv",
+                            ),
+                            (
+                                3,
+                                None,
+                                "unprocessed_2024-01-27T16:35:33:617135_raw_tagBasicData.csv",
+                            ),
+                        ],
+                    ],
+                    **kwargs
+                )
+            if "get_all_unprocessed_bq_file_metadata" in kwargs["task_id"]:
+                return FakeCloudSqlOperator(
+                    *args, mock_pg_return=[[(1,), (2,), (3,)], []], **kwargs
+                )
+            return fake_operator_with_return_value([])(*args, **kwargs)
+
+        self.mock_cloud_sql_patcher.side_effect = _select_cloud_sql_output
+
+        step_2_only_dag = self._create_dag().partial_subset(
+            task_ids_or_regex=[
+                "raw_data_branching.us_xx_primary_import_branch.list_normalized_unprocessed_gcs_file_paths",
+                "raw_data_branching.us_xx_primary_import_branch.get_all_unprocessed_gcs_file_metadata",
+                "raw_data_branching.us_xx_primary_import_branch.get_all_unprocessed_bq_file_metadata",
+                "raw_data_branching.us_xx_primary_import_branch.split_by_pre_import_normalization_type",
+            ],
+            include_upstream=False,
+            include_downstream=False,
+        )
+
+        with Session(bind=self.engine) as session:
+            result = self.run_dag_test(
+                step_2_only_dag,
+                session=session,
+                expected_failure_ids=[],  # none!
+                expected_skipped_ids=[],  # none!
+            )
+            self.assertEqual(DagRunState.SUCCESS, result.dag_run_state)
+
+            import_ready_files_jsonb = self.get_xcom_for_task_id(
+                "raw_data_branching.us_xx_primary_import_branch.split_by_pre_import_normalization_type",
+                session=session,
+                key=IMPORT_READY_FILES,
+            )
+            requires_norm_bq_metadata = self.get_xcom_for_task_id(
+                "raw_data_branching.us_xx_primary_import_branch.split_by_pre_import_normalization_type",
+                session=session,
+                key=REQUIRES_PRE_IMPORT_NORMALIZATION_FILES_BQ_METADATA,
+            )
+            requires_norm_paths = self.get_xcom_for_task_id(
+                "raw_data_branching.us_xx_primary_import_branch.split_by_pre_import_normalization_type",
+                session=session,
+                key=REQUIRES_PRE_IMPORT_NORMALIZATION_FILES,
+            )
+
+            # there are no files that require pre-import normalization, so we expect
+            # both |requires_norm_paths| (list of file paths that require pre-import
+            # normalization) and |requires_norm_bq_metadata| (list of big query metadata
+            # associated with paths in |requires_norm_paths|) to be empty
+            assert not json.loads(requires_norm_paths)
+            assert not json.loads(requires_norm_bq_metadata)
+
+            import_ready_files = [
+                ImportReadyFile.deserialize(import_ready_file_str)
+                for import_ready_file_str in json.loads(import_ready_files_jsonb)
+            ]
+
+            # validate that it matches what we expect
+            assert import_ready_files == [
+                ImportReadyFile(
+                    file_id=1,
+                    file_tag="tagBasicData",
+                    update_datetime=datetime.datetime.fromisoformat(
+                        "2024-01-25T16:35:33:617135Z"
+                    ),
+                    pre_import_normalized_file_paths=None,
+                    original_file_paths=[
+                        GcsfsFilePath.from_absolute_path(
+                            "testing/unprocessed_2024-01-25T16:35:33:617135_raw_tagBasicData.csv",
+                        )
+                    ],
+                ),
+                ImportReadyFile(
+                    file_id=2,
+                    file_tag="tagBasicData",
+                    update_datetime=datetime.datetime.fromisoformat(
+                        "2024-01-26T16:35:33:617135Z"
+                    ),
+                    pre_import_normalized_file_paths=None,
+                    original_file_paths=[
+                        GcsfsFilePath.from_absolute_path(
+                            "testing/unprocessed_2024-01-26T16:35:33:617135_raw_tagBasicData.csv",
+                        )
+                    ],
+                ),
+                ImportReadyFile(
+                    file_id=3,
+                    file_tag="tagBasicData",
+                    update_datetime=datetime.datetime.fromisoformat(
+                        "2024-01-27T16:35:33:617135Z"
+                    ),
+                    pre_import_normalized_file_paths=None,
+                    original_file_paths=[
+                        GcsfsFilePath.from_absolute_path(
+                            "testing/unprocessed_2024-01-27T16:35:33:617135_raw_tagBasicData.csv",
+                        )
+                    ],
+                ),
+            ]

@@ -368,6 +368,8 @@ def main() -> int:
         valid_module_prefixes=make_module_matcher(
             {
                 "recidiviz.airflow.tests",
+                "recidiviz.fakes.fake_gcs_file_system",
+                "recidiviz.tests.ingest.direct.fake_regions",
                 "recidiviz.tests.test_setup_utils",
                 "recidiviz.tools.utils.script_helpers",
                 "recidiviz.tools.postgres.local_postgres_helpers",
