@@ -94,12 +94,12 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
         reasons_fields=[
             ReasonsField(
                 name="latest_alert_descriptions",
-                type=bigquery.enums.SqlTypeNames.STRING,
+                type=bigquery.enums.StandardSqlTypeNames.STRING,
                 description="List of distinct alert descriptions for the latest alert",
             ),
             ReasonsField(
                 name="latest_alert_ids",
-                type=bigquery.enums.SqlTypeNames.STRING,
+                type=bigquery.enums.StandardSqlTypeNames.STRING,
                 description="List of distinct alert IDs for the latest alert",
             ),
         ],

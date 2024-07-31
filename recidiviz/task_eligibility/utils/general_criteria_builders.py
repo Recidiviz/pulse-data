@@ -130,12 +130,12 @@ def get_minimum_age_criteria(
         reasons_fields=[
             ReasonsField(
                 name="birthdate",
-                type=bigquery.enums.SqlTypeNames.DATE,
+                type=bigquery.enums.StandardSqlTypeNames.DATE,
                 description="Client's start date",
             ),
             ReasonsField(
                 name="age_eligible_date",
-                type=bigquery.enums.SqlTypeNames.DATE,
+                type=bigquery.enums.StandardSqlTypeNames.DATE,
                 description="Date when the client becomes eligible based on their age",
             ),
         ],
@@ -231,7 +231,7 @@ def get_minimum_time_served_criteria_query(
         reasons_fields=[
             ReasonsField(
                 name="minimum_time_served_date",
-                type=bigquery.enums.SqlTypeNames.DATE,
+                type=bigquery.enums.StandardSqlTypeNames.DATE,
                 description="Date when the client has served the time required",
             ),
         ],
@@ -530,7 +530,7 @@ def violations_within_time_interval_criteria_builder(
             reasons_fields=[
                 ReasonsField(
                     name=violation_date_name_in_reason_blob,
-                    type=bigquery.enums.SqlTypeNames.DATE,
+                    type=bigquery.enums.StandardSqlTypeNames.DATE,
                     description="Date when the violation occurred",
                 ),
             ],
@@ -544,7 +544,7 @@ def violations_within_time_interval_criteria_builder(
         reasons_fields=[
             ReasonsField(
                 name=violation_date_name_in_reason_blob,
-                type=bigquery.enums.SqlTypeNames.DATE,
+                type=bigquery.enums.StandardSqlTypeNames.DATE,
                 description="Date when the violation occurred",
             ),
         ],
@@ -627,7 +627,7 @@ def is_past_completion_date_criteria_builder(
         reasons_fields=[
             ReasonsField(
                 name=critical_date_name_in_reason,
-                type=bigquery.enums.SqlTypeNames.DATE,
+                type=bigquery.enums.StandardSqlTypeNames.DATE,
                 description="Date when the critical date has passed",
             ),
         ],

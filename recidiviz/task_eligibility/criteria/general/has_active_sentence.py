@@ -79,7 +79,7 @@ VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
         reasons_fields=[
             ReasonsField(
                 name="has_active_sentence",
-                type=bigquery.enums.SqlTypeNames.BOOLEAN,
+                type=bigquery.enums.StandardSqlTypeNames.BOOL,
                 description="#TODO(#29059): Add reasons field description",
             ),
         ],

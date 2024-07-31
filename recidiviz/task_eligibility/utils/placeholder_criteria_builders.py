@@ -17,7 +17,7 @@
 """Helper methods that return criteria view builders with placeholder/stubbed data to
 be used for populating a new criteria before the criteria query is developed.
 """
-from typing import Dict, List, Union
+from typing import Dict, List
 
 from google.cloud import bigquery
 
@@ -31,14 +31,12 @@ from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
 )
 
 # Default values to use for the placeholder reason columns
-DEFAULT_REASON_BY_TYPE: Dict[
-    Union[bigquery.enums.SqlTypeNames, bigquery.enums.StandardSqlTypeNames], str
-] = {
-    bigquery.enums.SqlTypeNames.BOOL: "FALSE",
-    bigquery.enums.SqlTypeNames.INT64: "1",
-    bigquery.enums.SqlTypeNames.STRING: "'placeholder'",
-    bigquery.enums.SqlTypeNames.RECORD: "['placeholder1', 'placeholder2']",
-    bigquery.enums.SqlTypeNames.DATE: f"'{MAGIC_END_DATE}'",
+DEFAULT_REASON_BY_TYPE: Dict[bigquery.enums.StandardSqlTypeNames, str] = {
+    bigquery.enums.StandardSqlTypeNames.BOOL: "FALSE",
+    bigquery.enums.StandardSqlTypeNames.INT64: "1",
+    bigquery.enums.StandardSqlTypeNames.STRING: "'placeholder'",
+    bigquery.enums.StandardSqlTypeNames.ARRAY: "['placeholder1', 'placeholder2']",
+    bigquery.enums.StandardSqlTypeNames.DATE: f"'{MAGIC_END_DATE}'",
 }
 
 
@@ -50,7 +48,7 @@ def state_agnostic_placeholder_query_template(
     """
     reason_query = ",\n    ".join(
         [
-            f"{DEFAULT_REASON_BY_TYPE.get(reason.type)} AS {reason.name}"
+            f"{DEFAULT_REASON_BY_TYPE[reason.type]} AS {reason.name}"
             for reason in reasons_fields
         ]
     )

@@ -119,7 +119,7 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
         reasons_fields=[
             ReasonsField(
                 name="latest_ineligible_convictions",
-                type=bigquery.enums.SqlTypeNames.RECORD,
+                type=bigquery.enums.StandardSqlTypeNames.ARRAY,
                 description="#TODO(#29059): Add reasons field description",
             )
         ],

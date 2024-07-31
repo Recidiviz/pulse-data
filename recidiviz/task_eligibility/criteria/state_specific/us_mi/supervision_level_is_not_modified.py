@@ -111,7 +111,7 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
         reasons_fields=[
             ReasonsField(
                 name="active_modifiers",
-                type=bigquery.enums.SqlTypeNames.BOOLEAN,
+                type=bigquery.enums.StandardSqlTypeNames.BOOL,
                 description="#TODO(#29059): Add reasons field description",
             ),
         ],

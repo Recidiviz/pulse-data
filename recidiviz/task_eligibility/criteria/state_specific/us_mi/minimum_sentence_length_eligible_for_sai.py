@@ -37,22 +37,22 @@ _DESCRIPTION = """Describes the spans of time when a resident is serving a sente
 _REASONS_FIELDS = [
     ReasonsField(
         name="is_indeterminate_sentence",
-        type=bigquery.enums.SqlTypeNames.BOOL,
+        type=bigquery.enums.StandardSqlTypeNames.BOOL,
         description="#TODO(#29059): Add reasons field description",
     ),
     ReasonsField(
         name="min_sentence",
-        type=bigquery.enums.SqlTypeNames.INT64,
+        type=bigquery.enums.StandardSqlTypeNames.INT64,
         description="#TODO(#29059): Add reasons field description",
     ),
     ReasonsField(
         name="is_breaking_and_entering",
-        type=bigquery.enums.SqlTypeNames.BOOL,
+        type=bigquery.enums.StandardSqlTypeNames.BOOL,
         description="#TODO(#29059): Add reasons field description",
     ),
     ReasonsField(
         name="is_firearm_felony",
-        type=bigquery.enums.SqlTypeNames.BOOL,
+        type=bigquery.enums.StandardSqlTypeNames.BOOL,
         description="#TODO(#29059): Add reasons field description",
     ),
 ]

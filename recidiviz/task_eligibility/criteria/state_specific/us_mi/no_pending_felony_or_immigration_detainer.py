@@ -37,22 +37,22 @@ _DESCRIPTION = """Describes spans of time during which a candidate does not have
 _REASONS_FIELDS = [
     ReasonsField(
         name="pending_felony_detainer",
-        type=bigquery.enums.SqlTypeNames.BOOL,
+        type=bigquery.enums.StandardSqlTypeNames.BOOL,
         description="#TODO(#29059): Add reasons field description",
     ),
     ReasonsField(
         name="pending_immigration_detainer",
-        type=bigquery.enums.SqlTypeNames.BOOL,
+        type=bigquery.enums.StandardSqlTypeNames.BOOL,
         description="#TODO(#29059): Add reasons field description",
     ),
     ReasonsField(
         name="pending_felony_charge",
-        type=bigquery.enums.SqlTypeNames.BOOL,
+        type=bigquery.enums.StandardSqlTypeNames.BOOL,
         description="#TODO(#29059): Add reasons field description",
     ),
     ReasonsField(
         name="felony_suspect_information",
-        type=bigquery.enums.SqlTypeNames.BOOL,
+        type=bigquery.enums.StandardSqlTypeNames.BOOL,
         description="#TODO(#29059): Add reasons field description",
     ),
 ]

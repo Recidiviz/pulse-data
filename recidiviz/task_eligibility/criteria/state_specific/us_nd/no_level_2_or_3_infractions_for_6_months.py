@@ -89,12 +89,12 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = StateSpecificTaskCr
     reasons_fields=[
         ReasonsField(
             name="infraction_categories",
-            type=bigquery.enums.SqlTypeNames.STRING,
+            type=bigquery.enums.StandardSqlTypeNames.STRING,
             description="Categories of the infractions that led to the level 2 or 3 infraction.",
         ),
         ReasonsField(
             name="most_recent_infraction_date",
-            type=bigquery.enums.SqlTypeNames.DATE,
+            type=bigquery.enums.StandardSqlTypeNames.DATE,
             description="Date of the most recent level 2 or 3 infraction.",
         ),
     ],

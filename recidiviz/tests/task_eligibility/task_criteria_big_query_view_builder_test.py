@@ -320,12 +320,12 @@ FROM
         reasons_fields = [
             ReasonsField(
                 name="fees_owed",
-                type=bigquery.enums.SqlTypeNames.FLOAT,
+                type=bigquery.enums.StandardSqlTypeNames.FLOAT64,
                 description="Amount of fees owed",
             ),
             ReasonsField(
                 name="offense_type",
-                type=bigquery.enums.SqlTypeNames.STRING,
+                type=bigquery.enums.StandardSqlTypeNames.STRING,
                 description="Offense type that person is serving",
             ),
         ]

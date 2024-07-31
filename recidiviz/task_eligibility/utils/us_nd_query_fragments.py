@@ -139,7 +139,7 @@ def parole_review_date_criteria_builder(
         reasons_fields=[
             ReasonsField(
                 name="parole_review_date",
-                type=bigquery.enums.SqlTypeNames.DATE,
+                type=bigquery.enums.StandardSqlTypeNames.DATE,
                 description="Parole Review Date: The date of the next parole review is scheduled",
             ),
         ],

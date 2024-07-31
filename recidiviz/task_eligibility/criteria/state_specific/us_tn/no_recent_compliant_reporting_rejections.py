@@ -112,12 +112,12 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
         reasons_fields=[
             ReasonsField(
                 name="contact_date_array",
-                type=bigquery.enums.SqlTypeNames.RECORD,
+                type=bigquery.enums.StandardSqlTypeNames.ARRAY,
                 description="#TODO(#29059): Add reasons field description",
             ),
             ReasonsField(
                 name="contact_code_array",
-                type=bigquery.enums.SqlTypeNames.RECORD,
+                type=bigquery.enums.StandardSqlTypeNames.ARRAY,
                 description="#TODO(#29059): Add reasons field description",
             ),
         ],

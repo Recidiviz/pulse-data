@@ -97,12 +97,12 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = StateSpecificTaskCr
     reasons_fields=[
         ReasonsField(
             name="full_term_completion_date",
-            type=bigquery.enums.SqlTypeNames.DATE,
+            type=bigquery.enums.StandardSqlTypeNames.DATE,
             description="Full term completion date: The date when the person is expected to complete their full term.",
         ),
         ReasonsField(
             name="parole_review_date",
-            type=bigquery.enums.SqlTypeNames.DATE,
+            type=bigquery.enums.StandardSqlTypeNames.DATE,
             description="Parole review date: The date when the person is expected to have a parole review.",
         ),
     ],

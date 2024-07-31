@@ -100,7 +100,7 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = StateSpecificTaskCr
     reasons_fields=[
         ReasonsField(
             name="ineligible_offenses",
-            type=bigquery.enums.SqlTypeNames.STRING,
+            type=bigquery.enums.StandardSqlTypeNames.STRING,
             description="Comma-separated list of offenses classified as Armed Offender Minimum Mandatory Sentence (AOMMS)",
         ),
     ],

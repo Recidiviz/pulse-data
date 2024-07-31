@@ -180,17 +180,17 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = StateSpecificTaskCr
     reasons_fields=[
         ReasonsField(
             name="parole_eligibility_date",
-            type=bigquery.enums.SqlTypeNames.DATE,
+            type=bigquery.enums.StandardSqlTypeNames.DATE,
             description="Parole Eligibility Date (PED): The date on which the person becomes eligible for parole.",
         ),
         ReasonsField(
             name="tentative_parole_date",
-            type=bigquery.enums.SqlTypeNames.DATE,
+            type=bigquery.enums.StandardSqlTypeNames.DATE,
             description="Tentative Parole Date (TPD): The date on which the person is tentatively scheduled for parole.",
         ),
         ReasonsField(
             name="parole_hearing_date",
-            type=bigquery.enums.SqlTypeNames.DATE,
+            type=bigquery.enums.StandardSqlTypeNames.DATE,
             description="Parole Hearing Date (PHD): The date on which the person is scheduled for a parole hearing.",
         ),
     ],
