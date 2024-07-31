@@ -73,7 +73,7 @@ _QUERY_TEMPLATE = f"""
         FROM sub_sessions_with_attributes ssa
         LEFT JOIN sentences
             USING (state_code, person_id)
-        WHERE (sentences.offense_date <= ssa.start_date)
+        WHERE sentences.offense_date<=ssa.start_date
         GROUP BY 1, 2, 3, 4
     ),
     absconsion_sessions AS (
@@ -83,7 +83,7 @@ _QUERY_TEMPLATE = f"""
             start_date,
             end_date_exclusive,
         FROM `{{project_id}}.{{sessions_dataset}}.compartment_sessions_materialized`
-        WHERE compartment_level_2='ABSCONSION'
+        WHERE state_code='US_OR' AND compartment_level_2='ABSCONSION'
     ),
     absconsions_during_sentence AS (
         /* Here, for each sentence, we pull sessions of absconsion occurring during that
@@ -117,7 +117,7 @@ _QUERY_TEMPLATE = f"""
         FROM sub_sessions_with_attributes ssa
         LEFT JOIN absconsions_during_sentence
             USING (state_code, person_id, sentence_id)
-        WHERE absconsion_start_date < ssa.start_date
+        WHERE absconsion_start_date<ssa.start_date
         GROUP BY 1, 2, 3, 4
     ),
     sub_sessions_with_attributes_with_reasons AS (
@@ -126,8 +126,8 @@ _QUERY_TEMPLATE = f"""
             person_id,
             sentence_id,
             start_date,
-            end_date,
-            is_eligible,
+            ssa.end_date,
+            ssa.is_eligible,
             TO_JSON(STRUCT(
                 sentences.date_imposed AS sentence_imposed_date,
                 sentences.sentence_start_date AS supervision_sentence_start_date,
@@ -153,7 +153,7 @@ _QUERY_TEMPLATE = f"""
                 sentences.statute AS sentence_statute,
                 sentence_id AS sentence_id
             )) AS reason,
-        FROM sub_sessions_with_attributes ss
+        FROM sub_sessions_with_attributes ssa
         LEFT JOIN sentences
             USING (state_code, person_id, sentence_id)
         LEFT JOIN most_recent_offenses
