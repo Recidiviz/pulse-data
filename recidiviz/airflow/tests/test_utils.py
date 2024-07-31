@@ -26,7 +26,7 @@ from unittest.mock import patch
 
 import attr
 from airflow import DAG, settings
-from airflow.models import BaseOperator, DagRun, TaskInstance
+from airflow.models import BaseOperator, DagRun, TaskInstance, XCom
 from airflow.utils import timezone
 from airflow.utils.context import Context
 from airflow.utils.db import initdb, resetdb
@@ -315,6 +315,19 @@ class AirflowIntegrationTest(unittest.TestCase):
         if not rows:
             raise ValueError(f"Task [{task_id}] not found")
         return TaskInstanceState(rows[0])
+
+    def get_xcom_for_task_id(
+        self, task_id: str, session: Session, key: str = "return_value"
+    ) -> str:
+        return (
+            session.query(XCom.value)
+            .filter(
+                XCom.task_id == task_id,
+                XCom.key == key,
+            )
+            .order_by(XCom.dag_run_id.desc())
+            .first()
+        )[0]
 
 
 def _find_task_ids_for_given_search_regexes(
