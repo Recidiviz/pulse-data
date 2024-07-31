@@ -244,6 +244,6 @@ resource "google_bigquery_table" "workflows_launch_metadata" {
     source_uris = [
       "https://docs.google.com/spreadsheets/d/1LW_wd4IzFXwUHgGSVAE2NCUHgNjccAAw_dUkg3qcXGE",
     ]
-    schema = jsonencode(yamldecode(file("${local.source_tables}/${module.static_reference_tables.dataset_id}/workflows_launch_metadata.yaml"))["schema"])
+    schema = jsonencode(yamldecode(file("${local.source_tables}/${module.static_reference_tables.dataset_id}/workflows_launch_metadata_materialized.yaml"))["schema"])
   }
 }
