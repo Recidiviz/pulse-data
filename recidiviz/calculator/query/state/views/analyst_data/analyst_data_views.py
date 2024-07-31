@@ -156,9 +156,6 @@ from recidiviz.calculator.query.state.views.analyst_data.us_mi.us_mi_warden_in_p
 from recidiviz.calculator.query.state.views.analyst_data.us_mo.us_mo_classification_hearings_preprocessed import (
     US_MO_CLASSIFICATION_HEARINGS_PREPROCESSED_RECORD_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.analyst_data.us_mo.us_mo_mosop_prio_eligibility import (
-    PRIORITIZED_ELIGIBILITY,
-)
 from recidiviz.calculator.query.state.views.analyst_data.us_mo.us_mo_mosop_prio_groups import (
     US_MO_MOSOP_PRIO_GROUPS_VIEW_BUILDER,
 )
@@ -359,7 +356,6 @@ ANALYST_DATA_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     US_MO_RESTRICTIVE_HOUSING_RECORD_VIEW_BUILDER,
     US_MO_MOSOP_PRIO_GROUPS_VIEW_BUILDER,
     US_MO_SENTENCING_DATES_PREPROCESSED_VIEW_BUILDER,
-    PRIORITIZED_ELIGIBILITY,
     US_TN_PAYMENTS_PREPROCESSED_VIEW_BUILDER,
     US_TN_EXEMPTIONS_PREPROCESSED_VIEW_BUILDER,
     US_TN_INVOICES_PREPROCESSED_VIEW_BUILDER,
