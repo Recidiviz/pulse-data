@@ -35,7 +35,8 @@ RACIAL_DISPARITIES_VIEW_QUERY_TEMPLATE = """
       SELECT state_code,
              {state_specific_race_or_ethnicity_groupings},
              SUM(population) as total_state_population
-      FROM `{project_id}.{external_reference_views_dataset}.state_resident_population_combined_race_ethnicity`
+      FROM `{project_id}.{external_reference_views_dataset}.state_resident_population_combined_race_ethnicity`,
+           UNNEST([race_or_ethnicity, "ALL"]) AS race_or_ethnicity
       GROUP BY state_code, race_or_ethnicity 
     ), sentenced_populations AS (
       SELECT
