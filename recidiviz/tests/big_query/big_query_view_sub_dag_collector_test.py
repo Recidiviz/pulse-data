@@ -36,7 +36,6 @@ class BigQueryViewSubDagCollectorTest(unittest.TestCase):
             view_addresses_in_sub_dag={
                 DIAMOND_SHAPED_DAG_VIEW_BUILDERS_LIST[0].address
             },
-            dataset_ids_in_sub_dag=None,
             include_ancestors=False,
             include_descendants=False,
             datasets_to_exclude=set(),
@@ -50,9 +49,8 @@ class BigQueryViewSubDagCollectorTest(unittest.TestCase):
     def test_single_dataset_in_sub_dag(self) -> None:
         collector = BigQueryViewSubDagCollector(
             view_builders_in_full_dag=DIAMOND_SHAPED_DAG_VIEW_BUILDERS_LIST,
-            view_addresses_in_sub_dag=None,
-            dataset_ids_in_sub_dag={
-                DIAMOND_SHAPED_DAG_VIEW_BUILDERS_LIST[3].dataset_id
+            view_addresses_in_sub_dag={
+                DIAMOND_SHAPED_DAG_VIEW_BUILDERS_LIST[3].address
             },
             include_ancestors=False,
             include_descendants=False,
@@ -64,14 +62,12 @@ class BigQueryViewSubDagCollectorTest(unittest.TestCase):
             collector.collect_view_builders(),
         )
 
-    def test_dataset_and_address_specified(self) -> None:
+    def test_multiple_addresses_specified(self) -> None:
         collector = BigQueryViewSubDagCollector(
             view_builders_in_full_dag=DIAMOND_SHAPED_DAG_VIEW_BUILDERS_LIST,
             view_addresses_in_sub_dag={
-                DIAMOND_SHAPED_DAG_VIEW_BUILDERS_LIST[0].address
-            },
-            dataset_ids_in_sub_dag={
-                DIAMOND_SHAPED_DAG_VIEW_BUILDERS_LIST[3].dataset_id
+                DIAMOND_SHAPED_DAG_VIEW_BUILDERS_LIST[0].address,
+                DIAMOND_SHAPED_DAG_VIEW_BUILDERS_LIST[3].address,
             },
             include_ancestors=False,
             include_descendants=False,
@@ -92,7 +88,6 @@ class BigQueryViewSubDagCollectorTest(unittest.TestCase):
             view_addresses_in_sub_dag={
                 DIAMOND_SHAPED_DAG_VIEW_BUILDERS_LIST[2].address
             },
-            dataset_ids_in_sub_dag=None,
             include_ancestors=True,
             include_descendants=False,
             datasets_to_exclude=set(),
@@ -110,9 +105,8 @@ class BigQueryViewSubDagCollectorTest(unittest.TestCase):
     def test_include_descendants(self) -> None:
         collector = BigQueryViewSubDagCollector(
             view_builders_in_full_dag=DIAMOND_SHAPED_DAG_VIEW_BUILDERS_LIST,
-            view_addresses_in_sub_dag=None,
-            dataset_ids_in_sub_dag={
-                DIAMOND_SHAPED_DAG_VIEW_BUILDERS_LIST[2].dataset_id
+            view_addresses_in_sub_dag={
+                DIAMOND_SHAPED_DAG_VIEW_BUILDERS_LIST[2].address
             },
             include_ancestors=False,
             include_descendants=True,
@@ -132,9 +126,8 @@ class BigQueryViewSubDagCollectorTest(unittest.TestCase):
     def test_include_ancestors_and_descendants(self) -> None:
         collector = BigQueryViewSubDagCollector(
             view_builders_in_full_dag=DIAMOND_SHAPED_DAG_VIEW_BUILDERS_LIST,
-            view_addresses_in_sub_dag=None,
-            dataset_ids_in_sub_dag={
-                DIAMOND_SHAPED_DAG_VIEW_BUILDERS_LIST[2].dataset_id
+            view_addresses_in_sub_dag={
+                DIAMOND_SHAPED_DAG_VIEW_BUILDERS_LIST[2].address
             },
             include_ancestors=True,
             include_descendants=True,

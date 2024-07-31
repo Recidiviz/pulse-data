@@ -217,26 +217,22 @@ def _load_manually_filtered_views_to_sandbox(
 
     logging.info("Prefixing all view datasets with [%s_].", sandbox_dataset_prefix)
 
-    addresses_from_view_ids = (
-        {
-            BigQueryAddress(
-                dataset_id=view_id_str.split(".")[0],
-                table_id=view_id_str.split(".")[1],
-            )
-            for view_id_str in view_ids_to_load
-        }
-        if view_ids_to_load
-        else None
-    )
-
     view_builders = deployed_view_builders()
+
+    addresses_from_view_ids = (
+        {BigQueryAddress.from_str(address_str) for address_str in view_ids_to_load}
+        if view_ids_to_load
+        else set()
+    )
+    addresses_from_dataset_ids = (
+        {vb.address for vb in view_builders if vb.dataset_id in dataset_ids_to_load}
+        if dataset_ids_to_load
+        else set()
+    )
 
     collector = BigQueryViewSubDagCollector(
         view_builders_in_full_dag=view_builders,
-        view_addresses_in_sub_dag=addresses_from_view_ids,
-        dataset_ids_in_sub_dag=(
-            set(dataset_ids_to_load) if dataset_ids_to_load else None
-        ),
+        view_addresses_in_sub_dag=addresses_from_view_ids | addresses_from_dataset_ids,
         include_ancestors=update_ancestors,
         include_descendants=update_descendants,
         datasets_to_exclude=_datasets_to_exclude_from_sandbox(
@@ -368,7 +364,7 @@ def _check_for_invalid_ignores(
     addresses_to_load: Set[BigQueryAddress],
 ) -> None:
     """Exits if any views that will be loaded (in |addresses_to_load|) are downstream
-    of an ingored view that has not yet been deployed.
+    of an ignored view that has not yet been deployed.
     """
     ignored_added_views = []
     invalid_views_to_load = []
@@ -464,7 +460,6 @@ def _load_views_changed_on_branch_to_sandbox(
     sub_dag_collector = BigQueryViewSubDagCollector(
         view_builders_in_full_dag=view_builders_in_full_dag,
         view_addresses_in_sub_dag=changed_views_to_load,
-        dataset_ids_in_sub_dag=None,
         include_ancestors=False,
         include_descendants=True,
         datasets_to_exclude=_datasets_to_exclude_from_sandbox(

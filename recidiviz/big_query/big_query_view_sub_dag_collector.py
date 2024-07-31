@@ -18,7 +18,7 @@
 up only a part of a full DAG of BigQuery views.
 """
 
-from typing import List, Optional, Sequence, Set
+from typing import List, Sequence, Set
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_utils import build_views_to_update
@@ -36,8 +36,7 @@ class BigQueryViewSubDagCollector(BigQueryViewCollector[BigQueryViewBuilder]):
     def __init__(
         self,
         view_builders_in_full_dag: Sequence[BigQueryViewBuilder],
-        view_addresses_in_sub_dag: Optional[Set[BigQueryAddress]],
-        dataset_ids_in_sub_dag: Optional[Set[str]],
+        view_addresses_in_sub_dag: Set[BigQueryAddress],
         include_ancestors: bool,
         include_descendants: bool,
         datasets_to_exclude: Set[str],
@@ -48,12 +47,7 @@ class BigQueryViewSubDagCollector(BigQueryViewCollector[BigQueryViewBuilder]):
                 views that we want to build a sub-DAG from.
             view_addresses_in_sub_dag: If specified, the sub-DAG will include all views
                 at these addresses (and any views upstream / downstream of those views,
-                as appropriate). Either this arg or |dataset_ids_in_sub_dag| must be
-                nonnull.
-            dataset_ids_in_sub_dag: If specified, the sub-DAG will include all views
-                in these datasets (and any views upstream / downstream of those views,
-                as appropriate). Either this arg or |view_addresses_in_sub_dag| must be
-                nonnull.
+                as appropriate).
             include_ancestors: If True, all ancestors of selected views will be included
                 in the sub-DAG as well.
             include_descendants: If True, all descendants of selected views will be
@@ -62,15 +56,8 @@ class BigQueryViewSubDagCollector(BigQueryViewCollector[BigQueryViewBuilder]):
                 sub-DAG, even if they are upstream / downstream of views in
                 |view_addresses_in_sub_dag| or |dataset_ids_in_sub_dag|.
         """
-
-        if not (view_addresses_in_sub_dag or dataset_ids_in_sub_dag):
-            raise ValueError(
-                "Must define at least one of view_ids_to_load or dataset_ids_to_load."
-            )
-
         self.view_builders_in_full_dag = view_builders_in_full_dag
         self.view_addresses_in_sub_dag = view_addresses_in_sub_dag
-        self.dataset_ids_in_sub_dag = dataset_ids_in_sub_dag
         self.include_ancestors = include_ancestors
         self.include_descendants = include_descendants
         self.datasets_to_exclude = datasets_to_exclude
@@ -111,20 +98,6 @@ class BigQueryViewSubDagCollector(BigQueryViewCollector[BigQueryViewBuilder]):
         """
 
         views_in_sub_dag: List[BigQueryView] = []
-        if self.dataset_ids_in_sub_dag:
-            views_in_datasets = [
-                view
-                for view in all_views
-                if view.dataset_id in self.dataset_ids_in_sub_dag
-            ]
-
-            found_datasets = {view.dataset_id for view in views_in_datasets}
-            if found_datasets != set(self.dataset_ids_in_sub_dag):
-                missing_datasets = set(self.dataset_ids_in_sub_dag) - found_datasets
-                raise ValueError(
-                    f"Did not find any views in the following datasets: {missing_datasets}"
-                )
-            views_in_sub_dag.extend(views_in_datasets)
 
         if self.view_addresses_in_sub_dag:
             if len(set(self.view_addresses_in_sub_dag)) != len(
@@ -133,18 +106,6 @@ class BigQueryViewSubDagCollector(BigQueryViewCollector[BigQueryViewBuilder]):
                 raise ValueError(
                     f"Found duplicates in list of input views to load: {self.view_addresses_in_sub_dag}"
                 )
-
-            if self.dataset_ids_in_sub_dag:
-                overlapping_addresses = [
-                    a
-                    for a in self.view_addresses_in_sub_dag
-                    if a in self.dataset_ids_in_sub_dag
-                ]
-                if overlapping_addresses:
-                    raise ValueError(
-                        f"Found addresses in --view_ids_to_load with datasets already "
-                        f"listed in --dataset_ids_to_load: {overlapping_addresses}"
-                    )
 
             views_with_addresses = [
                 view
