@@ -424,8 +424,11 @@ class SpreadsheetInterface:
             # for the user on the bulk upload error page.
             metric_errors: List[Dict[str, Any]] = []
             for sheet_name, errors in itertools.groupby(
-                ingest_result.metric_key_to_errors.get(metric_definition.key, []),
-                key=lambda e: e.sheet_name,
+                sorted(
+                    ingest_result.metric_key_to_errors.get(metric_definition.key, []),
+                    key=lambda e: e.sheet_name or "",
+                ),
+                key=lambda e: e.sheet_name or "",
             ):
                 metric_errors.append(
                     {
