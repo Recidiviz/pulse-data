@@ -68,17 +68,17 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
             ReasonsField(
                 name="ineligible_offenses",
                 type=bigquery.enums.SqlTypeNames.RECORD,
-                description="#TODO(#29059): Add reasons field description",
+                description="Offenses that make the person ineligible for the task",
             ),
             ReasonsField(
                 name="ineligible_offenses_descriptions",
                 type=bigquery.enums.SqlTypeNames.RECORD,
-                description="#TODO(#29059): Add reasons field description",
+                description="Descriptions of the ineligible offenses",
             ),
             ReasonsField(
                 name="most_recent_eluding_police_date",
                 type=bigquery.enums.SqlTypeNames.DATE,
-                description="#TODO(#29059): Add reasons field description",
+                description="Most recent eluding police date",
             ),
         ],
     )

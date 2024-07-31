@@ -64,22 +64,20 @@ WITH tpd AS (
     GROUP BY 1,2,3,4
 """
 
-VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
-    StateSpecificTaskCriteriaBigQueryViewBuilder(
-        criteria_name=_CRITERIA_NAME,
-        criteria_spans_query_template=_QUERY_TEMPLATE,
-        description=_DESCRIPTION,
-        analyst_dataset=ANALYST_VIEWS_DATASET,
-        state_code=StateCode.US_IX,
-        meets_criteria_default=True,
-        reasons_fields=[
-            ReasonsField(
-                name="latest_tentative_parole_date",
-                type=bigquery.enums.SqlTypeNames.DATE,
-                description="#TODO(#29059): Add reasons field description",
-            ),
-        ],
-    )
+VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = StateSpecificTaskCriteriaBigQueryViewBuilder(
+    criteria_name=_CRITERIA_NAME,
+    criteria_spans_query_template=_QUERY_TEMPLATE,
+    description=_DESCRIPTION,
+    analyst_dataset=ANALYST_VIEWS_DATASET,
+    state_code=StateCode.US_IX,
+    meets_criteria_default=True,
+    reasons_fields=[
+        ReasonsField(
+            name="latest_tentative_parole_date",
+            type=bigquery.enums.SqlTypeNames.DATE,
+            description="The date on which the individual is tentatively scheduled to be released on parole.",
+        ),
+    ],
 )
 
 if __name__ == "__main__":

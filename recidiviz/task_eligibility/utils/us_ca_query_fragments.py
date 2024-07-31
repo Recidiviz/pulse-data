@@ -117,8 +117,8 @@ WHERE cd.start_date < {nonnull_end_date_clause('cd.end_date')}"""
         reasons_fields=[
             ReasonsField(
                 name="status_employer_start_date",
-                type=bigquery.enums.SqlTypeNames.DATE,
-                description="#TODO(#29059): Add reasons field description",
+                type=bigquery.enums.StandardSqlTypeNames.ARRAY,
+                description="List of status, employer and start date for each employer active during the employment period.",
             )
         ],
     )

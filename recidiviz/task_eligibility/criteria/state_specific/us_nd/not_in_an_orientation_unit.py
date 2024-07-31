@@ -69,12 +69,12 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
             ReasonsField(
                 name="housing_unit_start_date",
                 type=bigquery.enums.SqlTypeNames.DATE,
-                description="#TODO(#29059): Add reasons field description",
+                description="Date when the person was placed in an orientation unit.",
             ),
             ReasonsField(
                 name="housing_unit",
                 type=bigquery.enums.SqlTypeNames.STRING,
-                description="#TODO(#29059): Add reasons field description",
+                description="The housing unit where the person was placed.",
             ),
         ],
     )

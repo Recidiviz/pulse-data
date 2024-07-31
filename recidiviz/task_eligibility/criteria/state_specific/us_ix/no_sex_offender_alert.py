@@ -95,12 +95,12 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
             ReasonsField(
                 name="latest_alert_descriptions",
                 type=bigquery.enums.SqlTypeNames.STRING,
-                description="#TODO(#29059): Add reasons field description",
+                description="List of distinct alert descriptions for the latest alert",
             ),
             ReasonsField(
                 name="latest_alert_ids",
                 type=bigquery.enums.SqlTypeNames.STRING,
-                description="#TODO(#29059): Add reasons field description",
+                description="List of distinct alert IDs for the latest alert",
             ),
         ],
     )

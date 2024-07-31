@@ -89,7 +89,7 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = StateSpecificTaskCr
         ReasonsField(
             name="sixty_days_in_crc_facility_date",
             type=bigquery.enums.SqlTypeNames.DATE,
-            description="#TODO(#29059): Add reasons field description",
+            description="The date on which the person has been in a Community Reentry Center facility or PWCC Unit 1 for 60 days.",
         ),
     ],
 )

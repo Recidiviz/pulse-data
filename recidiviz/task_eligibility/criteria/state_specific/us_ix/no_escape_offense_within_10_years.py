@@ -51,32 +51,30 @@ _QUERY_TEMPLATE = f"""WITH {x_time_from_ineligible_offense(statutes_list = _INEL
                                                            )}
 """
 
-VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
-    StateSpecificTaskCriteriaBigQueryViewBuilder(
-        state_code=StateCode.US_IX,
-        criteria_name=_CRITERIA_NAME,
-        criteria_spans_query_template=_QUERY_TEMPLATE,
-        description=_DESCRIPTION,
-        sessions_dataset=SESSIONS_DATASET,
-        meets_criteria_default=True,
-        reasons_fields=[
-            ReasonsField(
-                name="ineligible_offenses",
-                type=bigquery.enums.SqlTypeNames.RECORD,
-                description="#TODO(#29059): Add reasons field description",
-            ),
-            ReasonsField(
-                name="ineligible_offenses_descriptions",
-                type=bigquery.enums.SqlTypeNames.RECORD,
-                description="#TODO(#29059): Add reasons field description",
-            ),
-            ReasonsField(
-                name="most_recent_escape_date",
-                type=bigquery.enums.SqlTypeNames.DATE,
-                description="#TODO(#29059): Add reasons field description",
-            ),
-        ],
-    )
+VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = StateSpecificTaskCriteriaBigQueryViewBuilder(
+    state_code=StateCode.US_IX,
+    criteria_name=_CRITERIA_NAME,
+    criteria_spans_query_template=_QUERY_TEMPLATE,
+    description=_DESCRIPTION,
+    sessions_dataset=SESSIONS_DATASET,
+    meets_criteria_default=True,
+    reasons_fields=[
+        ReasonsField(
+            name="ineligible_offenses",
+            type=bigquery.enums.SqlTypeNames.RECORD,
+            description="Ineligible offenses that make the person ineligible for the task",
+        ),
+        ReasonsField(
+            name="ineligible_offenses_descriptions",
+            type=bigquery.enums.SqlTypeNames.RECORD,
+            description="Descriptions of the ineligible offenses",
+        ),
+        ReasonsField(
+            name="most_recent_escape_date",
+            type=bigquery.enums.SqlTypeNames.DATE,
+            description="The most recent escape date",
+        ),
+    ],
 )
 
 if __name__ == "__main__":

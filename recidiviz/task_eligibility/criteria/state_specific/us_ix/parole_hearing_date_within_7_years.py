@@ -132,21 +132,19 @@ WHERE start_date != {nonnull_end_date_clause('end_date')}
 GROUP BY 1,2,3,4
 """
 
-VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
-    StateSpecificTaskCriteriaBigQueryViewBuilder(
-        criteria_name=_CRITERIA_NAME,
-        criteria_spans_query_template=_QUERY_TEMPLATE,
-        description=_DESCRIPTION,
-        analyst_dataset=ANALYST_VIEWS_DATASET,
-        state_code=StateCode.US_IX,
-        reasons_fields=[
-            ReasonsField(
-                name="next_parole_hearing_date",
-                type=bigquery.enums.SqlTypeNames.DATE,
-                description="#TODO(#29059): Add reasons field description",
-            ),
-        ],
-    )
+VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = StateSpecificTaskCriteriaBigQueryViewBuilder(
+    criteria_name=_CRITERIA_NAME,
+    criteria_spans_query_template=_QUERY_TEMPLATE,
+    description=_DESCRIPTION,
+    analyst_dataset=ANALYST_VIEWS_DATASET,
+    state_code=StateCode.US_IX,
+    reasons_fields=[
+        ReasonsField(
+            name="next_parole_hearing_date",
+            type=bigquery.enums.SqlTypeNames.DATE,
+            description="Next Parole Hearing Date (PHD): The date on which the person is scheduled for a parole hearing.",
+        ),
+    ],
 )
 
 if __name__ == "__main__":

@@ -93,7 +93,7 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
             ReasonsField(
                 name="active_nco",
                 type=bigquery.enums.SqlTypeNames.BOOLEAN,
-                description="#TODO(#29059): Add reasons field description",
+                description="Whether there is an active no contact order",
             ),
         ],
     )

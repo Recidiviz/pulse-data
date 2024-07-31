@@ -145,22 +145,20 @@ FROM sub_sessions_with_attributes
 WHERE start_date != end_date
 GROUP BY 1,2,3,4
 """
-VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
-    StateSpecificTaskCriteriaBigQueryViewBuilder(
-        criteria_name=_CRITERIA_NAME,
-        description=_DESCRIPTION,
-        state_code=StateCode.US_IX,
-        criteria_spans_query_template=_QUERY_TEMPLATE,
-        meets_criteria_default=True,
-        sessions_dataset=SESSIONS_DATASET,
-        reasons_fields=[
-            ReasonsField(
-                name="minimum_time_served_date",
-                type=bigquery.enums.SqlTypeNames.DATE,
-                description="#TODO(#29059): Add reasons field description",
-            ),
-        ],
-    )
+VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = StateSpecificTaskCriteriaBigQueryViewBuilder(
+    criteria_name=_CRITERIA_NAME,
+    description=_DESCRIPTION,
+    state_code=StateCode.US_IX,
+    criteria_spans_query_template=_QUERY_TEMPLATE,
+    meets_criteria_default=True,
+    sessions_dataset=SESSIONS_DATASET,
+    reasons_fields=[
+        ReasonsField(
+            name="minimum_time_served_date",
+            type=bigquery.enums.SqlTypeNames.DATE,
+            description="The date on which the person has served at least one year for a DUI offense",
+        ),
+    ],
 )
 
 if __name__ == "__main__":

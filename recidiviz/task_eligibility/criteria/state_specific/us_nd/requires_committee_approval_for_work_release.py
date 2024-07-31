@@ -104,12 +104,12 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = StateSpecificTaskCr
         ReasonsField(
             name="has_registration_requirements",
             type=bigquery.enums.SqlTypeNames.BOOLEAN,
-            description="#TODO(#29059): Add reasons field description",
+            description="Does this person have registration requirements?",
         ),
         ReasonsField(
             name="has_to_serve_85_percent_of_sentence",
             type=bigquery.enums.SqlTypeNames.BOOLEAN,
-            description="#TODO(#29059): Add reasons field description",
+            description="Does this person have to serve 85% of their sentence?",
         ),
     ],
 )

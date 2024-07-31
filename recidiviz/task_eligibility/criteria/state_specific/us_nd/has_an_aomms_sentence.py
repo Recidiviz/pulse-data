@@ -87,25 +87,23 @@ GROUP BY 1,2,3,4,5
 ORDER BY 1,2,3
 """
 
-VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
-    StateSpecificTaskCriteriaBigQueryViewBuilder(
-        criteria_name=_CRITERIA_NAME,
-        description=_DESCRIPTION,
-        state_code=StateCode.US_ND,
-        criteria_spans_query_template=_QUERY_TEMPLATE,
-        raw_data_up_to_date_views_dataset=raw_latest_views_dataset_for_region(
-            state_code=StateCode.US_ND, instance=DirectIngestInstance.PRIMARY
+VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = StateSpecificTaskCriteriaBigQueryViewBuilder(
+    criteria_name=_CRITERIA_NAME,
+    description=_DESCRIPTION,
+    state_code=StateCode.US_ND,
+    criteria_spans_query_template=_QUERY_TEMPLATE,
+    raw_data_up_to_date_views_dataset=raw_latest_views_dataset_for_region(
+        state_code=StateCode.US_ND, instance=DirectIngestInstance.PRIMARY
+    ),
+    sessions_dataset=SESSIONS_DATASET,
+    meets_criteria_default=False,
+    reasons_fields=[
+        ReasonsField(
+            name="ineligible_offenses",
+            type=bigquery.enums.SqlTypeNames.STRING,
+            description="Comma-separated list of offenses classified as Armed Offender Minimum Mandatory Sentence (AOMMS)",
         ),
-        sessions_dataset=SESSIONS_DATASET,
-        meets_criteria_default=False,
-        reasons_fields=[
-            ReasonsField(
-                name="ineligible_offenses",
-                type=bigquery.enums.SqlTypeNames.STRING,
-                description="#TODO(#29059): Add reasons field description",
-            ),
-        ],
-    )
+    ],
 )
 
 if __name__ == "__main__":

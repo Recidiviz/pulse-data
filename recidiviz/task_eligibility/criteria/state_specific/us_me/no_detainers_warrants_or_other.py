@@ -85,30 +85,28 @@ SELECT
 FROM sub_sessions_with_attributes_grouped
 """
 
-VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
-    StateSpecificTaskCriteriaBigQueryViewBuilder(
-        criteria_name=_CRITERIA_NAME,
-        description=_DESCRIPTION,
-        state_code=StateCode.US_ME,
-        criteria_spans_query_template=_QUERY_TEMPLATE,
-        normalized_state_dataset=NORMALIZED_STATE_DATASET,
-        raw_data_up_to_date_views_dataset=raw_latest_views_dataset_for_region(
-            state_code=StateCode.US_ME, instance=DirectIngestInstance.PRIMARY
+VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = StateSpecificTaskCriteriaBigQueryViewBuilder(
+    criteria_name=_CRITERIA_NAME,
+    description=_DESCRIPTION,
+    state_code=StateCode.US_ME,
+    criteria_spans_query_template=_QUERY_TEMPLATE,
+    normalized_state_dataset=NORMALIZED_STATE_DATASET,
+    raw_data_up_to_date_views_dataset=raw_latest_views_dataset_for_region(
+        state_code=StateCode.US_ME, instance=DirectIngestInstance.PRIMARY
+    ),
+    meets_criteria_default=True,
+    reasons_fields=[
+        ReasonsField(
+            name="detainer",
+            type=bigquery.enums.SqlTypeNames.STRING,
+            description="Detainer, warrant or other pending hold.",
         ),
-        meets_criteria_default=True,
-        reasons_fields=[
-            ReasonsField(
-                name="detainer",
-                type=bigquery.enums.SqlTypeNames.STRING,
-                description="#TODO(#29059): Add reasons field description",
-            ),
-            ReasonsField(
-                name="detainer_start_date",
-                type=bigquery.enums.SqlTypeNames.DATE,
-                description="#TODO(#29059): Add reasons field description",
-            ),
-        ],
-    )
+        ReasonsField(
+            name="detainer_start_date",
+            type=bigquery.enums.SqlTypeNames.DATE,
+            description="Start date of the detainer, warrant or other pending hold.",
+        ),
+    ],
 )
 
 if __name__ == "__main__":

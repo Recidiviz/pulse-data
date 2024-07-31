@@ -170,32 +170,30 @@ WHERE start_date != end_date
 GROUP BY 1,2,3,4
 """
 
-VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
-    StateSpecificTaskCriteriaBigQueryViewBuilder(
-        criteria_name=_CRITERIA_NAME,
-        criteria_spans_query_template=_QUERY_TEMPLATE,
-        description=_DESCRIPTION,
-        sessions_dataset=SESSIONS_DATASET,
-        analyst_dataset=ANALYST_VIEWS_DATASET,
-        state_code=StateCode.US_IX,
-        reasons_fields=[
-            ReasonsField(
-                name="parole_eligibility_date",
-                type=bigquery.enums.SqlTypeNames.DATE,
-                description="#TODO(#29059): Add reasons field description",
-            ),
-            ReasonsField(
-                name="tentative_parole_date",
-                type=bigquery.enums.SqlTypeNames.DATE,
-                description="#TODO(#29059): Add reasons field description",
-            ),
-            ReasonsField(
-                name="parole_hearing_date",
-                type=bigquery.enums.SqlTypeNames.DATE,
-                description="#TODO(#29059): Add reasons field description",
-            ),
-        ],
-    )
+VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = StateSpecificTaskCriteriaBigQueryViewBuilder(
+    criteria_name=_CRITERIA_NAME,
+    criteria_spans_query_template=_QUERY_TEMPLATE,
+    description=_DESCRIPTION,
+    sessions_dataset=SESSIONS_DATASET,
+    analyst_dataset=ANALYST_VIEWS_DATASET,
+    state_code=StateCode.US_IX,
+    reasons_fields=[
+        ReasonsField(
+            name="parole_eligibility_date",
+            type=bigquery.enums.SqlTypeNames.DATE,
+            description="Parole Eligibility Date (PED): The date on which the person becomes eligible for parole.",
+        ),
+        ReasonsField(
+            name="tentative_parole_date",
+            type=bigquery.enums.SqlTypeNames.DATE,
+            description="Tentative Parole Date (TPD): The date on which the person is tentatively scheduled for parole.",
+        ),
+        ReasonsField(
+            name="parole_hearing_date",
+            type=bigquery.enums.SqlTypeNames.DATE,
+            description="Parole Hearing Date (PHD): The date on which the person is scheduled for a parole hearing.",
+        ),
+    ],
 )
 
 if __name__ == "__main__":

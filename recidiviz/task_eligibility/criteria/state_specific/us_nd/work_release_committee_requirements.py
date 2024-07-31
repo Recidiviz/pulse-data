@@ -141,37 +141,37 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = StateSpecificTaskCr
         ReasonsField(
             name="requires_committee_approval",
             type=bigquery.enums.SqlTypeNames.BOOLEAN,
-            description="#TODO(#29059): Add reasons field description",
+            description="Does this person require approval from the work-release committee?",
         ),
         ReasonsField(
             name="six_months_away_from_relevant_date",
             type=bigquery.enums.SqlTypeNames.BOOLEAN,
-            description="#TODO(#29059): Add reasons field description",
+            description="Is the person within 6 months of the relevant date (full term completion date or parole review date)?",
         ),
         ReasonsField(
             name="no_level_2_or_3_infractions",
             type=bigquery.enums.SqlTypeNames.BOOLEAN,
-            description="#TODO(#29059): Add reasons field description",
+            description="Does the person have no level 2 or 3 infractions in the past 6 months?",
         ),
         ReasonsField(
             name="parole_review_date",
             type=bigquery.enums.SqlTypeNames.DATE,
-            description="#TODO(#29059): Add reasons field description",
+            description="Parole review date: The date when the person is reviewed for parole.",
         ),
         ReasonsField(
             name="full_term_completion_date",
             type=bigquery.enums.SqlTypeNames.DATE,
-            description="#TODO(#29059): Add reasons field description",
+            description="Full term completion date: The date when the person is expected to complete their full term.",
         ),
         ReasonsField(
             name="infraction_categories",
             type=bigquery.enums.SqlTypeNames.STRING,
-            description="#TODO(#29059): Add reasons field description",
+            description="Categories of infractions that the person has committed.",
         ),
         ReasonsField(
             name="most_recent_infraction_date",
             type=bigquery.enums.SqlTypeNames.DATE,
-            description="#TODO(#29059): Add reasons field description",
+            description="Date of the most recent level 2 or 3 infraction.",
         ),
     ],
 )
