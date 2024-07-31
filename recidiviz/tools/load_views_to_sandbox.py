@@ -17,16 +17,25 @@
 """A script for writing regularly updated views in BigQuery to a set of temporary
 datasets. Used during development to test updates to views.
 
-To load all views that have changed since the last view deploy, run:
+To load all views that have changed since the last view deploy and all views
+downstream of those views, run:
     python -m recidiviz.tools.load_views_to_sandbox \
        --sandbox_dataset_prefix [SANDBOX_DATASET_PREFIX] auto
 
-
-To load all views that have changed since the last view deploy, but exclude some
-datasets when considering which views have changed, run:
+To load all views that have changed since the last view deploy and all views
+downstream of those views, but exclude some datasets when considering which views have
+changed, run:
     python -m recidiviz.tools.load_views_to_sandbox \
        --sandbox_dataset_prefix [SANDBOX_DATASET_PREFIX] auto \
        --changed_datasets_to_ignore [DATASET_ID_1,DATASET_ID_2,...]
+
+To load all views that have changed since the last view deploy and views
+downstream of those views, stopping once we've loaded all views specified by
+load_up_to_addresses and load_up_to_datasets, run:
+    python -m recidiviz.tools.load_views_to_sandbox \
+       --sandbox_dataset_prefix [SANDBOX_DATASET_PREFIX] auto
+       --load_up_to_addresses [DATASET_ID_1.VIEW_ID_1,DATASET_ID_2.VIEW_ID_2,...]
+       --load_up_to_datasets [DATASET_ID_1,DATASET_ID_2,...]
 
 To load all views that have changed since the last view deploy, but only look in some
 datasets when considering which views have changed, run:
@@ -104,6 +113,7 @@ from recidiviz.common.git import (
     get_hash_of_deployed_commit,
     is_commit_in_current_branch,
 )
+from recidiviz.tools.utils.arg_parsers import str_to_address_list
 from recidiviz.tools.utils.script_helpers import prompt_for_confirmation
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override, project_id
@@ -176,7 +186,7 @@ def _load_manually_filtered_views_to_sandbox(
     dataflow_dataset_override: Optional[str],
     filter_union_all: bool,
     allow_slow_views: bool,
-    view_ids_to_load: Optional[List[str]],
+    view_ids_to_load: Optional[List[BigQueryAddress]],
     dataset_ids_to_load: Optional[List[str]],
     update_ancestors: bool,
     update_descendants: bool,
@@ -192,7 +202,7 @@ def _load_manually_filtered_views_to_sandbox(
     dataflow_dataset_override : Optional[str]
         If True, updates views in the DATAFLOW_METRICS_MATERIALIZED_DATASET
 
-    view_ids_to_load : Optional[List[str]]
+    view_ids_to_load : Optional[List[BigQueryAddress]]
         If specified, only loads views whose view_id matches one of the listed view_ids.
         View_ids must take the form dataset_id.view_id
 
@@ -219,12 +229,8 @@ def _load_manually_filtered_views_to_sandbox(
 
     view_builders = deployed_view_builders()
 
-    addresses_from_view_ids = (
-        {BigQueryAddress.from_str(address_str) for address_str in view_ids_to_load}
-        if view_ids_to_load
-        else set()
-    )
-    addresses_from_dataset_ids = (
+    addresses_to_load = set(view_ids_to_load) if view_ids_to_load else set()
+    addresses_to_load |= (
         {vb.address for vb in view_builders if vb.dataset_id in dataset_ids_to_load}
         if dataset_ids_to_load
         else set()
@@ -232,7 +238,7 @@ def _load_manually_filtered_views_to_sandbox(
 
     collector = BigQueryViewSubDagCollector(
         view_builders_in_full_dag=view_builders,
-        view_addresses_in_sub_dag=addresses_from_view_ids | addresses_from_dataset_ids,
+        view_addresses_in_sub_dag=addresses_to_load,
         include_ancestors=update_ancestors,
         include_descendants=update_descendants,
         datasets_to_exclude=_datasets_to_exclude_from_sandbox(
@@ -414,6 +420,30 @@ def _check_for_invalid_ignores(
         sys.exit(1)
 
 
+def _get_all_addresses_between_start_and_end_collections(
+    all_views_dag_walker: BigQueryViewDagWalker,
+    start_addresses: Set[BigQueryAddress],
+    end_addresses: Set[BigQueryAddress],
+) -> Set[BigQueryAddress]:
+    """Given a set of addresses to start from and a set of addresses to end at, returns
+    the set of addresses including the start addresses, end addresses, and any views in
+    a dependency chain between the between start and end addresses.
+    """
+
+    start_views = all_views_dag_walker.views_for_addresses(list(start_addresses))
+    start_descendants = {
+        v.address
+        for v in all_views_dag_walker.get_descendants_sub_dag(start_views).views
+    }
+
+    end_views = all_views_dag_walker.views_for_addresses(list(end_addresses))
+    end_ancestors = {
+        v.address for v in all_views_dag_walker.get_ancestors_sub_dag(end_views).views
+    }
+
+    return end_ancestors.intersection(start_descendants)
+
+
 def _load_views_changed_on_branch_to_sandbox(
     *,
     sandbox_dataset_prefix: str,
@@ -423,6 +453,8 @@ def _load_views_changed_on_branch_to_sandbox(
     allow_slow_views: bool,
     changed_datasets_to_include: Optional[List[str]],
     changed_datasets_to_ignore: Optional[List[str]],
+    load_up_to_addresses: Optional[List[BigQueryAddress]],
+    load_up_to_datasets: Optional[List[str]],
 ) -> None:
     """Loads all views that have changed on this branch as compared to what is deployed
     to the current project (usually staging).
@@ -454,17 +486,38 @@ def _load_views_changed_on_branch_to_sandbox(
         )
         sys.exit(1)
 
-    sub_dag_collector = BigQueryViewSubDagCollector(
-        view_builders_in_full_dag=view_builders_in_full_dag,
-        view_addresses_in_sub_dag=changed_views_to_load,
-        include_ancestors=False,
-        include_descendants=True,
-        datasets_to_exclude=_datasets_to_exclude_from_sandbox(
-            dataflow_dataset_override
-        ),
-    )
     logging.info("Gathering views to load to sandbox...")
-    collected_builders = sub_dag_collector.collect_view_builders()
+    if load_up_to_datasets or load_up_to_addresses:
+        end_addresses = set(load_up_to_addresses) if load_up_to_addresses else set()
+        end_addresses |= (
+            {
+                vb.address
+                for vb in view_builders_in_full_dag
+                if vb.dataset_id in load_up_to_datasets
+            }
+            if load_up_to_datasets
+            else set()
+        )
+
+        addresses_to_load = _get_all_addresses_between_start_and_end_collections(
+            full_dag_walker,
+            start_addresses=changed_views_to_load,
+            end_addresses=end_addresses,
+        )
+        collected_builders = [
+            vb for vb in view_builders_in_full_dag if vb.address in addresses_to_load
+        ]
+    else:
+        sub_dag_collector = BigQueryViewSubDagCollector(
+            view_builders_in_full_dag=view_builders_in_full_dag,
+            view_addresses_in_sub_dag=changed_views_to_load,
+            include_ancestors=False,
+            include_descendants=True,
+            datasets_to_exclude=_datasets_to_exclude_from_sandbox(
+                dataflow_dataset_override
+            ),
+        )
+        collected_builders = sub_dag_collector.collect_view_builders()
 
     _check_for_invalid_ignores(
         full_dag_walker=full_dag_walker,
@@ -605,7 +658,7 @@ def parse_arguments() -> argparse.Namespace:
         "views in this list (plus dependencies, if applicable). View_ids must take the "
         "form dataset_id.view_id. Can be called together with the "
         "--dataset_ids_to_load argument as long as none of the datasets overlap.",
-        type=str_to_list,
+        type=str_to_address_list,
         required=False,
     )
 
@@ -662,6 +715,30 @@ def parse_arguments() -> argparse.Namespace:
         required=False,
     )
 
+    parser_auto.add_argument(
+        "--load_up_to_addresses",
+        dest="load_up_to_addresses",
+        help=(
+            "If provided, the sandbox load will stop after all of these views have "
+            "been loaded. Views that are only descendants of these views will not be "
+            "loaded."
+        ),
+        type=str_to_address_list,
+        required=False,
+    )
+
+    parser_auto.add_argument(
+        "--load_up_to_datasets",
+        dest="load_up_to_datasets",
+        help=(
+            "If provided, the sandbox load will stop after all of these views in these "
+            "datasets have been loaded. Views that are only descendants of the views "
+            "in these datasets will not be loaded."
+        ),
+        type=str_to_list,
+        required=False,
+    )
+
     subparsers.add_parser("all")
 
     return parser.parse_args()
@@ -701,6 +778,8 @@ if __name__ == "__main__":
                 allow_slow_views=args.allow_slow_views,
                 changed_datasets_to_include=args.changed_datasets_to_include,
                 changed_datasets_to_ignore=args.changed_datasets_to_ignore,
+                load_up_to_addresses=args.load_up_to_addresses,
+                load_up_to_datasets=args.load_up_to_datasets,
             )
         else:
             raise ValueError(f"Unexpected load to sandbox mode: [{args.chosen_mode}]")

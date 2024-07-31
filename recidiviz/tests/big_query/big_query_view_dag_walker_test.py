@@ -148,6 +148,22 @@ class TestBigQueryViewDagWalkerBase(unittest.TestCase):
     def synchronous(self) -> bool:
         raise NotImplementedError
 
+    def test_view_for_address(self) -> None:
+        all_views_dag_walker = BigQueryViewDagWalker(self.diamond_shaped_dag_views_list)
+
+        view = self.diamond_shaped_dag_views_list[1]
+        self.assertEqual(view, all_views_dag_walker.view_for_address(view.address))
+
+    def test_views_for_addresses(self) -> None:
+        all_views_dag_walker = BigQueryViewDagWalker(self.diamond_shaped_dag_views_list)
+
+        view_1 = self.diamond_shaped_dag_views_list[1]
+        view_2 = self.diamond_shaped_dag_views_list[2]
+        self.assertEqual(
+            [view_1, view_2],
+            all_views_dag_walker.views_for_addresses([view_1.address, view_2.address]),
+        )
+
     def test_dag_touches_all_views(self) -> None:
         walker = BigQueryViewDagWalker(self.all_views)
 

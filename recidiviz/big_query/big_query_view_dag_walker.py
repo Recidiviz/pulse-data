@@ -534,6 +534,22 @@ class BigQueryViewDagWalker:
     def view_for_address(self, view_address: BigQueryAddress) -> BigQueryView:
         return self.nodes_by_address[view_address].view
 
+    def views_for_addresses(
+        self, view_addresses: list[BigQueryAddress]
+    ) -> List[BigQueryView]:
+        """Returns the list of views associated with the provided list of addresses.
+        Throws if any of the addresses do not have a corresponding view in this DAG.
+        """
+        views = []
+        for view_address in view_addresses:
+            if view_address not in self.nodes_by_address:
+                raise ValueError(
+                    f"Address [{view_address.to_str()}] is not a valid view address."
+                )
+            views.append(self.nodes_by_address[view_address].view)
+
+        return views
+
     def node_for_view(self, view: BigQueryView) -> BigQueryViewDagNode:
         return self.nodes_by_address[view.address]
 
