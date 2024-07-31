@@ -20,7 +20,7 @@ for a transfer to a Community Reentry Center (CRC) as a resident worker.
 """
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.candidate_populations.general import (
-    incarceration_population,
+    general_incarceration_population,
 )
 from recidiviz.task_eligibility.completion_events.state_specific.us_ix import (
     transfer_to_reentry_center,
@@ -64,7 +64,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     state_code=StateCode.US_IX,
     task_name="TRANSFER_TO_CRC_RESIDENT_WORKER_REQUEST",
     description=_DESCRIPTION,
-    candidate_population_view_builder=incarceration_population.VIEW_BUILDER,
+    candidate_population_view_builder=general_incarceration_population.VIEW_BUILDER,
     criteria_spans_view_builders=[
         custody_level_is_minimum.VIEW_BUILDER,
         no_detainers_for_xcrc_and_crc.VIEW_BUILDER,
