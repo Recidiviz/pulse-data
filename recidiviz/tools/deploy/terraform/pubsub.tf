@@ -30,3 +30,14 @@ resource "google_pubsub_topic" "raw_data_import_dag_pubsub_topic" {
 resource "google_pubsub_topic" "raw_data_storage_notification_topic" {
   name = "v1.ingest.raw_data_storage_notifications"
 }
+
+data "google_storage_project_service_account" "gcs_account" {
+}
+
+// Enable Cloud Storage notifications to this topic by giving the correct IAM permission to the GCS-specific service
+// account that will publish Cloud Storage notifications.
+resource "google_pubsub_topic_iam_binding" "binding" {
+  topic   = google_pubsub_topic.raw_data_storage_notification_topic.id
+  role    = "roles/pubsub.publisher"
+  members = ["serviceAccount:${data.google_storage_project_service_account.gcs_account.email_address}"]
+}
