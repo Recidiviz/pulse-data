@@ -71,6 +71,7 @@ def get_task_eligible_event_query_builder(
             LAG(a.is_almost_eligible) OVER (PARTITION BY a.person_id, a.task_name ORDER BY a.start_date),
             FALSE
         ) AS after_almost_eligible,
+        d.system_type,
     FROM
         `{{project_id}}.analyst_data.all_task_eligibility_spans_materialized` a
     INNER JOIN
@@ -87,6 +88,10 @@ def get_task_eligible_event_query_builder(
         AND b.completion_event_type = c.task_type
         AND DATETIME_SUB(DATETIME(DATE_ADD(a.start_date, INTERVAL 1 DAY)), INTERVAL 1 SECOND)
             BETWEEN c.start_date AND {nonnull_end_date_exclusive_clause("c.end_date")}
+    INNER JOIN
+        `{{project_id}}.reference_views.completion_event_type_metadata_materialized` d
+    USING
+        (completion_event_type)
     WHERE
         -- remove any spans that start after the current millennium, e.g.
         -- eligibility following a life sentence
@@ -96,6 +101,7 @@ def get_task_eligible_event_query_builder(
         attribute_cols=[
             "task_name",
             "task_type",
+            "system_type",
             "after_tool_action",
             "after_almost_eligible",
         ],
@@ -962,9 +968,14 @@ SELECT
         ELSE a_t.ineligible_criteria
     END AS ineligible_criteria,
     -- Flag if someone has experienced at least one tool action before task completion
-    COALESCE(f.surfaced, FALSE) AS after_tool_action
+    COALESCE(f.surfaced, FALSE) AS after_tool_action,
+    c.system_type,
 FROM
     `{{project_id}}.task_eligibility.all_completion_events_materialized` e
+INNER JOIN
+    `{{project_id}}.reference_views.completion_event_type_metadata_materialized` c
+USING
+    (completion_event_type)
 -- Get information about continuous spans of eligibility
 LEFT JOIN
     `{{project_id}}.analyst_data.all_task_type_eligibility_spans_materialized` t
@@ -1002,6 +1013,7 @@ QUALIFY
 """,
         attribute_cols=[
             "task_type",
+            "system_type",
             "is_eligible",
             "days_eligible",
             "is_almost_eligible",
@@ -1207,6 +1219,7 @@ SELECT
         )
     , FALSE) AS is_first_tool_action,
     DATE_DIFF(a.start_date, c.start_date, DAY) days_eligible,
+    d.system_type,
 FROM
     `{{project_id}}.analyst_data.workflows_person_events_materialized` a
 LEFT JOIN
@@ -1221,9 +1234,14 @@ ON
     AND c.is_eligible
     -- Cast to a date to account for date comparison with timestamps
     AND DATE(a.start_date) BETWEEN c.start_date AND {nonnull_end_date_exclusive_clause("c.end_date")}
+INNER JOIN
+    `{{project_id}}.reference_views.completion_event_type_metadata_materialized` d
+ON
+    a.task_type = d.completion_event_type
 """,
         attribute_cols=[
             "task_type",
+            "system_type",
             "usage_event_type",
             "is_first_tool_action",
             "days_eligible",
@@ -1237,17 +1255,23 @@ ON
 SELECT
     a.* EXCEPT(email), email AS email_address,
     b.completion_event_type AS task_type,
+    c.system_type,
 FROM
     `{{project_id}}.analyst_data.workflows_officer_events_materialized` a
 INNER JOIN
     `{{project_id}}.reference_views.workflows_opportunity_configs_materialized` b
 USING
     (opportunity_type)
+INNER JOIN
+    `{{project_id}}.reference_views.completion_event_type_metadata_materialized` c
+USING
+    (completion_event_type)
 WHERE event = "{EventType.WORKFLOWS_USER_ACTION.value}" """,
         attribute_cols=[
             "event_type",
             "opportunity_type",
             "task_type",
+            "system_type",
             "person_external_id",
             "new_status",
         ],
@@ -1260,17 +1284,23 @@ WHERE event = "{EventType.WORKFLOWS_USER_ACTION.value}" """,
 SELECT
     a.* EXCEPT(email), email AS email_address,
     b.completion_event_type AS task_type,
+    c.system_type,
 FROM
     `{{project_id}}.analyst_data.workflows_officer_events_materialized` a
 INNER JOIN
     `{{project_id}}.reference_views.workflows_opportunity_configs_materialized` b
 USING
     (opportunity_type)
+INNER JOIN
+    `{{project_id}}.reference_views.completion_event_type_metadata_materialized` c
+USING
+    (completion_event_type)
 WHERE event = "{EventType.WORKFLOWS_USER_CLIENT_STATUS_UPDATE.value}" """,
         attribute_cols=[
             "event_type",
             "opportunity_type",
             "task_type",
+            "system_type",
             "person_external_id",
             "new_status",
         ],
@@ -1283,17 +1313,23 @@ WHERE event = "{EventType.WORKFLOWS_USER_CLIENT_STATUS_UPDATE.value}" """,
 SELECT
     a.* EXCEPT(email), email AS email_address,
     b.completion_event_type AS task_type,
+    c.system_type,
 FROM
     `{{project_id}}.analyst_data.workflows_officer_events_materialized` a
 INNER JOIN
     `{{project_id}}.reference_views.workflows_opportunity_configs_materialized` b
 USING
     (opportunity_type)
+INNER JOIN
+    `{{project_id}}.reference_views.completion_event_type_metadata_materialized` c
+USING
+    (completion_event_type)
 WHERE event = "{EventType.WORKFLOWS_USER_PAGE.value}" """,
         attribute_cols=[
             "event_type",
             "opportunity_type",
             "task_type",
+            "system_type",
             "person_external_id",
             "new_status",
         ],
