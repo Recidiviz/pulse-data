@@ -269,7 +269,14 @@ def format_spreadsheet_rows(
 
 
 def is_demo_agency(agency_name: str) -> bool:
-    return "[DEMO]" in agency_name or agency_name == "Department of Corrections"
+    return (
+        ("[DEMO]" in agency_name)
+        or ("[TEST]" in agency_name)
+        or (
+            agency_name
+            in ["Department of Corrections", "Presentation Superagency Account"]
+        )
+    )
 
 
 # Only initialize this in a dev environment.

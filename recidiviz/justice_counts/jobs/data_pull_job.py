@@ -116,7 +116,6 @@ if __name__ == "__main__":
         logger.info("Closing DB Connection Before Running User Permissions Check")
         logger.info("Running User Permissions Checks")
         check_user_permissions(
-            google_credentials=credentials,
             project_id=args.project_id,
             session=global_session,
         )
