@@ -14,29 +14,23 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Job that writes to the Justice Counts User Permissions google spreadsheet with data 
-about users with incorrect permissions
-
+"""Job that posts to Slack with data about users with incorrect permissions.
+Called from the production data_pull_job script that runs weekly.
 
 pipenv run python -m recidiviz.justice_counts.jobs.user_permissions_check \
-  --credentials-path=<path>
+  --project-id=justice-counts-local
 """
 import argparse
+import dataclasses
 import logging
 from collections import defaultdict
-from typing import Any, List, Optional
+from typing import Any, Dict, List, Set, Tuple
 
+import requests
 import sentry_sdk
-from google.oauth2.service_account import Credentials
-from oauth2client.client import GoogleCredentials
-from sqlalchemy import not_
 from sqlalchemy.orm import Session
 
-from recidiviz.justice_counts.agency import AgencyInterface
-from recidiviz.justice_counts.control_panel.utils import (
-    format_spreadsheet_rows,
-    write_data_to_spreadsheet,
-)
+from recidiviz.justice_counts.control_panel.utils import is_demo_agency
 from recidiviz.justice_counts.user_account import UserAccountInterface
 from recidiviz.justice_counts.utils.constants import JUSTICE_COUNTS_SENTRY_DSN
 from recidiviz.persistence.database.constants import JUSTICE_COUNTS_DB_SECRET_PREFIX
@@ -51,35 +45,34 @@ from recidiviz.tools.postgres.cloudsql_proxy_control import cloudsql_proxy_contr
 from recidiviz.utils.environment import (
     GCP_PROJECT_JUSTICE_COUNTS_PRODUCTION,
     GCP_PROJECT_JUSTICE_COUNTS_STAGING,
+    PROJECT_JUSTICE_COUNTS_LOCAL,
 )
 from recidiviz.utils.metadata import local_project_id_override
-
-# Spreadsheet Name: Justice Counts User Permissions
-# https://docs.google.com/spreadsheets/d/1wqXzoh7GHj2cNAzXVoQNlwwc-J6ptnUBS-cRTKMyi2o/edit#gid=0
-PERMISSION_SPREADSHEET_ID = "1wqXzoh7GHj2cNAzXVoQNlwwc-J6ptnUBS-cRTKMyi2o"
-COLUMN_HEADERS = [
-    "User Name",
-    "Email",
-    "User Account ID",
-    "Agencies",
-    "Role",
-]
+from recidiviz.utils.secrets import get_secret
 
 SCHEMA_TYPE = schema_type = SchemaType.JUSTICE_COUNTS
 logger = logging.getLogger(__name__)
+
+
+@dataclasses.dataclass
+class UserInfo:
+    """Holds information about a JC user"""
+
+    name: str
+    states: Set[str]
+    agency_names: List[str]
+    superagencies: List[schema.Agency]
+    child_agencies: List[schema.Agency]
+    individual_agencies: List[schema.Agency]
 
 
 def create_parser() -> argparse.ArgumentParser:
     """Returns an argument parser for the script."""
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--credentials-path",
-        help="Used to point to path of JSON file with Google Cloud credentials.",
-        required=False,
-    )
-    parser.add_argument(
         "--project-id",
         choices=[
+            PROJECT_JUSTICE_COUNTS_LOCAL,
             GCP_PROJECT_JUSTICE_COUNTS_STAGING,
             GCP_PROJECT_JUSTICE_COUNTS_PRODUCTION,
         ],
@@ -89,489 +82,282 @@ def create_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def write_and_format_sheet(
-    rows: List[List[str]],
-    index: int,
-    google_credentials: Any,
-    sheet_title: str,
-    num_rows_to_bold: Optional[int] = 3,
-    cell_pixel_size: Optional[int] = 160,
-) -> None:
+def find_users_with_missing_child_agencies(
+    users: List[UserInfo], child_agency_id_to_agency: Dict[int, schema.Agency]
+) -> List[List[Any]]:
+    """Return information about users who have access to a superagency
+    but not all of its child agencies.
+
+    Arguments:
+    users -- List of UserInfo objects
+    child_agency_id_to_agency -- Dictionary mapping child agency IDs to agencies
+
+    Returns:
+    List of lists. Each sublist has the format of
+    [user_name: str, superagency_name: str, missing_child_agency_names: List[str]]
     """
-    Writes to the Justice Counts User Permissions sheet with a write request and
-    A request to format the sheets with bold lettering and making the cells larger and
-    more readable.
-    """
-
-    sheet_id = write_data_to_spreadsheet(
-        new_sheet_title=sheet_title,
-        spreadsheet_id=PERMISSION_SPREADSHEET_ID,
-        google_credentials=google_credentials,
-        data_to_write=rows,
-        logger=logger,
-        overwrite_sheets=True,
-        index=index,
-    )
-
-    format_requests = [
-        {  # First request bolds the first three rows
-            "repeatCell": {
-                "range": {
-                    "sheetId": sheet_id,
-                    "startRowIndex": 0,  # Start row
-                    "endRowIndex": num_rows_to_bold,  # End row
-                },
-                "cell": {
-                    "userEnteredFormat": {
-                        "textFormat": {"bold": True},
-                    },
-                },
-                "fields": "userEnteredFormat.textFormat.bold",
-            }
-        },
-        {  # Second request makes the cells a bit larger, this is for readability.
-            "updateDimensionProperties": {
-                "range": {
-                    "sheetId": sheet_id,
-                    "dimension": "COLUMNS",
-                    "startIndex": 0,
-                    "endIndex": 15,
-                },
-                "properties": {"pixelSize": cell_pixel_size},
-                "fields": "pixelSize",
-            }
-        },
-    ]
-
-    format_spreadsheet_rows(
-        spreadsheet_id=PERMISSION_SPREADSHEET_ID,
-        google_credentials=google_credentials,
-        sheet_title=sheet_title,
-        logger=logger,
-        format_requests=format_requests,
-    )
-
-
-def write_non_csg_recidiviz_production_sheet(
-    session: Session, google_credentials: Any
-) -> None:
-    """
-    Writes to the `[PRODUCTION] Non-CSG/Recidiviz User Access` sheet with information
-    about access/permissions for non-CSG and non-Recidiviz users in production.
-    """
-    users = UserAccountInterface.get_non_csg_and_recidiviz_users(session=session)
-    child_agencies = (
-        session.query(schema.Agency)
-        .filter(not_(schema.Agency.super_agency_id.is_(None)))
-        .all()
-    )
-
     super_agency_id_to_child_agency_ids = defaultdict(list)
-    for child_agency in child_agencies:
+    for _, child_agency in child_agency_id_to_agency.items():
         super_agency_id_to_child_agency_ids[child_agency.super_agency_id].append(
             child_agency.id
         )
 
-    rows: List[List[str]] = [
-        [
-            """
-            Key
-            
-            Multiple States: User has access to agencies across multiple states.
-
-            Missing Child Agencies: User has access to a superagency but not all of its child agencies. 
-
-            No Superagency, > 1 Agency: User does not have access to a superagency but has access to 2 or more individual agencies.
-            
-            > 10 agencies: User has access to > 10 agencies
-
-            """
-        ],
-        [],
-        [
-            "User Name",
-            "User Email",
-            "User Id",
-            "Agencies",
-            "Multiple States",
-            "Missing Child Agencies",
-            "No Superagency, > 1 Agency",
-            "> 10 Agencies",
-        ],
-    ]
-    user_to_states = defaultdict(set)
-    user_to_super_agencies = defaultdict(list)
-    user_to_individual_agencies = defaultdict(list)
-    user_to_child_agencies = defaultdict(list)
-    user_to_agency_names = defaultdict(list)
+    user_infos = []
     for user in users:
-        for agency_assoc in user.agency_assocs:
-            user_to_states[user].add(agency_assoc.agency.state_code)
-            user_to_agency_names[user].append(agency_assoc.agency.name)
-            if agency_assoc.agency.is_superagency is True:
-                user_to_super_agencies[user].append(agency_assoc.agency)
-            elif agency_assoc.agency.super_agency_id is not None:
-                user_to_child_agencies[user].append(agency_assoc.agency)
-            else:
-                user_to_individual_agencies[user].append(agency_assoc.agency)
-
-    for user in users:
-        add_user_to_table = False
-
-        row = []
-        user_data = [
-            user.name,
-            user.email,
-            user.id,
-            ", ".join(user_to_agency_names[user]),
-        ]
-
-        # Multiple States Column
-        if len(user_to_states[user]) > 1:
-            row.append("Yes")
-            add_user_to_table = True
-        else:
-            row.append("No")
-
-        # Missing Child Agencies
-        missing_child_agencies_col_val = "No"
         user_child_agency_ids = {
-            child_agency.id for child_agency in user_to_child_agencies[user]
+            child_agency.id for child_agency in user.child_agencies
         }
-        for super_agency in user_to_super_agencies[user]:
-            if set(super_agency_id_to_child_agency_ids[super_agency.id]).issubset(
-                user_child_agency_ids
-            ):
-                continue
-
-            # If a user is part of a super agency but not all of the child agencies,
-            # add YES to the `Missing Child Agencies` column
-            missing_child_agencies_col_val = "Yes"
-            add_user_to_table = True
-            break
-
-        row.append(missing_child_agencies_col_val)
-
-        # No Superagency, > 1 Agency Column
-        if (
-            len(user_to_super_agencies[user]) == 0
-            and len(user_to_individual_agencies[user]) >= 2
-        ):
-            row.append("Yes")
-            add_user_to_table = True
-        else:
-            row.append("No")
-
-        # > 10 Agencies Column
-        if (
-            len(user_to_super_agencies[user]) + len(user_to_individual_agencies[user])
-            > 10
-        ):
-            row.append("Yes")
-            add_user_to_table = True
-        else:
-            row.append("No")
-
-        if add_user_to_table is True:
-            # Only add user to the table if they are an anomaly,
-            # in other words, they have `Yes` in one of the columns.
-            row = user_data + row
-            rows.append(row)
-
-    write_and_format_sheet(
-        rows=rows,
-        index=5,
-        google_credentials=google_credentials,
-        cell_pixel_size=200,
-        sheet_title="[PRODUCTION] Non-CSG/Recidiviz User Access",
-    )
-
-
-def write_missing_access_sheet(
-    session: Session, google_credentials: Any, users: List[schema.UserAccount]
-) -> None:
-    """
-    Writes to the `[PRODUCTION] CSG and Recidiviz Users Missing Access`
-    with information about access/permissions for CSG and Recidiviz users
-    in production.
-    """
-    agencies = AgencyInterface.get_agencies(session=session)
-    rows = [
-        [
-            """
-            Description: All CSG team members should have read-only access to all agencies
-            in production. As a rule, CSG users should not have admin access unless debugging
-            for a specific user case.
-            """
-        ],
-        [""],
-        ["CSG or JC Users missing access to a production agency"],
-        COLUMN_HEADERS,
-    ]
-
-    # Add Data for the `CSG or JC Users missing access to a production agency` table
-    for user in users:
-        user_agency_names = {a.agency.name for a in user.agency_assocs}
-        all_agency_names = {a.name for a in agencies}
-        if all_agency_names != user_agency_names:
-            no_access_agencies = all_agency_names.difference(user_agency_names)
-            rows.append(
+        missing_child_agency_names = []
+        for super_agency in user.superagencies:
+            child_agency_ids = set(super_agency_id_to_child_agency_ids[super_agency.id])
+            missing_child_agency_ids = child_agency_ids - user_child_agency_ids
+            missing_child_agency_names.extend(
                 [
-                    user.name,
-                    user.email,
-                    user.id,
-                    ", ".join(no_access_agencies),
-                    "NOT IN AGENCY",
+                    child_agency_id_to_agency[_id].name
+                    for _id in missing_child_agency_ids
                 ]
             )
+            if missing_child_agency_names:
+                user_infos.append(
+                    [
+                        user.name,
+                        super_agency.name,
+                        missing_child_agency_names,
+                    ]
+                )
+    return user_infos
 
-    write_and_format_sheet(
-        rows=rows,
-        index=3,
-        num_rows_to_bold=4,
-        google_credentials=google_credentials,
-        sheet_title="[PRODUCTION] CSG and Recidiviz Users Missing Access",
+
+def find_users_with_multiple_agencies(
+    users: List[UserInfo],
+) -> Tuple[List[Any], List[Any], List[Any]]:
+    """Return information about users who have:
+    * Access to multiple agencies but no superagency
+    * Access to > 10 agencies
+    * Access to agencies in multiple states
+
+    Arguments:
+    users -- List of UserInfo objects
+
+    Returns:
+    Tuple of three lists of lists:
+    -- users_with_multiple_agencies_no_super
+       Each sublist has the format: [user_name: str, agency_names: List[str]]
+    -- users_with_too_many_agencies
+       Each sublist has the format: [user_name: str, agency_names: List[str]]
+    -- users_with_multiple_states
+       Each sublist has the format: [user_name: str, state_names: List[str], agency_names: List[str]]
+    """
+    users_with_multiple_agencies_no_super = []
+    users_with_too_many_agencies = []
+    users_with_multiple_states = []
+    for user in users:
+        user_info = [user.name, user.agency_names]
+        if len(user.agency_names) > 1 and not user.superagencies:
+            users_with_multiple_agencies_no_super.append(user_info)
+        if (len(user.superagencies) + len(user.individual_agencies)) > 10:
+            users_with_too_many_agencies.append(user_info)
+        if len(user.states) > 1:
+            users_with_multiple_states.append(
+                [user.name, list(user.states), user.agency_names]
+            )
+    return (
+        users_with_multiple_agencies_no_super,
+        users_with_too_many_agencies,
+        users_with_multiple_states,
     )
 
 
-def write_too_much_access_sheet(
-    google_credentials: Any, users: List[schema.UserAccount]
-) -> None:
-    """
-    Writes to the `[PRODUCTION] CSG and Recidiviz Users Too Much Access`
-    with information about access/permissions for CSG and Recidiviz users
-    in production.
-    """
-    rows = [
-        [
-            """
-            Description: All JC and CSG team members should have read-only access to all non-demo agencies
-            in production. As a rule, JC and CSG users should not have admin access unless debugging
-            for a specific user case.
+def find_csg_users_with_wrong_role(
+    session: Session,
+) -> List[List[Any]]:
+    """Return information about CSG users who have a non-READ_ONLY role
+    for non-demo agencies in Production.
 
-            The demo agencies that that each csg member SHOULD have in production are Law Enforcement [DEMO], 
-            Courts [DEMO], Defense [DEMO], Prosecution [DEMO], Jails [DEMO], Prisons [DEMO], Supervision [DEMO],
-            and Department of Corrections.
-            """
-        ],
-        [""],
-        ["CSG users with > read-only access in a production agencies"],
-        COLUMN_HEADERS,
-    ]
+    Returns:
+    List of lists. Each sublist has the format of
+    [user_name: str, agency_names: List[str], role: str]
+    """
+    user_infos = []
+    users = UserAccountInterface.get_csg_users(session=session)
     for user in users:
         if "@csg.org" not in user.email:
             continue
         role_to_agency_names = defaultdict(list)
         for assoc in user.agency_assocs:
+            if is_demo_agency(assoc.agency.name):
+                continue
             role_to_agency_names[
                 assoc.role.value if assoc.role is not None else "NO ROLE"
             ].append(assoc.agency.name)
         for role, agency_names in role_to_agency_names.items():
-            if role != schema.UserAccountRole.READ_ONLY.value:
-                rows.append(
-                    [
-                        user.name,
-                        user.email,
-                        user.id,
-                        ", ".join(agency_names),
-                        role,
-                    ]
-                )
-
-    write_and_format_sheet(
-        rows=rows,
-        index=4,
-        num_rows_to_bold=4,
-        google_credentials=google_credentials,
-        sheet_title="[PRODUCTION] CSG and Recidiviz Users Too Much Access",
-    )
-
-
-def write_csg_recidiviz_production_sheets(
-    session: Session, google_credentials: Any
-) -> None:
-    """
-    Writes to the `[PRODUCTION] CSG and Recidiviz Users Too Much Access`
-    sheet and the` PRODUCTION] CSG and Recidiviz Users Missing Access sheet`
-    with information about access/permissions for CSG and Recidiviz users
-    in production.
-    """
-    users = UserAccountInterface.get_csg_users(session=session)
-    write_missing_access_sheet(
-        session=session, google_credentials=google_credentials, users=users
-    )
-    write_too_much_access_sheet(google_credentials=google_credentials, users=users)
-
-
-def write_csg_recidiviz_staging_sheet(
-    session: Session,
-    google_credentials: Any,
-) -> None:
-    """
-    Writes to the `[STAGING] CSG and Recidiviz User Access` sheet with information
-    about access/permissions for CSG and Recidiviz users in staging.
-    """
-    users = UserAccountInterface.get_csg_and_recidiviz_users(session=session)
-    rows = [
-        [
-            """
-            Description: The users listed in this table are missing admin access to the agencies listed in the
-            'Agencies' Column. All CSG team members should have admin access to all agencies in staging.
-            """
-        ],
-        [""],
-        COLUMN_HEADERS,
-    ]
-
-    for user in users:
-        role_to_agency_names = defaultdict(list)
-        for assoc in user.agency_assocs:
-            role_to_agency_names[
-                assoc.role.value if assoc.role is not None else "NO ROLE"
-            ].append(assoc.agency.name)
-        # All JC and CSG team members should have admin access to all agencies in staging.
-        for role, agency_names in role_to_agency_names.items():
-            if role not in (
-                schema.UserAccountRole.AGENCY_ADMIN.value,
-                schema.UserAccountRole.JUSTICE_COUNTS_ADMIN.value,
-            ):
-                rows.append(
-                    [
-                        user.name,
-                        user.email,
-                        user.id,
-                        ", ".join(agency_names),
-                        role,
-                    ]
-                )
-    write_and_format_sheet(
-        rows=rows,
-        index=1,
-        google_credentials=google_credentials,
-        sheet_title="[STAGING] CSG and Recidiviz User Access",
-    )
-
-
-def write_non_csg_recidiviz_staging_sheet(
-    session: Session,
-    google_credentials: Any,
-) -> None:
-    """
-    Writes to the `[STAGING] Agency Admin User Access` sheet with information
-    about access/permissions for non-CSG and non-Recidiviz users in staging.
-    """
-    users = UserAccountInterface.get_non_csg_and_recidiviz_users(session=session)
-    rows = [
-        [
-            """
-            Description: The users listed are non-CSG and non-Recidiviz users who have access to staging.
-            """
-        ],
-        [""],
-        COLUMN_HEADERS,
-    ]
-    for user in users:
-        role_to_agency_names = defaultdict(list)
-        for assoc in user.agency_assocs:
-            role_to_agency_names[
-                assoc.role.value if assoc.role is not None else "NO ROLE"
-            ].append(assoc.agency.name)
-        for role, agency_names in role_to_agency_names.items():
-            rows.append(
+            if role == schema.UserAccountRole.READ_ONLY.value:
+                continue
+            user_infos.append(
                 [
                     user.name,
-                    user.email,
-                    user.id,
-                    ", ".join(agency_names),
+                    agency_names,
                     role,
                 ]
             )
-    write_and_format_sheet(
-        rows=rows,
-        index=2,
-        google_credentials=google_credentials,
-        sheet_title="[STAGING] Non-CSG/Recidiviz User Access",
-    )
+    return user_infos
 
 
-def check_staging_permissions(google_credentials: Any, session: Session) -> None:
+def construct_user_infos(
+    session: Session,
+) -> Tuple[List[UserInfo], Dict[int, schema.Agency]]:
+    """Construct and returns list of UserInfo objects about all
+    non-CSG and non-Recidiviz users. Also return information about
+    all child agencies to which these users belong.
+
+    Returns:
+    -- user_infos: List of UserInfo objects
+    -- child_agency_id_to_agency: Dictionary mapping child agency IDs to agencies
     """
-    Checks the permissions of all users on staging and records the information
-    of the outliers in a google sheet.
-    """
-    write_csg_recidiviz_staging_sheet(
-        session=session,
-        google_credentials=google_credentials,
+    non_csg_users = UserAccountInterface.get_non_csg_and_recidiviz_users(
+        session=session
     )
-    write_non_csg_recidiviz_staging_sheet(
-        session=session,
-        google_credentials=google_credentials,
-    )
-
-
-def check_production_permissions(google_credentials: Any, session: Session) -> None:
-    """
-    Checks the permissions of all users in production and records the information
-    of the outliers in a google sheet.
-    """
-
-    write_csg_recidiviz_production_sheets(
-        session=session,
-        google_credentials=google_credentials,
-    )
-    write_non_csg_recidiviz_production_sheet(
-        session=session,
-        google_credentials=google_credentials,
-    )
+    user_infos = []
+    child_agency_id_to_agency = {}
+    for user in non_csg_users:
+        states = set()
+        agency_names = []
+        superagencies = []
+        child_agencies = []
+        individual_agencies = []
+        for agency_assoc in user.agency_assocs:
+            if is_demo_agency(agency_assoc.agency.name):
+                continue
+            states.add(agency_assoc.agency.state_code)
+            agency_names.append(agency_assoc.agency.name)
+            if agency_assoc.agency.is_superagency is True:
+                superagencies.append(agency_assoc.agency)
+            elif agency_assoc.agency.super_agency_id is not None:
+                child_agencies.append(agency_assoc.agency)
+                if agency_assoc.agency.id not in child_agency_id_to_agency:
+                    child_agency_id_to_agency[
+                        agency_assoc.agency.id
+                    ] = agency_assoc.agency
+            else:
+                individual_agencies.append(agency_assoc.agency)
+        user_infos.append(
+            UserInfo(
+                name=user.name,
+                states=states,
+                agency_names=agency_names,
+                superagencies=superagencies,
+                child_agencies=child_agencies,
+                individual_agencies=individual_agencies,
+            )
+        )
+    return user_infos, child_agency_id_to_agency
 
 
 def check_user_permissions(
-    google_credentials: Any,
     session: Session,
-    project_id: Optional[str] = None,
+    project_id: str,
 ) -> None:
-    if project_id == GCP_PROJECT_JUSTICE_COUNTS_STAGING:
-        check_staging_permissions(
-            google_credentials=google_credentials, session=session
+    """Identify users with potentially incorrect access levels
+    and send a message to Slack.
+    """
+    user_infos, child_agency_id_to_agency = construct_user_infos(session=session)
+    csg_users_with_wrong_role = find_csg_users_with_wrong_role(session=session)
+    users_with_missing_child_agencies = find_users_with_missing_child_agencies(
+        users=user_infos,
+        child_agency_id_to_agency=child_agency_id_to_agency,
+    )
+    (
+        users_with_multiple_agencies_no_super,
+        users_with_too_many_agencies,
+        users_with_multiple_states,
+    ) = find_users_with_multiple_agencies(users=user_infos)
+
+    def format_role(role: str) -> str:
+        # Convert e.g. AGENCY_ADMIN to Agency Admin
+        return role.replace("_", " ").title()
+
+    def add_users(text: str, user_infos: List[List[Any]]) -> str:
+        # Add information about these users to the text string
+        for (name, agencies) in user_infos:
+            text += f"* {name}: [Agencies] {', '.join(agencies)}\n"
+        text += "\n"
+        return text
+
+    text = ""
+    if csg_users_with_wrong_role:
+        text += "The following CSG users have non-read-only access to a production agency: \n"
+        for (name, agencies, role) in csg_users_with_wrong_role:
+            text += f"* {name}: [Role] {format_role(role)}, [Agencies] {', '.join(agencies)}\n"
+        text += "\n"
+
+    if users_with_missing_child_agencies:
+        text += "The following users have access to a superagency but not all of its child agencies: \n"
+        for (
+            name,
+            super_agency,
+            missing_child_agencies,
+        ) in users_with_missing_child_agencies:
+            text += f"{name}: [Superagency] {super_agency}, [Missing Children] {', '.join(missing_child_agencies)}\n"
+
+    if users_with_multiple_agencies_no_super:
+        text += "The following users have access to multiple agencies but no superagency: \n"
+        text = add_users(text=text, user_infos=users_with_multiple_agencies_no_super)
+
+    if users_with_too_many_agencies:
+        text += "The following users have access to > 10 agencies: \n"
+        text = add_users(text=text, user_infos=users_with_too_many_agencies)
+
+    if users_with_multiple_states:
+        text += "The following users have access to agencies in multiple states: \n"
+        for (name, states, agencies) in users_with_multiple_states:
+            text += f"* {name}: [States] {', '.join(states)}, [Agencies] {', '.join(agencies)}\n"
+        text += "\n"
+
+    if not text:
+        logging.info(
+            "No output of user permissions check; not sending a Slack message."
         )
+        return
+
     if project_id == GCP_PROJECT_JUSTICE_COUNTS_PRODUCTION:
-        check_production_permissions(
-            google_credentials=google_credentials, session=session
+        logging.info("Running in production; sending a Slack message to #jc-tech-chat")
+        slack_channel_id = "C04JL8A2ADB"
+    else:
+        logging.info(
+            "Running in local/staging; sending a Slack message to #jc-eng-only"
         )
+        slack_channel_id = "C05C9CND8N7"
+
+    slack_token = get_secret("deploy_slack_bot_authorization_token")
+    if not slack_token:
+        logging.error("Couldn't find `deploy_slack_bot_authorization_token`")
+        return
+
+    try:
+        response = requests.post(
+            "https://slack.com/api/chat.postMessage",
+            json={"text": text, "channel": slack_channel_id},
+            headers={"Authorization": "Bearer " + slack_token},
+            timeout=60,
+        )
+        logging.info("Response from Slack API call: %s", response)
+    except Exception as e:
+        logging.exception("Error when calling Slack API: %s", str(e))
 
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
     sentry_sdk.init(
         dsn=JUSTICE_COUNTS_SENTRY_DSN,
-        # Enable performance monitoring
-        enable_tracing=True,
     )
 
     args = create_parser().parse_args()
     database_key = SQLAlchemyDatabaseKey.for_schema(
         SchemaType.JUSTICE_COUNTS,
     )
-    if args.credentials_path is None:
-        # When running via Cloud Run Job, GoogleCredentials.get_application_default()
-        # will use the service account assigned to the Cloud Run Job.
-        # The service account has access to the spreadsheet with editor permissions.
-        credentials = GoogleCredentials.get_application_default()
-        justice_counts_engine = SQLAlchemyEngineManager.init_engine(
-            database_key=database_key,
-            secret_prefix_override=JUSTICE_COUNTS_DB_SECRET_PREFIX,
-        )
-        global_session = Session(bind=justice_counts_engine)
-        check_user_permissions(
-            project_id=args.project_id,
-            google_credentials=credentials,
-            session=global_session,
-        )
-    else:
-        # When running locally, point to JSON file with service account credentials.
-        # The service account has access to the spreadsheet with editor permissions.
-        credentials = Credentials.from_service_account_file(args.credentials_path)
-        with local_project_id_override(args.project_id):
+    if args.project_id == PROJECT_JUSTICE_COUNTS_LOCAL:
+        # If running locally, we actually want to point to production DB
+        with local_project_id_override(GCP_PROJECT_JUSTICE_COUNTS_PRODUCTION):
             with cloudsql_proxy_control.connection(
                 schema_type=schema_type,
                 secret_prefix_override=JUSTICE_COUNTS_DB_SECRET_PREFIX,
@@ -582,7 +368,16 @@ if __name__ == "__main__":
                     autocommit=False,
                 ) as global_session:
                     check_user_permissions(
-                        project_id=args.project_id,
-                        google_credentials=credentials,
                         session=global_session,
+                        project_id=args.project_id,
                     )
+    else:
+        justice_counts_engine = SQLAlchemyEngineManager.init_engine(
+            database_key=database_key,
+            secret_prefix_override=JUSTICE_COUNTS_DB_SECRET_PREFIX,
+        )
+        global_session = Session(bind=justice_counts_engine)
+        check_user_permissions(
+            session=global_session,
+            project_id=args.project_id,
+        )
