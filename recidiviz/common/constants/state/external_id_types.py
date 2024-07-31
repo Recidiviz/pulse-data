@@ -64,6 +64,10 @@ US_CO_DOC = "US_CO_DOC"
 # PersonId
 US_CO_PID = "US_CO_PID"
 
+
+# Unique identifier
+US_NE_DOC = "US_NE_DOC"
+
 # ND Elite ID - tracks someone across all incarceration stays
 US_ND_ELITE = "US_ND_ELITE"
 # ND Booking ID - tracks someone across incarceration stays that are related to

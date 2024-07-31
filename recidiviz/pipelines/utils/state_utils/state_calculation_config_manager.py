@@ -596,6 +596,45 @@ from recidiviz.pipelines.utils.state_utils.us_nd.us_nd_violation_response_normal
 from recidiviz.pipelines.utils.state_utils.us_nd.us_nd_violations_delegate import (
     UsNdViolationDelegate,
 )
+from recidiviz.pipelines.utils.state_utils.us_ne.us_ne_assessment_normalization_delegate import (
+    UsNeAssessmentNormalizationDelegate,
+)
+from recidiviz.pipelines.utils.state_utils.us_ne.us_ne_commitment_from_supervision_utils import (
+    UsNeCommitmentFromSupervisionDelegate,
+)
+from recidiviz.pipelines.utils.state_utils.us_ne.us_ne_incarceration_delegate import (
+    UsNeIncarcerationDelegate,
+)
+from recidiviz.pipelines.utils.state_utils.us_ne.us_ne_incarceration_metrics_producer_delegate import (
+    UsNeIncarcerationMetricsProducerDelegate,
+)
+from recidiviz.pipelines.utils.state_utils.us_ne.us_ne_incarceration_period_normalization_delegate import (
+    UsNeIncarcerationNormalizationDelegate,
+)
+from recidiviz.pipelines.utils.state_utils.us_ne.us_ne_recidivism_metrics_producer_delegate import (
+    UsNeRecidivismMetricsProducerDelegate,
+)
+from recidiviz.pipelines.utils.state_utils.us_ne.us_ne_sentence_normalization_delegate import (
+    UsNeSentenceNormalizationDelegate,
+)
+from recidiviz.pipelines.utils.state_utils.us_ne.us_ne_staff_role_period_normalization_delegate import (
+    UsNeStaffRolePeriodNormalizationDelegate,
+)
+from recidiviz.pipelines.utils.state_utils.us_ne.us_ne_supervision_delegate import (
+    UsNeSupervisionDelegate,
+)
+from recidiviz.pipelines.utils.state_utils.us_ne.us_ne_supervision_metrics_producer_delegate import (
+    UsNeSupervisionMetricsProducerDelegate,
+)
+from recidiviz.pipelines.utils.state_utils.us_ne.us_ne_supervision_period_normalization_delegate import (
+    UsNeSupervisionNormalizationDelegate,
+)
+from recidiviz.pipelines.utils.state_utils.us_ne.us_ne_violation_response_normalization_delegate import (
+    UsNeViolationResponseNormalizationDelegate,
+)
+from recidiviz.pipelines.utils.state_utils.us_ne.us_ne_violations_delegate import (
+    UsNeViolationDelegate,
+)
 from recidiviz.pipelines.utils.state_utils.us_or.us_or_assessment_normalization_delegate import (
     UsOrAssessmentNormalizationDelegate,
 )
@@ -844,6 +883,8 @@ def get_state_specific_assessment_normalization_delegate(
         return UsMiAssessmentNormalizationDelegate()
     if state_code == StateCode.US_MO.value:
         return UsMoAssessmentNormalizationDelegate()
+    if state_code == StateCode.US_NE.value:
+        return UsNeAssessmentNormalizationDelegate()
     if state_code == StateCode.US_NC.value:
         return UsNcAssessmentNormalizationDelegate()
     if state_code == StateCode.US_ND.value:
@@ -891,6 +932,8 @@ def get_state_specific_incarceration_period_normalization_delegate(
         return UsMiIncarcerationNormalizationDelegate()
     if state_code == StateCode.US_MO.value:
         return UsMoIncarcerationNormalizationDelegate()
+    if state_code == StateCode.US_NE.value:
+        return UsNeIncarcerationNormalizationDelegate()
     if state_code == StateCode.US_NC.value:
         return UsNcIncarcerationNormalizationDelegate()
     if state_code == StateCode.US_ND.value:
@@ -949,6 +992,8 @@ def get_state_specific_supervision_period_normalization_delegate(
         return UsMoSupervisionNormalizationDelegate(
             sentence_statuses_list=us_mo_sentence_statuses_list
         )
+    if state_code == StateCode.US_NE.value:
+        return UsNeSupervisionNormalizationDelegate()
     if state_code == StateCode.US_NC.value:
         return UsNcSupervisionNormalizationDelegate()
     if state_code == StateCode.US_ND.value:
@@ -1000,6 +1045,8 @@ def get_state_specific_sentence_normalization_delegate(
         return UsMiSentenceNormalizationDelegate()
     if state_code == StateCode.US_MO.value:
         return UsMoSentenceNormalizationDelegate()
+    if state_code == StateCode.US_NE.value:
+        return UsNeSentenceNormalizationDelegate()
     if state_code == StateCode.US_NC.value:
         return UsNcSentenceNormalizationDelegate()
     if state_code == StateCode.US_ND.value:
@@ -1049,6 +1096,8 @@ def get_state_specific_staff_role_period_normalization_delegate(
         return UsMiStaffRolePeriodNormalizationDelegate()
     if state_code == StateCode.US_MO.value:
         return UsMoStaffRolePeriodNormalizationDelegate()
+    if state_code == StateCode.US_NE.value:
+        return UsNeStaffRolePeriodNormalizationDelegate()
     if state_code == StateCode.US_NC.value:
         return UsNcStaffRolePeriodNormalizationDelegate()
     if state_code == StateCode.US_ND.value:
@@ -1092,6 +1141,8 @@ def get_state_specific_commitment_from_supervision_delegate(
         return UsMiCommitmentFromSupervisionDelegate()
     if state_code == StateCode.US_MO.value:
         return UsMoCommitmentFromSupervisionDelegate()
+    if state_code == StateCode.US_NE.value:
+        return UsNeCommitmentFromSupervisionDelegate()
     if state_code == StateCode.US_NC.value:
         return UsNcCommitmentFromSupervisionDelegate()
     if state_code == StateCode.US_ND.value:
@@ -1135,6 +1186,8 @@ def get_state_specific_violation_delegate(
         return UsMiViolationDelegate()
     if state_code == StateCode.US_MO.value:
         return UsMoViolationDelegate()
+    if state_code == StateCode.US_NE.value:
+        return UsNeViolationDelegate()
     if state_code == StateCode.US_NC.value:
         return UsNcViolationDelegate()
     if state_code == StateCode.US_ND.value:
@@ -1185,6 +1238,8 @@ def get_state_specific_violation_response_normalization_delegate(
         )
     if state_code == StateCode.US_MO.value:
         return UsMoViolationResponseNormalizationDelegate()
+    if state_code == StateCode.US_NE.value:
+        return UsNeViolationResponseNormalizationDelegate()
     if state_code == StateCode.US_NC.value:
         return UsNcViolationResponseNormalizationDelegate()
     if state_code == StateCode.US_ND.value:
@@ -1235,6 +1290,8 @@ def get_state_specific_incarceration_delegate(
         return UsMiIncarcerationDelegate()
     if state_code == StateCode.US_MO.value:
         return UsMoIncarcerationDelegate()
+    if state_code == StateCode.US_NE.value:
+        return UsNeIncarcerationDelegate()
     if state_code == StateCode.US_NC.value:
         return UsNcIncarcerationDelegate()
     if state_code == StateCode.US_ND.value:
@@ -1279,6 +1336,8 @@ def get_state_specific_supervision_delegate(
         return UsMiSupervisionDelegate()
     if state_code == StateCode.US_MO.value:
         return UsMoSupervisionDelegate()
+    if state_code == StateCode.US_NE.value:
+        return UsNeSupervisionDelegate()
     if state_code == StateCode.US_NC.value:
         return UsNcSupervisionDelegate()
     if state_code == StateCode.US_ND.value:
@@ -1323,6 +1382,8 @@ def _get_state_specific_incarceration_metrics_producer_delegate(
         return UsMiIncarcerationMetricsProducerDelegate()
     if state_code == StateCode.US_MO.value:
         return UsMoIncarcerationMetricsProducerDelegate()
+    if state_code == StateCode.US_NE.value:
+        return UsNeIncarcerationMetricsProducerDelegate()
     if state_code == StateCode.US_NC.value:
         return UsNcIncarcerationMetricsProducerDelegate()
     if state_code == StateCode.US_ND.value:
@@ -1367,6 +1428,8 @@ def _get_state_specific_supervision_metrics_producer_delegate(
         return UsMiSupervisionMetricsProducerDelegate()
     if state_code == StateCode.US_MO.value:
         return UsMoSupervisionMetricsProducerDelegate()
+    if state_code == StateCode.US_NE.value:
+        return UsNeSupervisionMetricsProducerDelegate()
     if state_code == StateCode.US_NC.value:
         return UsNcSupervisionMetricsProducerDelegate()
     if state_code == StateCode.US_ND.value:
@@ -1413,6 +1476,8 @@ def _get_state_specific_recidivism_metrics_producer_delegate(
         return UsMoRecidivismMetricsProducerDelegate()
     if state_code == StateCode.US_NC.value:
         return UsNcRecidivismMetricsProducerDelegate()
+    if state_code == StateCode.US_NE.value:
+        return UsNeRecidivismMetricsProducerDelegate()
     if state_code == StateCode.US_NC.value:
         return UsNcRecidivismMetricsProducerDelegate()
     if state_code == StateCode.US_NC.value:
