@@ -72,9 +72,6 @@ from recidiviz.calculator.query.state.views.analyst_data.us_az.us_az_action_queu
 from recidiviz.calculator.query.state.views.analyst_data.us_az.us_az_home_plan_preprocessed import (
     US_AZ_HOME_PLAN_PREPROCESSED_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.analyst_data.us_mo.us_mo_mosop_prio_eligibility import (
-    PRIORITIZED_ELIGIBILITY,
-)
 from recidiviz.calculator.query.state.views.analyst_data.us_mo.us_mo_mosop_prio_groups import (
     US_MO_MOSOP_PRIO_GROUPS_VIEW_BUILDER,
 )
@@ -222,9 +219,6 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
         "Not currently referenced but has been used for ad-hoc related research questions "
         "in the past and could become useful for census-based looker dashboards in the future"
         "(mayukas 12/21/23)"
-    ),
-    PRIORITIZED_ELIGIBILITY.address: (
-        "Used for ongoing MOSOP work (n-damiani 12/21/23)"
     ),
     US_MO_MOSOP_PRIO_GROUPS_VIEW_BUILDER.address: (
         "Used for ongoing MOSOP work (n-damiani 12/21/23)"
