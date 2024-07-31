@@ -63,26 +63,24 @@ _QUERY_TEMPLATE = f"""
     WHERE next_review_date < {nonnull_end_date_clause('next_hearing_date')}
 """
 
-VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
-    StateSpecificTaskCriteriaBigQueryViewBuilder(
-        state_code=StateCode.US_MO,
-        criteria_name=_CRITERIA_NAME,
-        criteria_spans_query_template=_QUERY_TEMPLATE,
-        description=_DESCRIPTION,
-        meets_criteria_default=False,
-        reasons_fields=[
-            ReasonsField(
-                name="next_review_date",
-                type=bigquery.enums.SqlTypeNames.DATE,
-                description="#TODO(#29059): Add reasons field description",
-            ),
-            ReasonsField(
-                name="due_date_inferred",
-                type=bigquery.enums.SqlTypeNames.BOOL,
-                description="#TODO(#29059): Add reasons field description",
-            ),
-        ],
-    )
+VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = StateSpecificTaskCriteriaBigQueryViewBuilder(
+    state_code=StateCode.US_MO,
+    criteria_name=_CRITERIA_NAME,
+    criteria_spans_query_template=_QUERY_TEMPLATE,
+    description=_DESCRIPTION,
+    meets_criteria_default=False,
+    reasons_fields=[
+        ReasonsField(
+            name="next_review_date",
+            type=bigquery.enums.SqlTypeNames.DATE,
+            description="Next Restrictive Housing review date (hearing) for the person.",
+        ),
+        ReasonsField(
+            name="due_date_inferred",
+            type=bigquery.enums.SqlTypeNames.BOOL,
+            description="Whether the due date is inferred based on the start date of the RH assignment, or not (it is scheduled).",
+        ),
+    ],
 )
 
 if __name__ == "__main__":

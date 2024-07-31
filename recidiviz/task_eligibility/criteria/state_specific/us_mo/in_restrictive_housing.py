@@ -61,7 +61,7 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
             ReasonsField(
                 name="confinement_type",
                 type=bigquery.enums.SqlTypeNames.STRING,
-                description="#TODO(#29059): Add reasons field description",
+                description="The type of cell or unit where the resident is confined.",
             ),
         ],
     )
