@@ -451,7 +451,6 @@ class ConvertQueryResultsTest(unittest.TestCase):
         ]
         table = bigquery.Table(table_ref, schema_fields)
 
-        mock_bq_client.dataset_ref_for_id.return_value = mock_dataset_ref
         mock_bq_client.get_table.return_value = table
 
         all_rows = [
@@ -524,7 +523,6 @@ class ConvertQueryResultsTest(unittest.TestCase):
         )
 
         mock_bq_client.paged_read_and_process.assert_called()
-        mock_bq_client.dataset_ref_for_id.assert_called()
         mock_bq_client.get_table.assert_called()
 
 

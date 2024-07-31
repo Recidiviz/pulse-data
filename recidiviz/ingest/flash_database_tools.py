@@ -46,11 +46,7 @@ def copy_raw_data_between_instances(
     )
 
     # Create raw data dataset, if necessary
-    big_query_client.create_dataset_if_necessary(
-        dataset_ref=big_query_client.dataset_ref_for_id(
-            dataset_id=destination_raw_dataset_id
-        ),
-    )
+    big_query_client.create_dataset_if_necessary(dataset_id=destination_raw_dataset_id)
 
     # Copy raw data over to destination
     big_query_client.copy_dataset_tables(

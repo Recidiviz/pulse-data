@@ -47,12 +47,9 @@ def gcs_export_directory(
     gs://{bucket_name}/ingested_state_data/{state_code}/{YYYY}/{MM}/{DD}
     """
 
-    big_query_client = BigQueryClientImpl()
-    dataset_ref = big_query_client.dataset_ref_for_id(input_dataset)
-
     path = GcsfsDirectoryPath.from_bucket_and_blob_name(
         bucket_name=bucket_name,
-        blob_name=f"ingested_{dataset_ref.dataset_id}_data/{state_code}/{today.year:04}/{today.month:02}/{today.day:02}/",
+        blob_name=f"ingested_{input_dataset}_data/{state_code}/{today.year:04}/{today.month:02}/{today.day:02}/",
     )
     return cast(GcsfsDirectoryPath, path)
 
@@ -66,11 +63,10 @@ def run_export(
     today = datetime.date.today()
 
     big_query_client = BigQueryClientImpl()
-    dataset_ref = big_query_client.dataset_ref_for_id(input_dataset)
-    if not big_query_client.dataset_exists(dataset_ref):
-        raise ValueError(f"Dataset {dataset_ref.dataset_id} does not exist")
+    if not big_query_client.dataset_exists(input_dataset):
+        raise ValueError(f"Dataset {input_dataset} does not exist")
 
-    tables = big_query_client.list_tables(dataset_ref.dataset_id)
+    tables = big_query_client.list_tables(input_dataset)
 
     export_configs = []
     for table in tables:
@@ -92,7 +88,7 @@ def run_export(
             query=export_query,
             query_parameters=[],
             intermediate_dataset_id="export_temporary_tables",
-            intermediate_table_name=f"{dataset_ref.dataset_id}_{table.table_id}_{state_code.lower()}",
+            intermediate_table_name=f"{input_dataset}_{table.table_id}_{state_code.lower()}",
             output_uri=output_uri,
             output_format=bigquery.DestinationFormat.CSV,
         )

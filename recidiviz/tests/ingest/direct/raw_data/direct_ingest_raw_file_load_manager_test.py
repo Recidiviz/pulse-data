@@ -252,8 +252,7 @@ class TestDirectIngestRawFileLoadManager(BigQueryEmulatorTestCase):
 
         self.assertFalse(
             self.bq_client.table_exists(
-                self.bq_client.dataset_ref_for_id("us_xx_primary_raw_data_temp_load"),
-                "singlePrimaryKey__1",
+                "us_xx_primary_raw_data_temp_load", "singlePrimaryKey__1"
             )
         )
 
@@ -271,23 +270,16 @@ class TestDirectIngestRawFileLoadManager(BigQueryEmulatorTestCase):
 
         self.assertFalse(
             self.bq_client.table_exists(
-                self.bq_client.dataset_ref_for_id("us_xx_primary_raw_data_temp_load"),
-                "singlePrimaryKey__1__transformed",
+                "us_xx_primary_raw_data_temp_load", "singlePrimaryKey__1__transformed"
             )
         )
 
         self.assertFalse(
-            self.bq_client.dataset_exists(
-                self.bq_client.dataset_ref_for_id(
-                    "pruning_us_xx_raw_data_diff_results_primary"
-                )
-            )
+            self.bq_client.dataset_exists("pruning_us_xx_raw_data_diff_results_primary")
         )
 
         self.assertFalse(
-            self.bq_client.dataset_exists(
-                self.bq_client.dataset_ref_for_id("pruning_us_xx_new_raw_data_primary")
-            )
+            self.bq_client.dataset_exists("pruning_us_xx_new_raw_data_primary")
         )
 
         assert not list(self.bq_client.list_tables("us_xx_primary_raw_data_temp_load"))
@@ -319,8 +311,7 @@ class TestDirectIngestRawFileLoadManager(BigQueryEmulatorTestCase):
 
         self.assertFalse(
             self.bq_client.table_exists(
-                self.bq_client.dataset_ref_for_id("us_xx_primary_raw_data_temp_load"),
-                "singlePrimaryKey__1",
+                "us_xx_primary_raw_data_temp_load", "singlePrimaryKey__1"
             )
         )
 
@@ -360,23 +351,16 @@ class TestDirectIngestRawFileLoadManager(BigQueryEmulatorTestCase):
 
         self.assertFalse(
             self.bq_client.table_exists(
-                self.bq_client.dataset_ref_for_id("us_xx_primary_raw_data_temp_load"),
-                "singlePrimaryKey__1__transformed",
+                "us_xx_primary_raw_data_temp_load", "singlePrimaryKey__1__transformed"
             )
         )
 
         self.assertFalse(
-            self.bq_client.dataset_exists(
-                self.bq_client.dataset_ref_for_id(
-                    "pruning_us_xx_raw_data_diff_results_primary"
-                )
-            )
+            self.bq_client.dataset_exists("pruning_us_xx_raw_data_diff_results_primary")
         )
 
         self.assertFalse(
-            self.bq_client.dataset_exists(
-                self.bq_client.dataset_ref_for_id("pruning_us_xx_new_raw_data_primary")
-            )
+            self.bq_client.dataset_exists("pruning_us_xx_new_raw_data_primary")
         )
 
         assert not list(self.bq_client.list_tables("us_xx_primary_raw_data_temp_load"))
@@ -454,14 +438,12 @@ class TestDirectIngestRawFileLoadManager(BigQueryEmulatorTestCase):
         self.assertTrue(len(self.fs.all_paths) == 1)
         self.assertFalse(
             self.bq_client.table_exists(
-                self.bq_client.dataset_ref_for_id("us_xx_primary_raw_data_temp_load"),
-                "singlePrimaryKey__1",
+                "us_xx_primary_raw_data_temp_load", "singlePrimaryKey__1"
             )
         )
         self.assertFalse(
             self.bq_client.table_exists(
-                self.bq_client.dataset_ref_for_id("us_xx_primary_raw_data_temp_load"),
-                "singlePrimaryKey__1__transformed",
+                "us_xx_primary_raw_data_temp_load", "singlePrimaryKey__1__transformed"
             )
         )
 
@@ -488,14 +470,12 @@ class TestDirectIngestRawFileLoadManager(BigQueryEmulatorTestCase):
         self.assertTrue(len(self.fs.all_paths) == 0)
         self.assertFalse(
             self.bq_client.table_exists(
-                self.bq_client.dataset_ref_for_id("us_xx_primary_raw_data_temp_load"),
-                "singlePrimaryKey__1",
+                "us_xx_primary_raw_data_temp_load", "singlePrimaryKey__1"
             )
         )
         self.assertFalse(
             self.bq_client.table_exists(
-                self.bq_client.dataset_ref_for_id("us_xx_primary_raw_data_temp_load"),
-                "singlePrimaryKey__1__transformed",
+                "us_xx_primary_raw_data_temp_load", "singlePrimaryKey__1__transformed"
             )
         )
 
@@ -522,14 +502,12 @@ class TestDirectIngestRawFileLoadManager(BigQueryEmulatorTestCase):
         self.assertTrue(len(self.fs.all_paths) == 0)
         self.assertFalse(
             self.bq_client.table_exists(
-                self.bq_client.dataset_ref_for_id("us_xx_primary_raw_data_temp_load"),
-                "singlePrimaryKey__1",
+                "us_xx_primary_raw_data_temp_load", "singlePrimaryKey__1"
             )
         )
         self.assertFalse(
             self.bq_client.table_exists(
-                self.bq_client.dataset_ref_for_id("us_xx_primary_raw_data_temp_load"),
-                "singlePrimaryKey__1__transformed",
+                "us_xx_primary_raw_data_temp_load", "singlePrimaryKey__1__transformed"
             )
         )
 
@@ -560,15 +538,13 @@ class TestDirectIngestRawFileLoadManager(BigQueryEmulatorTestCase):
         self.assertTrue(len(self.fs.all_paths) == 0)
         self.assertFalse(
             self.bq_client.table_exists(
-                self.bq_client.dataset_ref_for_id("us_xx_primary_raw_data_temp_load"),
-                "singlePrimaryKey__1",
+                "us_xx_primary_raw_data_temp_load", "singlePrimaryKey__1"
             )
         )
 
         self.assertFalse(
             self.bq_client.table_exists(
-                self.bq_client.dataset_ref_for_id("us_xx_primary_raw_data_temp_load"),
-                "singlePrimaryKey__1__transformed",
+                "us_xx_primary_raw_data_temp_load", "singlePrimaryKey__1__transformed"
             )
         )
 
@@ -597,15 +573,13 @@ class TestDirectIngestRawFileLoadManager(BigQueryEmulatorTestCase):
         self.assertTrue(len(self.fs.all_paths) == 1)
         self.assertFalse(
             self.bq_client.table_exists(
-                self.bq_client.dataset_ref_for_id("us_xx_primary_raw_data_temp_load"),
-                "singlePrimaryKey__1",
+                "us_xx_primary_raw_data_temp_load", "singlePrimaryKey__1"
             )
         )
 
         self.assertFalse(
             self.bq_client.table_exists(
-                self.bq_client.dataset_ref_for_id("us_xx_primary_raw_data_temp_load"),
-                "singlePrimaryKey__1__transformed",
+                "us_xx_primary_raw_data_temp_load", "singlePrimaryKey__1__transformed"
             )
         )
 
@@ -639,14 +613,12 @@ class TestDirectIngestRawFileLoadManager(BigQueryEmulatorTestCase):
         self.assertTrue(len(self.fs.all_paths) == 0)
         self.assertFalse(
             self.bq_client.table_exists(
-                self.bq_client.dataset_ref_for_id("us_xx_primary_raw_data_temp_load"),
-                "singlePrimaryKey__1",
+                "us_xx_primary_raw_data_temp_load", "singlePrimaryKey__1"
             )
         )
 
         self.assertFalse(
             self.bq_client.table_exists(
-                self.bq_client.dataset_ref_for_id("us_xx_primary_raw_data_temp_load"),
-                "singlePrimaryKey__1__transformed",
+                "us_xx_primary_raw_data_temp_load", "singlePrimaryKey__1__transformed"
             )
         )

@@ -106,9 +106,7 @@ class DirectIngestRawFileLoadManager:
         try:
             load_job: LoadJob = self.big_query_client.load_table_from_cloud_storage_async(
                 source_uris=[p.uri() for p in paths],
-                destination_dataset_ref=self.big_query_client.dataset_ref_for_id(
-                    destination_address.dataset_id
-                ),
+                destination_dataset_id=destination_address.dataset_id,
                 destination_table_id=destination_address.table_id,
                 destination_table_schema=RawDataTableBigQuerySchemaBuilder.build_bq_schmea_for_config(
                     raw_file_config=self.region_raw_file_config.raw_file_configs[

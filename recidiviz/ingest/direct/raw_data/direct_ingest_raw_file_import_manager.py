@@ -391,9 +391,7 @@ class DirectIngestRawFileImportManager:
         rows after this upload"""
 
         table_id = filename_parts_from_path(path).file_tag
-        if not self.big_query_client.table_exists(
-            self.big_query_client.dataset_ref_for_id(self.raw_tables_dataset), table_id
-        ):
+        if not self.big_query_client.table_exists(self.raw_tables_dataset, table_id):
             logging.info(
                 "Skipping row cleanup as %s.%s does not yet exist",
                 self.raw_tables_dataset,
@@ -424,9 +422,7 @@ class DirectIngestRawFileImportManager:
         try:
             load_job = self.big_query_client.load_table_from_cloud_storage_async(
                 source_uris=[p.uri() for p in file_paths],
-                destination_dataset_ref=self.big_query_client.dataset_ref_for_id(
-                    destination_address.dataset_id
-                ),
+                destination_dataset_id=destination_address.dataset_id,
                 destination_table_id=destination_address.table_id,
                 destination_table_schema=RawDataTableBigQuerySchemaBuilder.build_bq_schema_from_columns(
                     raw_file_config=self.region_raw_file_config.raw_file_configs[

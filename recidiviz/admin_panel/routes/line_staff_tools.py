@@ -373,7 +373,7 @@ def add_line_staff_tools_routes(bp: Blueprint) -> None:
             raw_data_config = RAW_FILES_CONFIG[state_code][upload_type]
             insert_job = bq.load_into_table_from_file_async(
                 fp,
-                bq.dataset_ref_for_id(STATIC_REFERENCE_TABLES_DATASET),
+                STATIC_REFERENCE_TABLES_DATASET,
                 table_name,
                 schema=[
                     bigquery.SchemaField(

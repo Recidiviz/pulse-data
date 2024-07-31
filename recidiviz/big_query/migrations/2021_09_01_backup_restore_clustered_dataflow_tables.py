@@ -61,21 +61,21 @@ def backup(dry_run: bool) -> None:
         "%sBacking up the dataset [%s].", dry_run_prefix, DATAFLOW_METRICS_DATASET
     )
     if not dry_run:
-        backup_dataset = bq_client.backup_dataset_tables_if_dataset_exists(
+        backup_dataset_id = bq_client.backup_dataset_tables_if_dataset_exists(
             DATAFLOW_METRICS_DATASET
         )
 
-        if not backup_dataset:
+        if not backup_dataset_id:
             logging.error(
                 "Dataset [%s] did not exist or could not be backed up.",
                 DATAFLOW_METRICS_DATASET,
             )
             sys.exit(1)
 
-        logging.info("Dataset backed up to [%s].", backup_dataset.dataset_id)
+        logging.info("Dataset backed up to [%s].", backup_dataset_id)
 
         i = input(
-            f"Confirm that all expected tables exist in the backup dataset [{backup_dataset.dataset_id}].\n"
+            f"Confirm that all expected tables exist in the backup dataset [{backup_dataset_id}].\n"
             "Type 'confirm' to proceed and delete the original dataset.\n"
         )
         if i != "confirm":
@@ -85,8 +85,7 @@ def backup(dry_run: bool) -> None:
         "%sDeleting the dataset [%s].", dry_run_prefix, DATAFLOW_METRICS_DATASET
     )
     if not dry_run:
-        original_dataset = bq_client.dataset_ref_for_id(DATAFLOW_METRICS_DATASET)
-        bq_client.delete_dataset(original_dataset, delete_contents=True)
+        bq_client.delete_dataset(DATAFLOW_METRICS_DATASET, delete_contents=True)
 
 
 def restore(backup_dataset_id: str, dry_run: bool) -> None:
@@ -111,8 +110,7 @@ def restore(backup_dataset_id: str, dry_run: bool) -> None:
     logging.info("%sDeleting the dataset [%s].", dry_run_prefix, backup_dataset_id)
     if not dry_run:
         bq_client = BigQueryClientImpl()
-        backup_dataset_ref = bq_client.dataset_ref_for_id(backup_dataset_id)
-        bq_client.delete_dataset(backup_dataset_ref, delete_contents=True)
+        bq_client.delete_dataset(backup_dataset_id, delete_contents=True)
 
 
 def parse_arguments(argv: List[str]) -> Tuple[argparse.Namespace, List[str]]:

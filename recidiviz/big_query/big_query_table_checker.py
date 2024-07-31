@@ -38,9 +38,7 @@ class BigQueryTableChecker:
         if self._columns is None:
             bq_client = BigQueryClientImpl()
             try:
-                t = bq_client.get_table(
-                    bq_client.dataset_ref_for_id(self.dataset_id), self.table_id
-                )
+                t = bq_client.get_table(self.dataset_id, self.table_id)
                 self._columns = [col.name for col in t.schema]
             except exceptions.NotFound:
                 self._columns = []

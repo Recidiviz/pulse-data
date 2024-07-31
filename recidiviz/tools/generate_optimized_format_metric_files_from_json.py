@@ -30,7 +30,6 @@ from typing import List, Optional, Tuple, cast
 from unittest.mock import create_autospec
 
 from google.cloud import bigquery
-from google.cloud.bigquery import DatasetReference
 
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.big_query.constants import TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS
@@ -88,7 +87,6 @@ def create_table(
     bq_client: BigQueryClientImpl,
     local_file: ContentsHandle,
     dataset_id: str,
-    dataset_ref: DatasetReference,
     table_id: str,
 ) -> None:
     """Creates a temporary table and inserts json data into it"""
@@ -106,7 +104,7 @@ def create_table(
         if len(data_points) == offset:
             break
         bq_client.stream_into_table(
-            dataset_ref=dataset_ref,
+            dataset_id=dataset_id,
             table_id=table_id,
             rows=data_points[offset : offset + LIMIT],
         )
@@ -178,12 +176,9 @@ def generate_optimized_format_metric_files_from_json(
     temp_dataset_id = f"temp_dataset_{randint(1000,9999)}"
     logging.info("Creating temporary dataset [%s]", temp_dataset_id)
     bq_client.create_dataset_if_necessary(
-        bq_client.dataset_ref_for_id(dataset_id=temp_dataset_id),
+        temp_dataset_id,
         default_table_expiration_ms=TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS,
     )
-    temp_dataset_ref = bq_client.dataset_ref_for_id(dataset_id=temp_dataset_id)
-    if not temp_dataset_ref:
-        raise ValueError(f"Dataset reference not found for dataset {temp_dataset_id}")
 
     try:
         logging.info("Reading json files from GCS")
@@ -211,7 +206,6 @@ def generate_optimized_format_metric_files_from_json(
                 local_file=local_file,
                 table_id=filename,
                 dataset_id=temp_dataset_id,
-                dataset_ref=temp_dataset_ref,
             )
 
             logging.info(
@@ -231,10 +225,7 @@ def generate_optimized_format_metric_files_from_json(
             "Deleting temporary dataset [%s]",
             temp_dataset_id,
         )
-        bq_client.delete_dataset(
-            dataset_ref=temp_dataset_ref,
-            delete_contents=True,
-        )
+        bq_client.delete_dataset(dataset_id=temp_dataset_id, delete_contents=True)
 
 
 def parse_arguments(argv: List[str]) -> Tuple[argparse.Namespace, List[str]]:

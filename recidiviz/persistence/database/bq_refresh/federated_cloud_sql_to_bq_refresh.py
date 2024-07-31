@@ -159,15 +159,14 @@ def _copy_regional_dataset_to_multi_region(
 
     source_dataset_id = config.regional_dataset(dataset_override_prefix)
     destination_dataset_id = config.multi_region_dataset(dataset_override_prefix)
-    destination_dataset = bq_client.dataset_ref_for_id(destination_dataset_id)
 
-    backup_dataset = bq_client.backup_dataset_tables_if_dataset_exists(
+    backup_dataset_id = bq_client.backup_dataset_tables_if_dataset_exists(
         destination_dataset_id
     )
 
     try:
         bq_client.create_dataset_if_necessary(
-            destination_dataset,
+            destination_dataset_id,
             default_table_expiration_ms=(
                 TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS
                 if dataset_override_prefix
@@ -186,11 +185,11 @@ def _copy_regional_dataset_to_multi_region(
             "Failed to flash [%s] to [%s] - contents backup can be found at [%s]",
             source_dataset_id,
             destination_dataset_id,
-            backup_dataset.dataset_id if backup_dataset else "NO BACKUP",
+            backup_dataset_id if backup_dataset_id else "NO BACKUP",
         )
         raise e
 
-    if backup_dataset:
+    if backup_dataset_id:
         bq_client.delete_dataset(
-            backup_dataset, delete_contents=True, not_found_ok=True
+            backup_dataset_id, delete_contents=True, not_found_ok=True
         )

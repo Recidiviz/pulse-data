@@ -24,7 +24,6 @@ from typing import Dict, List, Optional
 
 import numpy
 from faker import Faker
-from google.cloud import bigquery
 from more_itertools import first
 from pandas import DataFrame
 from tabulate import tabulate
@@ -230,11 +229,8 @@ class RawDataFixturesGenerator:
             instance=self.raw_data_source_instance,
             sandbox_dataset_prefix=None,
         )
-        dataset_ref = bigquery.DatasetReference.from_string(
-            raw_table_dataset_id, default_project=self.project_id
-        )
         if not self.bq_client.table_exists(
-            dataset_ref, table_id=raw_file_config.file_tag
+            raw_table_dataset_id, table_id=raw_file_config.file_tag
         ):
             raise RuntimeError(
                 f"Table [{raw_table_dataset_id}].[{raw_file_config.file_tag}] does not exist, exiting."

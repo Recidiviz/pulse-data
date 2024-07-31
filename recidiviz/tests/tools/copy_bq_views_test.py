@@ -31,13 +31,13 @@ class CopyBQViewsTest(unittest.TestCase):
     def setUp(self) -> None:
         self.mock_source_project_id = "fake-recidiviz-project"
         self.mock_source_dataset_id = "fake-dataset"
-        self.mock_source_dataset = bigquery.dataset.DatasetReference(
+        self.mock_source_dataset_ref = bigquery.dataset.DatasetReference(
             self.mock_source_project_id, self.mock_source_dataset_id
         )
 
         self.mock_destination_project_id = "fake-recidiviz-project-2"
         self.mock_destination_dataset_id = "fake-dataset-2"
-        self.mock_destination_dataset = bigquery.dataset.DatasetReference(
+        self.mock_destination_dataset_ref = bigquery.dataset.DatasetReference(
             self.mock_destination_project_id, self.mock_destination_dataset_id
         )
 
@@ -57,10 +57,8 @@ class CopyBQViewsTest(unittest.TestCase):
         self.client_patcher.stop()
 
     # pylint: disable=unused-argument
-    def table_exists_side_effect(
-        self, dataset_ref: bigquery.DatasetReference, table_id: str
-    ) -> bool:
-        return dataset_ref.dataset_id == self.mock_source_dataset_id
+    def table_exists_side_effect(self, dataset_id: str, table_id: str) -> bool:
+        return dataset_id == self.mock_source_dataset_id
 
     @mock.patch("recidiviz.big_query.big_query_client.BigQueryClientImpl.copy_view")
     @mock.patch("recidiviz.big_query.big_query_client.BigQueryClientImpl.table_exists")
@@ -88,11 +86,6 @@ class CopyBQViewsTest(unittest.TestCase):
             should_materialize=True,
         ).build()
 
-        expected_destination_dataset_ref = bigquery.DatasetReference(
-            project=self.mock_destination_project_id,
-            dataset_id=self.mock_destination_dataset_id,
-        )
-
         mock_copy_view.assert_called()
         self.assertEqual(expected_view, mock_copy_view.call_args_list[0][1].get("view"))
         self.assertEqual(
@@ -100,8 +93,8 @@ class CopyBQViewsTest(unittest.TestCase):
             mock_copy_view.call_args_list[0][1].get("destination_client").project_id,
         )
         self.assertEqual(
-            expected_destination_dataset_ref,
-            mock_copy_view.call_args_list[0][1].get("destination_dataset_ref"),
+            self.mock_destination_dataset_id,
+            mock_copy_view.call_args_list[0][1].get("destination_dataset_id"),
         )
 
     @mock.patch("recidiviz.big_query.big_query_client.BigQueryClientImpl.copy_view")
@@ -129,7 +122,9 @@ class CopyBQViewsTest(unittest.TestCase):
         self, mock_table_exists: mock.MagicMock, mock_copy_view: mock.MagicMock
     ) -> None:
         """Check that copy_view is not called on a table that does not have a view_query."""
-        table_ref = bigquery.TableReference(self.mock_source_dataset, "table_not_view")
+        table_ref = bigquery.TableReference(
+            self.mock_source_dataset_ref, "table_not_view"
+        )
         schema_fields = [bigquery.SchemaField("fake_schema_field", "STRING")]
         table_not_view = bigquery.Table(table_ref, schema_fields)
         self.mock_client.list_tables.return_value = [table_not_view]
@@ -180,11 +175,6 @@ class CopyBQViewsTest(unittest.TestCase):
             should_materialize=True,
         ).build()
 
-        expected_destination_dataset_ref = bigquery.DatasetReference(
-            project=self.mock_destination_project_id,
-            dataset_id=self.mock_destination_dataset_id,
-        )
-
         mock_copy_view.assert_called()
         self.assertEqual(expected_view, mock_copy_view.call_args_list[0][1].get("view"))
         self.assertEqual(
@@ -192,6 +182,6 @@ class CopyBQViewsTest(unittest.TestCase):
             mock_copy_view.call_args_list[0][1].get("destination_client").project_id,
         )
         self.assertEqual(
-            expected_destination_dataset_ref,
-            mock_copy_view.call_args_list[0][1].get("destination_dataset_ref"),
+            self.mock_destination_dataset_id,
+            mock_copy_view.call_args_list[0][1].get("destination_dataset_id"),
         )

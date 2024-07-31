@@ -149,7 +149,7 @@ class OptimizedMetricBigQueryViewExporter(BigQueryViewExporter):
         )
 
         table = self.bq_client.get_table(
-            self.bq_client.dataset_ref_for_id(export_view.dataset_id),
+            export_view.dataset_id,
             export_view.view_id,
         )
         all_keys = [field.name for field in table.schema]

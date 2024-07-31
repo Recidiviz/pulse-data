@@ -159,10 +159,7 @@ def load_from_gcs_to_temp_table(
     bucket_name = f"{project_id}{BUCKET_SUFFIX}"
     load_job = bq_client.load_table_from_cloud_storage_async(
         source_uris=[f"gs://{bucket_name}/{blob_name}"],
-        destination_dataset_ref=bigquery.DatasetReference(
-            project=project_id,
-            dataset_id=SENDGRID_EMAIL_DATA_DATASET,
-        ),
+        destination_dataset_id=SENDGRID_EMAIL_DATA_DATASET,
         destination_table_id=TEMP_DESTINATION_TABLE,
         destination_table_schema=[
             bigquery.SchemaField("processed", "TIMESTAMP", mode="NULLABLE"),
@@ -212,11 +209,7 @@ def load_from_temp_to_permanent_table(
 ) -> None:
     """Query temporary table and persist view to permanent table"""
     num_rows_before = bq_client.get_table(
-        dataset_ref=bigquery.DatasetReference(
-            project=project_id,
-            dataset_id=SENDGRID_EMAIL_DATA_DATASET,
-        ),
-        table_id=FINAL_DESTINATION_TABLE,
+        dataset_id=SENDGRID_EMAIL_DATA_DATASET, table_id=FINAL_DESTINATION_TABLE
     ).num_rows
 
     insert_job = bq_client.insert_into_table_from_query_async(

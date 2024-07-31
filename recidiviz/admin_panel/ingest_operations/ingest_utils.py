@@ -165,9 +165,7 @@ def import_raw_files_to_bq_sandbox(
 
         # Create the dataset up front with table expiration
         big_query_client.create_dataset_if_necessary(
-            big_query_client.dataset_ref_for_id(
-                dataset_id=import_manager.raw_tables_dataset
-            ),
+            dataset_id=import_manager.raw_tables_dataset,
             default_table_expiration_ms=TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS,
         )
 

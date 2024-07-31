@@ -209,16 +209,12 @@ QUALIFY ROW_NUMBER() OVER (ORDER BY b DESC) = 1;
         self.create_mock_table(address_1, schema_1)
         self.create_mock_table(address_2, schema_2)
 
-        table_1 = self.bq_client.get_table(
-            self.bq_client.dataset_ref_for_id(address_1.dataset_id), address_1.table_id
-        )
+        table_1 = self.bq_client.get_table(address_1.dataset_id, address_1.table_id)
 
         self.assertEqual(address_1.dataset_id, table_1.dataset_id)
         self.assertEqual(address_1.table_id, table_1.table_id)
         self.assertEqual(schema_1, table_1.schema)
-        table_2 = self.bq_client.get_table(
-            self.bq_client.dataset_ref_for_id(address_2.dataset_id), address_2.table_id
-        )
+        table_2 = self.bq_client.get_table(address_2.dataset_id, address_2.table_id)
         self.assertEqual(address_2.dataset_id, table_2.dataset_id)
         self.assertEqual(address_2.table_id, table_2.table_id)
         self.assertEqual(schema_2, table_2.schema)
@@ -233,14 +229,10 @@ QUALIFY ROW_NUMBER() OVER (ORDER BY b DESC) = 1;
         )
 
         self.bq_client.stream_into_table(
-            self.bq_client.dataset_ref_for_id(address_1.dataset_id),
-            address_1.table_id,
-            rows=[{"a": 1}],
+            address_1.dataset_id, address_1.table_id, rows=[{"a": 1}]
         )
         self.bq_client.stream_into_table(
-            self.bq_client.dataset_ref_for_id(address_2.dataset_id),
-            address_2.table_id,
-            rows=[{"b": 2}],
+            address_2.dataset_id, address_2.table_id, rows=[{"b": 2}]
         )
 
         self.run_query_test(

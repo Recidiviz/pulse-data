@@ -58,11 +58,10 @@ def run_export(
     """Performs the export operation, exporting rows for the given state codes from the tables from the state dataset
     in the given project to tables with the same names in the target dataset."""
     big_query_client = BigQueryClientImpl()
-    dataset_ref = big_query_client.dataset_ref_for_id(STATE_BASE_DATASET)
-    if not big_query_client.dataset_exists(dataset_ref):
-        raise ValueError(f"Dataset {dataset_ref.dataset_id} does not exist")
+    if not big_query_client.dataset_exists(STATE_BASE_DATASET):
+        raise ValueError(f"Dataset {STATE_BASE_DATASET} does not exist")
 
-    tables = big_query_client.list_tables(dataset_ref.dataset_id)
+    tables = big_query_client.list_tables(STATE_BASE_DATASET)
 
     for table in tables:
         logging.info("******************************")

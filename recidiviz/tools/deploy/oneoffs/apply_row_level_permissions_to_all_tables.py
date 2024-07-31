@@ -21,8 +21,9 @@ def apply_row_level_permissions_to_all_tables(dataset_prefix: Optional[str]) -> 
     def _apply_permissions_for_table(
         client: BigQueryClient, address: ProjectSpecificBigQueryAddress
     ) -> None:
-        dataset_ref = client.dataset_ref_for_id(address.dataset_id)
-        table = client.get_table(dataset_ref=dataset_ref, table_id=address.table_id)
+        table = client.get_table(
+            dataset_id=address.dataset_id, table_id=address.table_id
+        )
         client.apply_row_level_permissions(table)
 
     run_operation_for_tables_in_datasets(

@@ -20,8 +20,7 @@
 import concurrent
 import logging
 
-from google.cloud import bigquery
-from google.cloud import exceptions
+from google.cloud import bigquery, exceptions
 
 from recidiviz.big_query.big_query_client import BigQueryClient
 
@@ -51,8 +50,7 @@ def wait_for_table_load(
         )
 
         destination_table = big_query_client.get_table(
-            big_query_client.dataset_ref_for_id(load_job.destination.dataset_id),
-            load_job.destination.table_id,
+            load_job.destination.dataset_id, load_job.destination.table_id
         )
         logging.info(
             "Loaded %d rows in table %s.%s.%s",

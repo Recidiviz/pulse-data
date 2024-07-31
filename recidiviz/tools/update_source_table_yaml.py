@@ -66,10 +66,7 @@ def update_source_file_yaml(table_address: BigQueryAddress) -> None:
 
     client = BigQueryClientImpl()
     source_table_config = SourceTableConfig.from_table(
-        client.get_table(
-            client.dataset_ref_for_id(table_address.dataset_id),
-            table_address.table_id,
-        )
+        client.get_table(table_address.dataset_id, table_address.table_id)
     )
 
     with open(table_yaml_path, "w", encoding="utf-8") as yaml_file:

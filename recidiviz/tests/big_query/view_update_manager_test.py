@@ -56,9 +56,6 @@ class ViewManagerTest(unittest.TestCase):
         self.metadata_patcher = mock.patch("recidiviz.utils.metadata.project_id")
         self.mock_project_id_fn = self.metadata_patcher.start()
         self.mock_project_id_fn.return_value = _PROJECT_ID
-        self.mock_dataset_ref_ds_1 = bigquery.dataset.DatasetReference(
-            _PROJECT_ID, "dataset_1"
-        )
 
         self.client_patcher = patch(
             "recidiviz.big_query.view_update_manager.BigQueryClientImpl"
@@ -85,8 +82,6 @@ class ViewManagerTest(unittest.TestCase):
         |historically_managed_datasets_to_clean| provided, so nothing should be
         cleaned up. The only deleted table calls should be the ones from recreating
         views so changes can be reflected in schema."""
-        dataset = bigquery.dataset.DatasetReference(_PROJECT_ID, _DATASET_NAME)
-
         sample_views = [
             {
                 "view_id": "my_fake_view",
@@ -111,16 +106,15 @@ class ViewManagerTest(unittest.TestCase):
             for view in sample_views
         ]
 
-        self.mock_client.dataset_ref_for_id.return_value = dataset
-
         view_update_manager.create_managed_dataset_and_deploy_views_for_view_builders(
             view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
             view_builders_to_update=mock_view_builders,
             historically_managed_datasets_to_clean=None,
         )
 
-        self.mock_client.dataset_ref_for_id.assert_called_with(_DATASET_NAME)
-        self.mock_client.create_dataset_if_necessary.assert_called_with(dataset, None)
+        self.mock_client.create_dataset_if_necessary.assert_called_with(
+            _DATASET_NAME, None
+        )
         self.mock_client.create_or_update_view.assert_has_calls(
             [
                 mock.call(view_builder.build(), might_exist=True)
@@ -142,8 +136,6 @@ class ViewManagerTest(unittest.TestCase):
         self,
     ) -> None:
         """Tests that we don't materialize any views if they have not been updated"""
-        dataset = bigquery.dataset.DatasetReference(_PROJECT_ID, _DATASET_NAME)
-
         mock_view_builders = [
             SimpleBigQueryViewBuilder(
                 dataset_id=_DATASET_NAME,
@@ -169,9 +161,7 @@ class ViewManagerTest(unittest.TestCase):
             ),
         ]
 
-        def mock_get_table(
-            _dataset_ref: bigquery.DatasetReference, view_id: str
-        ) -> bigquery.Table:
+        def mock_get_table(_dataset_id: str, view_id: str) -> bigquery.Table:
             if mock_view_builders[0].view_id == view_id:
                 view_builder = mock_view_builders[0]
             elif mock_view_builders[1].view_id == view_id:
@@ -191,12 +181,7 @@ class ViewManagerTest(unittest.TestCase):
         def mock_create_or_update(
             view: BigQueryView, might_exist: bool  # pylint: disable=W0613
         ) -> bigquery.Table:
-            dataset_ref = bigquery.dataset.DatasetReference(
-                _PROJECT_ID, view.dataset_id
-            )
-            return mock_get_table(dataset_ref, view.view_id)
-
-        self.mock_client.dataset_ref_for_id.return_value = dataset
+            return mock_get_table(view.dataset_id, view.view_id)
 
         self.mock_client.get_table = mock_get_table
         self.mock_client.create_or_update_view.side_effect = mock_create_or_update
@@ -207,8 +192,9 @@ class ViewManagerTest(unittest.TestCase):
             historically_managed_datasets_to_clean=None,
         )
 
-        self.mock_client.dataset_ref_for_id.assert_called_with(_DATASET_NAME)
-        self.mock_client.create_dataset_if_necessary.assert_called_with(dataset, None)
+        self.mock_client.create_dataset_if_necessary.assert_called_with(
+            _DATASET_NAME, None
+        )
         self.mock_client.create_or_update_view.assert_has_calls(
             [
                 mock.call(mock_view_builders[0].build(), might_exist=True),
@@ -238,11 +224,6 @@ class ViewManagerTest(unittest.TestCase):
         self,
     ) -> None:
         """Tests that we don't materialize any views if they have not been updated"""
-        dataset = bigquery.dataset.DatasetReference(_PROJECT_ID, _DATASET_NAME)
-        materialized_dataset = bigquery.dataset.DatasetReference(
-            _PROJECT_ID, _DATASET_NAME_2
-        )
-
         mock_view_builders = [
             SimpleBigQueryViewBuilder(
                 dataset_id=_DATASET_NAME,
@@ -271,9 +252,7 @@ class ViewManagerTest(unittest.TestCase):
             ),
         ]
 
-        def mock_get_table(
-            _dataset_ref: bigquery.DatasetReference, view_id: str
-        ) -> bigquery.Table:
+        def mock_get_table(_dataset_id: str, view_id: str) -> bigquery.Table:
             if mock_view_builders[0].view_id == view_id:
                 view_builder = mock_view_builders[0]
             elif mock_view_builders[1].view_id == view_id:
@@ -297,22 +276,10 @@ class ViewManagerTest(unittest.TestCase):
         def mock_create_or_update(
             view: BigQueryView, might_exist: bool  # pylint: disable=W0613
         ) -> bigquery.Table:
-            dataset_ref = bigquery.dataset.DatasetReference(
-                _PROJECT_ID, view.dataset_id
-            )
-            table = mock_get_table(dataset_ref, view.view_id)
+            table = mock_get_table(view.dataset_id, view.view_id)
             if view.view_id == "my_fake_view_2":
                 table.view_query = mock_view_builders[1].build().view_query
             return table
-
-        def mock_get_dataset_ref(dataset_id: str) -> bigquery.dataset.DatasetReference:
-            if dataset_id == dataset.dataset_id:
-                return dataset
-            if dataset_id == materialized_dataset.dataset_id:
-                return materialized_dataset
-            raise ValueError(f"No dataset for id: {dataset_id}")
-
-        self.mock_client.dataset_ref_for_id.side_effect = mock_get_dataset_ref
 
         self.mock_client.get_table = mock_get_table
         self.mock_client.create_or_update_view.side_effect = mock_create_or_update
@@ -323,11 +290,8 @@ class ViewManagerTest(unittest.TestCase):
             historically_managed_datasets_to_clean=None,
         )
 
-        self.mock_client.dataset_ref_for_id.assert_has_calls(
-            [mock.call(_DATASET_NAME), mock.call(_DATASET_NAME_2)]
-        )
         self.mock_client.create_dataset_if_necessary.assert_has_calls(
-            [mock.call(dataset, None), mock.call(materialized_dataset, None)],
+            [mock.call(_DATASET_NAME, None), mock.call(_DATASET_NAME_2, None)],
             any_order=True,
         )
         self.mock_client.create_or_update_view.assert_has_calls(
@@ -369,9 +333,6 @@ class ViewManagerTest(unittest.TestCase):
         updates views that have a set materialized_address when the
         materialized_views_only flag is set to True.
         """
-        dataset = bigquery.dataset.DatasetReference(_PROJECT_ID, _DATASET_NAME)
-        dataset_2 = bigquery.dataset.DatasetReference(_PROJECT_ID, _DATASET_NAME_2)
-
         mock_view_builders = [
             SimpleBigQueryViewBuilder(
                 dataset_id=_DATASET_NAME,
@@ -389,33 +350,15 @@ class ViewManagerTest(unittest.TestCase):
             ),
         ]
 
-        def get_dataset_ref(dataset_id: str) -> bigquery.dataset.DatasetReference:
-            if dataset_id == dataset.dataset_id:
-                return dataset
-            if dataset_id == dataset_2.dataset_id:
-                return dataset_2
-            raise ValueError(f"No dataset for id: {dataset_id}")
-
-        self.mock_client.dataset_ref_for_id.side_effect = get_dataset_ref
-
         view_update_manager.create_managed_dataset_and_deploy_views_for_view_builders(
             view_builders_to_update=mock_view_builders,
             view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
             historically_managed_datasets_to_clean=None,
         )
 
-        self.mock_client.dataset_ref_for_id.assert_has_calls(
-            [
-                # One set of calls to create datasets and one to update views
-                mock.call(_DATASET_NAME),
-                mock.call(_DATASET_NAME_2),
-                mock.call(_DATASET_NAME),
-                mock.call(_DATASET_NAME_2),
-            ],
-            any_order=True,
-        )
         self.mock_client.create_dataset_if_necessary.assert_has_calls(
-            [mock.call(dataset, None), mock.call(dataset_2, None)], any_order=True
+            [mock.call(_DATASET_NAME, None), mock.call(_DATASET_NAME_2, None)],
+            any_order=True,
         )
         self.mock_client.create_or_update_view.assert_has_calls(
             [
@@ -448,12 +391,8 @@ class ViewManagerTest(unittest.TestCase):
         address_overrides."""
         materialized_dataset = "other_dataset"
 
-        override_dataset_ref = bigquery.dataset.DatasetReference(
-            _PROJECT_ID, "test_prefix_" + _DATASET_NAME
-        )
-        override_materialized_dataset_ref = bigquery.dataset.DatasetReference(
-            _PROJECT_ID, "test_prefix_" + materialized_dataset
-        )
+        override_dataset_id = "test_prefix_" + _DATASET_NAME
+        override_materialized_dataset_id = "test_prefix_" + materialized_dataset
 
         sample_views = [
             {
@@ -496,15 +435,6 @@ class ViewManagerTest(unittest.TestCase):
             view_dataset_override_prefix="test_prefix", view_builders=mock_view_builders
         )
 
-        def get_dataset_ref(dataset_id: str) -> bigquery.dataset.DatasetReference:
-            if dataset_id == override_dataset_ref.dataset_id:
-                return override_dataset_ref
-            if dataset_id == override_materialized_dataset_ref.dataset_id:
-                return override_materialized_dataset_ref
-            raise ValueError(f"No dataset for id: {dataset_id}")
-
-        self.mock_client.dataset_ref_for_id.side_effect = get_dataset_ref
-
         view_update_manager.create_managed_dataset_and_deploy_views_for_view_builders(
             view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
             view_builders_to_update=mock_view_builders,
@@ -512,17 +442,14 @@ class ViewManagerTest(unittest.TestCase):
             historically_managed_datasets_to_clean=None,
         )
 
-        dataset_refs = [override_dataset_ref, override_materialized_dataset_ref]
-        self.mock_client.dataset_ref_for_id.assert_has_calls(
-            [mock.call(dataset_ref.dataset_id) for dataset_ref in dataset_refs]
-        )
+        dataset_ids = [override_dataset_id, override_materialized_dataset_id]
         self.mock_client.create_dataset_if_necessary.assert_has_calls(
             [
                 mock.call(
-                    dataset_ref,
+                    dataset_id,
                     TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS,
                 )
-                for dataset_ref in dataset_refs
+                for dataset_id in dataset_ids
             ],
             any_order=True,
         )
@@ -578,8 +505,6 @@ class ViewManagerTest(unittest.TestCase):
 
     def test_create_dataset_and_update_views(self) -> None:
         """Test that create_dataset_and_update_views creates a dataset if necessary, and updates all views."""
-        dataset = bigquery.dataset.DatasetReference(_PROJECT_ID, _DATASET_NAME)
-
         sample_views = [
             {"view_id": "my_fake_view", "view_query_template": "SELECT NULL LIMIT 0"},
             {
@@ -601,16 +526,15 @@ class ViewManagerTest(unittest.TestCase):
             for view in sample_views
         ]
 
-        self.mock_client.dataset_ref_for_id.return_value = dataset
-
         # pylint: disable=protected-access
         view_update_manager._create_managed_dataset_and_deploy_views(
             mock_views, bq_region_override="us-east1", force_materialize=False
         )
 
         self.mock_client_constructor.assert_called_with(region_override="us-east1")
-        self.mock_client.dataset_ref_for_id.assert_called_with(_DATASET_NAME)
-        self.mock_client.create_dataset_if_necessary.assert_called_with(dataset, None)
+        self.mock_client.create_dataset_if_necessary.assert_called_with(
+            _DATASET_NAME, None
+        )
         self.mock_client.create_or_update_view.assert_has_calls(
             [mock.call(view, might_exist=True) for view in mock_views], any_order=True
         )
@@ -678,9 +602,6 @@ class ViewManagerTest(unittest.TestCase):
     def test_create_managed_dataset_and_deploy_views_for_view_builders_unmanaged_views_in_multiple_ds(
         self,
     ) -> None:
-        dataset = bigquery.dataset.DatasetReference(_PROJECT_ID, _DATASET_NAME)
-        dataset_2 = bigquery.dataset.DatasetReference(_PROJECT_ID, _DATASET_NAME_2)
-
         historically_managed_datasets = {_DATASET_NAME, _DATASET_NAME_2}
 
         mock_view_builders = [
@@ -737,12 +658,12 @@ class ViewManagerTest(unittest.TestCase):
         }
 
         def mock_list_tables(dataset_id: str) -> list[bigquery.table.TableListItem]:
-            if dataset_id == dataset.dataset_id:
+            if dataset_id == _DATASET_NAME:
                 return [
                     bigquery.table.TableListItem(mock_table_resource_ds_1_table),
                     bigquery.table.TableListItem(mock_table_resource_ds_1_table_bogus),
                 ]
-            if dataset_id == dataset_2.dataset_id:
+            if dataset_id == _DATASET_NAME_2:
                 return [
                     bigquery.table.TableListItem(mock_table_resource_ds_2_table),
                     bigquery.table.TableListItem(mock_table_resource_ds_2_table_bogus),
@@ -750,15 +671,6 @@ class ViewManagerTest(unittest.TestCase):
             raise ValueError(f"No tables for id: {dataset_id}")
 
         self.mock_client.list_tables.side_effect = mock_list_tables
-
-        def get_dataset_ref(dataset_id: str) -> bigquery.dataset.DatasetReference:
-            if dataset_id == dataset.dataset_id:
-                return dataset
-            if dataset_id == dataset_2.dataset_id:
-                return dataset_2
-            raise ValueError(f"No dataset for id: {dataset_id}")
-
-        self.mock_client.dataset_ref_for_id.side_effect = get_dataset_ref
         self.mock_client.dataset_exists.return_value = True
 
         view_update_manager.create_managed_dataset_and_deploy_views_for_view_builders(
@@ -781,10 +693,6 @@ class ViewManagerTest(unittest.TestCase):
             any_order=True,
         )
         self.assertEqual(self.mock_client.delete_table.call_count, 4)
-
-        self.mock_client.create_dataset_if_necessary.assert_has_calls(
-            [call(dataset, None), call(dataset_2, None)], any_order=True
-        )
         self.assertEqual(self.mock_client.create_dataset_if_necessary.call_count, 2)
         self.mock_client.create_or_update_view.assert_has_calls(
             [
@@ -795,13 +703,8 @@ class ViewManagerTest(unittest.TestCase):
         )
 
     def test_copy_dataset_schemas_to_sandbox(self) -> None:
-        def get_dataset_ref(dataset_id: str) -> bigquery.dataset.DatasetReference:
-            return bigquery.dataset.DatasetReference(_PROJECT_ID, dataset_id)
-
-        self.mock_client.dataset_ref_for_id.side_effect = get_dataset_ref
-
-        def dataset_exists(dataset_ref: bigquery.dataset.DatasetReference) -> bool:
-            return dataset_ref.dataset_id in (_DATASET_NAME, _DATASET_NAME_2)
+        def dataset_exists(dataset_id: str) -> bool:
+            return dataset_id in (_DATASET_NAME, _DATASET_NAME_2)
 
         self.mock_client.dataset_exists.side_effect = dataset_exists
 
@@ -836,11 +739,11 @@ class ViewManagerTest(unittest.TestCase):
         self.mock_client.create_dataset_if_necessary.assert_has_calls(
             [
                 call(
-                    dataset_ref=get_dataset_ref(f"test_{_DATASET_NAME}"),
+                    f"test_{_DATASET_NAME}",
                     default_table_expiration_ms=3000,
                 ),
                 call(
-                    dataset_ref=get_dataset_ref(f"test_{_DATASET_NAME_2}"),
+                    f"test_{_DATASET_NAME_2}",
                     default_table_expiration_ms=3000,
                 ),
             ],

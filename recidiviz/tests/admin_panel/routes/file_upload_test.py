@@ -21,7 +21,6 @@ from unittest import TestCase
 from unittest.mock import MagicMock, patch
 
 from flask import Blueprint, Flask
-from google.cloud import bigquery
 
 from recidiviz.admin_panel.routes.line_staff_tools import add_line_staff_tools_routes
 
@@ -52,11 +51,7 @@ class FileUploadEndpointTests(TestCase):
         self.bq_client_patcher = patch(
             "recidiviz.admin_panel.routes.line_staff_tools.BigQueryClientImpl"
         )
-        self.mock_dataset = bigquery.dataset.DatasetReference(
-            self.project_id, "test_dataset"
-        )
         self.mock_bq_client = self.bq_client_patcher.start().return_value
-        self.mock_bq_client.dataset_ref_for_id.return_value = self.mock_dataset
         self.app = Flask(__name__)
 
         blueprint = Blueprint("file_upload_test", __name__)
@@ -145,5 +140,5 @@ class FileUploadEndpointTests(TestCase):
         self.mock_bq_client.load_into_table_from_file_async.assert_called_once()
         args = self.mock_bq_client.load_into_table_from_file_async.call_args.args
         # don't test the contents of the file since the file pointer has already been closed
-        self.assertEqual(args[1], self.mock_dataset)
+        self.assertEqual(args[1], "static_reference_tables")
         self.assertEqual(args[2], "us_tn_standards_due")

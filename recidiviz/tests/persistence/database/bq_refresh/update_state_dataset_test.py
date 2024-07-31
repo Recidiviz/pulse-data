@@ -20,7 +20,6 @@
 import unittest
 
 import pytest
-from google.cloud import bigquery
 from mock import MagicMock, call, patch
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
@@ -97,12 +96,6 @@ class UpdateStateDatasetTest(unittest.TestCase):
             "recidiviz.big_query.view_update_manager.BigQueryClientImpl"
         )
         self.mock_bq = self.bq_patcher.start().return_value
-
-        # TODO(#25330): Remove this custom comparison once __eq__ works for BigQueryView
-        def mock_dataset_ref_for_id(dataset_id: str) -> bigquery.DatasetReference:
-            return bigquery.DatasetReference(TEST_PROJECT, dataset_id)
-
-        self.mock_bq.dataset_ref_for_id = mock_dataset_ref_for_id
         self.mock_bq.dataset_exists.return_value = True
         self.mock_bq.create_or_update_view.return_value.schema = []
 
@@ -203,8 +196,8 @@ class UpdateStateDatasetTest(unittest.TestCase):
         self.assertEqual(
             self.mock_bq.create_dataset_if_necessary.mock_calls,
             [
-                call(bigquery.DatasetReference(TEST_PROJECT, "state_views"), None),
-                call(bigquery.DatasetReference(TEST_PROJECT, "state"), None),
+                call("state_views", None),
+                call("state", None),
             ],
         )
 
@@ -330,11 +323,11 @@ class UpdateStateDatasetTest(unittest.TestCase):
             self.mock_bq.create_dataset_if_necessary.mock_calls,
             [
                 call(
-                    bigquery.DatasetReference(TEST_PROJECT, "foo_state_views"),
+                    "foo_state_views",
                     TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS,
                 ),
                 call(
-                    bigquery.DatasetReference(TEST_PROJECT, "foo_state"),
+                    "foo_state",
                     TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS,
                 ),
             ],

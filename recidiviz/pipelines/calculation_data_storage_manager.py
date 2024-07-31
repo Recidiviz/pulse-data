@@ -81,8 +81,8 @@ def _delete_empty_or_temp_datasets() -> None:
     datasets = bq_client.list_datasets()
 
     for dataset_resource in datasets:
-        dataset_ref = bq_client.dataset_ref_for_id(dataset_resource.dataset_id)
-        dataset = bq_client.get_dataset(dataset_ref)
+        dataset_id = dataset_resource.dataset_id
+        dataset = bq_client.get_dataset(dataset_id)
         dataset_labels = dataset.labels
 
         # Skip datasets that are managed by terraform
@@ -97,7 +97,7 @@ def _delete_empty_or_temp_datasets() -> None:
             logging.info(
                 "Skipping empty dataset that is used for housing temporary tables used "
                 "in raw data pruning [%s]",
-                dataset_ref.dataset_id,
+                dataset_id,
             )
             continue
 
@@ -111,7 +111,7 @@ def _delete_empty_or_temp_datasets() -> None:
         if managed_by_terraform:
             logging.info(
                 "Skipping empty dataset that is in Terraform state [%s]",
-                dataset_ref.dataset_id,
+                dataset_id,
             )
             continue
 
@@ -129,18 +129,18 @@ def _delete_empty_or_temp_datasets() -> None:
         ):
             logging.info(
                 "Dataset %s is a dataset created by Beam and not updated in a while. Deleting...",
-                dataset_ref.dataset_id,
+                dataset_id,
             )
-            bq_client.delete_dataset(dataset_ref, delete_contents=True)
+            bq_client.delete_dataset(dataset_id, delete_contents=True)
         elif (
-            bq_client.dataset_is_empty(dataset_ref)
+            bq_client.dataset_is_empty(dataset_id)
             and dataset_age_seconds > EMPTY_DATASET_DELETION_MIN_SECONDS
         ):
             logging.info(
                 "Dataset %s is empty and was not created very recently. Deleting...",
-                dataset_ref.dataset_id,
+                dataset_id,
             )
-            bq_client.delete_dataset(dataset_ref)
+            bq_client.delete_dataset(dataset_id)
 
 
 def _get_month_range_for_metric_and_state() -> Dict[str, Dict[str, int]]:

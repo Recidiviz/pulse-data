@@ -252,7 +252,7 @@ def verify_ingest_view_determinism(
         state_code=state_code, sandbox_dataset_prefix=dataset_prefix
     )
     bq_client.create_dataset_if_necessary(
-        bq_client.dataset_ref_for_id(temp_results_dataset_id),
+        temp_results_dataset_id,
         default_table_expiration_ms=TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS,
     )
 

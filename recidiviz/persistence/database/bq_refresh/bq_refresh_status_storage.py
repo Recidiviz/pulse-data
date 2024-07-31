@@ -120,7 +120,7 @@ def store_bq_refresh_status_in_big_query(
     )
 
     bq_client.stream_into_table(
-        bq_client.dataset_ref_for_id(address.dataset_id),
+        address.dataset_id,
         address.table_id,
         [result.to_serializable() for result in bq_refresh_statuses],
     )
@@ -131,14 +131,10 @@ def update_bq_refresh_status_table(
     bq_refresh_status_address: BigQueryAddress,
     table_schema: List[bigquery.SchemaField],
 ) -> None:
-    bq_refresh_status_dataset_ref = bq_client.dataset_ref_for_id(
-        bq_refresh_status_address.dataset_id
-    )
-
-    bq_client.create_dataset_if_necessary(bq_refresh_status_dataset_ref)
+    bq_client.create_dataset_if_necessary(bq_refresh_status_address.dataset_id)
 
     if bq_client.table_exists(
-        bq_refresh_status_dataset_ref, bq_refresh_status_address.table_id
+        bq_refresh_status_address.dataset_id, bq_refresh_status_address.table_id
     ):
         # Compare schema derived from schema table to existing dataset and
         # update if necessary.

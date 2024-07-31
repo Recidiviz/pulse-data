@@ -227,7 +227,7 @@ def store_validation_results_in_big_query(
 
     bq_client = BigQueryClientImpl()
     bq_client.stream_into_table(
-        bq_client.dataset_ref_for_id(VALIDATION_RESULTS_BIGQUERY_ADDRESS.dataset_id),
+        VALIDATION_RESULTS_BIGQUERY_ADDRESS.dataset_id,
         VALIDATION_RESULTS_BIGQUERY_ADDRESS.table_id,
         [result.to_serializable() for result in validation_results],
     )
