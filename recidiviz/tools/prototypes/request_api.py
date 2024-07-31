@@ -91,7 +91,11 @@ def make_request_to_api(
         response = requests.post(f"https://{domain}/oauth/token", data=data, timeout=10)
         token = response.json()["access_token"]
 
-    headers = {"Authorization": "Bearer " + token, "Content-Type": "application/json"}
+    headers = {
+        "Authorization": "Bearer " + token,
+        "Content-Type": "application/json",
+        "Origin": "http://localhost:3000",
+    }
 
     # Make the request
     url = STAGING_URL if target_env == "staging" else LOCALHOST_URL

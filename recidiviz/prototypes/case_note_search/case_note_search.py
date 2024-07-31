@@ -34,6 +34,7 @@ from recidiviz.tools.prototypes.gcs_bucket_reader import GCSBucketReader
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 
 IDAHO_CASE_NOTES_ENGINE_ID = "id-case-notes-new_1717011992933"
+FAKE_CASE_NOTES_ENGINE_ID = "fake-case-note-search_1721932843217"
 
 
 def download_full_case_note(gcs_link: str) -> Optional[str]:

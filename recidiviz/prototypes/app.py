@@ -99,11 +99,17 @@ async def search_case_notes() -> Response:
         return response
 
     page_size = request.args.get("page_size", default=20, type=int)
-    with_snippet = request.args.get("with_snippet", default=True, type=bool)
+    with_snippet = request.args.get(
+        "with_snippet", default=True, type=lambda v: v.lower() == "true"
+    )
+    external_id = request.args.get("external_id", default=None, type=str)
 
     case_note_response = case_note_search(
         query=query,
         page_size=page_size,
         with_snippet=with_snippet,
+        filter_conditions={"external_id": [external_id]}
+        if external_id is not None
+        else None,
     )
     return jsonify(case_note_response)
