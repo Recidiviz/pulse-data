@@ -19,7 +19,7 @@ someone in CO is eligible for geriatric parole.
 """
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.candidate_populations.general import (
-    incarceration_population,
+    general_incarceration_population,
 )
 from recidiviz.task_eligibility.completion_events.general import release_to_parole
 from recidiviz.task_eligibility.criteria.general import (
@@ -42,7 +42,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     state_code=StateCode.US_CO,
     task_name="TRANSFER_TO_GERIATRIC_PAROLE",
     description=_DESCRIPTION,
-    candidate_population_view_builder=incarceration_population.VIEW_BUILDER,
+    candidate_population_view_builder=general_incarceration_population.VIEW_BUILDER,
     criteria_spans_view_builders=[
         age_64_years_or_older.VIEW_BUILDER,
         incarcerated_at_least_20_years.VIEW_BUILDER,

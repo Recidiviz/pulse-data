@@ -20,7 +20,7 @@ for a transfer to the Expanded Community Reentry Center program.
 """
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.candidate_populations.general import (
-    incarceration_population,
+    general_incarceration_population,
 )
 from recidiviz.task_eligibility.completion_events.general import (
     release_to_community_confinement_supervision,
@@ -60,7 +60,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     state_code=StateCode.US_IX,
     task_name="TRANSFER_TO_XCRC_REQUEST",
     description=_DESCRIPTION,
-    candidate_population_view_builder=incarceration_population.VIEW_BUILDER,
+    candidate_population_view_builder=general_incarceration_population.VIEW_BUILDER,
     criteria_spans_view_builders=[
         in_crc_facility_or_pwcc_unit_1.VIEW_BUILDER,
         in_crc_facility_or_pwcc_unit_1_for_60_days.VIEW_BUILDER,
