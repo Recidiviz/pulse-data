@@ -46,26 +46,24 @@ _QUERY_TEMPLATE = """
     FROM `{project_id}.task_eligibility_criteria_us_mo.d1_sanction_after_most_recent_hearing_materialized`
 """
 
-VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
-    StateSpecificTaskCriteriaBigQueryViewBuilder(
-        state_code=StateCode.US_MO,
-        criteria_name=_CRITERIA_NAME,
-        criteria_spans_query_template=_QUERY_TEMPLATE,
-        description=_DESCRIPTION,
-        meets_criteria_default=True,
-        reasons_fields=[
-            ReasonsField(
-                name="latest_d1_sanction_start_date",
-                type=bigquery.enums.SqlTypeNames.DATE,
-                description="#TODO(#29059): Add reasons field description",
-            ),
-            ReasonsField(
-                name="latest_restrictive_housing_hearing_date",
-                type=bigquery.enums.SqlTypeNames.DATE,
-                description="#TODO(#29059): Add reasons field description",
-            ),
-        ],
-    )
+VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = StateSpecificTaskCriteriaBigQueryViewBuilder(
+    state_code=StateCode.US_MO,
+    criteria_name=_CRITERIA_NAME,
+    criteria_spans_query_template=_QUERY_TEMPLATE,
+    description=_DESCRIPTION,
+    meets_criteria_default=True,
+    reasons_fields=[
+        ReasonsField(
+            name="latest_d1_sanction_start_date",
+            type=bigquery.enums.SqlTypeNames.DATE,
+            description="Latest effective date of a D1 sanction for the person.",
+        ),
+        ReasonsField(
+            name="latest_restrictive_housing_hearing_date",
+            type=bigquery.enums.SqlTypeNames.DATE,
+            description="Latest hearing date for the person in Restrictive Housing.",
+        ),
+    ],
 )
 
 if __name__ == "__main__":

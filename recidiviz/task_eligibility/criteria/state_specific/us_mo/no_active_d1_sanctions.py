@@ -110,12 +110,12 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
             ReasonsField(
                 name="latest_sanction_start_date",
                 type=bigquery.enums.SqlTypeNames.DATE,
-                description="#TODO(#29059): Add reasons field description",
+                description="Latest effective date of a D1 sanction for the person.",
             ),
             ReasonsField(
                 name="latest_sanction_end_date",
                 type=bigquery.enums.SqlTypeNames.DATE,
-                description="#TODO(#29059): Add reasons field description",
+                description="Latest expiration date of a D1 sanction for the person.",
             ),
         ],
     )

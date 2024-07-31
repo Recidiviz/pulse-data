@@ -210,15 +210,17 @@ GROUP BY 1, 2, 3, 4
 
     def sub_criteria(self) -> List[TaskCriteriaBigQueryViewBuilder]:
         return [
-            criteria
-            if isinstance(
-                criteria,
-                (
-                    StateSpecificTaskCriteriaBigQueryViewBuilder,
-                    StateAgnosticTaskCriteriaBigQueryViewBuilder,
-                ),
+            (
+                criteria
+                if isinstance(
+                    criteria,
+                    (
+                        StateSpecificTaskCriteriaBigQueryViewBuilder,
+                        StateAgnosticTaskCriteriaBigQueryViewBuilder,
+                    ),
+                )
+                else criteria.as_criteria_view_builder
             )
-            else criteria.as_criteria_view_builder
             for criteria in self.sub_criteria_list
         ]
 
