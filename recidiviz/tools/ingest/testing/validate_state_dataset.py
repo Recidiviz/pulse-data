@@ -706,7 +706,7 @@ USING({associated_entity_2_pk})
     def run_validation(self) -> None:
         """Runs the full suite of `state` dataset validation jobs."""
         self.bq_client.create_dataset_if_necessary(
-            self.bq_client.dataset_ref_for_id(self.output_dataset_id),
+            self.output_dataset_id,
             default_table_expiration_ms=TEMP_DATAFLOW_DATASET_DEFAULT_TABLE_EXPIRATION_MS,
         )
 

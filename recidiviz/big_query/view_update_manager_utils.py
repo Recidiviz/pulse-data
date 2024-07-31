@@ -54,8 +54,7 @@ def delete_unmanaged_views_and_tables_from_dataset(
     in the set of managed views/tables. It then returns a set of the BigQueryAddress's
     from these unmanaged views/tables that are to be deleted."""
     unmanaged_views_and_tables: Set[BigQueryAddress] = set()
-    dataset_ref = bq_client.dataset_ref_for_id(dataset_id)
-    if not bq_client.dataset_exists(dataset_ref):
+    if not bq_client.dataset_exists(dataset_id):
         raise ValueError(f"Dataset {dataset_id} does not exist in BigQuery")
     for table in list(bq_client.list_tables(dataset_id)):
         table_bq_address = BigQueryAddress.from_list_item(table)
@@ -103,7 +102,7 @@ def cleanup_datasets_and_delete_unmanaged_views(
 
     for dataset_id in datasets_that_have_ever_been_managed:
         if dataset_id not in managed_views_map:
-            if bq_client.dataset_exists(bq_client.dataset_ref_for_id(dataset_id)):
+            if bq_client.dataset_exists(dataset_id):
                 if dry_run:
                     logging.info(
                         "[DRY RUN] Regular run would delete unmanaged dataset %s.",
@@ -114,9 +113,7 @@ def cleanup_datasets_and_delete_unmanaged_views(
                         "Deleting dataset %s, which is no longer managed.",
                         dataset_id,
                     )
-                    bq_client.delete_dataset(
-                        bq_client.dataset_ref_for_id(dataset_id), delete_contents=True
-                    )
+                    bq_client.delete_dataset(dataset_id, delete_contents=True)
             else:
                 logging.info(
                     "Dataset %s isn't being managed and no longer exists in BigQuery. "

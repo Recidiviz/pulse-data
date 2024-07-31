@@ -96,8 +96,6 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
         )
         self.mock_client = self.client_patcher.start().return_value
 
-        self.mock_client.dataset_ref_for_id.return_value = self.mock_dataset
-
         self.mock_view_builder = SimpleBigQueryViewBuilder(
             dataset_id=self.mock_dataset.dataset_id,
             view_id="test_view",

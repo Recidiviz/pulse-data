@@ -194,9 +194,6 @@ class TestViewUpdateManagerUtils(unittest.TestCase):
         ]
         self.project_id = "fake-recidiviz-project"
         self.mock_view_dataset_name = "my_views_dataset"
-        self.mock_dataset_ref_ds_1 = bigquery.dataset.DatasetReference(
-            self.project_id, "dataset_1"
-        )
         self.mock_table_resource_template = {
             "tableReference": {
                 "projectId": self.project_id,
@@ -332,7 +329,6 @@ class TestViewUpdateManagerUtils(unittest.TestCase):
             bigquery.table.TableListItem(self.mock_table_resource_ds_1_table_1),
             bigquery.table.TableListItem(self.mock_table_resource_ds_1_table_2),
         ]
-        self.mock_client.dataset_ref_for_id.return_value = self.mock_dataset_ref_ds_1
         self.mock_client.dataset_exists.return_value = True
         expected_deleted_views: Set[BigQueryAddress] = {
             BigQueryAddress(dataset_id="dataset_1", table_id="table_2")
@@ -340,7 +336,6 @@ class TestViewUpdateManagerUtils(unittest.TestCase):
         deleted_views = delete_unmanaged_views_and_tables_from_dataset(
             self.mock_client, "dataset_1", managed_tables, dry_run=False
         )
-        self.mock_client.dataset_ref_for_id.assert_called()
         self.mock_client.dataset_exists.assert_called()
         self.mock_client.list_tables.assert_called()
         self.mock_client.delete_table.assert_called_with("dataset_1", "table_2")
@@ -355,13 +350,11 @@ class TestViewUpdateManagerUtils(unittest.TestCase):
             bigquery.table.TableListItem(self.mock_table_resource_ds_1_table_1),
             bigquery.table.TableListItem(self.mock_table_resource_ds_1_table_2),
         ]
-        self.mock_client.dataset_ref_for_id.return_value = self.mock_dataset_ref_ds_1
         self.mock_client.dataset_exists.return_value = True
         expected_deleted_views: Set[BigQueryAddress] = set()
         deleted_views = delete_unmanaged_views_and_tables_from_dataset(
             self.mock_client, "dataset_1", managed_tables, dry_run=False
         )
-        self.mock_client.dataset_ref_for_id.assert_called()
         self.mock_client.dataset_exists.assert_called()
         self.mock_client.list_tables.assert_called()
         self.mock_client.delete_table.assert_not_called()
@@ -373,7 +366,6 @@ class TestViewUpdateManagerUtils(unittest.TestCase):
             bigquery.table.TableListItem(self.mock_table_resource_ds_1_table_1),
             bigquery.table.TableListItem(self.mock_table_resource_ds_1_table_2),
         ]
-        self.mock_client.dataset_ref_for_id.return_value = self.mock_dataset_ref_ds_1
         self.mock_client.dataset_exists.return_value = True
         expected_deleted_views: Set[BigQueryAddress] = {
             BigQueryAddress(dataset_id="dataset_1", table_id="table_1"),
@@ -382,7 +374,6 @@ class TestViewUpdateManagerUtils(unittest.TestCase):
         deleted_views = delete_unmanaged_views_and_tables_from_dataset(
             self.mock_client, "dataset_1", managed_tables, dry_run=False
         )
-        self.mock_client.dataset_ref_for_id.assert_called()
         self.mock_client.dataset_exists.assert_called()
         delete_calls = [call("dataset_1", "table_1"), call("dataset_1", "table_2")]
         self.mock_client.list_tables.assert_called()
@@ -392,13 +383,11 @@ class TestViewUpdateManagerUtils(unittest.TestCase):
     def test_delete_unmanaged_views_and_tables_no_views_existing_dataset(self) -> None:
         managed_tables: Set[BigQueryAddress] = set()
         self.mock_client.list_tables.return_value = []
-        self.mock_client.dataset_ref_for_id.return_value = self.mock_dataset_ref_ds_1
         self.mock_client.dataset_exists.return_value = True
         expected_deleted_views: Set[BigQueryAddress] = set()
         deleted_views = delete_unmanaged_views_and_tables_from_dataset(
             self.mock_client, "dataset_1", managed_tables, dry_run=False
         )
-        self.mock_client.dataset_ref_for_id.assert_called()
         self.mock_client.dataset_exists.assert_called()
         self.mock_client.list_tables.assert_called()
         self.mock_client.delete_table.assert_not_called()
@@ -410,7 +399,6 @@ class TestViewUpdateManagerUtils(unittest.TestCase):
             bigquery.table.TableListItem(self.mock_table_resource_ds_1_table_1),
             bigquery.table.TableListItem(self.mock_table_resource_ds_1_table_2),
         ]
-        self.mock_client.dataset_ref_for_id.return_value = self.mock_dataset_ref_ds_1
         self.mock_client.dataset_exists.return_value = True
         expected_deleted_views: Set[BigQueryAddress] = {
             BigQueryAddress(dataset_id="dataset_1", table_id="table_2")
@@ -418,7 +406,6 @@ class TestViewUpdateManagerUtils(unittest.TestCase):
         deleted_views = delete_unmanaged_views_and_tables_from_dataset(
             self.mock_client, "dataset_1", managed_tables, dry_run=True
         )
-        self.mock_client.dataset_ref_for_id.assert_called()
         self.mock_client.dataset_exists.assert_called()
         self.mock_client.list_tables.assert_called()
         self.mock_client.delete_table.assert_not_called()
@@ -430,13 +417,11 @@ class TestViewUpdateManagerUtils(unittest.TestCase):
             bigquery.table.TableListItem(self.mock_table_resource_ds_1_table_1),
             bigquery.table.TableListItem(self.mock_table_resource_ds_1_table_2),
         ]
-        self.mock_client.dataset_ref_for_id.return_value = self.mock_dataset_ref_ds_1
         self.mock_client.dataset_exists.return_value = False
         with self.assertRaises(ValueError):
             delete_unmanaged_views_and_tables_from_dataset(
                 self.mock_client, "dataset_bogus", managed_tables, dry_run=False
             )
-        self.mock_client.dataset_ref_for_id.assert_called()
         self.mock_client.dataset_exists.assert_called()
         self.mock_client.list_tables.assert_not_called()
         self.mock_client.delete_table.assert_not_called()
@@ -447,8 +432,6 @@ class TestViewUpdateManagerUtils(unittest.TestCase):
         datasets_that_have_ever_been_managed = {
             "dataset_1",
         }
-
-        dataset = bigquery.dataset.DatasetReference(self.project_id, "dataset_1")
 
         sample_views = [
             {
@@ -503,7 +486,6 @@ class TestViewUpdateManagerUtils(unittest.TestCase):
             bigquery.table.TableListItem(mock_table_resource_ds_1_table_2),
             bigquery.table.TableListItem(mock_table_resource_ds_1_table_3),
         ]
-        self.mock_client.dataset_ref_for_id.return_value = dataset
         self.mock_client.dataset_exists.return_value = True
 
         views_to_update = [view_builder.build() for view_builder in mock_view_builders]
@@ -531,9 +513,6 @@ class TestViewUpdateManagerUtils(unittest.TestCase):
             "dataset_1",
             "dataset_2",
         }
-
-        dataset = bigquery.dataset.DatasetReference(self.project_id, "dataset_1")
-        dataset_2 = bigquery.dataset.DatasetReference(self.project_id, "dataset_2")
 
         mock_view_builders = [
             SimpleBigQueryViewBuilder(
@@ -587,12 +566,12 @@ class TestViewUpdateManagerUtils(unittest.TestCase):
         }
 
         def mock_list_tables(dataset_id: str) -> list[bigquery.table.TableListItem]:
-            if dataset_id == dataset.dataset_id:
+            if dataset_id == "dataset_1":
                 return [
                     bigquery.table.TableListItem(mock_table_resource_ds_1_table),
                     bigquery.table.TableListItem(mock_table_resource_ds_1_table_bogus),
                 ]
-            if dataset_id == dataset_2.dataset_id:
+            if dataset_id == "dataset_2":
                 return [
                     bigquery.table.TableListItem(mock_table_resource_ds_2_table),
                     bigquery.table.TableListItem(mock_table_resource_ds_2_table_bogus),
@@ -601,14 +580,6 @@ class TestViewUpdateManagerUtils(unittest.TestCase):
 
         self.mock_client.list_tables.side_effect = mock_list_tables
 
-        def get_dataset_ref(dataset_id: str) -> bigquery.dataset.DatasetReference:
-            if dataset_id == dataset.dataset_id:
-                return dataset
-            if dataset_id == dataset_2.dataset_id:
-                return dataset_2
-            raise ValueError(f"No dataset for id: {dataset_id}")
-
-        self.mock_client.dataset_ref_for_id.side_effect = get_dataset_ref
         self.mock_client.dataset_exists.return_value = True
 
         views_to_update = [view_builder.build() for view_builder in mock_view_builders]
@@ -639,8 +610,6 @@ class TestViewUpdateManagerUtils(unittest.TestCase):
         datasets_that_have_ever_been_managed = {
             "dataset_1",
         }
-
-        dataset = bigquery.dataset.DatasetReference(self.project_id, "dataset_1")
 
         sample_views = [
             {
@@ -687,7 +656,6 @@ class TestViewUpdateManagerUtils(unittest.TestCase):
             bigquery.table.TableListItem(mock_table_resource_ds_1_table_1),
             bigquery.table.TableListItem(mock_table_resource_ds_1_table_2),
         ]
-        self.mock_client.dataset_ref_for_id.return_value = dataset
         self.mock_client.dataset_exists.return_value = True
 
         views_to_update = [view_builder.build() for view_builder in mock_view_builders]
@@ -715,9 +683,6 @@ class TestViewUpdateManagerUtils(unittest.TestCase):
             "dataset_1",
             "bogus_dataset",
         }
-
-        dataset = bigquery.dataset.DatasetReference(self.project_id, "dataset_1")
-        dataset_2 = bigquery.dataset.DatasetReference(self.project_id, "bogus_dataset")
 
         sample_views = [
             {
@@ -752,14 +717,6 @@ class TestViewUpdateManagerUtils(unittest.TestCase):
             bigquery.table.TableListItem(mock_table_resource_ds_1_table_1),
         ]
 
-        def get_dataset_ref(dataset_id: str) -> bigquery.dataset.DatasetReference:
-            if dataset_id == dataset.dataset_id:
-                return dataset
-            if dataset_id == dataset_2.dataset_id:
-                return dataset_2
-            raise ValueError(f"No dataset for id: {dataset_id}")
-
-        self.mock_client.dataset_ref_for_id.side_effect = get_dataset_ref
         self.mock_client.dataset_exists.return_value = True
 
         views_to_update = [view_builder.build() for view_builder in mock_view_builders]
@@ -778,7 +735,7 @@ class TestViewUpdateManagerUtils(unittest.TestCase):
         )
 
         self.mock_client.delete_dataset.assert_called_with(
-            self.mock_client.dataset_ref_for_id("bogus_dataset"), delete_contents=True
+            "bogus_dataset", delete_contents=True
         )
         self.mock_client.list_tables.assert_called()
         self.mock_client.delete_table.assert_not_called()
@@ -789,9 +746,6 @@ class TestViewUpdateManagerUtils(unittest.TestCase):
         datasets_that_have_ever_been_managed = {
             "dataset_1",
         }
-
-        dataset = bigquery.dataset.DatasetReference(self.project_id, "dataset_1")
-        dataset_2 = bigquery.dataset.DatasetReference(self.project_id, "bogus_dataset")
 
         mock_view_builders = [
             SimpleBigQueryViewBuilder(
@@ -829,26 +783,17 @@ class TestViewUpdateManagerUtils(unittest.TestCase):
         }
 
         def mock_list_tables(dataset_id: str) -> list[bigquery.table.TableListItem]:
-            if dataset_id == dataset.dataset_id:
+            if dataset_id == "dataset_1":
                 return [
                     bigquery.table.TableListItem(mock_table_resource_ds_1_table_1),
                 ]
-            if dataset_id == dataset_2.dataset_id:
+            if dataset_id == "bogus_dataset":
                 return [
                     bigquery.table.TableListItem(mock_table_resource_ds_2_table_1),
                 ]
             raise ValueError(f"No tables for id: {dataset_id}")
 
         self.mock_client.list_tables.side_effect = mock_list_tables
-
-        def get_dataset_ref(dataset_id: str) -> bigquery.dataset.DatasetReference:
-            if dataset_id == dataset.dataset_id:
-                return dataset
-            if dataset_id == dataset_2.dataset_id:
-                return dataset_2
-            raise ValueError(f"No dataset for id: {dataset_id}")
-
-        self.mock_client.dataset_ref_for_id.side_effect = get_dataset_ref
         self.mock_client.dataset_exists.return_value = True
 
         views_to_update = [view_builder.build() for view_builder in mock_view_builders]
@@ -878,11 +823,6 @@ class TestViewUpdateManagerUtils(unittest.TestCase):
             "dataset_unmanaged",
         }
 
-        dataset = bigquery.dataset.DatasetReference(self.project_id, "dataset_1")
-        dataset_2 = bigquery.dataset.DatasetReference(
-            self.project_id, "dataset_unmanaged"
-        )
-
         mock_view_builders = [
             SimpleBigQueryViewBuilder(
                 dataset_id="dataset_1",
@@ -906,17 +846,8 @@ class TestViewUpdateManagerUtils(unittest.TestCase):
             bigquery.table.TableListItem(mock_table_resource_ds_1_table_1),
         ]
 
-        def get_dataset_ref(dataset_id: str) -> bigquery.dataset.DatasetReference:
-            if dataset_id == dataset.dataset_id:
-                return dataset
-            if dataset_id == dataset_2.dataset_id:
-                return dataset_2
-            raise ValueError(f"No dataset for id: {dataset_id}")
-
-        self.mock_client.dataset_ref_for_id.side_effect = get_dataset_ref
-
-        def mock_dataset_exists(dataset_ref: bigquery.dataset.DatasetReference) -> bool:
-            if dataset_ref == dataset:
+        def mock_dataset_exists(dataset_id: str) -> bool:
+            if dataset_id == "dataset_1":
                 return True
             return False
 
@@ -950,12 +881,6 @@ class TestViewUpdateManagerUtils(unittest.TestCase):
             "dataset_2",
             "dataset_unmanaged",
         }
-
-        dataset = bigquery.dataset.DatasetReference(self.project_id, "dataset_1")
-        dataset_2 = bigquery.dataset.DatasetReference(self.project_id, "dataset_2")
-        dataset_3 = bigquery.dataset.DatasetReference(
-            self.project_id, "dataset_unmanaged"
-        )
 
         mock_view_builders = [
             SimpleBigQueryViewBuilder(
@@ -1009,12 +934,12 @@ class TestViewUpdateManagerUtils(unittest.TestCase):
         }
 
         def mock_list_tables(dataset_id: str) -> list[bigquery.table.TableListItem]:
-            if dataset_id == dataset.dataset_id:
+            if dataset_id == "dataset_1":
                 return [
                     bigquery.table.TableListItem(mock_table_resource_ds_1_table),
                     bigquery.table.TableListItem(mock_table_resource_ds_1_table_bogus),
                 ]
-            if dataset_id == dataset_2.dataset_id:
+            if dataset_id == "dataset_2":
                 return [
                     bigquery.table.TableListItem(mock_table_resource_ds_2_table),
                     bigquery.table.TableListItem(mock_table_resource_ds_2_table_bogus),
@@ -1023,16 +948,6 @@ class TestViewUpdateManagerUtils(unittest.TestCase):
 
         self.mock_client.list_tables.side_effect = mock_list_tables
 
-        def get_dataset_ref(dataset_id: str) -> bigquery.dataset.DatasetReference:
-            if dataset_id == dataset.dataset_id:
-                return dataset
-            if dataset_id == dataset_2.dataset_id:
-                return dataset_2
-            if dataset_id == dataset_3.dataset_id:
-                return dataset_3
-            raise ValueError(f"No dataset for id: {dataset_id}")
-
-        self.mock_client.dataset_ref_for_id.side_effect = get_dataset_ref
         self.mock_client.dataset_exists.return_value = True
 
         views_to_update = [view_builder.build() for view_builder in mock_view_builders]

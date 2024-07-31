@@ -42,23 +42,22 @@ class BigQueryRowStreamer:
         """
         self._create_or_update_table_if_necessary()
         self.bq_client.stream_into_table(
-            self.bq_client.dataset_ref_for_id(self.table_address.dataset_id),
-            self.table_address.table_id,
-            rows,
+            self.table_address.dataset_id, self.table_address.table_id, rows
         )
 
     def _create_or_update_table_if_necessary(self) -> None:
-        dataset_ref = self.bq_client.dataset_ref_for_id(self.table_address.dataset_id)
-        self.bq_client.create_dataset_if_necessary(dataset_ref)
-        if not self.bq_client.table_exists(dataset_ref, self.table_address.table_id):
+        self.bq_client.create_dataset_if_necessary(self.table_address.dataset_id)
+        if not self.bq_client.table_exists(
+            self.table_address.dataset_id, self.table_address.table_id
+        ):
             self.bq_client.create_table_with_schema(
-                dataset_ref.dataset_id,
+                self.table_address.dataset_id,
                 self.table_address.table_id,
                 schema_fields=self.table_schema,
             )
         else:
             self.bq_client.update_schema(
-                dataset_ref.dataset_id,
+                self.table_address.dataset_id,
                 self.table_address.table_id,
                 desired_schema_fields=self.table_schema,
                 allow_field_deletions=False,

@@ -106,9 +106,7 @@ class RawTableQueryBuilderTest(BigQueryEmulatorTestCase):
 
     def load_empty_raw_table(self, raw_file_config: DirectIngestRawFileConfig) -> None:
         dataset_id = "us_xx_raw_data"
-        self.bq_client.create_dataset_if_necessary(
-            dataset_ref=self.bq_client.dataset_ref_for_id(dataset_id)
-        )
+        self.bq_client.create_dataset_if_necessary(dataset_id)
         schema_fields = RawDataTableBigQuerySchemaBuilder.build_bq_schmea_for_config(
             raw_file_config=raw_file_config,
         )

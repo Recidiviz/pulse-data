@@ -45,10 +45,9 @@ def _update_raw_data_table_schema_to_new_schema(
         instance=instance,
         sandbox_dataset_prefix=sandbox_dataset_prefix,
     )
-    raw_data_dataset_ref = big_query_client.dataset_ref_for_id(raw_data_dataset_id)
 
     try:
-        if big_query_client.table_exists(raw_data_dataset_ref, raw_file_tag):
+        if big_query_client.table_exists(raw_data_dataset_id, raw_file_tag):
             big_query_client.update_schema(
                 raw_data_dataset_id, raw_file_tag, schema, allow_field_deletions=False
             )

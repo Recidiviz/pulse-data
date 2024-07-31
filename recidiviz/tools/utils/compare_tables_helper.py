@@ -277,12 +277,9 @@ def compare_table_or_view(
     output_project_id = address_original.project_id
     # Setup + determine which columns we'll be comparing
     bq_client = BigQueryClientImpl(project_id=output_project_id)
-    comparison_output_dataset_ref = bq_client.dataset_ref_for_id(
-        comparison_output_dataset_id
-    )
 
     bq_client.create_dataset_if_necessary(
-        comparison_output_dataset_ref, TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS
+        comparison_output_dataset_id, TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS
     )
 
     columns_df = _get_columns_info_df(address_original)

@@ -174,11 +174,8 @@ def compare_dataflow_output_to_sandbox(
     sandbox_comparison_output_dataset_id = (
         sandbox_dataset_prefix + "_dataflow_comparison_output"
     )
-    sandbox_comparison_output_dataset_ref = bq_client.dataset_ref_for_id(
-        sandbox_comparison_output_dataset_id
-    )
 
-    if bq_client.dataset_exists(sandbox_comparison_output_dataset_ref) and any(
+    if bq_client.dataset_exists(sandbox_comparison_output_dataset_id) and any(
         bq_client.list_tables(sandbox_comparison_output_dataset_id)
     ):
         if not allow_overwrite:
@@ -200,7 +197,7 @@ def compare_dataflow_output_to_sandbox(
                 bq_client.delete_table(table.dataset_id, table.table_id)
 
     bq_client.create_dataset_if_necessary(
-        sandbox_comparison_output_dataset_ref, TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS
+        sandbox_comparison_output_dataset_id, TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS
     )
 
     query_jobs: List[Tuple[QueryJob, str]] = []
@@ -254,7 +251,7 @@ def compare_dataflow_output_to_sandbox(
         query_job.result()
 
         output_table = bq_client.get_table(
-            sandbox_comparison_output_dataset_ref, output_table_id
+            sandbox_comparison_output_dataset_id, output_table_id
         )
 
         if output_table.num_rows == 0:
@@ -283,10 +280,10 @@ def compare_dataflow_output_to_sandbox(
     else:
         logging.info(
             "Dataflow output identical. Deleting dataset %s.",
-            sandbox_comparison_output_dataset_ref.dataset_id,
+            sandbox_comparison_output_dataset_id,
         )
         bq_client.delete_dataset(
-            sandbox_comparison_output_dataset_ref, delete_contents=True
+            sandbox_comparison_output_dataset_id, delete_contents=True
         )
 
 

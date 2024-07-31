@@ -266,10 +266,7 @@ def _get_all_views_changed_on_branch(
         v: BigQueryView, _parent_results: Dict[BigQueryView, Optional[ViewChangeType]]
     ) -> Optional[ViewChangeType]:
         try:
-            t = bq_client.get_table(
-                bq_client.dataset_ref_for_id(v.address.dataset_id),
-                v.address.table_id,
-            )
+            t = bq_client.get_table(v.address.dataset_id, v.address.table_id)
         except exceptions.NotFound:
             if not v.should_deploy():
                 return None

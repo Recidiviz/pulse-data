@@ -83,12 +83,12 @@ DEFAULT_QUERY_RUN_DATETIME = datetime.datetime.utcnow()
 class RawDataFixture:
     config: DirectIngestViewRawFileDependency
     fixture_data_df: pd.DataFrame
-    bq_dataset_str: str
+    bq_dataset_id: str
 
     @property
     def address(self) -> BigQueryAddress:
         return BigQueryAddress(
-            dataset_id=self.bq_dataset_str,
+            dataset_id=self.bq_dataset_id,
             table_id=self.config.file_tag,
         )
 
@@ -105,11 +105,8 @@ class DirectIngestRawDataFixtureLoader:
     def __init__(self, state_code: StateCode, emulator_test: BigQueryEmulatorTestCase):
         self.state_code = state_code
         self.bq_client = emulator_test.bq_client
-        self.raw_tables_dataset_str = raw_tables_dataset_for_region(
+        self.raw_tables_dataset_id = raw_tables_dataset_for_region(
             state_code=self.state_code, instance=DirectIngestInstance.PRIMARY
-        )
-        self.raw_tables_dataset = self.bq_client.dataset_ref_for_id(
-            self.raw_tables_dataset_str
         )
         self.raw_file_config = get_region_raw_file_config(self.state_code.value)
 
@@ -125,7 +122,9 @@ class DirectIngestRawDataFixtureLoader:
         For example, an ingest test named "test_person_001" will look for fixture
         files called "person_001.csv".
         """
-        self.bq_client.create_dataset_if_necessary(dataset_ref=self.raw_tables_dataset)
+        self.bq_client.create_dataset_if_necessary(
+            dataset_id=self.raw_tables_dataset_id
+        )
         with futures.ThreadPoolExecutor(
             # Conservatively allow only half as many workers as allowed connections.
             # Lower this number if we see "urllib3.connectionpool:Connection pool is
@@ -148,7 +147,7 @@ class DirectIngestRawDataFixtureLoader:
             schema_fields=fixture.schema,
         )
         self.bq_client.stream_into_table(
-            self.raw_tables_dataset,
+            fixture.address.dataset_id,
             fixture.address.table_id,
             rows=fixture.fixture_data_df.to_dict("records"),
         )
@@ -167,7 +166,7 @@ class DirectIngestRawDataFixtureLoader:
         for config in self._raw_dependencies_for_ingest_views(ingest_views):
             yield RawDataFixture(
                 config=config,
-                bq_dataset_str=self.raw_tables_dataset_str,
+                bq_dataset_id=self.raw_tables_dataset_id,
                 fixture_data_df=self._read_raw_data_fixture(
                     config,
                     ingest_test_identifier,

@@ -29,8 +29,6 @@ import logging
 import sys
 from typing import List, Tuple
 
-from google.cloud import bigquery
-
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.big_query.big_query_view import BigQueryView
 
@@ -49,21 +47,16 @@ def copy_bq_views(
 
     # Construct a BigQuery client with the destination_project_id
     destination_client = BigQueryClientImpl(project_id=destination_project_id)
-    destination_dataset = bigquery.DatasetReference(
-        destination_project_id, destination_dataset_id
-    )
     tables_in_source_dataset = source_client.list_tables(source_dataset_id)
 
     for table_ref in tables_in_source_dataset:
-        table = source_client.get_table(
-            source_client.dataset_ref_for_id(table_ref.dataset_id), table_ref.table_id
-        )
+        table = source_client.get_table(table_ref.dataset_id, table_ref.table_id)
         view_query = table.view_query
 
         # Only copy this view if there is a view_query to replicate and the view doesn't already exist in the
         # destination dataset
         if view_query and not destination_client.table_exists(
-            destination_dataset, table_id=table.table_id
+            destination_dataset_id, table_id=table.table_id
         ):
             # Remove any references to the source_project_id from the view_query
             updated_view_query = view_query.replace(source_project_id, "{project_id}")
@@ -79,7 +72,7 @@ def copy_bq_views(
                     view_query_template=updated_view_query,
                 ),
                 destination_client=destination_client,
-                destination_dataset_ref=destination_dataset,
+                destination_dataset_id=destination_dataset_id,
             )
 
 

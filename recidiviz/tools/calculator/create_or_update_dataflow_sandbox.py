@@ -83,9 +83,8 @@ def create_or_update_source_table_collections(
     bq_client = BigQueryClientImpl()
     for source_table_collection in source_table_collections:
         sandbox_dataset_id = source_table_collection.dataset_id
-        sandbox_dataset_ref = bq_client.dataset_ref_for_id(sandbox_dataset_id)
 
-        if bq_client.dataset_exists(sandbox_dataset_ref) and not allow_overwrite:
+        if bq_client.dataset_exists(sandbox_dataset_id) and not allow_overwrite:
             raise ValueError(
                 f"Dataset {sandbox_dataset_id} already exists in project {bq_client.project_id}. To overwrite, set --allow_overwrite.",
             )

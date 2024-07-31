@@ -152,11 +152,8 @@ def compare_metric_view_output_to_sandbox(
     sandbox_comparison_output_dataset_id = (
         sandbox_dataset_prefix + "_metric_view_comparison_output"
     )
-    sandbox_comparison_output_dataset_ref = bq_client.dataset_ref_for_id(
-        sandbox_comparison_output_dataset_id
-    )
 
-    if bq_client.dataset_exists(sandbox_comparison_output_dataset_ref) and any(
+    if bq_client.dataset_exists(sandbox_comparison_output_dataset_id) and any(
         bq_client.list_tables(sandbox_comparison_output_dataset_id)
     ):
         raise ValueError(
@@ -165,7 +162,7 @@ def compare_metric_view_output_to_sandbox(
         )
 
     bq_client.create_dataset_if_necessary(
-        sandbox_comparison_output_dataset_ref, TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS
+        sandbox_comparison_output_dataset_id, TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS
     )
 
     query_jobs: List[Tuple[QueryJob, str]] = []
@@ -190,9 +187,7 @@ def compare_metric_view_output_to_sandbox(
 
         sandbox_dataset_id = sandbox_dataset_prefix + "_" + view_builder.dataset_id
 
-        if not bq_client.dataset_exists(
-            bq_client.dataset_ref_for_id(sandbox_dataset_id)
-        ):
+        if not bq_client.dataset_exists(sandbox_dataset_id):
             raise ValueError(
                 f"Trying to compare output to a sandbox dataset that does not exist: "
                 f"{bq_client.project_id}.{sandbox_dataset_id}"
@@ -207,22 +202,18 @@ def compare_metric_view_output_to_sandbox(
                 view_builder.view_id,
             )
 
-        base_dataset_ref = bq_client.dataset_ref_for_id(base_dataset_id)
-
         if not check_determinism and not bq_client.table_exists(
-            base_dataset_ref, base_view_id
+            base_dataset_id, base_view_id
         ):
             logging.warning(
                 "View %s.%s does not exist. Skipping output comparison.",
-                base_dataset_ref.dataset_id,
+                base_dataset_id,
                 base_view_id,
             )
             skipped_views.append(f"{base_dataset_id}.{base_view_id}")
             continue
 
-        if not bq_client.table_exists(
-            bq_client.dataset_ref_for_id(sandbox_dataset_id), base_view_id
-        ):
+        if not bq_client.table_exists(sandbox_dataset_id, base_view_id):
             logging.warning(
                 "View %s.%s does not exist in sandbox. Skipping output comparison.",
                 sandbox_dataset_id,
@@ -249,7 +240,7 @@ def compare_metric_view_output_to_sandbox(
         query_job.result()
 
         output_table = bq_client.get_table(
-            sandbox_comparison_output_dataset_ref, output_table_id
+            sandbox_comparison_output_dataset_id, output_table_id
         )
 
         if output_table.num_rows == 0:
@@ -296,10 +287,10 @@ def compare_metric_view_output_to_sandbox(
         logging.info(
             "View output %s. Deleting dataset %s.",
             output_message,
-            sandbox_comparison_output_dataset_ref.dataset_id,
+            sandbox_comparison_output_dataset_id,
         )
         bq_client.delete_dataset(
-            sandbox_comparison_output_dataset_ref, delete_contents=True
+            sandbox_comparison_output_dataset_id, delete_contents=True
         )
 
 
@@ -316,8 +307,6 @@ def _view_output_comparison_job(
     """Builds and executes the query that compares the base and sandbox views. Returns a tuple with the the QueryJob and
     the table_id where the output will be written to in the sandbox_comparison_output_dataset_id dataset.
     """
-    base_dataset_ref = bq_client.dataset_ref_for_id(base_dataset_id)
-    sandbox_dataset_ref = bq_client.dataset_ref_for_id(sandbox_dataset_id)
     output_table_id = f"{view_builder.dataset_id}--{base_view_id}"
 
     if check_determinism:
@@ -326,14 +315,14 @@ def _view_output_comparison_job(
         preserve_column_types = True
     else:
         # Columns in deployed view
-        deployed_base_view = bq_client.get_table(base_dataset_ref, view_builder.view_id)
+        deployed_base_view = bq_client.get_table(base_dataset_id, view_builder.view_id)
         # If there are nested columns in the deployed view then we can't allow column type changes
         preserve_column_types = _table_contains_nested_columns(deployed_base_view)
         base_columns_to_compare = set(field.name for field in deployed_base_view.schema)
 
         # Columns in sandbox view
         deployed_sandbox_view = bq_client.get_table(
-            sandbox_dataset_ref, view_builder.view_id
+            sandbox_dataset_id, view_builder.view_id
         )
         if not preserve_column_types:
             # If there are nested columns in the sandbox view then we can't allow column type changes

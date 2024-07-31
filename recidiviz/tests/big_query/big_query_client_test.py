@@ -118,13 +118,13 @@ class BigQueryClientImplTest(unittest.TestCase):
         """Check that a dataset is created if it does not exist."""
         self.mock_client.get_dataset.side_effect = exceptions.NotFound("!")
         self.mock_client.create_dataset.return_value.access_entries = []
-        self.bq_client.create_dataset_if_necessary(self.mock_dataset_ref)
+        self.bq_client.create_dataset_if_necessary(self.mock_dataset_id)
         self.mock_client.create_dataset.assert_called()
 
     def test_create_dataset_if_necessary_dataset_exists(self) -> None:
         """Check that a dataset is not created if it already exists."""
         self.mock_client.get_dataset.side_effect = None
-        self.bq_client.create_dataset_if_necessary(self.mock_dataset_ref)
+        self.bq_client.create_dataset_if_necessary(self.mock_dataset_id)
         self.mock_client.create_dataset.assert_not_called()
 
     def test_create_dataset_if_necessary_table_expiration(self) -> None:
@@ -134,7 +134,7 @@ class BigQueryClientImplTest(unittest.TestCase):
         self.mock_client.create_dataset.return_value.access_entries = []
 
         self.bq_client.create_dataset_if_necessary(
-            self.mock_dataset_ref, default_table_expiration_ms=6000
+            self.mock_dataset_id, default_table_expiration_ms=6000
         )
 
         self.mock_client.create_dataset.assert_called()
@@ -144,7 +144,7 @@ class BigQueryClientImplTest(unittest.TestCase):
         self.mock_client.create_dataset.return_value.access_entries = []
 
         with freeze_time(datetime.datetime(2020, 1, 1, 1, 1, 1)):
-            self.bq_client.create_dataset_if_necessary(self.mock_dataset_ref)
+            self.bq_client.create_dataset_if_necessary(self.mock_dataset_id)
 
         call_args_list = self.mock_client.update_dataset.call_args_list
         self.assertEqual(1, len(call_args_list))
@@ -168,7 +168,7 @@ class BigQueryClientImplTest(unittest.TestCase):
         ]
 
         with freeze_time(datetime.datetime(2020, 1, 1, 1, 1, 1)):
-            self.bq_client.create_dataset_if_necessary(self.mock_dataset_ref)
+            self.bq_client.create_dataset_if_necessary(self.mock_dataset_id)
 
         call_args_list = self.mock_client.update_dataset.call_args_list
         self.assertEqual(1, len(call_args_list))
@@ -192,7 +192,7 @@ class BigQueryClientImplTest(unittest.TestCase):
         ]
 
         with freeze_time(datetime.datetime(2020, 1, 1, 1, 1, 1)):
-            self.bq_client.create_dataset_if_necessary(self.mock_dataset_ref)
+            self.bq_client.create_dataset_if_necessary(self.mock_dataset_id)
 
         call_args_list = self.mock_client.update_dataset.call_args_list
         self.assertEqual(1, len(call_args_list))
@@ -216,7 +216,7 @@ class BigQueryClientImplTest(unittest.TestCase):
         ]
 
         with freeze_time(datetime.datetime(2020, 1, 1, 1, 1, 1)):
-            self.bq_client.create_dataset_if_necessary(self.mock_dataset_ref)
+            self.bq_client.create_dataset_if_necessary(self.mock_dataset_id)
 
         call_args_list = self.mock_client.update_dataset.call_args_list
         self.assertEqual(1, len(call_args_list))
@@ -240,7 +240,7 @@ class BigQueryClientImplTest(unittest.TestCase):
         ]
 
         with freeze_time(datetime.datetime(2020, 1, 1, 1, 1, 1)):
-            self.bq_client.create_dataset_if_necessary(self.mock_dataset_ref)
+            self.bq_client.create_dataset_if_necessary(self.mock_dataset_id)
 
         call_args_list = self.mock_client.update_dataset.call_args_list
         self.assertEqual(1, len(call_args_list))
@@ -256,12 +256,12 @@ class BigQueryClientImplTest(unittest.TestCase):
     def test_multiple_client_locations(self) -> None:
         other_location_bq_client = BigQueryClientImpl(region_override="us-east1")
 
-        self.bq_client.get_table(self.mock_dataset_ref, self.mock_table_id)
+        self.bq_client.get_table(self.mock_dataset_id, self.mock_table_id)
         self.mock_client.get_table.assert_called()
         self.other_mock_client.get_table.assert_not_called()
 
         # The client that was created with a different location will use a new client
-        other_location_bq_client.dataset_exists(self.mock_dataset_ref)
+        other_location_bq_client.dataset_exists(self.mock_dataset_id)
         self.other_mock_client.get_dataset.assert_called()
         self.mock_client.get_dataset.assert_not_called()
 
@@ -278,14 +278,14 @@ class BigQueryClientImplTest(unittest.TestCase):
         """Check that table_exists returns True if the table exists."""
         self.mock_client.get_table.side_effect = None
         self.assertTrue(
-            self.bq_client.table_exists(self.mock_dataset_ref, self.mock_table_id)
+            self.bq_client.table_exists(self.mock_dataset_id, self.mock_table_id)
         )
 
     def test_table_exists_does_not_exist(self) -> None:
         """Check that table_exists returns False if the table does not exist."""
         self.mock_client.get_table.side_effect = exceptions.NotFound("!")
         table_exists = self.bq_client.table_exists(
-            self.mock_dataset_ref, self.mock_table_id
+            self.mock_dataset_id, self.mock_table_id
         )
         self.assertFalse(table_exists)
 
@@ -367,7 +367,7 @@ class BigQueryClientImplTest(unittest.TestCase):
         view."""
         self.assertIsNotNone(
             self.bq_client.export_table_to_cloud_storage_async(
-                source_table_dataset_ref=self.mock_dataset_ref,
+                source_table_dataset_id=self.mock_dataset_id,
                 source_table_id="source-table",
                 destination_uri=f"gs://{self.mock_project_id}-bucket/destination_path.json",
                 destination_format=bigquery.DestinationFormat.NEWLINE_DELIMITED_JSON,
@@ -383,7 +383,7 @@ class BigQueryClientImplTest(unittest.TestCase):
         with self.assertLogs(level="WARNING"):
             self.assertIsNone(
                 self.bq_client.export_table_to_cloud_storage_async(
-                    source_table_dataset_ref=self.mock_dataset_ref,
+                    source_table_dataset_id=self.mock_dataset_id,
                     source_table_id="source-table",
                     destination_uri=f"gs://{self.mock_project_id}-bucket/destination_path.json",
                     destination_format=bigquery.DestinationFormat.NEWLINE_DELIMITED_JSON,
@@ -398,7 +398,7 @@ class BigQueryClientImplTest(unittest.TestCase):
         self.mock_client.get_dataset.side_effect = exceptions.NotFound("!")
 
         self.bq_client.load_table_from_cloud_storage_async(
-            destination_dataset_ref=self.mock_dataset_ref,
+            destination_dataset_id=self.mock_dataset_id,
             destination_table_id=self.mock_table_id,
             destination_table_schema=[
                 SchemaField(
@@ -420,7 +420,7 @@ class BigQueryClientImplTest(unittest.TestCase):
         parent dataset if it already exists."""
 
         self.bq_client.load_table_from_cloud_storage_async(
-            destination_dataset_ref=self.mock_dataset_ref,
+            destination_dataset_id=self.mock_dataset_id,
             destination_table_id=self.mock_table_id,
             destination_table_schema=[
                 SchemaField(
@@ -442,7 +442,7 @@ class BigQueryClientImplTest(unittest.TestCase):
         self.mock_client.get_dataset.side_effect = exceptions.NotFound("!")
 
         self.bq_client.load_into_table_from_dataframe_async(
-            destination_dataset_ref=self.mock_dataset_ref,
+            destination_dataset_id=self.mock_dataset_id,
             destination_table_id=self.mock_table_id,
             source=pd.DataFrame({"a": [1, 2]}),
         )
@@ -455,7 +455,7 @@ class BigQueryClientImplTest(unittest.TestCase):
         parent dataset if it already exists."""
 
         self.bq_client.load_into_table_from_dataframe_async(
-            destination_dataset_ref=self.mock_dataset_ref,
+            destination_dataset_id=self.mock_dataset_id,
             destination_table_id=self.mock_table_id,
             source=pd.DataFrame({"a": [1, 2]}),
         )
@@ -469,7 +469,7 @@ class BigQueryClientImplTest(unittest.TestCase):
         self.mock_client.get_dataset.side_effect = exceptions.NotFound("!")
 
         self.bq_client.load_into_table_from_file_async(
-            destination_dataset_ref=self.mock_dataset_ref,
+            destination_dataset_id=self.mock_dataset_id,
             destination_table_id=self.mock_table_id,
             source=io.StringIO("data"),
             schema=self.mock_schema,
@@ -483,7 +483,7 @@ class BigQueryClientImplTest(unittest.TestCase):
         parent dataset if it already exists."""
 
         self.bq_client.load_into_table_from_file_async(
-            destination_dataset_ref=self.mock_dataset_ref,
+            destination_dataset_id=self.mock_dataset_id,
             destination_table_id=self.mock_table_id,
             source=io.StringIO("data"),
             schema=self.mock_schema,
@@ -798,7 +798,7 @@ class BigQueryClientImplTest(unittest.TestCase):
         self.mock_client.get_dataset.side_effect = exceptions.NotFound("!")
 
         self.bq_client.load_table_from_cloud_storage_async(
-            destination_dataset_ref=self.mock_dataset_ref,
+            destination_dataset_id=self.mock_dataset_id,
             destination_table_id=self.mock_table_id,
             destination_table_schema=[SchemaField("my_column", "STRING", "NULLABLE")],
             source_uris=["gs://bucket/export-uri"],
@@ -812,7 +812,7 @@ class BigQueryClientImplTest(unittest.TestCase):
         self.mock_client.insert_rows.return_value = None
 
         self.bq_client.stream_into_table(
-            dataset_ref=self.mock_dataset_ref,
+            dataset_id=self.mock_dataset_id,
             table_id=self.mock_table_id,
             rows=[{"a": 1, "b": "foo"}, {"a": 2, "b": "bar"}],
         )
@@ -826,7 +826,7 @@ class BigQueryClientImplTest(unittest.TestCase):
 
         with self.assertRaisesRegex(ValueError, error_message):
             self.bq_client.stream_into_table(
-                dataset_ref=self.mock_dataset_ref,
+                dataset_id=self.mock_dataset_id,
                 table_id=self.mock_table_id,
                 rows=[{"a": 1, "b": "foo"}, {"a": 2, "b": "bar"}],
             )
@@ -841,7 +841,7 @@ class BigQueryClientImplTest(unittest.TestCase):
 
         with self.assertRaisesRegex(RuntimeError, "Incorrect columns"):
             self.bq_client.stream_into_table(
-                dataset_ref=self.mock_dataset_ref,
+                dataset_id=self.mock_dataset_id,
                 table_id=self.mock_table_id,
                 rows=[{"a": 1, "b": "foo"}, {"a": 2, "b": "bar"}],
             )
@@ -851,7 +851,7 @@ class BigQueryClientImplTest(unittest.TestCase):
 
     def test_load_into_table_async(self) -> None:
         self.bq_client.load_into_table_async(
-            dataset_ref=self.mock_dataset_ref,
+            dataset_id=self.mock_dataset_id,
             table_id=self.mock_table_id,
             rows=[{"a": 1, "b": "foo"}, {"a": 2, "b": "bar"}],
         )
@@ -865,7 +865,7 @@ class BigQueryClientImplTest(unittest.TestCase):
 
         with self.assertRaisesRegex(ValueError, error_message):
             self.bq_client.load_into_table_async(
-                dataset_ref=self.mock_dataset_ref,
+                dataset_id=self.mock_dataset_id,
                 table_id=self.mock_table_id,
                 rows=[{"a": 1, "b": "foo"}, {"a": 2, "b": "bar"}],
             )

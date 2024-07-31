@@ -63,9 +63,7 @@ def cluster_table(
     clustering fields specified, and inserting the data back into the newly created
     table.
     """
-    dataset_ref = bq_client.dataset_ref_for_id(dataset_id)
-
-    table = bq_client.get_table(dataset_ref, table_id)
+    table = bq_client.get_table(dataset_id, table_id)
     existing_schema = table.schema
     existing_fields = {field.name for field in existing_schema}
     if extra_fields := set(fields_to_cluster).difference(existing_fields):
@@ -89,9 +87,8 @@ def cluster_table(
         )
 
     tmp_dataset_id = f"tmp_{str(uuid.uuid4())[:6]}_{dataset_id}"
-    tmp_dataset_ref = bq_client.dataset_ref_for_id(tmp_dataset_id)
     bq_client.create_dataset_if_necessary(
-        tmp_dataset_ref, default_table_expiration_ms=THREE_DAYS_MS
+        tmp_dataset_id, default_table_expiration_ms=THREE_DAYS_MS
     )
 
     logging.info(
@@ -132,7 +129,7 @@ def cluster_table(
     logging.info("Insert finished.")
 
     logging.info("Deleting temporary dataset `%s`...", tmp_dataset_id)
-    bq_client.delete_dataset(tmp_dataset_ref, delete_contents=True)
+    bq_client.delete_dataset(tmp_dataset_id, delete_contents=True)
     logging.info("Delete finished.")
 
 

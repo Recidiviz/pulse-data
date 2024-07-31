@@ -96,15 +96,15 @@ class SourceTableUpdateManager:
         source_table_config = source_table_collection.source_tables_by_address[
             source_table_address
         ]
-        dataset_ref = self.client.dataset_ref_for_id(
-            source_table_config.address.dataset_id
-        )
         result = SourceTableDryRunResult.CREATE_TABLE
-        if self.client.table_exists(dataset_ref, source_table_config.address.table_id):
+        if self.client.table_exists(
+            source_table_config.address.dataset_id, source_table_config.address.table_id
+        ):
             # Compare schema derived from metric class to existing dataflow views and
             # update if necessary.
             current_table = self.client.get_table(
-                dataset_ref, source_table_config.address.table_id
+                source_table_config.address.dataset_id,
+                source_table_config.address.table_id,
             )
 
             if not _validate_clustering_fields_match(
@@ -218,17 +218,16 @@ class SourceTableUpdateManager:
                 f"Attempted to update unmanaged table {source_table_address.to_str()}"
             )
 
-        dataset_ref = self.client.dataset_ref_for_id(
-            source_table_config.address.dataset_id
-        )
         try:
             if self.client.table_exists(
-                dataset_ref, source_table_config.address.table_id
+                source_table_config.address.dataset_id,
+                source_table_config.address.table_id,
             ):
                 # Compare schema derived from metric class to existing dataflow views and
                 # update if necessary.
                 current_table = self.client.get_table(
-                    dataset_ref, source_table_config.address.table_id
+                    source_table_config.address.dataset_id,
+                    source_table_config.address.table_id,
                 )
                 try:
                     if not _validate_clustering_fields_match(
@@ -287,9 +286,8 @@ class SourceTableUpdateManager:
         self,
         source_table_collection: SourceTableCollection,
     ) -> None:
-        dataset_ref = self.client.dataset_ref_for_id(source_table_collection.dataset_id)
         self.client.create_dataset_if_necessary(
-            dataset_ref=dataset_ref,
+            dataset_id=source_table_collection.dataset_id,
             default_table_expiration_ms=source_table_collection.table_expiration_ms,
         )
 

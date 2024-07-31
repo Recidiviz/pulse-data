@@ -22,7 +22,6 @@ from unittest.mock import call, create_autospec, patch
 
 from freezegun import freeze_time
 from google.cloud import bigquery
-from google.cloud.bigquery import DatasetReference
 
 from recidiviz.big_query.big_query_client import BigQueryClient
 from recidiviz.common.constants.states import StateCode
@@ -44,11 +43,6 @@ class FlashDatabaseToolsTest(unittest.TestCase):
         self.mock_project_id_patcher.start().return_value = self.mock_project_id
 
         self.mock_bq_client = create_autospec(BigQueryClient)
-
-        def fake_dataset_ref_for_id(dataset_id: str) -> bigquery.DatasetReference:
-            return bigquery.DatasetReference(self.mock_project_id, dataset_id)
-
-        self.mock_bq_client.dataset_ref_for_id = fake_dataset_ref_for_id
 
     def tearDown(self) -> None:
         self.mock_project_id_patcher.stop()
@@ -77,9 +71,7 @@ class FlashDatabaseToolsTest(unittest.TestCase):
         self.mock_bq_client.assert_has_calls(
             [
                 call.create_dataset_if_necessary(
-                    dataset_ref=DatasetReference(
-                        self.mock_project_id, raw_destination_id
-                    ),
+                    dataset_id=raw_destination_id,
                 ),
                 call.copy_dataset_tables(
                     source_dataset_id=raw_source_id,

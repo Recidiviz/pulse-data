@@ -99,12 +99,6 @@ class TestFederatedBQSchemaRefresh(unittest.TestCase):
     )
     def test_federated_cloud_sql_to_bq_refresh(self) -> None:
         # Arrange
-        def mock_dataset_ref_for_id(dataset_id: str) -> bigquery.DatasetReference:
-            return bigquery.DatasetReference.from_string(
-                dataset_id, default_project=self.mock_project_id
-            )
-
-        self.mock_bq_client.dataset_ref_for_id = mock_dataset_ref_for_id
         self.mock_bq_client.dataset_exists.return_value = True
 
         # Act
@@ -114,22 +108,10 @@ class TestFederatedBQSchemaRefresh(unittest.TestCase):
         self.assertEqual(
             self.mock_bq_client.create_dataset_if_necessary.mock_calls,
             [
-                mock.call(
-                    DatasetReference(
-                        "recidiviz-staging", "operations_v2_cloudsql_connection"
-                    ),
-                    None,
-                ),
-                mock.call(
-                    DatasetReference("recidiviz-staging", "operations_regional"), None
-                ),
-                mock.call(
-                    DatasetReference("recidiviz-staging", "operations"),
-                    default_table_expiration_ms=None,
-                ),
-                mock.call(
-                    DatasetReference("recidiviz-staging", "cloud_sql_to_bq_refresh")
-                ),
+                mock.call("operations_v2_cloudsql_connection", None),
+                mock.call("operations_regional", None),
+                mock.call("operations", default_table_expiration_ms=None),
+                mock.call("cloud_sql_to_bq_refresh"),
             ],
         )
 
@@ -151,10 +133,7 @@ class TestFederatedBQSchemaRefresh(unittest.TestCase):
             ]
         )
         stream_into_table_args = self.mock_bq_client.stream_into_table.call_args
-        self.assertEqual(
-            stream_into_table_args[0][0],
-            DatasetReference("recidiviz-staging", "cloud_sql_to_bq_refresh"),
-        )
+        self.assertEqual(stream_into_table_args[0][0], "cloud_sql_to_bq_refresh")
         self.assertEqual(
             stream_into_table_args[0][1],
             CLOUD_SQL_TO_BQ_REFRESH_STATUS_ADDRESS.table_id,
@@ -162,19 +141,15 @@ class TestFederatedBQSchemaRefresh(unittest.TestCase):
 
     def test_federated_cloud_sql_to_bq_refresh_with_overrides(self) -> None:
         # Arrange
-        def mock_dataset_ref_for_id(dataset_id: str) -> bigquery.DatasetReference:
-            return bigquery.DatasetReference.from_string(
-                dataset_id, default_project=self.mock_project_id
-            )
-
-        self.mock_bq_client.dataset_ref_for_id = mock_dataset_ref_for_id
         self.mock_bq_client.dataset_exists.return_value = True
         self.mock_bq_client.list_tables.return_value = [
             bigquery.TableReference(
-                mock_dataset_ref_for_id("my_prefix_operations"), "table_1"
+                DatasetReference(self.mock_project_id, "my_prefix_operations"),
+                "table_1",
             ),
             bigquery.TableReference(
-                mock_dataset_ref_for_id("my_prefix_operations"), "table_2"
+                DatasetReference(self.mock_project_id, "my_prefix_operations"),
+                "table_2",
             ),
         ]
 
@@ -188,28 +163,13 @@ class TestFederatedBQSchemaRefresh(unittest.TestCase):
         self.assertEqual(
             self.mock_bq_client.create_dataset_if_necessary.mock_calls,
             [
+                mock.call("my_prefix_operations_v2_cloudsql_connection", expiration_ms),
+                mock.call("my_prefix_operations_regional", expiration_ms),
                 mock.call(
-                    DatasetReference(
-                        "recidiviz-staging",
-                        "my_prefix_operations_v2_cloudsql_connection",
-                    ),
-                    expiration_ms,
-                ),
-                mock.call(
-                    DatasetReference(
-                        "recidiviz-staging", "my_prefix_operations_regional"
-                    ),
-                    expiration_ms,
-                ),
-                mock.call(
-                    DatasetReference("recidiviz-staging", "my_prefix_operations"),
+                    "my_prefix_operations",
                     default_table_expiration_ms=expiration_ms,
                 ),
-                mock.call(
-                    DatasetReference(
-                        "recidiviz-staging", "my_prefix_cloud_sql_to_bq_refresh"
-                    )
-                ),
+                mock.call("my_prefix_cloud_sql_to_bq_refresh"),
             ],
         )
 
@@ -232,8 +192,7 @@ class TestFederatedBQSchemaRefresh(unittest.TestCase):
         )
         stream_into_table_args = self.mock_bq_client.stream_into_table.call_args
         self.assertEqual(
-            stream_into_table_args[0][0],
-            DatasetReference("recidiviz-staging", "my_prefix_cloud_sql_to_bq_refresh"),
+            stream_into_table_args[0][0], "my_prefix_cloud_sql_to_bq_refresh"
         )
         self.assertEqual(
             stream_into_table_args[0][1],

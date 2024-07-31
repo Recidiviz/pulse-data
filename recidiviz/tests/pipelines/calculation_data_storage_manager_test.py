@@ -83,7 +83,7 @@ class CalculationDataStorageManagerTest(unittest.TestCase):
     def setUp(self) -> None:
         self.project_id = "fake-recidiviz-project"
         self.mock_view_dataset_name = "my_views_dataset"
-        self.mock_dataset = bigquery.dataset.DatasetReference(
+        self.mock_dataset_ref = bigquery.dataset.DatasetReference(
             self.project_id, self.mock_view_dataset_name
         )
 
@@ -112,16 +112,15 @@ class CalculationDataStorageManagerTest(unittest.TestCase):
         )
         self.mock_client = self.bq_client_patcher.start().return_value
 
-        self.mock_client.dataset_ref_for_id.return_value = self.mock_dataset
         self.mock_dataflow_tables = [
             bigquery.TableReference(
-                self.mock_dataset, "fake_pipeline_no_limit_metric_table"
+                self.mock_dataset_ref, "fake_pipeline_no_limit_metric_table"
             ),
             bigquery.TableReference(
-                self.mock_dataset, "fake_pipeline_with_limit_metric_2_table"
+                self.mock_dataset_ref, "fake_pipeline_with_limit_metric_2_table"
             ),
             bigquery.TableReference(
-                self.mock_dataset, "fake_pipeline_with_limit_metric_3_table"
+                self.mock_dataset_ref, "fake_pipeline_with_limit_metric_3_table"
             ),
         ]
         self.mock_client.list_tables.return_value = self.mock_dataflow_tables
@@ -256,14 +255,13 @@ class CalculationDataStorageManagerTest(unittest.TestCase):
         self.mock_client.list_datasets.return_value = [
             bigquery.dataset.DatasetListItem(self.mock_dataset_resource)
         ]
-        self.mock_client.dataset_ref_for_id.return_value = self.mock_dataset
         self.mock_client.get_dataset.return_value = empty_dataset
         self.mock_client.dataset_is_empty.return_value = True
 
         calculation_data_storage_manager._delete_empty_or_temp_datasets()
 
         self.mock_client.list_datasets.assert_called()
-        self.mock_client.delete_dataset.assert_called_with(self.mock_dataset)
+        self.mock_client.delete_dataset.assert_called_with(self.mock_view_dataset_name)
 
     # pylint: disable=protected-access
     @freeze_time("2020-01-02 00:00")
@@ -277,7 +275,6 @@ class CalculationDataStorageManagerTest(unittest.TestCase):
         self.mock_client.list_datasets.return_value = [
             bigquery.dataset.DatasetListItem(self.mock_dataset_resource)
         ]
-        self.mock_client.dataset_ref_for_id.return_value = self.mock_dataset
         self.mock_client.get_dataset.return_value = non_empty_dataset
         self.mock_client.dataset_is_empty.return_value = False
 
@@ -299,7 +296,6 @@ class CalculationDataStorageManagerTest(unittest.TestCase):
         self.mock_client.list_datasets.return_value = [
             bigquery.dataset.DatasetListItem(self.mock_dataset_resource)
         ]
-        self.mock_client.dataset_ref_for_id.return_value = self.mock_dataset
         self.mock_client.get_dataset.return_value = new_dataset
         self.mock_client.dataset_is_empty.return_value = False
 
@@ -324,7 +320,6 @@ class CalculationDataStorageManagerTest(unittest.TestCase):
         self.mock_client.list_datasets.return_value = [
             bigquery.dataset.DatasetListItem(self.mock_dataset_resource)
         ]
-        self.mock_client.dataset_ref_for_id.return_value = self.mock_dataset
         self.mock_client.get_dataset.return_value = terraform_managed_dataset
         self.mock_client.dataset_is_empty.return_value = True
 
@@ -354,9 +349,6 @@ class CalculationDataStorageManagerTest(unittest.TestCase):
             empty_dataset_name,
             datetime.datetime(2020, 1, 1, 0, 0, 0, tzinfo=datetime.timezone.utc),
         )
-        empty_dataset_ref = bigquery.dataset.DatasetReference(
-            self.project_id, empty_dataset_name
-        )
 
         self.mock_client.list_datasets.return_value = [
             bigquery.dataset.DatasetListItem(self.mock_dataset_resource),
@@ -369,10 +361,6 @@ class CalculationDataStorageManagerTest(unittest.TestCase):
                 }
             ),
         ]
-        self.mock_client.dataset_ref_for_id.side_effect = [
-            self.mock_dataset,
-            empty_dataset_ref,
-        ]
         self.mock_client.get_dataset.side_effect = [
             terraform_managed_dataset,
             empty_dataset,
@@ -382,7 +370,7 @@ class CalculationDataStorageManagerTest(unittest.TestCase):
         calculation_data_storage_manager._delete_empty_or_temp_datasets()
 
         self.mock_client.list_datasets.assert_called()
-        self.mock_client.delete_dataset.assert_called_with(empty_dataset_ref)
+        self.mock_client.delete_dataset.assert_called_with(empty_dataset_name)
 
     # pylint: disable=protected-access
     @freeze_time("2020-01-03 00:30")
@@ -414,10 +402,6 @@ class CalculationDataStorageManagerTest(unittest.TestCase):
             should_not_be_deleted_dataset,
         ]
         self.mock_client.get_dataset.side_effect = datasets
-        self.mock_client.dataset_ref_for_id.side_effect = [
-            bigquery.dataset.DatasetReference(self.project_id, dataset.dataset_id)
-            for dataset in datasets
-        ]
         self.mock_client.list_datasets.return_value = [
             bigquery.dataset.DatasetListItem(
                 {
@@ -435,12 +419,7 @@ class CalculationDataStorageManagerTest(unittest.TestCase):
         self.mock_client.list_datasets.assert_called()
         self.mock_client.delete_dataset.assert_has_calls(
             [
-                mock.call(
-                    bigquery.dataset.DatasetReference(
-                        self.project_id, dataset.dataset_id
-                    ),
-                    delete_contents=True,
-                )
+                mock.call(dataset.dataset_id, delete_contents=True)
                 for dataset in datasets[:2]
             ]
         )
@@ -466,13 +445,6 @@ class CalculationDataStorageManagerTest(unittest.TestCase):
             ),
         )
 
-        pruning_dataset_ref = bigquery.dataset.DatasetReference(
-            self.project_id, pruning_dataset_name
-        )
-        empty_dataset_ref = bigquery.dataset.DatasetReference(
-            self.project_id, empty_dataset_name
-        )
-
         self.mock_client.list_datasets.return_value = [
             bigquery.dataset.DatasetListItem(
                 {
@@ -491,10 +463,6 @@ class CalculationDataStorageManagerTest(unittest.TestCase):
                 }
             ),
         ]
-        self.mock_client.dataset_ref_for_id.side_effect = [
-            pruning_dataset_ref,
-            empty_dataset_ref,
-        ]
         self.mock_client.get_dataset.side_effect = [
             pruning_dataset,
             empty_dataset,
@@ -504,7 +472,7 @@ class CalculationDataStorageManagerTest(unittest.TestCase):
         calculation_data_storage_manager._delete_empty_or_temp_datasets()
 
         self.mock_client.list_datasets.assert_called()
-        self.mock_client.delete_dataset.assert_called_with(empty_dataset_ref)
+        self.mock_client.delete_dataset.assert_called_with(empty_dataset_name)
 
         # pylint: disable=protected-access
 
@@ -528,13 +496,6 @@ class CalculationDataStorageManagerTest(unittest.TestCase):
             ),
         )
 
-        load_dataset_ref = bigquery.dataset.DatasetReference(
-            self.project_id, load_dataset_name
-        )
-        empty_dataset_ref = bigquery.dataset.DatasetReference(
-            self.project_id, empty_dataset_name
-        )
-
         self.mock_client.list_datasets.return_value = [
             bigquery.dataset.DatasetListItem(
                 {
@@ -553,10 +514,6 @@ class CalculationDataStorageManagerTest(unittest.TestCase):
                 }
             ),
         ]
-        self.mock_client.dataset_ref_for_id.side_effect = [
-            load_dataset_ref,
-            empty_dataset_ref,
-        ]
         self.mock_client.get_dataset.side_effect = [
             load_dataset,
             empty_dataset,
@@ -566,7 +523,7 @@ class CalculationDataStorageManagerTest(unittest.TestCase):
         calculation_data_storage_manager._delete_empty_or_temp_datasets()
 
         self.mock_client.list_datasets.assert_called()
-        self.mock_client.delete_dataset.assert_called_with(empty_dataset_ref)
+        self.mock_client.delete_dataset.assert_called_with(empty_dataset_name)
 
     @patch(
         "recidiviz.pipelines.calculation_data_storage_manager._delete_empty_or_temp_datasets"
@@ -611,9 +568,6 @@ class CalculationDataStorageManagerTestRealConfig(unittest.TestCase):
         )
         self.mock_client = self.bq_client_patcher.start().return_value
 
-        self.mock_client.dataset_ref_for_id.return_value = bigquery.DatasetReference(
-            self.project_id, "test_dataflow_dataset"
-        )
         self.mock_client.list_tables.return_value = [
             bigquery.TableReference(
                 bigquery.DatasetReference(self.project_id, "test_dataflow_dataset"),

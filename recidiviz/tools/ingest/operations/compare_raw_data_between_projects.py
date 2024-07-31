@@ -94,8 +94,6 @@ def compare_raw_data_between_projects(
         instance=source_ingest_instance,
         sandbox_dataset_prefix=None,
     )
-    source_dataset = bq_client.dataset_ref_for_id(source_dataset_id)
-
     comparison_dataset_id = raw_tables_dataset_for_region(
         state_code=StateCode(region_code.upper()),
         instance=comparison_ingest_instance,
@@ -105,7 +103,7 @@ def compare_raw_data_between_projects(
     query_jobs: Dict[str, bigquery.QueryJob] = {}
     for file_tag, file_config in raw_file_config.raw_file_configs.items():
         if (
-            not bq_client.table_exists(source_dataset, file_tag)
+            not bq_client.table_exists(source_dataset_id, file_tag)
             or file_config.is_undocumented
         ):
             continue

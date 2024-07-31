@@ -140,7 +140,7 @@ class BigQueryEmulatorTestCase(unittest.TestCase, BigQueryTestHelper):
             to_delete = [
                 executor.submit(
                     self.bq_client.delete_dataset,
-                    self.bq_client.dataset_ref_for_id(dataset_list_item.dataset_id),
+                    dataset_list_item.dataset_id,
                     delete_contents=True,
                     not_found_ok=True,
                 )
@@ -168,11 +168,12 @@ class BigQueryEmulatorTestCase(unittest.TestCase, BigQueryTestHelper):
         check_exists: bool | None = True,
         create_dataset: bool | None = True,
     ) -> None:
-        dataset_ref = self.bq_client.dataset_ref_for_id(address.dataset_id)
         if create_dataset:
-            self.bq_client.create_dataset_if_necessary(dataset_ref)
+            self.bq_client.create_dataset_if_necessary(address.dataset_id)
 
-        if check_exists and self.bq_client.table_exists(dataset_ref, address.table_id):
+        if check_exists and self.bq_client.table_exists(
+            address.dataset_id, address.table_id
+        ):
             raise ValueError(
                 f"Table [{address}] already exists. Test cleanup not working properly."
             )
@@ -188,9 +189,8 @@ class BigQueryEmulatorTestCase(unittest.TestCase, BigQueryTestHelper):
         address: BigQueryAddress,
         data: List[Dict[str, Any]],
     ) -> None:
-        dataset_ref = self.bq_client.dataset_ref_for_id(address.dataset_id)
         self.bq_client.stream_into_table(
-            dataset_ref,
+            address.dataset_id,
             address.table_id,
             rows=data,
         )
