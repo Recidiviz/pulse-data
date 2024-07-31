@@ -33,21 +33,19 @@ _CRITERIA_NAME = "US_AR_NO_INCARCERATION_SANCTIONS_WITHIN_6_MONTHS"
 
 _DESCRIPTION = """Spans of time when someone hasn't had an incarceration sanction in the past 6 months"""
 
-VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
-    StateSpecificTaskCriteriaBigQueryViewBuilder(
-        criteria_name=_CRITERIA_NAME,
-        description=_DESCRIPTION,
-        state_code=StateCode.US_AR,
-        criteria_spans_query_template=no_incarceration_sanctions_within_n_months(6),
-        meets_criteria_default=True,
-        reasons_fields=[
-            ReasonsField(
-                name="event_dates",
-                type=bigquery.enums.StandardSqlTypeNames.ARRAY,
-                description="#TODO(#29059): Add reasons field description",
-            ),
-        ],
-    )
+VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = StateSpecificTaskCriteriaBigQueryViewBuilder(
+    criteria_name=_CRITERIA_NAME,
+    description=_DESCRIPTION,
+    state_code=StateCode.US_AR,
+    criteria_spans_query_template=no_incarceration_sanctions_within_n_months(6),
+    meets_criteria_default=True,
+    reasons_fields=[
+        ReasonsField(
+            name="event_dates",
+            type=bigquery.enums.StandardSqlTypeNames.ARRAY,
+            description="List of dates in the past 6 months when the person incurred an incarceration sanction.",
+        ),
+    ],
 )
 
 if __name__ == "__main__":
