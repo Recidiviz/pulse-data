@@ -87,12 +87,12 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
         reasons_fields=[
             ReasonsField(
                 name="judicial_district",
-                type=bigquery.enums.SqlTypeNames.STRING,
+                type=bigquery.enums.StandardSqlTypeNames.STRING,
                 description="#TODO(#29059): Add reasons field description",
             ),
             ReasonsField(
                 name="sentence_type",
-                type=bigquery.enums.SqlTypeNames.STRING,
+                type=bigquery.enums.StandardSqlTypeNames.STRING,
                 description="#TODO(#29059): Add reasons field description",
             ),
         ],

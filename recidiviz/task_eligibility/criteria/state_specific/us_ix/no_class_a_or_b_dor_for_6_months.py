@@ -91,7 +91,7 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = StateSpecificTaskCr
     reasons_fields=[
         ReasonsField(
             name="latest_dor_class",
-            type=bigquery.enums.SqlTypeNames.STRING,
+            type=bigquery.enums.StandardSqlTypeNames.STRING,
             description="The most recent DOR class (A or B) received by the resident",
         ),
     ],

@@ -113,12 +113,12 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
         reasons_fields=[
             ReasonsField(
                 name="latest_registration_requirement",
-                type=bigquery.enums.SqlTypeNames.DATE,
+                type=bigquery.enums.StandardSqlTypeNames.DATE,
                 description="Date of the most recent registration requirement.",
             ),
             ReasonsField(
                 name="registration_types",
-                type=bigquery.enums.SqlTypeNames.RECORD,
+                type=bigquery.enums.StandardSqlTypeNames.ARRAY,
                 description="Types of registration requirements.",
             ),
         ],

@@ -94,7 +94,7 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
         reasons_fields=[
             ReasonsField(
                 name="supervision_level",
-                type=bigquery.enums.SqlTypeNames.STRING,
+                type=bigquery.enums.StandardSqlTypeNames.STRING,
                 description="Supervision level for early termination.",
             ),
         ],

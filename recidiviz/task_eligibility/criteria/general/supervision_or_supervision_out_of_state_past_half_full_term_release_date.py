@@ -112,12 +112,12 @@ VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
         reasons_fields=[
             ReasonsField(
                 name="sentence_type",
-                type=bigquery.enums.SqlTypeNames.STRING,
+                type=bigquery.enums.StandardSqlTypeNames.STRING,
                 description="#TODO(#29059): Add reasons field description",
             ),
             ReasonsField(
                 name="half_full_term_release_date",
-                type=bigquery.enums.SqlTypeNames.DATE,
+                type=bigquery.enums.StandardSqlTypeNames.DATE,
                 description="#TODO(#29059): Add reasons field description",
             ),
         ],

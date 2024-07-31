@@ -66,12 +66,12 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
         reasons_fields=[
             ReasonsField(
                 name="assessment_date",
-                type=bigquery.enums.SqlTypeNames.DATE,
+                type=bigquery.enums.StandardSqlTypeNames.DATE,
                 description="Date of the assessment.",
             ),
             ReasonsField(
                 name="assessment_level",
-                type=bigquery.enums.SqlTypeNames.STRING,
+                type=bigquery.enums.StandardSqlTypeNames.STRING,
                 description="Assessment level of the client.",
             ),
         ],

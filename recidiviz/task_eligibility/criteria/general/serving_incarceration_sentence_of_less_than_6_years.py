@@ -41,7 +41,7 @@ VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
         reasons_fields=[
             ReasonsField(
                 name="length_of_longest_sentence_in_days",
-                type=bigquery.enums.SqlTypeNames.INT64,
+                type=bigquery.enums.StandardSqlTypeNames.INT64,
                 description="Length of longest active sentence in days.",
             )
         ],

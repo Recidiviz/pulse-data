@@ -126,7 +126,7 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
         reasons_fields=[
             ReasonsField(
                 name="supervision_level_is_sai",
-                type=bigquery.enums.SqlTypeNames.BOOLEAN,
+                type=bigquery.enums.StandardSqlTypeNames.BOOL,
                 description="#TODO(#29059): Add reasons field description",
             ),
         ],

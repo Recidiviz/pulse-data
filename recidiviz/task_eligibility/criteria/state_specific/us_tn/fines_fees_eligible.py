@@ -119,12 +119,12 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
             ),
             ReasonsField(
                 name="consecutive_monthly_payments",
-                type=bigquery.enums.SqlTypeNames.INT64,
+                type=bigquery.enums.StandardSqlTypeNames.INT64,
                 description="#TODO(#29059): Add reasons field description",
             ),
             ReasonsField(
                 name="current_exemptions",
-                type=bigquery.enums.SqlTypeNames.STRING,
+                type=bigquery.enums.StandardSqlTypeNames.STRING,
                 description="#TODO(#29059): Add reasons field description",
             ),
         ],

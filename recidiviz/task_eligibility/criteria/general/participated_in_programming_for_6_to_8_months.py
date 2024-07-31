@@ -56,7 +56,7 @@ VIEW_BUILDER: TaskCriteriaBigQueryViewBuilder = (
         reasons_fields=[
             ReasonsField(
                 name="programs",
-                type=bigquery.enums.SqlTypeNames.RECORD,
+                type=bigquery.enums.StandardSqlTypeNames.ARRAY,
                 description="#TODO(#29059): Add reasons field description",
             ),
         ],

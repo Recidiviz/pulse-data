@@ -96,7 +96,7 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
         reasons_fields=[
             ReasonsField(
                 name="supervision_specialty_is_rposn",
-                type=bigquery.enums.SqlTypeNames.BOOLEAN,
+                type=bigquery.enums.StandardSqlTypeNames.BOOL,
                 description="#TODO(#29059): Add reasons field description",
             ),
         ],

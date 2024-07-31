@@ -56,17 +56,17 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
         reasons_fields=[
             ReasonsField(
                 name="latest_detainer_start_date",
-                type=bigquery.enums.SqlTypeNames.DATE,
+                type=bigquery.enums.StandardSqlTypeNames.DATE,
                 description="Latest detainer start date",
             ),
             ReasonsField(
                 name="latest_detainer_type",
-                type=bigquery.enums.SqlTypeNames.STRING,
+                type=bigquery.enums.StandardSqlTypeNames.STRING,
                 description="Latest detainer type",
             ),
             ReasonsField(
                 name="latest_detainer_status",
-                type=bigquery.enums.SqlTypeNames.STRING,
+                type=bigquery.enums.StandardSqlTypeNames.STRING,
                 description="Latest detainer status",
             ),
         ],

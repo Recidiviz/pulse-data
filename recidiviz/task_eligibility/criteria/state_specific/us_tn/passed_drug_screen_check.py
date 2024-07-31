@@ -267,27 +267,27 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
         reasons_fields=[
             ReasonsField(
                 name="alc_drug_need_level",
-                type=bigquery.enums.SqlTypeNames.STRING,
+                type=bigquery.enums.StandardSqlTypeNames.STRING,
                 description="#TODO(#29059): Add reasons field description",
             ),
             ReasonsField(
                 name="negative_drug_screen_history_array",
-                type=bigquery.enums.SqlTypeNames.RECORD,
+                type=bigquery.enums.StandardSqlTypeNames.ARRAY,
                 description="#TODO(#29059): Add reasons field description",
             ),
             ReasonsField(
                 name="most_recent_positive_test_date",
-                type=bigquery.enums.SqlTypeNames.DATE,
+                type=bigquery.enums.StandardSqlTypeNames.DATE,
                 description="#TODO(#29059): Add reasons field description",
             ),
             ReasonsField(
                 name="latest_drug_screen_result",
-                type=bigquery.enums.SqlTypeNames.STRING,
+                type=bigquery.enums.StandardSqlTypeNames.STRING,
                 description="#TODO(#29059): Add reasons field description",
             ),
             ReasonsField(
                 name="latest_drug_screen_date",
-                type=bigquery.enums.SqlTypeNames.DATE,
+                type=bigquery.enums.StandardSqlTypeNames.DATE,
                 description="#TODO(#29059): Add reasons field description",
             ),
         ],

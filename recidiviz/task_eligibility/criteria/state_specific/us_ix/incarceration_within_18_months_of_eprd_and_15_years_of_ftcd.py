@@ -114,12 +114,12 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = StateSpecificTaskCr
     reasons_fields=[
         ReasonsField(
             name="full_term_completion_date",
-            type=bigquery.enums.SqlTypeNames.DATE,
+            type=bigquery.enums.StandardSqlTypeNames.DATE,
             description="Full term completion date: The date on which the full term of the sentence is completed.",
         ),
         ReasonsField(
             name="min_term_completion_date",
-            type=bigquery.enums.SqlTypeNames.DATE,
+            type=bigquery.enums.StandardSqlTypeNames.DATE,
             description="Earliest possible release date (EPRD): The earliest possible date on which the person can be released from incarceration.",
         ),
     ],

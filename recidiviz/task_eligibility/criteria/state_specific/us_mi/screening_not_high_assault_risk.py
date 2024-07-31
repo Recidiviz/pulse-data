@@ -37,7 +37,7 @@ _DESCRIPTION = """Describes spans of time during which a candidate does not have
 _REASONS_FIELDS = [
     ReasonsField(
         name="most_recent_assault_risk",
-        type=bigquery.enums.SqlTypeNames.STRING,
+        type=bigquery.enums.StandardSqlTypeNames.STRING,
         description="#TODO(#29059): Add reasons field description",
     ),
 ]

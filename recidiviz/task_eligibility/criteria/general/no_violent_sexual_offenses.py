@@ -34,7 +34,7 @@ _DESCRIPTION = """Describes spans of time where a candidate has no current or pr
 _REASONS_FIELDS = [
     ReasonsField(
         name="any_assaultive_sexual_conviction",
-        type=bigquery.enums.SqlTypeNames.BOOL,
+        type=bigquery.enums.StandardSqlTypeNames.BOOL,
         description="#TODO(#29059): Add reasons field description",
     ),
 ]

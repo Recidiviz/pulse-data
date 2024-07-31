@@ -55,12 +55,12 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = StateSpecificTaskCr
     reasons_fields=[
         ReasonsField(
             name="latest_d1_sanction_start_date",
-            type=bigquery.enums.SqlTypeNames.DATE,
+            type=bigquery.enums.StandardSqlTypeNames.DATE,
             description="Latest effective date of a D1 sanction for the person.",
         ),
         ReasonsField(
             name="restrictive_housing_start_date",
-            type=bigquery.enums.SqlTypeNames.DATE,
+            type=bigquery.enums.StandardSqlTypeNames.DATE,
             description="Start date of the person's current Restrictive Housing assignment.",
         ),
     ],

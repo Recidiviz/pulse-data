@@ -70,7 +70,7 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
         reasons_fields=[
             ReasonsField(
                 name="supervision_level_is_so",
-                type=bigquery.enums.SqlTypeNames.BOOLEAN,
+                type=bigquery.enums.StandardSqlTypeNames.BOOL,
                 description="Whether the supervision level is sexual offense related",
             ),
         ],

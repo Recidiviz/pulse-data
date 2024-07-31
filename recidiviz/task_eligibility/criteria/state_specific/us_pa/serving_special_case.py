@@ -86,12 +86,12 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = StateSpecificTaskCr
     reasons_fields=[
         ReasonsField(
             name="case_type",
-            type=bigquery.enums.SqlTypeNames.STRING,
+            type=bigquery.enums.StandardSqlTypeNames.STRING,
             description="Indicates whether someone is serving a special supervision case",
         ),
         ReasonsField(
             name="sanction_type",
-            type=bigquery.enums.SqlTypeNames.STRING,
+            type=bigquery.enums.StandardSqlTypeNames.STRING,
             description="Indicates what sanctions we are checking for - if special case, they must have no medium or high sanctions within past 12 months. If non-special case, they must have no high sanctions.",
         ),
     ],

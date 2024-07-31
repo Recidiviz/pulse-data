@@ -96,17 +96,17 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = StateSpecificTaskCr
     reasons_fields=[
         ReasonsField(
             name="offenses_descriptions",
-            type=bigquery.enums.SqlTypeNames.STRING,
+            type=bigquery.enums.StandardSqlTypeNames.STRING,
             description="Descriptions of the offenses that led to the warrants or detainers.",
         ),
         ReasonsField(
             name="order_types",
-            type=bigquery.enums.SqlTypeNames.STRING,
+            type=bigquery.enums.StandardSqlTypeNames.STRING,
             description="Types of the warrants or detainers.",
         ),
         ReasonsField(
             name="most_recent_warrant_or_detainer_date",
-            type=bigquery.enums.SqlTypeNames.DATE,
+            type=bigquery.enums.StandardSqlTypeNames.DATE,
             description="Date of the most recent warrant or detainer.",
         ),
     ],

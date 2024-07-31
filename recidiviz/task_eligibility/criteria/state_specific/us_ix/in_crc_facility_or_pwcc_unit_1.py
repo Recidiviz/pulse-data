@@ -113,12 +113,12 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = StateSpecificTaskCr
     reasons_fields=[
         ReasonsField(
             name="crc_start_date",
-            type=bigquery.enums.SqlTypeNames.DATE,
+            type=bigquery.enums.StandardSqlTypeNames.DATE,
             description="The date on which the person is in a Community Reentry Center (CRC) facility",
         ),
         ReasonsField(
             name="facility_name",
-            type=bigquery.enums.SqlTypeNames.STRING,
+            type=bigquery.enums.StandardSqlTypeNames.STRING,
             description="The name of the facility where the person is in a CRC facility or PWCC Unit 1",
         ),
     ],

@@ -178,17 +178,17 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = StateSpecificTaskCr
     reasons_fields=[
         ReasonsField(
             name="case_type",
-            type=bigquery.enums.SqlTypeNames.STRING,
+            type=bigquery.enums.StandardSqlTypeNames.STRING,
             description="Type of supervision case (special, life, non-life violent, or non-life non-violent)",
         ),
         ReasonsField(
             name="years_required_to_serve",
-            type=bigquery.enums.SqlTypeNames.STRING,
+            type=bigquery.enums.StandardSqlTypeNames.STRING,
             description="Years required to serve on supervision before being eligible for special circumstances supervision. Depends on case type.",
         ),
         ReasonsField(
             name="eligible_date",
-            type=bigquery.enums.SqlTypeNames.DATE,
+            type=bigquery.enums.StandardSqlTypeNames.DATE,
             description="Date where a client will have served enough time on supervision to be eligible for special circumstances supervision",
         ),
     ],

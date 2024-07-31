@@ -34,7 +34,7 @@ _DESCRIPTION = """Describes spans of time where a candidate is serving their fir
 _REASONS_FIELDS = [
     ReasonsField(
         name="is_first_prison_term",
-        type=bigquery.enums.SqlTypeNames.BOOL,
+        type=bigquery.enums.StandardSqlTypeNames.BOOL,
         description="#TODO(#29059): Add reasons field description",
     ),
 ]

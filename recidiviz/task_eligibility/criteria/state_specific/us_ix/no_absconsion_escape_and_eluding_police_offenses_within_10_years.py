@@ -117,17 +117,17 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = StateSpecificTaskCr
     reasons_fields=[
         ReasonsField(
             name="most_recent_absconded_date",
-            type=bigquery.enums.SqlTypeNames.DATE,
+            type=bigquery.enums.StandardSqlTypeNames.DATE,
             description="Most recent absconded date: The most recent date on which the person absconded.",
         ),
         ReasonsField(
             name="most_recent_eluding_police_date",
-            type=bigquery.enums.SqlTypeNames.RECORD,
+            type=bigquery.enums.StandardSqlTypeNames.ARRAY,
             description="Most recent eluding police date: The most recent date on which the person eluded police.",
         ),
         ReasonsField(
             name="most_recent_escape_date",
-            type=bigquery.enums.SqlTypeNames.RECORD,
+            type=bigquery.enums.StandardSqlTypeNames.ARRAY,
             description="Most recent escape date: The most recent date on which the person escaped.",
         ),
     ],

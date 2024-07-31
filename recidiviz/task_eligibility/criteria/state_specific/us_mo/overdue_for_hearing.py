@@ -175,12 +175,12 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = StateSpecificTaskCr
     reasons_fields=[
         ReasonsField(
             name="next_review_date",
-            type=bigquery.enums.SqlTypeNames.DATE,
+            type=bigquery.enums.StandardSqlTypeNames.DATE,
             description="Next Restrictive Housing review date (hearing) for the person.",
         ),
         ReasonsField(
             name="due_date_type",
-            type=bigquery.enums.SqlTypeNames.STRING,
+            type=bigquery.enums.StandardSqlTypeNames.STRING,
             description="Whether the due date is inferred based on the start date of the RH assignment, or not (it is scheduled).",
         ),
     ],

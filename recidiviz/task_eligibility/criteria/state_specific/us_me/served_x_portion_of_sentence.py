@@ -132,12 +132,12 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = StateSpecificTaskCr
     reasons_fields=[
         ReasonsField(
             name="eligible_date",
-            type=bigquery.enums.SqlTypeNames.DATE,
+            type=bigquery.enums.StandardSqlTypeNames.DATE,
             description="Date when the client has served 1/2 or 2/3 of their sentence.",
         ),
         ReasonsField(
             name="x_portion_served",
-            type=bigquery.enums.SqlTypeNames.STRING,
+            type=bigquery.enums.StandardSqlTypeNames.STRING,
             description="The portion of the sentence that the resident needs to serve.",
         ),
     ],

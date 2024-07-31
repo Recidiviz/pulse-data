@@ -42,7 +42,7 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
         reasons_fields=[
             ReasonsField(
                 name="statutes",
-                type=bigquery.enums.SqlTypeNames.STRUCT,
+                type=bigquery.enums.StandardSqlTypeNames.ARRAY,
                 description="List of statutes of sentences being served",
             )
         ],

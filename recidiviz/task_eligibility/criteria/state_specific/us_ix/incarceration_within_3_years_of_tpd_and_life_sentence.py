@@ -98,17 +98,17 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = StateSpecificTaskCr
     reasons_fields=[
         ReasonsField(
             name="ineligible_offenses",
-            type=bigquery.enums.SqlTypeNames.RECORD,
+            type=bigquery.enums.StandardSqlTypeNames.ARRAY,
             description="List of offenses that make the person ineligible for the task",
         ),
         ReasonsField(
             name="tentative_parole_date",
-            type=bigquery.enums.SqlTypeNames.DATE,
+            type=bigquery.enums.StandardSqlTypeNames.DATE,
             description="Tentative parole date (TPD)",
         ),
         ReasonsField(
             name="life_sentence",
-            type=bigquery.enums.SqlTypeNames.BOOLEAN,
+            type=bigquery.enums.StandardSqlTypeNames.BOOL,
             description="Whether the person is serving a life sentence",
         ),
     ],

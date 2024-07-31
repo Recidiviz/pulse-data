@@ -175,12 +175,12 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = StateSpecificTaskCr
     reasons_fields=[
         ReasonsField(
             name="eligible_date",
-            type=bigquery.enums.SqlTypeNames.DATE,
+            type=bigquery.enums.StandardSqlTypeNames.DATE,
             description="Date when the client is 30/24 months away from their release date.",
         ),
         ReasonsField(
             name="months_remaining_based_on_caseload",
-            type=bigquery.enums.SqlTypeNames.FLOAT,
+            type=bigquery.enums.StandardSqlTypeNames.FLOAT64,
             description="Number of months remaining on the sentence based on the statewide caseload.",
         ),
     ],

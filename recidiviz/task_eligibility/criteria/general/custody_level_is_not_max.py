@@ -48,17 +48,17 @@ VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
         reasons_fields=[
             ReasonsField(
                 name="custody_level",
-                type=bigquery.enums.SqlTypeNames.STRING,
+                type=bigquery.enums.StandardSqlTypeNames.STRING,
                 description="#TODO(#29059): Add reasons field description",
             ),
             ReasonsField(
                 name="custody_level_is_max",
-                type=bigquery.enums.SqlTypeNames.BOOL,
+                type=bigquery.enums.StandardSqlTypeNames.BOOL,
                 description="#TODO(#29059): Add reasons field description",
             ),
             ReasonsField(
                 name="custody_level_start_date",
-                type=bigquery.enums.SqlTypeNames.DATE,
+                type=bigquery.enums.StandardSqlTypeNames.DATE,
                 description="#TODO(#29059): Add reasons field description",
             ),
         ],

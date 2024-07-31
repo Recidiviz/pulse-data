@@ -141,7 +141,7 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = StateSpecificTaskCr
     reasons_fields=[
         ReasonsField(
             name="next_parole_hearing_date",
-            type=bigquery.enums.SqlTypeNames.DATE,
+            type=bigquery.enums.StandardSqlTypeNames.DATE,
             description="Next Parole Hearing Date (PHD): The date on which the person is scheduled for a parole hearing.",
         ),
     ],

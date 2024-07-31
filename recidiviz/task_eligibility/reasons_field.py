@@ -16,8 +16,6 @@
 # =============================================================================
 """Class that represents a column that provides additional information about the meets_criteria value
 in a given row in a TES criteria query."""
-from typing import Union
-
 import attr
 from google.cloud import bigquery
 
@@ -25,6 +23,5 @@ from google.cloud import bigquery
 @attr.define(frozen=True, kw_only=True)
 class ReasonsField:
     name: str
-    # TODO(#30532): update the `type` field to only take StandardSqlTypeNames
-    type: Union[bigquery.enums.SqlTypeNames, bigquery.enums.StandardSqlTypeNames]
+    type: bigquery.enums.StandardSqlTypeNames
     description: str

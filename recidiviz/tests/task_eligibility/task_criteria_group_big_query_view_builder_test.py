@@ -77,12 +77,12 @@ CRITERIA_4_STATE_SPECIFIC = StateSpecificTaskCriteriaBigQueryViewBuilder(
     reasons_fields=[
         ReasonsField(
             name="violations",
-            type=bigquery.enums.SqlTypeNames.FLOAT,
+            type=bigquery.enums.StandardSqlTypeNames.FLOAT64,
             description="Number of violations",
         ),
         ReasonsField(
             name="latest_violation_date",
-            type=bigquery.enums.SqlTypeNames.DATE,
+            type=bigquery.enums.StandardSqlTypeNames.DATE,
             description="Latest violation date",
         ),
     ],
@@ -98,7 +98,7 @@ CRITERIA_5_STATE_SPECIFIC = StateSpecificTaskCriteriaBigQueryViewBuilder(
     reasons_fields=[
         ReasonsField(
             name="fees_owed",
-            type=bigquery.enums.SqlTypeNames("FLOAT"),
+            type=bigquery.enums.StandardSqlTypeNames.FLOAT64,
             description="Amount of fees owed",
         ),
         ReasonsField(
@@ -236,8 +236,8 @@ SELECT
     LOGICAL_AND(
         COALESCE(meets_criteria, meets_criteria_default)
     ) AS meets_criteria,
-    TO_JSON(STRUCT(MAX(SAFE_CAST(JSON_VALUE(reason_v2, '$.fees_owed') AS FLOAT)) AS fees_owed, MAX(SAFE_CAST(JSON_VALUE(reason_v2, '$.latest_violation_date') AS DATE)) AS latest_violation_date, ANY_VALUE(JSON_VALUE_ARRAY(reason_v2, '$.offense_types')) AS offense_types, MAX(SAFE_CAST(JSON_VALUE(reason_v2, '$.violations') AS FLOAT)) AS violations)) AS reason,
-    MAX(SAFE_CAST(JSON_VALUE(reason_v2, '$.fees_owed') AS FLOAT)) AS fees_owed, MAX(SAFE_CAST(JSON_VALUE(reason_v2, '$.latest_violation_date') AS DATE)) AS latest_violation_date, ANY_VALUE(JSON_VALUE_ARRAY(reason_v2, '$.offense_types')) AS offense_types, MAX(SAFE_CAST(JSON_VALUE(reason_v2, '$.violations') AS FLOAT)) AS violations,
+    TO_JSON(STRUCT(MAX(SAFE_CAST(JSON_VALUE(reason_v2, '$.fees_owed') AS FLOAT64)) AS fees_owed, MAX(SAFE_CAST(JSON_VALUE(reason_v2, '$.latest_violation_date') AS DATE)) AS latest_violation_date, ANY_VALUE(JSON_VALUE_ARRAY(reason_v2, '$.offense_types')) AS offense_types, MAX(SAFE_CAST(JSON_VALUE(reason_v2, '$.violations') AS FLOAT64)) AS violations)) AS reason,
+    MAX(SAFE_CAST(JSON_VALUE(reason_v2, '$.fees_owed') AS FLOAT64)) AS fees_owed, MAX(SAFE_CAST(JSON_VALUE(reason_v2, '$.latest_violation_date') AS DATE)) AS latest_violation_date, ANY_VALUE(JSON_VALUE_ARRAY(reason_v2, '$.offense_types')) AS offense_types, MAX(SAFE_CAST(JSON_VALUE(reason_v2, '$.violations') AS FLOAT64)) AS violations,
 FROM
     sub_sessions_with_attributes
 GROUP BY 1, 2, 3, 4
@@ -465,7 +465,7 @@ SELECT
     end_date,
     NOT meets_criteria AS meets_criteria,
     reason,
-    SAFE_CAST(JSON_VALUE(reason_v2, '$.fees_owed') AS FLOAT) AS fees_owed,
+    SAFE_CAST(JSON_VALUE(reason_v2, '$.fees_owed') AS FLOAT64) AS fees_owed,
     JSON_VALUE_ARRAY(reason_v2, '$.offense_types') AS offense_types,
 FROM
     `{project_id}.task_eligibility_criteria_us_ky.criteria_5_materialized`
