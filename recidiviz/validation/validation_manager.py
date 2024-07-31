@@ -353,7 +353,8 @@ def _file_tickets_for_failing_validations(
     github_client = github_helperbot_client()
 
     for region, validations in groupby(
-        failed_validations, lambda v: v.validation_job.region_code
+        sorted(failed_validations, key=lambda v: v.validation_job.region_code),
+        lambda v: v.validation_job.region_code,
     ):
         issue_labels = ["Validation", f"Region: {region}", "Team: State Pod"]
         existing_issues = github_client.get_repo(RECIDIVIZ_DATA_REPO).get_issues(
