@@ -21,9 +21,10 @@ import datetime
 import json
 from typing import Dict, Iterable, List, Tuple
 
-import numpy as np
 import pandas as pd
-from scipy.stats import norm
+
+# Ignore: Mypy: module is installed, but missing library stubs or py.typed marker  [import-untyped]
+from statsmodels.stats.proportion import proportion_confint  # type: ignore
 
 from recidiviz.entrypoints.entrypoint_interface import EntrypointInterface
 from recidiviz.tools.analyst.cohort_methods import (
@@ -231,24 +232,16 @@ def add_attributes_to_index(
 # TODO(#31104): Move CI calculation to a centralized util method
 def add_cis(df: pd.DataFrame) -> pd.DataFrame:
     def calculate_ci(
-        event_rate: float, cohort_size: int, alpha: float = 0.05
+        event_rate: float, cohort_size: int, alpha: float = 0.05, method: str = "beta"
     ) -> Tuple[float, float]:
-        z = norm.ppf(1 - alpha / 2)
-        se = np.sqrt(event_rate * (1 - event_rate) / cohort_size)
-        y1 = event_rate - z * se
-        y2 = event_rate + z * se
+        return proportion_confint(
+            int(event_rate * cohort_size), cohort_size, alpha=alpha, method=method
+        )
 
-        return y1, y2
-
-    df["lower_ci"] = df.apply(
-        # lower_ci can't be lower than 0%
-        lambda row: max(0.0, calculate_ci(row.event_rate, row.cohort_size)[0]),
+    df[["lower_ci", "upper_ci"]] = df.apply(
+        lambda row: calculate_ci(row.event_rate, row.cohort_size),
         axis=1,
-    )
-    df["upper_ci"] = df.apply(
-        # upper_ci can't be higher than 100%
-        lambda row: min(1.0, calculate_ci(row.event_rate, row.cohort_size)[1]),
-        axis=1,
+        result_type="expand",
     )
     df["ci_size"] = df["upper_ci"] - df["lower_ci"]
     return df
