@@ -63,6 +63,9 @@ WITH MH_and_E AS (
     ON tak015.BL_DOC = pei.external_id
     AND pei.state_code = 'US_MO'
   WHERE tak068.CT_CSD IN ('MH','E')
+  -- When there are two assessments on the same day of the same type, we deduplicate using CNO which is part of the primary key.
+  QUALIFY ROW_NUMBER() OVER(PARTITION BY person_id, tak068.CT_CSD, SAFE.PARSE_DATE('%Y%m%d', tak015.BL_IC) 
+                            ORDER BY tak015.BL_CNO DESC) = 1   
 ),
 SACA_screener AS (
     SELECT
@@ -77,6 +80,9 @@ SACA_screener AS (
     INNER JOIN `{project_id}.{normalized_state_dataset}.state_person_external_id` pei
         ON HL_DOC = pei.external_id
         AND pei.state_code = 'US_MO'
+    -- Deduplicate very small number of duplicates on same day by taking higher score
+    QUALIFY ROW_NUMBER() OVER(PARTITION BY person_id, SAFE.PARSE_DATE('%Y%m%d', HL_BL)
+                            ORDER BY CAST(HL_SNS AS INT64) DESC) = 1
 ),
 MOCIS_screeners AS (
     /* This cte manipulates a completely different set of MOCIS tables for certain assessments and builds off a query
@@ -137,8 +143,10 @@ MOCIS_screeners AS (
         AND scores.ASMNT_SCORING_TYPE_CD = 'OSC'
     -- Deal with a smallish number of duplicates on person, assessment date, assessment type
     QUALIFY ROW_NUMBER() OVER(PARTITION BY doc_id_xref.OFNDR_CYCLE_REF_ID,
-                                            asmt.ASSESSMENT_DATE, asmt.ASSESSMENT_TOOL_REF_ID
-                              ORDER BY asmt.CREATE_TS DESC, scores.CREATE_TS DESC) = 1
+                                            asmt.ASSESSMENT_DATE, 
+                                            asmt.ASSESSMENT_TOOL_REF_ID
+                              ORDER BY asmt.CREATE_TS DESC, 
+                                        scores.CREATE_TS DESC) = 1
 )
 SELECT
     "US_MO" AS state_code,
@@ -172,6 +180,14 @@ SELECT
     NULL AS override_score_value,
 FROM `{project_id}.{normalized_state_dataset}.state_assessment`    
 WHERE state_code = 'US_MO'
+-- There are 2% duplicates on person_id and assessment_date, so we prioritize
+-- prison intake and community supervision tool
+QUALIFY RANK() OVER(PARTITION BY person_id, assessment_date 
+                    ORDER BY CASE WHEN assessment_type_raw_text = 'PRISON INTAKE TOOL' THEN 0
+                                 WHEN assessment_type_raw_text = 'COMMUNITY SUPERVISION TOOL' THEN 1
+                                 WHEN assessment_type_raw_text LIKE 'PRISON%'  THEN 2
+                                 WHEN assessment_type_raw_text = 'REENTRY TOOL'  THEN 3
+                                    ELSE 4 END)=1
 
 UNION ALL
 
