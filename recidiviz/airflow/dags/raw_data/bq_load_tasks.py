@@ -54,8 +54,8 @@ from recidiviz.utils.airflow_types import (
     MappedBatchedTaskOutput,
 )
 
-MAX_BQ_LOAD_THREADS = 8
-MAX_BQ_APPEND_TASKS = 8
+MAX_BQ_LOAD_THREADS = 8  # TODO(#29946) determine reasonable default
+MAX_BQ_APPEND_TASKS = 8  # TODO(#29946) determine reasonable default
 
 
 @task

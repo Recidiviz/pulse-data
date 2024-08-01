@@ -17,7 +17,7 @@
 """Tests for the raw data import DAG"""
 import datetime
 import json
-from typing import Any, Callable, Dict, List
+from typing import Any, Callable, Dict, List, Tuple
 from unittest.mock import patch
 
 import attr
@@ -42,16 +42,21 @@ from recidiviz.airflow.tests.utils.dag_helper_functions import (
     fake_operator_with_return_value,
     fake_task_function_with_return_value,
 )
+from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.cloud_storage.gcsfs_csv_chunk_boundary_finder import CsvChunkBoundary
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.constants.states import StateCode
 from recidiviz.fakes.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.direct.types.raw_data_import_types import (
+    AppendReadyFile,
+    AppendSummary,
     ImportReadyFile,
     PreImportNormalizationType,
     PreImportNormalizedCsvChunkResult,
     RawBigQueryFileMetadata,
+    RawDataAppendImportError,
+    RawFileLoadAndPrepError,
     RawFileProcessingError,
     RawGCSFileMetadata,
     RequiresPreImportNormalizationFile,
@@ -2270,3 +2275,263 @@ class RawDataImportDagPreImportNormalizationIntegrationTest(AirflowIntegrationTe
         assert _comparable(regrouped_and_verified.results) == _comparable(
             expected_results
         )
+
+
+# TODO(apache/airflow#41160) write tests here once we can construct a subdag of just
+# the tasks for the big query load step
+class RawDataImportDagBigQueryLoadIntegrationTest(AirflowIntegrationTest):
+    """integration tests for step 4: big query load step"""
+
+    def setUp(self) -> None:
+        super().setUp()
+
+        # env mocks ---
+
+        self.dag_id = get_raw_data_import_dag_id(_PROJECT_ID)
+        test_state_codes = [StateCode.US_XX, StateCode.US_YY]
+        test_state_code_and_instance_pairs = [
+            (StateCode.US_XX, DirectIngestInstance.PRIMARY),
+            (StateCode.US_XX, DirectIngestInstance.SECONDARY),
+            (StateCode.US_YY, DirectIngestInstance.PRIMARY),
+            (StateCode.US_YY, DirectIngestInstance.SECONDARY),
+        ]
+        self.raw_data_enabled_pairs = patch(
+            "recidiviz.airflow.dags.raw_data.raw_data_branching.get_raw_data_dag_enabled_state_and_instance_pairs",
+            return_value=test_state_code_and_instance_pairs,
+        )
+        self.raw_data_enabled_pairs.start()
+        self.raw_data_enabled_pairs_two = patch(
+            "recidiviz.airflow.dags.raw_data.initialize_raw_data_dag_group.get_raw_data_dag_enabled_state_and_instance_pairs",
+            return_value=test_state_code_and_instance_pairs,
+        )
+        self.raw_data_enabled_pairs_two.start()
+        self.raw_data_enabled_states = patch(
+            "recidiviz.airflow.dags.raw_data.raw_data_branching.get_raw_data_dag_enabled_states",
+            return_value=test_state_codes,
+        )
+        self.region_module_patch = patch(
+            "recidiviz.airflow.dags.raw_data.utils.direct_ingest_regions_module",
+            fake_regions,
+        )
+        self.region_module_patch.start()
+        self.metadata_patcher = patch(
+            "recidiviz.utils.metadata.project_id", return_value="recidiviz-fake"
+        )
+        self.metadata_patcher.start()
+
+        # operator mocks ---
+
+        self.coalesce_patcher = patch(
+            "recidiviz.airflow.dags.raw_data_import_dag.coalesce_import_ready_files.function",
+        )
+
+        self.coalesce_mock = self.coalesce_patcher.start()
+
+        # task interaction mocks ---
+
+        self.fs = FakeGCSFileSystem()
+        self.gcsfs_patcher = patch(
+            "recidiviz.airflow.dags.raw_data.bq_load_tasks.GcsfsFactory.build",
+            return_value=self.fs,
+        )
+        self.gcsfs_patcher.start()
+
+        self.bq_patcher = patch(
+            "recidiviz.airflow.dags.raw_data.bq_load_tasks.BigQueryClientImpl",
+        )
+        self.bq_mock = self.bq_patcher.start()
+
+        # instance vars for mocked return vals ---
+
+        self.input_requires_normalization: List[str] = []
+        self.input_bq_metadata: List[str] = []
+        self.chunking_return_value: List[str] = []
+        self.normalization_return_value: List[str] = []
+
+    def _create_dag(self) -> DAG:
+        # pylint: disable=import-outside-toplevel
+        from recidiviz.airflow.dags.raw_data_import_dag import (
+            create_raw_data_import_dag,
+        )
+
+        return create_raw_data_import_dag()
+
+    def tearDown(self) -> None:
+        self.raw_data_enabled_pairs.stop()
+        self.raw_data_enabled_pairs_two.stop()
+        self.raw_data_enabled_states.stop()
+        self.metadata_patcher.stop()
+        self.region_module_patch.stop()
+        self.coalesce_patcher.stop()
+        self.gcsfs_patcher.stop()
+        self.bq_patcher.stop()
+        super().tearDown()
+
+    def _create_sub_dag(self) -> DAG:
+        return self._create_dag().partial_subset(
+            task_ids_or_regex=[
+                "raw_data_branching.us_xx_primary_import_branch.coalesce_import_ready_files",
+                "raw_data_branching.us_xx_primary_import_branch.biq_query_load.load_and_prep_paths_for_batch",
+                "raw_data_branching.us_xx_primary_import_branch.biq_query_load.raise_load_prep_errors",
+                "raw_data_branching.us_xx_primary_import_branch.biq_query_load.generate_append_batches",
+                "raw_data_branching.us_xx_primary_import_branch.biq_query_load.append_ready_file_batches_from_generate_append_batches",
+                "raw_data_branching.us_xx_primary_import_branch.biq_query_load.append_to_raw_data_table_for_batch",
+                "raw_data_branching.us_xx_primary_import_branch.biq_query_load.raise_append_errors",
+            ],
+            include_upstream=False,
+            include_downstream=False,
+        )
+
+    def _register_files(
+        self, files: List[ImportReadyFile]
+    ) -> Tuple[List[GcsfsFilePath], List[GcsfsFilePath]]:
+        temp, original = [], []
+        for file in files:
+            if file.pre_import_normalized_file_paths:
+                for pre_import_path in file.pre_import_normalized_file_paths:
+                    self.fs.test_add_path(pre_import_path, local_path=None)
+                    temp.append(pre_import_path)
+            for path in file.original_file_paths:
+                self.fs.test_add_path(path, local_path=None)
+                original.append(path)
+
+        return original, temp
+
+    # TODO(#31955): remove the underscore from this test when we upgrade to the cloud
+    # composer version associated with the bug fix for the partial_subset bug
+    # TODO(apache/airflow#41160) ^^
+    def _test_all_success(self) -> None:
+        """test for all files successfully completing"""
+
+        import_ready_files = [
+            ImportReadyFile(
+                file_id=2,
+                file_tag="singlePrimaryKey",
+                update_datetime=datetime.datetime.fromisoformat(
+                    "2024-01-26T16:35:33:617135Z"
+                ),
+                pre_import_normalized_file_paths=[
+                    GcsfsFilePath.from_absolute_path(
+                        "temp/unprocessed_2024-01-26T16:35:33:617135_raw_singlePrimaryKey-0.csv",
+                    ),
+                    GcsfsFilePath.from_absolute_path(
+                        "temp/unprocessed_2024-01-26T16:35:33:617135_raw_singlePrimaryKey-1.csv",
+                    ),
+                    GcsfsFilePath.from_absolute_path(
+                        "temp/unprocessed_2024-01-26T16:35:33:617135_raw_singlePrimaryKey-2.csv",
+                    ),
+                ],
+                original_file_paths=[
+                    GcsfsFilePath.from_absolute_path(
+                        "testing/unprocessed_2024-01-26T16:35:33:617135_raw_singlePrimaryKey.csv",
+                    )
+                ],
+            ),
+            ImportReadyFile(
+                file_id=3,
+                file_tag="singlePrimaryKey",
+                update_datetime=datetime.datetime.fromisoformat(
+                    "2024-01-27T16:35:33:617135Z"
+                ),
+                pre_import_normalized_file_paths=[
+                    GcsfsFilePath.from_absolute_path(
+                        "temp/unprocessed_2024-01-27T16:35:33:617135_raw_singlePrimaryKey-0.csv",
+                    ),
+                    GcsfsFilePath.from_absolute_path(
+                        "temp/unprocessed_2024-01-27T16:35:33:617135_raw_singlePrimaryKey-1.csv",
+                    ),
+                    GcsfsFilePath.from_absolute_path(
+                        "temp/unprocessed_2024-01-27T16:35:33:617135_raw_singlePrimaryKey-2.csv",
+                    ),
+                ],
+                original_file_paths=[
+                    GcsfsFilePath.from_absolute_path(
+                        "testing/unprocessed_2024-01-27T16:35:33:617135_raw_singlePrimaryKey.csv",
+                    )
+                ],
+            ),
+        ]
+
+        self.coalesce_mock.side_effect = fake_task_function_with_return_value(
+            [[file.serialize()] for file in import_ready_files]
+        )
+
+        self.bq_mock().load_table_from_cloud_storage_async().output_rows = 100
+        self.bq_mock().create_table_from_query_async().total_rows = 90
+
+        original_paths, _ = self._register_files(import_ready_files)
+        with Session(bind=self.engine) as session:
+            result = self.run_dag_test(
+                self._create_sub_dag(),
+                session=session,
+                expected_failure_ids=[],  # none!
+                expected_skipped_ids=[],  # none!
+            )
+            self.assertEqual(DagRunState.SUCCESS, result.dag_run_state)
+
+            # validate xcom ---
+
+            load_and_prep_jsonb = self.get_xcom_for_task_id(
+                "raw_data_branching.us_xx_primary_import_branch.biq_query_load.load_and_prep_paths_for_batch",
+                session=session,
+                key="return_value",
+                is_mapped=True,
+            )
+
+            load_result = MappedBatchedTaskOutput.deserialize(
+                [
+                    json.loads(load_result_str)
+                    for load_result_str in assert_type(load_and_prep_jsonb, list)
+                ],
+                result_cls=AppendReadyFile,
+                error_cls=RawFileLoadAndPrepError,
+            )
+
+            assert not load_result.flatten_errors()
+            assert sorted(
+                load_result.flatten_results(),
+                key=lambda x: x.import_ready_file.file_id,
+            ) == [
+                AppendReadyFile(
+                    import_ready_file=import_ready_files[0],
+                    append_ready_table_address=BigQueryAddress(
+                        dataset_id="us_xx_primary_raw_data_temp_load",
+                        table_id="singlePrimaryKey__2__transformed",
+                    ),
+                    raw_rows_count=100,
+                ),
+                AppendReadyFile(
+                    import_ready_file=import_ready_files[1],
+                    append_ready_table_address=BigQueryAddress(
+                        dataset_id="us_xx_primary_raw_data_temp_load",
+                        table_id="singlePrimaryKey__3__transformed",
+                    ),
+                    raw_rows_count=100,
+                ),
+            ]
+
+            append_result_jsonb = self.get_xcom_for_task_id(
+                "raw_data_branching.us_xx_primary_import_branch.biq_query_load.append_to_raw_data_table_for_batch",
+                session=session,
+                key="return_value",
+                is_mapped=True,
+            )
+
+            append_output = MappedBatchedTaskOutput.deserialize(
+                [
+                    json.loads(append_result)
+                    for append_result in assert_type(append_result_jsonb, list)
+                ],
+                result_cls=AppendSummary,
+                error_cls=RawDataAppendImportError,
+            )
+
+            assert not append_output.flatten_errors()
+            assert append_output.flatten_results() == [
+                AppendSummary(file_id=2, historical_diffs_active=False),
+                AppendSummary(file_id=3, historical_diffs_active=False),
+            ]
+
+            # validate filesystem
+
+            assert set(self.fs.all_paths) == set(original_paths)
