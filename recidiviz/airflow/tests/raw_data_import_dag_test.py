@@ -18,14 +18,15 @@
 import datetime
 import json
 from typing import Any, Callable, Dict, List
-from unittest.mock import create_autospec, patch
+from unittest.mock import patch
 
 import attr
-from airflow.models import DAG, BaseOperator, DagBag
+from airflow.models import DAG, DagBag
 from airflow.models.baseoperator import partial
 from airflow.models.mappedoperator import OperatorPartial
 from airflow.providers.postgres.hooks.postgres import PostgresHook
 from airflow.utils.state import DagRunState
+from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from recidiviz.airflow.dags.monitoring.dag_registry import get_raw_data_import_dag_id
@@ -36,8 +37,6 @@ from recidiviz.airflow.dags.raw_data.metadata import (
 )
 from recidiviz.airflow.tests.test_utils import DAG_FOLDER, AirflowIntegrationTest
 from recidiviz.airflow.tests.utils.dag_helper_functions import (
-    FakeCloudSqlOperator,
-    FakeFailureOperator,
     fake_failing_operator_constructor,
     fake_k8s_operator_with_return_value,
     fake_operator_with_return_value,
@@ -57,6 +56,7 @@ from recidiviz.ingest.direct.types.raw_data_import_types import (
     RawGCSFileMetadata,
     RequiresPreImportNormalizationFile,
 )
+from recidiviz.persistence.database.schema.operations.schema import OperationsBase
 from recidiviz.tests.ingest.direct import fake_regions
 from recidiviz.utils.airflow_types import (
     BatchedTaskInstanceOutput,
@@ -308,17 +308,13 @@ class RawDataImportDagSequencingTest(AirflowIntegrationTest):
 class RawDataImportDagIntegrationTest(AirflowIntegrationTest):
     """Integration tests for the raw data import dag"""
 
+    metas = [OperationsBase]
+    conn_id = "operations_postgres_conn_id"
+
     def setUp(self) -> None:
         super().setUp()
         self.fs = FakeGCSFileSystem()
         self.dag_id = get_raw_data_import_dag_id(_PROJECT_ID)
-        self.environment_patcher = patch(
-            "os.environ",
-            {
-                "GCP_PROJECT": _PROJECT_ID,
-            },
-        )
-        self.environment_patcher.start()
         test_state_codes = [StateCode.US_XX, StateCode.US_YY]
         test_state_code_and_instance_pairs = [
             (StateCode.US_XX, DirectIngestInstance.PRIMARY),
@@ -341,11 +337,13 @@ class RawDataImportDagIntegrationTest(AirflowIntegrationTest):
             return_value=test_state_codes,
         )
         self.raw_data_enabled_states.start()
-        self.cloud_sql_query_operator_patcher = patch(
-            "recidiviz.airflow.dags.raw_data_import_dag.CloudSqlQueryOperator",
-            side_effect=fake_operator_with_return_value({}),
+        self.cloud_sql_db_hook_patcher = patch(
+            "recidiviz.airflow.dags.operators.cloud_sql_query_operator.CloudSQLDatabaseHook"
         )
-        self.mock_cloud_sql_patcher = self.cloud_sql_query_operator_patcher.start()
+        self.mock_cloud_sql_db_hook = self.cloud_sql_db_hook_patcher.start()
+        self.mock_cloud_sql_db_hook().get_database_hook.return_value = PostgresHook(
+            self.conn_id
+        )
         self.gcs_operator_patcher = patch(
             "recidiviz.airflow.dags.raw_data_import_dag.DirectIngestListNormalizedUnprocessedFilesOperator",
             side_effect=fake_operator_with_return_value([]),
@@ -409,11 +407,10 @@ class RawDataImportDagIntegrationTest(AirflowIntegrationTest):
         self.region_module_patch.start()
 
     def tearDown(self) -> None:
-        self.environment_patcher.stop()
         self.raw_data_enabled_pairs.stop()
         self.raw_data_enabled_pairs_two.stop()
         self.raw_data_enabled_states.stop()
-        self.cloud_sql_query_operator_patcher.stop()
+        self.cloud_sql_db_hook_patcher.stop()
         self.gcs_operator_patcher.stop()
         self.kpo_operator_patcher.stop()
         self.file_chunking_args_patcher.stop()
@@ -456,6 +453,11 @@ class RawDataImportDagIntegrationTest(AirflowIntegrationTest):
             )
             self.assertEqual(DagRunState.SUCCESS, result.dag_run_state)
 
+            for lock_released in session.execute(
+                text("select released from direct_ingest_raw_data_resource_lock")
+            ):
+                assert lock_released[0]
+
     def test_branching_secondary(self) -> None:
         with Session(bind=self.engine) as session:
             result = self.run_dag_test(
@@ -480,15 +482,18 @@ class RawDataImportDagIntegrationTest(AirflowIntegrationTest):
             )
             self.assertEqual(DagRunState.SUCCESS, result.dag_run_state)
 
-    def test_branching_resource_lock_acquisition_fails(self) -> None:
-        def _resource_lock_fails(*args: Dict, **kwargs: Any) -> BaseOperator:
-            if "acquire_raw_data_resource_locks" in kwargs["task_id"]:
-                return FakeFailureOperator(*args, **kwargs)
-            if "release_raw_data_resource_locks" in kwargs["task_id"]:
-                return FakeCloudSqlOperator(*args, mock_pg_return=[], **kwargs)
-            return fake_operator_with_return_value([])(*args, **kwargs)
+            for lock_released in session.execute(
+                text("select released from direct_ingest_raw_data_resource_lock")
+            ):
+                assert lock_released[0]
 
-        self.mock_cloud_sql_patcher.side_effect = _resource_lock_fails
+    def test_branching_resource_lock_acquisition_fails(self) -> None:
+        def _resource_lock_fails(*_args: Dict, **_kwargs: Any) -> None:
+            raise ValueError("We failed! Oops!")
+
+        self.mock_cloud_sql_db_hook().get_database_hook.side_effect = (
+            _resource_lock_fails
+        )
         with Session(bind=self.engine) as session:
             result = self.run_dag_test(
                 self._create_dag(),
@@ -520,43 +525,15 @@ class RawDataImportDagIntegrationTest(AirflowIntegrationTest):
             # failed state will only happen when resource releasing failed
             self.assertEqual(DagRunState.FAILED, result.dag_run_state)
 
+            assert not list(
+                session.execute(
+                    text("select released from direct_ingest_raw_data_resource_lock")
+                )
+            )
+
     def test_branching_resource_lock_acquisition_succeeds_but_we_fail_after(
         self,
     ) -> None:
-
-        acquire_mock_pg_hook = create_autospec(PostgresHook)
-        release_mock_pg_hook = create_autospec(PostgresHook)
-
-        def _resource_lock_fails(*args: Dict, **kwargs: Any) -> BaseOperator:
-            if "acquire_raw_data_resource_locks" in kwargs["task_id"]:
-                return FakeCloudSqlOperator(
-                    *args,
-                    mock_pg_return=[
-                        [
-                            None,
-                            [
-                                (1, "BUCKET"),
-                                (2, "OPERATIONS_DATABASE"),
-                                (3, "BIG_QUERY_RAW_DATA_DATASET"),
-                            ],
-                        ]
-                    ],
-                    mock_pg_hook=acquire_mock_pg_hook,
-                    **kwargs
-                )
-            if "release_raw_data_resource_locks" in kwargs["task_id"]:
-                return FakeCloudSqlOperator(
-                    *args,
-                    mock_pg_return=[
-                        [(1, False), (2, False), (3, False)],
-                        [(1, True), (2, True), (3, True)],
-                    ],
-                    mock_pg_hook=release_mock_pg_hook,
-                    **kwargs
-                )
-            return fake_operator_with_return_value([])(*args, **kwargs)
-
-        self.mock_cloud_sql_patcher.side_effect = _resource_lock_fails
 
         self.list_normalized_unprocessed_files_mock.side_effect = (
             fake_failing_operator_constructor
@@ -589,57 +566,266 @@ class RawDataImportDagIntegrationTest(AirflowIntegrationTest):
             # failed state will only happen when resource releasing failed
             self.assertEqual(DagRunState.SUCCESS, result.dag_run_state)
 
-            assert acquire_mock_pg_hook.get_records.call_count == 2
-            assert release_mock_pg_hook.get_records.call_count == 4
+            for lock_released in session.execute(
+                text("select released from direct_ingest_raw_data_resource_lock")
+            ):
+                assert lock_released[0]
 
-    def test_file_discovery_and_registration_none_seen_same_tag(self) -> None:
-        self.split_by_norm.stop()
 
-        # step 2 input
+class RawDataImportOperationsRegistrationIntegrationTest(AirflowIntegrationTest):
+    """integration tests for step 2: operations registration"""
+
+    metas = [OperationsBase]
+    conn_id = "operations_postgres_conn_id"
+
+    def setUp(self) -> None:
+        super().setUp()
+        self.dag_id = get_raw_data_import_dag_id(_PROJECT_ID)
+        test_state_codes = [StateCode.US_XX, StateCode.US_YY]
+        test_state_code_and_instance_pairs = [
+            (StateCode.US_XX, DirectIngestInstance.PRIMARY),
+            (StateCode.US_XX, DirectIngestInstance.SECONDARY),
+            (StateCode.US_YY, DirectIngestInstance.PRIMARY),
+            (StateCode.US_YY, DirectIngestInstance.SECONDARY),
+        ]
+        self.raw_data_enabled_pairs = patch(
+            "recidiviz.airflow.dags.raw_data.raw_data_branching.get_raw_data_dag_enabled_state_and_instance_pairs",
+            return_value=test_state_code_and_instance_pairs,
+        )
+        self.raw_data_enabled_pairs.start()
+        self.raw_data_enabled_pairs_two = patch(
+            "recidiviz.airflow.dags.raw_data.initialize_raw_data_dag_group.get_raw_data_dag_enabled_state_and_instance_pairs",
+            return_value=test_state_code_and_instance_pairs,
+        )
+        self.raw_data_enabled_pairs_two.start()
+        self.raw_data_enabled_states = patch(
+            "recidiviz.airflow.dags.raw_data.raw_data_branching.get_raw_data_dag_enabled_states",
+            return_value=test_state_codes,
+        )
+        self.raw_data_enabled_states.start()
+        self.region_module_patch = patch(
+            "recidiviz.airflow.dags.raw_data.utils.direct_ingest_regions_module",
+            fake_regions,
+        )
+        self.region_module_patch.start()
+        self.cloud_sql_db_hook_patcher = patch(
+            "recidiviz.airflow.dags.operators.cloud_sql_query_operator.CloudSQLDatabaseHook"
+        )
+        self.mock_cloud_sql_db_hook = self.cloud_sql_db_hook_patcher.start()
+        self.mock_cloud_sql_db_hook().get_database_hook.return_value = PostgresHook(
+            self.conn_id
+        )
+        self.gcs_operator_patcher = patch(
+            "recidiviz.airflow.dags.raw_data_import_dag.DirectIngestListNormalizedUnprocessedFilesOperator",
+            side_effect=fake_operator_with_return_value([]),
+        )
+        self.list_normalized_unprocessed_files_mock = self.gcs_operator_patcher.start()
+
+    def tearDown(self) -> None:
+        self.raw_data_enabled_pairs.stop()
+        self.raw_data_enabled_pairs_two.stop()
+        self.raw_data_enabled_states.stop()
+        self.cloud_sql_db_hook_patcher.stop()
+        self.gcs_operator_patcher.stop()
+        self.region_module_patch.stop()
+        super().tearDown()
+
+    def _create_dag(self) -> DAG:
+        # pylint: disable=import-outside-toplevel
+        from recidiviz.airflow.dags.raw_data_import_dag import (
+            create_raw_data_import_dag,
+        )
+
+        return create_raw_data_import_dag()
+
+    def test_no_chunked_files(self) -> None:
         self.list_normalized_unprocessed_files_mock.side_effect = fake_operator_with_return_value(
             [
                 "testing/unprocessed_2024-01-25T16:35:33:617135_raw_tagBasicData.csv",
-                "testing/unprocessed_2024-01-26T16:35:33:617135_raw_tagBasicData.csv",
-                "testing/unprocessed_2024-01-27T16:35:33:617135_raw_tagBasicData.csv",
+                "testing/unprocessed_2024-01-26T16:35:33:617135_raw_tagFileConfigHeaders.csv",
+                "testing/unprocessed_2024-01-27T16:35:33:617135_raw_tagCustomLineTerminatorNonUTF8.csv",
             ]
         )
 
-        # because partial_subset makes a deep copy of the whole dag, if we pass in a
-        # PostgresHook mock the calls wont be attributed to the mocks we create here
-        # so we dont
-        def _select_cloud_sql_output(*args: Dict, **kwargs: Any) -> BaseOperator:
-            if "get_all_unprocessed_gcs_file_metadata" in kwargs["task_id"]:
-                return FakeCloudSqlOperator(
-                    *args,
-                    mock_pg_return=[
-                        [],  # none already seen
-                        [
-                            (
-                                1,
-                                None,
-                                "unprocessed_2024-01-25T16:35:33:617135_raw_tagBasicData.csv",
-                            ),
-                            (
-                                2,
-                                None,
-                                "unprocessed_2024-01-26T16:35:33:617135_raw_tagBasicData.csv",
-                            ),
-                            (
-                                3,
-                                None,
-                                "unprocessed_2024-01-27T16:35:33:617135_raw_tagBasicData.csv",
-                            ),
-                        ],
-                    ],
-                    **kwargs
-                )
-            if "get_all_unprocessed_bq_file_metadata" in kwargs["task_id"]:
-                return FakeCloudSqlOperator(
-                    *args, mock_pg_return=[[(1,), (2,), (3,)], []], **kwargs
-                )
-            return fake_operator_with_return_value([])(*args, **kwargs)
+        step_2_only_dag = self._create_dag().partial_subset(
+            task_ids_or_regex=[
+                "raw_data_branching.us_xx_primary_import_branch.list_normalized_unprocessed_gcs_file_paths",
+                "raw_data_branching.us_xx_primary_import_branch.get_all_unprocessed_gcs_file_metadata",
+                "raw_data_branching.us_xx_primary_import_branch.get_all_unprocessed_bq_file_metadata",
+                "raw_data_branching.us_xx_primary_import_branch.split_by_pre_import_normalization_type",
+            ],
+            include_upstream=False,
+            include_downstream=False,
+        )
 
-        self.mock_cloud_sql_patcher.side_effect = _select_cloud_sql_output
+        with Session(bind=self.engine) as session:
+            result = self.run_dag_test(
+                step_2_only_dag,
+                session=session,
+                expected_failure_ids=[],  # none!
+                expected_skipped_ids=[],  # none!
+            )
+            self.assertEqual(DagRunState.SUCCESS, result.dag_run_state)
+
+            # --- validate xcom output
+
+            import_ready_files_jsonb = self.get_xcom_for_task_id(
+                "raw_data_branching.us_xx_primary_import_branch.split_by_pre_import_normalization_type",
+                session=session,
+                key=IMPORT_READY_FILES,
+            )
+            requires_norm_bq_metadata_jsonb = self.get_xcom_for_task_id(
+                "raw_data_branching.us_xx_primary_import_branch.split_by_pre_import_normalization_type",
+                session=session,
+                key=REQUIRES_PRE_IMPORT_NORMALIZATION_FILES_BQ_METADATA,
+            )
+            requires_norm_paths_jsonb = self.get_xcom_for_task_id(
+                "raw_data_branching.us_xx_primary_import_branch.split_by_pre_import_normalization_type",
+                session=session,
+                key=REQUIRES_PRE_IMPORT_NORMALIZATION_FILES,
+            )
+
+            requires_norm_paths = [
+                GcsfsFilePath.from_absolute_path(path)
+                for path in json.loads(assert_type(requires_norm_paths_jsonb, bytes))
+            ]
+
+            assert requires_norm_paths == [
+                GcsfsFilePath.from_absolute_path(
+                    "testing/unprocessed_2024-01-27T16:35:33:617135_raw_tagCustomLineTerminatorNonUTF8.csv",
+                )
+            ]
+
+            requires_norm_bq_metadata = [
+                RawBigQueryFileMetadata.deserialize(requires_norm_bq_metadata_str)
+                for requires_norm_bq_metadata_str in json.loads(
+                    assert_type(requires_norm_bq_metadata_jsonb, bytes)
+                )
+            ]
+
+            assert requires_norm_bq_metadata == [
+                RawBigQueryFileMetadata(
+                    gcs_files=[
+                        RawGCSFileMetadata(
+                            gcs_file_id=3,
+                            file_id=None,
+                            path=GcsfsFilePath.from_absolute_path(
+                                "testing/unprocessed_2024-01-27T16:35:33:617135_raw_tagCustomLineTerminatorNonUTF8.csv",
+                            ),
+                        )
+                    ],
+                    file_id=3,
+                    file_tag="tagCustomLineTerminatorNonUTF8",
+                    update_datetime=datetime.datetime.fromisoformat(
+                        "2024-01-27T16:35:33:617135Z"
+                    ),
+                )
+            ]
+
+            import_ready_files = [
+                ImportReadyFile.deserialize(import_ready_file_str)
+                for import_ready_file_str in json.loads(
+                    assert_type(import_ready_files_jsonb, bytes)
+                )
+            ]
+
+            assert import_ready_files == [
+                ImportReadyFile(
+                    file_id=1,
+                    file_tag="tagBasicData",
+                    update_datetime=datetime.datetime.fromisoformat(
+                        "2024-01-25T16:35:33:617135Z"
+                    ),
+                    pre_import_normalized_file_paths=None,
+                    original_file_paths=[
+                        GcsfsFilePath.from_absolute_path(
+                            "testing/unprocessed_2024-01-25T16:35:33:617135_raw_tagBasicData.csv",
+                        )
+                    ],
+                ),
+                ImportReadyFile(
+                    file_id=2,
+                    file_tag="tagFileConfigHeaders",
+                    update_datetime=datetime.datetime.fromisoformat(
+                        "2024-01-26T16:35:33:617135Z"
+                    ),
+                    pre_import_normalized_file_paths=None,
+                    original_file_paths=[
+                        GcsfsFilePath.from_absolute_path(
+                            "testing/unprocessed_2024-01-26T16:35:33:617135_raw_tagFileConfigHeaders.csv",
+                        )
+                    ],
+                ),
+            ]
+
+            # --- validate persisted rows in operations db
+
+            bq_metadata = session.execute(
+                text(
+                    "select file_id, update_datetime, file_processed_time from direct_ingest_raw_big_query_file_metadata"
+                )
+            )
+
+            assert list(bq_metadata) == [
+                (
+                    1,
+                    datetime.datetime.fromisoformat("2024-01-25T16:35:33:617135Z"),
+                    None,
+                ),
+                (
+                    2,
+                    datetime.datetime.fromisoformat("2024-01-26T16:35:33:617135Z"),
+                    None,
+                ),
+                (
+                    3,
+                    datetime.datetime.fromisoformat("2024-01-27T16:35:33:617135Z"),
+                    None,
+                ),
+            ]
+
+            gcs_metadata = session.execute(
+                text(
+                    "select file_id, gcs_file_id, update_datetime from direct_ingest_raw_gcs_file_metadata"
+                )
+            )
+
+            assert list(gcs_metadata) == [
+                (
+                    1,
+                    1,
+                    datetime.datetime.fromisoformat("2024-01-25T16:35:33:617135Z"),
+                ),
+                (
+                    2,
+                    2,
+                    datetime.datetime.fromisoformat("2024-01-26T16:35:33:617135Z"),
+                ),
+                (
+                    3,
+                    3,
+                    datetime.datetime.fromisoformat("2024-01-27T16:35:33:617135Z"),
+                ),
+            ]
+
+    def test_chunked_files(self) -> None:
+        # step 2 input
+        self.list_normalized_unprocessed_files_mock.side_effect = fake_operator_with_return_value(
+            [
+                # complete set of chunks
+                "testing/unprocessed_2024-01-25T16:35:33:617135_raw_tagChunkedFile-1.csv",
+                "testing/unprocessed_2024-01-25T17:35:33:617135_raw_tagChunkedFile-2.csv",
+                "testing/unprocessed_2024-01-25T18:35:33:617135_raw_tagChunkedFile-3.csv",
+                # missing 1 chunk
+                "testing/unprocessed_2024-01-26T16:35:33:617135_raw_tagChunkedFile-1.csv",
+                "testing/unprocessed_2024-01-26T17:35:33:617135_raw_tagChunkedFile-3.csv",
+                # has 1 too many chunks
+                "testing/unprocessed_2024-01-27T16:35:33:617135_raw_tagChunkedFile-1.csv",
+                "testing/unprocessed_2024-01-27T17:35:33:617135_raw_tagChunkedFile-2.csv",
+                "testing/unprocessed_2024-01-27T18:35:33:617135_raw_tagChunkedFile-3.csv",
+                "testing/unprocessed_2024-01-27T19:35:33:617135_raw_tagChunkedFile-3.csv",
+            ]
+        )
 
         step_2_only_dag = self._create_dag().partial_subset(
             task_ids_or_regex=[
@@ -666,73 +852,145 @@ class RawDataImportDagIntegrationTest(AirflowIntegrationTest):
                 session=session,
                 key=IMPORT_READY_FILES,
             )
-            requires_norm_bq_metadata = self.get_xcom_for_task_id(
+            requires_norm_bq_metadata_jsonb = self.get_xcom_for_task_id(
                 "raw_data_branching.us_xx_primary_import_branch.split_by_pre_import_normalization_type",
                 session=session,
                 key=REQUIRES_PRE_IMPORT_NORMALIZATION_FILES_BQ_METADATA,
             )
-            requires_norm_paths = self.get_xcom_for_task_id(
+            requires_norm_paths_jsonb = self.get_xcom_for_task_id(
                 "raw_data_branching.us_xx_primary_import_branch.split_by_pre_import_normalization_type",
                 session=session,
                 key=REQUIRES_PRE_IMPORT_NORMALIZATION_FILES,
             )
 
-            # there are no files that require pre-import normalization, so we expect
-            # both |requires_norm_paths| (list of file paths that require pre-import
-            # normalization) and |requires_norm_bq_metadata| (list of big query metadata
-            # associated with paths in |requires_norm_paths|) to be empty
-            assert not json.loads(assert_type(requires_norm_paths, bytes))
-            assert not json.loads(assert_type(requires_norm_bq_metadata, bytes))
+            requires_norm_paths = [
+                GcsfsFilePath.from_absolute_path(path)
+                for path in json.loads(assert_type(requires_norm_paths_jsonb, bytes))
+            ]
 
-            import_ready_files = [
-                ImportReadyFile.deserialize(import_ready_file_str)
-                for import_ready_file_str in json.loads(
-                    assert_type(import_ready_files_jsonb, bytes)
+            assert requires_norm_paths == [
+                GcsfsFilePath.from_absolute_path(
+                    "testing/unprocessed_2024-01-25T16:35:33:617135_raw_tagChunkedFile-1.csv",
+                ),
+                GcsfsFilePath.from_absolute_path(
+                    "testing/unprocessed_2024-01-25T17:35:33:617135_raw_tagChunkedFile-2.csv",
+                ),
+                GcsfsFilePath.from_absolute_path(
+                    "testing/unprocessed_2024-01-25T18:35:33:617135_raw_tagChunkedFile-3.csv",
+                ),
+            ]
+
+            requires_norm_bq_metadata = [
+                RawBigQueryFileMetadata.deserialize(requires_norm_bq_metadata_str)
+                for requires_norm_bq_metadata_str in json.loads(
+                    assert_type(requires_norm_bq_metadata_jsonb, bytes)
                 )
             ]
 
-            # validate that it matches what we expect
-            assert import_ready_files == [
-                ImportReadyFile(
+            assert requires_norm_bq_metadata == [
+                RawBigQueryFileMetadata(
+                    gcs_files=[
+                        RawGCSFileMetadata(
+                            gcs_file_id=1,
+                            file_id=None,
+                            path=GcsfsFilePath.from_absolute_path(
+                                "testing/unprocessed_2024-01-25T16:35:33:617135_raw_tagChunkedFile-1.csv",
+                            ),
+                        ),
+                        RawGCSFileMetadata(
+                            gcs_file_id=2,
+                            file_id=None,
+                            path=GcsfsFilePath.from_absolute_path(
+                                "testing/unprocessed_2024-01-25T17:35:33:617135_raw_tagChunkedFile-2.csv",
+                            ),
+                        ),
+                        RawGCSFileMetadata(
+                            gcs_file_id=3,
+                            file_id=None,
+                            path=GcsfsFilePath.from_absolute_path(
+                                "testing/unprocessed_2024-01-25T18:35:33:617135_raw_tagChunkedFile-3.csv",
+                            ),
+                        ),
+                    ],
                     file_id=1,
-                    file_tag="tagBasicData",
+                    file_tag="tagChunkedFile",
                     update_datetime=datetime.datetime.fromisoformat(
-                        "2024-01-25T16:35:33:617135Z"
+                        "2024-01-25T18:35:33:617135Z"
                     ),
-                    pre_import_normalized_file_paths=None,
-                    original_file_paths=[
-                        GcsfsFilePath.from_absolute_path(
-                            "testing/unprocessed_2024-01-25T16:35:33:617135_raw_tagBasicData.csv",
-                        )
-                    ],
-                ),
-                ImportReadyFile(
-                    file_id=2,
-                    file_tag="tagBasicData",
-                    update_datetime=datetime.datetime.fromisoformat(
-                        "2024-01-26T16:35:33:617135Z"
-                    ),
-                    pre_import_normalized_file_paths=None,
-                    original_file_paths=[
-                        GcsfsFilePath.from_absolute_path(
-                            "testing/unprocessed_2024-01-26T16:35:33:617135_raw_tagBasicData.csv",
-                        )
-                    ],
-                ),
-                ImportReadyFile(
-                    file_id=3,
-                    file_tag="tagBasicData",
-                    update_datetime=datetime.datetime.fromisoformat(
-                        "2024-01-27T16:35:33:617135Z"
-                    ),
-                    pre_import_normalized_file_paths=None,
-                    original_file_paths=[
-                        GcsfsFilePath.from_absolute_path(
-                            "testing/unprocessed_2024-01-27T16:35:33:617135_raw_tagBasicData.csv",
-                        )
-                    ],
-                ),
+                )
             ]
+
+            assert not json.loads(assert_type(import_ready_files_jsonb, bytes))
+
+            # --- validate persisted rows in operations db
+
+            bq_metadata = session.execute(
+                text(
+                    "select file_id, update_datetime, file_processed_time from direct_ingest_raw_big_query_file_metadata"
+                )
+            )
+
+            assert set(bq_metadata) == {
+                (
+                    1,
+                    datetime.datetime.fromisoformat("2024-01-25T18:35:33:617135Z"),
+                    None,
+                ),
+            }
+
+            gcs_metadata = session.execute(
+                text(
+                    "select file_id, gcs_file_id, update_datetime from direct_ingest_raw_gcs_file_metadata"
+                )
+            )
+
+            assert set(gcs_metadata) == {
+                (
+                    1,
+                    1,
+                    datetime.datetime.fromisoformat("2024-01-25T16:35:33:617135Z"),
+                ),
+                (
+                    1,
+                    2,
+                    datetime.datetime.fromisoformat("2024-01-25T17:35:33:617135Z"),
+                ),
+                (
+                    1,
+                    3,
+                    datetime.datetime.fromisoformat("2024-01-25T18:35:33:617135Z"),
+                ),
+                (
+                    None,
+                    4,
+                    datetime.datetime.fromisoformat("2024-01-26T16:35:33:617135Z"),
+                ),
+                (
+                    None,
+                    5,
+                    datetime.datetime.fromisoformat("2024-01-26T17:35:33:617135Z"),
+                ),
+                (
+                    None,
+                    6,
+                    datetime.datetime.fromisoformat("2024-01-27T16:35:33:617135Z"),
+                ),
+                (
+                    None,
+                    7,
+                    datetime.datetime.fromisoformat("2024-01-27T17:35:33:617135Z"),
+                ),
+                (
+                    None,
+                    8,
+                    datetime.datetime.fromisoformat("2024-01-27T18:35:33:617135Z"),
+                ),
+                (
+                    None,
+                    9,
+                    datetime.datetime.fromisoformat("2024-01-27T19:35:33:617135Z"),
+                ),
+            }
 
 
 class RawDataImportDagPreImportNormalizationIntegrationTest(AirflowIntegrationTest):
