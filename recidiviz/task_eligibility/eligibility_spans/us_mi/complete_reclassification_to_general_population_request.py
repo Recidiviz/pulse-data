@@ -20,7 +20,7 @@ someone in MI is eligible to be reclassified to general population from solitary
 from recidiviz.big_query.big_query_utils import BigQueryDateInterval
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.candidate_populations.general import (
-    incarceration_population,
+    general_incarceration_population,
 )
 from recidiviz.task_eligibility.completion_events.general import (
     transfer_out_of_disciplinary_or_temporary_solitary_confinement,
@@ -42,7 +42,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     state_code=StateCode.US_MI,
     task_name="COMPLETE_RECLASSIFICATION_TO_GENERAL_POPULATION_REQUEST",
     description=_DESCRIPTION,
-    candidate_population_view_builder=incarceration_population.VIEW_BUILDER,
+    candidate_population_view_builder=general_incarceration_population.VIEW_BUILDER,
     criteria_spans_view_builders=[
         eligible_for_reclassification_from_solitary_to_general.VIEW_BUILDER
     ],

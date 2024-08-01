@@ -19,7 +19,7 @@ someone in MI is eligible for a security committee classification review
 """
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.candidate_populations.general import (
-    incarceration_population,
+    general_incarceration_population,
 )
 from recidiviz.task_eligibility.completion_events.state_specific.us_mi import (
     security_classification_committee_review,
@@ -45,7 +45,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     state_code=StateCode.US_MI,
     task_name="COMPLETE_SECURITY_CLASSIFICATION_COMMITTEE_REVIEW_FORM",
     description=_DESCRIPTION,
-    candidate_population_view_builder=incarceration_population.VIEW_BUILDER,
+    candidate_population_view_builder=general_incarceration_population.VIEW_BUILDER,
     criteria_spans_view_builders=[
         past_security_classification_committee_review_date.VIEW_BUILDER,
         housing_unit_type_is_solitary_confinement.VIEW_BUILDER,
