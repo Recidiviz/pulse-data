@@ -18,7 +18,10 @@
 """
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config
-from recidiviz.calculator.query.state.dataset_config import NORMALIZED_STATE_DATASET
+from recidiviz.calculator.query.state.dataset_config import (
+    NORMALIZED_STATE_DATASET,
+    SESSIONS_DATASET,
+)
 from recidiviz.calculator.query.state.views.workflows.firestore.opportunity_record_query_fragments import (
     array_agg_case_notes_by_external_id,
     join_current_task_eligibility_spans_with_external_id,
@@ -40,6 +43,7 @@ from recidiviz.task_eligibility.utils.almost_eligible_query_fragments import (
     x_time_away_from_eligibility,
 )
 from recidiviz.task_eligibility.utils.us_nd_query_fragments import (
+    get_infractions_as_case_notes,
     get_positive_behavior_reports_as_case_notes,
     get_program_assignments_as_case_notes,
     reformat_ids,
@@ -69,8 +73,20 @@ case_notes_cte AS (
 
     UNION ALL
 
+    ({get_infractions_as_case_notes()})
+
+    UNION ALL
+
+    -- Mental Health Assignments
+    {get_program_assignments_as_case_notes(
+        additional_where_clause="REGEXP_CONTAINS(spa.program_id, r'MENTAL HEALTH')", 
+        criteria='Mental Health')}
+
+    UNION ALL
+
     -- Assignments (this includes programming, career readiness and jobs)
-    {get_program_assignments_as_case_notes()}
+    {get_program_assignments_as_case_notes(
+        additional_where_clause="NOT REGEXP_CONTAINS(spa.program_id, r'MENTAL HEALTH')")}
 
     UNION ALL
 
@@ -148,6 +164,7 @@ US_ND_TRANSFER_TO_ATP_FORM_RECORD_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     raw_data_views_dataset=raw_tables_dataset_for_region(
         state_code=StateCode.US_ND, instance=DirectIngestInstance.PRIMARY
     ),
+    sessions_dataset=SESSIONS_DATASET,
     should_materialize=True,
 )
 

@@ -17,9 +17,14 @@
 """
 Helper SQL queries for North Dakota
 """
+from typing import Optional
+
 from google.cloud import bigquery
 
-from recidiviz.calculator.query.bq_utils import nonnull_end_date_exclusive_clause
+from recidiviz.calculator.query.bq_utils import (
+    nonnull_end_date_exclusive_clause,
+    today_between_start_date_and_nullable_end_date_exclusive_clause,
+)
 from recidiviz.calculator.query.state.dataset_config import (
     NORMALIZED_STATE_DATASET,
     SESSIONS_DATASET,
@@ -62,6 +67,25 @@ MINIMUM_SECURITY_FACILITIES_WHERE_CLAUSE = f"""
     AND (facility != 'DWCRC' OR REGEXP_CONTAINS(housing_unit, r'HVN'))"""
 
 
+def parole_review_dates_query() -> str:
+    """
+    Returns a SQL query that retrieves the parole review dates for North Dakota.
+    """
+    # TODO(#31967): ingest parole review dates
+    return """
+        SELECT 
+            peid.state_code,
+            peid.person_id,
+            SAFE_CAST(SAFE.PARSE_DATETIME('%m/%d/%Y  %H:%M:%S%p', ms.MEDICAL_DATE) AS DATE) AS parole_review_date,
+        FROM `{project_id}.{raw_data_dataset}.elite_offender_medical_screenings_6i` ms
+        LEFT JOIN `{project_id}.{normalized_state_dataset}.state_person_external_id` peid
+            ON peid.external_id = REPLACE(REPLACE(ms.OFFENDER_BOOK_ID,',',''), '.00', '')
+            AND peid.id_type = 'US_ND_ELITE_BOOKING'
+            AND peid.state_code = 'US_ND'
+            AND ms.MEDICAL_QUESTIONAIRE_CODE = 'PAR'
+"""
+
+
 def parole_review_date_criteria_builder(
     criteria_name: str,
     description: str,
@@ -84,16 +108,7 @@ def parole_review_date_criteria_builder(
 
     _QUERY_TEMPLATE = f"""
         WITH medical_screening AS (
-        SELECT 
-            peid.state_code,
-            peid.person_id,
-            SAFE_CAST(SAFE.PARSE_DATETIME('%m/%d/%Y  %H:%M:%S%p', ms.MEDICAL_DATE) AS DATE) AS parole_review_date,
-        FROM `{{project_id}}.{{raw_data_dataset}}.elite_offender_medical_screenings_6i` ms
-        LEFT JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` peid
-            ON peid.external_id = REPLACE(REPLACE(ms.OFFENDER_BOOK_ID,',',''), '.00', '')
-            AND peid.id_type = 'US_ND_ELITE_BOOKING'
-            AND peid.state_code = 'US_ND'
-            AND ms.MEDICAL_QUESTIONAIRE_CODE = 'PAR'
+            {parole_review_dates_query()}
         ),
 
         critical_date_spans AS (
@@ -183,27 +198,40 @@ def get_positive_behavior_reports_as_case_notes() -> str:
         AND sic.incident_date > DATE_SUB(CURRENT_DATE, INTERVAL 1 YEAR)"""
 
 
-def get_program_assignments_as_case_notes() -> str:
+def get_program_assignments_as_case_notes(
+    criteria: str = "Assignments", additional_where_clause: Optional[str] = None
+) -> str:
     """
-    Returns a SQL query that retrieves program assignments as case notes.
+    Returns a SQL query that retrieves program assignments from the current
+    incarceration as case notes.
     """
 
-    return """
+    base_query = f"""
     SELECT 
         peid.external_id,
-        "Assignments" AS criteria,
+        '{criteria}' AS criteria,
         spa.participation_status AS note_title,
         CONCAT(
             spa.program_location_id,
-            " - Service: ",
+            " - ",
             SPLIT(spa.program_id, '@@')[SAFE_OFFSET(0)],
-            " - Activity Description: ",
+            " - Description: ",
             SPLIT(spa.program_id, '@@')[SAFE_OFFSET(1)]
         ) AS note_body,
-        COALESCE(spa.discharge_date, spa.start_date, spa.referral_date) AS event_date,
-    FROM `{project_id}.{normalized_state_dataset}.state_program_assignment` spa
-    INNER JOIN `{project_id}.{normalized_state_dataset}.state_person_external_id` peid
+        COALESCE(spa.discharge_date, spa.start_date, spa.referral_date) AS event_date
+    FROM `{{project_id}}.{{normalized_state_dataset}}.state_program_assignment` spa
+    INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` peid
         USING (person_id)
+    -- Only include program assignments from the current incarceration span
+    INNER JOIN `{{project_id}}.{{sessions_dataset}}.incarceration_super_sessions_materialized` iss
+        ON spa.state_code = iss.state_code
+        AND spa.person_id = iss.person_id
+        AND spa.start_date BETWEEN iss.start_date AND {nonnull_end_date_exclusive_clause('iss.end_date')}
+        AND COALESCE(spa.discharge_date, spa.start_date, spa.referral_date) BETWEEN iss.start_date AND IFNULL(iss.end_date, '9999-12-31')
+        AND {today_between_start_date_and_nullable_end_date_exclusive_clause(
+            start_date_column="iss.start_date",
+            end_date_column="iss.end_date"
+        )}
     WHERE spa.state_code = 'US_ND'
         AND spa.program_id IS NOT NULL
         AND spa.participation_status IN ('IN_PROGRESS', 
@@ -217,6 +245,60 @@ def get_program_assignments_as_case_notes() -> str:
                                             'DECEASED')
         -- Don't surface case manager assignments
         AND NOT REGEXP_CONTAINS(spa.program_id, r'ASSIGNED CASE MANAGER')
+    """
+
+    if additional_where_clause:
+        base_query += f" AND {additional_where_clause}"
+
+    base_query += """
     GROUP BY 1,2,3,4,5
     HAVING note_body IS NOT NULL
     """
+
+    return base_query
+
+
+def get_infractions_query(additional_columns: str = "") -> str:
+    """
+    Returns a SQL query that retrieves infractions for North Dakota.
+    """
+    # TODO(#31968): ingest infractions to incidents
+
+    return f"""
+    SELECT 
+        peid.state_code,
+        peid.person_id,
+        SAFE_CAST(LEFT(e.incident_date, 10) AS DATE) AS start_date,
+        DATE_ADD(SAFE_CAST(LEFT(e.incident_date, 10) AS DATE), INTERVAL 6 MONTH) AS end_date,
+        FALSE AS meets_criteria,
+        RESULT_OIC_OFFENCE_CATEGORY AS infraction_category,
+        SAFE_CAST(LEFT(e.incident_date, 10) AS DATE) AS start_date_infraction,
+        {additional_columns}
+    FROM `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.elite_offense_in_custody_and_pos_report_data_latest` e
+    INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` peid
+        ON peid.external_id = e.ROOT_OFFENDER_ID 
+        AND peid.id_type = 'US_ND_ELITE'
+    WHERE FINDING_DESCRIPTION = 'GUILTY'
+        AND RESULT_OIC_OFFENCE_CATEGORY IN ('LVL2', 'LVL3', 'LVL2E', 'LVL3R')"""
+
+
+def get_infractions_as_case_notes() -> str:
+    """
+    Returns a SQL query that retrieves infractions in the past 6 months as case notes.
+    """
+
+    return f"""
+    WITH infractions AS (
+        {get_infractions_query(
+            additional_columns = "e.INCIDENT_DETAILS, e.OIC_HEARING_TYPE_DESC, e.FINDING_DESCRIPTION, e.INCIDENT_TYPE_DESC, peid.external_id")}
+    )
+    SELECT 
+        external_id,
+        "Infractions (in the past 6 months)" AS criteria,
+        CONCAT(OIC_HEARING_TYPE_DESC, ' - ', INCIDENT_TYPE_DESC) AS note_title,
+        CONCAT(FINDING_DESCRIPTION, ' - ', INCIDENT_DETAILS) AS note_body,
+        start_date_infraction AS event_date
+    FROM infractions i
+    WHERE {today_between_start_date_and_nullable_end_date_exclusive_clause(
+            start_date_column="i.start_date",
+            end_date_column="i.end_date")}"""
