@@ -458,19 +458,23 @@ ON
     ),
     SpanQueryBuilder(
         span_type=SpanType.WORKFLOWS_USER_REGISTRATION_SESSION,
-        description="Spans of time over which a workflows user is a registered user of the workflows tool",
-        sql_source=f"""
+        description="Spans of time over which a primary workflows user is a registered user of the workflows tool",
+        sql_source="""
 SELECT
-    *,
+    * EXCEPT (workflows_user_email_address, completion_event_type),
     workflows_user_email_address AS email_address,
-    CAST(NULL AS DATE) AS end_date_exclusive,
-FROM `{{project_id}}.analyst_data.workflows_user_signups_materialized`,
-# Unnest all supported task types so that user registration can be associated with all task types
-#TODO(#31097): Restrict task type unnest to tasks available in a state_code
-UNNEST([{DEDUPED_TASK_COMPLETION_EVENT_VB_QUERY_FRAGMENT}]) AS task_type
+    completion_event_type AS task_type,
+FROM
+    `{project_id}.analyst_data.workflows_primary_user_registration_sessions_materialized`
+# Join with completion event metadata on system_type to get all task types that a user
+# could theoretically access based on their system type access (supervision vs. incarceration)
+LEFT JOIN
+    `{project_id}.reference_views.completion_event_type_metadata_materialized`
+USING
+    (system_type)
 """,
-        attribute_cols=["task_type"],
-        span_start_date_col="workflows_signup_date",
+        attribute_cols=["task_type", "system_type"],
+        span_start_date_col="start_date",
         span_end_date_col="end_date_exclusive",
     ),
 ]
