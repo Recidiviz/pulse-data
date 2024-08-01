@@ -299,6 +299,14 @@ def join_sentence_spans_to_compartment_sessions(
     sentences_preprocessed to compartment_sessions where sentence_spans overlap with particular
     kinds of sessions.
     """
+    if compartment_level_1_to_overlap is None:
+        compartment_level_1_to_overlap = ["SUPERVISION"]
+
+    if "INCARCERATION" in compartment_level_1_to_overlap:
+        sessions_view = "compartment_sessions"
+    else:
+        sessions_view = "prioritized_supervision_sessions"
+
     compartment_level_1_clause = _compartment_where_clause(
         compartment_types_to_overlap=compartment_level_1_to_overlap, level=1
     )
@@ -310,7 +318,7 @@ def join_sentence_spans_to_compartment_sessions(
     UNNEST (sentences_preprocessed_id_array_actual_completion) AS sentences_preprocessed_id
     INNER JOIN `{{project_id}}.{{sessions_dataset}}.sentences_preprocessed_materialized` sent
       USING (state_code, person_id, sentences_preprocessed_id)
-    INNER JOIN `{{project_id}}.{{sessions_dataset}}.compartment_sessions_materialized` sess
+    INNER JOIN `{{project_id}}.{{sessions_dataset}}.{sessions_view}_materialized` sess
         ON span.state_code = sess.state_code
         AND span.person_id = sess.person_id
         -- Restrict to spans that overlap with particular compartment levels

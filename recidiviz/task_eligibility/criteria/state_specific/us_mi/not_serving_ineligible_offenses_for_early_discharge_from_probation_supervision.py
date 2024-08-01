@@ -51,7 +51,8 @@ _QUERY_TEMPLATE = f"""
         FALSE AS meets_criteria,
         TO_JSON(STRUCT(ARRAY_AGG(DISTINCT statute) AS ineligible_offenses)) AS reason,
         ARRAY_AGG(DISTINCT statute) AS ineligible_offenses,
-    {join_sentence_spans_to_compartment_sessions(compartment_level_2_to_overlap="PROBATION")}
+    {join_sentence_spans_to_compartment_sessions(compartment_level_1_to_overlap = ['SUPERVISION'],
+                                                 compartment_level_2_to_overlap="PROBATION")}
     WHERE span.state_code = "US_MI"
         AND sent.sentence_sub_type = "PROBATION" 
         --only include spans with ineligible offenses 

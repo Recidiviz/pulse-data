@@ -48,7 +48,8 @@ _QUERY_TEMPLATE = f"""
         FALSE as meets_criteria,
         TO_JSON(STRUCT(ARRAY_AGG(DISTINCT statute) AS ineligible_offenses)) AS reason,
         ARRAY_AGG(DISTINCT statute) AS ineligible_offenses,
-    {join_sentence_spans_to_compartment_sessions(compartment_level_2_to_overlap=['PAROLE', 'DUAL'])}
+    {join_sentence_spans_to_compartment_sessions(compartment_level_1_to_overlap = ['SUPERVISION'],
+                                                 compartment_level_2_to_overlap=['PAROLE', 'DUAL'])}
     WHERE span.state_code = "US_MI"
     --exclude probation sentences for DUAL clients
     AND sent.sentence_type = "INCARCERATION" 
