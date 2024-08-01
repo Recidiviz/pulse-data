@@ -73,7 +73,7 @@ POPULATION_TYPE_TO_SPAN_SELECTOR_LIST: Dict[
         ),
         SpanSelector(
             span_type=SpanType.WORKFLOWS_USER_REGISTRATION_SESSION,
-            span_conditions_dict={},
+            span_conditions_dict={"system_type": ["INCARCERATION"]},
         ),
     ],
     MetricPopulationType.SUPERVISION: [
@@ -96,7 +96,7 @@ POPULATION_TYPE_TO_SPAN_SELECTOR_LIST: Dict[
         ),
         SpanSelector(
             span_type=SpanType.WORKFLOWS_USER_REGISTRATION_SESSION,
-            span_conditions_dict={},
+            span_conditions_dict={"system_type": ["SUPERVISION"]},
         ),
     ],
     MetricPopulationType.JUSTICE_INVOLVED: [

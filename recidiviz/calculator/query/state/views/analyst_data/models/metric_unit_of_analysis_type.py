@@ -328,10 +328,49 @@ WHERE "SUPERVISION_OFFICER" IN UNNEST(role_type_array)
     ): """SELECT
     state_code,
     workflows_user_email_address AS email_address,
-    workflows_signup_date AS start_date,
-    CAST(NULL AS DATE) end_date_exclusive, 
+    start_date,
+    end_date_exclusive, 
 FROM
-    `{project_id}.analyst_data.workflows_user_signups_materialized`""",
+    `{project_id}.analyst_data.workflows_primary_user_registration_sessions_materialized`""",
+    (
+        MetricUnitOfObservationType.WORKFLOWS_USER,
+        MetricUnitOfAnalysisType.WORKFLOWS_LOCATION,
+    ): """SELECT
+    state_code,
+    workflows_user_email_address AS email_address,
+    start_date,
+    end_date_exclusive,
+    location_id,
+FROM
+    `{project_id}.analyst_data.workflows_primary_user_registration_sessions_materialized`""",
+    (
+        MetricUnitOfObservationType.WORKFLOWS_USER,
+        MetricUnitOfAnalysisType.SUPERVISION_DISTRICT,
+    ): """SELECT
+        state_code,
+        workflows_user_email_address AS email_address,
+        start_date,
+        end_date_exclusive,
+        location_id AS district,
+    FROM
+        `{project_id}.analyst_data.workflows_primary_user_registration_sessions_materialized`
+    WHERE
+        system_type = "SUPERVISION"
+""",
+    (
+        MetricUnitOfObservationType.WORKFLOWS_USER,
+        MetricUnitOfAnalysisType.FACILITY,
+    ): """SELECT
+        state_code,
+        workflows_user_email_address AS email_address,
+        start_date,
+        end_date_exclusive,
+        location_id AS facility,
+    FROM
+        `{project_id}.analyst_data.workflows_primary_user_registration_sessions_materialized`
+    WHERE
+        system_type = "INCARCERATION"
+""",
 }
 
 UNIT_OF_ANALYSIS_STATIC_ATTRIBUTE_COLS_QUERY_DICT: Dict[
