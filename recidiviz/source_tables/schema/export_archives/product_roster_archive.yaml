@@ -25,7 +25,7 @@ schema:
     type: STRING
     mode: NULLABLE
   - name: user_hash
-    type: DATE
+    type: STRING
     mode: NULLABLE
   - name: pseudonymized_id
     type: STRING
