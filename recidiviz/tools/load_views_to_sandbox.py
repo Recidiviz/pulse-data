@@ -17,25 +17,25 @@
 """A script for writing regularly updated views in BigQuery to a set of temporary
 datasets. Used during development to test updates to views.
 
-To load all views that have changed since the last view deploy and all views
-downstream of those views, run:
-    python -m recidiviz.tools.load_views_to_sandbox \
-       --sandbox_dataset_prefix [SANDBOX_DATASET_PREFIX] auto
-
-To load all views that have changed since the last view deploy and all views
-downstream of those views, but exclude some datasets when considering which views have
-changed, run:
+To load all views that have changed since the last view deploy, run:
     python -m recidiviz.tools.load_views_to_sandbox \
        --sandbox_dataset_prefix [SANDBOX_DATASET_PREFIX] auto \
-       --changed_datasets_to_ignore [DATASET_ID_1,DATASET_ID_2,...]
+       --load_changed_views_only
 
 To load all views that have changed since the last view deploy and views
 downstream of those views, stopping once we've loaded all views specified by
-load_up_to_addresses and load_up_to_datasets, run:
+--load_up_to_addresses and --load_up_to_datasets, run:
     python -m recidiviz.tools.load_views_to_sandbox \
        --sandbox_dataset_prefix [SANDBOX_DATASET_PREFIX] auto
        --load_up_to_addresses [DATASET_ID_1.VIEW_ID_1,DATASET_ID_2.VIEW_ID_2,...]
        --load_up_to_datasets [DATASET_ID_1,DATASET_ID_2,...]
+
+To load all views that have changed since the last view deploy, but exclude some
+datasets when considering which views have changed, run:
+    python -m recidiviz.tools.load_views_to_sandbox \
+       --sandbox_dataset_prefix [SANDBOX_DATASET_PREFIX] auto \
+       --changed_datasets_to_ignore [DATASET_ID_1,DATASET_ID_2,...] \
+       --load_changed_views_only
 
 To load all views that have changed since the last view deploy, but only look in some
 datasets when considering which views have changed, run:
@@ -150,7 +150,13 @@ def load_all_views_to_sandbox(
     |dataflow_dataset_override| is not set, excludes views in
     DATAFLOW_METRICS_MATERIALIZED_DATASET, which is very expensive to materialize.
     """
-    prompt_for_confirmation("This will load all sandbox views, continue?")
+    prompt_for_confirmation(
+        "This will load ALL sandbox views. This can be a very slow / expensive "
+        "operation. If you just want to test that your view changes do not introduce "
+        "any view compilation issues, you can check with the tests in "
+        "recidiviz/tests/big_query/view_graph_validation_test.py. Are you sure you "
+        "want to continue?"
+    )
 
     logging.info("Gathering views to load to sandbox...")
     collected_builders = _AllButSomeBigQueryViewsCollector(
@@ -224,6 +230,22 @@ def _load_manually_filtered_views_to_sandbox(
         raise ValueError(
             "Must define at least one of view_ids_to_load or dataset_ids_to_load"
         )
+
+    confirmation_prompt = """
+There are relatively few known use cases for the `manual` mode. Consider these alternatives:
+* If you want to test how your local view changes impact a set of downstream views, you
+    can use `auto` mode with the `--load_up_to_addresses` and/or `--load_up_to_datasets`
+    arguments.
+* If you just want to load the views changed on your branch, you can use `auto` mode
+    with the `--load_changed_views_only` flag. 
+* If `auto` mode is picking up other views on `main` you can use the
+    `--changed_datasets_to_ignore` or `--changed_dataset_to_include` flags to filter 
+    out changes in datasets unrelated to your changes.
+
+Are you sure you still want to continue with `manual` mode? 
+"""
+
+    prompt_for_confirmation(confirmation_prompt)
 
     logging.info("Prefixing all view datasets with [%s_].", sandbox_dataset_prefix)
 
@@ -350,6 +372,7 @@ def _get_changed_views_to_load_to_sandbox(
 
 def _confirm_rebased_on_latest_deploy() -> None:
     last_deployed_commit = get_hash_of_deployed_commit(project_id())
+    logging.info("Last deployed commit: %s", last_deployed_commit)
 
     if not is_commit_in_current_branch(last_deployed_commit):
         logging.error(
@@ -455,10 +478,27 @@ def _load_views_changed_on_branch_to_sandbox(
     changed_datasets_to_ignore: Optional[List[str]],
     load_up_to_addresses: Optional[List[BigQueryAddress]],
     load_up_to_datasets: Optional[List[str]],
+    load_changed_views_only: bool,
 ) -> None:
     """Loads all views that have changed on this branch as compared to what is deployed
     to the current project (usually staging).
     """
+    if (
+        not load_changed_views_only
+        and not load_up_to_addresses
+        and not load_up_to_datasets
+    ):
+        raise ValueError(
+            "Must set one of --load_changed_views_only, --load_up_to_addresses, "
+            "or --load_up_to_datasets"
+        )
+
+    if load_changed_views_only and (load_up_to_addresses or load_up_to_datasets):
+        raise ValueError(
+            "Cannot set --load_changed_views_only at the same time as "
+            "--load_up_to_addresses or --load_up_to_datasets."
+        )
+
     _confirm_rebased_on_latest_deploy()
 
     view_builders_in_full_dag = deployed_view_builders()
@@ -498,26 +538,22 @@ def _load_views_changed_on_branch_to_sandbox(
             if load_up_to_datasets
             else set()
         )
-
-        addresses_to_load = _get_all_addresses_between_start_and_end_collections(
-            full_dag_walker,
-            start_addresses=changed_views_to_load,
-            end_addresses=end_addresses,
-        )
-        collected_builders = [
-            vb for vb in view_builders_in_full_dag if vb.address in addresses_to_load
-        ]
+    elif load_changed_views_only:
+        end_addresses = changed_views_to_load
     else:
-        sub_dag_collector = BigQueryViewSubDagCollector(
-            view_builders_in_full_dag=view_builders_in_full_dag,
-            view_addresses_in_sub_dag=changed_views_to_load,
-            include_ancestors=False,
-            include_descendants=True,
-            datasets_to_exclude=_datasets_to_exclude_from_sandbox(
-                dataflow_dataset_override
-            ),
+        raise ValueError(
+            "Expected one of load_changed_views_only, load_up_to_datasets or "
+            "load_up_to_addresses to be set."
         )
-        collected_builders = sub_dag_collector.collect_view_builders()
+
+    addresses_to_load = _get_all_addresses_between_start_and_end_collections(
+        full_dag_walker,
+        start_addresses=changed_views_to_load,
+        end_addresses=end_addresses,
+    )
+    collected_builders = [
+        vb for vb in view_builders_in_full_dag if vb.address in addresses_to_load
+    ]
 
     _check_for_invalid_ignores(
         full_dag_walker=full_dag_walker,
@@ -738,6 +774,16 @@ def parse_arguments() -> argparse.Namespace:
         type=str_to_list,
         required=False,
     )
+    parser_auto.add_argument(
+        "--load_changed_views_only",
+        dest="load_changed_views_only",
+        action="store_true",
+        default=False,
+        help=(
+            "If true, the sandbox load will only load views that have changed, or "
+            "views in the dependency chain between views that have changed."
+        ),
+    )
 
     subparsers.add_parser("all")
 
@@ -780,6 +826,7 @@ if __name__ == "__main__":
                 changed_datasets_to_ignore=args.changed_datasets_to_ignore,
                 load_up_to_addresses=args.load_up_to_addresses,
                 load_up_to_datasets=args.load_up_to_datasets,
+                load_changed_views_only=args.load_changed_views_only,
             )
         else:
             raise ValueError(f"Unexpected load to sandbox mode: [{args.chosen_mode}]")
