@@ -23,6 +23,9 @@ schema:
   - name: metric_rate
     type: FLOAT
     mode: NULLABLE
+  - name: category_type
+    type: STRING
+    mode: NULLABLE
   - name: caseload_type
     type: STRING
     mode: NULLABLE
