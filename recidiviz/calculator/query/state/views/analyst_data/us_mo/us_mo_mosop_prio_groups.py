@@ -62,9 +62,11 @@ pt_all AS (
 pt_mosop_groups_only AS (
     SELECT * 
     FROM pt_all
-    WHERE NOT completed_flag AND 
-        NOT ongoing_flag AND 
-        uns_ct < 2
+    WHERE 
+        NOT excluded_by_completion AND 
+        NOT excluded_by_ongoing AND 
+        NOT excluded_by_multiple_failures AND
+        NOT excluded_life
 ),
 grp_1a AS (
     SELECT 
