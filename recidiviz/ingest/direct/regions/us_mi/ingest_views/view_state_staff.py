@@ -106,8 +106,9 @@ RIGHT JOIN omni_base
 ON omni_base.email_address = LOWER(omni_email.email_address)
 ) omni_row
 WHERE row_num = 1
-)
-
+), 
+-- Getting staff information from compas if omni is null.
+final_cte AS ( 
 SELECT 
   omni.employee_ids AS employee_ids_omni,
   compas.RecIds AS employee_ids_compas,
@@ -117,7 +118,16 @@ SELECT
   COALESCE(omni.email_address_lower, compas.lower_Email) AS email_address,
 FROM omni
 FULL JOIN compas
-ON omni.email_address_lower = compas.lower_Email
+ON omni.email_address_lower = compas.lower_Email)
+-- Nulling out invalid emails.
+SELECT 
+  employee_ids_omni,
+  employee_ids_compas,
+  first_name,
+  middle_name, 
+  last_name, 
+  IF(email_address LIKE '%zz_locked%','',email_address) AS email_address
+FROM final_cte
 """
 
 
