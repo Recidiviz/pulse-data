@@ -79,26 +79,24 @@ QUALIFY ROW_NUMBER() OVER(PARTITION BY state_code, person_id, start_date, end_da
                           ORDER BY meets_criteria DESC, half_min_term_or_25_years_date ASC) = 1
 """
 
-VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
-    StateSpecificTaskCriteriaBigQueryViewBuilder(
-        criteria_name=_CRITERIA_NAME,
-        description=_DESCRIPTION,
-        state_code=StateCode.US_PA,
-        criteria_spans_query_template=_QUERY_TEMPLATE,
-        tes_criteria_general_dataset=TASK_ELIGIBILITY_CRITERIA_GENERAL,
-        reasons_fields=[
-            ReasonsField(
-                name="half_min_term_or_25_years_date",
-                type=bigquery.enums.StandardSqlTypeNames.DATE,
-                description="#TODO(#29059): Add reasons field description",
-            ),
-            ReasonsField(
-                name="criteria_fulfilled_first",
-                type=bigquery.enums.StandardSqlTypeNames.STRING,
-                description="#TODO(#29059): Add reasons field description",
-            ),
-        ],
-    )
+VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = StateSpecificTaskCriteriaBigQueryViewBuilder(
+    criteria_name=_CRITERIA_NAME,
+    description=_DESCRIPTION,
+    state_code=StateCode.US_PA,
+    criteria_spans_query_template=_QUERY_TEMPLATE,
+    tes_criteria_general_dataset=TASK_ELIGIBILITY_CRITERIA_GENERAL,
+    reasons_fields=[
+        ReasonsField(
+            name="half_min_term_or_25_years_date",
+            type=bigquery.enums.StandardSqlTypeNames.DATE,
+            description="Date where a client has served 25 years or has served half of their minimum sentence, whichever comes first",
+        ),
+        ReasonsField(
+            name="criteria_fulfilled_first",
+            type=bigquery.enums.StandardSqlTypeNames.STRING,
+            description="Indicates which criteria a client fulfilled first: serving 25 years or serving half of their minimum sentence",
+        ),
+    ],
 )
 
 if __name__ == "__main__":
