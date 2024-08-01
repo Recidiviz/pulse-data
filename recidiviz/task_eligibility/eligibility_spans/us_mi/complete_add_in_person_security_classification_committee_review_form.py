@@ -19,7 +19,7 @@ someone in MI is eligible for an in person security committee classification rev
 """
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.candidate_populations.general import (
-    incarceration_population,
+    general_incarceration_population,
 )
 from recidiviz.task_eligibility.completion_events.state_specific.us_mi import (
     add_in_person_security_classification_committee_review,
@@ -42,7 +42,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     state_code=StateCode.US_MI,
     task_name="COMPLETE_ADD_IN_PERSON_SECURITY_CLASSIFICATION_COMMITTEE_REVIEW_FORM",
     description=_DESCRIPTION,
-    candidate_population_view_builder=incarceration_population.VIEW_BUILDER,
+    candidate_population_view_builder=general_incarceration_population.VIEW_BUILDER,
     criteria_spans_view_builders=[
         past_add_in_person_review_for_scc_date.VIEW_BUILDER,
         in_solitary_confinement_at_least_one_year.VIEW_BUILDER,
