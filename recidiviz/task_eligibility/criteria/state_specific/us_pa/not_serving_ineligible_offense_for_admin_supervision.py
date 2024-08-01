@@ -202,27 +202,25 @@ _REASON_QUERY = f"""
       dedup_cte
 """
 
-VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
-    StateSpecificTaskCriteriaBigQueryViewBuilder(
-        criteria_name=_CRITERIA_NAME,
-        description=_DESCRIPTION,
-        criteria_spans_query_template=_REASON_QUERY,
+VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = StateSpecificTaskCriteriaBigQueryViewBuilder(
+    criteria_name=_CRITERIA_NAME,
+    description=_DESCRIPTION,
+    criteria_spans_query_template=_REASON_QUERY,
+    state_code=StateCode.US_PA,
+    normalized_state_dataset=NORMALIZED_STATE_DATASET,
+    sessions_dataset=SESSIONS_DATASET,
+    raw_data_up_to_date_views_dataset=raw_latest_views_dataset_for_region(
         state_code=StateCode.US_PA,
-        normalized_state_dataset=NORMALIZED_STATE_DATASET,
-        sessions_dataset=SESSIONS_DATASET,
-        raw_data_up_to_date_views_dataset=raw_latest_views_dataset_for_region(
-            state_code=StateCode.US_PA,
-            instance=DirectIngestInstance.PRIMARY,
-        ),
-        meets_criteria_default=True,
-        reasons_fields=[
-            ReasonsField(
-                name="ineligible_offenses",
-                type=bigquery.enums.StandardSqlTypeNames.ARRAY,
-                description="#TODO(#29059): Add reasons field description",
-            )
-        ],
-    )
+        instance=DirectIngestInstance.PRIMARY,
+    ),
+    meets_criteria_default=True,
+    reasons_fields=[
+        ReasonsField(
+            name="ineligible_offenses",
+            type=bigquery.enums.StandardSqlTypeNames.ARRAY,
+            description="List of offenses that a client has committed which make them ineligible for admin supervision",
+        )
+    ],
 )
 
 if __name__ == "__main__":

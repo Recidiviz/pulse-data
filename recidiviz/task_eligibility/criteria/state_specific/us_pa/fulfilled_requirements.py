@@ -40,7 +40,7 @@ _REASONS_FIELDS = [
     ReasonsField(
         name="eligible_date",
         type=bigquery.enums.StandardSqlTypeNames.DATE,
-        description="#TODO(#29059): Add reasons field description",
+        description="Date when a client will have fulfilled all assigned treatments or special conditions",
     ),
 ]
 
