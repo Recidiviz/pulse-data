@@ -22,6 +22,7 @@ from unittest.mock import patch
 from more_itertools import one
 
 from recidiviz.airflow.dags.raw_data.file_metadata_tasks import (
+    MAX_BQ_LOAD_JOBS,
     _build_import_summaries_for_errors,
     _build_import_summaries_for_results,
     _reconcile_import_summaries_and_bq_metadata,
@@ -140,7 +141,7 @@ class CoalesceImportReadyFiles(TestCase):
             [], '{"results": [], "errors": []}'
         )
 
-    def test_full(self) -> None:
+    def test_single_per_batch(self) -> None:
         files = [
             ImportReadyFile(
                 file_id=1,
@@ -172,7 +173,26 @@ class CoalesceImportReadyFiles(TestCase):
 
         assert coalesce_import_ready_files.function(
             serialized_files, output.serialize()
-        ) == [*serialized_files, *serialized_files]
+        ) == [[f] for f in [*serialized_files, *serialized_files]]
+
+    def test_multiple_per_batch(self) -> None:
+        file = ImportReadyFile(
+            file_id=1,
+            file_tag="tag",
+            update_datetime=datetime.datetime(2024, 1, 1, 1, 1, 1, tzinfo=datetime.UTC),
+            original_file_paths=[GcsfsFilePath.from_absolute_path("test/123.csv")],
+            pre_import_normalized_file_paths=None,
+        ).serialize()
+
+        output = BatchedTaskInstanceOutput[ImportReadyFile, RawFileProcessingError](
+            errors=[], results=[]
+        )
+
+        serialized_files = [file for _ in range(MAX_BQ_LOAD_JOBS * 3)]
+
+        assert coalesce_import_ready_files.function(
+            serialized_files, output.serialize()
+        ) == [[file, file, file] for _ in range(MAX_BQ_LOAD_JOBS)]
 
 
 class CoalesceResultsAndErrorsTest(TestCase):

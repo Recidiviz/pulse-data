@@ -20,6 +20,7 @@ from types import ModuleType
 from typing import Dict, List, Optional, Tuple
 
 from airflow.decorators import task
+from more_itertools import distribute
 
 from recidiviz.airflow.dags.raw_data.metadata import (
     APPEND_READY_FILE_BATCHES,
@@ -65,6 +66,8 @@ from recidiviz.utils.airflow_types import (
     MappedBatchedTaskOutput,
 )
 from recidiviz.utils.types import assert_type
+
+MAX_BQ_LOAD_JOBS = 8  # TODO(#29946) determine reasonable default
 
 
 @task
@@ -130,9 +133,9 @@ def split_by_pre_import_normalization_type(
 def coalesce_import_ready_files(
     serialized_input_ready_files_no_normalization: List[str],
     serialized_pre_import_normalization_result: str,
-) -> List[str]:
+) -> List[List[str]]:
     """Combines import ready file objects from pre-import normalization and files that
-    did not need pre-import normalization into a single list.
+    did not need pre-import normalization into equally sized batches.
     """
     pre_import_normalization_result = BatchedTaskInstanceOutput.deserialize(
         serialized_pre_import_normalization_result,
@@ -140,10 +143,17 @@ def coalesce_import_ready_files(
         RawFileProcessingError,
     )
 
-    return [
+    all_import_ready_files = [
         *serialized_input_ready_files_no_normalization,
         *[result.serialize() for result in pre_import_normalization_result.results],
     ]
+
+    if not all_import_ready_files:
+        return []
+
+    num_batches = min(len(all_import_ready_files), MAX_BQ_LOAD_JOBS)
+
+    return [list(batch) for batch in distribute(num_batches, all_import_ready_files)]
 
 
 @task
