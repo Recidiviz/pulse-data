@@ -500,29 +500,6 @@ class BigQueryClient:
         """
 
     @abc.abstractmethod
-    def copy_view(
-        self,
-        view: BigQueryView,
-        destination_client: "BigQueryClient",
-        destination_dataset_id: str,
-    ) -> bigquery.Table:
-        """Copies a view from this client's project to a destination project and dataset. If the dataset does not
-        already exist, a new one will be created.
-
-        This runs synchronously and waits for the job to complete.
-
-        Args:
-            view: The view to copy.
-            destination_client: A BigQueryClient for the destination project. Can be the this client instance if the
-                copy is being performed within the same project.
-            destination_dataset_ref: A reference to the dataset within the destination project.
-
-        Returns:
-            The Table (view) just created.
-
-        """
-
-    @abc.abstractmethod
     def create_table_from_query_async(
         self,
         *,
@@ -1584,35 +1561,6 @@ class BigQueryClientImpl(BigQueryClient):
             total_rows,
             process_page_fn.__name__,
         )
-
-    def copy_view(
-        self,
-        view: BigQueryView,
-        destination_client: BigQueryClient,
-        destination_dataset_id: str,
-    ) -> bigquery.Table:
-        if destination_client.table_exists(destination_dataset_id, view.view_id):
-            raise ValueError(f"Table [{view.view_id}] already exists in dataset!")
-
-        # Create the destination dataset if it doesn't yet exist
-        destination_client.create_dataset_if_necessary(destination_dataset_id)
-
-        destination_dataset_ref = self.dataset_ref_for_id(destination_dataset_id)
-        new_view_ref = destination_dataset_ref.table(view.view_id)
-        new_view = bigquery.Table(new_view_ref)
-        new_view.view_query = StrictStringFormatter().format(
-            view.view_query,
-            project_id=destination_client.project_id,
-            dataset_id=destination_dataset_ref.dataset_id,
-            view_id=view.view_id,
-        )
-
-        # copy clustering fields, if found in source view
-        if view.clustering_fields:
-            new_view.clustering_fields = view.clustering_fields
-        table = destination_client.create_table(new_view)
-        logging.info("Created %s", new_view_ref)
-        return table
 
     def create_table_from_query_async(
         self,
