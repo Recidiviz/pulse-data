@@ -32,6 +32,7 @@ STATES_WITH_RESIDENT_METADATA = [
     StateCode.US_MO,
     StateCode.US_ME,
     StateCode.US_IX,
+    StateCode.US_ND,
 ]
 
 _RESIDENT_RECORD_INCARCERATION_CTE = """

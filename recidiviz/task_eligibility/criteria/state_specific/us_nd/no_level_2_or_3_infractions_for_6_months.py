@@ -32,6 +32,9 @@ from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
+
+# import infractions_query
+from recidiviz.task_eligibility.utils.us_nd_query_fragments import get_infractions_query
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -44,20 +47,7 @@ infraction.
 
 _QUERY_TEMPLATE = f"""
 WITH infractions AS (
-  SELECT 
-    pei.state_code,
-    pei.person_id,
-    SAFE_CAST(LEFT(e.incident_date, 10) AS DATE) AS start_date,
-    DATE_ADD(SAFE_CAST(LEFT(e.incident_date, 10) AS DATE), INTERVAL 6 MONTH) AS end_date,
-    FALSE AS meets_criteria,
-    RESULT_OIC_OFFENCE_CATEGORY AS infraction_category,
-    SAFE_CAST(LEFT(e.incident_date, 10) AS DATE) AS start_date_infraction
-  FROM `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.elite_offense_in_custody_and_pos_report_data_latest` e
-  INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
-    ON pei.external_id = e.ROOT_OFFENDER_ID 
-    AND pei.id_type = 'US_ND_ELITE'
-  WHERE FINDING_DESCRIPTION = 'GUILTY'
-    AND RESULT_OIC_OFFENCE_CATEGORY IN ('LVL2', 'LVL3', 'LVL2E', 'LVL3R')
+    {get_infractions_query()}
 ),
 {create_sub_sessions_with_attributes(table_name='infractions')}
 SELECT 
