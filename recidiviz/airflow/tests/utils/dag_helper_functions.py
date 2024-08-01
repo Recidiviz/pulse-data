@@ -17,20 +17,15 @@
 """
 Helper functions for testing Airflow DAGs.
 """
-from typing import Any, Callable, Dict, List, Optional, Union
-from unittest.mock import MagicMock, create_autospec
+from typing import Any, Callable, Dict, List, Optional
 
 from airflow.decorators import task
 from airflow.models import BaseOperator
 from airflow.operators.empty import EmptyOperator
 from airflow.operators.python import PythonOperator
-from airflow.providers.postgres.hooks.postgres import PostgresHook
 from airflow.utils.context import Context
 from airflow.utils.trigger_rule import TriggerRule
 
-from recidiviz.airflow.dags.operators.cloud_sql_query_operator import (
-    CloudSqlQueryGenerator,
-)
 from recidiviz.persistence.database.schema_type import SchemaType
 
 
@@ -123,40 +118,6 @@ def fake_task_function_with_return_value(return_value: Any) -> Callable:
         return return_value
 
     return fake_func
-
-
-class FakeCloudSqlOperator(BaseOperator):
-    """Mocks out a CloudSqlOperator's interactions with the database using
-    |mock_pg_return| while allowing execution of xcom push/pull operation and logic
-    within execute_postgres_query to still run.
-    """
-
-    def __init__(
-        self,
-        *,
-        task_id: str,
-        cloud_sql_conn_id: str,
-        query_generator: CloudSqlQueryGenerator,
-        mock_pg_return: List[Any],
-        mock_pg_hook: Optional[MagicMock] = None,
-        **kwargs: Any,
-    ) -> None:
-        self._generator = query_generator
-        self._mock_pg_return = mock_pg_return
-        self._mock_pg_call_num = 0
-        self._cloud_sql_conn_id = cloud_sql_conn_id
-        self._mock_pg_hook = mock_pg_hook or create_autospec(PostgresHook)
-        super().__init__(task_id=task_id, **kwargs)
-
-    def execute(self, context: Context) -> Any:
-
-        self._mock_pg_hook.get_records.side_effect = self._mock_pg_get_records
-        return self._generator.execute_postgres_query(self, self._mock_pg_hook, context)  # type: ignore
-
-    def _mock_pg_get_records(self, _statement: Union[str, List[str]]) -> Any:
-        result = self._mock_pg_return[self._mock_pg_call_num]
-        self._mock_pg_call_num += 1
-        return result
 
 
 def fake_k8s_operator_with_return_value(

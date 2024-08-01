@@ -36,6 +36,7 @@ from sqlalchemy.orm import DeclarativeMeta, Session
 
 from recidiviz import airflow as recidiviz_airflow_module
 from recidiviz.tools.postgres import local_postgres_helpers
+from recidiviz.utils.types import assert_type
 
 AIRFLOW_WORKING_DIRECTORY = os.path.dirname(recidiviz_airflow_module.__file__)
 DAG_FOLDER = os.path.abspath(os.path.join(AIRFLOW_WORKING_DIRECTORY, "dags"))
@@ -76,6 +77,9 @@ class AirflowIntegrationTest(unittest.TestCase):
     # Stores the location of the postgres DB for this test run
     temp_db_dir: Optional[str]
     environment_patcher: Any
+    metas: Optional[List[DeclarativeMeta]] = None
+    conn_id: str = "local_test_db"
+    project_id: str = "recidiviz-testing"
 
     @classmethod
     def setUpClass(cls) -> None:
@@ -83,7 +87,9 @@ class AirflowIntegrationTest(unittest.TestCase):
         cls.environment_patcher = patch(
             "os.environ",
             {
+                "GCP_PROJECT": cls.project_id,
                 "AIRFLOW__DATABASE__SQL_ALCHEMY_CONN": local_postgres_helpers.on_disk_postgres_db_url(),
+                f"AIRFLOW_CONN_{cls.conn_id.upper()}": local_postgres_helpers.on_disk_postgres_db_url().render_as_string(),
             },
         )
         cls.environment_patcher.start()
@@ -102,7 +108,15 @@ class AirflowIntegrationTest(unittest.TestCase):
         self.engine = settings.engine
         initdb(load_connections=False)
 
+        if self.metas:
+            for meta in assert_type(self.metas, list):
+                meta.metadata.create_all(settings.engine)
+
     def tearDown(self) -> None:
+        if self.metas:
+            for meta in assert_type(self.metas, list):
+                meta.metadata.drop_all(settings.engine)
+
         resetdb(skip_init=True)
         self.engine.dispose()
 

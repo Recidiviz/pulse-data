@@ -369,6 +369,9 @@ def main() -> int:
             {
                 "recidiviz.airflow.tests",
                 "recidiviz.fakes.fake_gcs_file_system",
+                "recidiviz.persistence.database.schema.operations.schema",
+                "recidiviz.persistence.database.database_entity",
+                "recidiviz.persistence.entity.core_entity",
                 "recidiviz.tests.ingest.direct.fake_regions",
                 "recidiviz.tests.test_setup_utils",
                 "recidiviz.tools.utils.script_helpers",
