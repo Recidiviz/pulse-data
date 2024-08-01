@@ -17,6 +17,7 @@
 """Contains all classes related to raw file configs."""
 import os
 import re
+from collections import defaultdict
 from enum import Enum
 from types import ModuleType
 from typing import Dict, List, Optional, Set, Tuple
@@ -1038,7 +1039,9 @@ class DirectIngestRegionRawFileConfig:
         ]
 
 
-_RAW_TABLE_CONFIGS_BY_STATE = {}
+_RAW_TABLE_CONFIGS: Dict[
+    str, Dict[str, "DirectIngestRegionRawFileConfig"]
+] = defaultdict(dict)
 
 
 def get_region_raw_file_config(
@@ -1048,9 +1051,10 @@ def get_region_raw_file_config(
     if not region_module:
         region_module = direct_ingest_regions_module
 
-    if region_code_lower not in _RAW_TABLE_CONFIGS_BY_STATE:
-        _RAW_TABLE_CONFIGS_BY_STATE[
+    region_module_str = region_module.__name__
+    if region_code_lower not in _RAW_TABLE_CONFIGS[region_module_str]:
+        _RAW_TABLE_CONFIGS[region_module_str][
             region_code_lower
         ] = DirectIngestRegionRawFileConfig(region_code_lower, region_module)
 
-    return _RAW_TABLE_CONFIGS_BY_STATE[region_code_lower]
+    return _RAW_TABLE_CONFIGS[region_module_str][region_code_lower]
