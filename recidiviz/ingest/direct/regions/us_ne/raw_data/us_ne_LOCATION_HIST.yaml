@@ -1,0 +1,47 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: LOCATION_HIST
+file_description: |-
+  This file has location history information
+data_classification: source
+primary_key_cols: []
+columns:
+  - name: LocationHistId
+    description: |-
+      Location history id
+  - name: ID_NBR
+    description: |-
+      Nebraska ID number
+    is_pii: True
+  - name: EFFECTIVE_DT
+    description: |-
+      The effective date of this record
+  - name: CREATION_TS
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: REC_CNTR_CD
+    description: |-
+      Rec center code
+  - name: LOCT_PRFX_CD
+    description: |-
+      Location prefix code
+  - name: LOCT_SUFX_DSC
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: ADMIS_TYPE_CD
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: INST_RLSE_TYPE_CD
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: INST_RLSE_DT
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: LAST_ACTIVITY_TS
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: LAST_ACTIVITY_ID
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: LOCT_RELEASE_DT
+    description: |-
+      TODO(#31972): Fill in with answers from NE
