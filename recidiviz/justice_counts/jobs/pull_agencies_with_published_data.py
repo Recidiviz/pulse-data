@@ -141,16 +141,21 @@ def calculate_columns_helper(
     agency_name: str,
     agency_id: int,
     environment: str,
-) -> Tuple[str, str]:
-    site = (
+) -> Tuple[str, str, str]:
+    dashboard_site = (
         f"https://dashboard-staging.justice-counts.org/agency/{str(agency_id)}/"
         if environment == "STAGING"
         else f"https://dashboard-demo.justice-counts.org/agency/{str(agency_id)}/"
     )
+    api_link = (
+        f"https://publisher-staging.justice-counts.org/api/v2/agencies/{str(agency_id)}/published_data"
+        if environment == "STAGING"
+        else f"https://publisher.justice-counts.org/api/v2/agencies/{str(agency_id)}/published_data"
+    )
     # Encode agency name as URI
-    link = site + urllib.parse.quote(agency_name).lower()
+    dashboard_link = dashboard_site + urllib.parse.quote(agency_name).lower()
     num_time_periods_reported = str(len(agency_id_to_time_periods[agency_id]))
-    return link, num_time_periods_reported
+    return dashboard_link, api_link, num_time_periods_reported
 
 
 def pull_agencies_with_published_capacity_and_cost_data(
@@ -166,7 +171,9 @@ def pull_agencies_with_published_capacity_and_cost_data(
             "Agency Dashboard Link",
             "Number of Metrics With Data",
             "Number of Time Periods Reported",
-            "Is Dashboard Enabled?",
+            "Is V0 Dashboard Enabled?",
+            "Agency Sectors",
+            "API Link",
         ]
     ]
     (
@@ -179,7 +186,7 @@ def pull_agencies_with_published_capacity_and_cost_data(
         agency_id,
         agency,
     ) in agency_id_to_agency_with_dashboard_data.items():
-        link, num_time_periods_reported = calculate_columns_helper(
+        dashboard_link, api_link, num_time_periods_reported = calculate_columns_helper(
             agency_id_to_time_periods=agency_id_to_time_periods,
             agency_name=agency.name,
             agency_id=agency.id,
@@ -188,10 +195,12 @@ def pull_agencies_with_published_capacity_and_cost_data(
         data_to_write.append(
             [
                 agency.name,
-                link,
+                dashboard_link,
                 str(len(agency_id_to_reported_metrics_with_data[agency_id])),
                 num_time_periods_reported,
                 "Yes" if agency.is_dashboard_enabled is True else "No",
+                ", ".join(agency.systems),
+                api_link,
             ]
         )
 
