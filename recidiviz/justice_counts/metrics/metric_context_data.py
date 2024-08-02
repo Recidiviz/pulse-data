@@ -20,7 +20,7 @@ from typing import Any, Dict, List, Type, TypeVar
 
 import attr
 
-from recidiviz.common.constants.justice_counts import ContextKey, ValueType
+from recidiviz.common.constants.justice_counts import ContextKey
 from recidiviz.justice_counts.metrics.metric_definition import Context
 
 MetricContextDataT = TypeVar("MetricContextDataT", bound="MetricContextData")
@@ -36,20 +36,10 @@ class MetricContextData:
     value: Any
 
     def to_json(self, context_definition: Context) -> Dict[str, Any]:
-        value = self.value
-        multiple_choice_options = []
-        if context_definition.value_type == ValueType.MULTIPLE_CHOICE:
-            for elem in context_definition.multiple_choice_options or []:
-                multiple_choice_options.append(elem.value)
-
         return {
             "key": self.key.value,
-            "reporting_note": context_definition.reporting_note,
             "display_name": context_definition.label,
-            "type": context_definition.value_type.value,
-            "required": context_definition.required,
-            "value": value,
-            "multiple_choice_options": multiple_choice_options,
+            "value": self.value,
         }
 
     @classmethod

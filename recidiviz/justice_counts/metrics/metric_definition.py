@@ -22,7 +22,7 @@ from typing import Any, Dict, List, Optional, Set, Type, TypeVar
 
 import attr
 
-from recidiviz.common.constants.justice_counts import ContextKey, ValueType
+from recidiviz.common.constants.justice_counts import ContextKey
 from recidiviz.justice_counts.dimensions.base import DimensionBase
 from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.persistence.database.schema.justice_counts.schema import (
@@ -147,17 +147,12 @@ class MetricCategory(enum.Enum):
 @attr.define()
 class Context:
     """Additional context that the agency is required to report on this metric.
-    The `key` should be a unique identifier; `value_type` is the input type,
-    `label` should be a human-readable explanation, and `required` indicates if
-    this context is required or requested.
+    The `key` should be a unique identifier and `label` should be a human-readable
+    explanation.
     """
 
     key: ContextKey
-    value_type: ValueType
-    required: bool
     label: str
-    reporting_note: Optional[str] = None
-    multiple_choice_options: Optional[Type[enum.Enum]] = None
 
 
 @attr.define()
@@ -208,18 +203,14 @@ class AggregatedDimension:
                 context_lst.append(
                     Context(
                         key=ContextKey.ADDITIONAL_CONTEXT,
-                        value_type=ValueType.TEXT,
                         label="Please describe what data is being included in this breakdown.",
-                        required=False,
                     )
                 )
             else:
                 context_lst.append(
                     Context(
                         key=ContextKey.INCLUDES_EXCLUDES_DESCRIPTION,
-                        value_type=ValueType.TEXT,
                         label="If the listed categories do not adequately describe your breakdown, please describe additional data elements included in your agency’s definition.",
-                        required=False,
                     )
                 )
             dim_to_contexts[member] = context_lst
@@ -294,9 +285,7 @@ class MetricDefinition:
         additional_context.append(
             Context(
                 key=ContextKey.INCLUDES_EXCLUDES_DESCRIPTION,
-                value_type=ValueType.TEXT,
                 label=additional_context_label,
-                required=False,
             )
         )
 

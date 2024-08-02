@@ -1848,102 +1848,16 @@ def get_api_blueprint(
     @api_blueprint.route("/agencies/<agency_id>/published_data", methods=["GET"])
     def get_agency_published_data(agency_id: int) -> Response:
         try:
-            agency = AgencyInterface.get_agency_by_id(
-                session=current_session, agency_id=agency_id, with_settings=True
-            )
-            if not agency:
-                raise JusticeCountsServerError(
-                    code="agency_not_found",
-                    description=f"No agency exists with the id {agency_id}",
-                )
+            published_data_json = _get_published_data(agency_id=agency_id)
+            return jsonify(published_data_json)
+        except Exception as e:
+            raise _get_error(error=e) from e
 
-            agency_id = agency.id
-            reports = ReportInterface.get_reports_for_agency_dashboard(
-                session=current_session,
-                agency_id=agency_id,
-            )
-            report_ids = [report.id for report in reports]
-            report_id_to_frequency = {
-                report.id: ReportInterface.get_reporting_frequency(report)
-                for report in reports
-            }
-            report_datapoints = (
-                DatapointInterface.get_report_datapoints_for_agency_dashboard(
-                    session=current_session,
-                    report_ids=report_ids,
-                )
-            )
-
-            # Group aggregate datapoints by metric key.
-            metric_key_to_aggregate_datapoints_json: DefaultDict[
-                str, List[DatapointJson]
-            ] = defaultdict(list)
-
-            # Group breakdown datapoints by metric key, disaggregation, and dimension.
-            # e.g. map[LAW_ENFORCEMENT_ARRESTS][GENDER][MALE] = <datapoint containing number of male arrests>
-            metric_key_to_dimension_id_to_dimension_member_to_datapoints_json: (
-                DefaultDict[
-                    str, DefaultDict[str, DefaultDict[str, List[DatapointJson]]]
-                ]
-            ) = defaultdict(lambda: defaultdict(lambda: defaultdict(list)))
-
-            for datapoint in report_datapoints:
-                if (
-                    datapoint.is_report_datapoint is False
-                    or datapoint.report_id is None
-                ):
-                    raise ValueError(
-                        f"Expected get_report_datapoints_for_agency_dashboard to only return report datapoints. Instead, got a datapoint object with is_report_datapoint as {datapoint.is_report_datapoint} and report_id as {datapoint.report_id}."
-                    )
-                if datapoint.dimension_identifier_to_member is None:
-                    dimension_id, dimension_member = None, None
-                else:
-                    (
-                        dimension_id,
-                        dimension_member,
-                    ) = get_dimension_id_and_member(datapoint=datapoint)
-
-                datapoint_json = DatapointInterface.to_json_response(
-                    datapoint=datapoint,
-                    is_published=True,
-                    agency_name=agency.name,
-                    frequency=report_id_to_frequency[datapoint.report_id],
-                )
-
-                if dimension_id is not None and dimension_member is not None:
-                    metric_key_to_dimension_id_to_dimension_member_to_datapoints_json[
-                        datapoint.metric_definition_key
-                    ][dimension_id][dimension_member].append(datapoint_json)
-                else:
-                    metric_key_to_aggregate_datapoints_json[
-                        datapoint.metric_definition_key
-                    ].append(datapoint_json)
-
-            metrics = MetricSettingInterface.get_agency_metric_interfaces(
-                session=current_session,
-                agency=agency,
-            )
-
-            metrics_json = [
-                metric.to_json(
-                    entry_point=DatapointGetRequestEntryPoint.METRICS_TAB,
-                    aggregate_datapoints_json=metric_key_to_aggregate_datapoints_json.get(
-                        metric.key
-                    ),
-                    dimension_id_to_dimension_member_to_datapoints_json=metric_key_to_dimension_id_to_dimension_member_to_datapoints_json.get(
-                        metric.key
-                    ),
-                )
-                for metric in metrics
-            ]
-
-            return jsonify(
-                {
-                    "agency": agency.to_public_json(),
-                    "metrics": metrics_json,
-                }
-            )
-
+    @api_blueprint.route("/v2/agencies/<agency_id>/published_data", methods=["GET"])
+    def get_v2_agency_published_data(agency_id: int) -> Response:
+        try:
+            published_data_json = _get_published_data(is_v2=True, agency_id=agency_id)
+            return jsonify(published_data_json)
         except Exception as e:
             raise _get_error(error=e) from e
 
@@ -2118,3 +2032,118 @@ def _get_child_agency_json(agency: schema.Agency) -> List[Dict[str, Any]]:
         session=current_session, agency=agency
     )
     return [child_agency.to_json_simple() for child_agency in child_agencies]
+
+
+def _get_published_data(agency_id: int, is_v2: bool = False) -> Dict[str, Any]:
+    """
+    Retrieve published data for a specified agency.
+
+    This function fetches and processes the published data for a given agency
+    identified by `agency_id`. It retrieves agency details, reports, and associated
+    datapoints, organizing the data into a structured format suitable for public
+    presentation.
+
+    Args:
+        agency_id (int): The ID of the agency for which data is to be retrieved.
+        is_v2 (bool, optional): A flag to determine if version 2 of the data format
+                                should be used. Defaults to False.
+
+    Returns:
+        Dict[str, Any]: A dictionary containing the agency's public information and
+                        the associated metrics data in JSON format.
+
+    Raises:
+        JusticeCountsServerError: If the agency with the given `agency_id` does not exist.
+        ValueError: If an unexpected datapoint is encountered.
+    """
+    agency = AgencyInterface.get_agency_by_id(
+        session=current_session, agency_id=agency_id, with_settings=True
+    )
+    if not agency:
+        raise JusticeCountsServerError(
+            code="agency_not_found",
+            description=f"No agency exists with the id {agency_id}",
+        )
+
+    agency_id = agency.id
+    reports = ReportInterface.get_reports_for_agency_dashboard(
+        session=current_session,
+        agency_id=agency_id,
+    )
+    report_ids = [report.id for report in reports]
+    report_id_to_frequency = {
+        report.id: ReportInterface.get_reporting_frequency(report) for report in reports
+    }
+    report_datapoints = DatapointInterface.get_report_datapoints_for_agency_dashboard(
+        session=current_session,
+        report_ids=report_ids,
+    )
+
+    # Group aggregate datapoints by metric key.
+    metric_key_to_aggregate_datapoints_json: DefaultDict[
+        str, List[DatapointJson]
+    ] = defaultdict(list)
+
+    # Group breakdown datapoints by metric key, disaggregation, and dimension.
+    # e.g. map[LAW_ENFORCEMENT_ARRESTS][GENDER][MALE] = <datapoint containing number of male arrests>
+    metric_key_to_dimension_id_to_dimension_member_to_datapoints_json: DefaultDict[
+        str,
+        DefaultDict[
+            str,
+            DefaultDict[str, List[DatapointJson]],
+        ],
+    ] = defaultdict(lambda: defaultdict(lambda: defaultdict(list)))
+
+    for datapoint in report_datapoints:
+        if datapoint.is_report_datapoint is False or datapoint.report_id is None:
+            raise ValueError(
+                f"Expected get_report_datapoints_for_agency_dashboard to only return report datapoints. Instead, got a datapoint object with is_report_datapoint as {datapoint.is_report_datapoint} and report_id as {datapoint.report_id}."
+            )
+        if datapoint.dimension_identifier_to_member is None:
+            dimension_id, dimension_member = None, None
+        else:
+            (
+                dimension_id,
+                dimension_member,
+            ) = get_dimension_id_and_member(datapoint=datapoint)
+
+        datapoint_json = DatapointInterface.to_json_response(
+            datapoint=datapoint,
+            is_published=True,
+            agency_name=agency.name,
+            frequency=report_id_to_frequency[datapoint.report_id],
+            is_v2=is_v2,
+        )
+
+        if dimension_id is not None and dimension_member is not None:
+            metric_key_to_dimension_id_to_dimension_member_to_datapoints_json[
+                datapoint.metric_definition_key
+            ][dimension_id][dimension_member].append(datapoint_json)
+        else:
+            metric_key_to_aggregate_datapoints_json[
+                datapoint.metric_definition_key
+            ].append(datapoint_json)
+
+    metrics = MetricSettingInterface.get_agency_metric_interfaces(
+        session=current_session,
+        agency=agency,
+    )
+
+    metrics_json = [
+        metric.to_json(
+            entry_point=DatapointGetRequestEntryPoint.METRICS_TAB,
+            aggregate_datapoints_json=metric_key_to_aggregate_datapoints_json.get(
+                metric.key
+            ),
+            dimension_id_to_dimension_member_to_datapoints_json=metric_key_to_dimension_id_to_dimension_member_to_datapoints_json.get(
+                metric.key
+            ),
+            is_v2=is_v2,
+        )
+        for metric in metrics
+    ]
+
+    return {
+        "agency": agency.to_public_json(v2=is_v2),
+        "metrics": metrics_json,
+    }

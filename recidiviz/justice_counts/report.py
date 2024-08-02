@@ -600,7 +600,6 @@ class ReportInterface:
                     report=report,
                     value=context_key_to_value[context.key],
                     context_key=context.key,
-                    value_type=context.value_type,
                     agency=agency,
                     upload_method=upload_method,
                 )

@@ -32,7 +32,6 @@ from sqlalchemy.engine import Engine
 from recidiviz.auth.auth0_client import JusticeCountsAuth0AppMetadata
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
-from recidiviz.common.constants.justice_counts import ContextKey
 from recidiviz.fakes.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.justice_counts.agency import AgencyInterface
 from recidiviz.justice_counts.agency_user_account_association import (
@@ -768,10 +767,6 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                 {
                     "display_name": "If the listed categories do not adequately describe your metric, please describe additional data elements included in your agency’s definition.",
                     "key": "INCLUDES_EXCLUDES_DESCRIPTION",
-                    "multiple_choice_options": [],
-                    "reporting_note": None,
-                    "required": False,
-                    "type": "TEXT",
                     "value": None,
                 },
             ],
@@ -1574,12 +1569,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                         {
                             "key": law_enforcement.funding.key,
                             "value": 2000000,
-                            "contexts": [
-                                {
-                                    "key": ContextKey.INCLUDES_EXCLUDES_DESCRIPTION.value,
-                                    "value": "our metrics are different because xyz",
-                                },
-                            ],
+                            "contexts": [],
                         },
                     ],
                 },
@@ -1588,7 +1578,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             report = self.session.query(Report).one_or_none()
             self.assertEqual(report.status, ReportStatus.PUBLISHED)
             datapoints = report.datapoints
-            self.assertEqual(len(datapoints), 7)
+            self.assertEqual(len(datapoints), 6)
             # Aggregate Value
             self.assertEqual(get_value(datapoints[0]), 110)
             # Emergency Calls
@@ -1601,10 +1591,6 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             self.assertEqual(get_value(datapoints[4]), None)
             # Funding
             self.assertEqual(get_value(datapoints[5]), 2000000)
-            # INCLUDES_EXCLUDES_DESCRIPTION
-            self.assertEqual(
-                get_value(datapoints[6]), "our metrics are different because xyz"
-            )
 
     def test_update_multiple_report_statuses(self) -> None:
         monthly_report_1 = self.test_schema_objects.test_report_monthly
@@ -2885,12 +2871,10 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                         {
                             "setting_type": AgencySettingType.PURPOSE_AND_FUNCTIONS.value,
                             "value": "My agency has the following purpose and functions ...",
-                            "source_id": agency_id,
                         },
                         {
                             "setting_type": AgencySettingType.HOMEPAGE_URL.value,
                             "value": "www.agencyhomepage.com",
-                            "source_id": agency_id,
                         },
                     ],
                     "jurisdictions": {"excluded": [], "included": []},

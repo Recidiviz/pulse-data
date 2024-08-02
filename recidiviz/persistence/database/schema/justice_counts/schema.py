@@ -449,7 +449,7 @@ class Agency(Source):
             },
         }
 
-    def to_public_json(self) -> Dict[str, Any]:
+    def to_public_json(self, v2: bool = False) -> Dict[str, Any]:
         whitelisted_agency_settings = list(
             filter(
                 lambda setting: setting.setting_type
@@ -460,18 +460,23 @@ class Agency(Source):
                 self.agency_settings,
             )
         )
-        return {
+        response = {
             "id": self.id,
             "name": self.name,
-            "is_dashboard_enabled": self.is_dashboard_enabled,
-            "systems": [
-                system_enum.value
-                for system_enum in System.sort(
-                    systems=[System(system_str) for system_str in (self.systems or [])]
-                )
-            ],
             "settings": [setting.to_json() for setting in whitelisted_agency_settings],
         }
+
+        response["sectors" if v2 else "systems"] = [
+            system_enum.value
+            for system_enum in System.sort(
+                systems=[System(system_str) for system_str in (self.systems or [])]
+            )
+        ]
+        response[
+            "is_dashboard_enabled" if v2 else "is_v0_dashboard_enabled"
+        ] = self.is_dashboard_enabled
+
+        return response
 
 
 class UserAccount(JusticeCountsBase):
@@ -1007,7 +1012,6 @@ class AgencySetting(JusticeCountsBase):
         return {
             "setting_type": self.setting_type,
             "value": self.value,
-            "source_id": self.source_id,
         }
 
 

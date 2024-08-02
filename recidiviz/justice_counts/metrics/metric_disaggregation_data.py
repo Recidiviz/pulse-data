@@ -86,13 +86,15 @@ class MetricAggregatedDimensionData:
         """
         return {
             # Optional[Dict[DimensionBase, Any]]
-            "dimension_to_enabled_status": {
-                dimension.to_enum().name: enabled
-                for dimension, enabled in self.dimension_to_enabled_status.items()
-                if enabled is not None
-            }
-            if self.dimension_to_enabled_status is not None
-            else None,
+            "dimension_to_enabled_status": (
+                {
+                    dimension.to_enum().name: enabled
+                    for dimension, enabled in self.dimension_to_enabled_status.items()
+                    if enabled is not None
+                }
+                if self.dimension_to_enabled_status is not None
+                else None
+            ),
             # Dict[DimensionBase, Dict[enum.Enum, Optional[IncludesExcludesSetting]]]
             "dimension_to_includes_excludes_member_to_setting": {
                 dimension.to_enum().name: {
@@ -200,10 +202,31 @@ class MetricAggregatedDimensionData:
         dimension_member_to_datapoints_json: Optional[
             DefaultDict[str, List[DatapointJson]]
         ] = None,
+        is_v2: Optional[bool] = False,
     ) -> Dict[str, Any]:
-        # A disaggregation is enabled if at least one of its dimensions is enabled OR disabled.
-        # A disaggregation is disabled if ALL of its dimensions are disabled.
-        # If all dimensions are None, the disaggregation will be None.
+        """
+        Converts the given dimension definition and related information into a JSON-compatible dictionary.
+
+        Args:
+            dimension_definition (AggregatedDimension): The definition of the dimension to be converted to JSON.
+            entry_point (DatapointGetRequestEntryPoint): The entry point from which the data request originates.
+            dimension_member_to_datapoints_json (Optional[DefaultDict[str, List[DatapointJson]]], optional):
+                A dictionary mapping dimension members to their corresponding datapoints in JSON format.
+                Defaults to None.
+
+        Returns:
+            Dict[str, Any]: A dictionary containing the JSON representation of the dimension definition and its attributes.
+
+        Notes:
+            - The disaggregation status is determined based on the enabled status of its dimensions:
+                - If at least one dimension is enabled or disabled, the disaggregation is considered enabled.
+                - If all dimensions are disabled, the disaggregation is considered disabled.
+                - If all dimensions are None, the disaggregation will be None.
+            - The response includes a key, display name, dimensions, and enabled status.
+            - Additional fields such as helper text, required status, and should_sum_to_total are included
+            if the entry point is not the agency dashboard.
+        """
+
         is_disaggregation_enabled = None
         if self.dimension_to_enabled_status is not None:
             enabled_statuses = self.dimension_to_enabled_status.values()
@@ -212,20 +235,25 @@ class MetricAggregatedDimensionData:
             elif any(dim is not None for dim in enabled_statuses):
                 is_disaggregation_enabled = True
 
-        return {
+        response = {
             "key": dimension_definition.dimension.dimension_identifier(),
-            "helper_text": dimension_definition.helper_text,
-            "required": dimension_definition.required,
-            "should_sum_to_total": dimension_definition.should_sum_to_total,
             "display_name": dimension_definition.display_name
             or dimension_definition.dimension.display_name(),
             "dimensions": self.dimension_to_json(
                 entry_point=entry_point,
                 dimension_member_to_datapoints_json=dimension_member_to_datapoints_json,
                 dimension_definition=dimension_definition,
+                is_v2=is_v2,
             ),
             "enabled": is_disaggregation_enabled,
         }
+
+        if is_v2 is False:
+            response["helper_text"] = dimension_definition.helper_text
+            response["required"] = dimension_definition.required
+            response["should_sum_to_total"] = dimension_definition.should_sum_to_total
+
+        return response
 
     @classmethod
     def from_json(
@@ -369,6 +397,7 @@ class MetricAggregatedDimensionData:
         dimension_member_to_datapoints_json: Optional[
             Dict[str, List[DatapointJson]]
         ] = None,
+        is_v2: Optional[bool] = False,
     ) -> List[Dict[str, List[Dict[str, Any]]]]:
         """This method would be called in two scenarios: 1) We are getting the json of
         a report metric which will have both dimension_to_enabled_status and dimension_to_value
@@ -386,11 +415,13 @@ class MetricAggregatedDimensionData:
                     "key": dimension.to_enum().value,
                     "label": dimension.dimension_value,
                     "enabled": status,
-                    "datapoints": dimension_member_to_datapoints_json.get(
-                        dimension.to_enum().name
-                    )
-                    if dimension_member_to_datapoints_json is not None
-                    else None,
+                    "datapoints": (
+                        dimension_member_to_datapoints_json.get(
+                            dimension.to_enum().name
+                        )
+                        if dimension_member_to_datapoints_json is not None
+                        else None
+                    ),
                 }
                 json["contexts"] = []
                 if dimension_to_contexts is not None:
@@ -408,18 +439,22 @@ class MetricAggregatedDimensionData:
                             json_context = {
                                 "key": context.key.value,
                                 "value": actual_contexts.get(context.key.value),
-                                "label": context.label,
                             }
+                            json_context[
+                                "label" if is_v2 is False else "display_name"
+                            ] = context.label
                         else:
                             json_context = {
                                 "key": context.key.value,
                                 "value": None,
-                                "label": context.label,
                             }
+                            json_context[
+                                "label" if is_v2 is False else "display_name"
+                            ] = context.label
                         json["contexts"].append(json_context)
-                if (
-                    dimension_to_includes_excludes is not None
-                    and entry_point == DatapointGetRequestEntryPoint.METRICS_TAB
+                if dimension_to_includes_excludes is not None and (
+                    entry_point == DatapointGetRequestEntryPoint.METRICS_TAB
+                    or is_v2 is True
                 ):
                     includes_excluded_json = self.to_included_excluded_json(
                         dimension=dimension,
@@ -428,9 +463,9 @@ class MetricAggregatedDimensionData:
                         ),
                     )
                     json["includes_excludes"] = includes_excluded_json
-                if (
-                    self.dimension_to_value is not None
-                    and entry_point == DatapointGetRequestEntryPoint.REPORT_PAGE
+                if self.dimension_to_value is not None and (
+                    entry_point == DatapointGetRequestEntryPoint.REPORT_PAGE
+                    or is_v2 is True
                 ):
                     # if there is a non-null dimension_to_value dictionary, add dimension
                     # values into the json
