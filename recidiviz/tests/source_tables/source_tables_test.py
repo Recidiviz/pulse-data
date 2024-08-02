@@ -38,6 +38,8 @@ COMMON_VESTIGES = [
     "static_reference_tables.zip_city_county_state",
     # This view will be referenced by other workflows metadata views and events/spans as part of #31645
     "static_reference_tables.workflows_launch_metadata_materialized",
+    # This is used from time to time for oneoff validation
+    "static_reference_tables.us_tn_standards_due",
     # These Justice Counts V1 reference tables are managed by Terraform so must have schema definitions.
     # TODO(#29814): Determine whether we can delete these tables
     "external_reference.county_fips",

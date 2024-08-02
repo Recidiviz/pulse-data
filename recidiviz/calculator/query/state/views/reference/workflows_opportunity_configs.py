@@ -425,14 +425,13 @@ WORKFLOWS_OPPORTUNITY_CONFIGS = [
         opportunity_type_path_str="adminSupervision",
         person_record_type=PersonRecordType.CLIENT,
     ),
-    # TODO(Recidiviz/recidiviz-dashboards#5003) - Replace with us_tn_transfer_to_compliant_reporting_record when we move over to new data entirely
     WorkflowsOpportunityConfig(
         state_code=StateCode.US_TN,
         opportunity_type="compliantReporting",
         experiment_id="US_TN_COMPLIANT_REPORTING_WORKFLOWS",
-        opportunity_record_view_name="compliant_reporting_referral_record_materialized",
+        opportunity_record_view_name="us_tn_transfer_to_compliant_reporting_record_materialized",
         task_completion_event=TaskCompletionEventType.TRANSFER_TO_LIMITED_SUPERVISION,
-        source_filename="compliant_reporting_referral_record.json",
+        source_filename="us_tn_transfer_to_compliant_reporting_record.json",
         export_collection_name="compliantReportingReferrals",
         opportunity_type_path_str="compliantReporting",
         person_record_type=PersonRecordType.CLIENT,

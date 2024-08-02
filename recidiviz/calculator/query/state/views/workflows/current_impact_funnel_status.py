@@ -53,18 +53,6 @@ WITH eligibility AS (
   INNER JOIN `{{project_id}}.{{workflows_views_dataset}}.person_id_to_external_id_materialized` pei
     USING (state_code, person_id)
   WHERE CURRENT_DATE BETWEEN start_date AND {nonnull_end_date_exclusive_clause("end_date")}
-    -- TODO(#19015): Exclude TN CR until the subsequent sub-query is removed
-    AND (state_code != "US_TN" OR completion_event_type != "TRANSFER_TO_LIMITED_SUPERVISION")
-
-  UNION ALL
-
-  -- TODO(#19015): Query the TN CR remaining_criteria_needed separately until it is migrated to TES
-  SELECT
-    "US_TN" AS state_code,
-    tdoc_id AS person_external_id,
-    "TRANSFER_TO_LIMITED_SUPERVISION" AS completion_event_type,
-    remaining_criteria_needed,
-  FROM `{{project_id}}.{{analyst_views_dataset}}.us_tn_compliant_reporting_referral_materialized`
 )
 SELECT
   records.* EXCEPT (all_eligible_opportunities, person_name),
@@ -103,7 +91,6 @@ CURRENT_IMPACT_FUNNEL_STATUS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_id=CURRENT_IMPACT_FUNNEL_STATUS_VIEW_NAME,
     view_query_template=CURRENT_IMPACT_FUNNEL_STATUS_QUERY_TEMPLATE,
     description=CURRENT_IMPACT_FUNNEL_STATUS_DESCRIPTION,
-    analyst_views_dataset=dataset_config.ANALYST_VIEWS_DATASET,
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
     task_eligibility_dataset=TASK_ELIGIBILITY_DATASET_ID,
     workflows_views_dataset=dataset_config.WORKFLOWS_VIEWS_DATASET,

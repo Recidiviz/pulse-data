@@ -80,12 +80,6 @@ from recidiviz.calculator.query.state.views.analyst_data.us_mo.us_mo_program_tra
 from recidiviz.calculator.query.state.views.analyst_data.us_mo.us_mo_sentencing_dates_preprocessed import (
     US_MO_SENTENCING_DATES_PREPROCESSED_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_compliant_reporting_eligible import (
-    US_TN_COMPLIANT_REPORTING_ELIGIBLE_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_compliant_reporting_funnel import (
-    US_TN_COMPLIANT_REPORTING_FUNNEL_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_max_stays import (
     US_TN_MAX_STAYS_VIEW_BUILDER,
 )
@@ -180,11 +174,6 @@ from recidiviz.view_registry.deployed_views import build_all_deployed_views_dag_
 LOOKER_REFERENCED_ADDRESSES: Set[BigQueryAddress] = {
     WORKFLOWS_USAGE_VIEW_BUILDER.address,
     CURRENT_IMPACT_FUNNEL_STATUS_VIEW_BUILDER.address,
-    # TODO(Recidiviz/looker#427): The legacy TN compliant reporting dashboard
-    #  referencing this view is actively in use because it has more functionality than
-    #  any existing dashboard for standard workflows infra, and it cannot be deleted
-    #  until we have an adequate replacement.
-    US_TN_COMPLIANT_REPORTING_FUNNEL_VIEW_BUILDER.address,
     # TODO(Recidiviz/looker#539): This view is only referenced by the
     #  day_zero_overdue_supervision_discharge dashboard and can be deleted when that is
     #  deleted.
@@ -224,9 +213,6 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
     ),
     US_MO_SENTENCING_DATES_PREPROCESSED_VIEW_BUILDER.address: (
         "Used for ongoing MOSOP work (Damini Sharma 12/21/23)"
-    ),
-    US_TN_COMPLIANT_REPORTING_ELIGIBLE_VIEW_BUILDER.address: (
-        "(Damini Sharma 12/21/23) TODO(#17885): Completion of this epic will enable deletion of this view."
     ),
     EXPERIMENTS_VIEW_BUILDER.address: (
         "These views are still referenced by existing looker infra and will likely become relevant "
