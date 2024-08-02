@@ -473,7 +473,7 @@ class Agency(Source):
             )
         ]
         response[
-            "is_dashboard_enabled" if v2 else "is_v0_dashboard_enabled"
+            "is_v0_dashboard_enabled" if v2 else "is_dashboard_enabled"
         ] = self.is_dashboard_enabled
 
         return response

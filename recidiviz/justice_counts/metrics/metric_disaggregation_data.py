@@ -463,9 +463,9 @@ class MetricAggregatedDimensionData:
                         ),
                     )
                     json["includes_excludes"] = includes_excluded_json
-                if self.dimension_to_value is not None and (
-                    entry_point == DatapointGetRequestEntryPoint.REPORT_PAGE
-                    or is_v2 is True
+                if (
+                    self.dimension_to_value is not None
+                    and entry_point == DatapointGetRequestEntryPoint.REPORT_PAGE
                 ):
                     # if there is a non-null dimension_to_value dictionary, add dimension
                     # values into the json

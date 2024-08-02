@@ -3555,7 +3555,6 @@ class TestMetricInterface(TestCase):
                                 ],
                                 "key": "Drug Offenses",
                                 "label": "Drug Offenses",
-                                "value": 60,
                             },
                             {
                                 "contexts": [
@@ -3673,7 +3672,6 @@ class TestMetricInterface(TestCase):
                                 ],
                                 "key": "Person Offenses",
                                 "label": "Person Offenses",
-                                "value": 10,
                             },
                             {
                                 "contexts": [
@@ -3845,7 +3843,6 @@ class TestMetricInterface(TestCase):
                                 ],
                                 "key": "Property Offenses",
                                 "label": "Property Offenses",
-                                "value": 40,
                             },
                             {
                                 "contexts": [
@@ -4137,7 +4134,6 @@ class TestMetricInterface(TestCase):
                                 ],
                                 "key": "Public Order Offenses",
                                 "label": "Public Order Offenses",
-                                "value": 0,
                             },
                             {
                                 "contexts": [
@@ -4153,7 +4149,6 @@ class TestMetricInterface(TestCase):
                                 "includes_excludes": [],
                                 "key": "Unknown Offenses",
                                 "label": "Unknown Offenses",
-                                "value": 10,
                             },
                             {
                                 "contexts": [
@@ -4169,7 +4164,6 @@ class TestMetricInterface(TestCase):
                                 "includes_excludes": [],
                                 "key": "Other Offenses",
                                 "label": "Other Offenses",
-                                "value": 0,
                             },
                         ],
                         "display_name": "Offense Types",
