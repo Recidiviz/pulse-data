@@ -142,6 +142,11 @@ class TestSendIDLSUTexts(BigQueryEmulatorTestCase):
                     field_type=bigquery.enums.SqlTypeNames.STRING.value,
                     mode="REPEATED",
                 ),
+                bigquery.SchemaField(
+                    "district",
+                    field_type=bigquery.enums.SqlTypeNames.STRING.value,
+                    mode="NULLABLE",
+                ),
             ],
         )
         self.load_rows_into_table(
@@ -166,6 +171,7 @@ class TestSendIDLSUTexts(BigQueryEmulatorTestCase):
                     "lsir_level": "LOW",
                     "ineligible_criteria_list": "US_IX_INCOME_VERIFIED_WITHIN_3_MONTHS",
                     "ineligible_criteria": ["US_IX_INCOME_VERIFIED_WITHIN_3_MONTHS"],
+                    "district": "District 2",
                 },
                 {
                     "state_code": "US_IX",
@@ -186,6 +192,7 @@ class TestSendIDLSUTexts(BigQueryEmulatorTestCase):
                     "lsir_level": "LOW",
                     "ineligible_criteria_list": "NEGATIVE_DA_WITHIN_90_DAYS",
                     "ineligible_criteria": ["NEGATIVE_DA_WITHIN_90_DAYS"],
+                    "district": "District 4",
                 },
                 {
                     "state_code": "US_IX",
@@ -206,6 +213,7 @@ class TestSendIDLSUTexts(BigQueryEmulatorTestCase):
                     "lsir_level": None,
                     "ineligible_criteria_list": None,
                     "ineligible_criteria": [],
+                    "district": "District 6",
                 },
                 {
                     "state_code": "US_IX",
@@ -229,6 +237,7 @@ class TestSendIDLSUTexts(BigQueryEmulatorTestCase):
                         "NEGATIVE_DA_WITHIN_90_DAYS",
                         "US_IX_INCOME_VERIFIED_WITHIN_3_MONTHS",
                     ],
+                    "district": "District 2",
                 },
             ],
         )
@@ -297,12 +306,14 @@ class TestSendIDLSUTexts(BigQueryEmulatorTestCase):
             external_id_to_phone_num_to_text_dict["0"],
             {
                 "1234567890": StrictStringFormatter().format(
-                    MISSING_NEGATIVE_DA_OR_INCOME_OPENER, given_name="Ted"
+                    MISSING_NEGATIVE_DA_OR_INCOME_OPENER,
+                    given_name="Ted",
+                    po_name="Test Po 1",
+                    additional_contact=None,
                 )
+                + "\n1. "
                 + MISSING_INCOME_BULLET
-                + StrictStringFormatter().format(
-                    MISSING_NEGATIVE_DA_OR_INCOME_CLOSER, po_name="Test Po 1"
-                )
+                + MISSING_NEGATIVE_DA_OR_INCOME_CLOSER
                 + ALL_CLOSER
             },
         )
@@ -312,11 +323,12 @@ class TestSendIDLSUTexts(BigQueryEmulatorTestCase):
                 "1111111111": StrictStringFormatter().format(
                     MISSING_NEGATIVE_DA_OR_INCOME_OPENER,
                     given_name="Roy",
+                    po_name="Test Po 1",
+                    additional_contact=None,
                 )
+                + "\n1. "
                 + MISSING_NEGATIVE_DA_BULLET
-                + StrictStringFormatter().format(
-                    MISSING_NEGATIVE_DA_OR_INCOME_CLOSER, po_name="Test Po 1"
-                )
+                + MISSING_NEGATIVE_DA_OR_INCOME_CLOSER
                 + ALL_CLOSER
             },
         )
@@ -324,7 +336,10 @@ class TestSendIDLSUTexts(BigQueryEmulatorTestCase):
             external_id_to_phone_num_to_text_dict["2"],
             {
                 "2222222222": StrictStringFormatter().format(
-                    FULLY_ELIGIBLE_TEXT, given_name="Keeley", po_name="Test Po 2"
+                    FULLY_ELIGIBLE_TEXT,
+                    given_name="Keeley",
+                    po_name="Test Po 2",
+                    additional_contact=None,
                 )
                 + ALL_CLOSER
             },
@@ -335,12 +350,14 @@ class TestSendIDLSUTexts(BigQueryEmulatorTestCase):
                 "3333333333": StrictStringFormatter().format(
                     MISSING_NEGATIVE_DA_OR_INCOME_OPENER,
                     given_name="Coach",
+                    po_name="Test Po 2",
+                    additional_contact=None,
                 )
+                + "\n1. "
                 + MISSING_INCOME_BULLET
+                + "\n2. "
                 + MISSING_NEGATIVE_DA_BULLET
-                + StrictStringFormatter().format(
-                    MISSING_NEGATIVE_DA_OR_INCOME_CLOSER, po_name="Test Po 2"
-                )
+                + MISSING_NEGATIVE_DA_OR_INCOME_CLOSER
                 + ALL_CLOSER
             },
         )
