@@ -116,27 +116,27 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = StateSpecificTaskCr
         ReasonsField(
             name="solitary_start_date",
             type=bigquery.enums.StandardSqlTypeNames.DATE,
-            description="#TODO(#29059): Add reasons field description",
+            description="Date resident was placed in any type of solitary confinement",
         ),
         ReasonsField(
             name="latest_warden_in_person_scc_review_date",
             type=bigquery.enums.StandardSqlTypeNames.DATE,
-            description="#TODO(#29059): Add reasons field description",
+            description="Latest observed Warden in person review",
         ),
         ReasonsField(
             name="number_of_expected_reviews",
             type=bigquery.enums.StandardSqlTypeNames.INT64,
-            description="#TODO(#29059): Add reasons field description",
+            description="Number of expected Warden in person reviews based on time spent in solitary",
         ),
         ReasonsField(
             name="number_of_reviews",
             type=bigquery.enums.StandardSqlTypeNames.INT64,
-            description="#TODO(#29059): Add reasons field description",
+            description="Number of observed Warden in person reviews",
         ),
         ReasonsField(
             name="next_scc_date",
             type=bigquery.enums.StandardSqlTypeNames.DATE,
-            description="#TODO(#29059): Add reasons field description",
+            description="Expected next Warden in person review date",
         ),
     ],
 )

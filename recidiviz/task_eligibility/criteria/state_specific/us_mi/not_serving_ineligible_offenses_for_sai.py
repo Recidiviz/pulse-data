@@ -40,7 +40,7 @@ _REASONS_FIELDS = [
     ReasonsField(
         name="ineligible_offenses",
         type=bigquery.enums.StandardSqlTypeNames.ARRAY,
-        description="#TODO(#29059): Add reasons field description",
+        description="List of ineligible offenses for transfer to SAI",
     ),
 ]
 

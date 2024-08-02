@@ -97,7 +97,7 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
             ReasonsField(
                 name="active_ppo",
                 type=bigquery.enums.StandardSqlTypeNames.BOOL,
-                description="#TODO(#29059): Add reasons field description",
+                description="Whether a client has a pending detainer",
             )
         ],
     )

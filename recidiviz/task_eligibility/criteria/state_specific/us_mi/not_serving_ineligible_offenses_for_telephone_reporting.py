@@ -92,22 +92,22 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
             ReasonsField(
                 name="ineligible_offenses",
                 type=bigquery.enums.StandardSqlTypeNames.ARRAY,
-                description="#TODO(#29059): Add reasons field description",
+                description="List of relevant offenses",
             ),
             ReasonsField(
                 name="sentence_status",
                 type=bigquery.enums.StandardSqlTypeNames.ARRAY,
-                description="#TODO(#29059): Add reasons field description",
+                description="List of current sentence statuses",
             ),
             ReasonsField(
                 name="is_life_sentence",
                 type=bigquery.enums.StandardSqlTypeNames.BOOL,
-                description="#TODO(#29059): Add reasons field description",
+                description="Whether a client is serving a life sentence",
             ),
             ReasonsField(
                 name="sentence_status_raw_text",
                 type=bigquery.enums.StandardSqlTypeNames.ARRAY,
-                description="#TODO(#29059): Add reasons field description",
+                description="List of raw sentence statuses",
             ),
         ],
     )

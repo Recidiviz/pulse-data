@@ -38,7 +38,7 @@ _REASONS_FIELDS = [
     ReasonsField(
         name="true_security_level",
         type=bigquery.enums.StandardSqlTypeNames.STRING,
-        description="#TODO(#29059): Add reasons field description",
+        description="A resident's true security level",
     ),
 ]
 

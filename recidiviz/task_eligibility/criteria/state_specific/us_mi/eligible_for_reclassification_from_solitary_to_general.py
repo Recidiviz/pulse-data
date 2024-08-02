@@ -112,22 +112,22 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = StateSpecificTaskCr
         ReasonsField(
             name="detention_sanction_has_expired",
             type=bigquery.enums.StandardSqlTypeNames.BOOL,
-            description="#TODO(#29059): Add reasons field description",
+            description="Whether the detention sanction has expired",
         ),
         ReasonsField(
             name="overdue_in_temporary",
             type=bigquery.enums.StandardSqlTypeNames.BOOL,
-            description="#TODO(#29059): Add reasons field description",
+            description="Whether the resident has been in temporary segregation for over 30 days ",
         ),
         ReasonsField(
             name="sanction_expiration_date",
             type=bigquery.enums.StandardSqlTypeNames.DATE,
-            description="#TODO(#29059): Add reasons field description",
+            description="Sanction expiration date",
         ),
         ReasonsField(
             name="overdue_in_temporary_date",
             type=bigquery.enums.StandardSqlTypeNames.DATE,
-            description="#TODO(#29059): Add reasons field description",
+            description="Date at which the resident became overdue in temporary segregation",
         ),
     ],
 )

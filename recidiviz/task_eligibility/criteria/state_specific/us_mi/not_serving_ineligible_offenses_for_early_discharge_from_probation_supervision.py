@@ -62,26 +62,24 @@ _QUERY_TEMPLATE = f"""
     GROUP BY 1, 2, 3, 4,5
     """
 
-VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
-    StateSpecificTaskCriteriaBigQueryViewBuilder(
-        criteria_name=_CRITERIA_NAME,
-        description=_DESCRIPTION,
-        criteria_spans_query_template=_QUERY_TEMPLATE,
+VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = StateSpecificTaskCriteriaBigQueryViewBuilder(
+    criteria_name=_CRITERIA_NAME,
+    description=_DESCRIPTION,
+    criteria_spans_query_template=_QUERY_TEMPLATE,
+    state_code=StateCode.US_MI,
+    sessions_dataset=SESSIONS_DATASET,
+    meets_criteria_default=True,
+    raw_data_up_to_date_views_dataset=raw_latest_views_dataset_for_region(
         state_code=StateCode.US_MI,
-        sessions_dataset=SESSIONS_DATASET,
-        meets_criteria_default=True,
-        raw_data_up_to_date_views_dataset=raw_latest_views_dataset_for_region(
-            state_code=StateCode.US_MI,
-            instance=DirectIngestInstance.PRIMARY,
+        instance=DirectIngestInstance.PRIMARY,
+    ),
+    reasons_fields=[
+        ReasonsField(
+            name="ineligible_offenses",
+            type=bigquery.enums.StandardSqlTypeNames.ARRAY,
+            description="List of ineligible offenses for early discharge from probation supervision",
         ),
-        reasons_fields=[
-            ReasonsField(
-                name="ineligible_offenses",
-                type=bigquery.enums.StandardSqlTypeNames.ARRAY,
-                description="#TODO(#29059): Add reasons field description",
-            ),
-        ],
-    )
+    ],
 )
 
 if __name__ == "__main__":

@@ -110,27 +110,25 @@ deduped_sub_sessions AS (
                               attribute=['is_sai'])})
 """
 
-VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
-    StateSpecificTaskCriteriaBigQueryViewBuilder(
-        criteria_name=_CRITERIA_NAME,
-        description=_DESCRIPTION,
-        criteria_spans_query_template=_QUERY_TEMPLATE,
+VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = StateSpecificTaskCriteriaBigQueryViewBuilder(
+    criteria_name=_CRITERIA_NAME,
+    description=_DESCRIPTION,
+    criteria_spans_query_template=_QUERY_TEMPLATE,
+    state_code=StateCode.US_MI,
+    sessions_dataset=SESSIONS_DATASET,
+    analyst_data_dataset=ANALYST_VIEWS_DATASET,
+    normalized_state_dataset=NORMALIZED_STATE_DATASET,
+    raw_data_up_to_date_views_dataset=raw_latest_views_dataset_for_region(
         state_code=StateCode.US_MI,
-        sessions_dataset=SESSIONS_DATASET,
-        analyst_data_dataset=ANALYST_VIEWS_DATASET,
-        normalized_state_dataset=NORMALIZED_STATE_DATASET,
-        raw_data_up_to_date_views_dataset=raw_latest_views_dataset_for_region(
-            state_code=StateCode.US_MI,
-            instance=DirectIngestInstance.PRIMARY,
+        instance=DirectIngestInstance.PRIMARY,
+    ),
+    reasons_fields=[
+        ReasonsField(
+            name="supervision_level_is_sai",
+            type=bigquery.enums.StandardSqlTypeNames.BOOL,
+            description="Whether a client is on supervision after participating in SAI",
         ),
-        reasons_fields=[
-            ReasonsField(
-                name="supervision_level_is_sai",
-                type=bigquery.enums.StandardSqlTypeNames.BOOL,
-                description="#TODO(#29059): Add reasons field description",
-            ),
-        ],
-    )
+    ],
 )
 
 if __name__ == "__main__":

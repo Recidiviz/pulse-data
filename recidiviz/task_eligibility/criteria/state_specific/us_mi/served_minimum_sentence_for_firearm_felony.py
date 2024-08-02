@@ -38,7 +38,7 @@ _REASONS_FIELDS = [
     ReasonsField(
         name="eligible_date",
         type=bigquery.enums.StandardSqlTypeNames.DATE,
-        description="#TODO(#29059): Add reasons field description",
+        description="Date at which a client has met the minimum time served for a firearm felony according to SAI policy",
     ),
 ]
 

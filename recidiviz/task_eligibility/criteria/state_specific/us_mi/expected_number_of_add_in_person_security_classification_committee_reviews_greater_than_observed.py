@@ -206,37 +206,35 @@ _QUERY_TEMPLATE = f"""
     QUALIFY ROW_NUMBER() OVER(PARTITION BY t.person_id, t.start_date ORDER BY p.change_date DESC)=1
 """
 
-VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
-    StateSpecificTaskCriteriaBigQueryViewBuilder(
-        criteria_name=_CRITERIA_NAME,
-        description=_DESCRIPTION,
-        criteria_spans_query_template=_QUERY_TEMPLATE,
-        state_code=StateCode.US_MI,
-        sessions_dataset=SESSIONS_DATASET,
-        analyst_views_dataset=ANALYST_VIEWS_DATASET,
-        reasons_fields=[
-            ReasonsField(
-                name="solitary_start_date",
-                type=bigquery.enums.StandardSqlTypeNames.DATE,
-                description="#TODO(#29059): Add reasons field description",
-            ),
-            ReasonsField(
-                name="number_of_expected_reviews",
-                type=bigquery.enums.StandardSqlTypeNames.INT64,
-                description="#TODO(#29059): Add reasons field description",
-            ),
-            ReasonsField(
-                name="number_of_reviews",
-                type=bigquery.enums.StandardSqlTypeNames.INT64,
-                description="#TODO(#29059): Add reasons field description",
-            ),
-            ReasonsField(
-                name="latest_add_in_person_scc_review_date",
-                type=bigquery.enums.StandardSqlTypeNames.DATE,
-                description="#TODO(#29059): Add reasons field description",
-            ),
-        ],
-    )
+VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = StateSpecificTaskCriteriaBigQueryViewBuilder(
+    criteria_name=_CRITERIA_NAME,
+    description=_DESCRIPTION,
+    criteria_spans_query_template=_QUERY_TEMPLATE,
+    state_code=StateCode.US_MI,
+    sessions_dataset=SESSIONS_DATASET,
+    analyst_views_dataset=ANALYST_VIEWS_DATASET,
+    reasons_fields=[
+        ReasonsField(
+            name="solitary_start_date",
+            type=bigquery.enums.StandardSqlTypeNames.DATE,
+            description="Date resident was placed in any type of solitary confinement",
+        ),
+        ReasonsField(
+            name="number_of_expected_reviews",
+            type=bigquery.enums.StandardSqlTypeNames.INT64,
+            description="Number of expected ADD in person reviews based on time spent in solitary",
+        ),
+        ReasonsField(
+            name="number_of_reviews",
+            type=bigquery.enums.StandardSqlTypeNames.INT64,
+            description="Number of observed ADD in person reviews",
+        ),
+        ReasonsField(
+            name="latest_add_in_person_scc_review_date",
+            type=bigquery.enums.StandardSqlTypeNames.DATE,
+            description="Latest observed ADD in person review",
+        ),
+    ],
 )
 
 if __name__ == "__main__":

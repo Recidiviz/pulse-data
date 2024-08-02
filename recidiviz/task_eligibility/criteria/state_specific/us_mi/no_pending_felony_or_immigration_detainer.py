@@ -38,22 +38,22 @@ _REASONS_FIELDS = [
     ReasonsField(
         name="pending_felony_detainer",
         type=bigquery.enums.StandardSqlTypeNames.BOOL,
-        description="#TODO(#29059): Add reasons field description",
+        description="Whether a resident has a pending felony detainer",
     ),
     ReasonsField(
         name="pending_immigration_detainer",
         type=bigquery.enums.StandardSqlTypeNames.BOOL,
-        description="#TODO(#29059): Add reasons field description",
+        description="Whether a resident has a pending immigration detainer",
     ),
     ReasonsField(
         name="pending_felony_charge",
         type=bigquery.enums.StandardSqlTypeNames.BOOL,
-        description="#TODO(#29059): Add reasons field description",
+        description="Whether a resident has a pending felony charge",
     ),
     ReasonsField(
         name="felony_suspect_information",
         type=bigquery.enums.StandardSqlTypeNames.BOOL,
-        description="#TODO(#29059): Add reasons field description",
+        description="Whether a resident has felony suspect information",
     ),
 ]
 
