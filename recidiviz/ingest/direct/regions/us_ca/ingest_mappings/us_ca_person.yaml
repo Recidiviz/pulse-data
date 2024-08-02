@@ -39,20 +39,36 @@ output:
             $enum_mapping:
               $raw_text: Race
               $mappings:
-                StateRace.AMERICAN_INDIAN_ALASKAN_NATIVE: "American Indian/Alaskan Native"
-                StateRace.ASIAN: "Asian"
-                StateRace.BLACK: "Black"
+                StateRace.AMERICAN_INDIAN_ALASKAN_NATIVE:
+                  - "American Indian/Alaskan Native"
+                  - "I"
+                StateRace.ASIAN:
+                  - "A"
+                  - "Asian"
+                StateRace.BLACK:
+                  - "B"
+                  - "Black"
                 StateRace.NATIVE_HAWAIIAN_PACIFIC_ISLANDER:
                   - "Asian or Pacific Islander"
                   - "Pacific Islander"
-                StateRace.WHITE: "White"
-                StateRace.EXTERNAL_UNKNOWN: "Unknown"
-                StateRace.OTHER: "Other"
+                StateRace.WHITE:
+                  - "W"
+                  - "White"
+                StateRace.EXTERNAL_UNKNOWN:
+                  - "U"
+                  - "Unknown"
+                StateRace.OTHER:
+                  - "O"
+                  - "Other"
               $ignore:
                 # These are ethnicities, not races
-                - "Mexican"
-                - "Hispanic"
+                - "C"
                 - "Cuban"
+                - "D" # TODO(#32020): Investigate what this is, maybe Pacific Islander?
+                - "H"
+                - "Hispanic"
+                - "M"
+                - "Mexican"
     ethnicities:
       - StatePersonEthnicity:
           ethnicity:
