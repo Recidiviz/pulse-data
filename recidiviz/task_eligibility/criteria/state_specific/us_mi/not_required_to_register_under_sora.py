@@ -54,26 +54,24 @@ _QUERY_TEMPLATE = """
 """
 
 
-VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
-    StateSpecificTaskCriteriaBigQueryViewBuilder(
-        criteria_name=_CRITERIA_NAME,
-        description=_DESCRIPTION,
-        criteria_spans_query_template=_QUERY_TEMPLATE,
+VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = StateSpecificTaskCriteriaBigQueryViewBuilder(
+    criteria_name=_CRITERIA_NAME,
+    description=_DESCRIPTION,
+    criteria_spans_query_template=_QUERY_TEMPLATE,
+    state_code=StateCode.US_MI,
+    raw_data_up_to_date_views_dataset=raw_latest_views_dataset_for_region(
         state_code=StateCode.US_MI,
-        raw_data_up_to_date_views_dataset=raw_latest_views_dataset_for_region(
-            state_code=StateCode.US_MI,
-            instance=DirectIngestInstance.PRIMARY,
+        instance=DirectIngestInstance.PRIMARY,
+    ),
+    meets_criteria_default=True,
+    sessions_dataset=SESSIONS_DATASET,
+    reasons_fields=[
+        ReasonsField(
+            name="sentence_date_imposed",
+            type=bigquery.enums.StandardSqlTypeNames.DATE,
+            description="Earliest date imposed for a sentence that requires registration under SORA",
         ),
-        meets_criteria_default=True,
-        sessions_dataset=SESSIONS_DATASET,
-        reasons_fields=[
-            ReasonsField(
-                name="sentence_date_imposed",
-                type=bigquery.enums.StandardSqlTypeNames.DATE,
-                description="#TODO(#29059): Add reasons field description",
-            ),
-        ],
-    )
+    ],
 )
 
 if __name__ == "__main__":

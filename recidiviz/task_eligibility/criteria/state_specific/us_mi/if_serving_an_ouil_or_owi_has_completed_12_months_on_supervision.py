@@ -174,26 +174,24 @@ SELECT
 FROM critical_date_has_passed_spans cd
 """
 
-VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
-    StateSpecificTaskCriteriaBigQueryViewBuilder(
-        criteria_name=_CRITERIA_NAME,
-        description=_DESCRIPTION,
-        criteria_spans_query_template=_QUERY_TEMPLATE,
+VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = StateSpecificTaskCriteriaBigQueryViewBuilder(
+    criteria_name=_CRITERIA_NAME,
+    description=_DESCRIPTION,
+    criteria_spans_query_template=_QUERY_TEMPLATE,
+    state_code=StateCode.US_MI,
+    sessions_dataset=SESSIONS_DATASET,
+    raw_data_up_to_date_views_dataset=raw_latest_views_dataset_for_region(
         state_code=StateCode.US_MI,
-        sessions_dataset=SESSIONS_DATASET,
-        raw_data_up_to_date_views_dataset=raw_latest_views_dataset_for_region(
-            state_code=StateCode.US_MI,
-            instance=DirectIngestInstance.PRIMARY,
-        ),
-        meets_criteria_default=True,
-        reasons_fields=[
-            ReasonsField(
-                name="one_year_on_supervision_date",
-                type=bigquery.enums.StandardSqlTypeNames.DATE,
-                description="#TODO(#29059): Add reasons field description",
-            )
-        ],
-    )
+        instance=DirectIngestInstance.PRIMARY,
+    ),
+    meets_criteria_default=True,
+    reasons_fields=[
+        ReasonsField(
+            name="one_year_on_supervision_date",
+            type=bigquery.enums.StandardSqlTypeNames.DATE,
+            description="Date by which a client has served 12 months on active supervision",
+        )
+    ],
 )
 if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):

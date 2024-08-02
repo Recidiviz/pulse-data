@@ -38,7 +38,7 @@ _REASONS_FIELDS = [
     ReasonsField(
         name="most_recent_assault_risk",
         type=bigquery.enums.StandardSqlTypeNames.STRING,
-        description="#TODO(#29059): Add reasons field description",
+        description="Most recent assault risk",
     ),
 ]
 

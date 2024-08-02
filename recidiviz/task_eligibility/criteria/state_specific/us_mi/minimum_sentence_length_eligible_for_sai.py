@@ -38,22 +38,22 @@ _REASONS_FIELDS = [
     ReasonsField(
         name="is_indeterminate_sentence",
         type=bigquery.enums.StandardSqlTypeNames.BOOL,
-        description="#TODO(#29059): Add reasons field description",
+        description="Whether someone is serving an indeterminate sentence",
     ),
     ReasonsField(
         name="min_sentence",
         type=bigquery.enums.StandardSqlTypeNames.INT64,
-        description="#TODO(#29059): Add reasons field description",
+        description="The minimum length (days) of the client's current sentence",
     ),
     ReasonsField(
         name="is_breaking_and_entering",
         type=bigquery.enums.StandardSqlTypeNames.BOOL,
-        description="#TODO(#29059): Add reasons field description",
+        description="Whether a client is serving a sentence for Breaking and Entering a Dwelling",
     ),
     ReasonsField(
         name="is_firearm_felony",
         type=bigquery.enums.StandardSqlTypeNames.BOOL,
-        description="#TODO(#29059): Add reasons field description",
+        description="Whether a client is serving a sentence under the felony firearm law (MCL 750.227b)",
     ),
 ]
 

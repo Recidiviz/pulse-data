@@ -96,7 +96,7 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
             ReasonsField(
                 name="supervision_status_is_delayed_sentence",
                 type=bigquery.enums.StandardSqlTypeNames.BOOL,
-                description="#TODO(#29059): Add reasons field description",
+                description="Whether a client's sentence status is delayed",
             ),
         ],
     )

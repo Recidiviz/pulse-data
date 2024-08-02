@@ -96,26 +96,24 @@ SELECT
 FROM aggregated_modifier_spans
 """
 
-VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
-    StateSpecificTaskCriteriaBigQueryViewBuilder(
-        criteria_name=_CRITERIA_NAME,
-        description=_DESCRIPTION,
+VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = StateSpecificTaskCriteriaBigQueryViewBuilder(
+    criteria_name=_CRITERIA_NAME,
+    description=_DESCRIPTION,
+    state_code=StateCode.US_MI,
+    criteria_spans_query_template=_QUERY_TEMPLATE,
+    raw_data_up_to_date_views_dataset=raw_latest_views_dataset_for_region(
         state_code=StateCode.US_MI,
-        criteria_spans_query_template=_QUERY_TEMPLATE,
-        raw_data_up_to_date_views_dataset=raw_latest_views_dataset_for_region(
-            state_code=StateCode.US_MI,
-            instance=DirectIngestInstance.PRIMARY,
+        instance=DirectIngestInstance.PRIMARY,
+    ),
+    meets_criteria_default=True,
+    normalized_state_dataset=NORMALIZED_STATE_DATASET,
+    reasons_fields=[
+        ReasonsField(
+            name="active_modifiers",
+            type=bigquery.enums.StandardSqlTypeNames.BOOL,
+            description="Whether a client's supervision status has active modifiers",
         ),
-        meets_criteria_default=True,
-        normalized_state_dataset=NORMALIZED_STATE_DATASET,
-        reasons_fields=[
-            ReasonsField(
-                name="active_modifiers",
-                type=bigquery.enums.StandardSqlTypeNames.BOOL,
-                description="#TODO(#29059): Add reasons field description",
-            ),
-        ],
-    )
+    ],
 )
 
 if __name__ == "__main__":

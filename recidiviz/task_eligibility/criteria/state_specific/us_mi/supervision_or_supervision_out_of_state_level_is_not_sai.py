@@ -48,24 +48,20 @@ SELECT
 FROM `{project_id}.{criteria_dataset}.supervision_or_supervision_out_of_state_level_is_sai_materialized`
 """
 
-VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
-    StateSpecificTaskCriteriaBigQueryViewBuilder(
-        criteria_name=_CRITERIA_NAME,
-        description=_DESCRIPTION,
-        criteria_spans_query_template=_QUERY_TEMPLATE,
-        state_code=StateCode.US_MI,
-        meets_criteria_default=True,
-        criteria_dataset=task_eligibility_criteria_state_specific_dataset(
-            StateCode.US_MI
+VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = StateSpecificTaskCriteriaBigQueryViewBuilder(
+    criteria_name=_CRITERIA_NAME,
+    description=_DESCRIPTION,
+    criteria_spans_query_template=_QUERY_TEMPLATE,
+    state_code=StateCode.US_MI,
+    meets_criteria_default=True,
+    criteria_dataset=task_eligibility_criteria_state_specific_dataset(StateCode.US_MI),
+    reasons_fields=[
+        ReasonsField(
+            name="supervision_level_is_sai",
+            type=bigquery.enums.StandardSqlTypeNames.BOOL,
+            description="Whether a client is on supervision after participating in SAI",
         ),
-        reasons_fields=[
-            ReasonsField(
-                name="supervision_level_is_sai",
-                type=bigquery.enums.StandardSqlTypeNames.BOOL,
-                description="#TODO(#29059): Add reasons field description",
-            ),
-        ],
-    )
+    ],
 )
 
 if __name__ == "__main__":
