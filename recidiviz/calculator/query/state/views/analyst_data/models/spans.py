@@ -384,6 +384,8 @@ FROM
         sql_source="""SELECT
     * EXCEPT (ineligible_criteria),
     completion_event_type AS task_type,
+    launches.first_access_date IS NOT NULL AS task_type_is_live,
+    IFNULL(launches.is_fully_launched, FALSE) AS task_type_is_fully_launched,
     ARRAY_TO_STRING(ineligible_criteria, ",") AS ineligible_criteria,
 FROM
     `{project_id}.task_eligibility.all_tasks_materialized`
@@ -394,11 +396,17 @@ USING
 INNER JOIN
     `{project_id}.reference_views.completion_event_type_metadata_materialized` metadata
 USING
-    (completion_event_type)""",
+    (completion_event_type)
+LEFT JOIN
+    `{project_id}.analyst_data.workflows_live_completion_event_types_by_state_materialized` launches
+USING
+    (state_code, completion_event_type)""",
         attribute_cols=[
             "task_name",
             "task_type",
             "system_type",
+            "task_type_is_live",
+            "task_type_is_fully_launched",
             "is_eligible",
             "ineligible_criteria",
         ],
@@ -412,16 +420,24 @@ USING
 SELECT
     funnel.*,
     metadata.system_type,
+    launches.first_access_date IS NOT NULL AS task_type_is_live,
+    IFNULL(launches.is_fully_launched, false) AS task_type_is_fully_launched,
 FROM
     `{project_id}.analyst_data.workflows_person_impact_funnel_status_sessions_materialized` funnel
 LEFT JOIN
     `{project_id}.reference_views.completion_event_type_metadata_materialized` metadata
 ON
     funnel.task_type = metadata.completion_event_type
+LEFT JOIN
+    `{project_id}.analyst_data.workflows_live_completion_event_types_by_state_materialized` launches
+USING
+    (state_code, completion_event_type)
 """,
         attribute_cols=[
             "task_type",
             "system_type",
+            "task_type_is_live",
+            "task_type_is_fully_launched",
             "is_justice_involved",
             "is_eligible",
             "is_almost_eligible",
@@ -461,19 +477,30 @@ ON
         description="Spans of time over which a primary workflows user is a registered user of the workflows tool",
         sql_source="""
 SELECT
-    * EXCEPT (workflows_user_email_address, completion_event_type),
-    workflows_user_email_address AS email_address,
-    completion_event_type AS task_type,
+    sessions.* EXCEPT (workflows_user_email_address),
+    sessions.workflows_user_email_address AS email_address,
+    metadata.completion_event_type AS task_type,
+    launches.first_access_date IS NOT NULL AS task_type_is_live,
+    IFNULL(launches.is_fully_launched, FALSE) AS task_type_is_fully_launched,
 FROM
-    `{project_id}.analyst_data.workflows_primary_user_registration_sessions_materialized`
+    `{project_id}.analyst_data.workflows_primary_user_registration_sessions_materialized` sessions
 # Join with completion event metadata on system_type to get all task types that a user
 # could theoretically access based on their system type access (supervision vs. incarceration)
 LEFT JOIN
-    `{project_id}.reference_views.completion_event_type_metadata_materialized`
+    `{project_id}.reference_views.completion_event_type_metadata_materialized` metadata
 USING
     (system_type)
+LEFT JOIN
+    `{project_id}.analyst_data.workflows_live_completion_event_types_by_state_materialized` launches
+USING
+    (state_code, completion_event_type)
 """,
-        attribute_cols=["task_type", "system_type"],
+        attribute_cols=[
+            "task_type",
+            "system_type",
+            "task_type_is_live",
+            "task_type_is_fully_launched",
+        ],
         span_start_date_col="start_date",
         span_end_date_col="end_date_exclusive",
     ),
