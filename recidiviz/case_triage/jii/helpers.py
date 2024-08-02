@@ -36,12 +36,18 @@ from recidiviz.firestore.firestore_client import FirestoreClientImpl
 from recidiviz.utils.string import StrictStringFormatter
 
 INITIAL_TEXT = "Hi {given_name}, we’re reaching out on behalf of the Idaho Department of Correction (IDOC). We will send information about your eligibility for opportunities such as the Limited Supervision Unit (LSU), which offers a lower level of supervision.\n\nIf you have questions, reach out to {po_name}."
-FULLY_ELIGIBLE_TEXT = "Hi {given_name}, according to IDOC records, you might be eligible for the Limited Supervision Unit (LSU). LSU is a lower level of supervision with monthly online check-ins. To learn more, visit rviz.co/id_lsu\n\nIf you are interested in LSU, reach out to {po_name} or a specialist at specialistsd3@idoc.idaho.gov or (208) 454-7601. They can check if you’ve met all the requirements.\n\nYou may or may not be approved for LSU."
-MISSING_NEGATIVE_DA_OR_INCOME_OPENER = "Hi {given_name}, according to IDOC records, you are almost eligible for the Limited Supervision Unit (LSU). LSU is a lower level of supervision with monthly online check-ins. To learn more, visit rviz.co/id_lsu.\n\nLSU is optional, but if you are interested, you can do the following:\n"
-MISSING_INCOME_BULLET = "\n- You may share documents showing that you have a job, are a full-time student, or have other income such as a pension or disability benefits.\n"
-MISSING_NEGATIVE_DA_BULLET = "\n- You may provide a drug analysis test at the parole and probation office. You must test negative to be eligible for LSU.\n"
-MISSING_NEGATIVE_DA_OR_INCOME_CLOSER = "\nIf you have questions or would like to complete the steps above, reach out to {po_name} or a specialist at specialistsd3@idoc.idaho.gov or (208) 454-7601.\n\nYou may or may not be approved for LSU. You are not required to participate in LSU, nor required to complete any of the above steps."
+FULLY_ELIGIBLE_TEXT = "Hi {given_name}, IDOC records show that you’ve met some requirements for the Limited Supervision Unit (LSU). LSU is a lower level of supervision with monthly online check-ins.\n\nTo be considered, you must meet several requirements including:\n\n1. Be paying fines / fees regularly (small payments are okay)\n2. Have no current no-contact orders\n\nIf you meet these requirements or have questions, reach out to {po_name} or {additional_contact}. They will check if you qualify for LSU. Approval for LSU is not guaranteed.\n\nLearn more at rviz.co/id_lsu."
+MISSING_NEGATIVE_DA_OR_INCOME_OPENER = "Hi {given_name}, IDOC records show that you’ve met some requirements for the Limited Supervision Unit (LSU). LSU is a lower level of supervision with monthly online check-ins.\n\nLSU is optional, and to be considered you must be paying fines/fees regularly (small payments are okay) and have no current no-contact orders.\n\nIf you’re interested, you can reach out to {po_name} or {additional_contact} to complete the following items:\n"
+MISSING_INCOME_BULLET = "You may share documents showing that you have a job, are a full-time student, or have other income such as a pension or disability benefits.\n"
+MISSING_NEGATIVE_DA_BULLET = "You may provide a urine analysis test at the parole and probation office. You must test negative to be eligible for LSU.\n"
+MISSING_NEGATIVE_DA_OR_INCOME_CLOSER = (
+    "\nApproval for LSU is not guaranteed. Learn more at rviz.co/id_lsu."
+)
 ALL_CLOSER = "\n\nReply STOP to stop receiving these messages at any time. We’re unable to respond to messages sent to this number."
+
+D2_ADDITIONAL_CONTACT = None
+D4_ADDITIONAL_CONTACT = None
+D6_ADDITIONAL_CONTACT = None
 
 
 def generate_initial_text_messages_dict(
@@ -138,30 +144,57 @@ def construct_text_body(
     text_body = """"""
     given_name = literal_eval(individual["person_name"])["given_names"].title()
     po_name = individual["po_name"].title()
+    district = individual["district"].lower().strip()
+
+    if district == "district 2":
+        additional_contact = D2_ADDITIONAL_CONTACT
+    elif district == "district 4":
+        additional_contact = D4_ADDITIONAL_CONTACT
+    elif district == "district 6":
+        additional_contact = D6_ADDITIONAL_CONTACT
+    else:
+        raise ValueError(
+            f"Unexpected district. We expected {individual} to belong to districts 2, 4, or 6. They belong to district: {district}."
+        )
 
     if fully_eligible is True:
         text_body += StrictStringFormatter().format(
-            FULLY_ELIGIBLE_TEXT, given_name=given_name, po_name=po_name
+            FULLY_ELIGIBLE_TEXT,
+            given_name=given_name,
+            po_name=po_name,
+            additional_contact=additional_contact,
         )
     elif (
         missing_negative_da_within_90_days is True
         or missing_income_verified_within_3_months is True
     ):
         text_body += StrictStringFormatter().format(
-            MISSING_NEGATIVE_DA_OR_INCOME_OPENER, given_name=given_name
+            MISSING_NEGATIVE_DA_OR_INCOME_OPENER,
+            given_name=given_name,
+            po_name=po_name,
+            additional_contact=additional_contact,
         )
 
-    if missing_income_verified_within_3_months is True:
+    if (
+        missing_negative_da_within_90_days is True
+        and missing_income_verified_within_3_months is True
+    ):
+        text_body += "\n1. "
         text_body += MISSING_INCOME_BULLET
-    if missing_negative_da_within_90_days is True:
+        text_body += "\n2. "
         text_body += MISSING_NEGATIVE_DA_BULLET
+    elif missing_negative_da_within_90_days is True:
+        text_body += "\n1. "
+        text_body += MISSING_NEGATIVE_DA_BULLET
+    elif missing_income_verified_within_3_months is True:
+        text_body += "\n1. "
+        text_body += MISSING_INCOME_BULLET
+
     if (
         missing_negative_da_within_90_days is True
         or missing_income_verified_within_3_months is True
     ):
-        text_body += StrictStringFormatter().format(
-            MISSING_NEGATIVE_DA_OR_INCOME_CLOSER, po_name=po_name
-        )
+        text_body += MISSING_NEGATIVE_DA_OR_INCOME_CLOSER
 
     text_body += ALL_CLOSER
     return text_body
