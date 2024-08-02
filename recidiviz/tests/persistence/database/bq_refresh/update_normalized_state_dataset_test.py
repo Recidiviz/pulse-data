@@ -324,7 +324,7 @@ FROM `recidiviz-456.us_yy_state.fake_person`
             ): """SELECT state_code, another_entity_id, another_name, extra_normalization_only_field, fake_person_id
 FROM `recidiviz-456.us_xx_normalized_state_new.fake_another_entity`
 UNION ALL
-SELECT state_code, another_entity_id, another_name, NULL AS extra_normalization_only_field, fake_person_id
+SELECT state_code, another_entity_id, another_name, CAST(NULL AS STRING) AS extra_normalization_only_field, fake_person_id
 FROM `recidiviz-456.us_yy_normalized_state.fake_another_entity`
 """,
             BigQueryAddress(

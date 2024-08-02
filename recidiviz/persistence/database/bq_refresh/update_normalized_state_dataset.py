@@ -52,6 +52,7 @@ from recidiviz.source_tables.normalization_pipeline_output_table_collector impor
     build_normalization_pipeline_output_table_id_to_schemas,
 )
 from recidiviz.source_tables.source_table_config import SourceTableConfig
+from recidiviz.source_tables.source_table_update_manager import SourceTableUpdateManager
 from recidiviz.source_tables.union_tables_output_table_collector import (
     build_unioned_normalized_state_source_table_collection,
 )
@@ -59,7 +60,7 @@ from recidiviz.utils import metadata
 
 
 def _build_single_source_table_select_statement(
-    output_columns: list[str], input_source_table: SourceTableConfig
+    output_table_schema: list[SchemaField], input_source_table: SourceTableConfig
 ) -> str:
     """Builds a SELECT statement that will pull in data from the given input table.
     The result will have the provided output columns. If the source table doesn't have
@@ -67,8 +68,10 @@ def _build_single_source_table_select_statement(
     """
     input_table_columns = {f.name for f in input_source_table.schema_fields}
     columns_strs = (
-        column_name if column_name in input_table_columns else f"NULL AS {column_name}"
-        for column_name in output_columns
+        column.name
+        if column.name in input_table_columns
+        else f"CAST(NULL AS {column.field_type}) AS {column.name}"
+        for column in output_table_schema
     )
     project_specific_address = input_source_table.address.to_project_specific_address(
         metadata.project_id()
@@ -88,11 +91,9 @@ def _build_normalized_state_unioned_view_builder(
     tables and materializes to the given output address.
     """
     table_id = output_table_address.table_id
-    column_names = [column.name for column in output_table_schema]
-
     queries = (
         _build_single_source_table_select_statement(
-            column_names, input_tables_by_state[state_code]
+            output_table_schema, input_tables_by_state[state_code]
         )
         for state_code in sorted(input_tables_by_state, key=lambda s: s.value)
     )
@@ -255,4 +256,9 @@ def combine_sources_into_single_normalized_state_dataset(
             NORMALIZED_STATE_VIEWS_DATASET,
             NORMALIZED_STATE_DATASET,
         },
+    )
+
+    # Ensure that the produced output schema matches the expected schema
+    SourceTableUpdateManager().update(
+        build_unioned_normalized_state_source_table_collection()
     )
