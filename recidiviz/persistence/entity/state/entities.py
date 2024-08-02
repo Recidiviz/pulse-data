@@ -126,7 +126,9 @@ from recidiviz.common.constants.state.state_supervision_violation_response impor
     StateSupervisionViolationResponseType,
 )
 from recidiviz.common.constants.state.state_task_deadline import StateTaskType
+from recidiviz.common.constants.states import StateCode
 from recidiviz.common.date import DateOrDateTime, DateRange, DurationMixin
+from recidiviz.common.state_exempted_attrs_validator import state_exempted_validator
 from recidiviz.persistence.entity.base_entity import (
     Entity,
     EnumEntity,
@@ -2085,8 +2087,17 @@ class StateStaff(
     full_name: Optional[str] = attr.ib(
         default=None, validator=attr_validators.is_opt_str
     )
-    # TODO(#29072): Add is_opt_valid_email validator once all states have valid emails
-    email: Optional[str] = attr.ib(default=None, validator=attr_validators.is_opt_str)
+    email: Optional[str] = attr.ib(
+        default=None,
+        validator=state_exempted_validator(
+            attr_validators.is_opt_valid_email,
+            exempted_states={
+                StateCode.US_AR,  # TODO(#29046): Remove AR exemption after email fix
+                StateCode.US_ME,  # TODO(#31928): Remove ME exemption after email fix
+                StateCode.US_IX,  # TODO(#31930): Remove IX exemption after email fix
+            },
+        ),
+    )
 
     # Primary key - Only optional when hydrated in the parsing layer, before we have
     # written this entity to the persistence layer
