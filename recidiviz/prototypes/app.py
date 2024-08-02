@@ -62,6 +62,10 @@ async def validate_authentication() -> None:
 
 @app.before_request
 async def validate_cors() -> Optional[Union[Response, WerkzeugResponse]]:
+    # Bypass authentication for health check endpoint.
+    if request.path == "/health":
+        return None
+
     origin_is_allowed = any(
         re.match(allowed_origin, request.origin) for allowed_origin in ALLOWED_ORIGINS
     )
