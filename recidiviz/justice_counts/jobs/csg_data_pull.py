@@ -257,9 +257,9 @@ def summarize(
                 metrics_unavailable.add(datapoint["metric_definition_key"])
 
     return {
-        LAST_UPDATE: last_update.date()
-        if last_update != datetime.datetime(1970, 1, 1)
-        else "",
+        LAST_UPDATE: (
+            last_update.date() if last_update != datetime.datetime(1970, 1, 1) else ""
+        ),
         NUM_RECORDS_WITH_DATA: len(report_id_to_datapoints),
         NUM_METRICS_WITH_DATA: len(metric_key_to_datapoints),
         NUM_METRICS_CONFIGURED: len(metrics_configured),
@@ -267,12 +267,16 @@ def summarize(
         NUM_METRICS_AVAILABLE: len(metrics_available),
         NUM_METRICS_UNAVAILABLE: len(metrics_unavailable),
         DATA_SHARED_THIS_WEEK: data_shared_this_week,
-        INITIAL_METRIC_CONFIG_DATE: initial_metric_config_date.date()
-        if initial_metric_config_date != tomorrow
-        else "",
-        INITIAL_DATA_ENTRY_DATE: initial_data_entry_date.date()
-        if initial_data_entry_date != tomorrow
-        else "",
+        INITIAL_METRIC_CONFIG_DATE: (
+            initial_metric_config_date.date()
+            if initial_metric_config_date != tomorrow
+            else ""
+        ),
+        INITIAL_DATA_ENTRY_DATE: (
+            initial_data_entry_date.date()
+            if initial_data_entry_date != tomorrow
+            else ""
+        ),
     }
 
 
@@ -435,7 +439,11 @@ def create_new_agency_columns(
         published_capacity_and_costs_metrics = None
         is_dashboard_enabled = None
         if agency_id_to_agency_with_dashboard_data.get(agency_id) is not None:
-            agency_dashboard_link, num_time_periods_reported = calculate_columns_helper(
+            (
+                agency_dashboard_link,
+                _,
+                num_time_periods_reported,
+            ) = calculate_columns_helper(
                 agency_id_to_time_periods=agency_id_to_time_periods,
                 agency_name=agency["name"],
                 agency_id=agency_id,
