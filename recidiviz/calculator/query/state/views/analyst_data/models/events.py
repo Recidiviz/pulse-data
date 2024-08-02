@@ -72,6 +72,8 @@ def get_task_eligible_event_query_builder(
             FALSE
         ) AS after_almost_eligible,
         d.system_type,
+        launches.first_access_date IS NOT NULL AS task_type_is_live,
+        IFNULL(launches.is_fully_launched, FALSE) AS task_type_is_fully_launched,
     FROM
         `{{project_id}}.analyst_data.all_task_eligibility_spans_materialized` a
     INNER JOIN
@@ -92,6 +94,11 @@ def get_task_eligible_event_query_builder(
         `{{project_id}}.reference_views.completion_event_type_metadata_materialized` d
     USING
         (completion_event_type)
+    LEFT JOIN
+        `{{project_id}}.analyst_data.workflows_live_completion_event_types_by_state_materialized` launches
+    ON
+        a.state_code = launches.state_code
+        AND d.completion_event_type = launches.completion_event_type
     WHERE
         -- remove any spans that start after the current millennium, e.g.
         -- eligibility following a life sentence
@@ -102,6 +109,8 @@ def get_task_eligible_event_query_builder(
             "task_name",
             "task_type",
             "system_type",
+            "task_type_is_live",
+            "task_type_is_fully_launched",
             "after_tool_action",
             "after_almost_eligible",
         ],
@@ -970,12 +979,18 @@ SELECT
     -- Flag if someone has experienced at least one tool action before task completion
     COALESCE(f.surfaced, FALSE) AS after_tool_action,
     c.system_type,
+    launches.first_access_date IS NOT NULL AS task_type_is_live,
+    IFNULL(launches.is_fully_launched, FALSE) AS task_type_is_fully_launched,
 FROM
     `{{project_id}}.task_eligibility.all_completion_events_materialized` e
 INNER JOIN
     `{{project_id}}.reference_views.completion_event_type_metadata_materialized` c
 USING
     (completion_event_type)
+LEFT JOIN
+    `{{project_id}}.analyst_data.workflows_live_completion_event_types_by_state_materialized` launches
+USING
+    (state_code, completion_event_type)
 -- Get information about continuous spans of eligibility
 LEFT JOIN
     `{{project_id}}.analyst_data.all_task_type_eligibility_spans_materialized` t
@@ -1014,6 +1029,8 @@ QUALIFY
         attribute_cols=[
             "task_type",
             "system_type",
+            "task_type_is_live",
+            "task_type_is_fully_launched",
             "is_eligible",
             "days_eligible",
             "is_almost_eligible",
@@ -1220,6 +1237,8 @@ SELECT
     , FALSE) AS is_first_tool_action,
     DATE_DIFF(a.start_date, c.start_date, DAY) days_eligible,
     d.system_type,
+    launches.first_access_date IS NOT NULL AS task_type_is_live,
+    IFNULL(launches.is_fully_launched, FALSE) AS task_type_is_fully_launched,
 FROM
     `{{project_id}}.analyst_data.workflows_person_events_materialized` a
 LEFT JOIN
@@ -1238,10 +1257,17 @@ INNER JOIN
     `{{project_id}}.reference_views.completion_event_type_metadata_materialized` d
 ON
     a.task_type = d.completion_event_type
+LEFT JOIN
+    `{{project_id}}.analyst_data.workflows_live_completion_event_types_by_state_materialized` launches
+ON
+    d.completion_event_type = launches.completion_event_type
+    AND a.state_code = launches.state_code
 """,
         attribute_cols=[
             "task_type",
             "system_type",
+            "task_type_is_live",
+            "task_type_is_fully_launched",
             "usage_event_type",
             "is_first_tool_action",
             "days_eligible",
@@ -1256,22 +1282,30 @@ SELECT
     a.* EXCEPT(email), email AS email_address,
     b.completion_event_type AS task_type,
     c.system_type,
+    launches.first_access_date IS NOT NULL AS task_type_is_live,
+    IFNULL(launches.is_fully_launched, FALSE) AS task_type_is_fully_launched,
 FROM
     `{{project_id}}.analyst_data.workflows_officer_events_materialized` a
 INNER JOIN
     `{{project_id}}.reference_views.workflows_opportunity_configs_materialized` b
 USING
-    (opportunity_type)
+    (state_code, opportunity_type)
 INNER JOIN
     `{{project_id}}.reference_views.completion_event_type_metadata_materialized` c
 USING
     (completion_event_type)
+LEFT JOIN
+    `{{project_id}}.analyst_data.workflows_live_completion_event_types_by_state_materialized` launches
+USING
+    (state_code, completion_event_type)
 WHERE event = "{EventType.WORKFLOWS_USER_ACTION.value}" """,
         attribute_cols=[
             "event_type",
             "opportunity_type",
             "task_type",
             "system_type",
+            "task_type_is_live",
+            "task_type_is_fully_launched",
             "person_external_id",
             "new_status",
         ],
@@ -1285,22 +1319,30 @@ SELECT
     a.* EXCEPT(email), email AS email_address,
     b.completion_event_type AS task_type,
     c.system_type,
+    launches.first_access_date IS NOT NULL AS task_type_is_live,
+    IFNULL(launches.is_fully_launched, FALSE) AS task_type_is_fully_launched,
 FROM
     `{{project_id}}.analyst_data.workflows_officer_events_materialized` a
 INNER JOIN
     `{{project_id}}.reference_views.workflows_opportunity_configs_materialized` b
 USING
-    (opportunity_type)
+    (state_code, opportunity_type)
 INNER JOIN
     `{{project_id}}.reference_views.completion_event_type_metadata_materialized` c
 USING
     (completion_event_type)
+LEFT JOIN
+    `{{project_id}}.analyst_data.workflows_live_completion_event_types_by_state_materialized` launches
+USING
+    (state_code, completion_event_type)
 WHERE event = "{EventType.WORKFLOWS_USER_CLIENT_STATUS_UPDATE.value}" """,
         attribute_cols=[
             "event_type",
             "opportunity_type",
             "task_type",
             "system_type",
+            "task_type_is_live",
+            "task_type_is_fully_launched",
             "person_external_id",
             "new_status",
         ],
@@ -1314,22 +1356,30 @@ SELECT
     a.* EXCEPT(email), email AS email_address,
     b.completion_event_type AS task_type,
     c.system_type,
+    launches.first_access_date IS NOT NULL AS task_type_is_live,
+    IFNULL(launches.is_fully_launched, FALSE) AS task_type_is_fully_launched,
 FROM
     `{{project_id}}.analyst_data.workflows_officer_events_materialized` a
 INNER JOIN
     `{{project_id}}.reference_views.workflows_opportunity_configs_materialized` b
 USING
-    (opportunity_type)
+    (state_code, opportunity_type)
 INNER JOIN
     `{{project_id}}.reference_views.completion_event_type_metadata_materialized` c
 USING
     (completion_event_type)
+LEFT JOIN
+    `{{project_id}}.analyst_data.workflows_live_completion_event_types_by_state_materialized` launches
+USING
+    (state_code, completion_event_type)
 WHERE event = "{EventType.WORKFLOWS_USER_PAGE.value}" """,
         attribute_cols=[
             "event_type",
             "opportunity_type",
             "task_type",
             "system_type",
+            "task_type_is_live",
+            "task_type_is_fully_launched",
             "person_external_id",
             "new_status",
         ],

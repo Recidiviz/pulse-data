@@ -95,9 +95,6 @@ from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_segregation
 from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_segregation_stays import (
     US_TN_SEGREGATION_STAYS_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.analyst_data.workflows_live_completion_event_types_by_state import (
-    WORKFLOWS_LIVE_COMPLETION_EVENT_TYPES_BY_STATE_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.outliers.supervision_impact_metrics_outlier_officers import (
     SUPERVISION_IMPACT_METRICS_OUTLIER_OFFICERS_VIEW_BUILDER,
 )
@@ -359,10 +356,6 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
     ),
     NON_TEMPORARY_CUSTODY_INCARCERATION_POPULATION_VIEW_BUILDER.address: (
         "Will be used for MO RH eligibility spans (see #31337) (Daniel Allen 7/24/24)"
-    ),
-    WORKFLOWS_LIVE_COMPLETION_EVENT_TYPES_BY_STATE_VIEW_BUILDER.address: (
-        "Will be incorporated into person events and spans (see #31666) \
-        (Mayuka Sarukkai 7/29/24)"
     ),
 }
 
