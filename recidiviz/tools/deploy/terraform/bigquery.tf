@@ -86,39 +86,6 @@ resource "google_bigquery_table" "workflows_resident_record_archive" {
   schema = jsonencode(yamldecode(file("${local.source_tables}/${module.export_archives_dataset.dataset_id}/workflows_resident_record_archive.yaml"))["schema"])
 }
 
-# This legacy table should be used to add any additional compliant reporting legacy fields from `client_record`
-# that we might need for impact tracking. Historically these fields were on client_record, and they have been moved
-# to compliant_reporting_referral_record.
-resource "google_bigquery_table" "workflows_legacy_client_record_archive" {
-  dataset_id          = module.export_archives_dataset.dataset_id
-  table_id            = "workflows_legacy_client_record_archive"
-  description         = "This table contains daily archives of the client_record export for Workflows, which are read directly from Cloud Storage."
-  deletion_protection = false
-  external_data_configuration {
-    autodetect            = false
-    ignore_unknown_values = true
-    max_bad_records       = 0
-    source_format         = "NEWLINE_DELIMITED_JSON"
-    source_uris           = ["gs://${var.project_id}-practices-etl-data-archive/*/client_record.json"]
-  }
-  schema = jsonencode(yamldecode(file("${local.source_tables}/${module.export_archives_dataset.dataset_id}/workflows_legacy_client_record_archive.yaml"))["schema"])
-}
-
-resource "google_bigquery_table" "workflows_compliant_reporting_referral_record_archive" {
-  dataset_id          = module.export_archives_dataset.dataset_id
-  table_id            = "workflows_compliant_reporting_referral_record_archive"
-  description         = "This table contains daily archives of the compliant_reporting_referral_record export for Workflows, which are read directly from Cloud Storage."
-  deletion_protection = false
-  external_data_configuration {
-    autodetect            = false
-    ignore_unknown_values = true
-    max_bad_records       = 0
-    source_format         = "NEWLINE_DELIMITED_JSON"
-    source_uris           = ["gs://${var.project_id}-practices-etl-data-archive/*/compliant_reporting_referral_record.json"]
-  }
-  schema = jsonencode(yamldecode(file("${local.source_tables}/${module.export_archives_dataset.dataset_id}/workflows_compliant_reporting_referral_record_archive.yaml"))["schema"])
-}
-
 resource "google_bigquery_table" "outliers_supervision_officer_outlier_status_archive" {
   dataset_id          = module.export_archives_dataset.dataset_id
   table_id            = "outliers_supervision_officer_outlier_status_archive"

@@ -1209,8 +1209,6 @@ US_TN:
     sessions.us_tn_incarceration_staff_assignment_sessions_preprocessed: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
   BoardAction:
-    analyst_data.us_tn_compliant_reporting_logic: |-
-      Usage reason unknown. Grandfathered in 04/18/2024.
     sessions.us_tn_parole_board_hearing_decisions: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
     workflows_views.client_record: |-
@@ -1226,10 +1224,6 @@ US_TN:
     workflows_views.us_tn_custody_level_downgrade_record: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
   CodesDescription:
-    analyst_data.us_tn_compliant_reporting_logic: |-
-      Usage reason unknown. Grandfathered in 04/18/2024.
-    analyst_data.us_tn_sentence_logic: |-
-      Usage reason unknown. Grandfathered in 04/18/2024.
     workflows_views.client_record: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
     workflows_views.us_tn_full_term_supervision_discharge_record: |-
@@ -1240,10 +1234,6 @@ US_TN:
     analyst_data.us_tn_contact_comments_preprocessed: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
   ContactNoteType:
-    analyst_data.us_tn_compliant_reporting_logic: |-
-      Usage reason unknown. Grandfathered in 04/18/2024.
-    analyst_data.us_tn_compliant_reporting_referral: |-
-      Usage reason unknown. Grandfathered in 04/18/2024.
     analyst_data.us_tn_relevant_contact_codes: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
     analyst_data.us_tn_zero_tolerance_codes: |-
@@ -1279,8 +1269,6 @@ US_TN:
     analyst_data.us_tn_incarceration_incidents_preprocessed: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
   DrugTestDrugClass:
-    analyst_data.us_tn_compliant_reporting_logic: |-
-      Usage reason unknown. Grandfathered in 04/18/2024.
     sessions.us_tn_drug_screens_preprocessed: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
   HealthExam:
@@ -1297,16 +1285,12 @@ US_TN:
     workflows_views.us_tn_custody_level_downgrade_record: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
   JOIdentification:
-    sessions.us_tn_judicial_district_sessions: |-
-      Usage reason unknown. Grandfathered in 04/18/2024.
     sessions.us_tn_sentences_preprocessed: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
   JOSentence:
     sessions.us_tn_sentences_preprocessed: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
   JOVictim:
-    analyst_data.us_tn_compliant_reporting_referral: |-
-      Usage reason unknown. Grandfathered in 04/18/2024.
     workflows_views.us_tn_transfer_to_compliant_reporting_record: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
   MentalHealthServices:
@@ -1318,8 +1302,6 @@ US_TN:
     workflows_views.client_record: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
   OffenderAccounts:
-    analyst_data.us_tn_compliant_reporting_logic: |-
-      Usage reason unknown. Grandfathered in 04/18/2024.
     analyst_data.us_tn_exemptions_preprocessed: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
     analyst_data.us_tn_invoices_preprocessed: |-
@@ -1327,29 +1309,15 @@ US_TN:
     analyst_data.us_tn_payments_preprocessed: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
   OffenderAttributes:
-    analyst_data.us_tn_compliant_reporting_referral: |-
-      Usage reason unknown. Grandfathered in 04/18/2024.
     workflows_views.us_tn_transfer_to_compliant_reporting_record: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
   OffenderExemptions:
-    analyst_data.us_tn_compliant_reporting_logic: |-
-      Usage reason unknown. Grandfathered in 04/18/2024.
     analyst_data.us_tn_exemptions_preprocessed: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
   OffenderInvoices:
-    analyst_data.us_tn_compliant_reporting_logic: |-
-      Usage reason unknown. Grandfathered in 04/18/2024.
     analyst_data.us_tn_invoices_preprocessed: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
-  OffenderMovement:
-    analyst_data.us_tn_compliant_reporting_logic: |-
-      Usage reason unknown. Grandfathered in 04/18/2024.
-  OffenderName:
-    analyst_data.us_tn_compliant_reporting_logic: |-
-      Usage reason unknown. Grandfathered in 04/18/2024.
   OffenderPayments:
-    analyst_data.us_tn_compliant_reporting_logic: |-
-      Usage reason unknown. Grandfathered in 04/18/2024.
     analyst_data.us_tn_payments_preprocessed: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
   OffenderSentenceSummary:
@@ -1358,8 +1326,6 @@ US_TN:
     workflows_views.us_tn_custody_level_downgrade_record: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
   OffenderStatute:
-    analyst_data.us_tn_cr_raw_sentence_preprocessing: |-
-      Usage reason unknown. Grandfathered in 04/18/2024.
     analyst_data.us_tn_prior_record_preprocessed: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
     sessions.us_tn_sentences_preprocessed: |-
@@ -1375,15 +1341,10 @@ US_TN:
     workflows_views.us_tn_custody_level_downgrade_record: |-
       Used in opportunity record query for workflows tool. No schema ingesting PREA results.
   PriorRecord:
-    analyst_data.us_tn_cr_raw_sentence_preprocessing: |-
-      Usage reason unknown. Grandfathered in 04/18/2024.
     analyst_data.us_tn_prior_record_preprocessed: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
   RECIDIVIZ_REFERENCE_supervision_locations:
     reference_views.us_tn_location_metadata: |-
-      Usage reason unknown. Grandfathered in 04/18/2024.
-  ReleasePlan:
-    analyst_data.us_tn_compliant_reporting_referral: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
   STGOffender:
     workflows_views.us_tn_annual_reclassification_review_record: |-
@@ -1393,8 +1354,6 @@ US_TN:
     workflows_views.us_tn_full_term_supervision_discharge_record: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
   Sanctions:
-    analyst_data.us_tn_compliant_reporting_logic: |-
-      Usage reason unknown. Grandfathered in 04/18/2024.
     task_eligibility_criteria_us_tn.no_high_sanctions_in_past_year: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
   Segregation:
@@ -1410,8 +1369,6 @@ US_TN:
     workflows_views.us_tn_custody_level_downgrade_record: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
   Sentence:
-    sessions.us_tn_judicial_district_sessions: |-
-      Usage reason unknown. Grandfathered in 04/18/2024.
     sessions.us_tn_sentences_preprocessed: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
   Site:
@@ -1452,7 +1409,5 @@ US_TN:
     workflows_views.us_tn_custody_level_downgrade_record: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
   Violations:
-    analyst_data.us_tn_compliant_reporting_logic: |-
-      Usage reason unknown. Grandfathered in 04/18/2024.
     task_eligibility_criteria_us_tn.no_high_sanctions_in_past_year: |-
       Usage reason unknown. Grandfathered in 04/18/2024.

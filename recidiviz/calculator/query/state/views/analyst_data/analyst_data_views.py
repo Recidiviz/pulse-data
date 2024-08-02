@@ -213,26 +213,8 @@ from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_caf_q8 impo
 from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_cellbed_assignment_raw import (
     US_TN_CELLBED_ASSIGNMENT_RAW_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_compliant_reporting_eligible import (
-    US_TN_COMPLIANT_REPORTING_ELIGIBLE_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_compliant_reporting_funnel import (
-    US_TN_COMPLIANT_REPORTING_FUNNEL_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_compliant_reporting_logic import (
-    US_TN_COMPLIANT_REPORTING_LOGIC_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_compliant_reporting_referral import (
-    US_TN_COMPLIANT_REPORTING_REFERRAL_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_compliant_reporting_workflow_status import (
-    US_TN_COMPLIANT_REPORTING_WORKFLOW_STATUS_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_contact_comments_preprocessed import (
     US_TN_CONTACT_COMMENTS_PREPROCESSED_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_cr_raw_sentence_preprocessing import (
-    US_TN_CR_RAW_SENTENCE_PREPROCESSING_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_custody_classification_assessment_dates_preprocessed import (
     US_TN_CUSTODY_CLASSIFICATION_ASSESSMENT_DATES_PREPROCESSED_VIEW_BUILDER,
@@ -278,9 +260,6 @@ from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_segregation
 )
 from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_segregation_stays_v2 import (
     US_TN_SEGREGATION_STAYS_VIEW_BUILDER_V2,
-)
-from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_sentence_logic import (
-    US_TN_SENTENCE_LOGIC_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_zero_tolerance_codes import (
     US_TN_ZERO_TOLERANCE_CODES_VIEW_BUILDER,
@@ -349,13 +328,6 @@ ANALYST_DATA_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     US_OR_SERVED_6_MONTHS_SUPERVISION_VIEW_BUILDER,
     US_OR_SERVED_HALF_SENTENCE_VIEW_BUILDER,
     US_OR_STATUTE_ELIGIBLE_VIEW_BUILDER,
-    US_TN_COMPLIANT_REPORTING_LOGIC_VIEW_BUILDER,
-    US_TN_COMPLIANT_REPORTING_ELIGIBLE_VIEW_BUILDER,
-    US_TN_COMPLIANT_REPORTING_REFERRAL_VIEW_BUILDER,
-    US_TN_SENTENCE_LOGIC_VIEW_BUILDER,
-    US_TN_COMPLIANT_REPORTING_WORKFLOW_STATUS_VIEW_BUILDER,
-    US_TN_COMPLIANT_REPORTING_FUNNEL_VIEW_BUILDER,
-    US_TN_CR_RAW_SENTENCE_PREPROCESSING_VIEW_BUILDER,
     US_TN_ZERO_TOLERANCE_CODES_VIEW_BUILDER,
     US_MO_SCREENERS_PREPROCESSED_VIEW_BUILDER,
     US_MO_PROGRAM_TRACKS_VIEW_BUILDER,

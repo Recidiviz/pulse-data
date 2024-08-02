@@ -69,9 +69,6 @@ from recidiviz.calculator.query.state.views.workflows.clients_referral_form_subm
 from recidiviz.calculator.query.state.views.workflows.clients_referral_form_viewed import (
     CLIENTS_REFERRAL_FORM_VIEWED_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.workflows.clients_referral_implemented import (
-    CLIENTS_REFERRAL_IMPLEMENTED_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.workflows.clients_referral_status_updated import (
     CLIENTS_REFERRAL_STATUS_UPDATED_VIEW_BUILDER,
 )
@@ -80,9 +77,6 @@ from recidiviz.calculator.query.state.views.workflows.clients_snooze_spans impor
 )
 from recidiviz.calculator.query.state.views.workflows.clients_surfaced import (
     CLIENTS_SURFACED_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.workflows.compliant_reporting_referral_record_archive import (
-    COMPLIANT_REPORTING_REFERRAL_RECORD_ARCHIVE_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.workflows.current_impact_funnel_status import (
     CURRENT_IMPACT_FUNNEL_STATUS_VIEW_BUILDER,
@@ -127,7 +121,6 @@ from recidiviz.calculator.query.state.views.workflows.workflows_usage import (
 WORKFLOWS_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
     *FIRESTORE_VIEW_BUILDERS,
     PERSON_ID_TO_EXTERNAL_ID_VIEW_BUILDER,
-    COMPLIANT_REPORTING_REFERRAL_RECORD_ARCHIVE_VIEW_BUILDER,
     CLIENT_RECORD_ARCHIVE_VIEW_BUILDER,
     RESIDENT_RECORD_ARCHIVE_VIEW_BUILDER,
     CLIENTS_SURFACED_VIEW_BUILDER,
@@ -136,7 +129,6 @@ WORKFLOWS_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
     CLIENTS_REFERRAL_FORM_VIEWED_VIEW_BUILDER,
     CLIENTS_LATEST_REFERRAL_STATUS_VIEW_BUILDER,
     CLIENTS_LATEST_REFERRAL_STATUS_EXTENDED_VIEW_BUILDER,
-    CLIENTS_REFERRAL_IMPLEMENTED_VIEW_BUILDER,
     REIDENTIFIED_DASHBOARD_USERS_VIEW_BUILDER,
     CLIENTS_PROFILE_VIEWED_VIEW_BUILDER,
     CLIENTS_REFERRAL_FORM_COPIED_VIEW_BUILDER,
