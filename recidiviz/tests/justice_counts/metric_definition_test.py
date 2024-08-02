@@ -18,7 +18,7 @@
 
 from unittest import TestCase
 
-from recidiviz.common.constants.justice_counts import ContextKey, ValueType
+from recidiviz.common.constants.justice_counts import ContextKey
 from recidiviz.justice_counts.dimensions.person import (
     GenderRestricted,
     RaceAndEthnicity,
@@ -43,49 +43,37 @@ class TestAggregatedDimension(TestCase):
                     agg_dim.dimension.PERSON: [  # type: ignore[attr-defined]
                         Context(
                             key=ContextKey.INCLUDES_EXCLUDES_DESCRIPTION,
-                            value_type=ValueType.TEXT,
                             label="If the listed categories do not adequately describe your breakdown, please describe additional data elements included in your agency’s definition.",
-                            required=False,
                         )
                     ],
                     agg_dim.dimension.PROPERTY: [  # type: ignore[attr-defined]
                         Context(
                             key=ContextKey.INCLUDES_EXCLUDES_DESCRIPTION,
-                            value_type=ValueType.TEXT,
                             label="If the listed categories do not adequately describe your breakdown, please describe additional data elements included in your agency’s definition.",
-                            required=False,
                         )
                     ],
                     agg_dim.dimension.DRUG: [  # type: ignore[attr-defined]
                         Context(
                             key=ContextKey.INCLUDES_EXCLUDES_DESCRIPTION,
-                            value_type=ValueType.TEXT,
                             label="If the listed categories do not adequately describe your breakdown, please describe additional data elements included in your agency’s definition.",
-                            required=False,
                         )
                     ],
                     agg_dim.dimension.PUBLIC_ORDER: [  # type: ignore[attr-defined]
                         Context(
                             key=ContextKey.INCLUDES_EXCLUDES_DESCRIPTION,
-                            value_type=ValueType.TEXT,
                             label="If the listed categories do not adequately describe your breakdown, please describe additional data elements included in your agency’s definition.",
-                            required=False,
                         )
                     ],
                     agg_dim.dimension.OTHER: [  # type: ignore[attr-defined]
                         Context(
                             key=ContextKey.ADDITIONAL_CONTEXT,
-                            value_type=ValueType.TEXT,
                             label="Please describe what data is being included in this breakdown.",
-                            required=False,
                         )
                     ],
                     agg_dim.dimension.UNKNOWN: [  # type: ignore[attr-defined]
                         Context(
                             key=ContextKey.ADDITIONAL_CONTEXT,
-                            value_type=ValueType.TEXT,
                             label="Please describe what data is being included in this breakdown.",
-                            required=False,
                         )
                     ],
                 },
@@ -103,9 +91,7 @@ class TestAggregatedDimension(TestCase):
                 [
                     Context(
                         key=ContextKey.INCLUDES_EXCLUDES_DESCRIPTION,
-                        value_type=ValueType.TEXT,
                         label="If the listed categories do not adequately describe your breakdown, please describe additional data elements included in your agency’s definition.",
-                        required=False,
                     )
                 ],
             )

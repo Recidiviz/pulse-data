@@ -1836,3 +1836,94 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
             assert False
         except ValueError:
             assert True
+
+    def test_to_dashboard_v2_json_response(self) -> None:
+        with SessionFactory.using_database(self.database_key) as session:
+            agency = self.test_schema_objects.test_agency_C
+            user = self.test_schema_objects.test_user_C
+            report = self.test_schema_objects.test_report_supervision
+            session.add_all([user, agency, report])
+
+            current_time = datetime.datetime.now(tz=datetime.timezone.utc)
+            # Add 4 datapoints to the report
+            existing_datapoints_dict = ReportInterface.get_existing_datapoints_dict(
+                reports=[report]
+            )
+            inserts: List[schema.Datapoint] = []
+            updates: List[schema.Datapoint] = []
+            histories: List[schema.DatapointHistory] = []
+            DatapointInterface.add_report_datapoint(
+                session=session,
+                inserts=inserts,
+                updates=updates,
+                histories=histories,
+                report=report,
+                existing_datapoints_dict=existing_datapoints_dict,
+                value=100,
+                metric_definition_key="SUPERVISION_POPULATION",
+                current_time=current_time,
+                upload_method=UploadMethod.BULK_UPLOAD,
+            )
+            DatapointInterface.add_report_datapoint(
+                session=session,
+                inserts=inserts,
+                updates=updates,
+                histories=histories,
+                report=report,
+                existing_datapoints_dict=existing_datapoints_dict,
+                value=50,
+                metric_definition_key="SUPERVISION_POPULATION",
+                current_time=current_time,
+                dimension=DailyPopulationType["ACTIVE"],
+                upload_method=UploadMethod.BULK_UPLOAD,
+            )
+            DatapointInterface.flush_report_datapoints(
+                session=session,
+                inserts=inserts,
+                updates=updates,
+                histories=histories,
+            )
+            session.commit()
+
+            datapoints = DatapointInterface.get_datapoints_by_report_ids(
+                session=session,
+                report_ids=[report.id],
+                include_contexts=False,
+            )
+
+            datapoint_json = DatapointInterface.to_json_response(
+                datapoint=datapoints[0],
+                frequency=ReportingFrequency.MONTHLY,
+                is_published=True,
+                is_v2=True,
+            )
+
+            self.assertDictEqual(
+                datapoint_json,
+                {
+                    "id": datapoints[0].id,
+                    "frequency": "MONTHLY",
+                    "start_date": datetime.date(2022, 6, 1),
+                    "end_date": datetime.date(2022, 7, 1),
+                    "value": 100,
+                },
+            )
+
+            datapoint_json = DatapointInterface.to_json_response(
+                datapoint=datapoints[1],
+                frequency=ReportingFrequency.MONTHLY,
+                is_published=True,
+                is_v2=True,
+            )
+            self.assertDictEqual(
+                datapoint_json,
+                {
+                    "id": datapoints[1].id,
+                    "frequency": "MONTHLY",
+                    "start_date": datetime.date(2022, 6, 1),
+                    "end_date": datetime.date(2022, 7, 1),
+                    "disaggregation_display_name": "Daily Population Type",
+                    "dimension_display_name": "People on Active Supervision",
+                    "value": 50,
+                },
+            )

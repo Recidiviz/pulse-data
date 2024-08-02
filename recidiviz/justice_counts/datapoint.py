@@ -151,6 +151,7 @@ class DatapointInterface:
         frequency: schema.ReportingFrequency,
         old_value: Optional[str] = None,
         agency_name: Optional[str] = None,
+        is_v2: Optional[bool] = False,
     ) -> DatapointJson:
         """Serializes Datapoint object into json format for consumption in the Justice Counts Control Panel"""
         metric_definition = METRIC_KEY_TO_METRIC[datapoint.metric_definition_key]
@@ -168,25 +169,34 @@ class DatapointInterface:
             disaggregation_display_name = dimension.human_readable_name()
             dimension_display_name = dimension.dimension_value
 
-        return {
+        response: DatapointJson = {
             "id": datapoint.id,
-            "report_id": datapoint.report_id,
-            "agency_name": agency_name,
             "start_date": datapoint.start_date,
             "end_date": datapoint.end_date,
-            "metric_definition_key": datapoint.metric_definition_key,
-            "metric_display_name": metric_display_name,
-            "disaggregation_display_name": disaggregation_display_name,
-            "dimension_display_name": dimension_display_name,
             "value": get_value(datapoint=datapoint),
-            "old_value": (
-                get_value(datapoint=datapoint, use_value=old_value)
-                if old_value is not None
-                else None
-            ),
-            "is_published": is_published,
             "frequency": frequency.value,
         }
+
+        if is_v2 is True:
+            if dimension is not None:
+                response["disaggregation_display_name"] = disaggregation_display_name
+                response["dimension_display_name"] = dimension_display_name
+
+            return response
+
+        response["agency_name"] = agency_name
+        response["metric_definition_key"] = datapoint.metric_definition_key
+        response["metric_display_name"] = metric_display_name
+        response["disaggregation_display_name"] = disaggregation_display_name
+        response["dimension_display_name"] = dimension_display_name
+        response["old_value"] = (
+            get_value(datapoint=datapoint, use_value=old_value)
+            if old_value is not None
+            else None
+        )
+        response["is_published"] = is_published
+        response["report_id"] = datapoint.report_id
+        return response
 
     ### Get Path: Both Agency and Report Datapoints ###
 

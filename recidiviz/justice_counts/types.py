@@ -16,24 +16,24 @@
 # =============================================================================
 """Justice Counts Types"""
 from enum import Enum
-from typing import Any, Optional, TypedDict
+from typing import Any, NotRequired, Optional, TypedDict
 
 
 class DatapointJson(TypedDict):
     """Datapoint object serialized for API response"""
 
     id: int
-    report_id: int
-    agency_name: Optional[str]
+    report_id: NotRequired[int]
+    agency_name: NotRequired[Optional[str]]
     start_date: str
     end_date: str
-    metric_definition_key: str
-    metric_display_name: str
-    disaggregation_display_name: Optional[str]
-    dimension_display_name: Optional[str]
+    metric_definition_key: NotRequired[str]
+    metric_display_name: NotRequired[str]
+    disaggregation_display_name: NotRequired[Optional[str]]
+    dimension_display_name: NotRequired[Optional[str]]
     value: Any
-    old_value: Any
-    is_published: bool
+    old_value: NotRequired[Any]
+    is_published: NotRequired[bool]
     frequency: str
 
 

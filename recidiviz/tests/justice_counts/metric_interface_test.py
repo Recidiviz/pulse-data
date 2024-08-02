@@ -171,11 +171,7 @@ class TestMetricInterface(TestCase):
                     {
                         "key": "INCLUDES_EXCLUDES_DESCRIPTION",
                         "display_name": "If the listed categories do not adequately describe your metric, please describe additional data elements included in your agency’s definition.",
-                        "reporting_note": None,
-                        "required": False,
-                        "type": "TEXT",
                         "value": "our metrics are different because xyz",
-                        "multiple_choice_options": [],
                     },
                 ],
                 "disaggregations": [],
@@ -217,11 +213,7 @@ class TestMetricInterface(TestCase):
                     {
                         "key": "INCLUDES_EXCLUDES_DESCRIPTION",
                         "display_name": "If the listed categories do not adequately describe your metric, please describe additional data elements included in your agency’s definition.",
-                        "reporting_note": None,
-                        "required": False,
-                        "type": "TEXT",
                         "value": "our metrics are different because xyz",
-                        "multiple_choice_options": [],
                     },
                 ],
                 "disaggregations": [
@@ -374,11 +366,7 @@ class TestMetricInterface(TestCase):
                     {
                         "key": "INCLUDES_EXCLUDES_DESCRIPTION",
                         "display_name": "If the listed categories do not adequately describe your metric, please describe additional data elements included in your agency’s definition.",
-                        "reporting_note": None,
-                        "required": False,
-                        "type": "TEXT",
                         "value": "our metrics are different because xyz",
-                        "multiple_choice_options": [],
                     },
                 ],
                 "disaggregations": [
@@ -1731,15 +1719,13 @@ class TestMetricInterface(TestCase):
                                 "default": "Yes",
                                 "included": None,
                                 "key": "SERVICE_911",
-                                "label": "Calls for service received by the agency’s dispatch "
-                                "service via 911",
+                                "label": "Calls for service received by the agency’s dispatch service via 911",
                             },
                             {
                                 "default": "Yes",
                                 "included": None,
                                 "key": "SERVICE_311",
-                                "label": "Calls for service received by the agency’s dispatch "
-                                "service via 311 or equivalent non-emergency number",
+                                "label": "Calls for service received by the agency’s dispatch service via 311 or equivalent non-emergency number",
                             },
                             {
                                 "default": "Yes",
@@ -1751,15 +1737,13 @@ class TestMetricInterface(TestCase):
                                 "default": "Yes",
                                 "included": None,
                                 "key": "OFFICER_INITIATED",
-                                "label": "Officer-initiated calls for service (e.g., traffic "
-                                "stops, foot patrol)",
+                                "label": "Officer-initiated calls for service (e.g., traffic stops, foot patrol)",
                             },
                             {
                                 "default": "Yes",
                                 "included": None,
                                 "key": "OTHER_JURISDICTION",
-                                "label": "Calls for service received by another jurisdiction "
-                                "and routed to the agency for response",
+                                "label": "Calls for service received by another jurisdiction and routed to the agency for response",
                             },
                             {
                                 "default": "Yes",
@@ -2193,24 +2177,16 @@ class TestMetricInterface(TestCase):
                                     {
                                         "agency_name": None,
                                         "dimension_display_name": "Emergency",
-                                        "disaggregation_display_name": "Call " "Type",
-                                        "end_date": "Tue, 01 Nov "
-                                        "2022 "
-                                        "00:00:00 "
-                                        "GMT",
+                                        "disaggregation_display_name": "Call Type",
+                                        "end_date": "Tue, 01 Nov 2022 00:00:00 GMT",
                                         "frequency": "MONTHLY",
                                         "id": 14891,
                                         "is_published": True,
                                         "metric_definition_key": "LAW_ENFORCEMENT_CALLS_FOR_SERVICE",
-                                        "metric_display_name": "Calls "
-                                        "for "
-                                        "Service",
+                                        "metric_display_name": "Calls for Service",
                                         "old_value": None,
                                         "report_id": 314,
-                                        "start_date": "Sat, 01 "
-                                        "Oct 2022 "
-                                        "00:00:00 "
-                                        "GMT",
+                                        "start_date": "Sat, 01 Oct 2022 00:00:00 GMT",
                                         "value": 51890,
                                     }
                                 ],
@@ -3342,7 +3318,7 @@ class TestMetricInterface(TestCase):
                 "default": "Yes",
                 "included": "Yes",
                 "key": "EQUIPMENT",
-                "label": "Funding for the purchase of law enforcement " "equipment",
+                "label": "Funding for the purchase of law enforcement equipment",
             },
             {
                 "default": "Yes",
@@ -3487,4 +3463,766 @@ class TestMetricInterface(TestCase):
         metric_interface.post_process_storage_json()
         self.assertEqual(
             metric_interface.disaggregated_by_supervision_subsystems, False
+        )
+
+    def test_dashboard_v2_endpoint(self) -> None:
+        reported_metric = self.test_schema_objects.get_arrests_metric()
+        self.assertEqual(
+            reported_metric.to_json(
+                entry_point=DatapointGetRequestEntryPoint.METRICS_TAB, is_v2=True
+            ),
+            {
+                "category": "Populations",
+                "contexts": [
+                    {
+                        "display_name": "If the listed categories do not adequately describe your metric, please describe additional data elements included in your agency’s definition.",
+                        "key": "INCLUDES_EXCLUDES_DESCRIPTION",
+                        "value": "our metrics are different because xyz",
+                    }
+                ],
+                "custom_frequency": None,
+                "datapoints": None,
+                "description": "The number of arrests, citations, and summonses made by the agency.",
+                "disaggregated_by_supervision_subsystems": None,
+                "disaggregations": [
+                    {
+                        "dimensions": [
+                            {
+                                "contexts": [
+                                    {
+                                        "key": "INCLUDES_EXCLUDES_DESCRIPTION",
+                                        "display_name": "If the listed categories do not adequately describe your breakdown, please describe additional data elements included in your agency’s definition.",
+                                        "value": None,
+                                    }
+                                ],
+                                "datapoints": None,
+                                "description": "The number of arrests, citations, or summonses made by the agency in which the most serious offense was a drug offense.",
+                                "enabled": True,
+                                "includes_excludes": [
+                                    {
+                                        "description": None,
+                                        "settings": [
+                                            {
+                                                "default": "Yes",
+                                                "included": None,
+                                                "key": "DRUG_VIOLATIONS",
+                                                "label": "Drug/narcotic violations",
+                                            },
+                                            {
+                                                "default": "Yes",
+                                                "included": None,
+                                                "key": "DRUG_EQUIPMENT_VIOLATIONS",
+                                                "label": "Drug equipment violations",
+                                            },
+                                            {
+                                                "default": "Yes",
+                                                "included": None,
+                                                "key": "DRUG_SALES",
+                                                "label": "Drug sales",
+                                            },
+                                            {
+                                                "default": "Yes",
+                                                "included": None,
+                                                "key": "DRUG_DISTRIBUTION",
+                                                "label": "Drug distribution",
+                                            },
+                                            {
+                                                "default": "Yes",
+                                                "included": None,
+                                                "key": "DRUG_MANUFACTURING",
+                                                "label": "Drug manufacturing",
+                                            },
+                                            {
+                                                "default": "Yes",
+                                                "included": None,
+                                                "key": "DRUG_SMUGGLING",
+                                                "label": "Drug smuggling",
+                                            },
+                                            {
+                                                "default": "Yes",
+                                                "included": None,
+                                                "key": "DRUG_PRODUCTION",
+                                                "label": "Drug production",
+                                            },
+                                            {
+                                                "default": "Yes",
+                                                "included": None,
+                                                "key": "DRUG_POSSESSION",
+                                                "label": "Drug possession",
+                                            },
+                                        ],
+                                    }
+                                ],
+                                "key": "Drug Offenses",
+                                "label": "Drug Offenses",
+                                "value": 60,
+                            },
+                            {
+                                "contexts": [
+                                    {
+                                        "key": "INCLUDES_EXCLUDES_DESCRIPTION",
+                                        "display_name": "If the listed categories do not adequately describe your breakdown, please describe additional data elements included in your agency’s definition.",
+                                        "value": None,
+                                    }
+                                ],
+                                "datapoints": None,
+                                "description": "The number of arrests, citations, or summonses made by the agency in which the most serious offense was a crime against a person.",
+                                "enabled": True,
+                                "includes_excludes": [
+                                    {
+                                        "description": None,
+                                        "settings": [
+                                            {
+                                                "default": "Yes",
+                                                "included": None,
+                                                "key": "AGGRAVATED_ASSAULT",
+                                                "label": "Aggravated assault",
+                                            },
+                                            {
+                                                "default": "Yes",
+                                                "included": None,
+                                                "key": "SIMPLE_ASSAULT",
+                                                "label": "Simple assault",
+                                            },
+                                            {
+                                                "default": "Yes",
+                                                "included": None,
+                                                "key": "INTIMIDATION",
+                                                "label": "Intimidation",
+                                            },
+                                            {
+                                                "default": "Yes",
+                                                "included": None,
+                                                "key": "MURDER",
+                                                "label": "Murder and nonnegligent manslaughter",
+                                            },
+                                            {
+                                                "default": "Yes",
+                                                "included": None,
+                                                "key": "MANSLAUGHTER",
+                                                "label": "Negligent manslaughter",
+                                            },
+                                            {
+                                                "default": "Yes",
+                                                "included": None,
+                                                "key": "HUMAN_TRAFFICKING_COMMERCIAL",
+                                                "label": "Human trafficking, commercial sex acts",
+                                            },
+                                            {
+                                                "default": "Yes",
+                                                "included": None,
+                                                "key": "HUMAN_TRAFFICKING_INVOLUNTARY",
+                                                "label": "Human trafficking, involuntary servitude",
+                                            },
+                                            {
+                                                "default": "Yes",
+                                                "included": None,
+                                                "key": "KIDNAPPING",
+                                                "label": "Kidnapping/abduction",
+                                            },
+                                            {
+                                                "default": "Yes",
+                                                "included": None,
+                                                "key": "RAPE",
+                                                "label": "Rape",
+                                            },
+                                            {
+                                                "default": "Yes",
+                                                "included": None,
+                                                "key": "SODOMY",
+                                                "label": "Sodomy",
+                                            },
+                                            {
+                                                "default": "Yes",
+                                                "included": None,
+                                                "key": "SEXUAL_ASSAULT",
+                                                "label": "Sexual assault with an object",
+                                            },
+                                            {
+                                                "default": "Yes",
+                                                "included": None,
+                                                "key": "FONDLING",
+                                                "label": "Fondling",
+                                            },
+                                            {
+                                                "default": "Yes",
+                                                "included": None,
+                                                "key": "INCEST",
+                                                "label": "Incest",
+                                            },
+                                            {
+                                                "default": "Yes",
+                                                "included": None,
+                                                "key": "STATUTORY_RAPE",
+                                                "label": "Statutory rape",
+                                            },
+                                            {
+                                                "default": "Yes",
+                                                "included": None,
+                                                "key": "ROBBERY",
+                                                "label": "Robbery",
+                                            },
+                                            {
+                                                "default": "No",
+                                                "included": None,
+                                                "key": "JUSTIFIABLE_HOMICIDE",
+                                                "label": "Justifiable homicide",
+                                            },
+                                        ],
+                                    }
+                                ],
+                                "key": "Person Offenses",
+                                "label": "Person Offenses",
+                                "value": 10,
+                            },
+                            {
+                                "contexts": [
+                                    {
+                                        "key": "INCLUDES_EXCLUDES_DESCRIPTION",
+                                        "display_name": "If the listed categories do not adequately describe your breakdown, please describe additional data elements included in your agency’s definition.",
+                                        "value": None,
+                                    }
+                                ],
+                                "datapoints": None,
+                                "description": "The number of arrests, citations, or summonses made by the agency in which the most serious offense was a property offense.",
+                                "enabled": True,
+                                "includes_excludes": [
+                                    {
+                                        "description": None,
+                                        "settings": [
+                                            {
+                                                "default": "Yes",
+                                                "included": None,
+                                                "key": "ARSON",
+                                                "label": "Arson",
+                                            },
+                                            {
+                                                "default": "Yes",
+                                                "included": None,
+                                                "key": "BRIBERY",
+                                                "label": "Bribery",
+                                            },
+                                            {
+                                                "default": "Yes",
+                                                "included": None,
+                                                "key": "BURGLARY",
+                                                "label": "Burglary/breaking and entering",
+                                            },
+                                            {
+                                                "default": "Yes",
+                                                "included": None,
+                                                "key": "COUNTERFEITING",
+                                                "label": "Counterfeiting/forgery",
+                                            },
+                                            {
+                                                "default": "Yes",
+                                                "included": None,
+                                                "key": "VANDALISM",
+                                                "label": "Destruction/damage/vandalism of property",
+                                            },
+                                            {
+                                                "default": "Yes",
+                                                "included": None,
+                                                "key": "EMBEZZLEMENT",
+                                                "label": "Embezzlement",
+                                            },
+                                            {
+                                                "default": "Yes",
+                                                "included": None,
+                                                "key": "EXTORTION",
+                                                "label": "Extortion/blackmail",
+                                            },
+                                            {
+                                                "default": "Yes",
+                                                "included": None,
+                                                "key": "FALSE_PRETENSES",
+                                                "label": "False pretenses/swindle/confidence game",
+                                            },
+                                            {
+                                                "default": "Yes",
+                                                "included": None,
+                                                "key": "CREDIT_CARD",
+                                                "label": "Credit card/automated teller machine fraud",
+                                            },
+                                            {
+                                                "default": "Yes",
+                                                "included": None,
+                                                "key": "IMPERSONATION",
+                                                "label": "Impersonation",
+                                            },
+                                            {
+                                                "default": "Yes",
+                                                "included": None,
+                                                "key": "WELFARE_FRAUD",
+                                                "label": "Welfare fraud",
+                                            },
+                                            {
+                                                "default": "Yes",
+                                                "included": None,
+                                                "key": "WIRE_FRAUD",
+                                                "label": "Wire fraud",
+                                            },
+                                            {
+                                                "default": "Yes",
+                                                "included": None,
+                                                "key": "IDENTITY_THEFT",
+                                                "label": "Identity theft",
+                                            },
+                                            {
+                                                "default": "Yes",
+                                                "included": None,
+                                                "key": "HACKING",
+                                                "label": "Hacking/computer invasion",
+                                            },
+                                            {
+                                                "default": "Yes",
+                                                "included": None,
+                                                "key": "POCKET_PICKING",
+                                                "label": "Pocket-picking",
+                                            },
+                                            {
+                                                "default": "Yes",
+                                                "included": None,
+                                                "key": "PURSE_SNATCHING",
+                                                "label": "Purse-snatching",
+                                            },
+                                            {
+                                                "default": "Yes",
+                                                "included": None,
+                                                "key": "SHOPLIFTING",
+                                                "label": "Shoplifting",
+                                            },
+                                            {
+                                                "default": "Yes",
+                                                "included": None,
+                                                "key": "THEFT_FROM_BULIDING",
+                                                "label": "Theft from building",
+                                            },
+                                            {
+                                                "default": "Yes",
+                                                "included": None,
+                                                "key": "THEFT_FROM_MACHINE",
+                                                "label": "Theft from coin-operated machine or device",
+                                            },
+                                            {
+                                                "default": "Yes",
+                                                "included": None,
+                                                "key": "THEFT_FROM_VEHICLE",
+                                                "label": "Theft from motor vehicle",
+                                            },
+                                            {
+                                                "default": "Yes",
+                                                "included": None,
+                                                "key": "THEFT_OF_VEHICLE_PARTS",
+                                                "label": "Theft of motor vehicle parts or accessories",
+                                            },
+                                            {
+                                                "default": "Yes",
+                                                "included": None,
+                                                "key": "LARCENY",
+                                                "label": "All other larceny",
+                                            },
+                                            {
+                                                "default": "Yes",
+                                                "included": None,
+                                                "key": "THEFT_OF_VEHICLE",
+                                                "label": "Motor vehicle theft",
+                                            },
+                                            {
+                                                "default": "Yes",
+                                                "included": None,
+                                                "key": "STOLEN_PROPERTY",
+                                                "label": "Stolen property offenses",
+                                            },
+                                            {
+                                                "default": "No",
+                                                "included": None,
+                                                "key": "ROBBERY",
+                                                "label": "Robbery",
+                                            },
+                                        ],
+                                    }
+                                ],
+                                "key": "Property Offenses",
+                                "label": "Property Offenses",
+                                "value": 40,
+                            },
+                            {
+                                "contexts": [
+                                    {
+                                        "key": "INCLUDES_EXCLUDES_DESCRIPTION",
+                                        "display_name": "If the listed categories do not adequately describe your breakdown, please describe additional data elements included in your agency’s definition.",
+                                        "value": None,
+                                    }
+                                ],
+                                "datapoints": None,
+                                "description": "The number of arrests, citations, or summonses made by the agency in which the most serious offense was a public order offense.",
+                                "enabled": True,
+                                "includes_excludes": [
+                                    {
+                                        "description": None,
+                                        "settings": [
+                                            {
+                                                "default": "Yes",
+                                                "included": None,
+                                                "key": "ANIMAL_CRUELTY",
+                                                "label": "Animal cruelty",
+                                            },
+                                            {
+                                                "default": "Yes",
+                                                "included": None,
+                                                "key": "IMPORT_VIOLATIONS",
+                                                "label": "Import violations",
+                                            },
+                                            {
+                                                "default": "Yes",
+                                                "included": None,
+                                                "key": "EXPORT_VIOLATIONS",
+                                                "label": "Export violations",
+                                            },
+                                            {
+                                                "default": "Yes",
+                                                "included": None,
+                                                "key": "LIQUOR",
+                                                "label": "Federal liquor offenses",
+                                            },
+                                            {
+                                                "default": "Yes",
+                                                "included": None,
+                                                "key": "TOBACCO",
+                                                "label": "Federal tobacco offenses",
+                                            },
+                                            {
+                                                "default": "Yes",
+                                                "included": None,
+                                                "key": "WILDLIFE",
+                                                "label": "Wildlife trafficking",
+                                            },
+                                            {
+                                                "default": "Yes",
+                                                "included": None,
+                                                "key": "ESPIONAGE",
+                                                "label": "Espionage",
+                                            },
+                                            {
+                                                "default": "Yes",
+                                                "included": None,
+                                                "key": "MONEY_LAUNDERING",
+                                                "label": "Money laundering",
+                                            },
+                                            {
+                                                "default": "Yes",
+                                                "included": None,
+                                                "key": "HARBORING",
+                                                "label": "Harboring escapee/concealing from arrest",
+                                            },
+                                            {
+                                                "default": "Yes",
+                                                "included": None,
+                                                "key": "FLIGHT_PROSECUTION",
+                                                "label": "Flight to avoid prosecution",
+                                            },
+                                            {
+                                                "default": "Yes",
+                                                "included": None,
+                                                "key": "FLIGHT_DEPORTATION",
+                                                "label": "Flight to avoid deportation",
+                                            },
+                                            {
+                                                "default": "Yes",
+                                                "included": None,
+                                                "key": "BETTING",
+                                                "label": "Betting/wagering",
+                                            },
+                                            {
+                                                "default": "Yes",
+                                                "included": None,
+                                                "key": "GAMBLING",
+                                                "label": "Operating/promoting/assisting gambling",
+                                            },
+                                            {
+                                                "default": "Yes",
+                                                "included": None,
+                                                "key": "GAMBLING_EQUIPMENT",
+                                                "label": "Gambling equipment violations",
+                                            },
+                                            {
+                                                "default": "Yes",
+                                                "included": None,
+                                                "key": "SPORTS_TAMPERING",
+                                                "label": "Sports tampering",
+                                            },
+                                            {
+                                                "default": "Yes",
+                                                "included": None,
+                                                "key": "ILLEGAL_ENTRY",
+                                                "label": "Illegal entry into the United States",
+                                            },
+                                            {
+                                                "default": "Yes",
+                                                "included": None,
+                                                "key": "FALSE_CITIZENSHIP",
+                                                "label": "False citizenship",
+                                            },
+                                            {
+                                                "default": "Yes",
+                                                "included": None,
+                                                "key": "SMUGGLING",
+                                                "label": "Smuggling aliens",
+                                            },
+                                            {
+                                                "default": "Yes",
+                                                "included": None,
+                                                "key": "RENTRY",
+                                                "label": "Re-entry after deportation",
+                                            },
+                                            {
+                                                "default": "Yes",
+                                                "included": None,
+                                                "key": "PORNOGRAPHY",
+                                                "label": "Pornography/obscene material",
+                                            },
+                                            {
+                                                "default": "Yes",
+                                                "included": None,
+                                                "key": "PROSTITUTION",
+                                                "label": "Prostitution",
+                                            },
+                                            {
+                                                "default": "Yes",
+                                                "included": None,
+                                                "key": "ASSISTING_PROSTITUTION",
+                                                "label": "Assisting or promoting prostitution",
+                                            },
+                                            {
+                                                "default": "Yes",
+                                                "included": None,
+                                                "key": "PURCHASING_PROSTITUTION",
+                                                "label": "Purchasing prostitution",
+                                            },
+                                            {
+                                                "default": "Yes",
+                                                "included": None,
+                                                "key": "TREASON",
+                                                "label": "Treason",
+                                            },
+                                            {
+                                                "default": "Yes",
+                                                "included": None,
+                                                "key": "WEAPON_LAW_VIOLATIONS",
+                                                "label": "Weapon law violations",
+                                            },
+                                            {
+                                                "default": "Yes",
+                                                "included": None,
+                                                "key": "FIREARM_VIOLATIONS",
+                                                "label": "Violation of National Firearm Act of 1934",
+                                            },
+                                            {
+                                                "default": "Yes",
+                                                "included": None,
+                                                "key": "WEAPONS_OF_MASS_DESTRUCTION",
+                                                "label": "Weapons of mass destruction",
+                                            },
+                                            {
+                                                "default": "Yes",
+                                                "included": None,
+                                                "key": "EXPLOSIVES",
+                                                "label": "Explosives",
+                                            },
+                                            {
+                                                "default": "Yes",
+                                                "included": None,
+                                                "key": "FAILURE_TO_APPEAR",
+                                                "label": "Failure to appear",
+                                            },
+                                            {
+                                                "default": "Yes",
+                                                "included": None,
+                                                "key": "CURFEW",
+                                                "label": "Curfew/loitering/vagrancy violations",
+                                            },
+                                            {
+                                                "default": "Yes",
+                                                "included": None,
+                                                "key": "DISORDERLY_CONDUCT",
+                                                "label": "Disorderly conduct",
+                                            },
+                                            {
+                                                "default": "Yes",
+                                                "included": None,
+                                                "key": "DUI",
+                                                "label": "Driving under the influence",
+                                            },
+                                            {
+                                                "default": "Yes",
+                                                "included": None,
+                                                "key": "FAMILY_OFFENSES",
+                                                "label": "Family offenses, nonviolent",
+                                            },
+                                            {
+                                                "default": "Yes",
+                                                "included": None,
+                                                "key": "FEDERAL_RESOURCE_VIOLATIONS",
+                                                "label": "Federal resource violations",
+                                            },
+                                            {
+                                                "default": "Yes",
+                                                "included": None,
+                                                "key": "LIQUOR_LAW_VIOLATIONS",
+                                                "label": "Liquor law violations",
+                                            },
+                                            {
+                                                "default": "Yes",
+                                                "included": None,
+                                                "key": "PERJURY",
+                                                "label": "Perjury",
+                                            },
+                                            {
+                                                "default": "Yes",
+                                                "included": None,
+                                                "key": "TRESPASS",
+                                                "label": "Trespass of real property",
+                                            },
+                                            {
+                                                "default": "No",
+                                                "included": None,
+                                                "key": "DRUG_VIOLATIONS",
+                                                "label": "Drug/narcotic violations",
+                                            },
+                                            {
+                                                "default": "No",
+                                                "included": None,
+                                                "key": "DRUG_EQUIPMENT_VIOLATIONS",
+                                                "label": "Drug equipment violations",
+                                            },
+                                            {
+                                                "default": "No",
+                                                "included": None,
+                                                "key": "DRUG_SALES",
+                                                "label": "Drug sales",
+                                            },
+                                            {
+                                                "default": "No",
+                                                "included": None,
+                                                "key": "DRUG_DISTRIBUTION",
+                                                "label": "Drug distribution",
+                                            },
+                                            {
+                                                "default": "No",
+                                                "included": None,
+                                                "key": "DRUG_MANUFACTURING",
+                                                "label": "Drug manufacturing",
+                                            },
+                                            {
+                                                "default": "No",
+                                                "included": None,
+                                                "key": "DRUG_SMUGGLING",
+                                                "label": "Drug smuggling",
+                                            },
+                                            {
+                                                "default": "No",
+                                                "included": None,
+                                                "key": "DRUG_PRODUCTION",
+                                                "label": "Drug production",
+                                            },
+                                            {
+                                                "default": "No",
+                                                "included": None,
+                                                "key": "DRUG_POSSESSION",
+                                                "label": "Drug possession",
+                                            },
+                                        ],
+                                    }
+                                ],
+                                "key": "Public Order Offenses",
+                                "label": "Public Order Offenses",
+                                "value": 0,
+                            },
+                            {
+                                "contexts": [
+                                    {
+                                        "key": "ADDITIONAL_CONTEXT",
+                                        "display_name": "Please describe what data is being included in this breakdown.",
+                                        "value": None,
+                                    }
+                                ],
+                                "datapoints": None,
+                                "description": "The number of arrests, citations, or summonses made by the agency in which the most serious offense is not known.",
+                                "enabled": True,
+                                "includes_excludes": [],
+                                "key": "Unknown Offenses",
+                                "label": "Unknown Offenses",
+                                "value": 10,
+                            },
+                            {
+                                "contexts": [
+                                    {
+                                        "key": "ADDITIONAL_CONTEXT",
+                                        "display_name": "Please describe what data is being included in this breakdown.",
+                                        "value": None,
+                                    }
+                                ],
+                                "datapoints": None,
+                                "description": "The number of arrests, citations, or summonses made by the agency in which the most serious offense was another type of crime that was not a person, property, drug, or public order offense.",
+                                "enabled": True,
+                                "includes_excludes": [],
+                                "key": "Other Offenses",
+                                "label": "Other Offenses",
+                                "value": 0,
+                            },
+                        ],
+                        "display_name": "Offense Types",
+                        "enabled": True,
+                        "key": "metric/offense/type",
+                    }
+                ],
+                "display_name": "Arrests",
+                "enabled": True,
+                "frequency": "MONTHLY",
+                "includes_excludes": [
+                    {
+                        "description": None,
+                        "settings": [
+                            {
+                                "default": "Yes",
+                                "included": None,
+                                "key": "ON_VIEW",
+                                "label": "On-view arrest (i.e., apprehension without a warrant or previous incident report)",
+                            },
+                            {
+                                "default": "Yes",
+                                "included": None,
+                                "key": "WARRANT",
+                                "label": "Arrests for warrants or previous incident reports",
+                            },
+                            {
+                                "default": "Yes",
+                                "included": None,
+                                "key": "CITATION",
+                                "label": "Summonses or citations",
+                            },
+                            {
+                                "default": "Yes",
+                                "included": None,
+                                "key": "IN_JURISDICTION",
+                                "label": "Arrests made for offenses committed within the agency’s jurisdiction",
+                            },
+                            {
+                                "default": "No",
+                                "included": None,
+                                "key": "OUTSIDE_JURISDICTION",
+                                "label": "Arrests made for offenses committed outside the agency’s jurisdiction",
+                            },
+                        ],
+                    }
+                ],
+                "key": "LAW_ENFORCEMENT_ARRESTS",
+                "sector": {
+                    "display_name": "Law Enforcement",
+                    "key": "LAW_ENFORCEMENT",
+                },
+                "starting_month": None,
+                "unit": "ARRESTS",
+            },
         )

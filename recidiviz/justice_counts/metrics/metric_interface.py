@@ -204,9 +204,11 @@ class MetricInterface:
             #   frequency: Optional[schema.ReportingFrequency]
             #   starting_month: Optional[int]
             "custom_reporting_frequency": {
-                "custom_frequency": self.custom_reporting_frequency.frequency.name
-                if self.custom_reporting_frequency.frequency is not None
-                else None,
+                "custom_frequency": (
+                    self.custom_reporting_frequency.frequency.name
+                    if self.custom_reporting_frequency.frequency is not None
+                    else None
+                ),
                 "starting_month": self.custom_reporting_frequency.starting_month,
             },
             "version": "v1",
@@ -315,6 +317,7 @@ class MetricInterface:
         dimension_id_to_dimension_member_to_datapoints_json: Optional[
             DefaultDict[str, DefaultDict[str, List[DatapointJson]]]
         ] = None,
+        is_v2: Optional[bool] = False,
     ) -> Dict[str, Any]:
         """Returns the json form of the MetricInterface object."""
 
@@ -329,9 +332,8 @@ class MetricInterface:
         frequency = self.metric_definition.reporting_frequency.value
         includes_excludes_json_lst = []
         if (
-            entry_point is DatapointGetRequestEntryPoint.METRICS_TAB
-            and self.metric_definition.includes_excludes
-        ):
+            entry_point == DatapointGetRequestEntryPoint.METRICS_TAB or is_v2 is True
+        ) and self.metric_definition.includes_excludes:
             for includes_excludes in self.metric_definition.includes_excludes:
                 includes_excludes_json: Dict[str, Any] = {
                     "description": includes_excludes.description,
@@ -358,22 +360,20 @@ class MetricInterface:
             metric_file.canonical_filename for metric_file in self.metric_files
         ]
 
-        return {
+        system_value = {
+            "key": self.metric_definition.system.value,
+            "display_name": self.metric_definition.system.value.replace("_", " ")
+            .title()
+            .replace("And", "and"),
+        }
+
+        response: Dict[str, Any] = {
             "key": self.key,
-            "system": {
-                "key": self.metric_definition.system.value,
-                "display_name": self.metric_definition.system.value.replace("_", " ")
-                .title()
-                .replace("And", "and"),
-            },
             "display_name": self.metric_definition.display_name,
             "description": self.metric_definition.description,
-            "reporting_note": self.metric_definition.reporting_note,
-            "value": self.value,
             "includes_excludes": includes_excludes_json_lst,
             "unit": self.metric_definition.metric_type.unit,
             "category": self.metric_definition.category.human_readable_string,
-            "label": self.metric_definition.display_name,
             "enabled": self.is_metric_enabled,
             "frequency": frequency,
             "custom_frequency": (
@@ -387,7 +387,6 @@ class MetricInterface:
                 and frequency == schema.ReportingFrequency.ANNUAL.value
                 else self.custom_reporting_frequency.starting_month
             ),
-            "filenames": metric_filenames,
             "datapoints": aggregate_datapoints_json,
             "contexts": [
                 c.to_json(context_definition=context_key_to_context_definition[c.key])
@@ -407,11 +406,23 @@ class MetricInterface:
                         else None
                     ),
                     entry_point=entry_point,
+                    is_v2=is_v2,
                 )
                 for d in self.aggregated_dimensions
             ],
             "disaggregated_by_supervision_subsystems": self.disaggregated_by_supervision_subsystems,
         }
+
+        if is_v2 is True:
+            response["sector"] = system_value
+            return response
+
+        response["system"] = system_value
+        response["reporting_note"] = self.metric_definition.reporting_note
+        response["value"] = self.value
+        response["filenames"] = metric_filenames
+        response["label"] = self.metric_definition.display_name
+        return response
 
     @classmethod
     def from_json(
