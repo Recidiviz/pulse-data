@@ -32,6 +32,7 @@ from typing import List, Set, Type
 import sqlalchemy
 from pytablewriter import MarkdownTableWriter
 
+from recidiviz.common.attr_mixins import attribute_field_type_reference_for_class
 from recidiviz.common.constants.state.enum_canonical_strings import (
     SHARED_ENUM_VALUE_DESCRIPTIONS,
 )
@@ -39,7 +40,10 @@ from recidiviz.common.constants.state.state_entity_enum import StateEntityEnum
 from recidiviz.common.str_field_utils import snake_to_camel, to_snake_case
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.schema_utils import get_all_table_classes_in_schema
-from recidiviz.persistence.entity.entity_utils import get_all_enum_classes_in_module
+from recidiviz.persistence.entity.entity_utils import (
+    get_all_entity_classes_in_module,
+    get_all_enum_classes_in_module,
+)
 from recidiviz.persistence.entity.state import entities as state_entities
 from recidiviz.tools.docs.summary_file_generator import update_summary_file
 from recidiviz.tools.docs.utils import DOCS_ROOT_PATH, persist_file_contents
@@ -55,17 +59,22 @@ ENUM_DOCS_ROOT = os.path.join(SCHEMA_DOCS_ROOT, ENUMS_PACKAGE_NAME)
 def _get_all_entity_enum_classes() -> Set[Type[StateEntityEnum]]:
     """Returns the set of StateEntityEnums used in
     recidiviz/persistence/entity/state/entities.py"""
-    enum_classes = get_all_enum_classes_in_module(state_entities)
+    entity_classes = get_all_entity_classes_in_module(state_entities)
 
     state_enum_classes: Set[Type[StateEntityEnum]] = set()
+    for entity_class in entity_classes:
+        for field_info in attribute_field_type_reference_for_class(
+            entity_class
+        ).values():
+            if not (enum_class := field_info.enum_cls):
+                continue
 
-    for enum_class in enum_classes:
-        if not issubclass(enum_class, StateEntityEnum):
-            raise TypeError(
-                "Found enum class used in state/entities.py that is not of "
-                f"type StateEntityEnum: {enum_class}."
-            )
-        state_enum_classes.add(enum_class)
+            if not issubclass(enum_class, StateEntityEnum):
+                raise TypeError(
+                    "Found enum class used in state/entities.py that is not of "
+                    f"type StateEntityEnum: {enum_class}."
+                )
+            state_enum_classes.add(enum_class)
 
     return state_enum_classes
 
