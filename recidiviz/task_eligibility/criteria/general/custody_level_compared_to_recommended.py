@@ -56,12 +56,12 @@ VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
             ReasonsField(
                 name="recommended_custody_level",
                 type=bigquery.enums.StandardSqlTypeNames.STRING,
-                description="#TODO(#29059): Add reasons field description",
+                description="Client's recommended custody level",
             ),
             ReasonsField(
                 name="custody_level",
                 type=bigquery.enums.StandardSqlTypeNames.STRING,
-                description="#TODO(#29059): Add reasons field description",
+                description="Client's custody level",
             ),
         ],
     )

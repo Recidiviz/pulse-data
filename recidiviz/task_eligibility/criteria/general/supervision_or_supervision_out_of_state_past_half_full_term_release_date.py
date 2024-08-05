@@ -98,30 +98,28 @@ QUALIFY ROW_NUMBER() OVER (
 ) = 1
 """
 
-VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
-    StateAgnosticTaskCriteriaBigQueryViewBuilder(
-        criteria_name=_CRITERIA_NAME,
-        description=_DESCRIPTION,
-        criteria_spans_query_template=_QUERY_TEMPLATE,
-        sessions_dataset=SESSIONS_DATASET,
-        normalized_state_dataset=NORMALIZED_STATE_DATASET,
-        excluded_incarceration_states=list_to_query_string(
-            string_list=STATES_WITH_NO_INCARCERATION_SENTENCES_ON_SUPERVISION,
-            quoted=True,
+VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = StateAgnosticTaskCriteriaBigQueryViewBuilder(
+    criteria_name=_CRITERIA_NAME,
+    description=_DESCRIPTION,
+    criteria_spans_query_template=_QUERY_TEMPLATE,
+    sessions_dataset=SESSIONS_DATASET,
+    normalized_state_dataset=NORMALIZED_STATE_DATASET,
+    excluded_incarceration_states=list_to_query_string(
+        string_list=STATES_WITH_NO_INCARCERATION_SENTENCES_ON_SUPERVISION,
+        quoted=True,
+    ),
+    reasons_fields=[
+        ReasonsField(
+            name="sentence_type",
+            type=bigquery.enums.StandardSqlTypeNames.STRING,
+            description="Indicates a client's supervision level",
         ),
-        reasons_fields=[
-            ReasonsField(
-                name="sentence_type",
-                type=bigquery.enums.StandardSqlTypeNames.STRING,
-                description="#TODO(#29059): Add reasons field description",
-            ),
-            ReasonsField(
-                name="half_full_term_release_date",
-                type=bigquery.enums.StandardSqlTypeNames.DATE,
-                description="#TODO(#29059): Add reasons field description",
-            ),
-        ],
-    )
+        ReasonsField(
+            name="half_full_term_release_date",
+            type=bigquery.enums.StandardSqlTypeNames.DATE,
+            description="Date where a client has served half of their full term supervision sentence",
+        ),
+    ],
 )
 
 if __name__ == "__main__":

@@ -94,20 +94,18 @@ SELECT
 FROM critical_date_has_passed_spans cd
 """
 
-VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
-    StateAgnosticTaskCriteriaBigQueryViewBuilder(
-        criteria_name=_CRITERIA_NAME,
-        criteria_spans_query_template=_QUERY_TEMPLATE,
-        description=_DESCRIPTION,
-        sessions_dataset=SESSIONS_DATASET,
-        reasons_fields=[
-            ReasonsField(
-                name="thirty_days_in_same_facility_date",
-                type=bigquery.enums.StandardSqlTypeNames.DATE,
-                description="#TODO(#29059): Add reasons field description",
-            ),
-        ],
-    )
+VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = StateAgnosticTaskCriteriaBigQueryViewBuilder(
+    criteria_name=_CRITERIA_NAME,
+    criteria_spans_query_template=_QUERY_TEMPLATE,
+    description=_DESCRIPTION,
+    sessions_dataset=SESSIONS_DATASET,
+    reasons_fields=[
+        ReasonsField(
+            name="thirty_days_in_same_facility_date",
+            type=bigquery.enums.StandardSqlTypeNames.DATE,
+            description="Date when a client will have spent 30 days in the same facility",
+        ),
+    ],
 )
 
 if __name__ == "__main__":

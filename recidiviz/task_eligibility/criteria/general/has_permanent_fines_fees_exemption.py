@@ -44,20 +44,18 @@ _QUERY_TEMPLATE = """
 
 """
 
-VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
-    StateAgnosticTaskCriteriaBigQueryViewBuilder(
-        criteria_name=_CRITERIA_NAME,
-        description=_DESCRIPTION,
-        criteria_spans_query_template=_QUERY_TEMPLATE,
-        analyst_dataset=ANALYST_VIEWS_DATASET,
-        reasons_fields=[
-            ReasonsField(
-                name="current_exemptions",
-                type=bigquery.enums.StandardSqlTypeNames.STRING,
-                description="#TODO(#29059): Add reasons field description",
-            ),
-        ],
-    )
+VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = StateAgnosticTaskCriteriaBigQueryViewBuilder(
+    criteria_name=_CRITERIA_NAME,
+    description=_DESCRIPTION,
+    criteria_spans_query_template=_QUERY_TEMPLATE,
+    analyst_dataset=ANALYST_VIEWS_DATASET,
+    reasons_fields=[
+        ReasonsField(
+            name="current_exemptions",
+            type=bigquery.enums.StandardSqlTypeNames.STRING,
+            description="Lists all of the reasons that a client has a permanent exception from paying fines/fees",
+        ),
+    ],
 )
 
 if __name__ == "__main__":

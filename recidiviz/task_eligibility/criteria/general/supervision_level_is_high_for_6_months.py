@@ -64,7 +64,7 @@ VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
             ReasonsField(
                 name="high_start_date",
                 type=bigquery.enums.StandardSqlTypeNames.DATE,
-                description="#TODO(#29059): Add reasons field description",
+                description="Date that a client started on high supervision",
             ),
         ],
     )

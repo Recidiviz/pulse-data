@@ -131,7 +131,7 @@ def get_minimum_age_criteria(
             ReasonsField(
                 name="birthdate",
                 type=bigquery.enums.StandardSqlTypeNames.DATE,
-                description="Client's start date",
+                description="Client's birth date",
             ),
             ReasonsField(
                 name="age_eligible_date",

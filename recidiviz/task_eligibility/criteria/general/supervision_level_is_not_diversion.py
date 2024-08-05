@@ -57,21 +57,19 @@ SELECT
     FROM ({aggregate_adjacent_spans(table_name='diversion_spans')})
 """
 
-VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
-    StateAgnosticTaskCriteriaBigQueryViewBuilder(
-        criteria_name=_CRITERIA_NAME,
-        description=_DESCRIPTION,
-        criteria_spans_query_template=_QUERY_TEMPLATE,
-        sessions_dataset=SESSIONS_DATASET,
-        meets_criteria_default=True,
-        reasons_fields=[
-            ReasonsField(
-                name="supervision_level_is_diversion",
-                type=bigquery.enums.StandardSqlTypeNames.BOOL,
-                description="#TODO(#29059): Add reasons field description",
-            ),
-        ],
-    )
+VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = StateAgnosticTaskCriteriaBigQueryViewBuilder(
+    criteria_name=_CRITERIA_NAME,
+    description=_DESCRIPTION,
+    criteria_spans_query_template=_QUERY_TEMPLATE,
+    sessions_dataset=SESSIONS_DATASET,
+    meets_criteria_default=True,
+    reasons_fields=[
+        ReasonsField(
+            name="supervision_level_is_diversion",
+            type=bigquery.enums.StandardSqlTypeNames.BOOL,
+            description="Specifies whether a client's supervision level is diversion",
+        ),
+    ],
 )
 
 if __name__ == "__main__":

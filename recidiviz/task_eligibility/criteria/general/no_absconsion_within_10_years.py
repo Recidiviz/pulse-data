@@ -75,7 +75,7 @@ VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
             ReasonsField(
                 name="most_recent_absconded_date",
                 type=bigquery.enums.StandardSqlTypeNames.DATE,
-                description="#TODO(#29059): Add reasons field description",
+                description="Start date of most recent absconsion",
             ),
         ],
     )

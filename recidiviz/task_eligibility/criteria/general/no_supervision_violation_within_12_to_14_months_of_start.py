@@ -55,7 +55,7 @@ VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
             ReasonsField(
                 name="last_violation_date",
                 type=bigquery.enums.StandardSqlTypeNames.DATE,
-                description="#TODO(#29059): Add reasons field description",
+                description="Date of most recent violation",
             ),
         ],
     )

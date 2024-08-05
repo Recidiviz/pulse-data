@@ -35,7 +35,7 @@ _REASONS_FIELDS = [
     ReasonsField(
         name="is_first_prison_term",
         type=bigquery.enums.StandardSqlTypeNames.BOOL,
-        description="#TODO(#29059): Add reasons field description",
+        description="Specifies whether a candidate is serving their first state prison sentence",
     ),
 ]
 

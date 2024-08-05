@@ -54,7 +54,7 @@ VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
             ReasonsField(
                 name="solitary_start_date",
                 type=bigquery.enums.StandardSqlTypeNames.DATE,
-                description="#TODO(#29059): Add reasons field description",
+                description="Date that a resident began solitary confinement",
             ),
         ],
     )

@@ -44,25 +44,23 @@ _REASONS_COLUMNS = """IF(state_code = 'US_ME',
                         start_date AS supervision_level_start_date
                         """
 
-VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
-    custody_or_supervision_level_criteria_builder(
-        criteria_name=_CRITERIA_NAME,
-        description=_DESCRIPTION,
-        levels_lst=["MINIMUM", "LIMITED", "MEDIUM"],
-        reasons_columns=_REASONS_COLUMNS,
-        reasons_fields=[
-            ReasonsField(
-                name="supervision_level",
-                type=bigquery.enums.StandardSqlTypeNames.STRING,
-                description="#TODO(#29059): Add reasons field description",
-            ),
-            ReasonsField(
-                name="supervision_level_start_date",
-                type=bigquery.enums.StandardSqlTypeNames.DATE,
-                description="#TODO(#29059): Add reasons field description",
-            ),
-        ],
-    )
+VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = custody_or_supervision_level_criteria_builder(
+    criteria_name=_CRITERIA_NAME,
+    description=_DESCRIPTION,
+    levels_lst=["MINIMUM", "LIMITED", "MEDIUM"],
+    reasons_columns=_REASONS_COLUMNS,
+    reasons_fields=[
+        ReasonsField(
+            name="supervision_level",
+            type=bigquery.enums.StandardSqlTypeNames.STRING,
+            description="Supervision level of client",
+        ),
+        ReasonsField(
+            name="supervision_level_start_date",
+            type=bigquery.enums.StandardSqlTypeNames.DATE,
+            description="Date that a client started on their specified supervision level",
+        ),
+    ],
 )
 
 if __name__ == "__main__":

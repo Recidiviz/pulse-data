@@ -46,21 +46,19 @@ GROUP BY 1,2,3,4
 HAVING start_date < {nonnull_end_date_clause('end_date')}
 """
 
-VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
-    StateAgnosticTaskCriteriaBigQueryViewBuilder(
-        criteria_name=_CRITERIA_NAME,
-        description=_DESCRIPTION,
-        criteria_spans_query_template=_QUERY,
-        sessions_dataset=SESSIONS_DATASET,
-        meets_criteria_default=True,
-        reasons_fields=[
-            ReasonsField(
-                name="most_recent_work_release_start_date",
-                type=bigquery.enums.StandardSqlTypeNames.DATE,
-                description="#TODO(#29059): Add reasons field description",
-            ),
-        ],
-    )
+VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = StateAgnosticTaskCriteriaBigQueryViewBuilder(
+    criteria_name=_CRITERIA_NAME,
+    description=_DESCRIPTION,
+    criteria_spans_query_template=_QUERY,
+    sessions_dataset=SESSIONS_DATASET,
+    meets_criteria_default=True,
+    reasons_fields=[
+        ReasonsField(
+            name="most_recent_work_release_start_date",
+            type=bigquery.enums.StandardSqlTypeNames.DATE,
+            description="Date when a client began their most recent work release session",
+        ),
+    ],
 )
 if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):

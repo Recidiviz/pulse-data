@@ -64,20 +64,18 @@ WHERE start_date != {nonnull_end_date_clause('end_date')}
 GROUP BY 1,2,3,4
 """
 
-VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
-    StateAgnosticTaskCriteriaBigQueryViewBuilder(
-        criteria_name=_CRITERIA_NAME,
-        description=_DESCRIPTION,
-        criteria_spans_query_template=_QUERY_TEMPLATE,
-        normalized_state_dataset=NORMALIZED_STATE_DATASET,
-        reasons_fields=[
-            ReasonsField(
-                name="eligible_custodial_authority",
-                type=bigquery.enums.StandardSqlTypeNames.BOOL,
-                description="#TODO(#29059): Add reasons field description",
-            )
-        ],
-    )
+VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = StateAgnosticTaskCriteriaBigQueryViewBuilder(
+    criteria_name=_CRITERIA_NAME,
+    description=_DESCRIPTION,
+    criteria_spans_query_template=_QUERY_TEMPLATE,
+    normalized_state_dataset=NORMALIZED_STATE_DATASET,
+    reasons_fields=[
+        ReasonsField(
+            name="eligible_custodial_authority",
+            type=bigquery.enums.StandardSqlTypeNames.BOOL,
+            description="Specifies whether a client is under the custodial authority of a supervision authority or another state authority. Federal and other country authorities are excluded.",
+        )
+    ],
 )
 
 if __name__ == "__main__":

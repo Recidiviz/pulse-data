@@ -107,27 +107,25 @@ _QUERY_TEMPLATE = f"""
     GROUP BY 1,2,3,4
 """
 
-VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
-    StateAgnosticTaskCriteriaBigQueryViewBuilder(
-        criteria_name=_CRITERIA_NAME,
-        criteria_spans_query_template=_QUERY_TEMPLATE,
-        description=_DESCRIPTION,
-        sessions_dataset=SESSIONS_DATASET,
-        normalized_state_dataset=NORMALIZED_STATE_DATASET,
-        meets_criteria_default=True,
-        reasons_fields=[
-            ReasonsField(
-                name="latest_ua_results",
-                type=bigquery.enums.StandardSqlTypeNames.ARRAY,
-                description="#TODO(#29059): Add reasons field description",
-            ),
-            ReasonsField(
-                name="latest_ua_dates",
-                type=bigquery.enums.StandardSqlTypeNames.ARRAY,
-                description="#TODO(#29059): Add reasons field description",
-            ),
-        ],
-    )
+VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = StateAgnosticTaskCriteriaBigQueryViewBuilder(
+    criteria_name=_CRITERIA_NAME,
+    criteria_spans_query_template=_QUERY_TEMPLATE,
+    description=_DESCRIPTION,
+    sessions_dataset=SESSIONS_DATASET,
+    normalized_state_dataset=NORMALIZED_STATE_DATASET,
+    meets_criteria_default=True,
+    reasons_fields=[
+        ReasonsField(
+            name="latest_ua_results",
+            type=bigquery.enums.StandardSqlTypeNames.ARRAY,
+            description="Results of all urine/saliva drug tests in the past 90 days - true indicates positive result",
+        ),
+        ReasonsField(
+            name="latest_ua_dates",
+            type=bigquery.enums.StandardSqlTypeNames.ARRAY,
+            description="Dates of all urine/saliva drug tests in the past 90 days",
+        ),
+    ],
 )
 
 if __name__ == "__main__":

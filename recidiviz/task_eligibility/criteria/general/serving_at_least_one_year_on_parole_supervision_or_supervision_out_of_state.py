@@ -55,20 +55,18 @@ _QUERY_TEMPLATE = f"""
 """
 
 
-VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
-    StateAgnosticTaskCriteriaBigQueryViewBuilder(
-        criteria_name=_CRITERIA_NAME,
-        description=_DESCRIPTION,
-        criteria_spans_query_template=_QUERY_TEMPLATE,
-        sessions_dataset=SESSIONS_DATASET,
-        reasons_fields=[
-            ReasonsField(
-                name="projected_completion_date_max",
-                type=bigquery.enums.StandardSqlTypeNames.DATE,
-                description="#TODO(#29059): Add reasons field description",
-            ),
-        ],
-    )
+VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = StateAgnosticTaskCriteriaBigQueryViewBuilder(
+    criteria_name=_CRITERIA_NAME,
+    description=_DESCRIPTION,
+    criteria_spans_query_template=_QUERY_TEMPLATE,
+    sessions_dataset=SESSIONS_DATASET,
+    reasons_fields=[
+        ReasonsField(
+            name="projected_completion_date_max",
+            type=bigquery.enums.StandardSqlTypeNames.DATE,
+            description="Maximum projected completion date out of all sentences that a client is serving during their supervision period",
+        ),
+    ],
 )
 
 if __name__ == "__main__":
