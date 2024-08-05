@@ -3,7 +3,8 @@ file_tag: CTS_Inmate
 file_description: |-
   This file contains information on adults in custody.
 data_classification: source
-primary_key_cols: []
+primary_key_cols:
+  - ID_NBR
 columns:
   - name: ID_NBR
     description: |-
