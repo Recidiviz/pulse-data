@@ -38,7 +38,7 @@ INCARCERATION_POPULATION_BY_FACILITY_EXTERNAL_COMPARISON_QUERY_TEMPLATE = """
     WITH external_validation_dates AS (
         -- Only compare states and months for which we have external validation data
         SELECT DISTINCT region_code, date_of_stay FROM
-        `{project_id}.{external_accuracy_dataset}.incarceration_population_by_facility`
+        `{project_id}.{external_accuracy_dataset}.incarceration_population_by_facility_materialized`
     ), internal_incarceration_population AS (
         SELECT
             state_code as region_code, date_of_stay,
@@ -62,7 +62,7 @@ INCARCERATION_POPULATION_BY_FACILITY_EXTERNAL_COMPARISON_QUERY_TEMPLATE = """
           IFNULL(population_count, 0) as external_population_count,
           IFNULL(internal_population_count, 0) as internal_population_count
         FROM
-          `{project_id}.{external_accuracy_dataset}.incarceration_population_by_facility`
+          `{project_id}.{external_accuracy_dataset}.incarceration_population_by_facility_materialized`
         FULL OUTER JOIN
           relevant_internal_incarceration_population
         USING (region_code, date_of_stay, facility)

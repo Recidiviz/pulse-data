@@ -20,9 +20,9 @@ from unittest import TestCase
 
 from recidiviz.tests.ingest import fixtures
 from recidiviz.validation.views.metadata.validation_schema_config import (
-    get_external_validation_schema,
     DatasetSchemaInfo,
     TableSchemaInfo,
+    get_external_validation_schema,
 )
 
 
@@ -46,6 +46,7 @@ class TestDatasetSchemaInfoParsing(TestCase):
                         "region_code",
                         "year",
                     ],
+                    table_name_plain_text="aggregate incarceration facility populations",
                 ),
                 TableSchemaInfo(
                     table_name="incarceration_population_person_level",
@@ -55,6 +56,7 @@ class TestDatasetSchemaInfoParsing(TestCase):
                         "person_external_id",
                         "region_code",
                     ],
+                    table_name_plain_text="person-level incarceration population",
                 ),
             ],
         )

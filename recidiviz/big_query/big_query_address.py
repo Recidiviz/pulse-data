@@ -47,7 +47,7 @@ class BigQueryAddress:
         return f"{self.dataset_id}.{self.table_id}"
 
     def select_query_template(self, select_statement: str = "SELECT *") -> str:
-        if not select_statement.startswith("SELECT"):
+        if not select_statement.lstrip().startswith("SELECT"):
             raise ValueError(
                 f"Any custom select_statement must start with SELECT. Attempting to "
                 f"build a SELECT query for [{self.to_str()}] with statement "

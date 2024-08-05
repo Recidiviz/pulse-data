@@ -37,6 +37,7 @@ US_IX_SUPERVISION_TERMINATION_PERSON_LEVEL_VIEW_BUILDER = SimpleBigQueryViewBuil
     us_ix_validation_oneoff_dataset=dataset_config.validation_oneoff_dataset_for_state(
         StateCode.US_IX
     ),
+    should_materialize=True,
 )
 
 if __name__ == "__main__":

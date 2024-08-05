@@ -45,6 +45,7 @@ US_ME_INCARCERATION_POPULATION_BY_FACILITY_VIEW_BUILDER = SimpleBigQueryViewBuil
     us_me_validation_oneoff_dataset=dataset_config.validation_oneoff_dataset_for_state(
         StateCode.US_ME
     ),
+    should_materialize=True,
 )
 
 if __name__ == "__main__":

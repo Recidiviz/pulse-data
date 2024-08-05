@@ -36,12 +36,13 @@ WHERE UPPER(Facility) NOT LIKE '%TOTAL'
 
 US_MI_INCARCERATION_POPULATION_BY_FACILITY_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=dataset_config.validation_dataset_for_state(StateCode.US_MI),
-    view_id="incarceration_population_by_facility_view",
+    view_id="incarceration_population_by_facility",
     description="A unified view of all OOR reports that report per person information for MIDOC.",
     view_query_template=VIEW_QUERY_TEMPLATE,
     us_mi_validation_dataset=dataset_config.validation_dataset_for_state(
         StateCode.US_MI
     ),
+    should_materialize=True,
 )
 
 if __name__ == "__main__":

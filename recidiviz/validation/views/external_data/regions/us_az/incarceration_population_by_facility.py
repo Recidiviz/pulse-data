@@ -43,6 +43,7 @@ US_AZ_INCARCERATION_POPULATION_BY_FACILITY_VIEW_BUILDER = SimpleBigQueryViewBuil
     us_az_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
         StateCode.US_AZ, instance=DirectIngestInstance.PRIMARY
     ),
+    should_materialize=True,
 )
 if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
