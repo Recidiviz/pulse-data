@@ -3,7 +3,8 @@ file_tag: LOCATION_HIST
 file_description: |-
   This file has location history information
 data_classification: source
-primary_key_cols: []
+primary_key_cols:
+  - LocationHistId
 columns:
   - name: LocationHistId
     description: |-
