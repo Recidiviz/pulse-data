@@ -23,7 +23,7 @@ RECIDIVISM_PERSON_LEVEL_EXTERNAL_COMPARISON_QUERY_TEMPLATE = """
       -- NOTE: You can replace this part of the query with your own query to test the SELECT query you will use to generate
       -- data to insert into the `recidivism_person_level` table.
       SELECT region_code, release_cohort, follow_up_period, person_external_id, recidivated 
-      FROM `{{project_id}}.{{external_accuracy_dataset}}.recidivism_person_level`
+      FROM `{{project_id}}.{{external_accuracy_dataset}}.recidivism_person_level_materialized`
     ), releases AS (
       SELECT
         state_code,

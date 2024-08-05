@@ -44,7 +44,7 @@ WITH external_data AS (
         month,
         total_population
     -- Compare against the data from the state's population projection inputs or budget data
-    FROM `{project_id}.{external_accuracy_dataset}.population_projection_monthly_population`
+    FROM `{project_id}.{external_accuracy_dataset}.population_projection_monthly_population_materialized`
 ),
 internal_metrics AS (
     SELECT

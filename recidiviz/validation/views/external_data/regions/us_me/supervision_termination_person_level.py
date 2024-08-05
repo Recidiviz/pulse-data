@@ -50,6 +50,7 @@ US_ME_SUPERVISION_TERMINATION_PERSON_LEVEL_VIEW_BUILDER = SimpleBigQueryViewBuil
     us_me_validation_dataset=dataset_config.validation_dataset_for_state(
         StateCode.US_ME
     ),
+    should_materialize=True,
 )
 
 if __name__ == "__main__":

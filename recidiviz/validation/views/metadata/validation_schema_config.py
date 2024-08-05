@@ -31,6 +31,9 @@ class TableSchemaInfo:
     # Name of the BigQuery table
     table_name: str = attr.ib()
 
+    # Plain-text version of |table_name|
+    table_name_plain_text: str = attr.ib()
+
     # List of column names
     columns: List[str] = attr.ib(factory=list)
 
@@ -57,10 +60,12 @@ class DatasetSchemaInfo:
         for table_dict in yaml_tables:
             table_name = table_dict.pop("name", str)
             columns = table_dict.pop("columns", list)
+            table_name_plain_text = table_dict.pop("description", str)
             tables.append(
                 TableSchemaInfo(
                     table_name=table_name,
                     columns=sorted([c.lower() for c in columns]),
+                    table_name_plain_text=table_name_plain_text,
                 )
             )
 

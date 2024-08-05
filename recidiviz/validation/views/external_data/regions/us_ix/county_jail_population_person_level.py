@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2021 Recidiviz, Inc.
+# Copyright (C) 2022 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""A view containing external data for person level supervision starts to validate against."""
+"""A view containing the person level county jail population validation data for Idaho."""
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.common.constants.states import StateCode
@@ -22,23 +22,28 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.validation.views import dataset_config
 
-# TODO(#27269): Update this to build the query by collecting files
-_QUERY_TEMPLATE = """
-SELECT * FROM `{project_id}.{us_ix_validation_dataset}.supervision_start_person_level`
+VIEW_QUERY_TEMPLATE = """
+SELECT
+    'US_IX' AS region_code,
+    person_external_id,
+    'US_IX_DOC' AS external_id_type,
+    date_of_stay,
+    facility,
+    legal_status
+FROM `{project_id}.{us_ix_validation_oneoff_dataset}.county_jail_09_2020_incarceration_population`
 """
 
-SUPERVISION_START_PERSON_LEVEL_VIEW_BUILDER = SimpleBigQueryViewBuilder(
-    dataset_id=dataset_config.EXTERNAL_ACCURACY_DATASET,
-    view_id="supervision_start_person_level",
-    view_query_template=_QUERY_TEMPLATE,
-    description="Contains external data for person level supervision starts to "
-    "validate against. See http://go/external-validations for instructions on adding "
-    "new data.",
-    us_ix_validation_dataset=dataset_config.validation_dataset_for_state(
+US_IX_COUNTY_JAIL_POPULATION_PERSON_LEVEL_VIEW_BUILDER = SimpleBigQueryViewBuilder(
+    dataset_id=dataset_config.validation_dataset_for_state(StateCode.US_IX),
+    view_id="county_jail_population_person_level",
+    description="A view containing the person level county jail population validation data for Idaho.",
+    view_query_template=VIEW_QUERY_TEMPLATE,
+    us_ix_validation_oneoff_dataset=dataset_config.validation_oneoff_dataset_for_state(
         StateCode.US_IX
     ),
+    should_materialize=True,
 )
 
 if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
-        SUPERVISION_START_PERSON_LEVEL_VIEW_BUILDER.build_and_print()
+        US_IX_COUNTY_JAIL_POPULATION_PERSON_LEVEL_VIEW_BUILDER.build_and_print()

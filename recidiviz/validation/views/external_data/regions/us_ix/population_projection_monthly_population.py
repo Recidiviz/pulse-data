@@ -39,6 +39,7 @@ US_IX_POPULATION_PROJECTION_MONTLY_POPULATION_VIEW_BUILDER = SimpleBigQueryViewB
     us_ix_validation_oneoff_dataset=dataset_config.validation_oneoff_dataset_for_state(
         StateCode.US_IX
     ),
+    should_materialize=True,
 )
 
 if __name__ == "__main__":

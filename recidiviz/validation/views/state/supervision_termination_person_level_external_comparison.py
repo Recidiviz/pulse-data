@@ -38,7 +38,7 @@ WITH external_data AS (
   -- NOTE: You can replace this part of the query with your own query to test the SELECT query you will use to
   -- generate data to insert into the `supervision_termination_person_level` table.
   SELECT region_code, person_external_id, termination_date
-  FROM `{project_id}.{external_accuracy_dataset}.supervision_termination_person_level`
+  FROM `{project_id}.{external_accuracy_dataset}.supervision_termination_person_level_materialized`
 ), external_data_with_ids AS (
   SELECT
     region_code,

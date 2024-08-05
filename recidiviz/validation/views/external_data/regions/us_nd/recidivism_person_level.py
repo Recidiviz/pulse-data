@@ -39,6 +39,7 @@ US_ND_RECIDIVISM_PERSON_LEVEL_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     us_nd_validation_oneoffs_dataset=dataset_config.validation_oneoff_dataset_for_state(
         StateCode.US_ND
     ),
+    should_materialize=True,
 )
 
 if __name__ == "__main__":
