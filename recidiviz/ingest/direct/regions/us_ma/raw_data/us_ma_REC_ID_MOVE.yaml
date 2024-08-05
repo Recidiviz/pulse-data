@@ -1,0 +1,38 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: REC_ID_MOVE
+file_description: |-
+  This file contains movement information.
+data_classification: source
+primary_key_cols: []
+columns:
+  - name: COMMIT_NO
+    is_pii: True
+    description: |-
+      Commitment number - DOC's internal tracking number. Individuals may receive 
+      different numbers based on varying scenarios: subsequent incarcerations, serving 
+      consecutive sentences, transitioning from M/F facility to F/M, awaiting trial 
+      THEN being sentenced among a few.
+  - name: ADMISSION_MOVE_DATE
+    description: |-
+      Admission date associated with the admission code.
+  - name: ADMISSION_CODE
+    description: |-
+      Admission code associated with the admission move date.
+  - name: ADMISSION_TYPE
+    description: |-
+      Descriptor of how the offender was committed; associated with Admission Code.
+  - name: ADMISSION_TYPE_DESC
+    description: |-
+      Description of Admission code associated with the admission move date.
+  - name: RELEASE_MOVE_DATE
+    description: |-
+      Release date associated with the admission code.
+  - name: RELEASE_CODE
+    description: |-
+      Release code associated with the release move date.
+  - name: RELEASE_TYPE
+    description: |-
+      Descriptor of how the offender was released; associated with Release Code.
+  - name: RELEASE_TYPE_DESC
+    description: |-
+      Description of Release Code associated with the release move date.
