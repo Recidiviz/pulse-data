@@ -94,7 +94,9 @@ ASSIGNMENT_NAME_TO_TYPES["PERSON"] = (
 )
 
 
-def liquid_wrap(query_fragment: str, metric: AggregatedMetric, view_name: str) -> str:
+def liquid_wrap_metric(
+    query_fragment: str, metric: AggregatedMetric, view_name: str
+) -> str:
     """
     Outputs a conditional liquid fragment that will display the provided query fragment
     if the metric is selected in the Explore.
@@ -102,6 +104,14 @@ def liquid_wrap(query_fragment: str, metric: AggregatedMetric, view_name: str) -
     return f"""{{% if {view_name}.{metric.name}_measure._in_query or {view_name}.metric_filter._parameter_value contains "{metric.name}" %}}
     {query_fragment},
         {{% endif %}}"""
+
+
+def liquid_wrap_json_field(query_fragment: str, field_name: str, view_name: str) -> str:
+    """
+    Outputs a conditional liquid fragment that will display the provided query fragment
+    if the json field is selected in the Explore.
+    """
+    return f"""{{% if {view_name}.{field_name}._in_query or {view_name}.{field_name}._is_filtered %}}{query_fragment}{{% endif %}}"""
 
 
 def generate_period_span_metric_view(
@@ -122,7 +132,7 @@ def generate_period_span_metric_view(
         + ",\n"
         + "\n".join(
             [
-                liquid_wrap(
+                liquid_wrap_metric(
                     metric.generate_aggregation_query_fragment(
                         span_start_date_col="ses.start_date",
                         span_end_date_col="ses.end_date",
@@ -160,15 +170,31 @@ def generate_period_span_metric_view(
         if unit_of_observation.type == MetricUnitOfObservationType.PERSON_ID
         else "TO_JSON_STRING(STRUCT(TRUE AS dummy_attribute)) AS all_attributes"
     )
-    field_filters_query_fragment_json = list_to_query_string(
+    field_filters_query_fragment_json = "\n".join(
         [
-            f"JSON_VALUE(span_attributes, '$.{field}') AS {field}"
+            liquid_wrap_json_field(
+                f"JSON_VALUE(span_attributes, '$.{field}') AS {field},",
+                field,
+                view_name,
+            )
             for field in json_field_filters
         ]
     )
-    group_by_query_fragment = list_to_query_string(
-        [f"{n}" for n in range(1, 7 + len(json_field_filters))]
+    field_filters_group_by_query_fragment = (
+        (
+            "".join(
+                [
+                    liquid_wrap_json_field(
+                        f", JSON_VALUE(span_attributes, '$.{field}')", field, view_name
+                    )
+                    for field in json_field_filters
+                ]
+            )
+        )
+        if len(json_field_filters) > 0
+        else ""
     )
+
     derived_table_query = f"""
     WITH eligible_spans AS (
         SELECT
@@ -209,8 +235,7 @@ def generate_period_span_metric_view(
         time_period.end_date,
 
         -- additional disaggregation fields
-        {field_filters_query_fragment_json},
-
+        {field_filters_query_fragment_json}
         {metric_aggregation_fragment}
     FROM
         eligible_spans ses
@@ -221,7 +246,7 @@ def generate_period_span_metric_view(
         AND time_period.span_start_date < {nonnull_current_date_clause("ses.end_date")}
         AND {join_on_columns_fragment(columns=sorted(unit_of_observation.primary_key_columns), table1="ses", table2="time_period")}
     GROUP BY
-        {group_by_query_fragment}
+        1, 2, 3, 4, 5, 6{field_filters_group_by_query_fragment}
     """
     return LookMLView(
         view_name=f"{unit_of_observation.type.short_name}_period_span_aggregated_metrics_{view_name}",
@@ -239,7 +264,7 @@ def generate_period_event_metric_view(
     """Generates LookMLView with derived table performing logic for a set of PeriodEventAggregatedMetric objects"""
     metric_aggregation_fragment = "\n".join(
         [
-            liquid_wrap(
+            liquid_wrap_metric(
                 metric.generate_aggregation_query_fragment(
                     event_date_col="events.event_date"
                 ),
@@ -255,14 +280,29 @@ def generate_period_event_metric_view(
         )
         for metric in metrics
     ]
-    field_filters_query_fragment_json = list_to_query_string(
+    field_filters_query_fragment_json = "\n".join(
         [
-            f"JSON_VALUE(event_attributes" f", '$.{field}') AS {field}"
+            liquid_wrap_json_field(
+                f"JSON_VALUE(event_attributes, '$.{field}') AS {field},",
+                field,
+                view_name,
+            )
             for field in json_field_filters
         ]
     )
-    group_by_query_fragment = list_to_query_string(
-        [f"{n}" for n in range(1, 7 + len(json_field_filters))]
+    field_filters_group_by_query_fragment = (
+        (
+            "".join(
+                [
+                    liquid_wrap_json_field(
+                        f", JSON_VALUE(event_attributes, '$.{field}')", field, view_name
+                    )
+                    for field in json_field_filters
+                ]
+            )
+        )
+        if len(json_field_filters) > 0
+        else ""
     )
     derived_table_query = f"""
     SELECT
@@ -277,7 +317,7 @@ def generate_period_event_metric_view(
         assignments.end_date,
 
         -- additional disaggregation fields
-        {field_filters_query_fragment_json},
+        {field_filters_query_fragment_json}
 
         -- period_event metrics
         {metric_aggregation_fragment}
@@ -294,7 +334,7 @@ def generate_period_event_metric_view(
     )
 
     GROUP BY
-        {group_by_query_fragment}
+        1, 2, 3, 4, 5, 6{field_filters_group_by_query_fragment}
     """
     return LookMLView(
         view_name=f"{unit_of_observation.type.short_name}_period_event_aggregated_metrics_{view_name}",
@@ -318,7 +358,7 @@ def generate_assignment_span_metric_view(
     )
     metric_aggregation_fragment = "\n".join(
         [
-            liquid_wrap(
+            liquid_wrap_metric(
                 metric.generate_aggregation_query_fragment(
                     span_start_date_col="spans.start_date",
                     span_end_date_col="spans.end_date",
@@ -336,14 +376,29 @@ def generate_assignment_span_metric_view(
         )
         for metric in metrics
     ]
-    field_filters_query_fragment_json = list_to_query_string(
+    field_filters_query_fragment_json = "\n".join(
         [
-            f"JSON_VALUE(span_attributes, '$.{field}') AS {field}"
+            liquid_wrap_json_field(
+                f"JSON_VALUE(span_attributes, '$.{field}') AS {field},",
+                field,
+                view_name,
+            )
             for field in json_field_filters
         ]
     )
-    group_by_query_fragment = list_to_query_string(
-        [f"{n}" for n in range(1, 7 + len(json_field_filters))]
+    field_filters_group_by_query_fragment = (
+        (
+            "".join(
+                [
+                    liquid_wrap_json_field(
+                        f", JSON_VALUE(span_attributes, '$.{field}')", field, view_name
+                    )
+                    for field in json_field_filters
+                ]
+            )
+        )
+        if len(json_field_filters) > 0
+        else ""
     )
     derived_table_query = f"""
     SELECT
@@ -358,7 +413,7 @@ def generate_assignment_span_metric_view(
         assignments.end_date,
 
         -- additional disaggregation fields
-        {field_filters_query_fragment_json},
+        {field_filters_query_fragment_json}
 
         COUNT(DISTINCT CONCAT({unit_of_observation_query_fragment}, assignments.assignment_date)) AS assignments,
         {metric_aggregation_fragment}
@@ -374,7 +429,7 @@ def generate_assignment_span_metric_view(
                 AND {nonnull_end_date_exclusive_clause("spans.end_date")}
         )
     GROUP BY
-        {group_by_query_fragment}
+        1, 2, 3, 4, 5, 6{field_filters_group_by_query_fragment}
     """
     return LookMLView(
         view_name=f"{unit_of_observation.type.short_name}_assignment_span_aggregated_metrics_{view_name}",
@@ -392,7 +447,7 @@ def generate_assignment_event_metric_view(
     """Generates LookMLView with derived table performing logic for a set of AssignmentEventAggregatedMetric objects"""
     metric_aggregation_fragment_inner = "\n".join(
         [
-            liquid_wrap(
+            liquid_wrap_metric(
                 metric.generate_aggregation_query_fragment(
                     event_date_col="events.event_date",
                     assignment_date_col="assignments.assignment_date",
@@ -405,7 +460,9 @@ def generate_assignment_event_metric_view(
     )
     metric_aggregation_fragment_outer = "\n\t".join(
         [
-            liquid_wrap(f"SUM({metric.name}) AS {metric.name}", metric, view_name)
+            liquid_wrap_metric(
+                f"SUM({metric.name}) AS {metric.name}", metric, view_name
+            )
             for metric in metrics
         ]
     )
@@ -422,16 +479,43 @@ def generate_assignment_event_metric_view(
         ),
         table_prefix="assignments",
     )
-    field_filters_query_fragment_json = list_to_query_string(
+    field_filters_query_fragment_json = "\n".join(
         [
-            f"JSON_VALUE(event_attributes, '$.{field}') AS {field}"
+            liquid_wrap_json_field(
+                f"JSON_VALUE(event_attributes, '$.{field}') AS {field},",
+                field,
+                view_name,
+            )
             for field in json_field_filters
         ]
     )
-    field_filters_query_fragment = list_to_query_string(json_field_filters)
-    group_by_query_fragment = list_to_query_string(
-        [f"{n}" for n in range(1, 7 + len(json_field_filters))]
+    field_filters_group_by_query_fragment_json = (
+        (
+            "".join(
+                [
+                    liquid_wrap_json_field(
+                        f", JSON_VALUE(event_attributes, '$.{field}')", field, view_name
+                    )
+                    for field in json_field_filters
+                ]
+            )
+        )
+        if len(json_field_filters) > 0
+        else ""
     )
+    field_filters_query_fragment = "".join(
+        [
+            liquid_wrap_json_field(f"{field},", field, view_name)
+            for field in json_field_filters
+        ]
+    )
+    field_filters_group_by_query_fragment = "".join(
+        [
+            liquid_wrap_json_field(f", {field}", field, view_name)
+            for field in json_field_filters
+        ]
+    )
+
     derived_table_query = f"""
     SELECT
         -- assignments
@@ -445,7 +529,7 @@ def generate_assignment_event_metric_view(
         end_date,
 
         -- additional disaggregation fields
-        {field_filters_query_fragment},
+        {field_filters_query_fragment}
 
         {metric_aggregation_fragment_outer}
     FROM (
@@ -458,7 +542,7 @@ def generate_assignment_event_metric_view(
             {unit_of_observation_query_fragment},
             assignments.assignment_date,
             assignments.all_attributes,
-            {field_filters_query_fragment_json},
+            {field_filters_query_fragment_json}
             {metric_aggregation_fragment_inner}
         FROM
             ${{{unit_of_observation.type.short_name}_assignments_with_attributes_and_time_periods_{view_name}.SQL_TABLE_NAME}} assignments
@@ -475,11 +559,10 @@ def generate_assignment_event_metric_view(
             period,
             {unit_of_observation_query_fragment},
             assignments.assignment_date,
-            assignments.all_attributes,
-            {field_filters_query_fragment}
+            assignments.all_attributes{field_filters_group_by_query_fragment_json}
     )
     GROUP BY
-        {group_by_query_fragment}
+        1, 2, 3, 4, 5, 6{field_filters_group_by_query_fragment}
     """
     return LookMLView(
         view_name=f"{unit_of_observation.type.short_name}_assignment_event_aggregated_metrics_{view_name}",
@@ -1383,10 +1466,11 @@ def custom_metrics_view_query_template(
         if MetricUnitOfObservationType.PERSON_ID
         else f"${{{unit_of_observation.type.short_name}_assignments_with_attributes_{view_name}.SQL_TABLE_NAME}}"
     )
-    field_filters_query_fragment = (
-        ", " + list_to_query_string(json_field_filters)
-        if len(json_field_filters) > 0
-        else ""
+    field_filters_query_fragment = "".join(
+        [
+            liquid_wrap_json_field(f", {field}", field, view_name)
+            for field in json_field_filters
+        ]
     )
 
     first_join_fragment = "period_span_metrics"
@@ -1526,10 +1610,12 @@ def generate_custom_metrics_view(
                 ),
             )
         ]
-    field_filters_query_fragment = (
-        ", " + list_to_query_string(json_field_filters)
-        if len(json_field_filters) > 0
-        else ""
+
+    field_filters_query_fragment = "".join(
+        [
+            liquid_wrap_json_field(f", {field}", field, view_name)
+            for field in json_field_filters
+        ]
     )
 
     derived_table_query = f"""
