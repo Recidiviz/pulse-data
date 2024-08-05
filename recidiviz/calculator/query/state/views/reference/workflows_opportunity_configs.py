@@ -426,6 +426,18 @@ WORKFLOWS_OPPORTUNITY_CONFIGS = [
         person_record_type=PersonRecordType.CLIENT,
     ),
     WorkflowsOpportunityConfig(
+        state_code=StateCode.US_PA,
+        opportunity_type="usPaSpecialCircumstancesSupervision",
+        experiment_id="US_PA_SPECIAL_CIRCUMSTANCES_SUPERVISION_WORKFLOWS",
+        opportunity_record_view_name="us_pa_complete_transfer_to_special_circumstances_supervision_request_record_materialized",
+        task_completion_event=TaskCompletionEventType.TRANSFER_TO_SPECIAL_CIRCUMSTANCES_SUPERVISION,
+        source_filename="us_pa_complete_transfer_to_special_circumstances_supervision_request_record.json",
+        export_collection_name="US_PA-specialCircumstancesSupervisionReferrals",
+        opportunity_type_path_str="specialCircumstancesSupervisionReferrals",
+        person_record_type=PersonRecordType.CLIENT,
+    ),
+    # TODO(Recidiviz/recidiviz-dashboards#5003) - Replace with us_tn_transfer_to_compliant_reporting_record when we move over to new data entirely
+    WorkflowsOpportunityConfig(
         state_code=StateCode.US_TN,
         opportunity_type="compliantReporting",
         experiment_id="US_TN_COMPLIANT_REPORTING_WORKFLOWS",

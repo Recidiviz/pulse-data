@@ -28,6 +28,10 @@ from recidiviz.calculator.query.bq_utils import (
     nonnull_end_date_clause,
     nonnull_end_date_exclusive_clause,
 )
+from recidiviz.calculator.query.sessions_query_fragments import (
+    aggregate_adjacent_spans,
+    create_sub_sessions_with_attributes,
+)
 from recidiviz.calculator.query.state.dataset_config import (
     NORMALIZED_STATE_DATASET,
     SESSIONS_DATASET,
@@ -42,7 +46,6 @@ from recidiviz.task_eligibility.utils.critical_date_query_fragments import (
 )
 from recidiviz.task_eligibility.utils.us_pa_query_fragments import (
     case_when_special_case,
-    supervision_legal_authority_sessions_excluding_general_incarceration,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -59,10 +62,7 @@ _DESCRIPTION = """Describes spans of time during which a candidate is potentiall
 """
 
 _QUERY_TEMPLATE = f"""
-WITH aggregated_supervision_periods_excluding_general_incarceration AS ({supervision_legal_authority_sessions_excluding_general_incarceration()}),
-/* this pulls + aggregates all periods where someone is considered on supervision UNLESS they're concurrently in general incarceration */
-
-supervision_starts_with_assessments AS (
+WITH supervision_starts_with_assessments AS (
 /* This CTE finds start dates for all active supervision starts and joins the first assessment done within that supervision
  super session */ 
   SELECT
@@ -70,14 +70,15 @@ supervision_starts_with_assessments AS (
     sup.person_id,
     sup.start_date,
     sup.end_date_exclusive AS end_date,
-    sup.super_session_id,
+    sup.supervision_super_session_id,
     assessment_level,
-  FROM aggregated_supervision_periods_excluding_general_incarceration sup
+  FROM `{{project_id}}.{{sessions_dataset}}.supervision_super_sessions_materialized` sup
   LEFT JOIN `{{project_id}}.{{sessions_dataset}}.assessment_score_sessions_materialized` sap
     ON sup.state_code = sap.state_code
     AND sup.person_id = sap.person_id 
     AND sap.assessment_date BETWEEN sup.start_date AND {nonnull_end_date_exclusive_clause('sup.end_date_exclusive')}
   --only choose the first assessment score within a supervision super session
+  WHERE sup.state_code = "US_PA"
   QUALIFY ROW_NUMBER() OVER(PARTITION BY sup.person_id, sup.start_date, sup.end_date_exclusive ORDER BY sap.assessment_date)=1
 ),
 sentence_spans_with_info AS (
@@ -96,6 +97,32 @@ sentence_spans_with_info AS (
   WHERE state_code = "US_PA"
   GROUP BY 1,2,3,4
 ),
+special_case_spans AS (
+/* This CTE pulls all spans where someone is serving a special case */
+    SELECT state_code,
+        person_id,
+        start_date,
+        termination_date AS end_date,
+        TRUE AS is_special_case,
+    FROM `{{project_id}}.{{normalized_state_dataset}}.state_supervision_period`
+    WHERE state_code = 'US_PA'
+        AND {case_when_special_case()} THEN TRUE ELSE FALSE END
+),
+/* the below CTE creates and de-dupes sub-sessions in case someone is serving multiple overlapping special cases at once */
+{create_sub_sessions_with_attributes('special_case_spans')} 
+, deduped_special_case_spans AS (
+    SELECT distinct 
+        state_code,
+        person_id,
+        start_date,
+        end_date,
+        is_special_case,
+     FROM sub_sessions_with_attributes
+),
+agg_special_case_spans AS (
+/* this aggregates the sub_sessions to create continuous spans where someone is serving a special case */
+{aggregate_adjacent_spans(table_name='deduped_special_case_spans', attribute = 'is_special_case')}
+),
 supervision_starts_with_priority AS (
 /* Here, supervision starts are given a case type, which determine how long someone has to spend on supervision
   before being eligible. This type is determined on their status at the beginning of their supervision super session */ 
@@ -104,8 +131,8 @@ supervision_starts_with_priority AS (
     ss.person_id,
     ss.start_date,
     ss.end_date,
-    ss.super_session_id,
-    {case_when_special_case()} THEN 'special probation or parole case'
+    ss.supervision_super_session_id,
+    CASE WHEN is_special_case THEN 'special probation or parole case'
         WHEN is_life_sentence THEN 'life sentence'
         WHEN assessment_level IN ('MINIMUM', 'MEDIUM') THEN 'non-life sentence (violent case)' # placeholder while we wait for strong-r data 
         ELSE 'non-life sentence (non-violent case)'
@@ -118,11 +145,11 @@ supervision_starts_with_priority AS (
     AND ss.person_id = q.person_id
     AND q.start_date <= ss.start_date
     AND {nonnull_end_date_clause('q.end_date')} > ss.start_date
-  LEFT JOIN `{{project_id}}.{{normalized_state_dataset}}.state_supervision_period` ssp
-    ON ss.state_code = ssp.state_code
-    AND ss.person_id = ssp.person_id
-    AND ssp.start_date <= ss.start_date
-    AND {nonnull_end_date_clause('ssp.termination_date')} > ss.start_date
+  LEFT JOIN agg_special_case_spans scs
+    ON ss.state_code = scs.state_code
+    AND ss.person_id = scs.person_id
+    AND scs.start_date <= ss.start_date
+    AND {nonnull_end_date_clause('scs.end_date')} > ss.start_date
 ),
 critical_date_spans AS (
 /* This CTE assigns the critical date as 1, 3, 5, or 7 years from the supervision super session start

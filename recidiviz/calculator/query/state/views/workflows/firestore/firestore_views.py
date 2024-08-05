@@ -135,6 +135,9 @@ from recidiviz.calculator.query.state.views.workflows.firestore.us_nd_transfer_t
 from recidiviz.calculator.query.state.views.workflows.firestore.us_or_earned_discharge_record import (
     US_OR_EARNED_DISCHARGE_RECORD_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.workflows.firestore.us_pa_complete_transfer_to_special_circumstances_supervision_request_record import (
+    US_PA_COMPLETE_TRANSFER_TO_SPECIAL_CIRCUMSTANCES_SUPERVISION_REQUEST_RECORD_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.workflows.firestore.us_pa_transfer_to_administrative_supervision_form_record import (
     US_PA_TRANSFER_TO_ADMINISTRATIVE_SUPERVISION_FORM_RECORD_VIEW_BUILDER,
 )
@@ -200,4 +203,5 @@ FIRESTORE_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
     US_TN_ANNUAL_RECLASSIFICATION_REVIEW_RECORD_VIEW_BUILDER,
     US_OR_EARNED_DISCHARGE_RECORD_VIEW_BUILDER,
     US_PA_TRANSFER_TO_ADMINISTRATIVE_SUPERVISION_FORM_RECORD_VIEW_BUILDER,
+    US_PA_COMPLETE_TRANSFER_TO_SPECIAL_CIRCUMSTANCES_SUPERVISION_REQUEST_RECORD_VIEW_BUILDER,
 ]

@@ -83,6 +83,7 @@ def violations_helper() -> str:
             AND pei.id_type = 'US_PA_PBPP'
         WHERE v.state_code = 'US_PA'
             AND v.violation_date IS NOT NULL
+            AND v.violation_date >= DATE_ADD(CURRENT_DATE("US/Pacific"), INTERVAL -1 YEAR)
         """
 
 

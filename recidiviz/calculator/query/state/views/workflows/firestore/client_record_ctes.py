@@ -173,10 +173,9 @@ _CLIENT_RECORD_SUPERVISION_SUPER_SESSIONS_CTE = f"""
         FROM `{{project_id}}.{{sessions_dataset}}.supervision_super_sessions_materialized`
         WHERE state_code IN ({{workflows_supervision_states}})
         AND end_date IS NULL
+        AND state_code NOT IN ('US_ME', 'US_CA')
         # TODO(#20872) - Remove 'US_ME' filter once super_sessions fixed
-        AND state_code != 'US_ME'
         # TODO(#23716) - Remove 'US_CA' filter once CA date in super_sessions is fixed
-        AND state_code != 'US_CA'
  
         UNION ALL
 
