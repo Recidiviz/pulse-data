@@ -19,9 +19,15 @@ Module responsible for updating BigQuery source table schemata.
 This is primarily called via the `update_big_query_table_schemata` Airflow calculation DAG task,
 but in case it needs to be run outside of that context, a CLI is provided.
 
+# To validate the `recidiviz/source_tables/schema` YAML files run
 python -m recidiviz.source_tables.update_big_query_table_schemas \
   --project-id [project_id] \
-  --dry_run
+  --action validate_externally_managed_table_schemata
+
+# To perform a dry run of all source table schema updates
+python -m recidiviz.source_tables.update_big_query_table_schemas \
+  --project-id [project_id] \
+  --action dry_run
 """
 import argparse
 import logging
@@ -158,15 +164,20 @@ if __name__ == "__main__":
         required=True,
     )
     parser.add_argument(
-        "--dry-run",
-        action="store_true",
-    )
-    parser.add_argument(
-        "--log-output",
-        action="store_true",
+        "--action",
+        type=str,
+        choices=["dry_run", "validate_externally_managed_table_schemata"],
     )
     args = parser.parse_args()
     with local_project_id_override(args.project_id):
-        perform_bigquery_table_schema_update(
-            dry_run=args.dry_run, log_output=args.log_output
-        )
+        if args.action == "dry_run":
+            perform_bigquery_table_schema_update(
+                dry_run=True,
+                log_output=True,
+            )
+        elif args.action == "validate_externally_managed_table_schemata":
+            validate_externally_managed_table_schemata(
+                source_table_repository=build_source_table_repository_for_collected_schemata(
+                    project_id=args.project_id,
+                )
+            )

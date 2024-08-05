@@ -35,6 +35,7 @@ class UpdateBigQuerySourceTableSchemataEntrypoint(EntrypointInterface):
         # output tables
         parser = argparse.ArgumentParser()
         parser.add_argument("--dry-run", type=str_to_bool, default=False)
+
         return parser
 
     @staticmethod
