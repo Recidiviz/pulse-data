@@ -158,6 +158,7 @@ TASK_COMPLETIONS_LOOKER = EventCountMetric(
             event_conditions_dict={},
         ),
     ],
+    event_segmentation_columns=["task_type"],
 )
 TASK_COMPLETIONS_AFTER_TOOL_ACTION_LOOKER = EventCountMetric(
     name="task_completions_after_tool_action",
@@ -171,6 +172,7 @@ TASK_COMPLETIONS_AFTER_TOOL_ACTION_LOOKER = EventCountMetric(
             },
         ),
     ],
+    event_segmentation_columns=["task_type"],
 )
 TASK_COMPLETIONS_WHILE_ALMOST_ELIGIBLE_AFTER_TOOL_ACTION_LOOKER = EventCountMetric(
     name="task_completions_while_almost_eligible_after_tool_action",
@@ -186,6 +188,7 @@ TASK_COMPLETIONS_WHILE_ALMOST_ELIGIBLE_AFTER_TOOL_ACTION_LOOKER = EventCountMetr
             },
         ),
     ],
+    event_segmentation_columns=["task_type"],
 )
 TASK_COMPLETIONS_WHILE_ELIGIBLE_LOOKER = EventCountMetric(
     name="task_completions_while_eligible",
@@ -199,6 +202,7 @@ TASK_COMPLETIONS_WHILE_ELIGIBLE_LOOKER = EventCountMetric(
             },
         ),
     ],
+    event_segmentation_columns=["task_type"],
 )
 FIRST_TOOL_ACTIONS_LOOKER = EventCountMetric(
     name="first_tool_actions",
@@ -213,6 +217,7 @@ FIRST_TOOL_ACTIONS_LOOKER = EventCountMetric(
             },
         ),
     ],
+    event_segmentation_columns=["task_type"],
 )
 DAYS_ELIGIBLE_AT_FIRST_TOOL_ACTION_LOOKER = EventValueMetric(
     name="days_eligible_at_first_tool_action",
@@ -256,4 +261,5 @@ TASK_ELIGIBILITY_STARTS_WHILE_ALMOST_ELIGIBLE_AFTER_TOOL_ACTION_LOOKER = EventCo
             },
         ),
     ],
+    event_segmentation_columns=["task_type"],
 )
