@@ -84,7 +84,8 @@ SNOOZE_SPANS_QUERY_TEMPLATE = f"""
                 null) as end_date_actual
         FROM `{{project_id}}.{{export_archives_dataset}}.workflows_snooze_status_archive` a
         LEFT JOIN `{{project_id}}.{{workflows_dataset}}.person_id_to_external_id_materialized` pei
-            ON pei.state_code = IF(a.state_code = "US_ID", "US_IX", a.state_code) and pei.person_external_id = a.person_external_id
+            ON pei.state_code = IF(a.state_code = "US_ID", "US_IX", a.state_code)
+            AND UPPER(pei.person_external_id) = UPPER(a.person_external_id)
         GROUP BY person_id, state_code, person_external_id, opportunity_type, start_date
     ),
     -- event_snooze_spans captures snoozes that were set by users after the snooze feature was released (i.e. not migrated denials)
