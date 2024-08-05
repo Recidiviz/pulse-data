@@ -49,6 +49,7 @@ output:
                   - "B"
                   - "Black"
                 StateRace.NATIVE_HAWAIIAN_PACIFIC_ISLANDER:
+                  - "D"
                   - "Asian or Pacific Islander"
                   - "Pacific Islander"
                 StateRace.WHITE:
@@ -64,7 +65,6 @@ output:
                 # These are ethnicities, not races
                 - "C"
                 - "Cuban"
-                - "D" # TODO(#32020): Investigate what this is, maybe Pacific Islander?
                 - "H"
                 - "Hispanic"
                 - "M"
