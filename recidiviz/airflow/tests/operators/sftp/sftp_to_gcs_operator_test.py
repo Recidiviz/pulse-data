@@ -58,3 +58,23 @@ class TestSftpToGcsOperator(unittest.TestCase):
         self.assertEqual(
             expected_file.abs_path(), operator.build_download_path().abs_path()
         )
+
+    def test_creates_correct_download_path_with_dash(
+        self, _mock_sftp_delegate: MagicMock
+    ) -> None:
+        operator = RecidivizSftpToGcsOperator(
+            task_id="test-task",
+            project_id="recidiviz-testing",
+            region_code="US_XX",
+            remote_file_path="outside_folder/inside-folder-with-dash/file-with-dash.txt",
+            sftp_timestamp=int(
+                datetime.datetime(2023, 1, 1, 1, 0, 0, 0, tzinfo=pytz.UTC).timestamp()
+            ),
+        )
+        expected_file = GcsfsFilePath.from_bucket_and_blob_name(
+            bucket_name="recidiviz-testing-direct-ingest-state-us-xx-sftp",
+            blob_name="2023-01-01T01:00:00:000000/inside-folder-with-dash/file-with-dash.txt",
+        )
+        self.assertEqual(
+            expected_file.abs_path(), operator.build_download_path().abs_path()
+        )
