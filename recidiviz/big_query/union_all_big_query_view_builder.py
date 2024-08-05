@@ -128,7 +128,8 @@ class UnionAllBigQueryViewBuilder(BigQueryViewBuilder[BigQueryView]):
             )
             filtered_parent_view_builders = list(self.parent_view_builders)
 
-        for vb in filtered_parent_view_builders:
+        # Sort view builders by address so we produce a query with deterministic order
+        for vb in sorted(filtered_parent_view_builders, key=lambda vb: vb.address):
             select_statement = self.builder_to_select_statement(vb)
             if not vb.materialized_address:
                 raise ValueError(f"Expected view [{vb.address}] to be materialized.")
