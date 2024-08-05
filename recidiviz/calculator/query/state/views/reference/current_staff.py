@@ -40,40 +40,26 @@ CURRENT_STAFF_QUERY_TEMPLATE = f"""
             -- match the districts in the current staff record / admin panel, which makes it easier
             -- to compare the change adding this to what currently exists.
             -- TODO(#25398) Remove this transformation
-            WHEN ss.state_code="US_MI" THEN SPLIT(LOWER(JSON_VALUE(location_metadata.location_metadata, "$.supervision_district_id")), " ")[SAFE_OFFSET(0)]
-            ELSE JSON_VALUE(location_metadata.location_metadata, "$.supervision_district_id")
+            WHEN attrs.state_code="US_MI" THEN SPLIT(LOWER(attrs.supervision_district_id), " ")[SAFE_OFFSET(0)]
+            ELSE attrs.supervision_district_id
             END AS supervision_district_id,
-        JSON_VALUE(location_metadata.location_metadata, "$.supervision_district_name") AS supervision_district_name,
-        id.external_id AS external_id,
-        JSON_VALUE(full_name, "$.given_names") AS given_names,
-        JSON_VALUE(full_name, "$.surname") AS surname,
+        attrs.supervision_district_name,
+        attrs.officer_id AS external_id,
+        JSON_VALUE(ss.full_name, "$.given_names") AS given_names,
+        JSON_VALUE(ss.full_name, "$.surname") AS surname,
         officer_sessions.supervising_officer_external_id IS NOT NULL AS is_supervision_officer,
         supervisors_of_officers.supervisor_staff_external_id IS NOT NULL AS is_supervision_officer_supervisor,
-        {get_pseudonymized_id_query_str("IF(ss.state_code = 'US_IX', 'US_ID', ss.state_code) || id.external_id")} AS pseudonymized_id,
+        {get_pseudonymized_id_query_str("IF(ss.state_code = 'US_IX', 'US_ID', ss.state_code) || attrs.officer_id")} AS pseudonymized_id,
     FROM `{{project_id}}.normalized_state.state_staff` ss
-    LEFT JOIN (
-        SELECT state_code, staff_id, location_external_id, start_date
-        FROM `{{project_id}}.normalized_state.state_staff_location_period`
-        WHERE {today_between_start_date_and_nullable_end_date_clause("start_date", "end_date")}
-    ) location
-        USING (state_code, staff_id)
-    LEFT JOIN (
-        SELECT state_code, staff_id, role_type, role_subtype, start_date
-        FROM `{{project_id}}.normalized_state.state_staff_role_period`
-        WHERE {today_between_start_date_and_nullable_end_date_clause("start_date", "end_date")}
-    ) role_period
-        USING (state_code, staff_id)
-    LEFT JOIN `{{project_id}}.normalized_state.state_staff_external_id` id
-        USING (state_code, staff_id)
-    LEFT JOIN `{{project_id}}.reference_views.location_metadata_materialized` location_metadata
-        USING (state_code, location_external_id)
+    LEFT JOIN `{{project_id}}.sessions.supervision_staff_attribute_sessions_materialized` attrs
+        USING (staff_id)
     LEFT JOIN (
         SELECT DISTINCT state_code, supervising_officer_external_id
         FROM `{{project_id}}.sessions.supervision_officer_sessions_materialized`
         WHERE {today_between_start_date_and_nullable_end_date_clause("start_date", "end_date")}
     ) officer_sessions
         ON ss.state_code = officer_sessions.state_code
-        AND id.external_id = officer_sessions.supervising_officer_external_id
+        AND attrs.officer_id = officer_sessions.supervising_officer_external_id
     LEFT JOIN (
         SELECT DISTINCT sp.state_code, supervisor_staff_external_id
         FROM `{{project_id}}.normalized_state.state_staff_supervisor_period` sp
@@ -87,7 +73,7 @@ CURRENT_STAFF_QUERY_TEMPLATE = f"""
             AND {today_between_start_date_and_nullable_end_date_clause("os.start_date", "os.end_date")}
     ) supervisors_of_officers
         ON ss.state_code = supervisors_of_officers.state_code
-        AND id.external_id = supervisors_of_officers.supervisor_staff_external_id
+        AND attrs.officer_id = supervisors_of_officers.supervisor_staff_external_id
     WHERE
         -- Only include users who we can identify as likely supervision staff so we don't end up
         -- with completely irrelevant users in the admin panel or our product DBs. We don't
@@ -96,25 +82,12 @@ CURRENT_STAFF_QUERY_TEMPLATE = f"""
         -- only use it to limit the number of people we might include instead of determining access
         -- based on it.
         (
-            role_period.role_type IN ("SUPERVISION_OFFICER")
-            OR role_period.role_subtype IN ("SUPERVISION_OFFICER", "SUPERVISION_OFFICER_SUPERVISOR", "SUPERVISION_DISTRICT_MANAGER", "SUPERVISION_REGIONAL_MANAGER", "SUPERVISION_STATE_LEADERSHIP")
+            "SUPERVISION_OFFICER" IN UNNEST(attrs.role_type_array)
+            OR (SELECT COUNT(1) FROM (SELECT * FROM UNNEST(attrs.role_subtype_array) INTERSECT DISTINCT SELECT * FROM UNNEST(ARRAY["SUPERVISION_OFFICER", "SUPERVISION_OFFICER_SUPERVISOR", "SUPERVISION_DISTRICT_MANAGER", "SUPERVISION_REGIONAL_MANAGER", "SUPERVISION_STATE_LEADERSHIP"]))) >= 1
             OR officer_sessions.supervising_officer_external_id IS NOT NULL -- is_supervision_officer
             OR supervisors_of_officers.supervisor_staff_external_id IS NOT NULL -- is_supervision_officer_supervisor
         )
-        AND CASE ss.state_code
-            WHEN "US_MI" THEN id_type = "US_MI_OMNI_USER"
-            WHEN "US_IX" THEN id_type = "US_IX_EMPLOYEE"
-            ELSE TRUE
-            END
-    QUALIFY ROW_NUMBER() OVER (
-        PARTITION BY state_code, staff_id
-        ORDER BY
-            location.start_date DESC,
-            role_period.start_date DESC,
-            is_supervision_officer_supervisor DESC,
-            is_supervision_officer DESC,
-            external_id DESC
-    ) = 1
+        AND {today_between_start_date_and_nullable_end_date_clause("attrs.start_date", "attrs.end_date_exclusive")}
 """
 
 

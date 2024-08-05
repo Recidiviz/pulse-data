@@ -91,7 +91,6 @@ INGESTED_PRODUCT_USERS_QUERY_TEMPLATE = f"""
         FROM `{{project_id}}.reference_views.current_staff_materialized`
         WHERE state_code IN ({{state_staff_states}})
         AND email IS NOT NULL
-        QUALIFY ROW_NUMBER() OVER (PARTITION BY state_code, email ORDER BY external_id) = 1
     ),
     all_users AS (
         SELECT * FROM mo_users
