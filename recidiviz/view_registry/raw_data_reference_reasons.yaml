@@ -111,7 +111,7 @@ US_CA:
   AgentParole:
     reference_views.us_ca_location_metadata: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
-    validation_views.pa_badge_number_changes: |-
+    validation_views.parole_agent_badge_number_changes: |-
       This is a validation on the raw data -- if a badge number changes in the raw data,
       we want to be alerted so we can write a migration.
     workflows_views.supervision_staff_record: |-

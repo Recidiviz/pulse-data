@@ -24,7 +24,7 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.validation.views import dataset_config
 
-PA_BADGE_NUMBER_CHANGES_VIEW_NAME = "pa_badge_number_changes"
+PA_BADGE_NUMBER_CHANGES_VIEW_NAME = "parole_agent_badge_number_changes"
 
 PA_BADGE_NUMBER_CHANGES_DESCRIPTION = """This view shows us when badge numbers have
 changed. It only cares about BadgeNumbers after 1/1/2024 as there were some data issues

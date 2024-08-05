@@ -148,7 +148,7 @@ from recidiviz.validation.views.state.overlapping_incarceration_periods import (
 from recidiviz.validation.views.state.overlapping_supervision_periods import (
     OVERLAPPING_SUPERVISION_PERIODS_VIEW_BUILDER,
 )
-from recidiviz.validation.views.state.parole_officer_badge_changes import (
+from recidiviz.validation.views.state.parole_agent_badge_number_changes import (
     PA_BADGE_NUMBER_CHANGES_VIEW_BUILDER,
 )
 from recidiviz.validation.views.state.population_projection_data_validation.population_projection_monthly_population_external_comparison import (
