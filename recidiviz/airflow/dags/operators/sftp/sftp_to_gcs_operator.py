@@ -80,7 +80,7 @@ class RecidivizSftpToGcsOperator(BaseOperator):
             .astimezone(pytz.UTC)
             .strftime("%Y-%m-%dT%H:%M:%S:%f")
         )
-        normalized_file_path = os.path.normpath(self.remote_file_path).replace("-", "_")
+        normalized_file_path = os.path.normpath(self.remote_file_path)
         base_directory = os.path.basename(os.path.dirname(normalized_file_path))
         base_file_name = os.path.basename(normalized_file_path)
         return assert_type(
