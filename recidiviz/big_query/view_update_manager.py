@@ -190,8 +190,7 @@ def copy_dataset_schemas_to_sandbox(
             table_id=source_table_address.table_id,
         )
         bq_client.copy_table(
-            source_dataset_id=source_table_address.dataset_id,
-            source_table_id=source_table_address.table_id,
+            source_table_address=source_table_address,
             destination_dataset_id=destination_table_address.dataset_id,
             schema_only=True,
             overwrite=False,
@@ -396,7 +395,7 @@ def _create_or_update_view_and_materialize_if_necessary(
             view_changed = True
             old_schema = None
         else:
-            existing_view = bq_client.get_table(view.dataset_id, view.view_id)
+            existing_view = bq_client.get_table(view.address)
             if (
                 existing_view.view_query != view.view_query
                 or existing_view.clustering_fields != view.clustering_fields
@@ -419,7 +418,7 @@ def _create_or_update_view_and_materialize_if_necessary(
         # succeed so as to not halt the view update, so we set `not_found_ok=True`. If
         # for some reason someone else deleted it out from under us, it is also okay to
         # just proceed with the view update.
-        bq_client.delete_table(view.dataset_id, view.view_id, not_found_ok=True)
+        bq_client.delete_table(view.address, not_found_ok=True)
     updated_view = bq_client.create_or_update_view(view, might_exist=might_exist)
 
     if updated_view.schema != old_schema:
@@ -427,13 +426,10 @@ def _create_or_update_view_and_materialize_if_necessary(
         view_changed = True
 
     if view.materialized_address:
-        materialized_view_dataset_id = view.materialized_address.dataset_id
         if (
             view_changed
             or parent_changed
-            or not bq_client.table_exists(
-                materialized_view_dataset_id, view.materialized_address.table_id
-            )
+            or not bq_client.table_exists(view.materialized_address)
             or force_materialize
         ):
             bq_client.materialize_view_to_table(

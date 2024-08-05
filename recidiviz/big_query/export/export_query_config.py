@@ -23,6 +23,7 @@ from typing import Any, Dict, Generic, List, Optional, TypeVar
 import attr
 from google.cloud import bigquery
 
+from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_view import BigQueryView
 from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath, GcsfsFilePath
 from recidiviz.metrics.metric_big_query_view import MetricBigQueryView
@@ -77,6 +78,13 @@ class ExportQueryConfig:
 
     # The desired format of the output file
     output_format: str = attr.ib()
+
+    @property
+    def intermediate_table_address(self) -> BigQueryAddress:
+        return BigQueryAddress(
+            dataset_id=self.intermediate_dataset_id,
+            table_id=self.intermediate_table_name,
+        )
 
     @classmethod
     def from_view_query(

@@ -148,10 +148,7 @@ class OptimizedMetricBigQueryViewExporter(BigQueryViewExporter):
             export_view.view_id,
         )
 
-        table = self.bq_client.get_table(
-            export_view.dataset_id,
-            export_view.view_id,
-        )
+        table = self.bq_client.get_table(export_view.address)
         all_keys = [field.name for field in table.schema]
 
         logging.debug("Determined full set of keys for the view: %s", all_keys)

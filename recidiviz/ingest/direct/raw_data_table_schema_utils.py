@@ -20,6 +20,7 @@ from typing import List, Optional
 
 from google.cloud import bigquery
 
+from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_client import BigQueryClient
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.dataset_config import raw_tables_dataset_for_region
@@ -45,16 +46,17 @@ def _update_raw_data_table_schema_to_new_schema(
         instance=instance,
         sandbox_dataset_prefix=sandbox_dataset_prefix,
     )
-
+    raw_table_address = BigQueryAddress(
+        dataset_id=raw_data_dataset_id, table_id=raw_file_tag
+    )
     try:
-        if big_query_client.table_exists(raw_data_dataset_id, raw_file_tag):
+        if big_query_client.table_exists(raw_table_address):
             big_query_client.update_schema(
-                raw_data_dataset_id, raw_file_tag, schema, allow_field_deletions=False
+                raw_table_address, schema, allow_field_deletions=False
             )
         else:
             big_query_client.create_table_with_schema(
-                raw_data_dataset_id,
-                raw_file_tag,
+                raw_table_address,
                 schema,
                 clustering_fields=[FILE_ID_COL_NAME],
             )

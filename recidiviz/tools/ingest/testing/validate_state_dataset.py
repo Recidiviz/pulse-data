@@ -53,7 +53,10 @@ from google.cloud.bigquery import DatasetReference, WriteDisposition
 from more_itertools import one
 
 from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
-from recidiviz.big_query.big_query_address import ProjectSpecificBigQueryAddress
+from recidiviz.big_query.big_query_address import (
+    BigQueryAddress,
+    ProjectSpecificBigQueryAddress,
+)
 from recidiviz.big_query.big_query_client import BigQueryClient, BigQueryClientImpl
 from recidiviz.common.attr_mixins import attribute_field_type_reference_for_class
 from recidiviz.common.constants.states import StateCode
@@ -329,8 +332,7 @@ class StateDatasetValidator:
             state_code_filter=self.state_code_filter.value,
         )
         self.bq_client.insert_into_table_from_query_async(
-            destination_dataset_id=mappings_address.dataset_id,
-            destination_table_id=mappings_address.table_id,
+            destination_address=mappings_address.to_project_agnostic_address(),
             write_disposition=WriteDisposition.WRITE_TRUNCATE,
             query=query,
             use_query_cache=False,
@@ -363,8 +365,10 @@ class StateDatasetValidator:
         for output_table_id, template in output_table_id_to_template.items():
             jobs.append(
                 self.bq_client.insert_into_table_from_query_async(
-                    destination_dataset_id=self.output_dataset_id,
-                    destination_table_id=output_table_id,
+                    destination_address=BigQueryAddress(
+                        dataset_id=self.output_dataset_id,
+                        table_id=output_table_id,
+                    ),
                     write_disposition=WriteDisposition.WRITE_TRUNCATE,
                     query=StrictStringFormatter().format(
                         template,
@@ -386,21 +390,20 @@ class StateDatasetValidator:
         for table_id, row_count in self.bq_client.get_row_counts_for_tables(
             self.output_dataset_id
         ).items():
+            table_address = ProjectSpecificBigQueryAddress(
+                project_id=self.bq_client.project_id,
+                dataset_id=self.output_dataset_id,
+                table_id=table_id,
+            )
             if table_id not in output_table_id_to_template:
                 continue
             if row_count == 0:
                 # We found no errors, delete empty error table
                 self.bq_client.delete_table(
-                    dataset_id=self.output_dataset_id, table_id=table_id
+                    address=table_address.to_project_agnostic_address()
                 )
                 continue
-            error_table_addresses[
-                ProjectSpecificBigQueryAddress(
-                    project_id=self.bq_client.project_id,
-                    dataset_id=self.output_dataset_id,
-                    table_id=table_id,
-                )
-            ] = row_count
+            error_table_addresses[table_address] = row_count
         return error_table_addresses
 
     def _build_comparable_entity_rows_query(
@@ -636,8 +639,7 @@ USING({associated_entity_2_pk})
         )
 
         self.bq_client.insert_into_table_from_query_async(
-            destination_dataset_id=comparable_table_address.dataset_id,
-            destination_table_id=comparable_table_address.table_id,
+            destination_address=comparable_table_address.to_project_agnostic_address(),
             write_disposition=WriteDisposition.WRITE_TRUNCATE,
             query=comparable_rows_query,
             use_query_cache=False,

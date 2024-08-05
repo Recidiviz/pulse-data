@@ -58,6 +58,7 @@ from typing import List
 from google.cloud import bigquery
 from google.cloud.bigquery import WriteDisposition
 
+from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.calculator.query.state.dataset_config import SENDGRID_EMAIL_DATA_DATASET
 from recidiviz.cloud_storage.gcs_file_system import GCSFileSystem
@@ -69,8 +70,15 @@ from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAG
 from recidiviz.utils.string import StrictStringFormatter
 
 BUCKET_SUFFIX = "-sendgrid-data"
-FINAL_DESTINATION_TABLE = "raw_sendgrid_email_data"
-TEMP_DESTINATION_TABLE = "temp_for_upload"
+FINAL_DESTINATION_ADDRESS = BigQueryAddress(
+    dataset_id=SENDGRID_EMAIL_DATA_DATASET,
+    table_id="raw_sendgrid_email_data",
+)
+TEMP_DESTINATION_ADDRESS = BigQueryAddress(
+    dataset_id=SENDGRID_EMAIL_DATA_DATASET,
+    table_id="temp_for_upload",
+)
+
 DATE_FORMAT = "%Y.%m.%d"
 INSERT_QUERY_TEMPLATE = """
 SELECT processed, subject, api_key_id, message_id, event, email 
@@ -101,8 +109,7 @@ def main(*, project_id: str, local_filepath: str, backfill: bool) -> None:
     ):
         # Clear out old rows from table
         bq_client.delete_from_table_async(
-            dataset_id=SENDGRID_EMAIL_DATA_DATASET,
-            table_id=FINAL_DESTINATION_TABLE,
+            address=FINAL_DESTINATION_ADDRESS,
             filter_clause="WHERE TRUE",
         )
         # For each file in table, load into BQ
@@ -159,8 +166,7 @@ def load_from_gcs_to_temp_table(
     bucket_name = f"{project_id}{BUCKET_SUFFIX}"
     load_job = bq_client.load_table_from_cloud_storage_async(
         source_uris=[f"gs://{bucket_name}/{blob_name}"],
-        destination_dataset_id=SENDGRID_EMAIL_DATA_DATASET,
-        destination_table_id=TEMP_DESTINATION_TABLE,
+        destination_address=TEMP_DESTINATION_ADDRESS,
         destination_table_schema=[
             bigquery.SchemaField("processed", "TIMESTAMP", mode="NULLABLE"),
             bigquery.SchemaField("message_id", "STRING", mode="NULLABLE"),
@@ -208,19 +214,16 @@ def load_from_temp_to_permanent_table(
     bq_client: BigQueryClientImpl, project_id: str
 ) -> None:
     """Query temporary table and persist view to permanent table"""
-    num_rows_before = bq_client.get_table(
-        dataset_id=SENDGRID_EMAIL_DATA_DATASET, table_id=FINAL_DESTINATION_TABLE
-    ).num_rows
+    num_rows_before = bq_client.get_table(FINAL_DESTINATION_ADDRESS).num_rows
 
     insert_job = bq_client.insert_into_table_from_query_async(
-        destination_dataset_id=SENDGRID_EMAIL_DATA_DATASET,
-        destination_table_id=FINAL_DESTINATION_TABLE,
+        destination_address=FINAL_DESTINATION_ADDRESS,
         query=StrictStringFormatter().format(
             INSERT_QUERY_TEMPLATE,
             project_id=project_id,
             dataset_id=SENDGRID_EMAIL_DATA_DATASET,
-            temp_table=TEMP_DESTINATION_TABLE,
-            final_table=FINAL_DESTINATION_TABLE,
+            temp_table=TEMP_DESTINATION_ADDRESS.table_id,
+            final_table=FINAL_DESTINATION_ADDRESS.table_id,
         ),
         write_disposition=WriteDisposition.WRITE_APPEND,
         use_query_cache=True,
@@ -231,12 +234,10 @@ def load_from_temp_to_permanent_table(
     logging.info(
         "Loaded [%d] non-duplicate rows into table [%s]",
         (insert_job_result.total_rows - num_rows_before),
-        FINAL_DESTINATION_TABLE,
+        FINAL_DESTINATION_ADDRESS.to_str(),
     )
 
-    bq_client.delete_table(
-        dataset_id=SENDGRID_EMAIL_DATA_DATASET, table_id=TEMP_DESTINATION_TABLE
-    )
+    bq_client.delete_table(TEMP_DESTINATION_ADDRESS)
 
 
 def parse_arguments(argv: List[str]) -> argparse.Namespace:

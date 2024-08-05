@@ -23,6 +23,7 @@ from unittest.mock import MagicMock, patch
 from flask import Blueprint, Flask
 
 from recidiviz.admin_panel.routes.line_staff_tools import add_line_staff_tools_routes
+from recidiviz.big_query.big_query_address import BigQueryAddress
 
 # To modify this file, use Excel or download https://docs.google.com/spreadsheets/d/1W3RWWWxlHP4GB-LUegjw63DdbGEN-mUoIa7y7D2XhQc/edit?usp=sharing
 # as an excel file. Don't use Numbers on a Mac because it doesn't let you have a column that's just a time
@@ -140,5 +141,9 @@ class FileUploadEndpointTests(TestCase):
         self.mock_bq_client.load_into_table_from_file_async.assert_called_once()
         args = self.mock_bq_client.load_into_table_from_file_async.call_args.args
         # don't test the contents of the file since the file pointer has already been closed
-        self.assertEqual(args[1], "static_reference_tables")
-        self.assertEqual(args[2], "us_tn_standards_due")
+        self.assertEqual(
+            args[1],
+            BigQueryAddress(
+                dataset_id="static_reference_tables", table_id="us_tn_standards_due"
+            ),
+        )

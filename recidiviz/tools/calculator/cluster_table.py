@@ -43,6 +43,7 @@ import logging
 import uuid
 from typing import List
 
+from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_client import BigQueryClient, BigQueryClientImpl
 from recidiviz.tools.utils.script_helpers import prompt_for_confirmation
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
@@ -63,12 +64,13 @@ def cluster_table(
     clustering fields specified, and inserting the data back into the newly created
     table.
     """
-    table = bq_client.get_table(dataset_id, table_id)
+    table_address = BigQueryAddress(dataset_id=dataset_id, table_id=table_id)
+    table = bq_client.get_table(table_address)
     existing_schema = table.schema
     existing_fields = {field.name for field in existing_schema}
     if extra_fields := set(fields_to_cluster).difference(existing_fields):
         raise ValueError(
-            f"Fields {extra_fields} do not exist in table `{dataset_id}.{table_id}`."
+            f"Fields {extra_fields} do not exist in table `{table_address.to_str()}`."
         )
 
     if table.clustering_fields:
@@ -81,7 +83,7 @@ def cluster_table(
             )
             return
         prompt_for_confirmation(
-            f"`{dataset_id}.{table_id}` is already clustered by {table.clustering_fields}. "
+            f"`{table_address.to_str()}` is already clustered by {table.clustering_fields}. "
             f"Do you want to cluster by {fields_to_cluster} instead?",
             accepted_response_override=table_id,
         )
@@ -91,10 +93,11 @@ def cluster_table(
         tmp_dataset_id, default_table_expiration_ms=THREE_DAYS_MS
     )
 
+    tmp_table_address = BigQueryAddress(dataset_id=tmp_dataset_id, table_id=table_id)
     logging.info(
-        "Copying `%s.%s` to `%s.%s`...", dataset_id, table_id, tmp_dataset_id, table_id
+        "Copying `%s` to `%s`...", table_address.to_str(), tmp_table_address.to_str()
     )
-    copy_job = bq_client.copy_table(dataset_id, table_id, tmp_dataset_id)
+    copy_job = bq_client.copy_table(table_address, tmp_dataset_id)
     if copy_job is None:
         raise ValueError("Expected copy job")
     copy_job.result()
@@ -108,21 +111,18 @@ def cluster_table(
     )
     # We explicitly recreate the table, because if we just overwrite the existing one
     # with query results all the fields are marked nullable.
-    bq_client.delete_table(dataset_id, table_id)
+    bq_client.delete_table(table_address)
     bq_client.create_table_with_schema(
-        dataset_id=dataset_id,
-        table_id=table_id,
+        address=table_address,
         schema_fields=existing_schema,
         clustering_fields=fields_to_cluster,
     )
     logging.info("Delete and recreate finished.")
 
-    logging.info("Inserting back into `%s.%s`...", dataset_id, table_id)
+    logging.info("Inserting back into `%s`...", table_address.to_str())
     query_job = bq_client.insert_into_table_from_table_async(
-        source_dataset_id=tmp_dataset_id,
-        source_table_id=table_id,
-        destination_dataset_id=dataset_id,
-        destination_table_id=table_id,
+        source_address=tmp_table_address,
+        destination_address=table_address,
         use_query_cache=False,
     )
     query_job.result()

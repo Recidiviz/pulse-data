@@ -22,6 +22,7 @@ import attr
 import mock
 from mock import patch
 
+from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.ingest.direct.raw_data.direct_ingest_raw_table_schema_builder import (
     RawDataTableBigQuerySchemaBuilder,
 )
@@ -111,8 +112,10 @@ class RawTableQueryBuilderTest(BigQueryEmulatorTestCase):
             raw_file_config=raw_file_config,
         )
         self.bq_client.create_table_with_schema(
-            dataset_id=dataset_id,
-            table_id=raw_file_config.file_tag,
+            address=BigQueryAddress(
+                dataset_id=dataset_id,
+                table_id=raw_file_config.file_tag,
+            ),
             schema_fields=schema_fields,
             clustering_fields=[FILE_ID_COL_NAME],
         )

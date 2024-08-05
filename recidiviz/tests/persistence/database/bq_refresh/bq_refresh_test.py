@@ -20,8 +20,7 @@
 import unittest
 from unittest import mock
 
-from google.cloud import bigquery
-from google.cloud import exceptions
+from google.cloud import bigquery, exceptions
 from mock import create_autospec
 
 from recidiviz.big_query.big_query_client import BigQueryClient
@@ -47,7 +46,7 @@ class BqLoadTest(unittest.TestCase):
 
         self.mock_load_job_patcher = mock.patch("google.cloud.bigquery.job.LoadJob")
         self.mock_load_job = self.mock_load_job_patcher.start()
-        self.mock_load_job.destination.return_value = self.mock_table
+        self.mock_load_job.destination = self.mock_table
 
         self.mock_bq_client = create_autospec(BigQueryClient)
 

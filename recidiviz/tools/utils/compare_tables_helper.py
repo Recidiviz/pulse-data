@@ -337,11 +337,8 @@ def compare_table_or_view(
         table_id=f"{address_original.table_id}_full",
     )
 
-    full_comparison_address.to_str()
-
     insert_job = bq_client.create_table_from_query_async(
-        dataset_id=full_comparison_address.dataset_id,
-        table_id=full_comparison_address.table_id,
+        address=full_comparison_address.to_project_agnostic_address(),
         query=query,
         overwrite=True,
         use_query_cache=True,
@@ -363,8 +360,7 @@ def compare_table_or_view(
         table_id=f"{address_original.table_id}_differences",
     )
     insert_job = bq_client.create_table_from_query_async(
-        dataset_id=differences_output_address.dataset_id,
-        table_id=differences_output_address.table_id,
+        address=differences_output_address.to_project_agnostic_address(),
         query=difference_query,
         overwrite=True,
         use_query_cache=True,

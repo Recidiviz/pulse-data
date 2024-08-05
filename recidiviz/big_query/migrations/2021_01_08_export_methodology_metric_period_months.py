@@ -32,6 +32,7 @@ from typing import List, Tuple
 
 from google.cloud.bigquery import WriteDisposition
 
+from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.calculator.query.state.dataset_config import DATAFLOW_METRICS_DATASET
 from recidiviz.pipelines.dataflow_config import (
@@ -83,8 +84,10 @@ def main(dry_run: bool) -> None:
         else:
             # Move data from the Dataflow metrics dataset into the cold storage table, creating the table if necessary
             insert_job = bq_client.insert_into_table_from_query_async(
-                destination_dataset_id=cold_storage_dataset,
-                destination_table_id=table_id,
+                destination_address=BigQueryAddress(
+                    dataset_id=cold_storage_dataset,
+                    table_id=table_id,
+                ),
                 query=insert_query,
                 allow_field_additions=True,
                 write_disposition=WriteDisposition.WRITE_APPEND,
@@ -104,7 +107,8 @@ def main(dry_run: bool) -> None:
         else:
             # Delete these rows from the Dataflow metrics table
             delete_job = bq_client.delete_from_table_async(
-                dataflow_metrics_dataset, table_id, filter_clause=filter_clause
+                BigQueryAddress(dataset_id=dataflow_metrics_dataset, table_id=table_id),
+                filter_clause=filter_clause,
             )
 
             # Wait for the replace job to complete before moving on

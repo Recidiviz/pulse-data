@@ -33,6 +33,7 @@ from recidiviz.admin_panel.line_staff_tools.constants import (
     EMAIL_STATE_CODES,
     RAW_FILES_CONFIG,
 )
+from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.big_query.big_query_utils import normalize_column_name_for_bq
 from recidiviz.calculator.query.state.dataset_config import (
@@ -373,8 +374,10 @@ def add_line_staff_tools_routes(bp: Blueprint) -> None:
             raw_data_config = RAW_FILES_CONFIG[state_code][upload_type]
             insert_job = bq.load_into_table_from_file_async(
                 fp,
-                STATIC_REFERENCE_TABLES_DATASET,
-                table_name,
+                BigQueryAddress(
+                    dataset_id=STATIC_REFERENCE_TABLES_DATASET,
+                    table_id=table_name,
+                ),
                 schema=[
                     bigquery.SchemaField(
                         name=schema_field_dict["name"],

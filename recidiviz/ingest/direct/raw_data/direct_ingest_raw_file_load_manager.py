@@ -106,8 +106,7 @@ class DirectIngestRawFileLoadManager:
         try:
             load_job: LoadJob = self.big_query_client.load_table_from_cloud_storage_async(
                 source_uris=[p.uri() for p in paths],
-                destination_dataset_id=destination_address.dataset_id,
-                destination_table_id=destination_address.table_id,
+                destination_address=destination_address,
                 destination_table_schema=RawDataTableBigQuerySchemaBuilder.build_bq_schmea_for_config(
                     raw_file_config=self.region_raw_file_config.raw_file_configs[
                         file_tag
@@ -183,8 +182,7 @@ class DirectIngestRawFileLoadManager:
         )
 
         query_job = self.big_query_client.create_table_from_query_async(
-            dataset_id=destination_table.dataset_id,
-            table_id=destination_table.table_id,
+            address=destination_table,
             query=transformation_query,
             overwrite=True,
             use_query_cache=False,
@@ -319,8 +317,7 @@ class DirectIngestRawFileLoadManager:
         ).build_query()
 
         create_job = self.big_query_client.create_table_from_query_async(
-            dataset_id=temp_raw_data_diff_table_address.dataset_id,
-            table_id=temp_raw_data_diff_table_address.table_id,
+            address=temp_raw_data_diff_table_address,
             query=raw_data_diff_query,
             overwrite=True,
             use_query_cache=False,
@@ -359,10 +356,8 @@ class DirectIngestRawFileLoadManager:
         """Appends the contents of |source_table| to |destination_table|."""
 
         append_job = self.big_query_client.insert_into_table_from_table_async(
-            source_dataset_id=source_table.dataset_id,
-            source_table_id=source_table.table_id,
-            destination_dataset_id=destination_table.dataset_id,
-            destination_table_id=destination_table.table_id,
+            source_address=source_table,
+            destination_address=destination_table,
             use_query_cache=False,
         )
 
@@ -388,9 +383,7 @@ class DirectIngestRawFileLoadManager:
         """
 
         delete_job = self.big_query_client.delete_from_table_async(
-            dataset_id=raw_data_table.dataset_id,
-            table_id=raw_data_table.table_id,
-            filter_clause="WHERE file_id = " + str(file_id),
+            address=raw_data_table, filter_clause="WHERE file_id = " + str(file_id)
         )
         result = delete_job.result()
         if result.num_dml_affected_rows:
@@ -405,9 +398,7 @@ class DirectIngestRawFileLoadManager:
         for address in addresses:
             try:
                 logging.info("Deleting [%s]", address)
-                self.big_query_client.delete_table(
-                    address.dataset_id, address.table_id, not_found_ok=True
-                )
+                self.big_query_client.delete_table(address, not_found_ok=True)
             except Exception as e:
                 logging.error(
                     "Error: failed to clean up [%s] with [%s]: %s",

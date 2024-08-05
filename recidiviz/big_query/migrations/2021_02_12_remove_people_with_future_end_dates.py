@@ -30,6 +30,7 @@ import logging
 import sys
 from typing import List, Tuple
 
+from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_client import BigQueryClient, BigQueryClientImpl
 from recidiviz.calculator.query.state.dataset_config import DATAFLOW_METRICS_DATASET
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
@@ -40,17 +41,19 @@ from recidiviz.utils.params import str_to_bool
 def delete_from_table(
     dry_run: bool, bq_client: BigQueryClient, table_id: str, filter_clause: str
 ) -> None:
+    table_address = BigQueryAddress(
+        dataset_id=DATAFLOW_METRICS_DATASET, table_id=table_id
+    )
     if dry_run:
         logging.info(
-            "[DRY RUN] Would delete rows from [%s].[%s] %s",
-            DATAFLOW_METRICS_DATASET,
-            table_id,
+            "[DRY RUN] Would delete rows from [%s] %s",
+            table_address.to_str(),
             filter_clause,
         )
     else:
         # Delete these rows from the Dataflow metrics table
         delete_job = bq_client.delete_from_table_async(
-            DATAFLOW_METRICS_DATASET, table_id, filter_clause=filter_clause
+            table_address, filter_clause=filter_clause
         )
 
         # Wait for the delete job to complete before moving on

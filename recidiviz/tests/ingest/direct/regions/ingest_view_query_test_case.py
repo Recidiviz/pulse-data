@@ -142,13 +142,10 @@ class DirectIngestRawDataFixtureLoader:
 
     def _load_fixture_to_emulator(self, fixture: RawDataFixture) -> None:
         self.bq_client.create_table_with_schema(
-            dataset_id=fixture.address.dataset_id,
-            table_id=fixture.address.table_id,
-            schema_fields=fixture.schema,
+            address=fixture.address, schema_fields=fixture.schema
         )
         self.bq_client.stream_into_table(
-            fixture.address.dataset_id,
-            fixture.address.table_id,
+            address=fixture.address,
             rows=fixture.fixture_data_df.to_dict("records"),
         )
 

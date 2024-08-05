@@ -294,9 +294,7 @@ class TestSourceTableUpdateManagerRecreateOnError(BigQueryEmulatorTestCase):
             ),
         )
 
-        table = self.bq_client.get_table(
-            self.table_address.dataset_id, self.table_address.table_id
-        )
+        table = self.bq_client.get_table(self.table_address)
         self.assertEqual(table.schema, self.updated_table_config.schema_fields)
 
 

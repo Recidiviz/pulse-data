@@ -26,6 +26,7 @@ from google.cloud.bigquery import WriteDisposition
 from google.cloud.bigquery.table import TableListItem
 from more_itertools import one
 
+from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.calculator.query.state.dataset_config import DATAFLOW_METRICS_DATASET
 from recidiviz.calculator.query.state.views.dataflow_metrics_materialized.most_recent_dataflow_metrics import (
@@ -361,8 +362,9 @@ def move_old_dataflow_metrics_to_cold_storage(dry_run: bool = False) -> None:
         else:
             # Move data from the Dataflow metrics dataset into the cold storage table, creating the table if necessary
             insert_job = bq_client.insert_into_table_from_query_async(
-                destination_dataset_id=cold_storage_dataset,
-                destination_table_id=table_id,
+                destination_address=BigQueryAddress(
+                    dataset_id=cold_storage_dataset, table_id=table_id
+                ),
                 query=insert_query,
                 allow_field_additions=True,
                 write_disposition=WriteDisposition.WRITE_APPEND,
@@ -387,8 +389,9 @@ def move_old_dataflow_metrics_to_cold_storage(dry_run: bool = False) -> None:
         else:
             # Replace the Dataflow table with only the rows that should remain
             replace_job = bq_client.create_table_from_query_async(
-                dataset_id=dataflow_metrics_dataset,
-                table_id=table_ref.table_id,
+                address=BigQueryAddress(
+                    dataset_id=dataflow_metrics_dataset, table_id=table_ref.table_id
+                ),
                 query=replace_query,
                 overwrite=True,
                 use_query_cache=True,
@@ -419,8 +422,9 @@ def _decommission_dataflow_metric_table(
         logging.info("%s;", insert_query)
     else:
         insert_job = bq_client.insert_into_table_from_query_async(
-            destination_dataset_id=cold_storage_dataset,
-            destination_table_id=table_id,
+            destination_address=BigQueryAddress(
+                dataset_id=cold_storage_dataset, table_id=table_id
+            ),
             query=insert_query,
             allow_field_additions=True,
             write_disposition=WriteDisposition.WRITE_APPEND,
@@ -430,4 +434,8 @@ def _decommission_dataflow_metric_table(
         # Wait for the insert job to complete before deleting the table
         insert_job.result()
 
-        bq_client.delete_table(dataset_id=dataflow_metrics_dataset, table_id=table_id)
+        bq_client.delete_table(
+            address=BigQueryAddress(
+                dataset_id=dataflow_metrics_dataset, table_id=table_id
+            ),
+        )

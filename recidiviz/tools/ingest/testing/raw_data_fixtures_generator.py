@@ -28,6 +28,7 @@ from more_itertools import first
 from pandas import DataFrame
 from tabulate import tabulate
 
+from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.dataset_config import raw_tables_dataset_for_region
@@ -230,7 +231,9 @@ class RawDataFixturesGenerator:
             sandbox_dataset_prefix=None,
         )
         if not self.bq_client.table_exists(
-            raw_table_dataset_id, table_id=raw_file_config.file_tag
+            BigQueryAddress(
+                dataset_id=raw_table_dataset_id, table_id=raw_file_config.file_tag
+            )
         ):
             raise RuntimeError(
                 f"Table [{raw_table_dataset_id}].[{raw_file_config.file_tag}] does not exist, exiting."

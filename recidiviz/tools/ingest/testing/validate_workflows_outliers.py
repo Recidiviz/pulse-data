@@ -280,8 +280,7 @@ class WorkflowsOutliersDatasetValidator:
             state_code_filter=self.state_code_filter.value,
         )
         self.bq_client.insert_into_table_from_query_async(
-            destination_dataset_id=mappings_address.dataset_id,
-            destination_table_id=mappings_address.table_id,
+            destination_address=mappings_address.to_project_agnostic_address(),
             write_disposition=WriteDisposition.WRITE_TRUNCATE,
             query=query,
             use_query_cache=False,
@@ -321,11 +320,8 @@ class WorkflowsOutliersDatasetValidator:
         provided |dataset|, which can be used to compare against the same table in
         a different dataset.
         """
-        bigquery_address = BigQueryAddress(
-            dataset_id=table_address.dataset_id, table_id=table_address.table_id
-        )
         entity_primary_key, excluded_keys, _ = ADDRESS_BY_STATE[self.state_code_filter][
-            bigquery_address
+            table_address.to_project_agnostic_address()
             if not original_reference_table_address
             else original_reference_table_address
         ]
@@ -369,8 +365,7 @@ class WorkflowsOutliersDatasetValidator:
         )
 
         self.bq_client.insert_into_table_from_query_async(
-            destination_dataset_id=comparable_table_address.dataset_id,
-            destination_table_id=comparable_table_address.table_id,
+            destination_address=comparable_table_address.to_project_agnostic_address(),
             write_disposition=WriteDisposition.WRITE_TRUNCATE,
             query=comparable_rows_query,
             use_query_cache=False,

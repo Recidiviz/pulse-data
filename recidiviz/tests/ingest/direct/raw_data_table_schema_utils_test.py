@@ -22,6 +22,7 @@ from unittest.mock import create_autospec, patch
 
 from google.cloud import bigquery
 
+from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_client import BigQueryClient
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
@@ -165,8 +166,10 @@ class RawTableSchemaUtilsTest(unittest.TestCase):
         self.mock_client.create_table_with_schema.assert_called()
         self.mock_client.update_schema.assert_not_called()
         self.mock_client.create_table_with_schema.assert_called_with(
-            "us_xx_raw_data",
-            "raw_data_table",
+            BigQueryAddress(
+                dataset_id="us_xx_raw_data",
+                table_id="raw_data_table",
+            ),
             self.schema,
             clustering_fields=["file_id"],
         )
@@ -184,5 +187,7 @@ class RawTableSchemaUtilsTest(unittest.TestCase):
         self.mock_client.update_schema.assert_called()
         self.mock_client.create_table_with_schema.assert_not_called()
         self.mock_client.update_schema.assert_called_with(
-            "us_xx_raw_data", "raw_data_table", self.schema, allow_field_deletions=False
+            BigQueryAddress(dataset_id="us_xx_raw_data", table_id="raw_data_table"),
+            self.schema,
+            allow_field_deletions=False,
         )

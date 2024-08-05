@@ -120,9 +120,7 @@ def store_bq_refresh_status_in_big_query(
     )
 
     bq_client.stream_into_table(
-        address.dataset_id,
-        address.table_id,
-        [result.to_serializable() for result in bq_refresh_statuses],
+        address, [result.to_serializable() for result in bq_refresh_statuses]
     )
 
 
@@ -133,19 +131,9 @@ def update_bq_refresh_status_table(
 ) -> None:
     bq_client.create_dataset_if_necessary(bq_refresh_status_address.dataset_id)
 
-    if bq_client.table_exists(
-        bq_refresh_status_address.dataset_id, bq_refresh_status_address.table_id
-    ):
+    if bq_client.table_exists(bq_refresh_status_address):
         # Compare schema derived from schema table to existing dataset and
         # update if necessary.
-        bq_client.update_schema(
-            bq_refresh_status_address.dataset_id,
-            bq_refresh_status_address.table_id,
-            table_schema,
-        )
+        bq_client.update_schema(bq_refresh_status_address, table_schema)
     else:
-        bq_client.create_table_with_schema(
-            bq_refresh_status_address.dataset_id,
-            bq_refresh_status_address.table_id,
-            table_schema,
-        )
+        bq_client.create_table_with_schema(bq_refresh_status_address, table_schema)

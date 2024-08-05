@@ -76,6 +76,7 @@ from google.cloud import bigquery
 from google.cloud.bigquery import QueryJob
 from more_itertools import peekable
 
+from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.big_query.big_query_view import BigQueryViewBuilder
 from recidiviz.big_query.constants import TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS
@@ -165,7 +166,7 @@ def compare_metric_view_output_to_sandbox(
         sandbox_comparison_output_dataset_id, TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS
     )
 
-    query_jobs: List[Tuple[QueryJob, str]] = []
+    query_jobs: List[Tuple[QueryJob, BigQueryAddress]] = []
     skipped_views: List[str] = []
 
     for view_builder in deployed_view_builders():
@@ -194,60 +195,50 @@ def compare_metric_view_output_to_sandbox(
             )
 
         if view_builder.materialized_address and not check_determinism:
-            base_dataset_id = view_builder.materialized_address.dataset_id
-            base_view_id = view_builder.materialized_address.table_id
+            base_address = view_builder.materialized_address
         else:
-            base_dataset_id, base_view_id = (
-                view_builder.dataset_id,
-                view_builder.view_id,
-            )
+            base_address = view_builder.address
 
-        if not check_determinism and not bq_client.table_exists(
-            base_dataset_id, base_view_id
-        ):
+        if not check_determinism and not bq_client.table_exists(base_address):
             logging.warning(
-                "View %s.%s does not exist. Skipping output comparison.",
-                base_dataset_id,
-                base_view_id,
+                "View %s does not exist. Skipping output comparison.",
+                base_address.to_str(),
             )
-            skipped_views.append(f"{base_dataset_id}.{base_view_id}")
+            skipped_views.append(base_address.to_str())
             continue
 
-        if not bq_client.table_exists(sandbox_dataset_id, base_view_id):
+        sandbox_address = BigQueryAddress(
+            dataset_id=sandbox_dataset_id, table_id=base_address.table_id
+        )
+        if not bq_client.table_exists(sandbox_address):
             logging.warning(
-                "View %s.%s does not exist in sandbox. Skipping output comparison.",
-                sandbox_dataset_id,
-                base_view_id,
+                "View %s does not exist in sandbox. Skipping output comparison.",
+                sandbox_address.to_str(),
             )
-            skipped_views.append(f"{sandbox_dataset_id}.{base_view_id}")
+            skipped_views.append(sandbox_address.to_str())
             continue
-        query_job, output_table_id = _view_output_comparison_job(
+        query_job, output_table_address = _view_output_comparison_job(
             bq_client,
             view_builder,
-            base_view_id,
-            base_dataset_id,
-            sandbox_dataset_id,
+            base_address,
+            sandbox_address,
             sandbox_comparison_output_dataset_id,
             check_determinism,
             allow_schema_changes,
         )
 
         # Add query job to the list of running jobs
-        query_jobs.append((query_job, output_table_id))
+        query_jobs.append((query_job, output_table_address))
 
-    for query_job, output_table_id in query_jobs:
+    for query_job, output_table_address in query_jobs:
         # Wait for the insert job to complete before looking for the table
         query_job.result()
 
-        output_table = bq_client.get_table(
-            sandbox_comparison_output_dataset_id, output_table_id
-        )
+        output_table = bq_client.get_table(output_table_address)
 
         if output_table.num_rows == 0:
             # If there are no rows in the output table, then the view output was identical
-            bq_client.delete_table(
-                sandbox_comparison_output_dataset_id, output_table_id
-            )
+            bq_client.delete_table(output_table_address)
 
     views_with_different_output = bq_client.list_tables(
         sandbox_comparison_output_dataset_id
@@ -297,17 +288,16 @@ def compare_metric_view_output_to_sandbox(
 def _view_output_comparison_job(
     bq_client: BigQueryClientImpl,
     view_builder: MetricBigQueryViewBuilder,
-    base_view_id: str,
-    base_dataset_id: str,
-    sandbox_dataset_id: str,
+    base_address: BigQueryAddress,
+    sandbox_address: BigQueryAddress,
     sandbox_comparison_output_dataset_id: str,
     check_determinism: bool,
     allow_schema_changes: bool,
-) -> Tuple[bigquery.QueryJob, str]:
+) -> Tuple[bigquery.QueryJob, BigQueryAddress]:
     """Builds and executes the query that compares the base and sandbox views. Returns a tuple with the the QueryJob and
-    the table_id where the output will be written to in the sandbox_comparison_output_dataset_id dataset.
+    the address where the output will be written to in the sandbox_comparison_output_dataset_id dataset.
     """
-    output_table_id = f"{view_builder.dataset_id}--{base_view_id}"
+    output_table_id = f"{base_address.dataset_id}--{base_address.table_id}"
 
     if check_determinism:
         # Compare all columns
@@ -315,15 +305,13 @@ def _view_output_comparison_job(
         preserve_column_types = True
     else:
         # Columns in deployed view
-        deployed_base_view = bq_client.get_table(base_dataset_id, view_builder.view_id)
+        deployed_base_view = bq_client.get_table(view_builder.address)
         # If there are nested columns in the deployed view then we can't allow column type changes
         preserve_column_types = _table_contains_nested_columns(deployed_base_view)
         base_columns_to_compare = set(field.name for field in deployed_base_view.schema)
 
         # Columns in sandbox view
-        deployed_sandbox_view = bq_client.get_table(
-            sandbox_dataset_id, view_builder.view_id
-        )
+        deployed_sandbox_view = bq_client.get_table(sandbox_address)
         if not preserve_column_types:
             # If there are nested columns in the sandbox view then we can't allow column type changes
             preserve_column_types = _table_contains_nested_columns(
@@ -343,7 +331,7 @@ def _view_output_comparison_job(
         else:
             if base_columns_to_compare != sandbox_columns_to_compare:
                 raise ValueError(
-                    f"Schemas of the {base_dataset_id}.{base_view_id} deployed and"
+                    f"Schemas of the {base_address.to_str()} deployed and"
                     f" sandbox views do not match. If this is expected, please run again"
                     f"with the --allow_schema_changes flag."
                 )
@@ -365,28 +353,31 @@ def _view_output_comparison_job(
         ]
 
     base_dataset_id_for_query = (
-        sandbox_dataset_id if check_determinism else view_builder.dataset_id
+        sandbox_address.dataset_id if check_determinism else view_builder.dataset_id
     )
 
     diff_query = StrictStringFormatter().format(
         OUTPUT_COMPARISON_TEMPLATE,
         project_id=bq_client.project_id,
         base_dataset_id=base_dataset_id_for_query,
-        sandbox_dataset_id=sandbox_dataset_id,
-        view_id=base_view_id,
+        sandbox_dataset_id=sandbox_address.dataset_id,
+        view_id=base_address.table_id,
         columns_to_compare=", ".join(columns_to_compare),
         dimensions=", ".join(metric_dimensions),
     )
 
+    comparison_output_address = BigQueryAddress(
+        dataset_id=sandbox_comparison_output_dataset_id,
+        table_id=output_table_id,
+    )
     return (
         bq_client.create_table_from_query_async(
-            dataset_id=sandbox_comparison_output_dataset_id,
-            table_id=output_table_id,
+            address=comparison_output_address,
             query=diff_query,
             overwrite=True,
             use_query_cache=True,
         ),
-        output_table_id,
+        comparison_output_address,
     )
 
 

@@ -45,7 +45,10 @@ from google.cloud.bigquery_datatransfer import (
 from mock import call, create_autospec
 
 from recidiviz.big_query import big_query_client
-from recidiviz.big_query.big_query_address import BigQueryAddress
+from recidiviz.big_query.big_query_address import (
+    BigQueryAddress,
+    ProjectSpecificBigQueryAddress,
+)
 from recidiviz.big_query.big_query_client import BigQueryClient, BigQueryClientImpl
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.big_query.export.export_query_config import ExportQueryConfig
@@ -63,10 +66,13 @@ class BigQueryClientImplTest(unittest.TestCase):
         self.mock_project_id = "fake-recidiviz-project"
         self.mock_dataset_id = "fake-dataset"
         self.mock_table_id = "test_table"
-        self.mock_dataset_ref = bigquery.dataset.DatasetReference(
-            self.mock_project_id, self.mock_dataset_id
+        self.mock_table_address = BigQueryAddress(
+            dataset_id=self.mock_dataset_id, table_id=self.mock_table_id
         )
-        self.mock_table = self.mock_dataset_ref.table(self.mock_table_id)
+        mock_dataset_ref = bigquery.dataset.DatasetReference(
+            self.mock_project_id, self.mock_table_address.dataset_id
+        )
+        self.mock_table = mock_dataset_ref.table(self.mock_table_address.table_id)
         self.mock_schema = [
             bigquery.SchemaField(
                 mode="NULLABLE", field_type="STRING", name="fake_column"
@@ -118,13 +124,13 @@ class BigQueryClientImplTest(unittest.TestCase):
         """Check that a dataset is created if it does not exist."""
         self.mock_client.get_dataset.side_effect = exceptions.NotFound("!")
         self.mock_client.create_dataset.return_value.access_entries = []
-        self.bq_client.create_dataset_if_necessary(self.mock_dataset_id)
+        self.bq_client.create_dataset_if_necessary(self.mock_table_address.dataset_id)
         self.mock_client.create_dataset.assert_called()
 
     def test_create_dataset_if_necessary_dataset_exists(self) -> None:
         """Check that a dataset is not created if it already exists."""
         self.mock_client.get_dataset.side_effect = None
-        self.bq_client.create_dataset_if_necessary(self.mock_dataset_id)
+        self.bq_client.create_dataset_if_necessary(self.mock_table_address.dataset_id)
         self.mock_client.create_dataset.assert_not_called()
 
     def test_create_dataset_if_necessary_table_expiration(self) -> None:
@@ -144,7 +150,9 @@ class BigQueryClientImplTest(unittest.TestCase):
         self.mock_client.create_dataset.return_value.access_entries = []
 
         with freeze_time(datetime.datetime(2020, 1, 1, 1, 1, 1)):
-            self.bq_client.create_dataset_if_necessary(self.mock_dataset_id)
+            self.bq_client.create_dataset_if_necessary(
+                self.mock_table_address.dataset_id
+            )
 
         call_args_list = self.mock_client.update_dataset.call_args_list
         self.assertEqual(1, len(call_args_list))
@@ -168,7 +176,9 @@ class BigQueryClientImplTest(unittest.TestCase):
         ]
 
         with freeze_time(datetime.datetime(2020, 1, 1, 1, 1, 1)):
-            self.bq_client.create_dataset_if_necessary(self.mock_dataset_id)
+            self.bq_client.create_dataset_if_necessary(
+                self.mock_table_address.dataset_id
+            )
 
         call_args_list = self.mock_client.update_dataset.call_args_list
         self.assertEqual(1, len(call_args_list))
@@ -192,7 +202,9 @@ class BigQueryClientImplTest(unittest.TestCase):
         ]
 
         with freeze_time(datetime.datetime(2020, 1, 1, 1, 1, 1)):
-            self.bq_client.create_dataset_if_necessary(self.mock_dataset_id)
+            self.bq_client.create_dataset_if_necessary(
+                self.mock_table_address.dataset_id
+            )
 
         call_args_list = self.mock_client.update_dataset.call_args_list
         self.assertEqual(1, len(call_args_list))
@@ -216,7 +228,9 @@ class BigQueryClientImplTest(unittest.TestCase):
         ]
 
         with freeze_time(datetime.datetime(2020, 1, 1, 1, 1, 1)):
-            self.bq_client.create_dataset_if_necessary(self.mock_dataset_id)
+            self.bq_client.create_dataset_if_necessary(
+                self.mock_table_address.dataset_id
+            )
 
         call_args_list = self.mock_client.update_dataset.call_args_list
         self.assertEqual(1, len(call_args_list))
@@ -240,7 +254,9 @@ class BigQueryClientImplTest(unittest.TestCase):
         ]
 
         with freeze_time(datetime.datetime(2020, 1, 1, 1, 1, 1)):
-            self.bq_client.create_dataset_if_necessary(self.mock_dataset_id)
+            self.bq_client.create_dataset_if_necessary(
+                self.mock_table_address.dataset_id
+            )
 
         call_args_list = self.mock_client.update_dataset.call_args_list
         self.assertEqual(1, len(call_args_list))
@@ -256,12 +272,12 @@ class BigQueryClientImplTest(unittest.TestCase):
     def test_multiple_client_locations(self) -> None:
         other_location_bq_client = BigQueryClientImpl(region_override="us-east1")
 
-        self.bq_client.get_table(self.mock_dataset_id, self.mock_table_id)
+        self.bq_client.get_table(self.mock_table_address)
         self.mock_client.get_table.assert_called()
         self.other_mock_client.get_table.assert_not_called()
 
         # The client that was created with a different location will use a new client
-        other_location_bq_client.dataset_exists(self.mock_dataset_id)
+        other_location_bq_client.dataset_exists(self.mock_table_address.dataset_id)
         self.other_mock_client.get_dataset.assert_called()
         self.mock_client.get_dataset.assert_not_called()
 
@@ -277,16 +293,12 @@ class BigQueryClientImplTest(unittest.TestCase):
     def test_table_exists(self) -> None:
         """Check that table_exists returns True if the table exists."""
         self.mock_client.get_table.side_effect = None
-        self.assertTrue(
-            self.bq_client.table_exists(self.mock_dataset_id, self.mock_table_id)
-        )
+        self.assertTrue(self.bq_client.table_exists(self.mock_table_address))
 
     def test_table_exists_does_not_exist(self) -> None:
         """Check that table_exists returns False if the table does not exist."""
         self.mock_client.get_table.side_effect = exceptions.NotFound("!")
-        table_exists = self.bq_client.table_exists(
-            self.mock_dataset_id, self.mock_table_id
-        )
+        table_exists = self.bq_client.table_exists(self.mock_table_address)
         self.assertFalse(table_exists)
 
     @mock.patch("google.cloud.bigquery.QueryJobConfig")
@@ -300,7 +312,9 @@ class BigQueryClientImplTest(unittest.TestCase):
         self.mock_client.list_tables.return_value = ["table1"]
 
         # Act
-        results = self.bq_client.get_row_counts_for_tables(self.mock_dataset_id)
+        results = self.bq_client.get_row_counts_for_tables(
+            self.mock_table_address.dataset_id
+        )
 
         # Assert
         self.assertEqual(results, {"foo": 120, "bar": 0})
@@ -321,7 +335,9 @@ class BigQueryClientImplTest(unittest.TestCase):
         self.mock_client.get_dataset.side_effect = exceptions.NotFound("!")
 
         # Act
-        results = self.bq_client.get_row_counts_for_tables(self.mock_dataset_id)
+        results = self.bq_client.get_row_counts_for_tables(
+            self.mock_table_address.dataset_id
+        )
 
         # Assert
         self.assertEqual(results, {})
@@ -335,7 +351,9 @@ class BigQueryClientImplTest(unittest.TestCase):
         self.mock_client.list_tables.return_value = iter([])
 
         # Act
-        results = self.bq_client.get_row_counts_for_tables(self.mock_dataset_id)
+        results = self.bq_client.get_row_counts_for_tables(
+            self.mock_table_address.dataset_id
+        )
 
         # Assert
         self.assertEqual(results, {})
@@ -367,8 +385,7 @@ class BigQueryClientImplTest(unittest.TestCase):
         view."""
         self.assertIsNotNone(
             self.bq_client.export_table_to_cloud_storage_async(
-                source_table_dataset_id=self.mock_dataset_id,
-                source_table_id="source-table",
+                source_table_address=self.mock_table_address,
                 destination_uri=f"gs://{self.mock_project_id}-bucket/destination_path.json",
                 destination_format=bigquery.DestinationFormat.NEWLINE_DELIMITED_JSON,
                 print_header=True,
@@ -383,8 +400,7 @@ class BigQueryClientImplTest(unittest.TestCase):
         with self.assertLogs(level="WARNING"):
             self.assertIsNone(
                 self.bq_client.export_table_to_cloud_storage_async(
-                    source_table_dataset_id=self.mock_dataset_id,
-                    source_table_id="source-table",
+                    source_table_address=self.mock_table_address,
                     destination_uri=f"gs://{self.mock_project_id}-bucket/destination_path.json",
                     destination_format=bigquery.DestinationFormat.NEWLINE_DELIMITED_JSON,
                     print_header=True,
@@ -398,8 +414,7 @@ class BigQueryClientImplTest(unittest.TestCase):
         self.mock_client.get_dataset.side_effect = exceptions.NotFound("!")
 
         self.bq_client.load_table_from_cloud_storage_async(
-            destination_dataset_id=self.mock_dataset_id,
-            destination_table_id=self.mock_table_id,
+            destination_address=self.mock_table_address,
             destination_table_schema=[
                 SchemaField(
                     "my_column",
@@ -420,8 +435,7 @@ class BigQueryClientImplTest(unittest.TestCase):
         parent dataset if it already exists."""
 
         self.bq_client.load_table_from_cloud_storage_async(
-            destination_dataset_id=self.mock_dataset_id,
-            destination_table_id=self.mock_table_id,
+            destination_address=self.mock_table_address,
             destination_table_schema=[
                 SchemaField(
                     "my_column",
@@ -442,8 +456,7 @@ class BigQueryClientImplTest(unittest.TestCase):
         self.mock_client.get_dataset.side_effect = exceptions.NotFound("!")
 
         self.bq_client.load_into_table_from_dataframe_async(
-            destination_dataset_id=self.mock_dataset_id,
-            destination_table_id=self.mock_table_id,
+            destination_address=self.mock_table_address,
             source=pd.DataFrame({"a": [1, 2]}),
         )
 
@@ -455,8 +468,7 @@ class BigQueryClientImplTest(unittest.TestCase):
         parent dataset if it already exists."""
 
         self.bq_client.load_into_table_from_dataframe_async(
-            destination_dataset_id=self.mock_dataset_id,
-            destination_table_id=self.mock_table_id,
+            destination_address=self.mock_table_address,
             source=pd.DataFrame({"a": [1, 2]}),
         )
 
@@ -469,8 +481,7 @@ class BigQueryClientImplTest(unittest.TestCase):
         self.mock_client.get_dataset.side_effect = exceptions.NotFound("!")
 
         self.bq_client.load_into_table_from_file_async(
-            destination_dataset_id=self.mock_dataset_id,
-            destination_table_id=self.mock_table_id,
+            destination_address=self.mock_table_address,
             source=io.StringIO("data"),
             schema=self.mock_schema,
         )
@@ -483,8 +494,7 @@ class BigQueryClientImplTest(unittest.TestCase):
         parent dataset if it already exists."""
 
         self.bq_client.load_into_table_from_file_async(
-            destination_dataset_id=self.mock_dataset_id,
-            destination_table_id=self.mock_table_id,
+            destination_address=self.mock_table_address,
             source=io.StringIO("data"),
             schema=self.mock_schema,
         )
@@ -501,7 +511,7 @@ class BigQueryClientImplTest(unittest.TestCase):
                     ExportQueryConfig.from_view_query(
                         view=self.mock_view,
                         view_filter_clause="WHERE x = y",
-                        intermediate_table_name=self.mock_table_id,
+                        intermediate_table_name="some_table_id",
                         output_uri=f"gs://{bucket}/view.json",
                         output_format=bigquery.DestinationFormat.NEWLINE_DELIMITED_JSON,
                     )
@@ -582,8 +592,7 @@ class BigQueryClientImplTest(unittest.TestCase):
     def test_create_table_from_query(self) -> None:
         """Tests that the create_table_from_query function calls the function to create a table from a query."""
         self.bq_client.create_table_from_query_async(
-            dataset_id=self.mock_dataset_id,
-            table_id=self.mock_table_id,
+            address=self.mock_table_address,
             query="SELECT * FROM some.fake.table",
             query_parameters=[],
             use_query_cache=False,
@@ -600,8 +609,10 @@ class BigQueryClientImplTest(unittest.TestCase):
         fake_query = "SELECT NULL LIMIT 0"
         fake_cluster_fields = ["clustering_field_1", "clustering_field_2"]
         self.bq_client.insert_into_table_from_query_async(
-            destination_dataset_id=self.mock_dataset_id,
-            destination_table_id="fake_table_temp",
+            destination_address=BigQueryAddress(
+                dataset_id=self.mock_dataset_id,
+                table_id="fake_table_temp",
+            ),
             query=fake_query,
             write_disposition=bigquery.WriteDisposition.WRITE_TRUNCATE,
             clustering_fields=fake_cluster_fields,
@@ -629,8 +640,10 @@ class BigQueryClientImplTest(unittest.TestCase):
             "Trying to materialize into a table using different clustering fields than what currently exists requires 'WRITE_TRUNCATE' write_disposition.",
         ):
             self.bq_client.insert_into_table_from_query_async(
-                destination_dataset_id=self.mock_dataset_id,
-                destination_table_id="fake_table_temp",
+                destination_address=BigQueryAddress(
+                    dataset_id=self.mock_dataset_id,
+                    table_id="fake_table_temp",
+                ),
                 query=fake_query,
                 write_disposition=bigquery.WriteDisposition.WRITE_APPEND,
                 clustering_fields=fake_cluster_fields,
@@ -647,10 +660,11 @@ class BigQueryClientImplTest(unittest.TestCase):
         self.mock_client.get_table.return_value = mock_table
 
         self.bq_client.insert_into_table_from_table_async(
-            source_dataset_id=self.mock_dataset_id,
-            source_table_id=self.mock_table_id,
-            destination_dataset_id=self.mock_dataset_id,
-            destination_table_id="fake_table_temp",
+            source_address=self.mock_table_address,
+            destination_address=BigQueryAddress(
+                dataset_id=self.mock_dataset_id,
+                table_id="fake_table_temp",
+            ),
             use_query_cache=False,
         )
         expected_query = f"INSERT INTO `fake-recidiviz-project.{self.mock_dataset_id}.fake_table_temp` (fake_column) \nSELECT fake_column \nFROM `fake-recidiviz-project.{self.mock_dataset_id}.{self.mock_table_id}`"
@@ -691,10 +705,11 @@ class BigQueryClientImplTest(unittest.TestCase):
         self.mock_client.get_table.side_effect = _get_table
 
         self.bq_client.insert_into_table_from_table_async(
-            source_dataset_id=self.mock_dataset_id,
-            source_table_id=self.mock_table_id,
-            destination_dataset_id=self.mock_dataset_id,
-            destination_table_id="fake_table_temp",
+            source_address=self.mock_table_address,
+            destination_address=BigQueryAddress(
+                dataset_id=self.mock_dataset_id,
+                table_id="fake_table_temp",
+            ),
             use_query_cache=False,
         )
         expected_query = f"INSERT INTO `fake-recidiviz-project.{self.mock_dataset_id}.fake_table_temp` (fake_column) \nSELECT fake_column \nFROM `fake-recidiviz-project.{self.mock_dataset_id}.{self.mock_table_id}`"
@@ -716,10 +731,14 @@ class BigQueryClientImplTest(unittest.TestCase):
         self.mock_client.get_table.return_value = mock_table
 
         self.bq_client.insert_into_table_from_table_async(
-            source_dataset_id="mock-source-dataset",
-            source_table_id="mock_source_table",
-            destination_dataset_id="mock-destination-dataset",
-            destination_table_id="mock_destination_table",
+            source_address=BigQueryAddress(
+                dataset_id="mock-source-dataset",
+                table_id="mock_source_table",
+            ),
+            destination_address=BigQueryAddress(
+                dataset_id="mock-destination-dataset",
+                table_id="mock_destination_table",
+            ),
             use_query_cache=False,
         )
         expected_query = "INSERT INTO `fake-recidiviz-project.mock-destination-dataset.mock_destination_table` (fake_column) \nSELECT fake_column \nFROM `fake-recidiviz-project.mock-source-dataset.mock_source_table`"
@@ -740,10 +759,11 @@ class BigQueryClientImplTest(unittest.TestCase):
             r"Destination table \[fake-recidiviz-project.fake_source_dataset_id.fake_table_id\] does not exist",
         ):
             self.bq_client.insert_into_table_from_table_async(
-                source_dataset_id=self.mock_dataset_id,
-                source_table_id=self.mock_table_id,
-                destination_dataset_id="fake_source_dataset_id",
-                destination_table_id="fake_table_id",
+                source_address=self.mock_table_address,
+                destination_address=BigQueryAddress(
+                    dataset_id="fake_source_dataset_id",
+                    table_id="fake_table_id",
+                ),
                 use_query_cache=False,
             )
         self.mock_client.get_table.assert_called()
@@ -757,10 +777,11 @@ class BigQueryClientImplTest(unittest.TestCase):
             r"Found filter clause \[bad filter clause\] that does not begin with WHERE",
         ):
             self.bq_client.insert_into_table_from_table_async(
-                source_dataset_id=self.mock_dataset_id,
-                source_table_id=self.mock_table_id,
-                destination_dataset_id="fake_source_dataset_id",
-                destination_table_id="fake_table_id",
+                source_address=self.mock_table_address,
+                destination_address=BigQueryAddress(
+                    dataset_id="fake_source_dataset_id",
+                    table_id="fake_table_id",
+                ),
                 source_data_filter_clause="bad filter clause",
                 use_query_cache=False,
             )
@@ -777,10 +798,11 @@ class BigQueryClientImplTest(unittest.TestCase):
         filter_clause = "WHERE fake_column IN ('US_ND')"
         job_config = mock_job_config()
         self.bq_client.insert_into_table_from_table_async(
-            source_dataset_id=self.mock_dataset_id,
-            source_table_id=self.mock_table_id,
-            destination_dataset_id="fake_source_dataset_id",
-            destination_table_id="fake_table_id",
+            source_address=self.mock_table_address,
+            destination_address=BigQueryAddress(
+                dataset_id="fake_source_dataset_id",
+                table_id="fake_table_id",
+            ),
             source_data_filter_clause=filter_clause,
             use_query_cache=False,
         )
@@ -798,8 +820,7 @@ class BigQueryClientImplTest(unittest.TestCase):
         self.mock_client.get_dataset.side_effect = exceptions.NotFound("!")
 
         self.bq_client.load_table_from_cloud_storage_async(
-            destination_dataset_id=self.mock_dataset_id,
-            destination_table_id=self.mock_table_id,
+            destination_address=self.mock_table_address,
             destination_table_schema=[SchemaField("my_column", "STRING", "NULLABLE")],
             source_uris=["gs://bucket/export-uri"],
             write_disposition=bigquery.WriteDisposition.WRITE_APPEND,
@@ -812,8 +833,7 @@ class BigQueryClientImplTest(unittest.TestCase):
         self.mock_client.insert_rows.return_value = None
 
         self.bq_client.stream_into_table(
-            dataset_id=self.mock_dataset_id,
-            table_id=self.mock_table_id,
+            address=self.mock_table_address,
             rows=[{"a": 1, "b": "foo"}, {"a": 2, "b": "bar"}],
         )
 
@@ -826,8 +846,7 @@ class BigQueryClientImplTest(unittest.TestCase):
 
         with self.assertRaisesRegex(ValueError, error_message):
             self.bq_client.stream_into_table(
-                dataset_id=self.mock_dataset_id,
-                table_id=self.mock_table_id,
+                address=self.mock_table_address,
                 rows=[{"a": 1, "b": "foo"}, {"a": 2, "b": "bar"}],
             )
 
@@ -841,8 +860,7 @@ class BigQueryClientImplTest(unittest.TestCase):
 
         with self.assertRaisesRegex(RuntimeError, "Incorrect columns"):
             self.bq_client.stream_into_table(
-                dataset_id=self.mock_dataset_id,
-                table_id=self.mock_table_id,
+                address=self.mock_table_address,
                 rows=[{"a": 1, "b": "foo"}, {"a": 2, "b": "bar"}],
             )
 
@@ -851,8 +869,7 @@ class BigQueryClientImplTest(unittest.TestCase):
 
     def test_load_into_table_async(self) -> None:
         self.bq_client.load_into_table_async(
-            dataset_id=self.mock_dataset_id,
-            table_id=self.mock_table_id,
+            address=self.mock_table_address,
             rows=[{"a": 1, "b": "foo"}, {"a": 2, "b": "bar"}],
         )
 
@@ -865,8 +882,7 @@ class BigQueryClientImplTest(unittest.TestCase):
 
         with self.assertRaisesRegex(ValueError, error_message):
             self.bq_client.load_into_table_async(
-                dataset_id=self.mock_dataset_id,
-                table_id=self.mock_table_id,
+                address=self.mock_table_address,
                 rows=[{"a": 1, "b": "foo"}, {"a": 2, "b": "bar"}],
             )
 
@@ -876,7 +892,7 @@ class BigQueryClientImplTest(unittest.TestCase):
     def test_delete_from_table(self) -> None:
         """Tests that the delete_from_table function runs a query."""
         self.bq_client.delete_from_table_async(
-            self.mock_dataset_id, self.mock_table_id, filter_clause="WHERE x > y"
+            self.mock_table_address, filter_clause="WHERE x > y"
         )
         expected_query = (
             "DELETE FROM `fake-recidiviz-project.fake-dataset.test_table` WHERE x > y"
@@ -885,10 +901,7 @@ class BigQueryClientImplTest(unittest.TestCase):
 
     def test_delete_from_table_no_filter(self) -> None:
         """Tests that the delete_from_table function runs a query without a filter."""
-        self.bq_client.delete_from_table_async(
-            self.mock_dataset_id,
-            self.mock_table_id,
-        )
+        self.bq_client.delete_from_table_async(self.mock_table_address)
         expected_query = (
             "DELETE FROM `fake-recidiviz-project.fake-dataset.test_table` WHERE true"
         )
@@ -901,7 +914,7 @@ class BigQueryClientImplTest(unittest.TestCase):
             "Cannot delete from a table without a valid filter clause starting with WHERE.",
         ):
             self.bq_client.delete_from_table_async(
-                self.mock_dataset_id, self.mock_table_id, filter_clause="x > y"
+                self.mock_table_address, filter_clause="x > y"
             )
         self.mock_client.query.assert_not_called()
 
@@ -997,9 +1010,7 @@ class BigQueryClientImplTest(unittest.TestCase):
         self.mock_client.get_table.side_effect = exceptions.NotFound("!")
         schema_fields = [bigquery.SchemaField("new_schema_field", "STRING")]
 
-        self.bq_client.create_table_with_schema(
-            self.mock_dataset_id, self.mock_table_id, schema_fields
-        )
+        self.bq_client.create_table_with_schema(self.mock_table_address, schema_fields)
         self.mock_client.create_table.assert_called_once()
         table = self.mock_client.create_table.mock_calls[0].args[0]
         self.assertIsInstance(table, bigquery.Table)
@@ -1011,8 +1022,7 @@ class BigQueryClientImplTest(unittest.TestCase):
         schema_fields = [bigquery.SchemaField("new_schema_field", "STRING")]
 
         self.bq_client.create_table_with_schema(
-            self.mock_dataset_id,
-            self.mock_table_id,
+            self.mock_table_address,
             schema_fields,
             clustering_fields=[],
         )
@@ -1031,7 +1041,7 @@ class BigQueryClientImplTest(unittest.TestCase):
             "Trying to create a table that already exists: fake-dataset.test_table.",
         ):
             self.bq_client.create_table_with_schema(
-                self.mock_dataset_id, self.mock_table_id, schema_fields
+                self.mock_table_address, schema_fields
             )
         self.mock_client.create_table.assert_not_called()
 
@@ -1045,8 +1055,7 @@ class BigQueryClientImplTest(unittest.TestCase):
         ]
 
         self.bq_client.create_table_with_schema(
-            self.mock_dataset_id,
-            self.mock_table_id,
+            self.mock_table_address,
             schema_fields,
             date_partition_field="partition_field",
         )
@@ -1072,8 +1081,7 @@ class BigQueryClientImplTest(unittest.TestCase):
             r"Date partition field \[partition_field\] has unsupported type: \[STRING\].",
         ):
             self.bq_client.create_table_with_schema(
-                self.mock_dataset_id,
-                self.mock_table_id,
+                self.mock_table_address,
                 schema_fields,
                 date_partition_field="partition_field",
             )
@@ -1082,13 +1090,12 @@ class BigQueryClientImplTest(unittest.TestCase):
         """Tests that update_schema() updates with appropriate schema when there are
         valid updates to make.
         """
-        table_ref = bigquery.TableReference(self.mock_dataset_ref, self.mock_table_id)
         schema_fields = [
             bigquery.SchemaField("field_1", "STRING"),
             bigquery.SchemaField("field_2", "STRING"),
             bigquery.SchemaField("field_3", "STRING", description="Old description"),
         ]
-        table = bigquery.Table(table_ref, schema_fields)
+        table = bigquery.Table(self.mock_table, schema_fields)
         self.mock_client.get_table.return_value = table
 
         new_schema_fields = [
@@ -1099,19 +1106,17 @@ class BigQueryClientImplTest(unittest.TestCase):
             ),
         ]
 
-        self.bq_client.update_schema(
-            self.mock_dataset_id, self.mock_table_id, new_schema_fields
-        )
+        self.bq_client.update_schema(self.mock_table_address, new_schema_fields)
 
         # We should only have to get the table once to update it
         self.mock_client.get_table.assert_called_once()
-        self.mock_client.get_table.assert_called_with(table_ref)
+        self.mock_client.get_table.assert_called_with(self.mock_table)
         # We did not remove any fields
         self.mock_client.query.assert_not_called()
 
         self.mock_client.update_table.assert_called_once()
         self.mock_client.update_table.assert_called_with(
-            bigquery.Table(table_ref, new_schema_fields), ["schema"]
+            bigquery.Table(self.mock_table, new_schema_fields), ["schema"]
         )
         # For some reason, the above equality does not check schema equality properly,
         # so we check it explicitly.
@@ -1124,13 +1129,12 @@ class BigQueryClientImplTest(unittest.TestCase):
         """Tests that update_schema() does not do any updates when the schema hasn't
         changed.
         """
-        table_ref = bigquery.TableReference(self.mock_dataset_ref, self.mock_table_id)
         schema_fields = [
             bigquery.SchemaField("field_1", "STRING"),
             bigquery.SchemaField("field_2", "STRING"),
             bigquery.SchemaField("field_3", "STRING", description="Description"),
         ]
-        table = bigquery.Table(table_ref, schema_fields)
+        table = bigquery.Table(self.mock_table, schema_fields)
         self.mock_client.get_table.return_value = table
 
         new_schema_fields = [
@@ -1139,13 +1143,11 @@ class BigQueryClientImplTest(unittest.TestCase):
             bigquery.SchemaField("field_2", "STRING"),
         ]
 
-        self.bq_client.update_schema(
-            self.mock_dataset_id, self.mock_table_id, new_schema_fields
-        )
+        self.bq_client.update_schema(self.mock_table_address, new_schema_fields)
 
         # We should only have to get the table once to update it
         self.mock_client.get_table.assert_called_once()
-        self.mock_client.get_table.assert_called_with(table_ref)
+        self.mock_client.get_table.assert_called_with(self.mock_table)
 
         # No other work to remove or add fields is done
         self.mock_client.query.assert_not_called()
@@ -1153,7 +1155,6 @@ class BigQueryClientImplTest(unittest.TestCase):
 
     def test_update_removed_and_added(self) -> None:
         """Tests that update_schema() correctly removes and updates fields."""
-        table_ref = bigquery.TableReference(self.mock_dataset_ref, self.mock_table_id)
         schema_fields = [
             bigquery.SchemaField("field_1", "STRING"),
             bigquery.SchemaField("field_2", "STRING", mode="REQUIRED"),
@@ -1167,13 +1168,14 @@ class BigQueryClientImplTest(unittest.TestCase):
         fields_removed: set[str] = set()
 
         def mock_get_table(ref: bigquery.TableReference) -> bigquery.Table:
-            if ref != table_ref:
+            if ref != self.mock_table:
                 raise ValueError(f"Unexpected table [{ref}]")
             if not fields_removed:
-                return bigquery.Table(table_ref, schema_fields)
+                return bigquery.Table(self.mock_table, schema_fields)
 
             return bigquery.Table(
-                table_ref, [c for c in schema_fields if c.name not in fields_removed]
+                self.mock_table,
+                [c for c in schema_fields if c.name not in fields_removed],
             )
 
         self.mock_client.get_table.side_effect = mock_get_table
@@ -1191,13 +1193,13 @@ class BigQueryClientImplTest(unittest.TestCase):
 
         self.mock_client.query.side_effect = mock_query
 
-        self.bq_client.update_schema(
-            self.mock_dataset_id, self.mock_table_id, new_schema_fields
-        )
+        self.bq_client.update_schema(self.mock_table_address, new_schema_fields)
 
         # We call get_table() twice - once at the beginning and once after we have
         # removed fields.
-        self.mock_client.get_table.assert_has_calls([call(table_ref), call(table_ref)])
+        self.mock_client.get_table.assert_has_calls(
+            [call(self.mock_table), call(self.mock_table)]
+        )
 
         # Query called to remove field_2
         self.mock_client.query.assert_called_once()
@@ -1205,7 +1207,7 @@ class BigQueryClientImplTest(unittest.TestCase):
         # Update called to add/update new fields
         self.mock_client.update_table.assert_called_once()
         self.mock_client.update_table.assert_called_with(
-            bigquery.Table(table_ref, new_schema_fields), ["schema"]
+            bigquery.Table(self.mock_table, new_schema_fields), ["schema"]
         )
         # For some reason, the above equality does not check schema equality properly,
         # so we check it explicitly.
@@ -1216,12 +1218,11 @@ class BigQueryClientImplTest(unittest.TestCase):
 
     def test_update_schema_fails_on_changed_type(self) -> None:
         """Tests that update_schema() throws if we try to change a field type."""
-        table_ref = bigquery.TableReference(self.mock_dataset_ref, self.mock_table_id)
         schema_fields = [
             bigquery.SchemaField("field_1", "STRING"),
             bigquery.SchemaField("field_2", "STRING"),
         ]
-        table = bigquery.Table(table_ref, schema_fields)
+        table = bigquery.Table(self.mock_table, schema_fields)
         self.mock_client.get_table.return_value = table
 
         new_schema_fields = [
@@ -1235,12 +1236,10 @@ class BigQueryClientImplTest(unittest.TestCase):
             "fake-dataset.test_table. Existing field field_2 has type STRING. "
             "Cannot change this type to INT.",
         ):
-            self.bq_client.update_schema(
-                self.mock_dataset_id, self.mock_table_id, new_schema_fields
-            )
+            self.bq_client.update_schema(self.mock_table_address, new_schema_fields)
 
         self.mock_client.get_table.assert_called_once()
-        self.mock_client.get_table.assert_called_with(table_ref)
+        self.mock_client.get_table.assert_called_with(self.mock_table)
 
         # No other work to remove or add fields is done
         self.mock_client.query.assert_not_called()
@@ -1248,12 +1247,11 @@ class BigQueryClientImplTest(unittest.TestCase):
 
     def test_update_schema_fails_on_changed_mode(self) -> None:
         """Tests that update_schema() throws if we try to change a field mode."""
-        table_ref = bigquery.TableReference(self.mock_dataset_ref, self.mock_table_id)
         schema_fields = [
             bigquery.SchemaField("field_1", "STRING", "NULLABLE"),
             bigquery.SchemaField("field_2", "STRING"),
         ]
-        table = bigquery.Table(table_ref, schema_fields)
+        table = bigquery.Table(self.mock_table, schema_fields)
         self.mock_client.get_table.return_value = table
 
         new_schema_fields = [
@@ -1265,12 +1263,10 @@ class BigQueryClientImplTest(unittest.TestCase):
             ValueError,
             r"Cannot change the mode of field SchemaField\('field_1'.*\) to REQUIRED",
         ):
-            self.bq_client.update_schema(
-                self.mock_dataset_id, self.mock_table_id, new_schema_fields
-            )
+            self.bq_client.update_schema(self.mock_table_address, new_schema_fields)
 
         self.mock_client.get_table.assert_called_once()
-        self.mock_client.get_table.assert_called_with(table_ref)
+        self.mock_client.get_table.assert_called_with(self.mock_table)
 
         # No other work to remove or add fields is done
         self.mock_client.query.assert_not_called()
@@ -1280,12 +1276,11 @@ class BigQueryClientImplTest(unittest.TestCase):
         """Tests that update_schema() throws if we are attempting to delete a column
         when no_allowed_deletions is False.
         """
-        table_ref = bigquery.TableReference(self.mock_dataset_ref, self.mock_table_id)
         schema_fields = [
             bigquery.SchemaField("field_1", "STRING"),
             bigquery.SchemaField("field_2", "STRING"),
         ]
-        table = bigquery.Table(table_ref, schema_fields)
+        table = bigquery.Table(self.mock_table, schema_fields)
         self.mock_client.get_table.return_value = table
 
         new_schema_fields = [
@@ -1298,14 +1293,13 @@ class BigQueryClientImplTest(unittest.TestCase):
             "but field deletions is not allowed.",
         ):
             self.bq_client.update_schema(
-                self.mock_dataset_id,
-                self.mock_table_id,
+                self.mock_table_address,
                 new_schema_fields,
                 allow_field_deletions=False,
             )
 
         self.mock_client.get_table.assert_called_once()
-        self.mock_client.get_table.assert_called_with(table_ref)
+        self.mock_client.get_table.assert_called_with(self.mock_table)
 
         # No other work to remove or add fields is done
         self.mock_client.query.assert_not_called()
@@ -1328,8 +1322,7 @@ class BigQueryClientImplTest(unittest.TestCase):
             r"\[fake-dataset.test_table\].",
         ):
             self.bq_client.update_schema(
-                self.mock_dataset_id,
-                self.mock_table_id,
+                self.mock_table_address,
                 new_schema_fields,
                 allow_field_deletions=False,
             )
@@ -1355,8 +1348,7 @@ class BigQueryClientImplTest(unittest.TestCase):
             r"characters.",
         ):
             self.bq_client.update_schema(
-                self.mock_dataset_id,
-                self.mock_table_id,
+                self.mock_table_address,
                 new_schema_fields,
                 allow_field_deletions=False,
             )
@@ -1455,7 +1447,7 @@ class BigQueryClientImplTest(unittest.TestCase):
 
     def test_delete_table(self) -> None:
         """Tests that our delete table function calls the correct client method."""
-        self.bq_client.delete_table(self.mock_dataset_id, self.mock_table_id)
+        self.bq_client.delete_table(self.mock_table_address)
         self.mock_client.delete_table.assert_called()
 
     @mock.patch("google.cloud.bigquery.QueryJob")
@@ -2012,8 +2004,10 @@ class BigQueryClientImplTest(unittest.TestCase):
         self.mock_client.copy_table.side_effect = copy_jobs
 
         self.bq_client.copy_table(
-            source_dataset_id=source_dataset_id,
-            source_table_id=mock_table.table_id,
+            source_table_address=BigQueryAddress(
+                dataset_id=source_dataset_id,
+                table_id=mock_table.table_id,
+            ),
             destination_dataset_id=destination_dataset_id,
         )
 
@@ -2059,8 +2053,10 @@ class BigQueryClientImplTest(unittest.TestCase):
         self.mock_client.get_table.side_effect = mock_get_table
 
         self.bq_client.copy_table(
-            source_dataset_id=source_dataset_id,
-            source_table_id=mock_table.table_id,
+            source_table_address=BigQueryAddress(
+                dataset_id=source_dataset_id,
+                table_id=mock_table.table_id,
+            ),
             destination_dataset_id=destination_dataset_id,
             schema_only=True,
         )
@@ -2109,8 +2105,10 @@ class BigQueryClientImplTest(unittest.TestCase):
         self.mock_client.get_table.side_effect = mock_get_table
 
         self.bq_client.copy_table(
-            source_dataset_id=source_dataset_id,
-            source_table_id=mock_table.table_id,
+            source_table_address=BigQueryAddress(
+                dataset_id=source_dataset_id,
+                table_id=mock_table.table_id,
+            ),
             destination_dataset_id=destination_dataset_id,
             schema_only=True,
         )
@@ -2164,8 +2162,10 @@ class BigQueryClientImplTest(unittest.TestCase):
         self.mock_client.get_table.side_effect = mock_get_table
 
         self.bq_client.copy_table(
-            source_dataset_id=source_dataset_id,
-            source_table_id=mock_table.table_id,
+            source_table_address=BigQueryAddress(
+                dataset_id=source_dataset_id,
+                table_id=mock_table.table_id,
+            ),
             destination_dataset_id=destination_dataset_id,
             schema_only=True,
         )
@@ -2198,12 +2198,33 @@ class BigQueryClientImplTest(unittest.TestCase):
         source_dataset_id = "my_source"
         destination_dataset_id = "my_destination"
 
+        mock_table_address = ProjectSpecificBigQueryAddress(
+            project_id=self.mock_project_id,
+            dataset_id=source_dataset_id,
+            table_id="my_table",
+        )
+        mock_table_2_address = ProjectSpecificBigQueryAddress(
+            project_id=self.mock_project_id,
+            dataset_id=source_dataset_id,
+            table_id="my_table_2",
+        )
+        mock_view_address = ProjectSpecificBigQueryAddress(
+            project_id=self.mock_project_id,
+            dataset_id=source_dataset_id,
+            table_id="my_view",
+        )
+        source_table_addresses = [
+            mock_table_address,
+            mock_view_address,
+            mock_table_2_address,
+        ]
+
         mock_table = create_autospec(bigquery.Table)
         mock_table.table_type = "TABLE"
-        mock_table.table_id = "my_table"
+        mock_table.table_id = mock_table_address.table_id
         mock_table_2 = create_autospec(bigquery.Table)
         mock_table_2.table_type = "TABLE"
-        mock_table_2.table_id = "my_table_2"
+        mock_table_2.table_id = mock_table_2_address.table_id
         mock_view = create_autospec(bigquery.Table)
         mock_view.table_type = "VIEW"
 
@@ -2216,7 +2237,10 @@ class BigQueryClientImplTest(unittest.TestCase):
             if dataset_id == destination_dataset_id:
                 tables = []
             elif dataset_id == source_dataset_id:
-                tables = dataset_tables
+                tables = [
+                    bigquery.table.TableListItem.from_string(address.to_str())
+                    for address in source_table_addresses
+                ]
             else:
                 raise ValueError(f"Unexpected dataset [{dataset_id}]")
 
@@ -2278,6 +2302,27 @@ class BigQueryClientImplTest(unittest.TestCase):
         source_dataset_id = "my_source"
         destination_dataset_id = "my_destination"
 
+        mock_table_address = ProjectSpecificBigQueryAddress(
+            project_id=self.mock_project_id,
+            dataset_id=source_dataset_id,
+            table_id="my_table",
+        )
+        mock_table_2_address = ProjectSpecificBigQueryAddress(
+            project_id=self.mock_project_id,
+            dataset_id=source_dataset_id,
+            table_id="my_table_2",
+        )
+        mock_view_address = ProjectSpecificBigQueryAddress(
+            project_id=self.mock_project_id,
+            dataset_id=source_dataset_id,
+            table_id="my_view",
+        )
+        source_table_addresses = [
+            mock_table_address,
+            mock_view_address,
+            mock_table_2_address,
+        ]
+
         mock_table = create_autospec(bigquery.Table)
         mock_table.table_type = "TABLE"
         mock_table.table_id = "my_table"
@@ -2295,7 +2340,10 @@ class BigQueryClientImplTest(unittest.TestCase):
             if dataset_id == destination_dataset_id:
                 tables = []
             elif dataset_id == source_dataset_id:
-                tables = [mock_table, mock_view, mock_table_2]
+                tables = [
+                    bigquery.table.TableListItem.from_string(address.to_str())
+                    for address in source_table_addresses
+                ]
             else:
                 raise ValueError(f"Unexpected datset [{dataset_id}]")
 
@@ -2368,6 +2416,27 @@ class BigQueryClientImplTest(unittest.TestCase):
         source_dataset_id = "my_source"
         destination_dataset_id = "my_destination"
 
+        mock_table_address = ProjectSpecificBigQueryAddress(
+            project_id=self.mock_project_id,
+            dataset_id=source_dataset_id,
+            table_id="my_table",
+        )
+        mock_table_2_address = ProjectSpecificBigQueryAddress(
+            project_id=self.mock_project_id,
+            dataset_id=source_dataset_id,
+            table_id="my_table_2",
+        )
+        mock_view_address = ProjectSpecificBigQueryAddress(
+            project_id=self.mock_project_id,
+            dataset_id=source_dataset_id,
+            table_id="my_view",
+        )
+        source_table_addresses = [
+            mock_table_address,
+            mock_view_address,
+            mock_table_2_address,
+        ]
+
         mock_table = create_autospec(bigquery.Table)
         mock_table.table_type = "TABLE"
         mock_table.table_id = "my_table"
@@ -2376,6 +2445,12 @@ class BigQueryClientImplTest(unittest.TestCase):
         mock_table_2.table_id = "my_table_2"
         mock_view = create_autospec(bigquery.Table)
         mock_view.table_type = "VIEW"
+
+        extra_table_in_destination_address = ProjectSpecificBigQueryAddress(
+            project_id=self.mock_project_id,
+            dataset_id=destination_dataset_id,
+            table_id="my_extra_table",
+        )
 
         extra_table_in_destination = create_autospec(bigquery.Table)
         extra_table_in_destination.table_type = "TABLE"
@@ -2388,9 +2463,15 @@ class BigQueryClientImplTest(unittest.TestCase):
 
         def mock_list_tables(dataset_id: str) -> Iterator[bigquery.table.TableListItem]:
             if dataset_id == destination_dataset_id:
-                tables = [mock_table, extra_table_in_destination]
+                tables = [
+                    bigquery.table.TableListItem.from_string(a.to_str())
+                    for a in [mock_table_address, extra_table_in_destination_address]
+                ]
             elif dataset_id == source_dataset_id:
-                tables = dataset_tables
+                tables = [
+                    bigquery.table.TableListItem.from_string(a.to_str())
+                    for a in source_table_addresses
+                ]
             else:
                 raise ValueError(f"Unexpected dataset [{dataset_id}]")
 
@@ -2458,6 +2539,21 @@ class BigQueryClientImplTest(unittest.TestCase):
         dataset_to_backup_id = "my_dataset"
         expected_backup_dataset_id = "my_dataset_backup_2021_04_14_03_14_23_567800"
 
+        mock_table_address = ProjectSpecificBigQueryAddress(
+            project_id=self.mock_project_id,
+            dataset_id=dataset_to_backup_id,
+            table_id="my_table",
+        )
+        mock_view_address = ProjectSpecificBigQueryAddress(
+            project_id=self.mock_project_id,
+            dataset_id=dataset_to_backup_id,
+            table_id="my_view",
+        )
+        dataset_table_addresses = [
+            mock_table_address,
+            mock_view_address,
+        ]
+
         mock_table = create_autospec(bigquery.Table)
         mock_table.table_type = "TABLE"
         mock_table.table_id = "my_table"
@@ -2487,7 +2583,10 @@ class BigQueryClientImplTest(unittest.TestCase):
             if dataset_id == expected_backup_dataset_id:
                 tables = []
             elif dataset_id == dataset_to_backup_id:
-                tables = dataset_tables
+                tables = [
+                    bigquery.table.TableListItem.from_string(address.to_str())
+                    for address in dataset_table_addresses
+                ]
             else:
                 raise ValueError(f"Unexpected dataset [{dataset_id}]")
 
@@ -2625,10 +2724,8 @@ class BigQueryClientImplEmulatorTest(BigQueryEmulatorTestCase):
         self.load_rows_into_table(source, fake_data)
 
         job = self.bq_client.insert_into_table_from_table_async(
-            source_dataset_id=source.dataset_id,
-            source_table_id=source.table_id,
-            destination_dataset_id=destination.dataset_id,
-            destination_table_id=destination.table_id,
+            source_address=source,
+            destination_address=destination,
             use_query_cache=False,
         )
 
@@ -2637,10 +2734,8 @@ class BigQueryClientImplEmulatorTest(BigQueryEmulatorTestCase):
         self.run_query_test(f"select * from `{destination.to_str()}`", fake_data)
 
         job = self.bq_client.insert_into_table_from_table_async(
-            source_dataset_id=source.dataset_id,
-            source_table_id=source.table_id,
-            destination_dataset_id=destination.dataset_id,
-            destination_table_id=destination.table_id,
+            source_address=source,
+            destination_address=destination,
             use_query_cache=False,
         )
 
@@ -2671,10 +2766,8 @@ class BigQueryClientImplEmulatorTest(BigQueryEmulatorTestCase):
         self.load_rows_into_table(source, fake_data)
 
         job = self.bq_client.insert_into_table_from_table_async(
-            source_dataset_id=source.dataset_id,
-            source_table_id=source.table_id,
-            destination_dataset_id=destination.dataset_id,
-            destination_table_id=destination.table_id,
+            source_address=source,
+            destination_address=destination,
             use_query_cache=False,
         )
 
@@ -2707,10 +2800,8 @@ class BigQueryClientImplEmulatorTest(BigQueryEmulatorTestCase):
         self.load_rows_into_table(source, fake_data)
 
         job = self.bq_client.insert_into_table_from_table_async(
-            source_dataset_id=source.dataset_id,
-            source_table_id=source.table_id,
-            destination_dataset_id=destination.dataset_id,
-            destination_table_id=destination.table_id,
+            source_address=source,
+            destination_address=destination,
             use_query_cache=False,
         )
 
@@ -2746,10 +2837,8 @@ class BigQueryClientImplEmulatorTest(BigQueryEmulatorTestCase):
         self.load_rows_into_table(source, fake_data)
 
         job = self.bq_client.insert_into_table_from_table_async(
-            source_dataset_id=source.dataset_id,
-            source_table_id=source.table_id,
-            destination_dataset_id=destination.dataset_id,
-            destination_table_id=destination.table_id,
+            source_address=source,
+            destination_address=destination,
             source_data_filter_clause="WHERE col_3 != 'dissapear'",
             use_query_cache=False,
         )
@@ -2817,10 +2906,8 @@ class BigQueryClientImplEmulatorTest(BigQueryEmulatorTestCase):
         self.load_rows_into_table(source, fake_data)
 
         job = self.bq_client.insert_into_table_from_table_async(
-            source_dataset_id=source.dataset_id,
-            source_table_id=source.table_id,
-            destination_dataset_id=destination.dataset_id,
-            destination_table_id=destination.table_id,
+            source_address=source,
+            destination_address=destination,
             use_query_cache=False,
         )
 
@@ -2838,10 +2925,8 @@ class BigQueryClientImplEmulatorTest(BigQueryEmulatorTestCase):
         self.load_rows_into_table(source, fake_data_fail)
 
         job = self.bq_client.insert_into_table_from_table_async(
-            source_dataset_id=source.dataset_id,
-            source_table_id=source.table_id,
-            destination_dataset_id=destination.dataset_id,
-            destination_table_id=destination.table_id,
+            source_address=source,
+            destination_address=destination,
             use_query_cache=False,
         )
 
@@ -2892,10 +2977,8 @@ class BigQueryClientImplEmulatorTest(BigQueryEmulatorTestCase):
         self.load_rows_into_table(source, fake_data)
 
         job = self.bq_client.insert_into_table_from_table_async(
-            source_dataset_id=source.dataset_id,
-            source_table_id=source.table_id,
-            destination_dataset_id=destination.dataset_id,
-            destination_table_id=destination.table_id,
+            source_address=source,
+            destination_address=destination,
             use_query_cache=False,
         )
 

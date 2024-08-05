@@ -19,7 +19,7 @@ or table.
 """
 import attr
 from google.cloud import bigquery
-from google.cloud.bigquery import DatasetReference
+from google.cloud.bigquery import DatasetReference, TableReference
 
 from recidiviz.common import attr_validators
 
@@ -85,6 +85,19 @@ class ProjectSpecificBigQueryAddress:
             table_id=table.table_id,
         )
 
+    @classmethod
+    def from_table_reference(
+        cls, table_ref: TableReference
+    ) -> "ProjectSpecificBigQueryAddress":
+        return cls(
+            project_id=table_ref.project,
+            dataset_id=table_ref.dataset_id,
+            table_id=table_ref.table_id,
+        )
+
+    def to_project_agnostic_address(self) -> BigQueryAddress:
+        return BigQueryAddress(dataset_id=self.dataset_id, table_id=self.table_id)
+
     def to_str(self) -> str:
         return f"{self.project_id}.{self.dataset_id}.{self.table_id}"
 
@@ -105,3 +118,7 @@ class ProjectSpecificBigQueryAddress:
         return DatasetReference.from_string(
             dataset_id=self.dataset_id, default_project=self.project_id
         )
+
+    @property
+    def table_reference(self) -> TableReference:
+        return self.dataset_reference.table(self.table_id)
