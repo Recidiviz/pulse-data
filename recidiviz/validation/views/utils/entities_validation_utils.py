@@ -54,7 +54,11 @@ def unique_primary_keys_values_across_all_states_query() -> str:
     datasets have unique primary keys."""
     entity_sub_queries: List[str] = []
 
-    for entity_cls in entity_utils.get_all_entity_classes_in_module(state_entities):
+    # Sort classes by name to produce a deterministic query string
+    for entity_cls in sorted(
+        entity_utils.get_all_entity_classes_in_module(state_entities),
+        key=lambda cls: cls.__name__,
+    ):
         table_id = schema_utils.get_state_database_entity_with_name(
             entity_cls.__name__
         ).__tablename__
