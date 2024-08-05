@@ -44,6 +44,7 @@ WITH all_snooze_spans AS (
         start_date,
         end_date_actual AS end_date_exclusive,
         TRUE AS marked_ineligible,
+        denial_reasons,
     FROM
         `{{project_id}}.workflows_views.clients_snooze_spans_materialized`
     INNER JOIN
@@ -54,18 +55,30 @@ WITH all_snooze_spans AS (
 {create_sub_sessions_with_attributes("all_snooze_spans", index_columns=["state_code", "person_id", "task_type"], end_date_field_name="end_date_exclusive")}
 ,
 sub_sessions_deduped AS (
-    SELECT DISTINCT
+    SELECT
         state_code,
         person_id,
         task_type,
         start_date,
         end_date_exclusive,
+        TO_JSON_STRING(ARRAY_AGG(DISTINCT denial_reason IGNORE NULLS ORDER BY denial_reason)) AS denial_reasons,
     FROM sub_sessions_with_attributes
+    -- Flatten the array by creating multiple rows for each array and then doing a group by to have them in a single row
+    -- We cannot use DISTINCT directly to an array, we are using this approach instead
+    CROSS JOIN UNNEST(denial_reasons) AS denial_reason
+    -- Filter zero span days
+    WHERE start_date != end_date_exclusive
+    GROUP BY
+        state_code,
+        person_id,
+        task_type,
+        start_date,
+        end_date_exclusive
 )
 {aggregate_adjacent_spans(
     table_name="sub_sessions_deduped",
     index_columns=["state_code", "person_id", "task_type"],
-    attribute=[],
+    attribute=["denial_reasons"],
     session_id_output_name="marked_ineligible_span_id",
     end_date_field_name='end_date_exclusive'
 )}

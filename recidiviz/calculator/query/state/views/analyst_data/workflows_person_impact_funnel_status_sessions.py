@@ -75,6 +75,7 @@ def generate_workflows_person_impact_funnel_status_sessions(
         "is_eligible",
         "is_almost_eligible",
         "task_completed",
+        "denial_reasons",
     ] + [k.lower() for k in usage_event_names]
 
     query_template = f"""
@@ -194,6 +195,7 @@ all_sessions AS (
         NULL AS is_almost_eligible,
         CAST(NULL AS STRING) AS usage_event_type,
         NULL AS task_completed,
+        NULL AS denial_reasons,
     FROM system_sessions
     UNION ALL
     SELECT
@@ -207,6 +209,7 @@ all_sessions AS (
         is_almost_eligible,
         CAST(NULL AS STRING) AS usage_event_type,
         NULL AS task_completed,
+        NULL AS denial_reasons,
     FROM `{{project_id}}.analyst_data.all_task_type_eligibility_spans_materialized` eligibility_sessions
     UNION ALL
     SELECT
@@ -220,6 +223,7 @@ all_sessions AS (
         NULL AS is_almost_eligible,
         usage_event_type,
         NULL AS task_completed,
+        NULL AS denial_reasons,
     FROM usage_status_sessions
     UNION ALL
     SELECT
@@ -233,6 +237,7 @@ all_sessions AS (
         NULL AS is_almost_eligible,
         "MARKED_INELIGIBLE" AS usage_event_type,
         NULL AS task_completed,
+        denial_reasons,
     FROM `{{project_id}}.analyst_data.all_task_type_marked_ineligible_spans_materialized`
     UNION ALL
     SELECT
@@ -245,7 +250,8 @@ all_sessions AS (
         NULL AS is_eligible,
         NULL AS is_almost_eligible,
         CAST(NULL AS STRING) AS usage_event_type,
-        TRUE AS task_completed
+        TRUE AS task_completed,
+        NULL AS denial_reasons,
     FROM task_completion_sessions
 )
 ,
@@ -272,6 +278,7 @@ sub_sessions_dedup AS (
         LOGICAL_OR(COALESCE(is_almost_eligible, FALSE)) AS is_almost_eligible,
         {usage_status_dedup_query_fragment},
         LOGICAL_OR(COALESCE(task_completed, FALSE)) AS task_completed,
+        CASE WHEN COUNTIF(usage_event_type = "MARKED_INELIGIBLE") > 0 THEN MAX(denial_reasons) END AS denial_reasons,
     FROM
         sub_sessions_with_attributes
     GROUP BY 1, 2, 3, 4, 5

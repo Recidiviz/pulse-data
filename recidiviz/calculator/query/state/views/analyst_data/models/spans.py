@@ -443,6 +443,7 @@ USING
             "is_almost_eligible",
             "task_completed",
             *[k.lower() for k in USAGE_EVENTS_DICT],
+            "denial_reasons",
         ],
         span_start_date_col="start_date",
         span_end_date_col="end_date",
