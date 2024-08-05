@@ -46,21 +46,19 @@ _QUERY_TEMPLATE = f"""
 )}
 """
 
-VIEW_BUILDER: TaskCriteriaBigQueryViewBuilder = (
-    StateAgnosticTaskCriteriaBigQueryViewBuilder(
-        criteria_name=_CRITERIA_NAME,
-        description=_DESCRIPTION,
-        criteria_spans_query_template=_QUERY_TEMPLATE,
-        normalized_state_dataset=NORMALIZED_STATE_DATASET,
-        sessions_dataset=SESSIONS_DATASET,
-        reasons_fields=[
-            ReasonsField(
-                name="programs",
-                type=bigquery.enums.StandardSqlTypeNames.ARRAY,
-                description="#TODO(#29059): Add reasons field description",
-            ),
-        ],
-    )
+VIEW_BUILDER: TaskCriteriaBigQueryViewBuilder = StateAgnosticTaskCriteriaBigQueryViewBuilder(
+    criteria_name=_CRITERIA_NAME,
+    description=_DESCRIPTION,
+    criteria_spans_query_template=_QUERY_TEMPLATE,
+    normalized_state_dataset=NORMALIZED_STATE_DATASET,
+    sessions_dataset=SESSIONS_DATASET,
+    reasons_fields=[
+        ReasonsField(
+            name="programs",
+            type=bigquery.enums.StandardSqlTypeNames.ARRAY,
+            description="Array containing the program id, start date, and end date of all programs that someone participated in for 6-8 months during their supervision period",
+        ),
+    ],
 )
 
 if __name__ == "__main__":

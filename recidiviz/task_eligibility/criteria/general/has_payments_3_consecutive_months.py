@@ -101,26 +101,24 @@ _QUERY_TEMPLATE = f"""
         grouped_dates
 """
 
-VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
-    StateAgnosticTaskCriteriaBigQueryViewBuilder(
-        criteria_name=_CRITERIA_NAME,
-        description=_DESCRIPTION,
-        criteria_spans_query_template=_QUERY_TEMPLATE,
-        analyst_dataset=ANALYST_VIEWS_DATASET,
-        criteria_dataset=has_fines_fees_balance_below_500_builder.dataset_id,
-        reasons_fields=[
-            ReasonsField(
-                name="amount_owed",
-                type=bigquery.enums.StandardSqlTypeNames.FLOAT64,
-                description="#TODO(#29059): Add reasons field description",
-            ),
-            ReasonsField(
-                name="consecutive_monthly_payments",
-                type=bigquery.enums.StandardSqlTypeNames.INT64,
-                description="#TODO(#29059): Add reasons field description",
-            ),
-        ],
-    )
+VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = StateAgnosticTaskCriteriaBigQueryViewBuilder(
+    criteria_name=_CRITERIA_NAME,
+    description=_DESCRIPTION,
+    criteria_spans_query_template=_QUERY_TEMPLATE,
+    analyst_dataset=ANALYST_VIEWS_DATASET,
+    criteria_dataset=has_fines_fees_balance_below_500_builder.dataset_id,
+    reasons_fields=[
+        ReasonsField(
+            name="amount_owed",
+            type=bigquery.enums.StandardSqlTypeNames.FLOAT64,
+            description="Amount that a client owes in fines/fees",
+        ),
+        ReasonsField(
+            name="consecutive_monthly_payments",
+            type=bigquery.enums.StandardSqlTypeNames.INT64,
+            description="Number of consecutive monthly payments that a client has made",
+        ),
+    ],
 )
 
 if __name__ == "__main__":

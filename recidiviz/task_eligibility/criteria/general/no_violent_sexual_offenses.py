@@ -35,7 +35,7 @@ _REASONS_FIELDS = [
     ReasonsField(
         name="any_assaultive_sexual_conviction",
         type=bigquery.enums.StandardSqlTypeNames.BOOL,
-        description="#TODO(#29059): Add reasons field description",
+        description="Indicates whether a candidate has any current or prior violent sexual convictions",
     ),
 ]
 

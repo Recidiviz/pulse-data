@@ -48,21 +48,19 @@ SELECT
 FROM `{{project_id}}.{{criteria_dataset}}.{past_full_term_completion_builder.view_id}_materialized`
 """
 
-VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
-    StateAgnosticTaskCriteriaBigQueryViewBuilder(
-        criteria_name=_CRITERIA_NAME,
-        criteria_spans_query_template=_QUERY_TEMPLATE,
-        description=_DESCRIPTION,
-        criteria_dataset=past_full_term_completion_builder.dataset_id,
-        meets_criteria_default=True,
-        reasons_fields=[
-            ReasonsField(
-                name="eligible_date",
-                type=bigquery.enums.StandardSqlTypeNames.DATE,
-                description="#TODO(#29059): Add reasons field description",
-            ),
-        ],
-    )
+VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = StateAgnosticTaskCriteriaBigQueryViewBuilder(
+    criteria_name=_CRITERIA_NAME,
+    criteria_spans_query_template=_QUERY_TEMPLATE,
+    description=_DESCRIPTION,
+    criteria_dataset=past_full_term_completion_builder.dataset_id,
+    meets_criteria_default=True,
+    reasons_fields=[
+        ReasonsField(
+            name="eligible_date",
+            type=bigquery.enums.StandardSqlTypeNames.DATE,
+            description="Date of client's projected supervision full term completion",
+        ),
+    ],
 )
 
 if __name__ == "__main__":

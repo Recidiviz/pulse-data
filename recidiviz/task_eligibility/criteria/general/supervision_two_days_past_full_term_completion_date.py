@@ -59,20 +59,18 @@ _QUERY_TEMPLATE = f"""
     FROM critical_date_has_passed_spans
     """
 
-VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
-    StateAgnosticTaskCriteriaBigQueryViewBuilder(
-        criteria_name=_CRITERIA_NAME,
-        criteria_spans_query_template=_QUERY_TEMPLATE,
-        description=_DESCRIPTION,
-        sessions_dataset=SESSIONS_DATASET,
-        reasons_fields=[
-            ReasonsField(
-                name="full_term_completion_date",
-                type=bigquery.enums.StandardSqlTypeNames.DATE,
-                description="#TODO(#29059): Add reasons field description",
-            ),
-        ],
-    )
+VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = StateAgnosticTaskCriteriaBigQueryViewBuilder(
+    criteria_name=_CRITERIA_NAME,
+    criteria_spans_query_template=_QUERY_TEMPLATE,
+    description=_DESCRIPTION,
+    sessions_dataset=SESSIONS_DATASET,
+    reasons_fields=[
+        ReasonsField(
+            name="full_term_completion_date",
+            type=bigquery.enums.StandardSqlTypeNames.DATE,
+            description="Date of client's projected supervision full term completion",
+        ),
+    ],
 )
 
 if __name__ == "__main__":

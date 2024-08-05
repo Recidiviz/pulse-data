@@ -67,7 +67,7 @@ VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
             ReasonsField(
                 name="supervision_level_is_high",
                 type=bigquery.enums.StandardSqlTypeNames.BOOL,
-                description="#TODO(#29059): Add reasons field description",
+                description="Indicates whether a client's supervision level is high",
             ),
         ],
     )

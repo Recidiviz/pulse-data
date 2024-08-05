@@ -57,21 +57,19 @@ SELECT
     FROM ({aggregate_adjacent_spans(table_name='internal_unknown_spans')})
 """
 
-VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
-    StateAgnosticTaskCriteriaBigQueryViewBuilder(
-        criteria_name=_CRITERIA_NAME,
-        description=_DESCRIPTION,
-        criteria_spans_query_template=_QUERY_TEMPLATE,
-        sessions_dataset=SESSIONS_DATASET,
-        meets_criteria_default=True,
-        reasons_fields=[
-            ReasonsField(
-                name="internal_unknown_start_date",
-                type=bigquery.enums.StandardSqlTypeNames.DATE,
-                description="#TODO(#29059): Add reasons field description",
-            ),
-        ],
-    )
+VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = StateAgnosticTaskCriteriaBigQueryViewBuilder(
+    criteria_name=_CRITERIA_NAME,
+    description=_DESCRIPTION,
+    criteria_spans_query_template=_QUERY_TEMPLATE,
+    sessions_dataset=SESSIONS_DATASET,
+    meets_criteria_default=True,
+    reasons_fields=[
+        ReasonsField(
+            name="internal_unknown_start_date",
+            type=bigquery.enums.StandardSqlTypeNames.DATE,
+            description="Date when a client began having a supervision_level of internal_unknown",
+        ),
+    ],
 )
 
 if __name__ == "__main__":

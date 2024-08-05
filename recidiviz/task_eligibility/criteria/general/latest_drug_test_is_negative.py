@@ -84,12 +84,12 @@ VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
             ReasonsField(
                 name="latest_drug_screen_result",
                 type=bigquery.enums.StandardSqlTypeNames.STRING,
-                description="#TODO(#29059): Add reasons field description",
+                description="Result of latest drug screen",
             ),
             ReasonsField(
                 name="latest_drug_screen_date",
                 type=bigquery.enums.StandardSqlTypeNames.DATE,
-                description="#TODO(#29059): Add reasons field description",
+                description="Date of latest drug screen",
             ),
         ],
     )

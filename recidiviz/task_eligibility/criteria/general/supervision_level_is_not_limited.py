@@ -47,12 +47,12 @@ VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
             ReasonsField(
                 name="supervision_level",
                 type=bigquery.enums.StandardSqlTypeNames.STRING,
-                description="#TODO(#29059): Add reasons field description",
+                description="Client's supervision level",
             ),
             ReasonsField(
                 name="limited_start_date",
                 type=bigquery.enums.StandardSqlTypeNames.DATE,
-                description="#TODO(#29059): Add reasons field description",
+                description="Date that a client started on limited supervision",
             ),
         ],
         level_meets_criteria=False,

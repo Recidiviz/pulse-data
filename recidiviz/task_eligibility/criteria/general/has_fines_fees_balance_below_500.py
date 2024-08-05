@@ -50,7 +50,7 @@ VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
             ReasonsField(
                 name="amount_owed",
                 type=bigquery.enums.StandardSqlTypeNames.FLOAT64,
-                description="#TODO(#29059): Add reasons field description",
+                description="Amount that a client owes in fines/fees",
             ),
         ],
     )

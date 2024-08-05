@@ -70,20 +70,18 @@ _QUERY_TEMPLATE = f"""
     FROM sessions_and_sentence_spans
 """
 
-VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
-    StateAgnosticTaskCriteriaBigQueryViewBuilder(
-        criteria_name=_CRITERIA_NAME,
-        criteria_spans_query_template=_QUERY_TEMPLATE,
-        description=_DESCRIPTION,
-        sessions_dataset=SESSIONS_DATASET,
-        reasons_fields=[
-            ReasonsField(
-                name="has_active_sentence",
-                type=bigquery.enums.StandardSqlTypeNames.BOOL,
-                description="#TODO(#29059): Add reasons field description",
-            ),
-        ],
-    )
+VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = StateAgnosticTaskCriteriaBigQueryViewBuilder(
+    criteria_name=_CRITERIA_NAME,
+    criteria_spans_query_template=_QUERY_TEMPLATE,
+    description=_DESCRIPTION,
+    sessions_dataset=SESSIONS_DATASET,
+    reasons_fields=[
+        ReasonsField(
+            name="has_active_sentence",
+            type=bigquery.enums.StandardSqlTypeNames.BOOL,
+            description="Specifies whether a client has a supervision session that overlaps with a sentence span",
+        ),
+    ],
 )
 
 if __name__ == "__main__":

@@ -41,21 +41,19 @@ _QUERY_TEMPLATE = f"""
 """
 
 
-VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
-    StateAgnosticTaskCriteriaBigQueryViewBuilder(
-        criteria_name=_CRITERIA_NAME,
-        meets_criteria_default=False,
-        criteria_spans_query_template=_QUERY_TEMPLATE,
-        description=_DESCRIPTION,
-        sessions_dataset=SESSIONS_DATASET,
-        reasons_fields=[
-            ReasonsField(
-                name="negative_drug_screen_history_array",
-                type=bigquery.enums.StandardSqlTypeNames.ARRAY,
-                description="#TODO(#29059): Add reasons field description",
-            ),
-        ],
-    )
+VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = StateAgnosticTaskCriteriaBigQueryViewBuilder(
+    criteria_name=_CRITERIA_NAME,
+    meets_criteria_default=False,
+    criteria_spans_query_template=_QUERY_TEMPLATE,
+    description=_DESCRIPTION,
+    sessions_dataset=SESSIONS_DATASET,
+    reasons_fields=[
+        ReasonsField(
+            name="negative_drug_screen_history_array",
+            type=bigquery.enums.StandardSqlTypeNames.ARRAY,
+            description="Array that contains dates and results of all negative drug tests within the past year",
+        ),
+    ],
 )
 
 

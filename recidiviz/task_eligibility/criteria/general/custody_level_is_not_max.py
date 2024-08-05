@@ -39,32 +39,30 @@ _REASONS_COLUMNS = """custody_level AS custody_level,
     TRUE AS custody_level_is_max,
     start_date AS custody_level_start_date"""
 
-VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
-    custody_or_supervision_level_criteria_builder(
-        criteria_name=_CRITERIA_NAME,
-        description=_DESCRIPTION,
-        levels_lst=["MAXIMUM"],
-        reasons_columns=_REASONS_COLUMNS,
-        reasons_fields=[
-            ReasonsField(
-                name="custody_level",
-                type=bigquery.enums.StandardSqlTypeNames.STRING,
-                description="#TODO(#29059): Add reasons field description",
-            ),
-            ReasonsField(
-                name="custody_level_is_max",
-                type=bigquery.enums.StandardSqlTypeNames.BOOL,
-                description="#TODO(#29059): Add reasons field description",
-            ),
-            ReasonsField(
-                name="custody_level_start_date",
-                type=bigquery.enums.StandardSqlTypeNames.DATE,
-                description="#TODO(#29059): Add reasons field description",
-            ),
-        ],
-        level_meets_criteria=False,
-        compartment_level_1_filter="INCARCERATION",
-    )
+VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = custody_or_supervision_level_criteria_builder(
+    criteria_name=_CRITERIA_NAME,
+    description=_DESCRIPTION,
+    levels_lst=["MAXIMUM"],
+    reasons_columns=_REASONS_COLUMNS,
+    reasons_fields=[
+        ReasonsField(
+            name="custody_level",
+            type=bigquery.enums.StandardSqlTypeNames.STRING,
+            description="Client's custody level",
+        ),
+        ReasonsField(
+            name="custody_level_is_max",
+            type=bigquery.enums.StandardSqlTypeNames.BOOL,
+            description="Specifies whether a client has a custody level of MAXIMUM",
+        ),
+        ReasonsField(
+            name="custody_level_start_date",
+            type=bigquery.enums.StandardSqlTypeNames.DATE,
+            description="Specifies when a client began on the specified custody level",
+        ),
+    ],
+    level_meets_criteria=False,
+    compartment_level_1_filter="INCARCERATION",
 )
 
 if __name__ == "__main__":
