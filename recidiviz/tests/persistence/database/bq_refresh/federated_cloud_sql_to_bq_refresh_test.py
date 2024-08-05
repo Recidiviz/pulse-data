@@ -24,6 +24,7 @@ from unittest.mock import create_autospec, patch
 from google.cloud import bigquery
 from google.cloud.bigquery import DatasetReference
 
+from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.big_query.constants import TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS
 from recidiviz.common.constants import states
@@ -133,10 +134,12 @@ class TestFederatedBQSchemaRefresh(unittest.TestCase):
             ]
         )
         stream_into_table_args = self.mock_bq_client.stream_into_table.call_args
-        self.assertEqual(stream_into_table_args[0][0], "cloud_sql_to_bq_refresh")
         self.assertEqual(
-            stream_into_table_args[0][1],
-            CLOUD_SQL_TO_BQ_REFRESH_STATUS_ADDRESS.table_id,
+            stream_into_table_args[0][0],
+            BigQueryAddress(
+                dataset_id="cloud_sql_to_bq_refresh",
+                table_id=CLOUD_SQL_TO_BQ_REFRESH_STATUS_ADDRESS.table_id,
+            ),
         )
 
     def test_federated_cloud_sql_to_bq_refresh_with_overrides(self) -> None:
@@ -192,9 +195,9 @@ class TestFederatedBQSchemaRefresh(unittest.TestCase):
         )
         stream_into_table_args = self.mock_bq_client.stream_into_table.call_args
         self.assertEqual(
-            stream_into_table_args[0][0], "my_prefix_cloud_sql_to_bq_refresh"
-        )
-        self.assertEqual(
-            stream_into_table_args[0][1],
-            CLOUD_SQL_TO_BQ_REFRESH_STATUS_ADDRESS.table_id,
+            stream_into_table_args[0][0],
+            BigQueryAddress(
+                dataset_id="my_prefix_cloud_sql_to_bq_refresh",
+                table_id=CLOUD_SQL_TO_BQ_REFRESH_STATUS_ADDRESS.table_id,
+            ),
         )

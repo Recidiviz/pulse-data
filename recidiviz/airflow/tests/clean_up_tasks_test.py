@@ -143,10 +143,7 @@ class CleanUpTemporaryTables(TestCase):
         clean_up_temporary_tables.function([a.to_str() for a in tables])
 
         self.bq_mock.assert_has_calls(
-            [
-                call().delete_table(a.dataset_id, a.table_id, not_found_ok=True)
-                for a in tables
-            ]
+            [call().delete_table(a, not_found_ok=True) for a in tables]
         )
 
     def test_tables_with_errors(self) -> None:
@@ -157,11 +154,10 @@ class CleanUpTemporaryTables(TestCase):
         ]
 
         def _delete_table(
-            _dataset_id: str,
-            table_id: str,
+            address: BigQueryAddress,
             not_found_ok: bool = False,  # pylint: disable=unused-argument
         ) -> None:
-            if table_id == "table1":
+            if address.table_id == "table1":
                 raise ValueError("oops!")
 
         self.bq_mock().delete_table.side_effect = _delete_table
@@ -173,10 +169,7 @@ class CleanUpTemporaryTables(TestCase):
             clean_up_temporary_tables.function([a.to_str() for a in tables])
 
         self.bq_mock.assert_has_calls(
-            [
-                call().delete_table(a.dataset_id, a.table_id, not_found_ok=True)
-                for a in tables
-            ]
+            [call().delete_table(a, not_found_ok=True) for a in tables]
         )
 
 

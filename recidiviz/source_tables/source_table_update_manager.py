@@ -97,15 +97,10 @@ class SourceTableUpdateManager:
             source_table_address
         ]
         result = SourceTableDryRunResult.CREATE_TABLE
-        if self.client.table_exists(
-            source_table_config.address.dataset_id, source_table_config.address.table_id
-        ):
+        if self.client.table_exists(source_table_config.address):
             # Compare schema derived from metric class to existing dataflow views and
             # update if necessary.
-            current_table = self.client.get_table(
-                source_table_config.address.dataset_id,
-                source_table_config.address.table_id,
-            )
+            current_table = self.client.get_table(source_table_config.address)
 
             if not _validate_clustering_fields_match(
                 current_table, source_table_config
@@ -219,16 +214,10 @@ class SourceTableUpdateManager:
             )
 
         try:
-            if self.client.table_exists(
-                source_table_config.address.dataset_id,
-                source_table_config.address.table_id,
-            ):
+            if self.client.table_exists(source_table_config.address):
                 # Compare schema derived from metric class to existing dataflow views and
                 # update if necessary.
-                current_table = self.client.get_table(
-                    source_table_config.address.dataset_id,
-                    source_table_config.address.table_id,
-                )
+                current_table = self.client.get_table(source_table_config.address)
                 try:
                     if not _validate_clustering_fields_match(
                         current_table, source_table_config
@@ -240,8 +229,7 @@ class SourceTableUpdateManager:
                         )
 
                     self.client.update_schema(
-                        source_table_config.address.dataset_id,
-                        source_table_config.address.table_id,
+                        source_table_config.address,
                         source_table_config.schema_fields,
                         allow_field_deletions=update_config.allow_field_deletions,
                     )
@@ -256,19 +244,14 @@ class SourceTableUpdateManager:
                     )
 
                     # We are okay deleting and recreating the table as its contents are deleted / recreated
-                    self.client.delete_table(
-                        dataset_id=source_table_config.address.dataset_id,
-                        table_id=source_table_config.address.table_id,
-                    )
+                    self.client.delete_table(address=source_table_config.address)
                     self.client.create_table_with_schema(
-                        dataset_id=source_table_config.address.dataset_id,
-                        table_id=source_table_config.address.table_id,
+                        address=source_table_config.address,
                         schema_fields=source_table_config.schema_fields,
                     )
             else:
                 self.client.create_table_with_schema(
-                    source_table_config.address.dataset_id,
-                    source_table_config.address.table_id,
+                    source_table_config.address,
                     source_table_config.schema_fields,
                     clustering_fields=source_table_config.clustering_fields,
                 )

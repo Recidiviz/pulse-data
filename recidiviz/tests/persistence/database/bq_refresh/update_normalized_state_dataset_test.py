@@ -96,12 +96,17 @@ class UpdateNormalizedStateDatasetIntegrationTest(BigQueryEmulatorTestCase):
         collection = one(
             c for c in self.get_source_tables() if c.dataset_id == original_dataset_id
         )
+        overrides = (
+            BigQueryAddressOverrides.Builder(sandbox_prefix=sandbox_prefix)
+            .register_sandbox_override_for_entire_dataset(original_dataset_id)
+            .build()
+        )
         for source_table in collection.source_tables:
             self.bq_client.create_table_with_schema(
-                dataset_id=BigQueryAddressOverrides.format_sandbox_dataset(
-                    sandbox_prefix, original_dataset_id
+                address=(
+                    overrides.get_sandbox_address(source_table.address)
+                    or source_table.address
                 ),
-                table_id=source_table.address.table_id,
                 schema_fields=source_table.schema_fields,
             )
         return sandbox_dataset_id
@@ -147,7 +152,10 @@ class UpdateNormalizedStateDatasetIntegrationTest(BigQueryEmulatorTestCase):
 
         # Spot-check an arbitrary view to make sure the filter worked properly
         assessment_view = self.bq_client.get_table(
-            "my_prefix_normalized_state_views", "state_assessment_view"
+            BigQueryAddress(
+                dataset_id="my_prefix_normalized_state_views",
+                table_id="state_assessment_view",
+            )
         )
         # The overridden input dataset should be used
         self.assertTrue(

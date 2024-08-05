@@ -124,8 +124,16 @@ class ViewManagerTest(unittest.TestCase):
         )
         self.mock_client.delete_table.assert_has_calls(
             [
-                mock.call(_DATASET_NAME, "my_fake_view", not_found_ok=True),
-                mock.call(_DATASET_NAME, "my_other_fake_view", not_found_ok=True),
+                mock.call(
+                    BigQueryAddress(dataset_id=_DATASET_NAME, table_id="my_fake_view"),
+                    not_found_ok=True,
+                ),
+                mock.call(
+                    BigQueryAddress(
+                        dataset_id=_DATASET_NAME, table_id="my_other_fake_view"
+                    ),
+                    not_found_ok=True,
+                ),
             ],
             any_order=True,
         )
@@ -161,15 +169,15 @@ class ViewManagerTest(unittest.TestCase):
             ),
         ]
 
-        def mock_get_table(_dataset_id: str, view_id: str) -> bigquery.Table:
-            if mock_view_builders[0].view_id == view_id:
+        def mock_get_table(address: BigQueryAddress) -> bigquery.Table:
+            if mock_view_builders[0].view_id == address.table_id:
                 view_builder = mock_view_builders[0]
-            elif mock_view_builders[1].view_id == view_id:
+            elif mock_view_builders[1].view_id == address.table_id:
                 view_builder = mock_view_builders[1]
-            elif mock_view_builders[2].view_id == view_id:
+            elif mock_view_builders[2].view_id == address.table_id:
                 view_builder = mock_view_builders[2]
             else:
-                raise ValueError(f"Unexpected view id [{view_id}]")
+                raise ValueError(f"Unexpected view id [{address.table_id}]")
             view = view_builder.build()
             return mock.MagicMock(
                 view_query=view.view_query,
@@ -181,7 +189,7 @@ class ViewManagerTest(unittest.TestCase):
         def mock_create_or_update(
             view: BigQueryView, might_exist: bool  # pylint: disable=W0613
         ) -> bigquery.Table:
-            return mock_get_table(view.dataset_id, view.view_id)
+            return mock_get_table(view.address)
 
         self.mock_client.get_table = mock_get_table
         self.mock_client.create_or_update_view.side_effect = mock_create_or_update
@@ -211,9 +219,22 @@ class ViewManagerTest(unittest.TestCase):
         # in schema from the dag walker
         self.mock_client.delete_table.assert_has_calls(
             [
-                mock.call(_DATASET_NAME, "my_fake_view", not_found_ok=True),
-                mock.call(_DATASET_NAME, "my_fake_view_2", not_found_ok=True),
-                mock.call(_DATASET_NAME, "my_fake_view_3", not_found_ok=True),
+                mock.call(
+                    BigQueryAddress(dataset_id=_DATASET_NAME, table_id="my_fake_view"),
+                    not_found_ok=True,
+                ),
+                mock.call(
+                    BigQueryAddress(
+                        dataset_id=_DATASET_NAME, table_id="my_fake_view_2"
+                    ),
+                    not_found_ok=True,
+                ),
+                mock.call(
+                    BigQueryAddress(
+                        dataset_id=_DATASET_NAME, table_id="my_fake_view_3"
+                    ),
+                    not_found_ok=True,
+                ),
             ],
             any_order=True,
         )
@@ -252,15 +273,15 @@ class ViewManagerTest(unittest.TestCase):
             ),
         ]
 
-        def mock_get_table(_dataset_id: str, view_id: str) -> bigquery.Table:
-            if mock_view_builders[0].view_id == view_id:
+        def mock_get_table(address: BigQueryAddress) -> bigquery.Table:
+            if mock_view_builders[0].view_id == address.table_id:
                 view_builder = mock_view_builders[0]
-            elif mock_view_builders[1].view_id == view_id:
+            elif mock_view_builders[1].view_id == address.table_id:
                 view_builder = mock_view_builders[1]
-            elif mock_view_builders[2].view_id == view_id:
+            elif mock_view_builders[2].view_id == address.table_id:
                 view_builder = mock_view_builders[2]
             else:
-                raise ValueError(f"Unexpected view id [{view_id}]")
+                raise ValueError(f"Unexpected view id [{address.table_id}]")
             view = view_builder.build()
             if view.view_id != "my_fake_view_2":
                 view_query = view.view_query
@@ -276,7 +297,7 @@ class ViewManagerTest(unittest.TestCase):
         def mock_create_or_update(
             view: BigQueryView, might_exist: bool  # pylint: disable=W0613
         ) -> bigquery.Table:
-            table = mock_get_table(view.dataset_id, view.view_id)
+            table = mock_get_table(view.address)
             if view.view_id == "my_fake_view_2":
                 table.view_query = mock_view_builders[1].build().view_query
             return table
@@ -317,9 +338,22 @@ class ViewManagerTest(unittest.TestCase):
         # schema from the dag walker
         self.mock_client.delete_table.assert_has_calls(
             [
-                mock.call(_DATASET_NAME, "my_fake_view", not_found_ok=True),
-                mock.call(_DATASET_NAME, "my_fake_view_2", not_found_ok=True),
-                mock.call(_DATASET_NAME, "my_fake_view_3", not_found_ok=True),
+                mock.call(
+                    BigQueryAddress(dataset_id=_DATASET_NAME, table_id="my_fake_view"),
+                    not_found_ok=True,
+                ),
+                mock.call(
+                    BigQueryAddress(
+                        dataset_id=_DATASET_NAME, table_id="my_fake_view_2"
+                    ),
+                    not_found_ok=True,
+                ),
+                mock.call(
+                    BigQueryAddress(
+                        dataset_id=_DATASET_NAME, table_id="my_fake_view_3"
+                    ),
+                    not_found_ok=True,
+                ),
             ],
             any_order=True,
         )
@@ -372,8 +406,16 @@ class ViewManagerTest(unittest.TestCase):
         # schema from the dag walker
         self.mock_client.delete_table.assert_has_calls(
             [
-                mock.call(_DATASET_NAME, "my_fake_view", not_found_ok=True),
-                mock.call(_DATASET_NAME_2, "my_fake_view_2", not_found_ok=True),
+                mock.call(
+                    BigQueryAddress(dataset_id=_DATASET_NAME, table_id="my_fake_view"),
+                    not_found_ok=True,
+                ),
+                mock.call(
+                    BigQueryAddress(
+                        dataset_id=_DATASET_NAME_2, table_id="my_fake_view_2"
+                    ),
+                    not_found_ok=True,
+                ),
             ],
             any_order=True,
         )
@@ -485,16 +527,24 @@ class ViewManagerTest(unittest.TestCase):
         self.mock_client.delete_table.assert_has_calls(
             [
                 mock.call(
-                    "test_prefix_" + _DATASET_NAME, "my_fake_view", not_found_ok=True
-                ),
-                mock.call(
-                    "test_prefix_" + _DATASET_NAME,
-                    "my_other_fake_view",
+                    BigQueryAddress(
+                        dataset_id="test_prefix_" + _DATASET_NAME,
+                        table_id="my_fake_view",
+                    ),
                     not_found_ok=True,
                 ),
                 mock.call(
-                    "test_prefix_" + _DATASET_NAME,
-                    "materialized_view",
+                    BigQueryAddress(
+                        dataset_id="test_prefix_" + _DATASET_NAME,
+                        table_id="my_other_fake_view",
+                    ),
+                    not_found_ok=True,
+                ),
+                mock.call(
+                    BigQueryAddress(
+                        dataset_id="test_prefix_" + _DATASET_NAME,
+                        table_id="materialized_view",
+                    ),
                     not_found_ok=True,
                 ),
             ],
@@ -542,8 +592,16 @@ class ViewManagerTest(unittest.TestCase):
         # in schema from the dag walker
         self.mock_client.delete_table.assert_has_calls(
             [
-                mock.call(_DATASET_NAME, "my_fake_view", not_found_ok=True),
-                mock.call(_DATASET_NAME, "my_other_fake_view", not_found_ok=True),
+                mock.call(
+                    BigQueryAddress(dataset_id=_DATASET_NAME, table_id="my_fake_view"),
+                    not_found_ok=True,
+                ),
+                mock.call(
+                    BigQueryAddress(
+                        dataset_id=_DATASET_NAME, table_id="my_other_fake_view"
+                    ),
+                    not_found_ok=True,
+                ),
             ],
             any_order=True,
         )
@@ -682,12 +740,24 @@ class ViewManagerTest(unittest.TestCase):
         self.mock_client.list_tables.assert_called()
         self.mock_client.delete_table.assert_has_calls(
             [
-                call(_DATASET_NAME, "my_fake_view", not_found_ok=True),
-                call(_DATASET_NAME_2, "my_other_fake_view", not_found_ok=True),
+                call(
+                    BigQueryAddress(dataset_id=_DATASET_NAME, table_id="my_fake_view"),
+                    not_found_ok=True,
+                ),
+                call(
+                    BigQueryAddress(
+                        dataset_id=_DATASET_NAME_2, table_id="my_other_fake_view"
+                    ),
+                    not_found_ok=True,
+                ),
                 # above two calls are from deleting and recreating every view from
                 # _create_or_update_view_and_materialize_if_necessary()
-                call(_DATASET_NAME, "bogus_view_1"),
-                call(_DATASET_NAME_2, "bogus_view_2"),
+                call(
+                    BigQueryAddress(dataset_id=_DATASET_NAME, table_id="bogus_view_1")
+                ),
+                call(
+                    BigQueryAddress(dataset_id=_DATASET_NAME_2, table_id="bogus_view_2")
+                ),
                 # these two calls are from the actual cleaning up of unmanaged views
             ],
             any_order=True,
@@ -752,15 +822,19 @@ class ViewManagerTest(unittest.TestCase):
         self.mock_client.copy_table.assert_has_calls(
             [
                 call(
-                    source_dataset_id=_DATASET_NAME,
-                    source_table_id="my_table",
+                    source_table_address=BigQueryAddress(
+                        dataset_id=_DATASET_NAME,
+                        table_id="my_table",
+                    ),
                     destination_dataset_id=f"test_{_DATASET_NAME}",
                     schema_only=True,
                     overwrite=False,
                 ),
                 call(
-                    source_dataset_id=_DATASET_NAME_2,
-                    source_table_id="my_table_2",
+                    source_table_address=BigQueryAddress(
+                        dataset_id=_DATASET_NAME_2,
+                        table_id="my_table_2",
+                    ),
                     destination_dataset_id=f"test_{_DATASET_NAME_2}",
                     schema_only=True,
                     overwrite=False,

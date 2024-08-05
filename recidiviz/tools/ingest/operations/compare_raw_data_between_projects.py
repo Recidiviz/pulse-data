@@ -37,6 +37,7 @@ from typing import Dict, List, Optional, Tuple
 
 from google.cloud import bigquery, exceptions
 
+from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.dataset_config import raw_tables_dataset_for_region
@@ -88,7 +89,7 @@ def compare_raw_data_between_projects(
 
     raw_file_config = DirectIngestRegionRawFileConfig(region_code)
 
-    bq_client = BigQueryClientImpl(project_id=source_project_id)
+    source_bq_client = BigQueryClientImpl(project_id=source_project_id)
     source_dataset_id = raw_tables_dataset_for_region(
         state_code=StateCode(region_code.upper()),
         instance=source_ingest_instance,
@@ -102,8 +103,11 @@ def compare_raw_data_between_projects(
 
     query_jobs: Dict[str, bigquery.QueryJob] = {}
     for file_tag, file_config in raw_file_config.raw_file_configs.items():
+        source_table_address = BigQueryAddress(
+            dataset_id=source_dataset_id, table_id=file_tag
+        )
         if (
-            not bq_client.table_exists(source_dataset_id, file_tag)
+            not source_bq_client.table_exists(source_table_address)
             or file_config.is_undocumented
         ):
             continue
@@ -111,7 +115,7 @@ def compare_raw_data_between_projects(
         columns = ", ".join([column.name for column in file_config.documented_columns])
         columns += ", " + ", ".join(RECIDIVIZ_COLUMNS)
 
-        query_job = bq_client.run_query_async(
+        query_job = source_bq_client.run_query_async(
             query_str=StrictStringFormatter().format(
                 COMPARISON_TEMPLATE,
                 source_project_id=source_project_id,

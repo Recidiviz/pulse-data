@@ -338,7 +338,9 @@ class TestViewUpdateManagerUtils(unittest.TestCase):
         )
         self.mock_client.dataset_exists.assert_called()
         self.mock_client.list_tables.assert_called()
-        self.mock_client.delete_table.assert_called_with("dataset_1", "table_2")
+        self.mock_client.delete_table.assert_called_with(
+            BigQueryAddress(dataset_id="dataset_1", table_id="table_2")
+        )
         self.assertEqual(deleted_views, expected_deleted_views)
 
     def test_delete_unmanaged_views_and_tables_no_unmanaged_views(self) -> None:
@@ -375,7 +377,10 @@ class TestViewUpdateManagerUtils(unittest.TestCase):
             self.mock_client, "dataset_1", managed_tables, dry_run=False
         )
         self.mock_client.dataset_exists.assert_called()
-        delete_calls = [call("dataset_1", "table_1"), call("dataset_1", "table_2")]
+        delete_calls = [
+            call(BigQueryAddress(dataset_id="dataset_1", table_id="table_1")),
+            call(BigQueryAddress(dataset_id="dataset_1", table_id="table_2")),
+        ]
         self.mock_client.list_tables.assert_called()
         self.mock_client.delete_table.assert_has_calls(delete_calls, any_order=True)
         self.assertEqual(deleted_views, expected_deleted_views)
@@ -504,7 +509,9 @@ class TestViewUpdateManagerUtils(unittest.TestCase):
         )
         self.mock_client.delete_dataset.assert_not_called()
         self.mock_client.list_tables.assert_called()
-        self.mock_client.delete_table.assert_called_once_with("dataset_1", "bogus_view")
+        self.mock_client.delete_table.assert_called_once_with(
+            BigQueryAddress(dataset_id="dataset_1", table_id="bogus_view")
+        )
 
     def test_cleanup_datasets_and_delete_unmanaged_views_unmanaged_view_in_multiple_ds(
         self,
@@ -599,7 +606,10 @@ class TestViewUpdateManagerUtils(unittest.TestCase):
         self.mock_client.delete_dataset.assert_not_called()
         self.mock_client.list_tables.assert_called()
         self.mock_client.delete_table.assert_has_calls(
-            [call("dataset_1", "bogus_view_1"), call("dataset_2", "bogus_view_2")],
+            [
+                call(BigQueryAddress(dataset_id="dataset_1", table_id="bogus_view_1")),
+                call(BigQueryAddress(dataset_id="dataset_2", table_id="bogus_view_2")),
+            ],
             any_order=True,
         )
         self.assertEqual(self.mock_client.delete_table.call_count, 2)

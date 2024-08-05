@@ -41,24 +41,17 @@ class BigQueryRowStreamer:
         if it does not exist.
         """
         self._create_or_update_table_if_necessary()
-        self.bq_client.stream_into_table(
-            self.table_address.dataset_id, self.table_address.table_id, rows
-        )
+        self.bq_client.stream_into_table(self.table_address, rows)
 
     def _create_or_update_table_if_necessary(self) -> None:
         self.bq_client.create_dataset_if_necessary(self.table_address.dataset_id)
-        if not self.bq_client.table_exists(
-            self.table_address.dataset_id, self.table_address.table_id
-        ):
+        if not self.bq_client.table_exists(self.table_address):
             self.bq_client.create_table_with_schema(
-                self.table_address.dataset_id,
-                self.table_address.table_id,
-                schema_fields=self.table_schema,
+                self.table_address, schema_fields=self.table_schema
             )
         else:
             self.bq_client.update_schema(
-                self.table_address.dataset_id,
-                self.table_address.table_id,
+                self.table_address,
                 desired_schema_fields=self.table_schema,
                 allow_field_deletions=False,
             )

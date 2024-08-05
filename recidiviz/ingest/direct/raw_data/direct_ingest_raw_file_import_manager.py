@@ -390,19 +390,20 @@ class DirectIngestRawFileImportManager:
         and removing them prevents the table from ending up with duplicate
         rows after this upload"""
 
-        table_id = filename_parts_from_path(path).file_tag
-        if not self.big_query_client.table_exists(self.raw_tables_dataset, table_id):
+        table_address = BigQueryAddress(
+            dataset_id=self.raw_tables_dataset,
+            table_id=filename_parts_from_path(path).file_tag,
+        )
+        if not self.big_query_client.table_exists(table_address):
             logging.info(
-                "Skipping row cleanup as %s.%s does not yet exist",
-                self.raw_tables_dataset,
-                table_id,
+                "Skipping row cleanup as %s does not yet exist",
+                table_address.to_str(),
             )
             return
 
         # Starts the deletion
         delete_job = self.big_query_client.delete_from_table_async(
-            dataset_id=self.raw_tables_dataset,
-            table_id=table_id,
+            address=table_address,
             filter_clause="WHERE file_id = " + str(file_id),
         )
         # Waits for the deletion to complete
@@ -422,8 +423,7 @@ class DirectIngestRawFileImportManager:
         try:
             load_job = self.big_query_client.load_table_from_cloud_storage_async(
                 source_uris=[p.uri() for p in file_paths],
-                destination_dataset_id=destination_address.dataset_id,
-                destination_table_id=destination_address.table_id,
+                destination_address=destination_address,
                 destination_table_schema=RawDataTableBigQuerySchemaBuilder.build_bq_schema_from_columns(
                     raw_file_config=self.region_raw_file_config.raw_file_configs[
                         file_tag
@@ -539,8 +539,7 @@ class DirectIngestRawFileImportManager:
             temp_new_raw_data_address, file_tag, file_id, update_datetime
         )
         create_job = self.big_query_client.create_table_from_query_async(
-            dataset_id=temp_raw_data_diff_table_address.dataset_id,
-            table_id=temp_raw_data_diff_table_address.table_id,
+            address=temp_raw_data_diff_table_address,
             query=raw_data_diff_query,
             overwrite=True,
             use_query_cache=False,
@@ -549,22 +548,14 @@ class DirectIngestRawFileImportManager:
 
         # Append the results of the raw data diff query to the original raw data table
         append_job = self.big_query_client.insert_into_table_from_table_async(
-            source_dataset_id=temp_raw_data_diff_table_address.dataset_id,
-            source_table_id=temp_raw_data_diff_table_address.table_id,
-            destination_dataset_id=final_destination_address.dataset_id,
-            destination_table_id=final_destination_address.table_id,
+            source_address=temp_raw_data_diff_table_address,
+            destination_address=final_destination_address,
             use_query_cache=False,
         )
         append_job.result()
 
-        self.big_query_client.delete_table(
-            temp_new_raw_data_address.dataset_id,
-            temp_new_raw_data_address.table_id,
-        )
-        self.big_query_client.delete_table(
-            temp_raw_data_diff_table_address.dataset_id,
-            temp_raw_data_diff_table_address.table_id,
-        )
+        self.big_query_client.delete_table(temp_new_raw_data_address)
+        self.big_query_client.delete_table(temp_raw_data_diff_table_address)
 
 
 class DirectIngestRawDataSplittingGcsfsCsvReaderDelegate(

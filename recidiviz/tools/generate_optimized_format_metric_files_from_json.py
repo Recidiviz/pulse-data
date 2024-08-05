@@ -31,6 +31,7 @@ from unittest.mock import create_autospec
 
 from google.cloud import bigquery
 
+from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.big_query.constants import TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS
 from recidiviz.big_query.export.export_query_config import ExportBigQueryViewConfig
@@ -94,19 +95,16 @@ def create_table(
     schema_fields = [
         bigquery.SchemaField(column, "STRING") for column in data_points[0].keys()
     ]
+    table_address = BigQueryAddress(dataset_id=dataset_id, table_id=table_id)
     bq_client.create_table_with_schema(
-        dataset_id=dataset_id,
-        table_id=table_id,
-        schema_fields=schema_fields,
+        address=table_address, schema_fields=schema_fields
     )
     offset = 0
     while True:
         if len(data_points) == offset:
             break
         bq_client.stream_into_table(
-            dataset_id=dataset_id,
-            table_id=table_id,
-            rows=data_points[offset : offset + LIMIT],
+            address=table_address, rows=data_points[offset : offset + LIMIT]
         )
         offset += LIMIT
         if offset > len(data_points):

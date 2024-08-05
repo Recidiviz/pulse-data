@@ -93,6 +93,7 @@ from google.cloud.bigquery import QueryJob
 from google.cloud.bigquery.table import TableListItem
 from more_itertools import peekable
 
+from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.big_query.constants import TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS
 from recidiviz.calculator.query.state.dataset_config import DATAFLOW_METRICS_DATASET
@@ -194,7 +195,7 @@ def compare_dataflow_output_to_sandbox(
         else:
             # Clean up the existing tables in the dataset
             for table in bq_client.list_tables(sandbox_comparison_output_dataset_id):
-                bq_client.delete_table(table.dataset_id, table.table_id)
+                bq_client.delete_table(BigQueryAddress.from_list_item(table))
 
     bq_client.create_dataset_if_necessary(
         sandbox_comparison_output_dataset_id, TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS
@@ -236,8 +237,10 @@ def compare_dataflow_output_to_sandbox(
                     )
 
                     query_job = bq_client.create_table_from_query_async(
-                        dataset_id=sandbox_comparison_output_dataset_id,
-                        table_id=metric_table,
+                        address=BigQueryAddress(
+                            dataset_id=sandbox_comparison_output_dataset_id,
+                            table_id=metric_table,
+                        ),
                         query=comparison_query,
                         overwrite=True,
                         use_query_cache=True,
@@ -250,15 +253,14 @@ def compare_dataflow_output_to_sandbox(
         # Wait for the insert job to complete before looking for the table
         query_job.result()
 
-        output_table = bq_client.get_table(
-            sandbox_comparison_output_dataset_id, output_table_id
+        output_table_address = BigQueryAddress(
+            dataset_id=sandbox_comparison_output_dataset_id, table_id=output_table_id
         )
+        output_table = bq_client.get_table(output_table_address)
 
         if output_table.num_rows == 0:
             # If there are no rows in the output table, then the output was identical
-            bq_client.delete_table(
-                sandbox_comparison_output_dataset_id, output_table_id
-            )
+            bq_client.delete_table(output_table_address)
 
     metrics_with_different_output = peekable(
         bq_client.list_tables(sandbox_comparison_output_dataset_id)

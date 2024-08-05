@@ -80,13 +80,8 @@ def clean_up_temporary_tables(serialized_temporary_tables: List[str]) -> None:
 
     with futures.ThreadPoolExecutor(max_workers=MAX_DELETE_THREADS) as executor:
         delete_futures = [
-            executor.submit(
-                bq_client.delete_table,
-                table.dataset_id,
-                table.table_id,
-                not_found_ok=True,
-            )
-            for table in temporary_tables
+            executor.submit(bq_client.delete_table, table_address, not_found_ok=True)
+            for table_address in temporary_tables
         ]
 
         failed: List[Exception] = []

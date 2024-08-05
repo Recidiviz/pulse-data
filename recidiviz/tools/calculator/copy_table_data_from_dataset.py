@@ -34,6 +34,7 @@ import logging
 import sys
 from typing import List, Tuple
 
+from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -49,16 +50,18 @@ def copy_table_data_from_dataset(
 
     for table_id in tables_in_source_table:
         # Set source_table_id to the ID of the original table.
-        source_table_id = table_id.table_id
+        source_table_address = BigQueryAddress(
+            dataset_id=source_dataset_id, table_id=table_id.table_id
+        )
 
         # Set destination_table_id to the ID of the destination table.
-        destination_table_id = table_id.table_id
+        destination_table_address = BigQueryAddress(
+            dataset_id=destination_dataset_id, table_id=table_id.table_id
+        )
 
         job = bq_client.insert_into_table_from_table_async(
-            source_dataset_id=source_dataset_id,
-            source_table_id=source_table_id,
-            destination_dataset_id=destination_dataset_id,
-            destination_table_id=destination_table_id,
+            source_address=source_table_address,
+            destination_address=destination_table_address,
             use_query_cache=True,
         )
         jobs.append(job)

@@ -19,6 +19,7 @@ from typing import Iterator
 
 from google.cloud import bigquery
 
+from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_client import BigQueryClient
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.dataset_config import (
@@ -71,9 +72,10 @@ def delete_contents_of_raw_data_tables(
 
     query_jobs = []
     for table in list_of_tables:
-        query_job = big_query_client.delete_from_table_async(
-            dataset_id=raw_dataset_id, table_id=table.table_id
+        table_address = BigQueryAddress(
+            dataset_id=table.dataset_id, table_id=table.table_id
         )
+        query_job = big_query_client.delete_from_table_async(table_address)
         query_jobs.append(query_job)
     big_query_client.wait_for_big_query_jobs(query_jobs)
 
@@ -98,9 +100,10 @@ def delete_tables_in_pruning_datasets(
         ] = big_query_client.list_tables(dataset_id=dataset)
 
         for table in list_of_tables:
-            big_query_client.delete_table(
-                dataset_id=dataset, table_id=table.table_id, not_found_ok=True
+            table_address = BigQueryAddress(
+                dataset_id=table.dataset_id, table_id=table.table_id
             )
+            big_query_client.delete_table(address=table_address, not_found_ok=True)
 
 
 def copy_raw_data_to_backup(

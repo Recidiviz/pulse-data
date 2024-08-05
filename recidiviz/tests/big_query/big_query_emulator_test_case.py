@@ -171,26 +171,16 @@ class BigQueryEmulatorTestCase(unittest.TestCase, BigQueryTestHelper):
         if create_dataset:
             self.bq_client.create_dataset_if_necessary(address.dataset_id)
 
-        if check_exists and self.bq_client.table_exists(
-            address.dataset_id, address.table_id
-        ):
+        if check_exists and self.bq_client.table_exists(address):
             raise ValueError(
                 f"Table [{address}] already exists. Test cleanup not working properly."
             )
 
-        self.bq_client.create_table_with_schema(
-            dataset_id=address.dataset_id,
-            table_id=address.table_id,
-            schema_fields=schema,
-        )
+        self.bq_client.create_table_with_schema(address=address, schema_fields=schema)
 
     def load_rows_into_table(
         self,
         address: BigQueryAddress,
         data: List[Dict[str, Any]],
     ) -> None:
-        self.bq_client.stream_into_table(
-            address.dataset_id,
-            address.table_id,
-            rows=data,
-        )
+        self.bq_client.stream_into_table(address, rows=data)

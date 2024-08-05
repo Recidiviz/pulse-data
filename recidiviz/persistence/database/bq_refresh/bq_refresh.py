@@ -22,6 +22,7 @@ import logging
 
 from google.cloud import bigquery, exceptions
 
+from recidiviz.big_query.big_query_address import ProjectSpecificBigQueryAddress
 from recidiviz.big_query.big_query_client import BigQueryClient
 
 _BQ_LOAD_WAIT_TIMEOUT_SECONDS = 300
@@ -41,16 +42,19 @@ def wait_for_table_load(
     try:
         # Wait for table load job to complete.
         load_job.result(timeout=_BQ_LOAD_WAIT_TIMEOUT_SECONDS)
+
+        destination_table_address = ProjectSpecificBigQueryAddress.from_table_reference(
+            load_job.destination
+        )
+
         logging.info(
-            "Load job %s for table %s.%s.%s completed successfully.",
+            "Load job %s for table %s completed successfully.",
             load_job.job_id,
-            load_job.destination.project,
-            load_job.destination.dataset_id,
-            load_job.destination.table_id,
+            destination_table_address.to_str(),
         )
 
         destination_table = big_query_client.get_table(
-            load_job.destination.dataset_id, load_job.destination.table_id
+            destination_table_address.to_project_agnostic_address()
         )
         logging.info(
             "Loaded %d rows in table %s.%s.%s",

@@ -21,6 +21,7 @@ from typing import Callable, List, Optional
 
 from google.api_core import exceptions
 
+from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
 
 
@@ -29,8 +30,7 @@ class BigQueryTableChecker:
     functionality for checking if a column exists in the table."""
 
     def __init__(self, dataset_id: str, table_id: str) -> None:
-        self.dataset_id = dataset_id
-        self.table_id = table_id
+        self.address = BigQueryAddress(dataset_id=dataset_id, table_id=table_id)
         self._columns: Optional[List[str]] = None
 
     @property
@@ -38,7 +38,7 @@ class BigQueryTableChecker:
         if self._columns is None:
             bq_client = BigQueryClientImpl()
             try:
-                t = bq_client.get_table(self.dataset_id, self.table_id)
+                t = bq_client.get_table(self.address)
                 self._columns = [col.name for col in t.schema]
             except exceptions.NotFound:
                 self._columns = []

@@ -31,6 +31,7 @@ import argparse
 import datetime
 import logging
 
+from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.tools.utils.bigquery_helpers import (
     dataset_prefix_to_filter_regex,
@@ -75,7 +76,11 @@ if __name__ == "__main__":
             client=BigQueryClientImpl(),
             prompt=f"Extend the expiration to {expiration.isoformat()}",
             operation=lambda client, address: client.set_table_expiration(
-                address.dataset_id, address.table_id, expiration
+                BigQueryAddress(
+                    dataset_id=address.dataset_id,
+                    table_id=address.table_id,
+                ),
+                expiration,
             ),
             dataset_filter=dataset_prefix_to_filter_regex(args.dataset_prefix),
         )

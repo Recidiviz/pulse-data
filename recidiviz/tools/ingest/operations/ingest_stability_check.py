@@ -203,14 +203,16 @@ def _materialize_twice_and_return_num_different_rows(
 
     query_jobs = [
         bq_client.insert_into_table_from_query_async(
-            destination_dataset_id=address_1.dataset_id,
-            destination_table_id=address_1.table_id,
+            destination_address=BigQueryAddress(
+                dataset_id=address_1.dataset_id, table_id=address_1.table_id
+            ),
             query=view_query,
             use_query_cache=False,
         ),
         bq_client.insert_into_table_from_query_async(
-            destination_dataset_id=address_2.dataset_id,
-            destination_table_id=address_2.table_id,
+            destination_address=BigQueryAddress(
+                dataset_id=address_2.dataset_id, table_id=address_2.table_id
+            ),
             query=view_query,
             use_query_cache=False,
         ),
@@ -226,8 +228,7 @@ def _materialize_twice_and_return_num_different_rows(
     )
 
     bq_client.insert_into_table_from_query_async(
-        destination_dataset_id=diff_address.dataset_id,
-        destination_table_id=diff_address.table_id,
+        destination_address=diff_address.to_project_agnostic_address(),
         query=diff_query,
         use_query_cache=False,
     ).result()

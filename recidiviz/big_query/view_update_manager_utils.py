@@ -60,22 +60,20 @@ def delete_unmanaged_views_and_tables_from_dataset(
         table_bq_address = BigQueryAddress.from_list_item(table)
         if table_bq_address not in managed_tables:
             unmanaged_views_and_tables.add(table_bq_address)
-    for view in unmanaged_views_and_tables:
+    for view_address in unmanaged_views_and_tables:
         if dry_run:
             logging.info(
-                "[DRY RUN] Regular run would delete unmanaged table/view %s from dataset %s.",
-                view.table_id,
-                view.dataset_id,
+                "[DRY RUN] Regular run would delete unmanaged table/view %s.",
+                view_address.to_str(),
             )
 
         else:
             logging.info(
-                "Deleting unmanaged table/view %s from dataset %s.",
-                view.table_id,
-                view.dataset_id,
+                "Deleting unmanaged table/view %s.",
+                view_address.to_str(),
             )
 
-            bq_client.delete_table(view.dataset_id, view.table_id)
+            bq_client.delete_table(view_address)
     return unmanaged_views_and_tables
 
 

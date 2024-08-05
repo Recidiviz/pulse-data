@@ -23,6 +23,7 @@ from unittest.mock import call, create_autospec, patch
 from freezegun import freeze_time
 from google.cloud import bigquery
 
+from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_client import BigQueryClient
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
@@ -111,7 +112,7 @@ class FlashDatabaseToolsTest(unittest.TestCase):
                     dataset_id=raw_source_id,
                 ),
                 call.delete_from_table_async(
-                    dataset_id=raw_source_id, table_id="my_table"
+                    BigQueryAddress(dataset_id=raw_source_id, table_id="my_table")
                 ),
             ]
         )
