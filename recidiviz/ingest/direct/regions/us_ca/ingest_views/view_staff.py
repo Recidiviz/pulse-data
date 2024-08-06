@@ -72,13 +72,16 @@ unioned AS (
   FROM staff_from_PersonParole
 ), prioritized AS (
   -- `prioritized` ensures that we select information from AgentParole over PersonParole
-  -- if there is different information for the same BadgeNumber
+  -- if there is different information for the same BadgeNumber. Also, it drops any
+  -- staff who aren't parole agents -- we do this by dropping any staff whose
+  -- BadgeNumber is not a sequence of 4 digits.
   SELECT
     BadgeNumber,
     LastName,
     FirstName
   FROM unioned
-  WHERE True -- Required because of https://github.com/google/zetasql/issues/124
+  -- I know I know but string formatter doesn't like [0-9]BRACE4BRACE. TODO(#30821)
+  WHERE REGEXP_CONTAINS(BadgeNumber, "^[0-9][0-9][0-9][0-9]$")
   QUALIFY ROW_NUMBER() OVER (PARTITION BY BadgeNumber ORDER BY sourceTablePriority) = 1
 ), add_emails AS (
   -- `add_emails` joins back to AgentParole to get emails by BadgeNumber.
