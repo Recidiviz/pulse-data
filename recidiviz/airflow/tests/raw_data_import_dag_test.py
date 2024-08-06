@@ -445,7 +445,7 @@ class RawDataImportDagIntegrationTest(AirflowIntegrationTest):
                 run_conf={
                     "ingest_instance": "PRIMARY",
                 },
-                expected_skipped_ids=[
+                expected_skipped_task_id_regexes=[
                     # we expect all SECONDARY branch tasks to be skipped except
                     # ensure_release_resource_locks_release_if_acquired
                     "_secondary_import_branch_start",
@@ -472,7 +472,7 @@ class RawDataImportDagIntegrationTest(AirflowIntegrationTest):
                     "ingest_instance": "SECONDARY",
                     "state_code_filter": StateCode.US_XX.value,
                 },
-                expected_skipped_ids=[
+                expected_skipped_task_id_regexes=[
                     # we expect all PRIMARY and US_YY SECONDARY branch tasks to be
                     # skipped except ensure_release_resource_locks_release_if_acquired
                     r".*_primary_import_branch_start",
@@ -506,7 +506,7 @@ class RawDataImportDagIntegrationTest(AirflowIntegrationTest):
                 run_conf={
                     "ingest_instance": "PRIMARY",
                 },
-                expected_failure_ids=[
+                expected_failure_task_id_regexes=[
                     # intended tasks to fail
                     r".*_primary_import_branch\.acquire_raw_data_resource_locks",
                     # since the task above failed, we had no lock_ids to pull from xcom
@@ -522,7 +522,7 @@ class RawDataImportDagIntegrationTest(AirflowIntegrationTest):
                     r".*_primary_import_branch\.cleanup_and_storage.*",
                     r"raw_data_branching\.branch_end",
                 ],
-                expected_skipped_ids=[
+                expected_skipped_task_id_regexes=[
                     "_secondary_import_branch_start",
                     r".*_secondary_import_branch\.(?!ensure_release_resource_locks_release_if_acquired)",
                 ],
@@ -551,7 +551,7 @@ class RawDataImportDagIntegrationTest(AirflowIntegrationTest):
                 run_conf={
                     "ingest_instance": "PRIMARY",
                 },
-                expected_failure_ids=[
+                expected_failure_task_id_regexes=[
                     # intended failures
                     r".*_primary_import_branch\.list_normalized_unprocessed_gcs_file_paths",
                     # downstream failures
@@ -563,7 +563,7 @@ class RawDataImportDagIntegrationTest(AirflowIntegrationTest):
                     r".*_primary_import_branch\.biq_query_load\.*",
                     r".*_primary_import_branch\.cleanup_and_storage.*",
                 ],
-                expected_skipped_ids=[
+                expected_skipped_task_id_regexes=[
                     "_secondary_import_branch_start",
                     r".*_secondary_import_branch\.(?!ensure_release_resource_locks_release_if_acquired)",
                 ],
@@ -667,8 +667,8 @@ class RawDataImportOperationsRegistrationIntegrationTest(AirflowIntegrationTest)
             result = self.run_dag_test(
                 step_2_only_dag,
                 session=session,
-                expected_failure_ids=[],  # none!
-                expected_skipped_ids=[],  # none!
+                expected_failure_task_id_regexes=[],  # none!
+                expected_skipped_task_id_regexes=[],  # none!
             )
             self.assertEqual(DagRunState.SUCCESS, result.dag_run_state)
 
@@ -847,8 +847,8 @@ class RawDataImportOperationsRegistrationIntegrationTest(AirflowIntegrationTest)
             result = self.run_dag_test(
                 step_2_only_dag,
                 session=session,
-                expected_failure_ids=[],  # none!
-                expected_skipped_ids=[],  # none!
+                expected_failure_task_id_regexes=[],  # none!
+                expected_skipped_task_id_regexes=[],  # none!
             )
             self.assertEqual(DagRunState.SUCCESS, result.dag_run_state)
 
@@ -1163,8 +1163,8 @@ class RawDataImportDagPreImportNormalizationIntegrationTest(AirflowIntegrationTe
             result = self.run_dag_test(
                 step_3_only_dag,
                 session=session,
-                expected_failure_ids=[],
-                expected_skipped_ids=[
+                expected_failure_task_id_regexes=[],
+                expected_skipped_task_id_regexes=[
                     # we expect this since airflow will skipped mapped tasks w/ an empty input
                     "raw_data_branching.us_xx_primary_import_branch.pre_import_normalization.raw_data_file_chunking",
                     # these all have ALL_SUCCESS so ^^ being skipped will cause these to be skipped
@@ -1445,8 +1445,8 @@ class RawDataImportDagPreImportNormalizationIntegrationTest(AirflowIntegrationTe
             result = self.run_dag_test(
                 step_3_only_dag,
                 session=session,
-                expected_failure_ids=[],  # none!
-                expected_skipped_ids=[],  # none!
+                expected_failure_task_id_regexes=[],  # none!
+                expected_skipped_task_id_regexes=[],  # none!
             )
             self.assertEqual(DagRunState.SUCCESS, result.dag_run_state)
 
@@ -1823,10 +1823,10 @@ class RawDataImportDagPreImportNormalizationIntegrationTest(AirflowIntegrationTe
             result = self.run_dag_test(
                 step_3_only_dag,
                 session=session,
-                expected_failure_ids=[
+                expected_failure_task_id_regexes=[
                     "raw_data_branching.us_xx_primary_import_branch.pre_import_normalization.raise_chunk_normalization_errors"
                 ],
-                expected_skipped_ids=[],  # none!
+                expected_skipped_task_id_regexes=[],  # none!
             )
             self.assertEqual(DagRunState.FAILED, result.dag_run_state)
 
@@ -2172,10 +2172,10 @@ class RawDataImportDagPreImportNormalizationIntegrationTest(AirflowIntegrationTe
             result = self.run_dag_test(
                 step_3_only_dag,
                 session=session,
-                expected_failure_ids=[
+                expected_failure_task_id_regexes=[
                     "raw_data_branching.us_xx_primary_import_branch.pre_import_normalization.raise_file_chunking_errors"
                 ],
-                expected_skipped_ids=[],  # none!
+                expected_skipped_task_id_regexes=[],  # none!
             )
             self.assertEqual(DagRunState.FAILED, result.dag_run_state)
 
@@ -2464,8 +2464,8 @@ class RawDataImportDagBigQueryLoadIntegrationTest(AirflowIntegrationTest):
             result = self.run_dag_test(
                 self._create_sub_dag(),
                 session=session,
-                expected_failure_ids=[],  # none!
-                expected_skipped_ids=[],  # none!
+                expected_failure_task_id_regexes=[],  # none!
+                expected_skipped_task_id_regexes=[],  # none!
             )
             self.assertEqual(DagRunState.SUCCESS, result.dag_run_state)
 

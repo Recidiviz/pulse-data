@@ -125,15 +125,27 @@ class AirflowIntegrationTest(unittest.TestCase):
         dag: DAG,
         session: Session,
         run_conf: Optional[Dict[str, Any]] = None,
-        expected_failure_ids: Optional[List[str]] = None,
-        expected_skipped_ids: Optional[List[str]] = None,
+        expected_failure_task_id_regexes: Optional[List[str]] = None,
+        expected_skipped_task_id_regexes: Optional[List[str]] = None,
+        expected_success_task_id_regexes: Optional[List[str]] = None,
         skip_checking_task_statuses: Optional[bool] = False,
+        check_test_matches_all_task_ids: Optional[bool] = False,
     ) -> DagTestResult:
         """
-        A Modified version of 'dag.test'. Will run the full dag to allow
-        looking up statuses in the postgres database. `expected_failure_ids` and `expected_skipped_ids`
-        take regexes. Failure messages are stored in self.failure_messages.
+        A Modified version of 'dag.test' that runs the full dag and allows
+        looking up statuses in the postgres database.
+        If check_test_matches_all_task_ids is True, we expect every task_id in the DAG to match one
+        of the given regex patterns in expected_*_task_id_regexes.
+        Failure messages are stored in self.failure_messages.
         """
+        if check_test_matches_all_task_ids and not (
+            expected_failure_task_id_regexes
+            or expected_skipped_task_id_regexes
+            or expected_success_task_id_regexes
+        ):
+            raise ValueError(
+                "This test is marked to check against all task IDs, but no expected regex patterns have been passed in"
+            )
 
         failure_messages: Dict[str, str] = {}
 
@@ -196,7 +208,12 @@ class AirflowIntegrationTest(unittest.TestCase):
 
         if not skip_checking_task_statuses:
             self._check_dag_task_statuses(
-                dag, session, expected_failure_ids, expected_skipped_ids
+                dag,
+                session,
+                expected_failure_task_id_regexes,
+                expected_skipped_task_id_regexes,
+                expected_success_task_id_regexes,
+                check_test_matches_all_task_ids,
             )
 
         return DagTestResult(self._get_dag_run_state(session), failure_messages)
@@ -205,8 +222,10 @@ class AirflowIntegrationTest(unittest.TestCase):
         self,
         dag: DAG,
         session: Session,
-        expected_failure_ids: Optional[List[str]] = None,
-        expected_skipped_ids: Optional[List[str]] = None,
+        expected_failure_regexes: Optional[List[str]] = None,
+        expected_skipped_regexes: Optional[List[str]] = None,
+        expected_success_regexes: Optional[List[str]] = None,
+        check_test_matches_all_task_ids: Optional[bool] = False,
     ) -> None:
         """
         Check that the task statuses are as expected. If expected_failure_ids or expected_skipped_ids are
@@ -214,11 +233,36 @@ class AirflowIntegrationTest(unittest.TestCase):
         must be SUCCESS.
         """
         expected_failure_task_ids = _find_task_ids_for_given_search_regexes(
-            dag, expected_failure_ids or []
+            dag, expected_failure_regexes or []
         )
         expected_skipped_task_ids = _find_task_ids_for_given_search_regexes(
-            dag, expected_skipped_ids or []
+            dag, expected_skipped_regexes or []
         )
+        expected_success_task_ids = _find_task_ids_for_given_search_regexes(
+            dag, expected_success_regexes or []
+        )
+        if inter := expected_failure_task_ids.intersection(expected_skipped_task_ids):
+            raise ValueError(
+                f"Task ID regexes created failed and skipped task IDs that overlap: {inter}"
+            )
+        if inter := expected_failure_task_ids.intersection(expected_success_task_ids):
+            raise ValueError(
+                f"Task ID regexes created failed and success task IDs that overlap {inter}"
+            )
+        if inter := expected_skipped_task_ids.intersection(expected_success_task_ids):
+            raise ValueError(
+                f"Task ID regexes created skipped and success task IDs that overlap {inter}"
+            )
+        if check_test_matches_all_task_ids:
+            unmatched_task_ids = set(t.task_id for t in dag.tasks) - (
+                expected_failure_task_ids
+                | expected_skipped_task_ids
+                | expected_success_task_ids
+            )
+            if unmatched_task_ids:
+                raise ValueError(
+                    f"Found task IDs not covered by this test: {','.join(unmatched_task_ids)}"
+                )
 
         for task_instance in dag.tasks:
             task_state = self.get_task_instance_state(task_instance.task_id, session)
@@ -242,6 +286,14 @@ class AirflowIntegrationTest(unittest.TestCase):
             ):
                 raise ValueError(
                     f"Task [{task_instance.task_id}] succeeded unexpectedly"
+                )
+            if (
+                task_state == TaskInstanceState.SUCCESS
+                and expected_success_regexes is not None
+                and task_instance.task_id not in expected_success_task_ids
+            ):
+                raise ValueError(
+                    f"Task [{task_instance.task_id}] did not succeed as expected"
                 )
 
             if task_state not in [

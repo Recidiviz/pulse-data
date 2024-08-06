@@ -165,8 +165,8 @@ class TestInitializeCalculationDagGroupIntegration(AirflowIntegrationTest):
                     "ingest_instance": "PRIMARY",
                     "state_code_filter": "US_XX",
                 },
-                expected_failure_ids=[_VERIFY_PARAMETERS_TASK_ID],
-                expected_skipped_ids=[
+                expected_failure_task_id_regexes=[_VERIFY_PARAMETERS_TASK_ID],
+                expected_skipped_task_id_regexes=[
                     _WAIT_TO_CONTINUE_OR_CANCEL_TASK_ID,
                     _HANDLE_QUEUEING_RESULT_TASK_ID,
                     _WAIT_SECONDS_TASK_ID,
@@ -202,8 +202,8 @@ class TestInitializeCalculationDagGroupIntegration(AirflowIntegrationTest):
                     "ingest_instance": "SECONDARY",
                     "sandbox_prefix": "my_prefix",
                 },
-                expected_failure_ids=[_VERIFY_PARAMETERS_TASK_ID],
-                expected_skipped_ids=[
+                expected_failure_task_id_regexes=[_VERIFY_PARAMETERS_TASK_ID],
+                expected_skipped_task_id_regexes=[
                     _WAIT_TO_CONTINUE_OR_CANCEL_TASK_ID,
                     _HANDLE_QUEUEING_RESULT_TASK_ID,
                     _WAIT_SECONDS_TASK_ID,
@@ -225,8 +225,8 @@ class TestInitializeCalculationDagGroupIntegration(AirflowIntegrationTest):
                     "ingest_instance": "SECONDARY",
                     "state_code_filter": "US_XX",
                 },
-                expected_failure_ids=[_VERIFY_PARAMETERS_TASK_ID],
-                expected_skipped_ids=[
+                expected_failure_task_id_regexes=[_VERIFY_PARAMETERS_TASK_ID],
+                expected_skipped_task_id_regexes=[
                     _WAIT_TO_CONTINUE_OR_CANCEL_TASK_ID,
                     _HANDLE_QUEUEING_RESULT_TASK_ID,
                     _WAIT_SECONDS_TASK_ID,
@@ -245,8 +245,8 @@ class TestInitializeCalculationDagGroupIntegration(AirflowIntegrationTest):
                 dag=test_dag,
                 session=session,
                 run_conf={"unknown_key": "value"},
-                expected_failure_ids=[_VERIFY_PARAMETERS_TASK_ID],
-                expected_skipped_ids=[
+                expected_failure_task_id_regexes=[_VERIFY_PARAMETERS_TASK_ID],
+                expected_skipped_task_id_regexes=[
                     _WAIT_TO_CONTINUE_OR_CANCEL_TASK_ID,
                     _HANDLE_QUEUEING_RESULT_TASK_ID,
                     _WAIT_SECONDS_TASK_ID,

@@ -65,6 +65,7 @@ FAKE_PIPELINE_CONFIG_YAML_PATH = os.path.join(
 _UPDATE_ALL_MANAGED_VIEWS_TASK_ID = "update_managed_views_all"
 _VALIDATIONS_BRANCH_START = "validations.branch_start"
 _REFRESH_OPERATIONS_BQ_DATASET_TASK_ID = "bq_refresh.refresh_bq_dataset_OPERATIONS"
+_REFRESH_CASE_TRIAGE_BQ_DATASET_TASK_ID = "bq_refresh.refresh_bq_dataset_CASE_TRIAGE"
 _UPDATE_STATE_DATASET_TASK_ID = "update_state"
 _EXPORT_METRIC_VIEW_DATA_TASK_ID = "metric_exports.INGEST_METADATA_metric_exports.export_ingest_metadata_metric_view_data"
 
@@ -191,11 +192,17 @@ class TestCalculationPipelineDag(AirflowIntegrationTest):
         self.assertNotEqual(0, len(dag.task_ids))
 
         normalization_group: TaskGroup = dag.task_group_dict["normalization"]
-        update_normalized_state_group = dag.get_task("update_normalized_state")
+
+        normalization_completed = dag.get_task("normalization_completed")
+        update_normalized_state_dataset = dag.get_task("update_normalized_state")
 
         self.assertIn(
-            update_normalized_state_group.task_id,
+            normalization_completed.task_id,
             normalization_group.downstream_task_ids,
+        )
+        self.assertIn(
+            update_normalized_state_dataset.task_id,
+            normalization_completed.downstream_task_ids,
         )
 
     def test_update_normalized_state_upstream_of_non_normalization_pipelines(
@@ -346,7 +353,7 @@ class TestCalculationPipelineDag(AirflowIntegrationTest):
         task.render_template_fields({"dag_run": PRIMARY_DAG_RUN})
 
         self.assertEqual(task.task_id, "update_managed_views_all")
-        self.assertEqual(task.trigger_rule, TriggerRule.ALL_DONE)
+        self.assertEqual(task.trigger_rule, TriggerRule.ALL_SUCCESS)
 
         self.assertEqual(
             task.arguments[4:],
@@ -359,7 +366,7 @@ class TestCalculationPipelineDag(AirflowIntegrationTest):
         task = update_managed_views_operator()
         task.render_template_fields({"dag_run": SECONDARY_DAG_RUN})
         self.assertEqual(task.task_id, "update_managed_views_all")
-        self.assertEqual(task.trigger_rule, TriggerRule.ALL_DONE)
+        self.assertEqual(task.trigger_rule, TriggerRule.ALL_SUCCESS)
 
         self.assertEqual(
             task.arguments[4:],
@@ -694,7 +701,9 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
             "recidiviz.airflow.dags.calculation_dag.build_kubernetes_pod_task",
             side_effect=_fake_pod_operator,
         )
-        self.kubernetes_pod_operator_patcher.start()
+        self.mock_kubernetes_pod_operator_constructor = (
+            self.kubernetes_pod_operator_patcher.start()
+        )
 
         self.kubernetes_pod_operator_patcher_2 = patch(
             "recidiviz.airflow.dags.calculation.dataflow.single_ingest_pipeline_group.build_kubernetes_pod_task",
@@ -758,18 +767,19 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
                     "ingest_instance": "PRIMARY",
                     "state_code_filter": "US_XX",
                 },
-                expected_failure_ids=[
+                expected_failure_task_id_regexes=[
                     # This fails because no sandbox prefix arg is set when there is a
                     # state_code_filter.
                     r"verify_parameters",
                 ],
-                expected_skipped_ids=[
+                expected_skipped_task_id_regexes=[
                     r"wait_to_continue_or_cancel",
                     r"handle_queueing_result",
                     r"update_big_query_table_schemata",
                     r"ingest",
                     r"update_state",
                     r"bq_refresh",
+                    r"bq_refresh_completed",
                     r"update_managed_views",
                     r"normalization",
                     r"update_normalized_state",
@@ -807,14 +817,93 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
                 run_conf={
                     "ingest_instance": "PRIMARY",
                 },
-                expected_failure_ids=[
+                expected_failure_task_id_regexes=[
                     r".*us_yy_dataflow.us-yy-ingest.run_pipeline",
                     r".*us_yy_dataflow.write_upper_bounds",
                     r".*us_yy_dataflow.write_ingest_job_completion",
                     r".*ingest.branch_end",
                 ],
                 # No downstream processes are skipped!
-                expected_skipped_ids=[],
+                expected_skipped_task_id_regexes=[],
+            )
+
+    def test_calculation_dag_fails_downstream_of_schema_update(self) -> None:
+        """
+        Tests that most tasks do not run if 'update_big_query_table_schemata' fails.
+        """
+        from recidiviz.airflow.dags.calculation_dag import create_calculation_dag
+
+        self.mock_kubernetes_pod_operator_constructor.side_effect = lambda **kwargs: (
+            fake_failing_operator_constructor(**kwargs)
+            if kwargs["task_id"] == "update_big_query_table_schemata"
+            else fake_operator_constructor(**kwargs)
+        )
+
+        downstream_of_schema_update_dag = create_calculation_dag().partial_subset(
+            task_ids_or_regex=["update_big_query_table_schemata"],
+            include_downstream=True,
+            include_upstream=False,
+        )
+
+        with Session(bind=self.engine) as session:
+            self.run_dag_test(
+                downstream_of_schema_update_dag,
+                session=session,
+                run_conf={
+                    "ingest_instance": "PRIMARY",
+                },
+                expected_failure_task_id_regexes=[
+                    r"update_big_query_table_schemata",
+                    r"ingest\.[a-zA-Z]*",
+                    r"bq_refresh.refresh_bq_dataset_",
+                    r"update_state",
+                    r"update_normalized_state",
+                    r"normalization\.[a-zA-Z]*",
+                    r"update_managed_views_all",
+                    r"post_normalization_pipelines\.[a-zA-Z]*",
+                    r"validations.*",
+                    r"metric_exports.*",
+                ],
+                expected_skipped_task_id_regexes=[],
+                # These indicate their respective groups completed,
+                # but notice that update_state, update_normalized_state, etc.
+                # did not complete successfully!
+                # That is because these tasks simply trigger with ALL_DONE
+                expected_success_task_id_regexes=[
+                    r"bq_refresh.bq_refresh_completed",
+                    r"ingest_completed",
+                    r"normalization_completed",
+                ],
+                check_test_matches_all_task_ids=True,
+            )
+
+    def test_bq_refresh_does_not_block_view_update(self) -> None:
+        """Tests that OPERATIONS and CASE TRIAGE failure doesn't block the view update."""
+        from recidiviz.airflow.dags.calculation_dag import create_calculation_dag
+
+        self.mock_kubernetes_pod_operator_constructor.side_effect = lambda **kwargs: (
+            fake_failing_operator_constructor(**kwargs)
+            if "refresh_bq" in kwargs["task_id"]
+            else fake_operator_constructor(**kwargs)
+        )
+
+        dag = create_calculation_dag()
+        upstream_of_view_update = dag.partial_subset(
+            task_ids_or_regex=["update_managed_views_all"],
+            include_downstream=False,
+            include_upstream=True,
+        )
+
+        with Session(bind=self.engine) as session:
+            self.run_dag_test(
+                upstream_of_view_update,
+                session=session,
+                run_conf={
+                    "ingest_instance": "PRIMARY",
+                },
+                expected_failure_task_id_regexes=[
+                    r"bq_refresh.refresh_bq_dataset_",
+                ],
             )
 
     def test_calculation_dag_with_state_and_sandbox(self) -> None:
@@ -831,7 +920,7 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
                     "state_code_filter": "US_XX",
                     "sandbox_prefix": "test_prefix",
                 },
-                expected_skipped_ids=[
+                expected_skipped_task_id_regexes=[
                     r"US[_-]YY",
                 ],
             )
@@ -854,7 +943,7 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
                     "state_code_filter": "US_XX",
                     "sandbox_prefix": "test_prefix",
                 },
-                expected_skipped_ids=[
+                expected_skipped_task_id_regexes=[
                     r"US[_-]YY",
                 ],
             )
