@@ -110,3 +110,10 @@ tables:
       - date_of_supervision
       - supervision_type
       - population_count
+  - name: incarceration_population_by_custody_level_materialized
+    description: aggregate incarceration custody level populations
+    columns:
+      - region_code
+      - date_of_stay
+      - custody_level
+      - population_count

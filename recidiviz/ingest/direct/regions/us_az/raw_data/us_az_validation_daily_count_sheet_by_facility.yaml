@@ -2,8 +2,9 @@
 file_tag: validation_daily_count_sheet_by_facility
 file_description: |-
   This is an external validation dataset that lists the population count of each facility
-  under the jurisdiction of ADCRR on a given date. It is derived from the Daily Count
-  Sheets available on the ADCRR websites Reports page.
+  under the jurisdiction of ADCRR on a given date. It is derived from the Daily Count 
+  Sheets that were previously available on the ADCRR websites Reports page. These reports 
+  are no longer available publicly and must be requested from the data team.
 data_classification: validation
 always_historical_export: False
 primary_key_cols:
