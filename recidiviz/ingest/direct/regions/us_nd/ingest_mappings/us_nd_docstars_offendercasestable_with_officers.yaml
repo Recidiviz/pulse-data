@@ -246,6 +246,7 @@ output:
                     $mappings:
                       StateSupervisionPeriodTerminationReason.ABSCONSION:
                         - "13" # Terminated - Absconded (Active Petition To Revoke)
+                        - "28" # Closed with Active FTA
                       StateSupervisionPeriodTerminationReason.DEATH:
                         - "11" # "Terminated - Death
                       StateSupervisionPeriodTerminationReason.DISCHARGE:
@@ -271,12 +272,8 @@ output:
                       StateSupervisionPeriodTerminationReason.INVESTIGATION:
                         # TODO(#3276): Migrate these termination reasons to other values so that we can
                         #  remove this termination reason
-                        - "21" # Guilty
-                        - "22" # Guilty of Lesser Charge
-                        - "25" # Mistrial
                         - "26" # Deferred Prosecution
                         - "27" # Post-Conviction Supervision
-                        - "28" # Closed with Active FTA
                       StateSupervisionPeriodTerminationReason.REVOCATION:
                         - "9" # Terminated - Revocation
                         - "10" # Terminated - Revocation with Continuation
@@ -284,6 +281,11 @@ output:
                       StateSupervisionPeriodTerminationReason.SUSPENSION:
                         - "3" # Terminated - Termination (Deferred Imp.)
                         - "6" # Terminated - Termination-Negative (Susp. Sent)
+                      StateSupervisionPeriodTerminationReason.VACATED:
+                        - "25" # Mistrial
+                      StateSupervisionPeriodTerminationReason.ADMITTED_TO_INCARCERATION:
+                        - "21" # Guilty
+                        - "22" # Guilty of Lesser Charge
           supervision_level:
             $enum_mapping:
               $raw_text: current_supervision_level
