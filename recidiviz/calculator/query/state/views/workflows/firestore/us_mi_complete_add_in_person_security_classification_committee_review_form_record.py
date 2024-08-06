@@ -32,7 +32,7 @@ US_MI_COMPLETE_ADD_IN_PERSON_SECURITY_CLASSIFICATION_COMMITTEE_REVIEW_FORM_RECOR
     task_name="complete_add_in_person_security_classification_committee_review_form_materialized",
     view_id=US_MI_COMPLETE_ADD_IN_PERSON_SECURITY_CLASSIFICATION_COMMITTEE_REVIEW_FORM_RECORD_VIEW_NAME,
     description=US_MI_COMPLETE_ADD_IN_PERSON_SECURITY_CLASSIFICATION_COMMITTEE_REVIEW_FORM_RECORD_DESCRIPTION,
-    almost_eligible_days=30,
+    almost_eligible_days=60,
 )
 
 if __name__ == "__main__":
