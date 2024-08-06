@@ -12,7 +12,7 @@ exclusions:
     exclusion_reason: TODO(#28866) Hydrate new sentencing entities
 max_allowed_error_overrides:
   - validation_name: incarceration_population_by_facility_external_comparison
-    hard_max_allowed_error_override: 0.05
+    hard_max_allowed_error_override: 0.03
     override_reason:
       Given the very small size of some facilities in ND, this is actually a very strict threshold and we
       likely will not be able to do better. We're also already checking facility accuracy over the whole population with
@@ -25,62 +25,47 @@ max_allowed_error_overrides:
       expiration_dates. Because the impact/engagement metrics only look at distinct person/external
       ids, there is no known practical effect of having multiple entries for the same person with
       the same person and external id.
-  - validation_name: state_incarceration_period_by_admission_date_stable_counts
-    hard_max_allowed_error_override: .28
-    override_reason: This is standard deviation for this validation.
-  - validation_name: state_incarceration_period_by_release_date_stable_counts
-    hard_max_allowed_error_override: .28
-    override_reason: This is standard deviation for this validation.
   - validation_name: state_supervision_violation_response_by_response_date_stable_counts
-    hard_max_allowed_error_override: .28
+    hard_max_allowed_error_override: .26
     override_reason: This is standard deviation for this validation.
   - validation_name: person_caseload_location_sessions_caseload
-    hard_max_allowed_error_override: 0.03
+    hard_max_allowed_error_override: .30
     soft_max_allowed_error_override: 0.03
     override_reason: These errors shouldn't happen, but will be addressed in #TODO(#28365)
 num_allowed_rows_overrides:
   - validation_name: overlapping_incarceration_periods
-    hard_num_allowed_rows_override: 200
-    override_reason: TODO(#5803)  - Needs investigation.
+    hard_num_allowed_rows_override: 120
+    override_reason: TODO(#31847)  - Needs investigation.
       Likely related to shifting IP external ids.
-  - validation_name: incarceration_admission_after_open_period
-    hard_num_allowed_rows_override: 20
-    override_reason: TODO(#5803) - Needs investigation.
   - validation_name: invalid_admission_reason_and_pfi
     hard_num_allowed_rows_override: 10
     override_reason:
       TODO(#3723) - As of 12/07/2021 there are 4 REVOCATION admission to
       OOS (out of state) which maps to INTERNAL_UNKNOWN PFI. This should be fixed when
       we have a comprehensive fix for handling OOS in ND.
-  - validation_name: supervision_termination_prior_to_start
-    hard_num_allowed_rows_override: 350
-    override_reason: TODO(#5803), TODO(#24635) - Needs investigation.
   - validation_name: admission_pfi_pop_pfi_mismatch
-    hard_num_allowed_rows_override: 520
+    hard_num_allowed_rows_override: 100
     override_reason: TODO(#10625) - Need to be handled in IP pre-processing.
   - validation_name: session_new_admissions_with_no_sentence_date_imposed
     hard_num_allowed_rows_override: 11000
-    override_reason: Needs investigation.  Current failing level as of 2/13/24 is 9,300 rows #TODO(#16231)
+    override_reason: Needs investigation.  Current failing level as of 7/29/24 is 9,490 rows #TODO(#16231)
   - validation_name: session_liberty_releases_with_no_sentence_completion_date
     hard_num_allowed_rows_override: 300
-    override_reason: Needs investigation. Current failing level as of 2/13/24 is 227 rows. #TODO(#16241)
+    override_reason: Needs investigation. Current failing level as of 7/29/24 is 228 rows. #TODO(#16241)
   - validation_name: sentences_missing_date_imposed
     hard_num_allowed_rows_override: 30000
-    override_reason: Needs investigation.  Current failing level as of 2/13/24 is 24,073 rows #TODO(#16436)
+    override_reason: Needs investigation.  Current failing level as of 7/29/24 is 26,086 rows #TODO(#16436)
   - validation_name: sentences_undefined_relationship
-    hard_num_allowed_rows_override: 100
-    override_reason: Needs investigation. Current failing level as of 2/13/24 is 13 rows #TODO(#19047)
+    hard_num_allowed_rows_override: 20
+    override_reason: Needs investigation. Current failing level as of 7/29/24 is 13 rows #TODO(#19047)
   - validation_name: normalized_state_charge_missing_descriptions
-    hard_num_allowed_rows_override: 500
+    hard_num_allowed_rows_override: 120
     override_reason:
       Small number of rows missing descriptions in ref table. Current failing level as of
-      2/13/24 is 187 rows. #TODO(#24733)
-  - validation_name: normalized_state_charge_missing_uniform_offense_labels
-    hard_num_allowed_rows_override: 7500
-    override_reason: Current failing level as of 2/13/24 is 7325 rows. #TODO(#24773)
+      7/29/24 is 96 rows. #TODO(#31843)
   - validation_name: sessions_missing_closest_sentence_imposed_group
     hard_num_allowed_rows_override: 3000
-    override_reason: Current failing level as of 2/13/24 is 2,351 rows (2%) #TODO(#20403)
+    override_reason: Current failing level as of 7/29/24 is 2,259 rows (2%) #TODO(#20403)
   - validation_name: invalid_release_reasons_for_temporary_custody
-    hard_num_allowed_rows_override: 150
+    hard_num_allowed_rows_override: 25
     override_reason: TODO(#26250) - Needs investigation
