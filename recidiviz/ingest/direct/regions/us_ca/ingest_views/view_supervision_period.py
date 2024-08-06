@@ -25,7 +25,13 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 VIEW_QUERY_TEMPLATE = """
-WITH IncarcerationParole_parsed AS (
+WITH 
+/*
+`IncarcerationParole_parsed` gets out_date (reflecting a parole start) and
+ParoleEndDate (reflecting the end of parole). Super simple, our basic period, should
+be easy -- WRONG! The first step in a pretty involved view. Buckle up.
+*/
+IncarcerationParole_parsed AS (
     -- Use DISTINCT because it's possible to get some duplicates from this query
     -- which will cause problems later on with the LEAD/LAG functions
     SELECT DISTINCT
@@ -39,11 +45,12 @@ WITH IncarcerationParole_parsed AS (
 ),
 
 /*
-    The Delta file contains a record of when someone left the Parole population (for any number of reasons).
-    For these purposes we are only concerned with the fact that someone left and WHEN they left. However,
-    we exclude "Date Change" because these records refer to when someone is removed from the population of
-    people who will become eligible for Parole within 90 days.
-    This CTE will be used to close open periods from the IncarcerationParole table.
+The Delta file contains a record of when someone left the Parole population (for any
+number of reasons).  For these purposes we are only concerned with the fact that
+someone left and WHEN they left. However, we exclude "Date Change" because these
+records refer to when someone is removed from the population of people who will become
+eligible for Parole within 90 days.  This CTE will be used to close open periods from
+the IncarcerationParole table.
 */
 delta_file AS (
     SELECT
@@ -54,8 +61,20 @@ delta_file AS (
     WHERE OffenderGroup != 'Date Change'
 ),
 
+/*
+`merged_supervision_periods` contains multiple CTEs. They combine to ultimately infer
+missing end dates and then close periods with the Delta file, if applicable (this
+would be applicable if someone left the parole population for any reason, as that's
+when someone appears in the Delta file.)
+*/ 
 merged_supervision_periods AS (
-  WITH cleaned_parole_periods AS (
+ WITH 
+  /*
+  `cleaned_parole_periods` takes IncarcerationParole and infers end dates when there
+  is none, resulting in closed periods of parole. See other comments in CTE for
+  details on how this works.
+  */ 
+  cleaned_parole_periods AS (
     SELECT
       OffenderId,
       CAST(ip.out_date AS DATETIME) AS parole_start_date,
@@ -76,6 +95,11 @@ merged_supervision_periods AS (
       END AS inferred_parole_end_date
     FROM IncarcerationParole_parsed ip
   ),
+  /*
+  `msp_with_filter_for_recency` uses the Delta file to infer end dates on final, open
+  periods. It also adds a filter which, in the case of multiple erroneous closures in
+  the Delta file, selects the earliest date as the true closure.
+  */
   msp_with_filter_for_recency as (
     SELECT
       cpp.OffenderId,
@@ -110,8 +134,16 @@ merged_supervision_periods AS (
   FROM msp_with_filter_for_recency
   WHERE filter_row
 ),
+
+/*
+`offender_group_transitions_no_filter` begins the process of making offender_group
+periods. The offender_group can specify if an individual is absconded, or other
+statuses. It adds a filter row, which applied in a following CTE since it can helpful
+to have this functionality separated for future debugging. When the filter row is
+applied, we will end up with critical dates.
+*/
 offender_group_transitions_no_filter AS (
-  SELECT 
+ SELECT 
       OffenderId,
       CAST(LastParoleDate AS DATETIME) AS LastParoleDate,
       OffenderGroup,
@@ -131,6 +163,11 @@ offender_group_transitions_no_filter AS (
       ) as filter_row
   FROM {PersonParole@ALL} pp
 ),
+
+/*
+`offender_group_transitions` simply applies the filter above, ensuring we only retain
+rows that reflect an actual OffenderGroup change.
+*/
 offender_group_transitions as (
   SELECT * from offender_group_transitions_no_filter where filter_row
 ),
@@ -147,6 +184,9 @@ offender_group_periods AS (
     LEAD(update_datetime) OVER (PARTITION BY OffenderId ORDER BY update_datetime ASC) AS og_end_date,
   FROM offender_group_transitions
 ),
+/*
+`nullBadgeCTE` converts nulls to a string for easier processing.
+*/
 nullBadgeCTE AS (
   SELECT 
     OffenderId, 
@@ -154,6 +194,10 @@ nullBadgeCTE AS (
     update_datetime,
   FROM {PersonParole@ALL}
 ),
+/*
+`supervision_officer_prep_cte` gets the previous badge number for an offender -- later
+we'll check if that badge number changed, and if so, create a new supervision period.
+*/
 supervision_officer_prep_cte AS
 (
   SELECT 
@@ -163,6 +207,9 @@ supervision_officer_prep_cte AS
     LAG(BadgeNumber) OVER (PARTITION BY OffenderId ORDER BY update_datetime) AS prev_BadgeNumber 
   FROM nullBadgeCTE
 ),
+/*
+`supervision_officer_periods` create periods for when the supervising officer changes.
+*/
 supervision_officer_periods AS (
   SELECT 
     OffenderId, 
@@ -175,6 +222,10 @@ supervision_officer_periods AS (
   FROM supervision_officer_prep_cte
   WHERE BadgeNumber != prev_BadgeNumber OR prev_BadgeNumber IS NULL OR BadgeNumber = 'Null'
 ),
+/*
+`supervision_location_prep_cte` begins making periods for when the supervision location
+changes.
+*/
 supervision_location_prep_cte AS
 (
   SELECT 
@@ -185,6 +236,11 @@ supervision_location_prep_cte AS
     CONCAT(ifnull(ParoleRegion, 'null'),'@@',ifnull(ParoleDistrict, 'null'),'@@',ifnull(ParoleUnit, 'null')) AS fullLoc
   FROM {PersonParole@ALL}
 ),
+/*
+`supervision_location_prep_cte2` checks to see when any ParoleRegion, ParoleDistrict, or
+ParoleUnit changes by getting the previous location. Later we compare the previous
+location and the current location.
+*/
 supervision_location_prep_cte2 AS (
   SELECT
     OffenderId, 
@@ -194,6 +250,9 @@ supervision_location_prep_cte2 AS (
     update_datetime
   from supervision_location_prep_cte
 ),
+/*
+`supervision_location_periods` finishes making the periods by comparing previous location to current location.
+*/
 supervision_location_periods AS (
   SELECT 
     OffenderId, 
@@ -204,6 +263,16 @@ supervision_location_periods AS (
   from supervision_location_prep_cte2
   WHERE fullLoc != prev_fullLoc or prev_fullLoc is null 
 ),
+/*
+`supervision_level_changes` First, we consider every date for which the supervision
+level is supposed to have changed for an offender -- we choose the information that was
+given to us most recently. IE if we received information on 1/1/2020 (IE update_datetime
+is 1/1/2020) that Offender A changed to supervision level Cat A on 1/1/2020 (IE
+SupvLevelChangeDate is 1/1/2020), but then received more information the following week
+(update_datetime is 1/8/2020) that says actually on 1/1/2020 (SupvLevelChangeDate =
+1/1/2020) the supervision level was Category B, we prioritize Category B over Category A
+because Category B reflects the most recent information we have for 1/1/2020.
+*/
 supervision_level_changes AS (
   SELECT
     OffenderId,
@@ -221,6 +290,9 @@ supervision_level_changes AS (
   ) AS a
   WHERE rn = 1
 ),
+/*
+`supervision_level_periods` creates periods by creating an end date which reflects the next time supervision level changed.
+*/
 supervision_level_periods AS (
   SELECT
     OffenderId,
@@ -231,6 +303,11 @@ supervision_level_periods AS (
     SupervisionLevel
   FROM supervision_level_changes
 ),
+/*
+`transition_dates` (often called `critical_dates` in other views) gets all the dates
+anything changed -- so for all the periods we've created above, we get the start date
+and the end date and call these `transition_dates`.
+*/
 transition_dates as (
   -- We only need the start dates here. og_end_dates are just lead(start_date), so there are no new values there.
   SELECT DISTINCT
@@ -277,6 +354,10 @@ transition_dates as (
   FROM merged_supervision_periods
   WHERE inferred_parole_end_date IS NOT NULL
 ),
+/*
+`periods_cte` creates unfilled periods by taking end_date to be the next
+transition_date.
+*/
 periods_cte AS (
   SELECT
       td.OffenderId,
@@ -284,6 +365,10 @@ periods_cte AS (
       LEAD(transition_date) OVER (PARTITION BY td.OffenderId ORDER BY transition_date) AS end_date
   FROM transition_dates td
 ),
+/*
+`periods_cte_dropping_incarceration_periods` joins in supervision_periods which have
+already been properly closed according to the delta file if necessary.
+*/
 periods_cte_dropping_incarceration_periods AS (
   SELECT
     p.OffenderId,
@@ -308,7 +393,11 @@ periods_cte_dropping_incarceration_periods AS (
         )
       )
 ),
--- Using the approach used here: https://github.com/Recidiviz/pulse-data/blob/main/recidiviz/ingest/direct/regions/us_ix/ingest_views/view_supervision_period.py
+/* 
+`merged_supervision_periods_with_offender_groups`: Uses the approach used here:
+https://github.com/Recidiviz/pulse-data/blob/main/recidiviz/ingest/direct/regions/us_ix/ingest_views/view_supervision_period.py
+Similar to the CTE above, we join in offender group information.
+*/
 merged_supervision_periods_with_offender_groups AS (
   SELECT DISTINCT
     p.OffenderId,
@@ -321,6 +410,10 @@ merged_supervision_periods_with_offender_groups AS (
         AND p.start_date >= ogp.og_start_date 
         AND (p.end_date <= ogp.og_end_date OR ogp.og_end_date IS NULL)
 ),
+/*
+`merged_supervision_periods_with_supervision_level_and_offender_groups` Merge in
+supervision level information.
+*/
 merged_supervision_periods_with_supervision_level_and_offender_groups AS (
   SELECT DISTINCT
     p.OffenderId,
@@ -336,6 +429,9 @@ merged_supervision_periods_with_supervision_level_and_offender_groups AS (
     AND p.start_date >= slp.SupvLevelChangeDate
     AND (p.end_date <= slp.sl_end_date OR slp.sl_end_date IS NULL)
 ),
+/*
+`merged_supervision_periods_with_location` Merges in location information.
+*/
 merged_supervision_periods_with_location AS (
   SELECT DISTINCT
     p.OffenderId,
@@ -351,6 +447,13 @@ merged_supervision_periods_with_location AS (
     AND p.start_date >= slp.PeriodStart
     AND (p.end_date <= slp.PeriodEnd OR slp.PeriodEnd IS NULL)
 ),
+/*
+`merged_supervision_periods_with_officer` merges in officer information. We apply a
+regex after merging everything which only retains supervision periods associated with
+officers with valid badge numbers. This eliminates PSAs. We retain supervision periods
+associated with null badge numbers as there are instances when we don't know someone's
+supervising officer -- these are still periods that we care about. 
+*/
 merged_supervision_periods_with_officer AS (
   SELECT DISTINCT
     p.OffenderId,
@@ -366,6 +469,9 @@ merged_supervision_periods_with_officer AS (
     ON p.OffenderId = spo.OffenderId
     AND p.start_date >= spo.PeriodStart
     AND (p.end_date <= spo.PeriodEnd OR spo.PeriodEnd IS NULL)
+  WHERE (
+    REGEXP_CONTAINS(spo.BadgeNumber, r"^[0-9][0-9][0-9][0-9]$") OR spo.BadgeNumber IS NULL
+  )
 )
 SELECT
     OffenderId,
