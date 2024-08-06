@@ -29,6 +29,10 @@ from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodHousingUnitType,
 )
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
+from recidiviz.common.constants.state.state_supervision_contact import (
+    StateSupervisionContactLocation,
+    StateSupervisionContactMethod,
+)
 
 
 def parse_housing_unit_type(  # TODO(#21278): Update when schema change request for additional types of solitary is in.
@@ -148,3 +152,45 @@ def parse_sentence_status(raw_text: str) -> Optional[StateSentenceStatus]:
         return StateSentenceStatus.AMENDED
 
     return StateSentenceStatus.INTERNAL_UNKNOWN
+
+
+def supervision_contact_location(
+    raw_text: str,
+) -> Optional[StateSupervisionContactLocation]:
+    contact_type = raw_text
+
+    if contact_type == "E":
+        return StateSupervisionContactLocation.PLACE_OF_EMPLOYMENT
+    if contact_type in (
+        "DAYR",
+        "O",
+        "OV",
+    ):  # Day reporting, office (old code), office visit (new code)
+        return StateSupervisionContactLocation.SUPERVISION_OFFICE
+    if contact_type == "J":  # Jail
+        return StateSupervisionContactLocation.JAIL
+    if contact_type == "FLD":  # Field
+        return StateSupervisionContactLocation.FIELD
+    if contact_type == "H":  # Home
+        return StateSupervisionContactLocation.RESIDENCE
+    if contact_type == "CORT":  # Court
+        return StateSupervisionContactLocation.COURT
+    if contact_type == "TX":  # Treatment
+        return StateSupervisionContactLocation.TREATMENT_PROVIDER
+
+    return StateSupervisionContactLocation.INTERNAL_UNKNOWN
+
+
+def supervision_contact_method(
+    raw_text: str,
+) -> Optional[StateSupervisionContactMethod]:
+    contact_type = raw_text
+
+    if contact_type in ("H", "O", "OV"):
+        return StateSupervisionContactMethod.IN_PERSON
+    if contact_type == "TV":  # Telephone Visit
+        return StateSupervisionContactMethod.TELEPHONE
+    if contact_type == "VV":  # Virtual Visit
+        return StateSupervisionContactMethod.VIRTUAL
+
+    return StateSupervisionContactMethod.INTERNAL_UNKNOWN

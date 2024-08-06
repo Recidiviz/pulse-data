@@ -51,10 +51,10 @@ contacts AS (
     CHRONO_WHO, 
     CHRONO_TYPE, 
     CHRONO_WHAT, 
+    IF(CHRONO_TYPE IN ('O', 'OV', 'H', 'CORT', 'DAYR', 'E', 'FLD', 'J', 'TV', 'VV', 'TX'), 'YES', 'NO') AS MEASURABLE, 
     (DATE(CHRONO_DATE)) AS CHRONO_DATE
   FROM {RCDVZ_CISPRDDTA_CMCROH} cm
   WHERE CHRONO_WHO = 'O' -- Contact for Adult in Custody or Adult in Supervision
-  AND CHRONO_TYPE IN ('O', 'OV', 'H', 'CORT', 'DAYR', 'E', 'FLD', 'J', 'TV', 'VV', 'TX') 
   AND cm.CASELOAD IS NOT null
   AND RECORD_KEY IN (SELECT DISTINCT RECORD_KEY FROM people_on_supervision)
 )
@@ -66,7 +66,8 @@ SELECT DISTINCT
   CHRONO_WHO, 
   CHRONO_TYPE, 
   CHRONO_WHAT, 
-  CHRONO_DATE
+  CHRONO_DATE,
+  MEASURABLE, 
 FROM people_on_supervision ps
 LEFT JOIN contacts
 USING (RECORD_KEY)
