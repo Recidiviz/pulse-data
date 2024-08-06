@@ -487,18 +487,24 @@ COMPARTMENT_SUB_SESSIONS_PREPROCESSED_QUERY_TEMPLATE = """
             OR inferred_oos OR inferred_suspension OR inferred_missing_data OR inferred_mo_release
             OR inferred_mo_suspension OR inferred_mo_pending_custody, FALSE) AS is_inferred_compartment,
     FROM sessions_with_inferred_booleans 
-    )
+    ),
+    final_sessions_with_inferred_compartments AS (
     /*
     In situations where we overwrite an original compartment value due to inference, ensure that all adjacent
     sub-sessions with the same original compartment value also take on this recategorized value.
     */
     SELECT
-        * EXCEPT(compartment_level_1, compartment_level_2, session_id_prelim, is_inferred_compartment),
+        * EXCEPT(compartment_level_1, compartment_level_2, session_id_prelim),
         FIRST_VALUE(compartment_level_1)
             OVER(PARTITION BY person_id, session_id_prelim ORDER BY IF(is_inferred_compartment,0,1)) AS compartment_level_1,
         FIRST_VALUE(compartment_level_2)
             OVER(PARTITION BY person_id, session_id_prelim ORDER BY IF(is_inferred_compartment,0,1)) AS compartment_level_2
     FROM sessions_with_inferred_compartments
+    )
+    SELECT * EXCEPT(open_supervision_cl1, open_supervision_cl2, is_inferred_compartment),
+    IF(is_inferred_compartment AND compartment_level_1 LIKE 'SUPERVISION%', compartment_level_1, open_supervision_cl1) AS open_supervision_cl1,
+    IF(is_inferred_compartment AND compartment_level_1 LIKE 'SUPERVISION%', compartment_level_2, open_supervision_cl2) AS open_supervision_cl2,
+    FROM final_sessions_with_inferred_compartments
 """
 COMPARTMENT_SUB_SESSIONS_PREPROCESSED_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=SESSIONS_DATASET,

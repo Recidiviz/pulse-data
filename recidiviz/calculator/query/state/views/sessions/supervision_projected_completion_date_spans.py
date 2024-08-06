@@ -124,16 +124,27 @@ supervision_sessions AS (
         person_id,
         start_date,
         end_date_exclusive,
-        end_date_exclusive IS NULL AS open_supervision_session,
-    FROM `{{project_id}}.{{sessions_dataset}}.compartment_level_1_super_sessions_materialized`
+        compartment_level_1
+    FROM `{{project_id}}.{{sessions_dataset}}.prioritized_supervision_sessions_materialized`
     WHERE compartment_level_1 IN ("SUPERVISION", "SUPERVISION_OUT_OF_STATE")
 ),
+collapsed_supervision_sessions AS (
+SELECT 
+    *,
+    end_date_exclusive IS NULL AS open_supervision_session,
+FROM 
+({aggregate_adjacent_spans(
+    table_name="supervision_sessions",
+    index_columns=["state_code", "person_id"],
+    attribute = ["compartment_level_1"],
+    end_date_field_name="end_date_exclusive",
+)})),
 overlapping_supervision_sessions AS (
 -- Left join the supervision projected completion date spans onto the supervision sessions so that every supervision
 -- and supervision out of state session is maintained, but split if the `projected_completion_date_max` changes. 
 -- If no sentence is available the `projected_completion_date_max` will be NULL.
 {create_intersection_spans(
-    table_1_name="supervision_sessions",
+    table_1_name="collapsed_supervision_sessions",
     table_2_name="collapsed_adjacent_spans",
     index_columns=["state_code", "person_id"],
     table_1_columns=["open_supervision_session"],
