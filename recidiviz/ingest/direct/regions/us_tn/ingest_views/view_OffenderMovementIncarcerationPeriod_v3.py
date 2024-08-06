@@ -83,7 +83,7 @@ WITH
             'CELL_MOVEMENT' AS MovementReason,
             RequestedSiteID AS FromLocationID,
             RequestedSiteID AS ToLocationID,
-            'CELL_MOVEMENT' as PeriodEvent, # do we still need this?
+            'CELL_MOVEMENT' as PeriodEvent, 
             RequestedUnitID AS HousingUnit,
             LAG(RequestedUnitID) OVER(PARTITION BY OFFENDERID ORDER BY AssignmentDateTime) AS LastHousingUnit,
             CASE WHEN EndDate IS NOT NULL THEN 'CLOSED' ELSE 'OPEN' END as AssignmentStatus,
@@ -287,7 +287,7 @@ WITH
             StartPeriodEvent != 'TERMINATION'  
     ),
     -- We then hydrate all values of the housing unit, custody level, and faciltiy information as well as clean up any rough end date edges
-    hydrate_all_values AS (
+hydrate_all_values AS (
     SELECT 
         OffenderID,
         MovementSequenceNumber,
@@ -315,12 +315,36 @@ WITH
         {Site} site_info
     ON StartToLocationID = SiteID 
         WINDOW person_sequence AS (PARTITION BY OffenderID ORDER BY MovementSequenceNumber)
+),
+-- adding flag for when the last_movement ends in a code for release to supervision/from system 
+-- and a flag for when an open period starts with a unit_movement
+cleaning_extra_movements AS (
+    SELECT 
+        OffenderID,
+        StartDateTime,
+        EndDateTime,
+        Site,
+        SiteType,
+        DeathDate,
+        StartMovementType,
+        StartMovementReason,
+        EndMovementType,
+        MovementSequenceNumber,
+        EndMovementReason,
+        CustodyLevel, 
+        HousingUnit,
+        IF(RIGHT(LAG(EndMovementType) OVER (PARTITION BY OFFENDERID ORDER BY MovementSequenceNumber), 2) IN ('CC', 'PA', 'PR', 'DV', 'DI', 'EI', 'ES', 'NC', 'AB', 'FU', 'BO', 'WR'), 
+            'release', 
+            'stay'
+        ) AS last_movement,
+        IF(StartMovementReason ='UNIT_MOVEMENT' AND EndDatetime IS NULL, 'yes', 'no') as open_with_unit_change
+    FROM hydrate_all_values
 )
-SELECT 
+SELECT
     OffenderID,
     StartDateTime,
     EndDateTime,
-    hydrate_all_values.Site,
+    cleaning_extra_movements.Site,
     SiteType,
     StartMovementType,
     StartMovementReason,
@@ -332,11 +356,13 @@ SELECT
     # is in an incarceration facility (SiteType = 'IN'). We may need to revisit this choice in the future if we decide to 
     # include other SiteTypes that the CustodyLevel still applies to. 
     CASE WHEN SiteType = 'IN' THEN CustodyLevel ELSE Null END AS CustodyLevel, 
-    CASE WHEN hydrate_all_values.HousingUnit = confirm_housing_unit_in_actual_facility.SiteUnit THEN HousingUnit ELSE NULL END AS HousingUnit,
+    CASE WHEN cleaning_extra_movements.HousingUnit = confirm_housing_unit_in_actual_facility.SiteUnit THEN HousingUnit ELSE NULL END AS HousingUnit,
     ROW_NUMBER() OVER (PARTITION BY OffenderID ORDER BY MovementSequenceNumber ASC) AS IncarcerationPeriodSequenceNumber
-FROM hydrate_all_values
-LEFT JOIN confirm_housing_unit_in_actual_facility ON SiteUnit = HousingUnit AND confirm_housing_unit_in_actual_facility.Site = hydrate_all_values.Site
-# We use this final join to null out any HousingUnit assignments that are not updated once someone is is a different facility in OffenderMovement
+FROM cleaning_extra_movements
+-- We use this final join to null out any HousingUnit assignments that are not updated once someone is is a different facility in OffenderMovement
+LEFT JOIN confirm_housing_unit_in_actual_facility ON SiteUnit = HousingUnit AND confirm_housing_unit_in_actual_facility.Site = cleaning_extra_movements.Site
+-- filtering out when last open period start movement is unit change after a period ending with discharge codes 
+WHERE last_movement != 'release' OR open_with_unit_change != 'yes'
 """
 
 VIEW_BUILDER = DirectIngestViewQueryBuilder(
