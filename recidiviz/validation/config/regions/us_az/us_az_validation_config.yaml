@@ -7,6 +7,12 @@ exclusions:
   - validation_name: sentence_comparison
     exclusion_type: DOES_NOT_APPLY
     exclusion_reason: AZ is being hydrated only with v2 sentences
+  - validation_name: session_new_admissions_with_no_sentence_date_imposed
+    exclusion_type: DOES_NOT_APPLY
+    exclusion_reason: AZ is being hydrated only with v2 sentences
+  - validation_name: sessions_missing_closest_sentence_imposed_group
+    exclusion_type: DOES_NOT_APPLY
+    exclusion_reason: AZ is being hydrated only with v2 sentences
 max_allowed_error_overrides:
   - validation_name: incarceration_population_by_facility_external_comparison
     hard_max_allowed_error_override: 0.03
