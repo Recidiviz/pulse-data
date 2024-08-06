@@ -3,7 +3,8 @@ file_tag: REC_ID_PERSON
 file_description: |-
   This file contains person level information.
 data_classification: source
-primary_key_cols: []
+primary_key_cols:
+  - COMMIT_NO
 columns:
   - name: SID_NO
     is_pii: True

@@ -3,7 +3,10 @@ file_tag: REC_ID_SENTENCE
 file_description: |-
   This file contains sentence information.
 data_classification: source
-primary_key_cols: []
+primary_key_cols:
+  - COMMIT_NO
+  - SENTENCING_UNIT
+  - SENTENCE_SEQ_NUM
 columns:
   - name: COMMIT_NO
     is_pii: True
