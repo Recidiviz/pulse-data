@@ -1154,9 +1154,15 @@ US_ND:
       Alerts are flagged in the side panel of Workflows.
     workflows_views.us_nd_transfer_to_minimum_facility_form_record: |-
       Alerts are flagged in the side panel of Workflows.
+  recidiviz_elite_Assessments:
+    task_eligibility_criteria_us_nd.no_recent_referrals_to_minimum_housing: |-
+      Used to create a criteria using data from a referral tool.
   recidiviz_elite_CourseActivities:
     sessions.us_nd_incarceration_staff_assignment_sessions_preprocessed: |-
       Get CM staff assignments to residents.
+  recidiviz_elite_OffenderAssessments:
+    task_eligibility_criteria_us_nd.no_recent_referrals_to_minimum_housing: |-
+      Used to create a criteria using data from a referral tool.
   recidiviz_elite_offender_alerts:
     task_eligibility_criteria_us_nd.has_registration_requirements: |-
       Alerts are not ingested.

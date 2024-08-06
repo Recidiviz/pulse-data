@@ -302,3 +302,83 @@ def get_infractions_as_case_notes() -> str:
     WHERE {today_between_start_date_and_nullable_end_date_exclusive_clause(
             start_date_column="i.start_date",
             end_date_column="i.end_date")}"""
+
+
+def get_minimum_housing_referals_query() -> str:
+    """
+    Returns a SQL query that retrieves minimum housing referrals data.
+    """
+    return """
+WITH min_referrals AS (
+    SELECT 
+        SAFE_CAST(REGEXP_REPLACE(OFFENDER_BOOK_ID, r',|.00', '') AS STRING) AS external_id,
+        SAFE_CAST(REGEXP_REPLACE(ASSESSMENT_TYPE_ID, r',', '')  AS NUMERIC) AS assess_type,
+        rea.DESCRIPTION AS assess_type_desc,
+        CASE 
+            WHEN EVALUATION_RESULT_CODE = 'APP' THEN 'Approved'
+            WHEN EVALUATION_RESULT_CODE = 'RESCIND' THEN 'Rescinded'
+            WHEN EVALUATION_RESULT_CODE = 'REFER' THEN 'Referred'
+            WHEN EVALUATION_RESULT_CODE = 'NOTAPP' THEN 'Not Approved'
+            WHEN EVALUATION_RESULT_CODE = 'NOREF' THEN 'Not Referred'
+            WHEN EVALUATION_RESULT_CODE = 'DEFERRED' THEN 'Deferred'
+            ELSE 'Unknown'
+        END AS evaluation_result,
+        reoa.ASSESS_COMMENT_TEXT AS assess_comment_text,
+        reoa.COMMITTE_COMMENT_TEXT AS committee_comment_text,
+        SAFE_CAST(LEFT(reoa.EVALUATION_DATE, 10) AS DATE) AS evaluation_date,
+        SAFE_CAST(LEFT(reoa.NEXT_REVIEW_DATE, 10) AS DATE) AS next_review_date,
+    FROM `{project_id}.{raw_data_up_to_date_views_dataset}.recidiviz_elite_OffenderAssessments_latest` reoa
+    LEFT JOIN `{project_id}.{raw_data_up_to_date_views_dataset}.recidiviz_elite_Assessments_latest` rea
+    ON reoa.ASSESSMENT_TYPE_ID = rea.ASSESSMENT_ID
+    -- We only care about MINIMUM HOUSING REQUESTS
+    WHERE rea.DESCRIPTION = 'MINIMUM HOUSING REQUEST'
+),
+
+min_referrals_with_external_id AS (
+    # We join the referrals with the external id
+    SELECT 
+        peid.person_id,
+        peid.state_code,
+        mr.assess_type,
+        mr.assess_type_desc,
+        mr.evaluation_result,
+        mr.assess_comment_text,
+        mr.committee_comment_text,
+        mr.evaluation_date AS start_date,
+        mr.next_review_date,
+    FROM min_referrals mr
+    INNER JOIN `{project_id}.{normalized_state_dataset}.state_person_external_id` peid
+        ON mr.external_id = peid.external_id
+            AND peid.state_code = 'US_ND'
+            AND peid.id_type = 'US_ND_ELITE_BOOKING'
+),
+
+min_referrals_with_external_id_and_ce AS (
+    # We join the referrals with the closest completion event date for those who were approved
+    SELECT 
+        mr.person_id,
+        mr.state_code,
+        mr.assess_type,
+        mr.assess_type_desc,
+        mr.evaluation_result,
+        mr.assess_comment_text,
+        mr.committee_comment_text,
+        mr.start_date,
+        mr.next_review_date,
+        IFNULL(mr.next_review_date,
+            CASE
+                # For cases where the evaluation was approved, we close the span with 
+                # the completion event (being transferred to MIN) or the evaluation date + 6 months
+                WHEN mr.evaluation_result = 'Approved' THEN IFNULL(MIN(ce.completion_event_date), DATE_ADD(mr.start_date, INTERVAL 6 MONTH))
+                # For everyone else, we close the span 3 months after the evaluation/start date
+                ELSE DATE_ADD(mr.start_date, INTERVAL 3 MONTH)
+            END) AS end_date
+    FROM min_referrals_with_external_id mr
+    LEFT JOIN `{project_id}.{task_eligibility_completion_events_dataset}.transfer_to_reentry_center_materialized` ce
+        ON mr.person_id = ce.person_id
+            AND mr.start_date <= ce.completion_event_date
+            AND mr.evaluation_result = 'Approved'
+            AND mr.state_code = ce.state_code
+    GROUP BY 1,2,3,4,5,6,7,8,9
+)
+    """
