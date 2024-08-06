@@ -1,11 +1,23 @@
 # yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
 manifest_language: 1.0.0
 input_columns:
-  - REFERRAL_STAFF_ID
+  - STAFF_ID
+  - FIRST_NAME
+  - LAST_NAME
+  - MIDDLE_NAME
 unused_columns: []
 output:
   StateStaff:
     external_ids:
       - StateStaffExternalId:
-          external_id: REFERRAL_STAFF_ID
+          external_id: STAFF_ID
           id_type: $literal("US_ND_ELITE_OFFICER")
+    full_name:
+      $conditional:
+        - $if:
+            $not_null: LAST_NAME
+          $then:
+            $person_name:
+              $given_names: FIRST_NAME
+              $middle_names: MIDDLE_NAME
+              $surname: LAST_NAME

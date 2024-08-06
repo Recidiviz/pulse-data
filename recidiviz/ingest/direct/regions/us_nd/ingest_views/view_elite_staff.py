@@ -32,10 +32,31 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 VIEW_QUERY_TEMPLATE = """
+WITH 
+-- Collect all staff information from the base Elite staff table.
+elite_staff AS (
 SELECT DISTINCT 
-    REPLACE(REPLACE(REFERRAL_STAFF_ID, '.00', ''), ',', '') AS REFERRAL_STAFF_ID,
+    REPLACE(REPLACE(STAFF_ID, '.00', ''), ',', '') AS STAFF_ID,
+    FIRST_NAME,
+    MIDDLE_NAME,
+    LAST_NAME
+FROM {recidiviz_elite_staff_members}
+WHERE PERSONNEL_TYPE IN ('STAFF', 'CON')
+),
+-- Collect any STAFF_IDs that are not included in elite_staff, but are included as a referral
+-- source in programming data. As of 7/19/2024 there is only one such STAFF_ID.
+program_referral_staff AS (
+SELECT DISTINCT 
+    REPLACE(REPLACE(REFERRAL_STAFF_ID, '.00', ''), ',', '') AS STAFF_ID,
+    CAST(NULL AS STRING) AS FIRST_NAME,
+    CAST(NULL AS STRING) AS MIDDLE_NAME,
+    CAST(NULL AS STRING) AS LAST_NAME
 FROM {elite_OffenderProgramProfiles}
-WHERE REFERRAL_STAFF_ID IS NOT NULL
+WHERE REPLACE(REPLACE(REFERRAL_STAFF_ID, '.00', ''), ',', '') NOT IN (SELECT DISTINCT STAFF_ID FROM elite_staff)
+)
+SELECT * FROM elite_staff
+UNION ALL 
+SELECT * FROM program_referral_staff
 """
 
 VIEW_BUILDER = DirectIngestViewQueryBuilder(
