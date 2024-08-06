@@ -21,7 +21,6 @@ county codes."""
 import logging
 from typing import Dict, Optional
 
-
 COUNTY_CODES: Dict[str, str] = {
     "1": "US_ND_ADAMS",
     "AD": "US_ND_ADAMS",
