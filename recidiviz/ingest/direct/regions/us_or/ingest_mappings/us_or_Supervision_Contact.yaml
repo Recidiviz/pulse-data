@@ -10,8 +10,8 @@ input_columns:
   - CHRONO_WHO
   - CHRONO_WHAT
   - CHRONO_TYPE
+  - MEASURABLE
 unused_columns:
-  - CHRONO_WHAT # rarely populated but additional information about contact
   - CHRONO_WHO # Filtered to always be "O" (Adult on Supervision)
 output:
   StatePerson:
@@ -38,44 +38,13 @@ output:
           contact_method:
             $enum_mapping:
               $raw_text: CHRONO_TYPE
-              $mappings:
-                StateSupervisionContactMethod.IN_PERSON:
-                  - "O" # Office - old code
-                  - "OV" # Office - new code
-                  - "H" # Home Visit
-                StateSupervisionContactMethod.TELEPHONE:
-                  - "TV" # Telephone Visit
-                StateSupervisionContactMethod.VIRTUAL:
-                  - "VV" # Virtual Visit
-                StateSupervisionContactMethod.INTERNAL_UNKNOWN:
-                  - "CORT" # Court
-                  - "DAYR" # Day Reporting
-                  - "E" # Employment
-                  - "FLD" # Field
-                  - "J" # Jail
-                  - "TX" # Treatment
+              $custom_parser: us_or_custom_enum_parsers.supervision_contact_method
           status: $literal_enum(StateSupervisionContactStatus.COMPLETED)
           location:
             $enum_mapping:
               $raw_text: CHRONO_TYPE
-              $mappings:
-                StateSupervisionContactLocation.PLACE_OF_EMPLOYMENT:
-                  - "E" # Employment
-                StateSupervisionContactLocation.SUPERVISION_OFFICE:
-                  - "DAYR" # Day Reporting
-                  - "O" # Office - old code
-                  - "OV" # Office - new code
-                StateSupervisionContactLocation.JAIL:
-                  - "J" # Jail
-                StateSupervisionContactLocation.FIELD:
-                  - "FLD" # Field
-                StateSupervisionContactLocation.RESIDENCE:
-                  - "H" # Home Visit
-                StateSupervisionContactLocation.COURT:
-                  - "CORT" # Court
-                StateSupervisionContactLocation.TREATMENT_PROVIDER:
-                  - "TX" # Treatment
-                StateSupervisionContactLocation.INTERNAL_UNKNOWN:
-                  - "TV" # Telephone Visit
-                  - "VV" # Virtual Visit
-
+              $custom_parser: us_or_custom_enum_parsers.supervision_contact_location
+          supervision_contact_metadata:
+            $json_dict:
+              MEASURABLE: MEASURABLE
+              KEYWORD: CHRONO_WHAT
