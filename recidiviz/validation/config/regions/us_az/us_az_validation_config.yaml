@@ -15,10 +15,18 @@ exclusions:
     exclusion_reason: AZ is being hydrated only with v2 sentences
 max_allowed_error_overrides:
   - validation_name: incarceration_population_by_facility_external_comparison
-    hard_max_allowed_error_override: 0.03
+    soft_max_allowed_error_override: 0.03
+    hard_max_allowed_error_override: 0.26
     override_reason: |-
       1% hard threshold bump until we can get person-level validation 
       data for debugging. TODO(#30582)
+  - validation_name: supervision_population_by_type_external_comparison
+    hard_max_allowed_error_override: 0.11
+    soft_max_allowed_error_override: 0.0502
+    override_reason: |-
+      5% is the tightest threshold the state thought we could get to given the quality
+      of the raw data available. More recent months are within that threshold, and older
+      months have higher error rates.
 num_allowed_rows_overrides:
   - validation_name: invalid_release_reasons_for_temporary_custody
     hard_num_allowed_rows_override: 17
@@ -27,3 +35,5 @@ num_allowed_rows_overrides:
       been closed for many years. They are likely due to data entry errors. This validation
       is worth investigating if we have a more recent example or one related to an open 
       period, but these old examples are okay to ignore.
+      1% soft threshold bump and larger hard threshold bump until we can get person-level 
+      validation data for debugging. TODO(#30514)

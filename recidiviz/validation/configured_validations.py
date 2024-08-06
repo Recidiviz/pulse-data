@@ -73,6 +73,9 @@ from recidiviz.validation.views.state.incarceration_period_dates_existence impor
 from recidiviz.validation.views.state.incarceration_population_by_admission_reason_internal_consistency import (
     INCARCERATION_POPULATION_BY_ADMISSION_REASON_INTERNAL_CONSISTENCY_VIEW_BUILDER,
 )
+from recidiviz.validation.views.state.incarceration_population_by_custody_level_external_comparison import (
+    INCARCERATION_POPULATION_BY_CUSTODY_LEVEL_EXTERNAL_COMPARISON_VIEW_BUILDER,
+)
 from recidiviz.validation.views.state.incarceration_population_by_demographic_internal_comparison import (
     INCARCERATION_POPULATION_BY_DEMOGRAPHIC_INTERNAL_COMPARISON_VIEW_BUILDER,
 )
@@ -753,6 +756,16 @@ def get_all_validations() -> List[DataValidationCheck]:
         ),
         SamenessDataValidationCheck(
             view_builder=INCARCERATION_POPULATION_BY_FACILITY_EXTERNAL_COMPARISON_VIEW_BUILDER,
+            comparison_columns=[
+                "external_population_count",
+                "internal_population_count",
+            ],
+            hard_max_allowed_error=0.02,
+            validation_category=ValidationCategory.EXTERNAL_AGGREGATE,
+            region_configs=region_configs,
+        ),
+        SamenessDataValidationCheck(
+            view_builder=INCARCERATION_POPULATION_BY_CUSTODY_LEVEL_EXTERNAL_COMPARISON_VIEW_BUILDER,
             comparison_columns=[
                 "external_population_count",
                 "internal_population_count",

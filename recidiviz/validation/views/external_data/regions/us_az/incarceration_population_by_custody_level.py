@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""A view containing supervision population at the person level for Arizona."""
+"""A view detailing the incarceration population aggregated by custody level for Arizona."""
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.dataset_config import raw_latest_views_dataset_for_region
@@ -24,25 +24,18 @@ from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.validation.views import dataset_config
 
 VIEW_QUERY_TEMPLATE = """
-SELECT 
-  'US_AZ' AS region_code,
-  person.PERSON_ID AS person_external_id,
-  'US_AZ_PERSON_ID' AS external_id_type,
-  CAST(REPORT_DATE AS DATETIME) AS date_of_supervision,
-  OFFICE AS district,
-  OFFICER AS supervising_officer,
-  SUPV_LEV AS supervision_level
-FROM `{project_id}.{us_az_raw_data_up_to_date_dataset}.validation_supervision_population_person_level_latest` ext
--- As of 2024-06-04, this leaves 6 people with blank PERSON_IDs who are actively on supervision,
--- but do not appear with these ADC_NUMBER values in the PERSON table. See TODO(#30383).
-LEFT JOIN `{project_id}.{us_az_raw_data_up_to_date_dataset}.PERSON_latest` person
-USING(ADC_NUMBER)
+SELECT
+    'US_AZ' AS region_code,
+    CAST(COUNT_DATE AS DATE) AS date_of_stay,
+    UPPER(CUSTODY_LEVEL) AS custody_level,
+    CAST(population_count AS INT64) AS population_count,
+FROM `{project_id}.{us_az_raw_data_up_to_date_dataset}.validation_daily_count_sheet_by_custody_level_latest`
 """
 
-US_AZ_SUPERVISION_POPULATION_PERSON_LEVEL_VIEW_BUILDER = SimpleBigQueryViewBuilder(
+US_AZ_INCARCERATION_POPULATION_BY_CUSTODY_LEVEL_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=dataset_config.validation_dataset_for_state(StateCode.US_AZ),
-    view_id="supervision_population_person_level",
-    description="A view detailing supervision population at the person level for Arizona.",
+    view_id="incarceration_population_by_custody_level",
+    description="A view detailing the incarceration population aggregated by custody level for Arizona.",
     view_query_template=VIEW_QUERY_TEMPLATE,
     should_materialize=True,
     us_az_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
@@ -52,4 +45,4 @@ US_AZ_SUPERVISION_POPULATION_PERSON_LEVEL_VIEW_BUILDER = SimpleBigQueryViewBuild
 
 if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
-        US_AZ_SUPERVISION_POPULATION_PERSON_LEVEL_VIEW_BUILDER.build_and_print()
+        US_AZ_INCARCERATION_POPULATION_BY_CUSTODY_LEVEL_VIEW_BUILDER.build_and_print()
