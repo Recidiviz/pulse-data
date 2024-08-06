@@ -227,6 +227,7 @@ class TestSchemaUtils(unittest.TestCase):
         workflows_table_names = [
             "opportunity",
             "opportunity_configuration",
+            "case_note_search_record",
         ]
         insights_table_names = [
             "metric_benchmarks",

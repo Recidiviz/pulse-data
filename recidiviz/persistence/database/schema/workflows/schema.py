@@ -40,6 +40,63 @@ WorkflowsBase: DeclarativeMeta = declarative_base(
 )
 
 
+class CaseNoteSearchRecord(WorkflowsBase):
+    """Record case note search queries and results."""
+
+    __tablename__ = "case_note_search_record"
+
+    # Manage this table via alembic
+    __table_args__ = {"info": {RUN_MIGRATIONS: True}}
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+
+    # ID of the Staff member viewing the page
+    user_external_id = Column(String)
+
+    # ID of the Client whose page we’re on
+    client_external_id = Column(String)
+
+    # The US state for which this search occurred.
+    state_code = Column(String)
+
+    # The time that the query occurred.
+    timestamp = Column(DateTime(timezone=True))
+
+    # -- Request Values --
+
+    # The search term entered into the tool
+    search_term = Column(String)
+
+    # The page size limit used in the request.
+    page_size = Column(Integer)
+
+    # The filter conditions sent to the Discovery Engine.
+    filter_conditions = Column(JSON)
+
+    # The max number of extractive answers the engine should return.
+    max_extractive_answer_count = Column(Integer)
+
+    # The max number of snippets the engine should return.
+    max_snippet_count = Column(Integer)
+
+    # The number of summary results to return.
+    summary_result_count = Column(Integer)
+
+    # -- Result Values --
+
+    # The ids of the case notes returned by the Discovery Engine.
+    case_note_ids = Column(ARRAY(String))
+
+    # The extractive answer returned by the Discovery Engine, if requested.
+    extractive_answer = Column(String)
+
+    # The snippet returned by the Discovery Engine, if requested.
+    snippet = Column(String)
+
+    # The summary returned by the Discovery Engine, if requested.
+    summary = Column(String)
+
+
 class Opportunity(WorkflowsBase):
     """Base configuration data for an opportunity."""
 
