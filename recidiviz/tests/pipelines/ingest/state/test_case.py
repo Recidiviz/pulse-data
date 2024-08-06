@@ -15,8 +15,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """A class that represents a test case to be used for testing the ingest pipeline."""
-import json
-import unittest
 from collections import defaultdict
 from copy import deepcopy
 from datetime import datetime
@@ -44,9 +42,6 @@ from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_compiler_deleg
 )
 from recidiviz.ingest.direct.raw_data.direct_ingest_raw_table_schema_builder import (
     RawDataTableBigQuerySchemaBuilder,
-)
-from recidiviz.ingest.direct.raw_data.raw_file_configs import (
-    DirectIngestRegionRawFileConfig,
 )
 from recidiviz.ingest.direct.types.direct_ingest_constants import (
     MATERIALIZATION_TIME_COL_NAME,
@@ -81,9 +76,6 @@ from recidiviz.pipelines.ingest.dataset_config import (
     ingest_view_materialization_results_dataset,
     state_dataset_for_state_code,
 )
-from recidiviz.pipelines.ingest.state.constants import (
-    INGEST_VIEW_RESULTS_SCHEMA_COLUMNS,
-)
 from recidiviz.pipelines.ingest.state.generate_primary_keys import (
     generate_primary_key,
     string_representation,
@@ -97,9 +89,15 @@ from recidiviz.tests.big_query.big_query_emulator_test_case import (
     BigQueryEmulatorTestCase,
 )
 from recidiviz.tests.ingest.direct import fake_regions
+from recidiviz.tests.ingest.direct.direct_ingest_raw_fixture_loader import (
+    DirectIngestRawDataFixtureLoader,
+)
 from recidiviz.tests.ingest.direct.fixture_util import (
     DirectIngestTestFixturePath,
     load_dataframe_from_path,
+)
+from recidiviz.tests.ingest.direct.regions.state_ingest_view_parser_test_base import (
+    DEFAULT_UPDATE_DATETIME,
 )
 from recidiviz.tests.pipelines.fake_bigquery import (
     FakeReadAllFromBigQueryWithEmulator,
@@ -115,21 +113,33 @@ from recidiviz.tests.utils.fake_region import fake_region
 INGEST_INTEGRATION = "ingest_integration"
 
 
-class BaseStateIngestPipelineTestCase(unittest.TestCase):
-    """Base test case for testing ingest pipelines that does not use the BQ emulator."""
+# TODO(#22059): Standardize ingest view result fixtures for pipeline and ingest view
+# tests, and update this test case to load those fixtures using the same
+# common code as the ingest view test.
+class BaseStateIngestPipelineTestCase(BigQueryEmulatorTestCase):
+    """Base test case for testing ingest dataflow pipelines using the BigQueryEmulator."""
 
     @classmethod
-    def region_code(cls) -> StateCode:
-        return StateCode.US_DD
+    def state_code(cls) -> StateCode:
+        raise NotImplementedError(
+            "Add a specific StateCode for the state specific test."
+        )
 
     @classmethod
     def region_module_override(cls) -> Optional[ModuleType]:
-        return fake_regions
+        """
+        The module housing different region ingest code.
+        It allows us to differentiate "fake states", like US_DD,
+        and our template state, US_XX, as their configs and other
+        paths live in different places. If this method returns None,
+        it will read from the regular region path (for real states).
+        """
+        return None
 
     @classmethod
     def region(cls) -> DirectIngestRegion:
         return fake_region(
-            region_code=cls.region_code().value.lower(),
+            region_code=cls.state_code().value.lower(),
             environment="staging",
             region_module=cls.region_module_override(),
         )
@@ -165,13 +175,13 @@ class BaseStateIngestPipelineTestCase(unittest.TestCase):
     @classmethod
     def expected_ingest_view_dataset(cls) -> str:
         return ingest_view_materialization_results_dataset(
-            cls.region_code(), DEFAULT_TEST_PIPELINE_OUTPUT_SANDBOX_PREFIX
+            cls.state_code(), DEFAULT_TEST_PIPELINE_OUTPUT_SANDBOX_PREFIX
         )
 
     @classmethod
     def expected_state_dataset(cls) -> str:
         return state_dataset_for_state_code(
-            cls.region_code(), DEFAULT_TEST_PIPELINE_OUTPUT_SANDBOX_PREFIX
+            cls.state_code(), DEFAULT_TEST_PIPELINE_OUTPUT_SANDBOX_PREFIX
         )
 
     def setUp(self) -> None:
@@ -180,6 +190,11 @@ class BaseStateIngestPipelineTestCase(unittest.TestCase):
             "recidiviz.ingest.direct.direct_ingest_regions.get_direct_ingest_region"
         )
         self.region_patcher.start().return_value = self.region()
+        self.raw_fixture_loader = DirectIngestRawDataFixtureLoader(
+            state_code=self.state_code(),
+            emulator_test=self,
+            region_module=self.region_module_override(),
+        )
 
     def tearDown(self) -> None:
         self.region_patcher.stop()
@@ -190,23 +205,64 @@ class BaseStateIngestPipelineTestCase(unittest.TestCase):
         *,
         ingest_view_name: str,
         test_name: str,
+        fixture_has_metadata_columns: bool = True,
+        generate_default_metadata: bool = False,
+        use_results_fixture: bool = True,
     ) -> Iterable[Dict[str, Any]]:
-        """Reads in fixtures for ingest view results - if there is no metadata associated
-        with the ingest view results, generates a default metadata for the results."""
-        return load_dataframe_from_path(
-            raw_fixture_path=DirectIngestTestFixturePath.for_ingest_view_test_results_fixture(
-                region_code=self.region().region_code,
-                ingest_view_name=ingest_view_name,
+        """Reads in an ingest view fixture to be used in tests.
+
+        If the ingest view fixture has metadata in the CSV,
+        fixture_has_metadata_columns should be True.
+
+        If the fixture CSV does not have metadata, but we would
+        like to generate default values, then generate_default_metadata
+        should be True.
+
+        If we're loading an ingest view *result* fixture, then
+        use_results_fixture should be True. If we are using
+        an "extract and merge" fixture, it should be False.
+
+        TODO(#22059): Standardize ingest view fixtures and simplify
+                      this method. Ideally a pipeline test will only
+                      need to read ingest view result fixtures, and
+                      we can deprecate "extract and merge" fixtures.
+        """
+        if fixture_has_metadata_columns and generate_default_metadata:
+            raise ValueError(
+                "Can't read metadata from fixture and also generate default values!"
+            )
+        fixture_columns = (
+            self.ingest_view_manifest_collector()
+            .ingest_view_to_manifest[ingest_view_name]
+            .input_columns
+        )
+        if fixture_has_metadata_columns:
+            fixture_columns.extend(
+                [MATERIALIZATION_TIME_COL_NAME, UPPER_BOUND_DATETIME_COL_NAME]
+            )
+
+        if use_results_fixture:
+            fixture_path = (
+                DirectIngestTestFixturePath.for_ingest_view_test_results_fixture(
+                    region_code=self.region().region_code,
+                    ingest_view_name=ingest_view_name,
+                    file_name=f"{test_name}.csv",
+                ).full_path()
+            )
+        else:
+            fixture_path = DirectIngestTestFixturePath.for_extract_and_merge_fixture(
+                region_code=self.state_code().value,
                 file_name=f"{test_name}.csv",
-            ).full_path(),
-            fixture_columns=[
-                *self.ingest_view_manifest_collector()
-                .ingest_view_to_manifest[ingest_view_name]
-                .input_columns,
-                MATERIALIZATION_TIME_COL_NAME,
-                UPPER_BOUND_DATETIME_COL_NAME,
-            ],
-        ).to_dict("records")
+            ).full_path()
+
+        df = load_dataframe_from_path(
+            fixture_path,
+            fixture_columns,
+        )
+        if generate_default_metadata:
+            df[MATERIALIZATION_TIME_COL_NAME] = datetime.now().isoformat()
+            df[UPPER_BOUND_DATETIME_COL_NAME] = DEFAULT_UPDATE_DATETIME.isoformat()
+        return df.to_dict("records")
 
     def get_expected_root_entities_from_fixture(
         self,
@@ -218,12 +274,10 @@ class BaseStateIngestPipelineTestCase(unittest.TestCase):
             self.get_ingest_view_results_from_fixture(
                 ingest_view_name=ingest_view_name,
                 test_name=test_name,
+                fixture_has_metadata_columns=False,
+                generate_default_metadata=False,
             )
         )
-        for row in rows:
-            for column in INGEST_VIEW_RESULTS_SCHEMA_COLUMNS:
-                if column.name in row:
-                    row.pop(column.name)
         return (
             self.ingest_view_manifest_collector()
             .ingest_view_to_manifest[ingest_view_name]
@@ -290,15 +344,15 @@ class BaseStateIngestPipelineTestCase(unittest.TestCase):
                         string_representation(
                             {(parent_external_id, parent_cls.get_class_id_name())}
                         ),
-                        self.region_code(),
+                        self.state_code(),
                     ),
                     child_cls.get_primary_key_column_name(): generate_primary_key(
                         string_representation(
                             {(child_external_id, child_cls.get_class_id_name())}
                         ),
-                        self.region_code(),
+                        self.state_code(),
                     ),
-                    "state_code": self.region_code().value,
+                    "state_code": self.state_code().value,
                 }
                 for child_external_id, parent_external_id in associations
             ]
@@ -484,31 +538,25 @@ class BaseStateIngestPipelineTestCase(unittest.TestCase):
         return _validate_entity_output
 
 
-class StateIngestPipelineTestCase(
-    BaseStateIngestPipelineTestCase, BigQueryEmulatorTestCase
-):
+class StateIngestPipelineTestCase(BaseStateIngestPipelineTestCase):
     """A test case class to test the ingest pipeline, from raw data all the way to entity
     generation and merging. This does use the BQ emulator."""
+
+    @classmethod
+    def state_code(cls) -> StateCode:
+        return StateCode.US_DD
+
+    @classmethod
+    def region_module_override(cls) -> Optional[ModuleType]:
+        return fake_regions
 
     def setUp(self) -> None:
         super().setUp()
         self.raw_data_tables_dataset = raw_tables_dataset_for_region(
-            self.region_code(), self.raw_data_source_instance()
-        )
-        self.direct_ingest_raw_file_config = DirectIngestRegionRawFileConfig(
-            region_code=self.region_code().value, region_module=fake_regions
-        )
-
-        self.raw_file_config_patcher = patch(
-            "recidiviz.ingest.direct.views.direct_ingest_view_query_builder"
-            ".get_region_raw_file_config"
-        )
-        self.raw_file_config_patcher.start().return_value = (
-            self.direct_ingest_raw_file_config
+            self.state_code(), self.raw_data_source_instance()
         )
 
     def tearDown(self) -> None:
-        self.raw_file_config_patcher.stop()
         super().tearDown()
 
     def setup_single_ingest_view_raw_data_bq_tables(
@@ -526,6 +574,12 @@ class StateIngestPipelineTestCase(
                 raw_table_dependency_config, test_name=test_name
             )
 
+    # TODO(#22059): The raw fixtures for StateIngestPipelineTestCase
+    # have different metadata assumptions than our ingest view tests.
+    # Update the fixtures for these tests so that we generate default
+    # metadata for LATEST fixtures and have metadata in the file
+    # for ALL fixtures. Then we can use the raw_fixture_loader
+    # instead of this method.
     def setup_region_raw_data_bq_tables(self, test_name: str) -> None:
         # Deduplicate raw table dependencies where multiple tables are read from
         # same order.
@@ -602,7 +656,10 @@ class StateIngestPipelineTestCase(
         raw_data_upper_bound_dates_json_override: Optional[str] = None,
         debug: bool = False,  # pylint: disable=unused-argument
     ) -> None:
-        """Runs the state ingest pipeline and validates the output."""
+        """
+        Runs the state ingest pipeline and validates the output.
+        Assumes raw data tables have already been loaded!
+        """
         expected_entities = [
             entity
             for root_entity in expected_root_entities
@@ -636,7 +693,7 @@ class StateIngestPipelineTestCase(
 
         run_test_pipeline(
             pipeline_cls=self.pipeline_class(),
-            state_code=self.region_code().value,
+            state_code=self.state_code().value,
             project_id=BQ_EMULATOR_PROJECT_ID,
             read_from_bq_constructor=self.create_fake_bq_read_source_constructor,
             write_to_bq_constructor=self.create_fake_bq_write_sink_constructor(
@@ -652,17 +709,6 @@ class StateIngestPipelineTestCase(
             raw_data_upper_bound_dates_json=(
                 raw_data_upper_bound_dates_json_override
                 if raw_data_upper_bound_dates_json_override
-                else json.dumps(
-                    {
-                        # Fake upper bound dates for US_DD region
-                        "table1": "2022-07-04T00:00:00.000000",
-                        "table2": "2022-07-04T00:00:00.000000",
-                        "table3": "2022-07-04T00:00:00.000000",
-                        "table4": "2022-07-04T00:00:00.000000",
-                        "table5": "2023-07-05T00:00:00.000000",
-                        "table6": None,
-                        "table7": "2023-07-04T00:00:00.000000",
-                    }
-                )
+                else self.raw_fixture_loader.default_upper_bound_dates_json
             ),
         )

@@ -53,6 +53,11 @@ class TestGenerateIngestViewResults(StateIngestPipelineTestCase):
         super().tearDown()
         self.read_from_bq_patcher.stop()
 
+    # TODO(#22059): Standardize ingest view fixtures for ingest tests.
+    # This is testing ingest view materialization,
+    # so either separate these fixtures in a way that the
+    # this test likes, or really explicitly handle
+    # meatadata so we can consistently test it.
     def test_materialize_ingest_view_results(self) -> None:
         self.setup_single_ingest_view_raw_data_bq_tables(
             ingest_view_name="ingest12", test_name="ingest12"
@@ -63,7 +68,7 @@ class TestGenerateIngestViewResults(StateIngestPipelineTestCase):
 
         output = self.test_pipeline | pipeline.GenerateIngestViewResults(
             project_id=BQ_EMULATOR_PROJECT_ID,
-            state_code=self.region_code(),
+            state_code=self.state_code(),
             ingest_view_name="ingest12",
             raw_data_tables_to_upperbound_dates={
                 "table1": datetime.fromisoformat(

@@ -103,38 +103,38 @@ class TestMergeIngestViewRootEntityTrees(StateIngestPipelineTestCase):
                         datetime(2022, 7, 4, 0, 0).timestamp(),
                         "ingestMultipleChildren",
                         StatePerson(
-                            state_code=self.region_code().value,
+                            state_code=self.state_code().value,
                             external_ids=[
                                 StatePersonExternalId(
-                                    state_code=self.region_code().value,
+                                    state_code=self.state_code().value,
                                     external_id="ID1",
                                     id_type="US_DD_ID_TYPE",
                                 ),
                             ],
                             incarceration_periods=[
                                 StateIncarcerationPeriod(
-                                    state_code=self.region_code().value,
+                                    state_code=self.state_code().value,
                                     external_id="IC1",
                                     incarceration_type=StateIncarcerationType.STATE_PRISON,
                                     admission_date=date(2018, 1, 1),
                                     release_date=date(2019, 1, 1),
                                 ),
                                 StateIncarcerationPeriod(
-                                    state_code=self.region_code().value,
+                                    state_code=self.state_code().value,
                                     external_id="IC2",
                                     incarceration_type=StateIncarcerationType.STATE_PRISON,
                                     admission_date=date(2020, 1, 1),
                                     release_date=date(2021, 1, 1),
                                 ),
                                 StateIncarcerationPeriod(
-                                    state_code=self.region_code().value,
+                                    state_code=self.state_code().value,
                                     external_id="IC4",
                                     incarceration_type=StateIncarcerationType.STATE_PRISON,
                                     admission_date=date(2021, 6, 1),
                                     release_date=date(2021, 12, 1),
                                 ),
                                 StateIncarcerationPeriod(
-                                    state_code=self.region_code().value,
+                                    state_code=self.state_code().value,
                                     external_id="IC3",
                                     incarceration_type=StateIncarcerationType.STATE_PRISON,
                                     admission_date=date(2022, 1, 1),
@@ -155,7 +155,7 @@ class TestMergeIngestViewRootEntityTrees(StateIngestPipelineTestCase):
                 )
             )
             | pipeline.MergeIngestViewRootEntityTrees(
-                "ingestMultipleChildren", self.region_code(), self.field_index
+                "ingestMultipleChildren", self.state_code(), self.field_index
             )
         )
         assert_that(output, equal_to(expected_output))
@@ -170,10 +170,10 @@ class TestMergeIngestViewRootEntityTrees(StateIngestPipelineTestCase):
             (
                 datetime(2022, 7, 4, 0, 0).timestamp(),
                 StatePerson(
-                    state_code=self.region_code().value,
+                    state_code=self.state_code().value,
                     external_ids=[
                         StatePersonExternalId(
-                            state_code=self.region_code().value,
+                            state_code=self.state_code().value,
                             external_id="ID1",
                             id_type="US_DD_ID_TYPE",
                         ),
@@ -184,10 +184,10 @@ class TestMergeIngestViewRootEntityTrees(StateIngestPipelineTestCase):
             (
                 datetime(2022, 7, 4, 0, 0).timestamp(),
                 StatePerson(
-                    state_code=self.region_code().value,
+                    state_code=self.state_code().value,
                     external_ids=[
                         StatePersonExternalId(
-                            state_code=self.region_code().value,
+                            state_code=self.state_code().value,
                             external_id="ID1",
                             id_type="US_DD_ID_TYPE",
                         ),
@@ -204,10 +204,10 @@ class TestMergeIngestViewRootEntityTrees(StateIngestPipelineTestCase):
                         datetime(2022, 7, 4, 0, 0).timestamp(),
                         "test_ingest_view",
                         StatePerson(
-                            state_code=self.region_code().value,
+                            state_code=self.state_code().value,
                             external_ids=[
                                 StatePersonExternalId(
-                                    state_code=self.region_code().value,
+                                    state_code=self.state_code().value,
                                     external_id="ID1",
                                     id_type="US_DD_ID_TYPE",
                                 ),
@@ -222,7 +222,7 @@ class TestMergeIngestViewRootEntityTrees(StateIngestPipelineTestCase):
             self.test_pipeline
             | beam.Create(expected_input)
             | pipeline.MergeIngestViewRootEntityTrees(
-                "test_ingest_view", self.region_code(), self.field_index
+                "test_ingest_view", self.state_code(), self.field_index
             )
         )
         assert_that(output, equal_to(expected_output))
@@ -237,10 +237,10 @@ class TestMergeIngestViewRootEntityTrees(StateIngestPipelineTestCase):
             (
                 datetime(2022, 7, 4, 0, 0).timestamp(),
                 StatePerson(
-                    state_code=self.region_code().value,
+                    state_code=self.state_code().value,
                     external_ids=[
                         StatePersonExternalId(
-                            state_code=self.region_code().value,
+                            state_code=self.state_code().value,
                             external_id="ID1",
                             id_type="US_DD_ID_TYPE",
                         ),
@@ -248,13 +248,13 @@ class TestMergeIngestViewRootEntityTrees(StateIngestPipelineTestCase):
                     incarceration_sentences=[
                         StateIncarcerationSentence(
                             external_id="IS1",
-                            state_code=self.region_code().value,
+                            state_code=self.state_code().value,
                             incarceration_type=StateIncarcerationType.STATE_PRISON,
                             status=StateSentenceStatus.INTERNAL_UNKNOWN,
                             charges=[
                                 StateCharge(
                                     external_id="IC1",
-                                    state_code=self.region_code().value,
+                                    state_code=self.state_code().value,
                                     description="something",
                                     status=StateChargeStatus.INTERNAL_UNKNOWN,
                                 ),
@@ -266,10 +266,10 @@ class TestMergeIngestViewRootEntityTrees(StateIngestPipelineTestCase):
             (
                 datetime(2022, 7, 4, 0, 0).timestamp(),
                 StatePerson(
-                    state_code=self.region_code().value,
+                    state_code=self.state_code().value,
                     external_ids=[
                         StatePersonExternalId(
-                            state_code=self.region_code().value,
+                            state_code=self.state_code().value,
                             external_id="ID1",
                             id_type="US_DD_ID_TYPE",
                         ),
@@ -277,13 +277,13 @@ class TestMergeIngestViewRootEntityTrees(StateIngestPipelineTestCase):
                     incarceration_sentences=[
                         StateIncarcerationSentence(
                             external_id="IS1",
-                            state_code=self.region_code().value,
+                            state_code=self.state_code().value,
                             incarceration_type=StateIncarcerationType.STATE_PRISON,
                             status=StateSentenceStatus.INTERNAL_UNKNOWN,
                             charges=[
                                 StateCharge(
                                     external_id="IC1",
-                                    state_code=self.region_code().value,
+                                    state_code=self.state_code().value,
                                     description="something different",
                                     status=StateChargeStatus.INTERNAL_UNKNOWN,
                                 ),
@@ -301,10 +301,10 @@ class TestMergeIngestViewRootEntityTrees(StateIngestPipelineTestCase):
                         datetime(2022, 7, 4, 0, 0).timestamp(),
                         "test_ingest_view",
                         StatePerson(
-                            state_code=self.region_code().value,
+                            state_code=self.state_code().value,
                             external_ids=[
                                 StatePersonExternalId(
-                                    state_code=self.region_code().value,
+                                    state_code=self.state_code().value,
                                     external_id="ID1",
                                     id_type="US_DD_ID_TYPE",
                                 ),
@@ -312,13 +312,13 @@ class TestMergeIngestViewRootEntityTrees(StateIngestPipelineTestCase):
                             incarceration_sentences=[
                                 StateIncarcerationSentence(
                                     external_id="IS1",
-                                    state_code=self.region_code().value,
+                                    state_code=self.state_code().value,
                                     incarceration_type=StateIncarcerationType.STATE_PRISON,
                                     status=StateSentenceStatus.INTERNAL_UNKNOWN,
                                     charges=[
                                         StateCharge(
                                             external_id="IC1",
-                                            state_code=self.region_code().value,
+                                            state_code=self.state_code().value,
                                             description="something different",
                                             status=StateChargeStatus.INTERNAL_UNKNOWN,
                                         ),
@@ -334,7 +334,7 @@ class TestMergeIngestViewRootEntityTrees(StateIngestPipelineTestCase):
             self.test_pipeline
             | beam.Create(expected_input)
             | pipeline.MergeIngestViewRootEntityTrees(
-                "test_ingest_view", self.region_code(), self.field_index
+                "test_ingest_view", self.state_code(), self.field_index
             )
         )
         assert_that(output, equal_to(expected_output))
@@ -349,10 +349,10 @@ class TestMergeIngestViewRootEntityTrees(StateIngestPipelineTestCase):
             (
                 datetime(2022, 7, 4, 0, 0).timestamp(),
                 StatePerson(
-                    state_code=self.region_code().value,
+                    state_code=self.state_code().value,
                     external_ids=[
                         StatePersonExternalId(
-                            state_code=self.region_code().value,
+                            state_code=self.state_code().value,
                             external_id="ID1",
                             id_type="US_DD_ID_TYPE",
                         ),
@@ -363,10 +363,10 @@ class TestMergeIngestViewRootEntityTrees(StateIngestPipelineTestCase):
             (
                 datetime(2022, 7, 4, 0, 0).timestamp(),
                 StatePerson(
-                    state_code=self.region_code().value,
+                    state_code=self.state_code().value,
                     external_ids=[
                         StatePersonExternalId(
-                            state_code=self.region_code().value,
+                            state_code=self.state_code().value,
                             external_id="ID1",
                             id_type="US_DD_ID_TYPE",
                         ),
@@ -379,7 +379,7 @@ class TestMergeIngestViewRootEntityTrees(StateIngestPipelineTestCase):
             self.test_pipeline
             | beam.Create(expected_input)
             | pipeline.MergeIngestViewRootEntityTrees(
-                "test_ingest_view", self.region_code(), self.field_index
+                "test_ingest_view", self.state_code(), self.field_index
             )
         )
         with self.assertRaisesRegex(RuntimeError, r".*EntityMergingError.*"):

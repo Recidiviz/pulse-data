@@ -37,9 +37,22 @@ class TestStateIngestPipeline(StateIngestPipelineTestCase):
 
     def setUp(self) -> None:
         super().setUp()
+        self.us_dd_upper_date_bound_overrides = json.dumps(
+            {
+                # Fake upper bound dates for US_DD region
+                "table1": "2022-07-04T00:00:00.000000",
+                "table2": "2022-07-04T00:00:00.000000",
+                "table3": "2022-07-04T00:00:00.000000",
+                "table4": "2022-07-04T00:00:00.000000",
+                "table5": "2023-07-05T00:00:00.000000",
+                "table6": None,
+                "table7": "2023-07-04T00:00:00.000000",
+            }
+        )
 
     def test_state_ingest_pipeline(self) -> None:
         self.setup_region_raw_data_bq_tables(test_name=INGEST_INTEGRATION)
+        # TODO(#22059): Standardize ingest view result fixtures for pipeline and ingest view tests
         expected_ingest_view_output = {
             ingest_view: self.get_ingest_view_results_from_fixture(
                 ingest_view_name=ingest_view, test_name=INGEST_INTEGRATION
@@ -49,23 +62,23 @@ class TestStateIngestPipeline(StateIngestPipelineTestCase):
 
         # Ingest12
         external_id_1 = entities.StatePersonExternalId.new_with_defaults(
-            state_code=self.region_code().value,
+            state_code=self.state_code().value,
             external_id="ID1",
             id_type="US_DD_ID_TYPE",
         )
         person_1 = entities.StatePerson.new_with_defaults(
-            state_code=self.region_code().value,
+            state_code=self.state_code().value,
             external_ids=[external_id_1],
             full_name='{"given_names": "VALUE1", "middle_names": "", "name_suffix": "", "surname": "VALUE1"}',
         )
         external_id_1.person = person_1
         external_id_2 = entities.StatePersonExternalId.new_with_defaults(
-            state_code=self.region_code().value,
+            state_code=self.state_code().value,
             external_id="ID2",
             id_type="US_DD_ID_TYPE",
         )
         person_2 = entities.StatePerson.new_with_defaults(
-            state_code=self.region_code().value,
+            state_code=self.state_code().value,
             external_ids=[external_id_2],
             full_name='{"given_names": "VALUE2", "middle_names": "", "name_suffix": "", "surname": "VALUE2"}',
         )
@@ -73,7 +86,7 @@ class TestStateIngestPipeline(StateIngestPipelineTestCase):
 
         # IngestMultipleChildren
         incarceration_period_1 = entities.StateIncarcerationPeriod.new_with_defaults(
-            state_code=self.region_code().value,
+            state_code=self.state_code().value,
             external_id="IC1",
             admission_date=date(2018, 1, 1),
             release_date=date(2019, 1, 1),
@@ -81,7 +94,7 @@ class TestStateIngestPipeline(StateIngestPipelineTestCase):
             person=person_1,
         )
         incarceration_period_2 = entities.StateIncarcerationPeriod.new_with_defaults(
-            state_code=self.region_code().value,
+            state_code=self.state_code().value,
             external_id="IC2",
             admission_date=date(2020, 1, 1),
             release_date=date(2021, 1, 1),
@@ -89,7 +102,7 @@ class TestStateIngestPipeline(StateIngestPipelineTestCase):
             person=person_1,
         )
         incarceration_period_3 = entities.StateIncarcerationPeriod.new_with_defaults(
-            state_code=self.region_code().value,
+            state_code=self.state_code().value,
             external_id="IC3",
             admission_date=date(2022, 1, 1),
             release_date=date(2023, 1, 1),
@@ -97,7 +110,7 @@ class TestStateIngestPipeline(StateIngestPipelineTestCase):
             person=person_1,
         )
         incarceration_period_4 = entities.StateIncarcerationPeriod.new_with_defaults(
-            state_code=self.region_code().value,
+            state_code=self.state_code().value,
             external_id="IC4",
             admission_date=date(2021, 6, 1),
             release_date=date(2021, 12, 1),
@@ -113,23 +126,23 @@ class TestStateIngestPipeline(StateIngestPipelineTestCase):
 
         # IngestMultipleRootExternalIds
         external_id_1_1 = entities.StatePersonExternalId.new_with_defaults(
-            state_code=self.region_code().value,
+            state_code=self.state_code().value,
             external_id="VALUE3",
             id_type="US_DD_ID_ANOTHER_TYPE",
             person=person_1,
         )
         person_1.external_ids.append(external_id_1_1)
         person_3 = entities.StatePerson.new_with_defaults(
-            state_code=self.region_code().value,
+            state_code=self.state_code().value,
         )
         external_id_3_1 = entities.StatePersonExternalId.new_with_defaults(
-            state_code=self.region_code().value,
+            state_code=self.state_code().value,
             external_id="ID3",
             id_type="US_DD_ID_TYPE",
             person=person_3,
         )
         external_id_3_2 = entities.StatePersonExternalId.new_with_defaults(
-            state_code=self.region_code().value,
+            state_code=self.state_code().value,
             external_id="VALUE4",
             id_type="US_DD_ID_ANOTHER_TYPE",
             person=person_3,
@@ -138,49 +151,49 @@ class TestStateIngestPipeline(StateIngestPipelineTestCase):
 
         # IngestMultipleParents
         external_id_5 = entities.StatePersonExternalId.new_with_defaults(
-            state_code=self.region_code().value,
+            state_code=self.state_code().value,
             external_id="ID7",
             id_type="US_DD_ID_TYPE",
         )
         person_5 = entities.StatePerson.new_with_defaults(
-            state_code=self.region_code().value,
+            state_code=self.state_code().value,
             external_ids=[external_id_5],
         )
         external_id_5.person = person_5
         charge_1 = entities.StateCharge.new_with_defaults(
-            state_code=self.region_code().value,
+            state_code=self.state_code().value,
             external_id="C1",
             status=StateChargeStatus.INTERNAL_UNKNOWN,
             person=person_5,
         )
         charge_2 = entities.StateCharge.new_with_defaults(
-            state_code=self.region_code().value,
+            state_code=self.state_code().value,
             external_id="C2",
             status=StateChargeStatus.INTERNAL_UNKNOWN,
             person=person_5,
         )
         charge_3 = entities.StateCharge.new_with_defaults(
-            state_code=self.region_code().value,
+            state_code=self.state_code().value,
             external_id="C3",
             status=StateChargeStatus.INTERNAL_UNKNOWN,
             person=person_5,
         )
         supervision_sentence_1 = entities.StateSupervisionSentence.new_with_defaults(
-            state_code=self.region_code().value,
+            state_code=self.state_code().value,
             external_id="S1",
             status=StateSentenceStatus.INTERNAL_UNKNOWN,
             person=person_5,
             charges=[charge_1],
         )
         supervision_sentence_2 = entities.StateSupervisionSentence.new_with_defaults(
-            state_code=self.region_code().value,
+            state_code=self.state_code().value,
             external_id="S2",
             status=StateSentenceStatus.INTERNAL_UNKNOWN,
             person=person_5,
             charges=[charge_1],
         )
         supervision_sentence_3 = entities.StateSupervisionSentence.new_with_defaults(
-            state_code=self.region_code().value,
+            state_code=self.state_code().value,
             external_id="S3",
             status=StateSentenceStatus.INTERNAL_UNKNOWN,
             person=person_5,
@@ -188,7 +201,7 @@ class TestStateIngestPipeline(StateIngestPipelineTestCase):
         )
         incarceration_sentence_1 = (
             entities.StateIncarcerationSentence.new_with_defaults(
-                state_code=self.region_code().value,
+                state_code=self.state_code().value,
                 external_id="I1",
                 status=StateSentenceStatus.INTERNAL_UNKNOWN,
                 incarceration_type=StateIncarcerationType.STATE_PRISON,
@@ -198,7 +211,7 @@ class TestStateIngestPipeline(StateIngestPipelineTestCase):
         )
         incarceration_sentence_2 = (
             entities.StateIncarcerationSentence.new_with_defaults(
-                state_code=self.region_code().value,
+                state_code=self.state_code().value,
                 external_id="I2",
                 status=StateSentenceStatus.INTERNAL_UNKNOWN,
                 incarceration_type=StateIncarcerationType.STATE_PRISON,
@@ -208,7 +221,7 @@ class TestStateIngestPipeline(StateIngestPipelineTestCase):
         )
         incarceration_sentence_3 = (
             entities.StateIncarcerationSentence.new_with_defaults(
-                state_code=self.region_code().value,
+                state_code=self.state_code().value,
                 external_id="I3",
                 status=StateSentenceStatus.INTERNAL_UNKNOWN,
                 incarceration_type=StateIncarcerationType.STATE_PRISON,
@@ -245,11 +258,14 @@ class TestStateIngestPipeline(StateIngestPipelineTestCase):
         ]
 
         self.run_test_state_pipeline(
-            expected_ingest_view_output, expected_root_entities
+            expected_ingest_view_output,
+            expected_root_entities,
+            raw_data_upper_bound_dates_json_override=self.us_dd_upper_date_bound_overrides,
         )
 
     def test_state_ingest_pipeline_ingest_view_results_only(self) -> None:
         self.setup_region_raw_data_bq_tables(test_name=INGEST_INTEGRATION)
+        # TODO(#22059): Standardize ingest view result fixtures for pipeline and ingest view tests
         expected_ingest_view_output = {
             ingest_view: self.get_ingest_view_results_from_fixture(
                 ingest_view_name=ingest_view, test_name=INGEST_INTEGRATION
@@ -257,12 +273,16 @@ class TestStateIngestPipeline(StateIngestPipelineTestCase):
             for ingest_view in self.launchable_ingest_views()
         }
         self.run_test_state_pipeline(
-            expected_ingest_view_output, [], ingest_view_results_only=True
+            expected_ingest_view_output,
+            [],
+            ingest_view_results_only=True,
+            raw_data_upper_bound_dates_json_override=self.us_dd_upper_date_bound_overrides,
         )
 
     def test_state_ingest_pipeline_ingest_views_to_run_subset(self) -> None:
         self.setup_region_raw_data_bq_tables(test_name=INGEST_INTEGRATION)
         subset_of_ingest_views = ["ingest12"]
+        # TODO(#22059): Standardize ingest view result fixtures for pipeline and ingest view tests
         expected_ingest_view_output = {
             ingest_view: self.get_ingest_view_results_from_fixture(
                 ingest_view_name=ingest_view, test_name=INGEST_INTEGRATION
@@ -274,23 +294,23 @@ class TestStateIngestPipeline(StateIngestPipelineTestCase):
 
         # Ingest12
         external_id_1 = entities.StatePersonExternalId.new_with_defaults(
-            state_code=self.region_code().value,
+            state_code=self.state_code().value,
             external_id="ID1",
             id_type="US_DD_ID_TYPE",
         )
         person_1 = entities.StatePerson.new_with_defaults(
-            state_code=self.region_code().value,
+            state_code=self.state_code().value,
             external_ids=[external_id_1],
             full_name='{"given_names": "VALUE1", "middle_names": "", "name_suffix": "", "surname": "VALUE1"}',
         )
         external_id_1.person = person_1
         external_id_2 = entities.StatePersonExternalId.new_with_defaults(
-            state_code=self.region_code().value,
+            state_code=self.state_code().value,
             external_id="ID2",
             id_type="US_DD_ID_TYPE",
         )
         person_2 = entities.StatePerson.new_with_defaults(
-            state_code=self.region_code().value,
+            state_code=self.state_code().value,
             external_ids=[external_id_2],
             full_name='{"given_names": "VALUE2", "middle_names": "", "name_suffix": "", "surname": "VALUE2"}',
         )
@@ -302,6 +322,7 @@ class TestStateIngestPipeline(StateIngestPipelineTestCase):
             expected_ingest_view_output,
             expected_root_entities,
             ingest_views_to_run=" ".join(subset_of_ingest_views),
+            raw_data_upper_bound_dates_json_override=self.us_dd_upper_date_bound_overrides,
         )
 
     def test_missing_raw_data_upper_bound_dates(self) -> None:
