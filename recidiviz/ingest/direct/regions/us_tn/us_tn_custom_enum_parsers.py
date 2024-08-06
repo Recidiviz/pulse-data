@@ -25,6 +25,9 @@ my_enum_field:
 from recidiviz.common.constants.state.state_program_assignment import (
     StateProgramAssignmentParticipationStatus,
 )
+from recidiviz.common.constants.state.state_staff_caseload_type import (
+    StateStaffCaseloadType,
+)
 from recidiviz.common.constants.state.state_staff_role_period import (
     StateStaffRoleSubtype,
     StateStaffRoleType,
@@ -131,3 +134,42 @@ def program_participation_status(
     if treatment_terminated_reason in refused:
         return StateProgramAssignmentParticipationStatus.REFUSED
     return StateProgramAssignmentParticipationStatus.INTERNAL_UNKNOWN
+
+
+def parse_staff_caseload_type(
+    raw_text: str,
+) -> StateStaffCaseloadType:
+    """Assign staff caseload type based on raw text strings"""
+
+    if any(keyword in raw_text for keyword in ["SEX", "SCU"]):
+        return StateStaffCaseloadType.SEX_OFFENSE
+    if any(keyword in raw_text for keyword in ["ICOT", "ISC", "IOT"]):
+        return StateStaffCaseloadType.OTHER
+    if any(keyword in raw_text for keyword in ["REHAB", "DRUG", "RECOVERY"]):
+        return StateStaffCaseloadType.ALCOHOL_AND_DRUG
+    if "COURT" in raw_text:
+        return StateStaffCaseloadType.OTHER_COURT
+    if "ADMIN" in raw_text:
+        return StateStaffCaseloadType.ADMINISTRATIVE_SUPERVISION
+    if any(keyword in raw_text for keyword in ["COMPLIANT", "TELEPHONE"]):
+        return StateStaffCaseloadType.ELECTRONIC_MONITORING
+    if any(
+        keyword in raw_text
+        for keyword in [
+            "PPO",
+            "PROB",
+            "PAROLE",
+            "REG",
+            "INTAKE",  # short term caseload
+            "PA",
+            "CC2",  # correctional counselor 2
+            "CCII",  # correctional counselor 2
+            "PRO",
+            "GENERAL",
+            "MANAGER",  # mapping this here for now since sometimes managers have caseloads
+            "PPM",  # Probation/Parole Manager - not typically caseload carrier but sometimes take them on
+        ]
+    ):
+        return StateStaffCaseloadType.GENERAL
+
+    return StateStaffCaseloadType.INTERNAL_UNKNOWN
