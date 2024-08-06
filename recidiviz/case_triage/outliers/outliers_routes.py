@@ -658,4 +658,43 @@ def create_outliers_api_blueprint() -> Blueprint:
 
         return jsonify({"client": client_json})
 
+    @api.get("/<state>/action_strategies/<supervisor_pseudonymized_id>")
+    def action_strategies(state: str, supervisor_pseudonymized_id: str) -> Response:
+        state_code = StateCode(state.upper())
+
+        querier = OutliersQuerier(state_code)
+
+        user_context: UserContext = g.user_context
+        user_external_id = user_context.user_external_id
+        user_pseudonymized_id = user_context.pseudonymized_id
+
+        if (
+            supervisor_pseudonymized_id != user_pseudonymized_id
+            and user_external_id != "RECIDIVIZ"
+        ):
+            # Return an unauthorized error if the requesting user is requesting information about someone else
+            # and the requesting user is not a Recidiviz user
+            return jsonify_response(
+                f"Non-recidiviz user with pseudonymized_id {user_pseudonymized_id} is requesting action strategies for a user that isn't themselves: {supervisor_pseudonymized_id}",
+                HTTPStatus.UNAUTHORIZED,
+            )
+
+        supervisor = querier.get_supervisor_entity_from_pseudonymized_id(
+            supervisor_pseudonymized_id
+        )
+
+        if supervisor is None:
+            return jsonify_response(
+                f"User with pseudonymized_id doesn't exist in DB. Pseudonymized id: {supervisor_pseudonymized_id}",
+                HTTPStatus.NOT_FOUND,
+            )
+
+        officer_entities = querier.get_officers_for_supervisor(supervisor.external_id)
+
+        action_strategies_json = {
+            officer.pseudonymized_id: None for officer in officer_entities
+        }
+        action_strategies_json[supervisor.pseudonymized_id] = None
+        return jsonify(action_strategies_json)
+
     return api
