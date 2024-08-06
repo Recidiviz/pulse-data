@@ -52,25 +52,25 @@ class TestAssociateRootEntitiesWithPrimaryKeys(StateIngestPipelineTestCase):
         self.external_id_4 = ("ID4", "TYPE1")
 
         self.person12 = StatePerson(
-            state_code=self.region_code().value,
+            state_code=self.state_code().value,
             external_ids=[
                 StatePersonExternalId(
-                    state_code=self.region_code().value,
+                    state_code=self.state_code().value,
                     external_id=self.external_id_1[0],
                     id_type=self.external_id_1[1],
                 ),
                 StatePersonExternalId(
-                    state_code=self.region_code().value,
+                    state_code=self.state_code().value,
                     external_id=self.external_id_2[0],
                     id_type=self.external_id_2[1],
                 ),
             ],
         )
         self.person3 = StatePerson(
-            state_code=self.region_code().value,
+            state_code=self.state_code().value,
             external_ids=[
                 StatePersonExternalId(
-                    state_code=self.region_code().value,
+                    state_code=self.state_code().value,
                     external_id=self.external_id_3[0],
                     id_type=self.external_id_3[1],
                 )
@@ -83,11 +83,11 @@ class TestAssociateRootEntitiesWithPrimaryKeys(StateIngestPipelineTestCase):
 
         self.primary_key_12 = generate_primary_key(
             string_representation({self.external_id_1, self.external_id_2}),
-            StateCode(self.region_code().value),
+            StateCode(self.state_code().value),
         )
         self.primary_key_3 = generate_primary_key(
             string_representation({self.external_id_3}),
-            StateCode(self.region_code().value),
+            StateCode(self.state_code().value),
         )
 
     def test_associate_root_entities_with_primary_keys(self) -> None:

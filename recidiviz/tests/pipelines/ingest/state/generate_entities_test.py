@@ -93,7 +93,7 @@ class TestGenerateEntities(StateIngestPipelineTestCase):
                 )
             )
             | pipeline.GenerateEntities(
-                state_code=self.region_code(),
+                state_code=self.state_code(),
                 ingest_view_manifest=ingest_view_manifest,
                 ingest_view_context=IngestViewContentsContextImpl.build_for_tests(),
             )

@@ -17,17 +17,12 @@
 """Class with basic functionality for tests of all region-specific
 IngestRawFileImportControllers.
 """
-import abc
-import datetime
-import json
 from collections import defaultdict
 from copy import deepcopy
 from functools import cmp_to_key
-from types import ModuleType
 from typing import Any, Callable, Dict, Iterable, List, Optional, Union, cast
 
 import apache_beam as beam
-import pytz
 from apache_beam.pvalue import PBegin
 from apache_beam.testing.util import BeamAssertException, assert_that
 from mock import patch
@@ -40,13 +35,6 @@ from recidiviz.ingest.direct.direct_ingest_regions import (
 )
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_contents_context import (
     IngestViewContentsContextImpl,
-)
-from recidiviz.ingest.direct.raw_data.raw_file_configs import (
-    DirectIngestRegionRawFileConfig,
-)
-from recidiviz.ingest.direct.types.direct_ingest_constants import (
-    MATERIALIZATION_TIME_COL_NAME,
-    UPPER_BOUND_DATETIME_COL_NAME,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.persistence.entity.base_entity import (
@@ -68,13 +56,6 @@ from recidiviz.pipelines.ingest.state.generate_ingest_view_results import (
     GenerateIngestViewResults,
 )
 from recidiviz.pipelines.ingest.state.run_validations import RunValidations
-from recidiviz.tests.ingest.direct.fixture_util import (
-    DirectIngestTestFixturePath,
-    load_dataframe_from_path,
-)
-from recidiviz.tests.ingest.direct.regions.state_ingest_view_parser_test_base import (
-    DEFAULT_UPDATE_DATETIME,
-)
 from recidiviz.tests.persistence.entity.state.entities_test_utils import clear_db_ids
 from recidiviz.tests.pipelines.ingest.state.test_case import (
     BaseStateIngestPipelineTestCase,
@@ -204,27 +185,24 @@ def _sort_root_entities(root_entities: Iterable[RootEntity]) -> List[RootEntity]
 
 
 class StateSpecificIngestPipelineIntegrationTestCase(BaseStateIngestPipelineTestCase):
-    """Class with basic functionality for all region-specific ingest pipeline
-    integration tests.
+    """
+    This class provides an integration test to be used by all states that do ingest.
+
+    It currently reads in fixture files of ingest view output, rather than beginning with
+    raw data.
+    TODO(#22059): Standardize fixture formats and consolidate this with StateIngestPipelineTestCase
     """
 
     @classmethod
-    @abc.abstractmethod
     def state_code(cls) -> StateCode:
-        pass
-
-    @classmethod
-    def region_code(cls) -> StateCode:
-        return cls.state_code()
-
-    @classmethod
-    def region_module_override(cls) -> Optional[ModuleType]:
-        return None
+        raise NotImplementedError(
+            "Add a specific StateCode for the state specific test."
+        )
 
     @classmethod
     def region(cls) -> DirectIngestRegion:
         return get_direct_ingest_region(
-            region_code=cls.region_code().value.lower(),
+            region_code=cls.state_code().value.lower(),
             region_module_override=cls.region_module_override() or regions,
         )
 
@@ -259,29 +237,6 @@ class StateSpecificIngestPipelineIntegrationTestCase(BaseStateIngestPipelineTest
         self.context_patcher_fn.stop()
         super().tearDown()
 
-    def get_ingest_view_results_from_fixture(
-        self, *, ingest_view_name: str, test_name: str
-    ) -> List[Dict[str, Any]]:
-        """Returns the ingest view results for a given ingest view from the fixture file."""
-        fixture_columns = (
-            self.ingest_view_manifest_collector()
-            .ingest_view_to_manifest[ingest_view_name]
-            .input_columns
-        )
-        records = load_dataframe_from_path(
-            raw_fixture_path=DirectIngestTestFixturePath.for_extract_and_merge_fixture(
-                region_code=self.region_code().value,
-                file_name=f"{test_name}.csv",
-            ).full_path(),
-            fixture_columns=fixture_columns,
-        ).to_dict("records")
-
-        for record in records:
-            record[MATERIALIZATION_TIME_COL_NAME] = datetime.datetime.now().isoformat()
-            record[UPPER_BOUND_DATETIME_COL_NAME] = DEFAULT_UPDATE_DATETIME.isoformat()
-
-        return records
-
     def generate_ingest_view_results_for_one_date(
         self,
         project_id: str,
@@ -300,6 +255,9 @@ class StateSpecificIngestPipelineIntegrationTestCase(BaseStateIngestPipelineTest
             self.get_ingest_view_results_from_fixture(
                 ingest_view_name=ingest_view_name,
                 test_name=ingest_view_name,
+                fixture_has_metadata_columns=False,
+                generate_default_metadata=True,
+                use_results_fixture=False,
             ),
         )
 
@@ -330,8 +288,8 @@ class StateSpecificIngestPipelineIntegrationTestCase(BaseStateIngestPipelineTest
 
         return _inner_constructor
 
-    # TODO(#22059): Remove this method and replace with the default implementation once
-    # all states can start an ingest integration test using raw data fixtures.
+    # TODO(#22059): Remove this method and replace with the implementation on
+    # StateIngestPipelineTestCase when fixture formats and data loading is standardized.
     def run_test_state_pipeline(
         self,
         ingest_view_results: Dict[str, Iterable[Dict[str, Any]]],
@@ -379,24 +337,14 @@ class StateSpecificIngestPipelineIntegrationTestCase(BaseStateIngestPipelineTest
                     association_table
                 ].update(associations)
 
-        all_raw_file_tags = DirectIngestRegionRawFileConfig(
-            self.region_code().value.lower(), self.region().region_module
-        ).raw_file_tags
         pipeline_args = default_arg_list_for_pipeline(
             pipeline=self.pipeline_class(),
-            state_code=self.region_code().value,
+            state_code=self.state_code().value,
             project_id=self.project_id,
             root_entity_id_filter_set=None,
             ingest_view_results_only=ingest_view_results_only,
             ingest_views_to_run=ingest_views_to_run,
-            raw_data_upper_bound_dates_json=json.dumps(
-                # Make fake upper bounds with current time as the bound (i.e. include
-                # all data).
-                {
-                    file_tag: datetime.datetime.now(tz=pytz.UTC).isoformat()
-                    for file_tag in all_raw_file_tags
-                }
-            ),
+            raw_data_upper_bound_dates_json=self.raw_fixture_loader.default_upper_bound_dates_json,
         )
 
         with patch(

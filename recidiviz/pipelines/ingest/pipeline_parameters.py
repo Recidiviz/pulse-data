@@ -96,6 +96,10 @@ class IngestPipelineParameters(PipelineParameters):
         validator=attr_validators.is_non_empty_str
     )
 
+    # This maps a raw data table to the max update_datetime
+    # from the most recent completed raw data import of that table.
+    # This allows us to correctly filter out partial data
+    # if ingest and raw data import are happening concurrently.
     raw_data_upper_bound_dates: Dict[str, str] = attr.ib()
 
     @raw_data_upper_bound_dates.default
