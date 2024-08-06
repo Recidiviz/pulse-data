@@ -296,7 +296,6 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
     ) -> None:
         self.mock_authorization_handler.side_effect = self.auth_side_effect("us_pa")
         mock_enabled_states.return_value = ["US_PA"]
-
         with SessionFactory.using_database(self.insights_database_key) as session:
             mock_get_supervisor.return_value = (
                 session.query(SupervisionOfficerSupervisor)
@@ -566,6 +565,95 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         )
 
         self.snapshot.assert_match(response.json, name="test_get_benchmarks")  # type: ignore[attr-defined]
+
+    @patch(
+        "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_supervisor_entity_from_pseudonymized_id",
+    )
+    @patch(
+        "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_officers_for_supervisor",
+    )
+    @patch(
+        "recidiviz.case_triage.outliers.outliers_authorization.get_outliers_enabled_states",
+    )
+    def test_get_action_strategies(
+        self,
+        mock_enabled_states: MagicMock,
+        mock_get_outliers: MagicMock,
+        mock_get_supervisor: MagicMock,
+    ) -> None:
+        self.mock_authorization_handler.side_effect = self.auth_side_effect(
+            state_code="us_pa",
+            external_id="102",
+            pseudonymized_id="hash2",
+        )
+        mock_enabled_states.return_value = ["US_PA"]
+
+        with SessionFactory.using_database(self.insights_database_key) as session:
+            mock_get_supervisor.return_value = (
+                session.query(SupervisionOfficerSupervisor)
+                .filter(SupervisionOfficerSupervisor.external_id == "102")
+                .first()
+            )
+
+            mock_get_outliers.return_value = [
+                SupervisionOfficerEntity(
+                    full_name=PersonName(
+                        **{"given_names": "HARRY", "surname": "POTTER"}
+                    ),
+                    external_id="123",
+                    pseudonymized_id="hashhash",
+                    supervisor_external_id="102",
+                    supervisor_external_ids=["102"],
+                    district="Hogwarts",
+                    caseload_type=None,
+                    outlier_metrics=[
+                        {
+                            "metric_id": "metric_one",
+                            "statuses_over_time": [
+                                {
+                                    "end_date": "2023-05-01",
+                                    "metric_rate": 0.1,
+                                    "status": "FAR",
+                                },
+                                {
+                                    "end_date": "2023-04-01",
+                                    "metric_rate": 0.1,
+                                    "status": "FAR",
+                                },
+                            ],
+                        }
+                    ],
+                    top_x_pct_metrics=[
+                        {
+                            "metric_id": "incarceration_starts_and_inferred",
+                            "top_x_pct": 10,
+                        }
+                    ],
+                    avg_daily_population=10.0,
+                ),
+                SupervisionOfficerEntity(
+                    full_name=PersonName(
+                        **{"given_names": "RON", "surname": "WEASLEY"}
+                    ),
+                    external_id="456",
+                    pseudonymized_id="hashhashhash",
+                    supervisor_external_id="102",
+                    supervisor_external_ids=["102"],
+                    district="Hogwarts",
+                    caseload_type=None,
+                    outlier_metrics=[],
+                    top_x_pct_metrics=[],
+                    avg_daily_population=10.0,
+                ),
+            ]
+
+            response = self.test_client.get(
+                "/outliers/us_pa/action_strategies/hash2",
+                headers={"Origin": "http://localhost:3000"},
+            )
+
+            self.assertEqual(HTTPStatus.OK, response.status_code)
+            self.snapshot.assert_match(response.json, name="test_get_action_strategies")  # type: ignore[attr-defined]
 
     @patch(
         "recidiviz.case_triage.outliers.outliers_authorization.get_outliers_enabled_states",

@@ -544,7 +544,7 @@ class OutliersQuerier:
     def get_officers_for_supervisor(
         self,
         supervisor_external_id: str,
-        num_lookback_periods: Optional[int],
+        num_lookback_periods: Optional[int] = None,
         period_end_date: Optional[date] = None,
     ) -> List[SupervisionOfficerEntity]:
         """
