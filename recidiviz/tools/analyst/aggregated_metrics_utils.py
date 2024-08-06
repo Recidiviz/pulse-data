@@ -222,11 +222,23 @@ LEFT JOIN
 USING
     ({unit_of_analysis.get_primary_key_columns_query_string()}, start_date, end_date)"""
 
-    query_template = f"""
+    # Use a final SELECT statement to exclude 'period' and rename 'period_alt' to 'period'
+    final_select_statement = f"""
+    SELECT
+        * EXCEPT(period),
+        CASE
+            WHEN {time_interval_length} = 1 THEN '{time_interval_unit.value}'
+            ELSE period
+        END AS period
+    FROM (
+        {all_joins_query_template}
+    ) subquery
+    """
 
-{all_ctes_query_template}
-{all_joins_query_template}
-"""
+    query_template = f"""
+    {all_ctes_query_template}
+    {final_select_statement}
+    """
     return query_template
 
 
