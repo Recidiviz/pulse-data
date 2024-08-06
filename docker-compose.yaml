@@ -110,7 +110,7 @@ services:
       - "6379:6379"
 
   insights_migrations:
-    image: us.gcr.io/recidiviz-staging/appengine/default:latest
+    image: us-docker.pkg.dev/recidiviz-staging/appengine/default:latest
     volumes:
       - "./recidiviz:/app/recidiviz/"
     depends_on:
