@@ -23,7 +23,11 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 VIEW_QUERY_TEMPLATE = """
-WITH annotated_rows AS (
+WITH
+-- The result of this CTE is the same as the raw data table docstars_offenders, but with 
+-- an additional field preprocessed to identify rows that are prison / jail addresses in ND. 
+-- We do this to avoid mistaking those for personal addresses.
+ annotated_rows AS (
     SELECT 
         *,
         (

@@ -23,7 +23,12 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 VIEW_QUERY_TEMPLATE = """
-WITH staff_from_directory AS (
+WITH 
+-- This CTE pulls in relevant data from the monthly P&P directories that we receive
+-- via email and upload as raw data. It uses the update_datetime on each file to 
+-- track edge dates, as well as the most recent file we received (last_file_update_datetime),
+-- and the most recent file that each employee appeared in (last_appearance_datetime).
+staff_from_directory AS (
     SELECT
         -- Make officer IDs uniform across sources 
         CAST(OFFICER AS INT64) AS OFFICER,
@@ -37,6 +42,8 @@ WITH staff_from_directory AS (
     LEFT JOIN {RECIDIVIZ_REFERENCE_supervision_district_id_to_name} xref
     ON(UPPER(dir.Location) = UPPER(xref.supervising_district_name))
 ),
+-- This CTE gets the officer data directly from the Docstars system into the same format
+-- as above, to the extent possible. In Docstars, RecDate is the date the row was created.
 staff_from_docstars AS (
     SELECT DISTINCT
         -- Make officer IDs uniform across sources 
@@ -48,6 +55,8 @@ staff_from_docstars AS (
         MAX(CAST(RecDate AS DATETIME)) OVER (PARTITION BY OFFICER) AS last_appearance_datetime, 
     FROM {docstars_officers@ALL} 
 ),
+-- This CTE combines the data from the two sources. Officers often appear in both, 
+-- so we want to consider all rows from both sources when creating periods.
 combined_data AS (
     SELECT 
         OFFICER,
@@ -69,6 +78,10 @@ combined_data AS (
         last_appearance_datetime,
     FROM staff_from_docstars 
 ),
+-- This CTE filters the combined data to include only the rows that are relevant to the
+-- location periods we are constructing. These are rows where an officer just started working
+-- or changed locations. We also include all rows where the edge date is the last update
+-- we have about a given officer, to account for rows that signify an officer becoming inactive.
 critical_dates AS (
 SELECT * FROM (
     SELECT
@@ -89,7 +102,17 @@ WHERE
     OR cd.STATUS='0'   
     -- include the latest update even if the previous conditions are not true
     OR edge_date = last_file_update_datetime 
-), all_periods AS (
+), 
+-- This CTE constructs periods using the compiled critical dates. End dates follow this 
+-- logic: 
+    -- 1. If a person stopped working, close their employment period on the last date we 
+    --    receive data that included them as an active employee.
+    -- 2. If there is a subsequent row showing a person changed locations, close the existing 
+    --    period on the date of that change.
+    -- 3. If a there is no subsequent row, and the edge date is the same as the most 
+    --    recent date the person has appeared in the data, then leave the period open
+    --    to signify that the existing period is still active.
+all_periods AS (
 SELECT 
     OFFICER,
     location,

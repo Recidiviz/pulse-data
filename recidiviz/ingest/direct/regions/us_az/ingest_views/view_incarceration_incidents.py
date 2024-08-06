@@ -23,7 +23,11 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 VIEW_QUERY_TEMPLATE = """
-WITH traffic_preprocessed AS (
+WITH 
+-- This CTE constructs rudimentary location periods for each person so that the facility
+-- in which an incident took place can be accurately reflected, since that information
+-- does not exist in any incident review tables.
+traffic_preprocessed AS (
   SELECT 
     DOC_ID, 
     PRISON_ID, 
@@ -35,6 +39,10 @@ WITH traffic_preprocessed AS (
         AS NEXT_MOVEMENT_DATE
   FROM {AZ_DOC_INMATE_TRAFFIC_HISTORY} traffic
 ),
+-- This CTE aggregates basic information about each incident from four discipline-related
+-- tables that each contain some specific piece of associated information. Using this approach,
+-- it is possible  for one actual incident to have many outcomes; each outcome will be tied to 
+-- a distinct STAFF_REVIEW_ID, but have otherwise identical information.
 base AS (
 SELECT 
     doc_ep.PERSON_ID,
@@ -69,10 +77,12 @@ USING(STAFF_REVIEW_ID)
 LEFT JOIN {DOC_EPISODE} doc_ep
 USING(DOC_ID)
 LEFT JOIN traffic_preprocessed
+-- use the traffic table and the incident date to determine the facility in which an incident took place.
 ON(traffic_preprocessed.DOC_ID = review.DOC_ID 
 AND ((CAST(VIOLATION_DTM AS DATETIME)>= MOVEMENT_DATE AND CAST(VIOLATION_DTM AS DATETIME) < NEXT_MOVEMENT_DATE)
 OR (CAST(VIOLATION_DTM AS DATETIME) >= MOVEMENT_DATE AND NEXT_MOVEMENT_DATE IS NULL)))
 ),
+-- This CTE repeatedly joins to the LOOKUPS table to decode all necessary fields.
 code_lookup AS (
 SELECT 
     PERSON_ID,

@@ -24,7 +24,10 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 VIEW_QUERY_TEMPLATE = f"""
-WITH cases_with_terminating_officers AS (
+WITH 
+-- The result of this CTE is the same as the docstars_offendercasestable, but with 
+-- terminating officers' names, IDs, and locations attached from the docstars_officers table. 
+cases_with_terminating_officers AS (
   SELECT {{docstars_offendercasestable}}.*,
        CAST({{docstars_officers}}.OFFICER AS INT64) as terminating_officer_id,
        {{docstars_officers}}.LNAME AS terminating_officer_lname, 
@@ -34,6 +37,10 @@ WITH cases_with_terminating_officers AS (
   LEFT JOIN {{docstars_officers}}
   ON (CAST(TERMINATING_OFFICER AS INT64) = CAST(OFFICER AS INT64))
 ),
+-- This CTE ranks termination dates for a given person, since people may have had more
+-- than one case in their lives. The result contains one row per SID and case termination
+-- date, with a field ranking that case termination date chronologically. The most recent
+-- termination date will have the lowest ranking.
 ranked_term_dates AS (
   SELECT
     SID,
@@ -44,6 +51,8 @@ ranked_term_dates AS (
     ) AS rn
   FROM {{docstars_offendercasestable}}
 ),
+-- This CTE has the same resulting structure as the previous one, but keeps only the most
+-- recent SID and termination date pairs.
 most_recent_term_date_by_sid AS (
   SELECT
     SID,
@@ -53,6 +62,9 @@ most_recent_term_date_by_sid AS (
   WHERE
     rn = 1
 ),
+-- This CTE results in one row per case, with the most recent officer and (where applicable)
+-- terminating officer's information attached. Supervision levels are hydrated only for
+-- active cases or the most recently closed case to maintain accuracy. 
 offendercases_with_terminating_and_recent_pos AS (
   SELECT cases_with_terminating_officers.*,
         CAST({{docstars_officers}}.OFFICER AS INT64) AS recent_officer_id, 

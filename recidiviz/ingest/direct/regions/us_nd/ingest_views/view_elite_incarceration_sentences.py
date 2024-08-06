@@ -29,7 +29,30 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 VIEW_QUERY_TEMPLATE = """
-WITH charges AS (
+WITH 
+-- The results of this CTE contain one row for each sentence. Each row is associated with
+-- one person and set of dates that relate to the sentence. 
+sentences AS (
+    SELECT 
+        REPLACE(REPLACE(sentences.OFFENDER_BOOK_ID,',',''), '.00', '') AS OFFENDER_BOOK_ID,
+        sentences.SENTENCE_SEQ,
+        sentences.CHARGE_SEQ,
+        sentences.EFFECTIVE_DATE,
+        sentences.PROBABLE_RELEASE_DATE,
+        sentences.SENTENCE_EXPIRY_DATE,
+        sentences.SENTENCE_CALC_TYPE,
+        aggs.PAROLE_DATE,
+        aggs.CALC_POS_REL_DATE,
+        aggs.OVR_POS_REL_DATE,
+    FROM {elite_offendersentences} sentences
+    LEFT JOIN {elite_offendersentenceaggs} aggs
+    ON (REPLACE(REPLACE(sentences.OFFENDER_BOOK_ID,',',''), '.00', '') = aggs.OFFENDER_BOOK_ID)
+),
+-- This CTE is disjointed from the previous one and will be joined in the final subquery
+-- to factor charge information into the entity. There can be a one to one or a one to
+-- many relationship between sentences and charges; sequences of charges are ordered by the 
+-- CHARGE_SEQ field.
+charges AS (
     SELECT 
         REPLACE(REPLACE(OFFENDER_BOOK_ID,',',''), '.00', '') AS OFFENDER_BOOK_ID,
         CHARGE_SEQ,
@@ -50,22 +73,9 @@ WITH charges AS (
     LEFT JOIN {RECIDIVIZ_REFERENCE_offense_codes} codes
     USING(OFFENCE_CODE)
 ),
-sentences AS (
-    SELECT 
-        REPLACE(REPLACE(sentences.OFFENDER_BOOK_ID,',',''), '.00', '') AS OFFENDER_BOOK_ID,
-        sentences.SENTENCE_SEQ,
-        sentences.CHARGE_SEQ,
-        sentences.EFFECTIVE_DATE,
-        sentences.PROBABLE_RELEASE_DATE,
-        sentences.SENTENCE_EXPIRY_DATE,
-        sentences.SENTENCE_CALC_TYPE,
-        aggs.PAROLE_DATE,
-        aggs.CALC_POS_REL_DATE,
-        aggs.OVR_POS_REL_DATE,
-    FROM {elite_offendersentences} sentences
-    LEFT JOIN {elite_offendersentenceaggs} aggs
-    ON (REPLACE(REPLACE(sentences.OFFENDER_BOOK_ID,',',''), '.00', '') = aggs.OFFENDER_BOOK_ID)
-),
+-- This CTE collects sentence term information, which is stored separately. Even if there
+-- are many sentences associated witha booking, they can each have their own set of terms
+-- in this table.
 terms AS (
     SELECT
         REPLACE(REPLACE(OFFENDER_BOOK_ID,',',''), '.00', '') AS OFFENDER_BOOK_ID,

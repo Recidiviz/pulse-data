@@ -24,7 +24,10 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 VIEW_QUERY_TEMPLATE = """
-WITH staff_from_directory AS (
+WITH 
+-- This CTE pulls officer information from the P&P directory we receive monthly via email
+-- and upload as a reference file.
+staff_from_directory AS (
 SELECT DISTINCT
     OFFICER,
     LastName,
@@ -43,6 +46,7 @@ FROM (
     )
 WHERE recency_rank = 1
 ), 
+-- This CTE pulls the most recently available information for each officer in Docstars.
 staff_from_docstars AS (
 SELECT DISTINCT
     OFFICER,
