@@ -22,6 +22,7 @@ from collections import defaultdict
 from typing import Dict, Iterable, List, Optional
 
 from airflow.decorators import dag
+from airflow.operators.empty import EmptyOperator
 from airflow.utils.task_group import TaskGroup
 from airflow.utils.trigger_rule import TriggerRule
 from google.api_core.retry import Retry
@@ -98,7 +99,7 @@ def update_managed_views_operator() -> RecidivizKubernetesPodOperator:
             "--entrypoint=UpdateAllManagedViewsEntrypoint",
             SANDBOX_PREFIX_JINJA_ARG,
         ],
-        trigger_rule=TriggerRule.ALL_DONE,
+        trigger_rule=TriggerRule.ALL_SUCCESS,
     )
 
 
@@ -142,7 +143,7 @@ def execute_update_normalized_state() -> RecidivizKubernetesPodOperator:
             SANDBOX_PREFIX_JINJA_ARG,
             STATE_CODE_FILTER_JINJA_ARG,
         ],
-        trigger_rule=TriggerRule.ALL_DONE,
+        trigger_rule=TriggerRule.ALL_SUCCESS,
     )
 
 
@@ -154,7 +155,7 @@ def execute_update_state() -> RecidivizKubernetesPodOperator:
             "--entrypoint=UpdateStateEntrypoint",
             SANDBOX_PREFIX_JINJA_ARG,
         ],
-        trigger_rule=TriggerRule.ALL_DONE,
+        trigger_rule=TriggerRule.ALL_SUCCESS,
     )
 
 
@@ -342,7 +343,11 @@ def create_calculation_dag() -> None:
     2. Update the metric output for each state.
     3. Trigger BigQuery exports for each state and other datasets."""
 
-    update_state_dataset = execute_update_state()
+    # --- step 1: pre-ingest steps -----------------------------------
+    # Here we initialize the DAG and update the BQ table schemas
+    # If the schema update is successful, we kick off BQ refresh.
+    # If the schema update is not successful, we do not want to continue
+    # with the rest of the DAG.
     update_big_query_table_schemata = execute_update_big_query_table_schemata(
         dry_run=False
     )
@@ -354,33 +359,41 @@ def create_calculation_dag() -> None:
         case_triage_bq_refresh_completion = refresh_bq_dataset_operator(
             SchemaType.CASE_TRIAGE
         )
+        bq_refresh_completed = EmptyOperator(
+            task_id="bq_refresh_completed", trigger_rule=TriggerRule.ALL_DONE
+        )
+        (
+            [
+                operations_bq_refresh_completion,
+                case_triage_bq_refresh_completion,
+            ]
+            >> bq_refresh_completed
+        )
 
     initialize_dag = initialize_calculation_dag_group()
     initialize_dag >> update_big_query_table_schemata >> bq_refresh
 
+    # --- step 2: ingest -----------------------------------
     with TaskGroup(group_id="ingest") as ingest_task_group:
         ingest_pipelines_by_state = ingest_pipeline_branches_by_state_code()
         create_branching_by_key(
             ingest_pipelines_by_state, select_state_code_parameter_branch
         )
 
-    (
-        initialize_dag
-        >> update_big_query_table_schemata
-        >> ingest_task_group
-        >> update_state_dataset
+    ingest_completed = EmptyOperator(
+        task_id="ingest_completed", trigger_rule=TriggerRule.ALL_DONE
     )
+    # If the schema updates successfully, run ingest for all states
+    update_big_query_table_schemata >> ingest_task_group >> ingest_completed
 
-    update_all_views = update_managed_views_operator()
+    # If the schema updates successfully, update the state dataset after ingest is complete
+    # We keep the schema update as a dependency. If a single state ingest fails, we do not
+    # want to block the rest of the DAG. However, if the schema update fails, the ingest
+    # tasks go into 'upstream failed'. We do not want to continue in that case.
+    update_state_dataset = execute_update_state()
+    [update_big_query_table_schemata, ingest_completed] >> update_state_dataset
 
-    (
-        [
-            operations_bq_refresh_completion,
-            case_triage_bq_refresh_completion,
-        ]
-        >> update_all_views
-    )
-
+    # --- step 3: normalization -----------------------------------
     with TaskGroup(group_id="normalization") as normalization_task_group:
         normalization_pipelines_by_state = (
             normalization_pipeline_branches_by_state_code()
@@ -389,16 +402,21 @@ def create_calculation_dag() -> None:
             normalization_pipelines_by_state, select_state_code_parameter_branch
         )
 
+    normalization_completed = EmptyOperator(
+        task_id="normalization_completed", trigger_rule=TriggerRule.ALL_DONE
+    )
     update_normalized_state_dataset = execute_update_normalized_state()
 
-    # Normalization pipelines should run after the BQ refresh is complete, but
-    # complete before normalized_state dataset is refreshed.
-    (
-        update_state_dataset
-        >> normalization_task_group
-        >> update_normalized_state_dataset
-    )
+    # Normalization pipelines should run after the state dataset
+    # is updated, but complete before normalized_state dataset
+    # is refreshed. It shouldn't run if we failed to update the schema.
+    update_state_dataset >> normalization_task_group >> normalization_completed
+    [
+        normalization_completed,
+        update_big_query_table_schemata,
+    ] >> update_normalized_state_dataset
 
+    # --- step 4: metrics pipelines -----------------------------------
     with TaskGroup(
         group_id="post_normalization_pipelines"
     ) as post_normalization_pipelines:
@@ -414,9 +432,21 @@ def create_calculation_dag() -> None:
     # metric pipelines for the state are triggered.
     update_normalized_state_dataset >> post_normalization_pipelines
 
-    # Metric pipelines should complete before view update starts
-    post_normalization_pipelines >> update_all_views
+    # --- step 5: managed views -----------------------------------
+    # When ingest, normalization, and metrics pipelines are finished,
+    # we want to update all managed views with the updated data.
+    # We also wait until the BigQuery refresh to ops and case triage is complete
+    update_all_views = update_managed_views_operator()
+    [
+        update_big_query_table_schemata,
+        update_state_dataset,
+        update_normalized_state_dataset,
+        bq_refresh_completed,
+        post_normalization_pipelines,
+    ] >> update_all_views
 
+    # --- step 5: validations and metric exports -----------------------------------
+    # When all manged views are updated, we can run validations and metric exports.
     with TaskGroup(group_id="validations") as validations:
         create_branching_by_key(
             # We turn on validations (may still be in dev mode) as soon as there is
@@ -426,8 +456,6 @@ def create_calculation_dag() -> None:
             ),
             select_state_code_parameter_branch,
         )
-
-    update_all_views >> validations
 
     with TaskGroup(group_id="metric_exports") as metric_exports:
         with TaskGroup(group_id=STATE_SPECIFIC_METRIC_EXPORTS_GROUP_ID):
@@ -445,7 +473,7 @@ def create_calculation_dag() -> None:
             ):
                 create_metric_view_data_export_nodes([export_config])
 
-    update_all_views >> metric_exports
+    update_all_views >> [validations, metric_exports]
 
 
 calculation_dag = create_calculation_dag()

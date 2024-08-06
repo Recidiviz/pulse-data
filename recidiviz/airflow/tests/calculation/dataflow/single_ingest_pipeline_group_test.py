@@ -220,7 +220,7 @@ class TestSingleIngestPipelineGroupIntegration(AirflowIntegrationTest):
             result = self.run_dag_test(
                 test_dag,
                 session,
-                expected_skipped_ids=[
+                expected_skipped_task_id_regexes=[
                     r".*get_max_update_datetimes",
                     r".*get_watermarks",
                     r".*check_for_valid_watermarks",
@@ -253,7 +253,7 @@ class TestSingleIngestPipelineGroupIntegration(AirflowIntegrationTest):
             result = self.run_dag_test(
                 test_dag,
                 session,
-                expected_failure_ids=[
+                expected_failure_task_id_regexes=[
                     r".*check_for_valid_watermarks",
                     r".*verify_raw_data_flashing_not_in_progress",
                     r"us_xx_dataflow\.us-xx-ingest.*",
@@ -282,7 +282,7 @@ class TestSingleIngestPipelineGroupIntegration(AirflowIntegrationTest):
             result = self.run_dag_test(
                 test_dag,
                 session,
-                expected_failure_ids=[
+                expected_failure_task_id_regexes=[
                     r".*verify_raw_data_flashing_not_in_progress",
                     r"us_xx_dataflow\.us-xx-ingest.*",
                     r".*write_ingest_job_completion",
@@ -324,7 +324,7 @@ class TestSingleIngestPipelineGroupIntegration(AirflowIntegrationTest):
             result = self.run_dag_test(
                 test_dag,
                 session,
-                expected_failure_ids=[
+                expected_failure_task_id_regexes=[
                     r"us_xx_dataflow\.us-xx-ingest\.run_pipeline",
                     r".*write_ingest_job_completion",
                     r".*write_upper_bounds",

@@ -113,7 +113,7 @@ class TestBranchingByKey(AirflowIntegrationTest):
             self.run_dag_test(
                 test_dag,
                 session=session,
-                expected_failure_ids=["US_ZZ$", BRANCH_END_TASK_NAME],
+                expected_failure_task_id_regexes=["US_ZZ$", BRANCH_END_TASK_NAME],
             )
 
     def test_all_states_upstream_fails(self) -> None:
@@ -137,7 +137,7 @@ class TestBranchingByKey(AirflowIntegrationTest):
             self.run_dag_test(
                 test_dag,
                 session=session,
-                expected_failure_ids=[
+                expected_failure_task_id_regexes=[
                     "upstream",
                     "US_XX",  # since upstream failed, status will be upstream_failed
                     "US_ZZ",  # since upstream failed, status will be upstream_failed
@@ -165,7 +165,7 @@ class TestBranchingByKey(AirflowIntegrationTest):
                 test_dag,
                 session=session,
                 run_conf={STATE_CODE_FILTER: "US_XX"},
-                expected_skipped_ids=["US_ZZ"],
+                expected_skipped_task_id_regexes=["US_ZZ"],
             )
 
     def test_selected_state_succeeds_branch_succeeds(self) -> None:
@@ -186,7 +186,7 @@ class TestBranchingByKey(AirflowIntegrationTest):
             self.run_dag_test(
                 test_dag,
                 session=session,
-                expected_skipped_ids=["US_ZZ"],
+                expected_skipped_task_id_regexes=["US_ZZ"],
             )
 
     def test_selected_state_fails_branch_fails(self) -> None:
@@ -207,6 +207,6 @@ class TestBranchingByKey(AirflowIntegrationTest):
                 test_dag,
                 session=session,
                 run_conf={STATE_CODE_FILTER: "US_ZZ"},
-                expected_skipped_ids=["US_XX"],
-                expected_failure_ids=["US_ZZ$", BRANCH_END_TASK_NAME],
+                expected_skipped_task_id_regexes=["US_XX"],
+                expected_failure_task_id_regexes=["US_ZZ$", BRANCH_END_TASK_NAME],
             )
