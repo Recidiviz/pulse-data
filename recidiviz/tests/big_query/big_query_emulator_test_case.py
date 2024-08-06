@@ -26,6 +26,8 @@ from unittest.mock import Mock, patch
 
 import pandas as pd
 import pytest
+import requests
+from google.api_core.exceptions import GoogleAPICallError, from_http_response
 from google.cloud import bigquery
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
@@ -43,6 +45,23 @@ from recidiviz.tests.big_query.big_query_emulator_input_schema_json import (
 from recidiviz.tests.big_query.big_query_test_helper import BigQueryTestHelper
 from recidiviz.tests.test_setup_utils import BQ_EMULATOR_PROJECT_ID
 from recidiviz.tests.utils.big_query_emulator_control import BigQueryEmulatorControl
+
+
+def _fail_500(response: requests.Response) -> None:
+    """The BigQuery client retries when it receives a 500 from google.
+    However, using the emulator means we end up in an infinite try loop.
+    This function is used to mock the underlying error response and
+    fails if it is a 500 response.
+    """
+    original_error: GoogleAPICallError = from_http_response(response)
+    if original_error.response.status_code == 500:
+        raise RuntimeError(
+            "The BigQueryEmulator has failed with a 500 status code. "
+            "Check the emulator's container logs to investigate. "
+            "(The BigQueryEmulatorTestCase prints the logs when a test failed!)"
+            f"Original error message: {original_error.message}"
+        )
+    raise original_error
 
 
 # TODO(#15020): Migrate all usages of  BigQueryViewTestCase to use this test case
@@ -109,12 +128,17 @@ class BigQueryEmulatorTestCase(unittest.TestCase, BigQueryTestHelper):
             Mock(return_value=BQ_EMULATOR_PROJECT_ID),
         )
         self.project_id = self.project_id_patcher.start().return_value
+        self.bq_error_handling_patcher = patch(
+            "google.cloud.exceptions.from_http_response", _fail_500
+        )
+        self.bq_error_handling_patcher.start()
         self.bq_client = BigQueryClientImpl()
 
     def tearDown(self) -> None:
         self.project_id_patcher.stop()
         if self.wipe_emulator_data_on_teardown:
             self._wipe_emulator_data()
+        self.bq_error_handling_patcher.stop()
 
     @classmethod
     def tearDownClass(cls) -> None:

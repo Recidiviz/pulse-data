@@ -609,6 +609,26 @@ GROUP BY b;
             ],
         )
 
+    def test_invalid_data_load_fails(self) -> None:
+        """Tests that an action causing a 500 failure actually causes
+        our system to fail, rather than an infinite retry.
+        """
+        address = BigQueryAddress(dataset_id=_DATASET_1, table_id=_TABLE_1)
+        self.create_mock_table(
+            address,
+            schema=[
+                bigquery.SchemaField(
+                    "a",
+                    field_type=bigquery.enums.SqlTypeNames.DATE.value,
+                    mode="REQUIRED",
+                ),
+            ],
+        )
+        with self.assertRaisesRegex(
+            RuntimeError, "failed to convert 202-06-06 to time.Time type"
+        ):
+            self.load_rows_into_table(address, data=[{"a": "202-06-06"}])
+
     def test_array_agg_with_nulls(self) -> None:
         """Tests fix for https://github.com/goccy/bigquery-emulator/issues/33"""
         address = BigQueryAddress(dataset_id=_DATASET_1, table_id=_TABLE_1)
