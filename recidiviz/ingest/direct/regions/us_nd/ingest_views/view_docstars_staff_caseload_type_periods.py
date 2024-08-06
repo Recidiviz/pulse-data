@@ -27,7 +27,12 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 VIEW_QUERY_TEMPLATE = """
-WITH roster_data AS (
+WITH 
+-- This CTE pulls in relevant data from the monthly P&P directories that we receive
+-- via email and upload as raw data. It uses the update_datetime on each file to 
+-- track edge dates, as well as the most recent file we received (last_file_update_datetime),
+-- and the most recent file that each employee appeared in (last_appearance_datetime).
+roster_data AS (
 SELECT 
     OFFICER,
     UPPER(JobTitle) AS JobTitle,
@@ -36,6 +41,10 @@ SELECT
     MAX(CAST(update_datetime AS DATETIME)) OVER (PARTITION BY OFFICER) AS last_appearance_datetime, 
 FROM {RECIDIVIZ_REFERENCE_PP_directory@ALL}
 ),
+-- This CTE filters the data to include only the rows that are relevant to the caseload type
+-- periods we are constructing. These are rows where an officer just started working
+-- or changed job titles. We also include all rows where the edge date is the last update
+-- we have about a given officer, to account for rows that signify an officer becoming inactive.
 critical_dates AS (
     SELECT * FROM (
         SELECT

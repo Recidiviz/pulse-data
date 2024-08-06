@@ -56,7 +56,14 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 VIEW_QUERY_TEMPLATE = """
- WITH critical_dates AS (
+WITH 
+-- This CTE collects all of the critical dates on which any attribute we care about changed
+-- throughout the course of a person's incarceration. The result is one row per person, 
+-- attribute, and date that attribute was assigned. These attributes are pulled from multiple
+-- sources, so not all rows have all attributes filled in; each row will only contain
+-- information about the attribute(s) stored in one of the three source tables
+-- included here. These attributes will be combined later to form a complete picture.
+critical_dates AS (
   SELECT DISTINCT
     REPLACE(REPLACE(OFFENDER_BOOK_ID,',',''), '.00', '') AS OFFENDER_BOOK_ID,
     CAST(MOVEMENT_DATE AS DATETIME) AS MOVEMENT_DATE,
@@ -128,8 +135,12 @@ VIEW_QUERY_TEMPLATE = """
   FROM {elite_bedassignmenthistory} bed_assignments
   LEFT JOIN {elite_livingunits} ref
   USING(LIVING_UNIT_ID)
-)
-, dates_with_all_attributes AS (
+), 
+-- This CTE takes the rows from the previous result and carries forward attributes that 
+-- did not change since the previous update. This results in one row for every time any
+-- attribute of a person's incarceration changed. Each row contains every attribute that was 
+-- true on that date.
+dates_with_all_attributes AS (
   SELECT 
     OFFENDER_BOOK_ID,
     MOVEMENT_DATE,
@@ -147,7 +158,10 @@ VIEW_QUERY_TEMPLATE = """
   WINDOW person_window AS (
     PARTITION BY OFFENDER_BOOK_ID 
     ORDER BY MOVEMENT_DATE, CAST(MOVEMENT_SEQ AS INT64), MOVEMENT_REASON_CODE, DIRECTION_CODE)
-), full_periods AS (
+), 
+-- This CTE uses the collection of attributes and the dates they changed to construct
+-- periods during which specific things were true about a person's incarceration. 
+full_periods AS (
   SELECT 
     ROW_NUMBER() OVER person_window AS period_sequence, 
     * 
@@ -187,6 +201,13 @@ FROM (
       PARTITION BY OFFENDER_BOOK_ID 
       ORDER BY start_date, CAST(MOVEMENT_SEQ AS INT64), admission_reason_code)
 ), 
+-- The results of this CTE are structured the same as the previous results, but 
+-- have custody levels and bed assignments filled in when they can be inferred. This is the 
+-- case in two scenarios: 
+  -- 1. When either attribute is NULL and the person just arrived in a facility, we infer
+  --    that they are going through the intake process and have not been formally assigned yet.
+  -- 2. When eitehr attribute is NULL and the person did *not* just arrive in a facility, 
+  --    we fill in the attribute with a true unknown signifier. 
 infer_missing_attributes AS (
   SELECT 
     period_sequence,

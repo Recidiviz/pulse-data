@@ -28,7 +28,11 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 VIEW_QUERY_TEMPLATE = """
-WITH contacts_with_split_supervisor_name AS (
+WITH 
+-- The result of this CTE is one row for each supervision contact. Each row includes
+-- all of the relevant contact codes, the people involved, and the date. System-generated
+-- entries and FTR contacts are excluded. 
+contacts_with_split_supervisor_name AS (
   SELECT
     RecID,
     SID,
@@ -49,6 +53,7 @@ WITH contacts_with_split_supervisor_name AS (
   -- ND includes supervision and FTR contacts. Only include supervision contacts
   AND CATEGORY = 'Supervision'
  ),
+ -- This CTE results in one row per officer, containing the most up-to-date name for that officer. 
  latest_officer_info AS (
   SELECT DISTINCT
     OFFICER,

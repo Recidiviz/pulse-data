@@ -225,60 +225,6 @@ THESE_INGEST_VIEWS_HAVE_UNDOCUMENTED_CTES: Dict[StateCode, Dict[str, List[str]]]
     StateCode.US_NC: {
         "incarceration_periods": ["remove_nested_periods", "sentences"],
     },
-    StateCode.US_ND: {
-        "docstars_contacts_v2": [
-            "contacts_with_split_supervisor_name",
-            "latest_officer_info",
-        ],
-        "docstars_offendercasestable_with_officers": [
-            "cases_with_terminating_officers",
-            "most_recent_term_date_by_sid",
-            "offendercases_with_terminating_and_recent_pos",
-            "ranked_term_dates",
-        ],
-        "docstars_offenders": ["annotated_rows"],
-        "docstars_staff": ["staff_from_directory", "staff_from_docstars"],
-        "docstars_staff_caseload_type_periods": ["critical_dates", "roster_data"],
-        "docstars_staff_location_periods": [
-            "all_periods",
-            "combined_data",
-            "critical_dates",
-            "staff_from_directory",
-            "staff_from_docstars",
-        ],
-        "docstars_staff_role_periods": [
-            "all_periods",
-            "combined_data",
-            "critical_dates",
-            "staff_from_directory",
-            "staff_from_docstars",
-        ],
-        "docstars_staff_supervisor_periods": ["all_periods", "critical_dates"],
-        "elite_incarceration_sentences": ["charges", "sentences", "terms"],
-        "elite_movements_incarceration_periods": [
-            "critical_dates",
-            "dates_with_all_attributes",
-            "full_periods",
-            "infer_missing_attributes",
-        ],
-        "elite_offense_in_custody_and_pos_report_data": ["all_entries"],
-        "task_deadlines": [
-            "inc_filtered",
-            "incarceration_sentence_expiration",
-            "sup_filtered",
-            "supervision_sentence_expiration",
-        ],
-    },
-    StateCode.US_AZ: {
-        "incarceration_incidents": ["base", "code_lookup", "traffic_preprocessed"],
-        "state_charge": ["charges", "commitments"],
-        "state_person": [
-            "base_person_info",
-            "complete_addresses",
-            "most_recent_demographics",
-        ],
-        "state_sentence_group": ["base"],
-    },
     StateCode.US_IX: {
         "discharge_from_incarceration_deadline": [
             "SentenceOrderDates",

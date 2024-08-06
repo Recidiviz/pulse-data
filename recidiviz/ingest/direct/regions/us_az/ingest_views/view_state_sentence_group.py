@@ -35,7 +35,12 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 VIEW_QUERY_TEMPLATE = """
-WITH base AS (
+WITH 
+-- The result of this CTE is one row for each combination of commitment and set of
+-- release dates. Whenever one of the release dates changes, a row will be added
+-- with the updated information about the commitment and the date on which that information
+-- changed.
+base AS (
 SELECT DISTINCT
     -- sentence group external ID is COMMITMENT_ID-DOC_ID
     off.COMMITMENT_ID,

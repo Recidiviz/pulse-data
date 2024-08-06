@@ -23,7 +23,10 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 VIEW_QUERY_TEMPLATE = """
-WITH complete_addresses AS (
+WITH 
+-- Constructs a list of addresses attached to PERSON_ID values. This is done separately
+-- since each component of the address is stored in a distinct field and encoded.
+complete_addresses AS (
 SELECT * FROM (
     SELECT DISTINCT
     -- These values tend to change over time, presumably as more accurate information
@@ -59,6 +62,8 @@ SELECT * FROM (
     WHERE CURRENT_OCCUPANCY = 'Y') sub
 WHERE recency_rank = 1
 ),
+-- Constructs a list of relevant demographic attributes attached to PERSON_ID values. 
+-- This is done separately since each component is stored in a distinct field and encoded.
 most_recent_demographics AS (
     -- These values tend to change over time, presumably as more accurate information
     -- is added to the system to replace older, inaccurate demographic information.
@@ -91,6 +96,8 @@ FROM (
     ON (ETHNICITY = eth_lookup.LOOKUP_ID)) sub
     WHERE recency_rank = 1
 ),
+-- The result of this CTE is a simplified collection of the most recent information pertaining
+-- to each person with a PERSON_ID in the PERSON table who is listed with PERSON_TYPE "INMATE".
 base_person_info AS(
 SELECT DISTINCT
     p.PERSON_ID, 

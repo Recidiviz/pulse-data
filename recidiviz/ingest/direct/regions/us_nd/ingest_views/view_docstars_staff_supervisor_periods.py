@@ -30,7 +30,11 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 VIEW_QUERY_TEMPLATE = """
-WITH critical_dates AS (
+WITH
+-- This CTE filters the data in docstars_officers to include only the rows that are relevant to the
+-- supervisor periods we are constructing. These are rows where an officer changed employment status
+-- or changed supervisors.
+critical_dates AS (
 SELECT * FROM (
     SELECT
         CAST(OFFICER AS INT64) AS OFFICER,
@@ -49,7 +53,9 @@ WHERE
     OR cd.prev_supervisor != SUPERVISOR_ID
     -- officer's employment was terminated (RecDate in these rows is officers' termination date)
     OR cd.STATUS='0'
-), all_periods AS (
+),
+-- This CTE constructs periods using the compiled critical dates.
+all_periods AS (
 SELECT 
     OFFICER,
     FNAME,

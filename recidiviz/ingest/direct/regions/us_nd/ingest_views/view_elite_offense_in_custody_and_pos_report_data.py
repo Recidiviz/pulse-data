@@ -23,7 +23,6 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 VIEW_QUERY_TEMPLATE = """
-WITH all_entries AS (
 SELECT 
     ROOT_OFFENDER_ID,
     AGY_LOC_ID,
@@ -41,10 +40,7 @@ SELECT
     SANCTION_DAYS,
     SANCTION_SEQ
 FROM {elite_offense_in_custody_and_pos_report_data}
-)
--- Excludes entries with malformed dates that make them appear to have occurred before 1900.
-SELECT * 
-FROM all_entries
+-- Exclude entries with malformed dates that make them appear to have occurred before 1900.
 WHERE CAST(INCIDENT_DATE AS DATETIME) > CAST('1900-01-01' AS DATETIME)
 """
 

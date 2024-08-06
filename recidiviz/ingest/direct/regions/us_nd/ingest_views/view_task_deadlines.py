@@ -14,7 +14,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Query containing sentence expiration dates for incarceration and supervision sentences."""
+"""Query containing sentence expiration dates for incarceration and supervision sentences.
+
+To fit the task deadline schema, this view considers expiration dates to be the date on which a 
+person becomes eligible for release from either supervision or incarceration.
+"""
 
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
     DirectIngestViewQueryBuilder,
@@ -23,7 +27,11 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 VIEW_QUERY_TEMPLATE = """
-WITH supervision_sentence_expiration AS (
+WITH 
+-- This CTE collects all supervision release dates that have ever been associated with a given
+-- case number in the Docstars system, as well as the person associated with the case
+-- and the date on which the release date was created or updated
+supervision_sentence_expiration AS (
   SELECT DISTINCT
     SID AS person_external_id,
     CASE_NUMBER AS sentence_external_id, 
@@ -33,6 +41,8 @@ WITH supervision_sentence_expiration AS (
     'SUPERVISION' AS sentence_type
   FROM {docstars_offendercasestable@ALL}
 ), 
+-- This CTE filters the results from above to only include rows where the task eligibility 
+-- date changed. 
 sup_filtered AS (
   SELECT person_external_id, sentence_external_id, eligible_date, update_datetime, description, sentence_type FROM (
     SELECT *, LAG(eligible_date) OVER (PARTITION BY person_external_id ORDER BY update_datetime) AS prev_eligible_date
@@ -42,6 +52,9 @@ sup_filtered AS (
   OR (prev_eligible_date IS NOT NULL AND eligible_date IS NULL) 
   OR (prev_eligible_date != eligible_date)
 ),
+-- This CTE collects all incarceration release dates that have ever been associated with a given
+-- sentence in the Elite system, as well as the person associated with the sentence
+-- and the date on which the release date was created or updated. 
 incarceration_sentence_expiration AS (
     SELECT DISTINCT
         REPLACE(REPLACE(OFFENDER_BOOK_ID,',',''), '.00', '') AS person_external_id,
@@ -58,6 +71,8 @@ incarceration_sentence_expiration AS (
         'INCARCERATION' AS sentence_type
     FROM {elite_offendersentences@ALL} sentences
 ),
+-- This CTE filters the results from above to only include rows where the task eligibility 
+-- date changed. 
 inc_filtered AS (
   SELECT person_external_id, sentence_external_id, eligible_date, update_datetime, description, sentence_type FROM (
     SELECT *, LAG(eligible_date) OVER (PARTITION BY person_external_id ORDER BY update_datetime) AS prev_eligible_date

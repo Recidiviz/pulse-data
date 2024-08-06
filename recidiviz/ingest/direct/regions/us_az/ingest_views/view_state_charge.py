@@ -23,7 +23,11 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 VIEW_QUERY_TEMPLATE = """
-WITH commitments AS (
+WITH 
+-- This CTE collects basic information about every commitment, which is what charges
+-- hang off of. The result is one row per commitment. An individual can have multiple
+-- commitments with distinct offense dates. 
+commitments AS (
   SELECT DISTINCT 
     episode.PERSON_ID,
     commitment.COUNTY_ID,
@@ -45,6 +49,10 @@ WITH commitments AS (
   LEFT JOIN {DOC_EPISODE} episode
   USING(DOC_ID)
 ),
+-- This CTE connects charge information to commitments. The result ils one row per combination
+-- commitment and charge. There can be a one to one or a one to many relationship between 
+-- commitments and charges; however, only one charge is the controlling charge on a given
+-- commitment. 
 charges AS (
   SELECT 
     commitments.*,
