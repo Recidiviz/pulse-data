@@ -1,9 +1,13 @@
 address:
   dataset_id: pulse_dashboard_segment_metrics
   table_id: frontend_outliers_staff_page_viewed
-description:
-  "TODO(#29155): Add a description as to what this is used for and why
-  it isn't managed in code"
+description: |-
+  This table contains tracking metrics from segment
+  for the Outliers staff page. 
+  Fields arise from segment: https://segment.com/docs/
+  If this schema has changed, a new event has likely pulled
+  in a new metric from the spec. You can find common ones here:
+  https://segment.com/docs/connections/spec/common/
 schema:
   - name: anonymous_id
     type: STRING
@@ -90,6 +94,9 @@ schema:
     type: STRING
     mode: NULLABLE
   - name: context_timezone
+    type: STRING
+    mode: NULLABLE
+  - name: context_page_search
     type: STRING
     mode: NULLABLE
 clustering_fields: null
