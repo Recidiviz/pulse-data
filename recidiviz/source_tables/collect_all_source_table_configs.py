@@ -22,6 +22,7 @@ from itertools import groupby
 from recidiviz.calculator.query.state.dataset_config import (
     AUTH0_EVENTS,
     AUTH0_PROD_ACTION_LOGS,
+    PULSE_DASHBOARD_SEGMENT_DATASET,
 )
 from recidiviz.ingest.direct.dataset_config import (
     raw_data_pruning_new_raw_data_dataset,
@@ -173,6 +174,10 @@ def _collect_cloudsql_mirror_source_table_collections() -> list[SourceTableColle
 def _collect_externally_managed_source_table_collections(
     project_id: str | None,
 ) -> list[SourceTableCollection]:
+    """
+    Collects all externally managed source tables.
+    We declare datasets here where we are only interested in validating a subset of fields.
+    """
     yaml_paths = glob.glob(os.path.join(os.path.dirname(__file__), "schema/**/*.yaml"))
 
     def _source_table_sorter(source_table: SourceTableConfig) -> str:
@@ -186,11 +191,16 @@ def _collect_externally_managed_source_table_collections(
         key=_source_table_sorter,
     )
 
+    # "required" columns here means they are required by the view graph and should be
+    # validated that the fields exist in BigQuery, not the column mode (REQUIRED vs NULLABLE)
     datasets_to_validation_config = {
         AUTH0_EVENTS: SourceTableCollectionValidationConfig(
             only_check_required_columns=True,
         ),
         AUTH0_PROD_ACTION_LOGS: SourceTableCollectionValidationConfig(
+            only_check_required_columns=True,
+        ),
+        PULSE_DASHBOARD_SEGMENT_DATASET: SourceTableCollectionValidationConfig(
             only_check_required_columns=True,
         ),
     }

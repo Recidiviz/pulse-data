@@ -246,8 +246,11 @@ class UnionedStateAgnosticSourceTableLabel(SourceTableLabel[str]):
 class SourceTableCollectionValidationConfig:
     """Configures the schema validation for the source table collection"""
 
-    # Some unmanaged tables may have many different versions of their schema, it may be useful to only check a subset
-    # of columns in these cases
+    # Some unmanaged tables may have many different versions of their schema,
+    # it may be useful to only check a subset of columns in these cases.
+    # So these "required" columns are required by the view graph and should be
+    # validated that the fields exist in BigQuery.
+    # Required does not mean the column mode (REQUIRED vs NULLABLE)
     only_check_required_columns: bool
 
 
