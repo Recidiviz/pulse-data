@@ -4,6 +4,7 @@ file_description: |-
   This file contains movement information.
 data_classification: source
 primary_key_cols: []
+no_valid_primary_keys: True
 columns:
   - name: COMMIT_NO
     is_pii: True
@@ -36,3 +37,4 @@ columns:
   - name: RELEASE_TYPE_DESC
     description: |-
       Description of Release Code associated with the release move date.
+always_historical_export: True
