@@ -44,7 +44,7 @@ PRIMARY_USER_ROLE_TYPES_BY_SYSTEM_TYPE: Dict[WorkflowsSystemType, List[str]] = {
         "supervision_staff",
     ],
 }
-PRIMARY_USER_ROLE_TYPES = list(
+PRIMARY_USER_ROLE_TYPES = sorted(
     set().union(*PRIMARY_USER_ROLE_TYPES_BY_SYSTEM_TYPE.values())
 )
 

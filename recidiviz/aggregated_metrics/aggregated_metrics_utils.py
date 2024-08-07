@@ -83,13 +83,13 @@ def get_joined_metrics_by_observation_type_query(
 ) -> str:
     """Left joins together all subqueries using the unit of analysis and time period fields"""
     joined_query = f"SELECT * FROM ({subqueries[0]})" + "\n".join(
-        [
+        sorted(
             f"""
     FULL OUTER JOIN ({x}) 
         USING ({unit_of_analysis.get_primary_key_columns_query_string()}, start_date, end_date, period)"""
             for i, x in enumerate(subqueries)
             if i > 0
-        ]
+        )
     )
     index_cols = unit_of_analysis.get_primary_key_columns_query_string()
     # Select columns in their original order, since separation by metric unit of observation scrambles the order

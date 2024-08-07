@@ -115,7 +115,9 @@ class MetricUnitOfAnalysis:
     def get_primary_key_columns_query_string(self, prefix: Optional[str] = None) -> str:
         """Returns string containing comma separated primary key column names with optional prefix"""
         prefix_str = f"{prefix}." if prefix else ""
-        return ", ".join(f"{prefix_str}{column}" for column in self.primary_key_columns)
+        return ", ".join(
+            f"{prefix_str}{column}" for column in sorted(self.primary_key_columns)
+        )
 
     def get_static_attribute_columns_query_string(
         self, prefix: Optional[str] = None

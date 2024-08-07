@@ -33,7 +33,7 @@ _DESCRIPTION = """The outlier status of an officer (or staff member with a casel
 
 
 def get_metric_id_by_outcome(metric_outcome: MetricOutcome) -> List[str]:
-    return [metric.name for metric in METRICS_BY_OUTCOME_TYPE[metric_outcome]]
+    return sorted(metric.name for metric in METRICS_BY_OUTCOME_TYPE[metric_outcome])
 
 
 _QUERY_TEMPLATE = f"""

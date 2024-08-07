@@ -76,7 +76,7 @@ def get_period_span_time_specific_cte(
             table_prefix="assign",
         )
         metric_aggregation_fragment = ",\n".join(
-            [
+            sorted(
                 metric.generate_aggregation_query_fragment(
                     span_start_date_col="ses.start_date",
                     span_end_date_col="ses.end_date",
@@ -85,7 +85,7 @@ def get_period_span_time_specific_cte(
                     original_span_start_date="ses.span_start_date",
                 )
                 for metric in metrics_for_unit_of_observation
-            ]
+            )
         )
 
         unit_of_analysis_join_columns_str = (
@@ -163,11 +163,11 @@ def generate_period_span_aggregated_metrics_view_builder(
             metrics=metrics,
             metric_time_period=time_period,
         )
-        for time_period in (
+        for time_period in [
             MetricTimePeriod.MONTH,
             MetricTimePeriod.QUARTER,
             MetricTimePeriod.YEAR,
-        )
+        ]
     ]
     unioned_time_specific_ctes = "\nUNION ALL\n".join(time_specific_ctes)
     query_template = f"""
