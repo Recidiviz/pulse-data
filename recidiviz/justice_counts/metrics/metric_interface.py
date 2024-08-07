@@ -31,6 +31,7 @@ from recidiviz.justice_counts.metrics.custom_reporting_frequency import (
 )
 from recidiviz.justice_counts.metrics.metric_context_data import MetricContextData
 from recidiviz.justice_counts.metrics.metric_definition import (
+    ConfigurationStatus,
     IncludesExcludesSet,
     IncludesExcludesSetting,
     MetricDefinition,
@@ -89,6 +90,12 @@ class MetricInterface:
 
     # Values for the metric's custom reporting frequency.
     custom_reporting_frequency: CustomReportingFrequency = CustomReportingFrequency()
+
+    # Whether or not the top-level includes/excludes settings are considered fully
+    # configured by an agency
+    is_includes_excludes_configured: Optional[ConfigurationStatus] = attr.field(
+        default=None
+    )
 
     @property
     def metric_definition(self) -> MetricDefinition:
@@ -276,6 +283,7 @@ class MetricInterface:
             ),
             includes_excludes_set_lst=metric_definition.includes_excludes,
         )
+
         return cls(
             key=json["key"],
             value=None,  # Stored metric interfaces do not contain datapoint fields.
@@ -286,6 +294,9 @@ class MetricInterface:
             includes_excludes_member_to_setting=includes_excludes_member_to_setting,
             custom_reporting_frequency=CustomReportingFrequency.from_json(
                 json.get("custom_reporting_frequency", {})
+            ),
+            is_includes_excludes_configured=json.get(
+                "is_includes_excludes_configured", None
             ),
         )
 
@@ -411,6 +422,7 @@ class MetricInterface:
                 for d in self.aggregated_dimensions
             ],
             "disaggregated_by_supervision_subsystems": self.disaggregated_by_supervision_subsystems,
+            "is_includes_excludes_configured": self.is_includes_excludes_configured,
         }
 
         if is_v2 is True:

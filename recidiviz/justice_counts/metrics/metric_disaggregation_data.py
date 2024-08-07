@@ -32,6 +32,7 @@ from recidiviz.justice_counts.exceptions import JusticeCountsServerError
 from recidiviz.justice_counts.metrics.metric_context_data import MetricContextData
 from recidiviz.justice_counts.metrics.metric_definition import (
     AggregatedDimension,
+    ConfigurationStatus,
     IncludesExcludesSet,
     IncludesExcludesSetting,
 )
@@ -59,6 +60,15 @@ class MetricAggregatedDimensionData:
     dimension_to_contexts: Dict[DimensionBase, List[MetricContextData]] = attr.Factory(
         dict
     )
+    # Maps dimension to configuration status (whether the agency considers
+    # the includes/excludes of each dimension of this disaggregation to be fully
+    # configured to their satisfaction)
+    dimension_to_includes_excludes_configured_status: Dict[
+        DimensionBase, Optional[ConfigurationStatus]
+    ] = attr.Factory(dict)
+    # Indicates whether the agency considers this disaggregation's breakdowns to be
+    # turned on/off to their satisfaction
+    is_breakdown_configured: Optional[ConfigurationStatus] = attr.field(default=None)
 
     def dimension_identifier(self) -> str:
         # Identifier of the Dimension class that this breakdown corresponds to
@@ -148,6 +158,20 @@ class MetricAggregatedDimensionData:
                 dimension_str_to_dimension[dimension]
             ] = enabled_status
 
+        # For dimensions not present in the json, we set their configuration status to None.
+        dimension_to_includes_excludes_configured_status: Dict[
+            DimensionBase, Optional[ConfigurationStatus]
+        ] = {}
+        for dimension in dimension_class:  # type: ignore[attr-defined]
+            dimension_to_includes_excludes_configured_status[dimension] = None
+
+        for dimension, config_status in json.get(
+            "dimension_to_includes_excludes_configured_status", {}
+        ).items():
+            dimension_to_includes_excludes_configured_status[
+                dimension_str_to_dimension[dimension]
+            ] = config_status
+
         dimension_to_includes_excludes_member_to_setting: Dict[
             DimensionBase, Dict[enum.Enum, Optional[IncludesExcludesSetting]]
         ] = defaultdict(dict)
@@ -188,11 +212,14 @@ class MetricAggregatedDimensionData:
                         dimension
                     ],
                 )
+
         return cls(
             dimension_to_value=dimension_to_value,
             dimension_to_enabled_status=dimension_to_enabled_status,
             dimension_to_includes_excludes_member_to_setting=dimension_to_includes_excludes_member_to_setting,
             dimension_to_contexts=dimension_to_contexts,
+            dimension_to_includes_excludes_configured_status=dimension_to_includes_excludes_configured_status,
+            is_breakdown_configured=json.get("is_breakdown_configured", None),
         )
 
     def to_json(
@@ -237,6 +264,7 @@ class MetricAggregatedDimensionData:
 
         response = {
             "key": dimension_definition.dimension.dimension_identifier(),
+            "is_breakdown_configured": self.is_breakdown_configured,
             "display_name": dimension_definition.display_name
             or dimension_definition.dimension.display_name(),
             "dimensions": self.dimension_to_json(
@@ -408,6 +436,9 @@ class MetricAggregatedDimensionData:
         )
         dimension_to_description = dimension_definition.dimension_to_description
         dimension_to_contexts = dimension_definition.dimension_to_contexts
+        dimension_to_includes_excludes_configured_status = (
+            self.dimension_to_includes_excludes_configured_status
+        )
         dimensions = []
         if self.dimension_to_enabled_status is not None:
             for dimension, status in self.dimension_to_enabled_status.items():
@@ -463,6 +494,13 @@ class MetricAggregatedDimensionData:
                         ),
                     )
                     json["includes_excludes"] = includes_excluded_json
+                if (
+                    dimension_to_includes_excludes_configured_status is not None
+                    and entry_point == DatapointGetRequestEntryPoint.METRICS_TAB
+                ):
+                    json[
+                        "is_dimension_includes_excludes_configured"
+                    ] = dimension_to_includes_excludes_configured_status.get(dimension)
                 if (
                     self.dimension_to_value is not None
                     and entry_point == DatapointGetRequestEntryPoint.REPORT_PAGE
