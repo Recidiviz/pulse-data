@@ -54,11 +54,8 @@ SELECT
     CASE    -- charge judicial_district_code
        WHEN BS_CRC = '999' THEN NULL ELSE BS_CRC
     END AS BS_CRC,
-    CASE
-        WHEN BS_CCI = 'CS'
-        THEN concat(BS_DOC, '-', BS_CYC, '-', BS_CRQ)
-        ELSE null
-    END AS parent_sentence_external_id_array
+    BS_CCI,
+    BS_CRQ
 FROM
     {LBAKRDTA_TAK022} AS base_sentence
 """
@@ -110,48 +107,87 @@ WITH
 
     -- These are not neccessarily supervision sentences, but will have
     -- the necessary imposition date for probation sentences.
-    supervision_detail AS ({VALID_SUPERVISION_SENTENCE_INITIAL_INFO})
+    supervision_detail AS ({VALID_SUPERVISION_SENTENCE_INITIAL_INFO}),
 
+    -- We need all valid sentences as a relation so that we know
+    -- any consecutive sentence IDs are for a valid sentence.
+    valid_sentences AS (
+
+    SELECT
+        base_sentence_info.*,
+        incarceration_detail.BT_SD,  -- sentence imposed_date, incarceration
+        incarceration_detail.BT_CRR, -- sentence is_life
+        incarceration_detail.BT_SDI, -- sentence is_capital_punishment
+        supervision_detail.BU_SF,    -- sentence imposed_date, supervision
+        earliest_status_code.FH_SDE AS initial_status_desc,
+        earliest_status_code.BW_SCD AS initial_status_code
+    FROM 
+        base_sentence_info
+    LEFT JOIN 
+        incarceration_detail
+    ON
+        BS_DOC = BT_DOC AND 
+        BS_CYC = BT_CYC AND
+        BS_SEO = BT_SEO
+    LEFT JOIN 
+        supervision_detail 
+    ON
+        BS_DOC = BU_DOC AND 
+        BS_CYC = BU_CYC AND
+        BS_SEO = BU_SEO
+    JOIN 
+        earliest_status_code
+    USING
+        (BS_DOC, BS_CYC, BS_SEO)
+    WHERE
+        {BS_BT_BU_IMPOSITION_FILTER}
+    ),
+
+    -- Maps sentence external IDs to the external IDs of
+    -- the sentence they are consecutive to.
+    valid_consecutive_sentences AS (
+        SELECT DISTINCT
+            BS_DOC,
+            BS_CYC,
+            BS_SEO,    
+            CASE
+                WHEN BS_CCI = 'CS'
+                THEN concat(BS_DOC, '-', BS_CYC, '-', BS_CRQ)
+                ELSE null
+            END AS parent_sentence_external_id_array
+        FROM
+            valid_sentences
+        WHERE
+            concat(BS_DOC, '-', BS_CYC, '-', BS_CRQ)
+        IN (
+            SELECT concat(BS_DOC, '-', BS_CYC, '-', BS_SEO)
+            FROM valid_sentences
+        )
+    )
+-- We left join because not every sentence is consecutive
 SELECT
-    base_sentence_info.BS_DOC,                 -- unique for each person
-    base_sentence_info.BS_CYC,                 -- unique for each sentence group
-    base_sentence_info.BS_SEO,                 -- unique for each sentence
-    base_sentence_info.BS_CNS,                 -- sentence county_code
-    base_sentence_info.BS_NCI,                 -- charge ncic_code,
-    base_sentence_info.BS_ASO,                 -- charge statute,
-    base_sentence_info.BS_CLT,                 -- charge classification_type,
-    base_sentence_info.BS_CNT,                 -- charge county_code,
-    base_sentence_info.BS_CLA,                 -- charge classification_subtype,
-    base_sentence_info.BS_DO,                  -- charge offense_date,
-    base_sentence_info.BS_COD,                 -- charge description,
-    base_sentence_info.BS_CRC,                 -- charge judicial_district_code
-    base_sentence_info.parent_sentence_external_id_array,
-    incarceration_detail.BT_SD,  -- sentence imposed_date, incarceration
-    incarceration_detail.BT_CRR, -- sentence is_life
-    incarceration_detail.BT_SDI, -- sentence is_capital_punishment
-    supervision_detail.BU_SF,    -- sentence imposed_date, supervision
-    earliest_status_code.FH_SDE AS initial_status_desc,
-    earliest_status_code.BW_SCD AS initial_status_code
-FROM 
-    base_sentence_info
-LEFT JOIN 
-    incarceration_detail
-ON
-    BS_DOC = BT_DOC AND 
-    BS_CYC = BT_CYC AND
-    BS_SEO = BT_SEO
-LEFT JOIN 
-    supervision_detail 
-ON
-    BS_DOC = BU_DOC AND 
-    BS_CYC = BU_CYC AND
-    BS_SEO = BU_SEO
-JOIN 
-    earliest_status_code
-USING
-    (BS_DOC, BS_CYC, BS_SEO)
-WHERE
-    {BS_BT_BU_IMPOSITION_FILTER}
+    valid_sentences.BS_DOC,  -- unique for each person
+    valid_sentences.BS_CYC,  -- unique for each sentence group
+    valid_sentences.BS_SEO,  -- unique for each sentence
+    valid_sentences.BS_CNS,  -- sentence county_code
+    valid_sentences.BS_NCI,  -- charge ncic_code,
+    valid_sentences.BS_ASO,  -- charge statute,
+    valid_sentences.BS_CLT,  -- charge classification_type,
+    valid_sentences.BS_CNT,  -- charge county_code,
+    valid_sentences.BS_CLA,  -- charge classification_subtype,
+    valid_sentences.BS_DO,   -- charge offense_date,
+    valid_sentences.BS_COD,  -- charge description,
+    valid_sentences.BS_CRC,  -- charge judicial_district_code
+    valid_sentences.BT_SD,  -- sentence imposed_date, incarceration
+    valid_sentences.BT_CRR, -- sentence is_life
+    valid_sentences.BT_SDI, -- sentence is_capital_punishment
+    valid_sentences.BU_SF,    -- sentence imposed_date, supervision
+    valid_consecutive_sentences.parent_sentence_external_id_array,
+    valid_sentences.initial_status_desc,
+    valid_sentences.initial_status_code
+FROM valid_sentences
+LEFT JOIN valid_consecutive_sentences
+USING (BS_DOC, BS_CYC, BS_SEO)
 """
 
 VIEW_BUILDER = DirectIngestViewQueryBuilder(
