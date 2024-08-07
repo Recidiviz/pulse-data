@@ -484,6 +484,7 @@ class JusticeCountsSchemaTestObjects:
                 else []
             ),
             aggregated_dimensions=[],
+            is_includes_excludes_configured=None,
         )
 
     @staticmethod
@@ -850,11 +851,19 @@ class JusticeCountsSchemaTestObjects:
                         dimension_to_includes_excludes_member_to_setting={
                             dimension: {} for dimension in CallType
                         },
+                        dimension_to_includes_excludes_configured_status={
+                            CallType.EMERGENCY: None,
+                            CallType.NON_EMERGENCY: None,
+                            CallType.UNKNOWN: None,
+                            CallType.OTHER: None,
+                        },
+                        is_breakdown_configured=None,
                     )
                 ]
                 if include_disaggregations is True
                 else []
             ),
+            is_includes_excludes_configured=None,
         )
 
     @staticmethod
@@ -916,6 +925,7 @@ class JusticeCountsSchemaTestObjects:
                     },
                 )
             ],
+            is_includes_excludes_configured=None,
         )
 
     @staticmethod
@@ -925,4 +935,5 @@ class JusticeCountsSchemaTestObjects:
             value=30,
             is_metric_enabled=False,
             contexts=[],
+            is_includes_excludes_configured=None,
         )

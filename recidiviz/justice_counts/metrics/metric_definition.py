@@ -38,6 +38,13 @@ class IncludesExcludesSetting(enum.Enum):
     NO = "No"
 
 
+# Enum that describes whether an agency considers a metric setting
+# (breakdowns, and includes/excludes) to be fully configured to their satisfaction
+class ConfigurationStatus(enum.Enum):
+    YES = "Yes"
+    NO = "No"
+
+
 IncludesExcludesSetT = TypeVar("IncludesExcludesSetT", bound="IncludesExcludesSet")
 
 

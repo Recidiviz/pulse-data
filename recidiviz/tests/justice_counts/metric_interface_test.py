@@ -167,6 +167,7 @@ class TestMetricInterface(TestCase):
                 "starting_month": 1,
                 "filenames": ["funding", "funding_by_type"],
                 "includes_excludes": [],
+                "is_includes_excludes_configured": None,
                 "contexts": [
                     {
                         "key": "INCLUDES_EXCLUDES_DESCRIPTION",
@@ -209,6 +210,7 @@ class TestMetricInterface(TestCase):
                 "starting_month": None,
                 "filenames": ["calls_for_service", "calls_for_service_by_type"],
                 "includes_excludes": [],
+                "is_includes_excludes_configured": None,
                 "contexts": [
                     {
                         "key": "INCLUDES_EXCLUDES_DESCRIPTION",
@@ -223,6 +225,7 @@ class TestMetricInterface(TestCase):
                         "required": True,
                         "should_sum_to_total": False,
                         "helper_text": None,
+                        "is_breakdown_configured": None,
                         "enabled": None,
                         "dimensions": [
                             {
@@ -320,6 +323,7 @@ class TestMetricInterface(TestCase):
                 "disaggregated_by_supervision_subsystems": None,
                 "category": metric_definition.category.human_readable_string,
                 "includes_excludes": [],
+                "is_includes_excludes_configured": None,
                 "value": reported_metric.value,
                 "unit": metric_definition.metric_type.unit,
                 "label": "Civilian Complaints Sustained",
@@ -362,6 +366,7 @@ class TestMetricInterface(TestCase):
                     "arrests_by_biological_sex",
                 ],
                 "includes_excludes": [],
+                "is_includes_excludes_configured": None,
                 "contexts": [
                     {
                         "key": "INCLUDES_EXCLUDES_DESCRIPTION",
@@ -376,6 +381,7 @@ class TestMetricInterface(TestCase):
                         "required": True,
                         "should_sum_to_total": False,
                         "helper_text": None,
+                        "is_breakdown_configured": None,
                         "enabled": True,
                         "dimensions": [
                             {
@@ -784,6 +790,7 @@ class TestMetricInterface(TestCase):
                 "custom_frequency": None,
                 "starting_month": None,
             },
+            "is_includes_excludes_configured": None,
         }
 
         # Metric Interface instantiation
@@ -817,6 +824,13 @@ class TestMetricInterface(TestCase):
                         CallType.UNKNOWN: {},
                     },
                     dimension_to_contexts={},
+                    dimension_to_includes_excludes_configured_status={
+                        CallType.EMERGENCY: None,
+                        CallType.NON_EMERGENCY: None,
+                        CallType.OTHER: None,
+                        CallType.UNKNOWN: None,
+                    },
+                    is_breakdown_configured=None,
                 )
             ],
             disaggregated_by_supervision_subsystems=None,
@@ -824,6 +838,7 @@ class TestMetricInterface(TestCase):
             custom_reporting_frequency=CustomReportingFrequency(
                 frequency=None, starting_month=None
             ),
+            is_includes_excludes_configured=None,
         )
         # DeepDiff compares complex objects and returns the difference between them.
         self.assertFalse(
@@ -862,6 +877,8 @@ class TestMetricInterface(TestCase):
                     },
                     "dimension_to_includes_excludes_member_to_setting": {},
                     "dimension_to_contexts": {},
+                    "is_breakdown_configured": None,
+                    "dimension_to_includes_excludes_configured_status": {},
                 }
             },
             "disaggregated_by_supervision_subsystems": None,
@@ -870,6 +887,7 @@ class TestMetricInterface(TestCase):
                 "custom_frequency": None,
                 "starting_month": None,
             },
+            "is_includes_excludes_configured": None,
         }
         metric_interface = MetricInterface(
             key="LAW_ENFORCEMENT_CALLS_FOR_SERVICE",
@@ -900,6 +918,13 @@ class TestMetricInterface(TestCase):
                         CallType.UNKNOWN: {},
                     },
                     dimension_to_contexts={},
+                    dimension_to_includes_excludes_configured_status={
+                        CallType.EMERGENCY: None,
+                        CallType.NON_EMERGENCY: None,
+                        CallType.OTHER: None,
+                        CallType.UNKNOWN: None,
+                    },
+                    is_breakdown_configured=None,
                 )
             ],
             disaggregated_by_supervision_subsystems=None,
@@ -907,7 +932,9 @@ class TestMetricInterface(TestCase):
             custom_reporting_frequency=CustomReportingFrequency(
                 frequency=None, starting_month=None
             ),
+            is_includes_excludes_configured=None,
         )
+
         # DeepDiff compares complex objects and returns the difference between them.
         self.assertFalse(
             DeepDiff(
@@ -953,6 +980,7 @@ class TestMetricInterface(TestCase):
                 entry_point=DatapointGetRequestEntryPoint.METRICS_TAB
             ),
             {
+                "is_includes_excludes_configured": None,
                 "key": "LAW_ENFORCEMENT_CALLS_FOR_SERVICE",
                 "system": {"key": "LAW_ENFORCEMENT", "display_name": "Law Enforcement"},
                 "display_name": "Calls for Service",
@@ -1107,6 +1135,7 @@ class TestMetricInterface(TestCase):
                                     }
                                 ],
                                 "description": "The number of calls for police assistance received by the agency that require immediate response.",
+                                "is_dimension_includes_excludes_configured": None,
                             },
                             {
                                 "key": "Non-emergency Calls",
@@ -1170,6 +1199,7 @@ class TestMetricInterface(TestCase):
                                     },
                                 ],
                                 "description": "The number of calls for police assistance received by the agency that do not require immediate response.",
+                                "is_dimension_includes_excludes_configured": None,
                             },
                             {
                                 "key": "Unknown Calls",
@@ -1185,9 +1215,11 @@ class TestMetricInterface(TestCase):
                                 ],
                                 "includes_excludes": [],
                                 "description": "The number of calls for police assistance received by the agency of a type that is not known.",
+                                "is_dimension_includes_excludes_configured": None,
                             },
                         ],
                         "enabled": False,
+                        "is_breakdown_configured": None,
                     }
                 ],
             },
@@ -1202,6 +1234,7 @@ class TestMetricInterface(TestCase):
                 entry_point=DatapointGetRequestEntryPoint.METRICS_TAB
             ),
             {
+                "is_includes_excludes_configured": None,
                 "key": "LAW_ENFORCEMENT_CALLS_FOR_SERVICE",
                 "system": {"key": "LAW_ENFORCEMENT", "display_name": "Law Enforcement"},
                 "display_name": "Calls for Service",
@@ -1356,6 +1389,7 @@ class TestMetricInterface(TestCase):
                                     },
                                 ],
                                 "description": "The number of calls for police assistance received by the agency that require immediate response.",
+                                "is_dimension_includes_excludes_configured": None,
                             },
                             {
                                 "key": "Non-emergency Calls",
@@ -1419,6 +1453,7 @@ class TestMetricInterface(TestCase):
                                     },
                                 ],
                                 "description": "The number of calls for police assistance received by the agency that do not require immediate response.",
+                                "is_dimension_includes_excludes_configured": None,
                             },
                             {
                                 "key": "Unknown Calls",
@@ -1434,9 +1469,11 @@ class TestMetricInterface(TestCase):
                                 ],
                                 "includes_excludes": [],
                                 "description": "The number of calls for police assistance received by the agency of a type that is not known.",
+                                "is_dimension_includes_excludes_configured": None,
                             },
                         ],
                         "enabled": False,
+                        "is_breakdown_configured": None,
                     }
                 ],
             },
@@ -1451,6 +1488,7 @@ class TestMetricInterface(TestCase):
                 entry_point=DatapointGetRequestEntryPoint.METRICS_TAB
             ),
             {
+                "is_includes_excludes_configured": None,
                 "key": "LAW_ENFORCEMENT_CALLS_FOR_SERVICE",
                 "system": {"key": "LAW_ENFORCEMENT", "display_name": "Law Enforcement"},
                 "display_name": "Calls for Service",
@@ -1605,6 +1643,7 @@ class TestMetricInterface(TestCase):
                                     },
                                 ],
                                 "description": "The number of calls for police assistance received by the agency that require immediate response.",
+                                "is_dimension_includes_excludes_configured": None,
                             },
                             {
                                 "key": "Non-emergency Calls",
@@ -1668,6 +1707,7 @@ class TestMetricInterface(TestCase):
                                     },
                                 ],
                                 "description": "The number of calls for police assistance received by the agency that do not require immediate response.",
+                                "is_dimension_includes_excludes_configured": None,
                             },
                             {
                                 "key": "Unknown Calls",
@@ -1683,9 +1723,11 @@ class TestMetricInterface(TestCase):
                                 ],
                                 "includes_excludes": [],
                                 "description": "The number of calls for police assistance received by the agency of a type that is not known.",
+                                "is_dimension_includes_excludes_configured": None,
                             },
                         ],
                         "enabled": False,
+                        "is_breakdown_configured": None,
                     }
                 ],
             },
@@ -1703,6 +1745,7 @@ class TestMetricInterface(TestCase):
                 entry_point=DatapointGetRequestEntryPoint.METRICS_TAB
             ),
             {
+                "is_includes_excludes_configured": None,
                 "key": metric_definition.key,
                 "enabled": True,
                 "category": metric_definition.category.human_readable_string,
@@ -1799,6 +1842,7 @@ class TestMetricInterface(TestCase):
                                 "label": CallType.EMERGENCY.value,
                                 "key": CallType.EMERGENCY.value,
                                 "description": "The number of calls for police assistance received by the agency that require immediate response.",
+                                "is_dimension_includes_excludes_configured": None,
                                 "contexts": [
                                     {
                                         "key": "INCLUDES_EXCLUDES_DESCRIPTION",
@@ -1924,6 +1968,7 @@ class TestMetricInterface(TestCase):
                                     },
                                 ],
                                 "description": "The number of calls for police assistance received by the agency that do not require immediate response.",
+                                "is_dimension_includes_excludes_configured": None,
                             },
                             {
                                 "datapoints": None,
@@ -1939,8 +1984,10 @@ class TestMetricInterface(TestCase):
                                 ],
                                 "includes_excludes": [],
                                 "description": "The number of calls for police assistance received by the agency of a type that is not known.",
+                                "is_dimension_includes_excludes_configured": None,
                             },
                         ],
+                        "is_breakdown_configured": None,
                     }
                 ],
             },
@@ -2052,6 +2099,7 @@ class TestMetricInterface(TestCase):
                 dimension_id_to_dimension_member_to_datapoints_json=dimension_id_to_dimension_member_to_datapoints_json,
             ),
             {
+                "is_includes_excludes_configured": None,
                 "key": "LAW_ENFORCEMENT_CALLS_FOR_SERVICE",
                 "system": {"key": "LAW_ENFORCEMENT", "display_name": "Law Enforcement"},
                 "display_name": "Calls for Service",
@@ -2253,6 +2301,7 @@ class TestMetricInterface(TestCase):
                                     },
                                 ],
                                 "description": "The number of calls for police assistance received by the agency that require immediate response.",
+                                "is_dimension_includes_excludes_configured": None,
                             },
                             {
                                 "key": "Non-emergency Calls",
@@ -2332,6 +2381,7 @@ class TestMetricInterface(TestCase):
                                     },
                                 ],
                                 "description": "The number of calls for police assistance received by the agency that do not require immediate response.",
+                                "is_dimension_includes_excludes_configured": None,
                             },
                             {
                                 "key": "Unknown Calls",
@@ -2363,9 +2413,11 @@ class TestMetricInterface(TestCase):
                                 ],
                                 "includes_excludes": [],
                                 "description": "The number of calls for police assistance received by the agency of a type that is not known.",
+                                "is_dimension_includes_excludes_configured": None,
                             },
                         ],
                         "enabled": False,
+                        "is_breakdown_configured": None,
                     }
                 ],
             },
@@ -2910,6 +2962,7 @@ class TestMetricInterface(TestCase):
             },
             aggregated_dimensions=[],
             contexts=[],
+            is_includes_excludes_configured=None,
         )
 
         metric_interface_json = {
@@ -3036,6 +3089,7 @@ class TestMetricInterface(TestCase):
                     ],
                 },
             ],
+            "is_includes_excludes_configured": None,
         }
 
         # MetricInterface.to_json() expects includes_excludes field and not settings field
@@ -3277,6 +3331,7 @@ class TestMetricInterface(TestCase):
                     ],
                 },
             ],
+            "is_includes_excludes_configured": None,
             "datapoints": None,
         }
 
@@ -3380,6 +3435,7 @@ class TestMetricInterface(TestCase):
         aggregated_dimension = MetricAggregatedDimensionData(
             dimension_to_value={dim: 10 for dim in RaceAndEthnicity},
             dimension_to_enabled_status={dim: True for dim in RaceAndEthnicity},
+            is_breakdown_configured=None,
         )
 
         disaggregation_json = {
@@ -3388,6 +3444,7 @@ class TestMetricInterface(TestCase):
             "required": True,
             "should_sum_to_total": False,
             "helper_text": None,
+            "is_breakdown_configured": None,
             "enabled": True,
             "dimensions": [
                 {
@@ -3553,6 +3610,7 @@ class TestMetricInterface(TestCase):
                                         ],
                                     }
                                 ],
+                                "is_dimension_includes_excludes_configured": None,
                                 "key": "Drug Offenses",
                                 "label": "Drug Offenses",
                             },
@@ -3670,6 +3728,7 @@ class TestMetricInterface(TestCase):
                                         ],
                                     }
                                 ],
+                                "is_dimension_includes_excludes_configured": None,
                                 "key": "Person Offenses",
                                 "label": "Person Offenses",
                             },
@@ -3841,6 +3900,7 @@ class TestMetricInterface(TestCase):
                                         ],
                                     }
                                 ],
+                                "is_dimension_includes_excludes_configured": None,
                                 "key": "Property Offenses",
                                 "label": "Property Offenses",
                             },
@@ -4132,6 +4192,7 @@ class TestMetricInterface(TestCase):
                                         ],
                                     }
                                 ],
+                                "is_dimension_includes_excludes_configured": None,
                                 "key": "Public Order Offenses",
                                 "label": "Public Order Offenses",
                             },
@@ -4147,6 +4208,7 @@ class TestMetricInterface(TestCase):
                                 "description": "The number of arrests, citations, or summonses made by the agency in which the most serious offense is not known.",
                                 "enabled": True,
                                 "includes_excludes": [],
+                                "is_dimension_includes_excludes_configured": None,
                                 "key": "Unknown Offenses",
                                 "label": "Unknown Offenses",
                             },
@@ -4162,10 +4224,12 @@ class TestMetricInterface(TestCase):
                                 "description": "The number of arrests, citations, or summonses made by the agency in which the most serious offense was another type of crime that was not a person, property, drug, or public order offense.",
                                 "enabled": True,
                                 "includes_excludes": [],
+                                "is_dimension_includes_excludes_configured": None,
                                 "key": "Other Offenses",
                                 "label": "Other Offenses",
                             },
                         ],
+                        "is_breakdown_configured": None,
                         "display_name": "Offense Types",
                         "enabled": True,
                         "key": "metric/offense/type",
@@ -4211,6 +4275,7 @@ class TestMetricInterface(TestCase):
                         ],
                     }
                 ],
+                "is_includes_excludes_configured": None,
                 "key": "LAW_ENFORCEMENT_ARRESTS",
                 "sector": {
                     "display_name": "Law Enforcement",
