@@ -424,9 +424,6 @@ class SQLAlchemyEngineManager:
                 f"Instance id is not configured for schema type [{schema_type}]"
             )
 
-        db_host = cls._get_db_host(
-            database_key=database_key, secret_prefix_override=secret_prefix_override
-        )
         db_user = cls._get_db_user(
             database_key=database_key, secret_prefix_override=secret_prefix_override
         )
@@ -442,7 +439,11 @@ class SQLAlchemyEngineManager:
             username=db_user,
             password=db_password,
             database=db_name,
-            host=db_host if not using_unix_sockets else None,
+            host=cls._get_db_host(
+                database_key=database_key, secret_prefix_override=secret_prefix_override
+            )
+            if not using_unix_sockets
+            else None,
             port=db_port,
             query={"host": f"/cloudsql/{cloudsql_instance_id}"}
             if using_unix_sockets
