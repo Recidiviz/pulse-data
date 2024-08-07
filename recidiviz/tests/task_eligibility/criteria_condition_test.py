@@ -230,7 +230,7 @@ class TestPickNCompositeCriteriaCondition(unittest.TestCase):
             composite_criteria.get_criteria_builders(),
         )
         self.assertEqual(
-            """At least 2 and at most 2 of the following conditions met to qualify as almost eligible:
+            """Exactly 2 of the following conditions met to qualify as almost eligible:
     Not eligible criteria condition
     Less than value criteria condition
     Time dependent criteria condition""",

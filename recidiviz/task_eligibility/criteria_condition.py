@@ -471,10 +471,16 @@ GROUP BY 1, 2, 3, 4
 
     def get_description(self) -> str:
         """Aggregate the description field across all the sub conditions"""
-        description = (
-            f"At least {self.at_least_n_conditions_true} and at most {self.at_most_n_conditions_true} of the following "
-            "conditions met to qualify as almost eligible:\n    "
+        predicate = (
+            " of the following conditions met to qualify as almost eligible:\n    "
         )
+        if self.at_least_n_conditions_true == self.at_most_n_conditions_true:
+            description = f"Exactly {self.at_least_n_conditions_true}" + predicate
+        else:
+            description = (
+                f"At least {self.at_least_n_conditions_true} and at most {self.at_most_n_conditions_true}"
+                + predicate
+            )
         return description + "\n    ".join(
             [condition.description for condition in self.sub_conditions_list]
         )

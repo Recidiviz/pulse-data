@@ -43,6 +43,9 @@ from recidiviz.calculator.query.state.dataset_config import (
 from recidiviz.calculator.query.state.views.dataflow_metrics_materialized.most_recent_dataflow_metrics import (
     generate_metric_view_names,
 )
+from recidiviz.calculator.view_type_specific_documentation import (
+    get_view_type_specific_documentation,
+)
 from recidiviz.common import attr_validators
 from recidiviz.common.attr_utils import get_enum_cls
 from recidiviz.common.constants.states import StateCode
@@ -101,7 +104,7 @@ BQ_LINK_TEMPLATE = """https://console.cloud.google.com/bigquery?pli=1&p={project
 
 VIEW_DOCS_TEMPLATE = """## {view_dataset_id}.{view_table_id}
 {description}
-
+{view_type_specific_contents}
 #### View schema in Big Query
 This view may not be deployed to all environments yet.<br/>
 [**Staging**]({staging_link})
@@ -200,6 +203,7 @@ class CalculationDocumentationGenerator:
                 for state in states:
                     self.products_by_state[state][environment].append(product_name)
         all_view_builders = all_deployed_view_builders()
+        self.view_builders_by_address = {vb.address: vb for vb in all_view_builders}
         views_to_update = build_views_to_update(
             view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
             candidate_view_builders=all_view_builders,
@@ -987,6 +991,12 @@ class CalculationDocumentationGenerator:
             description=description,
             staging_link=staging_link,
             prod_link=prod_link,
+            view_type_specific_contents=(
+                get_view_type_specific_documentation(
+                    self.view_builders_by_address[view.address]
+                )
+                or ""
+            ),
             parent_tree=self._get_view_tree_string(view),
             child_tree=self._get_view_tree_string(view, descendants=True),
         )
