@@ -159,6 +159,14 @@ state_incarceration_incident_outcome_solitary = "SOLITARY"
 state_incarceration_incident_outcome_treatment = "TREATMENT"
 state_incarceration_incident_outcome_warning = "WARNING"
 
+state_incarceration_incident_severity_highest = "HIGHEST"
+state_incarceration_incident_severity_second_highest = "SECOND_HIGHEST"
+state_incarceration_incident_severity_third_highest = "THIRD_HIGHEST"
+state_incarceration_incident_severity_fourth_highest = "FOURTH_HIGHEST"
+state_incarceration_incident_severity_fifth_highest = "FIFTH_HIGHEST"
+state_incarceration_incident_severity_sixth_highest = "SIXTH_HIGHEST"
+state_incarceration_incident_severity_seventh_highest = "SEVENTH_HIGHEST"
+
 # state_incarceration_period.py
 state_incarceration_period_admission_reason_admitted_in_error = "ADMITTED_IN_ERROR"
 state_incarceration_period_admission_reason_admitted_from_supervision = (
