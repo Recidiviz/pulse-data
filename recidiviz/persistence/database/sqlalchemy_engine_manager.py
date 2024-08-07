@@ -392,14 +392,21 @@ class SQLAlchemyEngineManager:
         *,
         database_key: SQLAlchemyDatabaseKey,
         secret_prefix_override: Optional[str] = None,
+        using_unix_sockets: bool = True,
     ) -> URL:
         """Returns the Cloud SQL instance URL for a given database key.
 
         The host, user, password, etc. used to determine the instance URL are stored
-        in GCP secrets.  If `secret_prefix_override` is not specified,  we determine the prefix
-        for these secrets based on the database schema. However, it is possible that the
-        same database schema may live in more than one instance. In this case, use the
-        `secret_prefix_override` argument to override this logic.
+        in GCP secrets.
+
+        Args:
+            secret_prefix_override: If not specified,  we determine the prefix
+                for these secrets based on the database schema. However, it is possible that the
+                same database schema may live in more than one instance. In this case, use the
+                `secret_prefix_override` argument to override this logic.
+            using_unix_sockets: If True (default), we omit the hostname and set the query of the
+                url to {"host": f"/cloudsql/{cloudsql_instance_id}"}. If False, we set the
+                hostname according to secrets.
         """
         schema_type = database_key.schema_type
         instance_id_key = cls._get_cloudsql_instance_id_key(
@@ -410,6 +417,7 @@ class SQLAlchemyEngineManager:
                 f"Instance id is not configured for schema type [{schema_type}]"
             )
 
+        db_host = cls._get_db_host(database_key=database_key)
         db_user = cls._get_db_user(
             database_key=database_key, secret_prefix_override=secret_prefix_override
         )
@@ -425,8 +433,11 @@ class SQLAlchemyEngineManager:
             username=db_user,
             password=db_password,
             database=db_name,
+            host=db_host if not using_unix_sockets else None,
             port=db_port,
-            query={"host": f"/cloudsql/{cloudsql_instance_id}"},
+            query={"host": f"/cloudsql/{cloudsql_instance_id}"}
+            if using_unix_sockets
+            else {},
         )
 
         return url

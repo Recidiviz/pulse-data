@@ -33,7 +33,8 @@ write_to_file '5432' recidiviz/local/gsm/pathways_db_port
 
 # Database secrets
 write_to_file 'workflows' recidiviz/local/gsm/workflows_cloudsql_instance_id
-write_to_file 'localhost' recidiviz/local/gsm/workflows_db_host
+# References hostname specified in `services.workflows_db` from `docker-compose.yml`
+write_to_file 'workflows_db' recidiviz/local/gsm/workflows_db_host
 write_to_file 'workflows_user' recidiviz/local/gsm/workflows_db_user
 write_to_file 'example' recidiviz/local/gsm/workflows_db_password
 write_to_file '5432' recidiviz/local/gsm/workflows_db_port
