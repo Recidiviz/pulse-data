@@ -43,4 +43,10 @@ columns:
     description: Minimum LSIR assessment score
   - name: maxLSIRScore
     description: Maximum LSIR assessment score
+  - name: minAge
+    description: Minimum age requirement for opportunity
+  - name: maxAge
+    description: Maximum age requirement for opportunity
+  - name: district
+    description: District the opportunity was added by (Not necessarily the only district the opportunity is available for)
 update_cadence: IRREGULAR
