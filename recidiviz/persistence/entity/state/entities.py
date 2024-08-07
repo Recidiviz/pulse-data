@@ -55,6 +55,7 @@ from recidiviz.common.constants.state.state_employment_period import (
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_incident import (
     StateIncarcerationIncidentOutcomeType,
+    StateIncarcerationIncidentSeverity,
     StateIncarcerationIncidentType,
 )
 from recidiviz.common.constants.state.state_incarceration_period import (
@@ -1231,6 +1232,14 @@ class StateIncarcerationIncident(HasExternalIdEntity, BuildableAttr, Defaultable
         default=None, validator=attr_validators.is_opt(StateIncarcerationIncidentType)
     )
     incident_type_raw_text: Optional[str] = attr.ib(
+        default=None, validator=attr_validators.is_opt_str
+    )
+
+    incident_severity: Optional[StateIncarcerationIncidentSeverity] = attr.ib(
+        default=None,
+        validator=attr_validators.is_opt(StateIncarcerationIncidentSeverity),
+    )
+    incident_severity_raw_text: Optional[str] = attr.ib(
         default=None, validator=attr_validators.is_opt_str
     )
 

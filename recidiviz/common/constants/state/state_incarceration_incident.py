@@ -142,3 +142,65 @@ _STATE_INCARCERATION_INCIDENT_OUTCOME_TYPE_VALUE_DESCRIPTIONS: Dict[
     StateIncarcerationIncidentOutcomeType.WARNING: "Describes an incident outcome in "
     "which a person is given a warning.",
 }
+
+
+@unique
+class StateIncarcerationIncidentSeverity(StateEntityEnum):
+    """Possible State Incarceration Incident Severity Levels."""
+
+    HIGHEST = state_enum_strings.state_incarceration_incident_severity_highest
+    SECOND_HIGHEST = (
+        state_enum_strings.state_incarceration_incident_severity_second_highest
+    )
+    THIRD_HIGHEST = (
+        state_enum_strings.state_incarceration_incident_severity_third_highest
+    )
+    FOURTH_HIGHEST = (
+        state_enum_strings.state_incarceration_incident_severity_fourth_highest
+    )
+    FIFTH_HIGHEST = (
+        state_enum_strings.state_incarceration_incident_severity_fifth_highest
+    )
+    SIXTH_HIGHEST = (
+        state_enum_strings.state_incarceration_incident_severity_sixth_highest
+    )
+    SEVENTH_HIGHEST = (
+        state_enum_strings.state_incarceration_incident_severity_seventh_highest
+    )
+    INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
+    EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
+
+    @classmethod
+    def get_enum_description(cls) -> str:
+        return "An enum indicating the severity of an incident."
+
+    @classmethod
+    def get_value_descriptions(cls) -> Dict["StateEntityEnum", str]:
+        return _STATE_INCARCERATION_INCIDENT_SEVERITY_VALUE_DESCRIPTIONS
+
+
+_STATE_INCARCERATION_INCIDENT_SEVERITY_VALUE_DESCRIPTIONS: Dict[
+    StateEntityEnum, str
+] = {
+    StateIncarcerationIncidentSeverity.HIGHEST: "Highest incident severity level."
+    "Incidents with the highest severity level should always be mapped to this value,"
+    "regardless of the state's naming / numbering scheme for incident severity.",
+    StateIncarcerationIncidentSeverity.SECOND_HIGHEST: "Second highest incident severity level."
+    "Incidents with the second highest severity level should always be mapped to this value,"
+    "regardless of the state's naming / numbering scheme for incident severity.",
+    StateIncarcerationIncidentSeverity.THIRD_HIGHEST: "Third highest incident severity level."
+    "Incidents with the third highest severity level should always be mapped to this value,"
+    "regardless of the state's naming / numbering scheme for incident severity.",
+    StateIncarcerationIncidentSeverity.FOURTH_HIGHEST: "Fourth highest incident severity level."
+    "Incidents with the fourth highest severity level should always be mapped to this value,"
+    "regardless of the state's naming / numbering scheme for incident severity.",
+    StateIncarcerationIncidentSeverity.FIFTH_HIGHEST: "Fifth highest incident severity level."
+    "Incidents with the fifth highest severity level should always be mapped to this value,"
+    "regardless of the state's naming / numbering scheme for incident severity.",
+    StateIncarcerationIncidentSeverity.SIXTH_HIGHEST: "Sixth highest incident severity level."
+    "Incidents with the sixth highest severity level should always be mapped to this value,"
+    "regardless of the state's naming / numbering scheme for incident severity.",
+    StateIncarcerationIncidentSeverity.SEVENTH_HIGHEST: "Sevent highest incident severity level."
+    "Incidents with the seventh highest severity level should always be mapped to this value,"
+    "regardless of the state's naming / numbering scheme for incident severity.",
+}

@@ -131,6 +131,7 @@ class TestStateSchemaEnums(TestSchemaEnums):
             "state_supervision_level": state_supervision_period.StateSupervisionLevel,
             "state_incarceration_incident_type": state_incarceration_incident.StateIncarcerationIncidentType,
             "state_incarceration_incident_outcome_type": state_incarceration_incident.StateIncarcerationIncidentOutcomeType,
+            "state_incarceration_incident_severity": state_incarceration_incident.StateIncarcerationIncidentSeverity,
             "state_specialized_purpose_for_incarceration": state_incarceration_period.StateSpecializedPurposeForIncarceration,
             "state_program_assignment_participation_status": state_program_assignment.StateProgramAssignmentParticipationStatus,
             "state_staff_role_type": state_staff_role_period.StateStaffRoleType,

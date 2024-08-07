@@ -544,6 +544,19 @@ state_incarceration_incident_outcome_type = Enum(
     name="state_incarceration_incident_outcome_type",
 )
 
+state_incarceration_incident_severity = Enum(
+    state_enum_strings.state_incarceration_incident_severity_highest,
+    state_enum_strings.state_incarceration_incident_severity_second_highest,
+    state_enum_strings.state_incarceration_incident_severity_third_highest,
+    state_enum_strings.state_incarceration_incident_severity_fourth_highest,
+    state_enum_strings.state_incarceration_incident_severity_fifth_highest,
+    state_enum_strings.state_incarceration_incident_severity_sixth_highest,
+    state_enum_strings.state_incarceration_incident_severity_seventh_highest,
+    state_enum_strings.internal_unknown,
+    state_enum_strings.external_unknown,
+    name="state_incarceration_incident_severity",
+)
+
 state_supervision_violation_type = Enum(
     state_enum_strings.state_supervision_violation_type_absconded,
     state_enum_strings.state_supervision_violation_type_escaped,
@@ -2232,6 +2245,12 @@ class StateIncarcerationIncident(StateBase, _ReferencesStatePersonSharedColumns)
     )
     incident_type_raw_text = Column(
         String(255), comment="The raw text value of the incident type."
+    )
+    incident_severity = Column(
+        state_incarceration_incident_severity, comment="The severity of the incident."
+    )
+    incident_severity_raw_text = Column(
+        String(255), comment="The raw text value of the incident severity."
     )
     incident_date = Column(Date, comment="The date on which the incident took place.")
     state_code = Column(
