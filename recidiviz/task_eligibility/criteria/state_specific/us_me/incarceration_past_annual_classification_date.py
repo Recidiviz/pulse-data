@@ -43,31 +43,35 @@ _DESCRIPTION = """Defines a criteria span view that shows spans of time during w
 someone is past their annual reclassification date"""
 
 _QUERY_TEMPLATE = f"""
-  /* The following CTE unions together different date boundaries: year-span starts, year-span ends, reclassification meeting dates.
-  Meeting dates contribute -1 and year-span starts contribute 1 in order to count how many reclassification meetings
-  someone has due at a given time. The original session is spanified into yearly sections in order to keep track
-   of reclassification meeting debt. */
-    WITH super_sessions_with_6_years_remaining AS (
-        -- This CTE is used to merge the super_sessions with the date at which they will 
-        -- have 6 years remaining or less. That way it only includes spans of time where 
-        -- they require an annual reclassification
+      /* The following CTEs take the time between an individual's start and end date and spanifies it into yearly 
+        spans. The logic checks whether a given span has a meeting date within its start and end date 
+        OR if a reclassification meeting took place within 60 days of the span's start date. A one-to-one mapping 
+        between reclassification dates and spans is created, favoring the earliest span a meeting date can be 
+        associated with. 
+      */
+      WITH super_sessions_with_6_years_remaining AS (
+      -- This CTE finds all critical dates for when an individual has 6 years or more remaining on their sentence
           {six_years_remaining_cte(reclass_type='Annual')}
       ),
       meetings AS (
+       -- This CTE grabs all past reclassification meeting dates for all individuals 
           {meetings_cte()}
       ), 
-      reclass_is_due AS (
-          -- Residents start owing 1 reclass after they've been one year in and 1 reclass every year thereafter
+      reclass_due_dates AS (
+      -- This CTE generates a list of due dates for each individual during their incarceration stint
+      -- We use a 120 year generation period in order to ensure we capture all possible future spans 
           SELECT
             state_code,
             person_id,
-            LEAST(DATE_ADD(start_date, INTERVAL OFFSET YEAR), {nonnull_end_date_clause("end_date")}) AS change_date,
-            1 AS reclass_type,
+            incarceration_super_session_id,
+            LEAST(DATE_ADD(start_date, INTERVAL OFFSET YEAR), 
+                {nonnull_end_date_clause("end_date")}) AS reclass_is_due_date,
           FROM
             super_sessions_with_6_years_remaining,
-            UNNEST(GENERATE_ARRAY(1, 100, 1)) AS OFFSET
+            UNNEST(GENERATE_ARRAY(0, 100, 1)) AS OFFSET
           WHERE
-            OFFSET <= DATE_DIFF({nonnull_end_date_clause("end_date")}, start_date, DAY) / 365
+            OFFSET <= (DATE_DIFF({nonnull_end_date_clause("end_date")}, start_date, DAY) / 365) + 1
+          GROUP BY 1,2,3,4
       ),
       {reclassification_shared_logic(reclass_type='Annual')}
 """
@@ -90,11 +94,6 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = StateSpecificTaskCr
             name="reclass_type",
             type=bigquery.enums.StandardSqlTypeNames.STRING,
             description="Reclass type: annual or semi-annual",
-        ),
-        ReasonsField(
-            name="reclasses_needed",
-            type=bigquery.enums.StandardSqlTypeNames.FLOAT64,
-            description="Number of reclassifications needed by the resident",
         ),
         ReasonsField(
             name="latest_classification_date",

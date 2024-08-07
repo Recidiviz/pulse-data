@@ -779,8 +779,7 @@ def six_years_remaining_cte(reclass_type: str) -> str:
             iss.state_code,
             iss.person_id,
             iss.incarceration_super_session_id,
-            0 as reclasses_needed,
-            iss.start_date as actual_start_date, --This line is to ensure our date_add feature later grabs the correct date differences 
+            iss.start_date as actual_start_date,
             {annual_end_date if reclass_type == 'annual' else semi_annual_start_date}       
           FROM `{{project_id}}.{{sessions_dataset}}.incarceration_super_sessions_materialized` iss
           LEFT JOIN (
@@ -800,172 +799,99 @@ def six_years_remaining_cte(reclass_type: str) -> str:
             AND {nonnull_start_date_clause('syr.start_date')} < {nonnull_end_date_clause('iss.end_date')}
             AND {nonnull_start_date_clause('iss.start_date')} < {nonnull_end_date_clause('syr.end_date')}
           WHERE iss.state_code = 'US_ME' {annual_clause if reclass_type == 'annual' else semi_annual_clause}
-          GROUP BY 1,2,3,4,5,6"""
+          GROUP BY 1,2,3,4,5"""
 
 
 def reclassification_shared_logic(reclass_type: str) -> str:
     """
     Repeated CTE Logic used for Annual and Semi-Annual Reclassification
-    We take individual spans and connect various "change dates" together which are defined as follows:
-        * Every start date, a debt of 1 is added
-        * Every time there is a reclassification meeting, we subtract 1 from their current debt
-        * Every end date has a debt of 0, used only to signify the end of a span
-    There are three sums to account for edge cases, such as a reclass debt less than 0 or reclass meetings that
-    happen earlier than their intended reclassification date.
+    We take individual spans and split them into yearly or semi-yearly increments. We then create a
+    one-to-one mapping of reclassification meetings to spans based on the following logic:
+        * A reclassification meeting date is between the start and end of any given span OR
+        * A reclassification meeting date takes place within 60 days before the start of a given span, to account for
+        the occurrence of a reclassification meeting before its due date
     Input:
         reclass_type: Is the related reclassification Annual or Semi-Annual Reclassification
     Returns:
-        str: Query that grabs all individuals within 6 years of their expected release date
+        str: Query showing spans of eligibility and ineligibility for reclassification meetings
     """
     reclass_type = re.sub(r"[^\w\s]", "", reclass_type).lower()
-    return f"""population_change_dates AS (
-              -- Everyone is assumed to start with MAX(0, previous reclass debt) reclasses owed
-              SELECT 
-                state_code,
-                person_id,
-                start_date AS change_date,
-                reclasses_needed AS reclass_type,
-              FROM
-                super_sessions_with_6_years_remaining
-    
-              UNION ALL 
-    
-              SELECT *
-              FROM reclass_is_due
-    
-              UNION ALL
-    
-              -- This is used to capture the end_date of the super_session so we know when to end a span in the final CTE
-              SELECT
-                state_code,
-                person_id,
-                end_date AS change_date,
-                0 AS reclass_type,
-              FROM
-                super_sessions_with_6_years_remaining
-    
-              UNION ALL
-    
-              SELECT
-                state_code,
-                person_id,
-                reclass_meeting_date AS change_date,
-                -1 AS reclass_type,
-              FROM
-                meetings
-          ),
-        population_change_dates_agg AS (
-              SELECT
-                state_code,
-                person_id,
-                change_date,
-                SUM(reclass_type) AS reclass_type,
-              FROM
-                population_change_dates
-              GROUP BY
-                1,
-                2,
-                3 
-          ),
-          first_sum AS (
-          -- We do a first sum to get the reclassifications needed at each point in time
-              SELECT
-                p.state_code,
-                p.person_id,
-                cs.incarceration_super_session_id,
-                p.change_date AS start_date,
-                SUM(p.reclass_type) OVER (PARTITION BY p.state_code, p.person_id, cs.incarceration_super_session_id ORDER BY p.change_date ) AS reclasses_needed,
-                reclass_type,
-              FROM
-                population_change_dates_agg p
-              INNER JOIN
-                super_sessions_with_6_years_remaining cs
-              ON
-                p.person_id = cs.person_id
-                AND p.change_date BETWEEN cs.start_date
-                    AND {nonnull_end_date_clause("cs.end_date")}
-          ),
-          second_sum AS (
-          -- Removes reclassifications done 60 days before one was due and performs
-          -- the sum again
-              SELECT 
-                * EXCEPT(reclasses_needed, next_due_date, prev_due_date), 
-                SUM(reclass_type) OVER (PARTITION BY state_code, person_id, incarceration_super_session_id ORDER BY start_date ) AS reclasses_needed,
-              FROM (
-                  SELECT 
-                    fs.state_code,
-                    fs.person_id,
-                    fs.incarceration_super_session_id,
-                    fs.start_date,
-                    fs.reclasses_needed,
-                    fs.reclass_type,
-                    MIN(r.change_date) AS next_due_date,
-                    MAX(rr.change_date) AS prev_due_date,
-                  FROM first_sum fs
-                  LEFT JOIN reclass_is_due r
-                    -- Merge to the first meeting that happens just after the start_date/change_date
-                    ON fs.person_id = r.person_id
-                      AND fs.start_date < r.change_date
-                  LEFT JOIN reclass_is_due rr
-                    -- Merge to the first meeting that happens just before the start_date/change_date
-                    ON fs.person_id = rr.person_id
-                    AND fs.start_date > rr.change_date
-                    GROUP BY 1,2,3,4,5,6 
-              )
-              WHERE 
-                -- If a reclass brings reclasses_needed below 0 and 
-                --  it was done more than 60 days before such reclass was due, 
-                --  we remove it. 
-                -- For semiannuals, we check if the reclass was within 60 days of the previous reclass date as well to ensure
-                -- we are not removing one that should not be removed
-                (NOT (reclass_type = -1 
-                  AND reclasses_needed < 0 
-                  AND DATE_DIFF(next_due_date, start_date, DAY) > 60))
-                {'OR'
-                '(NOT (reclass_type = -1 '
-                  'AND reclasses_needed < 0 ' 
-                  'AND DATE_DIFF(start_date, prev_due_date, DAY) > 60))'
-                  if reclass_type == 'semiannual' else ''}
-          ),
-          third_sum AS (
-          -- Removes reclassifications that bring the reclasses_needed below -1 and
-          -- performs the sum again
-              SELECT 
-                state_code,
-                person_id,
-                incarceration_super_session_id,
-                start_date,
-                -- We use the LEAD function to get the end_date of the next row
-                LEAD(start_date) OVER (PARTITION BY state_code, person_id ORDER BY start_date) AS end_date,
-                SUM(reclass_type) OVER (PARTITION BY state_code, person_id, incarceration_super_session_id ORDER BY start_date ) AS reclasses_needed,
-              FROM second_sum
-              -- We remove any reclassifications done if reclasses_needed is below -1
-              WHERE NOT (reclasses_needed < -1 AND reclass_type <= -1)
-              -- This statement ensures we remove the final span of each `incarceration_super_session_id`, which
-              -- has a start_date set to the end_date of the super_session.
-              QUALIFY(LEAD(incarceration_super_session_id) 
-                      OVER(PARTITION BY state_code, person_id 
-                            ORDER BY start_date) = incarceration_super_session_id) 
-          )
+    return f"""
+      reclass_spans AS (
+          SELECT
+            * EXCEPT (reclass_is_due_date),
+            reclass_is_due_date AS start_date,
+            LEAD(reclass_is_due_date) OVER (PARTITION BY state_code, person_id, incarceration_super_session_id 
+                ORDER BY reclass_is_due_date) AS end_date,
+            ROW_NUMBER() OVER (PARTITION BY state_code, person_id ORDER BY reclass_is_due_date) as span_id,
+          FROM
+            reclass_due_dates
+            -- During span creation, one extra row is created for every person with a start date equal to their 
+            -- final span end and an end date of null, so this QUALIFY exists to remove that extraneous row
+            QUALIFY LEAD(reclass_is_due_date) OVER (PARTITION BY state_code, person_id, incarceration_super_session_id 
+                ORDER BY reclass_is_due_date) IS NOT NULL 
+      ),
+      -- We create a MANY:1 map between reclassification meetings and spans and assign each a row number within a span
+      -- and assign each span a total count of how many meetings exist within it
+      due_date_to_meeting_map AS (
+          SELECT
+            rs.*,
+            meetings.reclass_meeting_date,
+            ROW_NUMBER() OVER (PARTITION BY rs.state_code, rs.person_id, span_id 
+                ORDER BY reclass_meeting_date) AS rn,
+            COUNT(*) OVER (PARTITION BY rs.state_code, rs.person_id, start_date) AS count_within_span,
+          FROM
+            reclass_spans rs
+          LEFT JOIN
+            meetings
+          ON
+            rs.person_id = meetings.person_id
+            AND reclass_meeting_date BETWEEN DATE_SUB(rs.start_date, INTERVAL 60 day)
+            AND rs.end_date 
+      ),
+      -- For any meeting that is not the earliest meeting within a span, we check if it is close enough to the next span 
+      -- (within 60 days) and if so, consider it as part of the next span. We remove other meetings
+      -- (i.e. a third meeting within a span) to ensure a 1:1 mapping between reclass meetings and spans
+      span_id_change AS (
+        SELECT 
+          *,
+          CASE WHEN (count_within_span > 1 AND rn > 1 AND DATE_DIFF(end_date, reclass_meeting_date, DAY) <= 60)
+                THEN span_id + 1 
+                ELSE span_id
+            END as new_span_id
+        FROM due_date_to_meeting_map
+      ),
+      -- We rejoin only the previous cte to each span to ensure that each meeting within a span is the earliest
+      -- meeting within that span and the only meeting associated with that span 
+      rejoin_to_all_spans AS (
+          SELECT
+            rs.*,
+            reclass_meeting_date,
+          FROM
+            reclass_spans rs
+          LEFT JOIN
+            span_id_change sic
+          ON
+            rs.start_date = sic.start_date
+            AND rs.end_date = sic.end_date
+            AND rs.person_id = sic.person_id
+            AND rs.state_code = sic.state_code 
+            AND rs.span_id = sic.new_span_id
+      )
     SELECT
-      ts.state_code,
-      ts.person_id,
-      ts.start_date,
-      {revert_nonnull_end_date_clause('ts.end_date')} as end_date,
-      ts.reclasses_needed > 0 as meets_criteria,
-      TO_JSON(STRUCT({"'ANNUAL'" if reclass_type == 'annual' else "'SEMIANNUAL'"} AS reclass_type,
-        ANY_VALUE(ts.reclasses_needed) AS reclasses_needed,
-        MAX(meetings.reclass_meeting_date) AS latest_classification_date,
-        MAX(end_date) as eligible_date)) as reason,
+      rts.state_code,
+      rts.person_id,
+      rts.start_date,
+      {revert_nonnull_end_date_clause('rts.end_date')} AS end_date,
       {"'ANNUAL'" if reclass_type == 'annual' else "'SEMIANNUAL'"} AS reclass_type,
-      ANY_VALUE(ts.reclasses_needed) AS reclasses_needed,
-      MAX(meetings.reclass_meeting_date) AS latest_classification_date,
-      MAX(end_date) as eligible_date,
+      MAX(rts.reclass_meeting_date) AS latest_classification_date,
+      MAX(rts.reclass_meeting_date) IS NULL AS meets_criteria,
+      TO_JSON(STRUCT({"'ANNUAL'" if reclass_type == 'annual' else "'SEMIANNUAL'"} AS reclass_type,
+        MAX(rts.reclass_meeting_date) AS latest_classification_date,
+        MAX(rts.end_date) as eligible_date)) as reason,
+      MAX(rts.end_date) as eligible_date,
     FROM
-      third_sum ts
-    LEFT JOIN meetings
-      ON meetings.reclass_meeting_date BETWEEN ts.start_date AND ts.end_date
-      AND meetings.person_id = ts.person_id
+      rejoin_to_all_spans rts
     GROUP BY 1,2,3,4,5"""
 
 
@@ -973,9 +899,20 @@ def meetings_cte() -> str:
     """
     Query that grabs all reclassification meeting dates for all individuals in ME
     """
-    return """SELECT
+    return """
+          SELECT
               person_id, 
               state_code,
               completion_event_date as reclass_meeting_date,
           FROM
-            `{project_id}.{completion_event_us_me_dataset}.incarceration_assessment_completed_materialized`"""
+            `{project_id}.{completion_event_us_me_dataset}.incarceration_assessment_completed_materialized`
+          UNION ALL 
+          -- We create a dummy reclassification meeting so that individuals are not considered eligible 
+          -- within their first incarceration span
+          SELECT
+            person_id,
+            state_code,
+            start_date as reclass_meeting_date
+          FROM
+            `{project_id}.{sessions_dataset}.incarceration_super_sessions_materialized`
+          WHERE state_code = 'US_ME'"""
