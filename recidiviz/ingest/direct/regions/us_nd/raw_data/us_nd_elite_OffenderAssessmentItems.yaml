@@ -26,9 +26,13 @@ columns:
     description: |-
       Date the record was created.
     field_type: datetime
+    datetime_sql_parsers:
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y  %H:%M:%S %p', {col_name})"
   - name: CREATE_DATETIME
     description: |-
       Date and time the record was created.
+    datetime_sql_parsers:
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y  %H:%M:%S %p', {col_name})"
     field_type: datetime
   - name: CREATE_USER_ID
     description: |-
@@ -40,6 +44,8 @@ columns:
   - name: MODIFY_DATETIME
     description: |-
       Date and time the record was last modified.
+    datetime_sql_parsers:
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y  %H:%M:%S %p', {col_name})"
     field_type: datetime
   - name: MODIFY_USER_ID
     description: |-
