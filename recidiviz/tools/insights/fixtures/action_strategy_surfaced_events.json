@@ -1,0 +1,6 @@
+{"state_code":"US_PA","user_pseudonymized_id": "hash1","officer_pseudonymized_id": "officerhash1","action_strategy": "ACTION_STRATEGY_OUTLIER", "timestamp": "2024-04-02 09:00:03"}
+{"state_code":"US_PA","user_pseudonymized_id": "hash1","officer_pseudonymized_id": "officerhash2","action_strategy": "ACTION_STRATEGY_OUTLIER", "timestamp": "2024-04-03 09:00:04"}
+{"state_code":"US_PA","user_pseudonymized_id": "hash1","officer_pseudonymized_id": "officerhash1","action_strategy": "ACTION_STRATEGY_OUTLIER_ABSCONSION", "timestamp": "2024-04-04 09:00:05"}
+{"state_code":"US_PA","user_pseudonymized_id": "hash1","officer_pseudonymized_id": "officerhash1","action_strategy": "ACTION_STRATEGY_OUTLIER_NEW_OFFICER", "timestamp": "2024-04-05 09:00:06"}
+{"state_code":"US_PA","user_pseudonymized_id": "hash1","officer_pseudonymized_id": "officerhash1","action_strategy": "ACTION_STRATEGY_OUTLIER_3+_MONTHS", "timestamp": "2024-05-01 09:00:03"}
+{"state_code":"US_PA","user_pseudonymized_id": "hash1","officer_pseudonymized_id": null,"action_strategy": "ACTION_STRATEGY_60_PERC_OUTLIERS", "timestamp": "2024-06-01 09:00:03"}

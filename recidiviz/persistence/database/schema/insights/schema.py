@@ -29,6 +29,7 @@ from sqlalchemy import (
     Identity,
     Integer,
     String,
+    UniqueConstraint,
     sql,
 )
 from sqlalchemy.dialects.postgresql import ARRAY, JSONB
@@ -347,4 +348,35 @@ class UserMetadata(InsightsBase):
     )
     has_dismissed_rate_over_100_percent_note = Column(
         Boolean, nullable=False, server_default=sql.false()
+    )
+
+
+class ActionStrategySurfacedEvents(InsightsBase):
+    """Table containing data about which action strategies have been surfaced to a given user"""
+
+    __tablename__ = "action_strategy_surfaced_events"
+    # Other tables are deleted/recreated at import time, but this table needs to be kept up to date
+    # via alembic migrations.
+
+    _id = Column(Integer, Identity(), primary_key=True)
+    state_code = Column(String)
+    user_pseudonymized_id = Column(
+        String,
+        nullable=False,
+    )
+    officer_pseudonymized_id = Column(
+        String,
+        nullable=True,
+    )
+    action_strategy = Column(
+        String,
+        nullable=False,
+    )
+    timestamp = Column(Date, nullable=False)
+
+    __table_args__ = (
+        UniqueConstraint(
+            "user_pseudonymized_id", "officer_pseudonymized_id", "action_strategy"
+        ),
+        {"info": {RUN_MIGRATIONS: True}},
     )

@@ -3,6 +3,7 @@ Snapshots for recidiviz/tests/case_triage/outliers/outliers_routes_test.py
 Update snapshots automatically by running `pytest recidiviz/tests/case_triage/outliers/outliers_routes_test.py --snapshot-update    
 Remember to include a docstring like this after updating the snapshots for Pylint purposes    
 """
+
 # -*- coding: utf-8 -*-
 # snapshottest: v1 - https://goo.gl/zC4yUc
 from __future__ import unicode_literals
