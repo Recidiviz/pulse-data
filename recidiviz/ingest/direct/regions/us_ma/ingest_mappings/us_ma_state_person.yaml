@@ -1,0 +1,51 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_docstars_OffenderName` to corresponding
+# Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  - COMMIT_NO
+  - IMS_FNAME
+  - IMS_MI
+  - IMS_LNAME
+  - PRIMARY_DOB
+  - ASSIGNED_SEX
+  - RACE
+  - ETHNICITY
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: COMMIT_NO
+          id_type: $literal("US_MA_COMMIT_NO")
+    birthdate: PRIMARY_DOB
+    full_name:
+      $person_name:
+        $given_names: IMS_FNAME
+        $middle_names: IMS_MI
+        $surname: IMS_LNAME
+    gender:
+      $enum_mapping:
+        $raw_text: ASSIGNED_SEX
+        $mappings:
+          StateGender.MALE: M
+          StateGender.FEMALE: F
+    races:
+      - StatePersonRace:
+          race:
+            $enum_mapping:
+              $raw_text: RACE
+              $mappings:
+                StateRace.ASIAN: "Asian or Pacific Islander"
+                StateRace.BLACK: "Black or African-American"
+                StateRace.AMERICAN_INDIAN_ALASKAN_NATIVE: "American Indian or Alaska Native"
+                StateRace.WHITE: "White"
+                StateRace.EXTERNAL_UNKNOWN: "Unknown"
+    ethnicities:
+      - StatePersonEthnicity:
+          ethnicity:
+            $enum_mapping:
+              $raw_text: ETHNICITY
+              $mappings:
+                StateEthnicity.HISPANIC: "Y"
+                StateEthnicity.NOT_HISPANIC: "N"
