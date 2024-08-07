@@ -26,10 +26,15 @@ import sys
 import alembic.config
 
 from recidiviz.persistence.database.schema_type import SchemaType
+from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.persistence.database.sqlalchemy_engine_manager import (
     SQLAlchemyEngineManager,
 )
-from recidiviz.server_config import database_keys_for_schema_type
+from recidiviz.server_config import (
+    database_keys_for_schema_type,
+    state_codes_for_schema_type,
+)
+from recidiviz.tools.utils.fixture_helpers import create_dbs
 
 
 def create_parser() -> argparse.ArgumentParser:
@@ -53,6 +58,21 @@ def main(
     """
     Invokes the main code path for running migrations in the specified docker database(s).
     """
+    # If necessary, create state-segmented DBs, if they don't already exist
+    if schema_type.is_multi_db_schema:
+        postgres_db_key = SQLAlchemyDatabaseKey(
+            schema_type=schema_type, db_name="postgres"
+        )
+        engine = SQLAlchemyEngineManager.init_engine_for_db_instance(
+            database_key=postgres_db_key,
+            db_url=SQLAlchemyEngineManager.get_server_postgres_instance_url(
+                database_key=postgres_db_key,
+                using_unix_sockets=False,
+            ),
+        )
+        state_codes = state_codes_for_schema_type(schema_type)
+        create_dbs(state_codes=state_codes, schema_type=schema_type, engine=engine)
+
     # Run migrations
     for database_key in database_keys_for_schema_type(schema_type):
         SQLAlchemyEngineManager.update_sqlalchemy_env_vars(

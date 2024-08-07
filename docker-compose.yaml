@@ -119,6 +119,16 @@ services:
     environment:
       - IS_DEV=true
 
+  workflows_migrations:
+    image: us.gcr.io/recidiviz-staging/appengine/default:latest
+    volumes:
+      - "./recidiviz:/app/recidiviz/"
+    depends_on:
+      - workflows_db
+    command: pipenv run python -m recidiviz.tools.migrations.run_migrations_docker --database WORKFLOWS
+    environment:
+      - IS_DEV=true
+
   insights_db:
     image: postgres:13.1-alpine
     environment:

@@ -81,6 +81,28 @@ def database_keys_for_schema_type(
     raise ValueError(f"Unexpected schema_type: [{schema_type}]")
 
 
+def state_codes_for_schema_type(
+    schema_type: SchemaType,
+) -> List[str]:
+    """Returns a list of state codes enabled for the instance corresponding to
+    this schema type.
+    """
+    if not schema_type.is_multi_db_schema:
+        raise ValueError(f"schema_type is not multi DB: [{schema_type}]")
+
+    match schema_type:
+        case SchemaType.PATHWAYS:
+            return get_pathways_enabled_states()
+
+        case SchemaType.WORKFLOWS:
+            return get_workflows_enabled_states()
+
+        case SchemaType.INSIGHTS:
+            return get_outliers_enabled_states()
+
+    raise ValueError(f"Unexpected schema_type: [{schema_type}]")
+
+
 def initialize_scoped_sessions(app: Flask) -> None:
     # We can connect to the development versions of our databases database using the
     # default `init_engine` configurations, which uses secrets in `recidiviz/local`. If
