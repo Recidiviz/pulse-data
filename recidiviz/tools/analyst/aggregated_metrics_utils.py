@@ -180,7 +180,7 @@ FROM
 LEFT JOIN
     period_event_metrics
 USING
-    ({unit_of_analysis.get_primary_key_columns_query_string()}, start_date, end_date)"""
+    ({unit_of_analysis.get_primary_key_columns_query_string()}, start_date, end_date, period)"""
 
     assignment_event_metrics = [
         m for m in metrics if isinstance(m, AssignmentEventAggregatedMetric)
@@ -200,7 +200,7 @@ USING
 LEFT JOIN
     assignment_event_metrics
 USING
-    ({unit_of_analysis.get_primary_key_columns_query_string()}, start_date, end_date)"""
+    ({unit_of_analysis.get_primary_key_columns_query_string()}, start_date, end_date, period)"""
 
     assignment_span_metrics = [
         m for m in metrics if isinstance(m, AssignmentSpanAggregatedMetric)
@@ -220,7 +220,7 @@ USING
 LEFT JOIN
     assignment_span_metrics
 USING
-    ({unit_of_analysis.get_primary_key_columns_query_string()}, start_date, end_date)"""
+    ({unit_of_analysis.get_primary_key_columns_query_string()}, start_date, end_date, period)"""
 
     # Use a final SELECT statement to exclude 'period' and rename 'period_alt' to 'period'
     final_select_statement = f"""
