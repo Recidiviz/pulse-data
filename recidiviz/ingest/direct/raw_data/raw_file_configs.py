@@ -33,6 +33,9 @@ from recidiviz.ingest.direct import regions as direct_ingest_regions_module
 from recidiviz.ingest.direct.raw_data.raw_table_relationship_info import (
     RawTableRelationshipInfo,
 )
+from recidiviz.ingest.direct.types.raw_data_import_blocking_validation_types import (
+    RawDataTableImportBlockingValidationType,
+)
 from recidiviz.utils.encoding import to_python_standard
 from recidiviz.utils.yaml_dict import YAMLDict
 
@@ -65,6 +68,9 @@ class RawTableColumnFieldType(Enum):
 
     # Contains values representing dates or datetimes
     DATETIME = "datetime"
+
+    # Contains values representing integers
+    INTEGER = "integer"
 
     # Contains external ids representing a justice-impacted individual
     # i.e. values that might hydrate state_person_external_id
@@ -122,6 +128,25 @@ class ColumnEnumValueInfo:
     description: Optional[str] = attr.ib(validator=attr_validators.is_opt_str)
 
 
+@attr.define
+class ImportBlockingValidationExemption:
+    validation_type: RawDataTableImportBlockingValidationType = attr.ib(
+        validator=attr.validators.instance_of(RawDataTableImportBlockingValidationType)
+    )
+    exemption_reason: str = attr.ib(validator=attr_validators.is_non_empty_str)
+
+    @staticmethod
+    def list_includes_exemption_type(
+        exemption_list: Optional[List["ImportBlockingValidationExemption"]],
+        exemption_type: RawDataTableImportBlockingValidationType,
+    ) -> bool:
+        if not exemption_list:
+            return False
+        return any(
+            exemption.validation_type == exemption_type for exemption in exemption_list
+        )
+
+
 @attr.s
 class RawTableColumnInfo:
     """Stores information about a single raw data table column."""
@@ -159,6 +184,10 @@ class RawTableColumnInfo:
     # mean the table is the is_primary_person_table for the region, since there may be
     # multiple tables that are ID type roots for the region.)
     is_primary_for_external_id_type: bool = attr.ib(default=False)
+
+    import_blocking_validation_exemptions: Optional[
+        List[ImportBlockingValidationExemption]
+    ] = attr.ib(default=None, validator=attr_validators.is_opt_list)
 
     def __attrs_post_init__(self) -> None:
         # Known values should not be present unless this is a string field
@@ -638,12 +667,29 @@ class DirectIngestRawFileConfig:
                             f"[{column_name}] known_value [{known_value_value}] in "
                             f"[{file_tag}]: {repr(known_value.get())}"
                         )
+            import_blocking_validation_exemptions = None
+            if (
+                import_blocking_validation_exemptions_yaml := column.pop_dicts_optional(
+                    "import_blocking_validation_exemptions"
+                )
+            ) is not None:
+                import_blocking_validation_exemptions = [
+                    ImportBlockingValidationExemption(
+                        validation_type=RawDataTableImportBlockingValidationType(
+                            exemption.pop("validation_type", str)
+                        ),
+                        exemption_reason=exemption.pop("exemption_reason", str),
+                    )
+                    for exemption in import_blocking_validation_exemptions_yaml
+                ]
             column_infos.append(
                 RawTableColumnInfo(
                     name=column_name,
-                    field_type=RawTableColumnFieldType(field_type_str)
-                    if (field_type_str := column.pop_optional("field_type", str))
-                    else RawTableColumnFieldType.STRING,
+                    field_type=(
+                        RawTableColumnFieldType(field_type_str)
+                        if (field_type_str := column.pop_optional("field_type", str))
+                        else RawTableColumnFieldType.STRING
+                    ),
                     is_pii=column.pop_optional("is_pii", bool) or False,
                     description=column.pop_optional("description", str),
                     known_values=known_value_infos,
@@ -655,6 +701,7 @@ class DirectIngestRawFileConfig:
                         "is_primary_for_external_id_type", bool
                     )
                     or False,
+                    import_blocking_validation_exemptions=import_blocking_validation_exemptions,
                 )
             )
             if len(column) > 0:
@@ -727,27 +774,37 @@ class DirectIngestRawFileConfig:
             supplemental_order_by_clause=supplemental_order_by_clause or "",
             encoding=encoding if encoding is not None else default_encoding,
             separator=separator if separator is not None else default_separator,
-            custom_line_terminator=custom_line_terminator
-            if custom_line_terminator is not None
-            else default_line_terminator,
-            ignore_quotes=ignore_quotes
-            if ignore_quotes is not None
-            else default_ignore_quotes,
-            always_historical_export=always_historical_export
-            if always_historical_export is not None
-            else default_always_historical_export,
-            no_valid_primary_keys=no_valid_primary_keys
-            if no_valid_primary_keys is not None
-            else default_no_valid_primary_keys,
-            import_chunk_size_rows=import_chunk_size_rows
-            if import_chunk_size_rows is not None
-            else _DEFAULT_BQ_UPLOAD_CHUNK_SIZE,
-            infer_columns_from_config=infer_columns_from_config
-            if infer_columns_from_config is not None
-            else (
-                default_infer_columns_from_config
-                if default_infer_columns_from_config is not None
-                else False
+            custom_line_terminator=(
+                custom_line_terminator
+                if custom_line_terminator is not None
+                else default_line_terminator
+            ),
+            ignore_quotes=(
+                ignore_quotes if ignore_quotes is not None else default_ignore_quotes
+            ),
+            always_historical_export=(
+                always_historical_export
+                if always_historical_export is not None
+                else default_always_historical_export
+            ),
+            no_valid_primary_keys=(
+                no_valid_primary_keys
+                if no_valid_primary_keys is not None
+                else default_no_valid_primary_keys
+            ),
+            import_chunk_size_rows=(
+                import_chunk_size_rows
+                if import_chunk_size_rows is not None
+                else _DEFAULT_BQ_UPLOAD_CHUNK_SIZE
+            ),
+            infer_columns_from_config=(
+                infer_columns_from_config
+                if infer_columns_from_config is not None
+                else (
+                    default_infer_columns_from_config
+                    if default_infer_columns_from_config is not None
+                    else False
+                )
             ),
             table_relationships=table_relationships,
             is_primary_person_table=is_primary_person_table,
