@@ -145,8 +145,8 @@ POST_JULY_2017_CUSTODIAL_AUTHORITY_ENUM_MAP: Dict[
         "FD",  # Federal court
     ],
     StateCustodialAuthority.EXTERNAL_UNKNOWN: [
-        # Could be a county jail or another state's facility
-        "NTAD",
+        # TODO(#32122): Move this to STATE_PRISON once #32123 is complete.
+        "NTAD",  # Resident Not Admitted
     ],
     StateCustodialAuthority.STATE_PRISON: [
         "BTC",
@@ -300,6 +300,14 @@ def custodial_authority_from_facility_and_dates(
             "Found facility without a mapping to a custodial authority: "
             f"{facility}.",
         )
+
+    if (
+        bed_assignment.count("CJ-SS-") == 0
+        and bed_assignment.count("CJ-PV-") == 0
+        and bed_assignment.count("CJ-ESCAPE-") == 0
+    ) and facility == "CJ":
+        # This is not a period of temporary custody, but it is being served in a county jail.
+        return StateCustodialAuthority.STATE_PRISON
 
     return POST_JULY_2017_CUSTODIAL_AUTHORITY_RAW_TEXT_TO_ENUM_MAP[facility]
 
@@ -558,7 +566,7 @@ def incarceration_type_from_unit_or_facility(raw_text: str) -> StateIncarceratio
     bed_assignment, facility = raw_text.split("|")
     if bed_assignment in ("CJ-WRK-WAR", "CJ-WRK-STA"):
         # Work Release
-        return StateIncarcerationType.STATE_PRISON
+        return StateIncarcerationType.COUNTY_JAIL
     if (
         bed_assignment.count("CJ-SS-") > 0
         or bed_assignment.count("CJ-PV-") > 0
@@ -569,14 +577,24 @@ def incarceration_type_from_unit_or_facility(raw_text: str) -> StateIncarceratio
         # from escape. These folks are typically transferred to a DOCR orientation unit eventually,
         # but sometimes serve the entirety of their time in county jail.
         return StateIncarcerationType.COUNTY_JAIL
-    if facility in ("DEFP", "NW", "SC", "SW", "SE", "EAST", "NE", "NEC", "NC", "FD"):
+    if facility in (
+        "CJ",
+        "DEFP",
+        "NW",
+        "SC",
+        "SW",
+        "SE",
+        "EAST",
+        "NE",
+        "NEC",
+        "NC",
+        "FD",
+    ):
+        # This will include all bed assignments that start with "CJ" and are folks who have
+        # gone through orientation and have been selected to serve their DOCR time in a county jail.
         return StateIncarcerationType.COUNTY_JAIL
-    if facility == "NTAD":
-        return StateIncarcerationType.EXTERNAL_UNKNOWN
-    if facility in ("OS", "OOS", "OUT"):
+    if facility in ("OS", "OOS", "OUT", "NTAD"):
         # Other state facilities can be county jails or prisons; only the state is documented
         # in these cases, not the facility type.
-        return StateIncarcerationType.INTERNAL_UNKNOWN
-    # This will include all bed assignments that start with "CJ" and are folks who have
-    # gone through orientation and have been selected to serve their DOCR time in a county jail.
+        return StateIncarcerationType.OUT_OF_STATE
     return StateIncarcerationType.STATE_PRISON
