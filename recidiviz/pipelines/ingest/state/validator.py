@@ -179,15 +179,9 @@ def _sentencing_entities_checks(
     if state_person.state_code != StateCode.US_AZ.value:
         yield from _sentence_group_checks(state_person)
 
+    external_ids = set(s.external_id for s in state_person.sentences)
+
     for sentence in state_person.sentences:
-        # TODO(#30803) Remove this check new implementation is complete
-        # This lets us update views with the new implementation
-        # without breaking existing ingest
-        if state_person.state_code == StateCode.US_MO.value and (
-            "INCARCERATION" in sentence.external_id
-            or "SUPERVISION" in sentence.external_id
-        ):
-            continue
         if (
             not sentence.imposed_date
             and sentence.sentencing_authority != StateSentencingAuthority.OTHER_STATE
@@ -195,10 +189,8 @@ def _sentencing_entities_checks(
             yield f"Found sentence {sentence.limited_pii_repr()} with no imposed_date."
 
         # TODO(#30295) Hydrate in US_AZ
-        # TODO(#31016) Hydrate in US_IX
         if not sentence.sentencing_authority and state_person.state_code not in (
             StateCode.US_AZ.value,
-            StateCode.US_IX.value,
         ):
             yield f"Found sentence {sentence.limited_pii_repr()} with no sentencing_authority."
         # TODO(#29457) Ensure test fixture data and ingest views allow this check to happen in AZ
@@ -220,6 +212,17 @@ def _sentencing_entities_checks(
                     f"Sentence {sentence.limited_pii_repr()} has parole projected dates, "
                     "despite denoting that parole is not possible."
                 )
+
+        # If this sentence has consecutive sentences before it, check
+        # that they exist for this person.
+        if sentence.parent_sentence_external_id_array is not None:
+            for p_id in sentence.parent_sentence_external_id_array.split(","):
+                if p_id not in external_ids:
+                    yield (
+                        f"{sentence.limited_pii_repr()} denotes parent sentence {p_id}, "
+                        f"but {state_person.limited_pii_repr()} does not have a sentence "
+                        "with that external ID."
+                    )
 
         if not sentence.sentence_type:
             yield f"Found sentence {sentence.limited_pii_repr()} with no StateSentenceType."

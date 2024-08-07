@@ -554,6 +554,73 @@ class TestSentencingRootEntityChecks(unittest.TestCase):
             ],
         )
 
+    def test_parent_sentences_validation(
+        self,
+    ) -> None:
+        """
+        If a sentence has parent_sentence_external_id_array,
+        then those sentences should exist for the StatePerson.
+        """
+        sentence = state_entities.StateSentence(
+            state_code=self.state_code,
+            external_id="SENT-EXTERNAL-1",
+            person=self.state_person,
+            sentence_type=StateSentenceType.STATE_PRISON,
+            sentencing_authority=StateSentencingAuthority.PRESENT_WITHOUT_INFO,
+            imposed_date=date(2022, 1, 1),
+            parole_possible=None,
+            charges=[
+                state_entities.StateChargeV2(
+                    external_id="CHARGE",
+                    state_code=self.state_code,
+                    status=StateChargeV2Status.PRESENT_WITHOUT_INFO,
+                )
+            ],
+            parent_sentence_external_id_array=None,
+        )
+
+        # No parents, valid
+        self.state_person.sentences = [sentence]
+        errors = validate_root_entity(self.state_person, self.field_index)
+        self.assertEqual(errors, [])
+
+        # One parent, invalid
+        sentence.parent_sentence_external_id_array = "NOT-REAL"
+        self.state_person.sentences = [sentence]
+        errors = validate_root_entity(self.state_person, self.field_index)
+        self.assertEqual(
+            errors,
+            [
+                "StateSentence(external_id='SENT-EXTERNAL-1', sentence_id=None) denotes "
+                "parent sentence NOT-REAL, but StatePerson(person_id=1, "
+                "external_ids=[StatePersonExternalId(external_id='1', "
+                "id_type='US_XX_TEST_PERSON', person_external_id_id=None)]) "
+                "does not have a sentence with that external ID.",
+            ],
+        )
+
+        # Multiple parents, invalid
+        sentence.parent_sentence_external_id_array = "NOT-REAL,NOT-HERE"
+        self.state_person.sentences = [sentence]
+        errors = validate_root_entity(self.state_person, self.field_index)
+        self.assertEqual(
+            errors,
+            [
+                # ---- First error message ----
+                "StateSentence(external_id='SENT-EXTERNAL-1', sentence_id=None) denotes "
+                "parent sentence NOT-REAL, but StatePerson(person_id=1, "
+                "external_ids=[StatePersonExternalId(external_id='1', "
+                "id_type='US_XX_TEST_PERSON', person_external_id_id=None)]) "
+                "does not have a sentence with that external ID.",
+                # ---- Second error message ----
+                "StateSentence(external_id='SENT-EXTERNAL-1', sentence_id=None) denotes "
+                "parent sentence NOT-HERE, but StatePerson(person_id=1, "
+                "external_ids=[StatePersonExternalId(external_id='1', "
+                "id_type='US_XX_TEST_PERSON', person_external_id_id=None)]) "
+                "does not have a sentence with that external ID.",
+            ],
+        )
+
     def test_no_parole_possible_means_no_parole_projected_dates(
         self,
     ) -> None:
