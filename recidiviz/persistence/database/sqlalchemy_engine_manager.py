@@ -205,8 +205,13 @@ class SQLAlchemyEngineManager:
         return cls._secret_manager_prefix_for_type(database_key.schema_type)
 
     @classmethod
-    def _get_db_host(cls, *, database_key: SQLAlchemyDatabaseKey) -> str:
-        secret_key = f"{cls._secret_manager_prefix(database_key)}_db_host"
+    def _get_db_host(
+        cls,
+        *,
+        database_key: SQLAlchemyDatabaseKey,
+        secret_prefix_override: Optional[str],
+    ) -> str:
+        secret_key = f"{secret_prefix_override or cls._secret_manager_prefix(database_key)}_db_host"
         host = secrets.get_secret(secret_key)
         if host is None:
             raise ValueError(f"Unable to retrieve database host for key [{secret_key}]")
@@ -367,7 +372,9 @@ class SQLAlchemyEngineManager:
             os.environ[SQLALCHEMY_DB_HOST] = CLOUDSQL_PROXY_HOST
             os.environ[SQLALCHEMY_DB_PORT] = str(CLOUDSQL_PROXY_MIGRATION_PORT)
         else:
-            os.environ[SQLALCHEMY_DB_HOST] = cls._get_db_host(database_key=database_key)
+            os.environ[SQLALCHEMY_DB_HOST] = cls._get_db_host(
+                database_key=database_key, secret_prefix_override=secret_prefix_override
+            )
 
         if readonly_user:
             os.environ[SQLALCHEMY_DB_USER] = cls._get_db_readonly_user(
@@ -417,7 +424,9 @@ class SQLAlchemyEngineManager:
                 f"Instance id is not configured for schema type [{schema_type}]"
             )
 
-        db_host = cls._get_db_host(database_key=database_key)
+        db_host = cls._get_db_host(
+            database_key=database_key, secret_prefix_override=secret_prefix_override
+        )
         db_user = cls._get_db_user(
             database_key=database_key, secret_prefix_override=secret_prefix_override
         )
