@@ -67,7 +67,7 @@ WITH
         FROM case_info_cte ci
         LEFT JOIN report_type_cte rt
             USING(external_id)
-        WHERE recency_rank = 1
+        WHERE recency_rank = 1 OR recency_rank IS NULL
     ),
     -- this CTE grabs the most recent assessment score and level
     most_recent_score_cte AS
