@@ -346,7 +346,6 @@ def us_tn_classification_forms(
             a.OffenderID, 
             a.RiskLevel,
             DATE(a.CompletedDate) AS CompletedDate,
-            ROW_NUMBER() OVER(PARTITION BY a.OffenderID ORDER BY DATE(a.CompletedDate) DESC) AS latest_row,
             r.Pathway,
             p.PathwayName,
             r.Recommendation,
@@ -360,7 +359,6 @@ def us_tn_classification_forms(
         LEFT JOIN `{{project_id}}.{{us_tn_raw_data_up_to_date_dataset}}.VantagePointRecommendations_latest` r
           ON a.OffenderID = r.OffenderID
           AND a.AssessmentID = r.AssessmentID
-          AND CURRENT_DATE BETWEEN DATE(RecommendationDate) AND COALESCE(DATE(RecommendedEndDate), '9999-01-01')
         LEFT JOIN `{{project_id}}.{{us_tn_raw_data_up_to_date_dataset}}.VantagePointPathways_latest` p
           USING(Recommendation, Pathway)
         LEFT JOIN `{{project_id}}.{{us_tn_raw_data_up_to_date_dataset}}.VantagePointProgram_latest` pr
@@ -376,6 +374,9 @@ def us_tn_classification_forms(
             ) c
           ON a.OffenderID = c.OffenderID
           AND latest_refusal_date >= DATE(a.CompletedDate)
+        -- As per TTs, only information associated with latest assessment (e.g. recommendation associated with latest assessment)
+        -- should be considered relevant
+        QUALIFY ROW_NUMBER() OVER(PARTITION BY a.OffenderID ORDER BY DATE(a.CompletedDate) DESC) = 1
     ),
     active_vantage_recommendations AS (
         SELECT
@@ -390,7 +391,9 @@ def us_tn_classification_forms(
                 )
             ) AS active_recommendations,
         FROM vantage
-        WHERE Recommendation IS NOT NULL
+        -- Keep only recommendations that are still active, since there might be recommendations associated with the 
+        -- latest assessment that have ended
+        WHERE CURRENT_DATE BETWEEN DATE(RecommendationDate) AND COALESCE(DATE(RecommendedEndDate), '9999-01-01')
         GROUP BY 1
     ),
     detainers_cte AS (
@@ -574,7 +577,6 @@ def us_tn_classification_forms(
         ON pei.external_id = health.OffenderID
     LEFT JOIN vantage latest_vantage
         ON pei.external_id = latest_vantage.OffenderID
-        AND latest_vantage.latest_row = 1
     LEFT JOIN active_vantage_recommendations
         ON pei.external_id = active_vantage_recommendations.OffenderID
     LEFT JOIN prea
