@@ -59,6 +59,7 @@ class RawDataConfigWriter:
         return known_values_string
 
     def _generate_individual_column_string(self, column: RawTableColumnInfo) -> str:
+        """Generates a string for a single column in the yaml file."""
         if column is None or column.name is None:
             return ""
 
@@ -82,6 +83,15 @@ class RawDataConfigWriter:
             column_string += "\n    is_pii: True"
         if column.is_enum:
             column_string += self._get_known_values_config_string(column)
+        if column.import_blocking_validation_exemptions:
+            column_string += "\n    import_blocking_validation_exemptions:"
+            for exemption in column.import_blocking_validation_exemptions:
+                column_string += (
+                    f"\n      - validation_type: {exemption.validation_type.value}"
+                )
+                column_string += (
+                    f"\n        exemption_reason: {exemption.exemption_reason}"
+                )
         return column_string
 
     def _generate_columns_string(self, columns: List[RawTableColumnInfo]) -> str:

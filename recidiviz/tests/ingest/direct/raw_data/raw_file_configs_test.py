@@ -26,6 +26,7 @@ from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     ColumnEnumValueInfo,
     DirectIngestRawFileConfig,
     DirectIngestRegionRawFileConfig,
+    ImportBlockingValidationExemption,
     RawDataClassification,
     RawDataFileUpdateCadence,
     RawTableColumnFieldType,
@@ -36,6 +37,9 @@ from recidiviz.ingest.direct.raw_data.raw_table_relationship_info import (
     JoinColumn,
     RawDataJoinCardinality,
     RawTableRelationshipInfo,
+)
+from recidiviz.ingest.direct.types.raw_data_import_blocking_validation_types import (
+    RawDataTableImportBlockingValidationType,
 )
 from recidiviz.tests.ingest.direct import fake_regions
 
@@ -215,6 +219,60 @@ class TestRawTableColumnInfo(unittest.TestCase):
                 known_values=None,
                 external_id_type="US_OZ_EG",
             )
+
+    def test_nonnull_value_validation_exemption(self) -> None:
+        exemption = ImportBlockingValidationExemption(
+            validation_type=RawDataTableImportBlockingValidationType.NONNULL_VALUES,
+            exemption_reason="reason",
+        )
+        exempt_column = RawTableColumnInfo(
+            name="COL1",
+            field_type=RawTableColumnFieldType.STRING,
+            is_pii=False,
+            description=None,
+            known_values=None,
+            import_blocking_validation_exemptions=[exemption],
+        )
+        self.assertIsNotNone(exempt_column.import_blocking_validation_exemptions)
+        self.assertTrue(
+            ImportBlockingValidationExemption.list_includes_exemption_type(
+                exempt_column.import_blocking_validation_exemptions,
+                RawDataTableImportBlockingValidationType.NONNULL_VALUES,
+            )
+        )
+
+    def test_nonnull_value_validation_not_exempt(self) -> None:
+        non_exempt_column_default = RawTableColumnInfo(
+            name="COL1",
+            field_type=RawTableColumnFieldType.STRING,
+            is_pii=False,
+            description=None,
+            known_values=None,
+        )
+        exemption = ImportBlockingValidationExemption(
+            validation_type=RawDataTableImportBlockingValidationType.DATETIME_PARSERS,
+            exemption_reason="reason",
+        )
+        non_exempt_column = RawTableColumnInfo(
+            name="COL1",
+            field_type=RawTableColumnFieldType.DATETIME,
+            is_pii=False,
+            description=None,
+            known_values=None,
+            import_blocking_validation_exemptions=[exemption],
+        )
+
+        self.assertIsNone(
+            non_exempt_column_default.import_blocking_validation_exemptions
+        )
+        self.assertIsNotNone(non_exempt_column.import_blocking_validation_exemptions)
+
+        self.assertFalse(
+            ImportBlockingValidationExemption.list_includes_exemption_type(
+                non_exempt_column.import_blocking_validation_exemptions,
+                RawDataTableImportBlockingValidationType.NONNULL_VALUES,
+            )
+        )
 
 
 class TestDirectIngestRawFileConfig(unittest.TestCase):
@@ -917,6 +975,12 @@ class TestDirectIngestRegionRawFileConfig(unittest.TestCase):
                 known_values=[
                     ColumnEnumValueInfo(value="A", description="A description"),
                     ColumnEnumValueInfo(value="B", description=None),
+                ],
+                import_blocking_validation_exemptions=[
+                    ImportBlockingValidationExemption(
+                        validation_type=RawDataTableImportBlockingValidationType.NONNULL_VALUES,
+                        exemption_reason="reason",
+                    )
                 ],
             ),
             RawTableColumnInfo(
