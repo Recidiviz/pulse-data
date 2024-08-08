@@ -316,6 +316,7 @@ Denominator is the average daily caseload for the agent over the given time peri
         supervision_officer_metric_exclusions="""
         AND avg_daily_population BETWEEN 10 AND 150
         AND prop_period_with_critical_caseload >= 0.75""",
+        supervision_staff_exclusions="""'GENERAL' IN UNNEST(specialized_caseload_type_array)""",
     ),
 }
 
