@@ -31,11 +31,12 @@ python -m recidiviz.tools.justice_counts.add_child_agencies \
 
 import argparse
 import logging
+import os
 from typing import Dict, List
 
 import pandas as pd
 
-from recidiviz.common.constants.states import StateCode
+from recidiviz.common.fips import sanitize_county_name
 from recidiviz.justice_counts.agency import AgencyInterface
 from recidiviz.persistence.database.constants import JUSTICE_COUNTS_DB_SECRET_PREFIX
 from recidiviz.persistence.database.schema.justice_counts import schema
@@ -88,7 +89,10 @@ def create_parser() -> argparse.ArgumentParser:
 
 
 def add_child_agencies(
-    child_agency_names: List[str],
+    child_agency_data: List[
+        Dict[str, str]
+    ],  # we expect each dictionary to have at least
+    #  a "name" key and optionally a "county" key.
     dry_run: bool,
     super_agency_id: int,
     user_id_to_role: Dict[int, str],
@@ -99,6 +103,21 @@ def add_child_agencies(
     """
     schema_type = SchemaType.JUSTICE_COUNTS
     database_key = SQLAlchemyDatabaseKey.for_schema(schema_type)
+
+    # Construct the path to the county codes CSV file
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    county_codes_path = os.path.join(
+        script_dir, "../../datasets/static_data/county_fips.csv"
+    )
+
+    # Load county code mappings
+    county_codes_df = pd.read_csv(county_codes_path)
+    county_fips_to_county_code = dict(
+        zip(
+            county_codes_df["fips"],
+            county_codes_df["county_code"],
+        )
+    )
 
     with cloudsql_proxy_control.connection(
         schema_type=schema_type, secret_prefix_override=JUSTICE_COUNTS_DB_SECRET_PREFIX
@@ -118,10 +137,17 @@ def add_child_agencies(
             msg += "Adding %s child agencies for %s"
             logger.info(
                 msg,
-                str(len(child_agency_names)),
+                str(len(child_agency_data)),
                 super_agency.name,
             )
-            for child_agency_name in child_agency_names:
+            for child_agency_name_to_county in child_agency_data:
+                child_agency_name = child_agency_name_to_county.get("name")
+                county_fips = child_agency_name_to_county.get("county")
+                child_agency_county_code = sanitize_county_name(
+                    county_fips_to_county_code.get(county_fips, "")
+                )
+                if child_agency_name is None:
+                    continue
 
                 existing_agency = AgencyInterface.get_agency_by_name_state_and_systems(
                     session=session,
@@ -130,31 +156,32 @@ def add_child_agencies(
                     state_code=super_agency.state_code,
                 )
 
-                name = child_agency_name
                 if existing_agency is not None:
-                    updated_name = (
-                        existing_agency.name
-                        + f" ({StateCode[existing_agency.state_code.upper()].get_state().abbr})"
-                    )
-                    msg = "" if dry_run is False else "DRY RUN:"
-                    msg += "Agency with name %s already exists. Updating existing agency from %s -> %s\n"
-                    logger.info(msg, name, existing_agency.name, updated_name)
-                    existing_agency.name = updated_name
-                    name = (
-                        child_agency_name
-                        + f" ({StateCode[super_agency.state_code.upper()].get_state().abbr})"
+                    msg += "Agency with name %s already exists "
+                    if existing_agency.super_agency_id == super_agency_id:
+                        msg += "and is already a child agency for the superagency."
+                    else:
+                        existing_agency.super_agency_id = super_agency_id
+                        msg += "but is not a child agency for the superagency. Updating"
+                    logger.info(msg, child_agency_name)
+                    child_agency = existing_agency
+                else:
+                    child_agency = schema.Agency(
+                        name=child_agency_name,
+                        super_agency_id=super_agency_id,
+                        state_code=super_agency.state_code,
+                        systems=systems,
+                        fips_county_code=child_agency_county_code,
                     )
 
-                child_agency = schema.Agency(
-                    name=child_agency_name,
-                    super_agency_id=super_agency_id,
-                    state_code=super_agency.state_code,
-                    systems=systems,
-                )
-                msg = "" if dry_run is False else "DRY RUN:"
-                msg += "Adding Child Agency: %s"
-                logger.info(msg, name)
-                agency_user_account_associations = []
+                    msg = "" if dry_run is False else "DRY RUN:"
+                    msg += "Adding Child Agency: %s with county %s"
+                    logger.info(msg, child_agency_name, child_agency_county_code)
+
+                agency_user_account_associations: List[
+                    schema.AgencyUserAccountAssociation
+                ] = []
+
                 for user_id, role in user_id_to_role.items():
                     assoc = schema.AgencyUserAccountAssociation(
                         agency=child_agency,
@@ -173,9 +200,15 @@ if __name__ == "__main__":
     args = create_parser().parse_args()
     xls = pd.ExcelFile(args.file_path)
 
-    # Extract the 'agency names' sheet into a list of strings
-    agency_names_df = pd.read_excel(xls, sheet_name="agencies", usecols=["name"])
-    agency_names = agency_names_df["name"].tolist()
+    # Check for presence of 'county' column. We expect this column to be either None or hold
+    # the county FIPS codes
+    agency_columns = ["name"]
+    if "county" in pd.read_excel(xls, sheet_name="agencies", nrows=0).columns:
+        agency_columns.append("county")
+
+    # Extract the 'agencies' sheet into a list of dictionaries with 'name' and optionally 'county' keys
+    agency_names_df = pd.read_excel(xls, sheet_name="agencies", usecols=agency_columns)
+    agency_data = agency_names_df.to_dict(orient="records")
 
     # Extract the 'users' sheet into a dictionary mapping user IDs to roles
     users_df = pd.read_excel(xls, sheet_name="users", usecols=["user_id", "role"])
@@ -183,7 +216,7 @@ if __name__ == "__main__":
     with local_project_id_override(args.project_id):
         add_child_agencies(
             dry_run=args.dry_run,
-            child_agency_names=agency_names,
+            child_agency_data=agency_data,
             user_id_to_role=user_id_to_role_dict,
             systems=args.systems,
             super_agency_id=args.super_agency_id,
