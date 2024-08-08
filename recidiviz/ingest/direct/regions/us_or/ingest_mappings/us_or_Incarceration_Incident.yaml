@@ -117,9 +117,28 @@ output:
                   - Sexual Assault
                   - Sexual Coercion
                   - Assault of a Member of Public
+          incident_severity:
+            $enum_mapping:
+              $raw_text: MAPPED_VIOLATION_SEVERITY_LEVEL
+              $mappings:
+                StateIncarcerationIncidentSeverity.HIGHEST:
+                  - "1"
+                StateIncarcerationIncidentSeverity.SECOND_HIGHEST:
+                  - "2"
+                StateIncarcerationIncidentSeverity.THIRD_HIGHEST:
+                  - "3A"
+                StateIncarcerationIncidentSeverity.FOURTH_HIGHEST:
+                  - "3B"
+                StateIncarcerationIncidentSeverity.FIFTH_HIGHEST:
+                  - "4"
+                StateIncarcerationIncidentSeverity.SIXTH_HIGHEST:
+                  - "5"
+                StateIncarcerationIncidentSeverity.SEVENTH_HIGHEST:
+                  - "6"
+                StateIncarcerationIncidentSeverity.INTERNAL_UNKNOWN:
+                  - "Not Specified"
           incident_metadata:
             $json_dict:
-              SEVERITY: MAPPED_VIOLATION_SEVERITY_LEVEL
               FINDING: RULE_FINDING
           incarceration_incident_outcomes:
             - StateIncarcerationIncidentOutcome:
