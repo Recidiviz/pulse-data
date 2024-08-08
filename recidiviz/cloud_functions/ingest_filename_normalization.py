@@ -15,6 +15,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """This file contains all the cloud function logic to normalize ingest file names in GCS."""
+import base64
+import json
 import logging
 import os
 from datetime import date
@@ -56,14 +58,16 @@ def normalize_filename(cloud_event: CloudEvent) -> None:
     """Function to normalize ingest filenames in GCS triggered by a finalized object event in GCS.
     If the file is a zip file, it will invoke another cloud function to handle the unzipping
     in order to allocate more memory to the process."""
-    data = cloud_event.data
+
+    data_str = base64.b64decode(cloud_event.data["message"]["data"]).decode()
+    data = json.loads(data_str)
 
     bucket = data.get("bucket")
     relative_file_path = data.get("name")
 
     if not bucket or not relative_file_path:
         cloud_functions_log(
-            severity="ERROR", message="Missing bucket or file name in event: {data}"
+            severity="ERROR", message=f"Missing bucket or file name in event: {data}"
         )
         return
 
@@ -105,7 +109,9 @@ def normalize_filename(cloud_event: CloudEvent) -> None:
 
     if not has_normalized_filename:
         if not is_raw_data_import_dag_enabled(
-            StateCode(region_code.upper()), ingest_instance
+            StateCode(region_code.upper()),
+            ingest_instance,
+            project_id=os.environ["PROJECT_ID"],
         ):
             cloud_functions_log(
                 severity="INFO",
@@ -129,7 +135,9 @@ def normalize_filename(cloud_event: CloudEvent) -> None:
 
     if is_zipfile:
         if not is_raw_data_import_dag_enabled(
-            StateCode(region_code.upper()), ingest_instance
+            StateCode(region_code.upper()),
+            ingest_instance,
+            project_id=os.environ["PROJECT_ID"],
         ):
             cloud_functions_log(
                 severity="INFO",
