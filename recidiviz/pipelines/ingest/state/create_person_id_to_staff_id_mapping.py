@@ -1,0 +1,159 @@
+# Recidiviz - a data platform for criminal justice reform
+# Copyright (C) 2024 Recidiviz, Inc.
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+# =============================================================================
+"""A PTransform to collect all staff ids associated with each StatePerson."""
+from typing import Iterable
+
+import apache_beam as beam
+from more_itertools import one
+
+from recidiviz.common.attr_mixins import attribute_field_type_reference_for_class
+from recidiviz.persistence.entity.base_entity import Entity
+from recidiviz.persistence.entity.entity_utils import CoreEntityFieldIndex
+from recidiviz.persistence.entity.state.entities import StatePerson
+from recidiviz.persistence.entity.state.normalized_entities import NormalizedStateStaff
+from recidiviz.persistence.entity.walk_entity_dag import EntityDagEdge, walk_entity_dag
+from recidiviz.utils.types import assert_type
+
+PersonId = int
+StaffId = int
+StaffExternalId = tuple[str, str]
+StaffExternalIdToIdMap = dict[StaffExternalId, StaffId]
+
+
+NORMALIZED_STAFF_PCOLLECTION_KEY = "normalized_staff"
+PRE_NORMALIZATION_PERSONS_PCOLLECTION_KEY = "pre_normalization_persons"
+
+STAFF_IDS_KEY = "staff_ids"
+PERSON_IDS_KEY = "person_ids"
+
+
+class CreatePersonIdToStaffIdMapping(beam.PTransform):
+    """A PTransform to collect all staff ids associated with each StatePerson."""
+
+    def __init__(self, field_index: CoreEntityFieldIndex):
+        super().__init__()
+        self._field_index = field_index
+
+    def expand(
+        self,
+        input_or_inputs: dict[
+            str, beam.PCollection[NormalizedStateStaff] | beam.PCollection[StatePerson]
+        ],
+    ) -> beam.PCollection[tuple[PersonId, StaffExternalIdToIdMap]]:
+        normalized_staff: beam.PCollection[NormalizedStateStaff] = input_or_inputs[
+            NORMALIZED_STAFF_PCOLLECTION_KEY
+        ]
+        pre_normalization_persons: beam.PCollection[StatePerson] = input_or_inputs[
+            PRE_NORMALIZATION_PERSONS_PCOLLECTION_KEY
+        ]
+        # Produce map of (id_type, external_id) pair to the associated staff_id
+        normalized_staff_id_by_staff_external_id: beam.PCollection[
+            tuple[StaffExternalId, StaffId]
+        ] = normalized_staff | beam.FlatMap(
+            lambda staff: [
+                (e, staff.staff_id)
+                for e in self._extract_staff_external_ids_from_staff(staff)
+            ]
+        )
+
+        # Produce map of (id_type, external_id) pair to the associated person_id
+        # for all STAFF external ids
+        person_id_by_normalized_staff_external_id: beam.PCollection[
+            tuple[StaffExternalId, PersonId]
+        ] = pre_normalization_persons | beam.FlatMap(
+            lambda person: [
+                (e, person.person_id)
+                for e in self._extract_staff_external_ids_from_person(person)
+            ]
+        )
+
+        # Return a PCollection of person_id to dictionaries containing
+        # staff external id -> staff_id mappings for every staff external id referenced
+        # on this person.
+        return (
+            {
+                STAFF_IDS_KEY: normalized_staff_id_by_staff_external_id,
+                PERSON_IDS_KEY: person_id_by_normalized_staff_external_id,
+            }
+            | beam.CoGroupByKey()
+            | beam.FlatMap(self._map_for_single_external_id)
+            | beam.GroupByKey()
+            | beam.MapTuple(
+                lambda person_id, staff_external_id_to_staff_id: (
+                    person_id,
+                    dict(staff_external_id_to_staff_id),
+                )
+            )
+        )
+
+    @staticmethod
+    def _extract_staff_external_ids_from_staff(
+        staff: NormalizedStateStaff,
+    ) -> list[StaffExternalId]:
+        """Extract (id_type, external_id) tuples from the given staff."""
+        return [(e.id_type, e.external_id) for e in staff.external_ids]
+
+    def _extract_staff_external_ids_from_person(
+        self,
+        person: StatePerson,
+    ) -> list[StaffExternalId]:
+        """Extract (id_type, external_id) tuples for all staff external ids referenced
+        by the given person.
+        """
+
+        def _get_referenced_staff_external_id(
+            entity: Entity, _dag_edges: list[EntityDagEdge]
+        ) -> StaffExternalId | None:
+            for field_name in attribute_field_type_reference_for_class(type(entity)):
+                if field_name.endswith("staff_external_id"):
+                    staff_external_id = getattr(entity, field_name)
+                    staff_external_id_type = getattr(entity, f"{field_name}_type")
+                    if staff_external_id:
+                        return (
+                            assert_type(staff_external_id_type, str),
+                            assert_type(staff_external_id, str),
+                        )
+            return None
+
+        external_ids = walk_entity_dag(
+            dag_root_entity=person,
+            field_index=self._field_index,
+            node_processing_fn=_get_referenced_staff_external_id,
+        )
+
+        return list({e for e in external_ids if e is not None})
+
+    @staticmethod
+    def _map_for_single_external_id(
+        staff_external_id_to_grouped_ids: tuple[
+            StaffExternalId, dict[str, Iterable[PersonId] | Iterable[StaffId]]
+        ]
+    ) -> list[tuple[PersonId, tuple[StaffExternalId, StaffId]]]:
+        """Given a staff external id and input defining the staff_id for that staff
+        external id and the person_ids associated with that staff external id, returns
+        a list of key value pairs where each key is a person_id and each pair is the
+        (staff external id, staff_id) value.
+        """
+        staff_external_id = staff_external_id_to_grouped_ids[0]
+        grouped_ids = staff_external_id_to_grouped_ids[1]
+
+        staff_id = one(grouped_ids[STAFF_IDS_KEY])
+
+        return [
+            (person_id, (staff_external_id, staff_id))
+            for person_id in grouped_ids[PERSON_IDS_KEY]
+        ]
