@@ -2301,12 +2301,12 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
             "recidiviz.utils.metadata.project_id", return_value=_PROJECT_ID
         )
         self.project_patcher.start()
-        test_state_codes = [StateCode.US_XX, StateCode.US_YY]
+        test_state_codes = [StateCode.US_XX, StateCode.US_LL]
         test_state_code_and_instance_pairs = [
             (StateCode.US_XX, DirectIngestInstance.PRIMARY),
             (StateCode.US_XX, DirectIngestInstance.SECONDARY),
-            (StateCode.US_YY, DirectIngestInstance.PRIMARY),
-            (StateCode.US_YY, DirectIngestInstance.SECONDARY),
+            (StateCode.US_LL, DirectIngestInstance.PRIMARY),
+            (StateCode.US_LL, DirectIngestInstance.SECONDARY),
         ]
         self.raw_data_enabled_pairs = patch(
             "recidiviz.airflow.dags.raw_data.raw_data_branching.get_raw_data_dag_enabled_state_and_instance_pairs",
@@ -2476,14 +2476,12 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
                     r".*_primary_import_branch\.get_all_unprocessed_gcs_file_metadata",
                     r".*_primary_import_branch\.get_all_unprocessed_bq_file_metadata",
                     r".*_primary_import_branch\.split_by_pre_import_normalization_type",
-                    r".*_primary_import_branch\.coalesce_import_ready_files",
                     r".*_primary_import_branch\.pre_import_normalization\.*",
-                    r".*_primary_import_branch.coalesce_import_ready_files",
-                    r".*_primary_import_branch\.biq_query_load\..*",
                     r"raw_data_branching\.branch_end",
                 ],
                 expected_skipped_task_id_regexes=[
-                    # even if upstream fails, we still validate that there is no clean up to do
+                    r".*_primary_import_branch\.coalesce_import_ready_files",
+                    r".*_primary_import_branch\.biq_query_load\..*",
                     r".*_primary_import_branch\.cleanup_and_storage.*",
                     # non-primary branches
                     "_secondary_import_branch_start",
@@ -2521,12 +2519,11 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
                     r".*_primary_import_branch\.get_all_unprocessed_gcs_file_metadata",
                     r".*_primary_import_branch\.get_all_unprocessed_bq_file_metadata",
                     r".*_primary_import_branch\.split_by_pre_import_normalization_type",
-                    r".*_primary_import_branch\.coalesce_import_ready_files",
                     r".*_primary_import_branch\.pre_import_normalization\.*",
-                    r".*_primary_import_branch\.biq_query_load\.*",
                 ],
                 expected_skipped_task_id_regexes=[
-                    # even if upstream fails, we still validate that there is no clean up to do
+                    r".*_primary_import_branch\.coalesce_import_ready_files",
+                    r".*_primary_import_branch\.biq_query_load\..*",
                     r".*_primary_import_branch\.cleanup_and_storage.*",
                     "_secondary_import_branch_start",
                     r".*_secondary_import_branch\.(?!ensure_release_resource_locks_release_if_acquired)",
@@ -2563,8 +2560,8 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
                 expected_skipped_task_id_regexes=[
                     "_secondary_import_branch_start",
                     r".*_secondary_import_branch\.(?!ensure_release_resource_locks_release_if_acquired)",
-                    "us_yy_primary_import_branch_start",
-                    r".us_yy_primary_import_branch\.(?!ensure_release_resource_locks_release_if_acquired)",
+                    "us_ll_primary_import_branch_start",
+                    r".us_ll_primary_import_branch\.(?!ensure_release_resource_locks_release_if_acquired)",
                 ],
             )
             self.assertEqual(DagRunState.SUCCESS, result.dag_run_state)
@@ -2656,8 +2653,8 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
                     # branches that did not run
                     "_secondary_import_branch_start",
                     r".*_secondary_import_branch\.(?!ensure_release_resource_locks_release_if_acquired)",
-                    "us_yy_primary_import_branch_start",
-                    r".us_yy_primary_import_branch\.(?!ensure_release_resource_locks_release_if_acquired)",
+                    "us_ll_primary_import_branch_start",
+                    r".us_ll_primary_import_branch\.(?!ensure_release_resource_locks_release_if_acquired)",
                     # skipped bc no pre import norm!
                     r"raw_data_branching.us_xx_primary_import_branch.pre_import_normalization.(?!generate_file_chunking_pod_arguments)",
                 ],
@@ -2726,3 +2723,781 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
                 text("SELECT released FROM direct_ingest_raw_data_resource_lock")
             ):
                 assert lock_released[0]
+
+    def test_chunked_file_requires_pre_import_norm(self) -> None:
+
+        self._load_fixture_data(
+            gcsfs_direct_ingest_bucket_for_state(
+                project_id=_PROJECT_ID,
+                region_code="US_XX",
+                ingest_instance=DirectIngestInstance.PRIMARY,
+            ).bucket_name,
+            "tagChunkedFile",
+        )
+
+        self.load_bq_mock().load_table_from_cloud_storage_async().output_rows = 100
+        self.load_bq_mock().create_table_from_query_async().total_rows = 90
+
+        with Session(bind=self.engine) as session:
+            result = self.run_dag_test(
+                self._create_dag(),
+                session=session,
+                run_conf={"ingest_instance": "PRIMARY", "state_code_filter": "US_XX"},
+                expected_failure_task_id_regexes=[],  # none!
+                expected_skipped_task_id_regexes=[
+                    "_secondary_import_branch_start",
+                    r".*_secondary_import_branch\.(?!ensure_release_resource_locks_release_if_acquired)",
+                    "us_ll_primary_import_branch_start",
+                    r".us_ll_primary_import_branch\.(?!ensure_release_resource_locks_release_if_acquired)",
+                ],
+            )
+            self.assertEqual(DagRunState.SUCCESS, result.dag_run_state)
+
+            # conditions for success for a single file that successfully imported:
+            # (1) all files have been moved to storage or cleaned up
+            storage_path = gcsfs_direct_ingest_storage_directory_path_for_state(
+                region_code="US_XX", ingest_instance=DirectIngestInstance.PRIMARY
+            ).abs_path()
+            assert set(self.fs.all_paths) == {
+                GcsfsFilePath.from_absolute_path(
+                    f"{storage_path}raw/2024/01/25/processed_2024-01-25T16:35:33:617135_raw_tagChunkedFile-0.csv"
+                ),
+                GcsfsFilePath.from_absolute_path(
+                    f"{storage_path}raw/2024/01/25/processed_2024-01-25T16:35:33:617135_raw_tagChunkedFile-1.csv"
+                ),
+                GcsfsFilePath.from_absolute_path(
+                    f"{storage_path}raw/2024/01/25/processed_2024-01-25T16:35:33:617135_raw_tagChunkedFile-2.csv"
+                ),
+            }
+
+            # (2) bq client has all the expected calls
+            assert (
+                self.load_bq_mock().load_table_from_cloud_storage_async.call_count == 2
+            )
+            assert self.load_bq_mock().create_table_from_query_async.call_count == 2
+
+            assert self.load_bq_mock().delete_from_table_async.call_count == 1
+            assert self.load_bq_mock().delete_table.call_count == 3
+            assert (
+                self.load_bq_mock().insert_into_table_from_table_async.call_count == 1
+            )
+
+            # (3) file metadata dbs match what we expect
+            gcs_metadata = session.execute(
+                text(
+                    "select file_id, gcs_file_id, update_datetime from direct_ingest_raw_gcs_file_metadata"
+                )
+            )
+
+            assert set(gcs_metadata) == {
+                (
+                    1,
+                    1,
+                    datetime.datetime.fromisoformat("2024-01-25T16:35:33:617135Z"),
+                ),
+                (
+                    1,
+                    2,
+                    datetime.datetime.fromisoformat("2024-01-25T16:35:33:617135Z"),
+                ),
+                (
+                    1,
+                    3,
+                    datetime.datetime.fromisoformat("2024-01-25T16:35:33:617135Z"),
+                ),
+            }
+
+            bq_metadata = session.execute(
+                text(
+                    "select file_id, update_datetime, file_processed_time from direct_ingest_raw_big_query_file_metadata"
+                )
+            )
+
+            assert set(bq_metadata) == {
+                (
+                    1,
+                    datetime.datetime.fromisoformat("2024-01-25T16:35:33:617135Z"),
+                    self.frozen_time,
+                )
+            }
+
+            import_sessions = session.execute(
+                text(
+                    "select import_session_id, file_id, import_status, raw_rows from direct_ingest_raw_data_import_session"
+                )
+            )
+
+            assert set(import_sessions) == {(1, 1, "SUCCEEDED", 100)}
+
+            # (4) resource locks are released
+            for lock_released in session.execute(
+                text("select released from direct_ingest_raw_data_resource_lock")
+            ):
+                assert lock_released[0]
+
+    def test_some_pre_import_some_not_same_state(self) -> None:
+
+        self._load_fixture_data(
+            gcsfs_direct_ingest_bucket_for_state(
+                project_id=_PROJECT_ID,
+                region_code="US_XX",
+                ingest_instance=DirectIngestInstance.PRIMARY,
+            ).bucket_name,
+            "tagChunkedFile",
+            "singlePrimaryKey",
+            "tagBasicData",
+        )
+
+        self.load_bq_mock().load_table_from_cloud_storage_async().output_rows = 100
+        self.load_bq_mock().create_table_from_query_async().total_rows = 90
+
+        with Session(bind=self.engine) as session:
+            result = self.run_dag_test(
+                self._create_dag(),
+                session=session,
+                run_conf={"ingest_instance": "PRIMARY", "state_code_filter": "US_XX"},
+                expected_failure_task_id_regexes=[],  # none!
+                expected_skipped_task_id_regexes=[
+                    "_secondary_import_branch_start",
+                    r".*_secondary_import_branch\.(?!ensure_release_resource_locks_release_if_acquired)",
+                    "us_ll_primary_import_branch_start",
+                    r".us_ll_primary_import_branch\.(?!ensure_release_resource_locks_release_if_acquired)",
+                ],
+            )
+            self.assertEqual(DagRunState.SUCCESS, result.dag_run_state)
+
+            # conditions for success for a single file that successfully imported:
+            # (1) all files have been moved to storage or cleaned up
+            storage_path = gcsfs_direct_ingest_storage_directory_path_for_state(
+                region_code="US_XX", ingest_instance=DirectIngestInstance.PRIMARY
+            ).abs_path()
+            assert set(self.fs.all_paths) == {
+                GcsfsFilePath.from_absolute_path(
+                    f"{storage_path}raw/2024/01/25/processed_2024-01-25T16:35:33:617135_raw_tagChunkedFile-0.csv"
+                ),
+                GcsfsFilePath.from_absolute_path(
+                    f"{storage_path}raw/2024/01/25/processed_2024-01-25T16:35:33:617135_raw_tagChunkedFile-1.csv"
+                ),
+                GcsfsFilePath.from_absolute_path(
+                    f"{storage_path}raw/2024/01/25/processed_2024-01-25T16:35:33:617135_raw_tagChunkedFile-2.csv"
+                ),
+                GcsfsFilePath.from_absolute_path(
+                    f"{storage_path}raw/2024/01/25/processed_2024-01-25T16:35:33:617135_raw_singlePrimaryKey.csv"
+                ),
+                GcsfsFilePath.from_absolute_path(
+                    f"{storage_path}raw/2024/01/25/processed_2024-01-25T16:35:33:617135_raw_tagBasicData.csv"
+                ),
+            }
+
+            # (2) bq client has all the expected calls
+            assert (
+                self.load_bq_mock().load_table_from_cloud_storage_async.call_count
+                == 1 + 3
+            )
+            assert self.load_bq_mock().create_table_from_query_async.call_count == 1 + 3
+
+            assert self.load_bq_mock().delete_from_table_async.call_count == 1 * 3
+            assert self.load_bq_mock().delete_table.call_count == 3 * 3
+            assert (
+                self.load_bq_mock().insert_into_table_from_table_async.call_count
+                == 1 * 3
+            )
+
+            # (3) file metadata dbs match what we expect
+            gcs_metadata_counts = session.execute(
+                text(
+                    "select count(file_id) from direct_ingest_raw_gcs_file_metadata group by file_id"
+                )
+            )
+
+            assert sorted(gcs_metadata_counts) == [(1,), (1,), (3,)]
+
+            bq_metadata = session.execute(
+                text(
+                    "select file_id, update_datetime, file_processed_time from direct_ingest_raw_big_query_file_metadata"
+                )
+            )
+
+            assert set(bq_metadata) == {
+                (
+                    1,
+                    datetime.datetime.fromisoformat("2024-01-25T16:35:33:617135Z"),
+                    self.frozen_time,
+                ),
+                (
+                    2,
+                    datetime.datetime.fromisoformat("2024-01-25T16:35:33:617135Z"),
+                    self.frozen_time,
+                ),
+                (
+                    3,
+                    datetime.datetime.fromisoformat("2024-01-25T16:35:33:617135Z"),
+                    self.frozen_time,
+                ),
+            }
+
+            import_sessions = session.execute(
+                text(
+                    "select file_id, import_status, raw_rows from direct_ingest_raw_data_import_session"
+                )
+            )
+
+            assert set(import_sessions) == {
+                (1, "SUCCEEDED", 100),
+                (2, "SUCCEEDED", 100),
+                (3, "SUCCEEDED", 100),
+            }
+
+            # (4) resource locks are released
+            for lock_released in session.execute(
+                text("select released from direct_ingest_raw_data_resource_lock")
+            ):
+                assert lock_released[0]
+
+    def test_single_file_for_one_state_but_all_primary_conf(self) -> None:
+
+        self._load_fixture_data(
+            gcsfs_direct_ingest_bucket_for_state(
+                project_id=_PROJECT_ID,
+                region_code="US_XX",
+                ingest_instance=DirectIngestInstance.PRIMARY,
+            ).bucket_name,
+            "singlePrimaryKey",
+        )
+
+        self.load_bq_mock().load_table_from_cloud_storage_async().output_rows = 100
+        self.load_bq_mock().create_table_from_query_async().total_rows = 90
+
+        with Session(bind=self.engine) as session:
+            result = self.run_dag_test(
+                self._create_dag(),
+                session=session,
+                run_conf={"ingest_instance": "PRIMARY"},
+                expected_failure_task_id_regexes=[],  # none!
+                expected_skipped_task_id_regexes=[
+                    "_secondary_import_branch_start",
+                    r".*_secondary_import_branch\.(?!ensure_release_resource_locks_release_if_acquired)",
+                    # us_ll primary had no files
+                    r"raw_data_branching\.us_ll_primary_import_branch\.pre_import_normalization\.(?!generate_file_chunking_pod_arguments)",
+                    r"raw_data_branching\.us_ll_primary_import_branch\.biq_query_load\..*",
+                ],
+            )
+            self.assertEqual(DagRunState.SUCCESS, result.dag_run_state)
+
+            # conditions for success for a single file that successfully imported:
+            # (1) all files have been moved to storage or cleaned up
+            assert self.fs.all_paths == [
+                GcsfsFilePath.from_absolute_path(
+                    f'{gcsfs_direct_ingest_storage_directory_path_for_state(region_code="US_XX", ingest_instance=DirectIngestInstance.PRIMARY).abs_path()}raw/2024/01/25/processed_2024-01-25T16:35:33:617135_raw_singlePrimaryKey.csv'
+                )
+            ]
+
+            # (2) bq client has all the expected calls
+            assert (
+                self.load_bq_mock().load_table_from_cloud_storage_async.call_count == 2
+            )
+            assert self.load_bq_mock().create_table_from_query_async.call_count == 2
+
+            assert self.load_bq_mock().delete_from_table_async.call_count == 1
+            assert self.load_bq_mock().delete_table.call_count == 3
+            assert (
+                self.load_bq_mock().insert_into_table_from_table_async.call_count == 1
+            )
+
+            # (3) file metadata dbs match what we expect
+            gcs_metadata = session.execute(
+                text(
+                    "select file_id, gcs_file_id, update_datetime from direct_ingest_raw_gcs_file_metadata"
+                )
+            )
+
+            assert set(gcs_metadata) == {
+                (
+                    1,
+                    1,
+                    datetime.datetime.fromisoformat("2024-01-25T16:35:33:617135Z"),
+                )
+            }
+
+            bq_metadata = session.execute(
+                text(
+                    "select file_id, update_datetime, file_processed_time from direct_ingest_raw_big_query_file_metadata"
+                )
+            )
+
+            assert set(bq_metadata) == {
+                (
+                    1,
+                    datetime.datetime.fromisoformat("2024-01-25T16:35:33:617135Z"),
+                    self.frozen_time,
+                )
+            }
+
+            import_sessions = session.execute(
+                text(
+                    "select import_session_id, file_id, import_status, raw_rows from direct_ingest_raw_data_import_session"
+                )
+            )
+
+            assert set(import_sessions) == {(1, 1, "SUCCEEDED", 100)}
+
+            # (4) resource locks are released
+            for lock_released in session.execute(
+                text("select released from direct_ingest_raw_data_resource_lock")
+            ):
+                assert lock_released[0]
+
+    def test_single_file_for_all_states(self) -> None:
+
+        self._load_fixture_data(
+            gcsfs_direct_ingest_bucket_for_state(
+                project_id=_PROJECT_ID,
+                region_code="US_XX",
+                ingest_instance=DirectIngestInstance.PRIMARY,
+            ).bucket_name,
+            "singlePrimaryKey",
+        )
+        self._load_fixture_data(
+            gcsfs_direct_ingest_bucket_for_state(
+                project_id=_PROJECT_ID,
+                region_code="US_LL",
+                ingest_instance=DirectIngestInstance.PRIMARY,
+            ).bucket_name,
+            "customDatetimeSql",
+        )
+
+        self.load_bq_mock().load_table_from_cloud_storage_async().output_rows = 100
+        self.load_bq_mock().create_table_from_query_async().total_rows = 90
+
+        with Session(bind=self.engine) as session:
+            result = self.run_dag_test(
+                self._create_dag(),
+                session=session,
+                run_conf={"ingest_instance": "PRIMARY"},
+                expected_failure_task_id_regexes=[],  # none!
+                expected_skipped_task_id_regexes=[
+                    "_secondary_import_branch_start",
+                    r".*_secondary_import_branch\.(?!ensure_release_resource_locks_release_if_acquired)",
+                    # us_ll primary had no pre-import norm
+                    r"raw_data_branching.us_ll_primary_import_branch.pre_import_normalization.(?!generate_file_chunking_pod_arguments)",
+                ],
+            )
+            self.assertEqual(DagRunState.SUCCESS, result.dag_run_state)
+
+            # conditions for success for a single file that successfully imported:
+            # (1) all files have been moved to storage or cleaned up
+            assert set(self.fs.all_paths) == {
+                GcsfsFilePath.from_absolute_path(
+                    f'{gcsfs_direct_ingest_storage_directory_path_for_state(region_code="US_XX", ingest_instance=DirectIngestInstance.PRIMARY).abs_path()}raw/2024/01/25/processed_2024-01-25T16:35:33:617135_raw_singlePrimaryKey.csv'
+                ),
+                GcsfsFilePath.from_absolute_path(
+                    f'{gcsfs_direct_ingest_storage_directory_path_for_state(region_code="US_LL", ingest_instance=DirectIngestInstance.PRIMARY).abs_path()}raw/2024/01/25/processed_2024-01-25T16:35:33:617135_raw_customDatetimeSql.csv'
+                ),
+            }
+
+            # (2) bq client has all the expected calls
+            assert (
+                self.load_bq_mock().load_table_from_cloud_storage_async.call_count
+                == 1 + 2
+            )
+            assert self.load_bq_mock().create_table_from_query_async.call_count == 1 + 2
+
+            assert self.load_bq_mock().delete_from_table_async.call_count == 1 * 2
+            assert self.load_bq_mock().delete_table.call_count == 3 * 2
+            assert (
+                self.load_bq_mock().insert_into_table_from_table_async.call_count
+                == 1 * 2
+            )
+
+            # (3) file metadata dbs match what we expect
+            gcs_metadata = session.execute(
+                text(
+                    "select update_datetime, region_code from direct_ingest_raw_gcs_file_metadata"
+                )
+            )
+
+            assert set(gcs_metadata) == {
+                (
+                    datetime.datetime.fromisoformat("2024-01-25T16:35:33:617135Z"),
+                    "US_XX",
+                ),
+                (
+                    datetime.datetime.fromisoformat("2024-01-25T16:35:33:617135Z"),
+                    "US_LL",
+                ),
+            }
+
+            bq_metadata = session.execute(
+                text(
+                    "select update_datetime, file_processed_time, region_code from direct_ingest_raw_big_query_file_metadata"
+                )
+            )
+
+            assert set(bq_metadata) == {
+                (
+                    datetime.datetime.fromisoformat("2024-01-25T16:35:33:617135Z"),
+                    self.frozen_time,
+                    "US_XX",
+                ),
+                (
+                    datetime.datetime.fromisoformat("2024-01-25T16:35:33:617135Z"),
+                    self.frozen_time,
+                    "US_LL",
+                ),
+            }
+
+            import_sessions = session.execute(
+                text(
+                    "select file_id, import_status, raw_rows from direct_ingest_raw_data_import_session"
+                )
+            )
+
+            assert set(import_sessions) == {
+                (1, "SUCCEEDED", 100),
+                (2, "SUCCEEDED", 100),
+            }
+
+            # (4) resource locks are released
+            locks = list(
+                session.execute(
+                    text("select released from direct_ingest_raw_data_resource_lock")
+                )
+            )
+            assert len(locks) == 6
+            assert all(l[0] for l in locks)
+
+    def test_errors_during_file_chunking(self) -> None:
+
+        self._load_fixture_data(
+            gcsfs_direct_ingest_bucket_for_state(
+                project_id=_PROJECT_ID,
+                region_code="US_XX",
+                ingest_instance=DirectIngestInstance.PRIMARY,
+            ).bucket_name,
+            "singlePrimaryKey",
+            "tagCustomLineTerminatorNonUTF8",
+        )
+
+        self.load_bq_mock().load_table_from_cloud_storage_async().output_rows = 100
+        self.load_bq_mock().create_table_from_query_async().total_rows = 90
+
+        def _fail_wrapper(original: Callable) -> Callable:
+            def _fail_single_primary_key(fs: Any, path: GcsfsFilePath, cg: Any) -> Any:
+                if "tagCustomLineTerminatorNonUTF8" in path.blob_name:
+                    raise ValueError(f"Intentional failure for {path.blob_name}")
+
+                return original(fs, path, cg)
+
+            return _fail_single_primary_key
+
+        chunking_patcher = patch(
+            "recidiviz.entrypoints.raw_data.divide_raw_file_into_chunks._extract_file_chunks"
+        )
+        original, _ = chunking_patcher.get_original()
+
+        with Session(bind=self.engine) as session, chunking_patcher as chunking_mock:
+
+            dag = self._create_dag()
+            chunking_mock.side_effect = _fail_wrapper(original)
+            result = self.run_dag_test(
+                dag,
+                session=session,
+                run_conf={"ingest_instance": "PRIMARY", "state_code_filter": "US_XX"},
+                expected_failure_task_id_regexes=[
+                    "raw_data_branching.us_xx_primary_import_branch.pre_import_normalization.raise_file_chunking_errors"
+                ],
+                expected_skipped_task_id_regexes=[
+                    # branches that did not run
+                    "_secondary_import_branch_start",
+                    r".*_secondary_import_branch\.(?!ensure_release_resource_locks_release_if_acquired)",
+                    "us_ll_primary_import_branch_start",
+                    r".us_ll_primary_import_branch\.(?!ensure_release_resource_locks_release_if_acquired)",
+                ],
+            )
+            self.assertEqual(DagRunState.SUCCESS, result.dag_run_state)
+
+            # conditions for success for a single file and failure for another:
+            # (1) successful file has moved to storage, failed file stayed put
+            assert set(self.fs.all_paths) == {
+                GcsfsFilePath.from_absolute_path(
+                    f'{gcsfs_direct_ingest_storage_directory_path_for_state(region_code="US_XX", ingest_instance=DirectIngestInstance.PRIMARY).abs_path()}raw/2024/01/25/processed_2024-01-25T16:35:33:617135_raw_singlePrimaryKey.csv'
+                ),
+                GcsfsFilePath.from_absolute_path(
+                    f'{gcsfs_direct_ingest_bucket_for_state(region_code="US_XX", ingest_instance=DirectIngestInstance.PRIMARY).abs_path()}/unprocessed_2024-01-25T16:35:33:617135_raw_tagCustomLineTerminatorNonUTF8.csv'
+                ),
+            }
+
+            # (2) bq client has all the expected calls
+            assert (
+                self.load_bq_mock().load_table_from_cloud_storage_async.call_count == 2
+            )
+            assert self.load_bq_mock().create_table_from_query_async.call_count == 2
+
+            assert self.load_bq_mock().delete_from_table_async.call_count == 1
+            assert self.load_bq_mock().delete_table.call_count == 3
+            assert (
+                self.load_bq_mock().insert_into_table_from_table_async.call_count == 1
+            )
+
+            # (3) file metadata dbs match what we expect
+            gcs_metadata = session.execute(
+                text(
+                    "select file_id, gcs_file_id, update_datetime from direct_ingest_raw_gcs_file_metadata"
+                )
+            )
+
+            assert set(gcs_metadata) == {
+                (
+                    1,
+                    1,
+                    datetime.datetime.fromisoformat("2024-01-25T16:35:33:617135Z"),
+                ),
+                (
+                    2,
+                    2,
+                    datetime.datetime.fromisoformat("2024-01-25T16:35:33:617135Z"),
+                ),
+            }
+
+            bq_metadata = session.execute(
+                text(
+                    "select update_datetime, file_processed_time from direct_ingest_raw_big_query_file_metadata"
+                )
+            )
+
+            assert set(bq_metadata) == {
+                (
+                    datetime.datetime.fromisoformat("2024-01-25T16:35:33:617135Z"),
+                    self.frozen_time,
+                ),
+                (
+                    datetime.datetime.fromisoformat("2024-01-25T16:35:33:617135Z"),
+                    None,
+                ),
+            }
+
+            import_sessions = session.execute(
+                text(
+                    "select import_status, raw_rows from direct_ingest_raw_data_import_session"
+                )
+            )
+
+            assert sorted(import_sessions, key=lambda x: x[0]) == [
+                ("FAILED_PRE_IMPORT_NORMALIZATION_STEP", None),
+                ("SUCCEEDED", 100),
+            ]
+
+            # (4) resource locks are released
+            locks = list(
+                session.execute(
+                    text("select released from direct_ingest_raw_data_resource_lock")
+                )
+            )
+            assert len(locks) == 3
+            assert all(l[0] for l in locks)
+
+            # rerun!! ------------
+
+            result_two = self.run_dag_test(
+                dag,
+                session=session,
+                run_conf={"ingest_instance": "PRIMARY", "state_code_filter": "US_XX"},
+                expected_failure_task_id_regexes=[
+                    "raw_data_branching.us_xx_primary_import_branch.pre_import_normalization.raise_file_chunking_errors"
+                ],
+                expected_skipped_task_id_regexes=[
+                    # branches that did not run
+                    "_secondary_import_branch_start",
+                    r".*_secondary_import_branch\.(?!ensure_release_resource_locks_release_if_acquired)",
+                    "us_ll_primary_import_branch_start",
+                    r".us_ll_primary_import_branch\.(?!ensure_release_resource_locks_release_if_acquired)",
+                    # skipped since no files to import after failed chunking step!
+                    "raw_data_branching.us_xx_primary_import_branch.pre_import_normalization.raw_data_chunk_normalization",
+                    "raw_data_branching.us_xx_primary_import_branch.pre_import_normalization.regroup_and_verify_file_chunks",
+                    "raw_data_branching.us_xx_primary_import_branch.pre_import_normalization.raise_chunk_normalization_errors",
+                    r"raw_data_branching\.us_xx_primary_import_branch.biq_query_load\..*",
+                ],
+            )
+            self.assertEqual(DagRunState.SUCCESS, result_two.dag_run_state)
+
+            # conditions for success for rerun ending in failure:
+            # (1) successful file stayed put, failed file stayed put
+            assert set(self.fs.all_paths) == {
+                GcsfsFilePath.from_absolute_path(
+                    f'{gcsfs_direct_ingest_storage_directory_path_for_state(region_code="US_XX", ingest_instance=DirectIngestInstance.PRIMARY).abs_path()}raw/2024/01/25/processed_2024-01-25T16:35:33:617135_raw_singlePrimaryKey.csv'
+                ),
+                GcsfsFilePath.from_absolute_path(
+                    f'{gcsfs_direct_ingest_bucket_for_state(region_code="US_XX", ingest_instance=DirectIngestInstance.PRIMARY).abs_path()}/unprocessed_2024-01-25T16:35:33:617135_raw_tagCustomLineTerminatorNonUTF8.csv'
+                ),
+            }
+
+            # (2) bq client has all the expected calls from last time
+            assert (
+                self.load_bq_mock().load_table_from_cloud_storage_async.call_count == 2
+            )
+            assert self.load_bq_mock().create_table_from_query_async.call_count == 2
+
+            assert self.load_bq_mock().delete_from_table_async.call_count == 1
+            assert self.load_bq_mock().delete_table.call_count == 3
+            assert (
+                self.load_bq_mock().insert_into_table_from_table_async.call_count == 1
+            )
+
+            # (3) file metadata dbs match what we expect
+            gcs_metadata = session.execute(
+                text(
+                    "select file_id, gcs_file_id, update_datetime from direct_ingest_raw_gcs_file_metadata"
+                )
+            )
+
+            assert set(gcs_metadata) == {
+                (
+                    1,
+                    1,
+                    datetime.datetime.fromisoformat("2024-01-25T16:35:33:617135Z"),
+                ),
+                (
+                    2,
+                    2,
+                    datetime.datetime.fromisoformat("2024-01-25T16:35:33:617135Z"),
+                ),
+            }
+
+            bq_metadata = session.execute(
+                text(
+                    "select update_datetime, file_processed_time from direct_ingest_raw_big_query_file_metadata"
+                )
+            )
+
+            assert set(bq_metadata) == {
+                (
+                    datetime.datetime.fromisoformat("2024-01-25T16:35:33:617135Z"),
+                    self.frozen_time,
+                ),
+                (
+                    datetime.datetime.fromisoformat("2024-01-25T16:35:33:617135Z"),
+                    None,
+                ),
+            }
+
+            import_sessions = session.execute(
+                text(
+                    "select import_status, raw_rows from direct_ingest_raw_data_import_session"
+                )
+            )
+
+            assert sorted(import_sessions, key=lambda x: x[0]) == [
+                ("FAILED_PRE_IMPORT_NORMALIZATION_STEP", None),
+                ("FAILED_PRE_IMPORT_NORMALIZATION_STEP", None),
+                ("SUCCEEDED", 100),
+            ]
+
+            # (4) resource locks are released
+            locks = list(
+                session.execute(
+                    text("select released from direct_ingest_raw_data_resource_lock")
+                )
+            )
+            assert len(locks) == 6
+            assert all(l[0] for l in locks)
+
+            chunking_mock.side_effect = original
+
+            # third time, no failures this time!
+            result_three = self.run_dag_test(
+                self._create_dag(),
+                session=session,
+                run_conf={"ingest_instance": "PRIMARY", "state_code_filter": "US_XX"},
+                expected_failure_task_id_regexes=[],  # noooooone!
+                expected_skipped_task_id_regexes=[
+                    # branches that did not run
+                    "_secondary_import_branch_start",
+                    r".*_secondary_import_branch\.(?!ensure_release_resource_locks_release_if_acquired)",
+                    "us_ll_primary_import_branch_start",
+                    r".us_ll_primary_import_branch\.(?!ensure_release_resource_locks_release_if_acquired)",
+                ],
+            )
+            self.assertEqual(DagRunState.SUCCESS, result_three.dag_run_state)
+
+            # conditions for success for rerun ending in failure:
+            # (1) successful file stayed put, failed file stayed put
+            assert set(self.fs.all_paths) == {
+                GcsfsFilePath.from_absolute_path(
+                    f'{gcsfs_direct_ingest_storage_directory_path_for_state(region_code="US_XX", ingest_instance=DirectIngestInstance.PRIMARY).abs_path()}raw/2024/01/25/processed_2024-01-25T16:35:33:617135_raw_singlePrimaryKey.csv'
+                ),
+                GcsfsFilePath.from_absolute_path(
+                    f'{gcsfs_direct_ingest_storage_directory_path_for_state(region_code="US_XX", ingest_instance=DirectIngestInstance.PRIMARY).abs_path()}raw/2024/01/25/processed_2024-01-25T16:35:33:617135_raw_tagCustomLineTerminatorNonUTF8.csv'
+                ),
+            }
+
+            # (2) bq client has all the expected calls from last time
+            assert (
+                self.load_bq_mock().load_table_from_cloud_storage_async.call_count
+                == 1 + 2
+            )
+            assert self.load_bq_mock().create_table_from_query_async.call_count == 1 + 2
+
+            assert self.load_bq_mock().delete_from_table_async.call_count == 2
+            assert self.load_bq_mock().delete_table.call_count == 3 * 2
+            assert (
+                self.load_bq_mock().insert_into_table_from_table_async.call_count == 2
+            )
+
+            # (3) file metadata dbs match what we expect
+            gcs_metadata = session.execute(
+                text(
+                    "select file_id, gcs_file_id, update_datetime from direct_ingest_raw_gcs_file_metadata"
+                )
+            )
+
+            assert set(gcs_metadata) == {
+                (
+                    1,
+                    1,
+                    datetime.datetime.fromisoformat("2024-01-25T16:35:33:617135Z"),
+                ),
+                (
+                    2,
+                    2,
+                    datetime.datetime.fromisoformat("2024-01-25T16:35:33:617135Z"),
+                ),
+            }
+
+            bq_metadata = session.execute(
+                text(
+                    "select update_datetime, file_processed_time from direct_ingest_raw_big_query_file_metadata"
+                )
+            )
+
+            assert set(bq_metadata) == {
+                (
+                    datetime.datetime.fromisoformat("2024-01-25T16:35:33:617135Z"),
+                    self.frozen_time,
+                ),
+                (
+                    datetime.datetime.fromisoformat("2024-01-25T16:35:33:617135Z"),
+                    self.frozen_time,
+                ),
+            }
+
+            import_sessions = session.execute(
+                text(
+                    "select import_status, raw_rows from direct_ingest_raw_data_import_session"
+                )
+            )
+
+            assert sorted(import_sessions, key=lambda x: x[0]) == [
+                ("FAILED_PRE_IMPORT_NORMALIZATION_STEP", None),
+                ("FAILED_PRE_IMPORT_NORMALIZATION_STEP", None),
+                ("SUCCEEDED", 100),
+                ("SUCCEEDED", 100),
+            ]
+
+            # (4) resource locks are released
+            locks = list(
+                session.execute(
+                    text("select released from direct_ingest_raw_data_resource_lock")
+                )
+            )
+            assert len(locks) == 9
+            assert all(l[0] for l in locks)

@@ -130,7 +130,7 @@ def split_by_pre_import_normalization_type(
     }
 
 
-@task(trigger_rule=TriggerRule.NONE_FAILED_MIN_ONE_SUCCESS)
+@task(trigger_rule=TriggerRule.ALL_DONE)
 def coalesce_import_ready_files(
     serialized_input_ready_files_no_normalization: Optional[List[str]],
     serialized_pre_import_normalization_result: Optional[str],

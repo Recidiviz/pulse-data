@@ -209,6 +209,7 @@ class AirflowIntegrationTest(unittest.TestCase):
         if not skip_checking_task_statuses:
             self._check_dag_task_statuses(
                 dag,
+                dr.run_id,
                 session,
                 expected_failure_task_id_regexes,
                 expected_skipped_task_id_regexes,
@@ -221,6 +222,7 @@ class AirflowIntegrationTest(unittest.TestCase):
     def _check_dag_task_statuses(
         self,
         dag: DAG,
+        run_id: str,
         session: Session,
         expected_failure_regexes: Optional[List[str]] = None,
         expected_skipped_regexes: Optional[List[str]] = None,
@@ -228,9 +230,9 @@ class AirflowIntegrationTest(unittest.TestCase):
         check_test_matches_all_task_ids: Optional[bool] = False,
     ) -> None:
         """
-        Check that the task statuses are as expected. If expected_failure_ids or expected_skipped_ids are
-        provided, then the task statuses must match the expected statuses. Otherwise, the task statuses
-        must be SUCCESS.
+        Check that the task statuses are as expected for |run_id|. If expected_failure_ids
+        or expected_skipped_ids are provided, then the task statuses must match the
+        expected statuses. Otherwise, the task statuses must be SUCCESS.
         """
         expected_failure_task_ids = _find_task_ids_for_given_search_regexes(
             dag, expected_failure_regexes or []
@@ -266,7 +268,9 @@ class AirflowIntegrationTest(unittest.TestCase):
 
         status_errors: List[Exception] = []
         for task_instance in dag.tasks:
-            task_state = self.get_task_instance_state(task_instance.task_id, session)
+            task_state = self.get_task_instance_state(
+                task_instance.task_id, run_id, session
+            )
             if (
                 task_state == TaskInstanceState.SKIPPED
                 and task_instance.task_id not in expected_skipped_task_ids
@@ -385,12 +389,12 @@ class AirflowIntegrationTest(unittest.TestCase):
         return DagRunState(rows[0])
 
     def get_task_instance_state(
-        self, task_id: str, session: Session
+        self, task_id: str, run_id: str, session: Session
     ) -> TaskInstanceState:
         """Get the state of the task instance with task_id from the most recent dag run."""
         rows = (
             session.query(TaskInstance.state)
-            .filter(TaskInstance.task_id == task_id)
+            .filter(TaskInstance.task_id == task_id, TaskInstance.run_id == run_id)
             .first()
         )
         if not rows:

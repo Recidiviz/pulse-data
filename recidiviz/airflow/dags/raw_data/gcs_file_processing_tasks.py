@@ -175,6 +175,9 @@ def create_chunk_batches(
     exceeds the number of chunks, the number of batches is reduced to match the number of chunks.
     """
     all_chunks = _create_individual_chunk_objects_list(file_chunks)
+    if not all_chunks:
+        return []
+
     num_batches = min(len(all_chunks), num_batches)
 
     batches = distribute(num_batches, all_chunks)
