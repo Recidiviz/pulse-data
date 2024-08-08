@@ -34,6 +34,13 @@ class WorkflowsResidentETLDelegate(WorkflowsFirestoreETLDelegate):
     def transform_row(self, row: str) -> Tuple[str, dict]:
         data = json.loads(row)
 
+        metadata = convert_nested_dictionary_keys(
+            json.loads(data.get("metadata", "{}")), snake_to_camel
+        )
+
+        if metadata.get("stateCode") == "US_IX":
+            metadata["stateCode"] = "US_ID"
+
         new_document = {
             "pseudonymizedId": data["pseudonymized_id"],
             "personExternalId": data["person_external_id"],
@@ -52,9 +59,7 @@ class WorkflowsResidentETLDelegate(WorkflowsFirestoreETLDelegate):
             "admissionDate": data.get("admission_date"),
             "releaseDate": data.get("release_date"),
             "allEligibleOpportunities": data.get("all_eligible_opportunities"),
-            "metadata": convert_nested_dictionary_keys(
-                json.loads(data.get("metadata", "{}")), snake_to_camel
-            ),
+            "metadata": metadata,
             "portionServedNeeded": data.get("portion_served_needed"),
             "usMePortionNeededEligibleDate": data.get(
                 "us_me_portion_needed_eligible_date"
