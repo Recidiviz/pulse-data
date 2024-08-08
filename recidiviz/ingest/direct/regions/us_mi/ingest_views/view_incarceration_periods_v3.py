@@ -96,6 +96,7 @@ internal_movements AS (
         COALESCE((CAST(o.date_out as DATETIME)), CAST( DATE(9999,9,9) as DATETIME)) as date_out,
         u.cell_type_id,
         u.security_level_id,
+        u.cell_lock,
         wing.name as wing_name
     FROM final_lock_records o
 	JOIN {ADH_OFFENDER} o1	
@@ -239,7 +240,7 @@ periods_with_info as (
     CASE WHEN move.movement_date = basic.start_date then move.movement_reason_id else NULL end as movement_reason_id,
     CASE WHEN move.next_movement_date = basic.end_date then move.next_movement_reason_id else NULL end as next_movement_reason_id,
     internal.offender_lock_id,
-    internal.unit_lock_id,
+    internal.cell_lock,
     internal.reporting_station_name,
     -- Sometimes we see movement information before unit information, so in those cases we need the location type of the movement destination
     -- Otherwise we want to use the location type from the unit information
@@ -280,7 +281,7 @@ select
     end_date,
     movement_reason_id,
     next_movement_reason_id,
-    unit_lock_id,
+    cell_lock,
     reporting_station_name,
     location_code,
     location_type_id,

@@ -5,7 +5,7 @@ manifest_language: 1.0.0
 input_columns:
   - offender_id
   - start_date
-  - unit_lock_id
+  - cell_lock
   - reporting_station_name
   - location_code
   - location_type_id
@@ -42,7 +42,11 @@ output:
                   - "14294" # Residential Reentry Program
           county_code: county
           facility: location_code
-          housing_unit: unit_lock_id
+          housing_unit:
+            $concat:
+              $values:
+                - reporting_station_name
+                - cell_lock
           admission_date: start_date
           admission_reason:
             $conditional:

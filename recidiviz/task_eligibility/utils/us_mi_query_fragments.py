@@ -303,13 +303,14 @@ temp_opt_stg_information AS (
         person_external_id AS external_id,
         (MH_Treatment = 'Outpatient') as OPT_flag,
         STG,
-        Management_Level,
-        Confinement_Level,
-        Actual_Sec_Level
-    FROM `{{project_id}}.us_mi_validation.incarceration_population_person_level_materialized`
-        INNER JOIN (
+        Management_Level_Assessment_Result as Management_Level,
+        Confinement_Level_Assessment_Result as Confinement_Level,
+        Actual_Placement_Level_Assessment_Result as Actual_Sec_Level
+    FROM `{{project_id}}.us_mi_validation.incarceration_population_person_level_materialized` orc
+    INNER JOIN (
             SELECT MAX(date_of_stay) AS date_of_stay FROM `{{project_id}}.us_mi_validation.incarceration_population_person_level_materialized`
-        ) USING(date_of_stay)
+        ) USING(date_of_stay)     
+    LEFT JOIN `{{project_id}}.{{us_mi_raw_data_up_to_date_dataset}}.COMS_Security_Classification_latest` coms ON orc.person_external_id = LTRIM(coms.Offender_Number, '0') 
     -- this should always be true
     WHERE external_id_type = 'US_MI_DOC'
 )
@@ -328,7 +329,7 @@ SELECT
     DATE(pmx_sgt_max_date) AS form_information_max_release_date,
     DATE(pmi_sgt_min_date) AS form_information_min_release_date,
     si.facility AS form_information_facility,
-    CONCAT(reporting_station.name, "-", unit_lock.cell_lock) AS form_information_lock,
+    si.housing_unit AS form_information_lock,
     #TODO(#28298) replace with source tables when we receive data
     temp.OPT_flag AS form_information_OPT,
     temp.STG AS form_information_STG,
@@ -364,10 +365,6 @@ LEFT JOIN `{{project_id}}.{{normalized_state_dataset}}.state_incarceration_perio
     ON tes.state_code = si.state_code
     AND tes.person_id = si.person_id
     AND CURRENT_DATE('US/Eastern') BETWEEN si.admission_date AND {nonnull_end_date_clause('si.release_date')}
-LEFT JOIN `{{project_id}}.{{us_mi_raw_data_up_to_date_dataset}}.ADH_UNIT_LOCK_latest` unit_lock
-    ON si.housing_unit = unit_lock.unit_lock_id
-LEFT JOIN `{{project_id}}.{{us_mi_raw_data_up_to_date_dataset}}.ADH_REPORTING_STATION_latest` reporting_station
-    ON unit_lock.reporting_station_id = reporting_station.reporting_station_id
 LEFT JOIN release_dates sgt
     ON sgt.offender_number = tes.external_id 
 LEFT JOIN form_misconduct_codes m

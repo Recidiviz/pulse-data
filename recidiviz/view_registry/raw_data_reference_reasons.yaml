@@ -842,28 +842,8 @@ US_MI:
       Usage reason unknown. Grandfathered in 04/18/2024.
     workflows_views.us_mi_complete_classification_review_form_record: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
-  ADH_REPORTING_STATION:
-    workflows_views.us_mi_complete_add_in_person_security_classification_committee_review_form_record:
-      |-
-      Usage reason unknown. Grandfathered in 04/18/2024.
-    workflows_views.us_mi_complete_security_classification_committee_review_form_record:
-      |-
-      Usage reason unknown. Grandfathered in 04/18/2024.
-    workflows_views.us_mi_complete_warden_in_person_security_classification_committee_review_form_record:
-      |-
-      Usage reason unknown. Grandfathered in 04/18/2024.
   ADH_SUPERVISION_VIOLATION:
     outliers_views.supervision_client_events: |-
-      Usage reason unknown. Grandfathered in 04/18/2024.
-  ADH_UNIT_LOCK:
-    workflows_views.us_mi_complete_add_in_person_security_classification_committee_review_form_record:
-      |-
-      Usage reason unknown. Grandfathered in 04/18/2024.
-    workflows_views.us_mi_complete_security_classification_committee_review_form_record:
-      |-
-      Usage reason unknown. Grandfathered in 04/18/2024.
-    workflows_views.us_mi_complete_warden_in_person_security_classification_committee_review_form_record:
-      |-
       Usage reason unknown. Grandfathered in 04/18/2024.
   COMS_Intervention_Referral_Program_and_Service_Type_Combinations:
     outliers_views.supervision_client_events: |-
@@ -889,6 +869,19 @@ US_MI:
   COMS_Probation_Violations:
     outliers_views.supervision_client_events: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
+  COMS_Security_Classification:
+    workflows_views.us_mi_complete_add_in_person_security_classification_committee_review_form_record:
+      |-
+      We need to fill in 3 different types of security classification in the RH opps forms.  
+      It's possible we could ingest each security classfication as a different type of assessment? TODO(#32155)
+    workflows_views.us_mi_complete_security_classification_committee_review_form_record:
+      |-
+      We need to fill in 3 different types of security classification in the RH opps forms.  
+      It's possible we could ingest each security classfication as a different type of assessment? TODO(#32155)
+    workflows_views.us_mi_complete_warden_in_person_security_classification_committee_review_form_record:
+      |-
+      We need to fill in 3 different types of security classification in the RH opps forms.  
+      It's possible we could ingest each security classfication as a different type of assessment? TODO(#32155)
   COMS_Specialties:
     task_eligibility_criteria_us_mi.not_on_electronic_monitoring: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
