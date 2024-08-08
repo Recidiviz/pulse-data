@@ -56,6 +56,11 @@ class WorkflowsClientETLDelegate(WorkflowsFirestoreETLDelegate):
                     new_document[key] = state_specific_client_address_transformation(
                         state_code, value
                     )
+                case "metadata":
+                    metadata = json.loads(value)
+                    if metadata.get("state_code") == "US_IX":
+                        metadata["state_code"] = "US_ID"
+                    new_document[key] = metadata
                 case _:
                     new_document[key] = value
 

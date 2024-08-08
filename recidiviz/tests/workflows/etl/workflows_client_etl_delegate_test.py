@@ -245,6 +245,9 @@ class WorkflowsClientETLDelegateTest(TestCase):
                     "supervisionLevelStart": "2020-03-10",
                     "supervisionStartDate": "2021-03-04",
                     "allEligibleOpportunities": ["earlyTermination"],
+                    "metadata": {
+                        "stateCode": "US_ND",
+                    },
                 },
                 row,
             )
@@ -275,6 +278,10 @@ class WorkflowsClientETLDelegateTest(TestCase):
                     "supervisionLevelStart": "2020-03-10",
                     "supervisionStartDate": "2021-03-04",
                     "allEligibleOpportunities": ["earnedDischarge"],
+                    "metadata": {
+                        "stateCode": "US_ID",
+                        "notStateCode": "US_IX",
+                    },
                 },
                 row,
             )
