@@ -69,9 +69,7 @@ SENTENCING_COMMUNITY_OPPORTUNITY_RECORD_VIEW_BUILDER = (
             "CapacityTotal",
             "CapacityAvailable",
             "NeedsAddressed",
-            "eighteenOrOlderCriterion",
             "developmentalDisabilityDiagnosisCriterion",
-            "minorCriterion",
             "noCurrentOrPriorSexOffenseCriterion",
             "noCurrentOrPriorViolentOffenseCriterion",
             "noPendingFelonyChargesInAnotherCountyOrStateCriterion",
@@ -83,6 +81,9 @@ SENTENCING_COMMUNITY_OPPORTUNITY_RECORD_VIEW_BUILDER = (
             "diagnosedSubstanceUseDisorderCriterion",
             "minLsirScoreCriterion",
             "maxLsirScoreCriterion",
+            "minAge",
+            "maxAge",
+            "district",
         ],
     )
 )
