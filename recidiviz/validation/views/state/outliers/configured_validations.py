@@ -30,11 +30,17 @@ from recidiviz.validation.views.state.outliers.current_supervision_staff_missing
 from recidiviz.validation.views.state.outliers.current_supervision_staff_missing_email import (
     CURRENT_SUPERVISION_STAFF_MISSING_EMAIL_VIEW_BUILDER,
 )
+from recidiviz.validation.views.state.outliers.outlier_status_percent_change_exceeded import (
+    OUTLIER_STATUS_PERCENT_CHANGE_EXCEEDED_VIEW_BUILDER,
+)
 from recidiviz.validation.views.state.outliers.outliers_staff_count_percent_change_intermonth import (
     OUTLIERS_STAFF_COUNT_PERCENT_CHANGE_INTERMONTH_VIEW_BUILDER,
 )
 from recidiviz.validation.views.state.outliers.outliers_staff_count_percent_change_intramonth import (
     OUTLIERS_STAFF_COUNT_PERCENT_CHANGE_INTRAMONTH_VIEW_BUILDER,
+)
+from recidiviz.validation.views.state.outliers.statewide_target_percent_change_exceeded import (
+    STATEWIDE_TARGET_PERCENT_CHANGE_EXCEEDED_VIEW_BUILDER,
 )
 from recidiviz.validation.views.state.outliers.unidentified_supervision_officer_supervisors import (
     UNIDENTIFIED_SUPERVISION_OFFICER_SUPERVISORS_VIEW_BUILDER,
@@ -76,6 +82,28 @@ def get_all_outliers_validations(
         SamenessDataValidationCheck(
             view_builder=OUTLIERS_STAFF_COUNT_PERCENT_CHANGE_INTERMONTH_VIEW_BUILDER,
             comparison_columns=["last_export_staff_count", "current_staff_count"],
+            validation_category=ValidationCategory.CONSISTENCY,
+            region_configs=region_configs,
+        ),
+        SamenessDataValidationCheck(
+            view_builder=STATEWIDE_TARGET_PERCENT_CHANGE_EXCEEDED_VIEW_BUILDER,
+            comparison_columns=[
+                "last_export_target",
+                "current_target",
+            ],
+            soft_max_allowed_error=0.10,
+            hard_max_allowed_error=0.20,
+            validation_category=ValidationCategory.CONSISTENCY,
+            region_configs=region_configs,
+        ),
+        SamenessDataValidationCheck(
+            view_builder=OUTLIER_STATUS_PERCENT_CHANGE_EXCEEDED_VIEW_BUILDER,
+            comparison_columns=[
+                "last_export_count",
+                "current_count",
+            ],
+            soft_max_allowed_error=0.10,
+            hard_max_allowed_error=0.30,
             validation_category=ValidationCategory.CONSISTENCY,
             region_configs=region_configs,
         ),
