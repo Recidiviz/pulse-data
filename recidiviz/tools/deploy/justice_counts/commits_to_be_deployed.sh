@@ -41,7 +41,8 @@ fi
 PROD_IMAGE_BASE="us-central1-docker.pkg.dev/justice-counts-production/publisher-and-dashboard-images/main"
 
 # Find the Docker image currently deployed to production (i.e. with the tag 'latest')
-PROD_IMAGE_JSON=$(gcloud artifacts docker images list "${PROD_IMAGE_BASE}" --filter="tags:latest" --format=json --include-tags)
+# The argument 2>/dev/null suppresses logging.
+PROD_IMAGE_JSON=$(gcloud artifacts docker images list "${PROD_IMAGE_BASE}" --filter="tags:latest" --format=json --include-tags 2>/dev/null)
 
 if [[ ${PROD_IMAGE_JSON}  == "[]" ]]; then
     echo_error "No Docker images found in ${PROD_IMAGE_BASE} with tag 'latest'"
@@ -50,15 +51,23 @@ fi
 
 # The first tag should be the version
 TAGS=$(jq -r '.[0].tags' <<< "${PROD_IMAGE_JSON}")
-CURRENT_PROD_VERSION=$(cut -d ',' -f 1 <<< "${TAGS}")
+
+# Check if TAGS is a JSON array or a comma-separated string
+if echo "${TAGS}" | jq empty 2>/dev/null; then
+    # TAGS is a JSON array
+    CURRENT_PROD_VERSION_TAG=$(jq -r '.[0]' <<< "${TAGS}")
+else
+    # TAGS is a comma-separated string
+    CURRENT_PROD_VERSION_TAG=$(cut -d ',' -f 1 <<< "${TAGS}")
+fi
 
 echo "Commits in pulse-data since last deploy:"
 run_cmd git fetch --quiet
-run_cmd git log --oneline "tags/${CURRENT_PROD_VERSION}..tags/jc.${VERSION}" --grep="Justice Counts"
+run_cmd git log --oneline "tags/${CURRENT_PROD_VERSION_TAG}..tags/jc.${VERSION}" --grep="Justice Counts"
 echo ""
 
 cd ../justice-counts || exit
 run_cmd git fetch --quiet
 echo "Commits in justice-counts since last deploy:"
-run_cmd git log --oneline "tags/${CURRENT_PROD_VERSION}..tags/jc.${VERSION}"
+run_cmd git log --oneline "tags/${CURRENT_PROD_VERSION_TAG}..tags/jc.${VERSION}"
 cd ../pulse-data || exit
