@@ -16,9 +16,11 @@
 # =============================================================================
 """Tests for python logic for managing and handling raw file metadata"""
 import datetime
+import re
 from unittest import TestCase
 from unittest.mock import patch
 
+from airflow.exceptions import AirflowSkipException
 from more_itertools import one
 
 from recidiviz.airflow.dags.raw_data.file_metadata_tasks import (
@@ -141,6 +143,18 @@ class CoalesceImportReadyFiles(TestCase):
             [], '{"results": [], "errors": []}'
         )
 
+    def test_pre_import_skipped(self) -> None:
+        assert not coalesce_import_ready_files.function([], None)
+
+    def test_failed_upstream(self) -> None:
+        with self.assertRaisesRegex(
+            AirflowSkipException,
+            re.escape(
+                "Import ready files that dont require pre-import normalization is None; skipping as we cannot proceed!"
+            ),
+        ):
+            coalesce_import_ready_files.function(None, None)
+
     def test_single_per_batch(self) -> None:
         files = [
             ImportReadyFile(
@@ -229,6 +243,22 @@ class CoalesceResultsAndErrorsTest(TestCase):
             TEMPORARY_PATHS_TO_CLEAN: [],
             TEMPORARY_TABLES_TO_CLEAN: [],
         }
+
+    def test_skipped_upstream(self) -> None:
+        with self.assertRaisesRegex(
+            AirflowSkipException,
+            re.escape("Found no bq metadata, so assuming that this is an empty branch"),
+        ):
+            coalesce_results_and_errors.function(
+                "US_XX",
+                DirectIngestInstance.PRIMARY,
+                None,
+                None,
+                None,
+                None,
+                None,
+                None,
+            )
 
     def test_build_import_summaries_for_results_all_matching(self) -> None:
         summaries = [
