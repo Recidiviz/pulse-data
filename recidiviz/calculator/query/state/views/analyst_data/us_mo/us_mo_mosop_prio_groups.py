@@ -55,7 +55,7 @@ pt_all AS (
         completed_flag AS excluded_by_completion,
         ongoing_flag AS excluded_by_ongoing,
         uns_ct > 1 AS excluded_by_multiple_failures,
-        life_flag AS excluded_life
+        COALESCE(life_flag, FALSE) AS excluded_life
     FROM `{project_id}.{analyst_dataset}.us_mo_program_tracks_materialized`
     WHERE mosop_indicator
 ),
