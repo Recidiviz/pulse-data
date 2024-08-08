@@ -241,6 +241,11 @@ const App = (): JSX.Element => {
       </Layout.Sider>
       <div className={routeClass}>
         <Switch>
+          <Redirect
+            exact
+            from="/"
+            to={IngestOperations.INGEST_DATAFLOW_ROUTE}
+          />
           <Route
             path={DatasetMetadata.METADATA_DATASET_ROUTE_TEMPLATE}
             component={DatasetView}
@@ -322,7 +327,6 @@ const App = (): JSX.Element => {
               />
             </Switch>
           </StoreProvider>
-          <Redirect from="/" to={IngestOperations.INGEST_DATAFLOW_ROUTE} />
         </Switch>
       </div>
     </Layout>
