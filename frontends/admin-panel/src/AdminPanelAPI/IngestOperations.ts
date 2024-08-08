@@ -171,7 +171,7 @@ export const getLatestDataflowJob = async (
   stateCode: string
 ): Promise<Response> => {
   return getResource(
-    `/api/ingest_operations/get_latest_ingest_dataflow_job_by_instance/${stateCode}`
+    `/api/ingest_operations/get_latest_ingest_dataflow_job/${stateCode}`
   );
 };
 
