@@ -253,7 +253,7 @@ def create_single_state_code_ingest_instance_raw_data_import_branch(
         # execution layer: celery
         # outputs: [ AppendReadyFile ], [ AppendSummary ]
 
-        # trigger rule is NONE_FAILED_MIN_ONE_SUCCESS
+        # trigger rule is ALL_DONE
         serialized_import_ready_files = coalesce_import_ready_files(
             files_to_process[IMPORT_READY_FILES], pre_import_normalization_result
         )
