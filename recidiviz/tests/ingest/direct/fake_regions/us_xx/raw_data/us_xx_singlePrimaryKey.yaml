@@ -12,3 +12,4 @@ columns:
   - name: value
     description: |-
       value column description
+ignore_quotes: True

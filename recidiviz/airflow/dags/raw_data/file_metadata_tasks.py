@@ -20,6 +20,8 @@ from types import ModuleType
 from typing import Dict, List, Optional, Tuple
 
 from airflow.decorators import task
+from airflow.exceptions import AirflowSkipException
+from airflow.utils.trigger_rule import TriggerRule
 from more_itertools import distribute
 
 from recidiviz.airflow.dags.raw_data.metadata import (
@@ -53,7 +55,6 @@ from recidiviz.ingest.direct.types.raw_data_import_types import (
     AppendSummary,
     ImportReadyFile,
     PreImportNormalizationType,
-    PreImportNormalizedCsvChunkResult,
     RawBigQueryFileImportSummary,
     RawBigQueryFileMetadata,
     RawDataAppendImportError,
@@ -129,23 +130,32 @@ def split_by_pre_import_normalization_type(
     }
 
 
-@task
+@task(trigger_rule=TriggerRule.NONE_FAILED_MIN_ONE_SUCCESS)
 def coalesce_import_ready_files(
-    serialized_input_ready_files_no_normalization: List[str],
-    serialized_pre_import_normalization_result: str,
+    serialized_input_ready_files_no_normalization: Optional[List[str]],
+    serialized_pre_import_normalization_result: Optional[str],
 ) -> List[List[str]]:
     """Combines import ready file objects from pre-import normalization and files that
     did not need pre-import normalization into equally sized batches.
     """
-    pre_import_normalization_result = BatchedTaskInstanceOutput.deserialize(
-        serialized_pre_import_normalization_result,
-        ImportReadyFile,
-        RawFileProcessingError,
+    if serialized_input_ready_files_no_normalization is None:
+        raise AirflowSkipException(
+            "Import ready files that dont require pre-import normalization is None; skipping as we cannot proceed!"
+        )
+
+    pre_import_normalization_results = (
+        BatchedTaskInstanceOutput.deserialize(
+            serialized_pre_import_normalization_result,
+            ImportReadyFile,
+            RawFileProcessingError,
+        ).results
+        if serialized_pre_import_normalization_result is not None
+        else []
     )
 
     all_import_ready_files = [
         *serialized_input_ready_files_no_normalization,
-        *[result.serialize() for result in pre_import_normalization_result.results],
+        *[result.serialize() for result in pre_import_normalization_results],
     ]
 
     if not all_import_ready_files:
@@ -156,7 +166,7 @@ def coalesce_import_ready_files(
     return [list(batch) for batch in distribute(num_batches, all_import_ready_files)]
 
 
-@task
+@task(trigger_rule=TriggerRule.ALL_DONE)
 def coalesce_results_and_errors(
     region_code: str,
     raw_data_instance: DirectIngestInstance,
@@ -182,10 +192,6 @@ def coalesce_results_and_errors(
             deleted
     """
 
-    region_raw_config = get_direct_ingest_region_raw_config(
-        region_code, region_module_override=region_module_override
-    )
-
     (
         bq_metadata,
         import_results,
@@ -203,6 +209,10 @@ def coalesce_results_and_errors(
         successful_import_summaries_for_file_id,
         successfully_imported_paths,
     ) = _build_import_summaries_for_results(*import_results)
+
+    region_raw_config = get_direct_ingest_region_raw_config(
+        region_code, region_module_override=region_module_override
+    )
 
     (
         failed_import_summaries_for_file_id,
@@ -413,12 +423,12 @@ def _build_import_summaries_for_results(
 
 
 def _deserialize_coalesce_results_and_errors_inputs(
-    serialized_bq_metadata: List[str],
-    serialized_divide_files_into_chunks: List[str],
-    serialized_pre_import_normalization_result: str,
-    serialized_load_prep_results: List[str],
-    serialized_append_batches: Dict[str, List[str]],
-    serialized_append_result: List[str],
+    serialized_bq_metadata: Optional[List[str]],
+    serialized_divide_files_into_chunks: Optional[List[str]],
+    serialized_pre_import_normalization_result: Optional[str],
+    serialized_load_prep_results: Optional[List[str]],
+    serialized_append_batches: Optional[Dict[str, List[str]]],
+    serialized_append_result: Optional[List[str]],
 ) -> Tuple[
     List[RawBigQueryFileMetadata],
     Tuple[List[AppendSummary], List[AppendReadyFileBatch]],
@@ -428,45 +438,66 @@ def _deserialize_coalesce_results_and_errors_inputs(
         List[RawDataAppendImportError],
     ],
 ]:
-    """Deserialize and group inputs of coalesce_results_and_errors"""
+    """Deserialize and group inputs of coalesce_results_and_errors.
+
+    If |serialized_bq_metadata| is empty, we don't have the starting list of files
+    that we intended to import, so we will assume this is an empty branch.
+    """
+    if serialized_bq_metadata is None:
+        raise AirflowSkipException(
+            "Found no bq metadata, so assuming that this is an empty branch"
+        )
+
     bq_metadata = [
         RawBigQueryFileMetadata.deserialize(serialized_bq_metadata)
         for serialized_bq_metadata in serialized_bq_metadata
     ]
 
     divide_files_step_output = MappedBatchedTaskOutput.deserialize(
-        serialized_divide_files_into_chunks,
+        serialized_divide_files_into_chunks or [],
         result_cls=RequiresPreImportNormalizationFile,
         error_cls=RawFileProcessingError,
     )
 
-    pre_import_normalization_step_output = BatchedTaskInstanceOutput.deserialize(
-        serialized_pre_import_normalization_result,
-        result_cls=PreImportNormalizedCsvChunkResult,
-        error_cls=RawFileProcessingError,
+    pre_import_normalization_step_errors = (
+        BatchedTaskInstanceOutput.deserialize(
+            serialized_pre_import_normalization_result,
+            result_cls=ImportReadyFile,
+            error_cls=RawFileProcessingError,
+        ).errors
+        if serialized_pre_import_normalization_result
+        else []
     )
 
     load_and_prep_step_output = MappedBatchedTaskOutput.deserialize(
-        serialized_load_prep_results,
+        serialized_load_prep_results or [],
         result_cls=AppendReadyFile,
         error_cls=RawFileLoadAndPrepError,
     )
 
-    append_batches_step_results = [
-        AppendReadyFileBatch.deserialize(serialized_append_ready_file_batch)
-        for serialized_append_ready_file_batch in serialized_append_batches[
-            APPEND_READY_FILE_BATCHES
+    append_batches_step_results = (
+        [
+            AppendReadyFileBatch.deserialize(serialized_append_ready_file_batch)
+            for serialized_append_ready_file_batch in serialized_append_batches[
+                APPEND_READY_FILE_BATCHES
+            ]
         ]
-    ]
-    append_batches_skipped_file_errors = [
-        RawFileLoadAndPrepError.deserialize(serialized_skipped_file_errors)
-        for serialized_skipped_file_errors in serialized_append_batches[
-            SKIPPED_FILE_ERRORS
+        if serialized_append_batches
+        else []
+    )
+    append_batches_skipped_file_errors = (
+        [
+            RawFileLoadAndPrepError.deserialize(serialized_skipped_file_errors)
+            for serialized_skipped_file_errors in serialized_append_batches[
+                SKIPPED_FILE_ERRORS
+            ]
         ]
-    ]
+        if serialized_append_batches
+        else []
+    )
 
     append_step_output = MappedBatchedTaskOutput.deserialize(
-        serialized_append_result,
+        serialized_append_result or [],
         result_cls=AppendSummary,
         error_cls=RawDataAppendImportError,
     )
@@ -480,7 +511,7 @@ def _deserialize_coalesce_results_and_errors_inputs(
         (
             [
                 *divide_files_step_output.flatten_errors(),
-                *pre_import_normalization_step_output.errors,
+                *pre_import_normalization_step_errors,
             ],
             [
                 *load_and_prep_step_output.flatten_errors(),

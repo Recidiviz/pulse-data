@@ -93,9 +93,8 @@ class WriteImportSessionSqlQueryGenerator(CloudSqlQueryGenerator[List[str]]):
         # once and instead do batches?
         records = postgres_hook.get_records(
             self._create_insert_into_import_session_sql_query(
-                import_summaries,
-                assert_type(dag_run.start_date, datetime.datetime),
-            )
+                import_summaries, assert_type(dag_run.start_date, datetime.datetime)
+            ),
         )
 
         bq_update_ready_metadata = [

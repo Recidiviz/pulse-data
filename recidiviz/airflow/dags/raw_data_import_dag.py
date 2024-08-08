@@ -253,6 +253,7 @@ def create_single_state_code_ingest_instance_raw_data_import_branch(
         # execution layer: celery
         # outputs: [ AppendReadyFile ], [ AppendSummary ]
 
+        # trigger rule is NONE_FAILED_MIN_ONE_SUCCESS
         serialized_import_ready_files = coalesce_import_ready_files(
             files_to_process[IMPORT_READY_FILES], pre_import_normalization_result
         )
@@ -292,6 +293,7 @@ def create_single_state_code_ingest_instance_raw_data_import_branch(
 
         with TaskGroup("cleanup_and_storage") as cleanup_and_storage:
 
+            # trigger rule is ALL_DONE
             clean_and_storage_jobs = coalesce_results_and_errors(
                 state_code.value,
                 raw_data_instance,

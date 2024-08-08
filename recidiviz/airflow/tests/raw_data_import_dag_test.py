@@ -17,6 +17,7 @@
 """Tests for the raw data import DAG"""
 import datetime
 import json
+import os
 from typing import Any, Callable, Dict, List, Tuple
 from unittest.mock import patch
 
@@ -35,10 +36,13 @@ from recidiviz.airflow.dags.raw_data.metadata import (
     REQUIRES_PRE_IMPORT_NORMALIZATION_FILES,
     REQUIRES_PRE_IMPORT_NORMALIZATION_FILES_BQ_METADATA,
 )
+from recidiviz.airflow.tests.fixtures import raw_data as raw_data_fixtures
 from recidiviz.airflow.tests.test_utils import DAG_FOLDER, AirflowIntegrationTest
 from recidiviz.airflow.tests.utils.dag_helper_functions import (
     fake_failing_operator_constructor,
+    fake_k8s_operator_for_entrypoint,
     fake_k8s_operator_with_return_value,
+    fake_operator_from_callable,
     fake_operator_with_return_value,
     fake_task_function_with_return_value,
 )
@@ -46,7 +50,18 @@ from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.cloud_storage.gcsfs_csv_chunk_boundary_finder import CsvChunkBoundary
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.constants.states import StateCode
+from recidiviz.entrypoints.entrypoint_interface import EntrypointInterface
+from recidiviz.entrypoints.raw_data.divide_raw_file_into_chunks import (
+    RawDataFileChunkingEntrypoint,
+)
+from recidiviz.entrypoints.raw_data.normalize_raw_file_chunks import (
+    RawDataChunkNormalizationEntrypoint,
+)
 from recidiviz.fakes.fake_gcs_file_system import FakeGCSFileSystem
+from recidiviz.ingest.direct.gcs.directory_path_utils import (
+    gcsfs_direct_ingest_bucket_for_state,
+    gcsfs_direct_ingest_storage_directory_path_for_state,
+)
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.direct.types.raw_data_import_types import (
     AppendReadyFile,
@@ -310,273 +325,6 @@ class RawDataImportDagSequencingTest(AirflowIntegrationTest):
                     curr_task = next_task
 
 
-class RawDataImportDagIntegrationTest(AirflowIntegrationTest):
-    """Integration tests for the raw data import dag"""
-
-    metas = [OperationsBase]
-    conn_id = "operations_postgres_conn_id"
-
-    def setUp(self) -> None:
-        super().setUp()
-        self.fs = FakeGCSFileSystem()
-        self.dag_id = get_raw_data_import_dag_id(_PROJECT_ID)
-        test_state_codes = [StateCode.US_XX, StateCode.US_YY]
-        test_state_code_and_instance_pairs = [
-            (StateCode.US_XX, DirectIngestInstance.PRIMARY),
-            (StateCode.US_XX, DirectIngestInstance.SECONDARY),
-            (StateCode.US_YY, DirectIngestInstance.PRIMARY),
-            (StateCode.US_YY, DirectIngestInstance.SECONDARY),
-        ]
-        self.raw_data_enabled_pairs = patch(
-            "recidiviz.airflow.dags.raw_data.raw_data_branching.get_raw_data_dag_enabled_state_and_instance_pairs",
-            return_value=test_state_code_and_instance_pairs,
-        )
-        self.raw_data_enabled_pairs.start()
-        self.raw_data_enabled_pairs_two = patch(
-            "recidiviz.airflow.dags.raw_data.initialize_raw_data_dag_group.get_raw_data_dag_enabled_state_and_instance_pairs",
-            return_value=test_state_code_and_instance_pairs,
-        )
-        self.raw_data_enabled_pairs_two.start()
-        self.raw_data_enabled_states = patch(
-            "recidiviz.airflow.dags.raw_data.raw_data_branching.get_raw_data_dag_enabled_states",
-            return_value=test_state_codes,
-        )
-        self.raw_data_enabled_states.start()
-        self.cloud_sql_db_hook_patcher = patch(
-            "recidiviz.airflow.dags.operators.cloud_sql_query_operator.CloudSQLDatabaseHook"
-        )
-        self.mock_cloud_sql_db_hook = self.cloud_sql_db_hook_patcher.start()
-        self.mock_cloud_sql_db_hook().get_database_hook.return_value = PostgresHook(
-            self.conn_id
-        )
-        self.gcs_operator_patcher = patch(
-            "recidiviz.airflow.dags.raw_data_import_dag.DirectIngestListNormalizedUnprocessedFilesOperator",
-            side_effect=fake_operator_with_return_value([]),
-        )
-        self.list_normalized_unprocessed_files_mock = self.gcs_operator_patcher.start()
-        self.kpo_operator_patcher = patch(
-            "recidiviz.airflow.dags.raw_data_import_dag.RecidivizKubernetesPodOperator",
-            side_effect=fake_operator_with_return_value([]),
-        )
-        self.kpo_operator_mock = self.kpo_operator_patcher.start()
-
-        self.file_chunking_args_patcher = patch(
-            "recidiviz.airflow.dags.raw_data_import_dag.generate_file_chunking_pod_arguments.function",
-            side_effect=fake_task_function_with_return_value([]),
-        )
-        self.file_chunking_args_mock = self.file_chunking_args_patcher.start()
-
-        self.chunk_processing_args_patcher = patch(
-            "recidiviz.airflow.dags.raw_data_import_dag.generate_chunk_processing_pod_arguments.function",
-            side_effect=fake_task_function_with_return_value([]),
-        )
-        self.chunk_processing_args_mock = self.chunk_processing_args_patcher.start()
-
-        self.verify_file_chunks_patcher = patch(
-            "recidiviz.airflow.dags.raw_data_import_dag.regroup_and_verify_file_chunks.function",
-            side_effect=fake_task_function_with_return_value([]),
-        )
-        self.verify_file_chunks_mock = self.verify_file_chunks_patcher.start()
-
-        self.raise_errors_patcher = patch(
-            "recidiviz.airflow.dags.raw_data_import_dag.raise_chunk_normalization_errors.function",
-            side_effect=fake_task_function_with_return_value(None),
-        )
-        self.raise_errors_mock = self.raise_errors_patcher.start()
-
-        self.split_by_norm = patch(
-            "recidiviz.airflow.dags.raw_data_import_dag.split_by_pre_import_normalization_type.function",
-            side_effect=fake_task_function_with_return_value({}),
-        )
-        self.split_by_norm_mock = self.split_by_norm.start()
-
-        self.coalesce_files = patch(
-            "recidiviz.airflow.dags.raw_data_import_dag.coalesce_import_ready_files.function",
-            side_effect=fake_task_function_with_return_value([]),
-        )
-        self.coalesce_files_mock = self.coalesce_files.start()
-        self.clean_up_gcsfs_patcher = patch(
-            "recidiviz.airflow.dags.raw_data.clean_up_tasks.GcsfsFactory.build",
-            return_value=self.fs,
-        )
-        self.clean_up_gcsfs_patcher.start()
-        self.clean_up_bq_patcher = patch(
-            "recidiviz.airflow.dags.raw_data.clean_up_tasks.BigQueryClientImpl",
-        )
-        self.clean_up_bq_mock = self.clean_up_bq_patcher.start()
-
-        self.region_module_patch = patch(
-            "recidiviz.airflow.dags.raw_data.utils.direct_ingest_regions_module",
-            fake_regions,
-        )
-        self.region_module_patch.start()
-
-    def tearDown(self) -> None:
-        self.raw_data_enabled_pairs.stop()
-        self.raw_data_enabled_pairs_two.stop()
-        self.raw_data_enabled_states.stop()
-        self.cloud_sql_db_hook_patcher.stop()
-        self.gcs_operator_patcher.stop()
-        self.kpo_operator_patcher.stop()
-        self.file_chunking_args_patcher.stop()
-        self.chunk_processing_args_patcher.stop()
-        self.verify_file_chunks_patcher.stop()
-        self.raise_errors_patcher.stop()
-        self.split_by_norm.stop()
-        self.coalesce_files.stop()
-        self.clean_up_gcsfs_patcher.stop()
-        self.clean_up_bq_patcher.stop()
-        self.region_module_patch.stop()
-        super().tearDown()
-
-    def _create_dag(self) -> DAG:
-        # pylint: disable=import-outside-toplevel
-        from recidiviz.airflow.dags.raw_data_import_dag import (
-            create_raw_data_import_dag,
-        )
-
-        return create_raw_data_import_dag()
-
-    def test_branching_primary(self) -> None:
-        with Session(bind=self.engine) as session:
-            result = self.run_dag_test(
-                self._create_dag(),
-                session=session,
-                run_conf={
-                    "ingest_instance": "PRIMARY",
-                },
-                expected_skipped_task_id_regexes=[
-                    # we expect all SECONDARY branch tasks to be skipped except
-                    # ensure_release_resource_locks_release_if_acquired
-                    "_secondary_import_branch_start",
-                    r".*_secondary_import_branch\.(?!ensure_release_resource_locks_release_if_acquired)",
-                    # these steps are skipped as mapped tasks (and downstream tasks)
-                    # are skipped when the input is an empty list
-                    r"raw_data_branching.*_primary_import_branch.biq_query_load.*",
-                    r"raw_data_branching.*_primary_import_branch.cleanup_and_storage.*",
-                ],
-            )
-            self.assertEqual(DagRunState.SUCCESS, result.dag_run_state)
-
-            for lock_released in session.execute(
-                text("select released from direct_ingest_raw_data_resource_lock")
-            ):
-                assert lock_released[0]
-
-    def test_branching_secondary(self) -> None:
-        with Session(bind=self.engine) as session:
-            result = self.run_dag_test(
-                self._create_dag(),
-                session=session,
-                run_conf={
-                    "ingest_instance": "SECONDARY",
-                    "state_code_filter": StateCode.US_XX.value,
-                },
-                expected_skipped_task_id_regexes=[
-                    # we expect all PRIMARY and US_YY SECONDARY branch tasks to be
-                    # skipped except ensure_release_resource_locks_release_if_acquired
-                    r".*_primary_import_branch_start",
-                    r".*_primary_import_branch\.(?!ensure_release_resource_locks_release)",
-                    "us_yy_secondary_import_branch_start",
-                    r".*us_yy_secondary_import_branch\.(?!ensure_release_resource_locks_release_if_acquired)",
-                    # these steps are skipped as mapped tasks (and downstream tasks)
-                    # are skipped when the input is an empty list
-                    r"raw_data_branching.us_xx_secondary_import_branch.biq_query_load.*",
-                    r"raw_data_branching.us_xx_secondary_import_branch.cleanup_and_storage.*",
-                ],
-            )
-            self.assertEqual(DagRunState.SUCCESS, result.dag_run_state)
-
-            for lock_released in session.execute(
-                text("select released from direct_ingest_raw_data_resource_lock")
-            ):
-                assert lock_released[0]
-
-    def test_branching_resource_lock_acquisition_fails(self) -> None:
-        def _resource_lock_fails(*_args: Dict, **_kwargs: Any) -> None:
-            raise ValueError("We failed! Oops!")
-
-        self.mock_cloud_sql_db_hook().get_database_hook.side_effect = (
-            _resource_lock_fails
-        )
-        with Session(bind=self.engine) as session:
-            result = self.run_dag_test(
-                self._create_dag(),
-                session=session,
-                run_conf={
-                    "ingest_instance": "PRIMARY",
-                },
-                expected_failure_task_id_regexes=[
-                    # intended tasks to fail
-                    r".*_primary_import_branch\.acquire_raw_data_resource_locks",
-                    # since the task above failed, we had no lock_ids to pull from xcom
-                    r".*_primary_import_branch\.release_raw_data_resource_locks",
-                    # downstream failures
-                    r".*_primary_import_branch\.list_normalized_unprocessed_gcs_file_paths",
-                    r".*_primary_import_branch\.get_all_unprocessed_gcs_file_metadata",
-                    r".*_primary_import_branch\.get_all_unprocessed_bq_file_metadata",
-                    r".*_primary_import_branch\.split_by_pre_import_normalization_type",
-                    r".*_primary_import_branch\.coalesce_import_ready_files",
-                    r".*_primary_import_branch\.pre_import_normalization\.*",
-                    r".*_primary_import_branch\.biq_query_load\.*",
-                    r".*_primary_import_branch\.cleanup_and_storage.*",
-                    r"raw_data_branching\.branch_end",
-                ],
-                expected_skipped_task_id_regexes=[
-                    "_secondary_import_branch_start",
-                    r".*_secondary_import_branch\.(?!ensure_release_resource_locks_release_if_acquired)",
-                ],
-            )
-            # failed state will only happen when resource releasing failed
-            self.assertEqual(DagRunState.FAILED, result.dag_run_state)
-
-            assert not list(
-                session.execute(
-                    text("select released from direct_ingest_raw_data_resource_lock")
-                )
-            )
-
-    def test_branching_resource_lock_acquisition_succeeds_but_we_fail_after(
-        self,
-    ) -> None:
-
-        self.list_normalized_unprocessed_files_mock.side_effect = (
-            fake_failing_operator_constructor
-        )
-
-        with Session(bind=self.engine) as session:
-            result = self.run_dag_test(
-                self._create_dag(),
-                session=session,
-                run_conf={
-                    "ingest_instance": "PRIMARY",
-                },
-                expected_failure_task_id_regexes=[
-                    # intended failures
-                    r".*_primary_import_branch\.list_normalized_unprocessed_gcs_file_paths",
-                    # downstream failures
-                    r".*_primary_import_branch\.get_all_unprocessed_gcs_file_metadata",
-                    r".*_primary_import_branch\.get_all_unprocessed_bq_file_metadata",
-                    r".*_primary_import_branch\.split_by_pre_import_normalization_type",
-                    r".*_primary_import_branch\.coalesce_import_ready_files",
-                    r".*_primary_import_branch\.pre_import_normalization\.*",
-                    r".*_primary_import_branch\.biq_query_load\.*",
-                    r".*_primary_import_branch\.cleanup_and_storage.*",
-                ],
-                expected_skipped_task_id_regexes=[
-                    "_secondary_import_branch_start",
-                    r".*_secondary_import_branch\.(?!ensure_release_resource_locks_release_if_acquired)",
-                ],
-            )
-            # failed state will only happen when resource releasing failed
-            self.assertEqual(DagRunState.SUCCESS, result.dag_run_state)
-
-            for lock_released in session.execute(
-                text("select released from direct_ingest_raw_data_resource_lock")
-            ):
-                assert lock_released[0]
-
-
 class RawDataImportOperationsRegistrationIntegrationTest(AirflowIntegrationTest):
     """integration tests for step 2: operations registration"""
 
@@ -767,7 +515,7 @@ class RawDataImportOperationsRegistrationIntegrationTest(AirflowIntegrationTest)
 
             bq_metadata = session.execute(
                 text(
-                    "select file_id, update_datetime, file_processed_time from direct_ingest_raw_big_query_file_metadata"
+                    "SELECT file_id, update_datetime, file_processed_time FROM direct_ingest_raw_big_query_file_metadata"
                 )
             )
 
@@ -791,7 +539,7 @@ class RawDataImportOperationsRegistrationIntegrationTest(AirflowIntegrationTest)
 
             gcs_metadata = session.execute(
                 text(
-                    "select file_id, gcs_file_id, update_datetime from direct_ingest_raw_gcs_file_metadata"
+                    "SELECT file_id, gcs_file_id, update_datetime FROM direct_ingest_raw_gcs_file_metadata"
                 )
             )
 
@@ -931,7 +679,7 @@ class RawDataImportOperationsRegistrationIntegrationTest(AirflowIntegrationTest)
 
             bq_metadata = session.execute(
                 text(
-                    "select file_id, update_datetime, file_processed_time from direct_ingest_raw_big_query_file_metadata"
+                    "SELECT file_id, update_datetime, file_processed_time FROM direct_ingest_raw_big_query_file_metadata"
                 )
             )
 
@@ -945,7 +693,7 @@ class RawDataImportOperationsRegistrationIntegrationTest(AirflowIntegrationTest)
 
             gcs_metadata = session.execute(
                 text(
-                    "select file_id, gcs_file_id, update_datetime from direct_ingest_raw_gcs_file_metadata"
+                    "SELECT file_id, gcs_file_id, update_datetime FROM direct_ingest_raw_gcs_file_metadata"
                 )
             )
 
@@ -1104,7 +852,7 @@ class RawDataImportDagPreImportNormalizationIntegrationTest(AirflowIntegrationTe
                 is_mapped=True,
             ),
             *args,
-            **kwargs
+            **kwargs,
         )
 
     def _file_chunking(self, func: Callable) -> Callable:
@@ -2535,3 +2283,446 @@ class RawDataImportDagBigQueryLoadIntegrationTest(AirflowIntegrationTest):
             # validate filesystem
 
             assert set(self.fs.all_paths) == set(original_paths)
+
+
+class RawDataImportDagE2ETest(AirflowIntegrationTest):
+    """end to end tests for the raw data import dag"""
+
+    metas = [OperationsBase]
+    conn_id = "operations_postgres_conn_id"
+
+    def setUp(self) -> None:
+        super().setUp()
+
+        # env mocks ---
+
+        self.dag_id = get_raw_data_import_dag_id(_PROJECT_ID)
+        self.project_patcher = patch(
+            "recidiviz.utils.metadata.project_id", return_value=_PROJECT_ID
+        )
+        self.project_patcher.start()
+        test_state_codes = [StateCode.US_XX, StateCode.US_YY]
+        test_state_code_and_instance_pairs = [
+            (StateCode.US_XX, DirectIngestInstance.PRIMARY),
+            (StateCode.US_XX, DirectIngestInstance.SECONDARY),
+            (StateCode.US_YY, DirectIngestInstance.PRIMARY),
+            (StateCode.US_YY, DirectIngestInstance.SECONDARY),
+        ]
+        self.raw_data_enabled_pairs = patch(
+            "recidiviz.airflow.dags.raw_data.raw_data_branching.get_raw_data_dag_enabled_state_and_instance_pairs",
+            return_value=test_state_code_and_instance_pairs,
+        )
+        self.raw_data_enabled_pairs.start()
+        self.raw_data_enabled_pairs_two = patch(
+            "recidiviz.airflow.dags.raw_data.initialize_raw_data_dag_group.get_raw_data_dag_enabled_state_and_instance_pairs",
+            return_value=test_state_code_and_instance_pairs,
+        )
+        self.raw_data_enabled_pairs_two.start()
+        self.raw_data_enabled_states = patch(
+            "recidiviz.airflow.dags.raw_data.raw_data_branching.get_raw_data_dag_enabled_states",
+            return_value=test_state_codes,
+        )
+        self.raw_data_enabled_states.start()
+        self.region_module_patch = [
+            patch(target, fake_regions)
+            for target in [
+                "recidiviz.airflow.dags.raw_data.utils.direct_ingest_regions_module",
+                "recidiviz.ingest.direct.raw_data.raw_file_configs.direct_ingest_regions_module",
+                "recidiviz.ingest.direct.raw_data.direct_ingest_raw_table_migration_collector.regions",
+            ]
+        ]
+
+        for patcher in self.region_module_patch:
+            patcher.start()
+
+        # operator mocks ---
+
+        self.cloud_sql_db_hook_patcher = patch(
+            "recidiviz.airflow.dags.operators.cloud_sql_query_operator.CloudSQLDatabaseHook"
+        )
+        self.mock_cloud_sql_db_hook = self.cloud_sql_db_hook_patcher.start()
+        self.mock_cloud_sql_db_hook().get_database_hook.return_value = PostgresHook(
+            self.conn_id
+        )
+
+        self.gcs_operator_patcher = patch(
+            "recidiviz.airflow.dags.raw_data_import_dag.DirectIngestListNormalizedUnprocessedFilesOperator",
+            side_effect=fake_operator_from_callable(self._return_unprocessed_paths),
+        )
+        self.list_normalized_unprocessed_files_mock = self.gcs_operator_patcher.start()
+
+        self.kpo_operator_patcher = patch(
+            "recidiviz.airflow.dags.raw_data_import_dag.RecidivizKubernetesPodOperator.partial",
+            side_effect=self._fake_k8s_operator_wrapper,
+        )
+        self.kpo_operator_mock = self.kpo_operator_patcher.start()
+
+        # task interaction mocks ---
+
+        self.fs = FakeGCSFileSystem()
+
+        self.gcs_patchers = [
+            patch(target, return_value=self.fs)
+            for target in [
+                "recidiviz.airflow.dags.raw_data.gcs_file_processing_tasks.GcsfsFactory.build",
+                "recidiviz.airflow.dags.raw_data.bq_load_tasks.GcsfsFactory.build",
+                "recidiviz.airflow.dags.raw_data.clean_up_tasks.GcsfsFactory.build",
+                "recidiviz.entrypoints.raw_data.divide_raw_file_into_chunks.GcsfsFactory.build",
+                "recidiviz.entrypoints.raw_data.normalize_raw_file_chunks.GcsfsFactory.build",
+            ]
+        ]
+        for patcher in self.gcs_patchers:  # type: ignore
+            patcher.start()
+
+        self.load_tasks_bq_patcher = patch(
+            "recidiviz.airflow.dags.raw_data.bq_load_tasks.BigQueryClientImpl",
+        )
+        self.load_bq_mock = self.load_tasks_bq_patcher.start()
+        self.clean_tasks_bq_patcher = patch(
+            "recidiviz.airflow.dags.raw_data.clean_up_tasks.BigQueryClientImpl",
+        )
+        self.clean_bq_mock = self.clean_tasks_bq_patcher.start()
+
+        # compatibility issues w/ freezegun, see https://github.com/apache/airflow/pull/25511#issuecomment-1204297524
+        self.frozen_time = datetime.datetime(2024, 1, 26, 3, 4, 6, tzinfo=datetime.UTC)
+        self.processed_time_patcher = patch(
+            "recidiviz.airflow.dags.utils.cloud_sql.datetime",
+        )
+        self.processed_time_patcher.start().datetime.now.return_value = self.frozen_time
+
+    def tearDown(self) -> None:
+        # env ---
+        self.project_patcher.stop()
+        self.raw_data_enabled_pairs.stop()
+        self.raw_data_enabled_pairs_two.stop()
+        self.raw_data_enabled_states.stop()
+        for patcher in self.region_module_patch:
+            patcher.start()
+        # operators ---
+        self.cloud_sql_db_hook_patcher.stop()
+        self.kpo_operator_patcher.stop()
+        # task interactions
+        for patcher in self.gcs_patchers:  # type: ignore
+            patcher.stop()
+        self.load_tasks_bq_patcher.stop()
+        self.clean_tasks_bq_patcher.stop()
+        self.processed_time_patcher.stop()
+        super().tearDown()
+
+    def _return_unprocessed_paths(self, operator: Any, _context: Any) -> List[str]:
+        return [
+            file.abs_path()
+            for file in self.fs.ls_with_blob_prefix(
+                operator.kwargs["bucket"], "unprocessed"
+            )
+        ]
+
+    def _fake_k8s_operator_wrapper(self, *args: Any, **kwargs: Any) -> OperatorPartial:
+        """because the raw data import dag calls Operator.partial, we need to mock out
+        the return value of that function in order to properly mock out the k8s operator
+        """
+
+        entrypoint: type[EntrypointInterface]
+
+        if kwargs["task_id"] == "raw_data_file_chunking":
+            entrypoint = RawDataFileChunkingEntrypoint
+        elif kwargs["task_id"] == "raw_data_chunk_normalization":
+            entrypoint = RawDataChunkNormalizationEntrypoint
+        else:
+            raise ValueError("!!!!!!")
+
+        return partial(
+            fake_k8s_operator_for_entrypoint(entrypoint),
+            *args,
+            **kwargs,
+        )
+
+    def _create_dag(self) -> DAG:
+        # pylint: disable=import-outside-toplevel
+        from recidiviz.airflow.dags.raw_data_import_dag import (
+            create_raw_data_import_dag,
+        )
+
+        return create_raw_data_import_dag()
+
+    def _load_fixture_data(self, bucket: str, *tags: str) -> None:
+        fixture_directory = os.path.dirname(raw_data_fixtures.__file__)
+        for file in os.listdir(fixture_directory):
+            if any(tag in file for tag in tags):
+                self.fs.test_add_path(
+                    path=GcsfsFilePath.from_bucket_and_blob_name(
+                        bucket_name=bucket,
+                        blob_name=file,
+                    ),
+                    local_path=os.path.join(fixture_directory, file),
+                )
+
+    def test_branching_resource_lock_acquisition_fails(self) -> None:
+        with Session(bind=self.engine) as session, patch(
+            "recidiviz.airflow.dags.raw_data.acquire_resource_lock_sql_query_generator.PostgresHook.get_records",
+            return_value=None,
+        ):
+            result = self.run_dag_test(
+                self._create_dag(),
+                session=session,
+                run_conf={"ingest_instance": "PRIMARY"},
+                expected_failure_task_id_regexes=[
+                    # intended tasks to fail
+                    r".*_primary_import_branch\.acquire_raw_data_resource_locks",
+                    # since the task above failed, we had no lock_ids to pull from xcom
+                    r".*_primary_import_branch\.release_raw_data_resource_locks",
+                    # downstream failures
+                    r".*_primary_import_branch\.list_normalized_unprocessed_gcs_file_paths",
+                    r".*_primary_import_branch\.get_all_unprocessed_gcs_file_metadata",
+                    r".*_primary_import_branch\.get_all_unprocessed_bq_file_metadata",
+                    r".*_primary_import_branch\.split_by_pre_import_normalization_type",
+                    r".*_primary_import_branch\.coalesce_import_ready_files",
+                    r".*_primary_import_branch\.pre_import_normalization\.*",
+                    r".*_primary_import_branch.coalesce_import_ready_files",
+                    r".*_primary_import_branch\.biq_query_load\..*",
+                    r"raw_data_branching\.branch_end",
+                ],
+                expected_skipped_task_id_regexes=[
+                    # even if upstream fails, we still validate that there is no clean up to do
+                    r".*_primary_import_branch\.cleanup_and_storage.*",
+                    # non-primary branches
+                    "_secondary_import_branch_start",
+                    r".*_secondary_import_branch\.(?!ensure_release_resource_locks_release_if_acquired)",
+                ],
+            )
+            # failed state will only happen when resource releasing failed
+            self.assertEqual(DagRunState.FAILED, result.dag_run_state)
+
+            assert not list(
+                session.execute(
+                    text("SELECT * FROM direct_ingest_raw_data_resource_lock")
+                )
+            )
+
+    def test_branching_resource_lock_acquisition_succeeds_but_we_fail_after(
+        self,
+    ) -> None:
+
+        self.list_normalized_unprocessed_files_mock.side_effect = (
+            fake_failing_operator_constructor
+        )
+
+        with Session(bind=self.engine) as session:
+            result = self.run_dag_test(
+                self._create_dag(),
+                session=session,
+                run_conf={
+                    "ingest_instance": "PRIMARY",
+                },
+                expected_failure_task_id_regexes=[
+                    # intended failures
+                    r".*_primary_import_branch\.list_normalized_unprocessed_gcs_file_paths",
+                    # downstream failures
+                    r".*_primary_import_branch\.get_all_unprocessed_gcs_file_metadata",
+                    r".*_primary_import_branch\.get_all_unprocessed_bq_file_metadata",
+                    r".*_primary_import_branch\.split_by_pre_import_normalization_type",
+                    r".*_primary_import_branch\.coalesce_import_ready_files",
+                    r".*_primary_import_branch\.pre_import_normalization\.*",
+                    r".*_primary_import_branch\.biq_query_load\.*",
+                ],
+                expected_skipped_task_id_regexes=[
+                    # even if upstream fails, we still validate that there is no clean up to do
+                    r".*_primary_import_branch\.cleanup_and_storage.*",
+                    "_secondary_import_branch_start",
+                    r".*_secondary_import_branch\.(?!ensure_release_resource_locks_release_if_acquired)",
+                ],
+            )
+            # failed state will only happen when resource releasing failed
+            self.assertEqual(DagRunState.SUCCESS, result.dag_run_state)
+
+            for lock_released in session.execute(
+                text("SELECT released FROM direct_ingest_raw_data_resource_lock")
+            ):
+                assert lock_released[0]
+
+    def test_single_requires_pre_import_norm(self) -> None:
+
+        self._load_fixture_data(
+            gcsfs_direct_ingest_bucket_for_state(
+                project_id=_PROJECT_ID,
+                region_code="US_XX",
+                ingest_instance=DirectIngestInstance.PRIMARY,
+            ).bucket_name,
+            "singlePrimaryKey",
+        )
+
+        self.load_bq_mock().load_table_from_cloud_storage_async().output_rows = 100
+        self.load_bq_mock().create_table_from_query_async().total_rows = 90
+
+        with Session(bind=self.engine) as session:
+            result = self.run_dag_test(
+                self._create_dag(),
+                session=session,
+                run_conf={"ingest_instance": "PRIMARY", "state_code_filter": "US_XX"},
+                expected_failure_task_id_regexes=[],  # none!
+                expected_skipped_task_id_regexes=[
+                    "_secondary_import_branch_start",
+                    r".*_secondary_import_branch\.(?!ensure_release_resource_locks_release_if_acquired)",
+                    "us_yy_primary_import_branch_start",
+                    r".us_yy_primary_import_branch\.(?!ensure_release_resource_locks_release_if_acquired)",
+                ],
+            )
+            self.assertEqual(DagRunState.SUCCESS, result.dag_run_state)
+
+            # conditions for success for a single file that successfully imported:
+            # (1) all files have been moved to storage or cleaned up
+            assert self.fs.all_paths == [
+                GcsfsFilePath.from_absolute_path(
+                    f'{gcsfs_direct_ingest_storage_directory_path_for_state(region_code="US_XX", ingest_instance=DirectIngestInstance.PRIMARY).abs_path()}raw/2024/01/25/processed_2024-01-25T16:35:33:617135_raw_singlePrimaryKey.csv'
+                )
+            ]
+
+            # (2) bq client has all the expected calls
+            assert (
+                self.load_bq_mock().load_table_from_cloud_storage_async.call_count == 2
+            )
+            assert self.load_bq_mock().create_table_from_query_async.call_count == 2
+
+            assert self.load_bq_mock().delete_from_table_async.call_count == 1
+            assert self.load_bq_mock().delete_table.call_count == 3
+            assert (
+                self.load_bq_mock().insert_into_table_from_table_async.call_count == 1
+            )
+
+            # (3) file metadata dbs match what we expect
+            gcs_metadata = session.execute(
+                text(
+                    "SELECT file_id, gcs_file_id, update_datetime FROM direct_ingest_raw_gcs_file_metadata"
+                )
+            )
+
+            assert set(gcs_metadata) == {
+                (
+                    1,
+                    1,
+                    datetime.datetime.fromisoformat("2024-01-25T16:35:33:617135Z"),
+                )
+            }
+
+            bq_metadata = session.execute(
+                text(
+                    "SELECT file_id, update_datetime, file_processed_time FROM direct_ingest_raw_big_query_file_metadata"
+                )
+            )
+
+            assert set(bq_metadata) == {
+                (
+                    1,
+                    datetime.datetime.fromisoformat("2024-01-25T16:35:33:617135Z"),
+                    self.frozen_time,
+                )
+            }
+
+            import_sessions = session.execute(
+                text(
+                    "SELECT import_session_id, file_id, import_status, raw_rows FROM direct_ingest_raw_data_import_session"
+                )
+            )
+
+            assert set(import_sessions) == {(1, 1, "SUCCEEDED", 100)}
+
+            # (4) resource locks are released
+            for lock_released in session.execute(
+                text("SELECT released FROM direct_ingest_raw_data_resource_lock")
+            ):
+                assert lock_released[0]
+
+    def test_single_skips_pre_import_norm(self) -> None:
+
+        self._load_fixture_data(
+            gcsfs_direct_ingest_bucket_for_state(
+                project_id=_PROJECT_ID,
+                region_code="US_XX",
+                ingest_instance=DirectIngestInstance.PRIMARY,
+            ).bucket_name,
+            "tagBasicData",
+        )
+
+        self.load_bq_mock().load_table_from_cloud_storage_async().output_rows = 100
+        self.load_bq_mock().create_table_from_query_async().total_rows = 90
+
+        with Session(bind=self.engine) as session:
+            result = self.run_dag_test(
+                self._create_dag(),
+                session=session,
+                run_conf={"ingest_instance": "PRIMARY", "state_code_filter": "US_XX"},
+                expected_failure_task_id_regexes=[],  # none!
+                expected_skipped_task_id_regexes=[
+                    # branches that did not run
+                    "_secondary_import_branch_start",
+                    r".*_secondary_import_branch\.(?!ensure_release_resource_locks_release_if_acquired)",
+                    "us_yy_primary_import_branch_start",
+                    r".us_yy_primary_import_branch\.(?!ensure_release_resource_locks_release_if_acquired)",
+                    # skipped bc no pre import norm!
+                    r"raw_data_branching.us_xx_primary_import_branch.pre_import_normalization.(?!generate_file_chunking_pod_arguments)",
+                ],
+            )
+            self.assertEqual(DagRunState.SUCCESS, result.dag_run_state)
+
+            # conditions for success for a single file that successfully imported:
+            # (1) all files have been moved to storage or cleaned up
+            assert self.fs.all_paths == [
+                GcsfsFilePath.from_absolute_path(
+                    f'{gcsfs_direct_ingest_storage_directory_path_for_state(region_code="US_XX", ingest_instance=DirectIngestInstance.PRIMARY).abs_path()}raw/2024/01/25/processed_2024-01-25T16:35:33:617135_raw_tagBasicData.csv'
+                )
+            ]
+
+            # (2) bq client has all the expected calls
+            assert (
+                self.load_bq_mock().load_table_from_cloud_storage_async.call_count == 2
+            )
+            assert self.load_bq_mock().create_table_from_query_async.call_count == 2
+
+            assert self.load_bq_mock().delete_from_table_async.call_count == 1
+            assert self.load_bq_mock().delete_table.call_count == 3
+            assert (
+                self.load_bq_mock().insert_into_table_from_table_async.call_count == 1
+            )
+
+            # (3) file metadata dbs match what we expect
+            gcs_metadata = session.execute(
+                text(
+                    "SELECT file_id, gcs_file_id, update_datetime FROM direct_ingest_raw_gcs_file_metadata"
+                )
+            )
+
+            assert set(gcs_metadata) == {
+                (
+                    1,
+                    1,
+                    datetime.datetime.fromisoformat("2024-01-25T16:35:33:617135Z"),
+                )
+            }
+
+            bq_metadata = session.execute(
+                text(
+                    "SELECT file_id, update_datetime, file_processed_time FROM direct_ingest_raw_big_query_file_metadata"
+                )
+            )
+
+            assert set(bq_metadata) == {
+                (
+                    1,
+                    datetime.datetime.fromisoformat("2024-01-25T16:35:33:617135Z"),
+                    self.frozen_time,
+                )
+            }
+
+            import_sessions = session.execute(
+                text(
+                    "SELECT import_session_id, file_id, import_status, raw_rows FROM direct_ingest_raw_data_import_session"
+                )
+            )
+
+            assert set(import_sessions) == {(1, 1, "SUCCEEDED", 100)}
+
+            # (4) resource locks are released
+            for lock_released in session.execute(
+                text("SELECT released FROM direct_ingest_raw_data_resource_lock")
+            ):
+                assert lock_released[0]

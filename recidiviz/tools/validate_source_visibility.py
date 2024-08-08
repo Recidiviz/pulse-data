@@ -305,6 +305,7 @@ def main() -> int:
                 "recidiviz.tests.test_setup_utils",
                 "recidiviz.tools.postgres.local_postgres_helpers",
                 "recidiviz.tools.utils.script_helpers",
+                "recidiviz.entrypoints.entrypoint_interface",
                 *valid_calculation_dag_prefixes,
             }
         ),
@@ -377,6 +378,14 @@ def main() -> int:
                 "recidiviz.tests.test_setup_utils",
                 "recidiviz.tools.utils.script_helpers",
                 "recidiviz.tools.postgres.local_postgres_helpers",
+                "recidiviz.entrypoints.entrypoint_interface",
+                "recidiviz.entrypoints.raw_data.divide_raw_file_into_chunks",
+                "recidiviz.entrypoints.raw_data.normalize_raw_file_chunks",
+                "recidiviz.entrypoints.entrypoint_utils",
+                "recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_pre_import_normalizer",
+                "recidiviz.ingest.direct.raw_data.read_raw_file_column_headers",
+                "recidiviz.cloud_storage.bytes_chunk_reader",
+                "recidiviz.cloud_storage.read_only_csv_normalizing_stream",
                 *valid_raw_data_import_dag_prefixes,
             }
         ),

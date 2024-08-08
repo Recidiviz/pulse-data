@@ -264,36 +264,43 @@ class AirflowIntegrationTest(unittest.TestCase):
                     f"Found task IDs not covered by this test: {','.join(unmatched_task_ids)}"
                 )
 
+        status_errors: List[Exception] = []
         for task_instance in dag.tasks:
             task_state = self.get_task_instance_state(task_instance.task_id, session)
             if (
                 task_state == TaskInstanceState.SKIPPED
                 and task_instance.task_id not in expected_skipped_task_ids
             ):
-                raise ValueError(
-                    f"Task [{task_instance.task_id}] was skipped unexpectedly"
+                status_errors.append(
+                    ValueError(
+                        f"Task [{task_instance.task_id}] was skipped unexpectedly"
+                    )
                 )
             if (
                 task_state
                 in [TaskInstanceState.FAILED, TaskInstanceState.UPSTREAM_FAILED]
                 and task_instance.task_id not in expected_failure_task_ids
             ):
-                raise ValueError(f"Task [{task_instance.task_id}] failed unexpectedly")
+                status_errors.append(
+                    ValueError(f"Task [{task_instance.task_id}] failed unexpectedly")
+                )
             if (
                 task_state == TaskInstanceState.SUCCESS
                 and task_instance.task_id
                 in expected_failure_task_ids | expected_skipped_task_ids
             ):
-                raise ValueError(
-                    f"Task [{task_instance.task_id}] succeeded unexpectedly"
+                status_errors.append(
+                    ValueError(f"Task [{task_instance.task_id}] succeeded unexpectedly")
                 )
             if (
                 task_state == TaskInstanceState.SUCCESS
                 and expected_success_regexes is not None
                 and task_instance.task_id not in expected_success_task_ids
             ):
-                raise ValueError(
-                    f"Task [{task_instance.task_id}] did not succeed as expected"
+                status_errors.append(
+                    ValueError(
+                        f"Task [{task_instance.task_id}] did not succeed as expected"
+                    )
                 )
 
             if task_state not in [
@@ -302,9 +309,17 @@ class AirflowIntegrationTest(unittest.TestCase):
                 TaskInstanceState.FAILED,
                 TaskInstanceState.UPSTREAM_FAILED,
             ]:
-                raise ValueError(
-                    f"Task [{task_instance.task_id}] has an unexpected state: {task_state}"
+                status_errors.append(
+                    ValueError(
+                        f"Task [{task_instance.task_id}] has an unexpected state: {task_state}"
+                    )
                 )
+
+        if status_errors:
+            raise ExceptionGroup(
+                "Found tasks that didn't match expected statuses",
+                status_errors,
+            )
 
     def _get_or_create_dagrun(
         self,

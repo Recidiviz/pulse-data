@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2021 Recidiviz, Inc.
+# Copyright (C) 2024 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,13 +14,3 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-
-from typing import List, Optional, Tuple, Union
-
-class Checksum:
-    def __init__(self, initial_value: Optional[bytes] = b"") -> None: ...
-    def update(self, chunk: Union[bytes, List[int], Tuple[int]]) -> None: ...
-    def digest(self) -> bytes: ...
-
-def extend(crc: int, chunk: Union[bytes, List[int], Tuple[int]]) -> int: ...
-def value(chunk: Union[bytes, List[int], Tuple[int]]) -> int: ...

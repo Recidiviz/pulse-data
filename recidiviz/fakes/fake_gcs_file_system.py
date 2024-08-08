@@ -17,6 +17,7 @@
 """Test-only implementation of the GCSFileSystem"""
 
 import abc
+import base64
 import os
 import shutil
 import threading
@@ -25,6 +26,7 @@ from contextlib import contextmanager
 from typing import IO, Any, Dict, Iterator, List, Optional, Set, Union
 
 import attr
+import google_crc32c
 
 from recidiviz.cloud_storage.gcs_file_system import (
     GCSBlobDoesNotExistError,
@@ -132,7 +134,10 @@ class FakeGCSFileSystem(GCSFileSystem):
             return path.abs_path() in self.files
 
     def get_crc32c(self, path: GcsfsFilePath) -> str:
-        raise RuntimeError("FakeGCSFileSystem does not support get_crc32c")
+        with self.open(path=path, mode="rb") as f:
+            return base64.b64encode(google_crc32c.Checksum(f.read()).digest()).decode(
+                "utf-8"
+            )
 
     def get_file_size(self, path: GcsfsFilePath) -> Optional[int]:
         if not self.exists(path):
