@@ -19,7 +19,6 @@ raw big query file metadata"""
 import datetime
 from collections import defaultdict
 from itertools import groupby
-from types import ModuleType
 from typing import Dict, Iterator, List, Optional
 
 from airflow.providers.postgres.hooks.postgres import PostgresHook
@@ -72,7 +71,6 @@ class GetAllUnprocessedBQFileMetadataSqlQueryGenerator(
         region_code: str,
         raw_data_instance: DirectIngestInstance,
         get_all_unprocessed_gcs_file_metadata_task_id: str,
-        region_module_override: Optional[ModuleType] = None,
     ) -> None:
         super().__init__()
         self._region_code = region_code
@@ -80,14 +78,13 @@ class GetAllUnprocessedBQFileMetadataSqlQueryGenerator(
         self._get_all_unprocessed_gcs_file_metadata_task_id = (
             get_all_unprocessed_gcs_file_metadata_task_id
         )
-        self._region_module_override = region_module_override
         self._region_raw_file_config: Optional[DirectIngestRegionRawFileConfig] = None
 
     @property
     def region_raw_file_config(self) -> DirectIngestRegionRawFileConfig:
         if not self._region_raw_file_config:
             self._region_raw_file_config = get_direct_ingest_region_raw_config(
-                self._region_code, region_module_override=self._region_module_override
+                self._region_code
             )
         return self._region_raw_file_config
 

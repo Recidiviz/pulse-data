@@ -20,8 +20,7 @@ import logging
 import traceback
 from collections import defaultdict
 from itertools import groupby
-from types import ModuleType
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Tuple
 
 from airflow.decorators import task
 from airflow.exceptions import AirflowException
@@ -63,7 +62,6 @@ def load_and_prep_paths_for_batch(
     region_code: str,
     raw_data_instance: DirectIngestInstance,
     serialized_import_ready_files: List[str],
-    region_module_override: Optional[ModuleType] = None,
 ) -> str:
     """Given a batch of |serialized_import_ready_files|, asynchronously loads
     each file in parallel into it's own table, applying pre-migration
@@ -84,7 +82,7 @@ def load_and_prep_paths_for_batch(
     manager = DirectIngestRawFileLoadManager(
         raw_data_instance=raw_data_instance,
         region_raw_file_config=get_direct_ingest_region_raw_config(
-            region_code=region_code, region_module_override=region_module_override
+            region_code=region_code
         ),
         fs=fs,
         big_query_client=bq_client,
@@ -272,7 +270,6 @@ def append_to_raw_data_table_for_batch(
     region_code: str,
     raw_data_instance: DirectIngestInstance,
     serialized_append_ready_file_batch: str,
-    region_module_override: Optional[ModuleType] = None,
 ) -> str:
     """Uses |serialized_append_ready_file_batch|, which contains a list of AppendReadyFile
     objects grouped by file_tag, to sequentially append data from temp tables into the
@@ -294,9 +291,7 @@ def append_to_raw_data_table_for_batch(
 
     manager = DirectIngestRawFileLoadManager(
         raw_data_instance,
-        get_direct_ingest_region_raw_config(
-            region_code, region_module_override=region_module_override
-        ),
+        get_direct_ingest_region_raw_config(region_code),
         fs,
         big_query_client=bq_client,
     )

@@ -16,7 +16,7 @@
 # =============================================================================
 """Unit tests for GetAllUnprocessedBQFileMetadataSqlQueryGenerator"""
 from typing import List
-from unittest.mock import create_autospec
+from unittest.mock import create_autospec, patch
 
 from airflow.providers.postgres.hooks.postgres import PostgresHook
 from airflow.utils.context import Context
@@ -50,13 +50,17 @@ class TestGetAllUnprocessedBQFileMetadataSqlQueryGenerator(
 
     def setUp(self) -> None:
         super().setUp()
+        self.region_module_patch = patch(
+            "recidiviz.airflow.dags.raw_data.utils.direct_ingest_regions_module",
+            fake_regions,
+        )
+        self.region_module_patch.start()
 
         self.mock_pg_hook = PostgresHook(postgres_conn_id=self.conn_id)
         self.generator = GetAllUnprocessedBQFileMetadataSqlQueryGenerator(
             region_code="US_XX",
             raw_data_instance=DirectIngestInstance.PRIMARY,
             get_all_unprocessed_gcs_file_metadata_task_id="test_id",
-            region_module_override=fake_regions,
         )
         self.raw_gcs_generator = GetAllUnprocessedGCSFileMetadataSqlQueryGenerator(
             region_code="US_XX",
@@ -65,6 +69,10 @@ class TestGetAllUnprocessedBQFileMetadataSqlQueryGenerator(
         )
         self.mock_operator = create_autospec(CloudSqlQueryOperator)
         self.mock_context = create_autospec(Context)
+
+    def tearDown(self) -> None:
+        self.region_module_patch.stop()
+        return super().tearDown()
 
     def _validate_results(
         self, _results: List[str], _inputs: List[RawGCSFileMetadata]
