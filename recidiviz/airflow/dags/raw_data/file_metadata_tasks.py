@@ -16,7 +16,6 @@
 # =============================================================================
 """Python logic for managing and handling raw file metadata"""
 import logging
-from types import ModuleType
 from typing import Dict, List, Optional, Tuple
 
 from airflow.decorators import task
@@ -75,7 +74,6 @@ MAX_BQ_LOAD_JOBS = 8  # TODO(#29946) determine reasonable default
 def split_by_pre_import_normalization_type(
     region_code: str,
     serialized_bq_metadata: List[str],
-    region_module_override: Optional[ModuleType] = None,
 ) -> Dict[str, List[str]]:
     """Determines the pre-import normalization needs of each element of
     |serialized_bq_metadata|, returning a dictionary with three keys:
@@ -94,9 +92,7 @@ def split_by_pre_import_normalization_type(
         for serialized_metadata in serialized_bq_metadata
     ]
 
-    region_config = get_direct_ingest_region_raw_config(
-        region_code=region_code, region_module_override=region_module_override
-    )
+    region_config = get_direct_ingest_region_raw_config(region_code=region_code)
 
     import_ready_files: List[ImportReadyFile] = []
     pre_import_normalization_required_big_query_metadata: List[
@@ -176,7 +172,6 @@ def coalesce_results_and_errors(
     serialized_load_prep_results: List[str],
     serialized_append_batches: Dict[str, List[str]],
     serialized_append_result: List[str],
-    region_module_override: Optional[ModuleType] = None,
 ) -> Dict[str, List[str]]:
     """Reconciles RawBigQueryFileMetadata objects against the results and errors
     of the pre-import normalization and big query load steps, returning a dictionary
@@ -210,9 +205,7 @@ def coalesce_results_and_errors(
         successfully_imported_paths,
     ) = _build_import_summaries_for_results(*import_results)
 
-    region_raw_config = get_direct_ingest_region_raw_config(
-        region_code, region_module_override=region_module_override
-    )
+    region_raw_config = get_direct_ingest_region_raw_config(region_code)
 
     (
         failed_import_summaries_for_file_id,

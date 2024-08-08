@@ -62,6 +62,11 @@ class LoadAndPrepForRegionTest(TestCase):
             "recidiviz.airflow.dags.raw_data.gcs_file_processing_tasks.GcsfsFactory.build",
         )
         self.fs_patch.start()
+        self.region_module_patch = patch(
+            "recidiviz.airflow.dags.raw_data.utils.direct_ingest_regions_module",
+            fake_regions,
+        )
+        self.region_module_patch.start()
 
         self.mock_files = [
             ImportReadyFile(
@@ -97,10 +102,11 @@ class LoadAndPrepForRegionTest(TestCase):
         self.load_manager_patch.stop()
         self.bq_patch.stop()
         self.fs_patch.stop()
+        self.region_module_patch.stop()
 
     def test_no_files(self) -> None:
         result_str = load_and_prep_paths_for_batch.function(
-            "US_XX", DirectIngestInstance.PRIMARY, [], fake_regions
+            "US_XX", DirectIngestInstance.PRIMARY, []
         )
 
         result = BatchedTaskInstanceOutput.deserialize(
@@ -120,7 +126,6 @@ class LoadAndPrepForRegionTest(TestCase):
                 "US_XX",
                 DirectIngestInstance.PRIMARY,
                 ['{"this": "will-fail"}'],
-                fake_regions,
             )
 
     def test_all_succeed(self) -> None:
@@ -143,7 +148,6 @@ class LoadAndPrepForRegionTest(TestCase):
             "US_XX",
             DirectIngestInstance.PRIMARY,
             [file.serialize() for file in self.mock_files],
-            fake_regions,
         )
 
         result = BatchedTaskInstanceOutput.deserialize(
@@ -178,7 +182,6 @@ class LoadAndPrepForRegionTest(TestCase):
             "US_XX",
             DirectIngestInstance.PRIMARY,
             [file.serialize() for file in self.mock_files],
-            fake_regions,
         )
 
         result = BatchedTaskInstanceOutput.deserialize(
@@ -396,11 +399,17 @@ class AppendToRawDataTableForRegionTest(TestCase):
             "recidiviz.airflow.dags.raw_data.gcs_file_processing_tasks.GcsfsFactory.build",
         )
         self.fs_patch.start()
+        self.region_module_patch = patch(
+            "recidiviz.airflow.dags.raw_data.utils.direct_ingest_regions_module",
+            fake_regions,
+        )
+        self.region_module_patch.start()
 
     def tearDown(self) -> None:
         self.load_manager_patch.stop()
         self.bq_patch.stop()
         self.fs_patch.stop()
+        self.region_module_patch.stop()
 
     @staticmethod
     def get_summaries(file_tag: str) -> List[AppendReadyFile]:
@@ -459,7 +468,7 @@ class AppendToRawDataTableForRegionTest(TestCase):
 
     def test_no_files(self) -> None:
         result_str = append_to_raw_data_table_for_batch.function(
-            "US_XX", DirectIngestInstance.PRIMARY, "{}", fake_regions
+            "US_XX", DirectIngestInstance.PRIMARY, "{}"
         )
 
         result = BatchedTaskInstanceOutput.deserialize(
@@ -493,7 +502,6 @@ class AppendToRawDataTableForRegionTest(TestCase):
                     ),
                 }
             ).serialize(),
-            fake_regions,
         )
 
         result = BatchedTaskInstanceOutput.deserialize(
@@ -533,7 +541,6 @@ class AppendToRawDataTableForRegionTest(TestCase):
             "US_XX",
             DirectIngestInstance.PRIMARY,
             AppendReadyFileBatch(append_ready_files_by_tag=inputs).serialize(),
-            fake_regions,
         )
 
         result = BatchedTaskInstanceOutput.deserialize(
@@ -577,7 +584,6 @@ class AppendToRawDataTableForRegionTest(TestCase):
             "US_XX",
             DirectIngestInstance.PRIMARY,
             AppendReadyFileBatch(append_ready_files_by_tag=inputs).serialize(),
-            fake_regions,
         )
 
         result = BatchedTaskInstanceOutput.deserialize(

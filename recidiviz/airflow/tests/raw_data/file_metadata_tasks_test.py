@@ -63,17 +63,26 @@ from recidiviz.ingest.direct.types.raw_data_import_types import (
     RawGCSFileMetadata,
 )
 from recidiviz.tests.ingest.direct import fake_regions
-from recidiviz.tests.ingest.direct import fake_regions as fake_regions_module
 from recidiviz.utils.airflow_types import BatchedTaskInstanceOutput
 
 
 class SplitByPreImportNormalizationTest(TestCase):
     """Unit tests for split_by_pre_import_normalization_type"""
 
-    def test_no_files(self) -> None:
-        results = split_by_pre_import_normalization_type.function(
-            "US_XX", [], fake_regions
+    def setUp(self) -> None:
+        self.region_module_patch = patch(
+            "recidiviz.airflow.dags.raw_data.utils.direct_ingest_regions_module",
+            fake_regions,
         )
+        self.region_module_patch.start()
+        super().setUp()
+
+    def tearDown(self) -> None:
+        self.region_module_patch.stop()
+        super().tearDown()
+
+    def test_no_files(self) -> None:
+        results = split_by_pre_import_normalization_type.function("US_XX", [])
         assert results[IMPORT_READY_FILES] == []
         assert results[REQUIRES_PRE_IMPORT_NORMALIZATION_FILES_BQ_METADATA] == []
         assert results[REQUIRES_PRE_IMPORT_NORMALIZATION_FILES] == []
@@ -119,7 +128,7 @@ class SplitByPreImportNormalizationTest(TestCase):
             ),
         ]
         results = split_by_pre_import_normalization_type.function(
-            "US_XX", [i.serialize() for i in inputs], fake_regions
+            "US_XX", [i.serialize() for i in inputs]
         )
 
         assert [
@@ -218,9 +227,15 @@ class CoalesceResultsAndErrorsTest(TestCase):
         )
         self.pruning_mock = self.pruning_patch.start()
         self.pruning_mock.return_value = False
+        self.region_module_patch = patch(
+            "recidiviz.airflow.dags.raw_data.utils.direct_ingest_regions_module",
+            fake_regions,
+        )
+        self.region_module_patch.start()
 
     def tearDown(self) -> None:
         self.pruning_patch.stop()
+        self.region_module_patch.stop()
 
     def test_none(self) -> None:
         serialized_empty_batched_task_instance = BatchedTaskInstanceOutput(
@@ -236,7 +251,6 @@ class CoalesceResultsAndErrorsTest(TestCase):
             [],
             {SKIPPED_FILE_ERRORS: [], APPEND_READY_FILE_BATCHES: []},
             [],
-            region_module_override=fake_regions_module,
         ) == {
             IMPORT_SUMMARIES: [],
             PROCESSED_PATHS_TO_RENAME: [],
@@ -525,9 +539,7 @@ class CoalesceResultsAndErrorsTest(TestCase):
             ),
         ]
 
-        raw_region_config = get_direct_ingest_region_raw_config(
-            "US_XX", region_module_override=fake_regions_module
-        )
+        raw_region_config = get_direct_ingest_region_raw_config("US_XX")
 
         import_summaries, temp_files, temp_tables = _build_import_summaries_for_errors(
             raw_region_config,
@@ -606,9 +618,7 @@ class CoalesceResultsAndErrorsTest(TestCase):
             )
         ]
 
-        raw_region_config = get_direct_ingest_region_raw_config(
-            "US_XX", region_module_override=fake_regions_module
-        )
+        raw_region_config = get_direct_ingest_region_raw_config("US_XX")
 
         import_summaries, temp_files, temp_tables = _build_import_summaries_for_errors(
             raw_region_config,
@@ -692,9 +702,7 @@ class CoalesceResultsAndErrorsTest(TestCase):
             ),
         ]
 
-        raw_region_config = get_direct_ingest_region_raw_config(
-            "US_XX", region_module_override=fake_regions_module
-        )
+        raw_region_config = get_direct_ingest_region_raw_config("US_XX")
 
         import_summaries, temp_files, temp_tables = _build_import_summaries_for_errors(
             raw_region_config,
@@ -854,7 +862,6 @@ class CoalesceResultsAndErrorsTest(TestCase):
             [
                 BatchedTaskInstanceOutput(results=[], errors=append_errors).serialize(),
             ],
-            region_module_override=fake_regions_module,
         )
 
         assert len(result[IMPORT_SUMMARIES]) == len(bq_metadata)
@@ -972,9 +979,7 @@ class CoalesceResultsAndErrorsTest(TestCase):
             )
         }
 
-        raw_region_config = get_direct_ingest_region_raw_config(
-            "US_XX", region_module_override=fake_regions_module
-        )
+        raw_region_config = get_direct_ingest_region_raw_config("US_XX")
 
         missing_import_summaries = _reconcile_import_summaries_and_bq_metadata(
             raw_region_config,
@@ -1058,9 +1063,7 @@ class CoalesceResultsAndErrorsTest(TestCase):
             ),
         }
 
-        raw_region_config = get_direct_ingest_region_raw_config(
-            "US_XX", region_module_override=fake_regions_module
-        )
+        raw_region_config = get_direct_ingest_region_raw_config("US_XX")
 
         missing_import_summaries = _reconcile_import_summaries_and_bq_metadata(
             raw_region_config,
