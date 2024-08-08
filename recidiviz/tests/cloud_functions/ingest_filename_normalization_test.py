@@ -15,6 +15,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests for filename_normalization.py."""
+import base64
+import json
 import os
 from unittest import TestCase
 from unittest.mock import MagicMock, patch
@@ -43,6 +45,9 @@ class TestNormalizeFilename(TestCase):
         set_env_vars()
         self.bucket = "recidiviz-test-direct-ingest-state-us-xx"
         self.relative_file_path = "test_file"
+        self.event = self._build_pubsub_cloudevent(self.relative_file_path)
+
+    def _build_pubsub_cloudevent(self, file_name: str) -> CloudEvent:
         attributes = {
             "id": "5e9f24a",
             "type": "google.cloud.storage.object.v1.finalized",
@@ -50,13 +55,14 @@ class TestNormalizeFilename(TestCase):
         }
         data = {
             "bucket": self.bucket,
-            "name": self.relative_file_path,
-            "generation": 1,
-            "metageneration": 1,
-            "timeCreated": "2021-10-10 00:00:00.000000Z",
-            "updated": "2021-11-11 00:00:00.000000Z",
+            "name": file_name,
         }
-        self.event = CloudEvent(attributes, data)
+        message = {
+            "message": {
+                "data": base64.b64encode(json.dumps(data).encode("utf-8")).decode()
+            }
+        }
+        return CloudEvent(attributes, message)
 
     @patch("recidiviz.cloud_functions.ingest_filename_normalization.fs")
     @patch(
@@ -78,6 +84,7 @@ class TestNormalizeFilename(TestCase):
         )
 
         normalize_filename(self.event)
+
         mock_fs.mv_raw_file_to_normalized_path.assert_called_with(path_instance)
 
     @patch("recidiviz.cloud_functions.ingest_filename_normalization.fs")
@@ -122,6 +129,7 @@ class TestNormalizeFilename(TestCase):
         mock_fs.mv_raw_file_to_normalized_path.side_effect = ValueError()
 
         normalize_filename(self.event)
+
         mock_logging.assert_called_once()
 
     @patch("recidiviz.cloud_functions.ingest_filename_normalization.fs")
@@ -140,16 +148,17 @@ class TestNormalizeFilename(TestCase):
         mock_fs: MagicMock,
     ) -> None:
         normalize_filename(self.event)
+
         mock_fs.mv_raw_file_to_normalized_path.assert_not_called()
 
     @patch(
         "recidiviz.cloud_functions.ingest_filename_normalization.cloud_functions_log"
     )
     def test_missing_bucket_or_name(self, mock_logging: MagicMock) -> None:
-        bad_event = self.event
-        bad_event.data["name"] = ""
+        bad_event = self._build_pubsub_cloudevent(file_name="")
 
         normalize_filename(bad_event)
+
         mock_logging.assert_called_once()
 
     @patch(
@@ -171,6 +180,7 @@ class TestNormalizeFilename(TestCase):
         mock_path.return_value = GcsfsDirectoryPath(bucket_name=self.bucket)
 
         normalize_filename(self.event)
+
         mock_logging.assert_called_once()
 
     @patch("recidiviz.cloud_functions.ingest_filename_normalization.fs")
@@ -192,10 +202,12 @@ class TestNormalizeFilename(TestCase):
         mock_invoke_zip_handler: MagicMock,
         mock_fs: MagicMock,
     ) -> None:
-        zip_event = self.event
-        zip_event.data["name"] = f"{self.relative_file_path}.zip"
+        zip_event = self._build_pubsub_cloudevent(
+            file_name=f"{self.relative_file_path}.zip"
+        )
 
         normalize_filename(zip_event)
+
         mock_invoke_zip_handler.assert_not_called()
         mock_fs.mv_raw_file_to_normalized_path.assert_called_once()
 
@@ -213,10 +225,12 @@ class TestNormalizeFilename(TestCase):
         mock_invoke_zip_handler: MagicMock,
         mock_fs: MagicMock,
     ) -> None:
-        zip_event = self.event
-        zip_event.data["name"] = f"{self.relative_file_path}.zip"
+        zip_event = self._build_pubsub_cloudevent(
+            file_name=f"{self.relative_file_path}.zip"
+        )
 
         normalize_filename(zip_event)
+
         mock_invoke_zip_handler.assert_not_called()
         mock_fs.mv_raw_file_to_normalized_path.assert_not_called()
 
@@ -239,10 +253,12 @@ class TestNormalizeFilename(TestCase):
         mock_requests: MagicMock,
         _mock_fs: MagicMock,
     ) -> None:
-        zip_event = self.event
-        zip_event.data["name"] = f"unprocessed{self.relative_file_path}.zip"
+        zip_event = self._build_pubsub_cloudevent(
+            file_name=f"unprocessed{self.relative_file_path}.zip"
+        )
 
         normalize_filename(zip_event)
+
         mock_requests.post.assert_called_once()
 
     @patch("recidiviz.cloud_functions.ingest_filename_normalization.fs")
@@ -254,16 +270,24 @@ class TestNormalizeFilename(TestCase):
         "recidiviz.cloud_functions.ingest_filename_normalization.is_raw_data_import_dag_enabled",
         return_value=True,
     )
+    @patch("recidiviz.cloud_functions.ingest_filename_normalization.requests.post")
+    @patch(
+        "recidiviz.cloud_functions.ingest_filename_normalization.google.oauth2.id_token.fetch_id_token"
+    )
     def test_file_already_normalized(
         self,
+        _mock_fetch_id_token: MagicMock,
+        _mock_post: MagicMock,
         _mock_dag_disabled: MagicMock,
         _mock_is_normalized: MagicMock,
         mock_fs: MagicMock,
     ) -> None:
-        zip_event = self.event
-        zip_event.data["name"] = f"processed{self.relative_file_path}"
+        zip_event = self._build_pubsub_cloudevent(
+            file_name=f"processed{self.relative_file_path}.zip"
+        )
 
-        normalize_filename(self.event)
+        normalize_filename(zip_event)
+
         mock_fs.mv_raw_file_to_normalized_path.assert_not_called()
 
 
@@ -282,6 +306,7 @@ class TestHandleZipfile(TestCase):
     @patch("recidiviz.cloud_functions.ingest_filename_normalization.fs")
     def test_zip_file_handling(self, mock_fs: MagicMock) -> None:
         handle_zipfile(self.mock_request)
+
         mock_fs.unzip.assert_called_once()
         mock_fs.mv.assert_called_once()
         mock_fs.mv_raw_file_to_normalized_path.assert_not_called()

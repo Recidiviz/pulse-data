@@ -203,6 +203,7 @@ resource "google_cloudfunctions2_function" "filename_normalization" {
     environment_variables = {
       PYTHONPATH                   = "/workspace" # directory recidiviz/ lives in
       ZIPFILE_HANDLER_FUNCTION_URL = google_cloudfunctions2_function.handle_zipfile.url
+      PROJECT_ID                   = var.project_id
     }
   }
 }
