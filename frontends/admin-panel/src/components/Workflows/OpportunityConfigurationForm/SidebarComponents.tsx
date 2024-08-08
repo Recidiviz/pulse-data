@@ -32,6 +32,7 @@ const sidebarComponentNames = [
   "ResidentHousing",
   "UsMoIncarceration",
   "UsIdPastTwoYearsAlert",
+  "UsIdParoleDates",
 
   "Supervision",
   "Contact",
