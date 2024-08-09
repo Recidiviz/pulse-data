@@ -29,8 +29,10 @@ from flask import Flask
 from flask_smorest import Api
 from werkzeug.datastructures import FileStorage
 
-from recidiviz.auth.auth_endpoint import auth_endpoint_blueprint
-from recidiviz.auth.auth_users_endpoint import users_blueprint
+from recidiviz.auth.auth_endpoint import (
+    get_auth_endpoint_blueprint,
+)
+from recidiviz.auth.auth_users_endpoint import get_users_blueprint
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.io.local_file_contents_handle import LocalFileContentsHandle
@@ -83,7 +85,9 @@ class AuthUsersEndpointTestCase(TestCase):
     def setUp(self) -> None:
         self.maxDiff = None
         self.app = Flask(__name__)
-        self.app.register_blueprint(auth_endpoint_blueprint)
+        self.app.register_blueprint(
+            get_auth_endpoint_blueprint(authentication_middleware=None)
+        )
         self.app.config["TESTING"] = True
         api = Api(
             self.app,
@@ -93,7 +97,10 @@ class AuthUsersEndpointTestCase(TestCase):
                 "openapi_version": "3.1.0",
             },
         )
-        api.register_blueprint(users_blueprint, url_prefix="/auth/users")
+        api.register_blueprint(
+            get_users_blueprint(authentication_middleware=None),
+            url_prefix="/auth/users",
+        )
         self.client = self.app.test_client()
 
         self.headers: Dict[str, Dict[Any, Any]] = {"x-goog-iap-jwt-assertion": {}}

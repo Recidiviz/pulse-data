@@ -31,8 +31,8 @@ from opentelemetry.sdk.trace.sampling import Sampler, TraceIdRatioBased
 from opentelemetry.trace import set_tracer_provider
 from werkzeug import Response
 
-from recidiviz.auth.auth_endpoint import auth_endpoint_blueprint
-from recidiviz.auth.auth_users_endpoint import users_blueprint
+from recidiviz.auth.auth_endpoint import get_auth_endpoint_blueprint
+from recidiviz.auth.auth_users_endpoint import get_users_blueprint
 from recidiviz.monitoring.flask_insrumentation import instrument_flask_app
 from recidiviz.monitoring.providers import (
     create_monitoring_meter_provider,
@@ -40,10 +40,7 @@ from recidiviz.monitoring.providers import (
 )
 from recidiviz.monitoring.trace import CompositeSampler
 from recidiviz.persistence.database.schema_type import SchemaType
-from recidiviz.server_blueprint_registry import (
-    default_blueprints_with_url_prefixes,
-    flask_smorest_api_blueprints_with_url_prefixes,
-)
+from recidiviz.server_blueprint_registry import default_blueprints_with_url_prefixes
 from recidiviz.server_config import initialize_engines, initialize_scoped_sessions
 from recidiviz.utils import environment, metadata, structured_logging
 from recidiviz.utils.auth.gae import requires_gae_auth
@@ -74,8 +71,16 @@ service_type = environment.get_service_type()
 if service_type is environment.ServiceType.DEFAULT:
     for blueprint, url_prefix in default_blueprints_with_url_prefixes:
         app.register_blueprint(blueprint, url_prefix=url_prefix)
-    for blueprint, url_prefix in flask_smorest_api_blueprints_with_url_prefixes:
-        api.register_blueprint(blueprint, url_prefix=url_prefix)
+
+    app.register_blueprint(
+        get_auth_endpoint_blueprint(authentication_middleware=requires_gae_auth),
+        url_prefix="/auth",
+    )
+
+    app.register_blueprint(
+        get_users_blueprint(authentication_middleware=requires_gae_auth),
+        url_prefix="/auth/users",
+    )
 else:
     raise ValueError(f"Unsupported service type: {service_type}")
 
@@ -112,13 +117,6 @@ app.initialize_worker_process = initialize_worker_process  # type: ignore
 # Call manually running via the `flask` command and not `gunicorn`
 if not in_gunicorn():
     initialize_worker_process()
-
-
-@auth_endpoint_blueprint.before_request
-@users_blueprint.before_request
-@requires_gae_auth
-def authorization_middleware() -> None:
-    pass
 
 
 if environment.in_development():

@@ -15,14 +15,13 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Global registration of all endpoints for the main Recidiviz server backend."""
-from typing import List, Tuple, cast
+from typing import List, Tuple
 
 from flask import Blueprint
-from flask_smorest import Blueprint as FlaskSmorestBlueprint
 
 from recidiviz.admin_panel.all_routes import admin_panel_blueprint
-from recidiviz.auth.auth_endpoint import auth_endpoint_blueprint
-from recidiviz.auth.auth_users_endpoint import users_blueprint
+from recidiviz.auth.auth_endpoint import get_auth_endpoint_blueprint
+from recidiviz.auth.auth_users_endpoint import get_users_blueprint
 from recidiviz.backup.backup_manager import backup_manager_blueprint
 from recidiviz.ingest.direct.direct_ingest_control import direct_ingest_control
 from recidiviz.outliers.utils.routes import get_outliers_utils_blueprint
@@ -32,7 +31,6 @@ from recidiviz.pipelines.calculation_data_storage_manager import (
 from recidiviz.workflows.etl.routes import get_workflows_etl_blueprint
 
 default_blueprints_with_url_prefixes: List[Tuple[Blueprint, str]] = [
-    (auth_endpoint_blueprint, "/auth"),
     (backup_manager_blueprint, "/backup_manager"),
     (calculation_data_storage_manager_blueprint, "/calculation_data_storage_manager"),
     (direct_ingest_control, "/direct"),
@@ -40,19 +38,17 @@ default_blueprints_with_url_prefixes: List[Tuple[Blueprint, str]] = [
     (get_outliers_utils_blueprint(), "/outliers-utils"),
 ]
 
-# TODO(#24741): Remove once admin panel migration is completed
-flask_smorest_api_blueprints_with_url_prefixes: List[
-    Tuple[FlaskSmorestBlueprint, str]
-] = [(users_blueprint, "/auth/users")]
-
 
 def get_blueprints_for_documentation() -> List[Tuple[Blueprint, str]]:
     # TODO(#24741): Add back admin panel / auth blueprints once removed from blueprint registry
-    return (
-        default_blueprints_with_url_prefixes
-        + [
-            (cast(Blueprint, blueprint), url_prefix)
-            for blueprint, url_prefix in flask_smorest_api_blueprints_with_url_prefixes
-        ]
-        + [(admin_panel_blueprint, "/admin")]
-    )
+    return default_blueprints_with_url_prefixes + [
+        (admin_panel_blueprint, "/admin"),
+        (
+            get_auth_endpoint_blueprint(authentication_middleware=None),
+            "/auth",
+        ),
+        (
+            get_users_blueprint(authentication_middleware=None),
+            "/auth/users",
+        ),
+    ]

@@ -32,8 +32,8 @@ from recidiviz.admin_panel.all_routes import admin_panel_blueprint
 from recidiviz.admin_panel.constants import LOAD_BALANCER_SERVICE_ID_SECRET_NAME
 from recidiviz.admin_panel.routes.outliers import outliers_blueprint
 from recidiviz.admin_panel.routes.workflows import workflows_blueprint
-from recidiviz.auth.auth_endpoint import auth_endpoint_blueprint
-from recidiviz.auth.auth_users_endpoint import users_blueprint
+from recidiviz.auth.auth_endpoint import get_auth_endpoint_blueprint
+from recidiviz.auth.auth_users_endpoint import get_users_blueprint
 from recidiviz.monitoring.flask_insrumentation import instrument_flask_app
 from recidiviz.monitoring.providers import (
     create_monitoring_meter_provider,
@@ -79,8 +79,14 @@ api = Api(
 
 
 app.register_blueprint(admin_panel_blueprint, url_prefix="/admin")
-app.register_blueprint(auth_endpoint_blueprint, url_prefix="/auth")
-app.register_blueprint(users_blueprint, url_prefix="/auth/users")
+app.register_blueprint(
+    get_auth_endpoint_blueprint(authentication_middleware=requires_authorization),
+    url_prefix="/auth",
+)
+app.register_blueprint(
+    get_users_blueprint(authentication_middleware=requires_authorization),
+    url_prefix="/auth/users",
+)
 app.register_blueprint(outliers_blueprint, url_prefix="/admin/outliers")
 app.register_blueprint(workflows_blueprint, url_prefix="/admin/workflows")
 
