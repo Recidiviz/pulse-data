@@ -79,7 +79,6 @@ from recidiviz.common.constants.state.state_supervision_violation_response impor
 )
 from recidiviz.common.constants.state.state_task_deadline import StateTaskType
 from recidiviz.common.constants.states import StateCode
-from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.schema_utils import (
     get_all_table_classes_in_schema,
@@ -177,27 +176,19 @@ class TestCoreEntityFieldIndex(TestCase):
             ),
         )
 
-    def test_getDbEntityRelationshipFieldNames_children(self) -> None:
-        entity = schema.StateSupervisionSentence(
-            state_code="US_XX",
-            charges=[schema.StateCharge()],
-            person=schema.StatePerson(),
-            person_id=_ID,
-            supervision_sentence_id=_ID,
-        )
-        self.assertEqual(
-            {"charges"},
-            self.field_index.get_fields_with_non_empty_values(
-                entity, EntityFieldType.FORWARD_EDGE
-            ),
-        )
-
     def test_getEntityRelationshipFieldNames_backedges(self) -> None:
-        entity = schema.StateSupervisionSentence(
+        entity = state_entities.StateSupervisionSentence(
             state_code="US_XX",
-            charges=[schema.StateCharge()],
-            person=schema.StatePerson(),
-            person_id=_ID,
+            external_id=_EXTERNAL_ID,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+            charges=[
+                StateCharge.new_with_defaults(
+                    state_code="US_XX",
+                    external_id="c1",
+                    status=StateChargeStatus.PRESENT_WITHOUT_INFO,
+                )
+            ],
+            person=StatePerson.new_with_defaults(state_code="US_XX"),
             supervision_sentence_id=_ID,
         )
         self.assertEqual(
@@ -208,45 +199,51 @@ class TestCoreEntityFieldIndex(TestCase):
         )
 
     def test_getEntityRelationshipFieldNames_flatFields(self) -> None:
-        entity = schema.StateSupervisionSentence(
+        entity = state_entities.StateSupervisionSentence(
             state_code="US_XX",
-            charges=[schema.StateCharge()],
-            person=schema.StatePerson(),
-            person_id=_ID,
+            external_id=_EXTERNAL_ID,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+            charges=[
+                StateCharge.new_with_defaults(
+                    state_code="US_XX",
+                    external_id="c1",
+                    status=StateChargeStatus.PRESENT_WITHOUT_INFO,
+                )
+            ],
+            person=StatePerson.new_with_defaults(state_code="US_XX"),
             supervision_sentence_id=_ID,
         )
         self.assertEqual(
-            {"state_code", "supervision_sentence_id"},
+            {"state_code", "external_id", "status", "supervision_sentence_id"},
             self.field_index.get_fields_with_non_empty_values(
                 entity, EntityFieldType.FLAT_FIELD
             ),
         )
 
-    def test_getEntityRelationshipFieldNames_foreignKeys(self) -> None:
-        entity = schema.StateSupervisionSentence(
-            state_code="US_XX",
-            charges=[schema.StateCharge()],
-            person=schema.StatePerson(),
-            person_id=_ID,
-            supervision_sentence_id=_ID,
-        )
-        self.assertEqual(
-            {"person_id"},
-            self.field_index.get_fields_with_non_empty_values(
-                entity, EntityFieldType.FOREIGN_KEYS
-            ),
-        )
-
     def test_getEntityRelationshipFieldNames_all(self) -> None:
-        entity = schema.StateSupervisionSentence(
+        entity = state_entities.StateSupervisionSentence(
+            external_id=_EXTERNAL_ID,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
             state_code="US_XX",
-            charges=[schema.StateCharge()],
-            person=schema.StatePerson(),
-            person_id=_ID,
+            charges=[
+                StateCharge.new_with_defaults(
+                    state_code="US_XX",
+                    external_id="c1",
+                    status=StateChargeStatus.PRESENT_WITHOUT_INFO,
+                )
+            ],
+            person=StatePerson.new_with_defaults(state_code="US_XX"),
             supervision_sentence_id=_ID,
         )
         self.assertEqual(
-            {"state_code", "charges", "person", "person_id", "supervision_sentence_id"},
+            {
+                "state_code",
+                "charges",
+                "external_id",
+                "person",
+                "status",
+                "supervision_sentence_id",
+            },
             self.field_index.get_fields_with_non_empty_values(
                 entity, EntityFieldType.ALL
             ),
@@ -302,43 +299,43 @@ class TestCoreEntityFieldIndex(TestCase):
             entity_cls: Type[Entity], entity_field_type: EntityFieldType
         ) -> Set[str]:
             if (entity_cls, entity_field_type) == (
-                schema.StatePerson,
+                state_entities.StatePerson,
                 EntityFieldType.BACK_EDGE,
             ):
                 return set()
             if (entity_cls, entity_field_type) == (
-                schema.StatePerson,
+                state_entities.StatePerson,
                 EntityFieldType.FLAT_FIELD,
             ):
                 return {"full_name", "birthdate"}
             raise ValueError(f"Unexpected {entity_cls=} and {entity_field_type=}")
 
         with patch.object(
-            CoreEntityFieldIndex, "_get_all_database_entity_fields_slow"
+            CoreEntityFieldIndex, "_get_entity_fields_with_type_slow"
         ) as mock_get_fields:
             mock_get_fields.side_effect = mock_get_fields_fn
             fields = self.field_index.get_all_core_entity_fields(
-                schema.StatePerson, EntityFieldType.BACK_EDGE
+                state_entities.StatePerson, EntityFieldType.BACK_EDGE
             )
             self.assertEqual(set(), fields)
             mock_get_fields.assert_called_once_with(
-                schema.StatePerson, EntityFieldType.BACK_EDGE
+                state_entities.StatePerson, EntityFieldType.BACK_EDGE
             )
             self.field_index.get_all_core_entity_fields(
-                schema.StatePerson, EntityFieldType.BACK_EDGE
+                state_entities.StatePerson, EntityFieldType.BACK_EDGE
             )
             # The slow function still should only have been called once
             mock_get_fields.assert_called_once_with(
-                schema.StatePerson, EntityFieldType.BACK_EDGE
+                state_entities.StatePerson, EntityFieldType.BACK_EDGE
             )
             fields = self.field_index.get_all_core_entity_fields(
-                schema.StatePerson, EntityFieldType.FLAT_FIELD
+                state_entities.StatePerson, EntityFieldType.FLAT_FIELD
             )
             self.assertEqual({"full_name", "birthdate"}, fields)
             mock_get_fields.assert_has_calls(
                 [
-                    call(schema.StatePerson, EntityFieldType.BACK_EDGE),
-                    call(schema.StatePerson, EntityFieldType.FLAT_FIELD),
+                    call(state_entities.StatePerson, EntityFieldType.BACK_EDGE),
+                    call(state_entities.StatePerson, EntityFieldType.FLAT_FIELD),
                 ]
             )
 
@@ -370,36 +367,6 @@ class TestCoreEntityFieldIndex(TestCase):
             # This value wasn't cached so we had to call the slow function
             mock_get_fields.assert_called_once_with(
                 StatePerson, EntityFieldType.FORWARD_EDGE
-            )
-
-    def test_caching_behavior_pre_hydrated_database_entity_cache(self) -> None:
-        field_index = CoreEntityFieldIndex(
-            database_entity_fields_by_field_type={
-                "state_person": {
-                    EntityFieldType.BACK_EDGE: set(),
-                    EntityFieldType.FLAT_FIELD: {"full_name", "birthdate"},
-                }
-            }
-        )
-        with patch.object(
-            CoreEntityFieldIndex, "_get_all_database_entity_fields_slow"
-        ) as mock_get_fields:
-            fields = field_index.get_all_core_entity_fields(
-                schema.StatePerson, EntityFieldType.BACK_EDGE
-            )
-            self.assertEqual(set(), fields)
-            mock_get_fields.assert_not_called()
-            fields = field_index.get_all_core_entity_fields(
-                schema.StatePerson, EntityFieldType.FLAT_FIELD
-            )
-            self.assertEqual({"full_name", "birthdate"}, fields)
-            mock_get_fields.assert_not_called()
-            _ = field_index.get_all_core_entity_fields(
-                schema.StatePerson, EntityFieldType.FORWARD_EDGE
-            )
-            # This value wasn't cached so we had to call the slow function
-            mock_get_fields.assert_called_once_with(
-                schema.StatePerson, EntityFieldType.FORWARD_EDGE
             )
 
 
