@@ -33,10 +33,6 @@ StaffId = int
 StaffExternalId = tuple[str, str]
 StaffExternalIdToIdMap = dict[StaffExternalId, StaffId]
 
-
-NORMALIZED_STAFF_PCOLLECTION_KEY = "normalized_staff"
-PRE_NORMALIZATION_PERSONS_PCOLLECTION_KEY = "pre_normalization_persons"
-
 STAFF_IDS_KEY = "staff_ids"
 PERSON_IDS_KEY = "person_ids"
 
@@ -50,16 +46,12 @@ class CreatePersonIdToStaffIdMapping(beam.PTransform):
 
     def expand(
         self,
-        input_or_inputs: dict[
-            str, beam.PCollection[NormalizedStateStaff] | beam.PCollection[StatePerson]
+        input_or_inputs: tuple[
+            beam.PCollection[NormalizedStateStaff], beam.PCollection[StatePerson]
         ],
     ) -> beam.PCollection[tuple[PersonId, StaffExternalIdToIdMap]]:
-        normalized_staff: beam.PCollection[NormalizedStateStaff] = input_or_inputs[
-            NORMALIZED_STAFF_PCOLLECTION_KEY
-        ]
-        pre_normalization_persons: beam.PCollection[StatePerson] = input_or_inputs[
-            PRE_NORMALIZATION_PERSONS_PCOLLECTION_KEY
-        ]
+        normalized_staff, pre_normalization_persons = input_or_inputs
+
         # Produce map of (id_type, external_id) pair to the associated staff_id
         normalized_staff_id_by_staff_external_id: beam.PCollection[
             tuple[StaffExternalId, StaffId]
