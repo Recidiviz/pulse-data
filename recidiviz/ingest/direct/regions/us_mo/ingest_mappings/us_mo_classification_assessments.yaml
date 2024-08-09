@@ -1,0 +1,82 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_classification_assessments` to the corresponding
+# Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  - DOC_ID
+  - CYC
+  - assessment_id
+  - assessment_date
+  - assessment_score
+  - assessment_type
+  - score_type_value
+  - override_score_value
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: DOC_ID
+          id_type: $literal("US_MO_DOC")
+    assessments:
+      - StateAssessment:
+          external_id:
+            $concat:
+              $values:
+                - DOC_ID
+                - CYC
+                - assessment_id
+                - assessment_type
+          assessment_date: assessment_date
+          assessment_class:
+            $enum_mapping:
+              $raw_text: assessment_type
+              $mappings:
+                StateAssessmentClass.EDUCATION:
+                  - "CLASSIFICATION-E"
+                StateAssessmentClass.MENTAL_HEALTH:
+                  - "CLASSIFICATION-MH"
+                  - "940-MEN"
+                  - "950-WOMEN"
+                StateAssessmentClass.SUBSTANCE_ABUSE:
+                  - "SACA"
+                  - "960"
+                  - "320-MEN"
+                  - "340-WOMEN"
+                StateAssessmentClass.INTERNAL_UNKNOWN:
+                  - "CLASSIFICATION-W"
+                  - "CLASSIFICATION-V"
+                  - "CLASSIFICATION-I"
+                  - "CLASSIFICATION-P"
+                  - "CLASSIFICATION-F"
+                  - "CLASSIFICATION-M"
+          assessment_type:
+            $enum_mapping:
+              $raw_text: assessment_type
+              $mappings:
+                StateAssessmentType.SACA:
+                  - "SACA"
+                StateAssessmentType.CMHS:
+                  - "940-MEN"
+                  - "950-WOMEN"
+                StateAssessmentType.ICASA:
+                  - "320-MEN"
+                  - "340-WOMEN"
+                StateAssessmentType.TCU_DRUG_SCREEN:
+                  - "960"
+                StateAssessmentType.INTERNAL_UNKNOWN:
+                  - "CLASSIFICATION-E"
+                  - "CLASSIFICATION-MH"
+                  - "CLASSIFICATION-W"
+                  - "CLASSIFICATION-V"
+                  - "CLASSIFICATION-I"
+                  - "CLASSIFICATION-P"
+                  - "CLASSIFICATION-F"
+                  - "CLASSIFICATION-M"
+          assessment_score: assessment_score
+          assessment_metadata:
+            $json_dict:
+              assessment_id: assessment_id
+              classification_category_code: assessment_type
+              score_type_value: score_type_value
+              override_score_value: override_score_value
