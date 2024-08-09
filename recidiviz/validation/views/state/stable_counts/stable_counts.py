@@ -311,10 +311,6 @@ ENTITIES_WITH_EXPECTED_STABLE_COUNTS_OVER_TIME: Dict[str, StableCountsTableConfi
                         date(2023, 1, 1),
                         date(2023, 2, 1),
                     ],
-                    StateCode.US_MI: [
-                        date(2023, 8, 1),
-                        date(2023, 9, 1),
-                    ],  # This is probably because we haven't ingested decision responses from COMS yet.  Check this again when we have TODO(#23960)
                     StateCode.US_ND: [
                         date(2023, 11, 1),  # Stale data in staging, no issue in prod
                         date(2023, 12, 1),  # Stale data in staging, no issue in prod

@@ -8,7 +8,7 @@ input_columns:
   - supv_violation_incident_id
   - violation_date
   - incident_summary_notes
-  - violation_type_id
+  - violation_type
   - violation_invest_begin_date
   - decision_info
   - violated_conditions
@@ -37,19 +37,19 @@ output:
             - StateSupervisionViolationTypeEntry:
                 violation_type:
                   $enum_mapping:
-                    $raw_text: violation_type_id
+                    $raw_text: violation_type
                     $mappings:
                       StateSupervisionViolationType.FELONY:
-                        - "1914" # Felony
+                        - Felony
                       StateSupervisionViolationType.LAW:
-                        - "708" # New Offense
+                        - New Offense
                       StateSupervisionViolationType.TECHNICAL:
-                        - "709" # Technical
+                        - Technical
                       StateSupervisionViolationType.INTERNAL_UNKNOWN:
-                        - "1913" # Incident
-                        - "1915" # Supplemental
-                        - "1916" # Investigation
-                        - "7311" # Multiple Order Violation
+                        - Incident
+                        - Supplemental
+                        - Investigation
+                        - Multiple Order Violation
           supervision_violated_conditions:
             - $foreach:
                 $iterable:
@@ -166,78 +166,72 @@ output:
                                   $json: $iter_item
                               $mappings:
                                 StateSupervisionViolationResponseDecision.CONTINUANCE:
-                                  - "1847" # Reinstate
-                                  - "1843" # Continue
-                                  - "1786" # Probation Continued
-                                  - "1782" # No Change
-                                  - "1774" # Delayed Sentence Continued
-                                  - "1772" # Parole Continued
-                                  - "1767" # Parole Reinstated
-                                  - "1776" # HYTA Continued
+                                  - Reinstate
+                                  - Continue
+                                  - Probation Continued
+                                  - No Change
+                                  - Delayed Sentence Continued
+                                  - Parole Continued
+                                  - Parole Reinstated
+                                  - HYTA Continued
                                 StateSupervisionViolationResponseDecision.DELAYED_ACTION:
-                                  - "1844" # Refer to Program Manager
-                                  - "1845" # Refer to Area Manager
-                                  - "1848" # Return to Agent for Further Investigation
-                                  - "1836" # Defer to Court
-                                  - "1765" # Parole Violation Decision Deferred
+                                  - Refer to Program Manager
+                                  - Refer to Area Manager
+                                  - Return to Agent for Further Investigation
+                                  - Defer to Court
+                                  - Parole Violation Decision Deferred
                                 StateSupervisionViolationResponseDecision.EXTENSION:
-                                  - "1839" # Extend Term
-                                  - "1784" # Extend Term
+                                  - Extend Term
                                 StateSupervisionViolationResponseDecision.NEW_CONDITIONS:
-                                  - "1838" # Add Special Condition
-                                  - "1828" # Substance Abuse Testing
-                                  - "1842" # Electronic Monitoring
-                                  - "1770" # Electronic Monitoring
-                                  - "1850" # Return/Divert to Electronic Monitoring
-                                  - "1837" # Increase Supervision Level
-                                  - "1783" # Add/Change Conditions
-                                  - "7224" # Increase Supervision Level
+                                  - Add Special Condition
+                                  - Substance Abuse Testing
+                                  - Electronic Monitoring
+                                  - Return/Divert to Electronic Monitoring
+                                  - Increase Supervision Level
+                                  - Add/Change Conditions
                                 StateSupervisionViolationResponseDecision.OTHER:
-                                  - "1833" # Other
-                                  - "8097" # Other
-                                  - "1781" # Other Action
+                                  - Other
+                                  - Other Action
                                 StateSupervisionViolationResponseDecision.PRIVILEGES_REVOKED:
-                                  - "1777" # HYTA Revoked
+                                  - HYTA Revoked
                                 StateSupervisionViolationResponseDecision.REVOCATION:
-                                  - "1853" # Return to Prison
-                                  - "9995" # Return to Prison PVNS
-                                  - "1849" # Return/Divert to Corrections Center
-                                  - "11786" # Returned for Parole Revocation with New Sentence
-                                  - "1787" # Probation Revoked  Jail
-                                  - "1788" # Probation Revoked  Prison
-                                  - "1775" # Delayed Sentenced Revoked
-                                  - "1766" # Returned for Parole Revocation Process
+                                  - Return to Prison
+                                  - Return to Prison PVNS
+                                  - Return/Divert to Corrections Center
+                                  - Returned for Parole Revocation with New Sentence
+                                  - Probation Revoked  Jail
+                                  - Probation Revoked  Prison
+                                  - Delayed Sentenced Revoked
+                                  - Returned for Parole Revocation Process
                                 StateSupervisionViolationResponseDecision.SERVICE_TERMINATION:
-                                  - "1846" # Reinstate and Discharge
-                                  - "1834" # Discharge
-                                  - "1773" # Discharged by Court
+                                  - Reinstate and Discharge
+                                  - Discharge
+                                  - Discharged by Court
                                 StateSupervisionViolationResponseDecision.TREATMENT_IN_FIELD:
-                                  - "1827" # Day Treatment
-                                  - "1835" # Outpatient Treatment
+                                  - Day Treatment
+                                  - Outpatient Treatment
                                 StateSupervisionViolationResponseDecision.TREATMENT_IN_PRISON:
-                                  - "1851" # Return/Divert to Residential Treatment
-                                  - "1779" # Residential Treatment
+                                  - Return/Divert to Residential Treatment
+                                  - Residential Treatment
                                 StateSupervisionViolationResponseDecision.VIOLATION_UNFOUNDED:
-                                  - "7627" # Dismissed by Court
+                                  - Dismissed by Court
                                 StateSupervisionViolationResponseDecision.WARNING:
-                                  - "7178" # Verbal Warning
+                                  - Verbal Warning
                                 StateSupervisionViolationResponseDecision.WARRANT_ISSUED:
-                                  - "1840" # Issue Warrant #2
-                                  - "1841" # Issue Warrant #1
+                                  - "Issue Warrant #2"
+                                  - "Issue Warrant #1"
                                 StateSupervisionViolationResponseDecision.INTERNAL_UNKNOWN:
-                                  - "0" # TEMP <- There are quite a few (7%) management decisions that are designated with this decision type
+                                  - TEMP LOCATION TYPE # <- There are quite a few (7%) management decisions that are designated with this decision type
                                     # Not sure if this just means the decision hasn't been made yet?  But the decision date is valued for these records
                                     # In the data, we'll usually see another non-"0" decision made after this "0" decision, but not necessarily by the same person
                                     # Gonna keep this in the data for now and it can be filtered out later as necessary
                                   # BL NOTE: Not sure if these two are just some jail/prison time or complete revocation
-                                  - "1785" # Additional Jail
-                                  - "1769" # Corrections Center
+                                  - Additional Jail
+                                  - Corrections Center
                                   # BL NOTE: Not sure if mandated programming should be counted as "treatment"?
-                                  - "1768" # Other Programming
-                                  - "1852" # Return/Divert to TRV
-                                  - "9937" # Residential Programming Center
-                                  - "1778" # Residential Programming Center
-                                  - "13815" # Residential ReEntry Program
-                                  - "13817" # Residential ReEntry Program
-                                  - "1780" # SAI Commitment
-                                  - "1771" # TRV
+                                  - Other Programming
+                                  - Return/Divert to TRV
+                                  - Residential Programming Center
+                                  - Residential ReEntry Program
+                                  - SAI Commitment
+                                  - TRV

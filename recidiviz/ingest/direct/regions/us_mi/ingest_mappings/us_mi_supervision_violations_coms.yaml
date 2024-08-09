@@ -8,6 +8,10 @@ input_columns:
   - Incident_Date
   - Violation_Type
   - Investigation_Start_Date
+  - Supervisor_Decision_Date
+  - Supervisor_Decision
+  - PV_Specialist_Decision_Date
+  - PV_Specialist_Decision
 unused_columns: []
 output:
   StatePerson:
@@ -25,28 +29,33 @@ output:
               $separator: "##"
           violation_date: Incident_Date
           supervision_violation_types:
-            - StateSupervisionViolationTypeEntry:
-                violation_type:
-                  $enum_mapping:
-                    $raw_text: Violation_Type
-                    $mappings:
-                      # We currently only have violation type information for parole violations
-                      StateSupervisionViolationType.FELONY:
-                        # Parole
-                        - "Felony"
-                      StateSupervisionViolationType.LAW:
-                        # Parole
-                        - "New Offense"
-                      StateSupervisionViolationType.TECHNICAL:
-                        # Parole
-                        - "Technical"
-                      StateSupervisionViolationType.INTERNAL_UNKNOWN:
-                        # Parole
-                        - "Incident"
-                        - "Investigation"
-                        - "Multiple Order Violation"
-                        - "Positive Drug/Alcohol Test"
-                        - "Supplemental"
+            - $foreach:
+                $iterable: Violation_Type
+                $result:
+                  StateSupervisionViolationTypeEntry:
+                    violation_type:
+                      $enum_mapping:
+                        $raw_text: $iter_item
+                        $mappings:
+                          # We currently only have violation type information for parole violations
+                          StateSupervisionViolationType.FELONY:
+                            # Parole
+                            - "Felony"
+                          StateSupervisionViolationType.LAW:
+                            # Parole
+                            - "New Offense"
+                            # Parole or Probation
+                            - "Non-Technical"
+                          StateSupervisionViolationType.TECHNICAL:
+                            # Parole or Probation
+                            - "Technical"
+                          StateSupervisionViolationType.INTERNAL_UNKNOWN:
+                            # Parole
+                            - "Incident"
+                            - "Investigation"
+                            - "Multiple Order Violation"
+                            - "Positive Drug/Alcohol Test"
+                            - "Supplemental"
           supervision_violation_responses:
             - StateSupervisionViolationResponse:
                 external_id:
@@ -57,5 +66,78 @@ output:
                       - $literal("REPORT")
                     $separator: "##"
                 response_type: $literal_enum(StateSupervisionViolationResponseType.VIOLATION_REPORT)
-                response_date: Investigation_Start_Date
+                response_date:
+                  $conditional:
+                    - $if:
+                        $not_null: Investigation_Start_Date
+                      $then: Investigation_Start_Date
+                    - $else: Incident_Date
                 deciding_body_type: $literal_enum(StateSupervisionViolationResponseDecidingBodyType.SUPERVISION_OFFICER)
+            - $conditional:
+                - $if:
+                    $and:
+                      - $not_null: Supervisor_Decision_Date
+                      - $is_null: PV_Specialist_Decision_Date
+                  $then:
+                    StateSupervisionViolationResponse:
+                      external_id:
+                        $concat:
+                          $values:
+                            - $literal("COMS")
+                            - Violation_Incident_Id
+                            - $literal("SUPERVISOR_DECISION")
+                          $separator: "##"
+                      response_type: $literal_enum(StateSupervisionViolationResponseType.PERMANENT_DECISION)
+                      response_subtype: $literal("SUPERVISOR")
+                      response_date: Supervisor_Decision_Date
+                      deciding_body_type: $literal_enum(StateSupervisionViolationResponseDecidingBodyType.SUPERVISION_OFFICER)
+                      supervision_violation_response_decisions:
+                        - StateSupervisionViolationResponseDecisionEntry:
+                            decision:
+                              $enum_mapping:
+                                $raw_text: Supervisor_Decision
+                                $mappings:
+                                  StateSupervisionViolationResponseDecision.CONTINUANCE:
+                                    - "Continue Parole"
+                                    - "Reinstate Parole"
+                                    - "Reinstate Parole and Discharge"
+                                  StateSupervisionViolationResponseDecision.REVOCATION:
+                                    - "Return for Parole Revocation Process"
+                                  StateSupervisionViolationResponseDecision.TREATMENT_IN_FIELD:
+                                    - "Continue Parole Pending Programming"
+                                  StateSupervisionViolationResponseDecision.WARRANT_ISSUED:
+                                    - "Continue #2 Parole Warrant" ## Not sure if this is exactly what that means
+                                    - "Issue #2 Parole Warrant"
+            - $conditional:
+                - $if:
+                    $not_null: PV_Specialist_Decision_Date
+                  $then:
+                    StateSupervisionViolationResponse:
+                      external_id:
+                        $concat:
+                          $values:
+                            - $literal("COMS")
+                            - Violation_Incident_Id
+                            - $literal("PV_SPECIALIST_DECISION")
+                          $separator: "##"
+                      response_type: $literal_enum(StateSupervisionViolationResponseType.PERMANENT_DECISION)
+                      response_subtype: $literal("PV SPECIALIST")
+                      response_date: PV_Specialist_Decision_Date
+                      deciding_body_type: $literal_enum(StateSupervisionViolationResponseDecidingBodyType.SUPERVISION_OFFICER)
+                      supervision_violation_response_decisions:
+                        - StateSupervisionViolationResponseDecisionEntry:
+                            decision:
+                              $enum_mapping:
+                                $raw_text: PV_Specialist_Decision
+                                $mappings:
+                                  StateSupervisionViolationResponseDecision.CONTINUANCE:
+                                    - "Continue Parole"
+                                    - "Reinstate Parole"
+                                    - "Reinstate Parole and Discharge"
+                                  StateSupervisionViolationResponseDecision.REVOCATION:
+                                    - "Return for Parole Revocation Process"
+                                  StateSupervisionViolationResponseDecision.TREATMENT_IN_FIELD:
+                                    - "Continue Parole Pending Programming"
+                                  StateSupervisionViolationResponseDecision.WARRANT_ISSUED:
+                                    - "Continue #2 Parole Warrant" ## Not sure if this is exactly what that means
+                                    - "Issue #2 Parole Warrant"

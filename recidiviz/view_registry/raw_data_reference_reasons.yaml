@@ -833,17 +833,12 @@ US_MI:
       Usage reason unknown. Grandfathered in 04/18/2024.
     analyst_data.us_mi_supervision_level_raw_text_mappings: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
-    outliers_views.supervision_client_events: |-
-      Usage reason unknown. Grandfathered in 04/18/2024.
     reference_views.us_mi_location_metadata: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
     task_eligibility_criteria_us_mi.not_serving_ineligible_offenses_for_telephone_reporting:
       |-
       Usage reason unknown. Grandfathered in 04/18/2024.
     workflows_views.us_mi_complete_classification_review_form_record: |-
-      Usage reason unknown. Grandfathered in 04/18/2024.
-  ADH_SUPERVISION_VIOLATION:
-    outliers_views.supervision_client_events: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
   COMS_Intervention_Referral_Program_and_Service_Type_Combinations:
     outliers_views.supervision_client_events: |-
@@ -854,20 +849,8 @@ US_MI:
   COMS_Modifiers:
     task_eligibility_criteria_us_mi.supervision_level_is_not_modified: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
-  COMS_Parole_Violation_Violation_Incidents:
-    outliers_views.supervision_client_events: |-
-      Usage reason unknown. Grandfathered in 04/18/2024.
-  COMS_Parole_Violations:
-    outliers_views.supervision_client_events: |-
-      Usage reason unknown. Grandfathered in 04/18/2024.
   COMS_Personal_Protection_Orders:
     task_eligibility_criteria_us_mi.no_active_ppo: |-
-      Usage reason unknown. Grandfathered in 04/18/2024.
-  COMS_Probation_Violation_Violation_Incidents:
-    outliers_views.supervision_client_events: |-
-      Usage reason unknown. Grandfathered in 04/18/2024.
-  COMS_Probation_Violations:
-    outliers_views.supervision_client_events: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
   COMS_Security_Classification:
     workflows_views.us_mi_complete_add_in_person_security_classification_committee_review_form_record:
@@ -906,9 +889,6 @@ US_MI:
   COMS_Supervision_Statuses:
     task_eligibility_criteria_us_mi.supervision_status_is_not_delayed_sentence:
       |-
-      Usage reason unknown. Grandfathered in 04/18/2024.
-  COMS_Violation_Incidents:
-    outliers_views.supervision_client_events: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
   RECIDIVIZ_REFERENCE_offense_exclusion_list:
     task_eligibility_criteria_us_mi.if_serving_an_ouil_or_owi_has_completed_12_months_on_supervision:

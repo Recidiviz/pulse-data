@@ -47,6 +47,10 @@ _DESCRIPTION = """Information about individual-level events for supervision clie
 #
 # In order to be queried from the frontend, the relevant OutliersClientEvent must also be listed
 # in the OutliersConfig for the given state.
+#
+# When there are multiple distinct events of the same metric_id that occur on the same day, we would
+# ideally like this view to return all of them.
+
 
 _QUERY_TEMPLATE = f"""
 WITH
@@ -71,7 +75,7 @@ violations AS (
     sv.person_id,
     TO_JSON_STRING(
         STRUCT(
-            UPPER(COALESCE(omni_type_ref.description, coms_parole.Violation_Type, coms_probation.Case_Type)) AS code,
+            UPPER(violation_type_raw_text) AS code,
             UPPER(
                 CONCAT( 
                 NULLIF(SPLIT(condition_raw_text, "@@")[OFFSET(0)], 'NONE'),
@@ -81,31 +85,11 @@ violations AS (
             ) AS description
         )
     ) AS attributes
-    -- TODO(#29820): Query from `normalized_state` instead of `state` here
-    FROM `{{project_id}}.state.state_supervision_violation` sv
-    LEFT JOIN `{{project_id}}.state.state_supervision_violated_condition_entry` cond
+    FROM `{{project_id}}.normalized_state.state_supervision_violation` sv
+    LEFT JOIN `{{project_id}}.normalized_state.state_supervision_violated_condition_entry` cond
         ON sv.supervision_violation_id = cond.supervision_violation_id
-    -- NOTE: Let's use the raw tables instead of state tables for violation type becaue the ingested version has a ton of entity deletion issues.
-    --       The entity deletion issues should be resolved with IID so we can refactor to use state tables after MI is switched over to using IID TODO(#25983)
-    -- violation type for OMNI (only have data for parole violations):
-    LEFT JOIN `{{project_id}}.us_mi_raw_data_up_to_date_views.ADH_SUPERVISION_VIOLATION_latest` type
-        ON SPLIT(sv.external_id, "##")[OFFSET(0)] = type.supervision_violation_id 
-        AND sv.external_id NOT LIKE 'COMS%' 
-        AND sv.external_id NOT LIKE 'PROBATION%'
-    LEFT JOIN `{{project_id}}.us_mi_raw_data_up_to_date_views.ADH_REFERENCE_CODE_latest` omni_type_ref
-        ON type.violation_type_id = omni_type_ref.reference_code_id
-    -- violation type for COMS:
-    LEFT JOIN `{{project_id}}.us_mi_raw_data_up_to_date_views.COMS_Violation_Incidents_latest` coms_incidents
-        ON SPLIT(sv.external_id, "##")[OFFSET(1)] = coms_incidents.Violation_Incident_Id 
-        AND sv.external_id LIKE 'COMS%'
-    LEFT JOIN `{{project_id}}.us_mi_raw_data_up_to_date_views.COMS_Parole_Violation_Violation_Incidents_latest` coms_parole_incidents 
-        ON coms_parole_incidents.Violation_Incident_Id = coms_incidents.Violation_Incident_Id
-    LEFT JOIN `{{project_id}}.us_mi_raw_data_up_to_date_views.COMS_Parole_Violations_latest` coms_parole 
-        ON coms_parole.Parole_Violation_Id = coms_parole_incidents.Parole_Violation_Id
-    LEFT JOIN `{{project_id}}.us_mi_raw_data_up_to_date_views.COMS_Probation_Violation_Violation_Incidents_latest` coms_probation_incidents 
-        ON coms_probation_incidents.Violation_Incident_Id = coms_incidents.Violation_Incident_Id
-    LEFT JOIN `{{project_id}}.us_mi_raw_data_up_to_date_views.COMS_Probation_Violations_latest` coms_probation 
-        ON coms_probation.Probation_Violation_Id = coms_probation_incidents.Probation_Violation_Id
+    LEFT JOIN `{{project_id}}.normalized_state.state_supervision_violation_type_entry` type
+        ON sv.supervision_violation_id = type.supervision_violation_id
     WHERE
         sv.state_code = 'US_MI'
         AND violation_date IS NOT NULL
@@ -133,7 +117,26 @@ violations AS (
     
 ),
 sanctions AS (
--- TODO(#24708): Add in MI sanction data from COMS once we receive it
+
+    SELECT
+        "US_MI" AS state_code,
+        "{VIOLATION_RESPONSES.name}" AS metric_id,
+        response_date as event_date,
+        person_id,
+        TO_JSON_STRING( 
+            STRUCT(
+                NULL as code,
+                decision_raw_text as description
+            )) AS attributes
+    FROM `{{project_id}}.normalized_state.state_supervision_violation_response` resp
+    LEFT JOIN `{{project_id}}.normalized_state.state_supervision_violation_response_decision_entry` dec USING(state_code, person_id, supervision_violation_response_id)
+    WHERE
+        state_code = 'US_MI'
+        AND response_date IS NOT NULL
+        AND response_type = 'PERMANENT_DECISION'
+        AND decision_raw_text <> 'TEMP LOCATION TYPE'
+
+    UNION ALL
 
     SELECT
         "US_TN" AS state_code,
@@ -245,7 +248,7 @@ all_events AS (
     SELECT * FROM treatment_starts
 ),
 supervision_client_events AS (
-    SELECT 
+    SELECT DISTINCT
         e.state_code, 
         e.metric_id,
         e.event_date,
@@ -305,15 +308,17 @@ supervision_client_events AS (
         event_date >= population_start_date
         AND event_date < population_end_date
         AND pid.id_type = {{state_id_type}}
-    -- Dedup to the latest compartment occurring within the super session and to the earliest
-    -- officer assignment session that overlaps with the event. The latter helps us find the most
-    -- likely actual officer assignment if there is some overlap around the event date.
-    QUALIFY ROW_NUMBER() OVER (PARTITION BY ss.person_id, event_date, metric_id ORDER BY s.start_date DESC, {nonnull_end_date_clause('a.end_date')}, a.assignment_date) = 1
 )
 
 SELECT 
     {{columns}}
 FROM supervision_client_events
+-- Dedup to the latest compartment occurring within the super session and to the earliest
+-- officer assignment session that overlaps with the event. The latter helps us find the most
+-- likely actual officer assignment if there is some overlap around the event date.
+-- We use rank here instead of row_number so that we still capture all distinct events within the same event_date and metric_id
+-- We sort by officer_id at the end to deterministically dedup
+QUALIFY RANK() OVER (PARTITION BY state_code, client_id, event_date, metric_id ORDER BY supervision_start_date DESC, {nonnull_end_date_clause('officer_assignment_end_date')}, officer_assignment_date, officer_id) = 1
 """
 
 SUPERVISION_CLIENT_EVENTS_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
