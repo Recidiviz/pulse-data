@@ -320,7 +320,10 @@ function check_for_too_many_deployed_versions {
 }
 
 function verify_can_deploy {
+    local PROJECT_ID
+    local COMMIT_HASH
     PROJECT_ID=$1
+    COMMIT_HASH=$2
 
     echo "Checking script is executing in a pipenv shell"
     run_cmd check_running_in_pipenv_shell
@@ -348,6 +351,13 @@ function verify_can_deploy {
 
     echo "Checking pipenv is synced"
     "${BASH_SOURCE_DIR}"/../diff_pipenv.sh || exit_on_fail
+
+    echo "Checking Github status checks for commit"
+    python -m recidiviz.tools.deploy.verify_github_check_statuses \
+      --commit_ref "${COMMIT_HASH}" \
+      --prompt
+
+    exit_on_fail
 }
 
 function reconfigure_terraform_backend {

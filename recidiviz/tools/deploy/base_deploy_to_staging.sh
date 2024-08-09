@@ -78,7 +78,7 @@ fi
 
 echo "Performing pre-deploy verification"
 verify_hash "$COMMIT_HASH"
-run_cmd verify_can_deploy "$PROJECT_ID"
+run_cmd verify_can_deploy "$PROJECT_ID" "${COMMIT_HASH}"
 
 if [[ -n ${DEBUG_BUILD_NAME} ]]; then
     VERSION_TAG=${VERSION_TAG}-${DEBUG_BUILD_NAME}

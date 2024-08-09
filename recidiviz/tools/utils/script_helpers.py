@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """General helpers for python scripts."""
+import enum
 import logging
 import os
 import pwd
@@ -209,3 +210,25 @@ def run_command_streaming(
             raise RunCommandUnsuccessful(
                 f"Command failed: `{command}`\n### STDERR:\n{err}\n###"
             )
+
+
+class ANSI(enum.StrEnum):
+    """Bright foreground codes.
+    Reference: https://gist.github.com/fnky/458719343aabd01cfb17a3a4f7296797"""
+
+    BLACK = "\033[90m"
+    RED = "\033[91m"
+    FAIL = "\033[91m"
+    GREEN = "\033[92m"
+    OK = "\033[92m"
+    YELLOW = "\033[93m"
+    WARNING = "\033[93m"
+    BLUE = "\033[94m"
+    MAGENTA = "\033[95m"
+    CYAN = "\033[96m"
+    WHITE = "\033[97m"
+    ENDC = "\033[0m"
+
+
+def color_text(color: ANSI, text: str) -> str:
+    return f"{color.value}{text}{ANSI.ENDC.value}"
