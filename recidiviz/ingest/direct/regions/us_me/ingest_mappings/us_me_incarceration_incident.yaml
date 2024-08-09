@@ -10,9 +10,12 @@ input_columns:
   - Location_name
   - Location_Tx
   - E_Violation_Disposition_Type_Desc
-  - E_Violation_Disposition_Class_Desc
   - Summary_Tx
+  - CREATED_ON_DATE
+  - E_Violation_Disposition_Class_Desc
   - HEARING_ACTUALLY_HELD_DATE
+  - DISCIPLINARY_ACTION_FORMAL_IND
+  - Cis_1813_Disposition_Outcome_Type_Cd
 unused_columns: []
 output:
   StatePerson:
@@ -203,8 +206,48 @@ output:
                   - Self-Injurious Behaviour
                   - Sexual Activity by Force or Duress
                   - Unauthorized Physical Touching
-          #TODO(#30945): Ingest outcome once we have required tables, especially HEARING_ACTUALLY_HELD_DATE.
+          incident_severity:
+            $enum_mapping:
+              $raw_text: E_Violation_Disposition_Class_Desc
+              $mappings:
+                StateIncarcerationIncidentSeverity.HIGHEST:
+                  - A
+                StateIncarcerationIncidentSeverity.SECOND_HIGHEST:
+                  - B
+                StateIncarcerationIncidentSeverity.THIRD_HIGHEST:
+                  - C
+                StateIncarcerationIncidentSeverity.FOURTH_HIGHEST:
+                  - D
+                StateIncarcerationIncidentSeverity.EXTERNAL_UNKNOWN:
+                  - Major
+                  - Minor
+          incarceration_incident_outcomes:
+            - StateIncarcerationIncidentOutcome:
+                external_id:
+                  $concat:
+                    $values:
+                      - Cis_100_Client_Id
+                      - Incident_Id
+                      - Year_Num
+                hearing_date: HEARING_ACTUALLY_HELD_DATE
+                date_effective: CREATED_ON_DATE
+                outcome_type:
+                  $enum_mapping:
+                    $raw_text: Cis_1813_Disposition_Outcome_Type_Cd
+                    $mappings:
+                      StateIncarcerationIncidentOutcomeType.DISMISSED:
+                        - "5" # Dismissed (Technical)
+                        - "10" # Dismissed (Technical) (Juvenile)
+                      StateIncarcerationIncidentOutcomeType.NOT_GUILTY:
+                        - "3" # Found Not Guilty
+                        - "8" # Found Not Guilty (Juvenile)
+                      StateIncarcerationIncidentOutcomeType.INTERNAL_UNKNOWN:
+                        - "1" # Pled Guilty or No Contest
+                        - "2" # Found Guilty (After Not Guilty Plea)
+                        - "4" # Informal Resolution
+                        - "6" # Admitted (Juvenile)
+                        - "7" # Found Guitly (After Failure to Admit) (Juvenile)
+                        - "9" # Informal Resolution (Juvenile)
           incident_metadata:
             $json_dict:
-              CLASS: E_Violation_Disposition_Class_Desc
-              HEARING_ACTUALLY_HELD_DATE: HEARING_ACTUALLY_HELD_DATE
+              DISCIPLINARY_ACTION_FORMAL_IND: DISCIPLINARY_ACTION_FORMAL_IND
