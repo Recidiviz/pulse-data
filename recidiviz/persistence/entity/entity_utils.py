@@ -436,23 +436,19 @@ def get_all_entity_class_names_in_module(entities_module: ModuleType) -> Set[str
 
 class EntityFieldType(Enum):
     FLAT_FIELD = auto()
-    FOREIGN_KEYS = auto()
     FORWARD_EDGE = auto()
     BACK_EDGE = auto()
     ALL = auto()
 
 
 class CoreEntityFieldIndex:
-    """Class that caches the results of certain CoreEntity class introspection
+    """Class that caches the results of certain Entity class introspection
     functionality.
     """
 
     def __init__(
         self,
         direction_checker: Optional[SchemaEdgeDirectionChecker] = None,
-        database_entity_fields_by_field_type: Optional[
-            Dict[str, Dict[EntityFieldType, Set[str]]]
-        ] = None,
         entity_fields_by_field_type: Optional[
             Dict[str, Dict[EntityFieldType, Set[str]]]
         ] = None,
@@ -461,27 +457,17 @@ class CoreEntityFieldIndex:
             direction_checker or SchemaEdgeDirectionChecker.state_direction_checker()
         )
 
-        # TODO(#24930): Cache these at the process level by SchemaType so that we always
-        #  use a cached version where possible.
-        # Cache of fields by field type for DatabaseEntity classes
-        self.database_entity_fields_by_field_type: Dict[
-            str, Dict[EntityFieldType, Set[str]]
-        ] = (database_entity_fields_by_field_type or {})
-
         # Cache of fields by field type for Entity classes
         self.entity_fields_by_field_type: Dict[str, Dict[EntityFieldType, Set[str]]] = (
             entity_fields_by_field_type or {}
         )
 
     def get_fields_with_non_empty_values(
-        self, entity: CoreEntity, entity_field_type: EntityFieldType
+        self, entity: Entity, entity_field_type: EntityFieldType
     ) -> Set[str]:
         """Returns a set of field_names that correspond to any non-empty (nonnull or
         non-empty list) fields on the provided |entity| that match the provided
         |entity_field_type|.
-
-        Note: This function is relatively slow for Entity type entities and should not
-        be called in a tight loop.
         """
         result = set()
         for field_name in self.get_all_core_entity_fields(
@@ -496,10 +482,10 @@ class CoreEntityFieldIndex:
         return result
 
     def get_all_core_entity_fields(
-        self, entity_cls: Type[CoreEntity], entity_field_type: EntityFieldType
+        self, entity_cls: Type[Entity], entity_field_type: EntityFieldType
     ) -> Set[str]:
         """Returns a set of field_names that correspond to any fields (non-empty or
-        otherwise) on the provided DatabaseEntity |entity| class that match the provided
+        otherwise) on the provided Entity class |entity_cls| that match the provided
         |entity_field_type|. Fields are included whether or not the values are non-empty
         on the provided object.
 
@@ -507,79 +493,17 @@ class CoreEntityFieldIndex:
         """
         entity_name = entity_cls.get_entity_name()
 
-        if issubclass(entity_cls, DatabaseEntity):
-            if entity_name not in self.database_entity_fields_by_field_type:
-                self.database_entity_fields_by_field_type[entity_name] = {}
-            if (
+        if not issubclass(entity_cls, Entity):
+            raise ValueError(f"Unexpected entity type: {entity_cls}")
+
+        if entity_name not in self.entity_fields_by_field_type:
+            self.entity_fields_by_field_type[entity_name] = {}
+
+        if entity_field_type not in self.entity_fields_by_field_type[entity_name]:
+            self.entity_fields_by_field_type[entity_name][
                 entity_field_type
-                not in self.database_entity_fields_by_field_type[entity_name]
-            ):
-                self.database_entity_fields_by_field_type[entity_name][
-                    entity_field_type
-                ] = self._get_all_database_entity_fields_slow(
-                    entity_cls, entity_field_type
-                )
-            return self.database_entity_fields_by_field_type[entity_name][
-                entity_field_type
-            ]
-
-        if issubclass(entity_cls, Entity):
-            if entity_name not in self.entity_fields_by_field_type:
-                self.entity_fields_by_field_type[entity_name] = {}
-
-            if entity_field_type not in self.entity_fields_by_field_type[entity_name]:
-                self.entity_fields_by_field_type[entity_name][
-                    entity_field_type
-                ] = self._get_entity_fields_with_type_slow(
-                    entity_cls, entity_field_type
-                )
-            return self.entity_fields_by_field_type[entity_name][entity_field_type]
-
-        raise ValueError(f"Unexpected entity type: {entity_cls}")
-
-    def _get_all_database_entity_fields_slow(
-        self,
-        entity_cls: Type[DatabaseEntity],
-        entity_field_type: EntityFieldType,
-    ) -> Set[str]:
-        """Returns a set of field_names that correspond to any fields (non-empty or
-        otherwise) on the provided DatabaseEntity type |entity| that match the provided
-        |entity_field_type|.
-
-        This function is relatively slow and the results should be cached across
-        repeated calls.
-        """
-        back_edges = set()
-        forward_edges = set()
-        flat_fields = set()
-        foreign_keys = set()
-
-        for relationship_field_name in entity_cls.get_relationship_property_names():
-            if self.direction_checker.is_back_edge(entity_cls, relationship_field_name):
-                back_edges.add(relationship_field_name)
-            else:
-                forward_edges.add(relationship_field_name)
-
-        for foreign_key_name in entity_cls.get_foreign_key_names():
-            foreign_keys.add(foreign_key_name)
-
-        for column_field_name in entity_cls.get_column_property_names():
-            if column_field_name not in foreign_keys:
-                flat_fields.add(column_field_name)
-
-        if entity_field_type is EntityFieldType.FLAT_FIELD:
-            return flat_fields
-        if entity_field_type is EntityFieldType.FOREIGN_KEYS:
-            return foreign_keys
-        if entity_field_type is EntityFieldType.FORWARD_EDGE:
-            return forward_edges
-        if entity_field_type is EntityFieldType.BACK_EDGE:
-            return back_edges
-        if entity_field_type is EntityFieldType.ALL:
-            return flat_fields | foreign_keys | forward_edges | back_edges
-        raise ValueError(
-            f"Unrecognized EntityFieldType [{entity_field_type}] on entity type [{entity_cls}]"
-        )
+            ] = self._get_entity_fields_with_type_slow(entity_cls, entity_field_type)
+        return self.entity_fields_by_field_type[entity_name][entity_field_type]
 
     def _get_entity_fields_with_type_slow(
         self, entity_cls: Type[Entity], entity_field_type: EntityFieldType
@@ -607,8 +531,6 @@ class CoreEntityFieldIndex:
 
         if entity_field_type is EntityFieldType.FLAT_FIELD:
             return flat_fields
-        if entity_field_type is EntityFieldType.FOREIGN_KEYS:
-            return set()  # Entity objects never have foreign keys
         if entity_field_type is EntityFieldType.FORWARD_EDGE:
             return forward_edges
         if entity_field_type is EntityFieldType.BACK_EDGE:

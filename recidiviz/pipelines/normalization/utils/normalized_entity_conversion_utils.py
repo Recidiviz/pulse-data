@@ -59,6 +59,7 @@ from recidiviz.persistence.entity.normalized_entities_utils import (
     normalized_entity_class_with_base_class_name,
     update_forward_references_on_updated_entity,
 )
+from recidiviz.persistence.entity.state import entities as state_entities
 from recidiviz.persistence.entity.state import normalized_entities
 from recidiviz.persistence.entity.state.normalized_state_entity import (
     NormalizedStateEntity,
@@ -367,9 +368,12 @@ def convert_entities_to_normalized_dicts(
         normalized_base_entity_class = normalized_entity_class_with_base_class_name(
             base_entity_cls_name
         )
+        entity_cls = get_entity_class_in_module_with_name(
+            state_entities, base_entity_cls_name
+        )
 
         forward_relationship_fields = field_index.get_all_core_entity_fields(
-            type(schema_entity), EntityFieldType.FORWARD_EDGE
+            entity_cls, EntityFieldType.FORWARD_EDGE
         )
 
         # Collect the tagged entity dicts for all related classes that
