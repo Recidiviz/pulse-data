@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Implements authorization for Outliers routes"""
+import datetime
 import os
 from http import HTTPStatus
 from typing import Any, Dict, Optional
@@ -62,7 +63,18 @@ def on_successful_authorization(
     )
     user_pseudonymized_id = app_metadata.get("pseudonymizedId", None)
     routes = app_metadata.get("routes", {})
-    feature_variants = app_metadata.get("featureVariants", {})
+    feature_variants = {
+        fv: params
+        for fv, params in app_metadata.get("featureVariants", {}).items()
+        if "activeDate" not in params
+        or datetime.datetime.fromisoformat(params["activeDate"])
+        # Handle both naive and UTC activeDates
+        < datetime.datetime.now(
+            tz=datetime.datetime.fromisoformat(params["activeDate"]).tzinfo
+        )
+    }
+    if user_state_code == "RECIDIVIZ":
+        feature_variants["supervisorHomepageWorkflows"] = {}
 
     g.user_context = UserContext(
         state_code_str=user_state_code,
