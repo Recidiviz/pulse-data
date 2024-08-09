@@ -18,6 +18,12 @@
 from collections import defaultdict
 from typing import Dict, Set
 
+from recidiviz.calculator.query.state.views.analyst_data.insights_caseload_category_sessions import (
+    InsightsCaseloadCategoryType,
+)
+from recidiviz.common.constants.state.state_staff_caseload_type import (
+    StateStaffCaseloadType,
+)
 from recidiviz.common.constants.states import StateCode
 from recidiviz.outliers.constants import (
     ABSCONSIONS_BENCH_WARRANTS,
@@ -32,6 +38,7 @@ from recidiviz.outliers.constants import (
     VIOLATIONS_ABSCONSION,
 )
 from recidiviz.outliers.types import (
+    CaseloadCategory,
     MetricOutcome,
     OutliersBackendConfig,
     OutliersClientEventConfig,
@@ -82,6 +89,18 @@ The denominator is the average daily caseload for the officer over the given tim
         AND avg_daily_population BETWEEN 10 AND 150
         AND prop_period_with_critical_caseload >= 0.75""",
         supervision_staff_exclusions="COALESCE(specialized_caseload_type_primary,'') NOT IN ('OTHER')",
+        available_specialized_caseload_categories={
+            InsightsCaseloadCategoryType.SEX_OFFENSE_BINARY: [
+                CaseloadCategory(
+                    id=StateStaffCaseloadType.SEX_OFFENSE.name,
+                    display_name="Sex Offense Caseload",
+                ),
+                CaseloadCategory(
+                    id=f"NOT_{StateStaffCaseloadType.SEX_OFFENSE.name}",
+                    display_name="General + Other Caseloads",
+                ),
+            ]
+        },
     ),
     StateCode.US_PA: OutliersBackendConfig(
         metrics=[

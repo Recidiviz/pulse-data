@@ -1387,6 +1387,22 @@ class OutliersQuerier:
         # from other endpoints.
         deprecated_metrics = backend_config.pop("deprecated_metrics")
         backend_config["metrics"].extend(deprecated_metrics)
+        available_specialized_caseload_categories = backend_config.pop(
+            "available_specialized_caseload_categories"
+        )
+        primary_category_type = backend_config["primary_category_type"]
+        all_category_type_options = [
+            InsightsCaseloadCategoryType.ALL.value,
+            *available_specialized_caseload_categories.keys(),
+        ]
+        if primary_category_type not in all_category_type_options:
+            raise ValueError(
+                f"Invalid product configuration: primary_category_type is {primary_category_type}, options are {','.join(all_category_type_options)}"
+            )
+
+        backend_config[
+            "caseload_categories"
+        ] = available_specialized_caseload_categories.get(primary_category_type, [])
         config_dict.update(backend_config)
 
         user_config = self.get_configuration_for_user(user_context).to_dict()

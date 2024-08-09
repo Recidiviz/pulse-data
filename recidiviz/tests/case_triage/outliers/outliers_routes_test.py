@@ -26,6 +26,9 @@ import pytest
 from flask import Flask
 from flask.testing import FlaskClient
 
+from recidiviz.calculator.query.state.views.analyst_data.insights_caseload_category_sessions import (
+    InsightsCaseloadCategoryType,
+)
 from recidiviz.case_triage.error_handlers import register_error_handlers
 from recidiviz.case_triage.outliers.outliers_authorization import (
     on_successful_authorization,
@@ -36,6 +39,7 @@ from recidiviz.outliers.constants import (
     VIOLATION_RESPONSES,
 )
 from recidiviz.outliers.types import (
+    CaseloadCategory,
     ExcludedSupervisionOfficerEntity,
     OutliersBackendConfig,
     OutliersClientEventConfig,
@@ -204,6 +208,17 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
             worse_than_rate_label="label2",
             exclusion_reason_description="description",
             at_or_above_rate_label="label3",
+            primary_category_type=InsightsCaseloadCategoryType.SEX_OFFENSE_BINARY,
+            caseload_categories=[
+                CaseloadCategory(
+                    id="SEX_OFFENSE",
+                    display_name="Sex Offense Caseload",
+                ),
+                CaseloadCategory(
+                    id="NOT_SEX_OFFENSE",
+                    display_name="General + Other Caseloads",
+                ),
+            ],
         )
 
         response = self.test_client.get(
