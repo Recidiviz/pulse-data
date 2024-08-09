@@ -117,7 +117,14 @@ _REASON_QUERY = f"""
               -- Unlawful Contact with Minor
               OR (sc.statute LIKE 'CC6318%')
               -- Sexual Abuse of Children
-              OR (sc.statute LIKE 'CC6320%') )
+              OR (sc.statute LIKE 'CC6320%') 
+              -- Firearm charges
+              OR (sc.description LIKE '%FIREARM%'
+                OR sc.statute LIKE '%CC61%'
+                OR sc.statute LIKE '%18.61%'
+                OR sc.description LIKE '%VUFA%'
+                OR sc.description LIKE '%VIOLATION OF UNIFORM FIREARMS ACT%') 
+              )
             -- Removes a few cases where someone has multiple spans for the same offense so they aren't later
             -- aggregated unnecessarily
             QUALIFY ROW_NUMBER() OVER (PARTITION BY span.person_id, sc.description ORDER BY span.start_date ASC, projected_completion_date_max DESC) = 1 ),
@@ -160,7 +167,8 @@ _REASON_QUERY = f"""
                 OR PBPPOffenseDescription LIKE '%RAPE%'
                 OR PBPPOffenseDescription LIKE '%ARSON%'
                 OR PBPPOffenseDescription LIKE '%ROBBERY%'
-                OR PBPPOffenseDescription LIKE '%INTIMIDATION%')
+                OR PBPPOffenseDescription LIKE '%INTIMIDATION%'
+                OR PBPPOffenseDescription LIKE '%FIREARM%')
           GROUP BY
             1,2,3,4,5,6
         QUALIFY ROW_NUMBER() OVER (PARTITION BY person_id, description ORDER BY start_date ASC) = 1 ),
