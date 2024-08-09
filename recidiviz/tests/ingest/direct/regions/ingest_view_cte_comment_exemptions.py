@@ -327,7 +327,6 @@ THESE_INGEST_VIEWS_HAVE_UNDOCUMENTED_CTES: Dict[StateCode, Dict[str, List[str]]]
             "offender_booking_assignment",
             "offender_supervision_periods",
         ],
-        "supervision_violations_coms": ["probation_and_violation_joined_incidents"],
     },
     StateCode.US_TN: {
         "AssignedStaffSupervisionPeriod_v2": [

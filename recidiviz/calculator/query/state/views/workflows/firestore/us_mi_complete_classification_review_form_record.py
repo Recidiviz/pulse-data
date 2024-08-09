@@ -134,10 +134,8 @@ case_notes_cte AS (
     -- Recent violations (past 6 months)
     SELECT 
         ssv.person_id,
-        # Violation type + text directly from raw data
-        IF(violation_type != 'INTERNAL_UNKNOWN',
-            CONCAT(svte.violation_type, ' - ', svte.violation_type_raw_text),
-            svte.violation_type_raw_text) AS note_title, 
+        # Violation type directly from raw data
+        violation_type_raw_text AS note_title, 
         # Decision type + text directly from raw data
         IF(svrd.decision != 'INTERNAL_UNKNOWN',
             CONCAT('Decision: ', svrd.decision, ' - ', svrd.decision_raw_text),
@@ -154,7 +152,7 @@ case_notes_cte AS (
     WHERE ssv.state_code = 'US_MI'
         AND ssv.violation_date IS NOT NULL
         AND DATE_DIFF(CURRENT_DATE, ssv.violation_date, MONTH)<=6
-        AND svrd.decision != 'VIOLATION_UNFOUNDED'
+        AND (svrd.decision IS NULL or svrd.decision != 'VIOLATION_UNFOUNDED')
     QUALIFY ROW_NUMBER() OVER(PARTITION BY ssv.person_id, ssv.supervision_violation_id ORDER BY svr.response_date DESC) =1
 
     UNION ALL

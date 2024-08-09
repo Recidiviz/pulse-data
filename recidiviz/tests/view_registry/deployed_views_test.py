@@ -46,9 +46,6 @@ from recidiviz.calculator.query.state.views.analyst_data.all_task_type_ineligibl
 from recidiviz.calculator.query.state.views.analyst_data.workflows_person_impact_funnel_status_sessions import (
     WORKFLOWS_PERSON_IMPACT_FUNNEL_STATUS_SESSIONS_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.outliers.supervision_client_events import (
-    SUPERVISION_CLIENT_EVENTS_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.reference.state_person_to_state_staff import (
     STATE_PERSON_TO_STATE_STAFF_VIEW_BUILDER,
 )
@@ -558,8 +555,6 @@ The following views have less restrictive projects_to_deploy than their parents:
                 US_MO_SENTENCE_STATUSES_VIEW_BUILDER.address,
                 # This validation checks both state and normalized_state
                 PRIMARY_KEYS_UNIQUE_ACROSS_ALL_STATES_VIEW_BUILDER.address,
-                # TODO(#29820): This view should be updated to reference `normalized_state`
-                SUPERVISION_CLIENT_EVENTS_VIEW_BUILDER.address,
             },
             # The `operations` dataset shows a potentially stale view of data platform
             # operations data and should only be used for debugging / one-off analysis

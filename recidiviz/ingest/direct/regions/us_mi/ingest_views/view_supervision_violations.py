@@ -47,10 +47,11 @@ VIEW_QUERY_TEMPLATE = """,
         'DECISION' as _response_type,
         management_decision_id as _response_external_id,
         (DATE(decision_date)) as _response_date,
-        decision_type_id as _decision,
+        decision_ref.description as _decision,
         decide_employee_id as _decision_agent_id,
         UPPER(decide_employee_position) as _deciding_body_role
-    FROM {ADH_MANAGEMENT_DECISION} 
+    FROM {ADH_MANAGEMENT_DECISION} m
+    LEFT JOIN {ADH_REFERENCE_CODE} decision_ref ON m.decision_type_id = decision_ref.reference_code_id
     ),
     -- grab all the relevant StateSupervisionViolationResponseDecision from ADH_SANCTION
     sanction_decisions as (
@@ -59,10 +60,11 @@ VIEW_QUERY_TEMPLATE = """,
         'SANCTION' as _response_type,
         sanction_id as _response_external_id,
         (DATE(sanction_date)) as _response_date,
-        sanction_type_id as _decision,
+        sanction_ref.description as _decision,
         CAST(NULL as string) as _decision_agent_id,
         approval_authority_id as _deciding_body_role
     from {ADH_SANCTION} s
+    LEFT JOIN {ADH_REFERENCE_CODE} sanction_ref ON s.sanction_type_id = sanction_ref.reference_code_id
     ),
     -- stack the DECISION and SANCTION data and then transform it to be one line per supervision_violation_id
     all_decisions as (
@@ -122,7 +124,7 @@ VIEW_QUERY_TEMPLATE = """,
         i.supv_violation_incident_id,
         (DATE(i.violation_date)) as violation_date,
         i.incident_summary_notes,
-        v.violation_type_id,
+        ref_type.description as violation_type,
         (DATE(v.violation_invest_begin_date)) as violation_invest_begin_date,
         decision_info,
         violated_conditions
@@ -130,6 +132,7 @@ VIEW_QUERY_TEMPLATE = """,
     LEFT JOIN {ADH_SUPV_VIOLATION_INCIDENT} i on i.supervision_violation_id = v.supervision_violation_id
     LEFT JOIN all_decisions d on v.supervision_violation_id = d.supervision_violation_id
     LEFT JOIN violated_conditions c on i.supv_violation_incident_id = c.supv_violation_incident_id
+    LEFT JOIN {ADH_REFERENCE_CODE} ref_type on v.violation_type_id = ref_type.reference_code_id
     INNER JOIN {ADH_OFFENDER_BOOKING} b on v.offender_booking_id = b.offender_booking_id
 """
 

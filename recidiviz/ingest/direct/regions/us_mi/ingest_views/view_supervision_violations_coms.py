@@ -23,34 +23,59 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 VIEW_QUERY_TEMPLATE = """,
+
+    -- For each violation incident, string agg all violation types ofr all corresponding charges
+    charges AS (
+        SELECT 
+            Violation_Incident_Id,
+            LTRIM(Offender_Number, '0') AS Offender_Number,
+            STRING_AGG(DISTINCT Technical_Non_Technical ORDER BY Technical_Non_Technical) as charge_violation_types
+        FROM {COMS_Violation_Incident_Charges} charges
+        WHERE Technical_Non_Technical <> 'Predates COMS as System of Record'
+          AND Disposition NOT IN ('Not Guilty', 'Dismissed')
+        GROUP BY 1,2
+    ),
+
+    -- join all other violation information (for both parole and probation) with charges
     probation_and_violation_joined_incidents AS (
         SELECT 
             incidents.Violation_Incident_Id,
             LTRIM(incidents.Offender_Number, '0') AS Offender_Number,
             incidents.Incident_Date,
-            parole.Violation_Type AS Violation_Type,
-            COALESCE(parole.Investigation_Start_Date, probation.Investigation_Start_Date) as Investigation_Start_Date
+            -- as of 8/1/24, there are no cases where both charge_violation_types and parole.violation_type is both valued
+            COALESCE(charges.charge_violation_types, parole.Violation_Type) AS Violation_Type,
+            -- either parole.Investigation_Start_Date or probation.Investigation_Start_Date will be valued depending on whether it's parole or probation
+            COALESCE(parole.Investigation_Start_Date, probation.Investigation_Start_Date) as Investigation_Start_Date,
+            Supervisor_Decision,
+            Supervisor_Decision_Date,
+            PV_Specialist_Decision,
+            PV_Specialist_Decision_Date
         FROM {COMS_Violation_Incidents} incidents
 
         -- PAROLE
         LEFT JOIN {COMS_Parole_Violation_Violation_Incidents} parole_incidents ON parole_incidents.Violation_Incident_Id = incidents.Violation_Incident_Id
         LEFT JOIN {COMS_Parole_Violations} parole ON parole.Parole_Violation_Id = parole_incidents.Parole_Violation_Id
+        LEFT JOIN {COMS_Parole_Violation_Summary_Decisions} parole_decisions ON parole.Parole_Violation_Id = parole_decisions.Parole_Violation_Id
 
         -- PROBATION
         LEFT JOIN {COMS_Probation_Violation_Violation_Incidents} probation_incidents ON probation_incidents.Violation_Incident_Id = incidents.Violation_Incident_Id
         LEFT JOIN {COMS_Probation_Violations} probation ON probation.Probation_Violation_Id = probation_incidents.Probation_Violation_Id
 
-        -- TODO(#23477) Is this necessary?
-        LEFT JOIN {ADH_OFFENDER} off ON LTRIM(incidents.Offender_Number, '0') = off.Offender_Number
-        INNER JOIN {ADH_OFFENDER_BOOKING} booking ON booking.Offender_Id = off.Offender_Id 
+        -- CHARGES 
+        LEFT JOIN charges ON incidents.Violation_Incident_Id = charges.Violation_Incident_Id
     )
+
     SELECT 
         DISTINCT 
         Offender_Number, 
         Violation_Incident_Id, 
         Incident_Date, 
         Violation_Type, 
-        Investigation_Start_Date
+        Investigation_Start_Date,
+        Supervisor_Decision,
+        Supervisor_Decision_Date,
+        PV_Specialist_Decision,
+        PV_Specialist_Decision_Date
     FROM probation_and_violation_joined_incidents
 """
 
