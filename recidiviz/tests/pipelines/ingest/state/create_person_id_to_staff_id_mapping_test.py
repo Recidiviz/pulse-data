@@ -34,8 +34,6 @@ from recidiviz.persistence.entity.state.normalized_entities import (
     NormalizedStateStaffExternalId,
 )
 from recidiviz.pipelines.ingest.state.create_person_id_to_staff_id_mapping import (
-    NORMALIZED_STAFF_PCOLLECTION_KEY,
-    PRE_NORMALIZATION_PERSONS_PCOLLECTION_KEY,
     CreatePersonIdToStaffIdMapping,
 )
 from recidiviz.tests.pipelines.ingest.state.test_case import StateIngestPipelineTestCase
@@ -167,10 +165,10 @@ class TestCreatePersonIdToStaffIdMapping(StateIngestPipelineTestCase):
             self.test_pipeline | "Create input NormalizedStateStaff" >> beam.Create([])
         )
 
-        output = {
-            PRE_NORMALIZATION_PERSONS_PCOLLECTION_KEY: input_state_persons,
-            NORMALIZED_STAFF_PCOLLECTION_KEY: input_state_staff,
-        } | CreatePersonIdToStaffIdMapping(self.field_index)
+        output = (
+            input_state_staff,
+            input_state_persons,
+        ) | CreatePersonIdToStaffIdMapping(self.field_index)
         assert_that(output, equal_to([]))
         self.test_pipeline.run()
 
@@ -184,10 +182,10 @@ class TestCreatePersonIdToStaffIdMapping(StateIngestPipelineTestCase):
             >> beam.Create([STATE_STAFF_1, STATE_STAFF_2])
         )
 
-        output = {
-            PRE_NORMALIZATION_PERSONS_PCOLLECTION_KEY: input_state_persons,
-            NORMALIZED_STAFF_PCOLLECTION_KEY: input_state_staff,
-        } | CreatePersonIdToStaffIdMapping(self.field_index)
+        output = (
+            input_state_staff,
+            input_state_persons,
+        ) | CreatePersonIdToStaffIdMapping(self.field_index)
 
         # Output only is generated if there are people, but nothing crashes
         assert_that(output, equal_to([]))
@@ -214,10 +212,10 @@ class TestCreatePersonIdToStaffIdMapping(StateIngestPipelineTestCase):
             >> beam.Create([STATE_STAFF_1, STATE_STAFF_2])
         )
 
-        output = {
-            PRE_NORMALIZATION_PERSONS_PCOLLECTION_KEY: input_state_persons,
-            NORMALIZED_STAFF_PCOLLECTION_KEY: input_state_staff,
-        } | CreatePersonIdToStaffIdMapping(self.field_index)
+        output = (
+            input_state_staff,
+            input_state_persons,
+        ) | CreatePersonIdToStaffIdMapping(self.field_index)
         assert_that(output, equal_to(expected_output))
         self.test_pipeline.run()
 
@@ -255,9 +253,9 @@ class TestCreatePersonIdToStaffIdMapping(StateIngestPipelineTestCase):
             >> beam.Create([STATE_STAFF_1, STATE_STAFF_2])
         )
 
-        output = {
-            PRE_NORMALIZATION_PERSONS_PCOLLECTION_KEY: input_state_persons,
-            NORMALIZED_STAFF_PCOLLECTION_KEY: input_state_staff,
-        } | CreatePersonIdToStaffIdMapping(self.field_index)
+        output = (
+            input_state_staff,
+            input_state_persons,
+        ) | CreatePersonIdToStaffIdMapping(self.field_index)
         assert_that(output, equal_to(expected_output))
         self.test_pipeline.run()
