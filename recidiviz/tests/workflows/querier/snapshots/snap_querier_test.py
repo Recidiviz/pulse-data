@@ -19,7 +19,6 @@ Snapshots for recidiviz/tests/workflows/querier/querier_test.py
 Update by running `pytest recidiviz/tests/workflows/querier/querier_test.py --snapshot-update`
 You will need to replace this header afterward.
 """
-
 # -*- coding: utf-8 -*-
 # snapshottest: v1 - https://goo.gl/zC4yUc
 from __future__ import unicode_literals
