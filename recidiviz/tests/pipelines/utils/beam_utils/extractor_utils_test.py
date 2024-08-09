@@ -164,12 +164,22 @@ class TestExtractDataForPipeline(unittest.TestCase):
 
         entity_converter = StateSchemaToEntityConverter()
 
-        entity_person = entity_converter.convert(schema_person)
-        entity_ethnicity = entity_converter.convert(schema_ethnicity)
-        entity_alias = entity_converter.convert(schema_alias)
-        entity_external_id = entity_converter.convert(schema_external_id)
-        entity_races = entity_converter.convert_all([schema_race_1, schema_race_2])
-        entity_assessment = entity_converter.convert(schema_assessment)
+        entity_person = entity_converter.convert(
+            schema_person, populate_back_edges=True
+        )
+        entity_ethnicity = entity_converter.convert(
+            schema_ethnicity, populate_back_edges=True
+        )
+        entity_alias = entity_converter.convert(schema_alias, populate_back_edges=True)
+        entity_external_id = entity_converter.convert(
+            schema_external_id, populate_back_edges=True
+        )
+        entity_races = entity_converter.convert_all(
+            [schema_race_1, schema_race_2], populate_back_edges=True
+        )
+        entity_assessment = entity_converter.convert(
+            schema_assessment, populate_back_edges=True
+        )
 
         entity_person.ethnicities = [entity_ethnicity]
         entity_person.aliases = [entity_alias]
@@ -313,9 +323,11 @@ class TestExtractDataForPipeline(unittest.TestCase):
 
         entity_converter = StateSchemaToEntityConverter()
 
-        entity_person = entity_converter.convert(schema_person)
+        entity_person = entity_converter.convert(
+            schema_person, populate_back_edges=True
+        )
         entity_violation: entities.StateSupervisionViolation = entity_converter.convert(
-            schema_supervision_violation
+            schema_supervision_violation, populate_back_edges=True
         )
         entity_violation_response = entity_violation.supervision_violation_responses[0]
         entity_violation_types = entity_violation.supervision_violation_types
@@ -463,11 +475,19 @@ class TestExtractDataForPipeline(unittest.TestCase):
 
         entity_converter = StateSchemaToEntityConverter()
 
-        entity_ethnicity = entity_converter.convert(schema_ethnicity)
-        entity_alias = entity_converter.convert(schema_alias)
-        entity_external_id = entity_converter.convert(schema_external_id)
-        entity_races = entity_converter.convert_all([schema_race_1, schema_race_2])
-        entity_assessment = entity_converter.convert(schema_assessment)
+        entity_ethnicity = entity_converter.convert(
+            schema_ethnicity, populate_back_edges=True
+        )
+        entity_alias = entity_converter.convert(schema_alias, populate_back_edges=True)
+        entity_external_id = entity_converter.convert(
+            schema_external_id, populate_back_edges=True
+        )
+        entity_races = entity_converter.convert_all(
+            [schema_race_1, schema_race_2], populate_back_edges=True
+        )
+        entity_assessment = entity_converter.convert(
+            schema_assessment, populate_back_edges=True
+        )
 
         project = "project"
         dataset = "state"
@@ -581,12 +601,14 @@ class TestExtractDataForPipeline(unittest.TestCase):
 
         entity_converter = StateSchemaToEntityConverter()
 
-        entity_person = entity_converter.convert(schema_person)
+        entity_person = entity_converter.convert(
+            schema_person, populate_back_edges=True
+        )
         entity_charges: List[entities.StateCharge] = entity_converter.convert_all(
             [schema_charge_1, schema_charge_2], populate_back_edges=False
         )
         entity_sentence: entities.StateSupervisionSentence = entity_converter.convert(
-            schema_sentence
+            schema_sentence, populate_back_edges=True
         )
 
         entity_charges[0].supervision_sentences = [entity_sentence]
@@ -712,15 +734,17 @@ class TestExtractDataForPipeline(unittest.TestCase):
 
         entity_converter = StateSchemaToEntityConverter()
 
-        entity_person = entity_converter.convert(schema_person)
+        entity_person = entity_converter.convert(
+            schema_person, populate_back_edges=True
+        )
         entity_charges: List[entities.StateCharge] = entity_converter.convert_all(
             [schema_charge_1], populate_back_edges=False
         )
         entity_inc_sentence: entities.StateIncarcerationSentence = (
-            entity_converter.convert(schema_inc_sentence)
+            entity_converter.convert(schema_inc_sentence, populate_back_edges=True)
         )
         entity_sup_sentence: entities.StateSupervisionSentence = (
-            entity_converter.convert(schema_sup_sentence)
+            entity_converter.convert(schema_sup_sentence, populate_back_edges=True)
         )
 
         entity_charges[0].supervision_sentences = [entity_sup_sentence]
@@ -895,12 +919,22 @@ class TestExtractDataForPipeline(unittest.TestCase):
 
         entity_converter = StateSchemaToEntityConverter()
 
-        entity_person = entity_converter.convert(schema_person)
-        entity_ethnicity = entity_converter.convert(schema_ethnicity)
-        entity_alias = entity_converter.convert(schema_alias)
-        entity_external_id = entity_converter.convert(schema_external_id)
-        entity_races = entity_converter.convert_all([schema_race_1, schema_race_2])
-        entity_assessment = entity_converter.convert(schema_assessment)
+        entity_person = entity_converter.convert(
+            schema_person, populate_back_edges=True
+        )
+        entity_ethnicity = entity_converter.convert(
+            schema_ethnicity, populate_back_edges=True
+        )
+        entity_alias = entity_converter.convert(schema_alias, populate_back_edges=True)
+        entity_external_id = entity_converter.convert(
+            schema_external_id, populate_back_edges=True
+        )
+        entity_races = entity_converter.convert_all(
+            [schema_race_1, schema_race_2], populate_back_edges=True
+        )
+        entity_assessment = entity_converter.convert(
+            schema_assessment, populate_back_edges=True
+        )
 
         entity_person.ethnicities = [entity_ethnicity]
         entity_person.aliases = [entity_alias]
@@ -1064,12 +1098,14 @@ class TestExtractDataForPipeline(unittest.TestCase):
 
         entity_converter = StateSchemaToEntityConverter()
 
-        entity_person = entity_converter.convert(schema_person_1)
+        entity_person = entity_converter.convert(
+            schema_person_1, populate_back_edges=True
+        )
         entity_charges: List[entities.StateCharge] = entity_converter.convert_all(
             [schema_charge_1, schema_charge_2], populate_back_edges=False
         )
         entity_sentence: entities.StateSupervisionSentence = entity_converter.convert(
-            schema_sentence_1
+            schema_sentence_1, populate_back_edges=True
         )
 
         entity_charges[0].supervision_sentences = [entity_sentence]
@@ -1725,7 +1761,9 @@ class TestExtractAllEntitiesOfType(unittest.TestCase):
 
         data_dict = {person.__tablename__: person_data}
 
-        output_person_entity = StateSchemaToEntityConverter().convert(person)
+        output_person_entity = StateSchemaToEntityConverter().convert(
+            person, populate_back_edges=True
+        )
 
         entity_class = entity_utils.get_entity_class_in_module_with_name(
             entities, "StatePerson"
@@ -1780,7 +1818,7 @@ class TestShallowHydrateEntity(unittest.TestCase):
         supervision_violation = remove_relationship_properties(supervision_violation)
 
         output_violation_entity = StateSchemaToEntityConverter().convert(
-            supervision_violation
+            supervision_violation, populate_back_edges=True
         )
 
         entity_class = entity_utils.get_entity_class_in_module_with_name(

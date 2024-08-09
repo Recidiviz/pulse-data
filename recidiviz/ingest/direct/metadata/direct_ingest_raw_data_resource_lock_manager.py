@@ -189,6 +189,7 @@ class DirectIngestRawDataResourceLockManager:
                 convert_schema_object_to_entity(
                     schema.DirectIngestRawDataResourceLock(**result),
                     entities.DirectIngestRawDataResourceLock,
+                    populate_back_edges=False,
                 )
                 for result in results
             ]
@@ -207,6 +208,7 @@ class DirectIngestRawDataResourceLockManager:
             return convert_schema_object_to_entity(
                 lock,
                 entities.DirectIngestRawDataResourceLock,
+                populate_back_edges=False,
             )
 
     def release_lock_by_id(
@@ -225,7 +227,9 @@ class DirectIngestRawDataResourceLockManager:
 
             lock.released = True
             return convert_schema_object_to_entity(
-                lock, entities.DirectIngestRawDataResourceLock
+                lock,
+                entities.DirectIngestRawDataResourceLock,
+                populate_back_edges=False,
             )
 
     def acquire_lock_for_resources(
@@ -266,7 +270,9 @@ class DirectIngestRawDataResourceLockManager:
 
             return [
                 convert_schema_object_to_entity(
-                    new_lock, entities.DirectIngestRawDataResourceLock
+                    new_lock,
+                    entities.DirectIngestRawDataResourceLock,
+                    populate_back_edges=False,
                 )
                 for new_lock in new_locks
             ]

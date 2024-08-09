@@ -60,6 +60,7 @@ class DirectIngestRawDataFlashStatusManager:
             return convert_schema_object_to_entity(
                 self._get_most_recent_flashing_row(session),
                 entities.DirectIngestRawDataFlashStatus,
+                populate_back_edges=False,
             )
 
     def set_flashing_started(self) -> None:

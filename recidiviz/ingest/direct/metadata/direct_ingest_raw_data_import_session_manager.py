@@ -76,7 +76,9 @@ class DirectIngestRawDataImportSessionManager:
                 raise e
 
             return convert_schema_object_to_entity(
-                new_import_session, entities.DirectIngestRawDataImportSession
+                new_import_session,
+                entities.DirectIngestRawDataImportSession,
+                populate_back_edges=True,
             )
 
     @staticmethod
@@ -195,7 +197,9 @@ class DirectIngestRawDataImportSessionManager:
             )
 
             return convert_schema_object_to_entity(
-                import_session, entities.DirectIngestRawDataImportSession
+                import_session,
+                entities.DirectIngestRawDataImportSession,
+                populate_back_edges=True,
             )
 
     def get_import_sesions_for_file_id(
@@ -213,7 +217,9 @@ class DirectIngestRawDataImportSessionManager:
 
             return [
                 convert_schema_object_to_entity(
-                    import_session, entities.DirectIngestRawDataImportSession
+                    import_session,
+                    entities.DirectIngestRawDataImportSession,
+                    populate_back_edges=True,
                 )
                 for import_session in import_sessions
             ]
@@ -242,7 +248,9 @@ class DirectIngestRawDataImportSessionManager:
 
             return [
                 convert_schema_object_to_entity(
-                    import_session, entities.DirectIngestRawDataImportSession
+                    import_session,
+                    entities.DirectIngestRawDataImportSession,
+                    populate_back_edges=True,
                 )
                 for import_session in import_sessions
             ]

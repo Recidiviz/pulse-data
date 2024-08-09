@@ -152,7 +152,7 @@ class DirectIngestRawFileMetadataManager:
         ) as session:
             metadata = self._get_raw_file_metadata_for_path(session, path)
             return convert_schema_object_to_entity(
-                metadata, DirectIngestRawFileMetadata
+                metadata, DirectIngestRawFileMetadata, populate_back_edges=False
             )
 
     def has_raw_file_been_processed(self, path: GcsfsFilePath) -> bool:
@@ -197,7 +197,9 @@ class DirectIngestRawFileMetadataManager:
             results = query.all()
 
             return [
-                convert_schema_object_to_entity(metadata, DirectIngestRawFileMetadata)
+                convert_schema_object_to_entity(
+                    metadata, DirectIngestRawFileMetadata, populate_back_edges=False
+                )
                 for metadata in results
             ]
 
@@ -306,6 +308,7 @@ class DirectIngestRawFileMetadataManager:
                 convert_schema_object_to_entity(
                     schema.DirectIngestRawFileMetadata(**result),
                     DirectIngestRawFileMetadata,
+                    populate_back_edges=False,
                 )
                 for result in results
             ]
@@ -323,7 +326,9 @@ class DirectIngestRawFileMetadataManager:
             results = query.all()
 
             return [
-                convert_schema_object_to_entity(metadata, DirectIngestRawFileMetadata)
+                convert_schema_object_to_entity(
+                    metadata, DirectIngestRawFileMetadata, populate_back_edges=False
+                )
                 for metadata in results
             ]
 

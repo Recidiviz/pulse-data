@@ -879,42 +879,6 @@ def print_entity_tree(
             _print_indented(f"{child_field}: {id_str} - backedge", indent, file)
 
 
-def get_all_db_objs_from_trees(
-    db_objs: Sequence[DatabaseEntity],
-    field_index: CoreEntityFieldIndex,
-    result: Optional[Set[DatabaseEntity]] = None,
-) -> Set[DatabaseEntity]:
-    if result is None:
-        result = set()
-    for root_obj in db_objs:
-        for obj in get_all_db_objs_from_tree(root_obj, field_index, result):
-            result.add(obj)
-    return result
-
-
-def get_all_db_objs_from_tree(
-    db_obj: DatabaseEntity,
-    field_index: CoreEntityFieldIndex,
-    result: Optional[Set[DatabaseEntity]] = None,
-) -> Set[DatabaseEntity]:
-    if result is None:
-        result = set()
-
-    if db_obj in result:
-        return result
-
-    result.add(db_obj)
-
-    set_fields = field_index.get_fields_with_non_empty_values(
-        db_obj, EntityFieldType.FORWARD_EDGE
-    )
-    for field in set_fields:
-        child = db_obj.get_field_as_list(field)
-        get_all_db_objs_from_trees(child, field_index, result)
-
-    return result
-
-
 def get_all_entities_from_tree(
     entity: Entity,
     field_index: CoreEntityFieldIndex,

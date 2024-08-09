@@ -47,7 +47,9 @@ class DirectIngestSftpRemoteFileMetadataManager:
         schema_metadata: schema.DirectIngestSftpRemoteFileMetadata,
     ) -> DirectIngestSftpRemoteFileMetadata:
         entity_metadata = convert_schema_object_to_entity(
-            schema_metadata, DirectIngestSftpRemoteFileMetadata
+            schema_metadata,
+            DirectIngestSftpRemoteFileMetadata,
+            populate_back_edges=False,
         )
 
         if not isinstance(entity_metadata, DirectIngestSftpRemoteFileMetadata):
@@ -58,7 +60,7 @@ class DirectIngestSftpRemoteFileMetadataManager:
     def get_remote_file_metadata(
         self, remote_file_path: str, sftp_timestamp: float
     ) -> DirectIngestSftpRemoteFileMetadata:
-        """Returns metadata information for the provided remote file and tmestamp."""
+        """Returns metadata information for the provided remote file and timestamp."""
         with SessionFactory.using_database(
             self.database_key, autocommit=False
         ) as session:
@@ -72,7 +74,7 @@ class DirectIngestSftpRemoteFileMetadataManager:
                 .one()
             )
             return convert_schema_object_to_entity(
-                metadata, DirectIngestSftpRemoteFileMetadata
+                metadata, DirectIngestSftpRemoteFileMetadata, populate_back_edges=False
             )
 
     def has_remote_file_been_discovered(
@@ -142,7 +144,9 @@ class DirectIngestSftpRemoteFileMetadataManager:
             ).filter_by(region_code=self.region_code, file_download_time=None)
             return [
                 convert_schema_object_to_entity(
-                    result, DirectIngestSftpRemoteFileMetadata
+                    result,
+                    DirectIngestSftpRemoteFileMetadata,
+                    populate_back_edges=False,
                 )
                 for result in results
             ]

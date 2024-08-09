@@ -285,7 +285,9 @@ class IngestRawFileImportControllerTest(unittest.TestCase):
             )
 
             raw_file_metadata_list = [
-                convert_schema_object_to_entity(metadata, DirectIngestRawFileMetadata)
+                convert_schema_object_to_entity(
+                    metadata, DirectIngestRawFileMetadata, populate_back_edges=False
+                )
                 for metadata in raw_file_results
             ]
 
