@@ -79,7 +79,15 @@ run_cmd gcloud artifacts docker tags add "${PROD_IMAGE_URL}" "${PROD_IMAGE_TAG}"
 # As long as this Docker image was built using our Cloud Build Trigger, the first tag will always be the commit hash.
 # We need the commit hash so we know what point in the code to run the migrations against.
 RECIDIVIZ_DATA_TAGS=$(jq -r '.[0].tags' <<< "${STAGING_IMAGE_JSON}")
-RECIDIVIZ_DATA_COMMIT_HASH=$(cut -d ',' -f 1 <<< "${RECIDIVIZ_DATA_TAGS}")
+
+# Check if RECIDIVIZ_DATA_TAGS is a JSON array or a comma-separated string
+if echo "${RECIDIVIZ_DATA_TAGS}" | jq empty 2>/dev/null; then
+    # RECIDIVIZ_DATA_TAGS is a JSON array
+    RECIDIVIZ_DATA_COMMIT_HASH=$(jq -r '.[0]' <<< "${RECIDIVIZ_DATA_TAGS}")
+else
+    # RECIDIVIZ_DATA_TAGS is a comma-separated string
+    RECIDIVIZ_DATA_COMMIT_HASH=$(cut -d ',' -f 1 <<< "${RECIDIVIZ_DATA_TAGS}")
+fi
 
 echo "Checking out [${RECIDIVIZ_DATA_COMMIT_HASH}] in pulse-data..."
 run_cmd git fetch origin "${RECIDIVIZ_DATA_COMMIT_HASH}"

@@ -60,8 +60,8 @@ run_cmd pipenv run python -m recidiviz.tools.deploy.justice_counts.run_cloud_bui
 
 # Step 4: Tag Docker image with 'latest'
 
-# Look up the pulse-data commit sha used in the Docker build
-RECIDIVIZ_DATA_COMMIT_HASH=$(gcloud artifacts docker images list "${REMOTE_IMAGE_BASE}" --format=json --include-tags --sort-by=~CREATE_TIME | jq -r '.[0].tags' | cut -d ',' -f 1)
+# Look up the pulse-data commit sha used in the Docker build (supports tags in a JSON array or a comma-separated string format)
+RECIDIVIZ_DATA_COMMIT_HASH=$(gcloud artifacts docker images list "${REMOTE_IMAGE_BASE}" --format=json --include-tags --sort-by=~CREATE_TIME | jq -r '.[0].tags | if type == "array" then .[0] else (split(",") | .[0]) end')
 
 # Use that to get the URL of the built Docker image
 COMMIT_SHA_DOCKER_TAG=${REMOTE_IMAGE_BASE}:${RECIDIVIZ_DATA_COMMIT_HASH}
