@@ -43,7 +43,6 @@ from recidiviz.persistence.entity.base_entity import (
     HasMultipleExternalIdsEntity,
     RootEntity,
 )
-from recidiviz.persistence.entity.core_entity import CoreEntity
 from recidiviz.persistence.entity.entity_utils import (
     CoreEntityFieldIndex,
     get_all_entities_from_tree,
@@ -127,7 +126,7 @@ class RunValidationsWithOutputChecking(RunValidations):
     ) -> Callable[[Iterable[RootEntity]], None]:
         def _equal_to(actual: Iterable[RootEntity]) -> None:
             copy_of_actual = deepcopy(actual)
-            clear_db_ids([cast(CoreEntity, entity) for entity in copy_of_actual])
+            clear_db_ids([cast(Entity, entity) for entity in copy_of_actual])
             sorted_actual = _sort_root_entities(copy_of_actual)
             sorted_expected = _sort_root_entities(expected_root_entity_output)
             if sorted_actual != sorted_expected:

@@ -620,9 +620,7 @@ class CoreEntityFieldIndex:
         )
 
 
-def is_reference_only_entity(
-    entity: CoreEntity, field_index: CoreEntityFieldIndex
-) -> bool:
+def is_reference_only_entity(entity: Entity, field_index: CoreEntityFieldIndex) -> bool:
     """Returns true if this object does not contain any meaningful information
     describing the entity, but instead only identifies the entity for reference
     purposes. Concretely, this means the object has an external_id but no other set
@@ -643,7 +641,7 @@ def is_reference_only_entity(
 
 
 def get_explicitly_set_flat_fields(
-    entity: CoreEntity, field_index: CoreEntityFieldIndex
+    entity: Entity, field_index: CoreEntityFieldIndex
 ) -> Set[str]:
     """Returns the set of field names for fields on the entity that have been set with
     non-default values. The "state_code" field is also excluded, as it is set with the
@@ -680,14 +678,14 @@ def get_explicitly_set_flat_fields(
 
 
 def _sort_based_on_flat_fields(
-    db_entities: Sequence[CoreEntity], field_index: CoreEntityFieldIndex
+    db_entities: Sequence[Entity], field_index: CoreEntityFieldIndex
 ) -> None:
     """Helper function that sorts all entities in |db_entities| in place as
     well as all children of |db_entities|. Sorting is done by first by an
     external_id if that field exists, then present flat fields.
     """
 
-    def _get_entity_sort_key(e: CoreEntity) -> str:
+    def _get_entity_sort_key(e: Entity) -> str:
         """Generates a sort key for the given entity based on the flat field values
         in this entity."""
         return f"{e.get_external_id()}#{get_flat_fields_json_str(e, field_index)}"
@@ -702,9 +700,7 @@ def _sort_based_on_flat_fields(
             _sort_based_on_flat_fields(field, field_index)
 
 
-def get_flat_fields_json_str(
-    entity: CoreEntity, field_index: CoreEntityFieldIndex
-) -> str:
+def get_flat_fields_json_str(entity: Entity, field_index: CoreEntityFieldIndex) -> str:
     flat_fields_dict: Dict[str, str] = {}
     for field_name in field_index.get_fields_with_non_empty_values(
         entity, EntityFieldType.FLAT_FIELD
@@ -717,7 +713,7 @@ def _print_indented(s: str, indent: int, file: Optional[TextIOWrapper] = None) -
     print(f'{" " * indent}{s}', file=file)
 
 
-def _obj_id_str(entity: CoreEntity, id_mapping: Dict[int, int]) -> str:
+def _obj_id_str(entity: Entity, id_mapping: Dict[int, int]) -> str:
     python_obj_id = id(entity)
 
     if python_obj_id not in id_mapping:
@@ -752,7 +748,7 @@ def write_entity_tree_to_file(
 
 
 def print_entity_trees(
-    entities_list: Sequence[CoreEntity],
+    entities_list: Sequence[Entity],
     print_tree_structure_only: bool = False,
     python_id_to_fake_id: Optional[Dict[int, int]] = None,
     # Default arg caches across calls to this function
@@ -789,7 +785,7 @@ def print_entity_trees(
 
 
 def print_entity_tree(
-    entity: CoreEntity,
+    entity: Entity,
     print_tree_structure_only: bool = False,
     indent: int = 0,
     python_id_to_fake_id: Optional[Dict[int, int]] = None,
@@ -1014,44 +1010,6 @@ def get_all_entity_associations_from_tree(
         else:
             get_all_entity_associations_from_tree(child, field_index, result, seen_ids)
     return result
-
-
-def get_entities_by_type(
-    all_entities: Sequence[DatabaseEntity],
-    field_index: CoreEntityFieldIndex,
-    entities_of_type: Optional[Dict[Type, List[DatabaseEntity]]] = None,
-    seen_entities: Optional[Set[int]] = None,
-) -> Dict[Type, List[DatabaseEntity]]:
-    """Creates a list of entities for each entity type present in the provided
-    |all_entities| graph. Returns the types and the corresponding entity lists
-    as a dictionary.
-    - if |entities_of_type| is provided, this method will update this dictionary
-      rather than creating a new one to return.
-    - if |seen_entities| is provided, this method will skip over any entities
-      found in |all_entities| that are also present in |seen_entities|.
-    """
-    if entities_of_type is None:
-        entities_of_type = defaultdict(list)
-    if seen_entities is None:
-        seen_entities = set()
-
-    for entity in all_entities:
-        if id(entity) in seen_entities:
-            continue
-        seen_entities.add(id(entity))
-        entity_cls = entity.__class__
-        if entity_cls not in entities_of_type:
-            entities_of_type[entity_cls] = []
-        entities_of_type[entity_cls].append(entity)
-        for child_name in field_index.get_fields_with_non_empty_values(
-            entity, EntityFieldType.FORWARD_EDGE
-        ):
-            child_list = entity.get_field_as_list(child_name)
-            get_entities_by_type(
-                child_list, field_index, entities_of_type, seen_entities
-            )
-
-    return entities_of_type
 
 
 def get_non_flat_property_class_name(
@@ -1299,7 +1257,7 @@ def set_backedges(element: RootEntity, field_index: CoreEntityFieldIndex) -> Roo
 
 
 def get_many_to_many_relationships(
-    entity_cls: Type[CoreEntity], field_index: CoreEntityFieldIndex
+    entity_cls: Type[Entity], field_index: CoreEntityFieldIndex
 ) -> Set[str]:
     """Returns the set of fields on |entity| that connect that entity to a parent where
     there is a potential many-to-many relationship between entity and that parent entity type.

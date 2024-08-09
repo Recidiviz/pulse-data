@@ -18,8 +18,7 @@
 
 import datetime
 import unittest
-from collections import defaultdict
-from typing import Dict, List, Optional, Sequence, Type
+from typing import Optional, Sequence
 
 from recidiviz.common.constants.state.external_id_types import US_ND_ELITE
 from recidiviz.common.constants.state.state_assessment import (
@@ -102,21 +101,16 @@ from recidiviz.common.constants.state.state_supervision_violation_response impor
     StateSupervisionViolationResponseType,
 )
 from recidiviz.common.constants.state.state_task_deadline import StateTaskType
-from recidiviz.persistence.database.database_entity import DatabaseEntity
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.schema_utils import (
     get_all_table_classes_in_schema,
     is_association_table,
 )
-from recidiviz.persistence.database.session import Session
 from recidiviz.persistence.entity.base_entity import Entity
-from recidiviz.persistence.entity.core_entity import CoreEntity
 from recidiviz.persistence.entity.entity_utils import (
     CoreEntityFieldIndex,
     EntityFieldType,
     get_all_entities_from_tree,
-    get_entities_by_type,
-    print_entity_tree,
     set_backedges,
 )
 from recidiviz.persistence.entity.state import entities
@@ -125,7 +119,7 @@ from recidiviz.utils.types import assert_type
 
 
 def clear_db_ids(
-    db_entities: Sequence[CoreEntity],
+    db_entities: Sequence[Entity],
     # Default arg caches across calls to this function
     field_index: CoreEntityFieldIndex = CoreEntityFieldIndex(),
 ) -> None:
@@ -138,44 +132,6 @@ def clear_db_ids(
             entity, EntityFieldType.FORWARD_EDGE
         ):
             clear_db_ids(entity.get_field_as_list(field_name))
-
-
-def assert_no_unexpected_entities_in_db(
-    expected_entities: Sequence[DatabaseEntity],
-    session: Session,
-    # Default arg caches across calls to this function
-    field_index: CoreEntityFieldIndex = CoreEntityFieldIndex(),
-) -> None:
-    """Counts all of the entities present in the |expected_entities| graph by
-    type and ensures that the same number of entities exists in the DB for each
-    type.
-    """
-    entity_counter: Dict[Type, List[DatabaseEntity]] = defaultdict(list)
-    get_entities_by_type(expected_entities, field_index, entity_counter)
-    for cls, entities_of_cls in entity_counter.items():
-        expected_ids = set()
-        for entity in entities_of_cls:
-            expected_ids.add(entity.get_id())
-        db_entities = session.query(cls).all()
-        db_ids = set()
-        for entity in db_entities:
-            db_ids.add(entity.get_id())
-
-        if expected_ids != db_ids:
-            print("\n********** Entities from |expected_entities| **********\n")
-            for entity in sorted(entities_of_cls, key=lambda x: x.get_id()):
-                print_entity_tree(entity, field_index=field_index)
-            print("\n********** Entities from db **********\n")
-            for entity in sorted(db_entities, key=lambda x: x.get_id()):
-                print_entity_tree(entity, field_index=field_index)
-            raise ValueError(
-                f"For cls {cls.__name__}, found difference in primary keys from"
-                f"expected entities and those of entities read from db.\n"
-                f"Expected ids not present in db: "
-                f"{str(expected_ids - db_ids)}\n"
-                f"Db ids not present in expected entities: "
-                f"{str(db_ids - expected_ids)}\n"
-            )
 
 
 def generate_full_graph_state_person(

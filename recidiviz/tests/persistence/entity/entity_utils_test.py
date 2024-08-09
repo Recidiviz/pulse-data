@@ -25,7 +25,10 @@ import attr
 import pytz
 
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
-from recidiviz.common.constants.state.state_charge import StateChargeStatus
+from recidiviz.common.constants.state.state_charge import (
+    StateChargeStatus,
+    StateChargeV2Status,
+)
 from recidiviz.common.constants.state.state_drug_screen import (
     StateDrugScreenResult,
     StateDrugScreenSampleType,
@@ -76,12 +79,10 @@ from recidiviz.common.constants.state.state_supervision_violation_response impor
 )
 from recidiviz.common.constants.state.state_task_deadline import StateTaskType
 from recidiviz.common.constants.states import StateCode
-from recidiviz.persistence.database.database_entity import DatabaseEntity
 from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.schema_utils import (
     get_all_table_classes_in_schema,
-    get_state_database_entities,
     is_association_table,
 )
 from recidiviz.persistence.entity.base_entity import Entity
@@ -402,232 +403,94 @@ class TestCoreEntityFieldIndex(TestCase):
             )
 
 
-PLACEHOLDER_ENTITY_EXAMPLES: Dict[Type[DatabaseEntity], List[DatabaseEntity]] = {
-    schema.StateAssessment: [schema.StateAssessment(state_code=StateCode.US_XX.value)],
-    schema.StateCharge: [
-        schema.StateCharge(
-            state_code=StateCode.US_XX.value,
-            status=StateChargeStatus.PRESENT_WITHOUT_INFO.value,
-        )
-    ],
-    schema.StateDrugScreen: [schema.StateDrugScreen(state_code=StateCode.US_XX.value)],
-    schema.StateEmploymentPeriod: [
-        schema.StateEmploymentPeriod(state_code=StateCode.US_XX.value)
-    ],
-    schema.StateEarlyDischarge: [
-        schema.StateEarlyDischarge(state_code=StateCode.US_XX.value)
-    ],
-    schema.StateIncarcerationIncident: [
-        schema.StateIncarcerationIncident(state_code=StateCode.US_XX.value)
-    ],
-    schema.StateIncarcerationIncidentOutcome: [
-        schema.StateIncarcerationIncidentOutcome(state_code=StateCode.US_XX.value)
-    ],
-    schema.StateIncarcerationPeriod: [
-        schema.StateIncarcerationPeriod(state_code=StateCode.US_XX.value)
-    ],
-    schema.StateIncarcerationSentence: [
-        schema.StateIncarcerationSentence(
-            state_code=StateCode.US_XX.value,
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO.value,
-        )
-    ],
-    schema.StatePerson: [
-        schema.StatePerson(state_code=StateCode.US_XX.value),
-        schema.StatePerson(
-            state_code=StateCode.US_XX.value,
-            assessments=[
-                schema.StateAssessment(
-                    state_code=StateCode.US_XX.value, external_id=_EXTERNAL_ID
-                )
-            ],
-        ),
-    ],
-    schema.StatePersonAddressPeriod: [
-        schema.StatePersonAddressPeriod(state_code=StateCode.US_XX)
-    ],
-    schema.StatePersonHousingStatusPeriod: [
-        schema.StatePersonHousingStatusPeriod(state_code=StateCode.US_XX)
-    ],
-    schema.StatePersonAlias: [
-        schema.StatePersonAlias(state_code=StateCode.US_XX.value)
-    ],
-    schema.StatePersonEthnicity: [
-        schema.StatePersonEthnicity(state_code=StateCode.US_XX.value)
-    ],
-    schema.StatePersonExternalId: [],
-    schema.StatePersonRace: [schema.StatePersonRace(state_code=StateCode.US_XX.value)],
-    schema.StateProgramAssignment: [
-        schema.StateProgramAssignment(
-            state_code=StateCode.US_XX.value,
-            participation_status=StateProgramAssignmentParticipationStatus.PRESENT_WITHOUT_INFO.value,
-        )
-    ],
-    schema.StateStaff: [schema.StateStaff(state_code=StateCode.US_XX.value)],
-    schema.StateStaffExternalId: [],
-    schema.StateStaffCaseloadTypePeriod: [
-        # StateStaffCaseloadTypePeriod cannot be placeholders - must always have an
-        # external_id and start_date.
-    ],
-    schema.StateStaffLocationPeriod: [
-        # StateStaffSupervisorPeriod cannot be placeholders - must always have an
-        # external_id and start_date.
-    ],
-    schema.StateStaffRolePeriod: [
-        # StateStaffRolePeriod cannot be placeholders - must always have an external_id
-        # and start_date.
-    ],
-    schema.StateStaffSupervisorPeriod: [
-        # StateStaffSupervisorPeriod cannot be placeholders - must always have an
-        # external_id and start_date.
-    ],
-    schema.StateSupervisionCaseTypeEntry: [
-        schema.StateSupervisionCaseTypeEntry(state_code=StateCode.US_XX.value)
-    ],
-    schema.StateSupervisionContact: [
-        schema.StateSupervisionContact(state_code=StateCode.US_XX.value)
-    ],
-    schema.StateSupervisionPeriod: [
-        schema.StateSupervisionPeriod(state_code=StateCode.US_XX.value)
-    ],
-    schema.StateSupervisionSentence: [
-        schema.StateSupervisionSentence(
-            state_code=StateCode.US_XX.value,
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO.value,
-        ),
-        schema.StateSupervisionSentence(
-            state_code=StateCode.US_XX.value,
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO.value,
-            charges=[
-                schema.StateCharge(
-                    state_code=StateCode.US_XX.value,
-                    external_id=_EXTERNAL_ID,
-                    status=StateChargeStatus.PRESENT_WITHOUT_INFO.value,
-                )
-            ],
-        ),
-    ],
-    schema.StateSupervisionViolatedConditionEntry: [
-        schema.StateSupervisionViolatedConditionEntry(state_code=StateCode.US_XX.value)
-    ],
-    schema.StateSupervisionViolation: [
-        schema.StateSupervisionViolation(state_code=StateCode.US_XX.value)
-    ],
-    schema.StateSupervisionViolationResponse: [
-        schema.StateSupervisionViolationResponse(state_code=StateCode.US_XX.value)
-    ],
-    schema.StateSupervisionViolationResponseDecisionEntry: [
-        schema.StateSupervisionViolationResponseDecisionEntry(
-            state_code=StateCode.US_XX.value
-        )
-    ],
-    schema.StateSupervisionViolationTypeEntry: [
-        schema.StateSupervisionViolationTypeEntry(state_code=StateCode.US_XX.value)
-    ],
-    schema.StateTaskDeadline: [
-        schema.StateTaskDeadline(state_code=StateCode.US_XX.value)
-    ],
-}
-
 # Entities in this dict should not contain any meaningful information.
 # Instead, they only identify the entity for referencing.
 # Concretely, this means the object has an external_id but no other set fields.
-REFERENCE_ENTITY_EXAMPLES: Dict[Type[DatabaseEntity], List[DatabaseEntity]] = {
-    schema.StateSentenceGroup: [
-        schema.StateSentenceGroup(
+REFERENCE_ENTITY_EXAMPLES: Dict[Type[Entity], List[Entity]] = {
+    state_entities.StateSentenceGroup: [
+        state_entities.StateSentenceGroup(
             state_code=StateCode.US_XX.value,
             external_id=_EXTERNAL_ID,
         )
     ],
-    schema.StateSentenceGroupLength: [],
-    schema.StateSentenceLength: [],
-    schema.StateSentenceStatusSnapshot: [],
-    schema.StateChargeV2: [
-        schema.StateChargeV2(
+    state_entities.StateSentenceGroupLength: [],
+    state_entities.StateSentenceLength: [],
+    state_entities.StateSentenceStatusSnapshot: [],
+    state_entities.StateChargeV2: [
+        state_entities.StateChargeV2(
             state_code=StateCode.US_XX.value,
             external_id=_EXTERNAL_ID,
+            status=StateChargeV2Status.PRESENT_WITHOUT_INFO,
         )
     ],
-    schema.StateSentenceServingPeriod: [
-        schema.StateSentenceServingPeriod(
-            state_code=StateCode.US_XX.value, external_id=_EXTERNAL_ID
-        )
-    ],
-    schema.StateSentence: [
-        schema.StateSentence(
+    state_entities.StateSentenceServingPeriod: [],
+    state_entities.StateSentence: [
+        state_entities.StateSentence(
             state_code=StateCode.US_XX.value,
             external_id=_EXTERNAL_ID,
         ),
     ],
-    schema.StateAssessment: [
-        schema.StateAssessment(
+    state_entities.StateAssessment: [
+        state_entities.StateAssessment(
             state_code=StateCode.US_XX.value, external_id=_EXTERNAL_ID
         )
     ],
-    schema.StateCharge: [
-        schema.StateCharge(
+    state_entities.StateCharge: [
+        state_entities.StateCharge(
             state_code=StateCode.US_XX.value,
             external_id=_EXTERNAL_ID,
-            status=StateChargeStatus.PRESENT_WITHOUT_INFO.value,
+            status=StateChargeStatus.PRESENT_WITHOUT_INFO,
         )
     ],
-    schema.StateDrugScreen: [
-        schema.StateDrugScreen(
+    state_entities.StateDrugScreen: [],
+    state_entities.StateEmploymentPeriod: [],
+    state_entities.StateEarlyDischarge: [
+        state_entities.StateEarlyDischarge(
             state_code=StateCode.US_XX.value, external_id=_EXTERNAL_ID
         )
     ],
-    schema.StateEmploymentPeriod: [
-        schema.StateEmploymentPeriod(
+    state_entities.StateIncarcerationIncident: [
+        state_entities.StateIncarcerationIncident(
             state_code=StateCode.US_XX.value, external_id=_EXTERNAL_ID
         )
     ],
-    schema.StateEarlyDischarge: [
-        schema.StateEarlyDischarge(
+    state_entities.StateIncarcerationIncidentOutcome: [
+        state_entities.StateIncarcerationIncidentOutcome(
             state_code=StateCode.US_XX.value, external_id=_EXTERNAL_ID
         )
     ],
-    schema.StateIncarcerationIncident: [
-        schema.StateIncarcerationIncident(
+    state_entities.StateIncarcerationPeriod: [
+        state_entities.StateIncarcerationPeriod(
             state_code=StateCode.US_XX.value, external_id=_EXTERNAL_ID
         )
     ],
-    schema.StateIncarcerationIncidentOutcome: [
-        schema.StateIncarcerationIncidentOutcome(
-            state_code=StateCode.US_XX.value, external_id=_EXTERNAL_ID
-        )
-    ],
-    schema.StateIncarcerationPeriod: [
-        schema.StateIncarcerationPeriod(
-            state_code=StateCode.US_XX.value, external_id=_EXTERNAL_ID
-        )
-    ],
-    schema.StateIncarcerationSentence: [
-        schema.StateIncarcerationSentence(
+    state_entities.StateIncarcerationSentence: [
+        state_entities.StateIncarcerationSentence(
             state_code=StateCode.US_XX.value,
             external_id=_EXTERNAL_ID,
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO.value,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
         ),
     ],
-    schema.StatePerson: [
-        schema.StatePerson(
+    state_entities.StatePerson: [
+        state_entities.StatePerson(
             state_code=StateCode.US_XX.value,
             external_ids=[
-                schema.StatePersonExternalId(
+                state_entities.StatePersonExternalId(
                     state_code=StateCode.US_XX.value,
                     external_id=_EXTERNAL_ID,
                     id_type=_ID_TYPE,
                 )
             ],
         ),
-        schema.StatePerson(
+        state_entities.StatePerson(
             state_code=StateCode.US_XX.value,
             assessments=[
-                schema.StateAssessment(
+                state_entities.StateAssessment(
                     state_code=StateCode.US_XX.value, external_id=_EXTERNAL_ID
                 )
             ],
             external_ids=[
-                schema.StatePersonExternalId(
+                state_entities.StatePersonExternalId(
                     state_code=StateCode.US_XX.value,
                     external_id=_EXTERNAL_ID,
                     id_type=_ID_TYPE,
@@ -635,24 +498,24 @@ REFERENCE_ENTITY_EXAMPLES: Dict[Type[DatabaseEntity], List[DatabaseEntity]] = {
             ],
         ),
     ],
-    schema.StatePersonAddressPeriod: [],
-    schema.StatePersonHousingStatusPeriod: [],
-    schema.StatePersonAlias: [],
-    schema.StatePersonEthnicity: [],
-    schema.StatePersonExternalId: [],
-    schema.StatePersonRace: [],
-    schema.StateProgramAssignment: [
-        schema.StateProgramAssignment(
+    state_entities.StatePersonAddressPeriod: [],
+    state_entities.StatePersonHousingStatusPeriod: [],
+    state_entities.StatePersonAlias: [],
+    state_entities.StatePersonEthnicity: [],
+    state_entities.StatePersonExternalId: [],
+    state_entities.StatePersonRace: [],
+    state_entities.StateProgramAssignment: [
+        state_entities.StateProgramAssignment(
             state_code=StateCode.US_XX.value,
             external_id=_EXTERNAL_ID,
-            participation_status=StateProgramAssignmentParticipationStatus.PRESENT_WITHOUT_INFO.value,
+            participation_status=StateProgramAssignmentParticipationStatus.PRESENT_WITHOUT_INFO,
         )
     ],
-    schema.StateStaff: [
-        schema.StateStaff(
+    state_entities.StateStaff: [
+        state_entities.StateStaff(
             state_code=StateCode.US_XX.value,
             external_ids=[
-                schema.StateStaffExternalId(
+                state_entities.StateStaffExternalId(
                     state_code=StateCode.US_XX.value,
                     external_id=_EXTERNAL_ID,
                     id_type=_ID_TYPE,
@@ -660,349 +523,327 @@ REFERENCE_ENTITY_EXAMPLES: Dict[Type[DatabaseEntity], List[DatabaseEntity]] = {
             ],
         )
     ],
-    schema.StateStaffExternalId: [],
-    schema.StateStaffCaseloadTypePeriod: [
+    state_entities.StateStaffExternalId: [],
+    state_entities.StateStaffCaseloadTypePeriod: [
         # StateStaffCaseloadTypePeriod cannot be reference entities - must always have a
         # start_date.
     ],
-    schema.StateStaffLocationPeriod: [
+    state_entities.StateStaffLocationPeriod: [
         # StateStaffLocationPeriod cannot be reference entities - must always have a
         # start_date.
     ],
-    schema.StateStaffRolePeriod: [
+    state_entities.StateStaffRolePeriod: [
         # StateStaffRolePeriod cannot be reference entities - must always have a
         # start_date.
     ],
-    schema.StateStaffSupervisorPeriod: [
+    state_entities.StateStaffSupervisorPeriod: [
         # StateStaffSupervisorPeriod cannot be reference entities - must always have a
         # start_date.
     ],
-    schema.StateSupervisionCaseTypeEntry: [],
-    schema.StateSupervisionContact: [
-        schema.StateSupervisionContact(
+    state_entities.StateSupervisionCaseTypeEntry: [],
+    state_entities.StateSupervisionContact: [
+        state_entities.StateSupervisionContact(
             state_code=StateCode.US_XX.value, external_id=_EXTERNAL_ID
         )
     ],
-    schema.StateSupervisionPeriod: [
-        schema.StateSupervisionPeriod(
-            state_code=StateCode.US_XX.value, external_id=_EXTERNAL_ID
-        )
-    ],
-    schema.StateSupervisionSentence: [
-        schema.StateSupervisionSentence(
+    state_entities.StateSupervisionPeriod: [],
+    state_entities.StateSupervisionSentence: [
+        state_entities.StateSupervisionSentence(
             state_code=StateCode.US_XX.value,
             external_id=_EXTERNAL_ID,
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO.value,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
         ),
-        schema.StateSupervisionSentence(
+        state_entities.StateSupervisionSentence(
             state_code=StateCode.US_XX.value,
             external_id=_EXTERNAL_ID,
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO.value,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
             charges=[
-                schema.StateCharge(
+                state_entities.StateCharge(
                     state_code=StateCode.US_XX.value,
                     external_id=_EXTERNAL_ID,
-                    status=StateChargeStatus.PRESENT_WITHOUT_INFO.value,
+                    status=StateChargeStatus.PRESENT_WITHOUT_INFO,
                 )
             ],
         ),
     ],
-    schema.StateSupervisionViolatedConditionEntry: [],
-    schema.StateSupervisionViolation: [
-        schema.StateSupervisionViolation(
+    state_entities.StateSupervisionViolatedConditionEntry: [],
+    state_entities.StateSupervisionViolation: [
+        state_entities.StateSupervisionViolation(
             state_code=StateCode.US_XX.value, external_id=_EXTERNAL_ID
         )
     ],
-    schema.StateSupervisionViolationResponse: [
-        schema.StateSupervisionViolationResponse(
+    state_entities.StateSupervisionViolationResponse: [
+        state_entities.StateSupervisionViolationResponse(
             state_code=StateCode.US_XX.value, external_id=_EXTERNAL_ID
         )
     ],
-    schema.StateSupervisionViolationResponseDecisionEntry: [],
-    schema.StateSupervisionViolationTypeEntry: [],
-    schema.StateTaskDeadline: [],
+    state_entities.StateSupervisionViolationResponseDecisionEntry: [],
+    state_entities.StateSupervisionViolationTypeEntry: [],
+    state_entities.StateTaskDeadline: [],
 }
 
-HAS_MEANINGFUL_DATA_ENTITIES: Dict[Type[DatabaseEntity], List[DatabaseEntity]] = {
-    schema.StateSentenceGroup: [],
-    schema.StateSentenceGroupLength: [
-        schema.StateSentenceGroupLength(
+HAS_MEANINGFUL_DATA_ENTITIES: Dict[Type[Entity], List[Entity]] = {
+    state_entities.StateSentenceGroup: [],
+    state_entities.StateSentenceGroupLength: [
+        state_entities.StateSentenceGroupLength(
             state_code=StateCode.US_XX.value,
             group_update_datetime=datetime.datetime(2022, 1, 1),
         )
     ],
-    schema.StateSentenceLength: [
-        schema.StateSentenceLength(
+    state_entities.StateSentenceLength: [
+        state_entities.StateSentenceLength(
             state_code=StateCode.US_XX.value,
             length_update_datetime=datetime.datetime(2022, 1, 1),
         )
     ],
-    schema.StateSentenceStatusSnapshot: [
-        schema.StateSentenceStatusSnapshot(
+    state_entities.StateSentenceStatusSnapshot: [
+        state_entities.StateSentenceStatusSnapshot(
             state_code=StateCode.US_XX.value,
-            status=StateSentenceStatus.SERVING.value,
+            status=StateSentenceStatus.SERVING,
             status_update_datetime=datetime.datetime(2022, 1, 1),
         )
     ],
-    schema.StateChargeV2: [
-        schema.StateChargeV2(
+    state_entities.StateChargeV2: [
+        state_entities.StateChargeV2(
             state_code=StateCode.US_XX.value,
             external_id=_EXTERNAL_ID,
-            status=StateChargeStatus.PRESENT_WITHOUT_INFO.value,
+            status=StateChargeV2Status.PRESENT_WITHOUT_INFO,
             date_charged=datetime.datetime(2022, 1, 1),
         )
     ],
-    schema.StateSentenceServingPeriod: [
-        schema.StateSentenceServingPeriod(
+    state_entities.StateSentenceServingPeriod: [
+        state_entities.StateSentenceServingPeriod(
+            sentence_serving_period_id=None,
             state_code=StateCode.US_XX.value,
-            person_id=1,
             external_id=_EXTERNAL_ID,
             serving_start_date=datetime.date(2021, 1, 1),
+            serving_end_date=None,
         ),
     ],
-    schema.StateSentence: [
-        schema.StateSentence(
+    state_entities.StateSentence: [
+        state_entities.StateSentence(
             state_code=StateCode.US_XX.value,
             sentence_type=StateSentenceType.STATE_PRISON,
             external_id=_EXTERNAL_ID,
-            person_id=42,
             imposed_date=datetime.date(2022, 1, 1),
         ),
     ],
-    schema.StateAssessment: [
-        schema.StateAssessment(
+    state_entities.StateAssessment: [
+        state_entities.StateAssessment(
             state_code=StateCode.US_XX.value,
             external_id=_EXTERNAL_ID,
             assessment_date=datetime.date(2021, 1, 1),
         ),
-        schema.StateAssessment(
+        state_entities.StateAssessment(
             state_code=StateCode.US_XX.value,
+            external_id=_EXTERNAL_ID,
             assessment_date=datetime.date(2021, 1, 1),
         ),
     ],
-    schema.StateCharge: [
-        schema.StateCharge(
+    state_entities.StateCharge: [
+        state_entities.StateCharge(
             state_code=StateCode.US_XX.value,
             external_id=_EXTERNAL_ID,
-            status=StateChargeStatus.PRESENT_WITHOUT_INFO.value,
+            status=StateChargeStatus.PRESENT_WITHOUT_INFO,
             statute="1234a",
         ),
-        schema.StateCharge(
+        state_entities.StateCharge(
             state_code=StateCode.US_XX.value,
-            status=StateChargeStatus.PRESENT_WITHOUT_INFO.value,
+            external_id=_EXTERNAL_ID,
+            status=StateChargeStatus.PRESENT_WITHOUT_INFO,
             statute="1234a",
         ),
     ],
-    schema.StateDrugScreen: [
-        schema.StateDrugScreen(
+    state_entities.StateDrugScreen: [
+        state_entities.StateDrugScreen(
             state_code=StateCode.US_XX.value,
             external_id=_EXTERNAL_ID,
             drug_screen_date=datetime.date(2022, 5, 8),
-            drug_screen_result=StateDrugScreenResult.NEGATIVE.value,
+            drug_screen_result=StateDrugScreenResult.NEGATIVE,
             drug_screen_result_raw_text="DRUN",
-            sample_type=StateDrugScreenSampleType.BREATH.value,
+            sample_type=StateDrugScreenSampleType.BREATH,
             sample_type_raw_text="BREATH",
         )
     ],
-    schema.StateEmploymentPeriod: [
-        schema.StateEmploymentPeriod(
+    state_entities.StateEmploymentPeriod: [
+        state_entities.StateEmploymentPeriod(
             state_code=StateCode.US_XX.value,
             external_id=_EXTERNAL_ID,
             start_date=datetime.date(2022, 5, 8),
             end_date=datetime.date(2022, 5, 10),
             last_verified_date=datetime.date(2022, 5, 1),
-            employment_status=StateEmploymentPeriodEmploymentStatus.EMPLOYED_PART_TIME.value,
+            employment_status=StateEmploymentPeriodEmploymentStatus.EMPLOYED_PART_TIME,
             employment_status_raw_text="PT",
-            end_reason=StateEmploymentPeriodEndReason.QUIT.value,
+            end_reason=StateEmploymentPeriodEndReason.QUIT,
             end_reason_raw_text="PERSONAL",
             employer_name="ACME, INC.",
             employer_address="123 FAKE ST, ANYTOWN, XX, 00000",
             job_title=None,
         )
     ],
-    schema.StateEarlyDischarge: [
-        schema.StateEarlyDischarge(
+    state_entities.StateEarlyDischarge: [
+        state_entities.StateEarlyDischarge(
             state_code=StateCode.US_XX.value,
             external_id=_EXTERNAL_ID,
             decision_date=datetime.date(2021, 1, 1),
         ),
-        schema.StateEarlyDischarge(
-            state_code=StateCode.US_XX.value, decision_date=datetime.date(2021, 1, 1)
-        ),
     ],
-    schema.StateIncarcerationIncident: [
-        schema.StateIncarcerationIncident(
+    state_entities.StateIncarcerationIncident: [
+        state_entities.StateIncarcerationIncident(
             state_code=StateCode.US_XX.value,
             external_id=_EXTERNAL_ID,
             incident_date=datetime.date(2021, 1, 1),
         ),
-        schema.StateIncarcerationIncident(
-            state_code=StateCode.US_XX.value,
-            incident_date=datetime.date(2021, 1, 1),
-        ),
     ],
-    schema.StateIncarcerationIncidentOutcome: [
-        schema.StateIncarcerationIncidentOutcome(
+    state_entities.StateIncarcerationIncidentOutcome: [
+        state_entities.StateIncarcerationIncidentOutcome(
             state_code=StateCode.US_XX.value,
             external_id=_EXTERNAL_ID,
             report_date=datetime.date(2021, 1, 1),
         ),
-        schema.StateIncarcerationIncidentOutcome(
-            state_code=StateCode.US_XX.value,
-            report_date=datetime.date(2021, 1, 1),
-        ),
     ],
-    schema.StateIncarcerationPeriod: [
-        schema.StateIncarcerationPeriod(
+    state_entities.StateIncarcerationPeriod: [
+        state_entities.StateIncarcerationPeriod(
             state_code=StateCode.US_XX.value,
             external_id=_EXTERNAL_ID,
             admission_reason=StateIncarcerationPeriodAdmissionReason.EXTERNAL_UNKNOWN,
         ),
-        schema.StateIncarcerationPeriod(
-            state_code=StateCode.US_XX.value,
-            admission_reason=StateIncarcerationPeriodAdmissionReason.EXTERNAL_UNKNOWN,
-        ),
     ],
-    schema.StateIncarcerationSentence: [
-        schema.StateIncarcerationSentence(
+    state_entities.StateIncarcerationSentence: [
+        state_entities.StateIncarcerationSentence(
             state_code=StateCode.US_XX.value,
             external_id=_EXTERNAL_ID,
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO.value,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
             date_imposed=datetime.date(2021, 1, 1),
         ),
-        schema.StateIncarcerationSentence(
+        state_entities.StateIncarcerationSentence(
             state_code=StateCode.US_XX.value,
             external_id=_EXTERNAL_ID,
-            status=StateSentenceStatus.SERVING.value,
-        ),
-        schema.StateIncarcerationSentence(
-            state_code=StateCode.US_XX.value,
-            status=StateSentenceStatus.SERVING.value,
+            status=StateSentenceStatus.SERVING,
         ),
     ],
-    schema.StatePerson: [
-        schema.StatePerson(
+    state_entities.StatePerson: [
+        state_entities.StatePerson(
             state_code=StateCode.US_XX.value,
             external_ids=[
-                schema.StatePersonExternalId(
+                state_entities.StatePersonExternalId(
                     state_code=StateCode.US_XX.value,
                     external_id=_EXTERNAL_ID,
                     id_type=_ID_TYPE,
                 )
             ],
             races=[
-                schema.StatePersonRace(
+                state_entities.StatePersonRace(
                     state_code=StateCode.US_XX.value,
                     race=StateRace.WHITE,
                     race_raw_text="W",
                 ),
             ],
         ),
-        schema.StatePerson(
+        state_entities.StatePerson(
             state_code=StateCode.US_XX.value,
             gender=StateGender.MALE,
             external_ids=[
-                schema.StatePersonExternalId(
+                state_entities.StatePersonExternalId(
                     state_code=StateCode.US_XX.value,
                     external_id=_EXTERNAL_ID,
                     id_type=_ID_TYPE,
                 )
             ],
         ),
-        schema.StatePerson(
+        state_entities.StatePerson(
             state_code=StateCode.US_XX.value,
             gender=StateGender.MALE,
         ),
     ],
-    schema.StatePersonAddressPeriod: [
-        schema.StatePersonAddressPeriod(
+    state_entities.StatePersonAddressPeriod: [
+        state_entities.StatePersonAddressPeriod(
             state_code=StateCode.US_XX.value,
             address_type=StatePersonAddressType.PHYSICAL_RESIDENCE,
         ),
     ],
-    schema.StatePersonHousingStatusPeriod: [
-        schema.StatePersonHousingStatusPeriod(
+    state_entities.StatePersonHousingStatusPeriod: [
+        state_entities.StatePersonHousingStatusPeriod(
             state_code=StateCode.US_XX.value,
             housing_status_type=StatePersonHousingStatusType.PERMANENT_RESIDENCE,
         ),
     ],
-    schema.StatePersonAlias: [
-        schema.StatePersonAlias(state_code=StateCode.US_XX.value, full_name="Name"),
+    state_entities.StatePersonAlias: [
+        state_entities.StatePersonAlias(
+            state_code=StateCode.US_XX.value, full_name="Name"
+        ),
     ],
-    schema.StatePersonEthnicity: [
-        schema.StatePersonEthnicity(
+    state_entities.StatePersonEthnicity: [
+        state_entities.StatePersonEthnicity(
             state_code=StateCode.US_XX.value,
             ethnicity=StateEthnicity.HISPANIC,
             ethnicity_raw_text="H",
         ),
-        schema.StatePersonEthnicity(
+        state_entities.StatePersonEthnicity(
             state_code=StateCode.US_XX.value, ethnicity=StateEthnicity.NOT_HISPANIC
         ),
     ],
-    schema.StatePersonExternalId: [
-        schema.StatePersonExternalId(
+    state_entities.StatePersonExternalId: [
+        state_entities.StatePersonExternalId(
             state_code=StateCode.US_XX.value, external_id=_EXTERNAL_ID, id_type=_ID_TYPE
         )
     ],
-    schema.StatePersonRace: [
-        schema.StatePersonRace(
+    state_entities.StatePersonRace: [
+        state_entities.StatePersonRace(
             state_code=StateCode.US_XX.value, race=StateRace.WHITE, race_raw_text="W"
         ),
-        schema.StatePersonRace(state_code=StateCode.US_XX.value, race=StateRace.WHITE),
+        state_entities.StatePersonRace(
+            state_code=StateCode.US_XX.value, race=StateRace.WHITE
+        ),
     ],
-    schema.StateProgramAssignment: [
-        schema.StateProgramAssignment(
+    state_entities.StateProgramAssignment: [
+        state_entities.StateProgramAssignment(
             state_code=StateCode.US_XX.value,
             external_id=_EXTERNAL_ID,
-            participation_status=StateProgramAssignmentParticipationStatus.PRESENT_WITHOUT_INFO.value,
-            start_date=datetime.date(2021, 1, 1),
-        ),
-        schema.StateProgramAssignment(
-            state_code=StateCode.US_XX.value,
-            participation_status=StateProgramAssignmentParticipationStatus.PRESENT_WITHOUT_INFO.value,
+            participation_status=StateProgramAssignmentParticipationStatus.PRESENT_WITHOUT_INFO,
             start_date=datetime.date(2021, 1, 1),
         ),
     ],
-    schema.StateStaff: [
-        schema.StateStaff(
+    state_entities.StateStaff: [
+        state_entities.StateStaff(
             state_code=StateCode.US_XX.value,
             email="foo@bar.com",
             external_ids=[
-                schema.StateStaffExternalId(
+                state_entities.StateStaffExternalId(
                     state_code=StateCode.US_XX.value,
                     external_id=_EXTERNAL_ID,
                     id_type=_ID_TYPE,
                 )
             ],
         ),
-        schema.StateStaff(
+        state_entities.StateStaff(
             state_code=StateCode.US_XX.value,
             email="foo@bar.com",
             external_ids=[
-                schema.StateStaffExternalId(
+                state_entities.StateStaffExternalId(
                     state_code=StateCode.US_XX.value,
                     external_id=_EXTERNAL_ID,
                     id_type=_ID_TYPE,
                 )
             ],
             role_periods=[
-                schema.StateStaffRolePeriod(
+                state_entities.StateStaffRolePeriod(
                     state_code=StateCode.US_XX.value,
                     external_id=_EXTERNAL_ID,
                     start_date=datetime.date(2022, 5, 8),
                     end_date=datetime.date(2022, 5, 10),
-                    role_type=StateStaffRoleType.SUPERVISION_OFFICER.value,
+                    role_type=StateStaffRoleType.SUPERVISION_OFFICER,
                 )
             ],
         ),
     ],
-    schema.StateStaffExternalId: [
-        schema.StateStaffExternalId(
+    state_entities.StateStaffExternalId: [
+        state_entities.StateStaffExternalId(
             state_code=StateCode.US_XX.value, external_id=_EXTERNAL_ID, id_type=_ID_TYPE
         )
     ],
-    schema.StateStaffCaseloadTypePeriod: [
-        schema.StateStaffCaseloadTypePeriod(
+    state_entities.StateStaffCaseloadTypePeriod: [
+        state_entities.StateStaffCaseloadTypePeriod(
             state_code=StateCode.US_XX.value,
             external_id=_EXTERNAL_ID,
             caseload_type=StateStaffCaseloadType.ADMINISTRATIVE_SUPERVISION,
@@ -1011,8 +852,8 @@ HAS_MEANINGFUL_DATA_ENTITIES: Dict[Type[DatabaseEntity], List[DatabaseEntity]] =
             end_date=datetime.date(2023, 3, 12),
         )
     ],
-    schema.StateStaffLocationPeriod: [
-        schema.StateStaffLocationPeriod(
+    state_entities.StateStaffLocationPeriod: [
+        state_entities.StateStaffLocationPeriod(
             state_code=StateCode.US_XX.value,
             external_id=_EXTERNAL_ID,
             start_date=datetime.date(2022, 5, 8),
@@ -1020,17 +861,17 @@ HAS_MEANINGFUL_DATA_ENTITIES: Dict[Type[DatabaseEntity], List[DatabaseEntity]] =
             location_external_id="ABC123",
         )
     ],
-    schema.StateStaffRolePeriod: [
-        schema.StateStaffRolePeriod(
+    state_entities.StateStaffRolePeriod: [
+        state_entities.StateStaffRolePeriod(
             state_code=StateCode.US_XX.value,
             external_id=_EXTERNAL_ID,
             start_date=datetime.date(2022, 5, 8),
             end_date=datetime.date(2022, 5, 10),
-            role_type=StateStaffRoleType.SUPERVISION_OFFICER.value,
+            role_type=StateStaffRoleType.SUPERVISION_OFFICER,
         )
     ],
-    schema.StateStaffSupervisorPeriod: [
-        schema.StateStaffSupervisorPeriod(
+    state_entities.StateStaffSupervisorPeriod: [
+        state_entities.StateStaffSupervisorPeriod(
             state_code=StateCode.US_XX.value,
             external_id=_EXTERNAL_ID,
             start_date=datetime.date(2022, 5, 8),
@@ -1039,111 +880,88 @@ HAS_MEANINGFUL_DATA_ENTITIES: Dict[Type[DatabaseEntity], List[DatabaseEntity]] =
             supervisor_staff_external_id_type="US_XX_STAFF_ID",
         )
     ],
-    schema.StateSupervisionCaseTypeEntry: [
-        schema.StateSupervisionCaseTypeEntry(
-            state_code=StateCode.US_XX.value,
-            case_type=StateSupervisionCaseType.DOMESTIC_VIOLENCE,
-        ),
-        schema.StateSupervisionCaseTypeEntry(
+    state_entities.StateSupervisionCaseTypeEntry: [
+        state_entities.StateSupervisionCaseTypeEntry(
             state_code=StateCode.US_XX.value,
             case_type=StateSupervisionCaseType.DOMESTIC_VIOLENCE,
         ),
     ],
-    schema.StateSupervisionContact: [
-        schema.StateSupervisionContact(
+    state_entities.StateSupervisionContact: [
+        state_entities.StateSupervisionContact(
             state_code=StateCode.US_XX.value,
             external_id=_EXTERNAL_ID,
             location=StateSupervisionContactLocation.SUPERVISION_OFFICE,
         ),
-        schema.StateSupervisionContact(
-            state_code=StateCode.US_XX.value,
-            location=StateSupervisionContactLocation.SUPERVISION_OFFICE,
-        ),
     ],
-    schema.StateSupervisionPeriod: [
-        schema.StateSupervisionPeriod(
+    state_entities.StateSupervisionPeriod: [
+        state_entities.StateSupervisionPeriod(
             state_code=StateCode.US_XX.value,
             external_id=_EXTERNAL_ID,
             start_date=datetime.date(2021, 1, 1),
         ),
-        schema.StateSupervisionPeriod(
-            state_code=StateCode.US_XX.value, start_date=datetime.date(2021, 1, 1)
-        ),
     ],
-    schema.StateSupervisionSentence: [
-        schema.StateSupervisionSentence(
+    state_entities.StateSupervisionSentence: [
+        state_entities.StateSupervisionSentence(
             state_code=StateCode.US_XX.value,
             external_id=_EXTERNAL_ID,
-            status=StateSentenceStatus.SERVING.value,
+            status=StateSentenceStatus.SERVING,
         ),
-        schema.StateSupervisionSentence(
+        state_entities.StateSupervisionSentence(
             state_code=StateCode.US_XX.value,
             external_id=_EXTERNAL_ID,
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO.value,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
             date_imposed=datetime.date(2021, 1, 1),
             charges=[
-                schema.StateCharge(
+                state_entities.StateCharge(
                     state_code=StateCode.US_XX.value,
                     external_id=_EXTERNAL_ID,
-                    status=StateChargeStatus.PRESENT_WITHOUT_INFO.value,
+                    status=StateChargeStatus.PRESENT_WITHOUT_INFO,
                 )
             ],
         ),
-        schema.StateSupervisionSentence(
-            state_code=StateCode.US_XX.value,
-            status=StateSentenceStatus.SERVING.value,
-        ),
     ],
-    schema.StateSupervisionViolatedConditionEntry: [
-        schema.StateSupervisionViolatedConditionEntry(
+    state_entities.StateSupervisionViolatedConditionEntry: [
+        state_entities.StateSupervisionViolatedConditionEntry(
             state_code=StateCode.US_XX.value,
             condition=StateSupervisionViolatedConditionType.SPECIAL_CONDITIONS,
             condition_raw_text="DRG",
         )
     ],
-    schema.StateSupervisionViolation: [
-        schema.StateSupervisionViolation(
+    state_entities.StateSupervisionViolation: [
+        state_entities.StateSupervisionViolation(
             state_code=StateCode.US_XX.value,
             external_id=_EXTERNAL_ID,
             violation_date=datetime.date(2021, 1, 1),
         ),
-        schema.StateSupervisionViolation(
-            state_code=StateCode.US_XX.value,
-            violation_date=datetime.date(2021, 1, 1),
-        ),
     ],
-    schema.StateSupervisionViolationResponse: [
-        schema.StateSupervisionViolationResponse(
+    state_entities.StateSupervisionViolationResponse: [
+        state_entities.StateSupervisionViolationResponse(
             state_code=StateCode.US_XX.value,
             external_id=_EXTERNAL_ID,
             response_date=datetime.date(2021, 1, 1),
         ),
-        schema.StateSupervisionViolationResponse(
-            state_code=StateCode.US_XX.value,
-            response_date=datetime.date(2021, 1, 1),
-        ),
     ],
-    schema.StateSupervisionViolationResponseDecisionEntry: [
-        schema.StateSupervisionViolationResponseDecisionEntry(
+    state_entities.StateSupervisionViolationResponseDecisionEntry: [
+        state_entities.StateSupervisionViolationResponseDecisionEntry(
             state_code=StateCode.US_XX.value,
             decision=StateSupervisionViolationResponseDecision.PRIVILEGES_REVOKED,
         )
     ],
-    schema.StateSupervisionViolationTypeEntry: [
-        schema.StateSupervisionViolationTypeEntry(
+    state_entities.StateSupervisionViolationTypeEntry: [
+        state_entities.StateSupervisionViolationTypeEntry(
             state_code=StateCode.US_XX.value,
             violation_type=StateSupervisionViolationType.FELONY,
         )
     ],
-    schema.StateTaskDeadline: [
-        schema.StateTaskDeadline(
+    state_entities.StateTaskDeadline: [
+        state_entities.StateTaskDeadline(
             state_code=StateCode.US_XX.value,
             task_type=StateTaskType.DRUG_SCREEN,
             eligible_date=None,
             due_date=datetime.date(2021, 1, 1),
             update_datetime=datetime.datetime.now(tz=pytz.UTC),
         ),
-        schema.StateTaskDeadline(
+        state_entities.StateTaskDeadline(
             state_code=StateCode.US_XX.value,
             task_type=StateTaskType.DISCHARGE_FROM_SUPERVISION,
             task_subtype="SOME_SUBTYPE",
@@ -1284,22 +1102,22 @@ class TestEntityUtils(TestCase):
 
     def test_is_reference_only_entity(self) -> None:
         field_index = CoreEntityFieldIndex()
-        for db_entity_cls in get_state_database_entities():
-            if db_entity_cls not in REFERENCE_ENTITY_EXAMPLES:
+        for entity_cls in get_all_entity_classes_in_module(state_entities):
+            if entity_cls not in REFERENCE_ENTITY_EXAMPLES:
                 self.fail(
-                    f"Expected to find [{db_entity_cls}] in REFERENCE_ENTITY_EXAMPLES"
+                    f"Expected to find [{entity_cls}] in REFERENCE_ENTITY_EXAMPLES"
                 )
-            for entity in REFERENCE_ENTITY_EXAMPLES[db_entity_cls]:
-                self.assertIsInstance(entity, db_entity_cls)
+            for entity in REFERENCE_ENTITY_EXAMPLES[entity_cls]:
+                self.assertIsInstance(entity, entity_cls)
                 self.assertTrue(is_reference_only_entity(entity, field_index))
 
-            if db_entity_cls not in HAS_MEANINGFUL_DATA_ENTITIES:
+            if entity_cls not in HAS_MEANINGFUL_DATA_ENTITIES:
                 self.fail(
-                    f"Expected to find [{db_entity_cls}] in NON_REFERENCE_ENTITY_EXAMPLES"
+                    f"Expected to find [{entity_cls}] in NON_REFERENCE_ENTITY_EXAMPLES"
                 )
 
-            for entity in HAS_MEANINGFUL_DATA_ENTITIES[db_entity_cls]:
-                self.assertIsInstance(entity, db_entity_cls)
+            for entity in HAS_MEANINGFUL_DATA_ENTITIES[entity_cls]:
+                self.assertIsInstance(entity, entity_cls)
                 self.assertFalse(is_reference_only_entity(entity, field_index))
 
     def test_is_many_to_many_relationship(self) -> None:
@@ -1597,8 +1415,8 @@ class TestEntityUtils(TestCase):
                     get_association_table_id(entity_cls_a, entity_cls_b)
                 )
 
-        # Check that the set of association tables defined in schema.py matches the set
-        #  of association tables defined in schema.py
+        # Check that the set of association tables defined in state_entities.py matches the set
+        #  of association tables defined in state_entities.py
         self.assertEqual(schema_association_tables, association_tables)
 
     def test_get_association_table_id_agrees_with_schema_normalized(self) -> None:
@@ -1620,8 +1438,8 @@ class TestEntityUtils(TestCase):
                     get_association_table_id(entity_cls_a, entity_cls_b)
                 )
 
-        # Check that the set of association tables defined in schema.py matches the set
-        #  of association tables defined in schema.py
+        # Check that the set of association tables defined in state_entities.py matches the set
+        #  of association tables defined in state_entities.py
         self.assertEqual(schema_association_tables, association_tables)
 
     def test_get_entities_by_association_table_id(self) -> None:
