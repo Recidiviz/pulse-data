@@ -22,11 +22,11 @@ STAGING_TAGS=$(jq -r '.[0].tags' <<< "${STAGING_IMAGE_JSON}")
 
 # Check if STAGING_TAGS is a JSON array or a comma-separated string
 if echo "${STAGING_TAGS}" | jq empty 2>/dev/null; then
-  # STAGING_TAGS is a JSON array
-  CURRENT_STAGING_VERSION_TAG=$(jq -r '.[1]' <<< "${STAGING_TAGS}" | xargs)
+    # STAGING_TAGS is a JSON array
+    CURRENT_STAGING_VERSION_TAG=$(jq -r '.[1]' <<< "${STAGING_TAGS}" | xargs)
 else
-  # STAGING_TAGS is a comma-separated string
-  CURRENT_STAGING_VERSION_TAG=$(cut -d ',' -f 2 <<< "${STAGING_TAGS}" | xargs)
+    # STAGING_TAGS is a comma-separated string
+    CURRENT_STAGING_VERSION_TAG=$(cut -d ',' -f 2 <<< "${STAGING_TAGS}" | xargs)
 fi
 
 # We also need to remove the 'jc.' prefix from the tag to get just the version number.
