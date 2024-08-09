@@ -37,7 +37,7 @@ approaches has been approved by ACIS administrators at ADCRR.
    - Use previous start date as the end date (create only zero-day periods). 
 3) Periods that fulfill all of the logical "Active DPP Period" criteria listed above, but either: 
    a) Had intake completed at an office for which DPP_OFFICE_LOCATION.ACTIVE_FLAG = 'N' (the office no longer exists)
-   b) The officer who completed their intake does not exist in DPP_CASE_AGENT. TODO(#31546): update this source to MEA_PROFILES
+   b) Had intake completed > 5 years ago by an officer who is no longer active in MEA_PROFILES, and nothing has been tracked since then. 
    - Use previous start date as the end date (create only zero-day periods). 
 """
 
@@ -220,7 +220,7 @@ END)
 --    - Use previous start date as the end date (create only zero-day periods). 
 -- 3) Periods that fulfill all of the logical "Active DPP Period" criteria listed above, but either: 
 --    a) Had intake completed at an office for which DPP_OFFICE_LOCATION.ACTIVE_FLAG = 'N' (the office no longer exists)
---    b) The officer who completed their intake does not exist in DPP_CASE_AGENT. TODO(#31546): update this source to MEA_PROFILES
+--    b) Had intake completed > 5 years ago by an officer who is no longer active in MEA_PROFILES, and nothing has been tracked since then. 
 infer_ends AS (
 SELECT
  periods.* EXCEPT(end_date, start_reason, end_reason),
@@ -229,9 +229,8 @@ SELECT
   WHEN end_date IS NULL AND start_reason != 'Releasee Abscond' AND NULLIF(DPPE.SUPERVISION_LEVEL_ENDDATE,'NULL') IS NULL AND DPPE.STATUS_ID = '1748' THEN start_date
   -- intake happened in an office that no longer exists
   WHEN end_date IS NULL AND DOL.ACTIVE_FLAG = 'N' THEN start_date
-  -- officer does not appear in DPP_CASE_AGENT
-  -- TODO(#31546): update this when we have MEA_PROFILES to be "officer is inactive in MEA_PROFILES and start date is > x number of years ago"
-  WHEN end_date IS NULL AND DCA.AGENT_ID IS NULL THEN start_date
+  -- officer is not active in MEA_PROFILES and the period started > 5 years ago
+  WHEN end_date IS NULL AND MEA.IS_ACTIVE = 'N' AND DATE_DIFF(CURRENT_DATE, start_date, YEAR) > 5 THEN start_date
   -- actual period closures, as expected - use SUPERVISION_LEVEL_ENDDATE, where there is one that is not the start of a period of absconsion
   WHEN end_date IS NULL AND start_reason != 'Releasee Abscond' THEN CAST(NULLIF(DPPE.SUPERVISION_LEVEL_ENDDATE,'NULL') AS DATETIME)
   -- always NULL until this point
@@ -245,16 +244,15 @@ SELECT
   WHEN end_date IS NULL AND start_reason != 'Releasee Abscond' AND NULLIF(DPPE.SUPERVISION_LEVEL_ENDDATE,'NULL') IS NULL AND DPPE.STATUS_ID = '1748' THEN 'END - INFERRED MIGRATION ERROR'
   -- intake happened in an office that no longer exists
   WHEN end_date IS NULL AND DOL.ACTIVE_FLAG = 'N' THEN 'END - INFERRED MIGRATION ERROR'
-  -- officer does not appear in DPP_CASE_AGENT
-  -- TODO(#31546): update this when we have MEA_PROFILES to be "officer is inactive in MEA_PROFILES and start date is > x number of years ago"
-  WHEN end_date IS NULL AND DCA.AGENT_ID IS NULL THEN 'END - INFERRED MIGRATION ERROR'
+  -- officer is not active in MEA_PROFILES and the period started > 5 years ago
+  WHEN end_date IS NULL AND MEA.IS_ACTIVE = 'N' AND DATE_DIFF(CURRENT_DATE, start_date, YEAR) > 5 THEN 'END - INFERRED MIGRATION ERROR'
   -- always NULL until this point
    ELSE end_reason
  END AS end_reason,
 FROM periods
 LEFT JOIN {DPP_EPISODE} DPPE USING(DPP_ID)
 LEFT JOIN {DPP_OFFICE_LOCATION} DOL ON(periods.OFFICE_NAME = DOL.LOCATION_NAME)
-LEFT JOIN {DPP_CASE_AGENT} DCA ON (periods.OFFICER = DCA.agent_id)
+LEFT JOIN {MEA_PROFILES} MEA ON (periods.OFFICER = MEA.USERID)
 )
 SELECT * FROM (
 SELECT 
