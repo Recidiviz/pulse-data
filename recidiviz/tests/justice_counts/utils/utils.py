@@ -602,6 +602,7 @@ class JusticeCountsSchemaTestObjects:
                     "key": prisons.staff.key,
                     "enabled": True,
                     "last_updated": None,
+                    "is_includes_excludes_configured": "YES",
                     "settings": [
                         {
                             "key": PrisonStaffIncludesExcludes.VOLUNTEER.name,
@@ -616,10 +617,12 @@ class JusticeCountsSchemaTestObjects:
                         {
                             "enabled": True,
                             "key": StaffType.dimension_identifier(),
+                            "is_breakdown_configured": "YES",
                             "dimensions": [
                                 {
                                     "key": StaffType.SECURITY.value,
                                     "enabled": False,
+                                    "is_dimension_includes_excludes_configured": "YES",
                                     "settings": (
                                         [
                                             {
@@ -634,6 +637,7 @@ class JusticeCountsSchemaTestObjects:
                                 {
                                     "key": StaffType.MANAGEMENT_AND_OPERATIONS.value,
                                     "enabled": False,
+                                    "is_dimension_includes_excludes_configured": "NO",
                                     "settings": (
                                         [
                                             {
@@ -721,6 +725,7 @@ class JusticeCountsSchemaTestObjects:
                     "key": prisons.grievances_upheld.key,
                     "enabled": True,
                     "last_updated": None,
+                    "is_includes_excludes_configured": "NO",
                     "contexts": [
                         {
                             "key": ContextKey.ADDITIONAL_CONTEXT.name,

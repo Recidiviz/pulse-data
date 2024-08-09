@@ -41,8 +41,25 @@ class IncludesExcludesSetting(enum.Enum):
 # Enum that describes whether an agency considers a metric setting
 # (breakdowns, and includes/excludes) to be fully configured to their satisfaction
 class ConfigurationStatus(enum.Enum):
-    YES = "Yes"
-    NO = "No"
+    # Note: Name and value should match exactly. This allows us to work with them
+    # interchangeably, both in FE JSON and storage JSON, and saves us from having
+    # to convert to/from values in FE JSON and names in storage JSON.
+    YES = "YES"
+    NO = "NO"
+
+    @staticmethod
+    def to_json(status: Optional["ConfigurationStatus"]) -> Optional[str]:
+        if not status:
+            return None
+
+        return status.name
+
+    @staticmethod
+    def from_json(json_str: Optional[str]) -> Optional["ConfigurationStatus"]:
+        if not json_str:
+            return None
+
+        return ConfigurationStatus[json_str]
 
 
 IncludesExcludesSetT = TypeVar("IncludesExcludesSetT", bound="IncludesExcludesSet")
