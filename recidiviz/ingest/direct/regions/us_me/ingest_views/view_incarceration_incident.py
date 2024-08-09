@@ -50,7 +50,10 @@ dispositions AS (
     CIS_462_CLIENTS_INVOLVED_ID, 
     E_Violation_Disposition_Type_Desc, 
     E_Violation_Disposition_Class_Desc, 
-    HEARING_ACTUALLY_HELD_DATE
+    dc.CREATED_ON_DATE,
+    HEARING_ACTUALLY_HELD_DATE,
+    DISCIPLINARY_ACTION_FORMAL_IND,
+    Cis_1813_Disposition_Outcome_Type_Cd
   FROM {CIS_180_DISCIPLINARY_CASE} dc
   LEFT JOIN {CIS_181_VIOLATION_DISPOSITION} vd
   ON vd.Cis_180_Disciplinary_Case_Id = dc.DISCIPLINARY_CASE_ID
@@ -75,9 +78,12 @@ SELECT
   Location_name,
   Location_Tx,
   E_Violation_Disposition_Type_Desc,
-  E_Violation_Disposition_Class_Desc, 
   Summary_Tx,
-  HEARING_ACTUALLY_HELD_DATE
+  CREATED_ON_DATE,
+  E_Violation_Disposition_Class_Desc, 
+  HEARING_ACTUALLY_HELD_DATE,
+  DISCIPLINARY_ACTION_FORMAL_IND,
+  Cis_1813_Disposition_Outcome_Type_Cd
 FROM incidents 
 LEFT JOIN dispositions
 ON incidents.Incident_Id = dispositions.CIS_460_INCIDENT_ID
