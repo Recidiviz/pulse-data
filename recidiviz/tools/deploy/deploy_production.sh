@@ -21,7 +21,8 @@ if [[ "$1" == "" ]]; then
 fi
 
 echo "Performing pre-deploy verification"
-run_cmd verify_can_deploy recidiviz-123
+COMMIT_HASH=$(git rev-list -n 1 "${GIT_VERSION_TAG}")
+run_cmd verify_can_deploy recidiviz-123 "${COMMIT_HASH}"
 
 GIT_VERSION_TAG=$(echo "$1" | tr '-' '.') || exit_on_fail
 if [[ ! ${GIT_VERSION_TAG} =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
