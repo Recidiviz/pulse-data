@@ -25,7 +25,6 @@ from http import HTTPStatus
 from typing import Any, Callable, DefaultDict, Dict, List, Optional, Set
 
 from flask import Blueprint, Response, jsonify, make_response, request, send_file
-from flask_sqlalchemy_session import current_session
 from flask_wtf.csrf import CSRFProtect, generate_csrf
 from google.auth.transport import requests
 from google.cloud import storage
@@ -75,6 +74,7 @@ from recidiviz.justice_counts.utils.datapoint_utils import (
 )
 from recidiviz.justice_counts.utils.email import send_confirmation_email
 from recidiviz.persistence.database.schema.justice_counts import schema
+from recidiviz.persistence.database.sqlalchemy_flask_utils import current_session
 from recidiviz.utils.environment import (
     in_ci,
     in_development,

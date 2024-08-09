@@ -593,6 +593,7 @@ class AuthEndpointTests(TestCase):
             delete = self.client.delete(
                 self.delete_user,
                 headers=self.headers,
+                json={},
             )
             self.assertEqual(HTTPStatus.BAD_REQUEST, delete.status_code)
 

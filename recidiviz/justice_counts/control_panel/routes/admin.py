@@ -21,7 +21,6 @@ from http import HTTPStatus
 from typing import Any, Callable, Dict, List, Optional
 
 from flask import Blueprint, Response, jsonify, make_response, request
-from flask_sqlalchemy_session import current_session
 from google.cloud import run_v2
 from sqlalchemy.dialects.postgresql import insert
 
@@ -39,6 +38,7 @@ from recidiviz.justice_counts.utils.constants import (
     VALID_SYSTEMS,
 )
 from recidiviz.persistence.database.schema.justice_counts import schema
+from recidiviz.persistence.database.sqlalchemy_flask_utils import current_session
 from recidiviz.utils.environment import (
     GCP_PROJECT_JUSTICE_COUNTS_PRODUCTION,
     GCP_PROJECT_JUSTICE_COUNTS_STAGING,
