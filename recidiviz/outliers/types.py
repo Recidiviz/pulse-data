@@ -83,6 +83,15 @@ class PersonName:
         return f"{self.given_names} {self.surname}"
 
 
+@attr.s
+class CaseloadCategory:
+    # The caseload category as it appears in the data
+    id: str = attr.ib()
+
+    # The caseload category as it should appear in the UI
+    display_name: str = attr.ib()
+
+
 @attr.s(eq=False)
 class OutliersMetric:
     # The aggregated metric, which is an object from aggregated_metric_configurations.py
@@ -230,6 +239,13 @@ class OutliersBackendConfig:
     primary_category_type: InsightsCaseloadCategoryType = attr.ib(
         default=InsightsCaseloadCategoryType.ALL
     )
+
+    # The available specialized caseload categories for this state, plus the display name for each
+    # category, broken down by category type.
+    # TODO(#32104): Move this to the admin panel
+    available_specialized_caseload_categories: dict[
+        InsightsCaseloadCategoryType, list[CaseloadCategory]
+    ] = attr.ib(default={})
 
     def to_json(self) -> Dict[str, Any]:
         c = cattrs.Converter()
@@ -517,6 +533,10 @@ class OutliersProductConfiguration:
     primary_category_type: InsightsCaseloadCategoryType = attr.ib(
         default=InsightsCaseloadCategoryType.ALL
     )
+
+    # The available specialized caseload categories for this state, plus the display name for each
+    # category, broken down by category type.
+    caseload_categories: list[CaseloadCategory] = attr.ib(default={})
 
     # The string that is in the "Outliers" hover tooltip explaining what an outlier is
     outliers_hover: str = attr.ib(

@@ -25,6 +25,9 @@ from recidiviz.calculator.query.state.views.analyst_data.insights_caseload_categ
     InsightsCaseloadCategoryType,
 )
 from recidiviz.case_triage.outliers.user_context import UserContext
+from recidiviz.common.constants.state.state_staff_caseload_type import (
+    StateStaffCaseloadType,
+)
 from recidiviz.common.constants.states import StateCode
 from recidiviz.outliers.constants import (
     ABSCONSIONS_BENCH_WARRANTS,
@@ -34,6 +37,7 @@ from recidiviz.outliers.constants import (
 )
 from recidiviz.outliers.querier.querier import OutliersQuerier
 from recidiviz.outliers.types import (
+    CaseloadCategory,
     ConfigurationStatus,
     OutliersBackendConfig,
     OutliersClientEventConfig,
@@ -797,3 +801,44 @@ class TestOutliersQuerier(InsightsDbTestCase):
         querier = OutliersQuerier(StateCode.US_PA)
         result = querier.get_product_configuration(user_context=None)
         self.snapshot.assert_match(result, name="test_get_product_configuration")  # type: ignore[attr-defined]
+
+    @patch(
+        "recidiviz.outliers.querier.querier.OutliersQuerier.get_outliers_backend_config"
+    )
+    def test_get_product_configuration_with_specialized_category_type(
+        self, mock_config: MagicMock
+    ) -> None:
+        mock_config.return_value = OutliersBackendConfig(
+            metrics=[TEST_METRIC_1, TEST_METRIC_2],
+            available_specialized_caseload_categories={
+                InsightsCaseloadCategoryType.SEX_OFFENSE_BINARY: [
+                    CaseloadCategory(
+                        id=StateStaffCaseloadType.SEX_OFFENSE.name,
+                        display_name="Sex Offense Caseload",
+                    ),
+                    CaseloadCategory(
+                        id=f"NOT_{StateStaffCaseloadType.SEX_OFFENSE.name}",
+                        display_name="General + Other Caseloads",
+                    ),
+                ]
+            },
+            primary_category_type=InsightsCaseloadCategoryType.SEX_OFFENSE_BINARY,
+        )
+        querier = OutliersQuerier(StateCode.US_PA)
+        result = querier.get_product_configuration()
+        self.snapshot.assert_match(result, name="test_get_product_configuration_with_specialized_category_type")  # type: ignore[attr-defined]
+
+    @patch(
+        "recidiviz.outliers.querier.querier.OutliersQuerier.get_outliers_backend_config"
+    )
+    def test_get_product_configuration_invalid_primary_category_type(
+        self, mock_config: MagicMock
+    ) -> None:
+        mock_config.return_value = OutliersBackendConfig(
+            metrics=[TEST_METRIC_1, TEST_METRIC_2],
+            available_specialized_caseload_categories={},
+            primary_category_type=InsightsCaseloadCategoryType.SEX_OFFENSE_BINARY,
+        )
+        querier = OutliersQuerier(StateCode.US_PA)
+        with self.assertRaisesRegex(ValueError, "Invalid product configuration"):
+            querier.get_product_configuration()
