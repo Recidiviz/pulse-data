@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Defines a view that shows all releases from incarceration to parole for any
+"""Defines a view that shows all releases from general incarceration to parole for any
 person, across all states.
 """
 
@@ -26,7 +26,7 @@ from recidiviz.task_eligibility.task_completion_event_big_query_view_builder imp
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_DESCRIPTION = """Defines a view that shows all releases from incarceration to parole
+_DESCRIPTION = """Defines a view that shows all releases from general incarceration to parole
 for any person, across all states."""
 
 _QUERY_TEMPLATE = """
@@ -37,7 +37,8 @@ SELECT
 FROM `{project_id}.{sessions_dataset}.compartment_sessions_materialized`
 WHERE compartment_level_1 IN ("SUPERVISION", "SUPERVISION_OUT_OF_STATE")
   AND compartment_level_2 = "PAROLE"
-  AND inflow_from_level_1 IN ("INCARCERATION", "PENDING_SUPERVISION")
+  AND inflow_from_level_1 = "INCARCERATION"
+  AND inflow_from_level_2 = "GENERAL"
 """
 
 VIEW_BUILDER: StateAgnosticTaskCompletionEventBigQueryViewBuilder = (
