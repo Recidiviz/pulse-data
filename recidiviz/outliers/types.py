@@ -24,6 +24,9 @@ import cattrs
 from cattrs.gen import make_dict_unstructure_fn, override
 
 from recidiviz.aggregated_metrics.models.aggregated_metric import EventCountMetric
+from recidiviz.calculator.query.state.views.analyst_data.insights_caseload_category_sessions import (
+    InsightsCaseloadCategoryType,
+)
 from recidiviz.common.str_field_utils import person_name_case
 
 
@@ -222,6 +225,12 @@ class OutliersBackendConfig:
     # changed or replaced. Context here: https://paper.dropbox.com/doc/Design-Doc-Outliers-Metric-Race-Condition--CIFSxbs7iv0jEUQqZZHsNwqCAg-Mpf1Bq5VbYyxqJyW0jHhb
     deprecated_metrics: List[OutliersMetricConfig] = attr.ib(default=[])
 
+    # The caseload category type to use for disaggregating caseload types in the state
+    # TODO(#32104): Move this to the admin panel
+    primary_category_type: InsightsCaseloadCategoryType = attr.ib(
+        default=InsightsCaseloadCategoryType.ALL
+    )
+
     def to_json(self) -> Dict[str, Any]:
         c = cattrs.Converter()
 
@@ -356,8 +365,6 @@ class SupervisionOfficerEntityBase:
     caseload_type: Optional[str] = attr.ib()
 
     def to_json(self) -> Dict[str, Any]:
-        # TODO(#28217): To refine when designing Insights with disaggregated caseload types
-        self.caseload_type = None
         return cattrs.unstructure(self)
 
 
@@ -374,6 +381,22 @@ class SupervisionOfficerEntity(SupervisionOfficerEntityBase):
     top_x_pct_metrics: list = attr.ib()
     # The officer's avg caseload size in the latest period
     avg_daily_population: float = attr.ib()
+    # The caseload category this officer is part of
+    caseload_category: str = attr.ib()
+
+    def to_json(self) -> Dict[str, Any]:
+        c = cattrs.Converter()
+
+        # Transform "caseload_category" to "caseload_type" since that's what the frontend expects
+        # TODO(#31634) Remove this
+        officer_unst_hook = make_dict_unstructure_fn(
+            SupervisionOfficerEntity,
+            c,
+            caseload_category=override(rename="caseload_type"),
+        )
+        c.register_unstructure_hook(SupervisionOfficerEntity, officer_unst_hook)
+
+        return c.unstructure(self)
 
 
 @attr.s
@@ -489,6 +512,11 @@ class OutliersProductConfiguration:
 
     # Mapping of client event types that are relevant for this state to a config with relevant info
     client_events: List[OutliersClientEventConfig] = attr.ib(default=[])
+
+    # The category type to use for disaggregating caseload types in the state
+    primary_category_type: InsightsCaseloadCategoryType = attr.ib(
+        default=InsightsCaseloadCategoryType.ALL
+    )
 
     # The string that is in the "Outliers" hover tooltip explaining what an outlier is
     outliers_hover: str = attr.ib(
