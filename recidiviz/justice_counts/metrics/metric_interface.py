@@ -218,6 +218,9 @@ class MetricInterface:
                 ),
                 "starting_month": self.custom_reporting_frequency.starting_month,
             },
+            "is_includes_excludes_configured": ConfigurationStatus.to_json(
+                self.is_includes_excludes_configured
+            ),
             "version": "v1",
         }
 
@@ -295,8 +298,8 @@ class MetricInterface:
             custom_reporting_frequency=CustomReportingFrequency.from_json(
                 json.get("custom_reporting_frequency", {})
             ),
-            is_includes_excludes_configured=json.get(
-                "is_includes_excludes_configured", None
+            is_includes_excludes_configured=ConfigurationStatus.from_json(
+                json.get("is_includes_excludes_configured")
             ),
         )
 
@@ -422,7 +425,9 @@ class MetricInterface:
                 for d in self.aggregated_dimensions
             ],
             "disaggregated_by_supervision_subsystems": self.disaggregated_by_supervision_subsystems,
-            "is_includes_excludes_configured": self.is_includes_excludes_configured,
+            "is_includes_excludes_configured": ConfigurationStatus.to_json(
+                self.is_includes_excludes_configured
+            ),
         }
 
         if is_v2 is True:
@@ -517,6 +522,9 @@ class MetricInterface:
             custom_reporting_frequency=CustomReportingFrequency.from_json(json),
             disaggregated_by_supervision_subsystems=json.get(
                 "disaggregated_by_supervision_subsystems"
+            ),
+            is_includes_excludes_configured=ConfigurationStatus.from_json(
+                json.get("is_includes_excludes_configured")
             ),
         )
 

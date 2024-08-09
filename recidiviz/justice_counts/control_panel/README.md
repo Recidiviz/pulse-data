@@ -30,6 +30,7 @@ To run the app locally, you need to spin up both the backend and frontend simult
 - [Sentry](https://recidiviz-inc.sentry.io/issues/?project=4504532096516096&referrer=sidebar)
 - [Oncall doc](go/jc-oncall)
 - [Testing playbook](https://docs.google.com/document/d/1893HOIq1X6rvcxI3UJfpmL7feub7ivgqaytI-Jyp7bE/edit)
+- [How to add a new MetricSetting field](https://docs.google.com/document/d/11RRZlsgQZp6fRMQhIoVqtCk36PbfYhnDmGRSLf8JL2A/edit)
 
 ## Setting up your environment
 

@@ -121,6 +121,15 @@ class MetricAggregatedDimensionData:
                 }
                 for dimension, contexts in self.dimension_to_contexts.items()
             },
+            # Optional[ConfigurationStatus]
+            "is_breakdown_configured": ConfigurationStatus.to_json(
+                self.is_breakdown_configured
+            ),
+            # Dict[DimensionBase, ConfigurationStatus]
+            "dimension_to_includes_excludes_configured_status": {
+                dimension.to_enum().name: ConfigurationStatus.to_json(config_status)
+                for dimension, config_status in self.dimension_to_includes_excludes_configured_status.items()
+            },
         }
 
     @classmethod
@@ -170,7 +179,7 @@ class MetricAggregatedDimensionData:
         ).items():
             dimension_to_includes_excludes_configured_status[
                 dimension_str_to_dimension[dimension]
-            ] = config_status
+            ] = ConfigurationStatus.from_json(config_status)
 
         dimension_to_includes_excludes_member_to_setting: Dict[
             DimensionBase, Dict[enum.Enum, Optional[IncludesExcludesSetting]]
@@ -219,7 +228,9 @@ class MetricAggregatedDimensionData:
             dimension_to_includes_excludes_member_to_setting=dimension_to_includes_excludes_member_to_setting,
             dimension_to_contexts=dimension_to_contexts,
             dimension_to_includes_excludes_configured_status=dimension_to_includes_excludes_configured_status,
-            is_breakdown_configured=json.get("is_breakdown_configured", None),
+            is_breakdown_configured=ConfigurationStatus.from_json(
+                json.get("is_breakdown_configured")
+            ),
         )
 
     def to_json(
@@ -264,7 +275,9 @@ class MetricAggregatedDimensionData:
 
         response = {
             "key": dimension_definition.dimension.dimension_identifier(),
-            "is_breakdown_configured": self.is_breakdown_configured,
+            "is_breakdown_configured": ConfigurationStatus.to_json(
+                self.is_breakdown_configured
+            ),
             "display_name": dimension_definition.display_name
             or dimension_definition.dimension.display_name(),
             "dimensions": self.dimension_to_json(
@@ -316,6 +329,10 @@ class MetricAggregatedDimensionData:
             dim["key"]: dim.get(value_key) for dim in dimensions or []
         }  # example: {"BLACK": 50, "WHITE": 20, ...} if a report metric
         # or {"BLACK": True, "WHITE": False, ...} if it is an agency metric
+        is_breakdown_configured = ConfigurationStatus.from_json(
+            json.get("is_breakdown_configured")
+        )
+
         if entry_point == DatapointGetRequestEntryPoint.REPORT_PAGE:
             return cls(
                 dimension_to_value={
@@ -346,9 +363,11 @@ class MetricAggregatedDimensionData:
             # dict.
             return cls(
                 dimension_to_enabled_status=dimension_to_enabled_status,
+                is_breakdown_configured=is_breakdown_configured,
             )
 
         dimension_enum_value_to_includes_excludes_member_to_setting = {}
+        dimension_to_includes_excludes_configured_status = {}
         dimension_to_contexts = {}
         for dim in json.get("dimensions", []):
             dimension_key = dim["key"]
@@ -372,6 +391,13 @@ class MetricAggregatedDimensionData:
                         value=context["value"],
                     )
                 ]
+
+            # Process the configuration status of each includes/excludes
+            dimension_to_includes_excludes_configured_status[
+                dimension_enum_value
+            ] = ConfigurationStatus.from_json(
+                dim.get("is_dimension_includes_excludes_configured")
+            )
 
         dimension_to_includes_excludes_member_to_setting: Dict[
             DimensionBase, Dict[enum.Enum, Optional[IncludesExcludesSetting]]
@@ -414,6 +440,8 @@ class MetricAggregatedDimensionData:
             dimension_to_enabled_status=dimension_to_enabled_status,
             dimension_to_includes_excludes_member_to_setting=dimension_to_includes_excludes_member_to_setting,
             dimension_to_contexts=dimension_to_contexts,
+            is_breakdown_configured=is_breakdown_configured,
+            dimension_to_includes_excludes_configured_status=dimension_to_includes_excludes_configured_status,
         )
 
     ### To/From JSON Helpers ###
@@ -436,9 +464,6 @@ class MetricAggregatedDimensionData:
         )
         dimension_to_description = dimension_definition.dimension_to_description
         dimension_to_contexts = dimension_definition.dimension_to_contexts
-        dimension_to_includes_excludes_configured_status = (
-            self.dimension_to_includes_excludes_configured_status
-        )
         dimensions = []
         if self.dimension_to_enabled_status is not None:
             for dimension, status in self.dimension_to_enabled_status.items():
@@ -495,12 +520,16 @@ class MetricAggregatedDimensionData:
                     )
                     json["includes_excludes"] = includes_excluded_json
                 if (
-                    dimension_to_includes_excludes_configured_status is not None
+                    self.dimension_to_includes_excludes_configured_status is not None
                     and entry_point == DatapointGetRequestEntryPoint.METRICS_TAB
                 ):
                     json[
                         "is_dimension_includes_excludes_configured"
-                    ] = dimension_to_includes_excludes_configured_status.get(dimension)
+                    ] = ConfigurationStatus.to_json(
+                        self.dimension_to_includes_excludes_configured_status.get(
+                            dimension
+                        )
+                    )
                 if (
                     self.dimension_to_value is not None
                     and entry_point == DatapointGetRequestEntryPoint.REPORT_PAGE

@@ -1771,15 +1771,19 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
 
             # GET request
             response = self.client.get(f"/api/agencies/{agency.id}/metrics")
+
             # Check that GET request suceeded
             self.assertEqual(response.status_code, 200)
-            # Check that the we can get the previoulsy stored additional context
+
+            # Check that the we can get the previously stored additional context
             if response.json is None:
                 raise ValueError("Expected nonnull response.json")
-            other_context = response.json[2]["disaggregations"][0]["dimensions"][4][
+
+            response_json = response.json
+            other_context = response_json[2]["disaggregations"][0]["dimensions"][4][
                 "contexts"
             ]
-            unknown_context = response.json[2]["disaggregations"][0]["dimensions"][5][
+            unknown_context = response_json[2]["disaggregations"][0]["dimensions"][5][
                 "contexts"
             ]
             self.assertEqual(
@@ -1801,6 +1805,29 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                         "label": "Please describe what data is being included in this breakdown.",
                     }
                 ],
+            )
+
+            # Check that configuration statuses were persisted
+            self.assertEqual(response_json[1]["is_includes_excludes_configured"], None)
+            self.assertEqual(response_json[2]["is_includes_excludes_configured"], "YES")
+            self.assertEqual(response_json[8]["is_includes_excludes_configured"], "NO")
+            self.assertEqual(
+                response_json[2]["disaggregations"][0]["dimensions"][0][
+                    "is_dimension_includes_excludes_configured"
+                ],
+                "YES",
+            )
+            self.assertEqual(
+                response_json[2]["disaggregations"][0]["dimensions"][1][
+                    "is_dimension_includes_excludes_configured"
+                ],
+                "NO",
+            )
+            self.assertEqual(
+                response_json[2]["disaggregations"][0]["dimensions"][2][
+                    "is_dimension_includes_excludes_configured"
+                ],
+                None,
             )
 
     def test_update_metric_settings(self) -> None:

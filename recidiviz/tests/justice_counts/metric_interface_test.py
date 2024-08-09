@@ -700,6 +700,8 @@ class TestMetricInterface(TestCase):
                         },
                         "dimension_to_includes_excludes_member_to_setting": {},
                         "dimension_to_contexts": {},
+                        "is_breakdown_configured": None,
+                        "dimension_to_includes_excludes_configured_status": {},
                     }
                 },
                 "disaggregated_by_supervision_subsystems": None,
@@ -708,6 +710,7 @@ class TestMetricInterface(TestCase):
                     "custom_frequency": None,
                     "starting_month": None,
                 },
+                "is_includes_excludes_configured": None,
             },
         )
 
@@ -731,6 +734,7 @@ class TestMetricInterface(TestCase):
                     "custom_frequency": None,
                     "starting_month": None,
                 },
+                "is_includes_excludes_configured": None,
             },
         )
 
@@ -756,6 +760,8 @@ class TestMetricInterface(TestCase):
                         },
                         "dimension_to_includes_excludes_member_to_setting": {},
                         "dimension_to_contexts": {},
+                        "is_breakdown_configured": None,
+                        "dimension_to_includes_excludes_configured_status": {},
                     }
                 },
                 "disaggregated_by_supervision_subsystems": None,
@@ -764,6 +770,7 @@ class TestMetricInterface(TestCase):
                     "custom_frequency": None,
                     "starting_month": None,
                 },
+                "is_includes_excludes_configured": None,
             },
         )
 
@@ -2497,8 +2504,14 @@ class TestMetricInterface(TestCase):
                             CallType.UNKNOWN: {},
                         },
                         dimension_to_value=None,
+                        is_breakdown_configured=None,
+                        dimension_to_includes_excludes_configured_status={
+                            CallType.EMERGENCY: None,
+                            CallType.UNKNOWN: None,
+                        },
                     )
                 ],
+                is_includes_excludes_configured=None,
             ),
         )
 
@@ -2609,6 +2622,15 @@ class TestMetricInterface(TestCase):
                         "Please provide additional context.",
                     )
                 ],
+            },
+            dimension_to_includes_excludes_configured_status={
+                ReleaseType.TO_PROBATION_SUPERVISION: None,
+                ReleaseType.TO_PAROLE_SUPERVISION: None,
+                ReleaseType.TO_COMMUNITY_SUPERVISION: None,
+                ReleaseType.NO_CONTROL: None,
+                ReleaseType.DEATH: None,
+                ReleaseType.UNKNOWN: None,
+                ReleaseType.OTHER: None,
             },
         )
 
