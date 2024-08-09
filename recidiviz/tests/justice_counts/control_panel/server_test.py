@@ -133,7 +133,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         self.app = create_app(config=test_config)
         self.client = self.app.test_client()
         self.app.secret_key = "NOT A SECRET"
-        # `flask_sqlalchemy_session` sets the `scoped_session` attribute on the app,
+        # `flask_scoped_session` sets the `scoped_session` attribute on the app,
         # even though this is not specified in the types for `app`.
         self.session = self.app.scoped_session  # type: ignore[attr-defined]
         self.test_schema_objects = JusticeCountsSchemaTestObjects()

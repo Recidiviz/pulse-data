@@ -21,7 +21,6 @@ from typing import Any, Dict, List
 
 from flask.views import MethodView
 from flask_smorest import Blueprint, abort
-from flask_sqlalchemy_session import current_session
 from psycopg2.errors import (  # pylint: disable=no-name-in-module
     NotNullViolation,
     UniqueViolation,
@@ -57,6 +56,7 @@ from recidiviz.persistence.database.schema.case_triage.schema import (
     UserOverride,
 )
 from recidiviz.persistence.database.session import Session
+from recidiviz.persistence.database.sqlalchemy_flask_utils import current_session
 
 users_blueprint = Blueprint("users", "users")
 

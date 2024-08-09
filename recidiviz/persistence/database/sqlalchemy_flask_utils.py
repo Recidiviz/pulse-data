@@ -15,12 +15,12 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Implements helpers for working with SQLAlchemy in a Flask app."""
-from typing import Optional
+from typing import Any, Callable, Optional
 
-from flask import Flask
-from flask_sqlalchemy_session import flask_scoped_session
+from flask import Flask, current_app, has_app_context
 from sqlalchemy.engine import Engine
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import Session, scoped_session, sessionmaker
+from werkzeug.local import LocalProxy
 
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
@@ -51,3 +51,66 @@ def setup_scoped_sessions(
     flask_scoped_session(sessionmaker(bind=engine), app)
 
     return engine
+
+
+def _get_session() -> Session:
+    # pylint: disable=missing-docstring, protected-access
+    if not has_app_context():
+        raise RuntimeError(
+            "Cannot access current_session when outside of an application context."
+        )
+    app = current_app
+    if not hasattr(app, "scoped_session"):
+        raise AttributeError(
+            f"{app} has no 'scoped_session' attribute. You need to initialize it with a flask_scoped_session."
+        )
+    return app.scoped_session
+
+
+current_session: Session = LocalProxy(_get_session)
+
+# Scope the session to the current greenlet if greenlet is available,
+# otherwise fall back to the current thread.
+try:
+    from greenlet import getcurrent as _ident_func
+except ImportError:
+    from threading import get_ident as _ident_func
+
+
+class flask_scoped_session(scoped_session):
+    """A :class:`~sqlalchemy.orm.scoping.scoped_session` whose scope is set to
+    the Flask application context.
+    """
+
+    def __init__(
+        self, session_factory: Callable[[], Session], app: Flask | None = None
+    ) -> None:
+        """
+        :param session_factory: A callable that returns a
+            :class:`~sqlalchemy.orm.session.Session`
+        :param app: a :class:`~flask.Flask` application
+        """
+        super().__init__(session_factory, scopefunc=_ident_func)
+
+        if app is not None:
+            self.init_app(app)
+
+    def init_app(self, app: Flask) -> None:
+        """Setup scoped session creation and teardown for the passed ``app``.
+
+        :param app: a :class:`~flask.Flask` application
+        """
+        app.scoped_session = self  # type: ignore
+
+        @app.teardown_appcontext
+        def remove_scoped_session(*args: Any, **kwargs: Any) -> None:
+            # pylint: disable=missing-docstring,unused-argument,unused-variable
+            if not hasattr(app, "scoped_session") or not isinstance(
+                app.scoped_session, scoped_session
+            ):
+
+                raise AttributeError(
+                    f"{app} has not been initialized with a flask_scoped_session"
+                )
+
+            app.scoped_session.remove()

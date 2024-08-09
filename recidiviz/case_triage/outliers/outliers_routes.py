@@ -502,7 +502,7 @@ def create_outliers_api_blueprint() -> Blueprint:
                 HTTPStatus.UNAUTHORIZED,
             )
 
-        if request.json is None:
+        if not request.json:
             return jsonify_response("Missing request body", HTTPStatus.BAD_REQUEST)
 
         request_json = convert_nested_dictionary_keys(

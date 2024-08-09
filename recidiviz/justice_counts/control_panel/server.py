@@ -24,7 +24,6 @@ import sentry_sdk
 from flask import Flask, Response, request, send_from_directory
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
-from flask_sqlalchemy_session import current_session
 from flask_wtf.csrf import CSRFProtect
 from sentry_sdk.integrations.flask import FlaskIntegration
 from werkzeug.middleware.proxy_fix import ProxyFix
@@ -42,7 +41,10 @@ from recidiviz.justice_counts.control_panel.utils import (
 from recidiviz.justice_counts.feed import FeedInterface
 from recidiviz.justice_counts.utils.constants import JUSTICE_COUNTS_SENTRY_DSN
 from recidiviz.persistence.database.constants import JUSTICE_COUNTS_DB_SECRET_PREFIX
-from recidiviz.persistence.database.sqlalchemy_flask_utils import setup_scoped_sessions
+from recidiviz.persistence.database.sqlalchemy_flask_utils import (
+    current_session,
+    setup_scoped_sessions,
+)
 from recidiviz.utils import structured_logging
 from recidiviz.utils.environment import (
     GCP_PROJECT_STAGING,

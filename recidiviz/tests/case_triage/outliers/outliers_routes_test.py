@@ -1804,7 +1804,11 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
 
         response = self.test_client.patch(
             "/outliers/US_PA/user-info/hashhash",
-            headers={"Origin": "http://localhost:3000"},
+            headers={
+                "Origin": "http://localhost:3000",
+                "Content-Type": "application/json",
+            },
+            json={},
         )
 
         self.assertEqual(response.status_code, HTTPStatus.BAD_REQUEST)
@@ -1831,14 +1835,14 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         response = self.test_client.patch(
             "/outliers/US_PA/user-info/hashhash",
             headers={"Origin": "http://localhost:3000"},
-            json={},
+            json={"fakeKey": True},
         )
 
         self.assertEqual(response.status_code, HTTPStatus.BAD_REQUEST)
         self.assertEqual(
             response.json,
             {
-                "message": "Invalid request body. Expected keys: ['hasDismissedDataUnavailableNote', 'hasDismissedRateOver100PercentNote', 'hasSeenOnboarding']. Found keys: []",
+                "message": "Invalid request body. Expected keys: ['hasDismissedDataUnavailableNote', 'hasDismissedRateOver100PercentNote', 'hasSeenOnboarding']. Found keys: ['fakeKey']",
             },
         )
 
