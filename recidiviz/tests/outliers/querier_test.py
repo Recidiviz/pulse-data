@@ -135,6 +135,10 @@ class TestOutliersQuerier(InsightsDbTestCase):
             ):
                 session.add(SupervisionOfficerMetric(**officer_metric))
 
+        self.test_user_context = UserContext(
+            "US_PA", "12345", "hash-12345", True, {"supervisorHomepageWorkflows": {}}
+        )
+
     def tearDown(self) -> None:
         super().tearDown()
 
@@ -799,7 +803,7 @@ class TestOutliersQuerier(InsightsDbTestCase):
 
     def test_get_product_configuration(self) -> None:
         querier = OutliersQuerier(StateCode.US_PA)
-        result = querier.get_product_configuration(user_context=None)
+        result = querier.get_product_configuration(user_context=self.test_user_context)
         self.snapshot.assert_match(result, name="test_get_product_configuration")  # type: ignore[attr-defined]
 
     @patch(
@@ -825,7 +829,7 @@ class TestOutliersQuerier(InsightsDbTestCase):
             primary_category_type=InsightsCaseloadCategoryType.SEX_OFFENSE_BINARY,
         )
         querier = OutliersQuerier(StateCode.US_PA)
-        result = querier.get_product_configuration()
+        result = querier.get_product_configuration(user_context=self.test_user_context)
         self.snapshot.assert_match(result, name="test_get_product_configuration_with_specialized_category_type")  # type: ignore[attr-defined]
 
     @patch(
@@ -841,4 +845,4 @@ class TestOutliersQuerier(InsightsDbTestCase):
         )
         querier = OutliersQuerier(StateCode.US_PA)
         with self.assertRaisesRegex(ValueError, "Invalid product configuration"):
-            querier.get_product_configuration()
+            querier.get_product_configuration(user_context=self.test_user_context)
