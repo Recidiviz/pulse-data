@@ -152,11 +152,15 @@ class OutliersQuerier:
                 .all()
             )
 
-            state_config = self.get_outliers_backend_config()
+            state_config = self.get_product_configuration()
 
             metric_name_to_metric_context = {
                 metric: self._get_metric_context_from_db(
-                    session, metric, end_date, prev_end_date
+                    session,
+                    metric,
+                    end_date,
+                    prev_end_date,
+                    state_config.primary_category_type,
                 )
                 for metric in state_config.metrics
             }
@@ -279,12 +283,13 @@ class OutliersQuerier:
         metric: OutliersMetricConfig,
         end_date: date,
         prev_end_date: date,
+        category_type_to_compare: InsightsCaseloadCategoryType,
     ) -> MetricContext:
         """
         For the given metric_id, calculate and hydrate the MetricContext object as defined above.
         """
         target, target_status_strategy = self.get_target_from_db(
-            session, metric, end_date
+            session, metric, end_date, category_type_to_compare
         )
 
         # Get officer metrics for the given metric_id for the current and previous period
@@ -294,9 +299,8 @@ class OutliersQuerier:
                 SupervisionOfficerOutlierStatus.metric_id == metric.name,
                 SupervisionOfficerOutlierStatus.end_date.in_([end_date, prev_end_date]),
                 SupervisionOfficerOutlierStatus.period == MetricTimePeriod.YEAR.value,
-                # TODO(#31552): Return metrics for a configured category
                 SupervisionOfficerOutlierStatus.category_type
-                == InsightsCaseloadCategoryType.ALL.value,
+                == category_type_to_compare.value,
             )
             .with_entities(
                 SupervisionOfficerOutlierStatus.officer_id,
@@ -376,14 +380,13 @@ class OutliersQuerier:
         session: Session,
         metric: OutliersMetricConfig,
         end_date: date,
+        category_type_to_compare: InsightsCaseloadCategoryType,
     ) -> Tuple[float, TargetStatusStrategy]:
         target_query = session.query(MetricBenchmark).filter(
             MetricBenchmark.metric_id == metric.name,
             MetricBenchmark.end_date == end_date,
             MetricBenchmark.period == MetricTimePeriod.YEAR.value,
-            # TODO(#31552): Return benchmarks for a configured category
-            MetricBenchmark.category_type == InsightsCaseloadCategoryType.ALL.value,
-            MetricBenchmark.caseload_type == "ALL",
+            MetricBenchmark.category_type == category_type_to_compare.value,
         )
 
         metric_benchmark = target_query.scalar()
@@ -506,6 +509,7 @@ class OutliersQuerier:
     def get_officers_for_supervisor(
         self,
         supervisor_external_id: str,
+        category_type_to_compare: InsightsCaseloadCategoryType,
         num_lookback_periods: Optional[int] = None,
         period_end_date: Optional[date] = None,
     ) -> List[SupervisionOfficerEntity]:
@@ -514,11 +518,13 @@ class OutliersQuerier:
         includes information on the state's metrics that the officer is an outlier for.
 
         :param supervisor_external_id: The external id of the supervisor to get outlier information for
+        :param category_type_to_compare: The category type to use to determine the officers' caseload categories
         :param num_lookback_periods: The number of previous periods to get statuses for, prior to the period with end_date == period_end_date.
         :param period_end_date: The end date of the period to get Outliers for. If not provided, use the latest end date available.
         :rtype: List[SupervisionOfficerEntity]
         """
         id_to_entities = self.get_id_to_supervision_officer_entities(
+            category_type_to_compare=category_type_to_compare,
             num_lookback_periods=num_lookback_periods,
             period_end_date=period_end_date,
             supervisor_external_id=supervisor_external_id,
@@ -591,12 +597,13 @@ class OutliersQuerier:
 
     def get_benchmarks(
         self,
+        category_type_to_compare: InsightsCaseloadCategoryType,
         num_lookback_periods: Optional[int] = 5,
         period_end_date: Optional[date] = None,
     ) -> List[dict]:
         """
-        Returns a list of objects that have information for a given metric and benchmark. Each item in the returned
-        list adhere to the below format:
+        Returns a list of objects that have information for each metric and benchmark within the given caseload category type.
+        Each item in the returned list adheres to the below format:
             {
               "metric_id": str,
               "caseload_type": str,
@@ -634,10 +641,7 @@ class OutliersQuerier:
                 .filter(
                     # Get the benchmarks for all periods between requested or latest end_date and earliest end date
                     MetricBenchmark.end_date.between(earliest_end_date, end_date),
-                    # TODO(#31552): Return benchmarks for a configured category
-                    MetricBenchmark.category_type
-                    == InsightsCaseloadCategoryType.ALL.value,
-                    MetricBenchmark.caseload_type == "ALL",
+                    MetricBenchmark.category_type == category_type_to_compare.value,
                 )
                 .group_by(
                     MetricBenchmark.metric_id,
@@ -838,6 +842,7 @@ class OutliersQuerier:
     def get_supervision_officer_entity(
         self,
         pseudonymized_officer_id: str,
+        category_type_to_compare: InsightsCaseloadCategoryType,
         num_lookback_periods: Optional[int],
         period_end_date: Optional[date] = None,
     ) -> Optional[SupervisionOfficerEntity]:
@@ -846,6 +851,7 @@ class OutliersQuerier:
         If the officer doesn't have metrics for the period, return None.
 
         :param pseudonymized_officer_id: The pseudonymized id of the officer to get information for.
+        :param category_type_to_compare: The category type to use to determine the officer's caseload category
         :param num_lookback_periods: The number of previous periods to get benchmark data for, prior to the period with end_date == period_end_date.
         :param period_end_date: The end date of the period to get for. If not provided, use the latest end date available.
         :rtype: Optional[SupervisionOfficerEntity]
@@ -865,6 +871,7 @@ class OutliersQuerier:
                 return None
 
             id_to_entities = self.get_id_to_supervision_officer_entities(
+                category_type_to_compare=category_type_to_compare,
                 num_lookback_periods=num_lookback_periods,
                 period_end_date=period_end_date,
                 officer_external_id=officer_external_id,
@@ -902,6 +909,7 @@ class OutliersQuerier:
 
     def get_id_to_supervision_officer_entities(
         self,
+        category_type_to_compare: InsightsCaseloadCategoryType,
         num_lookback_periods: Optional[int],
         period_end_date: Optional[date] = None,
         officer_external_id: Optional[str] = None,
@@ -911,6 +919,7 @@ class OutliersQuerier:
         Returns a dictionary of officer external id to SupervisionOfficerEntity objects that includes information
         on the state's metrics that the officer is an outlier for or is in the top x% for.
 
+        :param category_type_to_compare: The category type to use to determine the officers' caseload categories
         :param num_lookback_periods: The number of previous periods to get statuses for, prior to the period with end_date == period_end_date.
         :param period_end_date: The end date of the period to get Outliers for. If not provided, use the latest end date available.
         :param officer_external_id: The external id of an officer to filter by.
@@ -949,9 +958,8 @@ class OutliersQuerier:
                 )
                 .filter(
                     SupervisionOfficerMetric.metric_id == "avg_daily_population",
-                    # TODO(#31552): Return metrics for a configured category
                     SupervisionOfficerMetric.category_type
-                    == InsightsCaseloadCategoryType.ALL.value,
+                    == category_type_to_compare.value,
                 )
                 .group_by(SupervisionOfficerMetric.officer_id)
                 .subquery()
@@ -973,9 +981,8 @@ class OutliersQuerier:
                     SupervisionOfficerOutlierStatus.end_date.between(
                         earliest_end_date, end_date
                     ),
-                    # TODO(#31552): Return metrics for a configured category
                     SupervisionOfficerOutlierStatus.category_type
-                    == InsightsCaseloadCategoryType.ALL.value,
+                    == category_type_to_compare.value,
                 )
                 .group_by(
                     SupervisionOfficer.external_id,
@@ -1007,6 +1014,8 @@ class OutliersQuerier:
                                 SupervisionOfficerOutlierStatus.metric_rate,
                                 "status",
                                 SupervisionOfficerOutlierStatus.status,
+                                "caseload_category",
+                                SupervisionOfficerOutlierStatus.caseload_type,
                             ),
                             SupervisionOfficerOutlierStatus.end_date.desc(),
                         )
@@ -1062,6 +1071,10 @@ class OutliersQuerier:
                     # If the latest status for the officer isn't the same as the requested end date, skip this row.
                     continue
 
+                # Get the caseload category for the latest period so we can put it directly on the officer entity
+                latest_period_caseload_category = latest_period_status_obj[
+                    "caseload_category"
+                ]
                 is_outlier = latest_period_status_obj["status"] == "FAR"
 
                 # Get whether or not the officer is in the top x% of a metric for the period with the requested end date
@@ -1081,26 +1094,30 @@ class OutliersQuerier:
                     # If is_top_x_pct_over_time is empty, the metric is not configured to calculate top x% officers.
                     is_top_x_pct = False
 
-                if record.external_id in officer_external_id_to_entity:
+                if external_id in officer_external_id_to_entity:
+                    existing_entity = officer_external_id_to_entity[external_id]
                     if is_outlier:
-                        officer_external_id_to_entity[
-                            external_id
-                        ].outlier_metrics.append(
+                        existing_entity.outlier_metrics.append(
                             {
                                 "metric_id": record.metric_id,
                                 "statuses_over_time": record.statuses_over_time,
                             }
                         )
                     if is_top_x_pct:
-                        officer_external_id_to_entity[
-                            external_id
-                        ].top_x_pct_metrics.append(
+                        existing_entity.top_x_pct_metrics.append(
                             {
                                 "metric_id": record.metric_id,
                                 "top_x_pct": record.is_top_x_pct_over_time[0][
                                     "top_x_pct"
                                 ],
                             }
+                        )
+                    if (
+                        existing_entity.caseload_category
+                        != latest_period_caseload_category
+                    ):
+                        raise ValueError(
+                            f"Officer with pseudonymized id {existing_entity.pseudonymized_id} has multiple caseload_category values for the latest period"
                         )
                 else:
                     officer_external_id_to_entity[
@@ -1112,7 +1129,10 @@ class OutliersQuerier:
                         supervisor_external_id=record.supervisor_external_id,
                         supervisor_external_ids=record.supervisor_external_ids,
                         district=record.supervision_district,
+                        # Deprecated specialized caseload type of the officer, do not use
+                        # TODO(#31634): Remove this
                         caseload_type=record.specialized_caseload_type,
+                        caseload_category=latest_period_caseload_category,
                         avg_daily_population=record.avg_daily_population,
                         outlier_metrics=(
                             [

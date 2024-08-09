@@ -233,7 +233,7 @@ snapshots[
 snapshots["TestOutliersRoutes.TestOutliersRoutes test_get_officer_not_outlier"] = {
     "officer": {
         "avgDailyPopulation": 10.0,
-        "caseloadType": None,
+        "caseloadType": "ALL",
         "district": "Guts",
         "externalId": "123",
         "fullName": {
@@ -253,7 +253,7 @@ snapshots["TestOutliersRoutes.TestOutliersRoutes test_get_officer_not_outlier"] 
 snapshots["TestOutliersRoutes.TestOutliersRoutes test_get_officer_success"] = {
     "officer": {
         "avgDailyPopulation": 10.0,
-        "caseloadType": None,
+        "caseloadType": "ALL",
         "district": "Guts",
         "externalId": "123",
         "fullName": {
@@ -281,7 +281,7 @@ snapshots["TestOutliersRoutes.TestOutliersRoutes test_get_officers_for_superviso
     "officers": [
         {
             "avgDailyPopulation": 10.0,
-            "caseloadType": None,
+            "caseloadType": "ALL",
             "district": "Hogwarts",
             "externalId": "123",
             "fullName": {
@@ -308,7 +308,7 @@ snapshots["TestOutliersRoutes.TestOutliersRoutes test_get_officers_for_superviso
         },
         {
             "avgDailyPopulation": 10.0,
-            "caseloadType": None,
+            "caseloadType": "ALL",
             "district": "Hogwarts",
             "externalId": "456",
             "fullName": {
@@ -332,7 +332,7 @@ snapshots[
     "officers": [
         {
             "avgDailyPopulation": 10.0,
-            "caseloadType": None,
+            "caseloadType": "ALL",
             "district": "Hogwarts",
             "externalId": "123",
             "fullName": {
@@ -357,7 +357,7 @@ snapshots[
         },
         {
             "avgDailyPopulation": 10.0,
-            "caseloadType": None,
+            "caseloadType": "ALL",
             "district": "Hogwarts",
             "externalId": "456",
             "fullName": {
@@ -418,6 +418,7 @@ Incarceration rate denominator description""",
         "officerHasNoEligibleClientsLabel": "Nice! No outstanding opportunities for now.",
         "officerHasNoOutlierMetricsLabel": "Nice! No outlying metrics this month.",
         "outliersHover": "Has a rate on any metric significantly higher than peers - over 1 Interquartile Range above the statewide rate.",
+        "primaryCategoryType": "ALL",
         "slightlyWorseThanRateLabel": "Slightly worse than statewide rate",
         "supervisionDistrictLabel": "district",
         "supervisionDistrictManagerLabel": "district manager",

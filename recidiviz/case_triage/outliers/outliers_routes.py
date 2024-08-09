@@ -168,8 +168,14 @@ def create_outliers_api_blueprint() -> Blueprint:
                 HTTPStatus.NOT_FOUND,
             )
 
+        primary_category_type = querier.get_product_configuration(
+            g.user_context
+        ).primary_category_type
         officer_entities = querier.get_officers_for_supervisor(
-            supervisor.external_id, num_lookback_periods, period_end_date
+            supervisor.external_id,
+            primary_category_type,
+            num_lookback_periods,
+            period_end_date,
         )
 
         officers = [
@@ -234,8 +240,14 @@ def create_outliers_api_blueprint() -> Blueprint:
                 f"Invalid parameters provided. Error: {str(e)}", HTTPStatus.BAD_REQUEST
             )
 
-        benchmarks = OutliersQuerier(state_code).get_benchmarks(
-            num_lookback_periods, period_end_date
+        querier = OutliersQuerier(state_code)
+
+        primary_category_type = querier.get_product_configuration(
+            g.user_context
+        ).primary_category_type
+
+        benchmarks = querier.get_benchmarks(
+            primary_category_type, num_lookback_periods, period_end_date
         )
 
         result = [
@@ -293,8 +305,14 @@ def create_outliers_api_blueprint() -> Blueprint:
         else:
             allowed_metric_ids = state_metrics
 
+        user_context: UserContext = g.user_context
+        category_type_to_compare = querier.get_product_configuration(
+            user_context
+        ).primary_category_type
+
         # Check that the requested officer exists and has metrics for the period.
         officer_entity = querier.get_supervision_officer_entity(
+            category_type_to_compare=category_type_to_compare,
             pseudonymized_officer_id=pseudonymized_officer_id,
             num_lookback_periods=0,
             period_end_date=period_end_date,
@@ -305,7 +323,6 @@ def create_outliers_api_blueprint() -> Blueprint:
                 HTTPStatus.NOT_FOUND,
             )
 
-        user_context: UserContext = g.user_context
         supervisor = querier.get_supervisor_from_external_id(
             user_context.user_external_id
         )
@@ -425,9 +442,17 @@ def create_outliers_api_blueprint() -> Blueprint:
 
         querier = OutliersQuerier(state_code)
 
+        user_context: UserContext = g.user_context
+        category_type_to_compare = querier.get_product_configuration(
+            user_context
+        ).primary_category_type
+
         # Check that the requested officer exists
         officer_entity = querier.get_supervision_officer_entity(
-            pseudonymized_officer_id, num_lookback_periods, period_end_date
+            pseudonymized_officer_id,
+            category_type_to_compare,
+            num_lookback_periods,
+            period_end_date,
         )
         if officer_entity is None:
             return jsonify_response(
@@ -435,7 +460,6 @@ def create_outliers_api_blueprint() -> Blueprint:
                 HTTPStatus.NOT_FOUND,
             )
 
-        user_context: UserContext = g.user_context
         supervisor = querier.get_supervisor_from_external_id(
             user_context.user_external_id
         )
@@ -689,7 +713,12 @@ def create_outliers_api_blueprint() -> Blueprint:
                 HTTPStatus.NOT_FOUND,
             )
 
-        officer_entities = querier.get_officers_for_supervisor(supervisor.external_id)
+        category_type_to_compare = querier.get_product_configuration(
+            user_context
+        ).primary_category_type
+        officer_entities = querier.get_officers_for_supervisor(
+            supervisor.external_id, category_type_to_compare
+        )
 
         action_strategies_json = {
             officer.pseudonymized_id: None for officer in officer_entities

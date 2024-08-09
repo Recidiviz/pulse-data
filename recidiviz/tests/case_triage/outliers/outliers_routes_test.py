@@ -314,6 +314,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                     supervisor_external_ids=["102"],
                     district="Hogwarts",
                     caseload_type=None,
+                    caseload_category="ALL",
                     outlier_metrics=[
                         {
                             "metric_id": "metric_one",
@@ -349,6 +350,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                     supervisor_external_ids=["102"],
                     district="Hogwarts",
                     caseload_type=None,
+                    caseload_category="ALL",
                     outlier_metrics=[],
                     top_x_pct_metrics=[],
                     avg_daily_population=10.0,
@@ -457,6 +459,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                     supervisor_external_ids=["102"],
                     district="Hogwarts",
                     caseload_type=None,
+                    caseload_category="ALL",
                     outlier_metrics=[
                         {
                             "metric_id": "metric_one",
@@ -487,6 +490,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                     supervisor_external_ids=["102"],
                     district="Hogwarts",
                     caseload_type=None,
+                    caseload_category="ALL",
                     outlier_metrics=[],
                     top_x_pct_metrics=[],
                     avg_daily_population=10.0,
@@ -606,6 +610,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                     supervisor_external_ids=["102"],
                     district="Hogwarts",
                     caseload_type=None,
+                    caseload_category="ALL",
                     outlier_metrics=[
                         {
                             "metric_id": "metric_one",
@@ -641,6 +646,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                     supervisor_external_ids=["102"],
                     district="Hogwarts",
                     caseload_type=None,
+                    caseload_category="ALL",
                     outlier_metrics=[],
                     top_x_pct_metrics=[],
                     avg_daily_population=10.0,
@@ -807,6 +813,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
             supervisor_external_ids=["102"],
             district="Guts",
             caseload_type=None,
+            caseload_category="ALL",
             outlier_metrics=[
                 {
                     "metric_id": "absconsions_bench_warrants",
@@ -884,6 +891,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
             supervisor_external_ids=["102"],
             district="Guts",
             caseload_type=None,
+            caseload_category="ALL",
             outlier_metrics=[
                 {
                     "metric_id": "absconsions_bench_warrants",
@@ -960,6 +968,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
             supervisor_external_ids=["102"],
             district="Guts",
             caseload_type=None,
+            caseload_category="ALL",
             outlier_metrics=[],
             top_x_pct_metrics=[],
             avg_daily_population=10.0,
@@ -1011,6 +1020,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
             supervisor_external_ids=["102"],
             district="Guts",
             caseload_type=None,
+            caseload_category="ALL",
             outlier_metrics=[
                 {
                     "metric_id": "other_metric",
@@ -1081,6 +1091,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
             supervisor_external_ids=["102"],
             district="Guts",
             caseload_type=None,
+            caseload_category="ALL",
             outlier_metrics=[
                 {
                     "metric_id": TEST_METRIC_1.name,
@@ -1162,6 +1173,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
             supervisor_external_ids=["102"],
             district="Guts",
             caseload_type=None,
+            caseload_category="ALL",
             outlier_metrics=[
                 {
                     "metric_id": TEST_METRIC_1.name,
@@ -1242,6 +1254,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
             supervisor_external_ids=["102"],
             district="Guts",
             caseload_type=None,
+            caseload_category="ALL",
             outlier_metrics=[
                 {
                     "metric_id": "absconsions_bench_warrants",
@@ -1327,6 +1340,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
             supervisor_external_ids=["102"],
             district="Guts",
             caseload_type=None,
+            caseload_category="ALL",
             outlier_metrics=[
                 {
                     "metric_id": "incarceration_starts_and_inferred",
@@ -1444,6 +1458,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
             supervisor_external_ids=["102"],
             district="Guts",
             caseload_type=None,
+            caseload_category="ALL",
             outlier_metrics=[
                 {
                     "metric_id": "absconsions_bench_warrants",
@@ -1517,6 +1532,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
             supervisor_external_ids=["102"],
             district="Guts",
             caseload_type=None,
+            caseload_category="ALL",
             outlier_metrics=[],
             top_x_pct_metrics=[],
             avg_daily_population=10.0,
@@ -1567,6 +1583,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
             supervisor_external_ids=["102"],
             district="Guts",
             caseload_type=None,
+            caseload_category="ALL",
             outlier_metrics=[
                 {
                     "metric_id": "absconsions_bench_warrants",
