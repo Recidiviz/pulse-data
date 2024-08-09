@@ -3,6 +3,10 @@
 # TODO(#27373): This script can be deleted once the calc DAG includes ingest
 # and supports end to end sandbox runs.
 
+# NOTE: If you are using the default mac version of bash you may encounter an error similar to the following:
+#  `recidiviz/tools/ingest/development/full_sandbox_pipeline.sh: line 94: declare: -A: invalid option`
+# Install bash from homebrew using `brew install bash` to correct this
+
 BASH_SOURCE_DIR=$(dirname "${BASH_SOURCE[0]}")
 # shellcheck source=recidiviz/tools/script_base.sh
 source "${BASH_SOURCE_DIR}/../../script_base.sh"
@@ -197,7 +201,7 @@ function confirm_cmd {
 }
 
 # Some more variables
-STATE_CODE_LOWERCASE=${STATE_CODE,,}                 # convert to lowercase
+STATE_CODE_LOWERCASE=${STATE_CODE,,} # convert to lowercase
 
 STANDARD_STATE_SPECIFIC_STATE_DATASET="${STATE_CODE_LOWERCASE}_state"
 SANDBOX_STATE_DATASET="${SANDBOX_PREFIX}_${STANDARD_STATE_SPECIFIC_STATE_DATASET}"
@@ -249,11 +253,11 @@ echo "If applicable, you should confirm that the normalization pipeline is compl
 
 echo "Ready to load data from ${SANDBOX_STATE_DATASET} and ${SANDBOX_STATE_SPECIFIC_NORMALIZED_DATASET} into the unified ${SANDBOX_NORMALIZED_DATASET} dataset."
 confirm_cmd python -m recidiviz.tools.calculator.update_sandbox_normalized_state_dataset \
-  --project_id "${PROJECT_ID}" \
-  --state_code "${STATE_CODE}" \
-  --input_state_dataset "${SANDBOX_STATE_DATASET}" \
-  --input_normalized_state_dataset "${SANDBOX_STATE_SPECIFIC_NORMALIZED_DATASET}" \
-  --output_sandbox_prefix "${SANDBOX_PREFIX}"
+	--project_id "${PROJECT_ID}" \
+	--state_code "${STATE_CODE}" \
+	--input_state_dataset "${SANDBOX_STATE_DATASET}" \
+	--input_normalized_state_dataset "${SANDBOX_STATE_SPECIFIC_NORMALIZED_DATASET}" \
+	--output_sandbox_prefix "${SANDBOX_PREFIX}"
 
 # Metric pipelines
 for pipeline in "${!PIPELINES[@]}"; do
