@@ -96,7 +96,6 @@ class SpreadsheetUploader:
         updates: List[schema.Datapoint],
         histories: List[schema.DatapointHistory],
         rows: List[Dict[str, Any]],
-        invalid_sheet_names: List[str],
         metric_key_to_datapoint_jsons: Dict[str, List[DatapointJson]],
         metric_key_to_errors: Dict[
             Optional[str], List[JusticeCountsBulkUploadException]
@@ -127,7 +126,6 @@ class SpreadsheetUploader:
                 updates=updates,
                 histories=histories,
                 agency_name_to_rows=agency_name_to_rows,
-                invalid_sheet_names=invalid_sheet_names,
                 metric_key_to_datapoint_jsons=metric_key_to_datapoint_jsons,
                 metric_key_to_errors=metric_key_to_errors,
                 uploaded_reports=uploaded_reports,
@@ -144,7 +142,6 @@ class SpreadsheetUploader:
                 updates=updates,
                 histories=histories,
                 system_to_rows=system_to_rows,
-                invalid_sheet_names=invalid_sheet_names,
                 metric_key_to_datapoint_jsons=metric_key_to_datapoint_jsons,
                 metric_key_to_errors=metric_key_to_errors,
                 uploaded_reports=uploaded_reports,
@@ -158,7 +155,6 @@ class SpreadsheetUploader:
                 histories=histories,
                 rows=rows,
                 system=self.system,
-                invalid_sheet_names=invalid_sheet_names,
                 metric_key_to_datapoint_jsons=metric_key_to_datapoint_jsons,
                 metric_key_to_errors=metric_key_to_errors,
                 uploaded_reports=uploaded_reports,
@@ -173,7 +169,6 @@ class SpreadsheetUploader:
         updates: List[schema.Datapoint],
         histories: List[schema.DatapointHistory],
         agency_name_to_rows: Dict[str, List[Dict[str, Any]]],
-        invalid_sheet_names: List[str],
         metric_key_to_datapoint_jsons: Dict[str, List[DatapointJson]],
         metric_key_to_errors: Dict[
             Optional[str], List[JusticeCountsBulkUploadException]
@@ -226,7 +221,6 @@ class SpreadsheetUploader:
                     updates=updates,
                     histories=histories,
                     system_to_rows=system_to_rows,
-                    invalid_sheet_names=invalid_sheet_names,
                     metric_key_to_datapoint_jsons=metric_key_to_datapoint_jsons,
                     metric_key_to_errors=metric_key_to_errors,
                     child_agency_name=curr_agency_name,
@@ -242,7 +236,6 @@ class SpreadsheetUploader:
                     histories=histories,
                     rows=current_rows,
                     system=self.system,
-                    invalid_sheet_names=invalid_sheet_names,
                     metric_key_to_datapoint_jsons=metric_key_to_datapoint_jsons,
                     metric_key_to_errors=metric_key_to_errors,
                     child_agency_name=curr_agency_name,
@@ -258,7 +251,6 @@ class SpreadsheetUploader:
         updates: List[schema.Datapoint],
         histories: List[schema.DatapointHistory],
         system_to_rows: Dict[schema.System, List[Dict[str, Any]]],
-        invalid_sheet_names: List[str],
         metric_key_to_datapoint_jsons: Dict[str, List[DatapointJson]],
         metric_key_to_errors: Dict[
             Optional[str], List[JusticeCountsBulkUploadException]
@@ -279,7 +271,6 @@ class SpreadsheetUploader:
                 histories=histories,
                 rows=current_rows,
                 system=current_system,
-                invalid_sheet_names=invalid_sheet_names,
                 metric_key_to_datapoint_jsons=metric_key_to_datapoint_jsons,
                 metric_key_to_errors=metric_key_to_errors,
                 uploaded_reports=uploaded_reports,
@@ -296,7 +287,6 @@ class SpreadsheetUploader:
         histories: List[schema.DatapointHistory],
         rows: List[Dict[str, Any]],
         system: schema.System,
-        invalid_sheet_names: List[str],
         metric_key_to_datapoint_jsons: Dict[str, List[DatapointJson]],
         metric_key_to_errors: Dict[
             Optional[str], List[JusticeCountsBulkUploadException]
@@ -320,9 +310,8 @@ class SpreadsheetUploader:
         metricfile = get_metricfile_by_sheet_name(
             sheet_name=self.sheet_name, system=system
         )
+
         if not metricfile:
-            if self.sheet_name not in invalid_sheet_names:
-                invalid_sheet_names.append(self.sheet_name)
             return
 
         existing_datapoint_json_list = metric_key_to_datapoint_jsons[

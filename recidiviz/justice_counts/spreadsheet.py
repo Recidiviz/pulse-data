@@ -262,18 +262,7 @@ class SpreadsheetInterface:
             system=spreadsheet.system, agency=agency, session=session
         )
 
-        if workbook_standardizer.validate_file_name(file_name=file_name) is False:
-            SpreadsheetInterface.log_errors_and_update_spreadsheet_status(
-                spreadsheet=spreadsheet,
-                agency_id=agency.id,
-                metric_key_to_errors=workbook_standardizer.metric_key_to_errors,
-            )
-            return BulkUploadResult(
-                spreadsheet=spreadsheet,
-                metric_key_to_errors=workbook_standardizer.metric_key_to_errors,
-            )
-
-        (xls, file_name, _) = workbook_standardizer.convert_file_to_pandas_excel_file(
+        xls, file_name = workbook_standardizer.standardize_workbook(
             file=file, file_name=file_name
         )
 
@@ -281,6 +270,7 @@ class SpreadsheetInterface:
             agency=agency,
             system=spreadsheet.system,
             child_agency_name_to_agency=workbook_standardizer.child_agency_name_to_agency,
+            metric_key_to_errors=workbook_standardizer.metric_key_to_errors,
             user_account=user_account,
             metric_key_to_metric_interface=metric_key_to_metric_interface,
         )
@@ -303,7 +293,7 @@ class SpreadsheetInterface:
             spreadsheet=spreadsheet,
             existing_report_ids=uploader.existing_report_ids,
             metric_key_to_datapoint_jsons=metric_key_to_datapoint_jsons,
-            metric_key_to_errors=workbook_standardizer.metric_key_to_errors,
+            metric_key_to_errors=metric_key_to_errors,  # TODO(#31446) Replace with workbook_standardizer.metric_key_to_errors after WorkbookStandardizer rollout
             updated_reports=uploader.updated_reports,
         )
 
@@ -312,7 +302,7 @@ class SpreadsheetInterface:
             SpreadsheetInterface.log_errors_and_update_spreadsheet_status(
                 spreadsheet=spreadsheet,
                 agency_id=agency.id,
-                metric_key_to_errors=workbook_standardizer.metric_key_to_errors,
+                metric_key_to_errors=metric_key_to_errors,  # TODO(#31446) Replace with workbook_standardizer.metric_key_to_errors  after WorkbookStandardizer rollout
             )
 
         else:

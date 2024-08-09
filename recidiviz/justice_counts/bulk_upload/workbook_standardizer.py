@@ -22,7 +22,7 @@ Bulk Upload into the Justice Counts database.
 from collections import defaultdict
 from functools import cached_property
 from io import StringIO
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 import pandas as pd
 from sqlalchemy.orm import Session
@@ -56,6 +56,8 @@ class WorkbookStandardizer:
         self.metric_key_to_errors: Dict[
             Optional[str], List[JusticeCountsBulkUploadException]
         ] = defaultdict(list)
+        self.invalid_sheet_names: Set[str] = set()
+        self.is_csv_upload = False
 
     @cached_property
     def child_agency_name_to_agency(self) -> Dict[str, schema.Agency]:
@@ -88,33 +90,6 @@ class WorkbookStandardizer:
 
         return child_agency_name_to_agency
 
-    def validate_file_name(self, file_name: str) -> bool:
-        """
-        Validates the file name to ensure it is of an acceptable type and format.
-
-        Args:
-            file_name (str): The name of the file to validate.
-
-        Returns:
-            bool: True if the file name is valid, False otherwise.
-        """
-        file_type = self.get_file_type_from_file_name(file_name=file_name)
-        if file_type != BulkUploadFileType.CSV:
-            return True
-
-        # Create new file name for the converted Excel file
-        _, sheet_name = self.get_new_file_name_and_sheet_name(file_name=file_name)
-
-        # Validate that the new sheet name corresponds to a valid metric file
-        if (
-            get_metricfile_by_sheet_name(sheet_name=sheet_name, system=self.system)
-            is None
-        ):
-            self._add_invalid_csv_file_name_error(sheet_name=sheet_name)
-            return False
-
-        return True
-
     def get_new_file_name_and_sheet_name(self, file_name: str) -> Tuple[str, str]:
         """
         Generates a new file name and corresponding sheet name for a converted Excel file.
@@ -141,9 +116,27 @@ class WorkbookStandardizer:
         """
         return BulkUploadFileType.from_suffix(file_name.rsplit(".", 1)[1].lower())
 
-    def convert_file_to_pandas_excel_file(
+    def _standardize_string(self, value: str) -> str:
+        """
+        Standardizes the given string by:
+        1) Removing leading and trailing whitespace.
+        2) Converting all text to lower case.
+        3) Replacing spaces with underscores (optional for specific cases).
+
+        Parameters:
+        value (str): The string to be standardized.
+
+        Returns:
+        str: The standardized string
+        """
+
+        value = value.strip().lower()
+        value = value.replace(" ", "_")
+        return value
+
+    def _convert_file_to_pandas_excel_file(
         self, file: Any, file_name: str
-    ) -> Tuple[pd.ExcelFile, str, BulkUploadFileType]:
+    ) -> Tuple[pd.ExcelFile, str]:
         """
         Converts a file to an Excel file if necessary, and validates the file name.
 
@@ -152,65 +145,134 @@ class WorkbookStandardizer:
             file name (str): The name of the file.
 
         Returns:
-            Optional[Tuple[pd.ExcelFile, str, BulkUploadFileType]]: A tuple containing the Excel file,
-            the new file name, and the file type, or None if validation fails.
+            Tuple[pd.ExcelFile, str]: A tuple containing the Excel file and
+            the new file name
         """
         # Determine the file type from the file name suffix
         file_type = self.get_file_type_from_file_name(file_name=file_name)
-
-        if file_type != BulkUploadFileType.CSV:
-            # If file is already in Excel format, return it
-            xls = pd.ExcelFile(file)
-            return xls, file_name, file_type
 
         # Create new file name for the converted Excel file
         new_file_name, sheet_name = self.get_new_file_name_and_sheet_name(
             file_name=file_name
         )
 
+        if file_type != BulkUploadFileType.CSV:
+            # If file is already in Excel format, return it
+            xls = pd.ExcelFile(file)
+            return xls, new_file_name
+
         # Convert bytes to string if necessary
+        self.is_csv_upload = True
         if isinstance(file, bytes):
             s = str(file, "utf-8")
             file = StringIO(s)
+        else:
+            file.stream.seek(0)
 
         # Read CSV file and convert it to Excel
-        file.stream.seek(0)
         csv_df = pd.read_csv(file)
         csv_df.to_excel(new_file_name, sheet_name=sheet_name, index=False)
         xls = pd.ExcelFile(new_file_name)
-        return xls, new_file_name, file_type
+        return xls, new_file_name
 
-    def _add_invalid_csv_file_name_error(self, sheet_name: str) -> None:
+    def standardize_workbook(
+        self, file: Any, file_name: str
+    ) -> Tuple[pd.ExcelFile, str]:
         """
-        Adds an error to the list of errors indicating that the provided CSV file name is invalid.
-
-        This method constructs a descriptive error message explaining that the provided `sheet_name`
-        does not correspond to any known metric for the agency. The expected file names are listed
-        in the error message. The error is then appended to the `metric_key_to_errors` attribute.
+        Standardizes the sheet names, column headers, and cell values in the given Excel workbook.
 
         Parameters:
-        sheet_name (str): The name of the CSV file that failed validation.
+        file (Any): The Excel or CSV file to be processed.
+        file_name (str): The name of the output Excel file.
+
+        Returns:
+        Tuple[pd.ExcelFile, str]: A tuple containing the Excel file and
+        the new file name
+        """
+        excel_file, standardized_file_name = self._convert_file_to_pandas_excel_file(
+            file=file, file_name=file_name
+        )
+
+        # Create a copy of the Excel file that can be updated
+        with pd.ExcelWriter(  # pylint: disable=abstract-class-instantiated
+            standardized_file_name
+        ) as writer:
+            for sheet_name in excel_file.sheet_names:
+                standardized_sheet_name = self._standardize_string(sheet_name)
+                if (
+                    get_metricfile_by_sheet_name(
+                        sheet_name=standardized_sheet_name, system=self.system
+                    )
+                    is not None
+                ):
+                    # Update sheet name in the excel file copy
+                    df = pd.read_excel(excel_file, sheet_name=sheet_name)
+                    df.to_excel(writer, sheet_name=standardized_sheet_name, index=False)
+                else:
+                    # 1) Don't write sheet with invalid sheet name to new excel object
+                    # 2) Add sheet name to invalid sheet names
+                    self.invalid_sheet_names.add(sheet_name)
+
+        if len(self.invalid_sheet_names) > 0:
+            self._add_invalid_name_error()
+
+        return pd.ExcelFile(standardized_file_name), standardized_file_name
+
+    def _add_invalid_name_error(self) -> None:
+        """
+        Adds an error to the list of errors indicating that the provided CSV file or sheet name is invalid.
+
+        This method constructs a descriptive error message explaining that the provided `sheet_name`
+        does not correspond to any known metric for the agency. Depending on whether it's a CSV file
+        error or an invalid sheet name error, the appropriate message is created and includes the
+        expected file names. The error is then appended to the `metric_key_to_errors` attribute.
+
+        Parameters:
+        None
 
         Returns:
         None
+
+        The method handles three types of errors:
+        1. CSV File Name Error: Occurs when the provided `sheet_name` does not match any of the expected
+        metric file names for the agency during a CSV upload. CSVs are processed by converting them into an
+        excel workbook with one sheet, the sheet name being the name of the file.
+        2. Invalid Sheet Name Error: Occurs when the provided `sheet_name` does not correspond to any
+        known metric sheet names for an Excel Workbook upload.
         """
-        # Construct the description message
+
         valid_file_names = ", ".join(
             [metric_file.canonical_filename for metric_file in self.metric_files]
         )
-        description = (
-            f"The file name '{sheet_name}' does not correspond to a metric for your agency. "
-            f"For CSV uploads, the file name should exactly match one of the following options: {valid_file_names}."
+        if self.is_csv_upload:
+            csv_error_description = (
+                f"The file name '{self.invalid_sheet_names.pop()}' does not correspond to a metric for your agency. "
+                f"For CSV uploads, the file name should exactly match one of the following options: {valid_file_names}."
+            )
+            self.metric_key_to_errors[None].append(
+                # The None key in metric_key_to_errors is designated for non-metric
+                # errors.These are errors that cannot be attributed to a particular
+                # metric, such as this one, where we are not able to tell what metric
+                # the user is attempting to upload for.
+                JusticeCountsBulkUploadException(
+                    title="Invalid File Name for CSV",
+                    message_type=BulkUploadMessageType.ERROR,
+                    description=csv_error_description,
+                )
+            )
+            return
+
+        invalid_sheet_name_error = (
+            f"The following sheet names do not correspond to a metric for your agency: "
+            f"{', '.join(self.invalid_sheet_names)}. "
+            f"Valid options include {valid_file_names}."
         )
 
-        # Append the error to the list. The None key in metric_key_to_errors
-        # is designated for non-metric errors. These are errors that cannot be
-        # attributed to a particular metric, such as this one, where we are
-        # not able to tell what metric the user is attempting to upload for.
         self.metric_key_to_errors[None].append(
             JusticeCountsBulkUploadException(
-                title="Invalid File Name for CSV",
+                title="Invalid Sheet Name",
                 message_type=BulkUploadMessageType.ERROR,
-                description=description,
-            )
+                description=invalid_sheet_name_error,
+            ),
         )
+        return

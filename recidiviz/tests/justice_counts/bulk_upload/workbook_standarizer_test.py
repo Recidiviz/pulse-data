@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Implements tests for Justice Counts Control Panel WorkbookStandardizer functionality."""
-
+import os
 
 import pytest
 
@@ -25,6 +25,10 @@ from recidiviz.justice_counts.bulk_upload.workbook_standardizer import (
 )
 from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.persistence.database.session_factory import SessionFactory
+from recidiviz.tests.justice_counts.spreadsheet_helpers import (
+    create_csv_file,
+    create_excel_file,
+)
 from recidiviz.tests.justice_counts.utils.utils import (
     JusticeCountsDatabaseTestCase,
     JusticeCountsSchemaTestObjects,
@@ -46,7 +50,38 @@ class TestJusticeCountsWorkbookStandardizer(JusticeCountsDatabaseTestCase):
             session.flush()
             self.prison_agency_id = prison_agency.id
 
-    def test_validate_file_name(self) -> None:
+    def test_invalid_csv_error(self) -> None:
+        """Bulk upload prison metrics into an empty database."""
+        with SessionFactory.using_database(self.database_key) as session:
+            prison_agency = AgencyInterface.get_agency_by_id(
+                session=session, agency_id=self.prison_agency_id
+            )
+            workbook_standardizer = WorkbookStandardizer(
+                system=schema.System.PRISONS, agency=prison_agency, session=session
+            )
+            file_name = "test_prison_csv"
+            file_path = create_csv_file(
+                system=schema.System.PRISONS,
+                metric="admissions",
+                file_name=file_name + ".csv",
+            )
+
+            with open(
+                file_path,
+                mode="rb",
+            ) as file:
+                workbook_standardizer.standardize_workbook(
+                    file=file.read(), file_name=file_name + ".csv"
+                )
+            self.assertEqual(len(workbook_standardizer.metric_key_to_errors), 1)
+            self.assertEqual(len(workbook_standardizer.metric_key_to_errors[None]), 1)
+            self.assertEqual(
+                workbook_standardizer.metric_key_to_errors[None][0].title,
+                "Invalid File Name for CSV",
+            )
+            os.remove(file_name + ".xlsx")
+
+    def test_invalid_sheet_names(self) -> None:
         """Bulk upload prison metrics into an empty database."""
         with SessionFactory.using_database(self.database_key) as session:
             prison_agency = AgencyInterface.get_agency_by_id(
@@ -56,12 +91,24 @@ class TestJusticeCountsWorkbookStandardizer(JusticeCountsDatabaseTestCase):
             workbook_standardizer = WorkbookStandardizer(
                 system=schema.System.PRISONS, agency=prison_agency, session=session
             )
-            invalid_file_name = workbook_standardizer.validate_file_name(
-                file_name="test_prison_csv.csv"
-            )
-            valid_file_name = workbook_standardizer.validate_file_name(
-                file_name="funding.csv"
+            file_name = "test_prison.xlsx"
+            file_path = create_excel_file(
+                system=schema.System.LAW_ENFORCEMENT,
+                file_name=file_name,
+                add_invalid_sheet_name=True,
             )
 
-            self.assertEqual(invalid_file_name, False)
-            self.assertEqual(valid_file_name, True)
+            with open(
+                file_path,
+                mode="rb",
+            ) as file:
+                workbook_standardizer.standardize_workbook(
+                    file=file.read(), file_name=file_name
+                )
+            self.assertEqual(len(workbook_standardizer.metric_key_to_errors), 1)
+            self.assertEqual(len(workbook_standardizer.metric_key_to_errors[None]), 1)
+            self.assertEqual(
+                workbook_standardizer.metric_key_to_errors[None][0].title,
+                "Invalid Sheet Name",
+            )
+            os.remove(file_name)

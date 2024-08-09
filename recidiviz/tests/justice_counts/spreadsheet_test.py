@@ -100,6 +100,7 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
                 self.assertEqual(spreadsheet.status, schema.SpreadsheetStatus.INGESTED)
                 self.assertEqual(spreadsheet.ingested_by, user.auth0_user_id)
                 self.assertEqual(spreadsheet.ingested_at, update_datetime)
+            os.remove(file_name)
 
     def test_ingest_spreadsheet_failure(self) -> None:
         with SessionFactory.using_database(self.database_key) as session:
@@ -141,6 +142,7 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
             self.assertEqual(spreadsheet.status, schema.SpreadsheetStatus.ERRORED)
             self.assertEqual(spreadsheet.ingested_by, None)
             self.assertEqual(spreadsheet.ingested_at, None)
+            os.remove(file_name)
 
     def test_get_ingest_spreadsheet_json(self) -> None:
         # Tests that spreadsheet jsons will include the right metrics.
@@ -208,21 +210,17 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
                 },
                 file_name=file_name,
             )
-            content = open(  # pylint:disable=consider-using-with
-                Path(file_path), "rb"
-            ).read()
-            file = BytesIO(content)
-            file.filename = os.path.basename(file_path)  # type: ignore[attr-defined]
-            ingest_result = SpreadsheetInterface.ingest_spreadsheet(
-                session=session,
-                file=file,
-                file_name=file_name,  # type: ignore[arg-type]
-                spreadsheet=spreadsheet,
-                auth0_user_id=user.auth0_user_id,
-                agency=agency,
-                metric_key_to_metric_interface=metric_key_to_metric_interface,
-                upload_method=UploadMethod.BULK_UPLOAD,
-            )
+            with open(Path(file_path), mode="rb") as file:
+                ingest_result = SpreadsheetInterface.ingest_spreadsheet(
+                    session=session,
+                    file=file,
+                    file_name=file_name,  # type: ignore[arg-type]
+                    spreadsheet=spreadsheet,
+                    auth0_user_id=user.auth0_user_id,
+                    agency=agency,
+                    metric_key_to_metric_interface=metric_key_to_metric_interface,
+                    upload_method=UploadMethod.BULK_UPLOAD,
+                )
 
             metric_definitions = (
                 SpreadsheetInterface.get_metric_definitions_for_workbook(
@@ -262,6 +260,7 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
                     self.assertEqual(
                         metric_key_to_json[definition.key]["enabled"], None
                     )
+            os.remove(file_name)
 
     def test_template_generator(self) -> None:
         # Testing that a spreadsheet will not include sheets for metric(s) or
@@ -430,3 +429,4 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
                 )
                 > 0
             )
+            os.remove(file_name)
