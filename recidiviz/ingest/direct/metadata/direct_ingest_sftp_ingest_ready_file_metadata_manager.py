@@ -124,7 +124,9 @@ class DirectIngestSftpIngestReadyFileMetadataManager:
                 .one()
             )
             return convert_schema_object_to_entity(
-                metadata, DirectIngestSftpIngestReadyFileMetadata
+                metadata,
+                DirectIngestSftpIngestReadyFileMetadata,
+                populate_back_edges=False,
             )
 
     def get_not_uploaded_ingest_ready_files(
@@ -140,7 +142,9 @@ class DirectIngestSftpIngestReadyFileMetadataManager:
             ).filter_by(region_code=self.region_code, file_upload_time=None)
             return [
                 convert_schema_object_to_entity(
-                    result, DirectIngestSftpIngestReadyFileMetadata
+                    result,
+                    DirectIngestSftpIngestReadyFileMetadata,
+                    populate_back_edges=False,
                 )
                 for result in results
             ]

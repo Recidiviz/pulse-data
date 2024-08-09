@@ -18,13 +18,20 @@
 from typing import List, Type
 from unittest import TestCase
 
+from recidiviz.common.attr_mixins import attr_field_name_storing_referenced_cls_name
 from recidiviz.persistence.database.database_entity import DatabaseEntity
 from recidiviz.persistence.database.schema_entity_converter.state.schema_entity_converter import (
     StateEntityToSchemaConverter,
     StateSchemaToEntityConverter,
 )
 from recidiviz.persistence.entity.base_entity import Entity
-from recidiviz.persistence.entity.entity_utils import print_entity_trees
+from recidiviz.persistence.entity.entity_utils import (
+    CoreEntityFieldIndex,
+    entities_have_direct_relationship,
+    print_entity_trees,
+)
+from recidiviz.persistence.entity.state.entities import StatePerson
+from recidiviz.persistence.entity.walk_entity_dag import EntityDagEdge, walk_entity_dag
 from recidiviz.tests.persistence.entity.state.entities_test_utils import (
     generate_full_graph_state_person,
 )
@@ -45,6 +52,7 @@ class TestStateSchemaEntityConverter(TestCase):
         self,
         start_entities: List[Entity],
         expected_entities: List[Entity],
+        *,
         populate_back_edges: bool,
         debug: bool = False,
     ) -> None:
@@ -64,7 +72,7 @@ class TestStateSchemaEntityConverter(TestCase):
 
         # Convert entities to schema objects
         schema_objects = StateEntityToSchemaConverter().convert_all(
-            start_entities, populate_back_edges
+            start_entities, populate_back_edges=populate_back_edges
         )
         self.assertEqual(len(schema_objects), expected_length)
 
@@ -73,7 +81,7 @@ class TestStateSchemaEntityConverter(TestCase):
 
         # Convert schema objects back to entities
         result = StateSchemaToEntityConverter().convert_all(
-            schema_objects_to_convert, populate_back_edges
+            schema_objects_to_convert, populate_back_edges=populate_back_edges
         )
         self.assertEqual(len(result), len(expected_entities))
         if debug:
@@ -100,7 +108,28 @@ class TestStateSchemaEntityConverter(TestCase):
 
     def test_convertPerson_noBackEdges_populateBackEdges(self) -> None:
         input_person = generate_full_graph_state_person(set_back_edges=False)
+
+        # The converter will convert direct backedges but not indirect / root entity
+        # backedges - strip these from the expected output.
+        def _remove_person_backedges(
+            entity: Entity, _dag_edges: list[EntityDagEdge]
+        ) -> None:
+            person_field = attr_field_name_storing_referenced_cls_name(
+                type(entity), StatePerson.__name__
+            )
+
+            if person_field and not entities_have_direct_relationship(
+                type(entity), StatePerson
+            ):
+                entity.clear_field(person_field)
+
         expected_person = generate_full_graph_state_person(set_back_edges=True)
+        walk_entity_dag(
+            dag_root_entity=expected_person,
+            field_index=CoreEntityFieldIndex(),
+            node_processing_fn=_remove_person_backedges,
+        )
+
         self._run_convert_test(
             [input_person], [expected_person], populate_back_edges=True, debug=True
         )

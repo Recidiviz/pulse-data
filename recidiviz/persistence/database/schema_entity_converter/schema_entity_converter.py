@@ -49,7 +49,7 @@ def _is_obj_in_module(obj: Any, module: ModuleType) -> bool:
 
 
 def convert_entities_to_schema(
-    entities: Sequence[Entity], populate_back_edges: bool = True
+    entities: Sequence[Entity], *, populate_back_edges: bool
 ) -> List[DatabaseEntity]:
     def _is_state_entity(obj: Any) -> bool:
         return _is_obj_in_module(obj, state_entities) and issubclass(
@@ -62,10 +62,12 @@ def convert_entities_to_schema(
         )
 
     if all(_is_state_entity(obj) for obj in entities):
-        return StateEntityToSchemaConverter().convert_all(entities, populate_back_edges)
+        return StateEntityToSchemaConverter().convert_all(
+            entities, populate_back_edges=populate_back_edges
+        )
     if all(_is_operations_entity(obj) for obj in entities):
         return OperationsEntityToSchemaConverter().convert_all(
-            entities, populate_back_edges
+            entities, populate_back_edges=populate_back_edges
         )
 
     raise ValueError(
@@ -75,7 +77,7 @@ def convert_entities_to_schema(
 
 
 def convert_schema_objects_to_entity(
-    schema_objects: Sequence[DatabaseEntity], populate_back_edges: bool = True
+    schema_objects: Sequence[DatabaseEntity], *, populate_back_edges: bool
 ) -> List[Entity]:
     def _is_state_schema_object(obj: Any) -> bool:
         return _is_obj_in_module(obj, state_schema) and issubclass(
@@ -89,11 +91,11 @@ def convert_schema_objects_to_entity(
 
     if all(_is_state_schema_object(obj) for obj in schema_objects):
         return StateSchemaToEntityConverter().convert_all(
-            schema_objects, populate_back_edges
+            schema_objects, populate_back_edges=populate_back_edges
         )
     if all(_is_operations_schema_object(obj) for obj in schema_objects):
         return OperationsSchemaToEntityConverter().convert_all(
-            schema_objects, populate_back_edges
+            schema_objects, populate_back_edges=populate_back_edges
         )
     raise ValueError(
         f"Expected all types to belong to the same schema, one of "
@@ -101,8 +103,12 @@ def convert_schema_objects_to_entity(
     )
 
 
-def convert_entity_to_schema_object(entity: Entity) -> DatabaseEntity:
-    result_list = convert_entities_to_schema([entity])
+def convert_entity_to_schema_object(
+    entity: Entity, *, populate_back_edges: bool
+) -> DatabaseEntity:
+    result_list = convert_entities_to_schema(
+        [entity], populate_back_edges=populate_back_edges
+    )
     if len(result_list) != 1:
         raise AssertionError(
             "Call to convert object should have only returned one result."
@@ -143,7 +149,8 @@ def _get_field_index_for_db_entity(db_entity: DatabaseEntity) -> CoreEntityField
 def convert_schema_object_to_entity(
     schema_object: DatabaseEntity,
     entity_type: Type[EntityT],
-    populate_back_edges: bool = True,
+    *,
+    populate_back_edges: bool,
 ) -> EntityT:
     conncted_schema_objects = [schema_object]
 
@@ -156,7 +163,7 @@ def convert_schema_object_to_entity(
                 conncted_schema_objects.append(attribute)
 
     result_list = convert_schema_objects_to_entity(
-        conncted_schema_objects, populate_back_edges
+        conncted_schema_objects, populate_back_edges=populate_back_edges
     )
 
     if len(result_list) != len(conncted_schema_objects):

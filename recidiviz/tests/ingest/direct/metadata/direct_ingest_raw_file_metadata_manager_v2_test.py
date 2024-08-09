@@ -650,7 +650,7 @@ class DirectIngestRawFileMetadataV2ManagerTest(unittest.TestCase):
             self.assertEqual(
                 expected_gcs_metadata,
                 convert_schema_object_to_entity(
-                    metadata, DirectIngestRawGCSFileMetadata
+                    metadata, DirectIngestRawGCSFileMetadata, populate_back_edges=False
                 ),
             )
 
@@ -666,7 +666,9 @@ class DirectIngestRawFileMetadataV2ManagerTest(unittest.TestCase):
             self.assertEqual(
                 expected_bq_metadata,
                 convert_schema_object_to_entity(
-                    metadata, DirectIngestRawBigQueryFileMetadata
+                    metadata,
+                    DirectIngestRawBigQueryFileMetadata,
+                    populate_back_edges=False,
                 ),
             )
 
@@ -765,7 +767,7 @@ class DirectIngestRawFileMetadataV2ManagerTest(unittest.TestCase):
                 expected_gcs,
                 [
                     convert_schema_object_to_entity(
-                        file, DirectIngestRawGCSFileMetadata
+                        file, DirectIngestRawGCSFileMetadata, populate_back_edges=False
                     )
                     for file in metadata
                 ],
@@ -784,7 +786,9 @@ class DirectIngestRawFileMetadataV2ManagerTest(unittest.TestCase):
                 expected_bq,
                 [
                     convert_schema_object_to_entity(
-                        file, DirectIngestRawBigQueryFileMetadata
+                        file,
+                        DirectIngestRawBigQueryFileMetadata,
+                        populate_back_edges=False,
                     )
                     for file in metadata
                 ],

@@ -195,7 +195,9 @@ class DirectIngestInstanceStatusManager:
                 "migration. There should always be a current row for ingest instance statuses."
             )
 
-        return convert_schema_object_to_entity(results, DirectIngestInstanceStatus)
+        return convert_schema_object_to_entity(
+            results, DirectIngestInstanceStatus, populate_back_edges=False
+        )
 
     def _get_most_recent_row_with_status(
         self, session: Session, status: DirectIngestStatus
@@ -214,7 +216,9 @@ class DirectIngestInstanceStatusManager:
         )
 
         if results:
-            return convert_schema_object_to_entity(results, DirectIngestInstanceStatus)
+            return convert_schema_object_to_entity(
+                results, DirectIngestInstanceStatus, populate_back_edges=False
+            )
 
         return None
 
@@ -239,7 +243,9 @@ class DirectIngestInstanceStatusManager:
         ).all()
 
         return [
-            convert_schema_object_to_entity(result, DirectIngestInstanceStatus)
+            convert_schema_object_to_entity(
+                result, DirectIngestInstanceStatus, populate_back_edges=False
+            )
             for result in results
         ]
 

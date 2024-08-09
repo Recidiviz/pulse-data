@@ -109,7 +109,9 @@ class DirectIngestRawFileMetadataManagerV2:
                 session, file_id
             )
             return convert_schema_object_to_entity(
-                metadata, entities.DirectIngestRawBigQueryFileMetadata
+                metadata,
+                entities.DirectIngestRawBigQueryFileMetadata,
+                populate_back_edges=True,
             )
 
     def get_raw_gcs_file_metadata(
@@ -123,7 +125,9 @@ class DirectIngestRawFileMetadataManagerV2:
         ) as session:
             metadata = self._get_gcs_raw_file_metadata_for_path(session, path)
             return convert_schema_object_to_entity(
-                metadata, entities.DirectIngestRawGCSFileMetadata
+                metadata,
+                entities.DirectIngestRawGCSFileMetadata,
+                populate_back_edges=True,
             )
 
     # --- file discovery logic ---------------------------------------------------------
@@ -180,7 +184,9 @@ class DirectIngestRawFileMetadataManagerV2:
             session.flush()
 
             return convert_schema_object_to_entity(
-                new_gcs_file, entities.DirectIngestRawGCSFileMetadata
+                new_gcs_file,
+                entities.DirectIngestRawGCSFileMetadata,
+                populate_back_edges=True,
             )
 
     def regiester_raw_big_query_file_for_paths(
@@ -261,7 +267,9 @@ class DirectIngestRawFileMetadataManagerV2:
             session.execute(update_query)
 
             return convert_schema_object_to_entity(
-                new_bq_file, entities.DirectIngestRawBigQueryFileMetadata
+                new_bq_file,
+                entities.DirectIngestRawBigQueryFileMetadata,
+                populate_back_edges=True,
             )
 
     # --- file processed logic ---------------------------------------------------------
@@ -364,7 +372,9 @@ class DirectIngestRawFileMetadataManagerV2:
             for big_query_file, _ in results:
                 result_dict[big_query_file.file_tag].append(
                     convert_schema_object_to_entity(
-                        big_query_file, entities.DirectIngestRawBigQueryFileMetadata
+                        big_query_file,
+                        entities.DirectIngestRawBigQueryFileMetadata,
+                        populate_back_edges=True,
                     )
                 )
 
@@ -396,7 +406,9 @@ class DirectIngestRawFileMetadataManagerV2:
 
             return [
                 convert_schema_object_to_entity(
-                    result, entities.DirectIngestRawBigQueryFileMetadata
+                    result,
+                    entities.DirectIngestRawBigQueryFileMetadata,
+                    populate_back_edges=True,
                 )
                 for result in results
             ]
