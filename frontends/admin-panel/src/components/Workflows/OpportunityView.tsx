@@ -19,11 +19,17 @@ import { Button, Form } from "antd";
 import { observer } from "mobx-react-lite";
 import { useHistory } from "react-router";
 
+import { Opportunity } from "../../WorkflowsStore/models/Opportunity";
 import OpportunityPresenter from "../../WorkflowsStore/presenters/OpportunityPresenter";
 import { useWorkflowsStore } from "../StoreProvider";
 import HydrationWrapper from "./HydrationWrapper";
 import OpportunityConfigurationsTable from "./OpportunityConfigurationsTable";
 import { buildRoute } from "./utils";
+
+export const updatedStringForOpportunity = (opp: Opportunity) =>
+  opp.lastUpdatedAt
+    ? `${opp.lastUpdatedAt.toLocaleString()} by ${opp.lastUpdatedBy}`
+    : "Not yet provisioned";
 
 const OpportunitySettings = ({
   presenter,
@@ -54,8 +60,7 @@ const OpportunitySettings = ({
       </Form.Item>
       <Form.Item label="Last Updated">
         <span className="ant-form-text">
-          {opportunity.lastUpdatedAt.toLocaleString()} by{" "}
-          {opportunity.lastUpdatedBy}
+          {updatedStringForOpportunity(opportunity)}
         </span>
       </Form.Item>
     </Form>
@@ -86,6 +91,7 @@ const OpportunityView = (): JSX.Element => {
             buildRoute(stateCode ?? "", selectedOpportunityType, "new")
           )
         }
+        disabled={!opportunityPresenter?.selectedOpportunity?.lastUpdatedAt}
       >
         New Configuration
       </Button>

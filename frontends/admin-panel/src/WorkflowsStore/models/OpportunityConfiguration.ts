@@ -16,7 +16,7 @@
 // =============================================================================
 import { z } from "zod";
 
-function nullishAsUndefined<T extends z.ZodTypeAny>(schema: T) {
+export function nullishAsUndefined<T extends z.ZodTypeAny>(schema: T) {
   return schema.nullish().transform((output) => {
     return output === null ? undefined : output;
   });

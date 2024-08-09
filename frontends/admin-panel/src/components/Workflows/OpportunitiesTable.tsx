@@ -22,6 +22,7 @@ import styled from "styled-components/macro";
 
 import { Opportunity } from "../../WorkflowsStore/models/Opportunity";
 import OpportunityPresenter from "../../WorkflowsStore/presenters/OpportunityPresenter";
+import { updatedStringForOpportunity } from "./OpportunityView";
 import { buildColumns, buildRoute } from "./utils";
 
 const TableContainer = styled.div`
@@ -53,9 +54,8 @@ const OpportunitiesTable = ({
     lastUpdatedAt: {
       title: "Last Updated",
       dataIndex: undefined,
-      sorter: (a, b) => compareAsc(a.lastUpdatedAt, b.lastUpdatedAt),
-      render: (opp) =>
-        `${opp.lastUpdatedAt.toLocaleString()} by ${opp.lastUpdatedBy}`,
+      sorter: (a, b) => compareAsc(a.lastUpdatedAt ?? 0, b.lastUpdatedAt ?? 0),
+      render: updatedStringForOpportunity,
     },
     // gatingFeatureVariant: {
     //   title: "Gating Feature Variant",
