@@ -42,7 +42,7 @@ class OpportunityInfo:
     system_type: WorkflowsSystemType = attr.ib()
     url_section: str = attr.ib()
     firestore_collection: str = attr.ib()
-    homepage_position: int = attr.ib()
+    homepage_position: Optional[int] = attr.ib()
 
     def to_dict(self) -> Dict[str, Any]:
         return cattrs.unstructure(self)
@@ -55,9 +55,9 @@ class FullOpportunityInfo(OpportunityInfo):
 
     experiment_id: str = attr.ib()
     completion_event: str = attr.ib()
-    last_updated_at: datetime = attr.ib()
-    last_updated_by: str = attr.ib()
-    gating_feature_variant: str = attr.ib(default=None)
+    last_updated_at: Optional[datetime] = attr.ib()
+    last_updated_by: Optional[str] = attr.ib()
+    gating_feature_variant: Optional[str] = attr.ib(default=None)
 
 
 @attr.s

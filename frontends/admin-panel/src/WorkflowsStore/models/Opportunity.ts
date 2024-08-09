@@ -17,6 +17,8 @@
 import { parseISO } from "date-fns";
 import { z } from "zod";
 
+import { nullishAsUndefined } from "./OpportunityConfiguration";
+
 function unEnum(raw: string) {
   const splat = raw.split(".");
   return splat[splat.length - 1];
@@ -29,9 +31,11 @@ export const opportunitySchema = z.object({
   urlSection: z.string(),
   completionEvent: z.string().transform(unEnum),
   experimentId: z.string(),
-  lastUpdatedAt: z.string().transform((r) => parseISO(r)),
-  lastUpdatedBy: z.string(),
-  gatingFeatureVariant: z.string().nullish(),
+  lastUpdatedAt: nullishAsUndefined(z.string()).transform(
+    (r) => r && parseISO(r)
+  ),
+  lastUpdatedBy: nullishAsUndefined(z.string()),
+  gatingFeatureVariant: nullishAsUndefined(z.string()),
 });
 
 export type Opportunity = z.infer<typeof opportunitySchema>;

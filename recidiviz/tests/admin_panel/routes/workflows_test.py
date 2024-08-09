@@ -183,7 +183,18 @@ class WorkflowsAdminPanelEndpointTests(TestCase):
                 "homepage_position": 1,
                 "last_updated_at": datetime.datetime(2024, 4, 15),
                 "last_updated_by": "bob",
-            }
+            },
+            {
+                "state_code": "US_ID",
+                "opportunity_type": "Unprovisioned Opp",
+                "system_type": "INCARCERATION",
+                "url_section": "other-url-path",
+                "completion_event": "event_id",
+                "experiment_id": "experiment_id",
+                "homepage_position": None,
+                "last_updated_at": None,
+                "last_updated_by": None,
+            },
         ]
 
         mock_querier.return_value.get_opportunities.return_value = mock_config
@@ -199,7 +210,18 @@ class WorkflowsAdminPanelEndpointTests(TestCase):
                 "homepagePosition": 1,
                 "lastUpdatedBy": "bob",
                 "lastUpdatedAt": "2024-04-15 00:00:00",
-            }
+            },
+            {
+                "stateCode": "US_ID",
+                "opportunityType": "Unprovisioned Opp",
+                "systemType": "INCARCERATION",
+                "urlSection": "other-url-path",
+                "completionEvent": "event_id",
+                "experimentId": "experiment_id",
+                "homepagePosition": None,
+                "lastUpdatedAt": None,
+                "lastUpdatedBy": None,
+            },
         ]
 
         response = self.client.get(self.opportunities_url)

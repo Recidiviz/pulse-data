@@ -42,10 +42,10 @@ class OpportunitySchema(CamelCaseSchema):
     url_section = fields.Str(required=True)
     completion_event = fields.Str(required=True)
     experiment_id = fields.Str(required=True)
-    last_updated_at = fields.Str(required=True)
-    last_updated_by = fields.Str(required=True)
+    last_updated_at = fields.Str(required=False)
+    last_updated_by = fields.Str(required=False)
 
-    homepage_position = fields.Int(required=True)
+    homepage_position = fields.Int(required=False)
     gating_feature_variant = fields.Str(required=False)
 
 

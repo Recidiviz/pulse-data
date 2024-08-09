@@ -17,38 +17,27 @@
 """Utility function for Workflows products."""
 
 from recidiviz.calculator.query.state.views.reference.workflows_opportunity_configs import (
-    WORKFLOWS_OPPORTUNITY_CONFIG_MAP,
+    WORKFLOWS_OPPORTUNITY_CONFIGS,
     PersonRecordType,
     WorkflowsOpportunityConfig,
 )
 from recidiviz.workflows.types import WorkflowsSystemType
 
 
-def get_config_for_opportunity(opportunity_type: str) -> WorkflowsOpportunityConfig:
-    """Given an opportunity type, returns the respective config from
-    WORKFLOWS_OPPORTUNITY_CONFIGS or throws an error if not available"""
-    static_config = WORKFLOWS_OPPORTUNITY_CONFIG_MAP.get(opportunity_type)
-
-    if not static_config:
-        raise ValueError(
-            f"No opportunity config found for opportunity type {opportunity_type}"
-        )
-
-    return static_config
+def get_configs() -> list[WorkflowsOpportunityConfig]:
+    return WORKFLOWS_OPPORTUNITY_CONFIGS
 
 
-def get_system_for_opportunity(opportunity_type: str) -> WorkflowsSystemType:
+def get_system_for_config(config: WorkflowsOpportunityConfig) -> WorkflowsSystemType:
     """Given an opportunity type, returns the system
     it is assigned to in WORKFLOWS_OPPORTUNITY_CONFIGS"""
 
-    static_config = get_config_for_opportunity(opportunity_type)
-
-    match static_config.person_record_type:
+    match config.person_record_type:
         case PersonRecordType.CLIENT:
             return WorkflowsSystemType.SUPERVISION
         case PersonRecordType.RESIDENT:
             return WorkflowsSystemType.INCARCERATION
 
     raise ValueError(
-        f"Unknown person type ({static_config.person_record_type}) for opportunity type {opportunity_type}"
+        f"Unknown person type ({config.person_record_type}) for opportunity type {config.opportunity_type}"
     )

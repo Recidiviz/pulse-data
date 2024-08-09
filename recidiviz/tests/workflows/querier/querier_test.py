@@ -157,6 +157,20 @@ SLD_INFO = FullOpportunityInfo(
     last_updated_by="ken@recidiviz.org",
 )
 
+UNPROVISIONED_INFO = FullOpportunityInfo(
+    state_code="US_ID",
+    opportunity_type="usIdNewOpp",
+    system_type=WorkflowsSystemType.SUPERVISION,
+    gating_feature_variant=None,
+    url_section="new_opp_path",
+    firestore_collection="new_opp_collection",
+    experiment_id="new_opp_experiment_id",
+    completion_event="new_opp_event",
+    homepage_position=None,
+    last_updated_at=None,
+    last_updated_by=None,
+)
+
 
 def generate_mock_config(
     opportunity_type: str, prefix: str
@@ -174,15 +188,12 @@ def generate_mock_config(
     )
 
 
-MOCK_CONFIGS = {
-    WORK_RELEASE_INFO.opportunity_type: generate_mock_config(
-        WORK_RELEASE_INFO.opportunity_type, "work_release"
-    ),
-    FAST_FTRD_INFO.opportunity_type: generate_mock_config(
-        FAST_FTRD_INFO.opportunity_type, "fast"
-    ),
-    SLD_INFO.opportunity_type: generate_mock_config(SLD_INFO.opportunity_type, "sld"),
-}
+MOCK_CONFIGS = [
+    generate_mock_config(WORK_RELEASE_INFO.opportunity_type, "work_release"),
+    generate_mock_config(FAST_FTRD_INFO.opportunity_type, "fast"),
+    generate_mock_config(SLD_INFO.opportunity_type, "sld"),
+    generate_mock_config(UNPROVISIONED_INFO.opportunity_type, "new_opp"),
+]
 
 
 @pytest.mark.uses_db
@@ -201,17 +212,17 @@ class TestWorkflowsQuerier(TestCase):
         super().setUpClass()
 
     def setUp(self) -> None:
-        self.system_for_opp_patcher = patch(
-            "recidiviz.workflows.querier.querier.get_system_for_opportunity"
+        self.system_for_config_patcher = patch(
+            "recidiviz.workflows.querier.querier.get_system_for_config"
         )
-        self.mock_system_for_opp = self.system_for_opp_patcher.start()
-        self.mock_system_for_opp.return_value = WorkflowsSystemType.SUPERVISION
+        self.mock_system_for_config = self.system_for_config_patcher.start()
+        self.mock_system_for_config.return_value = WorkflowsSystemType.SUPERVISION
 
-        self.config_for_opp_patcher = patch(
-            "recidiviz.workflows.querier.querier.get_config_for_opportunity"
+        self.get_configs_patcher = patch(
+            "recidiviz.workflows.querier.querier.get_configs",
         )
-        self.mock_config_for_opp = self.config_for_opp_patcher.start()
-        self.mock_config_for_opp.side_effect = lambda type: MOCK_CONFIGS[type]
+        self.mock_get_configs = self.get_configs_patcher.start()
+        self.mock_get_configs.return_value = MOCK_CONFIGS
 
         self.database_key = SQLAlchemyDatabaseKey(SchemaType.WORKFLOWS, db_name="us_id")
         local_persistence_helpers.use_on_disk_postgresql_database(self.database_key)
@@ -229,7 +240,8 @@ class TestWorkflowsQuerier(TestCase):
         super().setUp()
 
     def tearDown(self) -> None:
-        self.system_for_opp_patcher.stop()
+        self.system_for_config_patcher.stop()
+        self.get_configs_patcher.stop()
 
         local_persistence_helpers.teardown_on_disk_postgresql_database(
             self.database_key
@@ -246,11 +258,7 @@ class TestWorkflowsQuerier(TestCase):
     def test_get_opportunities(self) -> None:
         actual = WorkflowsQuerier(StateCode.US_ID).get_opportunities()
 
-        expected = [
-            WORK_RELEASE_INFO,
-            FAST_FTRD_INFO,
-            SLD_INFO,
-        ]
+        expected = [WORK_RELEASE_INFO, FAST_FTRD_INFO, SLD_INFO, UNPROVISIONED_INFO]
 
         self.assertCountEqual(expected, actual)
 
@@ -303,8 +311,11 @@ class TestWorkflowsQuerier(TestCase):
             WORK_RELEASE_INFO.opportunity_type: WorkflowsSystemType.SUPERVISION,
             FAST_FTRD_INFO.opportunity_type: WorkflowsSystemType.INCARCERATION,
             SLD_INFO.opportunity_type: WorkflowsSystemType.SUPERVISION,
+            UNPROVISIONED_INFO.opportunity_type: WorkflowsSystemType.SUPERVISION,
         }
-        self.mock_system_for_opp.side_effect = lambda type: mock_mapping[type]
+        self.mock_system_for_config.side_effect = lambda config: mock_mapping[
+            config.opportunity_type
+        ]
 
         actual_supervision = WorkflowsQuerier(
             StateCode.US_ID

@@ -44,10 +44,7 @@ from recidiviz.workflows.types import (
     OpportunityInfo,
     WorkflowsSystemType,
 )
-from recidiviz.workflows.utils.utils import (
-    get_config_for_opportunity,
-    get_system_for_opportunity,
-)
+from recidiviz.workflows.utils.utils import get_configs, get_system_for_config
 
 
 @attr.s(auto_attribs=True)
@@ -69,37 +66,61 @@ class WorkflowsQuerier:
         """Returns all opportunities configured in a state
         irrespective of feature-variant gating or system."""
         with self.database_session() as session:
-            opportunities = session.query(Opportunity).with_entities(
-                Opportunity.state_code,
-                Opportunity.opportunity_type,
-                Opportunity.gating_feature_variant,
-                Opportunity.homepage_position,
-                Opportunity.updated_at,
-                Opportunity.updated_by,
-            )
+            db_opportunities = {
+                opp.opportunity_type: opp
+                for opp in session.query(Opportunity).with_entities(
+                    Opportunity.state_code,
+                    Opportunity.opportunity_type,
+                    Opportunity.gating_feature_variant,
+                    Opportunity.homepage_position,
+                    Opportunity.updated_at,
+                    Opportunity.updated_by,
+                )
+            }
 
             infos: List[FullOpportunityInfo] = []
 
-            for opportunity in opportunities:
-                config = get_config_for_opportunity(opportunity.opportunity_type)
+            for config in get_configs():
+                normalized_state_code = config.state_code
+                if normalized_state_code == StateCode.US_IX:
+                    normalized_state_code = StateCode.US_ID
 
-                infos.append(
-                    FullOpportunityInfo(
-                        state_code=opportunity.state_code,
-                        opportunity_type=opportunity.opportunity_type,
-                        gating_feature_variant=opportunity.gating_feature_variant,
-                        url_section=config.opportunity_type_path_str,
-                        firestore_collection=config.export_collection_name,
-                        system_type=get_system_for_opportunity(
-                            opportunity.opportunity_type
-                        ),
-                        homepage_position=opportunity.homepage_position,
-                        completion_event=str(config.task_completion_event),
-                        experiment_id=config.experiment_id,
-                        last_updated_at=opportunity.updated_at,
-                        last_updated_by=opportunity.updated_by,
+                if normalized_state_code.value != self.state_code.value:
+                    continue
+
+                if config.opportunity_type in db_opportunities:
+                    opportunity = db_opportunities[config.opportunity_type]
+                    infos.append(
+                        FullOpportunityInfo(
+                            state_code=normalized_state_code.value,
+                            opportunity_type=config.opportunity_type,
+                            gating_feature_variant=opportunity.gating_feature_variant,
+                            url_section=config.opportunity_type_path_str,
+                            firestore_collection=config.export_collection_name,
+                            system_type=get_system_for_config(config),
+                            homepage_position=opportunity.homepage_position,
+                            completion_event=str(config.task_completion_event),
+                            experiment_id=config.experiment_id,
+                            last_updated_at=opportunity.updated_at,
+                            last_updated_by=opportunity.updated_by,
+                        )
                     )
-                )
+                else:
+                    infos.append(
+                        FullOpportunityInfo(
+                            state_code=normalized_state_code.value,
+                            opportunity_type=config.opportunity_type,
+                            gating_feature_variant=None,
+                            url_section=config.opportunity_type_path_str,
+                            firestore_collection=config.export_collection_name,
+                            system_type=get_system_for_config(config),
+                            homepage_position=None,
+                            completion_event=str(config.task_completion_event),
+                            experiment_id=config.experiment_id,
+                            last_updated_at=None,
+                            last_updated_by=None,
+                        )
+                    )
 
             return infos
 
@@ -119,7 +140,8 @@ class WorkflowsQuerier:
         return [
             opp
             for opp in opportunities
-            if opp.gating_feature_variant in fv_set
+            if opp.last_updated_at is not None
+            and opp.gating_feature_variant in fv_set
             and opp.system_type in allowed_systems
         ]
 
