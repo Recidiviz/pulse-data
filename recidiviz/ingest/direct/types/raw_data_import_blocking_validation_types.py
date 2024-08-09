@@ -15,7 +15,13 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Types for raw table validations."""
+import abc
 from enum import Enum
+from typing import Any, Dict, List
+
+import attr
+
+from recidiviz.big_query.big_query_address import BigQueryAddress
 
 
 class RawDataTableImportBlockingValidationType(Enum):
@@ -31,3 +37,36 @@ class RawDataTableImportBlockingValidationType(Enum):
     # checks that all values in a column with a defined type can be cast to that type,
     # excluding datetime columns which are handled by DATETIME_PARSERS, and string columns which columns are imported as by default
     EXPECTED_TYPE = "EXPECTED_TYPE"
+
+
+@attr.define
+class RawDataTableImportBlockingValidationFailure:
+    """Represents a failure encountered while running a RawDataTableImportBlockingValidation"""
+
+    validation_type: RawDataTableImportBlockingValidationType
+    error_msg: str
+
+
+@attr.define
+class RawDataTableImportBlockingValidation:
+    """Interface for a validation to be run on raw data after it has been loaded to a temporary table"""
+
+    file_tag: str
+    project_id: str
+    temp_table_address: BigQueryAddress
+    query: str = attr.ib(init=False)
+
+    def __attrs_post_init__(self) -> None:
+        self.query = self.build_query()
+
+    @abc.abstractmethod
+    def get_error_from_results(
+        self, results: List[Dict[str, Any]]
+    ) -> RawDataTableImportBlockingValidationFailure | None:
+        """Implemented by subclasses to determine if the query results should produce
+        an error.
+        """
+
+    @abc.abstractmethod
+    def build_query(self) -> str:
+        """Implemented by subclasses to build the query to run on the temporary table"""
