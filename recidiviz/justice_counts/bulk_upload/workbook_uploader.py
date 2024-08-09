@@ -34,14 +34,7 @@ from recidiviz.justice_counts.bulk_upload.spreadsheet_uploader import (
     SpreadsheetUploader,
 )
 from recidiviz.justice_counts.datapoint import DatapointInterface
-from recidiviz.justice_counts.exceptions import (
-    BulkUploadMessageType,
-    JusticeCountsBulkUploadException,
-)
-from recidiviz.justice_counts.metricfile import MetricFile
-from recidiviz.justice_counts.metricfiles.metricfile_registry import (
-    SYSTEM_TO_FILENAME_TO_METRICFILE,
-)
+from recidiviz.justice_counts.exceptions import JusticeCountsBulkUploadException
 from recidiviz.justice_counts.metrics.metric_interface import MetricInterface
 from recidiviz.justice_counts.report import ReportInterface
 from recidiviz.justice_counts.types import DatapointJson
@@ -64,6 +57,9 @@ class WorkbookUploader:
         metric_key_to_metric_interface: Dict[str, MetricInterface],
         child_agency_name_to_agency: Optional[Dict[str, schema.Agency]] = None,
         user_account: Optional[schema.UserAccount] = None,
+        metric_key_to_errors: Optional[
+            Dict[Optional[str], List[JusticeCountsBulkUploadException]]
+        ] = None,  # TODO(#31446) Remove this parameter after complete rollout of WorkbookStandardizer
     ) -> None:
         self.system = system
         self.agency = agency
@@ -79,7 +75,9 @@ class WorkbookUploader:
         # each metric's errors.
         self.metric_key_to_errors: Dict[
             Optional[str], List[JusticeCountsBulkUploadException]
-        ] = defaultdict(list)
+        ] = (
+            defaultdict(list) if metric_key_to_errors is None else metric_key_to_errors
+        )
         # metric_key_to_datapoint_jsons starts out empty and will be populated with
         # the ingested datapoints for each metric. We need these datapoints because
         # we send these to the frontend after the upload so it can render
@@ -168,7 +166,6 @@ class WorkbookUploader:
             unique_key: get_value(datapoint=datapoint)
             for unique_key, datapoint in existing_datapoints_dict.items()
         }
-        sheet_name_to_metricfile = SYSTEM_TO_FILENAME_TO_METRICFILE[self.system.value]
 
         # 2. Sort sheet_names so that we process by aggregate sheets first
         # e.g. caseloads before caseloads_by_gender. This ensures we don't
@@ -190,7 +187,6 @@ class WorkbookUploader:
         actual_sheet_names = sorted(xls.sheet_names)
 
         # 3. Now run through all sheets and process each in turn.
-        invalid_sheet_names: List[str] = []
         sheet_name_to_df = pd.read_excel(xls, sheet_name=None)
         inserts: List[schema.Datapoint] = []
         updates: List[schema.Datapoint] = []
@@ -210,6 +206,8 @@ class WorkbookUploader:
                 # _get_column_value.
                 pass
             rows = df.to_dict("records")
+            if len(rows) == 0:
+                continue
             spreadsheet_uploader = SpreadsheetUploader(
                 text_analyzer=self.text_analyzer,
                 system=self.system,
@@ -228,7 +226,6 @@ class WorkbookUploader:
                 updates=updates,
                 histories=histories,
                 rows=rows,
-                invalid_sheet_names=invalid_sheet_names,
                 metric_key_to_datapoint_jsons=self.metric_key_to_datapoint_jsons,
                 metric_key_to_errors=self.metric_key_to_errors,
                 uploaded_reports=self.uploaded_reports,
@@ -240,12 +237,6 @@ class WorkbookUploader:
             existing_datapoints_dict_changed=existing_datapoints_dict,
             existing_datapoints_dict_unchanged=existing_datapoints_dict_unchanged,
             agency_id_to_time_range_to_reports=agency_id_to_time_range_to_reports,
-        )
-
-        # 5. Add any workbook errors to metric_key_to_errors
-        self._add_invalid_sheet_name_error(
-            invalid_sheet_names=invalid_sheet_names,
-            sheet_name_to_metricfile=sheet_name_to_metricfile,
         )
 
         DatapointInterface.flush_report_datapoints(
@@ -463,25 +454,3 @@ class WorkbookUploader:
             axis=1,
         )
         return df
-
-    def _add_invalid_sheet_name_error(
-        self,
-        invalid_sheet_names: List[str],
-        sheet_name_to_metricfile: Dict[str, MetricFile],
-    ) -> None:
-        """This function adds an Invalid Sheet Names error to the metric_key_to_errors
-        dictionary if the user has included sheet names in their Excel workbook
-        that do not correspond to the metrics that are specified for their agency."""
-
-        if len(invalid_sheet_names) > 0:
-            description = (
-                f"The following sheet names do not correspond to a metric for "
-                f"your agency: {', '.join(invalid_sheet_names)}. "
-                f"Valid options include {', '.join(sheet_name_to_metricfile.keys())}."
-            )
-            invalid_sheet_name_error = JusticeCountsBulkUploadException(
-                title="Invalid Sheet Names",
-                message_type=BulkUploadMessageType.ERROR,
-                description=description,
-            )
-            self.metric_key_to_errors[None].append(invalid_sheet_name_error)

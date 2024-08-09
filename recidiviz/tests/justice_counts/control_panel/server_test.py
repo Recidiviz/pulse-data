@@ -16,7 +16,6 @@
 # =============================================================================
 """Implements tests for the Justice Counts Control Panel backend API."""
 import datetime
-import os
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 from unittest import mock
@@ -137,6 +136,11 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         # even though this is not specified in the types for `app`.
         self.session = self.app.scoped_session  # type: ignore[attr-defined]
         self.test_schema_objects = JusticeCountsSchemaTestObjects()
+        self.law_enforcement_excel_file_name = "law_enforcement_metrics.xlsx"
+        self.law_enforcement_excel_path = create_excel_file(
+            system=schema.System.LAW_ENFORCEMENT,
+            file_name=self.law_enforcement_excel_file_name,
+        )
         super().setUp()
 
     def tearDown(self) -> None:
@@ -1979,22 +1983,24 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         self.session.commit()
         agency = self.session.query(Agency).one_or_none()
         with self.app.test_request_context():
-            g.user_context = UserContext(
-                auth0_user_id=self.test_schema_objects.test_user_A.auth0_user_id,
-            )
+            with open(
+                self.bulk_upload_test_files / "law_enforcement/arrests.pdf",
+                mode="rb",
+            ) as file:
+                g.user_context = UserContext(
+                    auth0_user_id=self.test_schema_objects.test_user_A.auth0_user_id,
+                )
+                response = self.client.post(
+                    "/api/spreadsheets",
+                    data={
+                        "agency_id": agency.id,
+                        "system": System.LAW_ENFORCEMENT.value,
+                        "file": file,
+                    },
+                )
+                self.assertEqual(response.status_code, 500)
 
-            response = self.client.post(
-                "/api/spreadsheets",
-                data={
-                    "agency_id": agency.id,
-                    "system": System.LAW_ENFORCEMENT.value,
-                    "file": (
-                        self.bulk_upload_test_files / "law_enforcement/arrests.pdf"
-                    ).open("rb"),
-                },
-            )
-            self.assertEqual(response.status_code, 500)
-
+    @freeze_time(NOW_TIME)
     def test_upload_spreadsheet(self) -> None:
         self.session.add_all(
             [
@@ -2012,22 +2018,22 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             g.user_context = UserContext(
                 auth0_user_id=self.test_schema_objects.test_user_A.auth0_user_id,
             )
-
-            response = self.client.post(
-                "/api/spreadsheets",
-                data={
-                    "agency_id": agency.id,
-                    "system": System.LAW_ENFORCEMENT.value,
-                    "file": (
-                        self.bulk_upload_test_files
-                        / "law_enforcement/law_enforcement_metrics.xlsx"
-                    ).open("rb"),
-                },
-            )
+            with open(
+                self.law_enforcement_excel_path,
+                mode="rb",
+            ) as file:
+                response = self.client.post(
+                    "/api/spreadsheets",
+                    data={
+                        "agency_id": agency.id,
+                        "system": System.LAW_ENFORCEMENT.value,
+                        "file": file,
+                    },
+                )
             self.assertEqual(response.status_code, 200)
             response_dict = assert_type(response.json, dict)
             self.assertEqual(
-                response_dict.get("file_name"), "law_enforcement_metrics.xlsx"
+                response_dict.get("file_name"), self.law_enforcement_excel_file_name
             )
             spreadsheet = self.session.query(Spreadsheet).one()
             self.assertEqual(spreadsheet.system, System.LAW_ENFORCEMENT)
@@ -2035,11 +2041,10 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                 spreadsheet.uploaded_by,
                 self.test_schema_objects.test_user_A.auth0_user_id,
             )
+            self.assertIsNotNone(spreadsheet.ingested_at)
             self.assertEqual(
-                spreadsheet.ingested_at,
-                None,
+                spreadsheet.original_name, self.law_enforcement_excel_file_name
             )
-            self.assertEqual(spreadsheet.original_name, "law_enforcement_metrics.xlsx")
             standardized_name = f"{agency.id}:LAW_ENFORCEMENT:{datetime.datetime.now(tz=datetime.timezone.utc).timestamp()}.xlsx"
             self.assertEqual(
                 spreadsheet.standardized_name,
@@ -2349,17 +2354,18 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                 auth0_user_id=user.auth0_user_id,
             )
             # Upload spreadsheet
-            upload_response = self.client.post(
-                "/api/spreadsheets",
-                data={
-                    "agency_id": agency.id,
-                    "system": System.LAW_ENFORCEMENT.value,
-                    "file": (
-                        self.bulk_upload_test_files
-                        / "law_enforcement/law_enforcement_metrics.xlsx"
-                    ).open("rb"),
-                },
-            )
+            with open(
+                self.law_enforcement_excel_path,
+                mode="rb",
+            ) as file:
+                upload_response = self.client.post(
+                    "/api/spreadsheets",
+                    data={
+                        "agency_id": agency.id,
+                        "system": System.LAW_ENFORCEMENT.value,
+                        "file": file,
+                    },
+                )
             self.assertEqual(upload_response.status_code, 200)
             spreadsheet = self.session.query(Spreadsheet).one()
             # Download spreadsheet
@@ -2428,17 +2434,15 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             g.user_context = UserContext(
                 auth0_user_id=user.auth0_user_id,
             )
-            upload_response = self.client.post(
-                "/api/spreadsheets",
-                data={
-                    "agency_id": agency.id,
-                    "system": System.LAW_ENFORCEMENT.value,
-                    "file": (
-                        self.bulk_upload_test_files
-                        / "law_enforcement/law_enforcement_metrics.xlsx"
-                    ).open("rb"),
-                },
-            )
+            with open(Path(self.law_enforcement_excel_path), "rb") as file:
+                upload_response = self.client.post(
+                    "/api/spreadsheets",
+                    data={
+                        "agency_id": agency.id,
+                        "system": System.LAW_ENFORCEMENT.value,
+                        "file": file,
+                    },
+                )
             self.assertEqual(upload_response.status_code, 200)
             spreadsheet = self.session.query(Spreadsheet).one()
             response = self.client.delete(f"/api/spreadsheets/{spreadsheet.id}")
@@ -2690,13 +2694,6 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         self.session.flush()
         agency = self.test_schema_objects.test_agency_A
 
-        law_enforcement_excel = os.path.abspath(
-            os.path.join(
-                os.path.dirname(__file__),
-                "..",
-                "bulk_upload/bulk_upload_fixtures/law_enforcement/law_enforcement_metrics.xlsx",
-            )
-        )
         uploader = WorkbookUploader(
             agency=agency,
             system=schema.System.LAW_ENFORCEMENT,
@@ -2705,8 +2702,8 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         )
         uploader.upload_workbook(
             session=self.session,
-            xls=pd.ExcelFile(law_enforcement_excel),
-            filename=law_enforcement_excel,
+            xls=pd.ExcelFile(self.law_enforcement_excel_path),
+            filename=self.law_enforcement_excel_file_name,
             upload_method=UploadMethod.BULK_UPLOAD,
         )
         self.session.commit()
@@ -2750,13 +2747,6 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         self.session.flush()
         agency = self.test_schema_objects.test_agency_A
 
-        law_enforcement_excel = os.path.abspath(
-            os.path.join(
-                os.path.dirname(__file__),
-                "..",
-                "bulk_upload/bulk_upload_fixtures/law_enforcement/law_enforcement_metrics.xlsx",
-            )
-        )
         uploader = WorkbookUploader(
             agency=agency,
             system=schema.System.LAW_ENFORCEMENT,
@@ -2765,8 +2755,8 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         )
         uploader.upload_workbook(
             session=self.session,
-            xls=pd.ExcelFile(law_enforcement_excel),
-            filename=law_enforcement_excel,
+            xls=pd.ExcelFile(self.law_enforcement_excel_path),
+            filename=self.law_enforcement_excel_file_name,
             upload_method=UploadMethod.BULK_UPLOAD,
         )
         self.session.commit()
@@ -3253,7 +3243,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         # - grievances upheld reported monthly
         MetricSettingInterface.add_or_update_agency_metric_setting(
             session=self.session,
-            agency=super_agency,
+            agency=child_agency,
             agency_metric_updates=MetricInterface(
                 key=prisons.funding.key,
                 custom_reporting_frequency=CustomReportingFrequency(
@@ -3263,7 +3253,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         )
         MetricSettingInterface.add_or_update_agency_metric_setting(
             session=self.session,
-            agency=super_agency,
+            agency=child_agency,
             agency_metric_updates=MetricInterface(
                 key=prisons.staff.key,
                 custom_reporting_frequency=CustomReportingFrequency(
@@ -3273,7 +3263,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         )
         MetricSettingInterface.add_or_update_agency_metric_setting(
             session=self.session,
-            agency=super_agency,
+            agency=child_agency,
             agency_metric_updates=MetricInterface(
                 key=prisons.grievances_upheld.key,
                 custom_reporting_frequency=CustomReportingFrequency(

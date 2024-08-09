@@ -16,12 +16,16 @@
 # =============================================================================
 """Implements tests for Justice Counts Control Panel bulk upload functionality."""
 
+import os
 from typing import Dict, List
 
 import pandas as pd
 import pytest
 
 from recidiviz.justice_counts.agency import AgencyInterface
+from recidiviz.justice_counts.bulk_upload.workbook_standardizer import (
+    WorkbookStandardizer,
+)
 from recidiviz.justice_counts.bulk_upload.workbook_uploader import WorkbookUploader
 from recidiviz.justice_counts.dimensions.common import CaseSeverityType
 from recidiviz.justice_counts.dimensions.law_enforcement import CallType, ForceType
@@ -113,22 +117,36 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             # Create an excel sheet that has an invalid month
             # in the month column of the cases_disposed metric and a
             # sheet with an invalid sheet name.
+            file_name = "test_validation.xlsx"
             file_path = create_excel_file(
                 system=schema.System.PROSECUTION,
                 invalid_month_sheet_name="cases_disposed_by_type",
                 add_invalid_sheet_name=True,
-                file_name="test_validation.xlsx",
+                file_name=file_name,
             )
+            with open(
+                file_path,
+                mode="rb",
+            ) as file:
+                standardizer = WorkbookStandardizer(
+                    system=schema.System.PROSECUTION,
+                    agency=prosecution_agency,
+                    session=session,
+                )
+                xls, file_name = standardizer.standardize_workbook(
+                    file=file.read(), file_name=file_name
+                )
             workbook_uploader = WorkbookUploader(
                 system=schema.System.PROSECUTION,
                 agency=prosecution_agency,
                 user_account=user_account,
                 metric_key_to_metric_interface={},
+                metric_key_to_errors=standardizer.metric_key_to_errors,
             )
             _, metric_key_to_errors = workbook_uploader.upload_workbook(
                 session=session,
-                xls=pd.ExcelFile(file_path),
-                filename=file_path,
+                xls=xls,
+                filename=file_name,
                 upload_method=UploadMethod.BULK_UPLOAD,
             )
 
@@ -157,6 +175,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                 ),
                 cases_disposed_by_type_sum_error.description,
             )
+            os.remove(file_name)
 
     def test_prison(self) -> None:
         """Bulk upload prison metrics into an empty database."""
