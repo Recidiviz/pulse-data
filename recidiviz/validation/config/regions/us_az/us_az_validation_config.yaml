@@ -27,6 +27,12 @@ max_allowed_error_overrides:
       5% is the tightest threshold the state thought we could get to given the quality
       of the raw data available. More recent months are within that threshold, and older
       months have higher error rates.
+  - validation_name: supervision_population_person_level_external_comparison_matching_people_supervising_officer
+    hard_max_allowed_error_override: .1
+    override_reason:
+      Officer IDs are not stable over time / role changes, so we fail to
+      match some accurate officer assignments to the external ID that exists internally.
+      This accounts for approximately 91% of the current error rate. TODO(#32314)
 num_allowed_rows_overrides:
   - validation_name: invalid_release_reasons_for_temporary_custody
     hard_num_allowed_rows_override: 17
