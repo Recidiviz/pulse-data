@@ -278,7 +278,7 @@ def cis_425_program_enrollment_notes(
     additional_joins: Optional[str] = "",
     criteria: Optional[str] = "'Program enrollment'",
     note_title: Optional[str] = "CONCAT(st.E_STAT_TYPE_DESC ,' - ', pr.NAME_TX)",
-    note_body: Optional[str] = "ps.Comments_Tx",
+    note_body: Optional[str] = "IFNULL(ps.Comments_Tx, '<NO COMMENTS>')",
 ) -> str:
     """
     Formats program enrollment data as contact notes for Workflows tools
