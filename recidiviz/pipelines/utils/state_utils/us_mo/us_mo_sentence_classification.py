@@ -107,6 +107,19 @@ class UsMoSentenceStatus(BuildableAttr):
             or self.status_code.startswith("95O5")
         )
 
+    # Indicates that this status is related to starting / stopping a period of
+    # absconsion.
+    is_absconsion_status: bool = attr.ib()
+
+    @is_absconsion_status.default
+    def _is_absconsion_status(self) -> bool:
+        return self.status_code.startswith("65N95") or self.status_code in {
+            "65O1010",  # Offender declared absconder - from TAK026 BW$SCD
+            "65O1020",  # Offender declared absconder - from TAK026 BW$SCD
+            "65O1030",  # Offender declared absconder - from TAK026 BW$SCD
+            "65L9100",  # Offender declared absconder - from TAK026 BW$SCD
+        }
+
     # Indicates that this is a status that marks the beginning of a period of lifetime supervision (usually implemented
     # as electronic monitoring).
     is_lifetime_supervision_start_status: bool = attr.ib()
@@ -133,6 +146,15 @@ class UsMoSentenceStatus(BuildableAttr):
     @is_sentence_termination_status_candidate.default
     def _get_is_sentence_termination_status_candidate(self) -> bool:
         return self.status_code.startswith("9")
+
+    # Indicates that this status marks the end of a cycle, which is a continuous period
+    # of interaction with the MODOC. This status essentially means that the person is at
+    # liberty or has died.
+    is_cycle_termination_status: bool = attr.ib()
+
+    @is_cycle_termination_status.default
+    def _is_cycle_termination_status(self) -> bool:
+        return self.status_code.startswith("99")
 
     # If True, the presence of this status in association with a sentence means the sentence has been terminated and
     # this person is no longer serving it. This includes both successful completions and unsuccessful completions (e.g.
