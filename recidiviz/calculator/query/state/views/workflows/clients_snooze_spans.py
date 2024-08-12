@@ -98,19 +98,19 @@ SNOOZE_SPANS_QUERY_TEMPLATE = f"""
             s.state_code,
             s.person_external_id,
             s.opportunity_type,
-            EXTRACT(DATE FROM timestamp) as start_date,
+            DATETIME(timestamp)as start_date,
             email as snoozed_by,
             JSON_EXTRACT_STRING_ARRAY(reasons) as denial_reasons,
             CAST(NULL AS STRING) as other_reason,
             COALESCE(
-                EXTRACT(DATE FROM snooze_until),
-                DATE_ADD(EXTRACT(DATE FROM timestamp), INTERVAL snooze_for_days DAY)
+                DATETIME(snooze_until),
+                DATE_ADD(DATETIME(timestamp), INTERVAL snooze_for_days DAY)
             ) as end_date_scheduled,
         FROM `{{project_id}}.{{workflows_dataset}}.clients_opportunity_snoozed_materialized` s
         LEFT JOIN archive_snooze_spans a
-            ON s.person_id = a.person_id and s.opportunity_type = a.opportunity_type and EXTRACT(DATE FROM s.timestamp) = a.start_date
+            ON s.person_id = a.person_id and s.opportunity_type = a.opportunity_type and DATETIME(s.timestamp) = a.start_date
         WHERE a.person_id IS NULL  -- exclude snoozes that are already captured above
-        AND EXTRACT(DATE FROM timestamp) < "{{first_snooze_archive_date}}"
+        AND DATETIME(timestamp) < "{{first_snooze_archive_date}}"
     ),
     -- referral_status_denial_spans captures denials that were created before the snooze feature was released. They may have an end_date_actual
     -- if the person's referral status was subsequently updated making them eligible again. This CTE isn't directly unioned into the final view:
@@ -122,12 +122,12 @@ SNOOZE_SPANS_QUERY_TEMPLATE = f"""
             p.state_code,
             p.person_external_id,
             p.opportunity_type,
-            EXTRACT(DATE FROM timestamp) as start_date,
+            DATETIME(timestamp) as start_date,
             email as snoozed_by,
             denied_reasons as denial_reasons,
             CAST(NULL AS STRING) as other_reason,
             CAST(NULL AS DATE) as end_date_scheduled,
-            EXTRACT(DATE FROM (
+            DATETIME((
                 SELECT MIN(c.timestamp)
                 FROM `{{project_id}}.{{workflows_dataset}}.clients_referral_status_updated` c
                 WHERE c.person_id=p.person_id
@@ -136,13 +136,13 @@ SNOOZE_SPANS_QUERY_TEMPLATE = f"""
             )) as end_date_actual
         FROM `{{project_id}}.{{workflows_dataset}}.clients_referral_status_updated` p
         LEFT JOIN archive_snooze_spans a
-            ON p.person_id = a.person_id and p.opportunity_type = a.opportunity_type and EXTRACT(DATE FROM p.timestamp) = a.start_date
+            ON p.person_id = a.person_id and p.opportunity_type = a.opportunity_type and DATETIME(p.timestamp) = a.start_date
         LEFT JOIN event_snooze_spans e
-            ON p.person_id = e.person_id and p.opportunity_type = e.opportunity_type and EXTRACT(DATE FROM p.timestamp) = e.start_date
+            ON p.person_id = e.person_id and p.opportunity_type = e.opportunity_type and DATETIME(p.timestamp) = e.start_date
         WHERE status = "DENIED"
         AND a.person_id IS NULL  -- exclude snoozes that are already captured above
         AND e.person_id IS NULL
-        AND EXTRACT(DATE FROM timestamp) < "{{first_snooze_archive_date}}"
+        AND DATETIME(timestamp) < "{{first_snooze_archive_date}}"
     )
 
     SELECT * FROM archive_snooze_spans

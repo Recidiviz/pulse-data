@@ -17,6 +17,7 @@
 """Sessionized view of `clients_snooze_spans` aggregated to the task type level"""
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+from recidiviz.calculator.query.bq_utils import nonnull_end_date_clause
 from recidiviz.calculator.query.sessions_query_fragments import (
     aggregate_adjacent_spans,
     create_sub_sessions_with_attributes,
@@ -67,7 +68,7 @@ sub_sessions_deduped AS (
     -- We cannot use DISTINCT directly to an array, we are using this approach instead
     CROSS JOIN UNNEST(denial_reasons) AS denial_reason
     -- Filter zero span days
-    WHERE start_date != end_date_exclusive
+    WHERE start_date != {nonnull_end_date_clause("end_date_exclusive")}
     GROUP BY
         state_code,
         person_id,
