@@ -19,11 +19,11 @@ from recidiviz.big_query.selected_columns_big_query_view import (
     SelectedColumnsBigQueryViewBuilder,
 )
 from recidiviz.calculator.query.state import dataset_config
-from recidiviz.calculator.query.state.views.workflows.us_me.staff_template import (
-    build_us_me_staff_template,
+from recidiviz.calculator.query.state.views.workflows.us_me.incarceration_staff_template import (
+    US_ME_INCARCERATION_STAFF_TEMPLATE,
 )
-from recidiviz.calculator.query.state.views.workflows.us_nd.staff_template import (
-    build_us_nd_staff_template,
+from recidiviz.calculator.query.state.views.workflows.us_nd.incarceration_staff_template import (
+    US_ND_INCARCERATION_STAFF_TEMPLATE,
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.dataset_config import raw_latest_views_dataset_for_region
@@ -36,15 +36,12 @@ INCARCERATION_STAFF_RECORD_VIEW_NAME = "incarceration_staff_record"
 INCARCERATION_STAFF_RECORD_DESCRIPTION = """
     Incarceration staff records to be exported to Firestore to power Workflows.
     """
-_CASELOAD_SOURCE_TABLE = "resident_record_materialized"
 
 INCARCERATION_STAFF_RECORD_QUERY_TEMPLATE = f"""
     WITH 
-        me_staff AS ({build_us_me_staff_template(_CASELOAD_SOURCE_TABLE)}),
-        nd_staff AS ({build_us_nd_staff_template(_CASELOAD_SOURCE_TABLE)})
-    
-    SELECT {{columns}} FROM me_staff
-
+          me_staff AS ({US_ME_INCARCERATION_STAFF_TEMPLATE}),
+          nd_staff AS ({US_ND_INCARCERATION_STAFF_TEMPLATE})
+    SELECT {{columns}} FROM me_staff    
     UNION ALL
     
     SELECT {{columns}} FROM nd_staff
