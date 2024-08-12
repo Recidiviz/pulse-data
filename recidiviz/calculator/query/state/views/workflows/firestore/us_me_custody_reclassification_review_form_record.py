@@ -163,10 +163,12 @@ program_assignments_cte AS (
       cte AS (
         SELECT
           mp.CIS_100_CLIENT_ID AS external_id,
-          CONCAT(st.E_STAT_TYPE_DESC,' - ', pr.NAME_TX, ' - ', ps.Comments_Tx, ' - ', CAST(SAFE_CAST(LEFT(mp.MODIFIED_ON_DATE, 10) AS DATE) AS STRING)) AS form_information_program_enrollment,
+          CONCAT(st.E_STAT_TYPE_DESC,' - ', pr.NAME_TX, ' - ', IFNULL(ps.Comments_Tx, '<NO COMMENTS>'), 
+            ' - ', CAST(SAFE_CAST(LEFT(mp.MODIFIED_ON_DATE, 10) AS DATE) AS STRING)) AS form_information_program_enrollment,
         FROM {program_enrollment_helper()}
         WHERE
-          pr.NAME_TX IS NOT NULL QUALIFY ROW_NUMBER() OVER(PARTITION BY mp.ENROLL_ID ORDER BY Effct_Datetime DESC) = 1
+          pr.NAME_TX IS NOT NULL 
+        QUALIFY ROW_NUMBER() OVER(PARTITION BY mp.ENROLL_ID ORDER BY Effct_Datetime DESC) = 1
         ORDER BY
           (SAFE_CAST(LEFT(mp.MODIFIED_ON_DATE, 10) AS DATE)) DESC)
     SELECT
@@ -291,7 +293,7 @@ probation_term_cte AS (
   WHERE state_code = 'US_ME'
       AND supervision_type = 'PROBATION'
       AND effective_date > CURRENT_DATE('US/Eastern')
-      AND status = 'PENDING'
+      AND status IN ('PENDING', 'SERVING')
   GROUP BY 1,2
 ),
 
