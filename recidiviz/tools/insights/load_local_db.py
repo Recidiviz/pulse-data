@@ -17,10 +17,21 @@
 """
 Tool for loading data into the Insights development database.
 
-This script should be run only after `docker-compose up` has been run.
-This will delete everything from the tables and then re-add them from the
-specified source, i.e. staging GCS or fixture files.
+This script will delete everything from the tables and then re-add them from the
+specified source, i.e. staging GCS or fixture files. It is run from the application-data-import server.
 
+The schema for the Insights `configurations` and `user_metadata` tables are managed by migrations
+which are run from docker-compose. All other Insights tables are built during the data import process
+and will match the schema of the data being imported.
+
+If this is your first time trying to set up the Insights database:
+1. Initialize the devepment environment
+`./recidiviz/tools/outliers/initialize_development_environment.sh`
+2. Run docker-compose to run migrations and start the application-data-import server
+Note: This requires that local state databases already exist. If you don't have a db
+within insights_db for each state in outliers_enabled_states.yaml you must create them first.
+`docker compose -f docker-compose.yaml -f docker-compose.application-data-import.yaml up`
+3. Then run this script to load the fixture data (or staging GCS data) into the tables
 Usage against default development database (docker-compose v1):
 docker exec pulse-data_import_service_1 pipenv run python -m recidiviz.tools.insights.load_local_db \
     --data_type FIXTURE \
@@ -30,6 +41,16 @@ Usage against default development database (docker-compose v2):
 docker exec pulse-data-import_service-1 pipenv run python -m recidiviz.tools.insights.load_local_db \
     --data_type FIXTURE \
     --state_codes US_PA
+
+
+
+If you have previously loaded data, and are getting an error when trying to run docker compose,
+it is likely because the Insights tables in your local development environment were not built from
+migrations. You will need to delete those tables and start fresh. Follow the instructions in 
+[#31163](https://github.com/Recidiviz/pulse-data/pull/31163) for instructions on how to do that.
+
+
+Any time you wish to load fresh data into the local tables, complete steps 2 and 3 above.
 """
 import argparse
 import json
