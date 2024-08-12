@@ -69,3 +69,6 @@ num_allowed_rows_overrides:
   - validation_name: invalid_release_reasons_for_temporary_custody
     hard_num_allowed_rows_override: 25
     override_reason: TODO(#26250) - Needs investigation
+  - validation_name: unidentified_supervision_officer_supervisors
+    hard_num_allowed_rows_override: 10
+    override_reason: TODO(##32315) - Needs investigation
