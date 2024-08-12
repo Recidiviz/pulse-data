@@ -59,6 +59,7 @@ class UserInfo:
     """Holds information about a JC user"""
 
     name: str
+    email: str
     states: Set[str]
     agency_names: List[str]
     superagencies: List[schema.Agency]
@@ -243,6 +244,7 @@ def construct_user_infos(
         user_infos.append(
             UserInfo(
                 name=user.name,
+                email=user.email,
                 states=states,
                 agency_names=agency_names,
                 superagencies=superagencies,
@@ -271,6 +273,10 @@ def check_user_permissions(
         users_with_too_many_agencies,
         users_with_multiple_states,
     ) = find_users_with_multiple_agencies(users=user_infos)
+
+    users_with_no_agencies = [
+        (user.name, user.email) for user in user_infos if not user.agency_names
+    ]
 
     def format_role(role: str) -> str:
         # Convert e.g. AGENCY_ADMIN to Agency Admin
@@ -312,6 +318,11 @@ def check_user_permissions(
         for (name, states, agencies) in users_with_multiple_states:
             text += f"* {name}: [States] {', '.join(states)}, [Agencies] {', '.join(agencies)}\n"
         text += "\n"
+
+    if users_with_no_agencies:
+        text += "The following users don't have access to any agencies: \n"
+        for (name, email) in users_with_no_agencies:
+            text += f"* {name}, {email}\n"
 
     if not text:
         logging.info(
