@@ -456,8 +456,9 @@ class BigQueryClient:
         self,
         *,
         query_str: str,
-        query_parameters: Optional[List[bigquery.ScalarQueryParameter]] = None,
         use_query_cache: bool,
+        query_parameters: Optional[List[bigquery.ScalarQueryParameter]] = None,
+        http_timeout: Optional[float] = None,
     ) -> bigquery.QueryJob:
         """Runs a query in BigQuery asynchronously.
 
@@ -471,9 +472,11 @@ class BigQueryClient:
 
         Args:
             query_str: The query to execute
-            query_parameters: Parameters for the query
             use_query_cache: Whether to look for the result in the query cache. See:
                 https://cloud.google.com/bigquery/docs/reference/rest/v2/Job#JobConfigurationQuery.FIELDS.use_query_cache
+            query_parameters: Parameters for the query
+            http_timeout: The number of seconds to wait for client's underlying HTTP
+                transport before using client.query's ``retry``.
 
         Returns:
             A QueryJob which will contain the results once the query is complete.
@@ -1453,8 +1456,9 @@ class BigQueryClientImpl(BigQueryClient):
         self,
         *,
         query_str: str,
-        query_parameters: Optional[List[bigquery.ScalarQueryParameter]] = None,
         use_query_cache: bool,
+        query_parameters: Optional[List[bigquery.ScalarQueryParameter]] = None,
+        http_timeout: Optional[float] = None,
     ) -> bigquery.QueryJob:
         job_config = bigquery.QueryJobConfig(use_query_cache=use_query_cache)
         job_config.query_parameters = query_parameters or []
@@ -1463,6 +1467,7 @@ class BigQueryClientImpl(BigQueryClient):
             query=query_str,
             location=self.region,
             job_config=job_config,
+            timeout=http_timeout,
         )
 
     def paged_read_and_process(

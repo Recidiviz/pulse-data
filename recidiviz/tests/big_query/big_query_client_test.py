@@ -327,6 +327,7 @@ class BigQueryClientImplTest(unittest.TestCase):
                 """,
             location=BigQueryClient.DEFAULT_REGION,
             job_config=mock_job_config.return_value,
+            timeout=None,
         )
         mock_job_config.assert_called_with(use_query_cache=False)
 
