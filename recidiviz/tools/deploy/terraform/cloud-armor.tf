@@ -152,6 +152,20 @@ resource "google_compute_security_policy" "recidiviz-waf-policy" {
   }
 
   # ----------------------------------------------
+  # Exceptional URLs
+  # ----------------------------------------------
+  rule {
+    description = "Allow all traffic to the workflows configuration endpoint, which keeps triggering false positives"
+    action      = "allow"
+    priority    = "900"
+    match {
+      expr {
+        expression = "request.path.matches(\"/admin/line_staff_tools/workflows/[a-zA-Z_]+/opportunities/[a-zA-Z_]+/configurations/new\")"
+      }
+    }
+  }
+
+  # ----------------------------------------------
   # Static hosts to block
   # ----------------------------------------------
   rule {
