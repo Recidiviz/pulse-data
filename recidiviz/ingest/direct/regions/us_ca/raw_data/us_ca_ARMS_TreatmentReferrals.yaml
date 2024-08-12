@@ -8,6 +8,10 @@ file_description: >-
   some other reason.
 data_classification: source
 primary_key_cols:
+  # Note: this primary key is not a good one. If the program start_date was
+  # entered incorrectly for example, and later corrected, we would consider it a
+  # good program start. We need a stable program UUID. This is tracked here:
+  # #32264.
   - OffenderId
   - ORTGID
   - Program_Name

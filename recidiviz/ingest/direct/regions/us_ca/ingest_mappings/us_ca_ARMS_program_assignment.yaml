@@ -17,6 +17,10 @@ output:
           id_type: $literal("US_CA_DOC")
     program_assignments:
       - StateProgramAssignment:
+          # Note: the external ID is not a good one. If the program start_date was
+          # entered incorrectly for example, and later corrected, we would consider it a
+          # good program start. We need a stable program UUID. This is tracked here:
+          # #32264.
           external_id:
             $concat:
               $values:
@@ -24,6 +28,7 @@ output:
                 - OffenderId
                 - Program_Name
                 - Program_Start_Date
+                - Program_End_Date
           program_id: Program_Name
           participation_status:
             $conditional:
