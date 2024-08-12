@@ -48,6 +48,7 @@ _SUPERVISION_STAFF_ATTRIBUTES_NO_OVERLAPS: Dict[str, List[str]] = {
     "supervision_district_id_inferred": [],
     "supervision_district_name_inferred": [],
     "supervision_office_id_inferred": [],
+    "supervision_office_name_inferred": [],
 }
 
 _SUPERVISION_STAFF_ATTRIBUTES_WITH_OVERLAPS: Dict[str, List[str]] = {
@@ -78,6 +79,7 @@ WITH all_staff_attribute_periods AS (
         NULL AS supervision_district_id_inferred,
         NULL AS supervision_district_name_inferred,
         NULL AS supervision_office_id_inferred,
+        NULL AS supervision_office_name_inferred,
         NULL AS role_type,
         NULL AS role_subtype,
         NULL AS specialized_caseload_type,
@@ -107,6 +109,7 @@ WITH all_staff_attribute_periods AS (
         a.primary_district AS supervision_district_id_inferred,
         a.primary_district_name AS supervision_district_name_inferred,
         a.primary_office AS supervision_office_id_inferred,
+        a.primary_office_name AS supervision_office_name_inferred,
         NULL AS role_type,
         NULL AS role_subtype,
         NULL AS specialized_caseload_type,
@@ -138,6 +141,7 @@ WITH all_staff_attribute_periods AS (
         NULL AS supervision_district_id_inferred,
         NULL AS supervision_district_name_inferred,
         NULL AS supervision_office_id_inferred,
+        NULL AS supervision_office_name_inferred,
         role_type,
         role_subtype,
         NULL AS specialized_caseload_type,
@@ -163,6 +167,7 @@ WITH all_staff_attribute_periods AS (
         NULL AS supervision_district_id_inferred,
         NULL AS supervision_district_name_inferred,
         NULL AS supervision_office_id_inferred,
+        NULL AS supervision_office_name_inferred,
         NULL AS role_type,
         NULL AS role_subtype,
         caseload_type AS specialized_caseload_type,
@@ -188,6 +193,7 @@ WITH all_staff_attribute_periods AS (
         NULL AS supervision_district_id_inferred,
         NULL AS supervision_district_name_inferred,
         NULL AS supervision_office_id_inferred,
+        NULL AS supervision_office_name_inferred,
         NULL AS role_type,
         NULL AS role_subtype,
         NULL AS specialized_caseload_type,

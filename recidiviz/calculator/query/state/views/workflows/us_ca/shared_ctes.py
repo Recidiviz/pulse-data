@@ -16,20 +16,6 @@
 # =============================================================================
 """CTE Logic that is shared across US_CA Workflows queries."""
 
-US_CA_MOST_RECENT_AGENT_DATA = """
-  SELECT DISTINCT
-    BadgeNumber,
-    ParoleRegion,
-    ParoleDistrict,
-    ParoleUnit,
-    AgentClassification,
-    EMAILADDRESS
-  FROM `{project_id}.{us_ca_raw_data_dataset}.AgentParole`
-  WHERE BadgeNumber IS NOT NULL
-  QUALIFY file_id = FIRST_VALUE(file_id) OVER (
-    ORDER BY update_datetime DESC
-  )
-"""
 
 US_CA_MOST_RECENT_CLIENT_DATA = """
   SELECT

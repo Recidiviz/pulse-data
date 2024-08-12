@@ -122,8 +122,6 @@ US_CA:
     validation_views.parole_agent_badge_number_changes: |-
       This is a validation on the raw data -- if a badge number changes in the raw data,
       we want to be alerted so we can write a migration.
-    workflows_views.supervision_staff_record: |-
-      Usage reason unknown. Grandfathered in 04/18/2024.
   ParoleHousing:
     analyst_data.us_ca_sustainable_housing_status_periods: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
@@ -131,8 +129,6 @@ US_CA:
     reference_views.us_ca_location_metadata: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
     workflows_views.client_record: |-
-      Usage reason unknown. Grandfathered in 04/18/2024.
-    workflows_views.supervision_staff_record: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
     workflows_views.us_ca_supervision_level_downgrade_form_record: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
@@ -747,8 +743,6 @@ US_ME:
       Usage reason unknown. Grandfathered in 04/18/2024.
     workflows_views.incarceration_staff_record: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
-    workflows_views.supervision_staff_record: |-
-      Usage reason unknown. Grandfathered in 04/18/2024.
   CIS_908_CCS_LOCATION:
     reference_views.incarceration_location_ids_to_names: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
@@ -1087,8 +1081,6 @@ US_ND:
   docstars_officers:
     reference_views.ingested_product_users: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
-    workflows_views.supervision_staff_record: |-
-      Usage reason unknown. Grandfathered in 04/18/2024.
   elite_OffenderProgramProfiles:
     sessions.us_nd_incarceration_staff_assignment_sessions_preprocessed: |-
       Get CM staff assignments to residents.
@@ -1360,9 +1352,6 @@ US_TN:
       Usage reason unknown. Grandfathered in 04/18/2024.
   Site:
     reference_views.us_tn_location_metadata: |-
-      Usage reason unknown. Grandfathered in 04/18/2024.
-  Staff:
-    workflows_views.supervision_staff_record: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
   SupervisionPlan:
     dashboard_views.supervision_to_prison_population_snapshot_by_officer: |-
