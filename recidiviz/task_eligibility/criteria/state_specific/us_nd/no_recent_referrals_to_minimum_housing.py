@@ -32,6 +32,7 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.dataset_config import raw_latest_views_dataset_for_region
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.task_eligibility.dataset_config import (
+    TASK_COMPLETION_EVENTS_DATASET_ID,
     completion_event_state_specific_dataset,
 )
 from recidiviz.task_eligibility.reasons_field import ReasonsField
@@ -89,9 +90,10 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = StateSpecificTaskCr
         state_code=StateCode.US_ND, instance=DirectIngestInstance.PRIMARY
     ),
     normalized_state_dataset=NORMALIZED_STATE_DATASET,
-    task_eligibility_completion_events_dataset=completion_event_state_specific_dataset(
+    us_nd_task_eligibility_completion_events_dataset=completion_event_state_specific_dataset(
         StateCode.US_ND
     ),
+    general_task_eligibility_completion_events_dataset=TASK_COMPLETION_EVENTS_DATASET_ID,
     meets_criteria_default=True,
     reasons_fields=[
         ReasonsField(
