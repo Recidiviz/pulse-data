@@ -1,0 +1,59 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_state_person` to corresponding
+# Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  - internalId
+  - lastName
+  - firstName
+  - dob
+  - GENDER_CD
+  - RACE_CD
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: internalId
+          id_type: $literal("US_NE_INTERNAL_ID")
+    birthdate: dob
+    full_name:
+      $person_name:
+        $given_names: firstName
+        $surname: lastName
+    gender:
+      $enum_mapping:
+        $raw_text: GENDER_CD
+        $mappings:
+          StateGender.MALE: M
+          StateGender.FEMALE: F
+          StateGender.EXTERNAL_UNKNOWN: U
+    races:
+      - StatePersonRace:
+          race:
+            $enum_mapping:
+              $raw_text: RACE_CD
+              $mappings:
+                StateRace.ASIAN: AS
+                StateRace.BLACK: BK
+                StateRace.AMERICAN_INDIAN_ALASKAN_NATIVE: NA #confirm is this is true
+                StateRace.NATIVE_HAWAIIAN_PACIFIC_ISLANDER: [PI, HI] #confirm?
+                StateRace.WHITE: WT
+                StateRace.EXTERNAL_UNKNOWN:
+                  - OT #other?
+              $ignore: [HS]
+    ethnicities:
+      - StatePersonEthnicity:
+          ethnicity:
+            $enum_mapping:
+              $raw_text: RACE_CD
+              $mappings:
+                StateEthnicity.HISPANIC: HS
+              $ignore:
+                - BK
+                - WT
+                - NA
+                - OT
+                - AS
+                - PI
+                - HI

@@ -26,4 +26,4 @@ class UsNeSupervisionMetricsProducerDelegate(
     """US_NE implementation of the StateSpecificSupervisionMetricsProducerDelegate."""
 
     def primary_person_external_id_to_include(self) -> str:
-        return "US_NE_DOC"
+        return "US_NE_INTERNAL_ID"
