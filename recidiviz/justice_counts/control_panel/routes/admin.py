@@ -15,7 +15,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Implements api routes for the Justice Counts Publisher Admin Panel."""
-import itertools
 from collections import defaultdict
 from http import HTTPStatus
 from typing import Any, Callable, Dict, List, Optional
@@ -423,9 +422,10 @@ def get_admin_blueprint(
 
             # Delete team members that are in the agency's assocs, but not in the
             # list of team members that are sent over.
-            for assoc in agency.user_account_assocs + list(
-                itertools.chain(*[a.user_account_assocs for a in child_agencies])
-            ):
+            # NOTE: Just look at the agency when doing this, not the child agencies.
+            # If a team member is missing from the superagency but present
+            # in the child agency, that's fine! Don't delete.
+            for assoc in agency.user_account_assocs:
                 if assoc.user_account_id not in user_account_ids:
                     current_session.delete(assoc)
 

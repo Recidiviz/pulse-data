@@ -215,12 +215,15 @@ def create_app(config: Optional[Config] = None) -> Flask:
 
     # Based on this answer re: serving React app with Flask:
     # https://stackoverflow.com/a/45634550
-    @app.route("/", defaults={"path": ""})
     @app.route("/<path:path>")
-    def index(path: str = "") -> Response:
+    def index_with_path(path: str = "") -> Response:
         if path != "" and os.path.exists(os.path.join(static_folder, path)):
             return send_from_directory(static_folder, path)
 
+        return send_from_directory(static_folder, "index.html")
+
+    @app.route("/")
+    def index() -> Response:
         return send_from_directory(static_folder, "index.html")
 
     @app.route("/app_public_config.js")
