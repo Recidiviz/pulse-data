@@ -65,13 +65,15 @@ from recidiviz.persistence.entity.base_entity import Entity, EnumEntity, RootEnt
 from recidiviz.persistence.entity.entity_utils import (
     CoreEntityFieldIndex,
     EntityFieldType,
-    SchemaEdgeDirectionChecker,
     get_entities_by_association_table_id,
     get_entity_class_in_module_with_name,
     get_entity_class_in_module_with_table_id,
 )
 from recidiviz.persistence.entity.root_entity_utils import (
     get_root_entity_class_for_entity,
+)
+from recidiviz.persistence.entity.schema_edge_direction_checker import (
+    direction_checker_for_module,
 )
 from recidiviz.persistence.entity.state import entities, normalized_entities
 from recidiviz.persistence.entity.state.entities import (
@@ -225,16 +227,9 @@ class StateDatasetValidator:
         entities_module: ModuleType,
         schema_type: str,
     ) -> None:
-        if schema_type == "normalized_state":
-            direction_checker = (
-                SchemaEdgeDirectionChecker.normalized_state_direction_checker()
-            )
-        elif schema_type == "state":
-            direction_checker = SchemaEdgeDirectionChecker.state_direction_checker()
-        else:
-            raise ValueError(f"Unexpected schema_type: {schema_type}")
-
-        self.field_index = CoreEntityFieldIndex(direction_checker)
+        self.field_index = CoreEntityFieldIndex(
+            direction_checker_for_module(entities_module)
+        )
         self.state_code_filter = state_code_filter
         self.reference_dataset = DatasetReference.from_string(
             reference_state_dataset, default_project=reference_state_project_id

@@ -38,9 +38,11 @@ from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.entity_utils import (
     CoreEntityFieldIndex,
     EntityFieldType,
-    SchemaEdgeDirectionChecker,
 )
 from recidiviz.persistence.entity.operations import entities as operations_entities
+from recidiviz.persistence.entity.schema_edge_direction_checker import (
+    direction_checker_for_module,
+)
 from recidiviz.persistence.entity.state import entities as state_entities
 
 
@@ -119,31 +121,27 @@ def convert_entity_to_schema_object(
 EntityT = TypeVar("EntityT", bound=Entity)
 
 
-_core_entity_field_index_by_entity_type = {}
+_core_entity_field_index_by_entities_module: dict[ModuleType, CoreEntityFieldIndex] = {}
 
 
 def _get_field_index_for_db_entity(db_entity: DatabaseEntity) -> CoreEntityFieldIndex:
     if _is_obj_in_module(db_entity, state_schema):
-        if state_entities.__name__ not in _core_entity_field_index_by_entity_type:
-            _core_entity_field_index_by_entity_type[
-                state_entities.__name__
-            ] = CoreEntityFieldIndex(
-                direction_checker=SchemaEdgeDirectionChecker.state_direction_checker()
-            )
-        return _core_entity_field_index_by_entity_type[state_entities.__name__]
-    if _is_obj_in_module(db_entity, operations_schema):
-        if operations_entities.__name__ not in _core_entity_field_index_by_entity_type:
-            _core_entity_field_index_by_entity_type[
-                operations_entities.__name__
-            ] = CoreEntityFieldIndex(
-                direction_checker=SchemaEdgeDirectionChecker.operations_direction_checker()
-            )
-        return _core_entity_field_index_by_entity_type[operations_entities.__name__]
+        entities_module: ModuleType = state_entities
+    elif _is_obj_in_module(db_entity, operations_schema):
+        entities_module = operations_entities
+    else:
+        raise ValueError(
+            f"Expected {type(db_entity)} to belong to either [{state_schema.__name__}] or "
+            f"[{operations_schema.__name__}]"
+        )
 
-    raise ValueError(
-        f"Expected {type(db_entity)} to belong to either [{state_schema.__name__}] or "
-        f"[{operations_schema.__name__}]"
-    )
+    if entities_module not in _core_entity_field_index_by_entities_module:
+        _core_entity_field_index_by_entities_module[
+            entities_module
+        ] = CoreEntityFieldIndex(
+            direction_checker=direction_checker_for_module(entities_module)
+        )
+    return _core_entity_field_index_by_entities_module[entities_module]
 
 
 def convert_schema_object_to_entity(

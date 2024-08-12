@@ -70,6 +70,10 @@ class SchemaToEntityClassMapper:
             if cls_name in entity_classes_by_name
         }
 
+    @property
+    def entities_module(self) -> ModuleType:
+        return self._entities_module
+
     def entity_cls_for_schema_cls(
         self, schema_cls: Type[DatabaseEntity]
     ) -> Type[Entity]:

@@ -32,7 +32,6 @@ from recidiviz.persistence.database.schema_entity_converter.schema_to_entity_cla
     SchemaToEntityClassMapper,
 )
 from recidiviz.persistence.entity.base_entity import Entity
-from recidiviz.persistence.entity.entity_utils import SchemaEdgeDirectionChecker
 from recidiviz.persistence.entity.state import entities
 
 StatePersonType = TypeVar("StatePersonType", entities.StatePerson, schema.StatePerson)
@@ -45,9 +44,7 @@ class _StateSchemaEntityConverter(BaseSchemaEntityConverter[SrcBaseType, DstBase
         class_mapper = SchemaToEntityClassMapper.get(
             schema_module=schema, entities_module=entities
         )
-        super().__init__(
-            class_mapper, SchemaEdgeDirectionChecker.state_direction_checker()
-        )
+        super().__init__(class_mapper)
 
 
 class StateEntityToSchemaConverter(_StateSchemaEntityConverter[Entity, DatabaseEntity]):

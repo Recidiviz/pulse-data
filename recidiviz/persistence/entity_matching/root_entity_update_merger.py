@@ -38,9 +38,11 @@ from recidiviz.persistence.entity.base_entity import (
 from recidiviz.persistence.entity.entity_utils import (
     CoreEntityFieldIndex,
     EntityFieldType,
-    SchemaEdgeDirectionChecker,
     get_all_entities_from_tree,
     is_reference_only_entity,
+)
+from recidiviz.persistence.entity.schema_edge_direction_checker import (
+    direction_checker_for_module,
 )
 from recidiviz.persistence.entity.state import entities
 from recidiviz.persistence.entity.state.entities import StatePersonAlias
@@ -333,7 +335,7 @@ class RootEntityUpdateMerger:
                 merge_root_entity_trees. This is used to inform the merging order, so
                 newer updates are preserved.
         """
-        direction_checker = SchemaEdgeDirectionChecker.state_direction_checker()
+        direction_checker = direction_checker_for_module(entities)
         # Assert the list of multi-parent entity types is listed in order from closest
         # to the root entity to farthest away, so we merge from root downwards.
         direction_checker.assert_sorted(_MULTI_PARENT_ENTITY_TYPES)
