@@ -25,6 +25,7 @@ Example Usage:
 import argparse
 import logging
 import sys
+from collections import defaultdict
 from enum import Enum, auto
 from typing import Dict, List, Tuple
 
@@ -65,7 +66,9 @@ POSTGRES_FILE_ID_IN_BQ = """SELECT DISTINCT file_id FROM `{table}` WHERE file_id
 class PruningStatus(Enum):
     PRUNED = auto()
     NOT_ELIGIBLE = auto()
-    SKIPPED = auto()
+    SKIPPED_MISMATCH = auto()
+    SKIPPED_ONE_ID = auto()
+    SKIPPED_TOO_MANY_IDS = auto()
 
 
 def get_postgres_min_and_max_update_datetime_by_file_tag(
@@ -89,17 +92,16 @@ def get_postgres_min_and_max_update_datetime_by_file_tag(
     return dict(sorted(results_dict.items()))
 
 
-def postgres_file_ids_present_in_bq(
+def get_min_and_max_file_ids_in_postgres(
     session: Session,
     state_code: StateCode,
     file_tag: str,
-    bq_client: BigQueryClient,
-    table_bq_path: str,
     min_datetimes_contained: str,
     max_datetimes_contained: str,
-) -> List[str]:
-    """Validate whether the file_ids associated with min and max `update_datetime` on
-    Postgres are also present on BQ."""
+) -> List[int]:
+    """Returns file_ids from postgres whose update_datetimes match the provided
+    |min_datetimes_contained| and |max_datetimes_contained|.
+    """
     logging.info(
         "[%s] Generating Postgres query to identify file_ids from min and max dates...",
         file_tag,
@@ -118,23 +120,26 @@ def postgres_file_ids_present_in_bq(
     postgres_results = session.execute(sqlalchemy.text(command))
     logging.info("[%s] %s", file_tag, command)
     postgres_file_ids = [result[0] for result in postgres_results]
-    if len(postgres_file_ids) != 2:
-        return []
+    return postgres_file_ids
 
-    logging.info(
-        "[%s] Postgres min and max file_ids: min=(%s, %s), max=(%s, %s)",
-        file_tag,
-        postgres_file_ids[0],
-        min_datetimes_contained,
-        postgres_file_ids[1],
-        max_datetimes_contained,
-    )
+
+def postgres_file_ids_present_in_bq(
+    file_tag: str,
+    bq_client: BigQueryClient,
+    table_bq_path: str,
+    min_file_id: int,
+    max_file_id: int,
+) -> List[int]:
+    """Validate whether the file_ids associated with min and max `update_datetime` on
+    Postgres are also present on BQ."""
+
+    postgres_file_ids = {min_file_id, max_file_id}
 
     postgres_confirmation_query = StrictStringFormatter().format(
         POSTGRES_FILE_ID_IN_BQ,
         table=table_bq_path,
-        min_file_id=postgres_file_ids[0],
-        max_file_id=postgres_file_ids[1],
+        min_file_id=min_file_id,
+        max_file_id=max_file_id,
     )
     logging.info(
         "[%s] Running query to see if Postgres file_ids are present on BQ.", file_tag
@@ -152,12 +157,12 @@ def postgres_file_ids_present_in_bq(
             postgres_file_ids,
             bq_file_ids,
         )
-        if set(postgres_file_ids) == set(bq_file_ids):
+        if postgres_file_ids == set(bq_file_ids):
             return bq_file_ids
-        return []
     except exceptions.NotFound as e:
         logging.info("[%s] Table not found: %s", file_tag, str(e))
-        return []
+
+    return []
 
 
 def get_redundant_raw_file_ids(
@@ -201,7 +206,7 @@ def get_raw_file_configs_for_state(
 # TODO(#14127): delete this script once raw data pruning is live.
 def main(
     dry_run: bool, state_code: StateCode, project_id: str
-) -> Dict[PruningStatus, Dict[str, str]]:
+) -> Dict[PruningStatus, List[str]]:
     """Executes the main flow of the script.
 
     Iterates through each raw data table in the project and state specific raw data dataset
@@ -219,11 +224,7 @@ def main(
         state_code.value, DirectIngestInstance.PRIMARY
     )
 
-    results: Dict[PruningStatus, Dict[str, str]] = {
-        PruningStatus.PRUNED: {},
-        PruningStatus.NOT_ELIGIBLE: {},
-        PruningStatus.SKIPPED: {},
-    }
+    results: Dict[PruningStatus, List[str]] = defaultdict(list)
 
     with SessionFactory.for_proxy(database_key) as session:
         file_tag_to_min_and_max_update_datetimes: Dict[
@@ -239,9 +240,7 @@ def main(
                     "[%s][Skipping] File tag found in Postgres but not in raw YAML files.",
                     file_tag,
                 )
-                results[PruningStatus.NOT_ELIGIBLE][
-                    file_tag
-                ] = "File tag found in Postgres but not in raw YAML files"
+                results[PruningStatus.NOT_ELIGIBLE].append(file_tag)
                 continue
 
             if raw_file_configs[file_tag].always_historical_export is False:
@@ -249,9 +248,7 @@ def main(
                     "[%s][Skipping] `always_historical_export` set to False.",
                     file_tag,
                 )
-                results[PruningStatus.NOT_ELIGIBLE][
-                    file_tag
-                ] = "`always_historical_export` set to False."
+                results[PruningStatus.NOT_ELIGIBLE].append(file_tag)
                 continue
             logging.info(
                 "[%s] `always_historical_export` set to True. Moving forward with raw data pruning.",
@@ -273,14 +270,45 @@ def main(
                 table_name=file_tag,
             )
 
-            min_and_max_file_ids_in_bq = postgres_file_ids_present_in_bq(
+            min_and_max_file_ids_in_pg = get_min_and_max_file_ids_in_postgres(
                 session=session,
                 state_code=state_code,
                 file_tag=file_tag,
-                bq_client=bq_client,
-                table_bq_path=table_bq_path,
                 min_datetimes_contained=min_update_datetime,
                 max_datetimes_contained=max_update_datetime,
+            )
+
+            if len(min_and_max_file_ids_in_pg) < 2:
+                logging.error(
+                    "[%s] Skipping deletion because file tag has one or none file ids in pg",
+                    file_tag,
+                )
+                results[PruningStatus.SKIPPED_ONE_ID].append(file_tag)
+                continue
+
+            if len(min_and_max_file_ids_in_pg) > 2:
+                logging.error(
+                    "[%s] Skipping deletion because file tag has two file ids with min and max update datetimes in pg",
+                    file_tag,
+                )
+                results[PruningStatus.SKIPPED_TOO_MANY_IDS].append(file_tag)
+                continue
+
+            logging.info(
+                "[%s] Postgres min and max file_ids: min=(%s, %s), max=(%s, %s)",
+                file_tag,
+                min_and_max_file_ids_in_pg[0],
+                min_update_datetime,
+                min_and_max_file_ids_in_pg[1],
+                max_update_datetime,
+            )
+
+            min_and_max_file_ids_in_bq = postgres_file_ids_present_in_bq(
+                file_tag=file_tag,
+                bq_client=bq_client,
+                table_bq_path=table_bq_path,
+                min_file_id=min_and_max_file_ids_in_pg[0],
+                max_file_id=min_and_max_file_ids_in_pg[1],
             )
 
             if not min_and_max_file_ids_in_bq:
@@ -289,9 +317,7 @@ def main(
                     "were not found on BQ.",
                     file_tag,
                 )
-                results[PruningStatus.SKIPPED][
-                    file_tag
-                ] = "file_ids identified as min and max on Postgres were not found on BQ."
+                results[PruningStatus.SKIPPED_MISMATCH].append(file_tag)
                 continue
 
             deletion_query = StrictStringFormatter().format(
@@ -315,10 +341,15 @@ def main(
                 )
             else:
                 logging.info("[%s] Running deletion query in BQ...", file_tag)
+                # we set the http timeout here to make sure that we don't hang indefinitely
+                # the max this function *should* hang for is ~10 minutes as defined by
+                # the ``retry`` parameter of the underling .query call
                 query_job = bq_client.run_query_async(
-                    query_str=deletion_query, use_query_cache=True
+                    query_str=deletion_query, use_query_cache=True, http_timeout=60.0
                 )
-                query_job.result()
+                # the ``timeout`` parameter, similarly to the above, is the timeout
+                # associated with underlying http calls, not the function call as a whole
+                query_job.result(timeout=60.0)
                 logging.info(
                     "[%s] Marking %d metadata rows as invalidated...",
                     file_tag,
@@ -328,7 +359,8 @@ def main(
                     raw_data_metadata_manager.mark_file_as_invalidated_by_file_id(
                         session, file_id
                     )
-            results[PruningStatus.PRUNED][file_tag] = str(len(file_ids_to_delete))
+                session.commit()
+            results[PruningStatus.PRUNED].append(file_tag)
         return results
 
 
@@ -389,13 +421,23 @@ if __name__ == "__main__":
         ["PRUNED", len(run_results[PruningStatus.PRUNED]), ""],
         [
             "SKIPPED - FILE_IDS MISSING IN BQ",
-            len(run_results[PruningStatus.SKIPPED]),
-            list(run_results[PruningStatus.SKIPPED].keys()),
+            len(run_results[PruningStatus.SKIPPED_MISMATCH]),
+            run_results[PruningStatus.SKIPPED_MISMATCH] or "",
+        ],
+        [
+            "SKIPPED - DUPLICATE MIN/MAX FILE IDS IN PG",
+            len(run_results[PruningStatus.SKIPPED_TOO_MANY_IDS]),
+            run_results[PruningStatus.SKIPPED_TOO_MANY_IDS] or "",
+        ],
+        [
+            "SKIPPED - ONLY ONE FILE ID IN PG",
+            len(run_results[PruningStatus.SKIPPED_ONE_ID]),
+            run_results[PruningStatus.SKIPPED_ONE_ID] or "",
         ],
         [
             "NOT ELIGIBLE",
             len(run_results[PruningStatus.NOT_ELIGIBLE]),
-            "",
+            run_results[PruningStatus.NOT_ELIGIBLE] or "",
         ],
     ]
     logging.info(
@@ -407,10 +449,19 @@ if __name__ == "__main__":
         )
     )
 
-    if run_results[PruningStatus.SKIPPED]:
+    if run_results[PruningStatus.SKIPPED_MISMATCH]:
         prompt_for_confirmation(
-            f"The {len(run_results[PruningStatus.SKIPPED])} file tags that were skipped "
+            f"The {len(run_results[PruningStatus.SKIPPED_MISMATCH])} file tags that were skipped "
             "due to a mismatch between the operations database and big query and "
+            "require manual intervention before they are able to be pruned. Please "
+            "either post in the relevant state channel, the raw data pruning thread or "
+            "attempt to resolve it yourself :-)"
+        )
+
+    if run_results[PruningStatus.SKIPPED_TOO_MANY_IDS]:
+        prompt_for_confirmation(
+            f"The {len(run_results[PruningStatus.SKIPPED_TOO_MANY_IDS])} file tags that "
+            "were skipped due to there being file ids with duplicate min/max update_datetimes"
             "require manual intervention before they are able to be pruned. Please "
             "either post in the relevant state channel, the raw data pruning thread or "
             "attempt to resolve it yourself :-)"
