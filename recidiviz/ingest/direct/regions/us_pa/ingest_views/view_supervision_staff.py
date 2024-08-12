@@ -86,7 +86,6 @@ SELECT
     FROM {dbo_RelAgentHistory}
     WHERE SupervisorName NOT LIKE '%Vacant%'
     AND Supervisor_EmpNum IS NOT NULL
-    ORDER BY Supervisor_EmpNum
     ) sub
 -- Exclude malformed names. These are all included separately with proper formatting,
 -- so will still appear in the final result.
