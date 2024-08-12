@@ -33,6 +33,7 @@ from recidiviz.task_eligibility.criteria.general import (
 from recidiviz.task_eligibility.criteria.state_specific.us_nd import (
     incarceration_within_1_year_of_ftcd_or_prd_or_cpp_release,
     no_detainers_or_warrants,
+    no_recent_referrals_to_minimum_housing,
     not_serving_ineligible_offense_for_atp_work_release,
     work_release_committee_requirements,
 )
@@ -60,6 +61,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         incarcerated_at_least_90_days.VIEW_BUILDER,
         incarcerated_at_least_30_days_in_same_facility.VIEW_BUILDER,
         no_detainers_or_warrants.VIEW_BUILDER,
+        no_recent_referrals_to_minimum_housing.VIEW_BUILDER,
     ],
     completion_event_builder=granted_work_release.VIEW_BUILDER,
 )

@@ -353,6 +353,17 @@ min_referrals_with_external_id AS (
             AND peid.id_type = 'US_ND_ELITE_BOOKING'
 ),
 
+completion_events AS (
+    -- Completion events for both ATP and transfer to min
+    SELECT *
+    FROM `{project_id}.{general_task_eligibility_completion_events_dataset}.granted_work_release_materialized`
+
+    UNION ALL
+
+    SELECT *
+    FROM `{project_id}.{us_nd_task_eligibility_completion_events_dataset}.transfer_to_reentry_center_materialized`
+),
+
 min_referrals_with_external_id_and_ce AS (
     # We join the referrals with the closest completion event date for those who were approved
     SELECT 
@@ -365,16 +376,18 @@ min_referrals_with_external_id_and_ce AS (
         mr.committee_comment_text,
         mr.start_date,
         mr.next_review_date,
+        -- We use the next_review_date as the end date if it exists
         IFNULL(mr.next_review_date,
             CASE
-                # For cases where the evaluation was approved, we close the span with 
-                # the completion event (being transferred to MIN) or the evaluation date + 6 months
+                -- If not, in cases where the evaluation was approved, we either use the 
+                -- completion event or the evaluation date + 6 months
                 WHEN mr.evaluation_result = 'Approved' THEN IFNULL(MIN(ce.completion_event_date), DATE_ADD(mr.start_date, INTERVAL 6 MONTH))
-                # For everyone else, we close the span 3 months after the evaluation/start date
+                -- For people who's evaluation was not approved, end_date = 3 months 
+                -- after the evaluation/start date
                 ELSE DATE_ADD(mr.start_date, INTERVAL 3 MONTH)
             END) AS end_date
     FROM min_referrals_with_external_id mr
-    LEFT JOIN `{project_id}.{task_eligibility_completion_events_dataset}.transfer_to_reentry_center_materialized` ce
+    LEFT JOIN completion_events ce
         ON mr.person_id = ce.person_id
             AND mr.start_date <= ce.completion_event_date
             AND mr.evaluation_result = 'Approved'
