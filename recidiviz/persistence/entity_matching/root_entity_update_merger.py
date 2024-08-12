@@ -36,7 +36,7 @@ from recidiviz.persistence.entity.base_entity import (
     RootEntity,
 )
 from recidiviz.persistence.entity.entity_utils import (
-    CoreEntityFieldIndex,
+    EntityFieldIndex,
     EntityFieldType,
     get_all_entities_from_tree,
     is_reference_only_entity,
@@ -93,18 +93,12 @@ class RootEntityUpdateMerger:
     entities into an existing version of that root entity.
     """
 
-    def __init__(self, field_index: CoreEntityFieldIndex) -> None:
-        self.field_index = field_index
-
     def merge_root_entity_trees(
         self, old_root_entity: Optional[RootEntityT], root_entity_updates: RootEntityT
     ) -> RootEntityT:
         self._check_root_entity_meets_prerequisites(root_entity_updates)
         all_updated_entity_ids = {
-            id(e)
-            for e in get_all_entities_from_tree(
-                root_entity_updates, field_index=self.field_index
-            )
+            id(e) for e in get_all_entities_from_tree(root_entity_updates)
         }
         if old_root_entity:
             self._check_root_entity_meets_prerequisites(old_root_entity)
@@ -119,8 +113,9 @@ class RootEntityUpdateMerger:
         """Checks that root entity trees do not have any fields set that should not
         yet be set by this point in processing.
         """
-        for e in get_all_entities_from_tree(root_entity, field_index=self.field_index):
-            if back_edge_fields := self.field_index.get_fields_with_non_empty_values(
+        field_index = EntityFieldIndex.for_entity(root_entity)
+        for e in get_all_entities_from_tree(root_entity):
+            if back_edge_fields := field_index.get_fields_with_non_empty_values(
                 e, EntityFieldType.BACK_EDGE
             ):
                 raise ValueError(
@@ -142,7 +137,8 @@ class RootEntityUpdateMerger:
         two entity trees, applying updates to already existing entities where
         applicable.
         """
-        for child_field in self.field_index.get_all_core_entity_fields(
+        field_index = EntityFieldIndex.for_entity(old_entity)
+        for child_field in field_index.get_all_entity_fields(
             type(old_entity), EntityFieldType.FORWARD_EDGE
         ):
             old_children = old_entity.get_field(child_field)
@@ -165,7 +161,7 @@ class RootEntityUpdateMerger:
                 if issubclass(child_cls, EnumEntity):
 
                     def _enum_entity_key(entity: EnumEntity) -> str:
-                        return enum_entity_key(entity, self.field_index)
+                        return enum_entity_key(entity)
 
                     key_fn = _enum_entity_key
                 elif issubclass(child_cls, ExternalIdEntity):
@@ -183,7 +179,7 @@ class RootEntityUpdateMerger:
 
             old_entity.set_field(child_field, all_children)
 
-        if is_reference_only_entity(new_or_updated_entity, self.field_index):
+        if is_reference_only_entity(new_or_updated_entity):
             # At this point, the external_ids between old_entity and
             # new_or_updated_entity are the same, but new_or_updated_entity only has
             # the external_id field set, so we keep old_entity.
@@ -261,7 +257,8 @@ class RootEntityUpdateMerger:
         data that should be merged onto the old version of this entity, if there is
         a match.
         """
-        all_fields = self.field_index.get_all_core_entity_fields(
+        field_index = EntityFieldIndex.for_entity(new_or_updated_entity)
+        all_fields = field_index.get_all_entity_fields(
             type(new_or_updated_entity), EntityFieldType.FLAT_FIELD
         )
         if not issubclass(new_or_updated_entity.__class__, RootEntity):
@@ -416,7 +413,6 @@ class RootEntityUpdateMerger:
 
         walk_entity_dag(
             root_entity,
-            self.field_index,
             find_multi_parent_entities,
             explore_all_paths=True,
         )

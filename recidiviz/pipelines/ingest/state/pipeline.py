@@ -49,7 +49,6 @@ from recidiviz.persistence.database.schema_utils import (
     is_association_table,
 )
 from recidiviz.persistence.entity.base_entity import RootEntity
-from recidiviz.persistence.entity.entity_utils import CoreEntityFieldIndex
 from recidiviz.persistence.entity.generate_primary_key import (
     PrimaryKey,
     generate_primary_key,
@@ -127,7 +126,6 @@ class StateIngestPipeline(BasePipeline[IngestPipelineParameters]):
         return {}
 
     def run_pipeline(self, p: Pipeline) -> None:
-        field_index = CoreEntityFieldIndex()
         raw_data_source_instance = DirectIngestInstance(
             self.pipeline_parameters.raw_data_source_instance
         )
@@ -246,7 +244,6 @@ class StateIngestPipeline(BasePipeline[IngestPipelineParameters]):
                 >> MergeIngestViewRootEntityTrees(
                     ingest_view_name=ingest_view,
                     state_code=state_code,
-                    field_index=field_index,
                 )
             )
 
@@ -291,18 +288,14 @@ class StateIngestPipeline(BasePipeline[IngestPipelineParameters]):
                 MERGED_ROOT_ENTITIES_WITH_DATES: merged_root_entities_with_dates,
             }
             | AssociateRootEntitiesWithPrimaryKeys()
-            | MergeRootEntitiesAcrossDates(
-                state_code=state_code, field_index=field_index
-            )
+            | MergeRootEntitiesAcrossDates(state_code=state_code)
             | RunValidations(
                 expected_output_entities=expected_output_entities,
-                field_index=field_index,
                 state_code=state_code,
             )
             | beam.ParDo(
                 SerializeEntities(
                     state_code=state_code,
-                    field_index=field_index,
                     entities_module=state_entities,
                 )
             ).with_outputs(*output_state_tables)

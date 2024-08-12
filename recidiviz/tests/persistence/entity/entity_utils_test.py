@@ -17,13 +17,14 @@
 """Tests for entity_utils.py"""
 import datetime
 from functools import cmp_to_key
-from typing import Dict, List, Set, Type
+from typing import Dict, List, Type
 from unittest import TestCase
 from unittest.mock import call, patch
 
 import attr
 import pytz
 
+from recidiviz.common.attr_mixins import attribute_field_type_reference_for_class
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
 from recidiviz.common.constants.state.state_charge import (
     StateChargeStatus,
@@ -84,10 +85,12 @@ from recidiviz.persistence.database.schema_utils import (
     get_all_table_classes_in_schema,
     is_association_table,
 )
+from recidiviz.persistence.entity import entity_utils
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.entity_utils import (
-    CoreEntityFieldIndex,
+    EntityFieldIndex,
     EntityFieldType,
+    clear_entity_field_index_cache,
     deep_entity_update,
     entities_have_direct_relationship,
     get_all_entities_from_tree,
@@ -149,13 +152,11 @@ _EXTERNAL_ID = "EXTERNAL_ID-1"
 _ID_TYPE = "ID_TYPE"
 
 
-class TestCoreEntityFieldIndex(TestCase):
-    """Tests the functionality of CoreEntityFieldIndex."""
-
-    def setUp(self) -> None:
-        self.field_index = CoreEntityFieldIndex()
+class TestEntityFieldIndex(TestCase):
+    """Tests the functionality of EntityFieldIndex."""
 
     def test_getEntityRelationshipFieldNames_children(self) -> None:
+        field_index = EntityFieldIndex.for_entities_module(state_entities)
         entity = StateSupervisionSentence.new_with_defaults(
             state_code="US_XX",
             external_id="ss1",
@@ -172,12 +173,14 @@ class TestCoreEntityFieldIndex(TestCase):
         )
         self.assertEqual(
             {"charges"},
-            self.field_index.get_fields_with_non_empty_values(
+            field_index.get_fields_with_non_empty_values(
                 entity, EntityFieldType.FORWARD_EDGE
             ),
         )
 
     def test_getEntityRelationshipFieldNames_backedges(self) -> None:
+        field_index = EntityFieldIndex.for_entities_module(state_entities)
+
         entity = state_entities.StateSupervisionSentence(
             state_code="US_XX",
             external_id=_EXTERNAL_ID,
@@ -194,12 +197,14 @@ class TestCoreEntityFieldIndex(TestCase):
         )
         self.assertEqual(
             {"person"},
-            self.field_index.get_fields_with_non_empty_values(
+            field_index.get_fields_with_non_empty_values(
                 entity, EntityFieldType.BACK_EDGE
             ),
         )
 
     def test_getEntityRelationshipFieldNames_flatFields(self) -> None:
+        field_index = EntityFieldIndex.for_entities_module(state_entities)
+
         entity = state_entities.StateSupervisionSentence(
             state_code="US_XX",
             external_id=_EXTERNAL_ID,
@@ -216,12 +221,13 @@ class TestCoreEntityFieldIndex(TestCase):
         )
         self.assertEqual(
             {"state_code", "external_id", "status", "supervision_sentence_id"},
-            self.field_index.get_fields_with_non_empty_values(
+            field_index.get_fields_with_non_empty_values(
                 entity, EntityFieldType.FLAT_FIELD
             ),
         )
 
     def test_getEntityRelationshipFieldNames_all(self) -> None:
+        field_index = EntityFieldIndex.for_entities_module(state_entities)
         entity = state_entities.StateSupervisionSentence(
             external_id=_EXTERNAL_ID,
             status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
@@ -245,129 +251,92 @@ class TestCoreEntityFieldIndex(TestCase):
                 "status",
                 "supervision_sentence_id",
             },
-            self.field_index.get_fields_with_non_empty_values(
-                entity, EntityFieldType.ALL
-            ),
+            field_index.get_fields_with_non_empty_values(entity, EntityFieldType.ALL),
         )
 
     def test_caching_behavior_entity(self) -> None:
-        def mock_get_fields_fn(
-            entity_cls: Type[Entity], entity_field_type: EntityFieldType
-        ) -> Set[str]:
-            if (entity_cls, entity_field_type) == (
-                StatePerson,
-                EntityFieldType.BACK_EDGE,
-            ):
-                return set()
-            if (entity_cls, entity_field_type) == (
-                StatePerson,
-                EntityFieldType.FLAT_FIELD,
-            ):
-                return {"full_name", "birthdate"}
-            raise ValueError(f"Unexpected {entity_cls=} and {entity_field_type=}")
+        clear_entity_field_index_cache()
+        with patch(
+            f"{entity_utils.__name__}.attribute_field_type_reference_for_class"
+        ) as mock_get_field_type_ref:
+            mock_get_field_type_ref.side_effect = (
+                attribute_field_type_reference_for_class
+            )
 
-        with patch.object(
-            CoreEntityFieldIndex, "_get_entity_fields_with_type_slow"
-        ) as mock_get_fields:
-            mock_get_fields.side_effect = mock_get_fields_fn
-            fields = self.field_index.get_all_core_entity_fields(
-                StatePerson, EntityFieldType.BACK_EDGE
+            field_index_state = EntityFieldIndex.for_entities_module(state_entities)
+            self.assertEqual(
+                set(),
+                field_index_state.get_all_entity_fields(
+                    StatePerson, EntityFieldType.BACK_EDGE
+                ),
             )
-            self.assertEqual(set(), fields)
-            mock_get_fields.assert_called_once_with(
-                StatePerson, EntityFieldType.BACK_EDGE
-            )
-            self.field_index.get_all_core_entity_fields(
+            # The slow function is called once
+            mock_get_field_type_ref.assert_called_once_with(StatePerson)
+            field_index_state.get_all_entity_fields(
                 StatePerson, EntityFieldType.BACK_EDGE
             )
             # The slow function still should only have been called once
-            mock_get_fields.assert_called_once_with(
-                StatePerson, EntityFieldType.BACK_EDGE
+            mock_get_field_type_ref.assert_called_once_with(StatePerson)
+            self.assertEqual(
+                {
+                    "birthdate",
+                    "current_address",
+                    "current_email_address",
+                    "current_phone_number",
+                    "full_name",
+                    "gender",
+                    "gender_raw_text",
+                    "person_id",
+                    "residency_status",
+                    "residency_status_raw_text",
+                    "state_code",
+                },
+                field_index_state.get_all_entity_fields(
+                    StatePerson, EntityFieldType.FLAT_FIELD
+                ),
             )
-            fields = self.field_index.get_all_core_entity_fields(
+            # Still only once
+            mock_get_field_type_ref.assert_called_once_with(StatePerson)
+
+            field_index_normalized_state = EntityFieldIndex.for_entities_module(
+                normalized_entities
+            )
+            self.assertEqual(
+                {
+                    "birthdate",
+                    "current_address",
+                    "current_email_address",
+                    "current_phone_number",
+                    "full_name",
+                    "gender",
+                    "gender_raw_text",
+                    "person_id",
+                    "residency_status",
+                    "residency_status_raw_text",
+                    "state_code",
+                },
+                field_index_normalized_state.get_all_entity_fields(
+                    NormalizedStatePerson, EntityFieldType.FLAT_FIELD
+                ),
+            )
+
+            # Now a new call
+            mock_get_field_type_ref.assert_has_calls(
+                [call(StatePerson), call(NormalizedStatePerson)]
+            )
+
+            field_index_state_2 = EntityFieldIndex.for_entities_module(state_entities)
+            # These should be the exact same object
+            self.assertEqual(id(field_index_state), id(field_index_state_2))
+
+            # Call a function we've called already
+            field_index_state_2.get_all_entity_fields(
                 StatePerson, EntityFieldType.FLAT_FIELD
             )
-            self.assertEqual({"full_name", "birthdate"}, fields)
-            mock_get_fields.assert_has_calls(
-                [
-                    call(StatePerson, EntityFieldType.BACK_EDGE),
-                    call(StatePerson, EntityFieldType.FLAT_FIELD),
-                ]
-            )
 
-    def test_caching_behavior_database_entity(self) -> None:
-        def mock_get_fields_fn(
-            entity_cls: Type[Entity], entity_field_type: EntityFieldType
-        ) -> Set[str]:
-            if (entity_cls, entity_field_type) == (
-                state_entities.StatePerson,
-                EntityFieldType.BACK_EDGE,
-            ):
-                return set()
-            if (entity_cls, entity_field_type) == (
-                state_entities.StatePerson,
-                EntityFieldType.FLAT_FIELD,
-            ):
-                return {"full_name", "birthdate"}
-            raise ValueError(f"Unexpected {entity_cls=} and {entity_field_type=}")
-
-        with patch.object(
-            CoreEntityFieldIndex, "_get_entity_fields_with_type_slow"
-        ) as mock_get_fields:
-            mock_get_fields.side_effect = mock_get_fields_fn
-            fields = self.field_index.get_all_core_entity_fields(
-                state_entities.StatePerson, EntityFieldType.BACK_EDGE
-            )
-            self.assertEqual(set(), fields)
-            mock_get_fields.assert_called_once_with(
-                state_entities.StatePerson, EntityFieldType.BACK_EDGE
-            )
-            self.field_index.get_all_core_entity_fields(
-                state_entities.StatePerson, EntityFieldType.BACK_EDGE
-            )
-            # The slow function still should only have been called once
-            mock_get_fields.assert_called_once_with(
-                state_entities.StatePerson, EntityFieldType.BACK_EDGE
-            )
-            fields = self.field_index.get_all_core_entity_fields(
-                state_entities.StatePerson, EntityFieldType.FLAT_FIELD
-            )
-            self.assertEqual({"full_name", "birthdate"}, fields)
-            mock_get_fields.assert_has_calls(
-                [
-                    call(state_entities.StatePerson, EntityFieldType.BACK_EDGE),
-                    call(state_entities.StatePerson, EntityFieldType.FLAT_FIELD),
-                ]
-            )
-
-    def test_caching_behavior_pre_hydrated_entity_cache(self) -> None:
-        field_index = CoreEntityFieldIndex(
-            entity_fields_by_field_type={
-                "state_person": {
-                    EntityFieldType.BACK_EDGE: set(),
-                    EntityFieldType.FLAT_FIELD: {"full_name", "birthdate"},
-                }
-            }
-        )
-        with patch.object(
-            CoreEntityFieldIndex, "_get_entity_fields_with_type_slow"
-        ) as mock_get_fields:
-            fields = field_index.get_all_core_entity_fields(
-                StatePerson, EntityFieldType.BACK_EDGE
-            )
-            self.assertEqual(set(), fields)
-            mock_get_fields.assert_not_called()
-            fields = field_index.get_all_core_entity_fields(
-                StatePerson, EntityFieldType.FLAT_FIELD
-            )
-            self.assertEqual({"full_name", "birthdate"}, fields)
-            mock_get_fields.assert_not_called()
-            _ = field_index.get_all_core_entity_fields(
-                StatePerson, EntityFieldType.FORWARD_EDGE
-            )
-            # This value wasn't cached so we had to call the slow function
-            mock_get_fields.assert_called_once_with(
-                StatePerson, EntityFieldType.FORWARD_EDGE
+            # Still only two calls
+            mock_get_field_type_ref.assert_has_calls(
+                [call(StatePerson), call(NormalizedStatePerson)]
             )
 
 
@@ -944,9 +913,6 @@ HAS_MEANINGFUL_DATA_ENTITIES: Dict[Type[Entity], List[Entity]] = {
 class TestEntityUtils(TestCase):
     """Tests the functionality of our entity utils."""
 
-    def setUp(self) -> None:
-        self.field_index = CoreEntityFieldIndex()
-
     def test_get_entity_class_in_module_with_table_id(self) -> None:
         self.assertEqual(
             StatePerson,
@@ -1008,7 +974,6 @@ class TestEntityUtils(TestCase):
         state_direction_checker.assert_sorted(equivalent_state_classes_list)
 
     def test_is_reference_only_entity(self) -> None:
-        field_index = CoreEntityFieldIndex()
         for entity_cls in get_all_entity_classes_in_module(state_entities):
             if entity_cls not in REFERENCE_ENTITY_EXAMPLES:
                 self.fail(
@@ -1016,7 +981,7 @@ class TestEntityUtils(TestCase):
                 )
             for entity in REFERENCE_ENTITY_EXAMPLES[entity_cls]:
                 self.assertIsInstance(entity, entity_cls)
-                self.assertTrue(is_reference_only_entity(entity, field_index))
+                self.assertTrue(is_reference_only_entity(entity))
 
             if entity_cls not in HAS_MEANINGFUL_DATA_ENTITIES:
                 self.fail(
@@ -1025,7 +990,7 @@ class TestEntityUtils(TestCase):
 
             for entity in HAS_MEANINGFUL_DATA_ENTITIES[entity_cls]:
                 self.assertIsInstance(entity, entity_cls)
-                self.assertFalse(is_reference_only_entity(entity, field_index))
+                self.assertFalse(is_reference_only_entity(entity), f"{entity}")
 
     def test_is_many_to_many_relationship(self) -> None:
         self.assertTrue(is_many_to_many_relationship(StateSentence, StateChargeV2))
@@ -1646,14 +1611,14 @@ class TestBidirectionalUpdates(TestCase):
         person = generate_full_graph_state_person(
             set_back_edges=False, include_person_back_edges=False, set_ids=False
         )
-        field_index = CoreEntityFieldIndex()
-        _ = set_backedges(person, field_index)
-        all_entities = get_all_entities_from_tree(person, field_index)
+        _ = set_backedges(person)
+        all_entities = get_all_entities_from_tree(person)
         for entity in all_entities:
+            field_index = EntityFieldIndex.for_entity(entity)
             if isinstance(entity, StatePerson):
                 continue
             related_entities: List[Entity] = []
-            for field in field_index.get_all_core_entity_fields(
+            for field in field_index.get_all_entity_fields(
                 entity.__class__, EntityFieldType.BACK_EDGE
             ):
                 related_entities += entity.get_field_as_list(field)
@@ -1661,14 +1626,14 @@ class TestBidirectionalUpdates(TestCase):
 
     def test_set_backedges_staff(self) -> None:
         staff = generate_full_graph_state_staff(set_back_edges=False, set_ids=True)
-        field_index = CoreEntityFieldIndex()
-        _ = set_backedges(staff, field_index)
-        all_entities = get_all_entities_from_tree(staff, field_index)
+        _ = set_backedges(staff)
+        all_entities = get_all_entities_from_tree(staff)
         for entity in all_entities:
+            field_index = EntityFieldIndex.for_entity(entity)
             if isinstance(entity, StateStaff):
                 continue
             related_entities: List[Entity] = []
-            for field in field_index.get_all_core_entity_fields(
+            for field in field_index.get_all_entity_fields(
                 entity.__class__, EntityFieldType.BACK_EDGE
             ):
                 related_entities += entity.get_field_as_list(field)
@@ -1678,11 +1643,10 @@ class TestBidirectionalUpdates(TestCase):
         person = generate_full_graph_state_person(
             set_back_edges=True, include_person_back_edges=True, set_ids=True
         )
-        field_index = CoreEntityFieldIndex()
-        all_entities = get_all_entities_from_tree(person, field_index)
+        all_entities = get_all_entities_from_tree(person)
         for entity in all_entities:
             many_to_many_relationships = get_many_to_many_relationships(
-                entity.__class__, field_index
+                entity.__class__
             )
             if isinstance(entity, StateCharge):
                 self.assertSetEqual(
@@ -1699,10 +1663,9 @@ class TestBidirectionalUpdates(TestCase):
 
     def test_get_many_to_many_relationships_staff(self) -> None:
         staff = generate_full_graph_state_staff(set_back_edges=True, set_ids=True)
-        field_index = CoreEntityFieldIndex()
-        all_entities = get_all_entities_from_tree(staff, field_index)
+        all_entities = get_all_entities_from_tree(staff)
         for entity in all_entities:
             many_to_many_relationships = get_many_to_many_relationships(
-                entity.__class__, field_index
+                entity.__class__
             )
             self.assertEqual(len(many_to_many_relationships), 0)

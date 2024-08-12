@@ -27,10 +27,7 @@ from recidiviz.common.constants.state.state_sentence import (
 from recidiviz.common.constants.states import StateCode
 from recidiviz.common.date import DurationMixin
 from recidiviz.persistence.entity.base_entity import Entity
-from recidiviz.persistence.entity.entity_utils import (
-    CoreEntityFieldIndex,
-    get_all_entities_from_tree,
-)
+from recidiviz.persistence.entity.entity_utils import get_all_entities_from_tree
 from recidiviz.persistence.entity.state import entities as state_entities
 from recidiviz.persistence.entity.state.state_entity_mixins import LedgerEntityMixin
 from recidiviz.persistence.persistence_utils import RootEntityT
@@ -313,9 +310,7 @@ def duration_entity_checks(
     return None
 
 
-def validate_root_entity(
-    root_entity: RootEntityT, field_index: CoreEntityFieldIndex
-) -> List[Error]:
+def validate_root_entity(root_entity: RootEntityT) -> List[Error]:
     """The assumed input is a root entity with hydrated children entities attached to it.
     This function checks if the root entity does not violate any entity tree specific
     checks. This function returns a list of errors, where each error corresponds to
@@ -327,7 +322,7 @@ def validate_root_entity(
     error_messages.extend(_external_id_checks(root_entity))
 
     entities_by_cls: Dict[Type[Entity], List[Entity]] = defaultdict(list)
-    for child in get_all_entities_from_tree(root_entity, field_index=field_index):
+    for child in get_all_entities_from_tree(root_entity):
         entities_by_cls[type(child)].append(child)
 
     # Yields errors if global_unique_constraints fail

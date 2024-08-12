@@ -21,10 +21,7 @@ import apache_beam as beam
 
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.base_entity import RootEntity
-from recidiviz.persistence.entity.entity_utils import (
-    CoreEntityFieldIndex,
-    set_backedges,
-)
+from recidiviz.persistence.entity.entity_utils import set_backedges
 from recidiviz.persistence.entity.generate_primary_key import PrimaryKey
 from recidiviz.persistence.entity_matching.root_entity_update_merger import (
     RootEntityUpdateMerger,
@@ -39,12 +36,9 @@ class MergeRootEntitiesAcrossDates(beam.PTransform):
     """A PTransform that merges entity trees together via entity matching and then
     properly sets backedges and then primary keys."""
 
-    def __init__(
-        self, state_code: StateCode, field_index: CoreEntityFieldIndex
-    ) -> None:
+    def __init__(self, state_code: StateCode) -> None:
         super().__init__()
         self.state_code = state_code
-        self.field_index = field_index
 
     def expand(
         self,
@@ -63,13 +57,13 @@ class MergeRootEntitiesAcrossDates(beam.PTransform):
             >> beam.MapTuple(
                 lambda primary_key, root_entity: (
                     primary_key,
-                    set_backedges(root_entity, self.field_index),
+                    set_backedges(root_entity),
                 )
             )
             | "Set primary keys for all entities in root entity tree"
             >> beam.MapTuple(
                 lambda primary_key, root_entity: generate_primary_keys_for_root_entity_tree(
-                    primary_key, root_entity, self.state_code, self.field_index
+                    primary_key, root_entity, self.state_code
                 )
             )
         )
@@ -84,7 +78,7 @@ class MergeRootEntitiesAcrossDates(beam.PTransform):
         """Merges all root entities together via entity matching. If the state has a
         defined order for ingest views, then the root entities will be merged in that
         order. Otherwise, the root entities will be merged in alphabetical order."""
-        root_entity_merger = RootEntityUpdateMerger(self.field_index)
+        root_entity_merger = RootEntityUpdateMerger()
         primary_key, root_entity_dictionary = element
         merged_root_entity = None
         # We sort by (date, ingest_view_name) to ensure deterministic merge order across

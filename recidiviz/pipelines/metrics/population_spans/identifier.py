@@ -34,7 +34,6 @@ from recidiviz.common.date import (
     merge_sorted_date_ranges,
     tomorrow,
 )
-from recidiviz.persistence.entity.entity_utils import CoreEntityFieldIndex
 from recidiviz.persistence.entity.state.normalized_entities import (
     NormalizedStateIncarcerationPeriod,
     NormalizedStatePerson,
@@ -72,7 +71,6 @@ class PopulationSpanIdentifier(BaseIdentifier[List[Span]]):
 
     def __init__(self, state_code: StateCode) -> None:
         self.identifier_result_class = Span
-        self.field_index = CoreEntityFieldIndex()
         self.incarceration_delegate = get_state_specific_incarceration_delegate(
             state_code.value
         )

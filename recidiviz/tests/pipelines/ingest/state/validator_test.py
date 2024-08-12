@@ -34,10 +34,7 @@ from recidiviz.persistence.database.schema_utils import (
     get_database_entity_by_table_name,
 )
 from recidiviz.persistence.entity.base_entity import Entity
-from recidiviz.persistence.entity.entity_utils import (
-    CoreEntityFieldIndex,
-    get_all_entity_classes_in_module,
-)
+from recidiviz.persistence.entity.entity_utils import get_all_entity_classes_in_module
 from recidiviz.persistence.entity.state import entities as entities_schema
 from recidiviz.persistence.entity.state import entities as state_entities
 from recidiviz.persistence.entity.state.entities import (
@@ -50,9 +47,6 @@ from recidiviz.pipelines.ingest.state.validator import validate_root_entity
 
 class TestEntityValidations(unittest.TestCase):
     """Tests validations functions"""
-
-    def setUp(self) -> None:
-        self.field_index = CoreEntityFieldIndex()
 
     def test_valid_external_id_state_staff_entities(self) -> None:
         entity = state_entities.StateStaff(
@@ -72,7 +66,7 @@ class TestEntityValidations(unittest.TestCase):
             ],
         )
 
-        error_messages = validate_root_entity(entity, self.field_index)
+        error_messages = validate_root_entity(entity)
         self.assertTrue(len(list(error_messages)) == 0)
 
     def test_missing_external_id_state_staff_entities(self) -> None:
@@ -80,7 +74,7 @@ class TestEntityValidations(unittest.TestCase):
             state_code="US_XX", staff_id=1111, external_ids=[]
         )
 
-        error_messages = validate_root_entity(entity, self.field_index)
+        error_messages = validate_root_entity(entity)
         self.assertRegex(
             one(error_messages),
             r"^Found \[StateStaff\] with id \[1111\] missing an external_id:",
@@ -104,7 +98,7 @@ class TestEntityValidations(unittest.TestCase):
             ],
         )
 
-        error_messages = validate_root_entity(entity, self.field_index)
+        error_messages = validate_root_entity(entity)
         self.assertRegex(
             one(error_messages),
             r"Duplicate external id types for \[StateStaff\] with id "
@@ -129,7 +123,7 @@ class TestEntityValidations(unittest.TestCase):
             ],
         )
 
-        error_messages = validate_root_entity(entity, self.field_index)
+        error_messages = validate_root_entity(entity)
         self.assertRegex(
             one(error_messages),
             r"Duplicate external id types for \[StateStaff\] with id "
@@ -149,7 +143,7 @@ class TestEntityValidations(unittest.TestCase):
             ],
         )
 
-        error_messages = validate_root_entity(entity, self.field_index)
+        error_messages = validate_root_entity(entity)
         self.assertTrue(len(list(error_messages)) == 0)
 
     def test_missing_external_id_state_person_entities(self) -> None:
@@ -157,7 +151,7 @@ class TestEntityValidations(unittest.TestCase):
             state_code="US_XX", person_id=1111, external_ids=[]
         )
 
-        error_messages = validate_root_entity(entity, self.field_index)
+        error_messages = validate_root_entity(entity)
         self.assertRegex(
             one(error_messages),
             r"^Found \[StatePerson\] with id \[1111\] missing an external_id:",
@@ -181,7 +175,7 @@ class TestEntityValidations(unittest.TestCase):
             ],
         )
 
-        error_messages = validate_root_entity(entity, self.field_index)
+        error_messages = validate_root_entity(entity)
         self.assertRegex(
             one(error_messages),
             r"Duplicate external id types for \[StatePerson\] with id "
@@ -206,7 +200,7 @@ class TestEntityValidations(unittest.TestCase):
             ],
         )
 
-        error_messages = validate_root_entity(entity, self.field_index)
+        error_messages = validate_root_entity(entity)
         self.assertRegex(
             one(error_messages),
             r"Duplicate external id types for \[StatePerson\] with id "
@@ -251,7 +245,7 @@ class TestEntityValidations(unittest.TestCase):
             )
         )
 
-        error_messages = validate_root_entity(person, self.field_index)
+        error_messages = validate_root_entity(person)
         self.assertTrue(len(list(error_messages)) == 0)
 
     def test_entity_tree_unique_constraints_simple_invalid(self) -> None:
@@ -308,7 +302,7 @@ class TestEntityValidations(unittest.TestCase):
             )
         )
 
-        error_messages = validate_root_entity(person, self.field_index)
+        error_messages = validate_root_entity(person)
         self.assertEqual(
             error_messages[0],
             (
@@ -367,7 +361,7 @@ class TestEntityValidations(unittest.TestCase):
             )
         )
 
-        error_messages = validate_root_entity(person, self.field_index)
+        error_messages = validate_root_entity(person)
         expected_duplicate_error = (
             "Found [2] state_task_deadline entities with (state_code=US_XX, "
             "task_type=StateTaskType.DISCHARGE_FROM_INCARCERATION, "
@@ -420,7 +414,7 @@ class TestEntityValidations(unittest.TestCase):
             )
         )
 
-        error_messages = validate_root_entity(person, self.field_index)
+        error_messages = validate_root_entity(person)
         self.assertTrue(len(list(error_messages)) == 0)
 
     def test_multiple_errors_returned_for_root_enities(self) -> None:
@@ -467,7 +461,7 @@ class TestEntityValidations(unittest.TestCase):
             )
         )
 
-        error_messages = validate_root_entity(person, self.field_index)
+        error_messages = validate_root_entity(person)
         self.assertEqual(3, len(error_messages))
         self.assertRegex(
             error_messages[0],
@@ -540,7 +534,6 @@ class TestSentencingRootEntityChecks(unittest.TestCase):
     """Test that root entity checks specific to the sentencing schema are valid."""
 
     def setUp(self) -> None:
-        self.field_index = CoreEntityFieldIndex()
         self.state_code = "US_XX"
         self.state_person = state_entities.StatePerson(
             state_code=self.state_code,
@@ -581,13 +574,13 @@ class TestSentencingRootEntityChecks(unittest.TestCase):
 
         # No parents, valid
         self.state_person.sentences = [sentence]
-        errors = validate_root_entity(self.state_person, self.field_index)
+        errors = validate_root_entity(self.state_person)
         self.assertEqual(errors, [])
 
         # One parent, invalid
         sentence.parent_sentence_external_id_array = "NOT-REAL"
         self.state_person.sentences = [sentence]
-        errors = validate_root_entity(self.state_person, self.field_index)
+        errors = validate_root_entity(self.state_person)
         self.assertEqual(
             errors,
             [
@@ -602,7 +595,7 @@ class TestSentencingRootEntityChecks(unittest.TestCase):
         # Multiple parents, invalid
         sentence.parent_sentence_external_id_array = "NOT-REAL,NOT-HERE"
         self.state_person.sentences = [sentence]
-        errors = validate_root_entity(self.state_person, self.field_index)
+        errors = validate_root_entity(self.state_person)
         self.assertEqual(
             errors,
             [
@@ -652,17 +645,17 @@ class TestSentencingRootEntityChecks(unittest.TestCase):
             ],
         )
         self.state_person.sentences = [sentence]
-        errors = validate_root_entity(self.state_person, self.field_index)
+        errors = validate_root_entity(self.state_person)
         self.assertEqual(errors, [])
 
         sentence.parole_possible = True
         self.state_person.sentences = [sentence]
-        errors = validate_root_entity(self.state_person, self.field_index)
+        errors = validate_root_entity(self.state_person)
         self.assertEqual(errors, [])
 
         sentence.parole_possible = False
         self.state_person.sentences = [sentence]
-        errors = validate_root_entity(self.state_person, self.field_index)
+        errors = validate_root_entity(self.state_person)
         self.assertEqual(
             errors[0],
             (
@@ -682,7 +675,7 @@ class TestSentencingRootEntityChecks(unittest.TestCase):
             imposed_date=date(2022, 1, 1),
         )
         self.state_person.sentences.append(sentence)
-        errors = validate_root_entity(self.state_person, self.field_index)
+        errors = validate_root_entity(self.state_person)
         self.assertEqual(len(errors), 1)
         self.assertEqual(
             "Found sentence StateSentence(external_id='SENT-EXTERNAL-1', sentence_id=None) with no charges.",
@@ -706,7 +699,7 @@ class TestSentencingRootEntityChecks(unittest.TestCase):
             ],
         )
         self.state_person.sentences.append(sentence)
-        errors = validate_root_entity(self.state_person, self.field_index)
+        errors = validate_root_entity(self.state_person)
         self.assertEqual(len(errors), 1)
         self.assertEqual(
             "Found sentence StateSentence(external_id='SENT-EXTERNAL-1', sentence_id=None) with no sentencing_authority.",
@@ -729,7 +722,7 @@ class TestSentencingRootEntityChecks(unittest.TestCase):
             ],
         )
         self.state_person.sentences.append(sentence)
-        errors = validate_root_entity(self.state_person, self.field_index)
+        errors = validate_root_entity(self.state_person)
         self.assertEqual(len(errors), 2)
         self.assertEqual(
             "Found sentence StateSentence(external_id='SENT-EXTERNAL-1', sentence_id=None) with no imposed_date.",
@@ -797,7 +790,7 @@ class TestSentencingRootEntityChecks(unittest.TestCase):
             person=self.state_person,
         )
         self.state_person.sentences.append(parole_sentence)
-        errors = validate_root_entity(self.state_person, self.field_index)
+        errors = validate_root_entity(self.state_person)
         self.assertEqual(len(errors), 0)
 
     def test_revoked_sentence_status_check_invalid(self) -> None:
@@ -834,7 +827,7 @@ class TestSentencingRootEntityChecks(unittest.TestCase):
             person=self.state_person,
         )
         self.state_person.sentences.append(state_prison_sentence)
-        errors = validate_root_entity(self.state_person, self.field_index)
+        errors = validate_root_entity(self.state_person)
         self.assertEqual(len(errors), 1)
         self.assertEqual(
             errors[0],
@@ -908,7 +901,7 @@ class TestSentencingRootEntityChecks(unittest.TestCase):
             person=self.state_person,
         )
         self.state_person.sentences.append(incarceration_sentence)
-        errors = validate_root_entity(self.state_person, self.field_index)
+        errors = validate_root_entity(self.state_person)
         self.assertEqual(len(errors), 0)
 
     def test_sentence_to_sentence_group_reference(self) -> None:
@@ -936,12 +929,12 @@ class TestSentencingRootEntityChecks(unittest.TestCase):
             ],
         )
         self.state_person.sentences.append(sentence)
-        errors = validate_root_entity(self.state_person, self.field_index)
+        errors = validate_root_entity(self.state_person)
         self.assertEqual(len(errors), 0)
 
         # Error when there is a SG but no sentence
         self.state_person.sentences = []
-        errors = validate_root_entity(self.state_person, self.field_index)
+        errors = validate_root_entity(self.state_person)
         self.assertEqual(len(errors), 1)
         self.assertEqual(
             errors[0],
@@ -951,7 +944,7 @@ class TestSentencingRootEntityChecks(unittest.TestCase):
         # Error when there is a sentence but no SG (but at least one SG)
         sentence.sentence_group_external_id = "TEST-SG-2"
         self.state_person.sentences = [sentence]
-        errors = validate_root_entity(self.state_person, self.field_index)
+        errors = validate_root_entity(self.state_person)
         self.assertEqual(len(errors), 2)
         self.assertEqual(
             errors[0],
@@ -1001,7 +994,7 @@ class TestSentencingRootEntityChecks(unittest.TestCase):
         )
         self.state_person.sentences = [sentence]
         self.state_person.sentence_groups = [group]
-        errors = validate_root_entity(self.state_person, self.field_index)
+        errors = validate_root_entity(self.state_person)
         self.assertEqual(errors, [])
 
         # One sentence, parole_possible is False - Expected Error
@@ -1024,7 +1017,7 @@ class TestSentencingRootEntityChecks(unittest.TestCase):
         )
         self.state_person.sentences = [sentence]
         self.state_person.sentence_groups = [group]
-        errors = validate_root_entity(self.state_person, self.field_index)
+        errors = validate_root_entity(self.state_person)
         self.assertEqual(
             errors,
             [
@@ -1070,7 +1063,7 @@ class TestSentencingRootEntityChecks(unittest.TestCase):
         )
         self.state_person.sentences = [sentence_1, sentence_2]
         self.state_person.sentence_groups = [group]
-        errors = validate_root_entity(self.state_person, self.field_index)
+        errors = validate_root_entity(self.state_person)
         self.assertEqual(
             errors,
             [
@@ -1116,7 +1109,7 @@ class TestSentencingRootEntityChecks(unittest.TestCase):
         )
         self.state_person.sentences = [sentence_1, sentence_2]
         self.state_person.sentence_groups = [group]
-        errors = validate_root_entity(self.state_person, self.field_index)
+        errors = validate_root_entity(self.state_person)
         self.assertEqual(errors, [])
 
 
@@ -1124,7 +1117,6 @@ class TestIncarcerationPeriodRootEntityChecks(unittest.TestCase):
     """Test that root entity checks specific to incarceration periods are valid."""
 
     def setUp(self) -> None:
-        self.field_index = CoreEntityFieldIndex()
         self.state_code = "US_XX"
         self.state_person = state_entities.StatePerson(
             state_code=self.state_code,
@@ -1146,7 +1138,7 @@ class TestIncarcerationPeriodRootEntityChecks(unittest.TestCase):
             admission_date=date(2020, 1, 1),
         )
         self.state_person.incarceration_periods = [valid_period]
-        errors = validate_root_entity(self.state_person, self.field_index)
+        errors = validate_root_entity(self.state_person)
         self.assertEqual(errors, [])
 
     def test_missing_date_incarceration_period(self) -> None:
@@ -1162,7 +1154,7 @@ class TestIncarcerationPeriodRootEntityChecks(unittest.TestCase):
             person=self.state_person,
         )
         self.state_person.incarceration_periods = [valid_period, missing_date_period]
-        errors = validate_root_entity(self.state_person, self.field_index)
+        errors = validate_root_entity(self.state_person)
         self.assertEqual(
             errors,
             [
@@ -1178,7 +1170,6 @@ class TestSupervisionPeriodRootEntityChecks(unittest.TestCase):
     """Test that root entity checks specific to supervision periods are valid."""
 
     def setUp(self) -> None:
-        self.field_index = CoreEntityFieldIndex()
         self.state_code = "US_XX"
         self.state_person = state_entities.StatePerson(
             state_code=self.state_code,
@@ -1200,5 +1191,5 @@ class TestSupervisionPeriodRootEntityChecks(unittest.TestCase):
             start_date=date(2020, 1, 1),
         )
         self.state_person.supervision_periods = [valid_period]
-        errors = validate_root_entity(self.state_person, self.field_index)
+        errors = validate_root_entity(self.state_person)
         self.assertEqual(errors, [])

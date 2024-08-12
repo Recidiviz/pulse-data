@@ -25,10 +25,7 @@ from recidiviz.common.attr_mixins import (
     attr_field_type_for_field_name,
 )
 from recidiviz.persistence.entity.base_entity import Entity
-from recidiviz.persistence.entity.entity_utils import (
-    CoreEntityFieldIndex,
-    EntityFieldType,
-)
+from recidiviz.persistence.entity.entity_utils import EntityFieldIndex, EntityFieldType
 from recidiviz.utils.types import T, assert_type
 
 
@@ -80,7 +77,6 @@ EntityNodeProcessingFn = Callable[[Entity, List[EntityDagEdge]], T]
 
 def walk_entity_dag(
     dag_root_entity: Entity,
-    field_index: CoreEntityFieldIndex,
     node_processing_fn: EntityNodeProcessingFn[T],
     explore_all_paths: bool = False,
 ) -> List[T]:
@@ -96,7 +92,6 @@ def walk_entity_dag(
     """
     return _walk_entity_dag_inner(
         entity=dag_root_entity,
-        field_index=field_index,
         node_processing_fn=node_processing_fn,
         ancestor_chain=[],
         visited_entity_ids=set(),
@@ -106,7 +101,6 @@ def walk_entity_dag(
 
 def _walk_entity_dag_inner(
     entity: Entity,
-    field_index: CoreEntityFieldIndex,
     node_processing_fn: EntityNodeProcessingFn,
     ancestor_chain: List[EntityDagEdge],
     visited_entity_ids: Set[int],
@@ -115,7 +109,8 @@ def _walk_entity_dag_inner(
     """Private recursive helper for walk_entity_dag()."""
     results = [node_processing_fn(entity, ancestor_chain)]
     visited_entity_ids.add(id(entity))
-    for field in field_index.get_all_core_entity_fields(
+    field_index = EntityFieldIndex.for_entity(entity)
+    for field in field_index.get_all_entity_fields(
         type(entity), EntityFieldType.FORWARD_EDGE
     ):
         for child in entity.get_field_as_list(field):
@@ -129,7 +124,6 @@ def _walk_entity_dag_inner(
             results.extend(
                 _walk_entity_dag_inner(
                     child,
-                    field_index,
                     node_processing_fn,
                     ancestor_chain=ancestor_chain + [parent_info],
                     visited_entity_ids=visited_entity_ids,

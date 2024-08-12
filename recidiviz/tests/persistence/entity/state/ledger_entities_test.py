@@ -37,10 +37,7 @@ from recidiviz.common.constants.state.state_sentence import (
     StateSentenceType,
 )
 from recidiviz.common.constants.state.state_task_deadline import StateTaskType
-from recidiviz.persistence.entity.entity_utils import (
-    CoreEntityFieldIndex,
-    get_all_entity_classes_in_module,
-)
+from recidiviz.persistence.entity.entity_utils import get_all_entity_classes_in_module
 from recidiviz.persistence.entity.state import entities
 from recidiviz.persistence.entity.state.state_entity_mixins import LedgerEntityMixin
 from recidiviz.pipelines.ingest.state.validator import validate_root_entity
@@ -95,10 +92,6 @@ class LedgerEntityTestCaseProtocol:
             imposed_date=datetime.date(2022, 1, 1),
         )
 
-    @property
-    def field_index(self) -> CoreEntityFieldIndex:
-        return CoreEntityFieldIndex()
-
     def test_ledger_datetime_is_not_future(self) -> None:
         """
         This tests that the ledger_datetime_field is set correctly
@@ -122,10 +115,6 @@ class SequenceNumTest(unittest.TestCase):
     """Tests various configurations of sequence_num for LedgerEntityMixin."""
 
     state_code = "US_XX"
-
-    @property
-    def field_index(self) -> CoreEntityFieldIndex:
-        return CoreEntityFieldIndex()
 
     def new_state_person(self) -> entities.StatePerson:
         return entities.StatePerson(
@@ -158,7 +147,7 @@ class SequenceNumTest(unittest.TestCase):
             sequence_num=None,
         )
         person.task_deadlines = [deadline_1, deadline_2]
-        errors = validate_root_entity(person, self.field_index)
+        errors = validate_root_entity(person)
         self.assertEqual(errors, [])
 
     def test_sequence_num_all_none_invalid(self) -> None:
@@ -179,7 +168,7 @@ class SequenceNumTest(unittest.TestCase):
             sequence_num=None,
         )
         person.task_deadlines = [deadline_1, deadline_2]
-        errors = validate_root_entity(person, self.field_index)
+        errors = validate_root_entity(person)
         # One error for unique constraint,
         # another error for ledger entity check
         self.assertEqual(len(errors), 2)
@@ -206,7 +195,7 @@ class SequenceNumTest(unittest.TestCase):
             sequence_num=1,
         )
         person.task_deadlines = [deadline_1, deadline_2]
-        errors = validate_root_entity(person, self.field_index)
+        errors = validate_root_entity(person)
         self.assertIn(
             "sequence_num should be None for ALL hydrated entities or NO hydrated",
             errors[0],
@@ -230,7 +219,7 @@ class SequenceNumTest(unittest.TestCase):
             sequence_num=1,
         )
         person.task_deadlines = [deadline_1, deadline_2]
-        errors = validate_root_entity(person, self.field_index)
+        errors = validate_root_entity(person)
         self.assertIn("DUPLICATE sequence_num hydration.", errors[0])
 
 
@@ -293,7 +282,7 @@ class StateTaskDeadlineTest(unittest.TestCase, LedgerEntityTestCaseProtocol):
             sequence_num=1,
         )
         person.task_deadlines = [deadline_1]
-        _ = validate_root_entity(person, self.field_index)
+        _ = validate_root_entity(person)
         mock_ledger_entity_checks.assert_called()
 
 
@@ -343,7 +332,7 @@ class StateSentenceStatusSnapshotTest(unittest.TestCase, LedgerEntityTestCasePro
         )
         sentence.sentence_status_snapshots = [snapshot]
         person.sentences = [sentence]
-        _ = validate_root_entity(person, self.field_index)
+        _ = validate_root_entity(person)
         mock_ledger_entity_checks.assert_called()
 
 
@@ -391,7 +380,7 @@ class StateSentenceLengthTest(unittest.TestCase, LedgerEntityTestCaseProtocol):
         )
         sentence.sentence_lengths = [length]
         person.sentences = [sentence]
-        _ = validate_root_entity(person, self.field_index)
+        _ = validate_root_entity(person)
         mock_ledger_entity_checks.assert_called()
 
     def test_enforced_datetime_pairs(self) -> None:
@@ -484,7 +473,7 @@ class StateSentenceGroupLengthTest(unittest.TestCase, LedgerEntityTestCaseProtoc
             sentence_group_lengths=[group_length_1, group_length_2],
         )
         person.sentence_groups.append(group)
-        _ = validate_root_entity(person, self.field_index)
+        _ = validate_root_entity(person)
         mock_ledger_entity_checks.assert_called()
 
     def test_enforced_datetime_pairs(self) -> None:

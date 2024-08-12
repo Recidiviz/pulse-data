@@ -18,7 +18,6 @@
 import unittest
 
 from recidiviz.common.constants.state.state_person import StateEthnicity, StateRace
-from recidiviz.persistence.entity.entity_utils import CoreEntityFieldIndex
 from recidiviz.persistence.entity_matching.entity_merger_utils import (
     enum_entity_key,
     external_id_key,
@@ -35,12 +34,6 @@ from recidiviz.tests.persistence.entity_matching.us_xx_entity_builders import (
 
 class TestEntityMergerUtils(unittest.TestCase):
     """Tests for entity_merger_utils.py"""
-
-    field_index: CoreEntityFieldIndex
-
-    @classmethod
-    def setUpClass(cls) -> None:
-        cls.field_index = CoreEntityFieldIndex()
 
     def test_external_id_key(self) -> None:
         person_external_id = make_person_external_id(
@@ -82,7 +75,7 @@ class TestEntityMergerUtils(unittest.TestCase):
 
         self.assertEqual(
             "StatePersonRace##StateRace.BLACK|B",
-            enum_entity_key(person_race, field_index=self.field_index),
+            enum_entity_key(person_race),
         )
 
         null_raw_text_enum_entity = make_person_ethnicity(
@@ -91,5 +84,5 @@ class TestEntityMergerUtils(unittest.TestCase):
 
         self.assertEqual(
             "StatePersonEthnicity##StateEthnicity.NOT_HISPANIC|None",
-            enum_entity_key(null_raw_text_enum_entity, field_index=self.field_index),
+            enum_entity_key(null_raw_text_enum_entity),
         )

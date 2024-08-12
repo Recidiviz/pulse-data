@@ -25,7 +25,6 @@ from recidiviz.common.constants.state.state_supervision_violation_response impor
     StateSupervisionViolationResponseDecision,
 )
 from recidiviz.common.constants.states import StateCode
-from recidiviz.persistence.entity.entity_utils import CoreEntityFieldIndex
 from recidiviz.persistence.entity.normalized_entities_utils import (
     sort_normalized_entities_by_sequence_num,
 )
@@ -65,7 +64,6 @@ class ViolationIdentifier(BaseIdentifier[List[ViolationEvent]]):
 
     def __init__(self, state_code: StateCode) -> None:
         self.identifier_result_class = ViolationEvent
-        self.field_index = CoreEntityFieldIndex()
         self.violation_delegate = get_state_specific_violation_delegate(
             state_code.value
         )

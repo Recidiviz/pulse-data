@@ -108,7 +108,7 @@ from recidiviz.persistence.database.schema_utils import (
 )
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.entity_utils import (
-    CoreEntityFieldIndex,
+    EntityFieldIndex,
     EntityFieldType,
     get_all_entities_from_tree,
     set_backedges,
@@ -118,15 +118,12 @@ from recidiviz.persistence.entity.state.entities import StateProgramAssignment
 from recidiviz.utils.types import assert_type
 
 
-def clear_db_ids(
-    db_entities: Sequence[Entity],
-    # Default arg caches across calls to this function
-    field_index: CoreEntityFieldIndex = CoreEntityFieldIndex(),
-) -> None:
+def clear_db_ids(db_entities: Sequence[Entity]) -> None:
     """Clears primary key fields off of all entities in all of the provided
     |db_entities| graphs.
     """
     for entity in db_entities:
+        field_index = EntityFieldIndex.for_entity(entity)
         entity.clear_id()
         for field_name in field_index.get_fields_with_non_empty_values(
             entity, EntityFieldType.FORWARD_EDGE
@@ -649,11 +646,10 @@ def generate_full_graph_state_person(
     )
     person.housing_status_periods = [housing_status_period]
 
-    field_index = CoreEntityFieldIndex()
     if set_back_edges:
-        set_backedges(person, field_index=field_index)
+        set_backedges(person)
 
-    all_entities = get_all_entities_from_tree(person, field_index=field_index)
+    all_entities = get_all_entities_from_tree(person)
 
     if not include_person_back_edges and set_back_edges:
         for entity in all_entities:
@@ -745,14 +741,11 @@ def generate_full_graph_state_staff(
         )
     ]
 
-    field_index = CoreEntityFieldIndex()
     if set_back_edges:
-        set_backedges(staff, field_index=field_index)
+        set_backedges(staff)
 
     if set_ids:
-        for entity in get_all_entities_from_tree(
-            staff, field_index=CoreEntityFieldIndex()
-        ):
+        for entity in get_all_entities_from_tree(staff):
             if entity.get_id():
                 raise ValueError(
                     f"Found entity [{entity}] with already set id field."
@@ -777,7 +770,6 @@ class TestFullEntityGraph(unittest.TestCase):
             if not is_association_table(t.name)
         }
 
-        field_index = CoreEntityFieldIndex()
         all_entities = [
             e
             for re in [
@@ -786,9 +778,7 @@ class TestFullEntityGraph(unittest.TestCase):
                 ),
                 generate_full_graph_state_staff(set_back_edges=True, set_ids=True),
             ]
-            for e in get_all_entities_from_tree(
-                assert_type(re, Entity), field_index=field_index
-            )
+            for e in get_all_entities_from_tree(assert_type(re, Entity))
         ]
         entity_names = {e.get_entity_name() for e in all_entities}
 

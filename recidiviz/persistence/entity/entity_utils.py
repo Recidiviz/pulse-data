@@ -26,15 +26,13 @@ from io import TextIOWrapper
 from types import ModuleType
 from typing import Any, Dict, List, Optional, Sequence, Set, Tuple, Type, Union, cast
 
-import attr
-
 from recidiviz.common.attr_mixins import (
     BuildableAttrFieldType,
     attr_field_name_storing_referenced_cls_name,
     attr_field_referenced_cls_name_for_field_name,
     attr_field_type_for_field_name,
+    attribute_field_type_reference_for_class,
 )
-from recidiviz.common.attr_utils import is_forward_ref, is_list
 from recidiviz.common.constants.state.state_entity_enum import StateEntityEnum
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.persistence.database.schema.state import schema as state_schema
@@ -52,7 +50,6 @@ from recidiviz.persistence.entity.base_entity import (
 )
 from recidiviz.persistence.entity.entity_deserialize import EntityFactory
 from recidiviz.persistence.entity.schema_edge_direction_checker import (
-    SchemaEdgeDirectionChecker,
     direction_checker_for_module,
 )
 from recidiviz.persistence.entity.state import entities as state_entities
@@ -61,8 +58,9 @@ from recidiviz.persistence.entity.state.normalized_state_entity import (
     NormalizedStateEntity,
 )
 from recidiviz.persistence.entity.state.state_entity_mixins import LedgerEntityMixin
+from recidiviz.utils import environment
 from recidiviz.utils.log_helpers import make_log_output_path
-from recidiviz.utils.types import non_optional
+from recidiviz.utils.types import assert_type, non_optional
 
 
 @cache
@@ -166,28 +164,35 @@ class EntityFieldType(Enum):
     ALL = auto()
 
 
-class CoreEntityFieldIndex:
+class _EntityFieldIndexKey:
+    """Private key for the EntityFieldIndex to prevent instantiation outside of
+    this file.
+    """
+
+
+_entity_field_index_by_entities_module: dict[ModuleType, "EntityFieldIndex"] = {}
+
+
+@environment.test_only
+def clear_entity_field_index_cache() -> None:
+    _entity_field_index_by_entities_module.clear()
+
+
+class EntityFieldIndex:
     """Class that caches the results of certain Entity class introspection
     functionality.
     """
 
     def __init__(
-        self,
-        direction_checker: Optional[SchemaEdgeDirectionChecker] = None,
-        entity_fields_by_field_type: Optional[
-            Dict[str, Dict[EntityFieldType, Set[str]]]
-        ] = None,
+        self, entities_module: ModuleType, private_key: _EntityFieldIndexKey
     ) -> None:
-        # TODO(#29517): Refactor CoreEntityFieldIndex to take in an entities_module
-        #  rather than a direction checker and remove this defaulting behavior.
-        self.direction_checker = direction_checker or direction_checker_for_module(
-            state_entities
-        )
-
+        self.direction_checker = direction_checker_for_module(entities_module)
         # Cache of fields by field type for Entity classes
-        self.entity_fields_by_field_type: Dict[str, Dict[EntityFieldType, Set[str]]] = (
-            entity_fields_by_field_type or {}
-        )
+        self.entity_fields_by_field_type: Dict[
+            str, Dict[EntityFieldType, Set[str]]
+        ] = {}
+        if not isinstance(private_key, _EntityFieldIndexKey):
+            raise ValueError(f"Unexpected type for key: {type(private_key)}")
 
     def get_fields_with_non_empty_values(
         self, entity: Entity, entity_field_type: EntityFieldType
@@ -197,9 +202,7 @@ class CoreEntityFieldIndex:
         |entity_field_type|.
         """
         result = set()
-        for field_name in self.get_all_core_entity_fields(
-            type(entity), entity_field_type
-        ):
+        for field_name in self.get_all_entity_fields(type(entity), entity_field_type):
             v = entity.get_field(field_name)
             if isinstance(v, list):
                 if v:
@@ -208,7 +211,7 @@ class CoreEntityFieldIndex:
                 result.add(field_name)
         return result
 
-    def get_all_core_entity_fields(
+    def get_all_entity_fields(
         self, entity_cls: Type[Entity], entity_field_type: EntityFieldType
     ) -> Set[str]:
         """Returns a set of field_names that correspond to any fields (non-empty or
@@ -224,17 +227,15 @@ class CoreEntityFieldIndex:
             raise ValueError(f"Unexpected entity type: {entity_cls}")
 
         if entity_name not in self.entity_fields_by_field_type:
-            self.entity_fields_by_field_type[entity_name] = {}
+            self.entity_fields_by_field_type[
+                entity_name
+            ] = self._get_entity_fields_by_field_type_slow(entity_cls)
 
-        if entity_field_type not in self.entity_fields_by_field_type[entity_name]:
-            self.entity_fields_by_field_type[entity_name][
-                entity_field_type
-            ] = self._get_entity_fields_with_type_slow(entity_cls, entity_field_type)
         return self.entity_fields_by_field_type[entity_name][entity_field_type]
 
-    def _get_entity_fields_with_type_slow(
-        self, entity_cls: Type[Entity], entity_field_type: EntityFieldType
-    ) -> Set[str]:
+    def _get_entity_fields_by_field_type_slow(
+        self, entity_cls: Type[Entity]
+    ) -> Dict[EntityFieldType, Set[str]]:
         """Returns a set of field_names that correspond to any fields (non-empty or
         otherwise) on the provided Entity type |entity| that match the provided
         |entity_field_type|.
@@ -245,10 +246,10 @@ class CoreEntityFieldIndex:
         back_edges = set()
         forward_edges = set()
         flat_fields = set()
-        for field, attribute in attr.fields_dict(entity_cls).items():
-            # TODO(#1908): Update traversal logic if relationship fields can be
-            # different types aside from Entity and List
-            if is_forward_ref(attribute) or is_list(attribute):
+        for field, field_info in attribute_field_type_reference_for_class(
+            entity_cls
+        ).items():
+            if field_info.referenced_cls_name:
                 if self.direction_checker.is_back_edge(entity_cls, field):
                     back_edges.add(field)
                 else:
@@ -256,26 +257,48 @@ class CoreEntityFieldIndex:
             else:
                 flat_fields.add(field)
 
-        if entity_field_type is EntityFieldType.FLAT_FIELD:
-            return flat_fields
-        if entity_field_type is EntityFieldType.FORWARD_EDGE:
-            return forward_edges
-        if entity_field_type is EntityFieldType.BACK_EDGE:
-            return back_edges
-        if entity_field_type is EntityFieldType.ALL:
-            return flat_fields | forward_edges | back_edges
-        raise ValueError(
-            f"Unrecognized EntityFieldType {entity_field_type} on entity [{entity_cls}]"
-        )
+        return {
+            EntityFieldType.FLAT_FIELD: flat_fields,
+            EntityFieldType.FORWARD_EDGE: forward_edges,
+            EntityFieldType.BACK_EDGE: back_edges,
+            EntityFieldType.ALL: flat_fields | forward_edges | back_edges,
+        }
+
+    @classmethod
+    def for_entities_module(cls, entities_module: ModuleType) -> "EntityFieldIndex":
+        """Returns an EntityFieldIndex that can be used to determine information about
+        structure of any Entity classes in the given |entities_module|.
+        """
+        if entities_module not in _entity_field_index_by_entities_module:
+            _entity_field_index_by_entities_module[entities_module] = EntityFieldIndex(
+                entities_module, _EntityFieldIndexKey()
+            )
+        return _entity_field_index_by_entities_module[entities_module]
+
+    @classmethod
+    def for_entity_class(cls, entity_cls: Type[Entity]) -> "EntityFieldIndex":
+        """Returns an EntityFieldIndex that can be used to determine information about
+        structure of any Entity classes in the module associated with the given
+        |entity_cls|.
+        """
+        return cls.for_entities_module(get_module_for_entity_class(entity_cls))
+
+    @classmethod
+    def for_entity(cls, entity: Entity) -> "EntityFieldIndex":
+        """Returns an EntityFieldIndex that can be used to determine information about
+        structure of any Entity classes in the module associated with the given
+        |entity|.
+        """
+        return cls.for_entity_class(type(entity))
 
 
-def is_reference_only_entity(entity: Entity, field_index: CoreEntityFieldIndex) -> bool:
+def is_reference_only_entity(entity: Entity) -> bool:
     """Returns true if this object does not contain any meaningful information
     describing the entity, but instead only identifies the entity for reference
     purposes. Concretely, this means the object has an external_id but no other set
     fields (aside from default values).
     """
-    set_flat_fields = get_explicitly_set_flat_fields(entity, field_index)
+    set_flat_fields = get_explicitly_set_flat_fields(entity)
     if isinstance(entity, (state_schema.StatePerson, state_entities.StatePerson)):
         if set_flat_fields or any([entity.races, entity.aliases, entity.ethnicities]):
             return False
@@ -289,13 +312,12 @@ def is_reference_only_entity(entity: Entity, field_index: CoreEntityFieldIndex) 
     return set_flat_fields == {"external_id"}
 
 
-def get_explicitly_set_flat_fields(
-    entity: Entity, field_index: CoreEntityFieldIndex
-) -> Set[str]:
+def get_explicitly_set_flat_fields(entity: Entity) -> Set[str]:
     """Returns the set of field names for fields on the entity that have been set with
     non-default values. The "state_code" field is also excluded, as it is set with the
     same value on every entity for a given ingest run.
     """
+    field_index = EntityFieldIndex.for_entity(entity)
     set_flat_fields = field_index.get_fields_with_non_empty_values(
         entity, EntityFieldType.FLAT_FIELD
     )
@@ -326,9 +348,7 @@ def get_explicitly_set_flat_fields(
     return set_flat_fields
 
 
-def _sort_based_on_flat_fields(
-    db_entities: Sequence[Entity], field_index: CoreEntityFieldIndex
-) -> None:
+def _sort_based_on_flat_fields(db_entities: Sequence[Entity]) -> None:
     """Helper function that sorts all entities in |db_entities| in place as
     well as all children of |db_entities|. Sorting is done by first by an
     external_id if that field exists, then present flat fields.
@@ -337,19 +357,21 @@ def _sort_based_on_flat_fields(
     def _get_entity_sort_key(e: Entity) -> str:
         """Generates a sort key for the given entity based on the flat field values
         in this entity."""
-        return f"{e.get_external_id()}#{get_flat_fields_json_str(e, field_index)}"
+        return f"{e.get_external_id()}#{get_flat_fields_json_str(e)}"
 
     db_entities = cast(List, db_entities)
     db_entities.sort(key=_get_entity_sort_key)
     for entity in db_entities:
+        field_index = EntityFieldIndex.for_entity(entity)
         for field_name in field_index.get_fields_with_non_empty_values(
             entity, EntityFieldType.FORWARD_EDGE
         ):
             field = entity.get_field_as_list(field_name)
-            _sort_based_on_flat_fields(field, field_index)
+            _sort_based_on_flat_fields(field)
 
 
-def get_flat_fields_json_str(entity: Entity, field_index: CoreEntityFieldIndex) -> str:
+def get_flat_fields_json_str(entity: Entity) -> str:
+    field_index = EntityFieldIndex.for_entity(entity)
     flat_fields_dict: Dict[str, str] = {}
     for field_name in field_index.get_fields_with_non_empty_values(
         entity, EntityFieldType.FLAT_FIELD
@@ -378,7 +400,6 @@ def write_entity_tree_to_file(
     region_code: str,
     operation_for_filename: str,
     print_tree_structure_only: bool,
-    field_index: CoreEntityFieldIndex,
     root_entities: Sequence[Any],
 ) -> str:
     filepath = make_log_output_path(
@@ -389,7 +410,6 @@ def write_entity_tree_to_file(
         print_entity_trees(
             root_entities,
             print_tree_structure_only=print_tree_structure_only,
-            field_index=field_index,
             file=actual_output_file,
         )
 
@@ -400,8 +420,6 @@ def print_entity_trees(
     entities_list: Sequence[Entity],
     print_tree_structure_only: bool = False,
     python_id_to_fake_id: Optional[Dict[int, int]] = None,
-    # Default arg caches across calls to this function
-    field_index: CoreEntityFieldIndex = CoreEntityFieldIndex(),
     file: Optional[TextIOWrapper] = None,
 ) -> None:
     """Recursively prints out all objects in the trees below the given list of
@@ -421,14 +439,13 @@ def print_entity_trees(
 
     if python_id_to_fake_id is None:
         python_id_to_fake_id = {}
-        _sort_based_on_flat_fields(entities_list, field_index)
+        _sort_based_on_flat_fields(entities_list)
 
     for entity in entities_list:
         print_entity_tree(
             entity,
-            python_id_to_fake_id=python_id_to_fake_id,
             print_tree_structure_only=print_tree_structure_only,
-            field_index=field_index,
+            python_id_to_fake_id=python_id_to_fake_id,
             file=file,
         )
 
@@ -438,8 +455,6 @@ def print_entity_tree(
     print_tree_structure_only: bool = False,
     indent: int = 0,
     python_id_to_fake_id: Optional[Dict[int, int]] = None,
-    # Default arg caches across calls to this function
-    field_index: CoreEntityFieldIndex = CoreEntityFieldIndex(),
     file: Optional[TextIOWrapper] = None,
 ) -> None:
     """Recursively prints out all objects in the tree below the given entity. Each time we encounter a new object, we
@@ -451,9 +466,10 @@ def print_entity_tree(
     Note: this function sorts any list fields in the provided entity IN PLACE (should not matter for any equality checks
     we generally do).
     """
+    field_index = EntityFieldIndex.for_entity(entity)
     if python_id_to_fake_id is None:
         python_id_to_fake_id = {}
-        _sort_based_on_flat_fields([entity], field_index)
+        _sort_based_on_flat_fields([entity])
 
     _print_indented(_obj_id_str(entity, python_id_to_fake_id), indent, file)
 
@@ -482,7 +498,6 @@ def print_entity_tree(
                             print_tree_structure_only,
                             indent + 2,
                             python_id_to_fake_id,
-                            field_index=field_index,
                             file=file,
                         )
                     _print_indented("]", indent, file)
@@ -494,7 +509,6 @@ def print_entity_tree(
                     print_tree_structure_only,
                     indent + 2,
                     python_id_to_fake_id,
-                    field_index=field_index,
                     file=file,
                 )
         else:
@@ -530,14 +544,13 @@ def print_entity_tree(
 
 def get_all_entities_from_tree(
     entity: Entity,
-    field_index: CoreEntityFieldIndex,
     result: Optional[List[Entity]] = None,
     seen_ids: Optional[Set[int]] = None,
 ) -> List[Entity]:
     """Returns a list of all entities in the tree below the entity,
     including the entity itself. Entities are deduplicated by Python object id.
     """
-
+    field_index = EntityFieldIndex.for_entity(entity)
     if result is None:
         result = []
     if seen_ids is None:
@@ -561,16 +574,15 @@ def get_all_entities_from_tree(
 
         if isinstance(child, list):
             for c in child:
-                get_all_entities_from_tree(c, field_index, result, seen_ids)
+                get_all_entities_from_tree(c, result, seen_ids)
         else:
-            get_all_entities_from_tree(child, field_index, result, seen_ids)
+            get_all_entities_from_tree(child, result, seen_ids)
 
     return result
 
 
 def get_all_entity_associations_from_tree(
     entity: Entity,
-    field_index: CoreEntityFieldIndex,
     result: Optional[Dict[str, Set[Tuple[str, str]]]] = None,
     seen_ids: Optional[Set[int]] = None,
 ) -> Dict[str, Set[Tuple[str, str]]]:
@@ -581,6 +593,7 @@ def get_all_entity_associations_from_tree(
     this function can be used on Python entity trees that do not yet have primary keys assigned.
     """
 
+    field_index = EntityFieldIndex.for_entity(entity)
     if result is None:
         result = defaultdict(set)
     if seen_ids is None:
@@ -591,9 +604,7 @@ def get_all_entity_associations_from_tree(
 
     seen_ids.add(id(entity))
 
-    many_to_many_relationships = get_many_to_many_relationships(
-        entity.__class__, field_index
-    )
+    many_to_many_relationships = get_many_to_many_relationships(entity.__class__)
     for relationship in many_to_many_relationships:
         parents = entity.get_field_as_list(relationship)
         for parent in parents:
@@ -619,9 +630,9 @@ def get_all_entity_associations_from_tree(
 
         if isinstance(child, list):
             for c in child:
-                get_all_entity_associations_from_tree(c, field_index, result, seen_ids)
+                get_all_entity_associations_from_tree(c, result, seen_ids)
         else:
-            get_all_entity_associations_from_tree(child, field_index, result, seen_ids)
+            get_all_entity_associations_from_tree(child, result, seen_ids)
     return result
 
 
@@ -743,9 +754,10 @@ def deep_entity_update(
     return updated_entity
 
 
-def set_backedges(element: RootEntity, field_index: CoreEntityFieldIndex) -> RootEntity:
+def set_backedges(element: RootEntity) -> RootEntity:
     """Set the backedges of the root entity tree using DFS traversal of the root
     entity tree."""
+    field_index = EntityFieldIndex.for_entity(assert_type(element, Entity))
     root = cast(Entity, element)
     root_entity_cls = root.__class__
     stack: List[Entity] = [root]
@@ -753,7 +765,7 @@ def set_backedges(element: RootEntity, field_index: CoreEntityFieldIndex) -> Roo
         current_parent = stack.pop()
         current_parent_cls = current_parent.__class__
         forward_fields = sorted(
-            field_index.get_all_core_entity_fields(
+            field_index.get_all_entity_fields(
                 current_parent_cls, EntityFieldType.FORWARD_EDGE
             )
         )
@@ -824,14 +836,13 @@ def set_backedges(element: RootEntity, field_index: CoreEntityFieldIndex) -> Roo
     return element
 
 
-def get_many_to_many_relationships(
-    entity_cls: Type[Entity], field_index: CoreEntityFieldIndex
-) -> Set[str]:
+def get_many_to_many_relationships(entity_cls: Type[Entity]) -> Set[str]:
     """Returns the set of fields on |entity| that connect that entity to a parent where
     there is a potential many-to-many relationship between entity and that parent entity type.
     """
+    field_index = EntityFieldIndex.for_entity_class(entity_cls)
     many_to_many_relationships = set()
-    back_edges = field_index.get_all_core_entity_fields(
+    back_edges = field_index.get_all_entity_fields(
         entity_cls, EntityFieldType.BACK_EDGE
     )
     for back_edge in back_edges:

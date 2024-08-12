@@ -49,10 +49,7 @@ from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_compiler_deleg
     ingest_view_manifest_dir,
 )
 from recidiviz.persistence.entity.base_entity import Entity
-from recidiviz.persistence.entity.entity_utils import (
-    CoreEntityFieldIndex,
-    print_entity_trees,
-)
+from recidiviz.persistence.entity.entity_utils import print_entity_trees
 from recidiviz.tests.ingest.direct.fixture_util import DirectIngestTestFixturePath
 from recidiviz.tests.ingest.direct.ingest_mappings.ingest_view_manifest_compiler_test import (
     ingest_mappingest_json_schema_path,
@@ -194,7 +191,6 @@ class StateIngestViewParserTestBase:
             launch_entity_tree_html_diff_comparison(
                 found_root_entities=parsed_output,
                 expected_root_entities=expected_output,
-                field_index=CoreEntityFieldIndex(),
                 region_code=self.region_code(),
                 print_tree_structure_only=False,
             )

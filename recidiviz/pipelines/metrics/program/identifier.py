@@ -24,7 +24,6 @@ from dateutil.relativedelta import relativedelta
 from recidiviz.common.constants.state.state_program_assignment import (
     StateProgramAssignmentParticipationStatus,
 )
-from recidiviz.persistence.entity.entity_utils import CoreEntityFieldIndex
 from recidiviz.persistence.entity.normalized_entities_utils import (
     sort_normalized_entities_by_sequence_num,
 )
@@ -57,7 +56,6 @@ class ProgramIdentifier(BaseIdentifier[List[ProgramEvent]]):
 
     def __init__(self) -> None:
         self.identifier_result_class = ProgramEvent
-        self.field_index = CoreEntityFieldIndex()
 
     def identify(
         self,

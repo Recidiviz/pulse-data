@@ -28,7 +28,6 @@ from recidiviz.persistence.entity.base_entity import (
     UniqueConstraint,
 )
 from recidiviz.persistence.entity.entity_utils import (
-    CoreEntityFieldIndex,
     get_all_entities_from_tree,
     get_all_entity_classes_in_module,
 )
@@ -70,12 +69,9 @@ class GetEntityCriticalFields(beam.DoFn):
     # pylint: disable=W0223
 
     def __init__(
-        self,
-        field_index: CoreEntityFieldIndex,
-        constraints_by_entity_type: Dict[EntityClassName, List[UniqueConstraint]],
+        self, constraints_by_entity_type: Dict[EntityClassName, List[UniqueConstraint]]
     ) -> None:
         super().__init__()
-        self.field_index = field_index
         self.constraints_by_entity_type = constraints_by_entity_type
 
     def process(
@@ -85,9 +81,7 @@ class GetEntityCriticalFields(beam.DoFn):
         root entity tree.
         """
 
-        for e in get_all_entities_from_tree(
-            cast(Entity, element), field_index=self.field_index
-        ):
+        for e in get_all_entities_from_tree(cast(Entity, element)):
             entity_name = e.get_entity_name()
             yield (
                 entity_name,
@@ -135,15 +129,11 @@ class FindUniqueConstraintFailuresByRootEntity(beam.PTransform):
     """
 
     def __init__(
-        self,
-        entity_class_name: EntityClassName,
-        unique_constraint: UniqueConstraint,
-        field_index: CoreEntityFieldIndex,
+        self, entity_class_name: EntityClassName, unique_constraint: UniqueConstraint
     ) -> None:
         super().__init__()
         self.entity_class_name = entity_class_name
         self.unique_constraint = unique_constraint
-        self.field_index = field_index
 
     def expand(
         self, input_or_inputs: beam.PCollection[EntityCriticalFieldsDict]
@@ -225,7 +215,6 @@ class RunValidations(beam.PTransform):
     def __init__(
         self,
         expected_output_entities: Iterable[str],
-        field_index: CoreEntityFieldIndex,
         state_code: StateCode,
     ) -> None:
         super().__init__()
@@ -233,7 +222,6 @@ class RunValidations(beam.PTransform):
         self.constraints_by_entity_type = self._get_constraints_by_entity_type(
             self.expected_output_entities
         )
-        self.field_index = field_index
         self.state_code = state_code
 
     @staticmethod
@@ -271,8 +259,7 @@ class RunValidations(beam.PTransform):
             | "Generate entity critical fields"
             >> beam.ParDo(
                 GetEntityCriticalFields(
-                    field_index=self.field_index,
-                    constraints_by_entity_type=self.constraints_by_entity_type,
+                    constraints_by_entity_type=self.constraints_by_entity_type
                 )
             )
             | "Partition all entities by type"
@@ -310,9 +297,7 @@ class RunValidations(beam.PTransform):
                     entity_critical_dicts
                     | f"Find all {constraint.name} failures"
                     >> FindUniqueConstraintFailuresByRootEntity(
-                        entity_class_name=entity_name,
-                        field_index=self.field_index,
-                        unique_constraint=constraint,
+                        entity_class_name=entity_name, unique_constraint=constraint
                     )
                 )
                 unique_constraint_failure_pcollections.append(
@@ -378,9 +363,7 @@ class RunValidations(beam.PTransform):
 
         root_entity = grouped_elements[ROOT_ENTITY][0]
 
-        entity_level_errors: List[str] = list(
-            validate_root_entity(root_entity, self.field_index)
-        )
+        entity_level_errors: List[str] = list(validate_root_entity(root_entity))
         entity_level_errors += list(
             {
                 f.error_string()

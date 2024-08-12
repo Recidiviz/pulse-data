@@ -66,7 +66,6 @@ from recidiviz.persistence.database.schema_utils import (
 )
 from recidiviz.persistence.entity.base_entity import Entity, RootEntity
 from recidiviz.persistence.entity.entity_utils import (
-    CoreEntityFieldIndex,
     get_all_entities_from_tree,
     get_all_entity_associations_from_tree,
     get_module_for_entity_class,
@@ -652,7 +651,6 @@ class StateIngestPipelineTestCase(BaseStateIngestPipelineTestCase):
         expected_root_entities: List[RootEntity],
         ingest_view_results_only: bool = False,
         ingest_views_to_run: Optional[str] = None,
-        field_index: CoreEntityFieldIndex = CoreEntityFieldIndex(),
         raw_data_upper_bound_dates_json_override: Optional[str] = None,
         debug: bool = False,  # pylint: disable=unused-argument
     ) -> None:
@@ -663,9 +661,7 @@ class StateIngestPipelineTestCase(BaseStateIngestPipelineTestCase):
         expected_entities = [
             entity
             for root_entity in expected_root_entities
-            for entity in get_all_entities_from_tree(
-                cast(Entity, root_entity), field_index
-            )
+            for entity in get_all_entities_from_tree(cast(Entity, root_entity))
         ]
 
         expected_entity_types_to_expected_entities = {
@@ -685,7 +681,7 @@ class StateIngestPipelineTestCase(BaseStateIngestPipelineTestCase):
                 association_table,
                 associations,
             ) in get_all_entity_associations_from_tree(
-                cast(Entity, root_entity), field_index
+                cast(Entity, root_entity)
             ).items():
                 expected_entity_association_type_to_associations[
                     association_table

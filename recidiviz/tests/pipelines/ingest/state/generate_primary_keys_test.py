@@ -19,10 +19,7 @@ import unittest
 from typing import Set
 
 from recidiviz.common.constants.states import StateCode
-from recidiviz.persistence.entity.entity_utils import (
-    CoreEntityFieldIndex,
-    get_all_entities_from_tree,
-)
+from recidiviz.persistence.entity.entity_utils import get_all_entities_from_tree
 from recidiviz.persistence.entity.generate_primary_key import generate_primary_key
 from recidiviz.persistence.entity.state.entities import (
     StatePerson,
@@ -40,9 +37,6 @@ from recidiviz.tests.persistence.entity.state.entities_test_utils import (
 
 class TestGeneratePrimaryKey(unittest.TestCase):
     """Tests for generating primary keys based on external IDs."""
-
-    def setUp(self) -> None:
-        self.field_index = CoreEntityFieldIndex()
 
     def test_generate_primary_key_consistent(self) -> None:
         external_id_1 = ("ID1", "TYPE1")
@@ -100,7 +94,7 @@ class TestGeneratePrimaryKey(unittest.TestCase):
             set_ids=False,
         )
         state_code = StateCode(person.state_code)
-        all_entities = get_all_entities_from_tree(person, self.field_index)
+        all_entities = get_all_entities_from_tree(person)
         person_primary_key = generate_primary_key(
             string_representation(
                 {
@@ -114,7 +108,6 @@ class TestGeneratePrimaryKey(unittest.TestCase):
             root_primary_key=person_primary_key,
             root_entity=person,
             state_code=state_code,
-            field_index=self.field_index,
         )
         for entity in all_entities:
             if isinstance(entity, person.__class__):
@@ -127,7 +120,7 @@ class TestGeneratePrimaryKey(unittest.TestCase):
     def test_generate_primary_keys_for_root_entity_tree_staff(self) -> None:
         staff = generate_full_graph_state_staff(set_back_edges=True, set_ids=False)
         state_code = StateCode(staff.state_code)
-        all_entities = get_all_entities_from_tree(staff, self.field_index)
+        all_entities = get_all_entities_from_tree(staff)
         staff_primary_key = generate_primary_key(
             string_representation(
                 {
@@ -141,7 +134,6 @@ class TestGeneratePrimaryKey(unittest.TestCase):
             root_primary_key=staff_primary_key,
             root_entity=staff,
             state_code=state_code,
-            field_index=self.field_index,
         )
         for entity in all_entities:
             if isinstance(entity, staff.__class__):
@@ -183,7 +175,6 @@ class TestGeneratePrimaryKey(unittest.TestCase):
             root_primary_key=person_primary_key,
             root_entity=person,
             state_code=StateCode.US_XX,
-            field_index=self.field_index,
         )
         self.assertEqual(person.get_id(), person_primary_key)
         self.assertNotEqual(external_id_1.get_id(), external_id_2.get_id())

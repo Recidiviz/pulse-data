@@ -36,7 +36,6 @@ from recidiviz.ingest.direct.types.direct_ingest_constants import (
     UPPER_BOUND_DATETIME_COL_NAME,
 )
 from recidiviz.persistence.entity.base_entity import Entity
-from recidiviz.persistence.entity.entity_utils import CoreEntityFieldIndex
 from recidiviz.persistence.entity.state.entities import (
     StateCharge,
     StateIncarcerationPeriod,
@@ -59,7 +58,6 @@ class TestMergeIngestViewRootEntityTrees(StateIngestPipelineTestCase):
         apache_beam_pipeline_options = PipelineOptions()
         apache_beam_pipeline_options.view_as(SetupOptions).save_main_session = False
         self.test_pipeline = TestPipeline(options=apache_beam_pipeline_options)
-        self.field_index = CoreEntityFieldIndex()
 
     def _get_input_root_entities_with_upperbound_dates(
         self, *, ingest_view_name: str, test_name: str
@@ -155,7 +153,8 @@ class TestMergeIngestViewRootEntityTrees(StateIngestPipelineTestCase):
                 )
             )
             | pipeline.MergeIngestViewRootEntityTrees(
-                "ingestMultipleChildren", self.state_code(), self.field_index
+                "ingestMultipleChildren",
+                self.state_code(),
             )
         )
         assert_that(output, equal_to(expected_output))
@@ -222,7 +221,8 @@ class TestMergeIngestViewRootEntityTrees(StateIngestPipelineTestCase):
             self.test_pipeline
             | beam.Create(expected_input)
             | pipeline.MergeIngestViewRootEntityTrees(
-                "test_ingest_view", self.state_code(), self.field_index
+                "test_ingest_view",
+                self.state_code(),
             )
         )
         assert_that(output, equal_to(expected_output))
@@ -334,7 +334,8 @@ class TestMergeIngestViewRootEntityTrees(StateIngestPipelineTestCase):
             self.test_pipeline
             | beam.Create(expected_input)
             | pipeline.MergeIngestViewRootEntityTrees(
-                "test_ingest_view", self.state_code(), self.field_index
+                "test_ingest_view",
+                self.state_code(),
             )
         )
         assert_that(output, equal_to(expected_output))
@@ -379,7 +380,7 @@ class TestMergeIngestViewRootEntityTrees(StateIngestPipelineTestCase):
             self.test_pipeline
             | beam.Create(expected_input)
             | pipeline.MergeIngestViewRootEntityTrees(
-                "test_ingest_view", self.state_code(), self.field_index
+                "test_ingest_view", self.state_code()
             )
         )
         with self.assertRaisesRegex(RuntimeError, r".*EntityMergingError.*"):

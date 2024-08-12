@@ -63,7 +63,7 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.database.schema_utils import is_association_table
 from recidiviz.persistence.entity.base_entity import Entity, EnumEntity, RootEntity
 from recidiviz.persistence.entity.entity_utils import (
-    CoreEntityFieldIndex,
+    EntityFieldIndex,
     EntityFieldType,
     get_entities_by_association_table_id,
     get_entity_class_in_module_with_name,
@@ -71,9 +71,6 @@ from recidiviz.persistence.entity.entity_utils import (
 )
 from recidiviz.persistence.entity.root_entity_utils import (
     get_root_entity_class_for_entity,
-)
-from recidiviz.persistence.entity.schema_edge_direction_checker import (
-    direction_checker_for_module,
 )
 from recidiviz.persistence.entity.state import entities, normalized_entities
 from recidiviz.persistence.entity.state.entities import (
@@ -227,9 +224,6 @@ class StateDatasetValidator:
         entities_module: ModuleType,
         schema_type: str,
     ) -> None:
-        self.field_index = CoreEntityFieldIndex(
-            direction_checker_for_module(entities_module)
-        )
         self.state_code_filter = state_code_filter
         self.reference_dataset = DatasetReference.from_string(
             reference_state_dataset, default_project=reference_state_project_id
@@ -646,7 +640,8 @@ USING({associated_entity_2_pk})
         in the entity tree, False if it is connected via an intermediate entity /
         intermediate entities.
         """
-        back_edge_fields = self.field_index.get_all_core_entity_fields(
+        field_index = EntityFieldIndex.for_entities_module(self.entities_module)
+        back_edge_fields = field_index.get_all_entity_fields(
             entity_cls, EntityFieldType.BACK_EDGE
         )
 

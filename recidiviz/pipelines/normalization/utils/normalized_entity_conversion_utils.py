@@ -47,7 +47,7 @@ from recidiviz.persistence.database.schema_utils import (
 )
 from recidiviz.persistence.entity.base_entity import Entity, RootEntity
 from recidiviz.persistence.entity.entity_utils import (
-    CoreEntityFieldIndex,
+    EntityFieldIndex,
     EntityFieldType,
     get_entity_class_in_module_with_name,
     update_reverse_references_on_related_entities,
@@ -76,7 +76,6 @@ def convert_entity_trees_to_normalized_versions(
     root_entities: Sequence[Entity],
     normalized_entity_class: Type[NormalizedStateEntityT],
     additional_attributes_map: AdditionalAttributesMap,
-    field_index: CoreEntityFieldIndex,
 ) -> List[NormalizedStateEntityT]:
     """Converts each of the |root_entities| and all related entities in
     the tree hanging off of each entity to the Normalized versions of the entity.
@@ -131,6 +130,7 @@ def convert_entity_trees_to_normalized_versions(
     # Discover all of the relationships and normalized entities
     while len(stack) > 0:
         (normalized_base_entity_class, base_entity) = stack.popleft()
+        state_field_index = EntityFieldIndex.for_entity(base_entity)
 
         normalized_base_entity_class_name = normalized_base_entity_class.__name__
 
@@ -158,7 +158,7 @@ def convert_entity_trees_to_normalized_versions(
             normalized_base_entity_attributes.update(additional_args_for_base_entity)
 
         # Set all flat fields and unique fields to normalized class first on the builder
-        flat_fields = field_index.get_all_core_entity_fields(
+        flat_fields = state_field_index.get_all_entity_fields(
             type(base_entity), EntityFieldType.FLAT_FIELD
         )
         unique_fields = fields_unique_to_normalized_class(normalized_base_entity_class)
@@ -176,7 +176,7 @@ def convert_entity_trees_to_normalized_versions(
         ] = normalized_base_entity_builder.build()
 
         # Find all of the relationships
-        forward_fields = field_index.get_all_core_entity_fields(
+        forward_fields = state_field_index.get_all_entity_fields(
             type(base_entity), EntityFieldType.FORWARD_EDGE
         )
         for field in forward_fields:
@@ -289,7 +289,6 @@ def convert_entities_to_normalized_dicts(
     state_code: str,
     entities: Sequence[Entity],
     additional_attributes_map: AdditionalAttributesMap,
-    field_index: CoreEntityFieldIndex,
 ) -> List[Tuple[str, Dict[str, Any]]]:
     """First, converts each entity tree in |entities| to a tree of connected schema
     objects. Then, converts the schema versions of the entities into dictionary
@@ -315,7 +314,8 @@ def convert_entities_to_normalized_dicts(
         )
         normalized_entity_cls_name = normalized_entity_cls.__name__
 
-        forward_fields = field_index.get_all_core_entity_fields(
+        field_index = EntityFieldIndex.for_entity(entity)
+        forward_fields = field_index.get_all_entity_fields(
             type(entity), EntityFieldType.FORWARD_EDGE
         )
         for field in forward_fields:
@@ -372,7 +372,8 @@ def convert_entities_to_normalized_dicts(
             state_entities, base_entity_cls_name
         )
 
-        forward_relationship_fields = field_index.get_all_core_entity_fields(
+        field_index = EntityFieldIndex.for_entity_class(entity_cls)
+        forward_relationship_fields = field_index.get_all_entity_fields(
             entity_cls, EntityFieldType.FORWARD_EDGE
         )
 
