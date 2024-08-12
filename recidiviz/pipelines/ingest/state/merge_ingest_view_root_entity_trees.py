@@ -26,7 +26,6 @@ from recidiviz.persistence.entity.base_entity import (
     HasMultipleExternalIdsEntity,
     RootEntity,
 )
-from recidiviz.persistence.entity.entity_utils import CoreEntityFieldIndex
 from recidiviz.persistence.entity.state.entities import StatePerson, StateStaff
 from recidiviz.persistence.entity_matching.ingest_view_tree_merger import (
     IngestViewTreeMerger,
@@ -71,12 +70,10 @@ class MergeIngestViewRootEntityTrees(beam.PTransform):
         self,
         ingest_view_name: str,
         state_code: StateCode,
-        field_index: CoreEntityFieldIndex,
     ):
         super().__init__()
         self.ingest_view = ingest_view_name
         self.state_code = state_code
-        self.field_index = field_index
 
     def expand(
         self, input_or_inputs: beam.PCollection[Tuple[UpperBoundDate, RootEntity]]
@@ -135,7 +132,7 @@ class MergeIngestViewRootEntityTrees(beam.PTransform):
         key, entities = element
         external_id_key, upperbound_date = key
 
-        ingest_view_tree_merger = IngestViewTreeMerger(field_index=self.field_index)
+        ingest_view_tree_merger = IngestViewTreeMerger()
 
         root_entities: Union[List[StatePerson], List[StateStaff]]
         if all(isinstance(e, StatePerson) for e in entities):

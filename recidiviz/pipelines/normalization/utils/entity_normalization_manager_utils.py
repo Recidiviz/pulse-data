@@ -18,7 +18,6 @@
 import datetime
 from typing import Dict, List, Optional, Tuple, Type
 
-from recidiviz.persistence.entity.entity_utils import CoreEntityFieldIndex
 from recidiviz.persistence.entity.normalized_entities_utils import (
     AdditionalAttributesMap,
 )
@@ -96,7 +95,6 @@ def normalized_periods_for_calculations(
     incarceration_periods: List[StateIncarcerationPeriod],
     supervision_periods: List[StateSupervisionPeriod],
     normalized_violation_responses: List[NormalizedStateSupervisionViolationResponse],
-    field_index: CoreEntityFieldIndex,
     incarceration_sentences: List[NormalizedStateIncarcerationSentence],
     supervision_sentences: List[NormalizedStateSupervisionSentence],
     staff_external_id_to_staff_id: Dict[Tuple[str, str], int],
@@ -143,7 +141,6 @@ def normalized_periods_for_calculations(
         root_entities=processed_sps,
         normalized_entity_class=NormalizedStateSupervisionPeriod,
         additional_attributes_map=additional_sp_attributes,
-        field_index=field_index,
     )
 
     supervision_period_index = NormalizedSupervisionPeriodIndex(
@@ -157,7 +154,6 @@ def normalized_periods_for_calculations(
         normalized_supervision_period_index=supervision_period_index,
         normalized_violation_responses=normalized_violation_responses,
         incarceration_sentences=incarceration_sentences,
-        field_index=field_index,
         earliest_death_date=earliest_death_date,
     )
 
@@ -177,7 +173,6 @@ def normalized_periods_for_calculations(
 def normalized_violation_responses_from_processed_versions(
     processed_violation_responses: List[StateSupervisionViolationResponse],
     additional_vr_attributes: AdditionalAttributesMap,
-    field_index: CoreEntityFieldIndex,
 ) -> List[NormalizedStateSupervisionViolationResponse]:
     """Converts the entity trees connected to the |processed_violation_responses|
     into their Normalized versions.
@@ -205,7 +200,6 @@ def normalized_violation_responses_from_processed_versions(
         root_entities=distinct_processed_violations,
         normalized_entity_class=NormalizedStateSupervisionViolation,
         additional_attributes_map=additional_vr_attributes,
-        field_index=field_index,
     )
 
     distinct_normalized_violation_responses: List[

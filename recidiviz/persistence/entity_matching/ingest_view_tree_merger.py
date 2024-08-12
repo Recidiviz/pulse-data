@@ -24,7 +24,7 @@ from typing import Dict, List, Optional, Set, Tuple
 from recidiviz.persistence.entity.base_entity import EntityT, ExternalIdEntity
 from recidiviz.persistence.entity.entity_deserialize import Entity
 from recidiviz.persistence.entity.entity_utils import (
-    CoreEntityFieldIndex,
+    EntityFieldIndex,
     EntityFieldType,
     get_flat_fields_json_str,
 )
@@ -46,9 +46,6 @@ class IngestViewTreeMerger:
     """Class responsible for merging hydrated entity trees from a *single ingest view
     on a single day* into as few trees as possible.
     """
-
-    def __init__(self, field_index: CoreEntityFieldIndex) -> None:
-        self.field_index = field_index
 
     def merge(
         self,
@@ -145,7 +142,7 @@ class IngestViewTreeMerger:
         flat_field_reprs: Set[str] = set()
         for entity in entity_group:
             seen_objects.add(id(entity))
-            flat_field_reprs.add(get_flat_fields_json_str(entity, self.field_index))
+            flat_field_reprs.add(get_flat_fields_json_str(entity))
 
         # Get the entity that will become the merged entity
         primary_entity = entity_group[0]
@@ -218,7 +215,8 @@ class IngestViewTreeMerger:
 
         children_by_field = defaultdict(list)
         for entity in entity_group:
-            if non_empty_backedges := self.field_index.get_fields_with_non_empty_values(
+            field_index = EntityFieldIndex.for_entity(entity)
+            if non_empty_backedges := field_index.get_fields_with_non_empty_values(
                 entity, EntityFieldType.BACK_EDGE
             ):
                 raise ValueError(
@@ -228,7 +226,7 @@ class IngestViewTreeMerger:
                     f"set in parsing."
                 )
 
-            for field in self.field_index.get_fields_with_non_empty_values(
+            for field in field_index.get_fields_with_non_empty_values(
                 entity, EntityFieldType.FORWARD_EDGE
             ):
                 children_by_field[field].extend(entity.get_field_as_list(field))
@@ -238,6 +236,6 @@ class IngestViewTreeMerger:
         """Returns a string key that can be used to bucket this non-placeholder entity."""
         external_id = entity.get_external_id()
         if not external_id or isinstance(entity, ExternalIdEntity):
-            return get_flat_fields_json_str(entity, self.field_index)
+            return get_flat_fields_json_str(entity)
 
         return external_id

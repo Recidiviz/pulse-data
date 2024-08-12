@@ -33,7 +33,6 @@ from recidiviz.common.constants.state.state_incarceration_period import (
     StateSpecializedPurposeForIncarceration,
 )
 from recidiviz.common.constants.state.state_shared_enums import StateCustodialAuthority
-from recidiviz.persistence.entity.entity_utils import CoreEntityFieldIndex
 from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
 from recidiviz.persistence.entity.state.normalized_entities import (
     NormalizedStateIncarcerationSentence,
@@ -58,9 +57,6 @@ from recidiviz.tests.pipelines.utils.entity_normalization.normalization_testing_
 
 class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
     """Tests the normalized_incarceration_periods_and_additional_attributes function."""
-
-    def setUp(self) -> None:
-        self.field_index = CoreEntityFieldIndex()
 
     def _normalized_incarceration_periods_for_calculations(
         self,
@@ -88,7 +84,6 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
             normalized_supervision_period_index=sp_index,
             normalized_violation_responses=violation_responses,
             incarceration_sentences=incarceration_sentences,
-            field_index=self.field_index,
             earliest_death_date=earliest_death_date,
         )
 
@@ -1369,7 +1364,6 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
             ),
             normalized_violation_responses=[],
             incarceration_sentences=[],
-            field_index=CoreEntityFieldIndex(),
             earliest_death_date=None,
         )
 
@@ -1412,7 +1406,6 @@ class TestSortAndInferMissingDatesAndStatuses(unittest.TestCase):
             ),
             normalized_violation_responses=violation_responses,
             incarceration_sentences=[],
-            field_index=CoreEntityFieldIndex(),
             earliest_death_date=None,
         )
 

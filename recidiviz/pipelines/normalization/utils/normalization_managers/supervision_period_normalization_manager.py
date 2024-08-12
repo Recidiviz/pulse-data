@@ -29,10 +29,7 @@ from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodTerminationReason,
 )
 from recidiviz.persistence.entity.base_entity import Entity
-from recidiviz.persistence.entity.entity_utils import (
-    CoreEntityFieldIndex,
-    deep_entity_update,
-)
+from recidiviz.persistence.entity.entity_utils import deep_entity_update
 from recidiviz.persistence.entity.normalized_entities_utils import (
     AdditionalAttributesMap,
     get_shared_additional_attributes_map_for_entities,
@@ -182,8 +179,6 @@ class SupervisionPeriodNormalizationManager(EntityNormalizationManager):
         # The end date of the earliest incarceration or supervision period ending in
         # death. None if no periods end in death.
         self.earliest_death_date = earliest_death_date
-
-        self.field_index = CoreEntityFieldIndex()
 
     @staticmethod
     def normalized_entity_classes() -> List[Type[Entity]]:

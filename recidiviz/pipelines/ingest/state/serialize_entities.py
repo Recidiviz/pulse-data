@@ -28,7 +28,6 @@ from recidiviz.persistence.database.schema_utils import (
 )
 from recidiviz.persistence.entity.base_entity import Entity, RootEntity
 from recidiviz.persistence.entity.entity_utils import (
-    CoreEntityFieldIndex,
     get_all_entities_from_tree,
     get_many_to_many_relationships,
 )
@@ -46,22 +45,18 @@ class SerializeEntities(beam.DoFn):
     def __init__(
         self,
         state_code: StateCode,
-        field_index: CoreEntityFieldIndex,
         entities_module: ModuleType,
     ):
         super().__init__()
         self._state_code = state_code
-        self._field_index = field_index
         self._entities_module = entities_module
 
     def process(self, element: RootEntity) -> Generator[Dict[str, Any], None, None]:
         """Generates appropriate dictionaries for all elements and association tables."""
 
-        for entity in get_all_entities_from_tree(
-            entity=cast(Entity, element), field_index=self._field_index
-        ):
+        for entity in get_all_entities_from_tree(entity=cast(Entity, element)):
             many_to_many_relationships = get_many_to_many_relationships(
-                entity.__class__, field_index=self._field_index
+                entity.__class__
             )
             for relationship in many_to_many_relationships:
                 parent_entity_cls_name = attr_field_referenced_cls_name_for_field_name(

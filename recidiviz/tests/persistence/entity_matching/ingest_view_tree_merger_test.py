@@ -26,7 +26,6 @@ from more_itertools import one
 from recidiviz.common.constants.state.state_person import StateRace
 from recidiviz.common.constants.state.state_staff_role_period import StateStaffRoleType
 from recidiviz.common.constants.state.state_task_deadline import StateTaskType
-from recidiviz.persistence.entity.entity_utils import CoreEntityFieldIndex
 from recidiviz.persistence.entity.state.entities import StatePerson, StateStaff
 from recidiviz.persistence.entity_matching.ingest_view_tree_merger import (
     IngestViewTreeMerger,
@@ -47,7 +46,6 @@ class TestIngestViewTreeMerger(unittest.TestCase):
     """Tests for the IngestViewTreeMerger class."""
 
     def setUp(self) -> None:
-        self.field_index = CoreEntityFieldIndex()
         self.maxDiff = None
 
     def test_merge_people_exact_match(self) -> None:
@@ -65,7 +63,7 @@ class TestIngestViewTreeMerger(unittest.TestCase):
         ]
         expected_person = attr.evolve(ingested_persons[0])
 
-        tree_merger = IngestViewTreeMerger(field_index=self.field_index)
+        tree_merger = IngestViewTreeMerger()
 
         merge_result = tree_merger.merge(ingested_persons)
 
@@ -86,7 +84,7 @@ class TestIngestViewTreeMerger(unittest.TestCase):
         ]
         expected_person = attr.evolve(ingested_staff[0])
 
-        tree_merger = IngestViewTreeMerger(field_index=self.field_index)
+        tree_merger = IngestViewTreeMerger()
 
         merge_result = tree_merger.merge(ingested_staff)
 
@@ -113,7 +111,7 @@ class TestIngestViewTreeMerger(unittest.TestCase):
         ]
         expected_person = attr.evolve(ingested_persons[0])
 
-        tree_merger = IngestViewTreeMerger(field_index=self.field_index)
+        tree_merger = IngestViewTreeMerger()
 
         merge_result = tree_merger.merge(ingested_persons)
 
@@ -148,7 +146,7 @@ class TestIngestViewTreeMerger(unittest.TestCase):
         ]
         expected_staff = attr.evolve(ingested_staff[0])
 
-        tree_merger = IngestViewTreeMerger(field_index=self.field_index)
+        tree_merger = IngestViewTreeMerger()
 
         merge_result = tree_merger.merge(ingested_staff)
 
@@ -185,7 +183,7 @@ class TestIngestViewTreeMerger(unittest.TestCase):
             ),
         ]
 
-        tree_merger = IngestViewTreeMerger(field_index=self.field_index)
+        tree_merger = IngestViewTreeMerger()
 
         merge_result = tree_merger.merge(ingested_persons)
 
@@ -238,7 +236,7 @@ class TestIngestViewTreeMerger(unittest.TestCase):
             ),
         ]
 
-        tree_merger = IngestViewTreeMerger(field_index=self.field_index)
+        tree_merger = IngestViewTreeMerger()
 
         merge_result = tree_merger.merge(ingested_persons)
 
@@ -284,7 +282,7 @@ class TestIngestViewTreeMerger(unittest.TestCase):
             ),
         ]
 
-        tree_merger = IngestViewTreeMerger(field_index=self.field_index)
+        tree_merger = IngestViewTreeMerger()
 
         merge_result = tree_merger.merge(ingested_persons)
 
@@ -353,7 +351,7 @@ class TestIngestViewTreeMerger(unittest.TestCase):
             ),
         ]
 
-        tree_merger = IngestViewTreeMerger(field_index=self.field_index)
+        tree_merger = IngestViewTreeMerger()
 
         merge_result = tree_merger.merge(ingested_persons)
 

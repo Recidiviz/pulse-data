@@ -25,10 +25,7 @@ from apache_beam.testing.util import matches_all
 
 from recidiviz.common.constants.state.state_staff_role_period import StateStaffRoleType
 from recidiviz.common.constants.state.state_task_deadline import StateTaskType
-from recidiviz.persistence.entity.entity_utils import (
-    CoreEntityFieldIndex,
-    set_backedges,
-)
+from recidiviz.persistence.entity.entity_utils import set_backedges
 from recidiviz.persistence.entity.state.entities import (
     StatePerson,
     StatePersonExternalId,
@@ -51,7 +48,6 @@ class TestRunValidations(StateIngestPipelineTestCase):
         apache_beam_pipeline_options = PipelineOptions()
         apache_beam_pipeline_options.view_as(SetupOptions).save_main_session = False
         self.test_pipeline = TestPipeline(options=apache_beam_pipeline_options)
-        self.field_index = CoreEntityFieldIndex()
 
     def test_validate_single_staff_entity(self) -> None:
         entities = [
@@ -67,8 +63,7 @@ class TestRunValidations(StateIngestPipelineTestCase):
                             id_type="US_ZZ_TYPE",
                         )
                     ],
-                ),
-                field_index=self.field_index,
+                )
             )
         ]
         input_entities = self.test_pipeline | "Create test input" >> beam.Create(
@@ -76,7 +71,6 @@ class TestRunValidations(StateIngestPipelineTestCase):
         )
         output = input_entities | RunValidations(
             expected_output_entities=["state_staff", "state_staff_external_id"],
-            field_index=self.field_index,
             state_code=self.state_code(),
         )
         assert_that(output, matches_all(entities))
@@ -96,8 +90,7 @@ class TestRunValidations(StateIngestPipelineTestCase):
                             id_type="US_DD_TYPE",
                         )
                     ],
-                ),
-                field_index=self.field_index,
+                )
             )
         ]
         input_entities = self.test_pipeline | "Create test input" >> beam.Create(
@@ -106,7 +99,6 @@ class TestRunValidations(StateIngestPipelineTestCase):
 
         output = input_entities | RunValidations(
             expected_output_entities=["state_person", "state_person_external_id"],
-            field_index=self.field_index,
             state_code=self.state_code(),
         )
         assert_that(output, matches_all(entities))
@@ -175,10 +167,7 @@ class TestRunValidations(StateIngestPipelineTestCase):
                 ],
             ),
         ]
-        entities = [
-            set_backedges(e, field_index=self.field_index)
-            for e in entities_without_backedges
-        ]
+        entities = [set_backedges(e) for e in entities_without_backedges]
         input_entities = self.test_pipeline | "Create test input" >> beam.Create(
             entities
         )
@@ -189,7 +178,6 @@ class TestRunValidations(StateIngestPipelineTestCase):
                 "state_staff",
                 "state_staff_external_id",
             ],
-            field_index=self.field_index,
             state_code=self.state_code(),
         )
         assert_that(output, matches_all(entities))
@@ -247,9 +235,7 @@ class TestRunValidations(StateIngestPipelineTestCase):
                 ],
             ),
         ]
-        entities = [
-            set_backedges(e, self.field_index) for e in entities_without_backedges
-        ]
+        entities = [set_backedges(e) for e in entities_without_backedges]
         input_entities = self.test_pipeline | "Create test input" >> beam.Create(
             entities
         )
@@ -260,7 +246,6 @@ class TestRunValidations(StateIngestPipelineTestCase):
                 "state_person_external_id",
                 "state_task_deadline",
             ],
-            field_index=self.field_index,
             state_code=self.state_code(),
         )
         assert_that(output, matches_all(entities))
@@ -269,8 +254,7 @@ class TestRunValidations(StateIngestPipelineTestCase):
     def test_missing_external_ids_staff_entity(self) -> None:
         entities = [
             set_backedges(
-                StateStaff(state_code="US_DD", staff_id=1234, external_ids=[]),
-                field_index=self.field_index,
+                StateStaff(state_code="US_DD", staff_id=1234, external_ids=[])
             )
         ]
         input_entities = self.test_pipeline | "Create test input" >> beam.Create(
@@ -279,7 +263,6 @@ class TestRunValidations(StateIngestPipelineTestCase):
 
         _ = input_entities | RunValidations(
             expected_output_entities=["state_staff"],
-            field_index=self.field_index,
             state_code=self.state_code(),
         )
 
@@ -292,8 +275,7 @@ class TestRunValidations(StateIngestPipelineTestCase):
     def test_missing_external_ids_person_entity(self) -> None:
         entities = [
             set_backedges(
-                StatePerson(state_code="US_DD", person_id=1234, external_ids=[]),
-                field_index=self.field_index,
+                StatePerson(state_code="US_DD", person_id=1234, external_ids=[])
             )
         ]
         input_entities = self.test_pipeline | "Create test input" >> beam.Create(
@@ -302,7 +284,6 @@ class TestRunValidations(StateIngestPipelineTestCase):
 
         _ = input_entities | RunValidations(
             expected_output_entities=["state_person"],
-            field_index=self.field_index,
             state_code=self.state_code(),
         )
 
@@ -375,10 +356,7 @@ class TestRunValidations(StateIngestPipelineTestCase):
                 ],
             ),
         ]
-        entities = [
-            set_backedges(e, field_index=self.field_index)
-            for e in entities_without_backedges
-        ]
+        entities = [set_backedges(e) for e in entities_without_backedges]
         input_entities = self.test_pipeline | "Create test input" >> beam.Create(
             entities
         )
@@ -390,7 +368,6 @@ class TestRunValidations(StateIngestPipelineTestCase):
                 "state_staff",
                 "state_staff_external_id",
             ],
-            field_index=self.field_index,
             state_code=self.state_code(),
         )
 
@@ -468,10 +445,7 @@ class TestRunValidations(StateIngestPipelineTestCase):
                 ],
             ),
         ]
-        entities = [
-            set_backedges(e, field_index=self.field_index)
-            for e in entities_without_backedges
-        ]
+        entities = [set_backedges(e) for e in entities_without_backedges]
         input_entities = self.test_pipeline | "Create test input" >> beam.Create(
             entities
         )
@@ -483,7 +457,6 @@ class TestRunValidations(StateIngestPipelineTestCase):
                 "state_staff",
                 "state_staff_external_id",
             ],
-            field_index=self.field_index,
             state_code=self.state_code(),
         )
 
@@ -590,10 +563,7 @@ class TestRunValidations(StateIngestPipelineTestCase):
                 ],
             ),
         ]
-        entities = [
-            set_backedges(e, field_index=self.field_index)
-            for e in entities_without_backedges
-        ]
+        entities = [set_backedges(e) for e in entities_without_backedges]
         input_entities = self.test_pipeline | "Create test input" >> beam.Create(
             entities
         )
@@ -606,7 +576,6 @@ class TestRunValidations(StateIngestPipelineTestCase):
                 "state_staff",
                 "state_staff_external_id",
             ],
-            field_index=self.field_index,
             state_code=self.state_code(),
         )
         assert_that(output, matches_all(entities))
@@ -721,10 +690,7 @@ class TestRunValidations(StateIngestPipelineTestCase):
                 ],
             ),
         ]
-        entities = [
-            set_backedges(e, field_index=self.field_index)
-            for e in entities_without_backedges
-        ]
+        entities = [set_backedges(e) for e in entities_without_backedges]
         input_entities = self.test_pipeline | "Create test input" >> beam.Create(
             entities
         )
@@ -739,7 +705,6 @@ class TestRunValidations(StateIngestPipelineTestCase):
                 "state_staff_external_id",
                 "state_staff_role_period",
             ],
-            field_index=self.field_index,
             state_code=self.state_code(),
         )
 
@@ -855,10 +820,7 @@ class TestRunValidations(StateIngestPipelineTestCase):
                 ],
             ),
         ]
-        entities = [
-            set_backedges(e, field_index=self.field_index)
-            for e in entities_without_backedges
-        ]
+        entities = [set_backedges(e) for e in entities_without_backedges]
         input_entities = self.test_pipeline | "Create test input" >> beam.Create(
             entities
         )
@@ -872,7 +834,6 @@ class TestRunValidations(StateIngestPipelineTestCase):
                 "state_staff",
                 "state_staff_external_id",
             ],
-            field_index=self.field_index,
             state_code=self.state_code(),
         )
 
@@ -1013,10 +974,7 @@ class TestRunValidations(StateIngestPipelineTestCase):
                 ],
             ),
         ]
-        entities = [
-            set_backedges(e, field_index=self.field_index)
-            for e in entities_without_backedges
-        ]
+        entities = [set_backedges(e) for e in entities_without_backedges]
         input_entities = self.test_pipeline | "Create test input" >> beam.Create(
             entities
         )
@@ -1030,7 +988,6 @@ class TestRunValidations(StateIngestPipelineTestCase):
                 "state_staff",
                 "state_staff_external_id",
             ],
-            field_index=self.field_index,
             state_code=self.state_code(),
         )
 
@@ -1075,9 +1032,7 @@ class TestRunValidations(StateIngestPipelineTestCase):
                 person=person2,
             )
         )
-        entities = [
-            set_backedges(e, field_index=self.field_index) for e in [person1, person2]
-        ]
+        entities = [set_backedges(e) for e in [person1, person2]]
 
         input_entities = self.test_pipeline | "Create test input" >> beam.Create(
             entities
@@ -1085,7 +1040,6 @@ class TestRunValidations(StateIngestPipelineTestCase):
 
         _ = input_entities | RunValidations(
             expected_output_entities=["state_person", "state_person_external_id"],
-            field_index=self.field_index,
             state_code=self.state_code(),
         )
 
@@ -1218,10 +1172,7 @@ class TestRunValidations(StateIngestPipelineTestCase):
                 person=person2,
             ),
         )
-        entities = [
-            set_backedges(e, field_index=self.field_index)
-            for e in [person1, staff1, person2]
-        ]
+        entities = [set_backedges(e) for e in [person1, staff1, person2]]
 
         input_entities = self.test_pipeline | "Create test input" >> beam.Create(
             entities
@@ -1236,7 +1187,6 @@ class TestRunValidations(StateIngestPipelineTestCase):
                 "state_staff",
                 "state_staff_external_id",
             ],
-            field_index=self.field_index,
             state_code=self.state_code(),
         )
 
@@ -1300,7 +1250,7 @@ class TestRunValidations(StateIngestPipelineTestCase):
             )
         )
 
-        entities = [set_backedges(e, field_index=self.field_index) for e in [person]]
+        entities = [set_backedges(e) for e in [person]]
 
         input_entities = self.test_pipeline | "Create test input" >> beam.Create(
             entities
@@ -1312,7 +1262,6 @@ class TestRunValidations(StateIngestPipelineTestCase):
                 "state_person_external_id",
                 "state_task_deadline",
             ],
-            field_index=self.field_index,
             state_code=self.state_code(),
         )
         expected_error_message = (
@@ -1342,8 +1291,7 @@ class TestRunValidations(StateIngestPipelineTestCase):
                             id_type="US_ZZ_TYPE",
                         )
                     ],
-                ),
-                field_index=self.field_index,
+                )
             )
         ]
         input_entities = self.test_pipeline | "Create test input" >> beam.Create(
@@ -1356,7 +1304,6 @@ class TestRunValidations(StateIngestPipelineTestCase):
                 "state_staff_external_id",
                 "state_staff_role_period",
             ],
-            field_index=self.field_index,
             state_code=self.state_code(),
         )
         with self.assertRaisesRegex(

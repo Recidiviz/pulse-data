@@ -33,7 +33,6 @@ from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.state.state_supervision_violation import (
     StateSupervisionViolationType,
 )
-from recidiviz.persistence.entity.entity_utils import CoreEntityFieldIndex
 from recidiviz.persistence.entity.normalized_entities_utils import (
     LEGACY_NORMALIZATION_ENTITY_CLASSES,
     AdditionalAttributesMap,
@@ -154,9 +153,6 @@ class TestFieldsUniqueToNormalizedClass(unittest.TestCase):
 class TestConvertEntityTreesToNormalizedVersions(unittest.TestCase):
     """Tests the convert_entity_trees_to_normalized_versions function."""
 
-    def setUp(self) -> None:
-        self.field_index = CoreEntityFieldIndex()
-
     def test_convert_entity_trees_to_normalized_versions(self) -> None:
         violation_with_tree = get_violation_tree()
 
@@ -175,7 +171,6 @@ class TestConvertEntityTreesToNormalizedVersions(unittest.TestCase):
             root_entities=[violation_with_tree],
             normalized_entity_class=NormalizedStateSupervisionViolation,
             additional_attributes_map=additional_attributes_map,
-            field_index=self.field_index,
         )
 
         self.assertEqual([get_normalized_violation_tree()], normalized_trees)
@@ -209,7 +204,6 @@ class TestConvertEntityTreesToNormalizedVersions(unittest.TestCase):
             root_entities=ips,
             normalized_entity_class=NormalizedStateIncarcerationPeriod,
             additional_attributes_map=additional_attributes_map,
-            field_index=self.field_index,
         )
 
         expected_normalized_ips = [
@@ -250,7 +244,6 @@ class TestConvertEntityTreesToNormalizedVersions(unittest.TestCase):
                 StateSupervisionViolatedConditionEntry.__name__: {},
                 StateSupervisionViolationResponseDecisionEntry.__name__: {},
             },
-            field_index=self.field_index,
         )
 
         expected_normalized_svrs = (
@@ -310,7 +303,6 @@ class TestConvertEntityTreesToNormalizedVersions(unittest.TestCase):
                 entities.StateCharge.__name__: {},
                 entities.StateEarlyDischarge.__name__: {},
             },
-            field_index=self.field_index,
         )
 
         expected_charge = NormalizedStateCharge(
@@ -352,7 +344,6 @@ class TestConvertEntityTreesToNormalizedVersions(unittest.TestCase):
             root_entities=[],
             normalized_entity_class=NormalizedStateIncarcerationPeriod,
             additional_attributes_map={},
-            field_index=self.field_index,
         )
 
         self.assertEqual([], normalized_trees)
@@ -360,9 +351,6 @@ class TestConvertEntityTreesToNormalizedVersions(unittest.TestCase):
 
 class TestConvertEntitiesToNormalizedDicts(unittest.TestCase):
     """Tests the convert_entities_to_normalized_dicts function."""
-
-    def setUp(self) -> None:
-        self.field_index = CoreEntityFieldIndex()
 
     def test_convert_entities_to_normalized_dicts(self) -> None:
         person_id = 123
@@ -424,7 +412,6 @@ class TestConvertEntitiesToNormalizedDicts(unittest.TestCase):
             state_code="US_XX",
             entities=entities_to_convert,
             additional_attributes_map=additional_attributes_map,
-            field_index=self.field_index,
         )
 
         self.assertEqual(expected_output, converted_output)
@@ -544,7 +531,6 @@ class TestConvertEntitiesToNormalizedDicts(unittest.TestCase):
             state_code="US_XX",
             entities=entities_to_convert,
             additional_attributes_map=additional_attributes_map,
-            field_index=self.field_index,
         )
 
         self.assertCountEqual(expected_output, converted_output)
@@ -616,7 +602,6 @@ class TestConvertEntitiesToNormalizedDicts(unittest.TestCase):
             state_code="US_XX",
             entities=entities_to_convert,
             additional_attributes_map=additional_attributes_map,
-            field_index=self.field_index,
         )
 
         expected_output = [

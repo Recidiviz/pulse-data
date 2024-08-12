@@ -67,7 +67,6 @@ from recidiviz.calculator.query.state.views.workflows.firestore.firestore_views 
     FIRESTORE_VIEW_BUILDERS,
 )
 from recidiviz.common.constants.states import StateCode
-from recidiviz.persistence.entity.entity_utils import CoreEntityFieldIndex
 from recidiviz.task_eligibility.single_task_eligibility_spans_view_collector import (
     SingleTaskEligibilityBigQueryViewCollector,
 )
@@ -239,7 +238,6 @@ class WorkflowsOutliersDatasetValidator:
         output_sandbox_prefix: str,
         state_code_filter: StateCode,
     ) -> None:
-        self.field_index = CoreEntityFieldIndex()
         self.state_code_filter = state_code_filter
 
         self.reference_project_id = reference_project_id

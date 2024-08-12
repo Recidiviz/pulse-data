@@ -37,7 +37,6 @@ from recidiviz.common.constants.state.state_supervision_period import (
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.base_entity import Entity, RootEntity
 from recidiviz.persistence.entity.entity_utils import (
-    CoreEntityFieldIndex,
     get_entity_class_in_module_with_name,
 )
 from recidiviz.persistence.entity.state import entities as state_entities
@@ -138,7 +137,6 @@ class TestNormalizedPeriodsForCalculations(unittest.TestCase):
         self.state_code = StateCode.US_XX
         self.ip_normalization_delegate = UsXxIncarcerationNormalizationDelegate()
         self.sp_normalization_delegate = UsXxSupervisionNormalizationDelegate()
-        self.field_index = CoreEntityFieldIndex()
         self.person_id = 123
 
     def test_normalized_periods_for_calculations(self) -> None:
@@ -171,7 +169,6 @@ class TestNormalizedPeriodsForCalculations(unittest.TestCase):
             incarceration_periods=[incarceration_period],
             supervision_periods=[supervision_period],
             normalized_violation_responses=[],
-            field_index=self.field_index,
             incarceration_sentences=[],
             supervision_sentences=[],
             staff_external_id_to_staff_id=build_staff_external_id_to_staff_id_map(
@@ -202,7 +199,6 @@ class TestNormalizedPeriodsForCalculations(unittest.TestCase):
             incarceration_periods=[incarceration_period],
             supervision_periods=[],
             normalized_violation_responses=[],
-            field_index=self.field_index,
             incarceration_sentences=[],
             supervision_sentences=[],
             staff_external_id_to_staff_id=build_staff_external_id_to_staff_id_map(
@@ -231,7 +227,6 @@ class TestNormalizedPeriodsForCalculations(unittest.TestCase):
             incarceration_periods=[],
             supervision_periods=[supervision_period],
             normalized_violation_responses=[],
-            field_index=self.field_index,
             incarceration_sentences=[],
             supervision_sentences=[],
             staff_external_id_to_staff_id=build_staff_external_id_to_staff_id_map(
@@ -250,7 +245,6 @@ class TestNormalizedPeriodsForCalculations(unittest.TestCase):
             incarceration_periods=[],
             supervision_periods=[],
             normalized_violation_responses=[],
-            field_index=self.field_index,
             incarceration_sentences=[],
             supervision_sentences=[],
             staff_external_id_to_staff_id=build_staff_external_id_to_staff_id_map(
@@ -325,7 +319,6 @@ class TestNormalizedViolationResponsesFromProcessedVersions(unittest.TestCase):
     """Tests the normalized_violation_responses_from_processed_versions function."""
 
     def setUp(self) -> None:
-        self.field_index = CoreEntityFieldIndex()
         self.delegate = UsXxViolationResponseNormalizationDelegate()
 
     def test_normalized_violation_responses_from_processed_versions(self) -> None:
@@ -350,7 +343,6 @@ class TestNormalizedViolationResponsesFromProcessedVersions(unittest.TestCase):
         normalized_responses = normalized_violation_responses_from_processed_versions(
             processed_violation_responses=processed_violation_responses,
             additional_vr_attributes=additional_attributes,
-            field_index=self.field_index,
         )
 
         expected_responses = (
@@ -387,7 +379,6 @@ class TestNormalizedViolationResponsesFromProcessedVersions(unittest.TestCase):
         normalized_responses = normalized_violation_responses_from_processed_versions(
             processed_violation_responses=processed_violation_responses,
             additional_vr_attributes=additional_attributes,
-            field_index=self.field_index,
         )
 
         expected_violation_1 = get_normalized_violation_tree(starting_id_value=123)
@@ -434,7 +425,6 @@ class TestNormalizedViolationResponsesFromProcessedVersions(unittest.TestCase):
             _ = normalized_violation_responses_from_processed_versions(
                 processed_violation_responses=violation_responses,
                 additional_vr_attributes=additional_attributes,
-                field_index=self.field_index,
             )
 
         self.assertTrue(

@@ -31,10 +31,7 @@ from recidiviz.persistence.entity.base_entity import (
     ExternalIdEntity,
     HasMultipleExternalIdsEntity,
 )
-from recidiviz.persistence.entity.entity_utils import (
-    CoreEntityFieldIndex,
-    EntityFieldType,
-)
+from recidiviz.persistence.entity.entity_utils import EntityFieldIndex, EntityFieldType
 
 
 def root_entity_external_id_keys(root_entity: HasMultipleExternalIdsEntity) -> Set[str]:
@@ -51,12 +48,13 @@ def external_id_key(external_id_entity: ExternalIdEntity) -> str:
     return f"{type(e).__name__}##{e.id_type}|{e.external_id}"
 
 
-def enum_entity_key(enum_entity: EnumEntity, field_index: CoreEntityFieldIndex) -> str:
+def enum_entity_key(enum_entity: EnumEntity) -> str:
     """Generates a unique string key for an EnumEntity. All EnumEntity with the same
     entity key that are attached to the same parent should be considered duplicates and
     merged into one.
     """
-    fields = field_index.get_all_core_entity_fields(
+    field_index = EntityFieldIndex.for_entity(enum_entity)
+    fields = field_index.get_all_entity_fields(
         type(enum_entity), EntityFieldType.FLAT_FIELD
     )
     enum_field_name = one(

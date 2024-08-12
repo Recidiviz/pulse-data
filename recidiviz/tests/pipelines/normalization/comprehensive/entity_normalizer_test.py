@@ -29,7 +29,6 @@ from recidiviz.common.constants.state.state_incarceration_period import (
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.base_entity import Entity
-from recidiviz.persistence.entity.entity_utils import CoreEntityFieldIndex
 from recidiviz.persistence.entity.normalized_entities_utils import (
     AdditionalAttributesMap,
     normalized_entity_class_with_base_class_name,
@@ -463,8 +462,6 @@ class TestNormalizeEntitiesConvertedToNormalized(unittest.TestCase):
         for v in self.full_graph_person.supervision_violations:
             self.violation_responses.extend(v.supervision_violation_responses)
 
-        self.field_index = CoreEntityFieldIndex()
-
     def tearDown(self) -> None:
         for patcher in self.delegate_patchers:
             patcher.stop()
@@ -520,7 +517,6 @@ class TestNormalizeEntitiesConvertedToNormalized(unittest.TestCase):
                     entity_name
                 ),
                 additional_attributes_map=additional_attributes_map,
-                field_index=self.field_index,
             )
 
         return normalized_entities
@@ -556,7 +552,6 @@ class TestNormalizeEntitiesConvertedToNormalized(unittest.TestCase):
                     entity_name
                 ),
                 additional_attributes_map=additional_attributes_map,
-                field_index=self.field_index,
             )
 
         return normalized_entities

@@ -60,10 +60,7 @@ from recidiviz.common.constants.state.state_supervision_sentence import (
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.base_entity import Entity, RootEntity
-from recidiviz.persistence.entity.entity_utils import (
-    CoreEntityFieldIndex,
-    get_all_entities_from_tree,
-)
+from recidiviz.persistence.entity.entity_utils import get_all_entities_from_tree
 from recidiviz.persistence.entity.state import entities
 
 
@@ -74,7 +71,7 @@ def populate_root_entity_backedges(root_entities: List[RootEntity]) -> None:
             raise ValueError(
                 f"Found RootEntity class [{type(root_entity)}] which is not a subclass of Entity"
             )
-        children = get_all_entities_from_tree(root_entity, CoreEntityFieldIndex())
+        children = get_all_entities_from_tree(root_entity)
         for child in children:
             if (
                 child is not root_entity

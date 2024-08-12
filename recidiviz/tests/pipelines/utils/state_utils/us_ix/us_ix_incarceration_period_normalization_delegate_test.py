@@ -34,7 +34,6 @@ from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionLevel,
     StateSupervisionPeriodSupervisionType,
 )
-from recidiviz.persistence.entity.entity_utils import CoreEntityFieldIndex
 from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
 from recidiviz.persistence.entity.state.normalized_entities import (
     NormalizedStateSupervisionPeriod,
@@ -91,7 +90,6 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
             normalized_supervision_period_index=sp_index,
             normalized_violation_responses=violation_responses,
             incarceration_sentences=[],
-            field_index=CoreEntityFieldIndex(),
             earliest_death_date=earliest_death_date,
         )
 

@@ -37,7 +37,6 @@ from recidiviz.common.constants.state.state_supervision_sentence import (
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.common.date import DateRange, DateRangeDiff, last_day_of_month
-from recidiviz.persistence.entity.entity_utils import CoreEntityFieldIndex
 from recidiviz.persistence.entity.normalized_entities_utils import (
     sort_normalized_entities_by_sequence_num,
 )
@@ -107,7 +106,6 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
 
     def __init__(self, state_code: StateCode) -> None:
         self.identifier_result_class = SupervisionEvent
-        self.field_index = CoreEntityFieldIndex()
         self.supervision_delegate = get_state_specific_supervision_delegate(
             state_code.value
         )

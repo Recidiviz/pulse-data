@@ -41,7 +41,6 @@ from recidiviz.common.constants.state.state_incarceration_period import (
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.common.date import DateRange, DateRangeDiff
-from recidiviz.persistence.entity.entity_utils import CoreEntityFieldIndex
 from recidiviz.persistence.entity.state.normalized_entities import (
     NormalizedStateIncarcerationPeriod,
     NormalizedStatePerson,
@@ -69,7 +68,6 @@ class RecidivismIdentifier(BaseIdentifier[Dict[int, List[ReleaseEvent]]]):
 
     def __init__(self, state_code: StateCode) -> None:
         self.identifier_result_class = ReleaseEvent
-        self.field_index = CoreEntityFieldIndex()
         self.incarceration_delegate = get_state_specific_incarceration_delegate(
             state_code.value
         )

@@ -43,7 +43,6 @@ from recidiviz.persistence.database.schema_entity_converter.schema_to_entity_cla
     SchemaToEntityClassMapper,
 )
 from recidiviz.persistence.entity.base_entity import Entity
-from recidiviz.persistence.entity.entity_utils import CoreEntityFieldIndex
 from recidiviz.persistence.entity.schema_edge_direction_checker import (
     direction_checker_for_module,
 )
@@ -106,7 +105,6 @@ class BaseSchemaEntityConverter(Generic[SrcBaseType, DstBaseType]):
         self._back_edges: Dict[
             SrcIdType, Dict[FieldNameType, List[SrcIdType]]
         ] = defaultdict(lambda: defaultdict(list))
-        self.field_index = CoreEntityFieldIndex()
 
     @staticmethod
     def _id_from_src_object(src: SrcBaseType) -> SrcIdType:

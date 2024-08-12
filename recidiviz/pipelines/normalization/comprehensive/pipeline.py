@@ -50,7 +50,6 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.database import schema_utils
 from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.entity.base_entity import Entity
-from recidiviz.persistence.entity.entity_utils import CoreEntityFieldIndex
 from recidiviz.persistence.entity.normalized_entities_utils import (
     AdditionalAttributesMap,
     normalized_entity_class_with_base_class_name,
@@ -485,7 +484,6 @@ class NormalizedEntityTreeWritableDicts(beam.DoFn):
             additional_attributes_map,
         ) = element
 
-        field_index = CoreEntityFieldIndex()
         normalized_entity_list = [
             entity
             for entity_list in normalized_entities.values()
@@ -497,7 +495,6 @@ class NormalizedEntityTreeWritableDicts(beam.DoFn):
             state_code=state_code,
             entities=normalized_entity_list,
             additional_attributes_map=additional_attributes_map,
-            field_index=field_index,
         )
 
         for entity_name, entity_dict in tagged_entity_dict_outputs:

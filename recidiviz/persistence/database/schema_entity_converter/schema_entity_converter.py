@@ -35,14 +35,8 @@ from recidiviz.persistence.database.schema_entity_converter.state.schema_entity_
     StateSchemaToEntityConverter,
 )
 from recidiviz.persistence.entity.base_entity import Entity
-from recidiviz.persistence.entity.entity_utils import (
-    CoreEntityFieldIndex,
-    EntityFieldType,
-)
+from recidiviz.persistence.entity.entity_utils import EntityFieldIndex, EntityFieldType
 from recidiviz.persistence.entity.operations import entities as operations_entities
-from recidiviz.persistence.entity.schema_edge_direction_checker import (
-    direction_checker_for_module,
-)
 from recidiviz.persistence.entity.state import entities as state_entities
 
 
@@ -121,10 +115,7 @@ def convert_entity_to_schema_object(
 EntityT = TypeVar("EntityT", bound=Entity)
 
 
-_core_entity_field_index_by_entities_module: dict[ModuleType, CoreEntityFieldIndex] = {}
-
-
-def _get_field_index_for_db_entity(db_entity: DatabaseEntity) -> CoreEntityFieldIndex:
+def _get_field_index_for_db_entity(db_entity: DatabaseEntity) -> EntityFieldIndex:
     if _is_obj_in_module(db_entity, state_schema):
         entities_module: ModuleType = state_entities
     elif _is_obj_in_module(db_entity, operations_schema):
@@ -134,14 +125,7 @@ def _get_field_index_for_db_entity(db_entity: DatabaseEntity) -> CoreEntityField
             f"Expected {type(db_entity)} to belong to either [{state_schema.__name__}] or "
             f"[{operations_schema.__name__}]"
         )
-
-    if entities_module not in _core_entity_field_index_by_entities_module:
-        _core_entity_field_index_by_entities_module[
-            entities_module
-        ] = CoreEntityFieldIndex(
-            direction_checker=direction_checker_for_module(entities_module)
-        )
-    return _core_entity_field_index_by_entities_module[entities_module]
+    return EntityFieldIndex.for_entities_module(entities_module)
 
 
 def convert_schema_object_to_entity(
@@ -154,7 +138,7 @@ def convert_schema_object_to_entity(
 
     if populate_back_edges:
         field_index = _get_field_index_for_db_entity(schema_object)
-        for backedge_key in field_index.get_all_core_entity_fields(
+        for backedge_key in field_index.get_all_entity_fields(
             entity_type, EntityFieldType.BACK_EDGE
         ):
             if attribute := getattr(schema_object, backedge_key):

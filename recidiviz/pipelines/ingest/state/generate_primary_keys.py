@@ -26,10 +26,7 @@ from recidiviz.persistence.entity.base_entity import (
     HasExternalIdEntity,
     RootEntity,
 )
-from recidiviz.persistence.entity.entity_utils import (
-    CoreEntityFieldIndex,
-    EntityFieldType,
-)
+from recidiviz.persistence.entity.entity_utils import EntityFieldIndex, EntityFieldType
 from recidiviz.persistence.entity.generate_primary_key import (
     PrimaryKey,
     generate_primary_key,
@@ -60,7 +57,6 @@ def generate_primary_keys_for_root_entity_tree(
     root_primary_key: PrimaryKey,
     root_entity: RootEntity,
     state_code: StateCode,
-    field_index: CoreEntityFieldIndex,
 ) -> RootEntity:
     """Generate primary keys for a root entity tree by doing a Queue BFS traversal of the tree."""
     queue: List[Union[RootEntity, Entity]] = [root_entity]
@@ -109,7 +105,8 @@ def generate_primary_keys_for_root_entity_tree(
                 )
             )
 
-        forward_fields = field_index.get_all_core_entity_fields(
+        field_index = EntityFieldIndex.for_entity(entity)
+        forward_fields = field_index.get_all_entity_fields(
             entity.__class__, EntityFieldType.FORWARD_EDGE
         )
         for field in forward_fields:

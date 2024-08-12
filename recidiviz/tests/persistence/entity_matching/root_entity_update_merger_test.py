@@ -39,7 +39,6 @@ from recidiviz.common.constants.state.state_supervision_sentence import (
 )
 from recidiviz.common.constants.state.state_task_deadline import StateTaskType
 from recidiviz.persistence.entity.base_entity import RootEntity
-from recidiviz.persistence.entity.entity_utils import CoreEntityFieldIndex
 from recidiviz.persistence.entity_matching.root_entity_update_merger import (
     RootEntityUpdateMerger,
 )
@@ -103,7 +102,7 @@ class TestRootEntityUpdateMerger(unittest.TestCase):
     """Tests for the RootEntityUpdateMerger class."""
 
     def setUp(self) -> None:
-        self.merger = RootEntityUpdateMerger(CoreEntityFieldIndex())
+        self.merger = RootEntityUpdateMerger()
 
     def assert_expected_matches_result(
         self, *, expected_result: RootEntity, result: RootEntity, debug: bool = False
@@ -113,9 +112,7 @@ class TestRootEntityUpdateMerger(unittest.TestCase):
                 self.fail("The |debug| flag should only be used for local debugging.")
 
             launch_entity_tree_html_diff_comparison(
-                found_root_entities=[result],
-                expected_root_entities=[expected_result],
-                field_index=self.merger.field_index,
+                found_root_entities=[result], expected_root_entities=[expected_result]
             )
 
         self.assertEqual(expected_result, result)

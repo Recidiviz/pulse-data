@@ -31,7 +31,6 @@ from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodSupervisionType,
 )
 from recidiviz.common.constants.states import StateCode
-from recidiviz.persistence.entity.entity_utils import CoreEntityFieldIndex
 from recidiviz.persistence.entity.normalized_entities_utils import (
     sort_normalized_entities_by_sequence_num,
 )
@@ -95,7 +94,6 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
 
     def __init__(self, state_code: StateCode) -> None:
         self.identifier_result_class = IncarcerationEvent
-        self.field_index = CoreEntityFieldIndex()
         self.incarceration_delegate = get_state_specific_incarceration_delegate(
             state_code.value
         )

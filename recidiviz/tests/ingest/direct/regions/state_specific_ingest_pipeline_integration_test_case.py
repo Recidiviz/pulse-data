@@ -44,7 +44,6 @@ from recidiviz.persistence.entity.base_entity import (
     RootEntity,
 )
 from recidiviz.persistence.entity.entity_utils import (
-    CoreEntityFieldIndex,
     get_all_entities_from_tree,
     get_all_entity_associations_from_tree,
 )
@@ -97,12 +96,11 @@ class RunValidationsWithOutputChecking(RunValidations):
     def __init__(
         self,
         expected_output_entities: Iterable[str],
-        field_index: CoreEntityFieldIndex,
         state_code: StateCode,
         expected_root_entity_output: Iterable[RootEntity],
         debug: bool = False,
     ) -> None:
-        super().__init__(expected_output_entities, field_index, state_code)
+        super().__init__(expected_output_entities, state_code)
         self.expected_root_entity_output = expected_root_entity_output
         self.debug = debug
 
@@ -136,9 +134,8 @@ class RunValidationsWithOutputChecking(RunValidations):
                             "The |debug| flag should only be used for local debugging."
                         )
                     launch_entity_tree_html_diff_comparison(
-                        found_root_entities=sorted_actual,  # type: ignore
-                        expected_root_entities=sorted_expected,  # type: ignore
-                        field_index=CoreEntityFieldIndex(),
+                        found_root_entities=sorted_actual,
+                        expected_root_entities=sorted_expected,
                         region_code=state_code.value.lower(),
                     )
                 raise BeamAssertException(
@@ -264,22 +261,13 @@ class StateSpecificIngestPipelineIntegrationTestCase(BaseStateIngestPipelineTest
         self,
         expected_root_entities: List[RootEntity],
         debug: bool = False,
-    ) -> Callable[
-        [
-            Iterable[str],
-            CoreEntityFieldIndex,
-            StateCode,
-        ],
-        RunValidationsWithOutputChecking,
-    ]:
+    ) -> Callable[[Iterable[str], StateCode], RunValidationsWithOutputChecking,]:
         def _inner_constructor(
             expected_output_entities: Iterable[str],
-            field_index: CoreEntityFieldIndex,
             state_code: StateCode,
         ) -> RunValidationsWithOutputChecking:
             return RunValidationsWithOutputChecking(
                 expected_output_entities,
-                field_index,
                 state_code,
                 expected_root_entities,
                 debug,
@@ -295,7 +283,6 @@ class StateSpecificIngestPipelineIntegrationTestCase(BaseStateIngestPipelineTest
         expected_root_entities: List[RootEntity],
         ingest_view_results_only: bool = False,
         ingest_views_to_run: Optional[str] = None,
-        field_index: CoreEntityFieldIndex = CoreEntityFieldIndex(),
         debug: bool = False,
     ) -> None:
         """This runs a test for an ingest pipeline where the ingest view results are
@@ -307,9 +294,7 @@ class StateSpecificIngestPipelineIntegrationTestCase(BaseStateIngestPipelineTest
         expected_entities = [
             entity
             for root_entity in expected_root_entities
-            for entity in get_all_entities_from_tree(
-                cast(Entity, root_entity), field_index
-            )
+            for entity in get_all_entities_from_tree(cast(Entity, root_entity))
         ]
 
         expected_entity_types_to_expected_entities = {
@@ -330,7 +315,7 @@ class StateSpecificIngestPipelineIntegrationTestCase(BaseStateIngestPipelineTest
                 association_table,
                 associations,
             ) in get_all_entity_associations_from_tree(
-                cast(Entity, root_entity), field_index
+                cast(Entity, root_entity)
             ).items():
                 expected_entity_association_type_to_associations[
                     association_table

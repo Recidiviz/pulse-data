@@ -52,15 +52,12 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity import entity_utils
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.entity_utils import (
-    CoreEntityFieldIndex,
+    EntityFieldIndex,
     EntityFieldType,
     get_association_table_id,
     is_many_to_many_relationship,
     is_many_to_one_relationship,
     is_one_to_many_relationship,
-)
-from recidiviz.persistence.entity.schema_edge_direction_checker import (
-    direction_checker_for_module,
 )
 from recidiviz.persistence.entity.state import entities as state_entities
 from recidiviz.persistence.entity.state import normalized_entities
@@ -186,10 +183,9 @@ class ExtractRootEntityDataForPipeline(beam.PTransform):
             entities_module: ModuleType = normalized_entities
         else:
             entities_module = state_entities
-        direction_checker = direction_checker_for_module(entities_module)
 
         self._entities_module = entities_module
-        self._field_index = CoreEntityFieldIndex(direction_checker)
+        self._field_index = EntityFieldIndex.for_entities_module(entities_module)
 
         if not root_entity_cls:
             raise ValueError("No valid root_entity_cls passed to the pipeline.")
@@ -247,7 +243,7 @@ class ExtractRootEntityDataForPipeline(beam.PTransform):
         ] = defaultdict(list)
 
         for entity_class in self._entity_classes_to_hydrate:
-            for field in self._field_index.get_all_core_entity_fields(
+            for field in self._field_index.get_all_entity_fields(
                 entity_class, EntityFieldType.FORWARD_EDGE
             ):
                 referenced_class_name = attr_field_referenced_cls_name_for_field_name(

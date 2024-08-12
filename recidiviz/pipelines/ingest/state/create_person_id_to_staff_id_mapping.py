@@ -22,7 +22,6 @@ from more_itertools import one
 
 from recidiviz.common.attr_mixins import attribute_field_type_reference_for_class
 from recidiviz.persistence.entity.base_entity import Entity
-from recidiviz.persistence.entity.entity_utils import CoreEntityFieldIndex
 from recidiviz.persistence.entity.state.entities import StatePerson
 from recidiviz.persistence.entity.state.normalized_entities import NormalizedStateStaff
 from recidiviz.persistence.entity.walk_entity_dag import EntityDagEdge, walk_entity_dag
@@ -39,10 +38,6 @@ PERSON_IDS_KEY = "person_ids"
 
 class CreatePersonIdToStaffIdMapping(beam.PTransform):
     """A PTransform to collect all staff ids associated with each StatePerson."""
-
-    def __init__(self, field_index: CoreEntityFieldIndex):
-        super().__init__()
-        self._field_index = field_index
 
     def expand(
         self,
@@ -123,7 +118,6 @@ class CreatePersonIdToStaffIdMapping(beam.PTransform):
 
         external_ids = walk_entity_dag(
             dag_root_entity=person,
-            field_index=self._field_index,
             node_processing_fn=_get_referenced_staff_external_id,
         )
 

@@ -22,7 +22,6 @@ from apache_beam.options.pipeline_options import PipelineOptions, SetupOptions
 from apache_beam.pipeline_test import TestPipeline, assert_that, equal_to
 
 from recidiviz.common.constants.states import StateCode
-from recidiviz.persistence.entity.entity_utils import CoreEntityFieldIndex
 from recidiviz.persistence.entity.state.entities import (
     StateAssessment,
     StatePerson,
@@ -155,7 +154,6 @@ class TestCreatePersonIdToStaffIdMapping(StateIngestPipelineTestCase):
         apache_beam_pipeline_options = PipelineOptions()
         apache_beam_pipeline_options.view_as(SetupOptions).save_main_session = False
         self.test_pipeline = TestPipeline(options=apache_beam_pipeline_options)
-        self.field_index = CoreEntityFieldIndex()
 
     def test_create_person_id_to_staff_id_mapping_empty(self) -> None:
         input_state_persons = (
@@ -168,7 +166,8 @@ class TestCreatePersonIdToStaffIdMapping(StateIngestPipelineTestCase):
         output = (
             input_state_staff,
             input_state_persons,
-        ) | CreatePersonIdToStaffIdMapping(self.field_index)
+        ) | CreatePersonIdToStaffIdMapping()
+
         assert_that(output, equal_to([]))
         self.test_pipeline.run()
 
@@ -185,7 +184,7 @@ class TestCreatePersonIdToStaffIdMapping(StateIngestPipelineTestCase):
         output = (
             input_state_staff,
             input_state_persons,
-        ) | CreatePersonIdToStaffIdMapping(self.field_index)
+        ) | CreatePersonIdToStaffIdMapping()
 
         # Output only is generated if there are people, but nothing crashes
         assert_that(output, equal_to([]))
@@ -215,7 +214,8 @@ class TestCreatePersonIdToStaffIdMapping(StateIngestPipelineTestCase):
         output = (
             input_state_staff,
             input_state_persons,
-        ) | CreatePersonIdToStaffIdMapping(self.field_index)
+        ) | CreatePersonIdToStaffIdMapping()
+
         assert_that(output, equal_to(expected_output))
         self.test_pipeline.run()
 
@@ -256,6 +256,6 @@ class TestCreatePersonIdToStaffIdMapping(StateIngestPipelineTestCase):
         output = (
             input_state_staff,
             input_state_persons,
-        ) | CreatePersonIdToStaffIdMapping(self.field_index)
+        ) | CreatePersonIdToStaffIdMapping()
         assert_that(output, equal_to(expected_output))
         self.test_pipeline.run()

@@ -28,7 +28,6 @@ from recidiviz.calculator.query.state.views.reference.us_mo_sentence_statuses im
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.base_entity import Entity
-from recidiviz.persistence.entity.entity_utils import CoreEntityFieldIndex
 from recidiviz.persistence.entity.normalized_entities_utils import (
     AdditionalAttributesMap,
     merge_additional_attributes_maps,
@@ -103,7 +102,6 @@ class ComprehensiveEntityNormalizer:
     def __init__(self, state_code: StateCode) -> None:
         # Store as a string to avoid issues with pickling
         self.state_code_str = state_code.value
-        self.field_index = CoreEntityFieldIndex()
 
     def normalize_entities(
         self,
@@ -203,7 +201,6 @@ class ComprehensiveEntityNormalizer:
             supervision_contacts=supervision_contacts,
             staff_external_id_to_staff_id=staff_external_id_to_staff_id,
             us_mo_sentence_statuses_list=us_mo_sentence_statuses_list,
-            field_index=self.field_index,
         )
 
         return processed_entities
@@ -248,7 +245,6 @@ def all_normalized_person_entities(
     # TODO(#30199): Remove MO sentence statuses table dependency in favor of
     #  state_sentence_status_snapshot data
     us_mo_sentence_statuses_list: Optional[List[Dict[str, Any]]],
-    field_index: CoreEntityFieldIndex,
 ) -> EntityNormalizerResult:
     """Normalizes all entities that have corresponding comprehensive managers.
 
@@ -273,7 +269,6 @@ def all_normalized_person_entities(
         normalized_violation_responses_from_processed_versions(
             processed_violation_responses=processed_violation_responses,
             additional_vr_attributes=additional_vr_attributes,
-            field_index=field_index,
         )
     )
 
@@ -300,14 +295,12 @@ def all_normalized_person_entities(
         processed_incarceration_sentences,
         NormalizedStateIncarcerationSentence,
         additional_incarceration_sentence_attributes,
-        field_index,
     )
 
     normalized_supervision_sentences = convert_entity_trees_to_normalized_versions(
         processed_supervision_sentences,
         NormalizedStateSupervisionSentence,
         additional_supervision_sentence_attributes,
-        field_index,
     )
 
     program_assignment_manager = ProgramAssignmentNormalizationManager(
@@ -351,7 +344,6 @@ def all_normalized_person_entities(
         incarceration_periods=incarceration_periods,
         supervision_periods=supervision_periods,
         normalized_violation_responses=normalized_violation_responses,
-        field_index=field_index,
         incarceration_sentences=normalized_incarceration_sentences,
         supervision_sentences=normalized_supervision_sentences,
         staff_external_id_to_staff_id=staff_external_id_to_staff_id,
