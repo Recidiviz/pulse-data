@@ -269,10 +269,6 @@ class DirectIngestViewQueryBuilder:
             view_query_template: (str) The template for the query, formatted for hydration of raw table views.
             region_module: (ModuleType) Module containing all region raw data config files.
         """
-        DirectIngestViewQueryBuilder._validate_order_by(
-            ingest_view_name=ingest_view_name, view_query_template=view_query_template
-        )
-
         self._region_code = region
         self._raw_table_dependency_configs: Optional[
             List[DirectIngestViewRawFileDependency]
@@ -565,19 +561,3 @@ class DirectIngestViewQueryBuilder:
             filter_to_latest=raw_table_dependency_config.filter_to_latest,
             filter_to_only_documented_columns=True,
         )
-
-    @staticmethod
-    def _validate_order_by(ingest_view_name: str, view_query_template: str) -> None:
-        query = view_query_template.upper()
-        final_sub_query = query.split("FROM")[-1]
-        order_by_count = final_sub_query.count("ORDER BY")
-        window_count = final_sub_query.count("WINDOW")
-        as_count = final_sub_query.count(" AS ")
-        if (window_count == 0 and order_by_count > 0) or (
-            window_count > 0 and order_by_count > as_count
-        ):
-            raise ValueError(
-                f"Found ORDER BY not associated with a WINDOW clause after the final FROM statement in the SQL "
-                f"view_query_template for {ingest_view_name}. You should not commit ingest view queries with ordered "
-                f"results as this is unnecessarily inefficient."
-            )

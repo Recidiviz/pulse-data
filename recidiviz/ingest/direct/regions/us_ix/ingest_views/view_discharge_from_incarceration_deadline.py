@@ -152,7 +152,6 @@ VIEW_QUERY_TEMPLATE = """
             update_datetime
         FROM collapsed_by_update_datetime
         WHERE update_datetime IS NOT NULL
-        ORDER BY TermId, SentenceId
     )
 
     SELECT DISTINCT

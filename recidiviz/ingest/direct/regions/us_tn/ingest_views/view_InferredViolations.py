@@ -71,7 +71,6 @@ SELECT
     WHEN DATE_DIFF(ContactNoteDateTime, LAG(ContactNoteDateTime) OVER (PARTITION BY OffenderID ORDER BY ContactNoteDateTime ASC), DAY) < 31 THEN 'less_than_30_days'
     ELSE 'likely_unrelated' END AS time_between_this_and_previous_event
 FROM cleaned_contact_note_type
-ORDER BY OffenderID, ContactNoteDateTime
 ),
 identifying_likely_related_events AS (
     SELECT 
@@ -85,7 +84,6 @@ identifying_likely_related_events AS (
             WHEN time_between_this_and_previous_event = 'less_than_30_days' THEN NULL
             ELSE sequence END AS sequence_with_groupings_for_related_events
     FROM ordered_vwars_vrpts
-    ORDER BY OffenderID, ContactNoteDateTime
 ),
 grouping_likely_related_events AS (
   SELECT 
@@ -100,7 +98,6 @@ grouping_likely_related_events AS (
             WHEN sequence_with_groupings_for_related_events is NULL THEN LAST_VALUE(sequence_with_groupings_for_related_events IGNORE NULLS) OVER (PARTITION BY OffenderID ORDER BY ContactNoteDateTime ASC) 
             ELSE sequence_with_groupings_for_related_events END AS sequence_with_groupings_for_related_events
   FROM identifying_likely_related_events 
-  ORDER BY sequence
 ),
 all_inferred_violations AS (
 SELECT 

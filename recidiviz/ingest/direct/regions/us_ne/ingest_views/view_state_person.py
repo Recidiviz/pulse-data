@@ -23,22 +23,20 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 VIEW_QUERY_TEMPLATE = """
-WITH 
--- creating subquery to use QUALIFY #TODO(#32198) remove once fixed 
-person_info AS (
-    SELECT 
-        internalId,
-        lastName,
-        firstName,
-        DATE(NULLIF(dob, 'NULL')) AS dob,
-        GENDER_CD,
-        RACE_CD,
-     FROM {InmatePreviousId} i
-     LEFT JOIN {CTS_Inmate} c
-     on i.inmateNumber = c.ID_NBR
-     QUALIFY ROW_NUMBER() OVER(PARTITION BY internalId ORDER BY receivedDate DESC) = 1
-)
-SELECT * FROM person_info
+SELECT 
+    internalId,
+    lastName,
+    firstName,
+    DATE(NULLIF(dob, 'NULL')) AS dob,
+    GENDER_CD,
+    RACE_CD,
+FROM 
+    {InmatePreviousId} i
+LEFT JOIN 
+    {CTS_Inmate} c
+ON 
+    i.inmateNumber = c.ID_NBR
+QUALIFY ROW_NUMBER() OVER(PARTITION BY internalId ORDER BY receivedDate DESC) = 1
 """
 
 VIEW_BUILDER = DirectIngestViewQueryBuilder(

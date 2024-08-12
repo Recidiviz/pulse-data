@@ -38,9 +38,10 @@ from recidiviz.ingest.direct.views.direct_ingest_view_query_builder_collector im
 from recidiviz.tests.big_query.big_query_emulator_test_case import (
     BigQueryEmulatorTestCase,
 )
-from recidiviz.tests.big_query.big_query_test_helper import (
+from recidiviz.tests.big_query.big_query_test_helper import query_view
+from recidiviz.tests.big_query.sqlglot_helpers import (
+    check_query_is_not_ordered_outside_of_windows,
     get_undocumented_ctes,
-    query_view,
 )
 from recidiviz.tests.ingest.direct.direct_ingest_raw_fixture_loader import (
     DirectIngestRawDataFixtureLoader,
@@ -152,9 +153,32 @@ class IngestViewEmulatorQueryTestCase(BigQueryEmulatorTestCase):
         pd.options.display.max_rows = 999
         pd.options.display.max_colwidth = 999
         self.compare_results_to_fixture(results, expected_output_fixture_path)
-        self.check_ingest_view_ctes_are_documented(
+        self.lint_ingest_view_query(
             self.ingest_view, self.query_run_dt, self.state_code
         )
+
+    def lint_ingest_view_query(
+        self,
+        ingest_view: DirectIngestViewQueryBuilder,
+        query_run_dt: datetime.datetime,
+        state_code: StateCode,
+    ) -> None:
+        """Does advanced checks of ingest view queries for efficiency and documentation."""
+        query = ingest_view.build_query(
+            config=DirectIngestViewQueryBuilder.QueryStructureConfig(
+                raw_data_source_instance=DirectIngestInstance.PRIMARY,
+                raw_data_datetime_upper_bound=query_run_dt,
+            )
+        )
+        self.check_ingest_view_ctes_are_documented(query, ingest_view, state_code)
+        try:
+            check_query_is_not_ordered_outside_of_windows(query)
+        except ValueError as ve:
+            msg = (
+                f"Found unnecessary ORDER BY statement in ingest view '{ingest_view.ingest_view_name}'\n"
+                "Ingest view queries with ordered results are unnecessarily inefficient."
+            )
+            raise ValueError(msg) from ve
 
     @staticmethod
     def columns_from_raw_file_config(
@@ -189,19 +213,13 @@ class IngestViewEmulatorQueryTestCase(BigQueryEmulatorTestCase):
 
     def check_ingest_view_ctes_are_documented(
         self,
+        query: str,
         ingest_view: DirectIngestViewQueryBuilder,
-        query_run_dt: datetime.datetime,
         state_code: StateCode,
     ) -> None:
         """Throws if the view has CTEs that are not properly documented with a comment,
         or if CTEs that are now documented are still listed in the exemptions list.
         """
-        query = ingest_view.build_query(
-            config=DirectIngestViewQueryBuilder.QueryStructureConfig(
-                raw_data_source_instance=DirectIngestInstance.PRIMARY,
-                raw_data_datetime_upper_bound=query_run_dt,
-            )
-        )
         undocumented_ctes = get_undocumented_ctes(query)
         ingest_view_name = ingest_view.ingest_view_name
 

@@ -94,7 +94,7 @@ FROM (
   )
 )
 WHERE answer IS NOT NULL AND question_title IS NOT NULL
-ORDER BY OffenderQuestionnaireTemplateId, SectionId),
+),
 
 -- This CTE aggregates all the results into one row pers survey.
 -- For violation type (which is a "check all that apply" question), we string agg
