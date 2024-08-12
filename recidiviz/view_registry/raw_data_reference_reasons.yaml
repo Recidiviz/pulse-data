@@ -91,6 +91,10 @@ US_AZ:
       and this info is relevant to a reentry analysis in AZ.
     reference_views.us_az_location_metadata: |-
       We decode location names in the location metadata view.
+  MEA_PROFILES:
+    us_az_validation.supervision_population_person_level: |-
+      This table is used to join officer names available in external data to PERSON_IDs
+      used internally in the external comparison validation view.
   PERSON:
     us_az_validation.supervision_population_person_level: |-
       This table is used to convert ADC_NUMBER identifiers available in external data
