@@ -30,11 +30,6 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.dataset_config import (
     task_eligibility_spans_state_specific_dataset,
 )
-from recidiviz.task_eligibility.utils.almost_eligible_query_fragments import (
-    clients_eligible,
-    json_to_array_cte,
-    one_criteria_away_from_eligibility,
-)
 from recidiviz.task_eligibility.utils.us_ix_query_fragments import lsir_spans
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -48,13 +43,13 @@ US_IX_TRANSFER_TO_LIMITED_SUPERVISION_DESCRIPTION = """
     """
 
 US_IX_TRANSFER_TO_LIMITED_SUPERVISION_QUERY_TEMPLATE = f"""
-WITH current_task_eligibility_spans_with_peid AS (
-  {join_current_task_eligibility_spans_with_external_id(state_code= "'US_IX'", 
-    tes_task_query_view = 'complete_transfer_to_limited_supervision_form_materialized',
-    id_type = "'US_IX_DOC'")}
-),
-json_to_array_cte AS (
-    {json_to_array_cte('current_task_eligibility_spans_with_peid')}
+WITH eligible_and_almost_eligible AS (
+  {join_current_task_eligibility_spans_with_external_id(
+    state_code="'US_IX'",
+    tes_task_query_view='complete_transfer_to_limited_supervision_jii_form_materialized',
+    id_type="'US_IX_DOC'",
+    eligible_and_almost_eligible_only=True,
+  )}
 ),
 
 {lsir_spans()},
@@ -64,38 +59,6 @@ current_lsir_span AS (
         *
     FROM lsir_spans
     WHERE CURRENT_DATE BETWEEN score_span_start_date AND score_span_end_date
-),
-
-eligible_and_almost_eligible AS (
-    -- ELIGIBLE
-    {clients_eligible(from_cte = 'current_task_eligibility_spans_with_peid')}
-
-    UNION ALL
-
-    -- ALMOST ELIGIBLE (missing negative drug screen within 90 days)
-    {one_criteria_away_from_eligibility(criteria_name='NEGATIVE_DA_WITHIN_90_DAYS',
-                                        from_cte_table_name = "json_to_array_cte")}
-
-    UNION ALL
-
-    -- ALMOST ELIGIBLE (missing employment verification within 90 days)
-    {one_criteria_away_from_eligibility(criteria_name='US_IX_INCOME_VERIFIED_WITHIN_3_MONTHS',
-                                        from_cte_table_name = "json_to_array_cte")}
-
-    UNION ALL
-
-    -- ALMOST ELIGIBLE (missing employment verification and negative drug screen)
-    SELECT
-        * 
-    FROM (SELECT
-            * EXCEPT(array_reasons, is_almost_eligible),
-            
-        FROM json_to_array_cte
-        WHERE 
-            ('US_IX_INCOME_VERIFIED_WITHIN_3_MONTHS' IN UNNEST(ineligible_criteria) 
-                AND 'NEGATIVE_DA_WITHIN_90_DAYS' IN UNNEST (ineligible_criteria))
-            AND ARRAY_LENGTH(ineligible_criteria) = 2
-        )
 )
 
 SELECT
@@ -103,13 +66,12 @@ SELECT
     eae.state_code,
     eae.ineligible_criteria,
     eae.is_eligible,
-    jta.array_reasons,
+    JSON_QUERY_ARRAY(reasons) AS array_reasons,
     cls.lsir_level,
 FROM eligible_and_almost_eligible eae
 LEFT JOIN current_lsir_span cls
     USING(person_id)
-LEFT JOIN json_to_array_cte jta
-    USING(person_id)"""
+"""
 
 US_IX_TRANSFER_TO_LIMITED_SUPERVISION_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=dataset_config.WORKFLOWS_VIEWS_DATASET,
