@@ -132,7 +132,11 @@ def parse_release_reason(
     move_type, move_reason = raw_text.split("@@")
     move_type_list = move_type.split("-")
     move_reason_list = move_reason.split("-")
-
+    if "INFERRED_RELEASE_TO_SUPERVISION" in move_type_list:
+        # We can infer that these movements are releases to supervision, but we don't
+        # actually want to make any assumptions about data with this movement code since
+        # it's only used for movements with data entry errors.
+        return StateIncarcerationPeriodReleaseReason.INTERNAL_UNKNOWN
     if "50" in move_type_list:  # Commutation
         return StateIncarcerationPeriodReleaseReason.COMMUTED
     if any(

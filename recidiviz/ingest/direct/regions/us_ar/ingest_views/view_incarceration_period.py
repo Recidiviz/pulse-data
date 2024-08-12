@@ -25,59 +25,68 @@ from recidiviz.utils.metadata import local_project_id_override
 VIEW_QUERY_TEMPLATE = """
 WITH 
 
--- Incarceration periods are constructed using the following steps:
+/*
+Incarceration periods are constructed using the following steps:
+I. Identifying transition dates, which are the dates on which an incarcerated individual 
+experiences a change in status (including the beginnings/ends of an incarceration term).
+II. Unioning transitions of each type (external movement, bed assignment, and 
+custody classification), deduplicating transitions that share a date, and sorting the
+final set of transition dates.
+III. Building periods by matching the sorted transition dates, which are processed and 
+filtered to yield the view's output.
+*/
 
--- I. Identifying transition dates, which are the dates on which an incarcerated individual 
--- experiences a change in status (including the beginnings/ends of an incarceration term).
--- II. Unioning transitions of each type (external movement, bed assignment, and 
--- custody classification), deduplicating transitions that share a date, and sorting the
--- final set of transition dates.
--- III. Building periods by matching the sorted transition dates, which are processed and 
--- filtered to yield the view's output.
-
+/*
+Some types of movements are recorded for people on supervision, usually right after 
+a release from incarceration or before a violation return. Periods constructed from
+those movements will be filtered out to ensure that people on supervision aren't 
+mis-categorized as incarcerated. If neither location associated with a movement is
+considered a facility (based on the following list of facility-type ORGANIZATIONTYPE
+codes), then it's considered a supervision-only movement and this excluded.
+*/
 facility_locs AS (
-  SELECT org.*
-  FROM {ORGANIZATIONPROF} org
-  LEFT JOIN {ORGANIZATIONPROF} dept
-  ON org.ORGDEPTCODE = dept.PARTYID
-
-  -- Some types of movements are recorded for people on supervision, usually right after 
-  -- a release from incarceration or before a violation return. Periods constructed from
-  -- those movements will be filtered out to ensure that people on supervision aren't 
-  -- mis-categorized as incarcerated. Supervision periods constructed from EXTERNALMOVEMENT 
-  -- data can be identified using the fact that the associated organization will not have
-  -- a parent department. The exception is for movements preceding a prison return from 
-  -- supervision, which often have a parent department of C1 (ACC Director's Office) but 
-  -- don't yet indicate incarceration. Therefore, extra conditions are added for periods 
-  -- with a C1 department to only include community correction center locations, thus 
-  -- excluding field supervision.
-
-  -- This list of incarceration-specific locations is also used to determine whether or
-  -- not a final outgoing movement should be interpreted as the end of an incarceration term. 
-  -- If the final movement is not to one of these locations, then it's treated as terminal
-  -- by the sealed_periods CTE; otherwise, it's probably a transfer or similar movement
-  -- and the final period will be left open.
-
-  WHERE dept.ORGANIZATIONTYPE IN ('A1','I5','U5') OR (
-    dept.ORGANIZATIONTYPE = 'C1' AND (
-      org.ORGANIZATIONTYPE = 'D5' OR org.ORGANIZATIONTYPE LIKE 'C%'
-    )
+  SELECT *
+  FROM {ORGANIZATIONPROF}
+  WHERE ORGANIZATIONTYPE IN (
+    'B1', -- State Prison Unit
+    'B8', -- County Jail Backup
+    'BF', -- Reception Center
+    'D5', -- Community Corrections Center
+    'B2', -- Work Release Center
+    'BG', -- Inmate Hospital
+    'I4', -- Other State Law Enforc. Agency
+    'B6', -- County Jail Contract Condition
+    'C9', -- ACC Interstate Compact
+    'B7', -- County 309-In Jail
+    'BC', -- City Jail Backup
+    'E3', -- Police Department
+    'I5', -- Other State DOC
+    'U1', -- US Marshal
+    'BA', -- City Jail Contract Conditional
+    'U5', -- Federal Prison
+    'C1', -- ACC Director's Office
+    'BB', -- City 309-In Jail
+    'BE', -- Ark Non-DOC Facility
+    'C5', -- ACC Institu. Parole Services
+    'U3', -- Immigration & Nat. Service
+    'C3', -- ACC Residential Services
+    'B9' -- Arkansas Concurrent Sentences
   )
 ),
 
 -- STEP I. IDENTIFYING TRANSITIONS
 
+/*
+Movements into, from, or between facilities are recorded in the EXTERNALMOVEMENT table.
+Movement codes lower than 40, along with 2A and 2B, indicate moves into a facility,
+whereas movement codes 40 and higher (excepting 38), along with 8A, 8B, and 8J, indicate 
+moves out of a facility.  Movements from one facility to another will often show up in 
+the data as 2 moves: the outgoing movement from one facility and then the incoming movement 
+into another, usually on the same day. In these codes, the second movement code will usually 
+be the converse of the first, such as a 90 ('Transferred to Another Facility') followed 
+by a 30 ('Received from Another Facility').
+*/
 external_movements AS (
-  /*
-  Movements into, from, or between facilities are recorded in the EXTERNALMOVEMENT table.
-  Movement codes lower than 40, along with 2A and 2B, indicate moves into a facility,
-  whereas movement codes 40 and higher (excepting 38), along with 8A, 8B, and 8J, indicate 
-  moves out of a facility.  Movements from one facility to another will often show up in 
-  the data as 2 moves: the outgoing movement from one facility and then the incoming movement 
-  into another, usually on the same day. In these codes, the second movement code will usually 
-  be the converse of the first, such as a 90 ('Transferred to Another Facility') followed 
-  by a 30 ('Received from Another Facility').
-  */
   SELECT DISTINCT
     OFFENDERID,
     CAST(
@@ -101,22 +110,22 @@ external_movements AS (
       ELSE 'OUT' 
     END AS direction
   FROM {EXTERNALMOVEMENT}
-  WHERE REGEXP_CONTAINS(OFFENDERID, r'^[[:digit:]]+$') AND
-      EXTERNALMOVEMENTCODE IS NOT NULL AND (
-        LOCATIONREPORTMOVEMENT IN (
-          SELECT PARTYID 
-          FROM facility_locs
-        ) OR
-        OTHERLOCATIONCODE IN (
-          SELECT PARTYID 
-          FROM facility_locs
-        )
-      )
+  WHERE 
+    REGEXP_CONTAINS(OFFENDERID, r'^[[:digit:]]+$') AND
+    EXTERNALMOVEMENTCODE IS NOT NULL 
 ),
-
+-- Location is standardized as the location someone moves into for each movement, which
+-- entails using different location columns for 'IN' and 'OUT' movements.
 external_movements_processed AS (
-  -- Location is standardized as the location someone moves into for each movement, which
-  -- entails using different location columns for 'IN' and 'OUT' movements.
+  SELECT 
+    *,
+    -- The following two columns are created to help identify and use certain discharge data.
+    loc_to IN (
+      SELECT PARTYID 
+      FROM facility_locs
+    ) AS to_facility_loc,
+    EXTERNALMOVEMENTCODE='40' AND NOT has_facility_loc AS masked_discharge
+  FROM (
   SELECT DISTINCT 
     OFFENDERID,
     EMDATETIME,
@@ -127,8 +136,161 @@ external_movements_processed AS (
       WHEN direction = 'OUT' THEN OTHERLOCATIONCODE 
       ELSE NULL 
     END AS loc_to,
-    direction
+    direction,
+    LOCATIONREPORTMOVEMENT IN (
+      SELECT PARTYID 
+      FROM facility_locs
+    ) OR
+    OTHERLOCATIONCODE IN (
+      SELECT PARTYID 
+      FROM facility_locs
+    ) as has_facility_loc,
+    LOCATIONREPORTMOVEMENT,
+    OTHERLOCATIONCODE
   FROM external_movements
+  -- Absconsion-related events (absconsions and returns) can sometimes be reported by a 
+  -- facility-type location, but don't involve any actual detention, so they're filtered out.
+  WHERE EXTERNALMOVEMENTCODE NOT IN ('28','88')
+  )
+),
+/*
+Some data entry errors result in release-to-supervision movements being omitted from
+EXTERNALMOVEMENT. When this happens, someone's data will often look like a move into a
+facility, followed by a discharge from supervision. Because the intermediate movement is 
+missing, and the discharge from supervision isn't used in constructing incarceration periods,
+the person's incarceration periods would show them staying in the facility indefinitely.
+
+This CTE identifies the discharge movements that would be 'masked' because the reporting 
+location isn't a facility. Most of these aren't important for constructing incarceration
+periods, but the ones that are immediately preceded by a movement into a facility location 
+are needed to address the case described above.
+*/
+masked_discharges_and_facility_moves AS (
+  SELECT * 
+  FROM (
+    SELECT
+      *,
+      LAG(to_facility_loc) OVER sorted_moves AS previously_in_facility,
+      LAG(EMDATETIME) OVER sorted_moves AS last_move_date
+    FROM external_movements_processed
+    WHERE has_facility_loc OR masked_discharge
+    WINDOW sorted_moves AS (PARTITION BY OFFENDERID ORDER BY EMDATETIME)
+  ) 
+  WHERE masked_discharge AND previously_in_facility
+),
+/*
+If someone has a movement into a facility followed by a discharge from supervision, the
+intermediate movement from facility -> supervision should be in the SUPERVISIONEVENT table.
+For the relevant 'masked' discharges, we pull in all the supervision start events that
+fall between the facility movement and the supervision discharge. The earliest of these 
+events, if there are any, will be used to infer the end date of the incarceration period.
+*/
+inferred_discharges AS (
+  SELECT * 
+  FROM (
+    SELECT 
+      OFFENDERID,
+      EMDATETIME,
+      EXTERNALMOVEMENTCODE,
+      SEDATE,
+      last_move_date
+    FROM (
+      SELECT 
+        *,
+        ROW_NUMBER() OVER (PARTITION BY OFFENDERID ORDER BY SEDATE) as se_rank
+      FROM (
+        SELECT 
+          em.*,
+          se.SUPVEVENT,
+          se.SEDATE
+        FROM masked_discharges_and_facility_moves em
+        LEFT JOIN (
+          SELECT 
+            *,
+            CAST(
+              CAST(SUPVEVNTDATE AS DATETIME) AS DATE
+            ) AS SEDATE
+          FROM {SUPERVISIONEVENT}
+          WHERE SUPVEVENT IN (
+            'G01', -- Intake New Case
+            'S48', -- Sanction Released from SSP
+            'S31', -- Released from Incarceration
+            'S02', -- Change Type Of Supervision
+            'G07', -- Transfer Within Area
+            'G02', -- Transfer Within Arkansas
+            'L14', -- Administrative Closure
+            'S04', -- To Non-Reporting
+            'L03', -- Transfer To Other State
+            'S16' -- Probation Reinstated
+          )
+        ) se
+      ON 
+        em.OFFENDERID = se.OFFENDERID AND 
+        -- The dates in SUPERVISIONEVENT usually don't have a time component, so we cast
+        -- all the datetimes to dates in this join so that we can still identify supervision
+        -- starts that occur the same day as the pre-supervision facility movement.
+        SEDATE BETWEEN CAST(last_move_date AS DATE) AND CAST(EMDATETIME AS DATE)
+      )
+    )
+    WHERE se_rank = 1
+  ) 
+  WHERE SEDATE is not null 
+),
+/*
+This CTE filters out movements that don't involve a facility-type location on either side.
+This would 'mask' the discharges identified above, so before filtering, we join with 
+inferred_discharges, replacing certain data for the discharge movements so that a) they
+aren't masked anymore (since has_facility_loc will be set to TRUE) and b) use the date
+for the supervision start event, rather than the date of discharge from supervision.
+
+In some cases, the supervision start event occurs on the same day as the final pre-supervision
+facility movement.  Since SUPERVISIONEVENT usually records dates and not datetimes, we 
+simply add a second to the facility movement's datetime, ensuring that the inferred 
+release to supervision doesn't show up before the movement into a facility. This creates
+1-second long periods in the pre-supervision facility before the person is released; we
+do this instead of replacing the facility movement entirely, in case it becomes useful to know 
+what facility officially released someone to supervision.
+*/
+external_movements_filtered AS (
+  SELECT *
+  FROM (
+  SELECT 
+    em.OFFENDERID,
+    CASE 
+      WHEN dis.SEDATE IS NOT NULL AND dis.SEDATE = CAST(dis.last_move_date AS DATE) 
+        THEN DATETIME_ADD(dis.last_move_date,INTERVAL 1 SECOND)
+      WHEN dis.SEDATE IS NOT NULL 
+        THEN CAST(dis.SEDATE AS DATETIME)
+      ELSE em.EMDATETIME 
+    END AS EMDATETIME,
+    CASE 
+      WHEN dis.SEDATE IS NOT NULL THEN 'INFERRED_RELEASE_TO_SUPERVISION'
+      ELSE em.EXTERNALMOVEMENTCODE 
+    END AS EXTERNALMOVEMENTCODE,
+    CASE 
+      WHEN dis.SEDATE IS NOT NULL THEN 'UNKNOWN'
+      ELSE em.REASONFORMOVEMENT 
+    END AS REASONFORMOVEMENT,
+    CASE 
+      -- Inferred supervision releases have their location set to the 'Unknown' location code.
+      WHEN dis.SEDATE IS NOT NULL THEN '0099999'  
+      ELSE em.loc_to 
+    END AS loc_to,
+    CASE 
+      WHEN dis.SEDATE IS NOT NULL THEN 'OUT' 
+      ELSE em.direction 
+    END AS direction,
+    CASE 
+      WHEN dis.SEDATE IS NOT NULL THEN TRUE
+      ELSE em.has_facility_loc 
+    END AS has_facility_loc
+  FROM external_movements_processed em
+  LEFT JOIN inferred_discharges dis
+  USING(OFFENDERID,EMDATETIME)
+  )
+  -- Supervision-only movements can be identified and excluded using the locations 
+  -- specified in the facility_locs CTE.
+  WHERE has_facility_loc 
 ),
 
 -- The next 3 CTEs capture the critical dates on which someone's status meaningfully
@@ -137,6 +299,7 @@ external_movements_processed AS (
 -- 2. Changes in locations within a facility
 -- 3. Changes in custody level
 
+-- Get critical dates for changes in facility
 external_movement_transition_dates AS (
   SELECT *
   FROM (
@@ -149,14 +312,14 @@ external_movement_transition_dates AS (
       LAG(loc_to) OVER ordered_movements AS last_loc_to,
       LEAD(loc_to) OVER ordered_movements AS next_loc_to,
       direction
-    FROM external_movements_processed
+    FROM external_movements_filtered
     WINDOW ordered_movements AS (PARTITION BY OFFENDERID ORDER BY EMDATETIME)
   ) adjacent_movements
   -- The other 2 transition date CTEs don't include the LEAD value in their WHERE
   -- condition, but it's done here to retain information about a prison term's closing.
   WHERE loc_to != last_loc_to OR last_loc_to IS NULL OR next_loc_to IS NULL
 ),
-
+-- Get critical dates for changes in locations within a facility
 bed_assignment_transition_dates AS (
   SELECT 
     ba_transitions.*,
@@ -197,7 +360,7 @@ bed_assignment_transition_dates AS (
   ON 
     ba_transitions.FACILITYWHEREBEDLOCATED = ha.PARTYID AND ba_transitions.INMATEHOUSINGAREAID = ha.FACILITYBUILDINGID 
 ),
-
+-- Get critical dates for changes in custody level
 custody_classification_transition_dates AS (
   SELECT *
   FROM (
@@ -238,14 +401,16 @@ custody_classification_transition_dates AS (
 
 -- STEP II. COMPILING/PROCESSING TRANSITIONS
 
+/*
+Union the 3 transition date CTEs via an outer join. This means that on dates where
+only one type of transition occurs, other types of transition information will be 
+null, whereas dates with multiple types of transition will have information for each.
+Both of these cases are handled by coalescing the data to either retreive the non-null
+value, or prioritize the values based on the transition type (for instance, if an external 
+movement and a bed assignment occur on the same date, the external movement will be
+used to set the new location).
+*/
 joined_transitions AS (
-  -- Union the 3 transition date CTEs via an outer join. This means that on dates where
-  -- only one type of transition occurs, other types of transition information will be 
-  -- null, whereas dates with multiple types of transition will have information for each.
-  -- Both of these cases are handled by coalescing the data to either retreive the non-null
-  -- value, or prioritize the values based on the transition type (for instance, if an external 
-  -- movement and a bed assignment occur on the same date, the external movement will be
-  -- used to set the new location).
   SELECT 
     OFFENDERID,
     EMDATETIME,
@@ -282,18 +447,19 @@ joined_transitions AS (
   ) transitions_coalesced
   WINDOW prior_moves AS (PARTITION BY OFFENDERID ORDER BY EMDATETIME ROWS UNBOUNDED PRECEDING)
 ),
-
+/*
+To avoid constructing duplicate/overlapping periods, transition data must be
+deduplicated such that transition dates are unique at the person level. When there
+are multiple types of transition on a given date, this CTE collapses them into a 
+single transition. Different types of period information are handled differently:
+person, date, and sequence number don't require processing as they will be the same
+(since MOVE_SEQ is set using a RANK not ROW_NUMBER). Movement code, reason, and direction
+are concatenated and separated by hyphens. Other data is taken from the transition
+that specifies it: for example, if a bed assignment and custody assignment occur at the
+same time, the location data is pulled from the bed assignment transition and the custody
+level data is pulled from the custody assignment transition.
+*/
 deduped_transitions as (
-  -- To avoid constructing duplicate/overlapping periods, transition data must be
-  -- deduplicated such that transition dates are unique at the person level. When there
-  -- are multiple types of transition on a given date, this CTE collapses them into a 
-  -- single transition. Different types of period information are handled differently:
-  -- person, date, and sequence number don't require processing as they will be the same
-  -- (since MOVE_SEQ is set using a RANK not ROW_NUMBER). Movement code, reason, and direction
-  -- are concatenated and separated by hyphens. Other data is taken from the transition
-  -- that specifies it: for example, if a bed assignment and custody assignment occur at the
-  -- same time, the location data is pulled from the bed assignment transition and the custody
-  -- level data is pulled from the custody assignment transition.
   SELECT DISTINCT
     OFFENDERID,
     EMDATETIME, 
@@ -329,9 +495,8 @@ deduped_transitions as (
     ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING
   )
 ),
-
+-- Union the unique transition dates with the data deduplicated in the previous CTE.
 all_transitions AS (
-  -- Union the unique transition dates with the data deduplicated in the previous CTE.
   SELECT * 
   FROM (
     SELECT jt.* 
@@ -348,8 +513,8 @@ all_transitions AS (
 
 -- STEP III. CONSTRUCTING/FILTERING PERIODS
 
+-- Construct periods using the full set of transition dates.
 basic_periods AS (
-  -- Construct periods using the full set of transition dates.
   SELECT 
     td_starts.OFFENDERID,
     td_starts.EXTERNALMOVEMENTCODE AS entry_code,
@@ -378,10 +543,9 @@ basic_periods AS (
     td_starts.OFFENDERID = td_ends.OFFENDERID AND 
     td_starts.MOVE_SEQ = td_ends.MOVE_SEQ - 1
 ),
-
+-- Drop periods starting with a terminal movement, and shift those periods' exit 
+-- codes/reasons to the previous period to set the correct period closure data.
 sealed_periods AS (
-  -- Drop periods starting with a terminal movement, and shift those periods' exit 
-  -- codes/reasons to the previous period to set the correct period closure data.
   SELECT DISTINCT 
     OFFENDERID,
     start_date,
