@@ -45,7 +45,7 @@ WITH community_opp_info AS (
             CASE WHEN NeedsAddressed LIKE '%Mental health%' THEN 'MentalHealth,' ELSE '' END,
             CASE WHEN NeedsAddressed LIKE '%Substance use%' THEN 'SubstanceUse,' ELSE '' END,
             CASE WHEN NeedsAddressed LIKE '%Transportation%' THEN 'Transportation,' ELSE '' END,
-            CASE WHEN NeedsAddressed LIKE '%Other%' THEN 'Other' ELSE '' END
+            CASE WHEN NeedsAddressed LIKE '%Other%' THEN 'Other,' ELSE '' END
         ) AS needsAddressedConcat,
        REGEXP_REPLACE(ProviderPhoneNumber, r'[^0-9]', '') AS CleanedProviderPhoneNumber,
         CASE
