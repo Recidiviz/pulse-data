@@ -67,6 +67,8 @@ US_CO_PID = "US_CO_PID"
 
 # Unique identifier
 US_NE_DOC = "US_NE_DOC"
+# Unique internal identifier
+US_NE_INTERNAL_ID = "US_NE_INTERNAL_ID"
 
 # ND Elite ID - tracks someone across all incarceration stays
 US_ND_ELITE = "US_ND_ELITE"
