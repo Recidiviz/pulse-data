@@ -16,10 +16,13 @@
 # =============================================================================
 """Tests for BaseSchemaEntityConverter"""
 from unittest import TestCase
-from unittest.mock import create_autospec
+from unittest.mock import create_autospec, patch
 
 from more_itertools import one
 
+from recidiviz.persistence.database.schema_entity_converter import (
+    base_schema_entity_converter,
+)
 from recidiviz.persistence.database.schema_entity_converter.base_schema_entity_converter import (
     BaseSchemaEntityConverter,
 )
@@ -56,7 +59,7 @@ class _TestSchemaEntityConverter(BaseSchemaEntityConverter):
         class_mapper = SchemaToEntityClassMapper.get(
             schema_module=schema, entities_module=entities
         )
-        super().__init__(class_mapper, FAKE_SCHEMA_DIRECTION_CHECKER)
+        super().__init__(class_mapper)
 
 
 class SimpsonsFamily:
@@ -99,6 +102,12 @@ class TestBaseSchemaEntityConverter(TestCase):
     """Tests for BaseSchemaEntityConverter"""
 
     def setUp(self) -> None:
+        self.direction_checker_patcher = patch(
+            f"{base_schema_entity_converter.__name__}.direction_checker_for_module",
+            return_value=FAKE_SCHEMA_DIRECTION_CHECKER,
+        )
+        self.direction_checker_patcher.start()
+
         self.database_key = create_autospec(SQLAlchemyDatabaseKey)
         self.database_key.declarative_meta = FakeBase
         self.database_key.isolation_level = "SERIALIZABLE"
@@ -114,6 +123,7 @@ class TestBaseSchemaEntityConverter(TestCase):
 
     def tearDown(self) -> None:
         fakes.teardown_in_memory_sqlite_databases()
+        self.direction_checker_patcher.stop()
 
     def test_add_behavior(self) -> None:
         with SessionFactory.using_database(

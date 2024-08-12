@@ -88,7 +88,6 @@ from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.entity_utils import (
     CoreEntityFieldIndex,
     EntityFieldType,
-    SchemaEdgeDirectionChecker,
     deep_entity_update,
     entities_have_direct_relationship,
     get_all_entities_from_tree,
@@ -105,7 +104,9 @@ from recidiviz.persistence.entity.entity_utils import (
     is_reference_only_entity,
     set_backedges,
 )
-from recidiviz.persistence.entity.operations import entities as operations_entities
+from recidiviz.persistence.entity.schema_edge_direction_checker import (
+    direction_checker_for_module,
+)
 from recidiviz.persistence.entity.state import entities as state_entities
 from recidiviz.persistence.entity.state import normalized_entities
 from recidiviz.persistence.entity.state.entities import (
@@ -973,74 +974,13 @@ class TestEntityUtils(TestCase):
         )
         self.assertEqual(state_entities, get_module_for_entity_class(StatePerson))
 
-    def test_schemaEdgeDirectionChecker_isHigherRanked_higherRank(self) -> None:
-        direction_checker = SchemaEdgeDirectionChecker.state_direction_checker()
-        self.assertTrue(
-            direction_checker.is_higher_ranked(StatePerson, StateIncarcerationSentence)
-        )
-        self.assertTrue(
-            direction_checker.is_higher_ranked(StatePerson, StateSupervisionViolation)
-        )
-
-    def test_schemaEdgeDirectionChecker_isHigherRanked_lowerRank(self) -> None:
-        direction_checker = SchemaEdgeDirectionChecker.state_direction_checker()
-        self.assertFalse(
-            direction_checker.is_higher_ranked(StateSupervisionSentence, StatePerson)
-        )
-        self.assertFalse(
-            direction_checker.is_higher_ranked(StateSupervisionViolation, StatePerson)
-        )
-
-    def test_schemaEdgeDirectionChecker_isHigherRanked_sameRank(self) -> None:
-        direction_checker = SchemaEdgeDirectionChecker.state_direction_checker()
-        self.assertFalse(direction_checker.is_higher_ranked(StatePerson, StatePerson))
-        self.assertFalse(
-            direction_checker.is_higher_ranked(
-                StateSupervisionViolation, StateSupervisionViolation
-            )
-        )
-
-    def test_schemaEdgeDirectionChecker_covers_all_entities_operations(self) -> None:
-        entity_classes = get_all_entity_classes_in_module(operations_entities)
-        direction_checker = SchemaEdgeDirectionChecker.operations_direction_checker()
-        for entity_cls_a in entity_classes:
-            for entity_cls_b in entity_classes:
-                if entity_cls_a == entity_cls_b:
-                    continue
-                # If this doesn't crash, the class is covered
-                _ = direction_checker.is_higher_ranked(entity_cls_a, entity_cls_b)
-
-    def test_schemaEdgeDirectionChecker_covers_all_entities_state(self) -> None:
-        entity_classes = get_all_entity_classes_in_module(state_entities)
-        direction_checker = SchemaEdgeDirectionChecker.state_direction_checker()
-        for entity_cls_a in entity_classes:
-            for entity_cls_b in entity_classes:
-                if entity_cls_a == entity_cls_b:
-                    continue
-                # If this doesn't crash, the class is covered
-                _ = direction_checker.is_higher_ranked(entity_cls_a, entity_cls_b)
-
-    def test_schemaEdgeDirectionChecker_covers_all_entities_normalized_state(
-        self,
-    ) -> None:
-        entity_classes = get_all_entity_classes_in_module(normalized_entities)
-        direction_checker = (
-            SchemaEdgeDirectionChecker.normalized_state_direction_checker()
-        )
-        for entity_cls_a in entity_classes:
-            for entity_cls_b in entity_classes:
-                if entity_cls_a == entity_cls_b:
-                    continue
-                # If this doesn't crash, the class is covered
-                _ = direction_checker.is_higher_ranked(entity_cls_a, entity_cls_b)
-
     def test_normalized_and_state_have_same_class_hierarchy(self) -> None:
         """If this test fails _NORMALIZED_STATE_CLASS_HIERARCHY and
         _STATE_CLASS_HIERARCHY are not sorted in the same way for equivalent classes.
         """
         equivalent_state_classes_list = []
-        normalized_state_direction_checker = (
-            SchemaEdgeDirectionChecker.normalized_state_direction_checker()
+        normalized_state_direction_checker = direction_checker_for_module(
+            normalized_entities
         )
 
         def sort_fn(a: Type[Entity], b: Type[Entity]) -> int:
@@ -1064,7 +1004,7 @@ class TestEntityUtils(TestCase):
             if not equivalent_state_class:
                 continue
             equivalent_state_classes_list.append(equivalent_state_class)
-        state_direction_checker = SchemaEdgeDirectionChecker.state_direction_checker()
+        state_direction_checker = direction_checker_for_module(state_entities)
         state_direction_checker.assert_sorted(equivalent_state_classes_list)
 
     def test_is_reference_only_entity(self) -> None:

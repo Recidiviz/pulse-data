@@ -34,9 +34,9 @@ from recidiviz.common.attr_utils import (
 )
 from recidiviz.common.attr_validators import IsListOfValidator, IsOptionalValidator
 from recidiviz.persistence.entity.base_entity import Entity
-from recidiviz.persistence.entity.entity_utils import (
-    SchemaEdgeDirectionChecker,
-    get_all_entity_classes_in_module,
+from recidiviz.persistence.entity.entity_utils import get_all_entity_classes_in_module
+from recidiviz.persistence.entity.schema_edge_direction_checker import (
+    direction_checker_for_module,
 )
 from recidiviz.persistence.entity.state import entities as state_entities
 from recidiviz.persistence.entity.state import normalized_entities
@@ -105,9 +105,7 @@ class TestNormalizedEntities(unittest.TestCase):
                 )
             return
 
-        direction_checker = (
-            SchemaEdgeDirectionChecker.normalized_state_direction_checker()
-        )
+        direction_checker = direction_checker_for_module(normalized_entities)
         is_backedge_field = direction_checker.is_back_edge(entity_class, field_name)
         if is_backedge_field and field_default is None:
             default_ok = True
@@ -143,9 +141,7 @@ class TestNormalizedEntities(unittest.TestCase):
                 f"which has a validator that allows for optional values.",
             )
 
-        direction_checker = (
-            SchemaEdgeDirectionChecker.normalized_state_direction_checker()
-        )
+        direction_checker = direction_checker_for_module(normalized_entities)
         is_backedge_field = direction_checker.is_back_edge(entity_class, field_name)
 
         if is_backedge_field:

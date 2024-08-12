@@ -30,7 +30,6 @@ from recidiviz.persistence.database.schema_entity_converter.schema_to_entity_cla
     SchemaToEntityClassMapper,
 )
 from recidiviz.persistence.entity.base_entity import Entity
-from recidiviz.persistence.entity.entity_utils import SchemaEdgeDirectionChecker
 from recidiviz.persistence.entity.operations import entities
 
 
@@ -43,10 +42,7 @@ class _OperationsSchemaEntityConverter(
         class_mapper = SchemaToEntityClassMapper.get(
             schema_module=schema, entities_module=entities
         )
-        super().__init__(
-            class_mapper=class_mapper,
-            direction_checker=SchemaEdgeDirectionChecker.operations_direction_checker(),
-        )
+        super().__init__(class_mapper=class_mapper)
 
 
 class OperationsSchemaToEntityConverter(

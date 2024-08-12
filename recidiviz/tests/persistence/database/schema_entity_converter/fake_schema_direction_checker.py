@@ -17,7 +17,9 @@
 """Defines a class hierarchy / SchemaEdgeDirectionChecker for the schema represented in
 fake_entities.py / fake_schema.py
 """
-from recidiviz.persistence.entity.entity_utils import SchemaEdgeDirectionChecker
+from recidiviz.persistence.entity.schema_edge_direction_checker import (
+    SchemaEdgeDirectionChecker,
+)
 from recidiviz.tests.persistence.database.schema_entity_converter import (
     fake_entities as entities,
 )
@@ -29,4 +31,4 @@ CLASS_HIERARCHY = [
     entities.Toy.__name__,
 ]
 
-FAKE_SCHEMA_DIRECTION_CHECKER = SchemaEdgeDirectionChecker(CLASS_HIERARCHY, entities)
+FAKE_SCHEMA_DIRECTION_CHECKER = SchemaEdgeDirectionChecker(CLASS_HIERARCHY)

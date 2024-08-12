@@ -43,9 +43,9 @@ from recidiviz.persistence.database.schema_entity_converter.schema_to_entity_cla
     SchemaToEntityClassMapper,
 )
 from recidiviz.persistence.entity.base_entity import Entity
-from recidiviz.persistence.entity.entity_utils import (
-    CoreEntityFieldIndex,
-    SchemaEdgeDirectionChecker,
+from recidiviz.persistence.entity.entity_utils import CoreEntityFieldIndex
+from recidiviz.persistence.entity.schema_edge_direction_checker import (
+    direction_checker_for_module,
 )
 
 SrcIdType = int
@@ -83,11 +83,7 @@ class BaseSchemaEntityConverter(Generic[SrcBaseType, DstBaseType]):
     entity types.
     """
 
-    def __init__(
-        self,
-        class_mapper: SchemaToEntityClassMapper,
-        direction_checker: Optional[SchemaEdgeDirectionChecker],
-    ):
+    def __init__(self, class_mapper: SchemaToEntityClassMapper):
         """
         Args:
             direction_checker: A SchemaEdgeDirectionChecker object that is
@@ -96,7 +92,9 @@ class BaseSchemaEntityConverter(Generic[SrcBaseType, DstBaseType]):
             are no edges between nodes in the graph.
         """
         self._class_mapper = class_mapper
-        self._direction_checker = direction_checker
+        self._direction_checker = direction_checker_for_module(
+            class_mapper.entities_module
+        )
 
         # Cache of src object id to corresponding converted object
         self._converted_map: Dict[SrcIdType, DstBaseType] = {}

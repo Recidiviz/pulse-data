@@ -54,11 +54,13 @@ from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.entity_utils import (
     CoreEntityFieldIndex,
     EntityFieldType,
-    SchemaEdgeDirectionChecker,
     get_association_table_id,
     is_many_to_many_relationship,
     is_many_to_one_relationship,
     is_one_to_many_relationship,
+)
+from recidiviz.persistence.entity.schema_edge_direction_checker import (
+    direction_checker_for_module,
 )
 from recidiviz.persistence.entity.state import entities as state_entities
 from recidiviz.persistence.entity.state import normalized_entities
@@ -182,12 +184,9 @@ class ExtractRootEntityDataForPipeline(beam.PTransform):
 
         if issubclass(root_entity_cls, NormalizedStateEntity):
             entities_module: ModuleType = normalized_entities
-            direction_checker = (
-                SchemaEdgeDirectionChecker.normalized_state_direction_checker()
-            )
         else:
             entities_module = state_entities
-            direction_checker = SchemaEdgeDirectionChecker.state_direction_checker()
+        direction_checker = direction_checker_for_module(entities_module)
 
         self._entities_module = entities_module
         self._field_index = CoreEntityFieldIndex(direction_checker)
