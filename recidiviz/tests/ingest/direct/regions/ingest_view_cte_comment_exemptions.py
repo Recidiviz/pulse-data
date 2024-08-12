@@ -48,14 +48,6 @@ THESE_INGEST_VIEWS_HAVE_UNDOCUMENTED_CTES: Dict[StateCode, Dict[str, List[str]]]
     StateCode.US_AR: {
         "employment_period": ["employer_address"],
         "incarceration_incident": ["unpivoted_violation_outcomes", "violations"],
-        "incarceration_period": [
-            "all_transitions",
-            "bed_assignment_transition_dates",
-            "custody_classification_transition_dates",
-            "deduped_transitions",
-            "external_movements_processed",
-            "sealed_periods",
-        ],
         "person": ["op_cleaned", "ora_deduped"],
         "supervision_period": [
             "cleaned_se",
