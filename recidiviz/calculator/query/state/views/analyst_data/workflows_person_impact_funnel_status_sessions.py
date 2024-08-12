@@ -123,13 +123,16 @@ task_completion_sessions AS (
         AND b.start_date > a.completion_event_date
         AND a.completion_event_type = b.task_type
         AND b.eligibility_reset
+        -- Exclude future eligibility span start dates
+        AND b.start_date <= CURRENT_DATE("US/Eastern")
     LEFT JOIN
         system_sessions c
     ON
         a.person_id = c.person_id
         AND c.start_date > a.completion_event_date
         AND a.completion_event_type = c.task_type
-    GROUP BY 1, 2, 3, 4    
+    WHERE a.completion_event_date <= CURRENT_DATE("US/Eastern")
+    GROUP BY 1, 2, 3, 4
 )
 ,
 # Get spans over which someone qualified for a certain usage status
@@ -146,6 +149,8 @@ usage_status_end_dates AS (
         UNNEST([{list_to_query_string(list(DISCRETE_USAGE_EVENTS_DICT), quoted=True)}]) AS usage_event_type
     WHERE
         eligibility_reset
+        -- Exclude future eligibility spans
+        AND start_date <= CURRENT_DATE("US/Eastern")
 
     UNION ALL
 
@@ -175,11 +180,33 @@ usage_status_sessions AS (
         AND a.usage_event_type = b.usage_event_type
         AND b.end_date > a.start_date
     WHERE
-        a.usage_event_type IS NOT NULL
+        a.usage_event_type IN ({list_to_query_string(list(DISCRETE_USAGE_EVENTS_DICT), quoted=True)})
     # Use the first end date following the event as the end date of the session
     QUALIFY ROW_NUMBER() OVER (
         PARTITION BY person_id, task_type, usage_event_type, start_date 
         ORDER BY COALESCE(end_date, "9999-01-01")
+    ) = 1
+)
+,
+marked_ineligible_sessions AS (
+    SELECT
+        a.* EXCEPT (end_date_exclusive),
+        # Takes the earliest end date between the snooze span end and the usage reset dates
+        # This ensures that we close out snooze spans when a client moves out of the justice 
+        # system or becomes newly eligible or almost eligible for an opportunity
+        {revert_nonnull_end_date_clause(f"LEAST({nonnull_end_date_clause('a.end_date_exclusive')}, {nonnull_end_date_clause('b.end_date')})")} AS end_date_exclusive,
+    FROM
+        `{{project_id}}.analyst_data.all_task_type_marked_ineligible_spans_materialized` a
+    LEFT JOIN
+        usage_status_end_dates b
+    ON
+        a.person_id = b.person_id
+        AND a.task_type = b.task_type
+        AND {nonnull_end_date_clause("b.end_date")} > a.start_date
+    # Use the first end date following the event as the end date of the session
+    QUALIFY ROW_NUMBER() OVER (
+        PARTITION BY person_id, task_type, start_date 
+        ORDER BY {nonnull_end_date_clause("b.end_date")}
     ) = 1
 )
 ,
@@ -203,7 +230,8 @@ all_sessions AS (
         person_id,
         task_type,
         start_date,
-        end_date,
+        -- Convert any future end dates to NULL
+        CASE WHEN end_date > CURRENT_DATE("US/Eastern") THEN NULL ELSE end_date END AS end_date,
         NULL AS is_justice_involved,
         is_eligible,
         is_almost_eligible,
@@ -211,6 +239,7 @@ all_sessions AS (
         NULL AS task_completed,
         NULL AS denial_reasons,
     FROM `{{project_id}}.analyst_data.all_task_type_eligibility_spans_materialized` eligibility_sessions
+    WHERE start_date <= CURRENT_DATE("US/Eastern")
     UNION ALL
     SELECT
         state_code,
@@ -231,14 +260,14 @@ all_sessions AS (
         person_id,
         task_type,
         start_date,
-        end_date_exclusive AS end_date,
+        CASE WHEN end_date_exclusive > CURRENT_DATE("US/Eastern") THEN NULL ELSE end_date_exclusive END AS end_date,
         NULL AS is_justice_involved,
         NULL AS is_eligible,
         NULL AS is_almost_eligible,
         "MARKED_INELIGIBLE" AS usage_event_type,
         NULL AS task_completed,
         denial_reasons,
-    FROM `{{project_id}}.analyst_data.all_task_type_marked_ineligible_spans_materialized`
+    FROM marked_ineligible_sessions
     UNION ALL
     SELECT
         state_code,
