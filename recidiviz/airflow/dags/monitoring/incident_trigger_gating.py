@@ -25,6 +25,7 @@ from recidiviz.airflow.dags.monitoring.airflow_alerting_incident import (
 )
 from recidiviz.airflow.dags.monitoring.dag_registry import (
     get_calculation_dag_id,
+    get_raw_data_import_dag_id,
     get_sftp_dag_id,
 )
 from recidiviz.airflow.dags.utils.branching_by_key import BRANCH_END_TASK_NAME
@@ -95,6 +96,13 @@ def _get_trigger_predicates() -> List[AlertingIncidentTriggerPredicate]:
                 and len(incident.failed_execution_dates) == 1
             ),
             failure_message="must fail at least twice",
+        ),
+        # TODO(#28239) remove once we actually want to route failures to pager duty
+        AlertingIncidentTriggerPredicate(
+            method=TriggerPredicateMethod.SILENCE,
+            dag_id=get_raw_data_import_dag_id(project_id),
+            condition=lambda _: True,
+            failure_message="raw data import dag is still in development",
         ),
     ]
 
