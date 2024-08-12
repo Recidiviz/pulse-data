@@ -140,6 +140,36 @@ const ConfigurationsTable = ({
 
   return (
     <TableContainer>
+      <div>
+        <h3>Managing configurations:</h3>
+        Only ACTIVE configurations are available for use by the staging and
+        production frontends. Use these actions to update which configurations
+        are ACTIVE for specified feature variants, or the default configuration
+        (no feature variant). Configurations cannot be created in production,
+        only promoted from staging.
+        <ul>
+          <li>
+            Reactivate: Turns an INACTIVE configuration ACTIVE. If there is
+            another ACTIVE configuration with the same feature variant, it will
+            become INACTIVE.
+          </li>
+          <li>
+            Deactivate: Turns an ACTIVE configuration INACTIVE. This means it is
+            no longer able to be promoted or used by the FE.
+          </li>
+          <li>
+            Promote to default: Available on ACTIVE configurations with a
+            feature variant set. Promoting to default will remove the feature
+            variant and set it to the ACTIVE configuration for the default view.
+          </li>
+          <li>
+            Promote to production: When promoted, this configuration will become
+            the ACTIVE configuration used in the production frontend. Only
+            available on staging configurations.
+          </li>
+        </ul>
+      </div>
+
       <Table
         columns={metadataColumns.concat(copyColumns)}
         dataSource={configs}
