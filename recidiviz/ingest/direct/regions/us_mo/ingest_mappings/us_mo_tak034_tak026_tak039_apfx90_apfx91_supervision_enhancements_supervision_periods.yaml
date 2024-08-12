@@ -55,9 +55,7 @@ output:
           admission_reason:
             $conditional:
               - $if:
-                  $and:
-                    - $not_null: SUPV_PERIOD_BEG_DT
-                    - $is_null: START_STATUS_CODE_LIST
+                  $is_null: START_STATUS_CODE_LIST
                 $then: $literal_enum(StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE)
               - $else:
                   $enum_mapping:

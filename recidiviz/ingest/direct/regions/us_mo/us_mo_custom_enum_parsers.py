@@ -22,7 +22,6 @@ my_enum_field:
     $raw_text: MY_CSV_COL
     $custom_parser: us_mo_custom_enum_parsers.<function name>
 """
-import re
 from typing import Callable, Dict, List, Optional, Set
 
 from more_itertools import one
@@ -50,14 +49,12 @@ from recidiviz.common.str_field_utils import sorted_list_from_str
 from recidiviz.ingest.direct.regions.custom_enum_parser_utils import (
     invert_enum_to_str_mappings,
 )
+from recidiviz.ingest.direct.regions.us_mo.ingest_views.templates_sentences import (
+    BOND_STATUSES,
+)
 from recidiviz.pipelines.utils.state_utils.us_mo.us_mo_sentence_classification import (
     UsMoSentenceStatus,
 )
-
-TAK026_STATUS_CYCLE_TERMINATION_REGEX = re.compile(r"99O\d{4}")
-TAK026_STATUS_SUPERVISION_SENTENCE_COMPLETION_REGEX = re.compile(r"95O\d{4}")
-TAK026_STATUS_SUPERVISION_PERIOD_TERMINATION_REGEX = re.compile(r"\d5O\d{4}")
-TAK026_STATUS_SUPERVISION_PERIOD_START_REGEX = re.compile(r"\d5I\d{4}")
 
 NEW_COURT_COMMITTMENT_STATUS_CODES: List[str] = [
     #  All New Court Commitment (10I10*) statuses from TAK026 (except erroneous committment)
@@ -76,6 +73,7 @@ NEW_ADMISSION_SECONDARY_STATUS_CODES: List[str] = [
     "20I1000",  # Court Comm-Inst-Addl Charge
     #  Sometimes this is the only IN status after a Reverse/Remand Completion (90O1050)
     "20L6000",  # CC Fed/State (Papers Only)-AC
+    "30L6000",  # CC Fed/State(Papers Only)-Revt
 ]
 
 COURT_COMMITMENT_REVISIT_STATUS_CODES: List[str] = [
@@ -158,6 +156,19 @@ MID_INCARCERATION_TREATMENT_COMMITMENT_STATUSES: List[str] = [
     # incarceration (usually following a board hold).
     "50N1060",  # Parole Update - Treatment Center
     "50N3060",  # CR Update - Treatment Center
+]
+
+ADMITTED_FOR_TREATMENT_STATUSES: List[str] = [
+    # Statuses that indicate someone entered a facility for treatment
+    # Probation sanction admission for treatment
+    "20I1020",  # Court Comm-Lng Tm Trt-Addl Chg
+    "20I1040",  # Court Comm-120 Day Treat-Addl
+    "20I1060",  # Court Comm-MH 120 Day-Addl Chg
+    "40I2100",  # Prob Rev-Tech-120 Day Treat
+    "40I7060",  # Prob Adm-Post Conv-Trt Pgm
+    "40I7030",  # Prob Adm-Mental Health 120 Day
+    #  Parole returns for treatment
+    "40I1060",  # Parole Ret-Treatment Center
 ]
 
 PROBATION_REVOCATION_RETURN_STATUSES: List[str] = [
@@ -250,15 +261,7 @@ PROBATION_REVOCATION_SECONDARY_STATUS_CODES: List[str] = [
 ]
 
 TREATMENT_SANCTION_STATUS_CODES: List[str] = [
-    # Probation sanction admission for treatment
-    "20I1020",  # Court Comm-Lng Tm Trt-Addl Chg
-    "20I1040",  # Court Comm-120 Day Treat-Addl
-    "20I1060",  # Court Comm-MH 120 Day-Addl Chg
-    "40I2100",  # Prob Rev-Tech-120 Day Treat
-    "40I7060",  # Prob Adm-Post Conv-Trt Pgm
-    "40I7030",  # Prob Adm-Mental Health 120 Day
-    #  Parole returns for treatment
-    "40I1060",  # Parole Ret-Treatment Center
+    *ADMITTED_FOR_TREATMENT_STATUSES,
     *MID_INCARCERATION_TREATMENT_COMMITMENT_STATUSES,
 ]
 
@@ -285,6 +288,7 @@ SUPERVISION_SANCTION_COMMITMENT_FOR_TREATMENT_OR_SHOCK_STATUS_CODES: List[str] =
 BOARD_HOLDOVER_ENTRY_STATUS_CODES: List[str] = [
     #  All Board Holdover incarceration admission statuses (40I*)
     "40I0050",  # Board Holdover
+    "45O0ZZZ",  # Board Holdover     'MUST VERIFY'
     "40I1040",  # Parole Ret-OTST Decision Pend
     "40I3040",  # CR Ret-OTST Decision Pend
 ]
@@ -368,6 +372,20 @@ INVESTIGATION_START_STATUSES: Set[str] = {
     "35I5600",  # Sentencing Assessment-Revisit
 }
 
+PAPERS_ONLY_SUPERVISION_START_STATUSES = [
+    # These statuses are relatively rare (100ish instances cumulatively per year) and happen when someone has been
+    # charged with an MO crime, but has been committed to a federal facility or a prison in a different state. The
+    # person is only actually committed to a MO facility when we see a 40I6000 status. When this shows up on the
+    # admission date of a supervision period, it's likely because the person has been assigned to a PO for
+    # accounting purposes.
+    # TODO(#2905): Write a query to figure out the spans of time someone is under CC Fed/State incarceration and
+    #  generate incarceration periods for that time so we don't count these people erroneously as under supervision.
+    "10L6000",  # New CC Fed/State (Papers Only)
+    "20L6000",  # CC Fed/State (Papers Only)-AC
+    "30L6000",  # CC Fed/State(Papers Only)-Revt
+]
+
+
 SUPERVISION_PERIOD_TERMINATION_REASON_TO_STR_MAPPINGS: Dict[
     StateSupervisionPeriodTerminationReason, List[str]
 ] = {
@@ -379,6 +397,7 @@ SUPERVISION_PERIOD_TERMINATION_REASON_TO_STR_MAPPINGS: Dict[
     ],
     StateSupervisionPeriodTerminationReason.RETURN_FROM_ABSCONSION: [
         "65N9500",  # Offender re-engaged - from TAK026 BW$SCD
+        "65N95ZZ",  # Offender ReEngaged MUST VERIFY
     ],
     StateSupervisionPeriodTerminationReason.DEATH: [
         "99O9020",  # Suicide-Institution
@@ -456,9 +475,6 @@ SUPERVISION_PERIOD_TERMINATION_REASON_TO_STR_MAPPINGS: Dict[
         "99O2215",  # Parole Disc-Retroactive
         "99O2225",  # CR Discharge-Retroactive
         "99O2245",  # Admin Parole Disc-Retroactive
-        "99O3000",  # PreTrial Bond Supv Discharge
-        "99O3100",  # PreTrial Bond-Close Interest
-        "99O3130",  # Bond Supv-No Further Action
         "99O4000",  # IS Compact-Prob Discharge
         "99O4010",  # IS Compact-Prob Return/Tran
         "99O4020",  # IS Compact-Probation Revoked
@@ -479,7 +495,6 @@ SUPERVISION_PERIOD_TERMINATION_REASON_TO_STR_MAPPINGS: Dict[
         "99O5300",  # Executive Clemency Denied
         "99O5305",  # Executive Clemency Granted
         "99O5310",  # Executive Clemency Inv Comp.
-        "99O5405",  # Bond Invest-No Charge
         "99O5500",  # Diversion Denied
         "99O5605",  # SAR Other Disposition
         "99O5610",  # SAR Probation Denied-Other
@@ -490,10 +505,52 @@ SUPERVISION_PERIOD_TERMINATION_REASON_TO_STR_MAPPINGS: Dict[
         "99O7000",  # Relieved of Supv-Court Disc
     ],
     StateSupervisionPeriodTerminationReason.EXTERNAL_UNKNOWN: [],
+    StateSupervisionPeriodTerminationReason.INTERNAL_UNKNOWN: [
+        "65O1050",  # Rev/Rem Conv-Pending
+        "65O6010",  # Inmate Walkaway from EMP/RF
+        "95O0989",  # Erroneous Commit-Completion
+        "95O1000",  # Court Probation Completion
+        "95O1011",  # Ct Prob ECC Comp-CONFIDENTIAL
+        "95O1015",  # Court Prob-No Further Action
+        "95O1026",  # CONFIDENTIAL CLOSED-P&P
+        "95O1050",  # Reverse/Remand Completion
+        "95O2005",  # Div Term of Service-CONFIDENTI
+        "95O2010",  # Parole Completion
+        "95O2015",  # Parole Completion-Admin
+        "95O2110",  # Prob Rev-New Misd Conv-Jail
+        "95O7000",  # Relieved of Supv-Court
+        "95O1040",  # Resentenced
+        "99O7110",  # DOES NOT EXIST IN TAK146 but likely another DAGTA ERROR status
+        "99O7115",  # DATA ERROR-Probation Denied
+        "99O7125",  # DATA ERROR-Revoke Jail Other
+        "99O7130",  # DATA ERROR-Diversion
+        "99O7135",  # DATA ERROR-No Code
+        "99O7140",  # DATA ERROR-Revoke DOC
+        "99O7145",  # DATA ERROR-Suspended
+        "99O7150",  # DATA ERROR-Transfer OTST
+        "99O7155",  # DATA ERROR-Roll Back or Escape
+        "99O7160",  # DATA ERROR-Diversion-Rev-Other
+        *RETURN_FROM_ESCAPE_STATUS_CODES,
+        *RETURN_FROM_ERRONEOUS_RELEASE_STATUS_CODES,
+        *LEGACY_PROBATION_REENTRY_STATUS_CODES,
+    ],
+    StateSupervisionPeriodTerminationReason.ADMITTED_TO_INCARCERATION: [
+        *NEW_COURT_COMMITTMENT_STATUS_CODES,
+        "20I1000",  # Court Comm-Inst-Addl Charge
+        *COURT_COMMITMENT_REVISIT_STATUS_CODES,
+        *RETURN_POST_REMAND_STATUS_CODES,
+        *ADMITTED_FOR_TREATMENT_STATUSES,
+        *SHOCK_SANCTION_STATUS_CODES,
+        *BOARD_HOLDOVER_ENTRY_STATUS_CODES,
+        *INSTITUTIONAL_TRANSFER_FROM_OUT_OF_STATE_STATUS_CODES,
+        *PROBATION_REVOCATION_SECONDARY_STATUS_CODES,
+        *REDUCTION_OF_SENTENCE_REENTRY_STATUS_CODES,
+        "70I3030",  # Out of Custody Returned
+    ],
     StateSupervisionPeriodTerminationReason.REVOCATION: [
+        *PROBATION_REVOCATION_RETURN_STATUSES,
         # TODO(#10498): Consider reclassifying some of these as a status that indicates
         # that it's a return but not a revocation
-        "45O0ZZZ",  # Board Holdover     'MUST VERIFY'
         "45O0010",  # Emergency Board RF Housing
         "45O0050",  # Board Holdover
         "45O1ZZZ",  # Parole Return      'MUST VERIFY'
@@ -544,8 +601,6 @@ SUPERVISION_PERIOD_TERMINATION_REASON_TO_STR_MAPPINGS: Dict[
         "45O5600",  # SAR Probation Denied-DAI
         "45O57ZZ",  # Resentenced-No Rev 'MUST VERIFY'
         "45O5700",  # Resentenced-No Revocation
-        "45O59ZZ",  # Inv/Bnd Sup to DAI 'MUST VERIFY'
-        "45O5999",  # Inv/Bnd Sup Complete- To DAI
         "45O700Z",  # To DAI-Other Sent  'MUST VERIFY'
         "45O7000",  # Field to DAI-Other Sentence
         "45O7001",  # Field Supv to DAI-Same Offense
@@ -576,20 +631,20 @@ SUPERVISION_PERIOD_TERMINATION_REASON_TO_STR_MAPPINGS: Dict[
         "40I1020",  # Parole Ret-New Felony-Viol
         "40I1021",  # Parole Ret-No Violation
         "40I1025",  # Medical Parole Ret - Rescinded
-        "40I1040",  # Parole Ret-OTST Decision Pend
         "40I1050",  # Parole Viol-Felony Law Viol
         "40I1055",  # Parole Viol-Misd Law Viol
-        "40I1060",  # Parole Ret-Treatment Center
         "40I1070",  # Parole Return-Work Release
         # All Conditional Release Return (40I3*) statuses from TAK026
         "40I3010",  # CR Ret-Tech Viol
         "40I3020",  # CR Ret-New Felony-Viol
         "40I3021",  # CR Ret-No Violation
-        "40I3040",  # CR Ret-OTST Decision Pend
         "40I3050",  # CR Viol-Felony Law Viol
         "40I3055",  # CR Viol-Misd Law Viol
         "40I3060",  # CR Ret-Treatment Center
         "40I3070",  # CR Return-Work Release
+        "95O2100",  # Prob Rev-Technical-Jail
+        "95O2105",  # Prob Rev-New Felony Conv-Jail
+        "95O2120",  # Prob Rev-Codes Not Applicable
     ],
     StateSupervisionPeriodTerminationReason.SUSPENSION: [
         "65O2015",  # Court Probation Suspension
@@ -599,6 +654,11 @@ SUPERVISION_PERIOD_TERMINATION_REASON_TO_STR_MAPPINGS: Dict[
         "75O3000",  # MO Field-Interstate Transfer
         "75O3010",  # MO Board-Interstate Transfer
     ],
+    StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE: [
+        # This person has not actually been discharged -they are on lifetime supervision
+        "95O1020",  # Court Prob Comp-Lifetime Supv
+        "95O2060",  # Parole / CR Comp-Lifetime Supv
+    ],
 }
 
 
@@ -606,11 +666,10 @@ SUPERVISION_PERIOD_ADMISSION_REASON_TO_STR_MAPPINGS: Dict[
     StateSupervisionPeriodAdmissionReason, List[str]
 ] = {
     StateSupervisionPeriodAdmissionReason.ABSCONSION: [
-        "65O1010",  # Offender declared absconder - from TAK026 BW$SCD
-        "65O1020",  # Offender declared absconder - from TAK026 BW$SCD
-        "65O1030",  # Offender declared absconder - from TAK026 BW$SCD
-        "99O2035",  # Offender declared absconder - from TAK026 BW$SCD
-        "65L9100",  # Offender declared absconder - from TAK026 BW$SCD
+        "65O1010",  # Parole Absconder
+        "65O1020",  # Conditional Release Absconder
+        "65O1030",  # Adm Parole Release Absconder
+        "65L9100",  # Offender Declared Absconder
     ],
     StateSupervisionPeriodAdmissionReason.RELEASE_FROM_INCARCERATION: [
         # All 40O* statuses correspond to being released from an
@@ -670,22 +729,21 @@ SUPERVISION_PERIOD_ADMISSION_REASON_TO_STR_MAPPINGS: Dict[
         "40O9080",  # Petition Prob Rel-Cust/Detain
         "40O9100",  # Petition Parole Release
         "40O9110",  # Petition Parole Rel-Cus/Detain
+        "90O1070",  # Director's Rel Comp-Life Supv
     ],
     StateSupervisionPeriodAdmissionReason.COURT_SENTENCE: [
         "15I1000",  # New Court Probation
         "15I1200",  # New Court Parole
         "15I2000",  # New Diversion Supervision
-        "15I3000",  # New PreTrial Bond Supervision
-        # These statuses are relatively rare (100ish instances cumulatively per year) and happen when someone has been
-        # charged with an MO crime, but has been committed to a federal facility or a prison in a different state. The
-        # person is only actually committed to a MO facility when we see a 40I6000 status. When this shows up on the
-        # admission date of a supervision period, it's likely because the person has been assigned to a PO for
-        # accounting purposes.
-        # TODO(#2905): Write a query to figure out the spans of time someone is under CC Fed/State incarceration and
-        #  generate incarceration periods for that time so we don't count these people erroneously as under supervision.
-        "10L6000",  # New CC Fed/State (Papers Only)
-        "20L6000",  # CC Fed/State (Papers Only)-AC
-        "30L6000",  # CC Fed/State(Papers Only)-Revt
+        "25I1000",  # Court Probation-Addl Charge
+        "25I1200",  # Court Parole-Addl Charge
+        "25I2000",  # Diversion Supv-Addl Charge
+        "35I1000",  # Court Probation-Revisit
+        "35I1200",  # Court Parole-Revisit
+        "35I2000",  # Diversion Supv-Revisit
+        "35I4000",  # IS Compact-Prob-Revisit
+        "35I4100",  # IS Compact-Parole-Revisit
+        *PAPERS_ONLY_SUPERVISION_START_STATUSES,
     ],
     StateSupervisionPeriodAdmissionReason.RETURN_FROM_SUSPENSION: [
         "65I1099",  # Supervision Reinstated
@@ -695,20 +753,46 @@ SUPERVISION_PERIOD_ADMISSION_REASON_TO_STR_MAPPINGS: Dict[
     ],
     StateSupervisionPeriodAdmissionReason.RETURN_FROM_ABSCONSION: [
         "65N9500",  # Offender re-engaged - from TAK026 BW$SCD
+        "65N95ZZ",  # Offender ReEngaged MUST VERIFY
     ],
-    StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE: [
-        # Since a) we rank INVESTIGATION_START_STATUSES as being the lowest priority status to parse and b) we filter
-        # out all portions of supervision periods that happen before an initial investigation is over, if we pick one of
-        # these statuses as the primary status, it means a new investigation happened to open up on the same day as a
-        # person transferred POs and we want to still count that as a transfer.
-        *INVESTIGATION_START_STATUSES
+    StateSupervisionPeriodAdmissionReason.INTERNAL_UNKNOWN: [
+        "35I4010",  # IS Comp-Unsup/Priv PB-Revisit
+        "35I6010",  # Release from DMH for SVP Supv
+        "35I6020",  # Lifetime Supervision Revisit
+        "60O1050",  # Rev/Rem Conv-Pending
+        "60O3040",  # Erroneous Rel-Oth Jurisdiction
+        "60O3050",  # Erroneous Rel-DAI Direct Rel
+        "60O5010",  # Escape-Perimeter Confinement
+        "60O5020",  # Escape-While in Transit
+        "60O5030",  # Escape-Supervised Outcount
+        "60O5040",  # Escape-Court Appearance
+        "60O5050",  # Escape-Off Site Hospital
+        "60O6010",  # Walkaway From CRC
+        "60O6020",  # Furlough Return Failure
+        "60O6025",  # Extended Limits Return Failure
+        "60O6030",  # Work Release Return Failure
+        "60O6040",  # Unsupervised Outcount Failure
+        "60O6050",  # Other Release Return Failure
+        "60O6110",  # BD Walkaway From CRC
+        "60O6125",  # BD Ext Limits Return Failure
+        "60O6130",  # BD Work Release Return Failure
+        "60O6140",  # BD Unsupv Outcount Return Fail
+        "60O6150",  # BD Other Release Return Fail
+        "60O6210",  # PB Walkaway from CRC
+        "60O6225",  # PB Ext Limits Return Failure
+        "60O6230",  # PB Work Release Return Failure
+        "60O6240",  # PB Unsupv Outcount Return Fail
+        "60O6250",  # PB Other Release Return Fail
+        "70O3010",  # MO Inmate-Interstate Transfer
+        "70O3020",  # Federal Transfer
+        "70O3030",  # Out of Custody Arrested
+        "70O3040",  # CC Papers Only - Erron Rel
     ],
     StateSupervisionPeriodAdmissionReason.TRANSFER_FROM_OTHER_JURISDICTION: [
         "75I3000",  # MO Field-Interstate Returned
         "75I3010",  # MO Board-Interstate Returned
     ],
 }
-
 
 STR_TO_SUPERVISION_PERIOD_ADMISSION_REASON_MAPPINGS: Dict[
     str, StateSupervisionPeriodAdmissionReason
@@ -733,43 +817,76 @@ def parse_supervision_period_admission_reason(
             "Unexpected empty/null status list - empty values should not be passed to this mapper"
         )
 
-    if raw_text == "TRANSFER WITHIN STATE":
+    statuses = [
+        UsMoSentenceStatus(
+            sentence_status_external_id="0-0-0",
+            sentence_external_id="000",
+            status_date=None,
+            status_code=status,
+            status_description="",
+        )
+        for status in sorted_list_from_str(raw_text, ",")
+    ]
+
+    filtered_statuses = [
+        status
+        for status in statuses
+        if (
+            status.is_absconsion_status
+            or status.is_supervision_in_status
+            or status.is_incarceration_out_status
+            or status.status_code in PAPERS_ONLY_SUPERVISION_START_STATUSES
+        )
+        and not status.is_investigation_status
+        and status.status_code not in BOND_STATUSES
+        and not status.is_sentence_termimination_status
+    ]
+    if not filtered_statuses:
         return StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE
 
-    statuses = sorted_list_from_str(raw_text, ",")
-
-    def status_rank(status: str) -> int:
-        """In the case that there are multiple statuses on the same day, we pick the status that is most likely to
-        give us accurate info about the reason this supervision period was started. In the case of supervision
-        period admissions, we pick statuses that have the pattern X5I* (e.g. '15I1000'), since those statuses are
-        field (5) IN (I) statuses. In the absence if one of those statuses, we get our info from other statuses.
+    def status_rank(status: UsMoSentenceStatus) -> int:
+        """In the case that there are multiple statuses on the same day, we pick the
+        status that is most likely to give us accurate info about the reason this
+        supervision period was started. In the case of supervision period admissions,
+        we pick statuses that have the pattern X5I* (e.g. '15I1000'), since those
+        statuses are field (5) IN (I) statuses. In the absence if one of those statuses,
+        we get our info from other statuses.
         """
-        if status not in INVESTIGATION_START_STATUSES:
-            if re.match(TAK026_STATUS_SUPERVISION_PERIOD_START_REGEX, status):
-                return 0
+        if status.status_code in PAPERS_ONLY_SUPERVISION_START_STATUSES:
+            return 3
 
+        if status.is_absconsion_status:
+            return 2
+
+        if status.is_incarceration_out_status:
+            # Sometimes people just have a status that indicates they left incarceration
+            # and entering supervision is implied, but we don't actually see a *5I*
+            # supervision in IN status.
             return 1
 
-        # Since we filter out all portions of supervision periods that happen before an initial investigation is over,
-        # if we find a period that starts with one of these statuses, it means a new investigation happened to open up
-        # on the same day as a person transferred POs. We generally want to ignore this case and just treat it as a
-        # transfer unless there are other statuses that give us more info.
-        return 2
+        if status.is_supervision_in_status:
+            return 0
+
+        raise ValueError(
+            f"Found status code which does not fall into one of the expected "
+            f"categories: [{status.status_code}]"
+        )
 
     sorted_statuses = sorted(
-        statuses, key=lambda status: _status_rank_str(status, status_rank)
+        filtered_statuses,
+        key=lambda status: _status_rank_str(
+            status,
+            status_rank,
+        ),
     )
 
-    for sp_admission_reason_str in sorted_statuses:
-        if (
-            sp_admission_reason_str
-            in STR_TO_SUPERVISION_PERIOD_ADMISSION_REASON_MAPPINGS
-        ):
-            return STR_TO_SUPERVISION_PERIOD_ADMISSION_REASON_MAPPINGS[
-                sp_admission_reason_str
-            ]
-
-    return StateSupervisionPeriodAdmissionReason.INTERNAL_UNKNOWN
+    status_code = sorted_statuses[0].status_code
+    if status_code not in STR_TO_SUPERVISION_PERIOD_ADMISSION_REASON_MAPPINGS:
+        raise ValueError(
+            f"Found primary status code with no known admission reason mapping: "
+            f"[{status_code}]. Original raw text: [{raw_text}]"
+        )
+    return STR_TO_SUPERVISION_PERIOD_ADMISSION_REASON_MAPPINGS[status_code]
 
 
 def parse_supervision_period_termination_reason(
@@ -783,44 +900,100 @@ def parse_supervision_period_termination_reason(
     if not raw_text:
         return None
 
-    if raw_text == "TRANSFER WITHIN STATE":
+    statuses = [
+        UsMoSentenceStatus(
+            sentence_status_external_id="0-0-0",
+            sentence_external_id="000",
+            status_date=None,
+            status_code=status,
+            status_description="",
+        )
+        for status in sorted_list_from_str(raw_text, ",")
+    ]
+
+    filtered_statuses = [
+        status
+        for status in statuses
+        if (
+            status.is_absconsion_status
+            or status.is_incarceration_in_status
+            or status.is_supervision_out_status
+            or status.is_cycle_termination_status
+        )
+        and not status.is_investigation_status
+        and status.status_code not in BOND_STATUSES
+    ]
+    if not filtered_statuses:
         return StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE
 
-    statuses = sorted_list_from_str(raw_text, ",")
-
-    def status_rank(status: str) -> int:
-        """In the case that there are multiple statuses on the same day, we pick the status that is most likely to
-        give us accurate info about the reason this supervision period was terminated. In the case of supervision
-        period terminations, we pick statuses first that have the pattern 99O* (e.g. '99O9020'), since those
-        statuses always end a whole offender cycle, then statuses with pattern 95O* (sentence termination), then
-        finally X5O*, since those statuses are field (5) OUT (O) statuses. In the absence if one of those statuses,
-        we get our info from other statuses.
+    def status_rank(status: UsMoSentenceStatus) -> int:
+        """In the case that there are multiple statuses on the same day, we pick the
+        status that is most likely to give us accurate info about the reason this
+        supervision period was terminated. In the case of supervision period
+        terminations, we pick statuses first that have the pattern 99O* (e.g. '99O9020'),
+        since those statuses always end a whole offender cycle, then statuses with
+        pattern X5O*, since those statuses are field (5) OUT (O) statuses. In the
+        absence if one of those statuses, we get our info from other statuses.
         """
-        if re.match(TAK026_STATUS_CYCLE_TERMINATION_REGEX, status):
+        if status.is_cycle_termination_status:
             return 0
-        if re.match(TAK026_STATUS_SUPERVISION_SENTENCE_COMPLETION_REGEX, status):
+        if (
+            status.is_supervision_out_status
+            # We deprioritize sentence termination statuses because these usually do not
+            # give us meaningful information about why this period ended because, unlike
+            # cycle termination statuses, they do not indicate that the person has left
+            # supervision.
+            and not status.is_sentence_termimination_status
+        ):
             return 1
-        if re.match(TAK026_STATUS_SUPERVISION_PERIOD_TERMINATION_REGEX, status):
+
+        if status.is_incarceration_in_status:
             return 2
-        return 3
+
+        if status.is_absconsion_status:
+            return 3
+
+        if status.is_sentence_termimination_status:
+            return 4
+
+        raise ValueError(
+            f"Found status code which does not fall into one of the expected "
+            f"categories: [{status.status_code}]"
+        )
 
     sorted_statuses = sorted(
-        statuses, key=lambda status: _status_rank_str(status, status_rank)
+        filtered_statuses, key=lambda status: _status_rank_str(status, status_rank)
     )
 
-    for sp_termination_reason_str in sorted_statuses:
-        if (
-            sp_termination_reason_str
-            in STR_TO_SUPERVISION_PERIOD_TERMINATION_REASON_MAPPINGS
-        ):
-            return STR_TO_SUPERVISION_PERIOD_TERMINATION_REASON_MAPPINGS[
-                sp_termination_reason_str
-            ]
+    primary_status = sorted_statuses[0]
+    status_code = primary_status.status_code
 
-    return StateSupervisionPeriodTerminationReason.INTERNAL_UNKNOWN
+    # If we see a sentence termination status but no cycle termination status on a given
+    # day, usually this means something else is going on (e.g. a revocation that
+    # terminates a sentence or a sentence investigation finishing while a new sentence
+    # starts). In somewhat rare occasions we see no other helpful statuses other than
+    # the sentence termination status and in this case we cannot determine a termination
+    # reason.
+    if (
+        not primary_status.is_cycle_termination_status
+        and primary_status.is_sentence_termimination_status
+    ):
+        return StateSupervisionPeriodTerminationReason.INTERNAL_UNKNOWN
+    if status_code not in STR_TO_SUPERVISION_PERIOD_TERMINATION_REASON_MAPPINGS:
+        print(
+            f"Found primary status code with no known termination reason mapping: \n"
+            f"[{status_code}]. Original raw text: [{raw_text}]"
+        )
+        raise ValueError(
+            f"Found primary status code with no known termination reason mapping: "
+            f"[{status_code}]. Original raw text: [{raw_text}]"
+        )
+    return STR_TO_SUPERVISION_PERIOD_TERMINATION_REASON_MAPPINGS[status_code]
 
 
-def _status_rank_str(status: str, rank_fn: Callable[[str], int]) -> str:
+def _status_rank_str(
+    status: UsMoSentenceStatus, rank_fn: Callable[[UsMoSentenceStatus], int]
+) -> str:
     return f"{str({rank_fn(status)}).zfill(3)}{status}"
 
 
