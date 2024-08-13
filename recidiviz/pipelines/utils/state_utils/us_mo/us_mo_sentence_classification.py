@@ -175,6 +175,15 @@ class UsMoSentenceStatus(BuildableAttr):
             )
         )
 
+    # If True, we believe this status is a temporary status that is added as a hint to
+    # what happened, but we're not completely certain.
+    # These statuses have a description that ends in '- MUST VERIFY'
+    is_must_verify_status: bool = attr.ib()
+
+    @is_must_verify_status.default
+    def _get_is_must_verify_status(self) -> bool:
+        return self.status_code.endswith("Z")
+
     # Indicates that this status is critical for determining the supervision type associated with this sentence on a
     # given date.
     is_supervision_type_critical_status: bool = attr.ib()
