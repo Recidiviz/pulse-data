@@ -29,7 +29,12 @@ from recidiviz.utils.types import assert_type
 
 PersonId = int
 StaffId = int
-StaffExternalId = tuple[str, str]
+StaffExternalId = tuple[
+    # String external_id
+    str,
+    # String id type
+    str,
+]
 StaffExternalIdToIdMap = dict[StaffExternalId, StaffId]
 
 STAFF_IDS_KEY = "staff_ids"
@@ -91,14 +96,14 @@ class CreatePersonIdToStaffIdMapping(beam.PTransform):
     def _extract_staff_external_ids_from_staff(
         staff: NormalizedStateStaff,
     ) -> list[StaffExternalId]:
-        """Extract (id_type, external_id) tuples from the given staff."""
-        return [(e.id_type, e.external_id) for e in staff.external_ids]
+        """Extract (external_id, id_type) tuples from the given staff."""
+        return [(e.external_id, e.id_type) for e in staff.external_ids]
 
     def _extract_staff_external_ids_from_person(
         self,
         person: StatePerson,
     ) -> list[StaffExternalId]:
-        """Extract (id_type, external_id) tuples for all staff external ids referenced
+        """Extract (external_id, id_type) tuples for all staff external ids referenced
         by the given person.
         """
 
@@ -111,8 +116,8 @@ class CreatePersonIdToStaffIdMapping(beam.PTransform):
                     staff_external_id_type = getattr(entity, f"{field_name}_type")
                     if staff_external_id:
                         return (
-                            assert_type(staff_external_id_type, str),
                             assert_type(staff_external_id, str),
+                            assert_type(staff_external_id_type, str),
                         )
             return None
 
