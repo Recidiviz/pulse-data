@@ -122,11 +122,11 @@ SUPERVISION_LEVEL_SESSIONS_QUERY_TEMPLATE = """
         session.end_date_exclusive,
         DATE_SUB(session.end_date_exclusive, INTERVAL 1 DAY) AS end_date,
         session_lag.supervision_level AS previous_supervision_level,
-        LAST_VALUE(
+        FIRST_VALUE(
             CASE WHEN session.supervision_level NOT IN {non_active_supervision_levels} THEN session.supervision_level END IGNORE NULLS)
             OVER(
                 PARTITION BY session.state_code, session.person_id, session.supervision_group_id
-                ORDER BY session.start_date
+                ORDER BY session.start_date DESC
             ) AS most_recent_active_supervision_level,
         CASE WHEN session.correctional_level_priority < session_lag.correctional_level_priority
             AND session.is_discretionary_level AND session_lag.is_discretionary_level
