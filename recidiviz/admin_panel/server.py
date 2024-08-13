@@ -17,10 +17,11 @@
 """Flask server for the Admin Panel"""
 import datetime
 import logging
+import os
 from http import HTTPStatus
 from typing import Optional, Tuple
 
-from flask import Flask, redirect
+from flask import Flask, send_from_directory
 from flask_smorest import Api
 from opentelemetry.metrics import set_meter_provider
 from opentelemetry.sdk.trace.sampling import Sampler, TraceIdRatioBased
@@ -49,6 +50,14 @@ from recidiviz.utils.environment import in_gunicorn
 structured_logging.setup()
 
 logging.info("[%s] Running server.py", datetime.datetime.now().isoformat())
+
+_STATIC_FOLDER = os.path.abspath(
+    os.path.join(
+        os.path.dirname(os.path.realpath(__file__)),
+        "../../frontends/admin-panel/build/",
+    )
+)
+
 
 app = Flask(__name__)
 
@@ -146,7 +155,7 @@ if environment.in_development() or environment.in_gcp():
 
 @app.route("/")
 def index() -> Response:
-    return redirect("/admin", HTTPStatus.MOVED_PERMANENTLY)
+    return send_from_directory(_STATIC_FOLDER, "index.html")
 
 
 @app.route("/health")

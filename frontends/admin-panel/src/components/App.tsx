@@ -246,6 +246,11 @@ const App = (): JSX.Element => {
             from="/"
             to={IngestOperations.INGEST_DATAFLOW_ROUTE}
           />
+          <Redirect
+            exact
+            from={IngestOperations.ADMIN_BASE}
+            to={IngestOperations.INGEST_DATAFLOW_ROUTE}
+          />
           <Route
             path={DatasetMetadata.METADATA_DATASET_ROUTE_TEMPLATE}
             component={DatasetView}
