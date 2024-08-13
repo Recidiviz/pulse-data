@@ -24,7 +24,7 @@ from google.cloud.discoveryengine_v1.services.search_service.pagers import Searc
 from recidiviz.prototypes.case_note_search.case_note_search import (
     IDAHO_CASE_NOTES_ENGINE_ID,
     case_note_search,
-    extract_case_notes_responses,
+    extract_case_notes_results,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 
@@ -47,7 +47,7 @@ class TestCaseNoteFunctions(TestCase):
     """This class implements tests for the case note search module."""
 
     @patch("recidiviz.prototypes.case_note_search.case_note_search.GCSBucketReader")
-    def test_extract_case_notes_responses(
+    def test_extract_case_notes_results(
         self, mock_gcs_bucket_reader: MagicMock
     ) -> None:
         mock_pager = MagicMock(spec=SearchPager)
@@ -83,11 +83,11 @@ class TestCaseNoteFunctions(TestCase):
                 "preview": "This is an extractive answer",  # Uses extractive_answer since snippet is None.
             }
         ]
-        results = extract_case_notes_responses(mock_pager)
+        results = extract_case_notes_results(mock_pager)
         self.assertEqual(results, expected_result)
 
     @patch(
-        "recidiviz.prototypes.case_note_search.case_note_search.extract_case_notes_responses"
+        "recidiviz.prototypes.case_note_search.case_note_search.extract_case_notes_results"
     )
     @patch(
         "recidiviz.prototypes.case_note_search.case_note_search.DiscoveryEngineInterface"
@@ -95,7 +95,7 @@ class TestCaseNoteFunctions(TestCase):
     def test_case_note_search(
         self,
         mock_discovery_engine_interface: MagicMock,
-        mock_extract_case_notes_responses: MagicMock,
+        mock_extract_case_notes_results: MagicMock,
     ) -> None:
         query = "test query"
         page_size = 10
@@ -105,10 +105,22 @@ class TestCaseNoteFunctions(TestCase):
         mock_discovery_interface_instance = mock_discovery_engine_interface.return_value
         mock_discovery_interface_instance.search.return_value = mock_search_pager
 
-        mock_extract_case_notes_responses.return_value = "extracted results"
+        case_note_data = {
+            "document_id": "123",
+            "date": "2024-03-28",
+            "contact_mode": "Phone",
+            "note_type": "Supervision",
+            "note_title": None,
+            "extractive_answer": "This is an extractive answer",
+            "case_note": "Full case note content.",
+            "snippet": None,
+            "preview": "This is an extractive answer",  # Uses extractive_answer since snippet is None.
+        }
+
+        mock_extract_case_notes_results.return_value = [case_note_data]
 
         results = case_note_search(query, page_size, filter_conditions)
-        self.assertEqual(results, "extracted results")
+        self.assertEqual(results, {"results": [case_note_data], "error": None})
 
         mock_discovery_engine_interface.assert_called_once_with(
             project_id=GCP_PROJECT_STAGING, engine_id=IDAHO_CASE_NOTES_ENGINE_ID
@@ -119,4 +131,4 @@ class TestCaseNoteFunctions(TestCase):
             filter_conditions=filter_conditions,
             with_snippet=False,
         )
-        mock_extract_case_notes_responses.assert_called_once_with(mock_search_pager)
+        mock_extract_case_notes_results.assert_called_once_with(mock_search_pager)

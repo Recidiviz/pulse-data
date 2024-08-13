@@ -89,7 +89,7 @@ def get_preview(
     raise ValueError("No case note generated.")
 
 
-def extract_case_notes_responses(pager: SearchPager) -> List[Dict[str, Any]]:
+def extract_case_notes_results(pager: SearchPager) -> List[Dict[str, Any]]:
     """
     Extract relevant information from a SearchPager object for case note search results.
     """
@@ -132,7 +132,7 @@ def case_note_search(
     page_size: int = 10,
     filter_conditions: Optional[Dict[str, List[str]]] = None,
     with_snippet: bool = False,
-) -> List[Dict[str, Any]]:
+) -> Dict[str, Any]:
     """
     Perform a case note search using the Discovery Engine interface.
 
@@ -144,9 +144,10 @@ def case_note_search(
             (e.g. {"external_id": ["1234", "6789"]})
         with_snippet: Include snippets in the search results. Defaults to False.
 
-    Returns:
-        List[Dict[str, Any]]: A list of dictionaries containing case note information.
-        Each dictionary contains the following keys:
+    Returns (Dict[str, Any]):
+        In the success case, returns {"results": [<case_note_data>, <case_note_data>], "error": None},
+        where results is a list of dictionaries containing case note information.
+        Each case note dictionary has the following keys:
             - 'document_id' (str): The ID of the document.
             - 'date' (Optional[str]): The date associated with the document.
             - 'contact_mode' (Optional[str]): The contact mode associated with the document.
@@ -156,7 +157,7 @@ def case_note_search(
             - 'snippet' (Optional[str]): A snippet extracted from the document, if requested.
             - 'case_note' (Optional[str]): The full case note content downloaded from GCS.
 
-        In the case of an error, this instead returns [{"error": "description"}].
+        In the error case, the response is {"results": [], "error": <error_description>}.
     """
     try:
         discovery_interface = DiscoveryEngineInterface(
@@ -169,9 +170,10 @@ def case_note_search(
             filter_conditions=filter_conditions,
             with_snippet=with_snippet,
         )
-        return extract_case_notes_responses(search_pager)
+        results = extract_case_notes_results(search_pager)
+        return {"results": results, "error": None}
     except Exception as e:
-        return [{"error": str(e)}]
+        return {"results": [], "error": str(e)}
 
 
 if __name__ == "__main__":
