@@ -397,7 +397,6 @@ SUPERVISION_PERIOD_TERMINATION_REASON_TO_STR_MAPPINGS: Dict[
     ],
     StateSupervisionPeriodTerminationReason.RETURN_FROM_ABSCONSION: [
         "65N9500",  # Offender re-engaged - from TAK026 BW$SCD
-        "65N95ZZ",  # Offender ReEngaged MUST VERIFY
     ],
     StateSupervisionPeriodTerminationReason.DEATH: [
         "99O9020",  # Suicide-Institution
@@ -553,7 +552,6 @@ SUPERVISION_PERIOD_TERMINATION_REASON_TO_STR_MAPPINGS: Dict[
         # that it's a return but not a revocation
         "45O0010",  # Emergency Board RF Housing
         "45O0050",  # Board Holdover
-        "45O1ZZZ",  # Parole Return      'MUST VERIFY'
         "45O1010",  # Parole Ret-Tech Viol
         "45O1020",  # Parole Ret-New Felony-Viol
         "45O1021",  # Parole Ret-No Violation
@@ -561,13 +559,11 @@ SUPERVISION_PERIOD_TERMINATION_REASON_TO_STR_MAPPINGS: Dict[
         "45O1055",  # Parole Viol-Misd Law Viol
         "45O1060",  # Parole Ret-Treatment Center
         "45O1070",  # Parole Return-Work Release
-        "45O2ZZZ",  # Probation Revoked  'MUST VERIFY'
         "45O2000",  # Prob Rev-Technical
         "45O2005",  # Prob Rev-New Felony Conv
         "45O2010",  # Prob Rev-New Misd Conv
         "45O2015",  # Prob Rev-Felony Law Viol
         "45O2020",  # Prob Rev-Misd Law Viol
-        "45O3ZZZ",  # CR Return          'MUST VERIFY'
         "45O3010",  # CR Ret-Tech Viol
         "45O3020",  # CR Ret-New Felony-Viol
         "45O3021",  # CR Ret-No Violation
@@ -575,48 +571,33 @@ SUPERVISION_PERIOD_TERMINATION_REASON_TO_STR_MAPPINGS: Dict[
         "45O3055",  # CR Viol-Misd Law Viol
         "45O3060",  # CR Ret-Treatment Center
         "45O3070",  # CR Return-Work Release
-        "45O40ZZ",  # Resid Fac Return   'MUST VERIFY'
         "45O4010",  # Emergency Inmate RF Housing
         "45O4030",  # RF Return-Administrative
         "45O4035",  # RF Return-Treatment Center
         "45O4040",  # RF Return-Technical
         "45O4045",  # RF Return-New Felony Conv
         "45O4050",  # RF Return-New Misd Conv
-        "45O41ZZ",  # EMP Return         'MUST VERIFY'
         "45O4130",  # EMP Return-Administrative
         "45O4135",  # EMP Return-Treatment Center
         "45O4140",  # EMP Return-Technical
         "45O4145",  # EMP Return-New Felony Conv
         "45O4150",  # EMP Return-New Misd Conv
-        "45O42ZZ",  # IS Compact-Parole- 'MUST VERIFY'
         "45O4270",  # IS Compact-Parole-CRC Work Rel
-        "45O490Z",  # CR Deferred Return 'MUST VERIFY'
         "45O4900",  # CR Deferred Return
         "45O4999",  # Inmate Return From EMP/RF
-        "45O50ZZ",  # PSI-Prob Denied    'MUST VERIFY'
         "45O5000",  # PSI Probation Denied-DAI
-        "45O51ZZ",  # Pre-Sentence Comm  'MUST VERIFY'
         "45O5100",  # Pre-Sent Assess Commit to DAI
-        "45O56ZZ",  # SAR-Prob Denied    'MUST VERIFY'
         "45O5600",  # SAR Probation Denied-DAI
-        "45O57ZZ",  # Resentenced-No Rev 'MUST VERIFY'
         "45O5700",  # Resentenced-No Revocation
-        "45O700Z",  # To DAI-Other Sent  'MUST VERIFY'
         "45O7000",  # Field to DAI-Other Sentence
         "45O7001",  # Field Supv to DAI-Same Offense
-        "45O701Z",  # Prob to DAI-Shock  'MUST VERIFY'
         "45O7010",  # Prob-DAI-Shock Incarceration
-        "45O702Z",  # Prob-Ct Order Det--'MUST VERIFY'
         "45O7020",  # Prob-Ct Order Detention Sanctn
-        "45O703Z",  # Prob-MH 120 Day--'MUST VERIFY'
         "45O7030",  # Prob-Mental Health 120 Day
-        "45O706Z",  # Prob-Post Conv-Trt 'MUST VERIFY'
         "45O7060",  # Prob-Post Conv-Trt Pgm
         "45O7065",  # Prob-Post Conv-RDP
-        "45O77ZZ",  # IS Cmpct-Err Commt 'MUST VERIFY'
         "45O7700",  # IS Compact-Erroneous Commit
         "45O7999",  # Err Release-P&P Return to DAI
-        "45O8ZZZ",  # Admin Return       'MUST VERIFY'
         "45O8010",  # Adm Ret-Tech Viol
         "45O8020",  # Adm Ret-New Felony-Viol
         "45O8021",  # Adm Return-No Violation
@@ -753,7 +734,6 @@ SUPERVISION_PERIOD_ADMISSION_REASON_TO_STR_MAPPINGS: Dict[
     ],
     StateSupervisionPeriodAdmissionReason.RETURN_FROM_ABSCONSION: [
         "65N9500",  # Offender re-engaged - from TAK026 BW$SCD
-        "65N95ZZ",  # Offender ReEngaged MUST VERIFY
     ],
     StateSupervisionPeriodAdmissionReason.INTERNAL_UNKNOWN: [
         "35I4010",  # IS Comp-Unsup/Priv PB-Revisit
@@ -852,6 +832,9 @@ def parse_supervision_period_admission_reason(
         statuses are field (5) IN (I) statuses. In the absence if one of those statuses,
         we get our info from other statuses.
         """
+        if status.is_must_verify_status:
+            return 4
+
         if status.status_code in PAPERS_ONLY_SUPERVISION_START_STATUSES:
             return 3
 
@@ -880,7 +863,14 @@ def parse_supervision_period_admission_reason(
         ),
     )
 
-    status_code = sorted_statuses[0].status_code
+    primary_status = sorted_statuses[0]
+    status_code = primary_status.status_code
+
+    # These statuses are usually ephemeral and will be updated to a more correct status
+    # soon, but indicate that MO is not yet certain about what happened.
+    if primary_status.is_must_verify_status:
+        return StateSupervisionPeriodAdmissionReason.EXTERNAL_UNKNOWN
+
     if status_code not in STR_TO_SUPERVISION_PERIOD_ADMISSION_REASON_MAPPINGS:
         raise ValueError(
             f"Found primary status code with no known admission reason mapping: "
@@ -953,8 +943,11 @@ def parse_supervision_period_termination_reason(
         if status.is_absconsion_status:
             return 3
 
-        if status.is_sentence_termimination_status:
+        if status.is_must_verify_status:
             return 4
+
+        if status.is_sentence_termimination_status:
+            return 5
 
         raise ValueError(
             f"Found status code which does not fall into one of the expected "
@@ -979,6 +972,12 @@ def parse_supervision_period_termination_reason(
         and primary_status.is_sentence_termimination_status
     ):
         return StateSupervisionPeriodTerminationReason.INTERNAL_UNKNOWN
+
+    # These statuses are usually ephemeral and will be updated to a more correct status
+    # soon, but indicate that MO is not yet certain about what happened.
+    if primary_status.is_must_verify_status:
+        return StateSupervisionPeriodTerminationReason.EXTERNAL_UNKNOWN
+
     if status_code not in STR_TO_SUPERVISION_PERIOD_TERMINATION_REASON_MAPPINGS:
         print(
             f"Found primary status code with no known termination reason mapping: \n"
