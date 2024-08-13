@@ -231,12 +231,12 @@ class TestRawTableColumnInfo(unittest.TestCase):
             is_pii=False,
             description=None,
             known_values=None,
-            import_blocking_validation_exemptions=[exemption],
+            import_blocking_column_validation_exemptions=[exemption],
         )
-        self.assertIsNotNone(exempt_column.import_blocking_validation_exemptions)
+        self.assertIsNotNone(exempt_column.import_blocking_column_validation_exemptions)
         self.assertTrue(
             ImportBlockingValidationExemption.list_includes_exemption_type(
-                exempt_column.import_blocking_validation_exemptions,
+                exempt_column.import_blocking_column_validation_exemptions,
                 RawDataTableImportBlockingValidationType.NONNULL_VALUES,
             )
         )
@@ -259,17 +259,19 @@ class TestRawTableColumnInfo(unittest.TestCase):
             is_pii=False,
             description=None,
             known_values=None,
-            import_blocking_validation_exemptions=[exemption],
+            import_blocking_column_validation_exemptions=[exemption],
         )
 
         self.assertIsNone(
-            non_exempt_column_default.import_blocking_validation_exemptions
+            non_exempt_column_default.import_blocking_column_validation_exemptions
         )
-        self.assertIsNotNone(non_exempt_column.import_blocking_validation_exemptions)
+        self.assertIsNotNone(
+            non_exempt_column.import_blocking_column_validation_exemptions
+        )
 
         self.assertFalse(
             ImportBlockingValidationExemption.list_includes_exemption_type(
-                non_exempt_column.import_blocking_validation_exemptions,
+                non_exempt_column.import_blocking_column_validation_exemptions,
                 RawDataTableImportBlockingValidationType.NONNULL_VALUES,
             )
         )
@@ -976,7 +978,7 @@ class TestDirectIngestRegionRawFileConfig(unittest.TestCase):
                     ColumnEnumValueInfo(value="A", description="A description"),
                     ColumnEnumValueInfo(value="B", description=None),
                 ],
-                import_blocking_validation_exemptions=[
+                import_blocking_column_validation_exemptions=[
                     ImportBlockingValidationExemption(
                         validation_type=RawDataTableImportBlockingValidationType.NONNULL_VALUES,
                         exemption_reason="reason",
@@ -1136,6 +1138,12 @@ class TestDirectIngestRegionRawFileConfig(unittest.TestCase):
         self.assertEqual(False, default_config.default_always_historical_export)
         self.assertEqual("‡\n", default_config.default_line_terminator)
         self.assertEqual(False, default_config.default_no_valid_primary_keys)
+        self.assertTrue(
+            ImportBlockingValidationExemption.list_includes_exemption_type(
+                default_config.default_import_blocking_validation_exemptions,
+                RawDataTableImportBlockingValidationType.STABLE_HISTORICAL_RAW_DATA_COUNTS,
+            )
+        )
 
     def test_parsing_obeys_defaults(self) -> None:
         """Checks that all defaults are applied for a file that does not specify a
@@ -1168,6 +1176,12 @@ class TestDirectIngestRegionRawFileConfig(unittest.TestCase):
         self.assertFalse(simple_file_config.is_code_file)
         self.assertFalse(simple_file_config.is_chunked_file)
         self.assertIsNone(simple_file_config.expected_number_of_chunks)
+        self.assertTrue(
+            ImportBlockingValidationExemption.list_includes_exemption_type(
+                default_config.default_import_blocking_validation_exemptions,
+                RawDataTableImportBlockingValidationType.STABLE_HISTORICAL_RAW_DATA_COUNTS,
+            )
+        )
 
     def test_parsing_overrides_defaults(self) -> None:
         """Checks that all defaults are overridden for a file that does specify a
@@ -1176,6 +1190,7 @@ class TestDirectIngestRegionRawFileConfig(unittest.TestCase):
         default_config = self.us_xx_region_config.default_config()
 
         # This file has a custom line terminator / encoding / separator
+        # and contains import-blocking validation exemption
         file_config = self.us_xx_region_config.raw_file_configs[
             "tagPipeSeparatedNonUTF8"
         ]
@@ -1194,6 +1209,19 @@ class TestDirectIngestRegionRawFileConfig(unittest.TestCase):
         self.assertTrue(file_config.is_code_file)
         self.assertTrue(file_config.is_chunked_file)
         self.assertIsNotNone(file_config.expected_number_of_chunks)
+        # import_blocking_validation_exemptions should be appended to the default_import_blocking_validation_exemptions
+        self.assertTrue(
+            ImportBlockingValidationExemption.list_includes_exemption_type(
+                file_config.import_blocking_validation_exemptions,
+                RawDataTableImportBlockingValidationType.STABLE_HISTORICAL_RAW_DATA_COUNTS,
+            )
+        )
+        self.assertTrue(
+            ImportBlockingValidationExemption.list_includes_exemption_type(
+                file_config.import_blocking_validation_exemptions,
+                RawDataTableImportBlockingValidationType.NONNULL_VALUES,
+            )
+        )
 
         # This file is always a historical export
         file_config = self.us_xx_region_config.raw_file_configs[

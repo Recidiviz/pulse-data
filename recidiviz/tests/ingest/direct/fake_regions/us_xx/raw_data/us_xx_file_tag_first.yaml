@@ -14,7 +14,7 @@ columns:
       - value: A
         description: A description
       - value: B
-    import_blocking_validation_exemptions:
+    import_blocking_column_validation_exemptions:
       - validation_type: NONNULL_VALUES
         exemption_reason: reason
   - name: col_name_1b
