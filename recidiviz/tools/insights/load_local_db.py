@@ -72,6 +72,7 @@ from recidiviz.calculator.query.state.views.outliers.outliers_views import (
     OUTLIERS_VIEW_BUILDERS,
 )
 from recidiviz.cloud_sql.gcs_import_to_cloud_sql import (
+    CHUNK_SIZE,
     ModelSQL,
     _recreate_table,
     build_temporary_sqlalchemy_table,
@@ -137,12 +138,18 @@ def _reset_insights_table(
 
     model_columns = get_non_identity_columns_from_model(model)
     with SessionFactory.using_database(database_key) as session:
-        entities = [
-            parse_exported_json_row_from_bigquery(json.loads(row), model, model_columns)
-            for row in file.readlines()
-        ]
+        while True:
+            entities = [
+                parse_exported_json_row_from_bigquery(
+                    json.loads(row), model, model_columns
+                )
+                for row in file.readlines(CHUNK_SIZE)
+            ]
+            logging.info("read %s entities", len(entities))
 
-        if entities:
+            if not entities:
+                break
+
             session.execute(temporary_table.insert(), entities)
             session.commit()
 
