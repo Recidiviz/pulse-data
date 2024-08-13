@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Test utils for generating state CoreEntity/Entity classes."""
+"""Test utils for generating state Entity classes."""
 
 import datetime
 import unittest
@@ -66,6 +66,7 @@ from recidiviz.common.constants.state.state_program_assignment import (
 from recidiviz.common.constants.state.state_sentence import (
     StateSentenceStatus,
     StateSentenceType,
+    StateSentencingAuthority,
 )
 from recidiviz.common.constants.state.state_shared_enums import StateActingBodyType
 from recidiviz.common.constants.state.state_staff_caseload_type import (
@@ -101,19 +102,15 @@ from recidiviz.common.constants.state.state_supervision_violation_response impor
     StateSupervisionViolationResponseType,
 )
 from recidiviz.common.constants.state.state_task_deadline import StateTaskType
-from recidiviz.persistence.database.schema_type import SchemaType
-from recidiviz.persistence.database.schema_utils import (
-    get_all_table_classes_in_schema,
-    is_association_table,
-)
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.entity_utils import (
     EntityFieldIndex,
     EntityFieldType,
     get_all_entities_from_tree,
+    get_all_entity_classes_in_module,
     set_backedges,
 )
-from recidiviz.persistence.entity.state import entities
+from recidiviz.persistence.entity.state import entities, normalized_entities
 from recidiviz.persistence.entity.state.entities import StateProgramAssignment
 from recidiviz.utils.types import assert_type
 
@@ -758,20 +755,648 @@ def generate_full_graph_state_staff(
     return staff
 
 
+def generate_full_graph_normalized_state_person() -> normalized_entities.NormalizedStatePerson:
+    """Test util for generating a NormalizedStatePerson that has at least one child of
+    each possible Entity type, with all possible edge types defined between
+    objects.
+    """
+    assessment1 = normalized_entities.NormalizedStateAssessment(
+        assessment_id=1,
+        external_id="a1",
+        assessment_class=StateAssessmentClass.RISK,
+        assessment_class_raw_text=None,
+        assessment_type=StateAssessmentType.LSIR,
+        assessment_type_raw_text="LSIR",
+        assessment_date=datetime.date(2003, month=8, day=10),
+        state_code="US_XX",
+        assessment_score=55,
+        assessment_level=StateAssessmentLevel.MEDIUM,
+        assessment_level_raw_text="MED",
+        assessment_metadata="assessment metadata",
+        conducting_staff_external_id="EMP3",
+        conducting_staff_external_id_type="US_XX_STAFF_ID",
+        conducting_staff_id=1,
+        sequence_num=1,
+    )
+
+    assessment2 = normalized_entities.NormalizedStateAssessment(
+        assessment_id=2,
+        external_id="a2",
+        assessment_class=StateAssessmentClass.RISK,
+        assessment_class_raw_text=None,
+        assessment_type=StateAssessmentType.LSIR,
+        assessment_type_raw_text="LSIR",
+        assessment_date=datetime.date(2004, month=9, day=10),
+        state_code="US_XX",
+        assessment_score=10,
+        assessment_level=StateAssessmentLevel.LOW,
+        assessment_level_raw_text="LOW",
+        assessment_metadata="more assessment metadata",
+        conducting_staff_external_id="EMP3",
+        conducting_staff_external_id_type="US_XX_STAFF_ID",
+        conducting_staff_id=1,
+        sequence_num=2,
+    )
+
+    program_assignment = normalized_entities.NormalizedStateProgramAssignment(
+        program_assignment_id=1,
+        external_id="program_assignment_external_id_1",
+        state_code="US_XX",
+        participation_status=StateProgramAssignmentParticipationStatus.IN_PROGRESS,
+        participation_status_raw_text="IN_PROGRESS",
+        referral_date=datetime.date(year=2019, month=2, day=10),
+        start_date=datetime.date(year=2019, month=2, day=11),
+        program_id="program_id",
+        program_location_id="program_location_id",
+        referring_staff_external_id="EMP1",
+        referring_staff_external_id_type="US_XX_STAFF_ID",
+        referring_staff_id=1,
+        sequence_num=1,
+    )
+
+    program_assignment2 = normalized_entities.NormalizedStateProgramAssignment(
+        program_assignment_id=2,
+        external_id="program_assignment_external_id_2",
+        state_code="US_XX",
+        participation_status=StateProgramAssignmentParticipationStatus.DISCHARGED_UNKNOWN,
+        participation_status_raw_text="DISCHARGED_UNKNOWN",
+        referral_date=datetime.date(year=2019, month=2, day=10),
+        start_date=datetime.date(year=2019, month=2, day=11),
+        discharge_date=datetime.date(year=2019, month=2, day=12),
+        program_id="program_id",
+        program_location_id="program_location_id",
+        referring_staff_external_id="EMP1",
+        referring_staff_external_id_type="US_XX_STAFF_ID",
+        referring_staff_id=1,
+        sequence_num=2,
+    )
+
+    incident_outcome = normalized_entities.NormalizedStateIncarcerationIncidentOutcome(
+        incarceration_incident_outcome_id=1,
+        external_id="io1",
+        outcome_type=StateIncarcerationIncidentOutcomeType.WARNING,
+        outcome_type_raw_text="WARNING",
+        date_effective=datetime.date(year=2003, month=8, day=20),
+        state_code="US_XX",
+        outcome_description="LOSS OF COMMISSARY",
+        punishment_length_days=30,
+    )
+
+    incarceration_incident = normalized_entities.NormalizedStateIncarcerationIncident(
+        incarceration_incident_id=1,
+        external_id="i1",
+        incident_type=StateIncarcerationIncidentType.CONTRABAND,
+        incident_type_raw_text="CONTRABAND",
+        incident_date=datetime.date(year=2003, month=8, day=10),
+        state_code="US_XX",
+        facility="ALCATRAZ",
+        location_within_facility="13B",
+        incident_details="Found contraband cell phone.",
+        incarceration_incident_outcomes=[incident_outcome],
+    )
+
+    supervision_violation = normalized_entities.NormalizedStateSupervisionViolation(
+        supervision_violation_id=1,
+        external_id="sv1",
+        violation_date=datetime.date(year=2004, month=9, day=1),
+        state_code="US_XX",
+        is_violent=False,
+        supervision_violation_types=[
+            normalized_entities.NormalizedStateSupervisionViolationTypeEntry(
+                supervision_violation_type_entry_id=1,
+                state_code="US_XX",
+                violation_type=StateSupervisionViolationType.TECHNICAL,
+                violation_type_raw_text="TECHNICAL",
+            ),
+        ],
+        supervision_violated_conditions=[
+            normalized_entities.NormalizedStateSupervisionViolatedConditionEntry(
+                supervision_violated_condition_entry_id=1,
+                state_code="US_XX",
+                condition=StateSupervisionViolatedConditionType.SPECIAL_CONDITIONS,
+                condition_raw_text="MISSED CURFEW",
+            )
+        ],
+    )
+
+    supervision_violation_response = normalized_entities.NormalizedStateSupervisionViolationResponse(
+        supervision_violation_response_id=1,
+        external_id="svr1",
+        response_type=StateSupervisionViolationResponseType.CITATION,
+        response_date=datetime.date(year=2004, month=9, day=2),
+        state_code="US_XX",
+        deciding_body_type=StateSupervisionViolationResponseDecidingBodyType.SUPERVISION_OFFICER,
+        sequence_num=1,
+    )
+
+    supervision_violation.supervision_violation_responses = [
+        supervision_violation_response
+    ]
+
+    violation_response_decision = (
+        normalized_entities.NormalizedStateSupervisionViolationResponseDecisionEntry(
+            supervision_violation_response_decision_entry_id=1,
+            state_code="US_XX",
+            decision=StateSupervisionViolationResponseDecision.PRIVILEGES_REVOKED,
+            decision_raw_text="PR",
+        )
+    )
+    supervision_violation_response.supervision_violation_response_decisions = [
+        violation_response_decision
+    ]
+
+    supervision_contact = normalized_entities.NormalizedStateSupervisionContact(
+        supervision_contact_id=1,
+        external_id="CONTACT_ID",
+        status=StateSupervisionContactStatus.COMPLETED,
+        status_raw_text="COMPLETED",
+        contact_type=StateSupervisionContactType.DIRECT,
+        contact_type_raw_text="FACE_TO_FACE",
+        contact_date=datetime.date(year=1111, month=1, day=2),
+        state_code="US_XX",
+        contact_reason=StateSupervisionContactReason.GENERAL_CONTACT,
+        contact_reason_raw_text="GENERAL_CONTACT",
+        location=StateSupervisionContactLocation.RESIDENCE,
+        location_raw_text="RESIDENCE",
+        verified_employment=True,
+        resulted_in_arrest=False,
+        contacting_staff_external_id="EMP2",
+        contacting_staff_external_id_type="US_XX_STAFF_ID",
+        contacting_staff_id=1,
+    )
+
+    incarceration_sentence = normalized_entities.NormalizedStateIncarcerationSentence(
+        incarceration_sentence_id=1,
+        external_id="BOOK_ID1234-1",
+        status=StateSentenceStatus.COMPLETED,
+        status_raw_text="COMPLETED",
+        incarceration_type=StateIncarcerationType.STATE_PRISON,
+        incarceration_type_raw_text="PRISON",
+        date_imposed=datetime.date(year=2018, month=7, day=3),
+        projected_min_release_date=datetime.date(year=2017, month=5, day=14),
+        projected_max_release_date=None,
+        parole_eligibility_date=datetime.date(year=2018, month=5, day=14),
+        state_code="US_XX",
+        county_code="US_XX_COUNTY",
+        #   - What
+        # These will be None if is_life is true
+        min_length_days=90,
+        max_length_days=900,
+        is_life=False,
+        is_capital_punishment=False,
+        parole_possible=True,
+        initial_time_served_days=None,
+        good_time_days=10,
+        earned_time_days=None,
+    )
+
+    supervision_sentence = normalized_entities.NormalizedStateSupervisionSentence(
+        supervision_sentence_id=1,
+        external_id="BOOK_ID1234-2",
+        status=StateSentenceStatus.SERVING,
+        status_raw_text="SERVING",
+        supervision_type=StateSupervisionSentenceSupervisionType.PAROLE,
+        supervision_type_raw_text="PAROLE",
+        projected_completion_date=datetime.date(year=2020, month=5, day=14),
+        completion_date=None,
+        state_code="US_XX",
+        min_length_days=None,
+        max_length_days=200,
+    )
+
+    incarceration_period = normalized_entities.NormalizedStateIncarcerationPeriod(
+        incarceration_period_id=1,
+        external_id="ip1",
+        incarceration_type=StateIncarcerationType.STATE_PRISON,
+        incarceration_type_raw_text=None,
+        admission_date=datetime.date(year=2003, month=8, day=1),
+        release_date=datetime.date(year=2004, month=8, day=1),
+        state_code="US_XX",
+        county_code="US_XX_COUNTY",
+        facility="ALCATRAZ",
+        housing_unit="BLOCK A",
+        admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+        admission_reason_raw_text="NEW ADMISSION",
+        release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
+        release_reason_raw_text="CONDITIONAL RELEASE",
+        sequence_num=1,
+    )
+
+    charge = normalized_entities.NormalizedStateCharge(
+        charge_id=1,
+        external_id="CHARGE1_EXTERNAL_ID",
+        status=StateChargeStatus.CONVICTED,
+        status_raw_text="CONVICTED",
+        offense_date=datetime.date(year=2003, month=7, day=1),
+        date_charged=datetime.date(year=2003, month=8, day=1),
+        state_code="US_XX",
+        statute="A102.3",
+        description="DRUG POSSESSION",
+        attempted=True,
+        classification_type=StateChargeClassificationType.FELONY,
+        classification_type_raw_text="F",
+        classification_subtype="A",
+        counts=1,
+        charge_notes=None,
+    )
+
+    charge2 = normalized_entities.NormalizedStateCharge(
+        charge_id=2,
+        external_id="CHARGE2_EXTERNAL_ID",
+        status=StateChargeStatus.CONVICTED,
+        status_raw_text="CONVICTED",
+        offense_date=datetime.date(year=2003, month=7, day=1),
+        date_charged=datetime.date(year=2003, month=8, day=1),
+        state_code="US_XX",
+        statute="A102.3",
+        description="DRUG POSSESSION",
+        attempted=True,
+        classification_type=StateChargeClassificationType.FELONY,
+        classification_type_raw_text="F",
+        classification_subtype="B",
+        counts=1,
+        charge_notes=None,
+    )
+
+    charge3 = normalized_entities.NormalizedStateCharge(
+        charge_id=3,
+        external_id="CHARGE3_EXTERNAL_ID",
+        status=StateChargeStatus.DROPPED,
+        status_raw_text="DROPPED",
+        offense_date=datetime.date(year=2003, month=7, day=1),
+        date_charged=datetime.date(year=2003, month=8, day=1),
+        state_code="US_XX",
+        statute="A102.3",
+        description="DRUG POSSESSION",
+        attempted=True,
+        classification_type=StateChargeClassificationType.FELONY,
+        classification_type_raw_text="F",
+        classification_subtype="AA",
+        counts=1,
+        charge_notes=None,
+    )
+
+    supervision_sentence.charges = [charge, charge2, charge3]
+    incarceration_sentence.charges = [charge, charge2, charge3]
+
+    early_discharge_1 = normalized_entities.NormalizedStateEarlyDischarge(
+        early_discharge_id=1,
+        external_id="ed1",
+        request_date=datetime.date(year=2001, month=7, day=1),
+        decision_date=datetime.date(year=2001, month=7, day=20),
+        decision=StateEarlyDischargeDecision.SENTENCE_TERMINATION_GRANTED,
+        decision_raw_text="approved",
+        deciding_body_type=StateActingBodyType.PAROLE_BOARD,
+        deciding_body_type_raw_text="pb",
+        requesting_body_type=StateActingBodyType.SENTENCED_PERSON,
+        requesting_body_type_raw_text="sentenced_person",
+        state_code="US_XX",
+        county_code="COUNTY",
+    )
+    early_discharge_2 = normalized_entities.NormalizedStateEarlyDischarge(
+        early_discharge_id=2,
+        external_id="ed2",
+        request_date=datetime.date(year=2002, month=7, day=1),
+        decision_date=datetime.date(year=2002, month=7, day=20),
+        decision=StateEarlyDischargeDecision.UNSUPERVISED_PROBATION_GRANTED,
+        decision_raw_text="conditionally_approved",
+        deciding_body_type=StateActingBodyType.COURT,
+        deciding_body_type_raw_text="c",
+        requesting_body_type=StateActingBodyType.SENTENCED_PERSON,
+        requesting_body_type_raw_text="sentenced_person",
+        state_code="US_XX",
+        county_code="COUNTY",
+    )
+    early_discharge_3 = normalized_entities.NormalizedStateEarlyDischarge(
+        early_discharge_id=3,
+        external_id="ed3",
+        request_date=datetime.date(year=2001, month=1, day=1),
+        decision_date=datetime.date(year=2001, month=1, day=20),
+        decision=StateEarlyDischargeDecision.REQUEST_DENIED,
+        decision_raw_text="denied",
+        deciding_body_type=StateActingBodyType.PAROLE_BOARD,
+        deciding_body_type_raw_text="pb",
+        requesting_body_type=StateActingBodyType.SENTENCED_PERSON,
+        requesting_body_type_raw_text="sentenced_person",
+        state_code="US_XX",
+        county_code="COUNTY",
+    )
+    supervision_sentence.early_discharges = [early_discharge_1, early_discharge_2]
+    incarceration_sentence.early_discharges = [early_discharge_3]
+
+    supervision_case_type_entry = (
+        normalized_entities.NormalizedStateSupervisionCaseTypeEntry(
+            supervision_case_type_entry_id=1,
+            state_code="US_XX",
+            case_type=StateSupervisionCaseType.DOMESTIC_VIOLENCE,
+            case_type_raw_text="DOMESTIC_VIOLENCE",
+        )
+    )
+
+    supervision_period = normalized_entities.NormalizedStateSupervisionPeriod(
+        supervision_period_id=1,
+        external_id="sp1",
+        supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+        supervision_type_raw_text="PAROLE",
+        start_date=datetime.date(year=2004, month=8, day=1),
+        termination_date=None,
+        state_code="US_XX",
+        admission_reason=StateSupervisionPeriodAdmissionReason.RELEASE_FROM_INCARCERATION,
+        admission_reason_raw_text="RELEASE",
+        termination_reason=None,
+        termination_reason_raw_text=None,
+        supervision_level=StateSupervisionLevel.EXTERNAL_UNKNOWN,
+        supervision_level_raw_text="UNKNOWN",
+        conditions="10PM CURFEW",
+        case_type_entries=[supervision_case_type_entry],
+        supervising_officer_staff_external_id="EMP1",
+        supervising_officer_staff_external_id_type="US_XX_STAFF_ID",
+        supervising_officer_staff_id=1,
+        sequence_num=1,
+    )
+
+    task_deadline = normalized_entities.NormalizedStateTaskDeadline(
+        task_deadline_id=1,
+        state_code="US_XX",
+        task_type=StateTaskType.DISCHARGE_FROM_INCARCERATION,
+        eligible_date=datetime.date(2020, 9, 11),
+        update_datetime=datetime.datetime(2023, 2, 1, 11, 19),
+        task_metadata='{"external_id": "00000001-111123-371006", "sentence_type": "INCARCERATION"}',
+        sequence_num=1,
+    )
+
+    sentence = normalized_entities.NormalizedStateSentence(
+        sentence_id=1,
+        state_code="US_XX",
+        external_id="SENTENCE_EXTERNAL_ID_1",
+        sentence_group_external_id="SENTENCE_GROUP_EXTERNAL_ID_1",
+        sentence_metadata='{"BS_CCI": "", "BS_CRQ": "0", "SENTENCE_FLAG": "SENTENCE: 120 DAY"}',
+        sentencing_authority=StateSentencingAuthority.STATE,
+        sentence_type=StateSentenceType.STATE_PRISON,
+        imposed_date=datetime.date(year=1956, month=3, day=16),
+        is_life=True,
+        is_capital_punishment=True,
+    )
+
+    charge_v2 = normalized_entities.NormalizedStateChargeV2(
+        charge_v2_id=1,
+        state_code="US_XX",
+        status=StateChargeV2Status.PRESENT_WITHOUT_INFO,
+        external_id="CHARGE_V2_EXTERNAL_ID_1",
+        county_code="US_MO_JACKSON",
+        ncic_code="0904",
+        statute="10021040",
+        description="TC: MURDER 1ST - FIST",
+        is_violent=True,
+        classification_type=StateChargeV2ClassificationType.FELONY,
+        classification_type_raw_text="F",
+        classification_subtype="O",
+        judicial_district_code="22",
+    )
+    sentence.charges = [charge_v2]
+
+    sentence_serving_period = normalized_entities.NormalizedStateSentenceServingPeriod(
+        sentence_serving_period_id=1,
+        state_code="US_XX",
+        external_id="SP-001",
+        serving_start_date=datetime.date(2023, 5, 4),
+        serving_end_date=None,
+    )
+    sentence.sentence_serving_periods = [sentence_serving_period]
+
+    sentence_status_snapshot = (
+        normalized_entities.NormalizedStateSentenceStatusSnapshot(
+            sentence_status_snapshot_id=1,
+            state_code="US_XX",
+            status=StateSentenceStatus.SERVING,
+            status_update_datetime=datetime.datetime(2023, 1, 1),
+            sequence_num=1,
+        )
+    )
+    sentence.sentence_status_snapshots = [sentence_status_snapshot]
+
+    sentence_length = normalized_entities.NormalizedStateSentenceLength(
+        sentence_length_id=1,
+        state_code="US_XX",
+        length_update_datetime=datetime.datetime(2023, 1, 1),
+        sequence_num=1,
+    )
+    sentence.sentence_lengths = [sentence_length]
+
+    sentence_group = normalized_entities.NormalizedStateSentenceGroup(
+        sentence_group_id=1,
+        state_code="US_XX",
+        external_id="SG",
+    )
+    sentence_group_length = normalized_entities.NormalizedStateSentenceGroupLength(
+        sentence_group_length_id=1,
+        state_code="US_XX",
+        group_update_datetime=datetime.datetime(2023, 1, 1),
+        sequence_num=1,
+    )
+    sentence_group.sentence_group_lengths = [sentence_group_length]
+
+    drug_screen = normalized_entities.NormalizedStateDrugScreen(
+        drug_screen_id=1,
+        state_code="US_XX",
+        external_id="12356",
+        drug_screen_date=datetime.date(2022, 5, 8),
+        drug_screen_result=StateDrugScreenResult.NEGATIVE,
+        drug_screen_result_raw_text="DRUN",
+        sample_type=StateDrugScreenSampleType.BREATH,
+        sample_type_raw_text="BREATH",
+        drug_screen_metadata='{"DRUGTYPE": "METH"}',
+    )
+
+    employment_period = normalized_entities.NormalizedStateEmploymentPeriod(
+        employment_period_id=1,
+        state_code="US_XX",
+        external_id="12356",
+        start_date=datetime.date(2022, 5, 8),
+        end_date=datetime.date(2022, 5, 10),
+        last_verified_date=datetime.date(2022, 5, 1),
+        employment_status=StateEmploymentPeriodEmploymentStatus.EMPLOYED_PART_TIME,
+        employment_status_raw_text="PT",
+        end_reason=StateEmploymentPeriodEndReason.QUIT,
+        end_reason_raw_text="PERSONAL",
+        employer_name="ACME, INC.",
+        employer_address="123 FAKE ST, ANYTOWN, XX, 00000",
+        job_title=None,
+    )
+
+    address_period = normalized_entities.NormalizedStatePersonAddressPeriod(
+        person_address_period_id=1,
+        state_code="US_XX",
+        address_start_date=datetime.date(2020, 1, 1),
+        address_end_date=datetime.date(2022, 1, 1),
+        address_line_1="123 SANTA STREET",
+        address_line_2="APT 4",
+        address_city="NORTH POLE",
+        address_zip="10000",
+        address_county="GLACIER COUNTY",
+        address_type=StatePersonAddressType.PHYSICAL_RESIDENCE,
+    )
+
+    housing_status_period = (
+        normalized_entities.NormalizedStatePersonHousingStatusPeriod(
+            person_housing_status_period_id=1,
+            state_code="US_XX",
+            housing_status_start_date=datetime.date(year=2006, month=7, day=2),
+            housing_status_end_date=datetime.date(year=2007, month=7, day=2),
+            housing_status_type=StatePersonHousingStatusType.PERMANENT_RESIDENCE,
+        )
+    )
+
+    person = normalized_entities.NormalizedStatePerson(
+        person_id=1,
+        state_code="US_XX",
+        external_ids=[
+            normalized_entities.NormalizedStatePersonExternalId(
+                person_external_id_id=1,
+                state_code="US_XX",
+                external_id="ELITE_ID_123",
+                id_type=US_ND_ELITE,
+            )
+        ],
+        aliases=[
+            normalized_entities.NormalizedStatePersonAlias(
+                person_alias_id=1,
+                state_code="US_XX",
+                full_name="Beyoncé Giselle Knowles",
+            ),
+            normalized_entities.NormalizedStatePersonAlias(
+                person_alias_id=1,
+                state_code="US_XX",
+                full_name="Beyoncé Giselle Knowles-Carter",
+            ),
+        ],
+        races=[
+            normalized_entities.NormalizedStatePersonRace(
+                person_race_id=1,
+                state_code="US_XX",
+                race=StateRace.ASIAN,
+                race_raw_text="ASIAN",
+            ),
+            normalized_entities.NormalizedStatePersonRace(
+                person_race_id=1,
+                state_code="US_XX",
+                race=StateRace.BLACK,
+                race_raw_text="BLACK",
+            ),
+        ],
+        ethnicities=[
+            normalized_entities.NormalizedStatePersonEthnicity(
+                person_ethnicity_id=1,
+                state_code="US_XX",
+                ethnicity=StateEthnicity.NOT_HISPANIC,
+                ethnicity_raw_text="NOT HISPANIC",
+            )
+        ],
+        assessments=[assessment1, assessment2],
+        program_assignments=[program_assignment, program_assignment2],
+        incarceration_incidents=[incarceration_incident],
+        supervision_violations=[supervision_violation],
+        supervision_contacts=[supervision_contact],
+        incarceration_sentences=[incarceration_sentence],
+        supervision_sentences=[supervision_sentence],
+        incarceration_periods=[incarceration_period],
+        task_deadlines=[task_deadline],
+        sentences=[sentence],
+        supervision_periods=[supervision_period],
+        sentence_groups=[sentence_group],
+        drug_screens=[drug_screen],
+        employment_periods=[employment_period],
+        address_periods=[address_period],
+        housing_status_periods=[housing_status_period],
+    )
+
+    set_backedges(person)
+
+    return person
+
+
+def generate_full_graph_normalized_state_staff() -> normalized_entities.NormalizedStateStaff:
+    """Test util for generating a NormalizedStateStaff that has at least one child of
+    each possible Entity type, with all possible edge types defined between
+    objects.
+    """
+    staff = normalized_entities.NormalizedStateStaff(
+        staff_id=1,
+        state_code="US_XX",
+        full_name="Staff Name",
+        email="staff@staff.com",
+        external_ids=[
+            normalized_entities.NormalizedStateStaffExternalId(
+                staff_external_id_id=2,
+                state_code="US_XX",
+                external_id="123",
+                id_type="US_XX_STAFF",
+            )
+        ],
+        role_periods=[
+            normalized_entities.NormalizedStateStaffRolePeriod(
+                staff_role_period_id=3,
+                state_code="US_XX",
+                external_id="R1",
+                start_date=datetime.date(2023, 1, 1),
+                end_date=datetime.date(2023, 6, 1),
+                role_type=StateStaffRoleType.SUPERVISION_OFFICER,
+                role_type_raw_text="SUP_OF",
+                role_subtype=StateStaffRoleSubtype.SUPERVISION_OFFICER,
+                role_subtype_raw_text="SUP_OF",
+            )
+        ],
+        supervisor_periods=[
+            normalized_entities.NormalizedStateStaffSupervisorPeriod(
+                staff_supervisor_period_id=4,
+                state_code="US_XX",
+                external_id="S1",
+                start_date=datetime.date(2023, 1, 1),
+                end_date=datetime.date(2023, 6, 1),
+                supervisor_staff_external_id="S1",
+                supervisor_staff_external_id_type="SUPERVISOR",
+            )
+        ],
+        location_periods=[
+            normalized_entities.NormalizedStateStaffLocationPeriod(
+                staff_location_period_id=5,
+                state_code="US_XX",
+                external_id="L1",
+                start_date=datetime.date(2023, 1, 1),
+                end_date=datetime.date(2023, 6, 1),
+                location_external_id="L1",
+            )
+        ],
+        caseload_type_periods=[
+            normalized_entities.NormalizedStateStaffCaseloadTypePeriod(
+                staff_caseload_type_period_id=5,
+                state_code="US_XX",
+                external_id="C1",
+                caseload_type=StateStaffCaseloadType.OTHER,
+                caseload_type_raw_text="O",
+                start_date=datetime.date(2023, 1, 1),
+                end_date=datetime.date(2023, 6, 1),
+            )
+        ],
+    )
+
+    set_backedges(staff)
+
+    return staff
+
+
 class TestFullEntityGraph(unittest.TestCase):
+    """Tests for the generate_full_graph* helpers above."""
+
     def test_full_entity_graph_coverage(self) -> None:
         """Tests that the generate_full_graph_state_person() and
-        generate_full_graph_state_staff() functions cover all entities in the STATE
-        schema.
+        generate_full_graph_state_staff() functions cover all entities in the
+        state/entities.py module
         """
-        state_table_names = {
-            t.name
-            for t in get_all_table_classes_in_schema(SchemaType.STATE)
-            if not is_association_table(t.name)
-        }
+        expected_entity_classes = get_all_entity_classes_in_module(entities)
 
-        all_entities = [
-            e
+        found_entity_classes = {
+            type(e)
             for re in [
                 generate_full_graph_state_person(
                     set_back_edges=True, include_person_back_edges=True, set_ids=True
@@ -779,12 +1404,34 @@ class TestFullEntityGraph(unittest.TestCase):
                 generate_full_graph_state_staff(set_back_edges=True, set_ids=True),
             ]
             for e in get_all_entities_from_tree(assert_type(re, Entity))
-        ]
-        entity_names = {e.get_entity_name() for e in all_entities}
-
-        missing_in_entity_graph = state_table_names - entity_names
+        }
+        missing_in_entity_graph = expected_entity_classes - found_entity_classes
         if missing_in_entity_graph:
             raise ValueError(
-                f"Found entities defined in the STATE schema which are not included in "
-                f"one of the generate_full_graph* functions: {missing_in_entity_graph}"
+                f"Found entities defined in state/entities.py which are not included "
+                f"in one of the generate_full_graph_state* functions: "
+                f"{[cls.__name__ for cls in missing_in_entity_graph]}"
+            )
+
+    def test_full_normalized_entity_graph_coverage(self) -> None:
+        """Tests that the generate_full_graph_normalized_state_person() and
+        generate_full_graph_normalized_state_staff() functions cover all entities in the
+        state/normalized_entities.py module
+        """
+        expected_entity_classes = get_all_entity_classes_in_module(normalized_entities)
+
+        found_entity_classes = {
+            type(e)
+            for re in [
+                generate_full_graph_normalized_state_person(),
+                generate_full_graph_normalized_state_staff(),
+            ]
+            for e in get_all_entities_from_tree(assert_type(re, Entity))
+        }
+        missing_in_entity_graph = expected_entity_classes - found_entity_classes
+        if missing_in_entity_graph:
+            raise ValueError(
+                f"Found entities defined in state/entities.py which are not included "
+                f"in one of the generate_full_graph_state* functions: "
+                f"{[cls.__name__ for cls in missing_in_entity_graph]}"
             )

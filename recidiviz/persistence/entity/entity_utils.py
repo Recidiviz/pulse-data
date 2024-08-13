@@ -757,7 +757,8 @@ def deep_entity_update(
 def set_backedges(element: RootEntity) -> RootEntity:
     """Set the backedges of the root entity tree using DFS traversal of the root
     entity tree."""
-    field_index = EntityFieldIndex.for_entity(assert_type(element, Entity))
+    entities_module = get_module_for_entity_class(type(assert_type(element, Entity)))
+    field_index = EntityFieldIndex.for_entities_module(entities_module)
     root = cast(Entity, element)
     root_entity_cls = root.__class__
     stack: List[Entity] = [root]
@@ -786,7 +787,7 @@ def set_backedges(element: RootEntity) -> RootEntity:
                 )
 
             related_entity_cls = get_entity_class_in_module_with_name(
-                state_entities, related_entity_cls_name
+                entities_module, related_entity_cls_name
             )
             reverse_relationship_field = attr_field_name_storing_referenced_cls_name(
                 base_cls=related_entity_cls,
@@ -849,7 +850,7 @@ def get_many_to_many_relationships(entity_cls: Type[Entity]) -> Set[str]:
         relationship_field_type = attr_field_type_for_field_name(entity_cls, back_edge)
 
         parent_cls = get_entity_class_in_module_with_name(
-            entities_module=state_entities,
+            entities_module=get_module_for_entity_class(entity_cls),
             class_name=attr_field_referenced_cls_name_for_field_name(
                 entity_cls, back_edge
             ),
