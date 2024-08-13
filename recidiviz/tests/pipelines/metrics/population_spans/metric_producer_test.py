@@ -23,6 +23,7 @@ import attr
 from freezegun import freeze_time
 
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
+from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodCustodyLevel,
     StateIncarcerationPeriodHousingUnitType,
@@ -122,6 +123,7 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
     def test_produce_incarceration_span_metrics(self) -> None:
         incarceration_span = IncarcerationPopulationSpan(
             state_code="US_XX",
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
             facility="FACILITY X",
             start_date_inclusive=date(2000, 3, 12),
             end_date_exclusive=date(2000, 7, 2),
@@ -157,6 +159,7 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
                     start_date_inclusive=date(2000, 3, 12),
                     end_date_exclusive=date(2000, 7, 2),
                     included_in_state_population=True,
+                    incarceration_type=StateIncarcerationType.STATE_PRISON,
                     facility="FACILITY X",
                     purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
                     custodial_authority=StateCustodialAuthority.STATE_PRISON,
@@ -174,6 +177,7 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
     def test_produce_incarceration_span_metrics_split_into_age_spans(self) -> None:
         incarceration_span = IncarcerationPopulationSpan(
             state_code="US_XX",
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
             facility="FACILITY X",
             start_date_inclusive=date(2000, 3, 12),
             end_date_exclusive=date(2002, 1, 2),
@@ -204,6 +208,7 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
                     start_date_inclusive=date(2000, 3, 12),
                     end_date_exclusive=date(2000, 8, 31),
                     included_in_state_population=True,
+                    incarceration_type=StateIncarcerationType.STATE_PRISON,
                     facility="FACILITY X",
                     purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
                     custodial_authority=StateCustodialAuthority.STATE_PRISON,
@@ -220,6 +225,7 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
                     start_date_inclusive=date(2000, 8, 31),
                     end_date_exclusive=date(2001, 8, 31),
                     included_in_state_population=True,
+                    incarceration_type=StateIncarcerationType.STATE_PRISON,
                     facility="FACILITY X",
                     purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
                     custodial_authority=StateCustodialAuthority.STATE_PRISON,
@@ -236,6 +242,7 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
                     start_date_inclusive=date(2001, 8, 31),
                     end_date_exclusive=date(2002, 1, 2),
                     included_in_state_population=True,
+                    incarceration_type=StateIncarcerationType.STATE_PRISON,
                     facility="FACILITY X",
                     purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
                     custodial_authority=StateCustodialAuthority.STATE_PRISON,
@@ -250,6 +257,7 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
 
         incarceration_span = IncarcerationPopulationSpan(
             state_code="US_XX",
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
             facility="FACILITY X",
             start_date_inclusive=date(2000, 3, 12),
             end_date_exclusive=date(2002, 7, 2),
@@ -279,6 +287,7 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
                     start_date_inclusive=date(2000, 3, 12),
                     end_date_exclusive=date(2002, 7, 2),
                     included_in_state_population=True,
+                    incarceration_type=StateIncarcerationType.STATE_PRISON,
                     facility="FACILITY X",
                     purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
                     custodial_authority=StateCustodialAuthority.STATE_PRISON,
@@ -291,6 +300,7 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
     def test_produce_incarceration_span_metrics_open_span(self) -> None:
         incarceration_span = IncarcerationPopulationSpan(
             state_code="US_XX",
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
             facility="FACILITY X",
             start_date_inclusive=date(2019, 3, 12),
             end_date_exclusive=None,
@@ -321,6 +331,7 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
                     start_date_inclusive=date(2019, 3, 12),
                     end_date_exclusive=date(2019, 8, 31),
                     included_in_state_population=True,
+                    incarceration_type=StateIncarcerationType.STATE_PRISON,
                     facility="FACILITY X",
                     purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
                     custodial_authority=StateCustodialAuthority.STATE_PRISON,
@@ -337,6 +348,7 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
                     start_date_inclusive=date(2019, 8, 31),
                     end_date_exclusive=None,
                     included_in_state_population=True,
+                    incarceration_type=StateIncarcerationType.STATE_PRISON,
                     facility="FACILITY X",
                     purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
                     custodial_authority=StateCustodialAuthority.STATE_PRISON,
@@ -603,6 +615,7 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
     def test_produce_all_spans(self) -> None:
         incarceration_span = IncarcerationPopulationSpan(
             state_code="US_XX",
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
             facility="FACILITY X",
             start_date_inclusive=date(2015, 3, 1),
             end_date_exclusive=date(2017, 3, 1),
@@ -646,6 +659,7 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
                     start_date_inclusive=date(2015, 3, 1),
                     end_date_exclusive=date(2015, 8, 31),
                     included_in_state_population=True,
+                    incarceration_type=StateIncarcerationType.STATE_PRISON,
                     facility="FACILITY X",
                     purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
                     custodial_authority=StateCustodialAuthority.STATE_PRISON,
@@ -662,6 +676,7 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
                     start_date_inclusive=date(2015, 8, 31),
                     end_date_exclusive=date(2016, 8, 31),
                     included_in_state_population=True,
+                    incarceration_type=StateIncarcerationType.STATE_PRISON,
                     facility="FACILITY X",
                     purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
                     custodial_authority=StateCustodialAuthority.STATE_PRISON,
@@ -678,6 +693,7 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
                     start_date_inclusive=date(2016, 8, 31),
                     end_date_exclusive=date(2017, 3, 1),
                     included_in_state_population=True,
+                    incarceration_type=StateIncarcerationType.STATE_PRISON,
                     facility="FACILITY X",
                     purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
                     custodial_authority=StateCustodialAuthority.STATE_PRISON,

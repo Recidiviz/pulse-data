@@ -142,6 +142,7 @@ class PopulationSpanIdentifier(BaseIdentifier[List[Span]]):
                     included_in_state_population=self.incarceration_delegate.is_period_included_in_state_population(
                         incarceration_period
                     ),
+                    incarceration_type=incarceration_period.incarceration_type,
                     facility=incarceration_period.facility,
                     purpose_for_incarceration=incarceration_period.specialized_purpose_for_incarceration,
                     custodial_authority=incarceration_period.custodial_authority,
