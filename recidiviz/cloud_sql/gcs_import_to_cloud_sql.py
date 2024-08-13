@@ -55,6 +55,8 @@ CONSTRAINTS_TO_DROP: dict[str, list[str]] = defaultdict(list)
 
 ADDITIONAL_DDL_QUERIES_BY_TABLE_NAME: dict[str, list[str]] = {}
 
+CHUNK_SIZE = 10 * 1024 * 1024  # 10 mb
+
 
 def retry_predicate(exception: BaseException) -> bool:
     """A function that will determine whether we should retry a given Google exception."""
@@ -338,18 +340,24 @@ def _import_gcs_json_to_cloud_sql(
     with gcsfs.open(gcs_uri) as f, SessionFactory.using_database(
         database_key=database_key
     ) as session:
-        entities = [
-            parse_exported_json_row_from_bigquery(json.loads(row), model, model_columns)
-            for row in f.readlines()
-        ]
+        while True:
+            entities = [
+                parse_exported_json_row_from_bigquery(
+                    json.loads(row), model, model_columns
+                )
+                for row in f.readlines(CHUNK_SIZE)
+            ]
+            logging.info("read %s entities", len(entities))
+            if not entities:
+                break
 
-        # Note that in the 2.0 version of SQLAlchemy, when doing an ORM bulk insert "the keys should
-        # match the ORM mapped attribute name and not the actual database column name"
-        # (https://docs.sqlalchemy.org/en/20/orm/queryguide/dml.html#orm-bulk-insert-statements)
-        # whereas in 1.4 we want the actual column name. At the time of writing, we don't appear to
-        # do any ORM column -> new column name mappings so the distinction is moot.
-        session.execute(destination_table.insert(), entities)
-        session.commit()
+            # Note that in the 2.0 version of SQLAlchemy, when doing an ORM bulk insert "the keys should
+            # match the ORM mapped attribute name and not the actual database column name"
+            # (https://docs.sqlalchemy.org/en/20/orm/queryguide/dml.html#orm-bulk-insert-statements)
+            # whereas in 1.4 we want the actual column name. At the time of writing, we don't appear to
+            # do any ORM column -> new column name mappings so the distinction is moot.
+            session.execute(destination_table.insert(), entities)
+            session.commit()
 
     logging.info(
         "Successfully imported data to %s",
