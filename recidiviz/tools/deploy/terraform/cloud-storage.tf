@@ -521,3 +521,10 @@ resource "google_storage_bucket_object" "po_report_static_files" {
   name     = format("po_monthly_report/static/%s", replace(each.key, local.po_report_static_path, ""))
   source   = format("%s/%s", local.po_report_static_path, each.key)
 }
+
+module "override-districts-archive" {
+  source = "./modules/cloud-storage-bucket"
+
+  project_id  = var.project_id
+  name_suffix = "override-districts-archive"
+}
