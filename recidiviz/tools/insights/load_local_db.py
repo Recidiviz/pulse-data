@@ -85,7 +85,10 @@ from recidiviz.persistence.database.database_managers.state_segmented_database_m
     StateSegmentedDatabaseManager,
 )
 from recidiviz.persistence.database.schema.insights import schema
-from recidiviz.persistence.database.schema.insights.schema import InsightsBase
+from recidiviz.persistence.database.schema.insights.schema import (
+    RUN_MIGRATIONS,
+    InsightsBase,
+)
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.schema_utils import (
     get_all_table_classes_in_schema,
@@ -139,8 +142,9 @@ def _reset_insights_table(
             for row in file.readlines()
         ]
 
-        session.execute(temporary_table.insert(), entities)
-        session.commit()
+        if entities:
+            session.execute(temporary_table.insert(), entities)
+            session.commit()
 
     logging.info(
         "Dropping existing %s to replace with temporary table", destination_table_name
@@ -179,8 +183,12 @@ def reset_insights_fixtures(
 
     for table in tables:
         table_name = table.__tablename__
+        table_args = table.__table_args__ if hasattr(table, "__table_args__") else {}
+        args_dict = table_args[-1] if isinstance(table_args, tuple) else table_args
+        run_migrations_on_table = args_dict.get("info", {}).get(RUN_MIGRATIONS, False)
+
         logging.info("Hydrating table %s with %s data", table_name, data_type)
-        if data_type == "FIXTURE":
+        if data_type == "FIXTURE" or run_migrations_on_table:
             filename = f"{table_name}.json"
             fixture_path = os.path.join(os.path.dirname(fixtures.__file__), filename)
             with open(fixture_path, "r", encoding="UTF-8") as file:
@@ -220,7 +228,7 @@ def parse_arguments(argv: List[str]) -> Tuple[argparse.Namespace, List[str]]:
 
     parser.add_argument(
         "--data_type",
-        help="Type of data to load, defaults to FIXTURE.",
+        help="Type of data to load, defaults to FIXTURE. When set to GCS, will load fixture data for tables that do not have data in GCS.",
         type=str,
         choices=["FIXTURE", "GCS"],
         default="FIXTURE",
