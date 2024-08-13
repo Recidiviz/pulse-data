@@ -14,7 +14,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
-export const INGEST_OPERATIONS_BASE = "/admin/ingest_operations";
+export const ADMIN_BASE = "/admin/";
+export const INGEST_OPERATIONS_BASE = `${ADMIN_BASE}ingest_operations`;
 export const FLASH_DB_CHECKLIST_ROUTE = `${INGEST_OPERATIONS_BASE}/flash_primary_db`;
 export const DIRECT_SANDBOX_RAW_IMPORT = `${INGEST_OPERATIONS_BASE}/direct_import`;
 export const INGEST_DATAFLOW_ROUTE = `${INGEST_OPERATIONS_BASE}/ingest_pipeline_summary`;
