@@ -21,7 +21,9 @@ from typing import Optional
 
 import attr
 
+from recidiviz.common.attr_validators import is_opt
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
+from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodCustodyLevel,
     StateIncarcerationPeriodHousingUnitCategory,
@@ -99,6 +101,11 @@ This metric is derived from the `StateIncarcerationPeriod` entities, which store
     )
 
     # Optional characteristics
+
+    # Incarceration type
+    incarceration_type: Optional[StateIncarcerationType] = attr.ib(
+        default=None, validator=is_opt(StateIncarcerationType)
+    )
 
     # Facility
     facility: Optional[str] = attr.ib(default=None)

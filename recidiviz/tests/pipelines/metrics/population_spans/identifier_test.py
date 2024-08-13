@@ -1135,6 +1135,7 @@ def expected_incarceration_span(
         )
     return IncarcerationPopulationSpan(
         state_code=incarceration_period.state_code,
+        incarceration_type=incarceration_period.incarceration_type,
         facility=incarceration_period.facility,
         start_date_inclusive=incarceration_period.admission_date,
         end_date_exclusive=incarceration_period.release_date,

@@ -19,7 +19,9 @@ from typing import Optional
 
 import attr
 
+from recidiviz.common.attr_validators import is_opt
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
+from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodCustodyLevel,
     StateIncarcerationPeriodHousingUnitCategory,
@@ -41,6 +43,10 @@ from recidiviz.pipelines.utils.identifier_models import (
 @attr.s(frozen=True)
 class IncarcerationPopulationSpan(Span, IncludedInStateMixin):
     """Models a span of time that a person spent incarcerated"""
+
+    incarceration_type: Optional[StateIncarcerationType] = attr.ib(
+        default=None, validator=is_opt(StateIncarcerationType)
+    )
 
     facility: Optional[str] = attr.ib(default=None)
 
