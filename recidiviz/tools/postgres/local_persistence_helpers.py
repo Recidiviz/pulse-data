@@ -25,6 +25,7 @@ from sqlalchemy.engine import URL, Engine
 from sqlalchemy.exc import ProgrammingError
 from sqlalchemy.orm.session import _sessions
 
+from recidiviz.persistence.database.async_session_factory import AsyncSessionFactory
 from recidiviz.persistence.database.constants import (
     SQLALCHEMY_DB_HOST,
     SQLALCHEMY_DB_NAME,
@@ -42,6 +43,9 @@ from recidiviz.persistence.database.schema.pathways.schema import PathwaysBase
 from recidiviz.persistence.database.schema.state.schema import StateBase
 from recidiviz.persistence.database.schema.workflows.schema import WorkflowsBase
 from recidiviz.persistence.database.session_factory import SessionFactory
+from recidiviz.persistence.database.sqlalchemy_async_engine_manager import (
+    SQLAlchemyAsyncEngineManager,
+)
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.persistence.database.sqlalchemy_engine_manager import (
     SQLAlchemyEngineManager,
@@ -116,6 +120,36 @@ def teardown_on_disk_postgresql_database(database_key: SQLAlchemyDatabaseKey) ->
                 pass
 
     SQLAlchemyEngineManager.teardown_engine_for_database_key(database_key=database_key)
+
+
+@environment.local_only
+async def async_teardown_on_disk_postgresql_database(
+    database_key: SQLAlchemyDatabaseKey,
+) -> None:
+    """Clears async state in an on-disk postgres database for a given schema, for use once a
+    single test has completed. As an optimization, does not actually drop tables, just
+    clears them. As a best practice, you should call stop_and_clear_on_disk_postgresql_database()
+    once all tests in a test class are complete to actually drop the tables.
+    """
+    # Ensure all sessions are closed, otherwise the below may hang.
+    # Note: close_all_sessions() sometimes raises a RuntimeError about the size of the
+    # underlying dictionary changing, despite the IterationGuard used during iteration.
+    # It isn't clear why this is happening, but as an attempt to fix, first copy the
+    # values to a list and then iterate over that list ourselves.
+    for session in list(_sessions.values()):
+        session.close()
+
+    for table in reversed(database_key.declarative_meta.metadata.sorted_tables):
+        async with AsyncSessionFactory.using_database(database_key) as session:
+            try:
+                await session.execute(table.delete())
+                await session.commit()
+            except ProgrammingError:
+                pass
+
+    SQLAlchemyAsyncEngineManager.teardown_engine_for_database_key(
+        database_key=database_key
+    )
 
 
 @environment.local_only
