@@ -197,7 +197,7 @@ class TestCreatePersonIdToStaffIdMapping(StateIngestPipelineTestCase):
                 789,
                 {
                     # STATE_STAFF_1 external id referenced by STATE_PERSON_1
-                    ("US_XX_STAFF_ID_TYPE", "A123"): 123,
+                    ("A123", "US_XX_STAFF_ID_TYPE"): 123,
                 },
             )
         ]
@@ -226,7 +226,7 @@ class TestCreatePersonIdToStaffIdMapping(StateIngestPipelineTestCase):
                 789,
                 {
                     # STATE_STAFF_1 external id referenced by STATE_PERSON_1
-                    ("US_XX_STAFF_ID_TYPE", "A123"): 123,
+                    ("A123", "US_XX_STAFF_ID_TYPE"): 123,
                 },
             ),
             (
@@ -234,11 +234,11 @@ class TestCreatePersonIdToStaffIdMapping(StateIngestPipelineTestCase):
                 8910,
                 {
                     # STATE_STAFF_1 external id referenced by STATE_PERSON_2 on SP 1
-                    ("US_XX_STAFF_ID_TYPE", "A123"): 123,
+                    ("A123", "US_XX_STAFF_ID_TYPE"): 123,
                     # STATE_STAFF_2 external id referenced by STATE_PERSON_2 on SP 2
-                    ("US_XX_STAFF_ID_TYPE", "A456"): 456,
+                    ("A456", "US_XX_STAFF_ID_TYPE"): 456,
                     # STATE_STAFF_2 external id referenced by STATE_PERSON_2 on Assessment 1
-                    ("US_XX_STAFF_ID_TYPE_2", "B456"): 456,
+                    ("B456", "US_XX_STAFF_ID_TYPE_2"): 456,
                 },
             ),
         ]
