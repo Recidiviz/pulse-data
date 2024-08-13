@@ -57,16 +57,17 @@ def parse_arguments(argv: List[str]) -> argparse.Namespace:
 def print_check_statuses(check_runs: list[CheckRun]) -> None:
     indent_str = f"{ANSI.BLUE}>{ANSI.ENDC}"
 
-    conclusion_colors = {
+    check_colors = {
         "success": ANSI.GREEN,
         "failure": ANSI.FAIL,
     }
     print(f"Found {len(check_runs)} status checks:")
 
     for check_run in sorted(check_runs, key=lambda c: c.name):
-        conclusion = check_run.conclusion
+        # In progress checks do not have a conclusion set, but do have a status
+        conclusion = check_run.conclusion or check_run.status
         conclusion_str = color_text(
-            conclusion_colors.get(conclusion, ANSI.WARNING),
+            check_colors.get(conclusion, ANSI.WARNING),
             conclusion.upper(),
         )
         print(f"{indent_str} {conclusion_str} {check_run.name}")
