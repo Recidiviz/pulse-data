@@ -23,13 +23,14 @@ from apache_beam.typehints import with_input_types, with_output_types
 
 from recidiviz.common.attr_mixins import attr_field_referenced_cls_name_for_field_name
 from recidiviz.common.constants.states import StateCode
-from recidiviz.persistence.database.schema_utils import (
-    get_state_database_association_with_names,
-)
 from recidiviz.persistence.entity.base_entity import Entity, RootEntity
+from recidiviz.persistence.entity.entities_bq_schema import STATE_CODE_COL
 from recidiviz.persistence.entity.entity_utils import (
     get_all_entities_from_tree,
+    get_association_table_id,
+    get_entity_class_in_module_with_name,
     get_many_to_many_relationships,
+    get_module_for_entity_class,
 )
 from recidiviz.persistence.entity.serialization import serialize_entity_into_json
 
@@ -55,33 +56,35 @@ class SerializeEntities(beam.DoFn):
         """Generates appropriate dictionaries for all elements and association tables."""
 
         for entity in get_all_entities_from_tree(entity=cast(Entity, element)):
-            many_to_many_relationships = get_many_to_many_relationships(
-                entity.__class__
-            )
+            entity_cls = entity.__class__
+            many_to_many_relationships = get_many_to_many_relationships(entity_cls)
             for relationship in many_to_many_relationships:
                 parent_entity_cls_name = attr_field_referenced_cls_name_for_field_name(
-                    entity.__class__, relationship
+                    entity_cls, relationship
                 )
                 if not parent_entity_cls_name:
                     raise ValueError(
-                        f"Could not find parent entity class name for {entity.__class__}.{relationship}"
+                        f"Could not find parent entity class name for {entity_cls}.{relationship}"
                     )
-                association_table = get_state_database_association_with_names(
-                    entity.__class__.__name__, parent_entity_cls_name
+                parent_entity_cls = get_entity_class_in_module_with_name(
+                    get_module_for_entity_class(entity_cls), parent_entity_cls_name
+                )
+                association_table_id = get_association_table_id(
+                    parent_entity_cls, entity_cls
                 )
                 parent_entities = entity.get_field_as_list(relationship)
                 for parent_entity in parent_entities:
                     yield beam.pvalue.TaggedOutput(
-                        association_table.name,
+                        association_table_id,
                         {
                             parent_entity.get_class_id_name(): parent_entity.get_id(),
                             entity.get_class_id_name(): entity.get_id(),
-                            "state_code": self._state_code.value,
+                            STATE_CODE_COL: self._state_code.value,
                         },
                     )
 
             yield beam.pvalue.TaggedOutput(
-                entity.get_entity_name(),
+                entity.get_table_id(),
                 serialize_entity_into_json(
                     entity, entities_module=self._entities_module
                 ),
