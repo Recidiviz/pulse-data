@@ -20,16 +20,15 @@ if [[ "$1" == "" ]]; then
     run_cmd exit 1
 fi
 
-echo "Performing pre-deploy verification"
-COMMIT_HASH=$(git rev-list -n 1 "${GIT_VERSION_TAG}")
-run_cmd verify_can_deploy recidiviz-123 "${COMMIT_HASH}"
-
 GIT_VERSION_TAG=$(echo "$1" | tr '-' '.') || exit_on_fail
 if [[ ! ${GIT_VERSION_TAG} =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
     echo_error "Invalid release version [$GIT_VERSION_TAG] - must match regex: v[0-9]+\.[0-9]+\.[0-9]+"
     run_cmd exit 1
 fi
 
+echo "Performing pre-deploy verification"
+COMMIT_HASH=$(git rev-list -n 1 "${GIT_VERSION_TAG}") || exit_on_fail
+run_cmd verify_can_deploy recidiviz-123 "${COMMIT_HASH}"
 
 read -r -a VERSION_PARTS < <(parse_version "${GIT_VERSION_TAG}")
 MAJOR_VERSION="${VERSION_PARTS[1]}"
