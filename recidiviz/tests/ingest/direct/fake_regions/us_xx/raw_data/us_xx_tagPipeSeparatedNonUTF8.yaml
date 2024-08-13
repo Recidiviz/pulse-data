@@ -20,3 +20,6 @@ update_cadence: DAILY
 is_code_file: True
 is_chunked_file: True
 expected_number_of_chunks: 100
+import_blocking_validation_exemptions:
+  - validation_type: NONNULL_VALUES
+    exemption_reason: reason

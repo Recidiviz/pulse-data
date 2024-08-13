@@ -49,7 +49,7 @@
           "field_type": {
             "description": "Designates the type of data that this column contains",
             "type": "string",
-            "enum": ["string", "datetime","person_external_id", "staff_external_id"]
+            "enum": ["string", "datetime","person_external_id", "staff_external_id", "integer"]
           },
           "external_id_type": {
             "description": "If this column holds an external id field_type, designates which type it is (out of the external types defined in common/constants/state/external_id_types.py).",
@@ -89,6 +89,25 @@
             "description": "Describes the SQL parsers needed to parse the datetime string appropriately. It should contain the string literal {col_name} and follow the format with the SAFE.PARSE_TIMESTAMP('[insert your time format st]', [some expression w/ {col_name}]). SAFE.PARSE_DATE or SAFE.PARSE_DATETIME can also be used. See recidiviz.ingest.direct.views.direct_ingest_big_query_view_types.DATETIME_COL_NORMALIZATION_TEMPLATE",
             "type": "array",
             "items": { "type": "string" }
+          },
+          "import_blocking_column_validation_exemptions": {
+            "description": "A list of dictionaries representing import-blocking validation types that should be exempted for this column.",
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["validation_type", "exemption_reason"],
+              "properties": {
+                "validation_type": {
+                  "description": "Import-blocking validation type to exempt",
+                  "type": "string",
+                  "enum": ["NONNULL_VALUES", "DATETIME_PARSERS", "KNOWN_VALUES", "EXPECTED_TYPE"]
+                },
+                "exemption_reason": {
+                  "description": "The reason for the exemption",
+                  "type": "string"
+                }
+              }
+            }
           }
         }
       },
@@ -189,6 +208,25 @@
     "expected_number_of_chunks": {
       "description": "The number of distinct files (chunks) we expect to compose this file tag in each file transer",
       "type": "integer"
+    },
+    "import_blocking_validation_exemptions": {
+      "description": "A list of dictionaries representing import-blocking validation types that should be exempted for this table.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["validation_type", "exemption_reason"],
+        "properties": {
+          "validation_type": {
+            "description": "Import-blocking validation type to exempt",
+            "type": "string",
+            "enum": ["NONNULL_VALUES", "DATETIME_PARSERS", "KNOWN_VALUES", "EXPECTED_TYPE", "STABLE_HISTORICAL_RAW_DATA_COUNTS"]
+          },
+          "exemption_reason": {
+            "description": "The reason for the exemption",
+            "type": "string"
+          }
+        }
+      }
     }
   },
   "required": [

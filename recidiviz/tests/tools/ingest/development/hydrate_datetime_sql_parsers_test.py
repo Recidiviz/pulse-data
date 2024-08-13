@@ -186,5 +186,5 @@ class HydrateDatetimeSqlParsersTest(unittest.TestCase):
             ],
         )
         fake_region_config_writer.output_to_file.assert_called_with(
-            updated_config, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY
+            updated_config, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY
         )

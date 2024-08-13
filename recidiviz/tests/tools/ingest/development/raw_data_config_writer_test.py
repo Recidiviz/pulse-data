@@ -22,7 +22,11 @@ import unittest
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRegionRawFileConfig,
+    ImportBlockingValidationExemption,
     RawDataFileUpdateCadence,
+)
+from recidiviz.ingest.direct.types.raw_data_import_blocking_validation_types import (
+    RawDataTableImportBlockingValidationType,
 )
 from recidiviz.tests.ingest.direct import fake_regions as fake_regions_module
 from recidiviz.tools.docs.utils import PLACEHOLDER_TO_DO_STRING
@@ -75,6 +79,12 @@ class RawDataConfigWriterTest(unittest.TestCase):
                     output_path=test_output_path,
                     raw_file_config=config,
                     default_line_terminator="‡\n",
+                    default_import_blocking_validation_exemptions=[
+                        ImportBlockingValidationExemption(
+                            validation_type=RawDataTableImportBlockingValidationType.STABLE_HISTORICAL_RAW_DATA_COUNTS,
+                            exemption_reason="reason",
+                        )
+                    ],
                 )
                 with open(test_output_path, "r", encoding="utf-8") as f:
                     lines = f.readlines()

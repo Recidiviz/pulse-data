@@ -21,6 +21,7 @@ from typing import List, Optional
 
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRawFileConfig,
+    ImportBlockingValidationExemption,
     RawDataFileUpdateCadence,
     RawTableColumnFieldType,
     RawTableColumnInfo,
@@ -83,9 +84,9 @@ class RawDataConfigWriter:
             column_string += "\n    is_pii: True"
         if column.is_enum:
             column_string += self._get_known_values_config_string(column)
-        if column.import_blocking_validation_exemptions:
-            column_string += "\n    import_blocking_validation_exemptions:"
-            for exemption in column.import_blocking_validation_exemptions:
+        if column.import_blocking_column_validation_exemptions:
+            column_string += "\n    import_blocking_column_validation_exemptions:"
+            for exemption in column.import_blocking_column_validation_exemptions:
                 column_string += (
                     f"\n      - validation_type: {exemption.validation_type.value}"
                 )
@@ -114,6 +115,9 @@ class RawDataConfigWriter:
         default_no_valid_primary_keys: bool,
         default_line_terminator: Optional[str],
         default_update_cadence: Optional[RawDataFileUpdateCadence],
+        default_import_blocking_validation_exemptions: Optional[
+            List[ImportBlockingValidationExemption]
+        ],
     ) -> None:
         """Writes a yaml config file to the given path for a given raw file config"""
         file_description_string = "\n  ".join(
@@ -197,6 +201,22 @@ class RawDataConfigWriter:
 
                 table_relationships_lines.append("\n".join(relationship_lines))
             config += "\n".join(table_relationships_lines) + "\n"
+
+        # only write the exemptions that weren't inherited from the default
+        if raw_file_config.import_blocking_validation_exemptions:
+            exemptions = [
+                exemption
+                for exemption in raw_file_config.import_blocking_validation_exemptions
+                if not default_import_blocking_validation_exemptions
+                or exemption not in default_import_blocking_validation_exemptions
+            ]
+            if exemptions:
+                config += "import_blocking_validation_exemptions:\n"
+                for exemption in exemptions:
+                    config += (
+                        f"  - validation_type: {exemption.validation_type.value}\n"
+                    )
+                    config += f"    exemption_reason: {exemption.exemption_reason}\n"
 
         prior_config = None
         if os.path.exists(output_path):

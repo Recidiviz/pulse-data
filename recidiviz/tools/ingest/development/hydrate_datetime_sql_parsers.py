@@ -163,15 +163,17 @@ def update_parsers_in_region(
     default_config = region_config.default_config()
     for original_config in configs_to_update:
         new_columns = [
-            column
-            if not column.is_datetime or column.datetime_sql_parsers
-            else _update_parsers_in_column(
-                project_id,
-                original_config.file_tag,
-                column,
-                raw_data_dataset,
-                bq_client,
-                parsers_to_try,
+            (
+                column
+                if not column.is_datetime or column.datetime_sql_parsers
+                else _update_parsers_in_column(
+                    project_id,
+                    original_config.file_tag,
+                    column,
+                    raw_data_dataset,
+                    bq_client,
+                    parsers_to_try,
+                )
             )
             for column in original_config.columns
         ]
@@ -187,6 +189,7 @@ def update_parsers_in_region(
                 default_config.default_no_valid_primary_keys,
                 default_config.default_line_terminator,
                 default_config.default_update_cadence,
+                default_config.default_import_blocking_validation_exemptions,
             )
             print(f"File {original_config.file_tag}: Updates persisted")
 

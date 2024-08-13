@@ -185,7 +185,8 @@ class RawTableColumnInfo:
     # multiple tables that are ID type roots for the region.)
     is_primary_for_external_id_type: bool = attr.ib(default=False)
 
-    import_blocking_validation_exemptions: Optional[
+    # Column-level import-blocking validation exemptions
+    import_blocking_column_validation_exemptions: Optional[
         List[ImportBlockingValidationExemption]
     ] = attr.ib(default=None, validator=attr_validators.is_opt_list)
 
@@ -305,6 +306,13 @@ class DirectIngestRawFileDefaultConfig:
         default=None, validator=attr_validators.is_opt_bool
     )
 
+    # Import-blocking validation exemptions that are applied to all tables in this region
+    # Can include table-level validation exemptions and/or column-level exemptions to apply
+    # to all relevent columns in the region
+    default_import_blocking_validation_exemptions: Optional[
+        List[ImportBlockingValidationExemption]
+    ] = attr.ib(default=None, validator=attr_validators.is_opt_list)
+
 
 @attr.s(frozen=True)
 class DirectIngestRawFileConfig:
@@ -409,6 +417,13 @@ class DirectIngestRawFileConfig:
     expected_number_of_chunks: Optional[int] = attr.ib(
         default=None, validator=attr_validators.is_opt_int
     )
+
+    # Can include table-level validation exemptions and/or column-level exemptions to apply
+    # to all relevent columns in this table.
+    # Values are applied in addition to any default_import_blocking_validation_exemptions
+    import_blocking_validation_exemptions: Optional[
+        List[ImportBlockingValidationExemption]
+    ] = attr.ib(default=None, validator=attr_validators.is_opt_list)
 
     def __attrs_post_init__(self) -> None:
         self._validate_primary_keys()
@@ -639,6 +654,9 @@ class DirectIngestRawFileConfig:
         default_always_historical_export: bool,
         default_no_valid_primary_keys: bool,
         default_infer_columns_from_config: Optional[bool],
+        default_import_blocking_validation_exemptions: Optional[
+            List[ImportBlockingValidationExemption]
+        ],
         file_config_dict: YAMLDict,
     ) -> "DirectIngestRawFileConfig":
         """Returns a DirectIngestRawFileConfig built from a YAMLDict"""
@@ -646,6 +664,30 @@ class DirectIngestRawFileConfig:
         file_description = file_config_dict.pop("file_description", str)
         update_cadence = file_config_dict.pop_optional("update_cadence", str)
         data_class = file_config_dict.pop("data_classification", str)
+        import_blocking_validation_exemptions = None
+        if (
+            import_blocking_table_validation_exemptions_yaml := file_config_dict.pop_dicts_optional(
+                "import_blocking_validation_exemptions"
+            )
+        ) is not None:
+            import_blocking_validation_exemptions = [
+                ImportBlockingValidationExemption(
+                    validation_type=RawDataTableImportBlockingValidationType(
+                        exemption.pop("validation_type", str)
+                    ),
+                    exemption_reason=exemption.pop("exemption_reason", str),
+                )
+                for exemption in import_blocking_table_validation_exemptions_yaml
+            ]
+            if default_import_blocking_validation_exemptions is not None:
+                import_blocking_validation_exemptions.extend(
+                    exemption
+                    for exemption in default_import_blocking_validation_exemptions
+                    if not ImportBlockingValidationExemption.list_includes_exemption_type(
+                        import_blocking_validation_exemptions, exemption.validation_type
+                    )
+                )
+
         column_infos: List[RawTableColumnInfo] = []
         for column in file_config_dict.pop_dicts("columns"):
             column_name = column.pop("name", str)
@@ -667,20 +709,20 @@ class DirectIngestRawFileConfig:
                             f"[{column_name}] known_value [{known_value_value}] in "
                             f"[{file_tag}]: {repr(known_value.get())}"
                         )
-            import_blocking_validation_exemptions = None
+            import_blocking_column_validation_exemptions = None
             if (
-                import_blocking_validation_exemptions_yaml := column.pop_dicts_optional(
-                    "import_blocking_validation_exemptions"
+                import_blocking_column_validation_exemptions_yaml := column.pop_dicts_optional(
+                    "import_blocking_column_validation_exemptions"
                 )
             ) is not None:
-                import_blocking_validation_exemptions = [
+                import_blocking_column_validation_exemptions = [
                     ImportBlockingValidationExemption(
                         validation_type=RawDataTableImportBlockingValidationType(
                             exemption.pop("validation_type", str)
                         ),
                         exemption_reason=exemption.pop("exemption_reason", str),
                     )
-                    for exemption in import_blocking_validation_exemptions_yaml
+                    for exemption in import_blocking_column_validation_exemptions_yaml
                 ]
             column_infos.append(
                 RawTableColumnInfo(
@@ -701,7 +743,7 @@ class DirectIngestRawFileConfig:
                         "is_primary_for_external_id_type", bool
                     )
                     or False,
-                    import_blocking_validation_exemptions=import_blocking_validation_exemptions,
+                    import_blocking_column_validation_exemptions=import_blocking_column_validation_exemptions,
                 )
             )
             if len(column) > 0:
@@ -811,6 +853,11 @@ class DirectIngestRawFileConfig:
             is_code_file=is_code_file,
             is_chunked_file=is_chunked_file,
             expected_number_of_chunks=expected_number_of_chunks,
+            import_blocking_validation_exemptions=(
+                import_blocking_validation_exemptions
+                if import_blocking_validation_exemptions is not None
+                else default_import_blocking_validation_exemptions
+            ),
         )
 
 
@@ -883,6 +930,7 @@ class DirectIngestRegionRawFileConfig:
         return f"{self.region_code.lower()}_default.yaml"
 
     def default_config(self) -> DirectIngestRawFileDefaultConfig:
+        """Return the default raw data config for this region."""
         default_file_path = os.path.join(
             self.yaml_config_file_dir, self.default_config_filename
         )
@@ -909,6 +957,21 @@ class DirectIngestRegionRawFileConfig:
         default_infer_columns_from_config = default_contents.pop_optional(
             "default_infer_columns_from_config", bool
         )
+        default_import_blocking_validation_exemptions = None
+        if (
+            import_blocking_validation_exemptions_yaml := default_contents.pop_dicts_optional(
+                "default_import_blocking_validation_exemptions"
+            )
+        ) is not None:
+            default_import_blocking_validation_exemptions = [
+                ImportBlockingValidationExemption(
+                    validation_type=RawDataTableImportBlockingValidationType(
+                        exemption.pop("validation_type", str)
+                    ),
+                    exemption_reason=exemption.pop("exemption_reason", str),
+                )
+                for exemption in import_blocking_validation_exemptions_yaml
+            ]
 
         return DirectIngestRawFileDefaultConfig(
             filename=self.default_config_filename,
@@ -920,6 +983,7 @@ class DirectIngestRegionRawFileConfig:
             default_always_historical_export=default_always_historical_export,
             default_no_valid_primary_keys=default_no_valid_primary_keys,
             default_update_cadence=default_update_cadence,
+            default_import_blocking_validation_exemptions=default_import_blocking_validation_exemptions,
         )
 
     def get_datetime_parsers(self) -> Set[str]:
@@ -1015,6 +1079,7 @@ class DirectIngestRegionRawFileConfig:
                 default_config.default_always_historical_export,
                 default_config.default_no_valid_primary_keys,
                 default_config.default_infer_columns_from_config,
+                default_config.default_import_blocking_validation_exemptions,
                 yaml_contents,
             )
         return raw_data_configs

@@ -35,8 +35,11 @@ class RawDataTableImportBlockingValidationType(Enum):
     # checks that all values in an enum column match one of the defined known_values
     KNOWN_VALUES = "KNOWN_VALUES"
     # checks that all values in a column with a defined type can be cast to that type,
-    # excluding datetime columns which are handled by DATETIME_PARSERS, and string columns which columns are imported as by default
+    # excluding string columns which columns are imported as by default
     EXPECTED_TYPE = "EXPECTED_TYPE"
+    # checks that for raw data files that are always historical exports
+    # the number of rows in the raw data table is stable
+    STABLE_HISTORICAL_RAW_DATA_COUNTS = "STABLE_HISTORICAL_RAW_DATA_COUNTS"
 
 
 @attr.define
