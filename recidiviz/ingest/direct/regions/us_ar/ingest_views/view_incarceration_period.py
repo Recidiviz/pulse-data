@@ -114,44 +114,114 @@ external_movements AS (
     REGEXP_CONTAINS(OFFENDERID, r'^[[:digit:]]+$') AND
     EXTERNALMOVEMENTCODE IS NOT NULL 
 ),
+/*
+Admissions to backup jail facilities from parole may be special 90-day revocations, but
+this isn't directly specified anywhere in the raw data. To identify these 90-day revocations,
+we do the following:
+- Get the admission movements that could potentially be 90-day revocations, based on their
+  movement code and reason (return from ADC release/parole, with reason 'County/City Jail Backup')
+- Join these movements with the person's board hearings, taking only the hearings that occur
+  within 120 days of the admission movement. Note that this can be 120 days on either side,
+  because there's often a delay in hearing data being recorded, resulting in hearing actions
+  'occurring' after someone's already been committed.
+- If any of these hearings include a '5E' action ('90 Day PV'), and none of them include a 
+  '5F' action ('90 Day PV Removal'), then the movement is likely the result of a 90-day revocation. 
+This CTE identifies the probable 90-day revocations, and we later join on this to set flag_90
+to TRUE. This flag will stay TRUE until the person's next movement, and persists through
+other non-movement transitions (so if someone on a 90-day revocation has their custody class 
+changed without moving facilities, they will still be counted as a 90-day revocation because 
+of the original movement.)
+*/
+movements_with_90_day_flag AS (
+  SELECT 
+    OFFENDERID, 
+    EMDATETIME
+  FROM (
+    SELECT 
+      em.*,
+      CASE 
+        WHEN 
+          PAROLEBOARDFINALACTION1 = '5E' OR
+          PAROLEBOARDFINALACTION2 = '5E' OR 
+          PAROLEBOARDFINALACTION3 = '5E' OR 
+          PAROLEBOARDFINALACTION4 = '5E' OR 
+          PAROLEBOARDFINALACTION5 = '5E' OR 
+          PAROLEBOARDFINALACTION6 = '5E' 
+        THEN '5E'
+        WHEN 
+          PAROLEBOARDFINALACTION1 = '5F' OR
+          PAROLEBOARDFINALACTION2 = '5F' OR 
+          PAROLEBOARDFINALACTION3 = '5F' OR 
+          PAROLEBOARDFINALACTION4 = '5F' OR 
+          PAROLEBOARDFINALACTION5 = '5F' OR 
+          PAROLEBOARDFINALACTION6 = '5F' 
+        THEN '5F'
+        ELSE NULL 
+        END AS relevant_pb_action
+    FROM external_movements em 
+    LEFT JOIN {BOARDHEARING} bh
+    ON 
+      em.OFFENDERID = bh.OFFENDERID AND 
+      ABS(
+        DATE_DIFF(
+          CAST(
+            CONCAT(
+              SPLIT(ADMINEVENTDATE, ' ')[OFFSET(0)],' ',ADMINEVENTTIME
+            ) AS DATETIME
+          ),
+          EMDATETIME,
+          DAY
+        )
+      ) <= 120
+      WHERE EXTERNALMOVEMENTCODE IN ('10','18') AND REASONFORMOVEMENT = '04' 
+    ) 
+  GROUP BY OFFENDERID, EMDATETIME
+  HAVING(
+    LOGICAL_OR(relevant_pb_action='5E') AND NOT 
+    LOGICAL_OR(relevant_pb_action='5F')
+  )
+),
 -- Location is standardized as the location someone moves into for each movement, which
 -- entails using different location columns for 'IN' and 'OUT' movements.
 external_movements_processed AS (
   SELECT 
-    *,
+    em_processed.*,
     -- The following two columns are created to help identify and use certain discharge data.
-    loc_to IN (
+    em_processed.loc_to IN (
       SELECT PARTYID 
       FROM facility_locs
     ) AS to_facility_loc,
-    EXTERNALMOVEMENTCODE='40' AND NOT has_facility_loc AS masked_discharge
+    em_processed.EXTERNALMOVEMENTCODE='40' AND NOT em_processed.has_facility_loc AS masked_discharge,
+    em_flagged.OFFENDERID IS NOT NULL AS flag_90
   FROM (
-  SELECT DISTINCT 
-    OFFENDERID,
-    EMDATETIME,
-    EXTERNALMOVEMENTCODE,
-    REASONFORMOVEMENT,
-    CASE 
-      WHEN direction = 'IN' THEN LOCATIONREPORTMOVEMENT 
-      WHEN direction = 'OUT' THEN OTHERLOCATIONCODE 
-      ELSE NULL 
-    END AS loc_to,
-    direction,
-    LOCATIONREPORTMOVEMENT IN (
-      SELECT PARTYID 
-      FROM facility_locs
-    ) OR
-    OTHERLOCATIONCODE IN (
-      SELECT PARTYID 
-      FROM facility_locs
-    ) as has_facility_loc,
-    LOCATIONREPORTMOVEMENT,
-    OTHERLOCATIONCODE
-  FROM external_movements
-  -- Absconsion-related events (absconsions and returns) can sometimes be reported by a 
-  -- facility-type location, but don't involve any actual detention, so they're filtered out.
-  WHERE EXTERNALMOVEMENTCODE NOT IN ('28','88')
-  )
+    SELECT DISTINCT 
+      OFFENDERID,
+      EMDATETIME,
+      EXTERNALMOVEMENTCODE,
+      REASONFORMOVEMENT,
+      CASE 
+        WHEN direction = 'IN' THEN LOCATIONREPORTMOVEMENT 
+        WHEN direction = 'OUT' THEN OTHERLOCATIONCODE 
+        ELSE NULL 
+      END AS loc_to,
+      direction,
+      LOCATIONREPORTMOVEMENT IN (
+        SELECT PARTYID 
+        FROM facility_locs
+      ) OR
+      OTHERLOCATIONCODE IN (
+        SELECT PARTYID 
+        FROM facility_locs
+      ) as has_facility_loc,
+      LOCATIONREPORTMOVEMENT,
+      OTHERLOCATIONCODE
+    FROM external_movements
+    -- Absconsion-related events (absconsions and returns) can sometimes be reported by a 
+    -- facility-type location, but don't involve any actual detention, so they're filtered out.
+    WHERE EXTERNALMOVEMENTCODE NOT IN ('28','88')
+  ) em_processed
+  LEFT JOIN movements_with_90_day_flag em_flagged
+  USING(OFFENDERID, EMDATETIME)
 ),
 /*
 Some data entry errors result in release-to-supervision movements being omitted from
@@ -283,7 +353,8 @@ external_movements_filtered AS (
     CASE 
       WHEN dis.SEDATE IS NOT NULL THEN TRUE
       ELSE em.has_facility_loc 
-    END AS has_facility_loc
+    END AS has_facility_loc,
+    em.flag_90
   FROM external_movements_processed em
   LEFT JOIN inferred_discharges dis
   USING(OFFENDERID,EMDATETIME)
@@ -311,7 +382,8 @@ external_movement_transition_dates AS (
       loc_to,
       LAG(loc_to) OVER ordered_movements AS last_loc_to,
       LEAD(loc_to) OVER ordered_movements AS next_loc_to,
-      direction
+      direction,
+      flag_90
     FROM external_movements_filtered
     WINDOW ordered_movements AS (PARTITION BY OFFENDERID ORDER BY EMDATETIME)
   ) adjacent_movements
@@ -427,6 +499,7 @@ joined_transitions AS (
     COALESCE(MODIFIEDCUSTODYGRADE, LAST_VALUE(MODIFIEDCUSTODYGRADE IGNORE NULLS) OVER prior_moves) AS MODIFIEDCUSTODYGRADE,
     COALESCE(HOUSINGAREANAME, LAST_VALUE(HOUSINGAREANAME IGNORE NULLS) OVER prior_moves) AS HOUSINGAREANAME,
     COALESCE(bed_type, LAST_VALUE(bed_type IGNORE NULLS) OVER prior_moves) AS bed_type,
+    COALESCE(flag_90, LAST_VALUE(flag_90 IGNORE NULLS) OVER prior_moves) AS flag_90,
     RANK() OVER (PARTITION BY OFFENDERID ORDER BY EMDATETIME) AS MOVE_SEQ 
   FROM (
     SELECT 
@@ -438,7 +511,8 @@ joined_transitions AS (
       COALESCE(direction,cc.movement_type,ba.movement_type) AS direction,
       MODIFIEDCUSTODYGRADE,
       HOUSINGAREANAME,
-      bed_type
+      bed_type,
+      flag_90
     FROM external_movement_transition_dates em
     FULL OUTER JOIN custody_classification_transition_dates cc
     ON em.OFFENDERID = cc.OFFENDERID AND EMDATETIME = CCDATETIME
@@ -470,6 +544,7 @@ deduped_transitions as (
     LAST_VALUE(MODIFIEDCUSTODYGRADE) OVER ba_then_cc AS MODIFIEDCUSTODYGRADE,
     FIRST_VALUE(HOUSINGAREANAME) OVER ba_then_cc AS HOUSINGAREANAME,
     FIRST_VALUE(bed_type) OVER ba_then_cc AS bed_type,
+    flag_90,
     MOVE_SEQ
   FROM (
     SELECT 
@@ -525,6 +600,7 @@ basic_periods AS (
     td_starts.MODIFIEDCUSTODYGRADE AS custody_grade,
     td_starts.HOUSINGAREANAME AS HOUSINGAREANAME,
     td_starts.bed_type AS bed_type,
+    td_starts.flag_90 AS flag_90,
     td_starts.EMDATETIME AS start_date,
     td_ends.EMDATETIME AS end_date,
     td_starts.direction,
@@ -554,6 +630,7 @@ sealed_periods AS (
     custody_grade,
     HOUSINGAREANAME,
     bed_type,
+    flag_90,
     entry_code,
     entry_reason,
     COALESCE(terminating_code, exit_code) AS exit_code,
@@ -580,6 +657,10 @@ SELECT
   custody_grade,
   HOUSINGAREANAME,
   bed_type,
+  CASE 
+    WHEN COALESCE(flag_90,FALSE) THEN '90_DAY'
+    ELSE NULL
+  END AS special_admission_type,
   entry_code,
   entry_reason,
   exit_code,

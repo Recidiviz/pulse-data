@@ -9,6 +9,7 @@ input_columns:
   - custody_grade
   - HOUSINGAREANAME
   - bed_type
+  - special_admission_type
   - entry_code
   - entry_reason
   - exit_code
@@ -94,3 +95,12 @@ output:
                       StateIncarcerationPeriodCustodyLevel.INTERNAL_UNKNOWN:
                         - "C1" # Work Release
                         - "SK" # Safekeeper (Death Row)
+          specialized_purpose_for_incarceration:
+            $conditional:
+              - $if:
+                  $not_null: special_admission_type
+                $then:
+                  $enum_mapping:
+                    $raw_text: special_admission_type
+                    $mappings:
+                      StateSpecializedPurposeForIncarceration.SHOCK_INCARCERATION: "90_DAY"
