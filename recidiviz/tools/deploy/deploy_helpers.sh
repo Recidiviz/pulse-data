@@ -182,7 +182,8 @@ function pre_deploy_configure_infrastructure {
     ulimit -n 1024 || exit_on_fail
     deploy_terraform_infrastructure "${PROJECT}" "${COMMIT_HASH}" "${DOCKER_IMAGE_TAG}" || exit_on_fail
 
-    deploy_migrations "${PROJECT}" "${COMMIT_HASH}"
+    verify_hash "$COMMIT_HASH"
+    deploy_migrations "${PROJECT}"
 }
 
 function copy_docker_image_to_repository {
@@ -447,13 +448,12 @@ function deployment_bot_message {
 
 function deploy_migrations {
   local PROJECT=$1
-  local COMMIT_HASH=$2
 
   while true
   do
     echo "Running migrations using Cloud SQL Proxy"
 
-    run_cmd_no_exiting pipenv run ./recidiviz/tools/migrations/run_all_migrations.sh "${COMMIT_HASH}" "${PROJECT}"
+    run_cmd_no_exiting pipenv run ./recidiviz/tools/migrations/run_all_migrations.sh "${PROJECT}"
     RETURN_CODE=$?
 
     if [[ $RETURN_CODE -eq 0 ]]; then

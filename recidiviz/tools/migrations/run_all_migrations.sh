@@ -7,8 +7,7 @@ source "${BASH_SOURCE_DIR}/../script_base.sh"
 # shellcheck source=recidiviz/tools/postgres/script_helpers.sh
 source "${BASH_SOURCE_DIR}/../postgres/script_helpers.sh"
 
-MIGRATIONS_HASH=$1
-PROJECT_ID=$2
+PROJECT_ID=$1
 
 echo "Running migrations against all databases in ${PROJECT_ID}..."
 
@@ -19,7 +18,6 @@ function run_migrations {
   run_cmd python -m recidiviz.tools.migrations.run_migrations_to_head \
     --database "${SCHEMA_TYPE}" \
     --project-id "${PROJECT_ID}" \
-    --confirm-hash "${MIGRATIONS_HASH}" \
     --skip-db-name-check
 }
 
