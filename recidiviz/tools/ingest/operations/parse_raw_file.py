@@ -25,7 +25,7 @@ If the file is already uploaded to GCS, or you want to be able to explore the re
 BigQuery, use recidiviz.tools.ingest.operations.import_raw_files_to_sandbox.
 
 Usage:
-python -m recidiviz.tools.ingest.operations.parse_raw_file
+python -m recidiviz.tools.ingest.operations.parse_raw_file \
     --state-code US_ME \
     --file-path CIS_204_GEN_NOTE.csv \
     [--chunk-size 1000] \
