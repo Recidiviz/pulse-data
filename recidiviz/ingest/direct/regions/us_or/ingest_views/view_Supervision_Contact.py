@@ -51,10 +51,12 @@ contacts AS (
     CHRONO_WHO, 
     CHRONO_TYPE, 
     CHRONO_WHAT, 
-    IF(CHRONO_TYPE IN ('O', 'OV', 'H', 'CORT', 'DAYR', 'E', 'FLD', 'J', 'TV', 'VV', 'TX'), 'YES', 'NO') AS MEASURABLE, 
+    IF(CHRONO_TYPE IN ('O', 'OV', 'H', 'CORT', 'DAYR', 'E', 'FLD', 'J', 'TV', 'VV', 'TX') AND CHRONO_WHO IN ('O', 'RI'), 'YES', 'NO') AS MEASURABLE, 
     (DATE(CHRONO_DATE)) AS CHRONO_DATE
   FROM {RCDVZ_CISPRDDTA_CMCROH} cm
   WHERE CHRONO_WHO = 'O' -- Contact for Adult in Custody or Adult in Supervision
+  OR (CHRONO_WHO = 'RI' AND CHRONO_TYPE = 'J') -- Reach-Ins (RI) are also with client but have RI code instead of O
+  OR (CHRONO_WHO = 'N' and CHRONO_TYPE IN ('TV', 'OV', 'VV', 'EV')) -- these signify attempts
   AND cm.CASELOAD IS NOT null
   AND RECORD_KEY IN (SELECT DISTINCT RECORD_KEY FROM people_on_supervision)
 )
