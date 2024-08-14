@@ -29,6 +29,7 @@ from recidiviz.calculator.query.state.dataset_config import (
     SESSIONS_DATASET,
 )
 from recidiviz.calculator.query.state.views.workflows.firestore.opportunity_record_query_fragments import (
+    array_agg_case_notes_by_external_id,
     join_current_task_eligibility_spans_with_external_id,
 )
 from recidiviz.common.constants.states import StateCode
@@ -313,6 +314,28 @@ temp_opt_stg_information AS (
     LEFT JOIN `{{project_id}}.{{us_mi_raw_data_up_to_date_dataset}}.COMS_Security_Classification_latest` coms ON orc.person_external_id = LTRIM(coms.Offender_Number, '0') 
     -- this should always be true
     WHERE external_id_type = 'US_MI_DOC'
+),
+case_notes_cte AS (
+    SELECT
+        pei.external_id,
+        Activity AS criteria,
+        NULL AS note_title,
+        cn.Note AS note_body,
+        DATE(cn.Note_Date) AS event_date
+    FROM `{{project_id}}.{{us_mi_raw_data_up_to_date_dataset}}.COMS_Case_Notes_latest` cn 
+    INNER JOIN `{{project_id}}.{{us_mi_raw_data_up_to_date_dataset}}.COMS_Supervision_Schedule_Activities_latest` 
+        USING(Offender_Number, Case_Note_Id)
+    INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
+        ON LTRIM(cn.Offender_Number, '0') = pei.external_id 
+        AND id_type = 'US_MI_DOC'
+    LEFT JOIN `{{project_id}}.{{sessions_dataset}}.compartment_level_1_super_sessions_materialized` s
+        ON s.person_id = pei.person_id 
+        AND CURRENT_DATE BETWEEN s.start_date AND {nonnull_end_date_exclusive_clause('s.end_date_exclusive')}
+    WHERE Activity in ('SCC - Security Classification Committee','In Person Contact')
+    AND DATE(cn.Note_Date) BETWEEN s.start_date AND {nonnull_end_date_exclusive_clause('s.end_date_exclusive')}
+),
+array_case_notes_cte AS (
+{array_agg_case_notes_by_external_id()}
 )
 SELECT 
     tes.state_code,
@@ -357,6 +380,7 @@ SELECT
     temp.Management_Level AS metadata_management_security_level,
     temp.Confinement_Level AS metadata_confinement_security_level,
     temp.Actual_Sec_Level AS metadata_actual_security_level,
+    a.case_notes 
 FROM eligible_and_almost_eligible tes
 LEFT JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person` sp
     ON tes.state_code = sp.state_code
@@ -383,6 +407,9 @@ LEFT JOIN reasons_for_eligibility e
     ON tes.person_id = e.person_id
 LEFT JOIN temp_opt_stg_information temp
     ON tes.external_id = temp.external_id
+LEFT JOIN array_case_notes_cte a 
+    ON a.external_id = tes.external_id
+
     """
     return SimpleBigQueryViewBuilder(
         dataset_id=dataset_config.WORKFLOWS_VIEWS_DATASET,
