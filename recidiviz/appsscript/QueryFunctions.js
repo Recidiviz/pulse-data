@@ -17,6 +17,36 @@
 /* File containing functions that construct SQL Queries used in CreateReport.gs. */
 
 /**
+ * Get start date
+ * Query the Big Query database for the start_date.
+ * @param {string} stateCode The state code passed in from the Google Form (ex: 'US_MI')
+ * @param {string} timePeriod The time period passed in from the Google Form (ex: 'MONTH', 'QUARTER', or 'YEAR')
+ * @param {string} endDateString The end date passed from the connected Google Form on form submit (ex: '2023-03-01')
+ **/
+function getStartDate(stateCode, timePeriod, endDateString) {
+  const queryString = `
+    SELECT start_date
+    FROM aggregated_metrics.supervision_state_aggregated_metrics_materialized
+    WHERE state_code = '${stateCode}'
+    AND period = '${timePeriod}'
+    AND end_date = '${endDateString}'`;
+
+  const queryOutput = runQuery(queryString)[0];
+  const queryOutputLength = queryOutput.length;
+  if (queryOutputLength !== 1) {
+    throw new Error(
+      `Expected 1 row in query output, but got length: ${queryOutputLength}. Query output: ${queryOutput}.`
+    );
+  }
+
+  const splitStartDate = queryOutput[0].split("-");
+  const startDate = `${splitStartDate[1]}/${splitStartDate[2]}/${splitStartDate[0]}`;
+  Logger.log("startDate: %s", startDate);
+
+  return startDate;
+}
+
+/**
  * Construct opportunities granted text
  * Given parameters provided by the user, constructs a query string and call RunQuery
  * to query the BiqQuery database. After fetching the total number of supervision and
@@ -46,8 +76,8 @@ function constructOpportunitiesGrantedText(
     AND period = '${timePeriod}'
     AND end_date = '${endDateString}'`;
 
-  const queryOutput = runQuery(queryString)[0]
-  const queryOutputLength = queryOutput.length
+  const queryOutput = runQuery(queryString)[0];
+  const queryOutputLength = queryOutput.length;
   if (queryOutputLength !== 1) {
     throw new Error(
       `Expected 1 row in query output, but got length: ${queryOutputLength}. Query output: ${queryOutput}.`
@@ -55,32 +85,45 @@ function constructOpportunitiesGrantedText(
   }
 
   const opportunitiesGranted = parseInt(queryOutput[0]);
-  Logger.log(
-    "Opportunities Granted: %s",
-    opportunitiesGranted
-  );
+  Logger.log("Opportunities Granted: %s", opportunitiesGranted);
 
   return opportunitiesGranted;
 }
 
 /**
- * Construct supervision district column chart
+ * Get max region
+ * Given an array of arrays that contain the number of opportunities granted for each region, return the region with the max number of opportunities granted.
+ * @param {array} supervisionDistrictData
+ * @returns {string} the region with with max number of opportunities granted
+ **/
+function getMaxRegion(supervisionDistrictData) {
+  var maxRegion = null;
+  var maxNum = 0;
+  supervisionDistrictData.forEach((arr) => {
+    if (parseFloat(arr[1]) > maxNum) {
+      maxNum = arr[1];
+      maxRegion = arr[0];
+    }
+  });
+
+  return maxRegion;
+}
+
+/**
+ * Get supervision district data
  * Given parameters provided by the user, constructs a query string and calls runQuery
- * to query the BiqQuery database. After fetching the data from the database, populates
- * a new supervision column chart.
+ * to query the BiqQuery database.
  * @param {string} stateCode The state code passed in from the Google Form (ex: 'US_MI')
  * @param {string} timePeriod The time period passed in from the Google Form (ex: 'MONTH', 'QUARTER', or 'YEAR')
  * @param {string} endDateString The end date passed from the connected Google Form on form submit (ex: '2023-03-01')
- * @param {string} workflow The name of the workflow
  * @param {string} completionEventType The completion event type of the workflow (what we call it in the database)
  * @param {string} system The system of the workflow (ex: 'SUPERVISION' or 'INCARCERATION')
- * @returns {Chart} The built/populated column chart
+ * @returns {object} supervisionDistrictData An array or arrays containing data for each district/facility. Also returns the xAxisColumn and yAxisColumn.
  */
-function constructSupervisionDistrictColumnChart(
+function getSupervisionDistrictData(
   stateCode,
   timePeriod,
   endDateString,
-  workflow,
   completionEventType,
   system
 ) {
@@ -112,8 +155,28 @@ function constructSupervisionDistrictColumnChart(
     AND end_date = '${endDateString}';
   `;
 
-  supervisionDistrictData = runQuery(queryString);
+  return {
+    supervisionDistrictData: runQuery(queryString),
+    xAxisColumn: xAxisColumn,
+    yAxisColumn: yAxisColumn,
+  };
+}
 
+/**
+ * Construct supervision district column chart
+ * Populates a new supervision column chart.
+ * @param {string} workflow The name of the workflow
+ * @param {string} xAxisColumn The name of the x-axis
+ * @param {string} yAxisColumn The name of the y-axis
+ * @param {array} supervisionDistrictData An array of arrays containing data for each district/facility
+ * @returns {Chart} The built/populated column chart
+ */
+function constructSupervisionDistrictColumnChart(
+  workflow,
+  xAxisColumn,
+  yAxisColumn,
+  supervisionDistrictData
+) {
   const xAxisClean = cleanString(xAxisColumn);
   const yAxisClean = cleanString(yAxisColumn);
 
