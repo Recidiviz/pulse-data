@@ -42,8 +42,11 @@ function main(e) {
   Logger.log("endDateString: %s", endDateString);
   Logger.log("workflowsToInclude: %s", workflowsToInclude);
 
+  const startDate = getStartDate(stateCode, timePeriod, endDateString);
+
   const workflowToDistrictOrFacilitiesColumnChart = {};
   const workflowToOpportunityGranted = {};
+  const workflowToMaxOpportunityGrantedLocation = {};
 
   const stateCodeToRows = getSheetValues();
   const stateRows = stateCodeToRows[stateCode];
@@ -69,19 +72,29 @@ function main(e) {
       system
     );
 
-    var districtOrFacilitiesColumnChart =
-      constructSupervisionDistrictColumnChart(
+    const { supervisionDistrictData, xAxisColumn, yAxisColumn } =
+      getSupervisionDistrictData(
         stateCode,
         timePeriod,
         endDateString,
-        workflow,
         completionEventType,
         system
+      );
+
+    const maxRegion = getMaxRegion(supervisionDistrictData);
+
+    var districtOrFacilitiesColumnChart =
+      constructSupervisionDistrictColumnChart(
+        workflow,
+        xAxisColumn,
+        yAxisColumn,
+        supervisionDistrictData
       );
 
     workflowToDistrictOrFacilitiesColumnChart[workflow] =
       districtOrFacilitiesColumnChart;
     workflowToOpportunityGranted[workflow] = opportunityGranted;
+    workflowToMaxOpportunityGrantedLocation[workflow] = maxRegion;
   });
 
   copyAndPopulateTemplateDoc(
@@ -90,7 +103,9 @@ function main(e) {
     timePeriod,
     endDateString,
     workflowsToInclude,
-    workflowToOpportunityGranted
+    workflowToOpportunityGranted,
+    startDate,
+    workflowToMaxOpportunityGrantedLocation
   );
 }
 
@@ -105,6 +120,8 @@ function main(e) {
  * @param {string} endDateString The end date passed from the connected Google Form on form submit (ex: '2023-03-01')
  * @param {array} workflowsToInclude A list of Workflows to be included in the report
  * @param {map} workflowToOpportunityGranted An object that maps the workflow name to the number of opportunities granted for that workflow
+ * @param {string} startDate The start date (queried from BigQuery) (ex: '2023-02-01')
+ * @param {map} workflowToMaxOpportunityGrantedLocation An object that maps the workflow name to the district or facility with the most number of opportunities granted
  */
 function copyAndPopulateTemplateDoc(
   workflowToDistrictOrFacilitiesColumnChart,
@@ -112,7 +129,9 @@ function copyAndPopulateTemplateDoc(
   timePeriod,
   endDateString,
   workflowsToInclude,
-  workflowToOpportunityGranted
+  workflowToOpportunityGranted,
+  startDate,
+  workflowToMaxOpportunityGrantedLocation
 ) {
   const template = DriveApp.getFileById(
     "1nsc_o2fTlldTQavxJveucWgDKkic_clKZjn0GuyF2N8"
@@ -139,12 +158,19 @@ function copyAndPopulateTemplateDoc(
 
   body.replaceText("{{today_date}}", today);
 
+  const endDateClean = cleanDate(endDateString);
+  const timeRange = `${startDate}-${endDateClean}`;
+  body.replaceText("{{time_range}}", timeRange);
+
   copyAndPopulateOpportunityGrants(body, workflowToOpportunityGranted);
 
   copyAndPopulateWorkflowSection(
     body,
     workflowsToInclude,
-    workflowToDistrictOrFacilitiesColumnChart
+    workflowToDistrictOrFacilitiesColumnChart,
+    workflowToOpportunityGranted,
+    startDate,
+    workflowToMaxOpportunityGrantedLocation
   );
 }
 
@@ -185,7 +211,7 @@ function copyAndPopulateOpportunityGrants(body, workflowToOpportunityGranted) {
 
       textCopy.replaceText(
         "{{grant_type}}: {{num_grants}} Grants",
-        `${workflow}: ${opportunityGranted} Grants`
+        `${workflow}: ${opportunityGranted.toLocaleString()} Grants`
       );
       const startBoldIndex =
         textCopy.findText(": ").getEndOffsetInclusive() + 1;
@@ -206,11 +232,17 @@ function copyAndPopulateOpportunityGrants(body, workflowToOpportunityGranted) {
  * @param {Body} body The template document body
  * @param {array} workflowsToInclude A list of Workflows to be included in the report
  * @param {map} workflowToDistrictOrFacilitiesColumnChart An object that maps the workflow name to it's districtOrFacilitiesColumnChart
+ * @param {map} workflowToOpportunityGranted An object that maps the workflow name to the number of opportunities granted for that workflow
+ * @param {string} startDate The start date (queried from BigQuery) (ex: '2023-02-01')
+ * @param {map} workflowToMaxOpportunityGrantedLocation An object that maps the workflow name to the district or facility with the most number of opportunities granted
  */
 function copyAndPopulateWorkflowSection(
   body,
   workflowsToInclude,
-  workflowToDistrictOrFacilitiesColumnChart
+  workflowToDistrictOrFacilitiesColumnChart,
+  workflowToOpportunityGranted,
+  startDate,
+  workflowToMaxOpportunityGrantedLocation
 ) {
   const childIdx = getIndexOfElementToReplace(
     body,
@@ -240,7 +272,7 @@ function copyAndPopulateWorkflowSection(
         elementCopy.getChild(0).getType() ===
           DocumentApp.ElementType.INLINE_IMAGE
       ) {
-        elementCopyChild = elementCopy.getChild(0).copy();
+        let elementCopyChild = elementCopy.getChild(0).copy();
         const altTitle = elementCopyChild.getAltTitle();
         if (altTitle === "Impact Column Chart") {
           // Replace with generated chart
@@ -252,6 +284,16 @@ function copyAndPopulateWorkflowSection(
       } else {
         // Replace text
         elementCopy.replaceText("{{workflow_name}}", workflow);
+        elementCopy.replaceText("{{start_date}}", startDate);
+        elementCopy.replaceText(
+          "{{region_most_opps_granted}}",
+          workflowToMaxOpportunityGrantedLocation[workflow]
+        );
+        elementCopy.replaceText(
+          "{{total_transferred}}",
+          workflowToOpportunityGranted[workflow].toLocaleString()
+        );
+
         body.appendParagraph(elementCopy);
       }
     });

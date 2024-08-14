@@ -97,6 +97,18 @@ function createColumnChart(data, chartData, title, xAxis, yAxis) {
 }
 
 /**
+ * Clean date
+ * @param {string} dbDate The string representation of the date used in the database (ex: 2023-03-01)
+ * @returns {string} cleanDate The cleaned version of the string/date (ex: 03/01/2023)
+ */
+function cleanDate(dbDate) {
+  const splitDate = dbDate.split("-");
+  const cleanDate = `${splitDate[1]}/${splitDate[2]}/${splitDate[0]}`;
+
+  return cleanDate;
+}
+
+/**
  * Clean string
  * @param {string} dbString The string/label from the database
  * @returns {string} cleanString The cleaned version of the string/label (camelCase)
@@ -136,7 +148,7 @@ function getIndexOfElementToReplace(body, elementType, textToMatch) {
         // Note that cells start at index 0
         child = child.getCell(2, 1);
       }
-      
+
       if (child.getText() === textToMatch) {
         // We found the start of where we want to copy
         childIdx = idx;
@@ -145,5 +157,5 @@ function getIndexOfElementToReplace(body, elementType, textToMatch) {
     }
   }
 
-  return childIdx
+  return childIdx;
 }
