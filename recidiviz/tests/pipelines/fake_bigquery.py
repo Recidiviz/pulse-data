@@ -67,6 +67,7 @@ from recidiviz.pipelines.normalization.utils.normalized_entity_conversion_utils 
     column_names_on_bq_schema_for_normalized_state_entity,
 )
 from recidiviz.pipelines.utils.beam_utils.extractor_utils import ROOT_ENTITY_ID_KEY
+from recidiviz.pipelines.utils.execution_utils import TableRow
 from recidiviz.pipelines.utils.pipeline_run_utils import collect_all_pipeline_classes
 from recidiviz.tests.big_query.big_query_emulator_test_case import (
     BigQueryEmulatorTestCase,
@@ -644,6 +645,82 @@ class FakeWriteToBigQuery(apache_beam.PTransform):
     @abc.abstractmethod
     def expand(self, input_or_inputs: PCollection) -> Any:
         """Validates the output. Must be implemented by subclasses."""
+
+
+class FakeWriteToBigQueryEmulator(apache_beam.PTransform):
+    """Fake PTransform that writes rows to the BigQuery emulator."""
+
+    def __init__(
+        self,
+        output_dataset: str,
+        output_table: str,
+        write_disposition: apache_beam.io.BigQueryDisposition,
+        test_case: BigQueryEmulatorTestCase,
+    ):
+        super().__init__()
+        self._output_dataset = output_dataset
+        self._output_table = output_table
+        self._write_disposition = write_disposition
+        # This is unused but here so that we're forced to use this class in the context
+        # of a BigQueryEmulatorTestCase.
+        self._test_case = test_case
+
+    def expand(self, input_or_inputs: PCollection[TableRow]) -> None:
+        # Store thes values as local variables so `self` is not captured by the
+        # _write_rows function. This class stores a BigQueryEmulatorTestCase value
+        # which cannot be pickled, so cannot be referenced in a `Map` transform.
+        output_dataset = self._output_dataset
+        output_table = self._output_table
+
+        def _write_rows(_: None, rows: list[TableRow]) -> None:
+            # Create a new client so that we don't have to referenced `self._test_case`
+            # from inside the mapped function. Because we're running in the context of
+            # a BigQueryEmulatorTestCase, this client will talk to the emulator.
+            bq_client = BigQueryClientImpl()
+            bq_client.stream_into_table(
+                address=BigQueryAddress(
+                    dataset_id=output_dataset, table_id=output_table
+                ),
+                rows=rows,
+            )
+
+        _ = (
+            input_or_inputs.pipeline
+            # Create a PCollection with a single value so the _write_rows function gets
+            # called exactly once.
+            | apache_beam.Create([None])
+            | apache_beam.Map(
+                _write_rows,
+                # Convert the rows to a list - this is only a valid thing to do in tests
+                # where we are confident that the rows will all fit into memory at once
+                rows=apache_beam.pvalue.AsList(input_or_inputs),
+            )
+        )
+
+    @classmethod
+    def get_mock_write_to_big_query_constructor(
+        cls,
+        test_case: BigQueryEmulatorTestCase,
+    ) -> Callable[
+        [str, str, apache_beam.io.BigQueryDisposition], "FakeWriteToBigQueryEmulator"
+    ]:
+        """Returns a function that is a mock version of the `WriteToBigQuery`
+        constructor and will return a `FakeWriteToBigQueryEmulator` instance.
+        """
+
+        def mock_write_to_big_query_constructor(
+            output_dataset: str,
+            output_table: str,
+            write_disposition: apache_beam.io.BigQueryDisposition,
+        ) -> "FakeWriteToBigQueryEmulator":
+            return FakeWriteToBigQueryEmulator(
+                output_dataset=output_dataset,
+                output_table=output_table,
+                write_disposition=write_disposition,
+                test_case=test_case,
+            )
+
+        return mock_write_to_big_query_constructor
 
 
 class FakeWriteMetricsToBigQuery(FakeWriteToBigQuery):

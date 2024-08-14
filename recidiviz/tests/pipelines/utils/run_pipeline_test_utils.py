@@ -32,6 +32,7 @@ from recidiviz.persistence.entity.state.normalized_state_entity import (
     NormalizedStateEntity,
 )
 from recidiviz.pipelines.base_pipeline import BasePipeline
+from recidiviz.pipelines.ingest.state import write_root_entities_to_bq
 from recidiviz.pipelines.ingest.state.pipeline import StateIngestPipeline
 from recidiviz.pipelines.metrics.base_metric_pipeline import MetricPipeline
 from recidiviz.pipelines.normalization.comprehensive.pipeline import (
@@ -120,7 +121,10 @@ def run_test_pipeline(
             if read_all_from_bq_constructor
             else read_from_bq_constructor,
         ):
-            with patch(write_to_bq_class, write_to_bq_constructor):
+            with patch(
+                f"{write_root_entities_to_bq.__name__}.WriteToBigQuery",
+                write_to_bq_constructor,
+            ), patch(write_to_bq_class, write_to_bq_constructor):
                 with patch(
                     "recidiviz.pipelines.base_pipeline.Pipeline",
                     pipeline_constructor(project_id),

@@ -26,7 +26,7 @@ from recidiviz.persistence.entity.entities_bq_schema import (
 )
 from recidiviz.persistence.entity.state import entities as state_entities
 from recidiviz.persistence.entity.state import normalized_entities
-from recidiviz.pipelines.ingest.state import pipeline
+from recidiviz.pipelines.ingest.state.serialize_entities import SerializeEntities
 from recidiviz.tests.persistence.entity.state.entities_test_utils import (
     generate_full_graph_normalized_state_person,
     generate_full_graph_normalized_state_staff,
@@ -58,7 +58,7 @@ class TestSerializeEntities(StateIngestPipelineTestCase):
             self.test_pipeline
             | beam.Create(root_entities)
             | beam.ParDo(
-                pipeline.SerializeEntities(
+                SerializeEntities(
                     state_code=StateCode.US_DD,
                     entities_module=state_entities,
                 )
@@ -86,7 +86,7 @@ class TestSerializeEntities(StateIngestPipelineTestCase):
             self.test_pipeline
             | beam.Create(root_entities)
             | beam.ParDo(
-                pipeline.SerializeEntities(
+                SerializeEntities(
                     state_code=StateCode.US_DD,
                     entities_module=normalized_entities,
                 )

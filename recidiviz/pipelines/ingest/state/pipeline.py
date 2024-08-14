@@ -84,7 +84,9 @@ from recidiviz.pipelines.ingest.state.merge_root_entities_across_dates import (
     MergeRootEntitiesAcrossDates,
 )
 from recidiviz.pipelines.ingest.state.run_validations import RunValidations
-from recidiviz.pipelines.ingest.state.serialize_entities import SerializeEntities
+from recidiviz.pipelines.ingest.state.write_root_entities_to_bq import (
+    WriteRootEntitiesToBQ,
+)
 from recidiviz.pipelines.utils.beam_utils.bigquery_io_utils import WriteToBigQuery
 
 
@@ -282,7 +284,7 @@ class StateIngestPipeline(BasePipeline[IngestPipelineParameters]):
         )
 
         output_state_tables = get_pipeline_output_tables(expected_output_entities)
-        final_entities: beam.PCollection[Dict[str, Any]] = (
+        pre_normalization_root_entities: beam.PCollection[RootEntity] = (
             {
                 PRIMARY_KEYS: root_entity_external_ids_to_primary_keys,
                 MERGED_ROOT_ENTITIES_WITH_DATES: merged_root_entities_with_dates,
@@ -293,22 +295,18 @@ class StateIngestPipeline(BasePipeline[IngestPipelineParameters]):
                 expected_output_entities=expected_output_entities,
                 state_code=state_code,
             )
-            | beam.ParDo(
-                SerializeEntities(
-                    state_code=state_code,
-                    entities_module=state_entities,
-                )
-            ).with_outputs(*output_state_tables)
         )
 
-        for table_name in output_state_tables:
-            _ = getattr(
-                final_entities, table_name
-            ) | f"Write {table_name} to BigQuery" >> WriteToBigQuery(
+        _ = (
+            pre_normalization_root_entities
+            | f"Write pre-normalization entities to {self.pipeline_parameters.pre_normalization_output}"
+            >> WriteRootEntitiesToBQ(
+                state_code=state_code,
+                entities_module=state_entities,
                 output_dataset=self.pipeline_parameters.pre_normalization_output,
-                output_table=table_name,
-                write_disposition=beam.io.BigQueryDisposition.WRITE_TRUNCATE,
+                output_table_ids=output_state_tables,
             )
+        )
 
         if self.pipeline_parameters.run_normalization:
             # TODO(#29517): Actually add normalization logic here!
