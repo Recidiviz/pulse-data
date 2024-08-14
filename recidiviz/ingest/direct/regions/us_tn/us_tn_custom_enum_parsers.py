@@ -143,9 +143,9 @@ def parse_staff_caseload_type(
 
     if any(keyword in raw_text for keyword in ["SEX", "SCU"]):
         return StateStaffCaseloadType.SEX_OFFENSE
-    if any(keyword in raw_text for keyword in ["ICOT", "ISC", "IOT"]):
-        return StateStaffCaseloadType.OTHER
-    if any(keyword in raw_text for keyword in ["REHAB", "DRUG", "RECOVERY"]):
+    if any(keyword in raw_text for keyword in ["ROCS", "RECOVERY COURT"]):
+        return StateStaffCaseloadType.DRUG_COURT
+    if any(keyword in raw_text for keyword in ["REHAB", "DRUG", "RECOVERY", "DRC"]):
         return StateStaffCaseloadType.ALCOHOL_AND_DRUG
     if "COURT" in raw_text:
         return StateStaffCaseloadType.OTHER_COURT
@@ -168,6 +168,9 @@ def parse_staff_caseload_type(
             "GENERAL",
             "MANAGER",  # mapping this here for now since sometimes managers have caseloads
             "PPM",  # Probation/Parole Manager - not typically caseload carrier but sometimes take them on
+            "ICOT",  # compact cases managed same as other general cases
+            "ISC",
+            "IOT",
         ]
     ):
         return StateStaffCaseloadType.GENERAL
