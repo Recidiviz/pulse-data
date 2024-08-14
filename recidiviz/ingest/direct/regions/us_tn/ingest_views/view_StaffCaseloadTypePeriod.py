@@ -43,7 +43,10 @@ get_real_caseloads AS (
     SELECT * FROM all_periods
     WHERE CASELOADTYPE NOT LIKE '%NO CASELOAD%' 
         AND CASELOADTYPE NOT LIKE '%SECRETARY%' 
+        AND CASELOADTYPE NOT LIKE '%DIRECTOR%' 
+        AND CASELOADTYPE NOT LIKE '%EMPLOYMENT%' 
         AND CASELOADTYPE NOT LIKE '%PSI%' 
+        AND CASELOADTYPE NOT LIKE '%CC%' 
         AND CASELOADTYPE NOT LIKE '%BHS%' --BHS are Social Workers- no caseload (Behavioral Health Specialist)
         AND CASELOADTYPE NOT LIKE 'DATS%' --DAT are Risk and Needs assessors- they do not have a caseload.
         AND CASELOADTYPE NOT IN ('RESIGNED',
@@ -52,7 +55,14 @@ get_real_caseloads AS (
                                  'N/A',
                                  'PSA', -- Sanction officer, does not carry caseload
                                  'CA', -- Correctional Administrator, does not carry caseload
-                                 'DAT') 
+                                 'DAT',
+                                 'Court',
+                                 'Court/Reports',
+                                 'Programming',
+                                 'Sanctions',
+                                 'Program Liason',
+                                 'Counselor',
+                                 '120-Day Employee') 
 
 ),
 -- First, identify the first ever reported caseloadtype for each staff member sent to us by TN
