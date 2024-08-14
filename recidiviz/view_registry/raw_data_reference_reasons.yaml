@@ -841,6 +841,16 @@ US_MI:
       Usage reason unknown. Grandfathered in 04/18/2024.
     workflows_views.us_mi_complete_classification_review_form_record: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
+  COMS_Case_Notes:
+    workflows_views.us_mi_complete_add_in_person_security_classification_committee_review_form_record:
+      |-
+      Relevant case notes for SCC opportunities
+    workflows_views.us_mi_complete_security_classification_committee_review_form_record:
+      |-
+      Relevant case notes for SCC opportunities
+    workflows_views.us_mi_complete_warden_in_person_security_classification_committee_review_form_record:
+      |-
+      Relevant case notes for SCC opportunities
   COMS_Intervention_Referral_Program_and_Service_Type_Combinations:
     outliers_views.supervision_client_events: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
@@ -887,6 +897,15 @@ US_MI:
     analyst_data.us_mi_warden_in_person_security_classification_committee_review:
       |-
       Usage reason unknown. Grandfathered in 04/18/2024.
+    workflows_views.us_mi_complete_add_in_person_security_classification_committee_review_form_record:
+      |-
+      Used to identify relevant case notes for SCC opportunities
+    workflows_views.us_mi_complete_security_classification_committee_review_form_record:
+      |-
+      Used to identify relevant case notes for SCC opportunities
+    workflows_views.us_mi_complete_warden_in_person_security_classification_committee_review_form_record:
+      |-
+      Used to identify relevant case notes for SCC opportunities
   COMS_Supervision_Statuses:
     task_eligibility_criteria_us_mi.supervision_status_is_not_delayed_sentence:
       |-
