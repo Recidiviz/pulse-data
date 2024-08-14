@@ -50,6 +50,7 @@ from recidiviz.persistence.entity.entity_utils import (
 from recidiviz.persistence.entity_matching.entity_merger_utils import (
     root_entity_external_id_keys,
 )
+from recidiviz.pipelines.ingest.state import write_root_entities_to_bq
 from recidiviz.pipelines.ingest.state.generate_ingest_view_results import (
     GenerateIngestViewResults,
 )
@@ -330,6 +331,13 @@ class StateSpecificIngestPipelineIntegrationTestCase(BaseStateIngestPipelineTest
             ingest_views_to_run=ingest_views_to_run,
             raw_data_upper_bound_dates_json=self.raw_fixture_loader.default_upper_bound_dates_json,
         )
+        fake_bq_write_constructor = self.create_fake_bq_write_sink_constructor(
+            self.get_expected_output(
+                ingest_view_results,
+                expected_entity_types_to_expected_entities,
+                expected_entity_association_type_to_associations,
+            )
+        )
 
         with patch(
             "recidiviz.pipelines.ingest.state.pipeline.GenerateIngestViewResults",
@@ -341,13 +349,10 @@ class StateSpecificIngestPipelineIntegrationTestCase(BaseStateIngestPipelineTest
             ):
                 with patch(
                     "recidiviz.pipelines.ingest.state.pipeline.WriteToBigQuery",
-                    self.create_fake_bq_write_sink_constructor(
-                        self.get_expected_output(
-                            ingest_view_results,
-                            expected_entity_types_to_expected_entities,
-                            expected_entity_association_type_to_associations,
-                        )
-                    ),
+                    fake_bq_write_constructor,
+                ), patch(
+                    f"{write_root_entities_to_bq.__name__}.WriteToBigQuery",
+                    fake_bq_write_constructor,
                 ):
                     with patch(
                         "recidiviz.pipelines.base_pipeline.Pipeline",

@@ -69,44 +69,60 @@ from recidiviz.source_tables.source_table_config import (
 from recidiviz.utils import metadata
 
 
+def build_state_output_source_table_collection(
+    state_code: StateCode,
+) -> SourceTableCollection:
+    """Build the source table collection for the `us_xx_state` ingest pipeline output
+    dataset for a given state.
+    """
+    collection = SourceTableCollection(
+        dataset_id=state_dataset_for_state_code(state_code),
+        labels=[
+            DataflowPipelineSourceTableLabel(INGEST_PIPELINE_NAME),
+            IngestPipelineEntitySourceTableLabel(state_code=state_code),
+        ],
+    )
+    for table_id, schema_fields in get_bq_schema_for_entities_module(entities).items():
+        collection.add_source_table(table_id=table_id, schema_fields=schema_fields)
+    return collection
+
+
+def build_normalized_state_output_source_table_collection(
+    state_code: StateCode,
+) -> SourceTableCollection:
+    """Build the source table collection for the `us_xx_normalized_state` ingest
+    pipeline output dataset for a given state.
+    """
+    collection = SourceTableCollection(
+        dataset_id=normalized_state_dataset_for_state_code_ingest_pipeline_output(
+            state_code
+        ),
+        labels=[
+            DataflowPipelineSourceTableLabel(INGEST_PIPELINE_NAME),
+            NormalizedStateSpecificEntitySourceTableLabel(state_code=state_code),
+        ],
+    )
+    for table_id, schema_fields in get_bq_schema_for_entities_module(
+        normalized_entities
+    ).items():
+        collection.add_source_table(table_id=table_id, schema_fields=schema_fields)
+    return collection
+
+
 def _build_state_output_source_table_collections() -> list[SourceTableCollection]:
-    state_specific_collections: list[SourceTableCollection] = [
-        SourceTableCollection(
-            dataset_id=state_dataset_for_state_code(state_code),
-            labels=[
-                DataflowPipelineSourceTableLabel(INGEST_PIPELINE_NAME),
-                IngestPipelineEntitySourceTableLabel(state_code=state_code),
-            ],
-        )
+    return [
+        build_state_output_source_table_collection(state_code)
         for state_code in get_direct_ingest_states_existing_in_env()
     ]
-    for table_id, schema_fields in get_bq_schema_for_entities_module(entities).items():
-        for collection in state_specific_collections:
-            collection.add_source_table(table_id=table_id, schema_fields=schema_fields)
-    return state_specific_collections
 
 
 def _build_normalized_state_output_source_table_collections() -> list[
     SourceTableCollection
 ]:
-    state_specific_collections: list[SourceTableCollection] = [
-        SourceTableCollection(
-            dataset_id=normalized_state_dataset_for_state_code_ingest_pipeline_output(
-                state_code
-            ),
-            labels=[
-                DataflowPipelineSourceTableLabel(INGEST_PIPELINE_NAME),
-                NormalizedStateSpecificEntitySourceTableLabel(state_code=state_code),
-            ],
-        )
+    return [
+        build_normalized_state_output_source_table_collection(state_code)
         for state_code in get_direct_ingest_states_existing_in_env()
     ]
-    for table_id, schema_fields in get_bq_schema_for_entities_module(
-        normalized_entities
-    ).items():
-        for collection in state_specific_collections:
-            collection.add_source_table(table_id=table_id, schema_fields=schema_fields)
-    return state_specific_collections
 
 
 def build_ingest_pipeline_output_source_table_collections() -> list[
