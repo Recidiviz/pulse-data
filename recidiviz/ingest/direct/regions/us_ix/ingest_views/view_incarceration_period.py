@@ -20,6 +20,7 @@ hsn_Bed_SecurityLevel, hsn_ChangeReason, hsn_SecurityLevel, ind_LegalStatus, ind
 ind_OffenderLegalStatus, ref_Location, ref_LocationSubType, ref_LocationType, scl_Charge"""
 from recidiviz.ingest.direct.regions.us_ix.ingest_views.query_fragments import (
     BED_ASSIGNMENT_PERIODS_CTE,
+    CLIENT_ADDRESS_CTE,
     LEGAL_STATUS_PERIODS_CTE,
     LEGAL_STATUS_PERIODS_INCARCERATION_CTE,
     LOCATION_DETAILS_CTE,
@@ -44,6 +45,7 @@ WITH
 {TRANSFER_PERIODS_CTE},
 {TRANSFER_PERIODS_INCARCERATION_CTE},
 {SECURITY_LEVEL_PERIODS_CTE},
+{CLIENT_ADDRESS_CTE},
 
 -- This cte treats the transfer period as the primary source of truth for when a person
 -- is incarcerated, and attempts to map a legal status on to the transfer period by
@@ -101,7 +103,8 @@ transfer_periods_with_legal_status_with_beds_and_security_level AS (
         tls.DOCLocationToTypeName,
         tls.DOCLocationToSubTypeName,
         slp.SecurityLevelName,
-        b.LevelPath
+        b.LevelPath,
+        cac.JurisdictionId
     FROM (
         -- Create periods based on all the dates in transfer_periods_with_legal_status and bed_assignment_periods_cte and security_level_cte
         SELECT
@@ -154,6 +157,22 @@ transfer_periods_with_legal_status_with_beds_and_security_level AS (
                 OffenderId,
                 endDate as dte
             FROM security_level_periods_cte  
+
+            UNION DISTINCT
+
+            SELECT
+                DISTINCT
+                OffenderId,
+                StartDate AS dte,
+            FROM client_addresses_cte
+
+            UNION DISTINCT
+
+            SELECT
+                DISTINCT
+                OffenderId,
+                EndDate AS dte,
+            FROM client_addresses_cte
         ) spans 
     ) p
     -- merge on all relevant info from transfer_periods_with_legal_status and bed_assignment_periods_cte for each period
@@ -165,6 +184,10 @@ transfer_periods_with_legal_status_with_beds_and_security_level AS (
         ON p.OffenderId = b.OffenderId
         AND p.period_start >= b.FromDate
         AND COALESCE(p.period_end, DATE(9999,12,31)) <= COALESCE(b.ToDate, DATE(9999,12,31))
+    LEFT JOIN client_addresses_cte cac
+        ON p.OffenderId = cac.OffenderId
+        AND p.period_start >= cac.StartDate
+        AND COALESCE(p.period_end, DATE(9999,12,31)) <= COALESCE(cac.EndDate, DATE(9999,12,31))
     LEFT JOIN security_level_periods_cte slp
         ON p.OffenderId = slp.OffenderId
         AND p.period_start >= slp.startDate
@@ -191,6 +214,7 @@ incarceration_periods AS (
             LegalStatusDesc,
             SecurityLevelName,
             LevelPath,
+            JurisdictionId
         FROM transfer_periods_with_legal_status_with_beds_and_security_level
         WHERE Start_TransferTypeDesc != 'Out from DOC'
     ) a

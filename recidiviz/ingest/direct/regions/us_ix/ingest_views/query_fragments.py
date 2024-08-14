@@ -958,7 +958,18 @@ SUPERVISOR_ROSTER_EMPLOYEE_IDS_CTE = """
           AND (EmployeeId_email_match is not null or EmployeeId_name_match is not null)
     )
 """
-
+CLIENT_ADDRESS_CTE = """
+    -- we will be using Jurisdiction ID to determine what district the client falls into
+    client_addresses_cte AS (
+        SELECT 
+            JurisdictionId,
+            OffenderId,
+            DATE(StartDate) AS StartDate,
+            DATE(EndDate) AS EndDate
+        FROM {ref_Address}
+        LEFT JOIN {ind_Offender_Address} using (AddressId)
+    )
+"""
 SUPERVISOR_ROSTER_SUPERVISOR_IDS_CTE = """
     -- now, we'll do the same matching to get supervisor employeeId
     -- we'll first try matching by email (which works most of the time) and then try matching on name/dist

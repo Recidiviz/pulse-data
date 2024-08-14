@@ -73,9 +73,19 @@ SELECT
           END AS {LocationMetadataKey.SUPERVISION_DISTRICT_NAME.value}
         )
       )
+    WHEN LocationTypeId = '13' THEN
+      TO_JSON(
+        STRUCT(
+          UPPER(map.district) AS {LocationMetadataKey.SUPERVISION_DISTRICT_ID.value},
+          UPPER(map.district) AS {LocationMetadataKey.SUPERVISION_DISTRICT_NAME.value}
+        )
+      )
     ELSE NULL
     END AS location_metadata,
-FROM `{{project_id}}.{{us_ix_raw_data_up_to_date_dataset}}.ref_Location_latest`
+
+FROM `{{project_id}}.{{us_ix_raw_data_up_to_date_dataset}}.ref_Location_latest` ll
+LEFT JOIN `{{project_id}}.{{us_ix_raw_data_up_to_date_dataset}}.RECIDIVIZ_REFERENCE_county_to_district_mapping_latest` map
+ON map.countyName = ll.LocationName
 
 UNION ALL
 
