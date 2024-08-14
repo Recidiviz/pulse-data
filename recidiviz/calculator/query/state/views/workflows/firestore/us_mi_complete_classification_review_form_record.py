@@ -66,8 +66,11 @@ eligible_clients AS (
             WHEN cses.correctional_level = 'HIGH' THEN 'MAXIMUM' 
             WHEN cses.correctional_level = 'MAXIMUM' THEN 'MEDIUM' 
             WHEN cses.correctional_level = 'MEDIUM' THEN 'MINIMUM' 
-            WHEN cses.correctional_level = 'MINIMUM' THEN 'TELEPHONE REPORTING' 
-        ELSE NULL
+            --only suggest TRS if is_eligible is strictly FALSE (and is_almost_eligible is also FALSE)
+            --in other words, if is_eligible is NULL or TRUE or is_almost_eligible is TRUE than suggest trs
+            WHEN cses.correctional_level = 'MINIMUM' AND (tr.is_eligible IS NULL OR tr.is_eligible OR tr.is_almost_eligible) 
+                THEN 'TELEPHONE REPORTING' 
+            ELSE NULL
         END AS metadata_recommended_supervision_level, 
     FROM (
         SELECT * FROM `{{project_id}}.{{task_eligibility_dataset}}.complete_initial_classification_review_form_materialized` 
@@ -89,6 +92,9 @@ eligible_clients AS (
     LEFT JOIN compas_recommended_preprocessed c
         ON tes.state_code = c.state_code
         AND tes.person_id = c.person_id
+    LEFT JOIN`{{project_id}}.{{task_eligibility_dataset}}.complete_transfer_to_telephone_reporting_request_materialized` tr
+        ON tr.person_id = tes.person_id 
+        AND CURRENT_DATE('US/Pacific') BETWEEN tr.start_date AND {nonnull_end_date_exclusive_clause("tr.end_date")}
     WHERE CURRENT_DATE('US/Pacific') BETWEEN tes.start_date AND {nonnull_end_date_exclusive_clause("tes.end_date")}
         AND tes.is_eligible
         AND tes.state_code = "US_MI"
