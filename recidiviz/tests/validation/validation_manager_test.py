@@ -804,6 +804,7 @@ class TestFetchValidations(TestCase):
             launched_state_codes,
             [
                 "US_AR",
+                "US_AZ",
                 "US_CA",
                 "US_CO",
                 "US_IX",

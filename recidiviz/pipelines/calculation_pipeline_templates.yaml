@@ -215,12 +215,19 @@ metric_pipelines:
     region: us-west3
     staging_only: True
 
-  # Full US_AZ population spans with no time limit
+  # Full US_AZ calculations with no time limit
   - pipeline: population_span_metrics
     state_code: US_AZ
     metric_types: INCARCERATION_POPULATION_SPAN SUPERVISION_POPULATION_SPAN
     region: us-west1
-    staging_only: True
+  - pipeline: supervision_metrics
+    state_code: US_AZ
+    metric_types: SUPERVISION_START SUPERVISION_TERMINATION
+    region: us-west1
+  - pipeline: incarceration_metrics
+    state_code: US_AZ
+    metric_types: INCARCERATION_ADMISSION INCARCERATION_COMMITMENT_FROM_SUPERVISION INCARCERATION_RELEASE
+    region: us-west1
 
 supplemental_dataset_pipelines:
   # TODO(#16661) Rename US_IX -> US_ID in this file when we are ready to migrate the
