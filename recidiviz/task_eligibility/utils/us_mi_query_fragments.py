@@ -344,7 +344,7 @@ SELECT
     e.number_of_reviews AS metadata_number_of_reviews,
     DATE(pmx_sgt_max_date) AS metadata_max_release_date,
     DATE(pmi_sgt_min_date) AS metadata_min_release_date,
-    DATE_DIFF(DATE(pmx_sgt_max_date), CURRENT_DATE('US/Eastern'), MONTH) <3 AS metadata_less_than_3_months_from_erd,
+    DATE_DIFF(DATE(pmx_sgt_max_date), CURRENT_DATE('US/Eastern'), MONTH) <24 AS metadata_less_than_24_months_from_erd,
     DATE_DIFF(CURRENT_DATE('US/Eastern'), h.start_date, DAY) AS metadata_days_in_solitary_session,
     DATE_DIFF(CURRENT_DATE('US/Eastern'), hc.start_date, DAY) AS metadata_days_in_collapsed_solitary_session,
     temp.OPT_flag AS metadata_OPT,
