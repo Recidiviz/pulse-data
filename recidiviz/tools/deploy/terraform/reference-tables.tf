@@ -100,19 +100,6 @@ module "us_tn_supervision_facility_names_table" {
   table_name = "us_tn_supervision_facility_names"
 }
 
-
-module "us_tn_supervision_locations_table" {
-  source = "./modules/reference-table"
-
-  project_id      = var.project_id
-  bucket_name     = module.external_reference_tables_bucket.name
-  dataset_id      = module.external_reference_dataset.dataset_id
-  recidiviz_root  = local.recidiviz_root
-  read_from_local = true
-
-  table_name = "us_tn_supervision_locations"
-}
-
 module "us_id_supervision_unit_to_district_map_table" {
   source = "./modules/reference-table"
 
