@@ -44,7 +44,6 @@ from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.tools.migrations.migration_helpers import (
     EngineIteratorDelegate,
     confirm_correct_db_instance,
-    confirm_correct_git_branch,
 )
 from recidiviz.tools.postgres.cloudsql_proxy_control import cloudsql_proxy_control
 from recidiviz.utils import metadata
@@ -70,13 +69,6 @@ def create_parser() -> argparse.ArgumentParser:
         required=True,
     )
     parser.add_argument(
-        "--repo-root",
-        type=str,
-        default="./",
-        help="The path to the root pulse-data/ folder. "
-        "This is needed to check the current git branch.",
-    )
-    parser.add_argument(
         "--dry-run",
         help="If set, this runs all migrations locally instead of against prod/staging databases.",
         action="store_true",
@@ -99,11 +91,6 @@ def create_parser() -> argparse.ArgumentParser:
         "If set, this skips the check to see whether you're running against the intended database.",
     )
     parser.add_argument(
-        "--confirm-hash",
-        type=str,
-        help="If included, skips the manual git branch confirmation and verifies that the hash is as expected.",
-    )
-    parser.add_argument(
         "--no-launch-proxy",
         action="store_true",
         help="If specified, the Cloud SQL Proxy will not be launched. "
@@ -114,10 +101,8 @@ def create_parser() -> argparse.ArgumentParser:
 
 def main(
     schema_type: SchemaType,
-    repo_root: str,
     dry_run: bool,
     skip_db_name_check: bool,
-    confirm_hash: Optional[str] = None,
     secret_prefix_override: Optional[str] = None,
 ) -> None:
     """
@@ -131,8 +116,6 @@ def main(
 
     if not skip_db_name_check:
         confirm_correct_db_instance(schema_type)
-
-    confirm_correct_git_branch(repo_root, confirm_hash=confirm_hash)
 
     # Run migrations
     for database_key, _engine in EngineIteratorDelegate.iterate_and_connect_to_engines(
@@ -171,10 +154,8 @@ if __name__ == "__main__":
     def _run_main(_args: argparse.Namespace) -> None:
         main(
             schema_type=_args.database,
-            repo_root=_args.repo_root,
             dry_run=_args.dry_run,
             skip_db_name_check=_args.skip_db_name_check,
-            confirm_hash=_args.confirm_hash,
             secret_prefix_override=secret_prefix,
         )
 
