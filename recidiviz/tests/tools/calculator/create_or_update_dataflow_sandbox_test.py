@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests basic functionality of the create_or_update_dataflow_sandbox tool"""
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 
@@ -25,8 +25,12 @@ from recidiviz.pipelines.pipeline_names import (
     NORMALIZATION_PIPELINE_NAME,
     SUPPLEMENTAL_PIPELINE_NAME,
 )
+from recidiviz.source_tables import normalization_pipeline_output_table_collector
 from recidiviz.tests.big_query.big_query_emulator_test_case import (
     BigQueryEmulatorTestCase,
+)
+from recidiviz.tools.calculator import (
+    create_or_update_dataflow_sandbox as create_or_update_dataflow_sandbox_module,
 )
 from recidiviz.tools.calculator.create_or_update_dataflow_sandbox import (
     create_or_update_dataflow_sandbox,
@@ -36,6 +40,27 @@ from recidiviz.tools.calculator.create_or_update_dataflow_sandbox import (
 @pytest.mark.uses_bq_emulator
 class CreateOrUpdateDataflowSandboxTest(BigQueryEmulatorTestCase):
     """Tests basic functionality of the create_or_update_dataflow_sandbox tool"""
+
+    def setUp(self) -> None:
+        super().setUp()
+        self.existing_states = [StateCode.US_XX, StateCode.US_YY]
+        self.existing_states_patchers = [
+            patch(
+                f"{normalization_pipeline_output_table_collector.__name__}.get_direct_ingest_states_existing_in_env",
+                return_value=self.existing_states,
+            ),
+            patch(
+                f"{create_or_update_dataflow_sandbox_module.__name__}.get_direct_ingest_states_existing_in_env",
+                return_value=self.existing_states,
+            ),
+        ]
+        for patcher in self.existing_states_patchers:
+            patcher.start()
+
+    def tearDown(self) -> None:
+        super().tearDown()
+        for patcher in self.existing_states_patchers:
+            patcher.stop()
 
     def test_create_supplemental(self) -> None:
         create_or_update_dataflow_sandbox(
@@ -79,13 +104,7 @@ class CreateOrUpdateDataflowSandboxTest(BigQueryEmulatorTestCase):
                 allow_overwrite=False,
             )
 
-    @patch(
-        "recidiviz.source_tables.normalization_pipeline_output_table_collector.get_direct_ingest_states_existing_in_env",
-        return_value=[StateCode.US_XX, StateCode.US_YY],
-    )
-    def test_create_normalization_with_filter(
-        self, _mock_get_states: MagicMock
-    ) -> None:
+    def test_create_normalization_with_filter(self) -> None:
         create_or_update_dataflow_sandbox(
             sandbox_dataset_prefix="sandboxed",
             pipelines=[NORMALIZATION_PIPELINE_NAME],
@@ -108,13 +127,7 @@ class CreateOrUpdateDataflowSandboxTest(BigQueryEmulatorTestCase):
                 state_code_filter=StateCode.US_XX,
             )
 
-    @patch(
-        "recidiviz.source_tables.normalization_pipeline_output_table_collector.get_direct_ingest_states_existing_in_env",
-        return_value=[StateCode.US_XX, StateCode.US_YY],
-    )
-    def test_create_normalization_without_filter(
-        self, _mock_get_states: MagicMock
-    ) -> None:
+    def test_create_normalization_without_filter(self) -> None:
         create_or_update_dataflow_sandbox(
             sandbox_dataset_prefix="sandboxed",
             pipelines=[NORMALIZATION_PIPELINE_NAME],

@@ -84,12 +84,9 @@ from recidiviz.persistence.entity.state.normalized_entities import (
     NormalizedStateStaff,
 )
 from recidiviz.source_tables.ingest_pipeline_output_table_collector import (
-    build_ingest_pipeline_output_source_table_collections,
+    build_state_output_source_table_collection,
 )
-from recidiviz.source_tables.source_table_config import (
-    IngestPipelineEntitySourceTableLabel,
-    SourceTableCollection,
-)
+from recidiviz.source_tables.source_table_config import SourceTableCollection
 from recidiviz.source_tables.union_tables_output_table_collector import (
     build_unioned_normalized_state_source_table_collection,
 )
@@ -249,13 +246,7 @@ class StateDatasetValidator:
         self, state_code: StateCode, schema_type: str
     ) -> SourceTableCollection:
         if schema_type == "state":
-            return one(
-                c
-                for c in build_ingest_pipeline_output_source_table_collections()
-                if c.has_label(
-                    IngestPipelineEntitySourceTableLabel(state_code=state_code)
-                )
-            )
+            return build_state_output_source_table_collection(state_code)
         if schema_type == "normalized_state":
             return build_unioned_normalized_state_source_table_collection()
         raise ValueError(f"Unexpected schema_type: {schema_type}")

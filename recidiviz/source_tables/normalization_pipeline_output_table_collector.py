@@ -38,9 +38,9 @@ from recidiviz.pipelines.normalization.utils.normalized_entity_conversion_utils 
 from recidiviz.pipelines.pipeline_names import NORMALIZATION_PIPELINE_NAME
 from recidiviz.source_tables.source_table_config import (
     DataflowPipelineSourceTableLabel,
-    NormalizedStateSpecificEntitySourceTableLabel,
     SourceTableCollection,
     SourceTableCollectionUpdateConfig,
+    StateSpecificSourceTableLabel,
 )
 
 
@@ -86,7 +86,7 @@ def build_normalization_pipeline_output_source_table_collections() -> list[
         SourceTableCollection(
             labels=[
                 DataflowPipelineSourceTableLabel(NORMALIZATION_PIPELINE_NAME),
-                NormalizedStateSpecificEntitySourceTableLabel(state_code=state_code),
+                StateSpecificSourceTableLabel(state_code=state_code),
             ],
             update_config=SourceTableCollectionUpdateConfig.regenerable(),
             dataset_id=normalized_state_dataset_for_state_code_legacy_normalization_output(

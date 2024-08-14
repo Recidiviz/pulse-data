@@ -21,9 +21,8 @@ from recidiviz.source_tables.collect_all_source_table_configs import (
     build_source_table_repository_for_collected_schemata,
 )
 from recidiviz.source_tables.source_table_config import (
-    IngestPipelineEntitySourceTableLabel,
     NormalizedStateAgnosticEntitySourceTableLabel,
-    NormalizedStateSpecificEntitySourceTableLabel,
+    StateSpecificSourceTableLabel,
     UnionedStateAgnosticSourceTableLabel,
 )
 
@@ -35,23 +34,23 @@ class CollectAllSourceTableConfigsTest(unittest.TestCase):
         source_table_repository = build_source_table_repository_for_collected_schemata(
             project_id=None
         )
-        datasets = (
+        dataset_collections = (
             source_table_repository.collections_labelled_with(
                 label_type=NormalizedStateAgnosticEntitySourceTableLabel
             )
             + source_table_repository.collections_labelled_with(
-                label_type=NormalizedStateSpecificEntitySourceTableLabel
-            )
-            + source_table_repository.collections_labelled_with(
-                label_type=IngestPipelineEntitySourceTableLabel
+                label_type=StateSpecificSourceTableLabel
             )
             + source_table_repository.collections_labelled_with(
                 label_type=UnionedStateAgnosticSourceTableLabel
             )
         )
 
-        for dataset in datasets:
-            for table in dataset.source_tables:
+        for dataset_collection in dataset_collections:
+            # TODO(#30495): When we add *ingest_view_results datasets into the normal
+            #  set of collected schema, we'll need to make an exemption for those here
+            #  since they don't have state_code columns.
+            for table in dataset_collection.source_tables:
                 self.assertIn(
                     "state_code",
                     {schema_field.name for schema_field in table.schema_fields},
