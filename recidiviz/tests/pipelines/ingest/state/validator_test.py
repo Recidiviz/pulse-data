@@ -702,7 +702,10 @@ class TestSentencingRootEntityChecks(unittest.TestCase):
         errors = validate_root_entity(self.state_person)
         self.assertEqual(len(errors), 1)
         self.assertEqual(
-            "Found sentence StateSentence(external_id='SENT-EXTERNAL-1', sentence_id=None) with no sentencing_authority.",
+            "Found entity [StateSentence(external_id='SENT-EXTERNAL-1', "
+            "sentence_id=None)] with null [sentencing_authority]. The "
+            "[sentencing_authority] field must be set by the time we reach the "
+            "validations step.",
             errors[0],
         )
 
@@ -725,12 +728,14 @@ class TestSentencingRootEntityChecks(unittest.TestCase):
         errors = validate_root_entity(self.state_person)
         self.assertEqual(len(errors), 2)
         self.assertEqual(
-            "Found sentence StateSentence(external_id='SENT-EXTERNAL-1', sentence_id=None) with no imposed_date.",
             errors[0],
+            "Found entity [StateSentence(external_id='SENT-EXTERNAL-1', "
+            "sentence_id=None)] with null [sentence_type]. The [sentence_type] field "
+            "must be set by the time we reach the validations step.",
         )
         self.assertEqual(
             errors[1],
-            "Found sentence StateSentence(external_id='SENT-EXTERNAL-1', sentence_id=None) with no StateSentenceType.",
+            "Found sentence StateSentence(external_id='SENT-EXTERNAL-1', sentence_id=None) with no imposed_date.",
         )
 
     def test_revoked_sentence_status_check_valid(self) -> None:

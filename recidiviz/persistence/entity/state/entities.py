@@ -141,7 +141,7 @@ from recidiviz.persistence.entity.base_entity import (
 )
 from recidiviz.persistence.entity.state.entity_field_validators import (
     appears_with,
-    pre_norm_opt,
+    parsing_opt_only,
 )
 from recidiviz.persistence.entity.state.state_entity_mixins import LedgerEntityMixin
 
@@ -2348,7 +2348,7 @@ class StateSentence(HasExternalIdEntity, BuildableAttr, DefaultableAttr):
     # *Only optional for parsing*
     sentence_type: Optional[StateSentenceType] = attr.ib(
         default=None,
-        validator=pre_norm_opt(attr.validators.instance_of(StateSentenceType)),
+        validator=parsing_opt_only(attr.validators.instance_of(StateSentenceType)),
     )
 
     # The class of authority imposing this sentence: COUNTY, STATE, etc.
@@ -2356,7 +2356,9 @@ class StateSentence(HasExternalIdEntity, BuildableAttr, DefaultableAttr):
     # Only optional for parsing
     sentencing_authority: Optional[StateSentencingAuthority] = attr.ib(
         default=None,
-        validator=pre_norm_opt(attr.validators.instance_of(StateSentencingAuthority)),
+        validator=parsing_opt_only(
+            attr.validators.instance_of(StateSentencingAuthority)
+        ),
     )
     sentencing_authority_raw_text: Optional[str] = attr.ib(
         default=None, validator=attr_validators.is_opt_str
@@ -2604,7 +2606,7 @@ class StateSentenceStatusSnapshot(
     )
     # The status of a sentence
     status: StateSentenceStatus = attr.ib(
-        validator=pre_norm_opt(attr.validators.instance_of(StateSentenceStatus))
+        validator=parsing_opt_only(attr.validators.instance_of(StateSentenceStatus))
     )
 
     # The raw text value of the status of the sentence
