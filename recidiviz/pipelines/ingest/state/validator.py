@@ -19,6 +19,7 @@
 from collections import defaultdict
 from typing import Dict, Iterable, List, Optional, Sequence, Type
 
+from recidiviz.common.attr_mixins import attribute_field_type_reference_for_class
 from recidiviz.common.constants.state.state_sentence import (
     StateSentenceStatus,
     StateSentenceType,
@@ -29,6 +30,9 @@ from recidiviz.common.date import DurationMixin
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.entity_utils import get_all_entities_from_tree
 from recidiviz.persistence.entity.state import entities as state_entities
+from recidiviz.persistence.entity.state.entity_field_validators import (
+    ParsingOptionalOnlyValidator,
+)
 from recidiviz.persistence.entity.state.state_entity_mixins import LedgerEntityMixin
 from recidiviz.persistence.persistence_utils import RootEntityT
 from recidiviz.pipelines.ingest.state.constants import EntityKey, Error
@@ -185,11 +189,6 @@ def _sentencing_entities_checks(
         ):
             yield f"Found sentence {sentence.limited_pii_repr()} with no imposed_date."
 
-        # TODO(#30295) Hydrate in US_AZ
-        if not sentence.sentencing_authority and state_person.state_code not in (
-            StateCode.US_AZ.value,
-        ):
-            yield f"Found sentence {sentence.limited_pii_repr()} with no sentencing_authority."
         # TODO(#29457) Ensure test fixture data and ingest views allow this check to happen in AZ
         # TODO(#30060) Ensure test fixture data and ingest views allow this check to happen in IX
         # We can then remove the state code check from this statement.
@@ -225,8 +224,6 @@ def _sentencing_entities_checks(
                         "with that external ID."
                     )
 
-        if not sentence.sentence_type:
-            yield f"Found sentence {sentence.limited_pii_repr()} with no StateSentenceType."
         elif sentence.sentence_type in {
             StateSentenceType.PAROLE,
             StateSentenceType.PROBATION,
@@ -327,6 +324,21 @@ def validate_root_entity(root_entity: RootEntityT) -> List[Error]:
 
     # Yields errors if global_unique_constraints fail
     error_messages.extend(_unique_constraint_check(entities_by_cls))
+
+    for entity_cls, entities in entities_by_cls.items():
+        for field_name, field_info in attribute_field_type_reference_for_class(
+            entity_cls
+        ).items():
+            validator = field_info.attribute.validator
+            if isinstance(validator, ParsingOptionalOnlyValidator):
+                for entity in entities:
+                    if entity.get_field(field_name) is not None:
+                        continue
+                    error_messages.append(
+                        f"Found entity [{entity.limited_pii_repr()}] with null "
+                        f"[{field_name}]. The [{field_name}] field must be set by "
+                        f"the time we reach the validations step."
+                    )
 
     if isinstance(root_entity, state_entities.StatePerson):
         error_messages.extend(_sentencing_entities_checks(root_entity))

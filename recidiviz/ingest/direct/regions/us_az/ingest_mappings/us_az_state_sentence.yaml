@@ -42,6 +42,8 @@ output:
           external_id: external_id
           parole_possible: $variable(is_parole_bool)
           initial_time_served_days: jail_credit_days
+          # TODO(#30295) Hydrate sentencing_authority in US_AZ
+          sentencing_authority: $literal_enum(StateSentencingAuthority.INTERNAL_UNKNOWN)
           #set to internal unkown until we know how to map sentence type
           sentence_type: $literal_enum(StateSentenceType.INTERNAL_UNKNOWN)
           sentence_group_external_id: sentence_group_external_id

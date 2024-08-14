@@ -26,7 +26,7 @@ from recidiviz.common import attr_validators
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.state.entity_field_validators import (
     appears_with,
-    pre_norm_opt,
+    parsing_opt_only,
 )
 from recidiviz.persistence.entity.state.normalized_state_entity import (
     NormalizedStateEntity,
@@ -39,10 +39,10 @@ class Foo:
 
 @attr.s()
 class Example(Entity):
-    an_int: Optional[int] = attr.ib(validator=pre_norm_opt(attr_validators.is_int))
-    a_str: Optional[str] = attr.ib(validator=pre_norm_opt(attr_validators.is_str))
+    an_int: Optional[int] = attr.ib(validator=parsing_opt_only(attr_validators.is_int))
+    a_str: Optional[str] = attr.ib(validator=parsing_opt_only(attr_validators.is_str))
     a_foo: Optional[Foo] = attr.ib(
-        validator=pre_norm_opt(attr.validators.instance_of(Foo))
+        validator=parsing_opt_only(attr.validators.instance_of(Foo))
     )
     always_optional_date: Optional[datetime.date] = attr.ib(
         validator=attr_validators.is_opt_date
@@ -57,7 +57,7 @@ class NormalizedExample(Example, NormalizedStateEntity):
 @attr.s()
 class CompoundExample(Entity):
     list_of_str: Optional[List[str]] = attr.ib(
-        validator=pre_norm_opt(
+        validator=parsing_opt_only(
             attr.validators.deep_iterable(
                 member_validator=attr.validators.instance_of(str),
                 iterable_validator=attr.validators.instance_of(list),
@@ -68,13 +68,13 @@ class CompoundExample(Entity):
     # need to be compatible
     positive_int: Optional[int] = attr.ib(
         validator=[
-            pre_norm_opt(attr_validators.is_int),
-            pre_norm_opt(attr.validators.gt(0)),
+            parsing_opt_only(attr_validators.is_int),
+            parsing_opt_only(attr.validators.gt(0)),
         ]
     )
     # attr.validator can be passed a compound validator
     negative_int: Optional[int] = attr.ib(
-        validator=pre_norm_opt(
+        validator=parsing_opt_only(
             attr.validators.and_(attr_validators.is_int, attr.validators.lt(0))
         )
     )
@@ -88,10 +88,10 @@ class NormalizedCompoundExample(CompoundExample, NormalizedStateEntity):
     """Now all the fields should not be optional."""
 
 
-class TestPreNormOptionalValidator(unittest.TestCase):
-    """Tests that the pre_norm_opt validator works as expected."""
+class TestParsingOptionalOnlyValidator(unittest.TestCase):
+    """Tests that the parsing_opt_only validator works as expected."""
 
-    def test_pre_norm_is_actually_optional(self) -> None:
+    def test_parsing_only_is_actually_optional(self) -> None:
         _ = Example(
             an_int=None,
             a_str=None,
@@ -171,81 +171,59 @@ class TestPreNormOptionalValidator(unittest.TestCase):
             always_optional_date=None,
         )
 
-    def test_normalized_is_not_optional(self) -> None:
-        _ = NormalizedExample(
-            an_int=2,
-            a_str="string",
-            a_foo=Foo(),
-            always_optional_foo=None,
-            always_optional_date=None,
-        )
-        _ = NormalizedExample(
-            an_int=2,
-            a_str="string",
-            a_foo=Foo(),
-            always_optional_foo=Foo(),
-            always_optional_date=None,
-        )
-        with self.assertRaisesRegex(TypeError, "must be <class 'int'>"):
-            _ = NormalizedExample(
-                an_int=None,
-                a_str="string",
-                a_foo=Foo(),
-                always_optional_foo=None,
-                always_optional_date=None,
-            )
-        with self.assertRaisesRegex(TypeError, "must be <class 'str'>"):
-            _ = NormalizedExample(
-                an_int=2,
-                a_str=None,
-                a_foo=Foo(),
-                always_optional_foo=None,
-                always_optional_date=None,
-            )
-        with self.assertRaisesRegex(TypeError, "'a_foo' must be <class "):
+    def test_parsing_only_on_normalized_entity(self) -> None:
+        with self.assertRaisesRegex(
+            TypeError,
+            r"Cannot use a parsing_opt_only\(\) validator on NormalizedStateEntity "
+            r"classes",
+        ):
             _ = NormalizedExample(
                 an_int=2,
                 a_str="string",
-                a_foo=None,
+                a_foo=Foo(),
                 always_optional_foo=None,
                 always_optional_date=None,
             )
 
-        _ = NormalizedCompoundExample(
-            list_of_str=["abc"],
-            positive_int=1,
-            negative_int=-1,
-            always_optional_foo=None,
-            always_optional_date=None,
-        )
-        with self.assertRaisesRegex(TypeError, "'list_of_str' must be "):
-            _ = NormalizedCompoundExample(
-                list_of_str=None,
-                positive_int=1,
-                negative_int=-1,
-                always_optional_foo=None,
-                always_optional_date=None,
-            )
-        with self.assertRaisesRegex(TypeError, "'positive_int' must be "):
-            _ = NormalizedCompoundExample(
-                list_of_str=["abc"],
-                positive_int=None,
-                negative_int=-1,
-                always_optional_foo=None,
-                always_optional_date=None,
-            )
-        with self.assertRaisesRegex(TypeError, "'negative_int' must be "):
-            _ = NormalizedCompoundExample(
-                list_of_str=["abc"],
-                positive_int=1,
-                negative_int=None,
-                always_optional_foo=None,
-                always_optional_date=None,
-            )
+    def test_parsing_only_underlying_validators(self) -> None:
 
         # Check that the underlying validators still work.
+        _ = CompoundExample(
+            list_of_str=["abc"],
+            positive_int=2,
+            negative_int=-1,
+            always_optional_foo=Foo(),
+            always_optional_date=None,
+        )
+        with self.assertRaisesRegex(TypeError, "'positive_int' must be <class 'int'>"):
+            _ = CompoundExample(
+                list_of_str=["abc"],
+                positive_int="str",  # type: ignore[arg-type]
+                negative_int=-1,
+                always_optional_foo=None,
+                always_optional_date=None,
+            )
+
+        with self.assertRaisesRegex(TypeError, "'list_of_str' must be <class 'list'>"):
+            _ = CompoundExample(
+                list_of_str=2,  # type: ignore[arg-type]
+                positive_int=1,
+                negative_int=-1,
+                always_optional_foo=None,
+                always_optional_date=None,
+            )
+
+        with self.assertRaisesRegex(TypeError, "'negative_int' must be <class 'int'>"):
+            _ = CompoundExample(
+                list_of_str=["abc"],
+                positive_int=1,
+                negative_int="str",  # type: ignore[arg-type]
+                always_optional_foo=None,
+                always_optional_date=None,
+            )
+
         with self.assertRaisesRegex(ValueError, "'positive_int' must be > 0: -42"):
-            _ = NormalizedCompoundExample(
+            _ = CompoundExample(
                 list_of_str=["abc"],
                 positive_int=-42,
                 negative_int=-1,
@@ -254,7 +232,7 @@ class TestPreNormOptionalValidator(unittest.TestCase):
             )
 
         with self.assertRaisesRegex(ValueError, "'negative_int' must be < 0: 42"):
-            _ = NormalizedCompoundExample(
+            _ = CompoundExample(
                 list_of_str=["abc"],
                 positive_int=42,
                 negative_int=42,

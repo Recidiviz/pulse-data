@@ -21,15 +21,16 @@ import attr
 
 from recidiviz.common import attr_validators
 from recidiviz.common.date import DateOrDateTime, assert_datetime_less_than
-from recidiviz.persistence.entity.state.entity_field_validators import pre_norm_opt
 
 
 @attr.s(eq=False)
 class SequencedEntityMixin:
     """Set of attributes for an entity that can be ordered in a sequence."""
 
-    sequence_num: Optional[int] = attr.ib(
-        default=None, validator=pre_norm_opt(attr_validators.is_int)
+    # TODO(#32385): Enforce that this field is nonnull for NormalizedStateEntity
+    #  entities.
+    sequence_num: int | None = attr.ib(
+        default=None, validator=attr_validators.is_opt_int
     )
 
 

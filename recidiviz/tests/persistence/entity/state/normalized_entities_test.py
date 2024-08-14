@@ -41,7 +41,7 @@ from recidiviz.persistence.entity.schema_edge_direction_checker import (
 from recidiviz.persistence.entity.state import entities as state_entities
 from recidiviz.persistence.entity.state import normalized_entities
 from recidiviz.persistence.entity.state.entity_field_validators import (
-    PreNormOptionalValidator,
+    ParsingOptionalOnlyValidator,
 )
 from recidiviz.persistence.entity.state.normalized_entities import (
     EntityBackedgeValidator,
@@ -299,7 +299,7 @@ class TestNormalizedEntities(unittest.TestCase):
                 entity_validator = entity_field_info.attribute.validator
                 normalized_entity_validator = normalized_field_info.attribute.validator
 
-                if isinstance(entity_validator, PreNormOptionalValidator):
+                if isinstance(entity_validator, ParsingOptionalOnlyValidator):
                     self.assertFalse(
                         isinstance(
                             normalized_entity_validator,
@@ -307,7 +307,7 @@ class TestNormalizedEntities(unittest.TestCase):
                         ),
                         f"Found [{field_name}] which has a validator that "
                         f"allows for optional values even though it is marked as "
-                        f"pre_norm_opt() in state/entities.py.",
+                        f"parsing_opt_only() in state/entities.py.",
                     )
                 if not issubclass(normalized_entity_class, Entity):
                     raise ValueError(

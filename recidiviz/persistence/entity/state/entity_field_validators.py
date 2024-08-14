@@ -28,28 +28,49 @@ from recidiviz.persistence.entity.state.normalized_state_entity import (
 
 
 @attr.s(repr=False, slots=True, hash=True)
-class PreNormOptionalValidator:
+class ParsingOptionalOnlyValidator:
     """A copy of _OptionalValidator from the attr library.
-    We use this when we want an attribute to only be optional for pre-normalization."""
+    We use this when we want an attribute to only be optional for entities produced
+    by the ingest view entity creation step, but should never be null once we have
+    merged entity trees together.
+
+    Any field marked with this validator will be confirmed nonnull in the RunValidations
+    step of ingest pipelines.
+    """
 
     # attr library does not expose the types of validators through their API
     # this validator can be any of attr.validators as well as this class.
     validator = attr.ib()  # type: ignore
 
     def __call__(self, inst: EntityT, attr_: attr.Attribute, value: Any) -> None:
-        if not isinstance(inst, NormalizedStateEntity) and value is None:
+        if isinstance(inst, NormalizedStateEntity):
+            raise TypeError(
+                f"Cannot use a parsing_opt_only() validator on "
+                f"NormalizedStateEntity classes. Found on [{type(inst).__name__}] "
+                f"field [{attr_.name}]"
+            )
+
+        if value is None:
             return
         self.validator(inst, attr_, value)
 
     def __repr__(self) -> str:
-        return f"<pre-normalization optional validator for {self.validator!r} or None>"
+        return f"<pre-merge optional validator for {self.validator!r} or None>"
 
 
-def pre_norm_opt(
+def parsing_opt_only(
     validator: Union[Callable, List[Callable], Tuple[Callable]]
 ) -> Callable:
-    """Returns a validator callable that is equivalent to attr.validators.is_optional"""
-    return PreNormOptionalValidator(validator)
+    """Returns a validator callable that is equivalent to attr.validators.is_optional.
+
+    We use this when we want an attribute to only be optional for entities produced
+    by the ingest view entity creation step, but should never be null once we have
+    merged entity trees together.
+
+    Any field marked with this validator will be confirmed nonnull in the RunValidations
+    step of ingest pipelines.
+    """
+    return ParsingOptionalOnlyValidator(validator)
 
 
 class AppearsWithValidator:
