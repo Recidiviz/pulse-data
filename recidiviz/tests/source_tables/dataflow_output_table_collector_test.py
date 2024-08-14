@@ -30,8 +30,8 @@ from recidiviz.source_tables.dataflow_output_table_collector import (
 )
 from recidiviz.source_tables.source_table_config import (
     DataflowPipelineSourceTableLabel,
-    NormalizedStateSpecificEntitySourceTableLabel,
     SourceTableCollection,
+    StateSpecificSourceTableLabel,
 )
 from recidiviz.source_tables.source_table_repository import SourceTableRepository
 
@@ -60,12 +60,8 @@ class TestDataflowOutputTableCollector(unittest.TestCase):
         pipeline_output_label = DataflowPipelineSourceTableLabel(
             NORMALIZATION_PIPELINE_NAME
         )
-        us_xx_label = NormalizedStateSpecificEntitySourceTableLabel(
-            state_code=StateCode.US_XX
-        )
-        us_yy_label = NormalizedStateSpecificEntitySourceTableLabel(
-            state_code=StateCode.US_YY
-        )
+        us_xx_label = StateSpecificSourceTableLabel(state_code=StateCode.US_XX)
+        us_yy_label = StateSpecificSourceTableLabel(state_code=StateCode.US_YY)
 
         normalization_collections = self.source_table_repository.get_collections(
             labels=[pipeline_output_label]

@@ -28,15 +28,16 @@ from recidiviz.persistence.entity.state import entities as state_entities
 from recidiviz.persistence.entity.state import (
     normalized_entities as normalized_state_entities,
 )
+from recidiviz.pipelines.ingest.dataset_config import state_dataset_for_state_code
+from recidiviz.pipelines.normalization.dataset_config import (
+    normalized_state_dataset_for_state_code_ingest_pipeline_output,
+    normalized_state_dataset_for_state_code_legacy_normalization_output,
+)
 from recidiviz.source_tables.ingest_pipeline_output_table_collector import (
     build_ingest_pipeline_output_source_table_collections,
 )
 from recidiviz.source_tables.normalization_pipeline_output_table_collector import (
     build_normalization_pipeline_output_source_table_collections,
-)
-from recidiviz.source_tables.source_table_config import (
-    IngestPipelineEntitySourceTableLabel,
-    NormalizedStateSpecificEntitySourceTableLabel,
 )
 from recidiviz.source_tables.union_tables_output_table_collector import (
     build_unioned_normalized_state_source_table_collection,
@@ -139,10 +140,8 @@ class TestGetBqSchemaForEntitiesModule(unittest.TestCase):
         state_collection = one(
             c
             for c in build_ingest_pipeline_output_source_table_collections()
-            if c.has_label(
-                # Pick an arbitrary state's ingest pipeline output schema to test
-                IngestPipelineEntitySourceTableLabel(state_code=StateCode.US_OZ)
-            )
+            # Pick an arbitrary state's ingest pipeline output schema to test
+            if c.dataset_id == state_dataset_for_state_code(StateCode.US_OZ)
         )
         expected_table_to_schema = {
             t.address.table_id: t.schema_fields for t in state_collection.source_tables
@@ -177,10 +176,11 @@ class TestGetBqSchemaForEntitiesModule(unittest.TestCase):
         state_collection = one(
             c
             for c in build_normalization_pipeline_output_source_table_collections()
-            if c.has_label(
-                # Pick an arbitrary state's ingest pipeline output schema to test
-                NormalizedStateSpecificEntitySourceTableLabel(
-                    state_code=StateCode.US_OZ
+            # Pick an arbitrary state's ingest pipeline output schema to test
+            if (
+                c.dataset_id
+                == normalized_state_dataset_for_state_code_legacy_normalization_output(
+                    StateCode.US_OZ
                 )
             )
         )
@@ -207,10 +207,11 @@ class TestGetBqSchemaForEntitiesModule(unittest.TestCase):
         state_collection = one(
             c
             for c in build_ingest_pipeline_output_source_table_collections()
-            if c.has_label(
-                # Pick an arbitrary state's ingest pipeline output schema to test
-                NormalizedStateSpecificEntitySourceTableLabel(
-                    state_code=StateCode.US_OZ
+            # Pick an arbitrary state's ingest pipeline output schema to test
+            if (
+                c.dataset_id
+                == normalized_state_dataset_for_state_code_ingest_pipeline_output(
+                    StateCode.US_OZ
                 )
             )
         )

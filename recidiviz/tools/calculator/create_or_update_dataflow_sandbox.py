@@ -27,7 +27,6 @@ python -m recidiviz.tools.calculator.create_or_update_dataflow_sandbox \
         --project_id [PROJECT_ID] \
         --sandbox_dataset_prefix [SANDBOX_DATASET_PREFIX] \
         [--state_code STATE_CODE] \
-        [--ingest_instance INGEST_INSTANCE] \
         [--allow_overwrite] \
         --datasets_to_create metrics normalization supplemental ingest (must be last due to list)
 """
@@ -41,7 +40,6 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
     get_direct_ingest_states_existing_in_env,
 )
-from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.pipelines.pipeline_names import (
     INGEST_PIPELINE_NAME,
     METRICS_PIPELINE_NAME,
@@ -56,9 +54,8 @@ from recidiviz.source_tables.ingest_pipeline_output_table_collector import (
 )
 from recidiviz.source_tables.source_table_config import (
     DataflowPipelineSourceTableLabel,
-    IngestPipelineEntitySourceTableLabel,
-    NormalizedStateSpecificEntitySourceTableLabel,
     SourceTableCollection,
+    StateSpecificSourceTableLabel,
 )
 from recidiviz.source_tables.source_table_repository import SourceTableRepository
 from recidiviz.source_tables.source_table_update_manager import SourceTableUpdateManager
@@ -122,18 +119,18 @@ def create_or_update_dataflow_sandbox(
     )
     collections_to_create: list[SourceTableCollection] = []
 
+    state_codes = [
+        state_code
+        for state_code in get_direct_ingest_states_existing_in_env()
+        if (not state_code_filter or state_code == state_code_filter)
+    ]
+
     for pipeline in pipelines:
         pipeline_collections = dataflow_source_tables.get_collections(
             labels=[DataflowPipelineSourceTableLabel(pipeline_name=pipeline)]
         )
 
-        # Filter down to relevant ingest pipeline collections based on filters
         if pipeline == INGEST_PIPELINE_NAME:
-            state_codes = [
-                state_code
-                for state_code in get_direct_ingest_states_existing_in_env()
-                if (not state_code_filter or state_code == state_code_filter)
-            ]
             # TODO(#30495): These will not need to be added separately once ingest views
             #  define their schemas in the YAML mappings definitions and we can collect
             #  these ingest view tables with all the other source tables.
@@ -144,26 +141,16 @@ def create_or_update_dataflow_sandbox(
                 )
             )
 
+        # Filter down to relevant collections based on filters
+        if pipeline in (INGEST_PIPELINE_NAME, NORMALIZATION_PIPELINE_NAME):
             pipeline_collections = [
                 c
                 for c in pipeline_collections
                 if c.has_any_label(
                     [
-                        IngestPipelineEntitySourceTableLabel(state_code=state_code)
+                        StateSpecificSourceTableLabel(state_code=state_code)
                         for state_code in state_codes
                     ]
-                )
-            ]
-
-        # Filter down to relevant normalization pipeline collections
-        if pipeline == NORMALIZATION_PIPELINE_NAME and state_code_filter:
-            pipeline_collections = [
-                c
-                for c in pipeline_collections
-                if c.has_label(
-                    NormalizedStateSpecificEntitySourceTableLabel(
-                        state_code=state_code_filter
-                    )
                 )
             ]
 
@@ -196,13 +183,6 @@ def parse_arguments() -> argparse.Namespace:
         type=StateCode,
         help="If set, sandbox datasets will only be created for this state. Relevant "
         "when creating the normalization dataset.",
-    )
-    parser.add_argument(
-        "--ingest_instance",
-        type=DirectIngestInstance,
-        default=DirectIngestInstance.PRIMARY,
-        help="Sandbox datasets will only be created for this ingest instance. Relevant "
-        "when creating the ingest datasets.",
     )
     parser.add_argument(
         "--sandbox_dataset_prefix",

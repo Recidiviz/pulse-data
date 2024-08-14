@@ -164,34 +164,8 @@ class NormalizedStateAgnosticEntitySourceTableLabel(SourceTableLabel[bool]):
 
 
 @attr.define
-class NormalizedStateSpecificEntitySourceTableLabel(SourceTableLabel[StateCode]):
-    """Label for source tables in a state-specific us_xx_normalized_state dataset"""
-
-    state_code: StateCode = attr.ib(validator=attr.validators.instance_of(StateCode))
-
-    @property
-    def value(self) -> StateCode:
-        return self.state_code
-
-
-@attr.define
-class IngestPipelineEntitySourceTableLabel(SourceTableLabel[StateCode]):
-    """Label for source tables output by an ingest pipeline into a state-specific
-    `us_xx_state` dataset.
-    """
-
-    state_code: StateCode = attr.ib(validator=attr.validators.instance_of(StateCode))
-
-    @property
-    def value(self) -> StateCode:
-        return self.state_code
-
-
-@attr.define
-class IngestViewOutputSourceTableLabel(SourceTableLabel[StateCode]):
-    """Label for source tables output by an ingest pipeline that contain the results of
-    ingest view queries.
-    """
+class StateSpecificSourceTableLabel(SourceTableLabel[StateCode]):
+    """Label for source tables in a state-specific dataset"""
 
     state_code: StateCode = attr.ib(validator=attr.validators.instance_of(StateCode))
 

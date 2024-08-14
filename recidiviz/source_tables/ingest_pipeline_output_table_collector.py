@@ -60,11 +60,9 @@ from recidiviz.pipelines.normalization.dataset_config import (
 from recidiviz.pipelines.pipeline_names import INGEST_PIPELINE_NAME
 from recidiviz.source_tables.source_table_config import (
     DataflowPipelineSourceTableLabel,
-    IngestPipelineEntitySourceTableLabel,
-    IngestViewOutputSourceTableLabel,
-    NormalizedStateSpecificEntitySourceTableLabel,
     SourceTableCollection,
     SourceTableCollectionUpdateConfig,
+    StateSpecificSourceTableLabel,
 )
 from recidiviz.utils import metadata
 
@@ -79,7 +77,7 @@ def build_state_output_source_table_collection(
         dataset_id=state_dataset_for_state_code(state_code),
         labels=[
             DataflowPipelineSourceTableLabel(INGEST_PIPELINE_NAME),
-            IngestPipelineEntitySourceTableLabel(state_code=state_code),
+            StateSpecificSourceTableLabel(state_code=state_code),
         ],
     )
     for table_id, schema_fields in get_bq_schema_for_entities_module(entities).items():
@@ -99,7 +97,7 @@ def build_normalized_state_output_source_table_collection(
         ),
         labels=[
             DataflowPipelineSourceTableLabel(INGEST_PIPELINE_NAME),
-            NormalizedStateSpecificEntitySourceTableLabel(state_code=state_code),
+            StateSpecificSourceTableLabel(state_code=state_code),
         ],
     )
     for table_id, schema_fields in get_bq_schema_for_entities_module(
@@ -174,7 +172,7 @@ def _build_ingest_view_source_table_collections(
             update_config=SourceTableCollectionUpdateConfig.regenerable(),
             labels=[
                 DataflowPipelineSourceTableLabel(pipeline_name=INGEST_PIPELINE_NAME),
-                IngestViewOutputSourceTableLabel(state_code=state_code),
+                StateSpecificSourceTableLabel(state_code=state_code),
             ],
         )
         dataset_to_source_table_collection[dataset_id] = source_table_collection
