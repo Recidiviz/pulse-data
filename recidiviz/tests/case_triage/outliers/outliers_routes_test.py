@@ -414,7 +414,6 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                     supervisor_external_id="102",
                     supervisor_external_ids=["102"],
                     district="Hogwarts",
-                    caseload_type=None,
                 ),
                 ExcludedSupervisionOfficerEntity(
                     full_name=PersonName(
@@ -425,7 +424,6 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                     supervisor_external_id="102",
                     supervisor_external_ids=["102"],
                     district="Hogwarts",
-                    caseload_type=None,
                 ),
             ]
 

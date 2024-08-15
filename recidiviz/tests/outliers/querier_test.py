@@ -400,6 +400,24 @@ class TestOutliersQuerier(InsightsDbTestCase):
 
         self.assertIsNone(actual)
 
+    def test_get_excluded_supervision_officer_entity_found_match(self) -> None:
+        # Return matching excluded supervision officer entity
+        actual = OutliersQuerier(
+            StateCode.US_PA
+        ).get_excluded_supervision_officer_entity(
+            pseudonymized_officer_id="officerhash10",
+        )
+        self.snapshot.assert_match(actual, name="test_get_excluded_supervision_officer_entity_found_match")  # type: ignore[attr-defined]
+
+    def test_get_excluded_supervision_officer_entity_no_match(self) -> None:
+        # Return matching excluded supervision officer entity
+        actual = OutliersQuerier(
+            StateCode.US_PA
+        ).get_excluded_supervision_officer_entity(
+            pseudonymized_officer_id="invalidhash",
+        )
+        self.assertIsNone(actual)  # type: ignore[attr-defined]
+
     def test_get_supervisor_from_external_id_found_match(self) -> None:
         # Return matching supervisor
         actual = OutliersQuerier(StateCode.US_PA).get_supervisor_from_external_id(
