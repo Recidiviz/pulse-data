@@ -200,7 +200,6 @@ snapshots[
 ] = {
     "officers": [
         {
-            "caseloadType": None,
             "district": "Hogwarts",
             "externalId": "123",
             "fullName": {
@@ -214,7 +213,6 @@ snapshots[
             "supervisorExternalIds": ["102"],
         },
         {
-            "caseloadType": None,
             "district": "Hogwarts",
             "externalId": "456",
             "fullName": {

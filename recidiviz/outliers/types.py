@@ -377,8 +377,6 @@ class SupervisionOfficerEntityBase:
     supervisor_external_ids: List[str] = attr.ib()
     # The district the officer
     district: str = attr.ib()
-    # The officer's caseload type in the latest period
-    caseload_type: Optional[str] = attr.ib()
 
     def to_json(self) -> Dict[str, Any]:
         return cattrs.unstructure(self)
@@ -399,6 +397,8 @@ class SupervisionOfficerEntity(SupervisionOfficerEntityBase):
     avg_daily_population: float = attr.ib()
     # The caseload category this officer is part of
     caseload_category: str = attr.ib()
+    # The officer's caseload type in the latest period
+    caseload_type: Optional[str] = attr.ib()
 
     def to_json(self) -> Dict[str, Any]:
         c = cattrs.Converter()
@@ -408,6 +408,7 @@ class SupervisionOfficerEntity(SupervisionOfficerEntityBase):
         officer_unst_hook = make_dict_unstructure_fn(
             SupervisionOfficerEntity,
             c,
+            caseload_type=override(omit=True),
             caseload_category=override(rename="caseload_type"),
         )
         c.register_unstructure_hook(SupervisionOfficerEntity, officer_unst_hook)

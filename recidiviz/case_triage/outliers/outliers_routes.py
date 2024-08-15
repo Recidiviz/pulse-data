@@ -483,6 +483,47 @@ def create_outliers_api_blueprint() -> Blueprint:
             }
         )
 
+    @api.get("/<state>/excluded_officer/<pseudonymized_officer_id>")
+    def excluded_officer(state: str, pseudonymized_officer_id: str) -> Response:
+        state_code = StateCode(state.upper())
+        querier = OutliersQuerier(state_code)
+        # Check that the requested officer exists
+        excluded_officer_entity = querier.get_excluded_supervision_officer_entity(
+            pseudonymized_officer_id,
+        )
+
+        user_context: UserContext = g.user_context
+
+        if excluded_officer_entity is None:
+            return jsonify_response(
+                f"Officer with psuedonymized id not found: {pseudonymized_officer_id}",
+                HTTPStatus.NOT_FOUND,
+            )
+
+        supervisor = querier.get_supervisor_from_external_id(
+            user_context.user_external_id
+        )
+
+        # If the current user cannot access data about all supervisors, ensure that they supervise the requested officer.
+        if not user_context.can_access_all_supervisors and (
+            not supervisor
+            or supervisor.external_id
+            not in excluded_officer_entity.supervisor_external_ids
+        ):
+            return jsonify_response(
+                "User cannot access all supervisors and does not supervise the requested officer.",
+                HTTPStatus.UNAUTHORIZED,
+            )
+
+        return jsonify(
+            {
+                "officer": convert_nested_dictionary_keys(
+                    excluded_officer_entity.to_json(),
+                    snake_to_camel,
+                )
+            }
+        )
+
     @api.get("/<state>/user-info/<pseudonymized_id>")
     def user_info(state: str, pseudonymized_id: str) -> Response:
         state_code = StateCode(state.upper())
