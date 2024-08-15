@@ -36,8 +36,8 @@ from recidiviz.firestore.firestore_client import FirestoreClientImpl
 from recidiviz.utils.string import StrictStringFormatter
 
 INITIAL_TEXT = "Hi {given_name}, we’re reaching out on behalf of the Idaho Department of Correction (IDOC). We will send information about your eligibility for opportunities such as the Limited Supervision Unit (LSU), which offers a lower level of supervision.\n\nIf you have questions, reach out to {po_name}."
-FULLY_ELIGIBLE_TEXT = "Hi {given_name}, IDOC records show that you’ve met some requirements for the Limited Supervision Unit (LSU). LSU is a lower level of supervision with monthly online check-ins.\n\nTo be considered, you must meet several requirements including:\n\n1. Be paying fines / fees regularly (small payments are okay)\n2. Have no current no-contact orders\n\nIf you meet these requirements or have questions, reach out to {po_name} or {additional_contact}. They will check if you qualify for LSU. Approval for LSU is not guaranteed.\n\nLearn more at rviz.co/id_lsu."
-MISSING_NEGATIVE_DA_OR_INCOME_OPENER = "Hi {given_name}, IDOC records show that you’ve met some requirements for the Limited Supervision Unit (LSU). LSU is a lower level of supervision with monthly online check-ins.\n\nLSU is optional, and to be considered you must be paying fines/fees regularly (small payments are okay) and have no current no-contact orders.\n\nIf you’re interested, you can reach out to {po_name} or {additional_contact} to complete the following items:\n"
+FULLY_ELIGIBLE_TEXT = "Hi {given_name}, IDOC records show that you’ve met some requirements for the Limited Supervision Unit (LSU). LSU is a lower level of supervision with monthly online check-ins.\n\nTo be considered, you must meet several requirements including:\n\n1. Be paying fines / fees regularly (small payments are okay)\n2. Have no current no-contact orders\n\nIf you meet these requirements or have questions, reach out to {po_name}{additional_contact}. They will check if you qualify for LSU. Approval for LSU is not guaranteed.\n\nLearn more at rviz.co/id_lsu."
+MISSING_NEGATIVE_DA_OR_INCOME_OPENER = "Hi {given_name}, IDOC records show that you’ve met some requirements for the Limited Supervision Unit (LSU). LSU is a lower level of supervision with monthly online check-ins.\n\nLSU is optional, and to be considered you must be paying fines/fees regularly (small payments are okay) and have no current no-contact orders.\n\nIf you’re interested, you can reach out to {po_name}{additional_contact} to complete the following items:\n"
 MISSING_INCOME_BULLET = "You may share documents showing that you have a job, are a full-time student, or have other income such as a pension or disability benefits.\n"
 MISSING_NEGATIVE_DA_BULLET = "You may provide a urine analysis test at the parole and probation office. You must test negative to be eligible for LSU.\n"
 MISSING_NEGATIVE_DA_OR_INCOME_CLOSER = (
@@ -45,9 +45,19 @@ MISSING_NEGATIVE_DA_OR_INCOME_CLOSER = (
 )
 ALL_CLOSER = "\n\nReply STOP to stop receiving these messages at any time. We’re unable to respond to messages sent to this number."
 
-D2_ADDITIONAL_CONTACT = None
-D4_ADDITIONAL_CONTACT = None
-D6_ADDITIONAL_CONTACT = None
+D1_ADDITIONAL_CONTACT = " or email D1Connect@idoc.idaho.gov"
+D2_ADDITIONAL_CONTACT = " or contact a specialist at district2Admin@idoc.idaho.gov"
+D3_ADDITIONAL_CONTACT = (
+    " or a specialist at specialistsd3@idoc.idaho.gov or (208) 454-7601"
+)
+D4_ADDITIONAL_CONTACT = (
+    " or a specialist at d4ppspecialists@idoc.idaho.gov or 208-327-7008"
+)
+D5_ADDITIONAL_CONTACT = ""
+D6_ADDITIONAL_CONTACT = ""
+D7_ADDITIONAL_CONTACT = (
+    " or a specialist at d7.pp.specialist@idoc.idaho.gov or (208) 701-7130"
+)
 
 
 def generate_initial_text_messages_dict(
@@ -146,15 +156,23 @@ def construct_text_body(
     po_name = individual["po_name"].title()
     district = individual["district"].lower().strip()
 
-    if district == "district 2":
+    if district == "district 1":
+        additional_contact = D1_ADDITIONAL_CONTACT
+    elif district == "district 2":
         additional_contact = D2_ADDITIONAL_CONTACT
+    elif district == "district 3":
+        additional_contact = D3_ADDITIONAL_CONTACT
     elif district == "district 4":
         additional_contact = D4_ADDITIONAL_CONTACT
+    elif district == "district 5":
+        additional_contact = D5_ADDITIONAL_CONTACT
     elif district == "district 6":
         additional_contact = D6_ADDITIONAL_CONTACT
+    elif district == "district 7":
+        additional_contact = D7_ADDITIONAL_CONTACT
     else:
         raise ValueError(
-            f"Unexpected district. We expected {individual} to belong to districts 2, 4, or 6. They belong to district: {district}."
+            f"Unexpected district. We expected {individual} to belong to districts 1, 2, 3, 4, 5, 6 or 7. They belong to: {district}."
         )
 
     if fully_eligible is True:
