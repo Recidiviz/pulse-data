@@ -45,13 +45,14 @@ grouped AS (
     ParoleAgentName,
     EMAILADDRESS,
     BadgeNumber,
-    ARRAY_AGG(update_datetime ORDER BY update_datetime DESC) AS update_datetimes
+    ARRAY_AGG(distinct update_datetime ORDER BY update_datetime DESC) AS update_datetimes
   FROM problems
   GROUP BY ParoleAgentName, EMAILADDRESS, BadgeNumber
 )
 SELECT *,
     "US_CA" as region_code
 FROM grouped
+ORDER BY ParoleAgentName, EMAILADDRESS, update_datetimes[SAFE_OFFSET(0)]
 """
 
 PA_BADGE_NUMBER_CHANGES_VIEW_BUILDER = SimpleBigQueryViewBuilder(
