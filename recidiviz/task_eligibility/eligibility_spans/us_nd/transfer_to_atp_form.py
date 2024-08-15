@@ -18,7 +18,7 @@
 Shows the spans of time during which someone in ND is eligible
 for the Adult Training Program (ATP).
 """
-
+from recidiviz.big_query.big_query_utils import BigQueryDateInterval
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.candidate_populations.general import (
     general_incarceration_population,
@@ -36,6 +36,11 @@ from recidiviz.task_eligibility.criteria.state_specific.us_nd import (
     no_recent_referrals_to_minimum_housing,
     not_serving_ineligible_offense_for_atp_work_release,
     work_release_committee_requirements,
+)
+from recidiviz.task_eligibility.criteria_condition import (
+    NotEligibleCriteriaCondition,
+    PickNCompositeCriteriaCondition,
+    TimeDependentCriteriaCondition,
 )
 from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
@@ -64,6 +69,42 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         no_recent_referrals_to_minimum_housing.VIEW_BUILDER,
     ],
     completion_event_builder=granted_work_release.VIEW_BUILDER,
+    almost_eligible_condition=PickNCompositeCriteriaCondition(
+        sub_conditions_list=[
+            # Almost eligible if:
+            # (3 months within FTCD OR 3 months within PRD)
+            #   XOR missing 30 days in same facility
+            #   XOR missing 90 days incarcerated
+            PickNCompositeCriteriaCondition(
+                sub_conditions_list=[
+                    TimeDependentCriteriaCondition(
+                        criteria=incarceration_within_1_year_of_ftcd_or_prd_or_cpp_release.VIEW_BUILDER,
+                        reasons_date_field="full_term_completion_date",
+                        interval_length=3,
+                        interval_date_part=BigQueryDateInterval.MONTH,
+                        description="Within 3 months from eligibility according to the full term completion date",
+                    ),
+                    TimeDependentCriteriaCondition(
+                        criteria=incarceration_within_1_year_of_ftcd_or_prd_or_cpp_release.VIEW_BUILDER,
+                        reasons_date_field="parole_review_date",
+                        interval_length=3,
+                        interval_date_part=BigQueryDateInterval.MONTH,
+                        description="Within 3 months away from eligibility according to the parole review date",
+                    ),
+                ],
+                at_least_n_conditions_true=1,
+            ),
+            NotEligibleCriteriaCondition(
+                criteria=incarcerated_at_least_30_days_in_same_facility.VIEW_BUILDER,
+                description="Only missing the 30 days in the same facility criteria",
+            ),
+            NotEligibleCriteriaCondition(
+                criteria=incarcerated_at_least_90_days.VIEW_BUILDER,
+                description="Only missing the 90 days in the NDDCR criteria",
+            ),
+        ],
+        at_most_n_conditions_true=1,
+    ),
 )
 
 if __name__ == "__main__":
