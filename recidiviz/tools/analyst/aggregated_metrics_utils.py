@@ -68,22 +68,46 @@ def get_time_period_cte(
     interval_length: int,
     min_date: datetime,
     max_date: Optional[datetime],
+    rolling_period_unit: Optional[MetricTimePeriod] = None,
+    rolling_period_length: Optional[int] = None,
 ) -> str:
     """Returns query template for generating time periods at custom intervals falling between the min and max dates.
     If no max date is provided, use current date."""
 
-    if interval_unit in [
+    # Both rolling_period_unit and rolling_period_length must be provided together
+    if (rolling_period_unit and not rolling_period_length) or (
+        rolling_period_length and not rolling_period_unit
+    ):
+        raise ValueError(
+            "Both rolling_period_unit and rolling_period_length must be provided together."
+        )
+
+    # If any rolling period parameter is not provided, default them to interval_unit and interval_length
+    if not rolling_period_length or not rolling_period_unit:
+        rolling_period_length = interval_length
+        rolling_period_unit = interval_unit
+
+    # Validate interval_unit and rolling_period_unit
+    valid_periods = [
         MetricTimePeriod.DAY,
         MetricTimePeriod.WEEK,
         MetricTimePeriod.MONTH,
         MetricTimePeriod.QUARTER,
         MetricTimePeriod.YEAR,
-    ]:
-        period_str = f'"{MetricTimePeriod.CUSTOM.value}"'
-    else:
+    ]
+    if interval_unit not in valid_periods:
         raise ValueError(
-            f"Interval type {interval_unit.value} is not a valid interval type."
+            f"Interval type {interval_unit.value} is not a valid interval type"
         )
+    if rolling_period_unit not in valid_periods:
+        raise ValueError(
+            f"Rolling period type {rolling_period_unit.value} is not a valid type"
+        )
+
+    rolling_interval_str = (
+        f"INTERVAL {rolling_period_length} {rolling_period_unit.value}"
+    )
+    period_str = f'"{MetricTimePeriod.CUSTOM.value}"'
     interval_str = f"INTERVAL {interval_length} {interval_unit.value}"
     min_date_str = f'"{min_date.strftime("%Y-%m-%d")}"'
     max_date_str = (
@@ -100,7 +124,7 @@ FROM
     UNNEST(GENERATE_DATE_ARRAY(
         {min_date_str},
         {max_date_str},
-        {interval_str}
+        {rolling_interval_str}
     )) AS population_start_date
 WHERE
     DATE_ADD(population_start_date, {interval_str}) <= CURRENT_DATE("US/Eastern")
@@ -116,6 +140,8 @@ def get_custom_aggregated_metrics_query_template(
     time_interval_length: int,
     min_date: datetime = datetime(2020, 1, 1),
     max_date: datetime = datetime(2023, 1, 1),
+    rolling_period_unit: Optional[MetricTimePeriod] = None,
+    rolling_period_length: Optional[int] = None,
 ) -> str:
     """Returns a query template to generate all metrics for specified unit of analysis, population, and time periods"""
     if not metrics:
@@ -129,7 +155,12 @@ def get_custom_aggregated_metrics_query_template(
         )
     unit_of_analysis = METRIC_UNITS_OF_ANALYSIS_BY_TYPE[unit_of_analysis_type]
     time_period_cte = get_time_period_cte(
-        time_interval_unit, time_interval_length, min_date, max_date
+        time_interval_unit,
+        time_interval_length,
+        min_date,
+        max_date,
+        rolling_period_unit,
+        rolling_period_length,
     )
 
     all_ctes_query_template = f"""
@@ -250,6 +281,8 @@ def get_custom_aggregated_metrics(
     time_interval_length: int,
     min_date: datetime = datetime(2020, 1, 1),
     max_date: datetime = datetime(2023, 1, 1),
+    rolling_period_unit: Optional[MetricTimePeriod] = None,
+    rolling_period_length: Optional[int] = None,
     print_query_template: bool = False,
     project_id: str = "recidiviz-staging",
 ) -> pd.DataFrame:
@@ -262,6 +295,8 @@ def get_custom_aggregated_metrics(
         time_interval_length,
         min_date,
         max_date,
+        rolling_period_unit,
+        rolling_period_length,
         # strip the project id prefix from the query template, since this can not be read by pd.read_gbq
     ).replace("{project_id}.", "")
     if print_query_template:
