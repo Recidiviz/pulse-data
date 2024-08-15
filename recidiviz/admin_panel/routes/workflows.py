@@ -204,8 +204,12 @@ class OpportunitySingleConfigurationAPI(MethodView):
 class OpportunitySingleConfigurationDeactivateAPI(MethodView):
     "Endpoint to deactivate a config given an id."
 
-    @workflows_blueprint.response(HTTPStatus.OK)
-    def put(self, state_code_str: str, opportunity_type: str, config_id: int) -> str:
+    @workflows_blueprint.response(
+        HTTPStatus.OK, OpportunityConfigurationResponseSchema()
+    )
+    def post(
+        self, state_code_str: str, opportunity_type: str, config_id: int
+    ) -> FullOpportunityConfig:
         state_code = refine_state_code(state_code_str)
 
         try:
@@ -213,7 +217,12 @@ class OpportunitySingleConfigurationDeactivateAPI(MethodView):
         except ValueError as error:
             abort(HTTPStatus.BAD_REQUEST, message=str(error))
 
-        return f"Configuration {str(config_id)} has been deactivated"
+        config = WorkflowsQuerier(state_code).get_config_for_id(
+            opportunity_type, config_id
+        )
+        if config is None:
+            raise RuntimeError("Couldn't fetch deactivated config")
+        return config
 
 
 @workflows_blueprint.route(
@@ -222,8 +231,12 @@ class OpportunitySingleConfigurationDeactivateAPI(MethodView):
 class OpportunitySingleConfigurationActivateAPI(MethodView):
     "Endpoint to activate a config given an id."
 
-    @workflows_blueprint.response(HTTPStatus.OK)
-    def put(self, state_code_str: str, opportunity_type: str, config_id: int) -> str:
+    @workflows_blueprint.response(
+        HTTPStatus.OK, OpportunityConfigurationResponseSchema()
+    )
+    def post(
+        self, state_code_str: str, opportunity_type: str, config_id: int
+    ) -> FullOpportunityConfig:
         state_code = refine_state_code(state_code_str)
 
         try:
@@ -233,7 +246,12 @@ class OpportunitySingleConfigurationActivateAPI(MethodView):
         except ValueError as error:
             abort(HTTPStatus.BAD_REQUEST, message=str(error))
 
-        return f"Created new activate config {str(active_config_id)} from deactived config{str(config_id)}"
+        config = WorkflowsQuerier(state_code).get_config_for_id(
+            opportunity_type, active_config_id
+        )
+        if config is None:
+            raise RuntimeError("Couldn't fetch activated config")
+        return config
 
 
 @workflows_blueprint.route(

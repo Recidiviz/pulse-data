@@ -15,7 +15,12 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
-import { MinusCircleOutlined, PlusOutlined } from "@ant-design/icons";
+import {
+  DownCircleOutlined,
+  MinusCircleOutlined,
+  PlusOutlined,
+  UpCircleOutlined,
+} from "@ant-design/icons";
 import { Button, Form, FormListFieldData } from "antd";
 import { ReactNode } from "react";
 
@@ -30,13 +35,13 @@ export const MultiEntry = ({
 }) => (
   <Form.Item label={label}>
     <Form.List name={name}>
-      {(fields, { add, remove }) => (
+      {(fields, { add, remove, move }) => (
         <>
-          {fields.map((field) => (
+          {fields.map((field, i) => (
             <div
               key={field.key}
               style={{
-                width: "80%",
+                width: "100%",
                 display: "flex",
                 alignItems: "baseline",
                 gap: "0.5em",
@@ -44,7 +49,20 @@ export const MultiEntry = ({
               }}
             >
               {children(field)}{" "}
-              <MinusCircleOutlined onClick={() => remove(field.name)} />
+              <div
+                style={{
+                  width: "20%",
+                  display: "flex",
+                  justifyContent: "flex-start",
+                  gap: "0.25em",
+                }}
+              >
+                <MinusCircleOutlined onClick={() => remove(field.name)} />
+                {i > 0 && <UpCircleOutlined onClick={() => move(i, i - 1)} />}
+                {i < fields.length - 1 && (
+                  <DownCircleOutlined onClick={() => move(i, i + 1)} />
+                )}
+              </div>
             </div>
           ))}
           <Form.Item>

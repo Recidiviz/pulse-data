@@ -409,7 +409,7 @@ class WorkflowsAdminPanelEndpointTests(TestCase):
         self.assertEqual(HTTPStatus.BAD_REQUEST, response.status_code)
 
     ########
-    # PUT /workflows/<state_code>/opportunities/<opportunity_type>/configurations/<id>/deactivate
+    # POST /workflows/<state_code>/opportunities/<opportunity_type>/configurations/<id>/deactivate
     ########
 
     @patch(
@@ -423,7 +423,9 @@ class WorkflowsAdminPanelEndpointTests(TestCase):
     ) -> None:
         mock_enabled_states.return_value = ["US_ID"]
 
-        response = self.client.put(self.single_opportunity_configuration_deactivate_url)
+        response = self.client.post(
+            self.single_opportunity_configuration_deactivate_url
+        )
 
         self.assertEqual(HTTPStatus.OK, response.status_code)
 
@@ -446,13 +448,15 @@ class WorkflowsAdminPanelEndpointTests(TestCase):
     ) -> None:
         mock_enabled_states.return_value = ["US_ID"]
 
-        response = self.client.put(self.single_opportunity_configuration_deactivate_url)
+        response = self.client.post(
+            self.single_opportunity_configuration_deactivate_url
+        )
 
         self.assertEqual(HTTPStatus.BAD_REQUEST, response.status_code)
         self.assertEqual("Config does not exist", json.loads(response.data)["message"])
 
     ########
-    # PUT /workflows/<state_code>/opportunities/<opportunity_type>/configurations/<id>/activate
+    # POST /workflows/<state_code>/opportunities/<opportunity_type>/configurations/<id>/activate
     ########
 
     @patch(
@@ -466,7 +470,7 @@ class WorkflowsAdminPanelEndpointTests(TestCase):
     ) -> None:
         mock_enabled_states.return_value = ["US_ID"]
 
-        response = self.client.put(self.single_opportunity_configuration_activate_url)
+        response = self.client.post(self.single_opportunity_configuration_activate_url)
 
         self.assertEqual(HTTPStatus.OK, response.status_code)
 
@@ -489,7 +493,7 @@ class WorkflowsAdminPanelEndpointTests(TestCase):
     ) -> None:
         mock_enabled_states.return_value = ["US_ID"]
 
-        response = self.client.put(self.single_opportunity_configuration_activate_url)
+        response = self.client.post(self.single_opportunity_configuration_activate_url)
 
         self.assertEqual(HTTPStatus.BAD_REQUEST, response.status_code)
         self.assertEqual("Config does not exist", json.loads(response.data)["message"])
