@@ -359,8 +359,6 @@ COMPARTMENT_SUB_SESSIONS_PREPROCESSED_QUERY_TEMPLATE = """
         metric_source = 'INFERRED'
             AND (prev_end_reason = 'RELEASED_IN_ERROR' OR next_start_reason = 'RETURN_FROM_ERRONEOUS_RELEASE') AS inferred_erroneous,
         metric_source = 'INFERRED'
-            -- TODO(#27881): Investigate implication of removing inflow_from condition in pending custody inference
-            AND inflow_from_level_1 = 'SUPERVISION'
             AND (prev_end_reason in ('REVOCATION', 'ADMITTED_TO_INCARCERATION')
                 OR (next_start_reason IN ('REVOCATION', 'SANCTION_ADMISSION'))) AS inferred_pending_custody,
         metric_source = 'INFERRED'
@@ -420,12 +418,12 @@ COMPARTMENT_SUB_SESSIONS_PREPROCESSED_QUERY_TEMPLATE = """
                 WHEN inferred_death THEN 'DEATH'
                 WHEN inferred_erroneous THEN 'ERRONEOUS_RELEASE'
                 WHEN inferred_missing_data THEN LAG(compartment_level_1) OVER(PARTITION BY person_id ORDER BY start_date)
-                WHEN inferred_pending_custody OR inferred_mo_pending_custody THEN 'PENDING_CUSTODY'
                 WHEN inferred_pending_supervision THEN 'PENDING_SUPERVISION'
                 WHEN inferred_oos AND LAG(compartment_level_1) OVER(PARTITION BY person_id ORDER BY start_date) IN ('INCARCERATION','SUPERVISION') THEN CONCAT(LAG(compartment_level_1) OVER(PARTITION BY person_id ORDER BY start_date), '_', 'OUT_OF_STATE')
                 WHEN inferred_oos AND LAG(compartment_level_1) OVER(PARTITION BY person_id ORDER BY start_date) IN ('SUPERVISION_OUT_OF_STATE') THEN 'SUPERVISION_OUT_OF_STATE'
                 WHEN inferred_oos AND LAG(compartment_level_1) OVER(PARTITION BY person_id ORDER BY start_date) IN ('INCARCERATION_OUT_OF_STATE') THEN 'INCARCERATION_OUT_OF_STATE'
                 WHEN inferred_suspension OR inferred_mo_suspension THEN 'SUSPENSION'
+                WHEN inferred_pending_custody OR inferred_mo_pending_custody THEN 'PENDING_CUSTODY'
                 ELSE compartment_level_1 END, 'INTERNAL_UNKNOWN') AS compartment_level_1,
         COALESCE(
             CASE 
@@ -437,10 +435,10 @@ COMPARTMENT_SUB_SESSIONS_PREPROCESSED_QUERY_TEMPLATE = """
                 WHEN inferred_death THEN 'DEATH'
                 WHEN inferred_erroneous THEN 'ERRONEOUS_RELEASE'
                 WHEN inferred_missing_data THEN LAG(compartment_level_2) OVER(PARTITION BY person_id ORDER BY start_date)
-                WHEN inferred_pending_custody OR inferred_mo_pending_custody THEN 'PENDING_CUSTODY'
                 WHEN inferred_pending_supervision THEN 'PENDING_SUPERVISION'
                 WHEN inferred_oos THEN LAG(compartment_level_2) OVER(PARTITION BY person_id ORDER BY start_date)
                 WHEN inferred_suspension OR inferred_mo_suspension THEN 'SUSPENSION'
+                WHEN inferred_pending_custody OR inferred_mo_pending_custody THEN 'PENDING_CUSTODY'
                 ELSE compartment_level_2 END, 'INTERNAL_UNKNOWN') AS compartment_level_2,
         supervising_officer_external_id,
         compartment_location,
