@@ -237,7 +237,7 @@ class TestSendIDLSUTexts(BigQueryEmulatorTestCase):
                         "NEGATIVE_DA_WITHIN_90_DAYS",
                         "US_IX_INCOME_VERIFIED_WITHIN_3_MONTHS",
                     ],
-                    "district": "District 2",
+                    "district": "District 3",
                 },
             ],
         )
@@ -309,7 +309,7 @@ class TestSendIDLSUTexts(BigQueryEmulatorTestCase):
                     MISSING_NEGATIVE_DA_OR_INCOME_OPENER,
                     given_name="Ted",
                     po_name="Test Po 1",
-                    additional_contact=None,
+                    additional_contact=" or contact a specialist at district2Admin@idoc.idaho.gov",
                 )
                 + "\n1. "
                 + MISSING_INCOME_BULLET
@@ -324,7 +324,7 @@ class TestSendIDLSUTexts(BigQueryEmulatorTestCase):
                     MISSING_NEGATIVE_DA_OR_INCOME_OPENER,
                     given_name="Roy",
                     po_name="Test Po 1",
-                    additional_contact=None,
+                    additional_contact=" or a specialist at d4ppspecialists@idoc.idaho.gov or 208-327-7008",
                 )
                 + "\n1. "
                 + MISSING_NEGATIVE_DA_BULLET
@@ -339,7 +339,7 @@ class TestSendIDLSUTexts(BigQueryEmulatorTestCase):
                     FULLY_ELIGIBLE_TEXT,
                     given_name="Keeley",
                     po_name="Test Po 2",
-                    additional_contact=None,
+                    additional_contact="",
                 )
                 + ALL_CLOSER
             },
@@ -351,7 +351,7 @@ class TestSendIDLSUTexts(BigQueryEmulatorTestCase):
                     MISSING_NEGATIVE_DA_OR_INCOME_OPENER,
                     given_name="Coach",
                     po_name="Test Po 2",
-                    additional_contact=None,
+                    additional_contact=" or a specialist at specialistsd3@idoc.idaho.gov or (208) 454-7601",
                 )
                 + "\n1. "
                 + MISSING_INCOME_BULLET
