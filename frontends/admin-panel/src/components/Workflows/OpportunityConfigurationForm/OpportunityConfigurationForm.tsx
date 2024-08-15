@@ -15,7 +15,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
-import { Button, Checkbox, Form, Input } from "antd";
+import { Button, Checkbox, Form, Input, Select } from "antd";
 import { observer } from "mobx-react-lite";
 import { useHistory } from "react-router";
 import { z } from "zod";
@@ -57,8 +57,9 @@ const OpportunityConfigurationForm = ({
       template && Object.entries(template.eligibleCriteriaCopy),
     ineligibleCriteriaCopy:
       template && Object.entries(template.ineligibleCriteriaCopy),
-    isAlert: !!template?.isAlert,
-    hideDenialRevert: !!template?.hideDenialRevert,
+    isAlert: template?.isAlert ?? false,
+    hideDenialRevert: template?.hideDenialRevert ?? false,
+    priority: template?.priority ?? "NORMAL",
   };
 
   // Add notification UUIDs to newly created notifications
@@ -196,6 +197,12 @@ const OpportunityConfigurationForm = ({
       </Form.Item>
       <Form.Item label="Alert?" name="isAlert" valuePropName="checked">
         <Checkbox />
+      </Form.Item>
+      <Form.Item label="Priority" name="priority" rules={[{ required: true }]}>
+        <Select>
+          <Select.Option value="NORMAL">NORMAL</Select.Option>
+          <Select.Option value="HIGH">HIGH</Select.Option>
+        </Select>
       </Form.Item>
       <MultiEntry label="Notifications" name="notifications">
         {({ name, ...field }) => {

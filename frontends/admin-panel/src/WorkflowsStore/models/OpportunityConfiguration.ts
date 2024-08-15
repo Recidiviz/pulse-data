@@ -72,6 +72,7 @@ export const babyOpportunityConfigurationSchema = z.object({
   sidebarComponents: z.array(z.string()),
   methodologyUrl: z.string(),
   isAlert: z.boolean(),
+  priority: z.enum(["HIGH", "NORMAL"]),
   eligibilityDateText: nullishAsUndefined(z.string()),
   hideDenialRevert: z.boolean(),
   tooltipEligibilityText: nullishAsUndefined(z.string()),

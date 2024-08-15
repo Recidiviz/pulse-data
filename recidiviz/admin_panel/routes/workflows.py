@@ -147,6 +147,7 @@ class OpportunityConfigurationsAPI(MethodView):
             display_name=body_args["display_name"],
             methodology_url=body_args["methodology_url"],
             is_alert=body_args["is_alert"],
+            priority=body_args["priority"],
             initial_header=body_args.get("initial_header"),
             denial_reasons=body_args["denial_reasons"],
             eligible_criteria_copy=body_args["eligible_criteria_copy"],

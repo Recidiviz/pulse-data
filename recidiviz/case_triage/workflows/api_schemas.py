@@ -218,6 +218,7 @@ class WorkflowsConfigSchema(CamelCaseSchema):
     sidebar_components = fields.List(fields.Str())
     methodology_url = fields.Str()
     is_alert = fields.Bool()
+    priority = fields.Str()
     tab_groups = fields.Dict(fields.Str(), fields.List(fields.Str()), required=False)
     compare_by = fields.List(fields.Nested(SortParamSchema()), required=False)
     notifications = fields.List(fields.Nested(NotificationSchema()))
