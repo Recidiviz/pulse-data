@@ -18,7 +18,12 @@
 import { message } from "antd";
 import { autorun, flowResult, makeAutoObservable } from "mobx";
 
-import { postOpportunityConfiguration } from "../../AdminPanelAPI/WorkflowsAPI";
+import {
+  activateOpportunityConfiguration,
+  deactivateOpportunityConfiguration,
+  postOpportunityConfiguration,
+  promoteOpportunityConfiguration,
+} from "../../AdminPanelAPI/WorkflowsAPI";
 import { Hydratable, HydrationState } from "../../InsightsStore/types";
 import { BabyOpportunityConfiguration } from "../models/OpportunityConfiguration";
 import { WorkflowsStore } from "../WorkflowsStore";
@@ -81,6 +86,66 @@ export default class OpportunityConfigurationPresenter implements Hydratable {
     } catch (e) {
       message.error(
         `Error adding configuration:
+        \n${e}`,
+        10
+      );
+      return false;
+    }
+  }
+
+  async deactivateOpportunityConfiguration(configId: number): Promise<boolean> {
+    try {
+      await deactivateOpportunityConfiguration(
+        this.stateCode,
+        this.opportunityType,
+        configId
+      );
+      message.success("Configuration deactivated");
+      this.hydrationState.status = "needs hydration";
+      return true;
+    } catch (e) {
+      message.error(
+        `Error deactivating configuration:
+        \n${e}`,
+        10
+      );
+      return false;
+    }
+  }
+
+  async activateOpportunityConfiguration(configId: number): Promise<boolean> {
+    try {
+      const newConfig = await activateOpportunityConfiguration(
+        this.stateCode,
+        this.opportunityType,
+        configId
+      );
+      message.success("Configuration activated");
+      this.hydrationState.status = "needs hydration";
+      this.workflowsStore.setSelectedOpportunityConfigurationId(newConfig.id);
+      return true;
+    } catch (e) {
+      message.error(
+        `Error activating configuration:
+        \n${e}`,
+        10
+      );
+      return false;
+    }
+  }
+
+  async promoteOpportunityConfiguration(configId: number): Promise<boolean> {
+    try {
+      await promoteOpportunityConfiguration(
+        this.stateCode,
+        this.opportunityType,
+        configId
+      );
+      message.success("Configuration promoted");
+      return true;
+    } catch (e) {
+      message.error(
+        `Error promoting configuration:
         \n${e}`,
         10
       );

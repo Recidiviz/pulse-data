@@ -85,7 +85,7 @@ const OpportunityConfigurationForm = ({
           ...Object.fromEntries(
             OPTIONAL_FIELDS.map((f) => [
               f,
-              values[f]?.length ? values.f : undefined,
+              values[f]?.length ? values[f] : undefined,
             ])
           ),
           denialReasons: Object.fromEntries(values.denialReasons ?? []),
@@ -104,16 +104,17 @@ const OpportunityConfigurationForm = ({
       autoComplete="off"
       initialValues={initial}
     >
-      <Form.Item label="Name" name="displayName" rules={[{ required: true }]}>
-        <Input />
-      </Form.Item>
       <Form.Item
-        label="Description"
+        label="Configuration Description"
         name="description"
         rules={[{ required: true }]}
       >
         <Input />
       </Form.Item>
+      <Form.Item label="Name" name="displayName" rules={[{ required: true }]}>
+        <Input />
+      </Form.Item>
+
       <Form.Item label="Feature Variant" name="featureVariant">
         <Input />
       </Form.Item>

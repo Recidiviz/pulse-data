@@ -16,6 +16,7 @@
 // =============================================================================
 
 import { Form, Input } from "antd";
+import TextArea from "antd/lib/input/TextArea";
 
 import { MultiEntry } from "./MultiEntry";
 
@@ -28,7 +29,7 @@ export const CriteriaCopy = ({
 }) => (
   <MultiEntry label={label} name={outerName}>
     {({ name, ...field }) => (
-      <>
+      <div style={{ width: "100%", marginBottom: "0.25em" }}>
         <Form.Item
           {...field}
           noStyle
@@ -37,19 +38,30 @@ export const CriteriaCopy = ({
         >
           <Input placeholder="Criteria" />
         </Form.Item>
-        :
-        <Form.Item
-          {...field}
-          noStyle
-          name={[name, 1, "text"]}
-          rules={[{ required: true, message: "'text' is required" }]}
-        >
-          <Input placeholder="Text" />
-        </Form.Item>
-        <Form.Item {...field} noStyle name={[name, 1, "tooltip"]}>
-          <Input placeholder="Tooltip" />
-        </Form.Item>
-      </>
+        <div style={{ marginTop: "0.25em", display: "flex", gap: "0.25em" }}>
+          <Form.Item
+            {...field}
+            noStyle
+            // style={{
+            //   width: "40%",
+            // }}
+            name={[name, 1, "text"]}
+            rules={[{ required: true, message: "'text' is required" }]}
+          >
+            <TextArea placeholder="Text" />
+          </Form.Item>
+          <Form.Item
+            {...field}
+            noStyle
+            // style={{
+            //   width: "40%",
+            // }}
+            name={[name, 1, "tooltip"]}
+          >
+            <TextArea placeholder="Tooltip" />
+          </Form.Item>
+        </div>
+      </div>
     )}
   </MultiEntry>
 );

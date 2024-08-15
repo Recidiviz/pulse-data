@@ -69,3 +69,35 @@ export const postOpportunityConfiguration = async (
     config
   );
 };
+
+export const deactivateOpportunityConfiguration = async (
+  stateCode: string,
+  opportunityType: string,
+  configId: number
+): Promise<OpportunityConfiguration> => {
+  const response = await post(
+    `/admin/workflows/${stateCode}/opportunities/${opportunityType}/configurations/${configId}/deactivate`
+  );
+  return opportunityConfigurationSchema.parse(response);
+};
+
+export const activateOpportunityConfiguration = async (
+  stateCode: string,
+  opportunityType: string,
+  configId: number
+): Promise<OpportunityConfiguration> => {
+  const response = await post(
+    `/admin/workflows/${stateCode}/opportunities/${opportunityType}/configurations/${configId}/activate`
+  );
+  return opportunityConfigurationSchema.parse(response);
+};
+
+export const promoteOpportunityConfiguration = async (
+  stateCode: string,
+  opportunityType: string,
+  configId: number
+): Promise<Response> => {
+  return post(
+    `/admin/workflows/${stateCode}/opportunities/${opportunityType}/configurations/${configId}/promote`
+  );
+};

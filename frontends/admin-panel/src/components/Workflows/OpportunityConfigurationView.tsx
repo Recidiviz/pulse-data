@@ -15,7 +15,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
-import { Button, Form } from "antd";
+import { Button, Form, Space } from "antd";
 import { observer } from "mobx-react-lite";
 import { useHistory } from "react-router";
 
@@ -35,9 +35,41 @@ const OpportunityConfigurationSettings = ({
 
   return (
     <>
-      <Button onClick={() => history.push(`new?from=${config.id}`)}>
-        Duplicate
-      </Button>
+      <Space>
+        <Button onClick={() => history.push(`new?from=${config.id}`)}>
+          Duplicate
+        </Button>
+        {config.status === "ACTIVE" && (
+          <>
+            <Button
+              onClick={() =>
+                presenter.deactivateOpportunityConfiguration(config.id)
+              }
+            >
+              Deactivate
+            </Button>
+            <Button
+              onClick={() =>
+                // eslint-disable-next-line no-alert
+                window.confirm(
+                  "Are you sure you want to promote this configuration to production?"
+                ) && presenter.promoteOpportunityConfiguration(config.id)
+              }
+            >
+              Promote to Production
+            </Button>
+          </>
+        )}
+        {config.status === "INACTIVE" && (
+          <Button
+            onClick={() =>
+              presenter.activateOpportunityConfiguration(config.id)
+            }
+          >
+            Activate
+          </Button>
+        )}
+      </Space>
       <Form>
         <Form.Item label="Name">
           <span className="ant-form-text">{config.displayName}</span>
