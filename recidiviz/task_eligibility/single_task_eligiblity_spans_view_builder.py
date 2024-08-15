@@ -23,6 +23,7 @@ from typing import List, Optional, Sequence, Union
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.bq_utils import (
     nonnull_end_date_clause,
+    nonnull_end_date_exclusive_clause,
     revert_nonnull_end_date_clause,
 )
 from recidiviz.calculator.query.sessions_query_fragments import (
@@ -48,9 +49,6 @@ from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
 from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder import (
     InvertedTaskCriteriaBigQueryViewBuilder,
     TaskCriteriaGroupBigQueryViewBuilder,
-)
-from recidiviz.task_eligibility.utils.critical_date_query_fragments import (
-    critical_date_has_passed_spans_cte,
 )
 from recidiviz.utils.string import StrictStringFormatter
 
@@ -237,7 +235,7 @@ class SingleTaskEligibilitySpansBigQueryViewBuilder(SimpleBigQueryViewBuilder):
         ] = []
         if almost_eligible_criteria_condition:
             criteria_to_critical_date_query_fragment_map = (
-                almost_eligible_criteria_condition.get_critical_dates()
+                almost_eligible_criteria_condition.get_critical_date_parsing_fragments_by_criteria()
             )
         else:
             criteria_to_critical_date_query_fragment_map = None
@@ -263,7 +261,7 @@ class SingleTaskEligibilitySpansBigQueryViewBuilder(SimpleBigQueryViewBuilder):
                         criteria_view_builder.criteria_name
                         in criteria_to_critical_date_query_fragment_map
                     ):
-                        criteria_query_fragment = SingleTaskEligibilitySpansBigQueryViewBuilder._split_criteria_by_critical_date_query_fragment(
+                        criteria_query_fragment = SingleTaskEligibilitySpansBigQueryViewBuilder.split_criteria_by_critical_date_query_fragment(
                             criteria_to_critical_date_query_fragment_map[
                                 criteria_view_builder.criteria_name
                             ]
@@ -542,27 +540,78 @@ WINDOW w AS (PARTITION BY state_code, person_id ORDER BY start_date ASC)
 """
 
     @staticmethod
-    def _split_criteria_by_critical_date_query_fragment(
-        critical_date_extract_string: str,
+    def split_criteria_by_critical_date_query_fragment(
+        critical_date_extract_strings: List[str],
     ) -> str:
-        """Split any criteria spans that overlap a critical date to handle time dependent criteria conditions"""
-
+        """Return a query fragment that splits the criteria spans across any overlapping a critical dates"""
+        critical_date_extract_fragment = (
+            "\n"
+            + indent(",\n".join(set(critical_date_extract_strings)), " " * 12)
+            + "\n"
+        )
         return f"""
 (
-    WITH critical_date_spans AS (
+    -- Split the criteria spans across any overlapping critical date boundaries
+    WITH criteria_spans AS (
         SELECT
-            * EXCEPT (start_date, end_date),
-            start_date AS start_datetime,
-            end_date AS end_datetime,
-            -- Parse out the critical date relevant for almost eligibility
-            {critical_date_extract_string} AS critical_date
-        FROM `{{{{project_id}}}}.{{criteria_dataset_id}}.{{criteria_view_id}}`
+            *
+        FROM `{{{{project_id}}}}.{{criteria_dataset_id}}.{{criteria_view_id}}` criteria
         WHERE state_code = "{{state_code}}"
-    ),{critical_date_has_passed_spans_cte(attributes=["meets_criteria", "reason", "reason_v2"])}
+    ),
+    criteria_boundary_dates AS (
+        -- Fetch the set of unique new start dates taken as the combination of the
+        -- original start date and all overlapping critical dates
+        SELECT DISTINCT
+            state_code,
+            person_id,
+            start_date AS original_start_date,
+            end_date AS original_end_date,
+            new_start_date,
+        FROM criteria_spans,
+        -- Unnest 1 row for each new start dates including the original criteria span start date
+        -- along with all the critical dates that fall within the criteria span interval
+        UNNEST([start_date, {critical_date_extract_fragment}
+        ]) AS new_start_date
+        WHERE
+            -- Only include the dates that fall within the criteria span (start date inclusive)
+            new_start_date BETWEEN criteria_spans.start_date
+                AND {nonnull_end_date_exclusive_clause("criteria_spans.end_date")}
+    ),
+    new_criteria_boundary_spans AS (
+        -- Create the new spans representing the intervals
+        -- [new start date, coalesce(next new start date, original end date)]
+        SELECT
+            state_code,
+            person_id,
+            new_start_date AS start_date,
+            IFNULL(
+                -- Pick the next new_start_date as this span's new span end_date
+                LEAD(new_start_date) OVER (
+                    PARTITION BY state_code, person_id, original_start_date, original_end_date
+                    ORDER BY new_start_date
+                ),
+                -- Use the original span end_date if there is no next new_start_date
+                original_end_date
+            ) AS end_date,
+        FROM criteria_boundary_dates
+    )
+    -- Join the new span boundaries back to the overlapping criteria span for
+    -- the criteria span metadata columns (reason, meets_criteria)
     SELECT
-        * EXCEPT(critical_date, critical_date_has_passed),
+        criteria_spans.state_code,
+        criteria_spans.person_id,
+        new_spans.start_date,
+        new_spans.end_date,
+        criteria_spans.meets_criteria,
+        criteria_spans.reason,
+        criteria_spans.reason_v2,
         "{{criteria_name}}" AS criteria_name
-    FROM critical_date_has_passed_spans
+    FROM new_criteria_boundary_spans new_spans
+    INNER JOIN criteria_spans
+        ON new_spans.state_code = criteria_spans.state_code
+        AND new_spans.person_id = criteria_spans.person_id
+        AND new_spans.start_date < {nonnull_end_date_clause("criteria_spans.end_date")}
+        AND criteria_spans.start_date < {nonnull_end_date_clause("new_spans.end_date")}
 )
 """
 

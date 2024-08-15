@@ -69,7 +69,9 @@ class TestCriteriaCondition(unittest.TestCase):
             "Not eligible criteria condition",
             NOT_ELIGIBLE_CRITERIA_CONDITION.description,
         )
-        self.assertIsNone(NOT_ELIGIBLE_CRITERIA_CONDITION.get_critical_dates())
+        self.assertIsNone(
+            NOT_ELIGIBLE_CRITERIA_CONDITION.get_critical_date_parsing_fragments_by_criteria()
+        )
         expected_query_template = """
     SELECT
         *,
@@ -92,7 +94,9 @@ class TestCriteriaCondition(unittest.TestCase):
             "Less than value criteria condition",
             LESS_THAN_CRITERIA_CONDITION.description,
         )
-        self.assertIsNone(LESS_THAN_CRITERIA_CONDITION.get_critical_dates())
+        self.assertIsNone(
+            LESS_THAN_CRITERIA_CONDITION.get_critical_date_parsing_fragments_by_criteria()
+        )
         expected_query_template = """
     SELECT
         * EXCEPT(criteria_reason),
@@ -145,9 +149,11 @@ class TestTimeDependentCriteriaCondition(unittest.TestCase):
         )
         self.assertEqual(
             {
-                "US_KY_CRITERIA_4": "DATE_SUB(SAFE_CAST(JSON_VALUE(reason_v2, '$.latest_violation_date') AS DATE), INTERVAL 1 MONTH)"
+                "US_KY_CRITERIA_4": [
+                    "DATE_SUB(SAFE_CAST(JSON_VALUE(reason_v2, '$.latest_violation_date') AS DATE), INTERVAL 1 MONTH)"
+                ],
             },
-            TIME_DEPENDENT_CRITERIA_CONDITION.get_critical_dates(),
+            TIME_DEPENDENT_CRITERIA_CONDITION.get_critical_date_parsing_fragments_by_criteria(),
         )
         expected_query_template = """
     SELECT
@@ -237,10 +243,13 @@ class TestPickNCompositeCriteriaCondition(unittest.TestCase):
             composite_criteria.description,
         )
         expected_critical_dates = {
-            "US_KY_CRITERIA_4": "DATE_SUB(SAFE_CAST(JSON_VALUE(reason_v2, '$.latest_violation_date') AS DATE), INTERVAL 1 MONTH)",
+            "US_KY_CRITERIA_4": [
+                "DATE_SUB(SAFE_CAST(JSON_VALUE(reason_v2, '$.latest_violation_date') AS DATE), INTERVAL 1 MONTH)"
+            ],
         }
         self.assertEqual(
-            expected_critical_dates, composite_criteria.get_critical_dates()
+            expected_critical_dates,
+            composite_criteria.get_critical_date_parsing_fragments_by_criteria(),
         )
 
         expected_query_fragment = """
@@ -334,11 +343,16 @@ class TestPickNCompositeCriteriaCondition(unittest.TestCase):
             composite_criteria.description,
         )
         expected_critical_dates = {
-            "US_KY_CRITERIA_4": "DATE_SUB(SAFE_CAST(JSON_VALUE(reason_v2, '$.latest_violation_date') AS DATE), INTERVAL 1 MONTH)",
-            "ANOTHER_STATE_AGNOSTIC_CRITERIA": "DATE_SUB(SAFE_CAST(JSON_VALUE(reason_v2, '$.eligible_date') AS DATE), INTERVAL 2 DAY)",
+            "US_KY_CRITERIA_4": [
+                "DATE_SUB(SAFE_CAST(JSON_VALUE(reason_v2, '$.latest_violation_date') AS DATE), INTERVAL 1 MONTH)"
+            ],
+            "ANOTHER_STATE_AGNOSTIC_CRITERIA": [
+                "DATE_SUB(SAFE_CAST(JSON_VALUE(reason_v2, '$.eligible_date') AS DATE), INTERVAL 2 DAY)"
+            ],
         }
         self.assertEqual(
-            expected_critical_dates, composite_criteria.get_critical_dates()
+            expected_critical_dates,
+            composite_criteria.get_critical_date_parsing_fragments_by_criteria(),
         )
 
         expected_query_fragment = """
@@ -390,22 +404,56 @@ class TestPickNCompositeCriteriaCondition(unittest.TestCase):
         )
 
     def test_composite_criteria_two_critical_dates_one_criteria(self) -> None:
-        """Checks an error is raised when two time dependent conditions are applied to one task criteria"""
-        with self.assertRaises(ValueError):
-            composite_criteria = PickNCompositeCriteriaCondition(
-                sub_conditions_list=[
-                    TIME_DEPENDENT_CRITERIA_CONDITION,
-                    TimeDependentCriteriaCondition(
-                        criteria=CRITERIA_4_STATE_SPECIFIC,
-                        reasons_date_field="latest_violation_date",
-                        interval_length=2,
-                        interval_date_part=BigQueryDateInterval.DAY,
-                        description="Time dependent criteria condition",
-                    ),
-                ],
-                at_least_n_conditions_true=1,
-            )
-            composite_criteria.get_critical_dates()
+        """
+        Checks the composite criteria condition can combine two time dependent conditions for one eligibility criteria.
+        """
+        two_date_criteria = StateAgnosticTaskCriteriaBigQueryViewBuilder(
+            criteria_name="US_KY_CRITERIA_4",
+            description="A criteria for KY residents",
+            criteria_spans_query_template="SELECT * FROM `{project_id}.sessions.super_sessions_materialized`",
+            meets_criteria_default=False,
+            reasons_fields=[
+                ReasonsField(
+                    name="criteria_date_1",
+                    type=bigquery.enums.StandardSqlTypeNames.DATE,
+                    description="First date relevant to the criteria",
+                ),
+                ReasonsField(
+                    name="criteria_date_2",
+                    type=bigquery.enums.StandardSqlTypeNames.DATE,
+                    description="Second date relevant to the criteria",
+                ),
+            ],
+        )
+        composite_criteria = PickNCompositeCriteriaCondition(
+            sub_conditions_list=[
+                TimeDependentCriteriaCondition(
+                    criteria=two_date_criteria,
+                    reasons_date_field="criteria_date_1",
+                    interval_length=1,
+                    interval_date_part=BigQueryDateInterval.MONTH,
+                    description="Within 1 month of criteria date 1",
+                ),
+                TimeDependentCriteriaCondition(
+                    criteria=two_date_criteria,
+                    reasons_date_field="criteria_date_2",
+                    interval_length=2,
+                    interval_date_part=BigQueryDateInterval.DAY,
+                    description="Within 2 days of criteria date 2",
+                ),
+            ],
+            at_least_n_conditions_true=1,
+        )
+        expected_critical_dates = {
+            "US_KY_CRITERIA_4": [
+                "DATE_SUB(SAFE_CAST(JSON_VALUE(reason_v2, '$.criteria_date_1') AS DATE), INTERVAL 1 MONTH)",
+                "DATE_SUB(SAFE_CAST(JSON_VALUE(reason_v2, '$.criteria_date_2') AS DATE), INTERVAL 2 DAY)",
+            ],
+        }
+        self.assertEqual(
+            expected_critical_dates,
+            composite_criteria.get_critical_date_parsing_fragments_by_criteria(),
+        )
 
     def test_composite_criteria_not_enough_sub_conditions(self) -> None:
         """Checks an error is raised when PickNCompositeCriteriaCondition is initialized too few sub conditions"""

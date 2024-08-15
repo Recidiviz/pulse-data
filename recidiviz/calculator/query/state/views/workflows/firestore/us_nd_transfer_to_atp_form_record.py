@@ -36,12 +36,6 @@ from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestIns
 from recidiviz.task_eligibility.dataset_config import (
     task_eligibility_spans_state_specific_dataset,
 )
-from recidiviz.task_eligibility.utils.almost_eligible_query_fragments import (
-    clients_eligible,
-    json_to_array_cte,
-    one_criteria_away_from_eligibility,
-    x_time_away_from_eligibility,
-)
 from recidiviz.task_eligibility.utils.us_nd_query_fragments import (
     get_infractions_as_case_notes,
     get_positive_behavior_reports_as_case_notes,
@@ -59,10 +53,13 @@ US_ND_TRANSFER_TO_ATP_RECORD_DESCRIPTION = """
 
 US_ND_TRANSFER_TO_ATP_RECORD_QUERY_TEMPLATE = f"""
 
-WITH current_incarceration_pop_cte AS (
-    {join_current_task_eligibility_spans_with_external_id(state_code= "'US_ND'", 
-    tes_task_query_view = 'transfer_to_atp_form_materialized',
-    id_type = "'US_ND_ELITE'")}
+WITH eligible_and_almost_eligible AS (
+    {join_current_task_eligibility_spans_with_external_id(
+        state_code="'US_ND'",
+        tes_task_query_view='transfer_to_atp_form_materialized',
+        id_type="'US_ND_ELITE'",
+        eligible_and_almost_eligible_only=True,
+    )}
 ),
 
 case_notes_cte AS (
@@ -106,40 +103,6 @@ case_notes_cte AS (
             AND peid.id_type = 'US_ND_ELITE_BOOKING'
     WHERE ALERT_STATUS = 'ACTIVE'
     AND ALERT_CODE IN ('SEXOF', 'SEX', 'VICTIM', 'VIC', 'CHILD', 'VIOLENT','NOCONT', 'OAC')
-), 
-json_to_array_cte AS (
-    {json_to_array_cte('current_incarceration_pop_cte')}
-),
-
-eligible_and_almost_eligible AS (
-    -- ELIGIBLE
-    {clients_eligible(from_cte = 'current_incarceration_pop_cte')}
-
-    UNION ALL
-
-    -- ALMOST ELIGIBLE (<3mo away from eligibility according to the full_term_completion_date)
-    {x_time_away_from_eligibility(time_interval= 3, date_part= 'MONTH',
-        criteria_name= 'US_ND_INCARCERATION_WITHIN_1_YEAR_OF_FTCD_OR_PRD_OR_CPP_RELEASE',
-        eligible_date = 'full_term_completion_date',
-        from_cte_table_name = "json_to_array_cte")}
-
-    UNION ALL
-    
-    -- ALMOST ELIGIBLE (<3mo away from eligibility according to the parole_review_date)
-    {x_time_away_from_eligibility(time_interval= 15, date_part= 'MONTH',
-        criteria_name= 'US_ND_INCARCERATION_WITHIN_1_YEAR_OF_FTCD_OR_PRD_OR_CPP_RELEASE',
-        eligible_date = 'parole_review_date',
-        from_cte_table_name = "json_to_array_cte")}
-
-    UNION ALL
-    
-    -- ALMOST ELIGIBLE (Only missing the 30 days in the same facility criteria)
-    {one_criteria_away_from_eligibility(criteria_name = 'INCARCERATED_AT_LEAST_30_DAYS_IN_SAME_FACILITY',)}
-
-    UNION ALL
-    
-    -- ALMOST ELIGIBLE (Only missing the 90 days in NDDCR criteria)
-    {one_criteria_away_from_eligibility(criteria_name = 'INCARCERATED_AT_LEAST_90_DAYS',)}
 ),
 
 array_case_notes_cte AS (

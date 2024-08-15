@@ -19,6 +19,7 @@ task eligibility spans.
 """
 import abc
 import itertools
+from collections import defaultdict
 from textwrap import indent
 from typing import Dict, List, Optional, Tuple
 
@@ -82,13 +83,11 @@ class CriteriaCondition:
     ) -> List[AnyTaskCriteriaViewBuilder]:
         """Return the list of criteria view builders that the CriteriaCondition covers"""
 
-    def get_critical_dates(
+    def get_critical_date_parsing_fragments_by_criteria(
         self,
-    ) -> Optional[Dict[str, str]]:
+    ) -> Optional[Dict[str, List[str]]]:
         """
-        Return a dictionary with the criteria name mapped to the critical date parsing query fragment used to
-        extract any mid-criteria date boundaries. These date boundaries are used to split criteria spans within the
-        task eligibility spans view builder.
+        Return a dictionary with the criteria name mapped to a list of critical date parsing query fragments used
         """
         return None
 
@@ -278,14 +277,16 @@ WHERE "{self.criteria.criteria_name}" IN UNNEST(ineligible_criteria)
             " " * 4,
         )
 
-    def get_critical_dates(
+    def get_critical_date_parsing_fragments_by_criteria(
         self,
-    ) -> Optional[Dict[str, str]]:
+    ) -> Optional[Dict[str, List[str]]]:
         """Return the critical date parsing query for the reason field in the criteria"""
         return {
-            self.criteria.criteria_name: self._get_criteria_condition_date_fragment(
-                json_reasons_column="reason_v2"
-            )
+            self.criteria.criteria_name: [
+                self._get_criteria_condition_date_fragment(
+                    json_reasons_column="reason_v2"
+                )
+            ]
         }
 
     def _get_criteria_condition_date_fragment(
@@ -396,32 +397,26 @@ GROUP BY 1, 2, 3, 4
             " " * 4,
         )
 
-    def get_critical_dates(
+    def get_critical_date_parsing_fragments_by_criteria(
         self,
-    ) -> Optional[Dict[str, str]]:
+    ) -> Optional[Dict[str, List[str]]]:
         """Return all critical date parsing queries for the sub conditions"""
 
-        # Recursively collect the critical dates from the sub conditions
-        critical_date_map: Dict[str, str] = {}
+        # Iteratively collect the critical dates from the sub conditions
+        critical_date_fragments_map: Dict[str, List[str]] = defaultdict(list)
         for condition in self.sub_conditions_list:
-            condition_critical_dates = condition.get_critical_dates()
-            if condition_critical_dates:
-                for (
-                    criteria_name,
-                    critical_date_parse_string,
-                ) in condition_critical_dates.items():
-                    if criteria_name in critical_date_map:
-                        raise ValueError(
-                            f"Single eligibility criteria [{criteria_name}] cannot support more than one "
-                            "TimeDependentCriteriaCondition within a PickNCompositeCriteriaCondition:\n"
-                            f"['{critical_date_parse_string}', '{critical_date_map[criteria_name]}']"
-                        )
-                    critical_date_map[criteria_name] = critical_date_parse_string
+            sub_condition_fragments_map = (
+                condition.get_critical_date_parsing_fragments_by_criteria()
+            )
+            if not sub_condition_fragments_map:
+                continue
+            for criteria_name, fragments in sub_condition_fragments_map.items():
+                critical_date_fragments_map[criteria_name].extend(fragments)
 
-        if len(critical_date_map) == 0:
+        if not critical_date_fragments_map:
             return None
 
-        return critical_date_map
+        return critical_date_fragments_map
 
     @staticmethod
     def _validate_condition_count(
