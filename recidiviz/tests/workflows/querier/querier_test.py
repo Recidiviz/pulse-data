@@ -62,6 +62,7 @@ def load_model_fixture(
                     in {
                         "snooze",
                         "is_alert",
+                        "priority",
                         "hide_denial_revert",
                         "eligible_criteria_copy",
                         "ineligible_criteria_copy",
@@ -105,6 +106,7 @@ def make_add_config_arguments(
         "snooze": {},
         "feature_variant": feature_variant,
         "is_alert": False,
+        "priority": "NORMAL",
         "denial_text": "denial_text",
         "sidebar_components": ["sidebarComponent"],
         "eligibility_date_text": "eligibility date",
@@ -618,6 +620,7 @@ class TestWorkflowsQuerier(TestCase):
         self.assertEqual(actual.display_name, deactivated.display_name)  # type: ignore
         self.assertEqual(actual.methodology_url, deactivated.methodology_url)  # type: ignore
         self.assertEqual(actual.is_alert, deactivated.is_alert)  # type: ignore
+        self.assertEqual(actual.priority, deactivated.priority)  # type: ignore
         self.assertEqual(actual.initial_header, deactivated.initial_header)  # type: ignore
         self.assertEqual(actual.denial_reasons, deactivated.denial_reasons)  # type: ignore
         self.assertEqual(

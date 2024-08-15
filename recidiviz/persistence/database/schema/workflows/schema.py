@@ -163,6 +163,9 @@ class OpportunityConfiguration(WorkflowsBase):
     # Is this opportunity an alert
     is_alert = Column(Boolean, nullable=False)
 
+    # Priority level of this opportunity
+    priority = Column(String, nullable=False, server_default="NORMAL")
+
     # Header shown while in the null search state
     initial_header = Column(String, nullable=True)
 

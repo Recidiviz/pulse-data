@@ -107,6 +107,11 @@ const OpportunityConfigurationSettings = ({
             {JSON.stringify(config.isAlert)}
           </span>
         </Form.Item>
+        <Form.Item label="Priority">
+          <span className="ant-form-text">
+            {JSON.stringify(config.priority)}
+          </span>
+        </Form.Item>
         <Form.Item label="Tab Groups">
           <span className="ant-form-text">
             {JSON.stringify(config.tabGroups)}

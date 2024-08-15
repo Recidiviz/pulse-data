@@ -68,6 +68,7 @@ class OpportunityConfig:
 
     state_code: str = attr.ib()
     opportunity_type: str = attr.ib()
+    priority: str = attr.ib()
     display_name: str = attr.ib()
     methodology_url: str = attr.ib()
     initial_header: Optional[str] = attr.ib()
@@ -112,6 +113,7 @@ class OpportunityConfig:
             subheading=full_config.subheading,
             snooze=full_config.snooze,
             is_alert=full_config.is_alert,
+            priority=full_config.priority,
             denial_text=full_config.denial_text,
             sidebar_components=full_config.sidebar_components,
             tab_groups=full_config.tab_groups,
@@ -161,6 +163,7 @@ class FullOpportunityConfig(OpportunityConfig):
             snooze=config.snooze,
             feature_variant=config.feature_variant,
             is_alert=config.is_alert,
+            priority=config.priority,
             denial_text=config.denial_text,
             sidebar_components=config.sidebar_components,
             tab_groups=config.tab_groups,
@@ -201,6 +204,7 @@ class OpportunityConfigResponse(OpportunityInfo, OpportunityConfig):
             call_to_action=config.call_to_action,
             subheading=config.subheading,
             snooze=config.snooze,
+            priority=config.priority,
             is_alert=config.is_alert,
             denial_text=config.denial_text,
             sidebar_components=config.sidebar_components,

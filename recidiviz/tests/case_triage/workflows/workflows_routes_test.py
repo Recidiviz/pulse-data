@@ -1835,6 +1835,7 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
                 subheading="the subheading",
                 snooze={"foo": 12},
                 is_alert=False,
+                priority="NORMAL",
                 denial_text=None,
                 eligible_criteria_copy={
                     "criteria": {
