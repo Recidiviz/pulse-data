@@ -35,7 +35,9 @@ from recidiviz.persistence.entity.state.normalized_entities import (
 from recidiviz.pipelines.ingest.state.create_person_id_to_staff_id_mapping import (
     CreatePersonIdToStaffIdMapping,
 )
-from recidiviz.tests.pipelines.ingest.state.test_case import StateIngestPipelineTestCase
+from recidiviz.tests.big_query.big_query_emulator_test_case import (
+    BigQueryEmulatorTestCase,
+)
 
 STATE_STAFF_1 = NormalizedStateStaff(
     staff_id=123,
@@ -146,7 +148,7 @@ STATE_PERSON_2 = StatePerson(
 )
 
 
-class TestCreatePersonIdToStaffIdMapping(StateIngestPipelineTestCase):
+class TestCreatePersonIdToStaffIdMapping(BigQueryEmulatorTestCase):
     """Tests the CreatePersonIdToStaffIdMapping PTransform."""
 
     def setUp(self) -> None:

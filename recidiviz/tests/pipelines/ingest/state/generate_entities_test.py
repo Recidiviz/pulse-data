@@ -16,11 +16,14 @@
 # =============================================================================
 """Testing the GenerateEntities PTransform."""
 from datetime import datetime
+from types import ModuleType
+from typing import Optional
 
 import apache_beam as beam
 from apache_beam.options.pipeline_options import PipelineOptions, SetupOptions
 from apache_beam.pipeline_test import TestPipeline, assert_that, equal_to
 
+from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_contents_context import (
     IngestViewContentsContextImpl,
 )
@@ -35,10 +38,16 @@ from recidiviz.persistence.entity.state.entities import (
     StatePersonExternalId,
 )
 from recidiviz.pipelines.ingest.state import pipeline
-from recidiviz.tests.pipelines.ingest.state.test_case import StateIngestPipelineTestCase
+from recidiviz.tests.big_query.big_query_emulator_test_case import (
+    BigQueryEmulatorTestCase,
+)
+from recidiviz.tests.ingest.direct import fake_regions
+from recidiviz.tests.pipelines.ingest.state.ingest_region_test_mixin import (
+    IngestRegionTestMixin,
+)
 
 
-class TestGenerateEntities(StateIngestPipelineTestCase):
+class TestGenerateEntities(BigQueryEmulatorTestCase, IngestRegionTestMixin):
     """Tests the GenerateEntities PTransform."""
 
     def setUp(self) -> None:
@@ -46,6 +55,14 @@ class TestGenerateEntities(StateIngestPipelineTestCase):
         apache_beam_pipeline_options = PipelineOptions()
         apache_beam_pipeline_options.view_as(SetupOptions).save_main_session = False
         self.test_pipeline = TestPipeline(options=apache_beam_pipeline_options)
+
+    @classmethod
+    def state_code(cls) -> StateCode:
+        return StateCode.US_DD
+
+    @classmethod
+    def region_module_override(cls) -> Optional[ModuleType]:
+        return fake_regions
 
     def test_generate_entities(self) -> None:
         expected_output = [

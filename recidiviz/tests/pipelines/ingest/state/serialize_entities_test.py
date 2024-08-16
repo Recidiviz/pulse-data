@@ -27,16 +27,18 @@ from recidiviz.persistence.entity.entities_bq_schema import (
 from recidiviz.persistence.entity.state import entities as state_entities
 from recidiviz.persistence.entity.state import normalized_entities
 from recidiviz.pipelines.ingest.state.serialize_entities import SerializeEntities
+from recidiviz.tests.big_query.big_query_emulator_test_case import (
+    BigQueryEmulatorTestCase,
+)
 from recidiviz.tests.persistence.entity.state.entities_test_utils import (
     generate_full_graph_normalized_state_person,
     generate_full_graph_normalized_state_staff,
     generate_full_graph_state_person,
     generate_full_graph_state_staff,
 )
-from recidiviz.tests.pipelines.ingest.state.test_case import StateIngestPipelineTestCase
 
 
-class TestSerializeEntities(StateIngestPipelineTestCase):
+class TestSerializeEntities(BigQueryEmulatorTestCase):
     """Tests the SerializeEntities DoFn."""
 
     def setUp(self) -> None:

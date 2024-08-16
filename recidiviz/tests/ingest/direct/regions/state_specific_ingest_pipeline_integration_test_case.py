@@ -28,11 +28,6 @@ from apache_beam.testing.util import BeamAssertException, assert_that
 from mock import patch
 
 from recidiviz.common.constants.states import StateCode
-from recidiviz.ingest.direct import regions
-from recidiviz.ingest.direct.direct_ingest_regions import (
-    DirectIngestRegion,
-    get_direct_ingest_region,
-)
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_contents_context import (
     IngestViewContentsContextImpl,
 )
@@ -189,23 +184,6 @@ class StateSpecificIngestPipelineIntegrationTestCase(BaseStateIngestPipelineTest
     raw data.
     TODO(#22059): Standardize fixture formats and consolidate this with StateIngestPipelineTestCase
     """
-
-    @classmethod
-    def state_code(cls) -> StateCode:
-        raise NotImplementedError(
-            "Add a specific StateCode for the state specific test."
-        )
-
-    @classmethod
-    def region(cls) -> DirectIngestRegion:
-        return get_direct_ingest_region(
-            region_code=cls.state_code().value.lower(),
-            region_module_override=cls.region_module_override() or regions,
-        )
-
-    @classmethod
-    def state_code_str_upper(cls) -> str:
-        return cls.state_code().value.upper()
 
     def setUp(self) -> None:
         super().setUp()
