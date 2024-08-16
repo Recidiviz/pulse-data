@@ -28,7 +28,7 @@ VIEW_QUERY_TEMPLATE = """
         IMS_FNAME,
         IMS_MI,
         IMS_LNAME,
-        PRIMARY_DOB,
+        DATE(PRIMARY_DOB) AS PRIMARY_DOB,
         ASSIGNED_SEX,
         RACE,
         ETHNICITY
