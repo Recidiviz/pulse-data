@@ -83,7 +83,6 @@ from recidiviz.tests.ingest.direct.fixture_util import (
     load_dataframe_from_path,
 )
 from recidiviz.tests.pipelines.fake_bigquery import (
-    FakeReadAllFromBigQueryWithEmulator,
     FakeReadFromBigQueryWithEmulator,
     FakeWriteOutputToBigQueryWithValidator,
 )
@@ -490,11 +489,6 @@ class StateIngestPipelineTestCase(BaseStateIngestPipelineTestCase):
     ) -> FakeReadFromBigQueryWithEmulator:
         return FakeReadFromBigQueryWithEmulator(query=query, test_case=self)
 
-    def create_fake_bq_read_all_source_constructor(
-        self,
-    ) -> FakeReadAllFromBigQueryWithEmulator:
-        return FakeReadAllFromBigQueryWithEmulator()
-
     def run_test_state_pipeline(
         self,
         ingest_view_results: Dict[str, Iterable[Dict[str, Any]]],
@@ -549,7 +543,6 @@ class StateIngestPipelineTestCase(BaseStateIngestPipelineTestCase):
                     expected_entity_association_type_to_associations,
                 )
             ),
-            read_all_from_bq_constructor=self.create_fake_bq_read_all_source_constructor,
             ingest_view_results_only=ingest_view_results_only,
             ingest_views_to_run=ingest_views_to_run,
             raw_data_upper_bound_dates_json=(

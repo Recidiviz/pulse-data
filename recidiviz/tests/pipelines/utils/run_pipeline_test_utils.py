@@ -80,7 +80,6 @@ def run_test_pipeline(
         [str, str, apache_beam.io.BigQueryDisposition], FakeWriteToBigQuery
     ],
     root_entity_id_filter_set: Optional[Set[RootEntityId]] = None,
-    read_all_from_bq_constructor: Optional[Callable[[], FakeReadFromBigQuery]] = None,
     **additional_pipeline_args: Any,
 ) -> None:
     """Runs a test version of the pipeline in the provided module with BQ I/O mocked out."""
@@ -116,24 +115,18 @@ def run_test_pipeline(
         read_from_bq_constructor,
     ):
         with patch(
-            "apache_beam.io.ReadAllFromBigQuery",
-            read_all_from_bq_constructor
-            if read_all_from_bq_constructor
-            else read_from_bq_constructor,
-        ):
+            f"{write_root_entities_to_bq.__name__}.WriteToBigQuery",
+            write_to_bq_constructor,
+        ), patch(write_to_bq_class, write_to_bq_constructor):
             with patch(
-                f"{write_root_entities_to_bq.__name__}.WriteToBigQuery",
-                write_to_bq_constructor,
-            ), patch(write_to_bq_class, write_to_bq_constructor):
+                "recidiviz.pipelines.base_pipeline.Pipeline",
+                pipeline_constructor(project_id),
+            ):
                 with patch(
-                    "recidiviz.pipelines.base_pipeline.Pipeline",
-                    pipeline_constructor(project_id),
+                    "recidiviz.pipelines.metrics.base_metric_pipeline.job_id",
+                    get_job_id,
                 ):
-                    with patch(
-                        "recidiviz.pipelines.metrics.base_metric_pipeline.job_id",
-                        get_job_id,
-                    ):
-                        pipeline_cls.build_from_args(pipeline_args).run()
+                    pipeline_cls.build_from_args(pipeline_args).run()
 
 
 def default_data_dict_for_root_schema_classes(
