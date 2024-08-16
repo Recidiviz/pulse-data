@@ -87,6 +87,8 @@ sanitized_internal_metrics AS (
       END AS supervising_officer_external_id,
       CASE
         WHEN state_code = 'US_IX' and (supervision_level_raw_text like 'LOW SUPERVISION UNIT%' or supervision_level_raw_text like 'LOW SUPERVSN UNIT%') THEN 'LIMITED SUPERVISION'
+        -- There is no supervision_level_raw_text in AZ, so use the supervision level enum value instead. 
+        WHEN state_code = 'US_AZ' THEN supervision_level
         ELSE supervision_level_raw_text
       END AS supervision_level_raw_text,
       CASE

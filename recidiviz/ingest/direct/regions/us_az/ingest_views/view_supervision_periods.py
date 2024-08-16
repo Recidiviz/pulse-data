@@ -55,7 +55,7 @@ get_start_date AS (
         DPPE.PERSON_ID,
         DPPE.DPP_ID,
         SUBSTR(UPPER(COALESCE(LLEVEL.CODE, 'UNK')), 1, 3) AS SUPV_LEVEL,
-        CAST(NULL AS STRING) AS OFFICE_NAME, 
+        CAST(NULL AS STRING) AS OFFICE, 
         CAST(NULL AS STRING) AS OFFICER,
         CASE 
             WHEN NULLIF(LRELTYPE.DESCRIPTION, 'NULL') IS NOT NULL THEN CONCAT('START - ', LRELTYPE.DESCRIPTION)
@@ -76,7 +76,7 @@ get_officer_change_dates AS (
         DIA.DPP_ID,
         CAST(NULL AS STRING) AS SUPV_LEVEL,
         -- Sometimes two officers or locations are assigned at the exact same time. This chooses one randomly but deterministically.
-        FIRST_VALUE(DOL.LOCATION_NAME) OVER location_agent_window AS OFFICE_NAME, 
+        FIRST_VALUE(OFFICE_LOCATION_ID) OVER location_agent_window AS OFFICE, 
         FIRST_VALUE(DIA.AGENT_ID) OVER location_agent_window AS OFFICER,
         'OFFICER CHANGE' AS MOVEMENT_DESCRIPTION,
         CAST(NULL AS DATETIME) AS BEGAN_DATE,
@@ -85,7 +85,6 @@ get_officer_change_dates AS (
         CAST(NULL AS DATETIME) AS CRITICAL_MOVEMENT_DATE,
     FROM {DPP_INTAKE_ASSIGNMENT} DIA
     JOIN {DPP_EPISODE} DPPE ON(DIA.DPP_ID = DPPE.DPP_ID)
-    LEFT JOIN {DPP_OFFICE_LOCATION} DOL ON DIA.OFFICE_LOCATION_ID = DOL.OFFICE_LOCATION_ID
     WINDOW location_agent_window AS (PARTITION BY DIA.PERSON_ID, DIA.DPP_ID, DIA.ASSIGNED_FROM 
     ORDER BY INTAKE_ASSIGNMENT_ID ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING)
 ),
@@ -95,7 +94,7 @@ get_level_change_dates AS (
         DPPE.PERSON_ID,
         ACCAT.DPP_ID,
         SUBSTR(UPPER(COALESCE(LLEVEL.CODE, 'UNK')), 1, 3) AS SUPV_LEVEL,
-        CAST(NULL AS STRING) AS OFFICE_NAME, 
+        CAST(NULL AS STRING) AS OFFICE, 
         CAST(NULL AS STRING) AS OFFICER,
         'SUPV LEVEL ASSESSMENT' AS MOVEMENT_DESCRIPTION,
         CAST(NULL AS DATETIME) AS BEGAN_DATE,
@@ -115,7 +114,7 @@ get_dates_from_movements AS (
         COALESCE(DPPE.PERSON_ID, DOCE.PERSON_ID) AS PERSON_ID, 
         COALESCE(NULLIF(ADITH.DPP_ID,'NULL'), DOCE.DPP_ID) AS DPP_ID,
         CAST(NULL AS STRING) AS SUPV_LEVEL,
-        CAST(NULL AS STRING) AS OFFICE_NAME, 
+        CAST(NULL AS STRING) AS OFFICE, 
         CAST(NULL AS STRING) AS OFFICER,
         CASE WHEN
             UPPER(MV.MOVEMENT_DESCRIPTION) IN('RELEASEE ABSCOND', 'WARRANT QUASHED') THEN MV.MOVEMENT_DESCRIPTION
@@ -169,7 +168,7 @@ SELECT
     -- prison, we want to carry that officer's information forward. We also want to attach
     -- this information to supervision level changes that do not have an officer associated, 
     -- because the officer has not changed.
-    LAST_VALUE(OFFICE_NAME IGNORE NULLS) OVER person_window AS OFFICE_NAME,
+    LAST_VALUE(OFFICE IGNORE NULLS) OVER person_window AS OFFICE,
     LAST_VALUE(OFFICER IGNORE NULLS) OVER person_window AS OFFICER,
     LAST_VALUE(SUPV_LEVEL IGNORE NULLS) OVER person_window AS SUPV_LEVEL,
     COALESCE(BEGAN_DATE, INTAKE_DATE, DATE_ASSESSMENT, CRITICAL_MOVEMENT_DATE) AS period_start_date,
@@ -193,7 +192,7 @@ periods AS (
 SELECT
     PERSON_ID, 
     DPP_ID,
-    OFFICE_NAME,
+    OFFICE,
     OFFICER,
     SUPV_LEVEL,
     period_start_date AS start_date,
@@ -251,14 +250,14 @@ SELECT
  END AS end_reason,
 FROM periods
 LEFT JOIN {DPP_EPISODE} DPPE USING(DPP_ID)
-LEFT JOIN {DPP_OFFICE_LOCATION} DOL ON(periods.OFFICE_NAME = DOL.LOCATION_NAME)
+LEFT JOIN {DPP_OFFICE_LOCATION} DOL ON(periods.OFFICE = DOL.OFFICE_LOCATION_ID)
 LEFT JOIN {MEA_PROFILES} MEA ON (periods.OFFICER = MEA.USERID)
 )
 SELECT * FROM (
 SELECT 
     PERSON_ID, 
     DPP_ID,
-    OFFICE_NAME,
+    OFFICE,
     OFFICER,
     SUPV_LEVEL,
     -- in the DPP_EPISODE table, 0001-01-01 is used in place of NULL. 

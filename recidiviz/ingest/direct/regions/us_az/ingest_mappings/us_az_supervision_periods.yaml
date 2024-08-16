@@ -5,7 +5,7 @@ manifest_language: 1.0.0
 input_columns:
   - PERSON_ID
   - DPP_ID
-  - OFFICE_NAME
+  - OFFICE
   - OFFICER
   - SUPV_LEVEL
   - start_date
@@ -144,7 +144,7 @@ output:
                     - $literal("Interstate Compact Probation")
                 $then: $literal_enum(StateSupervisionPeriodSupervisionType.PROBATION)
               - $else: $literal_enum(StateSupervisionPeriodSupervisionType.PAROLE)
-          supervision_site: OFFICE_NAME
+          supervision_site: OFFICE
           supervising_officer_staff_external_id: OFFICER
           supervising_officer_staff_external_id_type:
             $conditional:
