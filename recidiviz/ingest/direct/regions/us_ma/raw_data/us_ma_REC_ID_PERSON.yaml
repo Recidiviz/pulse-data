@@ -42,6 +42,16 @@ columns:
       The status of an incarcerated individual admitted to prison; 
       either pre-arraignment or pre-trial admission, civil commitment, 
       or a criminal sentence from the courts.
+  - name: AGENCY_JURISDICTION
+    description: |-
+      The agency jurisdiction marks the jurisdiction of the incarcerated individual, 
+      either Massachusetts (MA DOC) or one of the Massachusetts counties. An 
+      individual is considered to be under Massachusetts DOC jurisdiction when the 
+      Commonwealth has legal authority over the individual regardless of where 
+      the incarcerated individual is being held. DOC Jurisdiction includes those 
+      incarcerated in Massachusetts DOC facilities and thosehoused in correctional 
+      facilities outside of the Massachusetts DOC (i.e. Massachusetts Houses of 
+      Correction, other states’ correctional facilities, and the Federal Bureau of Prisons).
   - name: IMS_FNAME
     is_pii: True
     description: |-
@@ -56,6 +66,9 @@ columns:
       Last name of the incarcerated individual.
   - name: PRIMARY_DOB
     is_pii: True
+    field_type: datetime
+    datetime_sql_parsers:
+      - "SAFE.PARSE_DATE('%m/%d/%y', {col_name})"
     description: |-
       The primary date of birth of an incarcerated individual.
   - name: ASSIGNED_SEX

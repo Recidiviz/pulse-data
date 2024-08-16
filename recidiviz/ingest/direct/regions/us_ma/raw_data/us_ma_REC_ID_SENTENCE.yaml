@@ -42,14 +42,23 @@ columns:
     description: |-
       Sentence Type of the statute (H-House of Correction, R-Reformatory, S-State).
   - name: SENTENCE_IMPOSED_DATE
+    field_type: datetime
+    datetime_sql_parsers:
+      - "SAFE.PARSE_DATE('%m/%d/%y', {col_name})"
     description: |-
       Date upon which a sentence is pronounced. Prior to the implementation of IMS, 
       this date was referred to as the sentence date.
   - name: SENTENCE_EFFECTIVE_DATE
+    field_type: datetime
+    datetime_sql_parsers:
+      - "SAFE.PARSE_DATE('%m/%d/%y', {col_name})"
     description: |-
       Date on which a sentence is invoked minus any days of jail credits. All other 
       dates are calculated from the sentence effective date.
   - name: MAX_EXPIRATION_DATE
+    field_type: datetime
+    datetime_sql_parsers:
+      - "SAFE.PARSE_DATE('%m/%d/%y', {col_name})"
     description: |-
       Date the offender was originally scheduled for release. This date does NOT take 
       earned time credits into consideration; IMS calculates this as the Original 
@@ -59,3 +68,10 @@ columns:
       Indicates that the Governing offense is a Life 1 or Life 2 Sentence: 
       If MAX_TERM_LIFE = 1, then the Governing offense is Life 1 without Parol; 
       If MAX_TERM_LIFE = 2, then the Governing offense is Life 2 with Parole
+  - name: SENTENCE_PAROLE_DATE
+    field_type: datetime
+    datetime_sql_parsers:
+      - "SAFE.PARSE_DATE('%m/%d/%y', {col_name})"
+    description: |-
+      Date of Individual PE (Parole Eligibility) Date associated with governing sentence. 
+      The SENTENCE_PAROLE_DATE will be null for Life Sentences.
