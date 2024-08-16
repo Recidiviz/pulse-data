@@ -137,6 +137,7 @@ opentelemetry-instrumentation-redis = "*"
 opentelemetry-instrumentation-requests = "*"
 opentelemetry-instrumentation-sqlalchemy = ">=0.43b0"
 opentelemetry-semantic-conventions = ">=0.43b0"
+opentelemetry-propagator-gcp = "*"
 # TODO(#9157): Unpin alembic -- blocked by sqlalchemy/alembic#900 and sqlalchemy/alembic#903
 alembic = "==1.6.5"
 # TODO(#18145): Remove the <2.0.0 pin
