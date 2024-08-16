@@ -253,39 +253,6 @@ class FakeReadFromBigQueryWithEmulator(apache_beam.PTransform):
         )
 
 
-class FakeReadAllFromBigQueryWithEmulator(apache_beam.PTransform):
-    """Must be used from within a test that extends BigQueryEmulatorTestCase, returns a
-    PCollection of query results. Mocks ReadAllFromBigQuery PTransform.
-    """
-
-    def __init__(self) -> None:
-        super().__init__()
-
-    def expand(
-        self, input_or_inputs: PCollection[apache_beam.io.ReadFromBigQueryRequest]
-    ) -> PCollection[Dict[str, Any]]:
-        return (
-            input_or_inputs
-            | "Querying table against BQ Emulator"
-            >> apache_beam.FlatMap(self._query_against_emulator)
-            | "Cleaning values" >> apache_beam.Map(change_datetime_to_str)
-        )
-
-    def _query_against_emulator(
-        self, request: apache_beam.io.ReadFromBigQueryRequest
-    ) -> List[Dict[str, Any]]:
-        # NOTE: Ideally this class would mimic FakeReadFromBigQueryWithEmulator and
-        # get bq_client from the TestCase, however for some reason this class must
-        # be pickleable (we don't know why this one and not
-        # FakeReadFromBigQueryWithEmulator), so cannot store the TestCase on the class.
-        bq_client = BigQueryClientImpl()
-        return list(
-            BigQueryResultsContentsHandle(
-                bq_client.run_query_async(query_str=request.query, use_query_cache=True)
-            ).get_contents_iterator()
-        )
-
-
 # TODO(#25244): Update all pipeline tests to just load data into a BQ emulator and mock
 #  the pipelines to read from the emulator instead of real BQ.
 class FakeReadFromBigQueryFactory:
