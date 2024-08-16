@@ -25,6 +25,7 @@ from apache_beam.testing.util import matches_all
 
 from recidiviz.common.constants.state.state_staff_role_period import StateStaffRoleType
 from recidiviz.common.constants.state.state_task_deadline import StateTaskType
+from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.entity_utils import set_backedges
 from recidiviz.persistence.entity.state.entities import (
     StatePerson,
@@ -37,10 +38,12 @@ from recidiviz.persistence.entity.state.entities import (
     StateTaskDeadline,
 )
 from recidiviz.pipelines.ingest.state.run_validations import RunValidations
-from recidiviz.tests.pipelines.ingest.state.test_case import StateIngestPipelineTestCase
+from recidiviz.tests.big_query.big_query_emulator_test_case import (
+    BigQueryEmulatorTestCase,
+)
 
 
-class TestRunValidations(StateIngestPipelineTestCase):
+class TestRunValidations(BigQueryEmulatorTestCase):
     """Pipeline tests for the ValidateRootEntities PTransform"""
 
     def setUp(self) -> None:
@@ -48,6 +51,10 @@ class TestRunValidations(StateIngestPipelineTestCase):
         apache_beam_pipeline_options = PipelineOptions()
         apache_beam_pipeline_options.view_as(SetupOptions).save_main_session = False
         self.test_pipeline = TestPipeline(options=apache_beam_pipeline_options)
+
+    @classmethod
+    def state_code(cls) -> StateCode:
+        return StateCode.US_DD
 
     def test_validate_single_staff_entity(self) -> None:
         entities = [

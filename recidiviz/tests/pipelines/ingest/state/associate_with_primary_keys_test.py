@@ -31,10 +31,12 @@ from recidiviz.pipelines.ingest.state.generate_primary_keys import (
     generate_primary_key,
     string_representation,
 )
-from recidiviz.tests.pipelines.ingest.state.test_case import StateIngestPipelineTestCase
+from recidiviz.tests.big_query.big_query_emulator_test_case import (
+    BigQueryEmulatorTestCase,
+)
 
 
-class TestAssociateRootEntitiesWithPrimaryKeys(StateIngestPipelineTestCase):
+class TestAssociateRootEntitiesWithPrimaryKeys(BigQueryEmulatorTestCase):
     """Tests the AssociateRootEntitiesWithPrimaryKeys PTransform."""
 
     def setUp(self) -> None:
@@ -89,6 +91,10 @@ class TestAssociateRootEntitiesWithPrimaryKeys(StateIngestPipelineTestCase):
             string_representation({self.external_id_3}),
             StateCode(self.state_code().value),
         )
+
+    @classmethod
+    def state_code(cls) -> StateCode:
+        return StateCode.US_DD
 
     def test_associate_root_entities_with_primary_keys(self) -> None:
         expected_output = [

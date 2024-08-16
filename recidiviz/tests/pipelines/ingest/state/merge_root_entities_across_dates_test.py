@@ -30,10 +30,12 @@ from recidiviz.pipelines.ingest.state.generate_primary_keys import (
     generate_primary_key,
     string_representation,
 )
-from recidiviz.tests.pipelines.ingest.state.test_case import StateIngestPipelineTestCase
+from recidiviz.tests.big_query.big_query_emulator_test_case import (
+    BigQueryEmulatorTestCase,
+)
 
 
-class TestMergeRootEntitiesAcrossDates(StateIngestPipelineTestCase):
+class TestMergeRootEntitiesAcrossDates(BigQueryEmulatorTestCase):
     """Tests the MergeRootEntitiesAcrossDates PTransform."""
 
     def setUp(self) -> None:

@@ -20,10 +20,12 @@ from apache_beam.options.pipeline_options import PipelineOptions, SetupOptions
 from apache_beam.pipeline_test import TestPipeline, assert_that, equal_to
 
 from recidiviz.pipelines.ingest.state import pipeline
-from recidiviz.tests.pipelines.ingest.state.test_case import StateIngestPipelineTestCase
+from recidiviz.tests.big_query.big_query_emulator_test_case import (
+    BigQueryEmulatorTestCase,
+)
 
 
-class TestClusterExternalIds(StateIngestPipelineTestCase):
+class TestClusterExternalIds(BigQueryEmulatorTestCase):
     """Tests the ClusterRootExternalIds PTransform."""
 
     def setUp(self) -> None:

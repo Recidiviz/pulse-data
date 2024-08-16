@@ -16,7 +16,8 @@
 # =============================================================================
 """Tests the MergeIngestViewRootEntityTrees PTransform."""
 from datetime import date, datetime
-from typing import Iterable, List, Tuple
+from types import ModuleType
+from typing import Iterable, List, Optional, Tuple
 
 import apache_beam as beam
 from apache_beam.options.pipeline_options import PipelineOptions, SetupOptions
@@ -47,10 +48,18 @@ from recidiviz.pipelines.ingest.state import pipeline
 from recidiviz.pipelines.ingest.state.constants import (
     INGEST_VIEW_RESULTS_SCHEMA_COLUMNS,
 )
-from recidiviz.tests.pipelines.ingest.state.test_case import StateIngestPipelineTestCase
+from recidiviz.tests.big_query.big_query_emulator_test_case import (
+    BigQueryEmulatorTestCase,
+)
+from recidiviz.tests.ingest.direct import fake_regions
+from recidiviz.tests.pipelines.ingest.state.ingest_region_test_mixin import (
+    IngestRegionTestMixin,
+)
 
 
-class TestMergeIngestViewRootEntityTrees(StateIngestPipelineTestCase):
+class TestMergeIngestViewRootEntityTrees(
+    BigQueryEmulatorTestCase, IngestRegionTestMixin
+):
     """Tests the MergeIngestViewRootEntityTrees PTransform."""
 
     def setUp(self) -> None:
@@ -58,6 +67,14 @@ class TestMergeIngestViewRootEntityTrees(StateIngestPipelineTestCase):
         apache_beam_pipeline_options = PipelineOptions()
         apache_beam_pipeline_options.view_as(SetupOptions).save_main_session = False
         self.test_pipeline = TestPipeline(options=apache_beam_pipeline_options)
+
+    @classmethod
+    def state_code(cls) -> StateCode:
+        return StateCode.US_DD
+
+    @classmethod
+    def region_module_override(cls) -> Optional[ModuleType]:
+        return fake_regions
 
     def _get_input_root_entities_with_upperbound_dates(
         self, *, ingest_view_name: str, test_name: str
