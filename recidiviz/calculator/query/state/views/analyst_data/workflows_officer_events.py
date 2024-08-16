@@ -199,6 +199,15 @@ WORKFLOWS_OFFICER_EVENT_QUERY_CONFIGS = [
         has_status=False,
         should_get_context_page=False,
     ),
+    WorkflowsOfficerEventQueryConfig(
+        table_name="pages",
+        officer_event_name=EventType.WORKFLOWS_USER_PAGE,
+        workflows_event_type="WORKFLOWS_PAGE_VIEWED",
+        has_person_external_id=False,
+        has_opportunity_type=False,
+        has_status=False,
+        should_get_context_page=True,
+    ),
 ]
 
 
@@ -210,7 +219,10 @@ def workflows_officer_event_template(config: WorkflowsOfficerEventQueryConfig) -
         # If there is no opportunity and person associated with this event,
         # the event is not from a workflows_views.clients_ table, so get the raw event
         # and join on reidentified_dashboard_users to get user_external_id.
-        table_source = f"""`{{project_id}}.{{workflows_segment_dataset}}.{config.table_name}` INNER JOIN `{{project_id}}.{{workflows_views_dataset}}.reidentified_dashboard_users` USING (user_id)"""
+        table_source = f"""`{{project_id}}.{{workflows_segment_dataset}}.{config.table_name}`
+INNER JOIN `{{project_id}}.{{workflows_views_dataset}}.reidentified_dashboard_users` 
+    USING (user_id)
+WHERE context_page_path LIKE '%workflows%' AND context_page_url LIKE '%://dashboard.recidiviz.org/%'"""
     else:
         table_source = (
             f"""`{{project_id}}.{{workflows_views_dataset}}.{config.table_name}`"""
@@ -244,7 +256,6 @@ SELECT
         else "CAST(NULL AS STRING)"
     } AS context_page
 FROM {table_source}
-{ "WHERE context_page_path LIKE '%workflows%'" if config.table_name == "identifies" else "" }
 QUALIFY ROW_NUMBER() OVER (PARTITION BY {list_to_query_string(cols_to_dedup_by)} ORDER BY timestamp DESC) = 1
     """
     return template
