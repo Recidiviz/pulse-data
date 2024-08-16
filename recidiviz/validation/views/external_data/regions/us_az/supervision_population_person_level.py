@@ -33,7 +33,14 @@ SELECT
   OFFICE AS district,
   EXT.OFFICER,
   officer.USERID AS supervising_officer_person_id,
-  SUPV_LEV AS supervision_level,
+  CASE 
+    WHEN SUPV_LEV = 'MAX' THEN 'MAXIMUM'
+    WHEN SUPV_LEV = 'MED' THEN 'MEDIUM'
+    WHEN SUPV_LEV = 'MIN' THEN 'MINIMUM'
+    WHEN SUPV_LEV = 'INT' THEN 'HIGH' -- Intensive
+    WHEN SUPV_LEV = 'UNK' THEN 'EXTERNAL_UNKNOWN'
+    ELSE SUPV_LEV
+  END AS supervision_level,
   officer.is_active,
   officer.IS_CC_USER,
   AQ_SEARCH_CRITERIA
