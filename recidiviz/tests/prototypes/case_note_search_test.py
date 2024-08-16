@@ -22,7 +22,7 @@ from unittest.mock import MagicMock, patch
 from google.cloud.discoveryengine_v1.services.search_service.pagers import SearchPager
 
 from recidiviz.prototypes.case_note_search.case_note_search import (
-    IDAHO_CASE_NOTES_ENGINE_ID,
+    FAKE_CASE_NOTES_ENGINE_ID,
     case_note_search,
     extract_case_notes_results,
 )
@@ -123,7 +123,7 @@ class TestCaseNoteFunctions(TestCase):
         self.assertEqual(results, {"results": [case_note_data], "error": None})
 
         mock_discovery_engine_interface.assert_called_once_with(
-            project_id=GCP_PROJECT_STAGING, engine_id=IDAHO_CASE_NOTES_ENGINE_ID
+            project_id=GCP_PROJECT_STAGING, engine_id=FAKE_CASE_NOTES_ENGINE_ID
         )
         mock_discovery_interface_instance.search.assert_called_once_with(
             query=query,

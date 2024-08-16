@@ -33,7 +33,7 @@ class TestDiscoveryEngineInterface(TestCase):
         )
 
     def test_serving_config(self) -> None:
-        expected = f"projects/{self.project_id}/locations/global/collections/default_collection/engines/{self.engine_id}/servingConfigs/default_config"
+        expected = f"projects/{self.project_id}/locations/us/collections/default_collection/engines/{self.engine_id}/servingConfigs/default_config"
         self.assertEqual(self.interface.serving_config, expected)
 
     def test_format_filter_condition(self) -> None:
