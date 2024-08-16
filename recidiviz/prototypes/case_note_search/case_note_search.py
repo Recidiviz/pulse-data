@@ -34,7 +34,7 @@ from recidiviz.tools.prototypes.gcs_bucket_reader import GCSBucketReader
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 
 IDAHO_CASE_NOTES_ENGINE_ID = "id-case-notes-new_1717011992933"
-FAKE_CASE_NOTES_ENGINE_ID = "fake-case-note-search_1721932843217"
+FAKE_CASE_NOTES_ENGINE_ID = "fake-case-note-search_1723492600856"
 
 
 def download_full_case_note(gcs_link: str) -> Optional[str]:
@@ -162,7 +162,7 @@ def case_note_search(
     try:
         discovery_interface = DiscoveryEngineInterface(
             project_id=GCP_PROJECT_STAGING,
-            engine_id=IDAHO_CASE_NOTES_ENGINE_ID,
+            engine_id=FAKE_CASE_NOTES_ENGINE_ID,
         )
         search_pager = discovery_interface.search(
             query=query,

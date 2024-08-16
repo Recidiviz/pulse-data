@@ -22,6 +22,7 @@ from functools import cached_property
 from typing import Dict, List, Optional
 
 import attr
+from google.api_core.client_options import ClientOptions
 from google.cloud import discoveryengine_v1 as discoveryengine
 from google.cloud.discoveryengine_v1.services.search_service.pagers import SearchPager
 
@@ -41,7 +42,7 @@ class DiscoveryEngineInterface:
     @cached_property
     def serving_config(self) -> str:
         """The resource name of the Search serving configuration."""
-        return f"projects/{self.project_id}/locations/global/collections/default_collection/engines/{self.engine_id}/servingConfigs/default_config"
+        return f"projects/{self.project_id}/locations/us/collections/default_collection/engines/{self.engine_id}/servingConfigs/default_config"
 
     @staticmethod
     def _format_filter_condition(filter_conditions: Dict[str, List[str]]) -> str:
@@ -113,7 +114,12 @@ class DiscoveryEngineInterface:
                 if with_snippet or with_summary
                 else None,
             )
-            client = discoveryengine.SearchServiceClient()
+            # Using the US-based client for all searches.
+            client = discoveryengine.SearchServiceClient(
+                client_options=ClientOptions(
+                    api_endpoint="us-discoveryengine.googleapis.com"
+                )
+            )
             response = client.search(request)
             return response
 
