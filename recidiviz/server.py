@@ -26,9 +26,14 @@ import zope.event.classhandler
 from flask import Flask, redirect, request
 from flask_smorest import Api
 from gevent import events
+from opentelemetry.baggage.propagation import W3CBaggagePropagator
 from opentelemetry.metrics import set_meter_provider
+from opentelemetry.propagate import set_global_textmap
+from opentelemetry.propagators.cloud_trace_propagator import CloudTraceFormatPropagator
+from opentelemetry.propagators.composite import CompositePropagator
 from opentelemetry.sdk.trace.sampling import Sampler, TraceIdRatioBased
 from opentelemetry.trace import set_tracer_provider
+from opentelemetry.trace.propagation.tracecontext import TraceContextTextMapPropagator
 from werkzeug import Response
 
 from recidiviz.auth.auth_endpoint import get_auth_endpoint_blueprint
@@ -89,6 +94,19 @@ else:
 # forking mechanism and can be instantiated pre-fork.
 meter_provider = create_monitoring_meter_provider()
 set_meter_provider(meter_provider)
+
+# OpenTelemetry's TextMap Propagators are used for communicating trace/span context across service boundaries
+set_global_textmap(
+    CompositePropagator(
+        propagators=[
+            # App Engine does not use the standard w3c `traceparent` header, instead it uses `X-Cloud-Trace-Context`
+            # so we must supplement the default propagators with a GCP-specific propagator
+            CloudTraceFormatPropagator(),
+            TraceContextTextMapPropagator(),
+            W3CBaggagePropagator(),
+        ]
+    )
+)
 
 
 def initialize_worker_process() -> None:
