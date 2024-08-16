@@ -7,7 +7,7 @@ steps:
       - "--dockerfile=Dockerfile.recidiviz-base"
       - "--cache=true"
       - >-
-        --destination=us.gcr.io/recidiviz-staging/recidiviz-base:latest
+        --destination=us-docker.pkg.dev/recidiviz-staging/recidiviz-base/default:latest
     id: recidiviz-base
   # Build the prototypes image and push it to Artifact Registry.
   - name: "gcr.io/kaniko-project/executor:v1.8.1"
