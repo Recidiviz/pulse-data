@@ -71,7 +71,7 @@ from recidiviz.ingest.direct.dataset_config import (
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.utils import environment, metadata
-from recidiviz.utils.environment import GCP_PROJECTS, in_test
+from recidiviz.utils.environment import in_test
 from recidiviz.utils.size import total_size
 from recidiviz.utils.string import StrictStringFormatter
 
@@ -2399,19 +2399,3 @@ class BigQueryClientImpl(BigQueryClient):
         )
 
         return f"{dataset_id}_{timestamp}"
-
-    @environment.test_only
-    def clear_data(self) -> None:
-        """Clears all data out of existing tables in all datasets."""
-        if self.project_id in GCP_PROJECTS:
-            raise ValueError(
-                f"Cannot run clear_data() against a real project: "
-                f"[{self.project_id}]"
-            )
-        for dataset in self.list_datasets():
-            for table in self.list_tables(dataset.dataset_id):
-                self.delete_from_table_async(
-                    BigQueryAddress(
-                        dataset_id=dataset.dataset_id, table_id=table.table_id
-                    )
-                )

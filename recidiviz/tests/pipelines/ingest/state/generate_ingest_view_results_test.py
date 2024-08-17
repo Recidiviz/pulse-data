@@ -51,7 +51,22 @@ class TestGenerateIngestViewResults(StateIngestPipelineTestCase):
 
     def tearDown(self) -> None:
         super().tearDown()
+        self._clear_emulator_table_data()
         self.read_from_bq_patcher.stop()
+
+    def setup_single_ingest_view_raw_data_bq_tables(
+        self, ingest_view_name: str, test_name: str
+    ) -> None:
+        ingest_view_builder = (
+            self.ingest_view_collector().get_query_builder_by_view_name(
+                ingest_view_name
+            )
+        )
+        self.raw_fixture_loader.load_raw_fixtures_to_emulator(
+            [ingest_view_builder],
+            ingest_test_identifier=f"{test_name}.csv",
+            file_update_dt=None,
+        )
 
     # TODO(#22059): Standardize ingest view fixtures for ingest tests.
     # This is testing ingest view materialization,

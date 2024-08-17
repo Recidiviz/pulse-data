@@ -18,12 +18,14 @@
 import glob
 import os.path
 from itertools import groupby
+from types import ModuleType
 
 from recidiviz.calculator.query.state.dataset_config import (
     AUTH0_EVENTS,
     AUTH0_PROD_ACTION_LOGS,
     PULSE_DASHBOARD_SEGMENT_DATASET,
 )
+from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.dataset_config import (
     raw_data_pruning_new_raw_data_dataset,
     raw_data_pruning_raw_data_diff_results_dataset,
@@ -60,6 +62,7 @@ from recidiviz.source_tables.source_table_config import (
     SourceTableCollectionValidationConfig,
     SourceTableConfig,
     SourceTableLabel,
+    StateSpecificSourceTableLabel,
 )
 from recidiviz.source_tables.source_table_repository import SourceTableRepository
 from recidiviz.source_tables.union_tables_output_table_collector import (
@@ -73,6 +76,70 @@ from recidiviz.source_tables.us_mi_validation_oneoffs import (
 ONE_DAY_MS = 24 * 60 * 60 * 1000
 
 
+def build_raw_data_source_table_collections_for_state_and_instance(
+    state_code: StateCode,
+    instance: DirectIngestInstance,
+    region_module_override: ModuleType | None,
+) -> list[SourceTableCollection]:
+    """Collects datasets / source table definitions for all raw data configurations for
+    a given state and raw data instance.
+    """
+    region_config = get_region_raw_file_config(state_code.value, region_module_override)
+    # For a given state and instance, create the raw datasets used for housing temporary tables related to
+    # raw data pruning. The tables within the dataset will be temporarily added and deleted in the process of
+    # raw data pruning, but the datasets themselves won't.
+    labels: list[SourceTableLabel] = [
+        RawDataSourceTableLabel(state_code=state_code, ingest_instance=instance),
+        StateSpecificSourceTableLabel(state_code=state_code),
+    ]
+    collections = [
+        SourceTableCollection(
+            dataset_id=raw_data_pruning_new_raw_data_dataset(state_code, instance),
+            labels=labels,
+            default_table_expiration_ms=ONE_DAY_MS,
+        ),
+        SourceTableCollection(
+            dataset_id=raw_data_pruning_raw_data_diff_results_dataset(
+                state_code, instance
+            ),
+            labels=labels,
+            default_table_expiration_ms=ONE_DAY_MS,
+        ),
+        SourceTableCollection(
+            dataset_id=raw_data_temp_load_dataset(state_code, instance),
+            labels=labels,
+            # TODO(#30687) consider raising this if we think that there are
+            # certain temp tables we would want to keep around for longer
+            # by default (i.e. those that have a import-blocking validation)
+            # failure we'd like to be able to inspect
+            default_table_expiration_ms=ONE_DAY_MS,
+        ),
+    ]
+
+    raw_data_collection = SourceTableCollection(
+        dataset_id=raw_tables_dataset_for_region(
+            state_code=state_code,
+            instance=instance,
+        ),
+        # Changes to raw data source tables must be manually executed by implementation engineers
+        update_config=SourceTableCollectionUpdateConfig.static(),
+        labels=labels,
+    )
+
+    collections.append(raw_data_collection)
+
+    for raw_file_tag in region_config.raw_file_configs:
+        raw_data_collection.add_source_table(
+            raw_file_tag,
+            description=f"Raw data file for {raw_file_tag}",
+            schema_fields=RawDataTableBigQuerySchemaBuilder.build_bq_schmea_for_config(
+                raw_file_config=region_config.raw_file_configs[raw_file_tag],
+            ),
+            clustering_fields=[FILE_ID_COL_NAME],
+        )
+    return collections
+
+
 def collect_raw_data_source_table_collections() -> list[SourceTableCollection]:
     """Collects datasets / source table definitions for all raw data configurations"""
     collections: list[SourceTableCollection] = []
@@ -80,63 +147,11 @@ def collect_raw_data_source_table_collections() -> list[SourceTableCollection]:
     state_codes = get_direct_ingest_states_existing_in_env()
     for state_code in state_codes:
         for instance in DirectIngestInstance:
-            region_config = get_region_raw_file_config(state_code.value)
-            # For a given state and instance, create the raw datasets used for housing temporary tables related to
-            # raw data pruning. The tables within the dataset will be temporarily added and deleted in the process of
-            # raw data pruning, but the datasets themselves won't.
-            labels: list[SourceTableLabel] = [
-                RawDataSourceTableLabel(state_code=state_code, ingest_instance=instance)
-            ]
             collections.extend(
-                [
-                    SourceTableCollection(
-                        dataset_id=raw_data_pruning_new_raw_data_dataset(
-                            state_code, instance
-                        ),
-                        labels=labels,
-                        default_table_expiration_ms=ONE_DAY_MS,
-                    ),
-                    SourceTableCollection(
-                        dataset_id=raw_data_pruning_raw_data_diff_results_dataset(
-                            state_code, instance
-                        ),
-                        labels=labels,
-                        default_table_expiration_ms=ONE_DAY_MS,
-                    ),
-                    SourceTableCollection(
-                        dataset_id=raw_data_temp_load_dataset(state_code, instance),
-                        labels=labels,
-                        # TODO(#30687) consider raising this if we think that there are
-                        # certain temp tables we would want to keep around for longer
-                        # by default (i.e. those that have a import-blocking validation)
-                        # failure we'd like to be able to inspect
-                        default_table_expiration_ms=ONE_DAY_MS,
-                    ),
-                ]
-            )
-
-            raw_data_collection = SourceTableCollection(
-                dataset_id=raw_tables_dataset_for_region(
-                    state_code=state_code,
-                    instance=instance,
-                ),
-                # Changes to raw data source tables must be manually executed by implementation engineers
-                update_config=SourceTableCollectionUpdateConfig.static(),
-                labels=labels,
-            )
-
-            collections.append(raw_data_collection)
-
-            for raw_file_tag in region_config.raw_file_configs:
-                raw_data_collection.add_source_table(
-                    raw_file_tag,
-                    description=f"Raw data file for {raw_file_tag}",
-                    schema_fields=RawDataTableBigQuerySchemaBuilder.build_bq_schmea_for_config(
-                        raw_file_config=region_config.raw_file_configs[raw_file_tag],
-                    ),
-                    clustering_fields=[FILE_ID_COL_NAME],
+                build_raw_data_source_table_collections_for_state_and_instance(
+                    state_code, instance, region_module_override=None
                 )
-
+            )
     return collections
 
 

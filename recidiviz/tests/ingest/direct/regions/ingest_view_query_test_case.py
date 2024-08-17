@@ -17,14 +17,20 @@
 """An implementation of BigQueryViewTestCase with functionality specific to testing
 ingest view queries.
 """
+import abc
 import datetime
 import os.path
-from typing import Tuple
+from functools import cache
+from types import ModuleType
+from typing import Optional, Tuple
 
 import pandas as pd
 import pytz
+from more_itertools import one
 
+from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.common.constants.states import StateCode
+from recidiviz.ingest.direct.dataset_config import raw_tables_dataset_for_region
 from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager import (
     DirectIngestRawFileConfig,
 )
@@ -32,9 +38,10 @@ from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestIns
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
     DirectIngestViewQueryBuilder,
 )
-from recidiviz.ingest.direct.views.direct_ingest_view_query_builder_collector import (
-    DirectIngestViewQueryBuilderCollector,
+from recidiviz.source_tables.collect_all_source_table_configs import (
+    build_raw_data_source_table_collections_for_state_and_instance,
 )
+from recidiviz.source_tables.source_table_config import SourceTableCollection
 from recidiviz.tests.big_query.big_query_emulator_test_case import (
     BigQueryEmulatorTestCase,
 )
@@ -53,6 +60,9 @@ from recidiviz.tests.ingest.direct.fixture_util import (
 from recidiviz.tests.ingest.direct.regions.ingest_view_cte_comment_exemptions import (
     THESE_INGEST_VIEWS_HAVE_UNDOCUMENTED_CTES,
 )
+from recidiviz.tests.pipelines.ingest.state.ingest_region_test_mixin import (
+    IngestRegionTestMixin,
+)
 from recidiviz.utils import environment
 
 # we need file_update_dt to have a pytz.UTC timezone, but the query_run_dt to be
@@ -63,7 +73,7 @@ DEFAULT_FILE_UPDATE_DATETIME = datetime.datetime.now(tz=pytz.UTC) - datetime.tim
 DEFAULT_QUERY_RUN_DATETIME = datetime.datetime.utcnow()
 
 
-class IngestViewEmulatorQueryTestCase(BigQueryEmulatorTestCase):
+class IngestViewEmulatorQueryTestCase(BigQueryEmulatorTestCase, IngestRegionTestMixin):
     """An extension of BigQueryEmulatorTestCase with functionality specific to testing
     ingest view queries.
 
@@ -72,32 +82,67 @@ class IngestViewEmulatorQueryTestCase(BigQueryEmulatorTestCase):
                   common code as the pipeline test.
     """
 
-    @property
-    def state_code(self) -> StateCode:
-        raise NotImplementedError(
-            "Set the state_code property on the state specific subclass."
+    wipe_emulator_data_on_teardown = False
+
+    @classmethod
+    def get_source_tables(cls) -> list[SourceTableCollection]:
+        collections = build_raw_data_source_table_collections_for_state_and_instance(
+            cls.state_code(),
+            DirectIngestInstance.PRIMARY,
+            region_module_override=cls.region_module_override(),
         )
 
-    @property
-    def ingest_view_name(self) -> str:
-        raise NotImplementedError(
-            "Set the ingest_view_name property on the test subclass."
+        # For performance reasons, only load the schemas for the actual tables we'll
+        # need in this test.
+
+        # Filter down to just tables in the us_xx_raw_data dataset
+        raw_tables_dataset = raw_tables_dataset_for_region(
+            state_code=cls.state_code(), instance=DirectIngestInstance.PRIMARY
+        )
+        collection = one(c for c in collections if c.dataset_id == raw_tables_dataset)
+
+        # Next, filter down to just the tables that are dependencies of this ingest view
+        filtered_collection = SourceTableCollection(
+            dataset_id=collection.dataset_id,
+            update_config=collection.update_config,
+            labels=collection.labels,
+        )
+        for file_tag in cls.ingest_view().raw_data_table_dependency_file_tags:
+            address = BigQueryAddress(
+                dataset_id=collection.dataset_id, table_id=file_tag
+            )
+            source_table = collection.source_tables_by_address[address]
+            filtered_collection.source_tables_by_address[address] = source_table
+        return [filtered_collection]
+
+    @classmethod
+    def region_module_override(cls) -> Optional[ModuleType]:
+        return None
+
+    @classmethod
+    @abc.abstractmethod
+    def ingest_view_name(cls) -> str:
+        """Subclasses must implement this method to return the ingest view name"""
+
+    @classmethod
+    @cache
+    def ingest_view(cls) -> DirectIngestViewQueryBuilder:
+        return cls.ingest_view_collector().get_query_builder_by_view_name(
+            cls.ingest_view_name()
         )
 
     def setUp(self) -> None:
         super().setUp()
-        self.ingest_view: DirectIngestViewQueryBuilder = (
-            DirectIngestViewQueryBuilderCollector.from_state_code(
-                self.state_code
-            ).get_query_builder_by_view_name(self.ingest_view_name)
-        )
-
         # Is replaced in some downstream tests
         self.file_update_dt = DEFAULT_FILE_UPDATE_DATETIME
         self.query_run_dt = DEFAULT_QUERY_RUN_DATETIME
         self.raw_fixture_delegate = DirectIngestRawDataFixtureLoader(
-            self.state_code, emulator_test=self
+            self.state_code(), emulator_test=self
         )
+
+    def tearDown(self) -> None:
+        self._clear_emulator_table_data()
+        super().tearDown()
 
     def run_ingest_view_test(
         self, fixtures_files_name: str, create_expected: bool = False
@@ -123,18 +168,18 @@ class IngestViewEmulatorQueryTestCase(BigQueryEmulatorTestCase):
                 f"[{fixtures_files_name}]. Found [{self._testMethodName}]"
             )
         self.raw_fixture_delegate.load_raw_fixtures_to_emulator(
-            [self.ingest_view], fixtures_files_name, self.file_update_dt
+            [self.ingest_view()], fixtures_files_name, self.file_update_dt
         )
 
         expected_output_fixture_path = (
             DirectIngestTestFixturePath.for_ingest_view_test_results_fixture(
-                region_code=self.state_code.value,
-                ingest_view_name=self.ingest_view.ingest_view_name,
+                region_code=self.state_code().value,
+                ingest_view_name=self.ingest_view_name(),
                 file_name=fixtures_files_name,
             ).full_path()
         )
         results = self._query_ingest_view_for_builder(
-            self.ingest_view, self.query_run_dt
+            self.ingest_view(), self.query_run_dt
         )
 
         if create_expected:
@@ -154,7 +199,7 @@ class IngestViewEmulatorQueryTestCase(BigQueryEmulatorTestCase):
         pd.options.display.max_colwidth = 999
         self.compare_results_to_fixture(results, expected_output_fixture_path)
         self.lint_ingest_view_query(
-            self.ingest_view, self.query_run_dt, self.state_code
+            self.ingest_view(), self.query_run_dt, self.state_code()
         )
 
     def lint_ingest_view_query(

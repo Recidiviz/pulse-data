@@ -78,7 +78,7 @@ class TestWriteRootEntitiesToBQ(BigQueryEmulatorTestCase):
 
     def tearDown(self) -> None:
         super().tearDown()
-        self.bq_client.clear_data()
+        self._clear_emulator_table_data()
         self.write_to_bq_patcher.stop()
 
     @classmethod

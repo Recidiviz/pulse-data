@@ -154,7 +154,33 @@ class BigQueryEmulatorTestCase(unittest.TestCase, BigQueryTestHelper):
             query_str=query, use_query_cache=True
         ).to_dataframe()
 
+    def _clear_emulator_table_data(self) -> None:
+        """Clears the data out of emulator tables but does not delete any tables."""
+        with futures.ThreadPoolExecutor(
+            # Conservatively allow only half as many workers as allowed connections.
+            # Lower this number if we see "urllib3.connectionpool:Connection pool is
+            # full, discarding connection" errors.
+            max_workers=int(BQ_CLIENT_MAX_POOL_SIZE / 2)
+        ) as executor:
+            to_delete = [
+                executor.submit(
+                    self.bq_client.delete_from_table_async,
+                    BigQueryAddress(
+                        dataset_id=dataset_list_item.dataset_id,
+                        table_id=table_list_item.table_id,
+                    ),
+                )
+                for dataset_list_item in self.bq_client.list_datasets()
+                for table_list_item in self.bq_client.list_tables(
+                    dataset_list_item.dataset_id
+                )
+            ]
+
+        for future in futures.as_completed(to_delete):
+            future.result()
+
     def _wipe_emulator_data(self) -> None:
+        """Fully deletes all tables and datasets loaded into the emulator."""
         with futures.ThreadPoolExecutor(
             # Conservatively allow only half as many workers as allowed connections.
             # Lower this number if we see "urllib3.connectionpool:Connection pool is
