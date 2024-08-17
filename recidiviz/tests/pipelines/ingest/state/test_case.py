@@ -30,18 +30,11 @@ from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_utils import schema_for_sqlalchemy_table
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.dataset_config import raw_tables_dataset_for_region
-from recidiviz.ingest.direct.raw_data.direct_ingest_raw_table_schema_builder import (
-    RawDataTableBigQuerySchemaBuilder,
-)
 from recidiviz.ingest.direct.types.direct_ingest_constants import (
     MATERIALIZATION_TIME_COL_NAME,
     UPPER_BOUND_DATETIME_COL_NAME,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
-from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
-    DirectIngestViewRawFileDependency,
-    RawFileHistoricalRowsFilterType,
-)
 from recidiviz.persistence.database.schema.state import schema as state_schema
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.schema_utils import (
@@ -70,6 +63,10 @@ from recidiviz.pipelines.ingest.state.pipeline import StateIngestPipeline
 from recidiviz.pipelines.ingest.state.serialize_entities import (
     serialize_entity_into_json,
 )
+from recidiviz.source_tables.collect_all_source_table_configs import (
+    build_raw_data_source_table_collections_for_state_and_instance,
+)
+from recidiviz.source_tables.source_table_config import SourceTableCollection
 from recidiviz.tests.big_query.big_query_emulator_test_case import (
     BQ_EMULATOR_PROJECT_ID,
     BigQueryEmulatorTestCase,
@@ -77,10 +74,6 @@ from recidiviz.tests.big_query.big_query_emulator_test_case import (
 from recidiviz.tests.ingest.direct import fake_regions
 from recidiviz.tests.ingest.direct.direct_ingest_raw_fixture_loader import (
     DirectIngestRawDataFixtureLoader,
-)
-from recidiviz.tests.ingest.direct.fixture_util import (
-    DirectIngestTestFixturePath,
-    load_dataframe_from_path,
 )
 from recidiviz.tests.pipelines.fake_bigquery import (
     FakeReadFromBigQueryWithEmulator,
@@ -103,6 +96,8 @@ INGEST_INTEGRATION = "ingest_integration"
 class BaseStateIngestPipelineTestCase(BigQueryEmulatorTestCase, IngestRegionTestMixin):
     """Base test case for testing ingest dataflow pipelines using the BigQueryEmulator."""
 
+    wipe_emulator_data_on_teardown = False
+
     @classmethod
     def pipeline_class(cls) -> Type[BasePipeline]:
         return StateIngestPipeline
@@ -119,6 +114,14 @@ class BaseStateIngestPipelineTestCase(BigQueryEmulatorTestCase, IngestRegionTest
             cls.state_code(), DEFAULT_TEST_PIPELINE_OUTPUT_SANDBOX_PREFIX
         )
 
+    @classmethod
+    def get_source_tables(cls) -> list[SourceTableCollection]:
+        return build_raw_data_source_table_collections_for_state_and_instance(
+            cls.state_code(),
+            DirectIngestInstance.PRIMARY,
+            region_module_override=cls.region_module_override(),
+        )
+
     def setUp(self) -> None:
         super().setUp()
         self.region_patcher = patch(
@@ -133,6 +136,7 @@ class BaseStateIngestPipelineTestCase(BigQueryEmulatorTestCase, IngestRegionTest
 
     def tearDown(self) -> None:
         self.region_patcher.stop()
+        self._clear_emulator_table_data()
         super().tearDown()
 
     def get_expected_output_entity_types(
@@ -407,77 +411,11 @@ class StateIngestPipelineTestCase(BaseStateIngestPipelineTestCase):
     def tearDown(self) -> None:
         super().tearDown()
 
-    def setup_single_ingest_view_raw_data_bq_tables(
-        self, ingest_view_name: str, test_name: str
-    ) -> None:
-        ingest_view_builder = (
-            self.ingest_view_collector().get_query_builder_by_view_name(
-                ingest_view_name
-            )
-        )
-        for (
-            raw_table_dependency_config
-        ) in ingest_view_builder.raw_table_dependency_configs:
-            self._load_bq_table_for_raw_dependency(
-                raw_table_dependency_config, test_name=test_name
-            )
-
-    # TODO(#22059): The raw fixtures for StateIngestPipelineTestCase
-    # have different metadata assumptions than our ingest view tests.
-    # Update the fixtures for these tests so that we generate default
-    # metadata for LATEST fixtures and have metadata in the file
-    # for ALL fixtures. Then we can use the raw_fixture_loader
-    # instead of this method.
     def setup_region_raw_data_bq_tables(self, test_name: str) -> None:
-        # Deduplicate raw table dependencies where multiple tables are read from
-        # same order.
-        configs_by_name_and_filter_type: Dict[
-            str,
-            Dict[RawFileHistoricalRowsFilterType, DirectIngestViewRawFileDependency],
-        ] = defaultdict(dict)
-        for ingest_view in self.launchable_ingest_views():
-            ingest_view_builder = (
-                self.ingest_view_collector().get_query_builder_by_view_name(ingest_view)
-            )
-            for (
-                raw_table_dependency_config
-            ) in ingest_view_builder.raw_table_dependency_configs:
-                configs_by_name_and_filter_type[
-                    raw_table_dependency_config.raw_file_config.file_tag
-                ][raw_table_dependency_config.filter_type] = raw_table_dependency_config
-
-        for config_by_type in configs_by_name_and_filter_type.values():
-            for raw_table_dependency_config in config_by_type.values():
-                self._load_bq_table_for_raw_dependency(
-                    raw_table_dependency_config, test_name=test_name
-                )
-
-    def _load_bq_table_for_raw_dependency(
-        self,
-        raw_table_dependency_config: DirectIngestViewRawFileDependency,
-        test_name: str,
-    ) -> None:
-        """Sets up the BQ emulator with appropriate raw data tables for the test region."""
-        table_address = BigQueryAddress(
-            dataset_id=self.raw_data_tables_dataset,
-            table_id=raw_table_dependency_config.raw_file_config.file_tag,
-        )
-
-        schema = RawDataTableBigQuerySchemaBuilder.build_bq_schmea_for_config(
-            raw_file_config=raw_table_dependency_config.raw_file_config
-        )
-        self.create_mock_table(table_address, schema)
-
-        self.load_rows_into_table(
-            table_address,
-            data=load_dataframe_from_path(
-                raw_fixture_path=DirectIngestTestFixturePath.for_raw_file_fixture(
-                    region_code=self.region().region_code,
-                    raw_file_dependency_config=raw_table_dependency_config,
-                    file_name=f"{test_name}.csv",
-                ).full_path(),
-                fixture_columns=[c.name for c in schema],
-            ).to_dict("records"),
+        self.raw_fixture_loader.load_raw_fixtures_to_emulator(
+            self.ingest_view_collector().get_query_builders(),
+            ingest_test_identifier=f"{test_name}.csv",
+            file_update_dt=None,
         )
 
     def create_fake_bq_read_source_constructor(
