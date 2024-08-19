@@ -424,7 +424,8 @@ def us_tn_classification_forms(
             DISTINCT
             OffenderID,
             CASE WHEN IncompatibleType = 'S' THEN 'STAFF'
-                  ELSE facility_id
+                  -- If the location for anyone is a county jail, for example, we don't need the specific jail info
+                  ELSE IF(location_type='STATE_PRISON',facility_id,'OUT OF SYSTEM')
                   END AS incompatible_offender_id,
             IncompatibleType AS incompatible_type,
         FROM `{{project_id}}.us_tn_raw_data_up_to_date_views.IncompatiblePair_latest` i
@@ -435,10 +436,21 @@ def us_tn_classification_forms(
             i.IncompatibleOffenderID = pei.external_id
         AND
             pei.state_code = 'US_TN'
-        LEFT JOIN `{{project_id}}.analyst_data.us_tn_cellbed_assignment_raw_materialized`
+        LEFT JOIN (
+            SELECT
+                person_id,
+                state_code,
+                facility AS facility_id,
+            FROM `{{project_id}}.sessions.compartment_sub_sessions_materialized`
+            WHERE
+                CURRENT_DATE('US/Pacific') BETWEEN start_date AND {nonnull_end_date_exclusive_clause('end_date_exclusive')}
+        ) cs
             USING(person_id, state_code)
+        LEFT JOIN `{{project_id}}.reference_views.location_metadata_materialized` lm
+            ON cs.facility_id = lm.location_external_id
+            AND cs.state_code = lm.state_code
         WHERE IncompatibleRemovedDate IS NULL
-        AND (facility_id IS NOT NULL OR IncompatibleType = 'S')
+            AND (facility_id IS NOT NULL OR IncompatibleType = 'S')
 
         UNION DISTINCT 
     
@@ -446,7 +458,8 @@ def us_tn_classification_forms(
             DISTINCT
             IncompatibleOffenderID AS OffenderID,
             CASE WHEN IncompatibleType = 'S' THEN 'STAFF'
-                  ELSE facility_id
+                  -- If the location for anyone is a county jail, for example, we don't need the specific jail info
+                  ELSE IF(location_type='STATE_PRISON',facility_id,'OUT OF SYSTEM')
                   END AS incompatible_offender_id,
             IncompatibleType AS incompatible_type,
         FROM `{{project_id}}.us_tn_raw_data_up_to_date_views.IncompatiblePair_latest` i
@@ -457,11 +470,21 @@ def us_tn_classification_forms(
             i.OffenderID = pei.external_id
         AND
             pei.state_code = 'US_TN'
-        -- TODO(#27428): Once source of facility ID in TN is reconciled, this can be removed
-        LEFT JOIN `{{project_id}}.analyst_data.us_tn_cellbed_assignment_raw_materialized`
+        LEFT JOIN (
+            SELECT
+                person_id,
+                state_code,
+                facility AS facility_id,
+            FROM `{{project_id}}.sessions.compartment_sub_sessions_materialized`
+            WHERE
+                CURRENT_DATE('US/Pacific') BETWEEN start_date AND {nonnull_end_date_exclusive_clause('end_date_exclusive')}
+        ) cs
             USING(person_id, state_code)
+        LEFT JOIN `{{project_id}}.reference_views.location_metadata_materialized` lm
+            ON cs.facility_id = lm.location_external_id
+            AND cs.state_code = lm.state_code
         WHERE IncompatibleRemovedDate IS NULL
-        AND (facility_id IS NOT NULL OR IncompatibleType = 'S')
+            AND (facility_id IS NOT NULL OR IncompatibleType = 'S')
    ), 
    prea AS (
         SELECT OffenderID, 

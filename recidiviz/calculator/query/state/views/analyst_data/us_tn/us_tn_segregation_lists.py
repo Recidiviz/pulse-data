@@ -50,7 +50,7 @@ US_TN_SEGREGATION_LISTS_QUERY_TEMPLATE = f"""
         WHERE state_code = "US_TN"
         AND CURRENT_DATE('US/Eastern') BETWEEN start_date and IFNULL(DATE_SUB(end_date_exclusive, INTERVAL 1 DAY), "9999-12-31")
     ), 
-    -- get open periods from output of us_tn_segregation_stays_v2 view 
+    -- get open periods from output of us_tn_segregation_stays view 
     latest_seg_stay AS (
         SELECT 
             person_id,
@@ -66,7 +66,7 @@ US_TN_SEGREGATION_LISTS_QUERY_TEMPLATE = f"""
             s.start_date,
             s.end_date_exclusive
         FROM current_seg_stays s
-        LEFT JOIN `{{project_id}}.analyst_data.us_tn_segregation_stays_v2_materialized` a
+        LEFT JOIN `{{project_id}}.analyst_data.us_tn_segregation_stays_materialized` a
         USING(person_id, state_code)
         WHERE CURRENT_DATE('US/Eastern') BETWEEN a.start_date and {nonnull_end_date_exclusive_clause('a.end_date_exclusive')}
     )

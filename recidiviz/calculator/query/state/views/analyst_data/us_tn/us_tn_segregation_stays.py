@@ -19,11 +19,8 @@ Snapshot view of everyone currently in Segregation in TDOC Facilities
 """
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
-from recidiviz.calculator.query.bq_utils import (
-    today_between_start_date_and_nullable_end_date_exclusive_clause,
-)
 from recidiviz.calculator.query.sessions_query_fragments import (
-    aggregate_adjacent_spans,
+    create_intersection_spans,
     create_sub_sessions_with_attributes,
 )
 from recidiviz.calculator.query.state.dataset_config import ANALYST_VIEWS_DATASET
@@ -38,40 +35,39 @@ US_TN_SEGREGATION_STAYS_VIEW_DESCRIPTION = (
 
 US_TN_SEGREGATION_STAYS_QUERY_TEMPLATE = f"""
     WITH segregation_cte AS (
-        /* This CTE keeps all historic and current segregation periods with some cleaned up fields
-        and latest facility information. The reason for not filtering to only "current" periods here is because
-        we first want to stitch together continuous periods, many of which will be closed by now. However because
-         periods are not closed out with high fidelity in this table, we carry latest facility information through */
-        --TODO(#26842): Explicitly add periods spent in max custody since not all might be entered in this table
+        /* This CTE keeps all historic and current segregation periods with some cleaned up fields. 
+        The reason for not filtering to only "current" periods here is because we first want to 
+        stitch together continuous periods, many of which will be closed by now. However 
+        periods are not closed out with high fidelity in this table. */
         SELECT
             pei.person_id,
             pei.external_id,
             pei.state_code,
-            s.SiteID AS seg_facility,
+            s.SiteID AS facility_id,
             DATE(s.StartDateTime) AS start_date,
-            DATE(s.ActualEndDateTime) AS end_date,
+            DATE(s.ActualEndDateTime) AS end_date, 
             DATE(s.ScheduleEndDateTime) AS scheduled_end_date,
             s.SegragationReason AS segregation_reason,
             s.SegregationStatus AS segregation_status,
             s.SegregationType AS segregation_type,
-            c.facility_id AS current_facility_id, 
-            c.unit_id AS current_unit_id,
         FROM `{{project_id}}.us_tn_raw_data_up_to_date_views.Segregation_latest` s
         INNER JOIN `{{project_id}}.normalized_state.state_person_external_id` pei
             ON s.OffenderID = pei.external_id
             AND pei.state_code = 'US_TN'
-        -- TODO(#27428): Remove this join when custody level information aligns with location information
-        LEFT JOIN `{{project_id}}.analyst_data.us_tn_cellbed_assignment_raw_materialized` c
-            USING(person_id, state_code)
-        -- There are a very small number of duplicates on person id and start date in the segregation table
-        QUALIFY ROW_NUMBER() OVER(PARTITION BY pei.person_id, start_date ORDER BY end_date DESC) = 1
+
     ),
     -- The vast majority of spans have an exclusive end date, but 16% dont. This cte constructs end_date_exclusive for
     -- those 16%
     fix_end_date AS (
         SELECT
             *,
-            CASE WHEN DATE_ADD(end_date, INTERVAL 1 DAY) = next_start_date THEN DATE_ADD(end_date, INTERVAL 1 DAY)
+            CASE WHEN DATE_ADD(end_date, INTERVAL 1 DAY) = next_start_date 
+                    THEN DATE_ADD(end_date, INTERVAL 1 DAY)
+                 -- 3% of seg periods have the same start/end date but not same start/end time. To accurately still count these
+                 -- in our seg starts metrics, setting the end_date_exclusive to be 1 day after the start date. If this creates
+                 -- overlapping spans, those will be addressed by create_sub_sessions_with_attributes later
+                 WHEN start_date = end_date 
+                    THEN DATE_ADD(end_date, INTERVAL 1 DAY)
                  ELSE end_date END AS end_date_exclusive,
     FROM 
         (
@@ -81,95 +77,124 @@ US_TN_SEGREGATION_STAYS_QUERY_TEMPLATE = f"""
         FROM segregation_cte    
         )
     ),
-    /* 8% of the rows in the segregation table have overlapping spans. This can be for various reasons (multiple counts
-     of punitive segregation starting on different dates, not closing out periods, etc). This CTE corrects
-     for that before we can collapse adjacent spans */
-    {create_sub_sessions_with_attributes('fix_end_date',
-                                         end_date_field_name='end_date_exclusive')}
-   ,
-   keep_attribute_arrays AS (
-        -- Attributes of all currently "active" segregation spans where segregation facility matches current facility
-        -- This provides information, for example, on all the Segregation Reasons that might be currently applicable
+    -- Unioning segregation raw data with ingested custody level information. MAXIMUM custody is also segregation and 
+    -- we expect this data to be more reliable since periods are not always closed in segregation data.
+    union_max_data AS (
         SELECT
             person_id,
+            external_id,
             state_code,
-            MIN(start_date) AS earliest_start_date,
-            MAX(end_date_exclusive) AS latest_end_date,
-            ARRAY_AGG(DISTINCT segregation_reason) AS segregation_reason,
-            ARRAY_AGG(DISTINCT segregation_status) AS segregation_status,
-            ARRAY_AGG(DISTINCT segregation_type) AS segregation_type,
-        FROM sub_sessions_with_attributes
-        WHERE {today_between_start_date_and_nullable_end_date_exclusive_clause(
-                start_date_column="start_date",
-                end_date_column="end_date_exclusive"
-            )}
-            AND seg_facility = current_facility_id
-        GROUP BY 1,2
-   ),
-   latest_attributes AS (
-        -- Attributes of latest segregation span where segregation facility matches current facility
-        SELECT *
+            facility_id, 
+            start_date,
+            end_date_exclusive, 
+            scheduled_end_date,
+            segregation_reason,
+            segregation_status,
+            segregation_type,
         FROM fix_end_date
-        WHERE {today_between_start_date_and_nullable_end_date_exclusive_clause(
-                start_date_column="start_date",
-                end_date_column="end_date_exclusive"
-            )}
-            AND seg_facility = current_facility_id
-        QUALIFY ROW_NUMBER() OVER(PARTITION BY person_id ORDER BY start_date DESC) = 1
-   ),
-   deduplicate AS ( 
-    SELECT DISTINCT
-            person_id,
-            state_code,
+
+        UNION ALL 
+
+        SELECT
+            c.person_id,
+            external_id,
+            c.state_code,
+            facility AS facility_id,
             start_date,
             end_date_exclusive,
-    FROM sub_sessions_with_attributes
+            null AS scheduled_end_date,
+            null AS segregation_reason,
+            null AS segregation_status,
+            correctional_level AS segregation_type,
+        FROM `{{project_id}}.sessions.compartment_sub_sessions_materialized` c
+        INNER JOIN `{{project_id}}.normalized_state.state_person_external_id`
+            USING(person_id, state_code)
+        WHERE c.state_code = 'US_TN'
+            AND c.correctional_level = 'MAXIMUM'
+            AND compartment_level_1 = 'INCARCERATION'
     ),
-    -- Collapses adjacent spans. We dont create new spans if facility or segregation type changes. However, we're only
-    -- keeping periods where the latest seg facility is the same as the current facility, to partially mitigate 
-    -- open periods that weren't closed out
-    sessionized_cte AS
-    (
-    {aggregate_adjacent_spans(table_name='deduplicate',
-                       end_date_field_name='end_date_exclusive')}
+    -- sessions level information to determine if someone with an open period from 
+    -- segregation table is actually still incarcerated. Taking all values for compartment 
+    -- levels (incarcerated or not) because TN is using seg lists to clean up incorrectly open seg periods. 
+    compartment_sessions AS (
+        SELECT 
+            cs.state_code,
+            cs.person_id,
+            cs.start_date,
+            cs.end_date_exclusive,
+            cs.compartment_level_1, 
+            cs.compartment_level_2, 
+            cs.facility,
+            COALESCE(lm.location_type, 'UNKNOWN') AS location_type,
+            cs.housing_unit
+        FROM `{{project_id}}.sessions.compartment_sub_sessions_materialized` cs
+        LEFT JOIN
+            `{{project_id}}.reference_views.location_metadata_materialized` lm
+        ON
+            facility = location_external_id
+        WHERE cs.state_code = 'US_TN' 
+    ),
+    -- Using create_intersection_spans because we know there are some overlapping periods within Segregation raw table and between Segregation and max custordy periods
+    incarceration_spans AS (
+        SELECT * 
+        FROM ({create_intersection_spans(table_1_name='union_max_data',
+                                    table_2_name='compartment_sessions',
+                                    index_columns=['state_code', 'person_id'],
+                                    table_1_columns=['external_id','segregation_type'],
+                                    table_2_columns=['compartment_level_1','compartment_level_2', 'facility', 'location_type', 'housing_unit'],
+                                    table_1_start_date_field_name='start_date',
+                                    table_1_end_date_field_name='end_date_exclusive',)})
+    ),
+    -- Handles overlapping spans with differing data, like we see in Segregation and Max table
+    {create_sub_sessions_with_attributes('incarceration_spans',
+                                         end_date_field_name='end_date_exclusive')}
+    ,
+    -- Prioritizing where segregation_type is 'MAXIMUM' since that data is more reliable 
+    -- than the segregation data. 
+    dedup_on_max AS (
+        SELECT
+            state_code,
+            person_id,
+            external_id,
+            facility,
+            location_type,
+            housing_unit,
+            start_date,
+            end_date_exclusive,
+            segregation_type, 
+            compartment_level_1,
+            compartment_level_2
+        FROM
+            sub_sessions_with_attributes
+        QUALIFY ROW_NUMBER() OVER(PARTITION BY person_id, state_code, start_date, end_date_exclusive
+                                ORDER BY 
+                                    CASE WHEN segregation_type = 'MAXIMUM' THEN 0 
+                                         WHEN segregation_type = 'PUN' THEN 1 
+                                         WHEN segregation_type = 'PCB' THEN 2 
+                                         ELSE 3 END ASC) = 1
     )
-    -- Now that we have periods of continuous segregation, we bring in attributes from all active spans
-    SELECT
-        s.person_id,
-        s.state_code,
-        JSON_EXTRACT_SCALAR(full_name,'$.given_names') AS first_name,
-        JSON_EXTRACT_SCALAR(full_name,'$.surname') AS last_name,
-        s.start_date AS continuous_seg_start_date,
-        s.end_date_exclusive AS continuous_seg_end_date,
-        l.external_id,
-        l.current_facility_id,
-        l.current_unit_id,
-        l.start_date AS latest_seg_start_date,
-        l.scheduled_end_date AS latest_scheduled_end_date,
-        l.segregation_type AS latest_segregation_type,
-        l.segregation_reason AS latest_segregation_reason,
-        l.segregation_status AS latest_segregation_status,
-        DATE_DIFF(CURRENT_DATE('US/Pacific'), s.start_date, DAY) AS length_of_continuous_seg_stay,        
-        k.segregation_reason AS segregation_reason_array,
-        k.segregation_status AS segregation_status_array,
-        k.segregation_type AS segregation_type_array,
-    FROM sessionized_cte s
-    LEFT JOIN latest_attributes l
-        USING(person_id)
-    LEFT JOIN `{{project_id}}.analyst_data.us_tn_max_stays_materialized` m
-        USING(person_id)
-    LEFT JOIN keep_attribute_arrays k
-        USING(person_id)
-    INNER JOIN `{{project_id}}.normalized_state.state_person` sp
-        USING(person_id)
-    WHERE {today_between_start_date_and_nullable_end_date_exclusive_clause(
-                start_date_column="s.start_date",
-                end_date_column="s.end_date_exclusive"
-            )}
-        -- Excludes people who show up as currently in max custody
-        AND m.person_id IS NULL
-        AND l.current_facility_id is not null
-
+    -- transforming raw segregation_types to solitary confinement enum values
+    SELECT 
+        person_id,
+        state_code,
+        facility,
+        location_type,
+        compartment_level_1,
+        compartment_level_2,
+        housing_unit,
+        segregation_type AS housing_unit_type_raw_text,
+        CASE 
+          WHEN segregation_type IN ('ASE', 'MAXIMUM') THEN 'ADMINISTRATIVE_SOLITARY_CONFINEMENT'
+          WHEN segregation_type IN ('HCE','INV', 'MET', 'SPD') THEN 'TEMPORARY_SOLITARY_CONFINEMENT'
+          WHEN segregation_type IN ('IPT', 'MSG', 'QUA', 'SIP', 'TSD') THEN 'OTHER_SOLITARY_CONFINEMENT'
+          WHEN segregation_type IN ('PCB') THEN 'PROTECTIVE_CUSTODY'
+          WHEN segregation_type IN ('PUN') THEN 'DISCIPLINARY_SOLITARY_CONFINEMENT'
+          WHEN segregation_type IN ('TSE') THEN 'MENTAL_HEALTH_SOLITARY_CONFINEMENT'
+        ELSE 'GENERAL'
+        END AS housing_unit_type,
+        start_date,
+        end_date_exclusive
+    FROM dedup_on_max
 """
 
 US_TN_SEGREGATION_STAYS_VIEW_BUILDER = SimpleBigQueryViewBuilder(

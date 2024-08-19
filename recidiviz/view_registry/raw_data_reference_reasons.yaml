@@ -1214,9 +1214,6 @@ US_TN:
       Usage reason unknown. Grandfathered in 04/18/2024.
     workflows_views.client_record: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
-  CellBedAssignment:
-    analyst_data.us_tn_cellbed_assignment_raw: |-
-      Raw data used while ingest issues are being resolved (TODO(#24959) and TODO(#27428)).
   Classification:
     analyst_data.us_tn_custody_level_sessions_preprocessed: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
@@ -1361,8 +1358,6 @@ US_TN:
     analyst_data.us_tn_segregation_lists: |-
       Using view to flag data issues in the raw Segregation table to TN.
     analyst_data.us_tn_segregation_stays: |-
-      Usage reason unknown. Grandfathered in 04/18/2024.
-    analyst_data.us_tn_segregation_stays_v2: |-
       Segregation data is unreliable in TN, we tried ingesting it with incarceration 
       periods and it resulted in lots of inaccuracies so need to check it against ingested data here.
     workflows_views.us_tn_annual_reclassification_review_record: |-
