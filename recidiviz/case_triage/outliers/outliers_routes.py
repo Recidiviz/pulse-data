@@ -36,7 +36,7 @@ from recidiviz.common.common_utils import convert_nested_dictionary_keys
 from recidiviz.common.constants.states import StateCode
 from recidiviz.common.str_field_utils import snake_to_camel, to_snake_case
 from recidiviz.outliers.querier.querier import OutliersQuerier
-from recidiviz.outliers.types import PersonName
+from recidiviz.outliers.types import OutliersActionStrategy, PersonName
 from recidiviz.utils.flask_exception import FlaskException
 from recidiviz.utils.types import assert_type
 
@@ -761,9 +761,19 @@ def create_outliers_api_blueprint() -> Blueprint:
             supervisor.external_id, category_type_to_compare
         )
 
-        action_strategies_json = {
-            officer.pseudonymized_id: None for officer in officer_entities
-        }
+        action_strategies_json = {}
+
+        supervisor_events = querier.get_action_strategy_surfaced_events_for_supervisor(
+            supervisor.pseudonymized_id
+        )
+        action_strategies = OutliersActionStrategy(events=supervisor_events)
+        for officer in officer_entities:
+            action_strategies_json[
+                officer.pseudonymized_id
+            ] = action_strategies.get_eligible_action_strategy_for_officer(
+                officer=officer
+            )
+
         action_strategies_json[supervisor.pseudonymized_id] = None
         return jsonify(action_strategies_json)
 

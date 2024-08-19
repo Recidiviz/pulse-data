@@ -45,6 +45,7 @@ from recidiviz.outliers.types import (
     UserInfo,
 )
 from recidiviz.persistence.database.schema.insights.schema import (
+    ActionStrategySurfacedEvents,
     Configuration,
     MetricBenchmark,
     SupervisionClientEvent,
@@ -134,6 +135,8 @@ class TestOutliersQuerier(InsightsDbTestCase):
                 SupervisionOfficerMetric
             ):
                 session.add(SupervisionOfficerMetric(**officer_metric))
+            for as_event in load_model_from_json_fixture(ActionStrategySurfacedEvents):
+                session.add(ActionStrategySurfacedEvents(**as_event))
 
         self.test_user_context = UserContext(
             "US_PA", "12345", "hash-12345", True, {"supervisorHomepageWorkflows": {}}
@@ -864,3 +867,11 @@ class TestOutliersQuerier(InsightsDbTestCase):
         querier = OutliersQuerier(StateCode.US_PA)
         with self.assertRaisesRegex(ValueError, "Invalid product configuration"):
             querier.get_product_configuration(user_context=self.test_user_context)
+
+    def test_get_action_strategy_surfaced_events_for_supervisor(self) -> None:
+        pseudo_id = "hash1"
+        querier = OutliersQuerier(StateCode.US_PA)
+        result = querier.get_action_strategy_surfaced_events_for_supervisor(
+            supervisor_pseudonymized_id=pseudo_id
+        )
+        self.snapshot.assert_match(result, name="test_get_action_strategy_surfaced_events_for_supervisor")  # type: ignore[attr-defined]
