@@ -21,12 +21,12 @@ from typing import List, Optional
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct import templates
 from recidiviz.persistence.entity.state import entities
-from recidiviz.tests.ingest.direct.regions.state_specific_ingest_pipeline_integration_test_case import (
-    StateSpecificIngestPipelineIntegrationTestCase,
+from recidiviz.tests.ingest.direct.regions.legacy_state_specific_ingest_pipeline_integration_test_case import (
+    LegacyStateSpecificIngestPipelineIntegrationTestCase,
 )
 
 
-class UsXxPipelineIntegrationTest(StateSpecificIngestPipelineIntegrationTestCase):
+class UsXxPipelineIntegrationTest(LegacyStateSpecificIngestPipelineIntegrationTestCase):
     """Ingest pipeline integration test(s) for US_XX."""
 
     @classmethod
