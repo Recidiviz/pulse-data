@@ -26,7 +26,11 @@ from recidiviz.common.constants.state.state_sentence import (
     StateSentenceType,
     StateSentencingAuthority,
 )
-from recidiviz.persistence.entity.state.entities import StateChargeV2, StateSentence
+from recidiviz.persistence.entity.state.entities import (
+    StateChargeV2,
+    StateSentence,
+    StateSentenceLength,
+)
 from recidiviz.persistence.entity.state.normalized_entities import (
     NormalizedStateChargeV2,
 )
@@ -162,3 +166,93 @@ class TestSentenceV2Normalization(unittest.TestCase):
         assert len(last_sentence.charges) == 2
         for charge in last_sentence.charges:
             assert last_sentence in charge.sentences
+
+    def test_get_normalized_sentences_length_empty_projected_fields(self) -> None:
+        sentence = self._new_sentence(1)
+        start_date = datetime.datetime(2022, 1, 1)
+        sentence.sentence_lengths = [
+            StateSentenceLength(
+                state_code=self.state_code_value,
+                sentence_length_id=111,
+                length_update_datetime=start_date,
+                sentence_length_days_min=42,
+            ),
+            StateSentenceLength(
+                state_code=self.state_code_value,
+                sentence_length_id=222,
+                length_update_datetime=start_date + datetime.timedelta(days=10),
+                sentence_length_days_min=49,
+            ),
+        ]
+        normalized_sentence = get_normalized_sentences([sentence])[0]
+        normalized_lengths = sorted(
+            normalized_sentence.sentence_lengths, key=lambda s: s.partition_key
+        )
+        assert len(normalized_lengths) == 2
+        first, second = normalized_lengths
+        assert first.sequence_num == 1
+        assert first.sentence_length_days_min == 42
+        assert second.sequence_num == 2
+        assert second.sentence_length_days_min == 49
+
+    def test_get_normalized_sentences_length_inconsistent_projected_fields(
+        self,
+    ) -> None:
+        sentence = self._new_sentence(1)
+        start_date = datetime.datetime(2022, 1, 1)
+        sentence.sentence_lengths = [
+            StateSentenceLength(
+                state_code=self.state_code_value,
+                sentence_length_id=111,
+                length_update_datetime=start_date,
+                # These are intended to be backwards
+                sentence_length_days_max=142,
+                sentence_length_days_min=149,
+                # These are intended to be backwards
+                projected_completion_date_max_external=start_date
+                + datetime.timedelta(days=142),
+                projected_completion_date_min_external=start_date
+                + datetime.timedelta(days=149),
+            ),
+            StateSentenceLength(
+                state_code=self.state_code_value,
+                sentence_length_id=222,
+                length_update_datetime=start_date + datetime.timedelta(days=10),
+                # These are intended to not be backwards
+                sentence_length_days_max=115,
+                sentence_length_days_min=100,
+                # These are intended to not be backwards
+                projected_completion_date_max_external=start_date
+                + datetime.timedelta(days=115),
+                projected_completion_date_min_external=start_date
+                + datetime.timedelta(days=100),
+            ),
+        ]
+        normalized_sentence = get_normalized_sentences([sentence])[0]
+        normalized_lengths = sorted(
+            normalized_sentence.sentence_lengths, key=lambda s: s.partition_key
+        )
+        assert len(normalized_lengths) == 2
+        first, second = normalized_lengths
+        assert first.sequence_num == 1
+        assert first.sentence_length_days_min == 142
+        assert (
+            first.projected_completion_date_min_external
+            == start_date + datetime.timedelta(days=142)
+        )
+        assert first.sentence_length_days_max == 149
+        assert (
+            first.projected_completion_date_max_external
+            == start_date + datetime.timedelta(days=149)
+        )
+        assert second.sequence_num == 2
+        assert second.sentence_length_days_min == 100
+        assert (
+            second.projected_completion_date_min_external
+            == start_date + datetime.timedelta(days=100)
+        )
+        assert second.sentence_length_days_max == 115
+        assert (
+            second.projected_completion_date_max_external
+            == start_date + datetime.timedelta(days=115)
+        )

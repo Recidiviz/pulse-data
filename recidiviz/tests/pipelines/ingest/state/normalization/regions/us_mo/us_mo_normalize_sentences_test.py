@@ -184,6 +184,38 @@ def test_person_001_sentencing_normalization() -> None:
         charges=[CHARGE_001_20040224_2],
     )
     CHARGE_001_20040224_2.sentences.append(SENTENCE_001_20040224_2)
+
+    SENTENCE_001_19900117_1.sentence_lengths = [
+        entities.StateSentenceLength(
+            state_code="US_MO",
+            length_update_datetime=datetime.datetime(2004, 3, 17),
+            projected_completion_date_max_external=datetime.date(1991, 9, 24),
+            projected_completion_date_min_external=None,
+            person=person_001,
+            sentence=SENTENCE_001_19900117_1,
+        )
+    ]
+    SENTENCE_001_20040224_1.sentence_lengths = [
+        entities.StateSentenceLength(
+            state_code="US_MO",
+            length_update_datetime=datetime.datetime(2009, 3, 9),
+            projected_completion_date_max_external=datetime.date(2009, 2, 23),
+            projected_completion_date_min_external=None,
+            person=person_001,
+            sentence=SENTENCE_001_20040224_1,
+        ),
+    ]
+    SENTENCE_001_20040224_2.sentence_lengths = [
+        entities.StateSentenceLength(
+            state_code="US_MO",
+            length_update_datetime=datetime.datetime(2009, 11, 4),
+            projected_completion_date_max_external=datetime.date(2009, 11, 4),
+            projected_completion_date_min_external=None,
+            person=person_001,
+            sentence=SENTENCE_001_20040224_2,
+        ),
+    ]
+
     person_001.sentences.extend(
         [
             SENTENCE_001_19900117_1,
@@ -256,6 +288,18 @@ def test_person_001_sentencing_normalization() -> None:
         sentencing_authority_raw_text='STLO@@"NEW COURT PROBATION "',
         is_capital_punishment=False,
         charges=[NORMALIZED_CHARGE_001_19900117_1],
+        sentence_lengths=[
+            normalized_entities.NormalizedStateSentenceLength(
+                sequence_num=1,
+                state_code="US_MO",
+                sentence_length_id=assert_type(
+                    SENTENCE_001_19900117_1.sentence_lengths[0].sentence_length_id, int
+                ),
+                length_update_datetime=datetime.datetime(2004, 3, 17),
+                projected_completion_date_max_external=datetime.date(1991, 9, 24),
+                projected_completion_date_min_external=None,
+            )
+        ],
     )
     NORMALIZED_CHARGE_001_19900117_1.sentences.append(
         NORMALIZED_SENTENCE_001_19900117_1
@@ -309,6 +353,18 @@ def test_person_001_sentencing_normalization() -> None:
         sentencing_authority_raw_text='STLO@@"NEW COURT PROBATION "',
         is_capital_punishment=False,
         charges=[NORMALIZED_CHARGE_001_20040224_1],
+        sentence_lengths=[
+            normalized_entities.NormalizedStateSentenceLength(
+                sequence_num=1,
+                state_code="US_MO",
+                sentence_length_id=assert_type(
+                    SENTENCE_001_20040224_1.sentence_lengths[0].sentence_length_id, int
+                ),
+                length_update_datetime=datetime.datetime(2009, 3, 9),
+                projected_completion_date_max_external=datetime.date(2009, 2, 23),
+                projected_completion_date_min_external=None,
+            )
+        ],
     )
     NORMALIZED_CHARGE_001_20040224_1.sentences.append(
         NORMALIZED_SENTENCE_001_20040224_1
@@ -362,14 +418,26 @@ def test_person_001_sentencing_normalization() -> None:
         sentencing_authority_raw_text='STLO@@"COURT PROBATION-ADDL CHARGE "',
         is_capital_punishment=False,
         charges=[NORMALIZED_CHARGE_001_20040224_2],
+        sentence_lengths=[
+            normalized_entities.NormalizedStateSentenceLength(
+                sequence_num=1,
+                state_code="US_MO",
+                sentence_length_id=assert_type(
+                    SENTENCE_001_20040224_2.sentence_lengths[0].sentence_length_id, int
+                ),
+                length_update_datetime=datetime.datetime(2009, 11, 4),
+                projected_completion_date_max_external=datetime.date(2009, 11, 4),
+                projected_completion_date_min_external=None,
+            ),
+        ],
     )
     NORMALIZED_CHARGE_001_20040224_2.sentences.append(
         NORMALIZED_SENTENCE_001_20040224_2
     )
     expected_normalized_sentences = [
-        NORMALIZED_SENTENCE_001_19900117_1,
-        NORMALIZED_SENTENCE_001_20040224_1,
-        NORMALIZED_SENTENCE_001_20040224_2,
+        set_backedges(NORMALIZED_SENTENCE_001_19900117_1),
+        set_backedges(NORMALIZED_SENTENCE_001_20040224_1),
+        set_backedges(NORMALIZED_SENTENCE_001_20040224_2),
     ]
     actual_normalized_sentences = sorted(
         get_normalized_sentences(person_001.sentences), key=lambda s: s.external_id

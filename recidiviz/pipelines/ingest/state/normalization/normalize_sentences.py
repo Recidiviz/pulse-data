@@ -33,11 +33,17 @@ from typing import Dict, List
 from recidiviz.common.constants.state.state_sentence import StateSentenceType
 from recidiviz.common.ncic import get_description
 from recidiviz.persistence.entity.entity_utils import set_backedges
-from recidiviz.persistence.entity.state.entities import StateChargeV2, StateSentence
+from recidiviz.persistence.entity.state.entities import (
+    StateChargeV2,
+    StateSentence,
+    StateSentenceLength,
+)
 from recidiviz.persistence.entity.state.normalized_entities import (
     NormalizedStateChargeV2,
     NormalizedStateSentence,
+    NormalizedStateSentenceLength,
 )
+from recidiviz.pipelines.ingest.state.normalization.utils import get_min_max_fields
 from recidiviz.utils.types import assert_type
 
 
@@ -89,6 +95,53 @@ def normalize_charge_v2(charge: StateChargeV2) -> NormalizedStateChargeV2:
     )
 
 
+def normalize_sentence_lengths(
+    sentence_lengths: List[StateSentenceLength],
+) -> List[NormalizedStateSentenceLength]:
+    """
+    Normalizes StateSentenceLength, with two updates:
+        - Updates sequence_num to be contiguous from 1 based on the partition_key,
+          correcting it if external data is increasing, but not contiguous from 1
+        - Updates sentence_length_days min/max and projected_completion_date min/max
+          to actually be the min/max of the hydrated values, correcting it if external
+          data is not consistent. Other date enforcement occurs at ingest in the
+          __attrs_post_init__ of StateSentenceLength
+    """
+    normalized_lengths = []
+    for idx, length in enumerate(
+        sorted(sentence_lengths, key=lambda s: s.partition_key)
+    ):
+        # If the sentence length projected min/max fields are not
+        # consistent in "state" such that min is always < max, we ensure that
+        # they are consistent in "normalized_state"
+        # See the __attrs_post_init__ of StateSentenceLength to see what
+        # projected field consitency we enforce at ingest.
+        days_min, days_max = get_min_max_fields(
+            length.sentence_length_days_min, length.sentence_length_days_max
+        )
+        comp_date_min, comp_date_max = get_min_max_fields(
+            length.projected_completion_date_min_external,
+            length.projected_completion_date_max_external,
+        )
+
+        normalized_lengths.append(
+            NormalizedStateSentenceLength(
+                sequence_num=idx + 1,
+                state_code=length.state_code,
+                sentence_length_id=assert_type(length.sentence_length_id, int),
+                length_update_datetime=length.length_update_datetime,
+                good_time_days=length.good_time_days,
+                earned_time_days=length.earned_time_days,
+                projected_parole_release_date_external=length.projected_parole_release_date_external,
+                sentence_length_days_min=days_min,
+                sentence_length_days_max=days_max,
+                projected_completion_date_min_external=comp_date_min,
+                projected_completion_date_max_external=comp_date_max,
+            )
+        )
+    return normalized_lengths
+
+
 def normalize_sentence(
     sentence: StateSentence,
     charge_id_to_normalized_charge_cache: Dict[int, NormalizedStateChargeV2],
@@ -121,10 +174,10 @@ def normalize_sentence(
         sentence_metadata=sentence.sentence_metadata,
         # Relationships
         charges=normalized_charges,
+        sentence_lengths=normalize_sentence_lengths(sentence.sentence_lengths)
         # TODO(#32303): Normalize sentence_statuses
         # TODO(#32304): Normalize sentence_serving_periods
         # TODO(#32306): Create sentence_group_inferred from group and serving periods
-        # TODO(#32307): Normalize sentence_lengths
     )
 
 
