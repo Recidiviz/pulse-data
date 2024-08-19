@@ -1,0 +1,109 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: CIS_208_JOB_DEFN
+file_description: |-
+  This table lists jobs that can be worked by folks under MEDOC supervision.
+data_classification: source
+primary_key_cols:
+  - JOB_ID
+columns:
+  - name: LOGICAL_DELETE_IND
+    description: Y if this row should be considered deleted.
+  - name: CREATED_ON_DATE
+    description: When the row was created
+    field_type: datetime
+  - name: CREATED_BY_TX
+    description: Who created the row.
+    is_pii: True
+  - name: MODIFIED_ON_DATE
+    description: When the row was last modified.
+    field_type: datetime
+  - name: MODIFIED_BY_TX
+    description: Who last modified the row.
+    is_pii: True
+  - name: JOB_ID
+    description: ID of the job. Needed for joining.
+  - name: LOCATION_TX
+    description: >-
+      The location of the job. Considered PII as it's a TX field, meaning it can contain
+      raw text.
+  - name: START_TIME
+    description: When the job was started.
+    field_type: datetime
+  - name: END_TIME
+    description: When the job was ended.
+    field_type: datetime
+  - name: FLEX_IND
+    description: TODO(#26093)
+  - name: POSITION_NUM
+    description: TODO(#26093)
+  - name: AVAIL_NUM
+    description: TODO(#26093)
+  - name: COMMUNITY_IND
+    description: >-
+      Perhaps whether or not this job is eligible for people in Community Confinement?
+  - name: MINIMUM_IND
+    description: >-
+      Perhaps whether or not this job is eligible for people in Minimum Custody?
+  - name: MEDIUM_IND
+    description: >-
+      Perhaps whether or not this job is eligible for people in Medium Custody?
+  - name: CLOSE_IND
+    description: TODO(#26093)
+  - name: JUV_HIGH_IND
+    description: >-
+      Perhaps whether or not this job is eligible for Juveniles under High level
+      custody?
+  - name: JUV_MOD_IND
+    description: TODO(#26093)
+  - name: JUV_DETENTION_IND
+    description: TODO(#26093)
+  - name: JUV_UNCLASSIFIED_IND
+    description: TODO(#26093)
+  - name: BOUNDRY_RB
+    description: TODO(#26093)
+  - name: PAY_IND
+    description: TODO(#26093)
+  - name: MGT_DAYS_IND
+    description: TODO(#26093)
+  - name: COMMWERC_ELIG_IND
+    description: TODO(#26093)
+  - name: COMM_SUPER_TX
+    description: TODO(#26093)
+    is_pii: True
+  - name: OCCURRENCES_NUM
+    description: TODO(#26093)
+  - name: SUNDAY_IND
+    description: >-
+      Maybe an indicator for if work is required on this day?
+  - name: MONDAY_IND
+    description: >-
+      Maybe an indicator for if work is required on this day?
+  - name: TUESDAY_IND
+    description: >-
+      Maybe an indicator for if work is required on this day?
+  - name: WEDNESDAY_IND
+    description: >-
+      Maybe an indicator for if work is required on this day?
+  - name: THURSDAY_IND
+    description: >-
+      Maybe an indicator for if work is required on this day?
+  - name: FRIDAY_IND
+    description: >-
+      Maybe an indicator for if work is required on this day?
+  - name: SATURDAY_IND
+    description: >-
+      Maybe an indicator for if work is required on this day?
+  - name: DESCR_TX
+    description: >-
+      Description of the job.
+    is_pii: True
+  - name: CIS_908_CCS_LOCATION_ID
+    description: Used to join to CIS_908 for the location.
+  - name: CIS_2084_JOB_NAME_CD
+    description: Used to join to CIS_2084.
+  - name: CIS_900_EMPLOYEE_ID
+    description: >-
+      Used to join to CIS_900 for employee information, though not sure exactly what
+      role the employee has in this case.
+  - name: CIS_2082_COMM_AGCY_CD
+    description: Used to join to CIS_2082.
