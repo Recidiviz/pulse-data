@@ -44,7 +44,9 @@ from recidiviz.pipelines.supplemental.base_supplemental_dataset_pipeline import 
 from recidiviz.pipelines.utils.execution_utils import RootEntityId
 from recidiviz.tests.pipelines.fake_bigquery import (
     FakeReadFromBigQuery,
+    FakeReadFromBigQueryWithEmulator,
     FakeWriteToBigQuery,
+    FakeWriteToBigQueryEmulator,
 )
 
 
@@ -75,9 +77,12 @@ def run_test_pipeline(
     pipeline_cls: Type[BasePipeline],
     state_code: str,
     project_id: str,
-    read_from_bq_constructor: Callable[[str, bool, bool], FakeReadFromBigQuery],
+    read_from_bq_constructor: Callable[
+        [str, bool, bool], FakeReadFromBigQuery | FakeReadFromBigQueryWithEmulator
+    ],
     write_to_bq_constructor: Callable[
-        [str, str, apache_beam.io.BigQueryDisposition], FakeWriteToBigQuery
+        [str, str, apache_beam.io.BigQueryDisposition],
+        FakeWriteToBigQuery | FakeWriteToBigQueryEmulator,
     ],
     root_entity_id_filter_set: Optional[Set[RootEntityId]] = None,
     **additional_pipeline_args: Any,

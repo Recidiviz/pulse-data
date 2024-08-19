@@ -51,8 +51,8 @@ from recidiviz.pipelines.ingest.state.generate_ingest_view_results import (
 )
 from recidiviz.pipelines.ingest.state.run_validations import RunValidations
 from recidiviz.tests.persistence.entity.state.entities_test_utils import clear_db_ids
-from recidiviz.tests.pipelines.ingest.state.test_case import (
-    BaseStateIngestPipelineTestCase,
+from recidiviz.tests.pipelines.ingest.state.legacy_pipeline_test_case import (
+    BaseLegacyStateIngestPipelineTestCase,
 )
 from recidiviz.tests.pipelines.utils.run_pipeline_test_utils import (
     default_arg_list_for_pipeline,
@@ -176,7 +176,9 @@ def _sort_root_entities(root_entities: Iterable[RootEntity]) -> List[RootEntity]
     return sorted(root_entities, key=cmp_to_key(_root_entity_comparator))
 
 
-class StateSpecificIngestPipelineIntegrationTestCase(BaseStateIngestPipelineTestCase):
+class StateSpecificIngestPipelineIntegrationTestCase(
+    BaseLegacyStateIngestPipelineTestCase
+):
     """
     This class provides an integration test to be used by all states that do ingest.
 

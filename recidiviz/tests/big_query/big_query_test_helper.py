@@ -19,6 +19,7 @@
 import abc
 import datetime
 import logging
+import os
 from typing import Dict, List, Type, Union
 
 import db_dtypes
@@ -26,6 +27,10 @@ import numpy
 import pandas as pd
 from more_itertools import one
 from pandas._testing import assert_frame_equal
+
+from recidiviz.big_query.big_query_address import BigQueryAddress
+from recidiviz.tests.ingest.direct.fixture_util import load_dataframe_from_path
+from recidiviz.utils import environment, metadata
 
 DTYPES = {
     "integer": {int, pd.Int64Dtype, numpy.dtypes.Int64DType, numpy.int64},
@@ -40,6 +45,113 @@ class BigQueryTestHelper:
     @abc.abstractmethod
     def query(self, query: str) -> pd.DataFrame:
         """Returns results from the given query"""
+
+    def compare_table_to_fixture(
+        self,
+        address: BigQueryAddress,
+        columns_to_ignore: list[str],
+        expected_output_fixture_path: str,
+        expect_missing_fixtures_on_empty_results: bool,
+        create_expected: bool,
+    ) -> None:
+        project_specific_address = address.to_project_specific_address(
+            metadata.project_id()
+        )
+
+        if columns_to_ignore:
+            columns_str = ", ".join(columns_to_ignore)
+            query = project_specific_address.select_query(
+                select_statement=f"SELECT * EXCEPT({columns_str})"
+            )
+        else:
+            query = project_specific_address.select_query()
+
+        table_contents_df = self.query(query)
+        self.compare_results_to_fixture(
+            results=table_contents_df,
+            expected_output_fixture_path=expected_output_fixture_path,
+            create_expected=create_expected,
+            expect_missing_fixtures_on_empty_results=expect_missing_fixtures_on_empty_results,
+        )
+
+    @classmethod
+    def compare_results_to_fixture(
+        cls,
+        results: pd.DataFrame,
+        expected_output_fixture_path: str,
+        expect_missing_fixtures_on_empty_results: bool,
+        create_expected: bool,
+    ) -> None:
+        """Compares the results in the given Dataframe that have been presumably read
+        out of the BQ emulator and compares them to the data in the fixture file at the
+        provided path.
+
+        Args:
+            results: A Dataframe containing the query results we want to compare to the
+                provided fixture.
+            expected_output_fixture_path: The path to the fixture file containing the
+                expected results we expect to compare to the |results| Dataframe.
+            expect_missing_fixtures_on_empty_results: If True, we expect a file to exist
+                at |expected_output_fixture_path| if and only if the |results| Dataframe
+                is empty.
+            create_expected: If True, running this function will update all the
+                |expected_output_fixture_path| to contain contents that match |results|.
+        """
+
+        fixture_should_not_exist = (
+            results.empty and expect_missing_fixtures_on_empty_results
+        )
+
+        if create_expected:
+            if environment.in_ci():
+                raise AssertionError(
+                    "`create_expected` should only be used when writing or updating the test."
+                )
+
+            if fixture_should_not_exist:
+                if os.path.exists(expected_output_fixture_path):
+                    os.remove(expected_output_fixture_path)
+            else:
+                # Make output directory if it doesn't yet exist
+                output_directory = os.path.dirname(expected_output_fixture_path)
+                os.makedirs(output_directory, exist_ok=True)
+
+                sorted_results = cls.apply_types_and_sort(
+                    results,
+                    cls._get_fixture_comparison_data_types(results),
+                    results.columns.tolist(),
+                )
+                sorted_results.to_csv(expected_output_fixture_path, index=False)
+
+        if fixture_should_not_exist:
+            if os.path.exists(expected_output_fixture_path):
+                raise ValueError(
+                    f"Found fixture [{expected_output_fixture_path}] but there were no "
+                    f"results produced - this fixture should be deleted."
+                )
+            # Fixture does not exist and results are empty - check passes
+            return
+        pd.options.display.width = 9999
+        pd.options.display.max_columns = 999
+        pd.options.display.max_rows = 999
+        pd.options.display.max_colwidth = 999
+
+        print(f"Loading expected results from path [{expected_output_fixture_path}]")
+        expected = load_dataframe_from_path(
+            expected_output_fixture_path, fixture_columns=None, allow_comments=True
+        )
+        cls.compare_expected_and_result_dfs(expected=expected, results=results)
+
+    @staticmethod
+    def _get_fixture_comparison_data_types(
+        results: pd.DataFrame,
+    ) -> Dict[str, Union[Type, str]]:
+        return {
+            column: BigQueryTestHelper.fixture_comparison_data_type_for_column(
+                results, column
+            )
+            for column in results.columns.tolist()
+        }
 
     @classmethod
     def compare_expected_and_result_dfs(

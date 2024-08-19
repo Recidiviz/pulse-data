@@ -53,17 +53,13 @@ from recidiviz.tests.big_query.sqlglot_helpers import (
 from recidiviz.tests.ingest.direct.direct_ingest_raw_fixture_loader import (
     DirectIngestRawDataFixtureLoader,
 )
-from recidiviz.tests.ingest.direct.fixture_util import (
-    DirectIngestTestFixturePath,
-    load_dataframe_from_path,
-)
+from recidiviz.tests.ingest.direct.fixture_util import DirectIngestTestFixturePath
 from recidiviz.tests.ingest.direct.regions.ingest_view_cte_comment_exemptions import (
     THESE_INGEST_VIEWS_HAVE_UNDOCUMENTED_CTES,
 )
 from recidiviz.tests.pipelines.ingest.state.ingest_region_test_mixin import (
     IngestRegionTestMixin,
 )
-from recidiviz.utils import environment
 
 # we need file_update_dt to have a pytz.UTC timezone, but the query_run_dt to be
 # timzone naive for bq
@@ -182,22 +178,12 @@ class IngestViewEmulatorQueryTestCase(BigQueryEmulatorTestCase, IngestRegionTest
             self.ingest_view(), self.query_run_dt
         )
 
-        if create_expected:
-            if environment.in_ci():
-                raise AssertionError(
-                    "`create_expected` should only be used when writing or updating the test."
-                )
-            # Make output directory if it doesn't yet exist
-            output_directory = os.path.dirname(expected_output_fixture_path)
-            os.makedirs(output_directory, exist_ok=True)
-
-            results.to_csv(expected_output_fixture_path, index=False)
-
-        pd.options.display.width = 9999
-        pd.options.display.max_columns = 999
-        pd.options.display.max_rows = 999
-        pd.options.display.max_colwidth = 999
-        self.compare_results_to_fixture(results, expected_output_fixture_path)
+        self.compare_results_to_fixture(
+            results,
+            expected_output_fixture_path,
+            create_expected=create_expected,
+            expect_missing_fixtures_on_empty_results=False,
+        )
         self.lint_ingest_view_query(
             self.ingest_view(), self.query_run_dt, self.state_code()
         )
@@ -291,17 +277,3 @@ class IngestViewEmulatorQueryTestCase(BigQueryEmulatorTestCase, IngestRegionTest
                     f"Query {ingest_view_name} has all CTEs documented - please remove "
                     f"its empty entry from THESE_INGEST_VIEWS_HAVE_UNDOCUMENTED_CTES."
                 )
-
-    def compare_results_to_fixture(
-        self, results: pd.DataFrame, expected_output_fixture_path: str
-    ) -> None:
-        """Compares the results in the given Dataframe that have been presumably read
-        out of a local, fake BQ instance (i.e. backed by Postgres) and compares them
-        to the data in the fixture file at the provided path.
-        """
-
-        print(f"Loading expected results from path [{expected_output_fixture_path}]")
-        expected = load_dataframe_from_path(
-            expected_output_fixture_path, fixture_columns=None, allow_comments=True
-        )
-        self.compare_expected_and_result_dfs(expected=expected, results=results)
