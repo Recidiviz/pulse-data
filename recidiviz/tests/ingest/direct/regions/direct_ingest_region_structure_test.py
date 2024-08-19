@@ -101,6 +101,9 @@ from recidiviz.tests.ingest.direct.fixture_util import (
 from recidiviz.tests.ingest.direct.regions.ingest_view_query_test_case import (
     IngestViewEmulatorQueryTestCase,
 )
+from recidiviz.tests.ingest.direct.regions.state_specific_ingest_pipeline_integration_test_case import (
+    PIPELINE_INTEGRATION_TEST_NAME,
+)
 from recidiviz.tools.postgres import local_persistence_helpers, local_postgres_helpers
 from recidiviz.utils import environment, metadata
 from recidiviz.utils.environment import GCPEnvironment
@@ -832,6 +835,10 @@ class TestControllerWithIngestManifestCollection(unittest.TestCase):
                     f"[{test_file_name}]"
                 )
             ingest_view_to_test_names[ingest_view_name] = test_names
+
+        # Every ingest view is tested by the pipeline integration test
+        for test_names in ingest_view_to_test_names.values():
+            test_names.add(PIPELINE_INTEGRATION_TEST_NAME)
         return ingest_view_to_test_names
 
     def test_all_ingest_views_have_corresponding_test(self) -> None:
