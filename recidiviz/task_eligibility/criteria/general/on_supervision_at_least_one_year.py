@@ -36,6 +36,7 @@ VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
         criteria_name=_CRITERIA_NAME,
         description=_DESCRIPTION,
         minimum_time_served=1,
+        compartment_level_0="SUPERVISION",
         compartment_level_1_types=["SUPERVISION"],
     )
 )

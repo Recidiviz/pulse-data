@@ -23,6 +23,7 @@ from google.cloud import bigquery
 
 from recidiviz.calculator.query.bq_utils import revert_nonnull_end_date_clause
 from recidiviz.calculator.query.sessions_query_fragments import (
+    aggregate_adjacent_spans,
     create_sub_sessions_with_attributes,
     join_sentence_spans_to_compartment_sessions,
 )
@@ -148,6 +149,7 @@ def get_minimum_time_served_criteria_query(
     description: str,
     minimum_time_served: int,
     time_served_interval: str = "YEAR",
+    compartment_level_0: str = "INCARCERATION",
     compartment_level_1_types: Optional[List[str]] = None,
     compartment_level_2_types: Optional[List[str]] = None,
     housing_unit_types: Optional[List[str]] = None,
@@ -155,28 +157,71 @@ def get_minimum_time_served_criteria_query(
 ) -> StateAgnosticTaskCriteriaBigQueryViewBuilder:
     """Returns a state agnostic criteria view builder indicating spans of time when a person has served
     |minimum_time_served| years or more. The compartment level filters can be used to restrict the type of session
-    that counts towards the time served."""
+    that counts towards the time served.
+
+    Parameters:
+    -----------
+    criteria_name : str
+        The name of the criteria view.
+
+    description : str
+        A brief description of the criteria view.
+
+    minimum_time_served : int
+        The minimum amount of time served required to meet the criteria.
+
+    time_served_interval : str, optional
+        The interval type for the time served (e.g., "YEAR", "MONTH"). Defaults to "YEAR".
+
+    compartment_level_0 : str, optional
+        The primary compartment level to filter sessions by. Defaults to "INCARCERATION". If "SUPERVISION" then
+        `prioritized_supervision_sessions` is used instead of `compartment_level_1` or `compartment_sessions`
+
+    compartment_level_1_types : Optional[List[str]], optional
+        A list of compartment level 1 types to filter sessions by, e.g., "SUPERVISION",
+        "INCARCERATION". Defaults to None.
+
+    compartment_level_2_types : Optional[List[str]], optional
+        A list of compartment level 2 types to filter sessions by. If provided, sessions
+        will be filtered based on this level. Defaults to None.
+
+    housing_unit_types : Optional[List[str]], optional
+        A list of housing unit types to filter sessions by. Defaults to None.
+
+    supervision_level_types : Optional[List[str]], optional
+        A list of supervision level types to filter sessions by. Defaults to None.
+    """
 
     # Default to `system_sessions` if no compartment type is specified
     sessions_table = "system_sessions_materialized"
     sessions_conditions = []
+    attribute = ""  # Initialize attribute to a default value
 
     if compartment_level_1_types:
-        sessions_table = "compartment_level_1_super_sessions_materialized"
-        sessions_conditions.append(
-            f"compartment_level_1 IN ('{', '.join(compartment_level_1_types)}')"
-        )
+        attribute = "compartment_level_1"
+        if (
+            "SUPERVISION" in compartment_level_1_types
+            or "SUPERVISION_OUT_OF_STATE" in compartment_level_1_types
+        ):
+            sessions_table = "prioritized_supervision_sessions_materialized"
+            formatted_values = "', '".join(compartment_level_1_types)
+            sessions_conditions.append(f"compartment_level_1 IN ('{formatted_values}')")
+
+        if "INCARCERATION" in compartment_level_1_types:
+            sessions_table = "compartment_level_1_super_sessions_materialized"
+            formatted_values = "', '".join(compartment_level_1_types)
+            sessions_conditions.append(f"compartment_level_1 IN ('{formatted_values}')")
 
     if compartment_level_2_types:
-        sessions_table = "compartment_sessions_materialized"
-        sessions_conditions.append(
-            f"compartment_level_2 IN ('{', '.join(compartment_level_2_types)}')"
-        )
-    if housing_unit_types:
-        sessions_table = "housing_unit_type_sessions_materialized"
-        sessions_conditions.append(
-            f"housing_unit_type IN ('{', '.join(housing_unit_types)}')"
-        )
+        attribute = "compartment_level_2"
+        if compartment_level_0 == "SUPERVISION":
+            sessions_table = "prioritized_supervision_sessions_materialized"
+            formatted_values = "', '".join(compartment_level_2_types)
+            sessions_conditions.append(f"compartment_level_2 IN ('{formatted_values}')")
+        else:
+            sessions_table = "compartment_sessions_materialized"
+            formatted_values = "', '".join(compartment_level_2_types)
+            sessions_conditions.append(f"compartment_level_2 IN ('{formatted_values}')")
 
     if supervision_level_types:
         if compartment_level_1_types or compartment_level_2_types:
@@ -184,14 +229,15 @@ def get_minimum_time_served_criteria_query(
                 "Compartment level 1 and 2 values are not supported in supervision level sessions"
             )
         sessions_table = "supervision_level_sessions_materialized"
-        sessions_conditions.append(
-            f"supervision_level IN ('{', '.join(supervision_level_types)}')"
-        )
+        formatted_values = "', '".join(supervision_level_types)
+        sessions_conditions.append(f"supervision_level IN ('{formatted_values}')")
+        attribute = "supervision_level"
+
     if housing_unit_types:
         sessions_table = "housing_unit_type_sessions_materialized"
-        sessions_conditions.append(
-            f"housing_unit_type IN ('{', '.join(housing_unit_types)}')"
-        )
+        formatted_values = "', '".join(housing_unit_types)
+        sessions_conditions.append(f"housing_unit_type IN ('{formatted_values}')")
+        attribute = "housing_unit_type"
 
     if len(sessions_conditions) > 0:
         condition_string = "WHERE " + "\n\t\tAND ".join(sessions_conditions)
@@ -199,15 +245,27 @@ def get_minimum_time_served_criteria_query(
         condition_string = ""
 
     criteria_query = f"""
-    WITH critical_date_spans AS (
+    WITH filtered_spans AS (
+      SELECT
+        state_code,
+        person_id,
+        start_date,
+        end_date_exclusive,
+        {attribute},
+      FROM `{{project_id}}.{{sessions_dataset}}.{sessions_table}`
+      {condition_string}
+    ),
+    critical_date_spans AS (
       SELECT
         state_code,
         person_id,
         start_date AS start_datetime,
         end_date_exclusive AS end_datetime,
         DATE_ADD(start_date, INTERVAL {minimum_time_served} {time_served_interval}) AS critical_date,
-      FROM `{{project_id}}.{{sessions_dataset}}.{sessions_table}`
-      {condition_string}
+      FROM ({aggregate_adjacent_spans(
+                table_name='filtered_spans',
+                end_date_field_name="end_date_exclusive",
+            )})
     ),
     {critical_date_has_passed_spans_cte()}
     SELECT
