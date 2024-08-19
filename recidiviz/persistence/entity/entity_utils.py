@@ -754,7 +754,7 @@ def deep_entity_update(
     return updated_entity
 
 
-def set_backedges(element: RootEntity) -> RootEntity:
+def set_backedges(element: Entity | RootEntity) -> Entity | RootEntity:
     """Set the backedges of the root entity tree using DFS traversal of the root
     entity tree."""
     entities_module = get_module_for_entity_class(type(assert_type(element, Entity)))
