@@ -36,11 +36,15 @@ from recidiviz.persistence.entity.entity_utils import set_backedges
 from recidiviz.persistence.entity.state.entities import (
     StateChargeV2,
     StateSentence,
+    StateSentenceGroup,
+    StateSentenceGroupLength,
     StateSentenceLength,
 )
 from recidiviz.persistence.entity.state.normalized_entities import (
     NormalizedStateChargeV2,
     NormalizedStateSentence,
+    NormalizedStateSentenceGroup,
+    NormalizedStateSentenceGroupLength,
     NormalizedStateSentenceLength,
 )
 from recidiviz.pipelines.ingest.state.normalization.utils import get_min_max_fields
@@ -197,3 +201,64 @@ def get_normalized_sentences(
     for sentence in normalized_sentences:
         set_backedges(sentence)
     return normalized_sentences
+
+
+def normalize_group_lengths(
+    group_lengths: List[StateSentenceGroupLength],
+) -> List[NormalizedStateSentenceGroupLength]:
+    """
+    Normalizes StateSentenceGroupLength, with two updates:
+        - Updates sequence_num to be contiguous from 1 based on the partition_key,
+          correcting it if external data is increasing, but not contiguous from 1
+        - Updates sentence_length_days min/max and projected_completion_date min/max
+          to actually be the min/max of the hydrated values, correcting it if external
+          data is not consistent. Other date enforcement occurs at ingest in the
+          __attrs_post_init__ of StateSentenceLength
+    """
+    normalized_lengths = []
+    for idx, length in enumerate(sorted(group_lengths, key=lambda s: s.partition_key)):
+        # If the group length full term min/max fields are not
+        # consistent in "state" such that min is always < max, we ensure that
+        # they are consistent in "normalized_state"
+        # See the __attrs_post_init__ of StateSentenceGroupLength to see what
+        # projected field consitency we enforce at ingest.
+        full_term_min, full_term_max = get_min_max_fields(
+            length.projected_full_term_release_date_min_external,
+            length.projected_full_term_release_date_max_external,
+        )
+        normalized_lengths.append(
+            NormalizedStateSentenceGroupLength(
+                sequence_num=idx + 1,
+                state_code=length.state_code,
+                sentence_group_length_id=assert_type(
+                    length.sentence_group_length_id, int
+                ),
+                group_update_datetime=length.group_update_datetime,
+                parole_eligibility_date_external=length.parole_eligibility_date_external,
+                projected_parole_release_date_external=length.projected_parole_release_date_external,
+                projected_full_term_release_date_min_external=full_term_min,
+                projected_full_term_release_date_max_external=full_term_max,
+            )
+        )
+    return normalized_lengths
+
+
+def get_normalized_sentence_groups(
+    sentence_groups: List[StateSentenceGroup],
+) -> List[NormalizedStateSentenceGroup]:
+    return [
+        assert_type(
+            set_backedges(
+                NormalizedStateSentenceGroup(
+                    external_id=group.external_id,
+                    state_code=group.state_code,
+                    sentence_group_id=assert_type(group.sentence_group_id, int),
+                    sentence_group_lengths=normalize_group_lengths(
+                        group.sentence_group_lengths
+                    ),
+                )
+            ),
+            NormalizedStateSentenceGroup,
+        )
+        for group in sentence_groups
+    ]

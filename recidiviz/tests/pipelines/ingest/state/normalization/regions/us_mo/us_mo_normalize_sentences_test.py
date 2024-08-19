@@ -38,6 +38,7 @@ from recidiviz.pipelines.ingest.state.generate_primary_keys import (
     string_representation,
 )
 from recidiviz.pipelines.ingest.state.normalization.normalize_sentences import (
+    get_normalized_sentence_groups,
     get_normalized_sentences,
 )
 from recidiviz.utils.types import assert_type
@@ -223,6 +224,22 @@ def test_person_001_sentencing_normalization() -> None:
             SENTENCE_001_20040224_2,
         ]
     )
+
+    SG_001_19900117 = entities.StateSentenceGroup(
+        state_code="US_MO",
+        external_id="TEST_001-19900117",
+    )
+    SG_001_20040224 = entities.StateSentenceGroup(
+        state_code="US_MO",
+        external_id="TEST_001-20040224",
+    )
+    person_001.sentence_groups.extend(
+        [
+            SG_001_19900117,
+            SG_001_20040224,
+        ]
+    )
+
     set_backedges(person_001)
     person_001_pk = generate_primary_key(
         string_representation(
@@ -443,3 +460,23 @@ def test_person_001_sentencing_normalization() -> None:
         get_normalized_sentences(person_001.sentences), key=lambda s: s.external_id
     )
     assert actual_normalized_sentences == expected_normalized_sentences
+
+    NORMALIZED_SG_001_19900117 = normalized_entities.NormalizedStateSentenceGroup(
+        state_code="US_MO",
+        external_id="TEST_001-19900117",
+        sentence_group_id=assert_type(SG_001_19900117.sentence_group_id, int),
+    )
+    NORMALIZED_SG_001_20040224 = normalized_entities.NormalizedStateSentenceGroup(
+        state_code="US_MO",
+        external_id="TEST_001-20040224",
+        sentence_group_id=assert_type(SG_001_20040224.sentence_group_id, int),
+    )
+    expected_normalized_sentence_groups = [
+        set_backedges(NORMALIZED_SG_001_19900117),
+        set_backedges(NORMALIZED_SG_001_20040224),
+    ]
+    actual_normalized_sentence_groups = sorted(
+        get_normalized_sentence_groups(person_001.sentence_groups),
+        key=lambda s: s.external_id,
+    )
+    assert actual_normalized_sentence_groups == expected_normalized_sentence_groups

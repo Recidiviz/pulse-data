@@ -29,12 +29,15 @@ from recidiviz.common.constants.state.state_sentence import (
 from recidiviz.persistence.entity.state.entities import (
     StateChargeV2,
     StateSentence,
+    StateSentenceGroup,
+    StateSentenceGroupLength,
     StateSentenceLength,
 )
 from recidiviz.persistence.entity.state.normalized_entities import (
     NormalizedStateChargeV2,
 )
 from recidiviz.pipelines.ingest.state.normalization.normalize_sentences import (
+    get_normalized_sentence_groups,
     get_normalized_sentences,
     normalize_charge_v2,
 )
@@ -65,6 +68,13 @@ class TestSentenceV2Normalization(unittest.TestCase):
             sentence_type=StateSentenceType.STATE_PRISON,
             sentencing_authority=StateSentencingAuthority.STATE,
             imposed_date=datetime.date(2022, 2, 2),
+        )
+
+    def _new_sentence_group(self, id_num: int) -> StateSentenceGroup:
+        return StateSentenceGroup(
+            state_code=self.state_code_value,
+            external_id=f"sentence-group-{id_num}",
+            sentence_group_id=id_num,
         )
 
     def test_normalized_charge_v2_has_external_fields(self) -> None:
@@ -255,4 +265,120 @@ class TestSentenceV2Normalization(unittest.TestCase):
         assert (
             second.projected_completion_date_max_external
             == start_date + datetime.timedelta(days=115)
+        )
+
+    def test_get_normalized_sentence_groups_no_lengths(self) -> None:
+        """Tests that all sentence group properties are persisted in normalization."""
+        sentence_groups = [self._new_sentence_group(i) for i in range(5)]
+        normalized_groups = get_normalized_sentence_groups(sentence_groups)
+        for i in range(5):
+            group = sentence_groups[i]
+            normalized_group = normalized_groups[i]
+            assert group.external_id == normalized_group.external_id
+            assert group.sentence_group_id == normalized_group.sentence_group_id
+            assert group.state_code == normalized_group.state_code
+
+    def test_get_normalized_sentence_groups_length_empty_projected_fields(self) -> None:
+        group = self._new_sentence_group(1)
+        start_date = datetime.datetime(2022, 1, 1)
+        group.sentence_group_lengths = [
+            StateSentenceGroupLength(
+                state_code=self.state_code_value,
+                sentence_group_length_id=111,
+                group_update_datetime=start_date,
+                parole_eligibility_date_external=start_date
+                + datetime.timedelta(days=100),
+            ),
+            StateSentenceGroupLength(
+                state_code=self.state_code_value,
+                sentence_group_length_id=222,
+                group_update_datetime=start_date + datetime.timedelta(days=10),
+                parole_eligibility_date_external=start_date
+                + datetime.timedelta(days=90),
+            ),
+        ]
+        normalized_group = get_normalized_sentence_groups([group])[0]
+        normalized_lengths = sorted(
+            normalized_group.sentence_group_lengths, key=lambda s: s.partition_key
+        )
+        assert len(normalized_lengths) == 2
+        first, second = normalized_lengths
+        assert first.sequence_num == 1
+        assert first.sentence_group_length_id == 111
+        assert (
+            first.parole_eligibility_date_external
+            == start_date + datetime.timedelta(100)
+        )
+        assert second.sequence_num == 2
+        assert second.sentence_group_length_id == 222
+        assert (
+            second.parole_eligibility_date_external
+            == start_date + datetime.timedelta(90)
+        )
+
+    def test_get_normalized_sentence_groups_length_inconsistent_projected_fields(
+        self,
+    ) -> None:
+        group = self._new_sentence_group(1)
+        start_date = datetime.datetime(2022, 1, 1)
+        group.sentence_group_lengths = [
+            StateSentenceGroupLength(
+                state_code=self.state_code_value,
+                sentence_group_length_id=111,
+                group_update_datetime=start_date,
+                parole_eligibility_date_external=start_date
+                + datetime.timedelta(days=100),
+                # Intended to be more than the max value
+                projected_full_term_release_date_min_external=start_date
+                + datetime.timedelta(days=200),
+                projected_full_term_release_date_max_external=start_date
+                + datetime.timedelta(days=190),
+            ),
+            StateSentenceGroupLength(
+                state_code=self.state_code_value,
+                sentence_group_length_id=222,
+                group_update_datetime=start_date + datetime.timedelta(days=10),
+                parole_eligibility_date_external=start_date
+                + datetime.timedelta(days=90),
+                # Intended to be less than the max value
+                projected_full_term_release_date_min_external=start_date
+                + datetime.timedelta(days=180),
+                projected_full_term_release_date_max_external=start_date
+                + datetime.timedelta(days=190),
+            ),
+        ]
+
+        normalized_group = get_normalized_sentence_groups([group])[0]
+        normalized_lengths = sorted(
+            normalized_group.sentence_group_lengths, key=lambda s: s.partition_key
+        )
+        assert len(normalized_lengths) == 2
+        first, second = normalized_lengths
+        assert first.sequence_num == 1
+        assert first.sentence_group_length_id == 111
+        assert (
+            first.parole_eligibility_date_external
+            == start_date + datetime.timedelta(100)
+        )
+        assert (
+            first.projected_full_term_release_date_min_external
+            == start_date + datetime.timedelta(190)
+        )
+        assert (
+            first.projected_full_term_release_date_max_external
+            == start_date + datetime.timedelta(200)
+        )
+        assert second.sequence_num == 2
+        assert second.sentence_group_length_id == 222
+        assert (
+            second.parole_eligibility_date_external
+            == start_date + datetime.timedelta(90)
+        )
+        assert (
+            second.projected_full_term_release_date_min_external
+            == start_date + datetime.timedelta(180)
+        )
+        assert (
+            second.projected_full_term_release_date_max_external
+            == start_date + datetime.timedelta(190)
         )
