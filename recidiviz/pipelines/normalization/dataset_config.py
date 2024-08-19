@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Helpers for getting pipeline output datasets for normalized entities."""
+from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
 from recidiviz.common.constants.states import StateCode
 
 
@@ -28,7 +29,7 @@ def normalized_state_dataset_for_state_code_legacy_normalization_output(
 
 
 def normalized_state_dataset_for_state_code_ingest_pipeline_output(
-    state_code: StateCode,
+    state_code: StateCode, sandbox_dataset_prefix: str | None = None
 ) -> str:
     """Where the output of state-specific ingest pipeline normalized entities output is
     stored.
@@ -36,4 +37,9 @@ def normalized_state_dataset_for_state_code_ingest_pipeline_output(
     # TODO(#31741): Rename this back to `us_xx_normalized_state` once we're only reading
     #  from this dataset for all states and have deleted the legacy
     #  `us_xx_normalized_state` source table collections.
-    return f"{state_code.value.lower()}_normalized_state_new"
+    base_dataset = f"{state_code.value.lower()}_normalized_state_new"
+    if not sandbox_dataset_prefix:
+        return base_dataset
+    return BigQueryAddressOverrides.format_sandbox_dataset(
+        sandbox_dataset_prefix, base_dataset
+    )

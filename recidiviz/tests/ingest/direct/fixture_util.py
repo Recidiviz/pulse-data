@@ -140,6 +140,12 @@ class DirectIngestFixtureDataFileType(Enum):
     #  view subdir and delete this enum?
     EXTRACT_AND_MERGE_INPUT = "extract_and_merge_input"
 
+    # Fixture files that contain data in the format of the `us_xx_state`/`state` dataset
+    STATE_DATA = "state"
+
+    # Fixture files that contain data in the format of the `state` dataset
+    NORMALIZED_STATE_DATA = "normalized_state"
+
 
 def replace_empty_with_null(
     values: Union[Iterable[Dict[str, str]], Iterable[Tuple[str, ...]]]
@@ -269,6 +275,36 @@ class DirectIngestTestFixturePath:
         )
 
     @classmethod
+    def for_state_data_fixture(
+        cls,
+        *,
+        region_code: str,
+        table_id: str,
+        file_name: str,
+    ) -> "DirectIngestTestFixturePath":
+        return cls(
+            region_code=region_code,
+            fixture_file_type=DirectIngestFixtureDataFileType.STATE_DATA,
+            subdir_name=table_id,
+            file_name=file_name,
+        )
+
+    @classmethod
+    def for_normalized_state_data_fixture(
+        cls,
+        *,
+        region_code: str,
+        table_id: str,
+        file_name: str,
+    ) -> "DirectIngestTestFixturePath":
+        return cls(
+            region_code=region_code,
+            fixture_file_type=DirectIngestFixtureDataFileType.NORMALIZED_STATE_DATA,
+            subdir_name=table_id,
+            file_name=file_name,
+        )
+
+    @classmethod
     def for_enum_raw_text_fixture(
         cls,
         *,
@@ -380,6 +416,16 @@ class DirectIngestTestFixturePath:
                 region_fixtures_directory_path,
                 self.fixture_file_type.value,
                 self.ingest_view_name(),
+            )
+
+        if self.fixture_file_type in (
+            DirectIngestFixtureDataFileType.STATE_DATA,
+            DirectIngestFixtureDataFileType.NORMALIZED_STATE_DATA,
+        ):
+            return os.path.join(
+                region_fixtures_directory_path,
+                self.fixture_file_type.value,
+                assert_type(self.subdir_name, str),
             )
 
         if self.fixture_file_type is DirectIngestFixtureDataFileType.ENUM_RAW_TEXT:

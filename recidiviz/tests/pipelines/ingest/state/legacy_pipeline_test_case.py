@@ -15,11 +15,9 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """A class that represents a test case to be used for testing the ingest pipeline."""
-from collections import defaultdict
 from copy import deepcopy
 from datetime import datetime
-from types import ModuleType
-from typing import Any, Callable, Dict, Iterable, List, Optional, Set, Tuple, Type, cast
+from typing import Any, Callable, Dict, Iterable, List, Set, Tuple, Type
 
 import apache_beam
 from apache_beam.testing.util import BeamAssertException
@@ -28,8 +26,6 @@ from mock import patch
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_utils import schema_for_sqlalchemy_table
-from recidiviz.common.constants.states import StateCode
-from recidiviz.ingest.direct.dataset_config import raw_tables_dataset_for_region
 from recidiviz.ingest.direct.types.direct_ingest_constants import (
     MATERIALIZATION_TIME_COL_NAME,
     UPPER_BOUND_DATETIME_COL_NAME,
@@ -44,12 +40,8 @@ from recidiviz.persistence.database.schema_utils import (
     get_state_database_association_with_names,
     is_association_table,
 )
-from recidiviz.persistence.entity.base_entity import Entity, RootEntity
-from recidiviz.persistence.entity.entity_utils import (
-    get_all_entities_from_tree,
-    get_all_entity_associations_from_tree,
-    get_module_for_entity_class,
-)
+from recidiviz.persistence.entity.base_entity import Entity
+from recidiviz.persistence.entity.entity_utils import get_module_for_entity_class
 from recidiviz.pipelines.base_pipeline import BasePipeline
 from recidiviz.pipelines.ingest.dataset_config import (
     ingest_view_materialization_results_dataset,
@@ -68,15 +60,12 @@ from recidiviz.source_tables.collect_all_source_table_configs import (
 )
 from recidiviz.source_tables.source_table_config import SourceTableCollection
 from recidiviz.tests.big_query.big_query_emulator_test_case import (
-    BQ_EMULATOR_PROJECT_ID,
     BigQueryEmulatorTestCase,
 )
-from recidiviz.tests.ingest.direct import fake_regions
 from recidiviz.tests.ingest.direct.direct_ingest_raw_fixture_loader import (
     DirectIngestRawDataFixtureLoader,
 )
 from recidiviz.tests.pipelines.fake_bigquery import (
-    FakeReadFromBigQueryWithEmulator,
     FakeWriteOutputToBigQueryWithValidator,
 )
 from recidiviz.tests.pipelines.ingest.state.ingest_region_test_mixin import (
@@ -84,16 +73,17 @@ from recidiviz.tests.pipelines.ingest.state.ingest_region_test_mixin import (
 )
 from recidiviz.tests.pipelines.utils.run_pipeline_test_utils import (
     DEFAULT_TEST_PIPELINE_OUTPUT_SANDBOX_PREFIX,
-    run_test_pipeline,
 )
-
-INGEST_INTEGRATION = "ingest_integration"
 
 
 # TODO(#22059): Standardize ingest view result fixtures for pipeline and ingest view
 # tests, and update this test case to load those fixtures using the same
 # common code as the ingest view test.
-class BaseStateIngestPipelineTestCase(BigQueryEmulatorTestCase, IngestRegionTestMixin):
+# TODO(#29517): Deprecate this class and all subclasses in favor of the new
+#  StateIngestPipelineTestCase
+class BaseLegacyStateIngestPipelineTestCase(
+    BigQueryEmulatorTestCase, IngestRegionTestMixin
+):
     """Base test case for testing ingest dataflow pipelines using the BigQueryEmulator."""
 
     wipe_emulator_data_on_teardown = False
@@ -388,104 +378,3 @@ class BaseStateIngestPipelineTestCase(BigQueryEmulatorTestCase, IngestRegionTest
                         )
 
         return _validate_entity_output
-
-
-class StateIngestPipelineTestCase(BaseStateIngestPipelineTestCase):
-    """A test case class to test the ingest pipeline, from raw data all the way to entity
-    generation and merging. This does use the BQ emulator."""
-
-    @classmethod
-    def state_code(cls) -> StateCode:
-        return StateCode.US_DD
-
-    @classmethod
-    def region_module_override(cls) -> Optional[ModuleType]:
-        return fake_regions
-
-    def setUp(self) -> None:
-        super().setUp()
-        self.raw_data_tables_dataset = raw_tables_dataset_for_region(
-            self.state_code(), DirectIngestInstance.PRIMARY
-        )
-
-    def tearDown(self) -> None:
-        super().tearDown()
-
-    def setup_region_raw_data_bq_tables(self, test_name: str) -> None:
-        self.raw_fixture_loader.load_raw_fixtures_to_emulator(
-            self.ingest_view_collector().get_query_builders(),
-            ingest_test_identifier=f"{test_name}.csv",
-            file_update_dt=None,
-        )
-
-    def create_fake_bq_read_source_constructor(
-        self,
-        query: str,
-        # pylint: disable=unused-argument
-        use_standard_sql: bool,
-        validate: bool,
-    ) -> FakeReadFromBigQueryWithEmulator:
-        return FakeReadFromBigQueryWithEmulator(query=query, test_case=self)
-
-    def run_test_state_pipeline(
-        self,
-        ingest_view_results: Dict[str, Iterable[Dict[str, Any]]],
-        expected_root_entities: List[RootEntity],
-        ingest_view_results_only: bool = False,
-        ingest_views_to_run: Optional[str] = None,
-        raw_data_upper_bound_dates_json_override: Optional[str] = None,
-        debug: bool = False,  # pylint: disable=unused-argument
-    ) -> None:
-        """
-        Runs the state ingest pipeline and validates the output.
-        Assumes raw data tables have already been loaded!
-        """
-        expected_entities = [
-            entity
-            for root_entity in expected_root_entities
-            for entity in get_all_entities_from_tree(cast(Entity, root_entity))
-        ]
-
-        expected_entity_types_to_expected_entities = {
-            entity_type: [
-                entity
-                for entity in expected_entities
-                if entity.get_entity_name() == entity_type
-            ]
-            for ingest_view in self.launchable_ingest_views()
-            for entity_type in self.get_expected_output_entity_types(
-                ingest_view_name=ingest_view,
-            )
-        }
-        expected_entity_association_type_to_associations = defaultdict(set)
-        for root_entity in expected_root_entities:
-            for (
-                association_table,
-                associations,
-            ) in get_all_entity_associations_from_tree(
-                cast(Entity, root_entity)
-            ).items():
-                expected_entity_association_type_to_associations[
-                    association_table
-                ].update(associations)
-
-        run_test_pipeline(
-            pipeline_cls=self.pipeline_class(),
-            state_code=self.state_code().value,
-            project_id=BQ_EMULATOR_PROJECT_ID,
-            read_from_bq_constructor=self.create_fake_bq_read_source_constructor,
-            write_to_bq_constructor=self.create_fake_bq_write_sink_constructor(
-                expected_output=self.get_expected_output(
-                    ingest_view_results,
-                    expected_entity_types_to_expected_entities,
-                    expected_entity_association_type_to_associations,
-                )
-            ),
-            ingest_view_results_only=ingest_view_results_only,
-            ingest_views_to_run=ingest_views_to_run,
-            raw_data_upper_bound_dates_json=(
-                raw_data_upper_bound_dates_json_override
-                if raw_data_upper_bound_dates_json_override
-                else self.raw_fixture_loader.default_upper_bound_dates_json
-            ),
-        )

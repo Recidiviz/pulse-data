@@ -16,12 +16,21 @@
 # =============================================================================
 """Testing the GenerateIngestViewResults PTransform"""
 import unittest
+from copy import deepcopy
 from datetime import datetime
+from types import ModuleType
+from typing import Any, Callable, Dict, Iterable, Optional
 
 from apache_beam.options.pipeline_options import PipelineOptions, SetupOptions
 from apache_beam.pipeline_test import TestPipeline, assert_that
+from apache_beam.testing.util import BeamAssertException
 from mock import patch
 
+from recidiviz.common.constants.states import StateCode
+from recidiviz.ingest.direct.types.direct_ingest_constants import (
+    MATERIALIZATION_TIME_COL_NAME,
+    UPPER_BOUND_DATETIME_COL_NAME,
+)
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
     DirectIngestViewQueryBuilder,
@@ -31,11 +40,21 @@ from recidiviz.tests.big_query.big_query_emulator_test_case import (
     BQ_EMULATOR_PROJECT_ID,
 )
 from recidiviz.tests.ingest.direct import fake_regions
-from recidiviz.tests.pipelines.ingest.state.test_case import StateIngestPipelineTestCase
+from recidiviz.tests.pipelines.ingest.state.pipeline_test_case import (
+    StateIngestPipelineTestCase,
+)
 
 
 class TestGenerateIngestViewResults(StateIngestPipelineTestCase):
     """Tests the GenerateIngestViewResults PTransform."""
+
+    @classmethod
+    def state_code(cls) -> StateCode:
+        return StateCode.US_DD
+
+    @classmethod
+    def region_module_override(cls) -> Optional[ModuleType]:
+        return fake_regions
 
     def setUp(self) -> None:
         super().setUp()
@@ -67,6 +86,39 @@ class TestGenerateIngestViewResults(StateIngestPipelineTestCase):
             ingest_test_identifier=f"{test_name}.csv",
             file_update_dt=None,
         )
+
+    @staticmethod
+    def validate_ingest_view_results(
+        expected_output: Iterable[Dict[str, Any]],
+        _output_table: str,
+    ) -> Callable[[Iterable[Dict[str, Any]]], None]:
+        """Allows for validating the output of ingest view results without worrying about
+        the output of the materialization time."""
+
+        def _validate_ingest_view_results_output(
+            output: Iterable[Dict[str, Any]]
+        ) -> None:
+            # TODO(#22059): Remove this once all states can start an ingest integration
+            # test using raw data fixtures.
+            if not expected_output:
+                return
+            copy_of_expected_output = deepcopy(expected_output)
+            for record in copy_of_expected_output:
+                record.pop(MATERIALIZATION_TIME_COL_NAME)
+            copy_of_output = deepcopy(output)
+            for record in copy_of_output:
+                if not MATERIALIZATION_TIME_COL_NAME in record:
+                    raise BeamAssertException("Missing materialization time column")
+                record.pop(MATERIALIZATION_TIME_COL_NAME)
+                record[UPPER_BOUND_DATETIME_COL_NAME] = datetime.fromisoformat(
+                    record[UPPER_BOUND_DATETIME_COL_NAME]
+                ).isoformat()
+            if copy_of_output != copy_of_expected_output:
+                raise BeamAssertException(
+                    f"Output does not match expected output: output is {copy_of_output}, expected is {copy_of_expected_output}"
+                )
+
+        return _validate_ingest_view_results_output
 
     # TODO(#22059): Standardize ingest view fixtures for ingest tests.
     # This is testing ingest view materialization,
