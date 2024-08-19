@@ -62,6 +62,7 @@ from recidiviz.persistence.database.database_managers.state_segmented_database_m
     StateSegmentedDatabaseManager,
 )
 from recidiviz.persistence.database.schema.insights.schema import (
+    ActionStrategySurfacedEvents,
     Configuration,
     MetricBenchmark,
     SupervisionClientEvent,
@@ -1473,3 +1474,27 @@ class OutliersQuerier:
         c.register_structure_hook(datetime, lambda dt, _: dt)
 
         return c.structure(config_dict, OutliersProductConfiguration)
+
+    def get_action_strategy_surfaced_events_for_supervisor(
+        self, supervisor_pseudonymized_id: str
+    ) -> ActionStrategySurfacedEvents:
+        """
+        Gets the ActionStrategySurfacedEvents for a given supervisor.
+        """
+        with self.insights_database_session() as session:
+            supervisor_events = (
+                session.query(ActionStrategySurfacedEvents)
+                .filter(
+                    ActionStrategySurfacedEvents.user_pseudonymized_id
+                    == supervisor_pseudonymized_id
+                )
+                .with_entities(
+                    ActionStrategySurfacedEvents.user_pseudonymized_id,
+                    ActionStrategySurfacedEvents.officer_pseudonymized_id,
+                    ActionStrategySurfacedEvents.action_strategy,
+                    ActionStrategySurfacedEvents.timestamp,
+                )
+                .all()
+            )
+
+            return supervisor_events

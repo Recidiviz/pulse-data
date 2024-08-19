@@ -28,6 +28,9 @@ from recidiviz.calculator.query.state.views.analyst_data.insights_caseload_categ
     InsightsCaseloadCategoryType,
 )
 from recidiviz.common.str_field_utils import person_name_case
+from recidiviz.persistence.database.schema.insights.schema import (
+    ActionStrategySurfacedEvents,
+)
 
 
 class MetricOutcome(Enum):
@@ -560,3 +563,37 @@ class OutliersProductConfiguration:
         c.register_unstructure_hook(OutliersMetricConfig, metrics_unst_hook)
 
         return c.unstructure(self)
+
+
+class ActionStrategyType(Enum):
+    ACTION_STRATEGY_OUTLIER = "ACTION_STRATEGY_OUTLIER"
+    ACTION_STRATEGY_OUTLIER_3_MONTHS = "ACTION_STRATEGY_OUTLIER_3_MONTHS"
+    ACTION_STRATEGY_OUTLIER_ABSCONSION = "ACTION_STRATEGY_OUTLIER_ABSCONSION"
+    ACTION_STRATEGY_OUTLIER_NEW_OFFICER = "ACTION_STRATEGY_OUTLIER_NEW_OFFICER"
+    ACTION_STRATEGY_60_PERC_OUTLIERS = "ACTION_STRATEGY_60_PERC_OUTLIERS"
+
+
+@attr.s
+class OutliersActionStrategy:
+    events: List[ActionStrategySurfacedEvents] = attr.ib()
+
+    # Officer is eligible for ACTION_STRATEGY_OUTLIER if they are an outlier and this prompt has not surfaced
+    def action_strategy_outlier_eligible(
+        self, officer_pseudo_id: str, is_outlier: bool
+    ) -> bool:
+        disqualifying_events = [
+            e
+            for e in self.events
+            if e.officer_pseudonymized_id == officer_pseudo_id
+            and e.action_strategy == ActionStrategyType.ACTION_STRATEGY_OUTLIER.value
+        ]
+        return is_outlier and len(disqualifying_events) == 0
+
+    def get_eligible_action_strategy_for_officer(
+        self, officer: SupervisionOfficerEntity
+    ) -> Optional[str]:
+        is_outlier = len(officer.outlier_metrics) > 0
+        officer_pseudo_id = officer.pseudonymized_id
+        if self.action_strategy_outlier_eligible(officer_pseudo_id, is_outlier):
+            return ActionStrategyType.ACTION_STRATEGY_OUTLIER.value
+        return None
