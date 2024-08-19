@@ -210,9 +210,6 @@ from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_caf_q7 impo
 from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_caf_q8 import (
     US_TN_CAF_Q8_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_cellbed_assignment_raw import (
-    US_TN_CELLBED_ASSIGNMENT_RAW_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_contact_comments_preprocessed import (
     US_TN_CONTACT_COMMENTS_PREPROCESSED_VIEW_BUILDER,
 )
@@ -234,9 +231,6 @@ from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_incarcerati
 from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_invoices_preprocessed import (
     US_TN_INVOICES_PREPROCESSED_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_max_stays import (
-    US_TN_MAX_STAYS_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_payments_preprocessed import (
     US_TN_PAYMENTS_PREPROCESSED_VIEW_BUILDER,
 )
@@ -257,9 +251,6 @@ from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_segregation
 )
 from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_segregation_stays import (
     US_TN_SEGREGATION_STAYS_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_segregation_stays_v2 import (
-    US_TN_SEGREGATION_STAYS_VIEW_BUILDER_V2,
 )
 from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_zero_tolerance_codes import (
     US_TN_ZERO_TOLERANCE_CODES_VIEW_BUILDER,
@@ -359,13 +350,10 @@ ANALYST_DATA_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     US_CA_SUSTAINABLE_HOUSING_STATUS_PERIODS_VIEW_BUILDER,
     US_TN_RELEVANT_CONTACT_CODES_VIEW_BUILDER,
     US_TN_CONTACT_COMMENTS_PREPROCESSED_VIEW_BUILDER,
-    US_TN_MAX_STAYS_VIEW_BUILDER,
-    US_TN_SEGREGATION_STAYS_VIEW_BUILDER,
     US_TN_CUSTODY_LEVEL_SESSIONS_PREPROCESSED_VIEW_BUILDER,
-    US_TN_SEGREGATION_STAYS_VIEW_BUILDER_V2,
+    US_TN_SEGREGATION_STAYS_VIEW_BUILDER,
     US_TN_SEGREGATION_LISTS_VIEW_BUILDER,
     WORKFLOWS_PERSON_IMPACT_FUNNEL_STATUS_SESSIONS_VIEW_BUILDER,
-    US_TN_CELLBED_ASSIGNMENT_RAW_VIEW_BUILDER,
     US_AZ_ACTION_QUEUE_VIEW_BUILDER,
     US_AZ_HOME_PLAN_PREPROCESSED_VIEW_BUILDER,
     US_TN_CUSTODY_CLASSIFICATION_ASSESSMENT_DATES_PREPROCESSED_VIEW_BUILDER,

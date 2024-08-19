@@ -52,8 +52,7 @@ HOUSING_UNIT_TYPE_SESSIONS_QUERY_TEMPLATE = f"""
         housing_unit_type,
         start_date,
         end_date_exclusive
-    -- TODO(#30674): Change name here to `us_tn_segregation_stays` once original is deprecated
-    FROM `{{project_id}}.{{analyst_dataset}}.us_tn_segregation_stays_v2_materialized` 
+    FROM `{{project_id}}.{{analyst_dataset}}.us_tn_segregation_stays_materialized` 
     )
     ,
     sessionized_cte AS

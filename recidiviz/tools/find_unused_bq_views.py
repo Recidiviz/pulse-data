@@ -80,14 +80,8 @@ from recidiviz.calculator.query.state.views.analyst_data.us_mo.us_mo_program_tra
 from recidiviz.calculator.query.state.views.analyst_data.us_mo.us_mo_sentencing_dates_preprocessed import (
     US_MO_SENTENCING_DATES_PREPROCESSED_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_max_stays import (
-    US_TN_MAX_STAYS_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_segregation_lists import (
     US_TN_SEGREGATION_LISTS_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_segregation_stays import (
-    US_TN_SEGREGATION_STAYS_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.outliers.supervision_impact_metrics_outlier_officers import (
     SUPERVISION_IMPACT_METRICS_OUTLIER_OFFICERS_VIEW_BUILDER,
@@ -291,14 +285,6 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
     COMPARTMENT_LEVEL_2_SUPER_SESSIONS_VIEW_BUILDER.address: (
         "Not currently referenced but is used in downstream analytical work for which "
         "we are interested in aggregating across in state and out of state (Andrew Gaidus 1/25/24)"
-    ),
-    US_TN_MAX_STAYS_VIEW_BUILDER.address: (
-        "Used to send ad hoc reports to TN every quarter. These views will eventually be deprecated if"
-        "#21518 is completed (Damini Sharma 1/25/24)"
-    ),
-    US_TN_SEGREGATION_STAYS_VIEW_BUILDER.address: (
-        "Used to send ad hoc reports to TN every quarter. These views will eventually be deprecated if"
-        "#21518 is completed (Damini Sharma 1/25/24)"
     ),
     US_TN_SEGREGATION_LISTS_VIEW_BUILDER.address: (
         "Used to send ad hoc reports to TN every quarter. These views will eventually be deprecated if"
