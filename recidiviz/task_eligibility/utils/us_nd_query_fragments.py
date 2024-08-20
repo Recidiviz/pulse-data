@@ -198,6 +198,54 @@ def get_positive_behavior_reports_as_case_notes() -> str:
         AND sic.incident_date > DATE_SUB(CURRENT_DATE, INTERVAL 1 YEAR)"""
 
 
+TRAINING_PROGRAMMING_NOTE_TEXT_REGEX = "|".join(
+    [
+        "THINKING FOR CHANGE",
+        "THINKING FOR A CHANGE",
+        "FREE THROUGH RECOVERY",
+        "RESTORING PROMISE",
+        "PEER SUPPORT",
+        "BEYOND TRAUMA",
+        "ADDICTION AFTERCARE",
+        "TED TALKS",
+        "CBISA",
+        "TRAINING",
+        "PROGRAM",
+        "CLASS",
+        "COURSE",
+        "CAREER",
+        "EDUCATION",
+        "SKILLS",
+        "WORK",
+        "CAREER",
+    ]
+)
+
+WORK_NOTE_TEXT_REGEX = "|".join(
+    [
+        "FOOD SERVICES",
+        "SHOP",
+        "HELPER",
+        "MAIN KITCHEN",
+        "WORKER",
+        "JANITOR",
+        "ASST",
+        "JOB",
+        "EMPLOYMENT",
+    ]
+)
+
+HEALTH_NOTE_TEXT_REGEX = "|".join(
+    [
+        "MEDICAL",
+        "HEALTH",
+        "PSYCH",
+        "MEDICATED",
+        "MEDICATION",
+    ]
+)
+
+
 def get_program_assignments_as_case_notes(
     criteria: str = "Assignments", additional_where_clause: Optional[str] = None
 ) -> str:
@@ -394,4 +442,49 @@ min_referrals_with_external_id_and_ce AS (
             AND mr.state_code = ce.state_code
     GROUP BY 1,2,3,4,5,6,7,8,9
 )
+    """
+
+
+_SSI_NOTE_TEXT_REGEX = "|".join(
+    [
+        "SSI",
+        "SOCIAL SECURITY DISABILITY",
+        "DISABILITY BENEFITS",
+        "SOCIAL DISABILITY INSURANCE",
+        "DISABILITY INSURANCE",
+    ]
+)
+SSI_NOTE_WHERE_CLAUSE = (
+    f"WHERE REGEXP_CONTAINS(UPPER(ocn.CASE_NOTE_TEXT), r'{_SSI_NOTE_TEXT_REGEX}')"
+)
+
+
+def get_offender_case_notes(
+    criteria: str, additional_where_clause: Optional[str] = None
+) -> str:
+    """
+    Returns a SQL query that retrieves case notes from OffenderCaseNotes
+    """
+
+    return f"""
+    SELECT 
+        peid.external_id,
+        "{criteria}" AS criteria,
+        ocn.CASE_NOTE_TYPE AS note_title,
+        ocn.CASE_NOTE_TEXT AS note_body,
+        SAFE_CAST(PARSE_DATETIME('%m/%d/%Y %I:%M:%S%p', CONTACT_TIME) AS DATE) AS event_date,
+    FROM `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.elite_OffenderCaseNotes_latest` ocn
+    INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` peid
+        ON SAFE_CAST(REGEXP_REPLACE(ocn.OFFENDER_BOOK_ID, r',|.00', '') AS STRING) = peid.external_id
+            AND peid.state_code = 'US_ND'
+            AND peid.id_type = 'US_ND_ELITE_BOOKING'
+    -- Only include case notes from the current incarceration span
+    INNER JOIN `{{project_id}}.{{sessions_dataset}}.incarceration_super_sessions_materialized` iss
+        ON iss.state_code='US_ND'
+        AND peid.person_id = iss.person_id
+        AND {today_between_start_date_and_nullable_end_date_exclusive_clause(
+            start_date_column="iss.start_date",
+            end_date_column="iss.end_date"
+        )}
+    {additional_where_clause}
     """

@@ -1104,6 +1104,11 @@ US_ND:
   docstars_officers:
     reference_views.ingested_product_users: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
+  elite_OffenderCaseNotes:
+    workflows_views.us_nd_transfer_to_atp_form_record: |-
+      We need case notes related to SSI.
+    workflows_views.us_nd_transfer_to_minimum_facility_form_record: |-
+      We need case notes related to SSI.
   elite_OffenderProgramProfiles:
     sessions.us_nd_incarceration_staff_assignment_sessions_preprocessed: |-
       Get CM staff assignments to residents.

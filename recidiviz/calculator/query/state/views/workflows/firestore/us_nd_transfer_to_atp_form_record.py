@@ -41,6 +41,11 @@ from recidiviz.task_eligibility.utils.us_nd_query_fragments import (
     get_positive_behavior_reports_as_case_notes,
     get_program_assignments_as_case_notes,
     reformat_ids,
+    get_offender_case_notes,
+    SSI_NOTE_WHERE_CLAUSE,
+    HEALTH_NOTE_TEXT_REGEX,
+    TRAINING_PROGRAMMING_NOTE_TEXT_REGEX,
+    WORK_NOTE_TEXT_REGEX,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -74,16 +79,30 @@ case_notes_cte AS (
 
     UNION ALL
 
-    -- Mental Health Assignments
+    -- Health Assignments
     {get_program_assignments_as_case_notes(
-        additional_where_clause="REGEXP_CONTAINS(spa.program_id, r'MENTAL HEALTH')", 
-        criteria='Mental Health')}
+        additional_where_clause=f"REGEXP_CONTAINS(spa.program_id, r'{HEALTH_NOTE_TEXT_REGEX}')", 
+        criteria='Health')}
 
     UNION ALL
 
-    -- Assignments (this includes programming, career readiness and jobs)
+    -- Training/Program Assignments
     {get_program_assignments_as_case_notes(
-        additional_where_clause="NOT REGEXP_CONTAINS(spa.program_id, r'MENTAL HEALTH')")}
+        additional_where_clause=f"REGEXP_CONTAINS(spa.program_id, r'{TRAINING_PROGRAMMING_NOTE_TEXT_REGEX}')", 
+        criteria='Programming')}
+
+    UNION ALL
+
+    -- Job Assignments
+    {get_program_assignments_as_case_notes(
+        additional_where_clause=f"REGEXP_CONTAINS(spa.program_id, r'{WORK_NOTE_TEXT_REGEX}')", 
+        criteria='Jobs')}
+        
+    UNION ALL
+    
+    -- Social Security Insurance
+    {get_offender_case_notes(criteria = 'Social Security Insurance', 
+                             additional_where_clause=SSI_NOTE_WHERE_CLAUSE)}
 
     UNION ALL
 
