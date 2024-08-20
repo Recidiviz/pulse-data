@@ -49,9 +49,6 @@ from recidiviz.calculator.query.state.views.analyst_data.workflows_person_impact
 from recidiviz.calculator.query.state.views.reference.state_person_to_state_staff import (
     STATE_PERSON_TO_STATE_STAFF_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.reference.us_mo_sentence_statuses import (
-    US_MO_SENTENCE_STATUSES_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.workflows.current_impact_funnel_status import (
     CURRENT_IMPACT_FUNNEL_STATUS_VIEW_BUILDER,
 )
@@ -552,7 +549,6 @@ The following views have less restrictive projects_to_deploy than their parents:
             STATE_BASE_DATASET: {
                 # Reference views that feed into the normalization pipelines
                 STATE_PERSON_TO_STATE_STAFF_VIEW_BUILDER.address,
-                US_MO_SENTENCE_STATUSES_VIEW_BUILDER.address,
                 # This validation checks both state and normalized_state
                 PRIMARY_KEYS_UNIQUE_ACROSS_ALL_STATES_VIEW_BUILDER.address,
             },
