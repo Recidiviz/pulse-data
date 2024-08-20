@@ -799,11 +799,7 @@ def parse_supervision_period_admission_reason(
 
     statuses = [
         UsMoSentenceStatus(
-            sentence_status_external_id="0-0-0",
-            sentence_external_id="000",
-            status_date=None,
-            status_code=status,
-            status_description="",
+            status_date=None, status_code=status, status_description="", sequence_num=0
         )
         for status in sorted_list_from_str(raw_text, ",")
     ]
@@ -892,11 +888,7 @@ def parse_supervision_period_termination_reason(
 
     statuses = [
         UsMoSentenceStatus(
-            sentence_status_external_id="0-0-0",
-            sentence_external_id="000",
-            status_date=None,
-            status_code=status,
-            status_description="",
+            status_date=None, status_code=status, status_description="", sequence_num=0
         )
         for status in sorted_list_from_str(raw_text, ",")
     ]
@@ -1409,13 +1401,12 @@ def get_recidiviz_sentence_status(raw_text: str) -> StateSentenceStatus:
     """
     code, description = raw_text.split("@@")
     status = UsMoSentenceStatus(
-        sentence_status_external_id="0-0-0",
-        sentence_external_id="000",
         status_date=None,
         status_code=code,
         status_description=description,
+        sequence_num=0,
     )
-    return status.state_sentence_status
+    return status.get_state_sentence_status()
 
 
 # TODO(#28189): Expand status code knowledge/coverage for supervision type classification.
@@ -1426,9 +1417,8 @@ def parse_state_sentence_type_from_supervision_status(
     """Returns the StateSentenceType for a StateSentence based on the status code at imposition."""
     status_code, status_description = raw_text.split("@@")
     status = UsMoSentenceStatus(
-        sentence_status_external_id="0-0-0",
-        sentence_external_id="0-0-0",
         status_date=None,
+        sequence_num=0,
         status_code=status_code,
         status_description=status_description,
     )
@@ -1455,9 +1445,8 @@ def get_sentence_type(raw_text: str) -> StateSentenceType:
     """
     initial_status_code, initial_status_desc = raw_text.split("@@")
     status = UsMoSentenceStatus(
-        sentence_status_external_id="0-0-0",
-        sentence_external_id="0-0-0",
         status_date=None,
+        sequence_num=0,
         status_code=initial_status_code,
         status_description=initial_status_desc,
     )

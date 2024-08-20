@@ -192,11 +192,10 @@ def get_imposed_date(
     # However, we fall back to the imposed date,
     # found in supervision data if needed.
     status = UsMoSentenceStatus(
-        sentence_status_external_id="0-0-0",
-        sentence_external_id="000",
         status_date=None,
         status_code=initial_status_code,
         status_description=initial_status_desc,
+        sequence_num=0,
     )
     if status.is_incarceration_in_status or status.is_incarceration_out_status:
         imposed_date = (

@@ -20,8 +20,7 @@ from typing import Optional
 
 import attr
 
-from recidiviz.common.attr_converters import optional_str_to_uppercase_str
-from recidiviz.common.attr_mixins import BuildableAttr
+from recidiviz.common.attr_converters import str_to_uppercase_str
 from recidiviz.common.constants.state.state_sentence import (
     StateSentenceStatus,
     StateSentenceType,
@@ -30,34 +29,27 @@ from recidiviz.common.constants.state.state_supervision_sentence import (
     StateSupervisionSentenceSupervisionType,
 )
 from recidiviz.common.date import DateRange, DurationMixin
+from recidiviz.persistence.entity.state.entities import StateSentenceStatusSnapshot
 
 
 @attr.s(frozen=True)
-class UsMoSentenceStatus(BuildableAttr):
-    """Representation of MO statuses in the TAK026 table, with helpers to provide more info about this status."""
-
-    # Unique id for this sentence status object
-    sentence_status_external_id: str = attr.ib()
-
-    # External id for the sentence associated with this status
-    sentence_external_id: str = attr.ib()
+class UsMoSentenceStatus:
+    """Representation of MO statuses in the TAK026 table, with helpers to provide more
+    info about this status.
+    """
 
     # Status date
     status_date: Optional[date] = attr.ib()
+
+    # Sequence number - determines ordering for statuses on the same date
+    sequence_num: int = attr.ib()
 
     # Status code like 15O1000
     status_code: str = attr.ib()
 
     # Human-readable status code description
     # Will be an uppercase or empty str
-    status_description: str = attr.ib(converter=optional_str_to_uppercase_str)
-
-    # MO DOC id for person associated with this sentence
-    person_external_id: str = attr.ib()
-
-    @person_external_id.default
-    def _get_person_external_id(self) -> str:
-        return self.sentence_external_id.split("-")[0]
+    status_description: str = attr.ib(converter=str_to_uppercase_str)
 
     # If True, this is a status that denotes a start to some period of supervision related to this sentence.
     # Note: these are not always present when a period of supervision starts - sometimes only an 'incarceration out'
@@ -303,16 +295,10 @@ class UsMoSentenceStatus(BuildableAttr):
             return StateSentenceType.PAROLE
         return StateSentenceType.INTERNAL_UNKNOWN
 
-    # This is to identify the type of SentenceStatus at its own
-    # point in time in a ledger of StateSentenceStatusSnapshots
-    state_sentence_status: StateSentenceStatus = attr.ib()
-
-    @state_sentence_status.default
-    def _state_sentence_status(
-        self,
-    ) -> StateSentenceStatus:
-        """Returns the StateSentenceStatus based on the given sentence and status code."""
-
+    def get_state_sentence_status(self) -> StateSentenceStatus:
+        """Returns the StateSentenceStatus that is true about this sentence starting at
+        the point in time associated with this status.
+        """
         if self.status_code in {
             "35I3500",  # Bond Supv-Pb Suspended-Revisit
             "65O2015",  # Court Probation Suspension
@@ -337,18 +323,46 @@ class UsMoSentenceStatus(BuildableAttr):
 
         return StateSentenceStatus.SERVING
 
-    # TODO(#30199): Remove this field once we set sequence_num directly as a param
-    #  on this class.
-    @property
-    def sequence_num(self) -> int:
-        """Parses the status sequence number from the external id."""
-        parts = self.sentence_status_external_id.split("-")
-        if len(parts) < 2:
+    @classmethod
+    def from_sentence_status_snapshot(
+        cls, status_snapshot: StateSentenceStatusSnapshot
+    ) -> "UsMoSentenceStatus":
+        """Builds a UsMoSentenceStatus parser object from the provided
+        |status_snapshot|.
+        """
+        if not (status_raw_text := status_snapshot.status_raw_text):
             raise ValueError(
-                f"Unexpected sentence status external id format: "
-                f"{self.sentence_status_external_id}"
+                f"Found status snapshot with status [{status_snapshot.status}] but no "
+                f"status_raw_text value. All MO status snapshots expected to have raw "
+                f"text."
             )
-        return int(parts[-1])
+        if (sequence_num := status_snapshot.sequence_num) is None:
+            raise ValueError("Found status snapshot with null sequence_num value.")
+
+        raw_text_parts = status_raw_text.split("@@")
+        if not len(raw_text_parts) == 2:
+            raise ValueError(
+                f"Unexpected number of raw text parts for sentence status raw text "
+                f"[{status_snapshot.status_raw_text}]"
+            )
+        status_code, description = raw_text_parts
+
+        mo_sentence_status = UsMoSentenceStatus(
+            status_code=status_code,
+            status_date=status_snapshot.status_update_datetime.date(),
+            sequence_num=sequence_num,
+            status_description=description,
+        )
+        derived_sentence_status = mo_sentence_status.get_state_sentence_status()
+        if derived_sentence_status != status_snapshot.status:
+            raise ValueError(
+                f"Found status produced by the UsMoSentenceStatus "
+                f"({status_code=}) [{derived_sentence_status}] which does not "
+                f"match the status on the StateSentenceStatusSnapshot it was derived "
+                f"from [{status_snapshot.status}]."
+            )
+
+        return mo_sentence_status
 
 
 @attr.s(frozen=True)

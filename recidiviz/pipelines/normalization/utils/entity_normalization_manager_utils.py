@@ -125,7 +125,6 @@ def normalized_periods_for_calculations(
         incarceration_periods=incarceration_periods,
         delegate=sp_normalization_delegate,
         earliest_death_date=earliest_death_date,
-        incarceration_sentences=incarceration_sentences,
         supervision_sentences=supervision_sentences,
         staff_external_id_to_staff_id=staff_external_id_to_staff_id,
     )

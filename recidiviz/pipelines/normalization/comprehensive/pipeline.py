@@ -172,7 +172,8 @@ class ComprehensiveNormalizationPipeline(BasePipeline[NormalizationPipelineParam
                 # do state-specific processing of the sentences for normalizing
                 # supervision periods.
                 StateCode.US_MO: [
-                    # TODO(#30199): Remove dependency on this view in favor of StateSentenceStatusSnapshot
+                    # TODO(#30199): Actually stop pulling this view into the pipeline at
+                    #  all now that we're not using it and delete this view.
                     US_MO_SENTENCE_STATUSES_VIEW_BUILDER
                 ],
             },

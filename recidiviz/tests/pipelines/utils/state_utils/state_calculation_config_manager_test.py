@@ -163,7 +163,7 @@ class TestStateCalculationConfigManager(unittest.TestCase):
                 state_code.value,
                 incarceration_periods=[],
                 assessments=[],
-                us_mo_sentence_statuses_list=[],
+                sentences=[],
             )
 
     def test_get_state_specific_case_compliance_manager(self) -> None:
