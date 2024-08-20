@@ -31,10 +31,20 @@ from google.cloud.discoveryengine_v1.services.search_service.pagers import Searc
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.tools.prototypes.discovery_engine import DiscoveryEngineInterface
 from recidiviz.tools.prototypes.gcs_bucket_reader import GCSBucketReader
-from recidiviz.utils.environment import GCP_PROJECT_STAGING
+from recidiviz.utils.environment import (
+    GCP_PROJECT_PRODUCTION,
+    GCP_PROJECT_STAGING,
+    get_gcp_environment,
+    in_development,
+)
 
 IDAHO_CASE_NOTES_ENGINE_ID = "id-case-notes-new_1717011992933"
 FAKE_CASE_NOTES_ENGINE_ID = "fake-case-note-search_1723492600856"
+CASE_NOTE_SEARCH_ENGINE_ID = "case-note-search_1723818974584"
+
+# The discovery engine returns different results depending on whether we are using
+# structured or unstructured data.
+STRUCTURED_DATASETS = {CASE_NOTE_SEARCH_ENGINE_ID}
 
 
 def download_full_case_note(gcs_link: str) -> Optional[str]:
@@ -69,10 +79,10 @@ def get_snippet(result: Any) -> Optional[str]:
 
 
 def get_preview(
-    snippet: Optional[str],
-    extractive_answer: Optional[str],
     full_case_note: Optional[str],
-    n: int = 30,
+    snippet: Optional[str] = None,
+    extractive_answer: Optional[str] = None,
+    n: int = 250,
 ) -> str:
     """Generates the preview to be displayed in the frontend.
 
@@ -89,7 +99,9 @@ def get_preview(
     raise ValueError("No case note generated.")
 
 
-def extract_case_notes_results(pager: SearchPager) -> List[Dict[str, Any]]:
+def extract_case_notes_results_unstructured_data(
+    pager: SearchPager,
+) -> List[Dict[str, Any]]:
     """
     Extract relevant information from a SearchPager object for case note search results.
     """
@@ -115,6 +127,45 @@ def extract_case_notes_results(pager: SearchPager) -> List[Dict[str, Any]]:
                     "preview": get_preview(
                         extractive_answer=extractive_answer,
                         snippet=snippet,
+                        full_case_note=full_case_note,
+                    ),
+                    "case_note": full_case_note,
+                }
+            )
+        except Exception as e:
+            raise ValueError(
+                f"Could not parse SearchPager results. document.id = {document_id}"
+            ) from e
+    return results
+
+
+def get_note_body(result: Any) -> Optional[str]:
+    """Gets the note body from the search result."""
+    note_body = result.document.struct_data.get("note_body", None)
+    return note_body
+
+
+def extract_case_notes_results_structured_data(
+    pager: SearchPager,
+) -> List[Dict[str, Any]]:
+    """
+    Extract relevant information from a SearchPager object for case note search results.
+    """
+    results = []
+    for result in pager.results:
+        document_id = result.document.id
+        try:
+            full_case_note = get_note_body(result)
+            results.append(
+                {
+                    "document_id": document_id,
+                    "date": result.document.struct_data.get("note_date", None),
+                    "contact_mode": result.document.struct_data.get("note_mode", None),
+                    "note_type": result.document.struct_data.get("note_type", None),
+                    "note_title": result.document.struct_data.get("note_title", None),
+                    "extractive_answer": None,
+                    "snippet": None,
+                    "preview": get_preview(
                         full_case_note=full_case_note,
                     ),
                     "case_note": full_case_note,
@@ -159,10 +210,23 @@ def case_note_search(
 
         In the error case, the response is {"results": [], "error": <error_description>}.
     """
+    # Use real case notes for local development and production development. Otherwise
+    # use fake data.
+    if in_development() or get_gcp_environment() == GCP_PROJECT_PRODUCTION:
+        engine_id = CASE_NOTE_SEARCH_ENGINE_ID
+    else:
+        engine_id = FAKE_CASE_NOTES_ENGINE_ID
+
+    # Explicitly disable snippets if running the engine on structured data, since
+    # snippets, extractive answers, and summaries are disabled for structed data stores.
+    # See https://github.com/googleapis/google-cloud-ruby/issues/26036.
+    if engine_id in STRUCTURED_DATASETS:
+        with_snippet = False
+
     try:
         discovery_interface = DiscoveryEngineInterface(
             project_id=GCP_PROJECT_STAGING,
-            engine_id=FAKE_CASE_NOTES_ENGINE_ID,
+            engine_id=engine_id,
         )
         search_pager = discovery_interface.search(
             query=query,
@@ -170,10 +234,19 @@ def case_note_search(
             filter_conditions=filter_conditions,
             with_snippet=with_snippet,
         )
-        results = extract_case_notes_results(search_pager)
-        return {"results": results, "error": None}
+        if engine_id in STRUCTURED_DATASETS:
+            results = extract_case_notes_results_structured_data(search_pager)
+        else:
+            results = extract_case_notes_results_unstructured_data(search_pager)
+        return {
+            "results": results,
+            "error": None,
+        }
     except Exception as e:
-        return {"results": [], "error": str(e)}
+        return {
+            "results": [],
+            "error": str(e),
+        }
 
 
 if __name__ == "__main__":
