@@ -16,17 +16,16 @@
 # =============================================================================
 """Ingest pipeline integration test(s) for US_XX."""
 from types import ModuleType
-from typing import List, Optional
+from typing import Optional
 
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct import templates
-from recidiviz.persistence.entity.state import entities
-from recidiviz.tests.ingest.direct.regions.legacy_state_specific_ingest_pipeline_integration_test_case import (
-    LegacyStateSpecificIngestPipelineIntegrationTestCase,
+from recidiviz.tests.ingest.direct.regions.state_specific_ingest_pipeline_integration_test_case import (
+    StateSpecificIngestPipelineIntegrationTestCase,
 )
 
 
-class UsXxPipelineIntegrationTest(LegacyStateSpecificIngestPipelineIntegrationTestCase):
+class UsXxPipelineIntegrationTest(StateSpecificIngestPipelineIntegrationTestCase):
     """Ingest pipeline integration test(s) for US_XX."""
 
     @classmethod
@@ -38,21 +37,11 @@ class UsXxPipelineIntegrationTest(LegacyStateSpecificIngestPipelineIntegrationTe
         return templates
 
     def test_run_full_ingest_pipeline(self) -> None:
-        """Integration test that runs ingest end-to-end for all ingest views defined for
-        US_XX.
+        """Integration test that runs an ingest pipeline end-to-end for all ingest
+        views defined for US_XX.
         """
 
-        # Build expected set of python entities throughout whole test
-        expected_root_entities: List[entities.RootEntity] = []
-
-        # NOTE: For each new ingest view, add a block like the one below at the end of
-        # the test.
-
-        ######################################
-        # <ingest view name here>
-        ######################################
-        # Arrange
-
-        # < Add to / update expected_root_entities here>
-
-        self.run_test_state_pipeline({}, expected_root_entities)
+        # If your test is failing because you changed ingest logic and fixture files
+        # containing expected results need to be upgraded, run this function with
+        # `create_expected=True` to update the fixture files.
+        self.run_test_state_pipeline()
