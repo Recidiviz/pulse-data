@@ -19,10 +19,11 @@ from typing import Any, Dict, List
 
 import attr
 
-from recidiviz.ingest.direct.types.raw_data_import_blocking_validation_types import (
-    RawDataTableImportBlockingValidation,
-    RawDataTableImportBlockingValidationFailure,
-    RawDataTableImportBlockingValidationType,
+from recidiviz.ingest.direct.raw_data.raw_file_configs import RawTableColumnInfo
+from recidiviz.ingest.direct.types.raw_data_import_blocking_validation import (
+    RawDataColumnImportBlockingValidation,
+    RawDataImportBlockingValidationFailure,
+    RawDataImportBlockingValidationType,
 )
 from recidiviz.utils.string import StrictStringFormatter
 
@@ -35,13 +36,16 @@ LIMIT 1
 
 
 @attr.define
-class NonNullValuesColumnValidation(RawDataTableImportBlockingValidation):
+class NonNullValuesColumnValidation(RawDataColumnImportBlockingValidation):
     """Validation to check if a column has only null values, runs on all columns unless explicitly exempt."""
 
-    column_name: str
-    validation_type: RawDataTableImportBlockingValidationType = (
-        RawDataTableImportBlockingValidationType.NONNULL_VALUES
+    validation_type: RawDataImportBlockingValidationType = (
+        RawDataImportBlockingValidationType.NONNULL_VALUES
     )
+
+    @staticmethod
+    def validation_applies_to_column(_column: RawTableColumnInfo) -> bool:
+        return True
 
     def build_query(self) -> str:
         return StrictStringFormatter().format(
@@ -54,12 +58,12 @@ class NonNullValuesColumnValidation(RawDataTableImportBlockingValidation):
 
     def get_error_from_results(
         self, results: List[Dict[str, Any]]
-    ) -> RawDataTableImportBlockingValidationFailure | None:
+    ) -> RawDataImportBlockingValidationFailure | None:
         if results:
             # Found at least one nonnull value
             return None
         # Found only null values
-        return RawDataTableImportBlockingValidationFailure(
+        return RawDataImportBlockingValidationFailure(
             validation_type=self.validation_type,
             error_msg=f"Found column [{self.column_name}] on raw file [{self.file_tag}] with only null values."
             f"\nValidation query: {self.query}",

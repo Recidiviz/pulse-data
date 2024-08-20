@@ -38,8 +38,8 @@ from recidiviz.ingest.direct.raw_data.raw_table_relationship_info import (
     RawDataJoinCardinality,
     RawTableRelationshipInfo,
 )
-from recidiviz.ingest.direct.types.raw_data_import_blocking_validation_types import (
-    RawDataTableImportBlockingValidationType,
+from recidiviz.ingest.direct.types.raw_data_import_blocking_validation import (
+    RawDataImportBlockingValidationType,
 )
 from recidiviz.tests.ingest.direct import fake_regions
 
@@ -222,7 +222,7 @@ class TestRawTableColumnInfo(unittest.TestCase):
 
     def test_nonnull_value_validation_exemption(self) -> None:
         exemption = ImportBlockingValidationExemption(
-            validation_type=RawDataTableImportBlockingValidationType.NONNULL_VALUES,
+            validation_type=RawDataImportBlockingValidationType.NONNULL_VALUES,
             exemption_reason="reason",
         )
         exempt_column = RawTableColumnInfo(
@@ -237,7 +237,7 @@ class TestRawTableColumnInfo(unittest.TestCase):
         self.assertTrue(
             ImportBlockingValidationExemption.list_includes_exemption_type(
                 exempt_column.import_blocking_column_validation_exemptions,
-                RawDataTableImportBlockingValidationType.NONNULL_VALUES,
+                RawDataImportBlockingValidationType.NONNULL_VALUES,
             )
         )
 
@@ -250,7 +250,7 @@ class TestRawTableColumnInfo(unittest.TestCase):
             known_values=None,
         )
         exemption = ImportBlockingValidationExemption(
-            validation_type=RawDataTableImportBlockingValidationType.DATETIME_PARSERS,
+            validation_type=RawDataImportBlockingValidationType.DATETIME_PARSERS,
             exemption_reason="reason",
         )
         non_exempt_column = RawTableColumnInfo(
@@ -272,7 +272,7 @@ class TestRawTableColumnInfo(unittest.TestCase):
         self.assertFalse(
             ImportBlockingValidationExemption.list_includes_exemption_type(
                 non_exempt_column.import_blocking_column_validation_exemptions,
-                RawDataTableImportBlockingValidationType.NONNULL_VALUES,
+                RawDataImportBlockingValidationType.NONNULL_VALUES,
             )
         )
 
@@ -980,7 +980,7 @@ class TestDirectIngestRegionRawFileConfig(unittest.TestCase):
                 ],
                 import_blocking_column_validation_exemptions=[
                     ImportBlockingValidationExemption(
-                        validation_type=RawDataTableImportBlockingValidationType.NONNULL_VALUES,
+                        validation_type=RawDataImportBlockingValidationType.NONNULL_VALUES,
                         exemption_reason="reason",
                     )
                 ],
@@ -1141,7 +1141,7 @@ class TestDirectIngestRegionRawFileConfig(unittest.TestCase):
         self.assertTrue(
             ImportBlockingValidationExemption.list_includes_exemption_type(
                 default_config.default_import_blocking_validation_exemptions,
-                RawDataTableImportBlockingValidationType.STABLE_HISTORICAL_RAW_DATA_COUNTS,
+                RawDataImportBlockingValidationType.STABLE_HISTORICAL_RAW_DATA_COUNTS,
             )
         )
 
@@ -1179,7 +1179,7 @@ class TestDirectIngestRegionRawFileConfig(unittest.TestCase):
         self.assertTrue(
             ImportBlockingValidationExemption.list_includes_exemption_type(
                 default_config.default_import_blocking_validation_exemptions,
-                RawDataTableImportBlockingValidationType.STABLE_HISTORICAL_RAW_DATA_COUNTS,
+                RawDataImportBlockingValidationType.STABLE_HISTORICAL_RAW_DATA_COUNTS,
             )
         )
 
@@ -1213,13 +1213,13 @@ class TestDirectIngestRegionRawFileConfig(unittest.TestCase):
         self.assertTrue(
             ImportBlockingValidationExemption.list_includes_exemption_type(
                 file_config.import_blocking_validation_exemptions,
-                RawDataTableImportBlockingValidationType.STABLE_HISTORICAL_RAW_DATA_COUNTS,
+                RawDataImportBlockingValidationType.STABLE_HISTORICAL_RAW_DATA_COUNTS,
             )
         )
         self.assertTrue(
             ImportBlockingValidationExemption.list_includes_exemption_type(
                 file_config.import_blocking_validation_exemptions,
-                RawDataTableImportBlockingValidationType.NONNULL_VALUES,
+                RawDataImportBlockingValidationType.NONNULL_VALUES,
             )
         )
 
@@ -1614,3 +1614,68 @@ class TestDirectIngestRegionRawFileConfig(unittest.TestCase):
             r"Raw data config marked as is_chunked_file must have an expected number of chunks",
         ):
             attr.evolve(self.sparse_config, is_chunked_file=True)
+
+    def test_is_exempt_from_validation(self) -> None:
+        column_name = "Col1"
+        table_validation_exemption_type = (
+            RawDataImportBlockingValidationType.NONNULL_VALUES
+        )
+        column_validation_exemption_type = (
+            RawDataImportBlockingValidationType.EXPECTED_TYPE
+        )
+
+        exempt_config = attr.evolve(
+            self.sparse_config,
+            import_blocking_validation_exemptions=[
+                ImportBlockingValidationExemption(
+                    validation_type=table_validation_exemption_type,
+                    exemption_reason="reason",
+                )
+            ],
+            columns=[
+                RawTableColumnInfo(
+                    name=column_name,
+                    description="description",
+                    is_pii=False,
+                    field_type=RawTableColumnFieldType.INTEGER,
+                    import_blocking_column_validation_exemptions=[
+                        ImportBlockingValidationExemption(
+                            validation_type=column_validation_exemption_type,
+                            exemption_reason="reason",
+                        )
+                    ],
+                ),
+            ],
+        )
+
+        self.assertTrue(
+            exempt_config.file_is_exempt_from_validation(
+                table_validation_exemption_type
+            )
+        )
+        self.assertTrue(
+            exempt_config.column_is_exempt_from_validation(
+                column_name, table_validation_exemption_type
+            )
+        )
+        self.assertFalse(
+            exempt_config.file_is_exempt_from_validation(
+                column_validation_exemption_type
+            )
+        )
+        self.assertTrue(
+            exempt_config.column_is_exempt_from_validation(
+                column_name, column_validation_exemption_type
+            )
+        )
+
+    def test_is_exempt_from_column_validation_column_doesnt_exist(self) -> None:
+        column_name = "ColDoesntExist"
+
+        with self.assertRaisesRegex(
+            ValueError,
+            rf"Expected to find exactly one entry for column \[{column_name}\], found: \[\]",
+        ):
+            self.sparse_config.column_is_exempt_from_validation(
+                column_name, RawDataImportBlockingValidationType.NONNULL_VALUES
+            )

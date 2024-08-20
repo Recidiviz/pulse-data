@@ -19,10 +19,12 @@ from typing import Any, Dict, List
 
 import attr
 
-from recidiviz.ingest.direct.types.raw_data_import_blocking_validation_types import (
-    RawDataTableImportBlockingValidation,
-    RawDataTableImportBlockingValidationFailure,
-    RawDataTableImportBlockingValidationType,
+from recidiviz.big_query.big_query_address import BigQueryAddress
+from recidiviz.ingest.direct.raw_data.raw_file_configs import RawTableColumnInfo
+from recidiviz.ingest.direct.types.raw_data_import_blocking_validation import (
+    RawDataColumnImportBlockingValidation,
+    RawDataImportBlockingValidationFailure,
+    RawDataImportBlockingValidationType,
 )
 from recidiviz.utils.string import StrictStringFormatter
 
@@ -35,16 +37,40 @@ LIMIT 1
 
 
 @attr.define
-class DatetimeParsersColumnValidation(RawDataTableImportBlockingValidation):
+class DatetimeParsersColumnValidation(RawDataColumnImportBlockingValidation):
     """Validation that checks if a datetime column has values that don't match any of its datetime parsers
     validation runs on all columns with datetime_sql_parsers unless explicitly exempt.
     """
 
-    column_name: str
     datetime_sql_parsers: List[str]
-    validation_type: RawDataTableImportBlockingValidationType = (
-        RawDataTableImportBlockingValidationType.DATETIME_PARSERS
+    validation_type: RawDataImportBlockingValidationType = (
+        RawDataImportBlockingValidationType.DATETIME_PARSERS
     )
+
+    @classmethod
+    def create_column_validation(
+        cls,
+        file_tag: str,
+        project_id: str,
+        temp_table_address: BigQueryAddress,
+        column: RawTableColumnInfo,
+    ) -> "DatetimeParsersColumnValidation":
+        if not column.datetime_sql_parsers:
+            raise ValueError(
+                f"datetime_sql_parsers for {column.name} must not be empty"
+            )
+
+        return cls(
+            project_id=project_id,
+            temp_table_address=temp_table_address,
+            file_tag=file_tag,
+            column_name=column.name,
+            datetime_sql_parsers=column.datetime_sql_parsers,
+        )
+
+    @staticmethod
+    def validation_applies_to_column(column: RawTableColumnInfo) -> bool:
+        return column.datetime_sql_parsers is not None
 
     def build_query(self) -> str:
         if not self.datetime_sql_parsers:
@@ -70,11 +96,11 @@ class DatetimeParsersColumnValidation(RawDataTableImportBlockingValidation):
 
     def get_error_from_results(
         self, results: List[Dict[str, Any]]
-    ) -> RawDataTableImportBlockingValidationFailure | None:
+    ) -> RawDataImportBlockingValidationFailure | None:
         if results:
             # At least one datetime value didn't parse correctly
-            return RawDataTableImportBlockingValidationFailure(
-                validation_type=RawDataTableImportBlockingValidationType.DATETIME_PARSERS,
+            return RawDataImportBlockingValidationFailure(
+                validation_type=self.validation_type,
                 error_msg=(
                     f"Found column [{self.column_name}] on raw file [{self.file_tag}] "
                     f"not matching any of the datetime_sql_parsers defined in its configuration YAML."

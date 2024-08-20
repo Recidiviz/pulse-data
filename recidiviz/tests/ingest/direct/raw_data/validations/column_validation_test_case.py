@@ -16,13 +16,17 @@
 # =============================================================================
 """Common test cases for column validations."""
 import abc
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Type
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_utils import schema_field_for_type
-from recidiviz.ingest.direct.types.raw_data_import_blocking_validation_types import (
-    RawDataTableImportBlockingValidation,
-    RawDataTableImportBlockingValidationFailure,
+from recidiviz.ingest.direct.raw_data.raw_file_configs import (
+    RawTableColumnFieldType,
+    RawTableColumnInfo,
+)
+from recidiviz.ingest.direct.types.raw_data_import_blocking_validation import (
+    RawDataColumnImportBlockingValidation,
+    RawDataImportBlockingValidationFailure,
 )
 from recidiviz.tests.big_query.big_query_emulator_test_case import (
     BigQueryEmulatorTestCase,
@@ -38,14 +42,35 @@ class ColumnValidationTestCase(BigQueryEmulatorTestCase):
             dataset_id="test_dataset", table_id="test_table"
         )
         self.file_tag = "test_file_tag"
-        self.happy_col = "happy_col"
-        self.sad_col = "sad_col"
+        self.happy_col_name = "happy_col"
+        self.sad_col_name = "sad_col"
+        self.happy_col = RawTableColumnInfo(
+            name=self.happy_col_name,
+            description="description",
+            is_pii=True,
+            field_type=RawTableColumnFieldType.STRING,
+        )
+        self.sad_col = RawTableColumnInfo(
+            name=self.sad_col_name,
+            description="description",
+            is_pii=True,
+            field_type=RawTableColumnFieldType.STRING,
+        )
+
+    def create_validation(
+        self, column: RawTableColumnInfo
+    ) -> RawDataColumnImportBlockingValidation:
+        """Create the validation to test."""
+        return self.get_validation_class().create_column_validation(
+            project_id=self.project_id,
+            file_tag=self.file_tag,
+            temp_table_address=self.temp_table_address,
+            column=column,
+        )
 
     @abc.abstractmethod
-    def create_validation(
-        self, column_name: str
-    ) -> RawDataTableImportBlockingValidation:
-        """Create the validation to test."""
+    def get_validation_class(self) -> Type[RawDataColumnImportBlockingValidation]:
+        """Get the validation class to test."""
 
     @abc.abstractmethod
     def get_test_data(self) -> List[Dict[str, Optional[str]]]:
@@ -57,15 +82,15 @@ class ColumnValidationTestCase(BigQueryEmulatorTestCase):
         self.create_mock_table(
             address=self.temp_table_address,
             schema=[
-                schema_field_for_type(self.happy_col, str),
-                schema_field_for_type(self.sad_col, str),
+                schema_field_for_type(self.happy_col_name, str),
+                schema_field_for_type(self.sad_col_name, str),
             ],
         )
         self.load_rows_into_table(self.temp_table_address, self.data)
 
     def validation_failure_test(
         self,
-        expected_error: RawDataTableImportBlockingValidationFailure,
+        expected_error: RawDataImportBlockingValidationFailure,
     ) -> None:
         validation = self.create_validation(self.sad_col)
         self.load_data()
@@ -73,13 +98,15 @@ class ColumnValidationTestCase(BigQueryEmulatorTestCase):
         results = self.query(validation.query)
         error = validation.get_error_from_results(results.to_dict("records"))
 
-        self.assertIsNotNone(error)
-        # make mypy happy
-        if error:
-            self.assertEqual(expected_error.validation_type, error.validation_type)
-            self.assertEqual(expected_error.error_msg, error.error_msg)
+        if not error:
+            self.fail("Expected error not found")
 
-    def validation_success_test(self) -> None:
+        self.assertEqual(expected_error.validation_type, error.validation_type)
+        self.assertEqual(expected_error.error_msg, error.error_msg)
+
+    def validation_success_test(
+        self,
+    ) -> None:
         validation = self.create_validation(self.happy_col)
         self.load_data()
 

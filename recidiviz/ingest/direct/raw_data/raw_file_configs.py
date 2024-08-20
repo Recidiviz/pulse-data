@@ -33,8 +33,8 @@ from recidiviz.ingest.direct import regions as direct_ingest_regions_module
 from recidiviz.ingest.direct.raw_data.raw_table_relationship_info import (
     RawTableRelationshipInfo,
 )
-from recidiviz.ingest.direct.types.raw_data_import_blocking_validation_types import (
-    RawDataTableImportBlockingValidationType,
+from recidiviz.ingest.direct.types.raw_data_import_blocking_validation_type import (
+    RawDataImportBlockingValidationType,
 )
 from recidiviz.utils.encoding import to_python_standard
 from recidiviz.utils.yaml_dict import YAMLDict
@@ -130,15 +130,15 @@ class ColumnEnumValueInfo:
 
 @attr.define
 class ImportBlockingValidationExemption:
-    validation_type: RawDataTableImportBlockingValidationType = attr.ib(
-        validator=attr.validators.instance_of(RawDataTableImportBlockingValidationType)
+    validation_type: RawDataImportBlockingValidationType = attr.ib(
+        validator=attr.validators.instance_of(RawDataImportBlockingValidationType)
     )
     exemption_reason: str = attr.ib(validator=attr_validators.is_non_empty_str)
 
     @staticmethod
     def list_includes_exemption_type(
         exemption_list: Optional[List["ImportBlockingValidationExemption"]],
-        exemption_type: RawDataTableImportBlockingValidationType,
+        exemption_type: RawDataImportBlockingValidationType,
     ) -> bool:
         if not exemption_list:
             return False
@@ -641,6 +641,32 @@ class DirectIngestRawFileConfig:
         """
         return self.get_update_interval_in_days() * 24 + 12
 
+    def file_is_exempt_from_validation(
+        self, validation_type: RawDataImportBlockingValidationType
+    ) -> bool:
+        """Returns True if the validation_type is found in the file_tag's import_blocking_validation_exemptions
+        or the default_import_blocking_validation_exemptions for the file_tag's region.
+        """
+        return ImportBlockingValidationExemption.list_includes_exemption_type(
+            self.import_blocking_validation_exemptions,
+            validation_type,
+        )
+
+    def column_is_exempt_from_validation(
+        self,
+        column_name: str,
+        validation_type: RawDataImportBlockingValidationType,
+    ) -> bool:
+        """Returns True if the validation_type is found in the column's import_blocking_column_validation_exemptions
+        or the file_tag's import_blocking_validation_exemptions
+        or the default_import_blocking_validation_exemptions for the file_tag's region.
+        """
+        column_info = self.get_column_info(column_name)
+
+        return ImportBlockingValidationExemption.list_includes_exemption_type(
+            column_info.import_blocking_column_validation_exemptions, validation_type
+        ) or self.file_is_exempt_from_validation(validation_type)
+
     @classmethod
     def from_yaml_dict(
         cls,
@@ -672,7 +698,7 @@ class DirectIngestRawFileConfig:
         ) is not None:
             import_blocking_validation_exemptions = [
                 ImportBlockingValidationExemption(
-                    validation_type=RawDataTableImportBlockingValidationType(
+                    validation_type=RawDataImportBlockingValidationType(
                         exemption.pop("validation_type", str)
                     ),
                     exemption_reason=exemption.pop("exemption_reason", str),
@@ -717,7 +743,7 @@ class DirectIngestRawFileConfig:
             ) is not None:
                 import_blocking_column_validation_exemptions = [
                     ImportBlockingValidationExemption(
-                        validation_type=RawDataTableImportBlockingValidationType(
+                        validation_type=RawDataImportBlockingValidationType(
                             exemption.pop("validation_type", str)
                         ),
                         exemption_reason=exemption.pop("exemption_reason", str),
@@ -965,7 +991,7 @@ class DirectIngestRegionRawFileConfig:
         ) is not None:
             default_import_blocking_validation_exemptions = [
                 ImportBlockingValidationExemption(
-                    validation_type=RawDataTableImportBlockingValidationType(
+                    validation_type=RawDataImportBlockingValidationType(
                         exemption.pop("validation_type", str)
                     ),
                     exemption_reason=exemption.pop("exemption_reason", str),

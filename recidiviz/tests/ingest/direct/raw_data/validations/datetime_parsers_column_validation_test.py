@@ -16,14 +16,18 @@
 # =============================================================================
 """Unit tests for datetime_parsers_column_validation.py."""
 
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Type
 
+import attr
+
+from recidiviz.ingest.direct.raw_data.raw_file_configs import RawTableColumnFieldType
 from recidiviz.ingest.direct.raw_data.validations.datetime_parsers_column_validation import (
     DatetimeParsersColumnValidation,
 )
-from recidiviz.ingest.direct.types.raw_data_import_blocking_validation_types import (
-    RawDataTableImportBlockingValidationFailure,
-    RawDataTableImportBlockingValidationType,
+from recidiviz.ingest.direct.types.raw_data_import_blocking_validation import (
+    RawDataColumnImportBlockingValidation,
+    RawDataImportBlockingValidationFailure,
+    RawDataImportBlockingValidationType,
 )
 from recidiviz.tests.ingest.direct.raw_data.validations.column_validation_test_case import (
     ColumnValidationTestCase,
@@ -39,32 +43,39 @@ class TestDatetimeParsersColumnValidation(ColumnValidationTestCase):
             "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S %p', {col_name})",
             "SAFE.PARSE_TIMESTAMP('%m/%d/%Y', {col_name})",
         ]
-
-    def create_validation(self, column_name: str) -> DatetimeParsersColumnValidation:
-        return DatetimeParsersColumnValidation(
-            file_tag=self.file_tag,
-            project_id=self.project_id,
-            temp_table_address=self.temp_table_address,
-            column_name=column_name,
+        self.happy_col = attr.evolve(
+            self.happy_col,
+            field_type=RawTableColumnFieldType.DATETIME,
+            datetime_sql_parsers=self.datetime_sql_parsers,
+        )
+        self.sad_col = attr.evolve(
+            self.sad_col,
+            field_type=RawTableColumnFieldType.DATETIME,
             datetime_sql_parsers=self.datetime_sql_parsers,
         )
 
+    def get_validation_class(self) -> Type[RawDataColumnImportBlockingValidation]:
+        return DatetimeParsersColumnValidation
+
     def get_test_data(self) -> List[Dict[str, Optional[str]]]:
         return [
-            {self.happy_col: "01/01/2022 12:00:00 AM", self.sad_col: "01/01/2022"},
-            {self.happy_col: "01/01/2022", self.sad_col: "5D"},
+            {
+                self.happy_col_name: "01/01/2022 12:00:00 AM",
+                self.sad_col_name: "01/01/2022",
+            },
+            {self.happy_col_name: "01/01/2022", self.sad_col_name: "5D"},
         ]
 
     def test_build_query_empty_datetime_sql_parsers(self) -> None:
         with self.assertRaisesRegex(
             ValueError,
-            f"datetime_sql_parsers for {self.sad_col} must not be empty",
+            f"datetime_sql_parsers for {self.sad_col_name} must not be empty",
         ):
             DatetimeParsersColumnValidation(
                 file_tag=self.file_tag,
                 project_id=self.project_id,
                 temp_table_address=self.temp_table_address,
-                column_name=self.sad_col,
+                column_name=self.sad_col_name,
                 datetime_sql_parsers=[],
             )
 
@@ -72,9 +83,9 @@ class TestDatetimeParsersColumnValidation(ColumnValidationTestCase):
         self.validation_success_test()
 
     def test_validation_failure(self) -> None:
-        expected_error = RawDataTableImportBlockingValidationFailure(
-            validation_type=RawDataTableImportBlockingValidationType.DATETIME_PARSERS,
-            error_msg=f"Found column [{self.sad_col}] on raw file [{self.file_tag}] "
+        expected_error = RawDataImportBlockingValidationFailure(
+            validation_type=RawDataImportBlockingValidationType.DATETIME_PARSERS,
+            error_msg=f"Found column [{self.sad_col_name}] on raw file [{self.file_tag}] "
             f"not matching any of the datetime_sql_parsers defined in its configuration YAML."
             f"\nDefined parsers: [{', '.join(self.datetime_sql_parsers)}]."
             f"\nFirst value that does not parse: [5D]."
@@ -82,3 +93,18 @@ class TestDatetimeParsersColumnValidation(ColumnValidationTestCase):
         )
 
         self.validation_failure_test(expected_error)
+
+    def test_validation_applies_to_column(self) -> None:
+        datetime_column = self.happy_col
+        non_datetime_column = attr.evolve(self.happy_col, datetime_sql_parsers=None)
+
+        self.assertTrue(
+            DatetimeParsersColumnValidation.validation_applies_to_column(
+                datetime_column
+            )
+        )
+        self.assertFalse(
+            DatetimeParsersColumnValidation.validation_applies_to_column(
+                non_datetime_column
+            )
+        )

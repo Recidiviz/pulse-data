@@ -25,8 +25,8 @@ from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     ImportBlockingValidationExemption,
     RawDataFileUpdateCadence,
 )
-from recidiviz.ingest.direct.types.raw_data_import_blocking_validation_types import (
-    RawDataTableImportBlockingValidationType,
+from recidiviz.ingest.direct.types.raw_data_import_blocking_validation import (
+    RawDataImportBlockingValidationType,
 )
 from recidiviz.tests.ingest.direct import fake_regions as fake_regions_module
 from recidiviz.tools.docs.utils import PLACEHOLDER_TO_DO_STRING
@@ -81,7 +81,7 @@ class RawDataConfigWriterTest(unittest.TestCase):
                     default_line_terminator="‡\n",
                     default_import_blocking_validation_exemptions=[
                         ImportBlockingValidationExemption(
-                            validation_type=RawDataTableImportBlockingValidationType.STABLE_HISTORICAL_RAW_DATA_COUNTS,
+                            validation_type=RawDataImportBlockingValidationType.STABLE_HISTORICAL_RAW_DATA_COUNTS,
                             exemption_reason="reason",
                         )
                     ],

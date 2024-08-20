@@ -16,15 +16,15 @@
 # =============================================================================
 """Unit tests for nonnull_values_column_validation.py."""
 
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Type
 
 from recidiviz.ingest.direct.raw_data.validations.nonnull_values_column_validation import (
     NonNullValuesColumnValidation,
 )
-from recidiviz.ingest.direct.types.raw_data_import_blocking_validation_types import (
-    RawDataTableImportBlockingValidation,
-    RawDataTableImportBlockingValidationFailure,
-    RawDataTableImportBlockingValidationType,
+from recidiviz.ingest.direct.types.raw_data_import_blocking_validation import (
+    RawDataColumnImportBlockingValidation,
+    RawDataImportBlockingValidationFailure,
+    RawDataImportBlockingValidationType,
 )
 from recidiviz.tests.ingest.direct.raw_data.validations.column_validation_test_case import (
     ColumnValidationTestCase,
@@ -34,30 +34,29 @@ from recidiviz.tests.ingest.direct.raw_data.validations.column_validation_test_c
 class TestNonNullValuesColumnValidation(ColumnValidationTestCase):
     """Unit tests for NonNullValuesColumnValidation"""
 
-    def create_validation(
-        self, column_name: str
-    ) -> RawDataTableImportBlockingValidation:
-        return NonNullValuesColumnValidation(
-            file_tag=self.file_tag,
-            project_id=self.project_id,
-            temp_table_address=self.temp_table_address,
-            column_name=column_name,
-        )
+    def get_validation_class(self) -> Type[RawDataColumnImportBlockingValidation]:
+        return NonNullValuesColumnValidation
 
     def get_test_data(self) -> List[Dict[str, Optional[str]]]:
         return [
-            {self.happy_col: "1", self.sad_col: None},
-            {self.happy_col: "2", self.sad_col: None},
+            {self.happy_col_name: "1", self.sad_col_name: None},
+            {self.happy_col_name: "2", self.sad_col_name: None},
         ]
 
     def test_validation_success(self) -> None:
         self.validation_success_test()
 
     def test_validation_failure(self) -> None:
-        expected_error = RawDataTableImportBlockingValidationFailure(
-            validation_type=RawDataTableImportBlockingValidationType.NONNULL_VALUES,
-            error_msg=f"Found column [{self.sad_col}] on raw file [{self.file_tag}] with only null values."
+        expected_error = RawDataImportBlockingValidationFailure(
+            validation_type=RawDataImportBlockingValidationType.NONNULL_VALUES,
+            error_msg=f"Found column [{self.sad_col_name}] on raw file [{self.file_tag}] with only null values."
             f"\nValidation query: {self.create_validation(self.sad_col).query}",
         )
 
         self.validation_failure_test(expected_error)
+
+    def test_validation_applies_to_column(self) -> None:
+        # validation applies to all columns
+        self.assertTrue(
+            NonNullValuesColumnValidation.validation_applies_to_column(self.happy_col)
+        )

@@ -19,12 +19,13 @@ import logging
 from typing import Any, Dict, List
 
 import attr
+from more_itertools import one
 
-from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
-from recidiviz.ingest.direct.types.raw_data_import_blocking_validation_types import (
+from recidiviz.ingest.direct.raw_data.raw_file_configs import DirectIngestRawFileConfig
+from recidiviz.ingest.direct.types.raw_data_import_blocking_validation import (
+    RawDataImportBlockingValidationFailure,
+    RawDataImportBlockingValidationType,
     RawDataTableImportBlockingValidation,
-    RawDataTableImportBlockingValidationFailure,
-    RawDataTableImportBlockingValidationType,
 )
 from recidiviz.utils.string import StrictStringFormatter
 
@@ -73,11 +74,13 @@ class StableHistoricalRawDataCountsTableValidation(
 ):
     """Verify that the current raw data row count is within an acceptable range of the historical median for that file tag."""
 
-    region_code: str
-    raw_data_instance: DirectIngestInstance
-    validation_type: RawDataTableImportBlockingValidationType = (
-        RawDataTableImportBlockingValidationType.STABLE_HISTORICAL_RAW_DATA_COUNTS
+    validation_type: RawDataImportBlockingValidationType = (
+        RawDataImportBlockingValidationType.STABLE_HISTORICAL_RAW_DATA_COUNTS
     )
+
+    @staticmethod
+    def validation_applies_to_table(file_config: DirectIngestRawFileConfig) -> bool:
+        return file_config.always_historical_export
 
     def build_query(self) -> str:
         return StrictStringFormatter().format(
@@ -95,7 +98,7 @@ class StableHistoricalRawDataCountsTableValidation(
 
     def get_error_from_results(
         self, results: List[Dict[str, Any]]
-    ) -> RawDataTableImportBlockingValidationFailure | None:
+    ) -> RawDataImportBlockingValidationFailure | None:
         if not results:
             raise RuntimeError(
                 "No results found for stable historical counts validation."
@@ -103,7 +106,7 @@ class StableHistoricalRawDataCountsTableValidation(
                 f"\nValidation query: {self.query}"
             )
 
-        stats = results[0]
+        stats = one(results)
 
         median = stats[RAW_ROWS_MEDIAN_KEY]
         if not median:
@@ -119,7 +122,7 @@ class StableHistoricalRawDataCountsTableValidation(
             abs(median - temp_table_row_count) / float(median)
             > ROW_COUNT_PERCENT_CHANGE_TOLERANCE
         ):
-            return RawDataTableImportBlockingValidationFailure(
+            return RawDataImportBlockingValidationFailure(
                 validation_type=self.validation_type,
                 error_msg=(
                     f"Median historical raw rows count [{median}] is more than [{ROW_COUNT_PERCENT_CHANGE_TOLERANCE}] different than the current count [{temp_table_row_count}]."
