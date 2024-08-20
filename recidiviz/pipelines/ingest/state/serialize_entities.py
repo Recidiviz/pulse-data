@@ -52,7 +52,9 @@ class SerializeEntities(beam.DoFn):
         self._state_code = state_code
         self._entities_module = entities_module
 
-    def process(self, element: RootEntity) -> Generator[Dict[str, Any], None, None]:
+    def process(
+        self, element: RootEntity
+    ) -> Generator[beam.pvalue.TaggedOutput, None, None]:
         """Generates appropriate dictionaries for all elements and association tables."""
 
         for entity in get_all_entities_from_tree(entity=cast(Entity, element)):

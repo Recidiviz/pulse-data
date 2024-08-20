@@ -463,11 +463,15 @@ class ExtractRootEntityDataForPipeline(beam.PTransform):
             )
 
         entities_and_associations: Dict[
-            Union[EntityClassName, EntityRelationshipKey, TableName],
-            PCollection[
-                Tuple[RootEntityId, Union[EntityAssociation, Entity, TableRow]]
-            ],
-        ] = {**shallow_hydrated_entities, **hydrated_association_info, **reference_data}
+            EntityClassName | EntityRelationshipKey | TableName,
+            PCollection[Tuple[RootEntityId, Entity]]
+            | PCollection[Tuple[RootEntityId, EntityAssociation]]
+            | PCollection[Tuple[RootEntityId, TableRow]],
+        ] = {
+            **shallow_hydrated_entities,
+            **hydrated_association_info,
+            **reference_data,
+        }
 
         # Group all entities and association tuples by the root_entity_id
         entities_and_association_info_by_root_entity_id: PCollection[

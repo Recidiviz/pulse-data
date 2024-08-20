@@ -19,7 +19,7 @@ import abc
 from typing import Any, Dict, Generator, Iterable, List, Set, Tuple, Type, Union
 
 import apache_beam as beam
-from apache_beam.pvalue import PBegin
+from apache_beam import Pipeline
 from apache_beam.typehints.decorators import with_input_types, with_output_types
 
 from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
@@ -110,7 +110,7 @@ class MetricPipeline(
         """Whether or not to include the args relevant to limiting calculation metric
         output to a specific set of months. Should be overwritten by subclasses."""
 
-    def run_pipeline(self, p: PBegin) -> None:
+    def run_pipeline(self, p: Pipeline) -> None:
         pipeline_parameters = self.pipeline_parameters
         state_code = StateCode(pipeline_parameters.state_code.upper())
         person_id_filter_set = (
@@ -336,7 +336,7 @@ class RecidivizMetricWritableDict(beam.DoFn):
     # pylint: disable=arguments-differ
     def process(
         self, element: RecidivizMetric
-    ) -> Generator[Dict[str, Any], None, None]:
+    ) -> Generator[beam.pvalue.TaggedOutput, None, None]:
         """The beam.io.WriteToBigQuery transform requires elements to be in dictionary
         form, where the values are in formats as required by BigQuery I/O connector.
 

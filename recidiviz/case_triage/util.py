@@ -102,7 +102,11 @@ def get_redis_connection_options() -> Dict[Any, Any]:
         "socket_keepalive_options": socket_keepalive_options,
         "retry_on_error": REDIS_RETRY_SUPPORTED_ERRORS,
         "retry": Retry(
-            backoff=ConstantBackoff(backoff=REDIS_RETRY_BACKOFF_SECONDS),
+            backoff=ConstantBackoff(
+                # types-redis defines the backoff arg type as int, but floats are
+                # allowed
+                backoff=REDIS_RETRY_BACKOFF_SECONDS,  # type: ignore[arg-type]
+            ),
             retries=REDIS_RETRY_MAX_RETRIES,
             supported_errors=REDIS_RETRY_SUPPORTED_ERRORS,
         ),

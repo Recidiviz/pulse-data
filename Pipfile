@@ -17,7 +17,7 @@ bandit = "*"
 coveralls = "*"
 # This should always be pinned to the latest version officially supported by Dataflow: https://cloud.google.com/dataflow/docs/support/sdk-version-support-status#python
 # If this version is bumped then the beam version in recidiviz/pipelines/Dockerfile.pipelines must be as well.
-apache-beam = { extras = ["gcp", "test"], version = "==2.52.0" }
+apache-beam = { extras = ["gcp", "test"], version = "==2.58.1" }
 debugpy = "*"
 fakeredis = "*"
 freezegun = "*"
@@ -56,8 +56,7 @@ types-protobuf = "*"
 types-psycopg2 = "*"
 types-python-dateutil = "*"
 types-pytz = "*"
-# TODO(#11759): Remove version pin once fakeredis supports 4.2.0+
-types-redis = "<4.2.0"
+types-redis = "*"
 types-requests = "*"
 types-PyYAML = "*"
 msal = "*"
@@ -172,7 +171,9 @@ google-cloud-monitoring = "*"
 google-cloud-tasks = "*"
 google-cloud-pubsub = "*"
 google-cloud-secret-manager = "*"
-google-cloud-storage = ">=2.0.0"
+# Version must be at least 2.18.2 to mitigate https://github.com/apache/beam/issues/32169 for apache-beam versions
+# 2.53.0 - 2.58.*
+google-cloud-storage = ">=2.18.2"
 google-cloud-trace = "*"
 wrapt = "*"
 attrs = "*"
@@ -211,8 +212,7 @@ statsmodels = "*"
 openpyxl = "*"
 analytics-python = "*"
 astroid = "*"
-# TODO(#11759): Remove version pin once fakeredis supports 4.2.0+
-redis = "<4.6.0"
+redis = "*"
 pyarrow = "*"
 auth0-python = "*"
 sentry-sdk = { extras = ["flask"], version = "*" }

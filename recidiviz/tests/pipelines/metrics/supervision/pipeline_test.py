@@ -1259,7 +1259,7 @@ class SupervisionPipelineFakeWriteMetricsToBigQuery(FakeWriteMetricsToBigQuery):
         self._expected_violation_types = expected_violation_types
         self._table = output_table
 
-    def expand(self, input_or_inputs: Iterable[Any]) -> Iterable[RecidivizMetric]:
+    def expand(self, input_or_inputs: beam.PCollection) -> Iterable[RecidivizMetric]:
         ret = super().expand(input_or_inputs)
 
         if self._expected_violation_types:
