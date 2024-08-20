@@ -130,18 +130,25 @@ work_assignments_cte AS (
         person_id,
         SAFE_CAST(LEFT(ci.START_DATE, 10) AS STRING) AS work_assignments_start_date,
         SAFE_CAST(LEFT(ci.END_DATE, 10) AS STRING) AS work_assignments_end_date,
-        IFNULL(EMPLOYER_TX, 'Employer Unknown') AS employer,
-        IFNULL(OCCUPATION_TX, 'Occupation Unknown') AS occupation,
+        IFNULL(Job_Name_Tx, 'Occupation Unknown') AS occupation,
+        IFNULL(Job_Desc, 'Employer Unknown') AS employer,
       FROM
-        `{{project_id}}.{{us_me_raw_data_up_to_date_dataset}}.CIS_128_EMPLOYMENT_HISTORY_latest` ci
+        `{{project_id}}.{{us_me_raw_data_up_to_date_dataset}}.CIS_210_JOB_ASSIGN_latest` ci
+      LEFT JOIN `{{project_id}}.{{us_me_raw_data_up_to_date_dataset}}.CIS_208_JOB_DEFN_latest`
+        ON CIS_208_JOB_ID = Job_Id
+      LEFT JOIN `{{project_id}}.{{us_me_raw_data_up_to_date_dataset}}.CIS_2084_JOB_NAME_CODE_latest`
+        ON Cis_2084_Job_Name_Cd = Job_Name_Cd
+      LEFT JOIN `{{project_id}}.{{us_me_raw_data_up_to_date_dataset}}.CIS_2082_JOB_CODE_latest`
+        ON Cis_2082_Comm_Agcy_Cd = Job_Cd
       INNER JOIN
         `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` ei
       ON
-        ci.Cis_100_Client_Id = external_id
+        ci.CIS_100_CLIENT_ID = external_id
         AND id_type = 'US_ME_DOC'
         AND SAFE_CAST(LEFT(ci.START_DATE, 10) AS DATE) <= CURRENT_DATE('US/Pacific')
         AND DATE_SUB(CURRENT_DATE('US/Pacific'), INTERVAL 6 MONTH) < IFNULL(SAFE_CAST(LEFT(ci.END_DATE, 10) AS DATE), '9999-12-31')
         AND CURRENT_DATE >= IFNULL(SAFE_CAST(LEFT(ci.START_DATE, 10) AS DATE), '1000-01-01')
+      GROUP BY 1,2,3,4,5
       ORDER BY
         2 DESC)
     SELECT
