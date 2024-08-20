@@ -31,7 +31,6 @@ from recidiviz.aggregated_metrics.models.aggregated_metric import (
 )
 from recidiviz.aggregated_metrics.models.aggregated_metric_configurations import (
     AVG_DAILY_POPULATION,
-    DEDUPED_TASK_COMPLETION_EVENT_VB,
 )
 from recidiviz.calculator.query.bq_utils import (
     MAGIC_START_DATE,
@@ -1580,7 +1579,7 @@ def custom_metrics_view_query_template(
 def generate_custom_metrics_view(
     metrics: List[AggregatedMetric],
     view_name: str,
-    json_field_filters: List[str],
+    json_field_filters_with_suggestions: Dict[str, List[str]],
     additional_view_fields: Optional[List[LookMLViewField]],
 ) -> LookMLView:
     """Generates LookMLView with derived table that joins together metric view
@@ -1602,7 +1601,7 @@ def generate_custom_metrics_view(
                 unit_of_observation=METRIC_UNITS_OF_OBSERVATION_BY_TYPE[
                     unit_of_observation
                 ],
-                json_field_filters=json_field_filters,
+                json_field_filters=list(json_field_filters_with_suggestions),
                 # Only include full index column mappings for the first unit of observation cte
                 # to avoid having duplicate index columns in the final query
                 include_column_mapping=(
@@ -1614,7 +1613,7 @@ def generate_custom_metrics_view(
     field_filters_query_fragment = "".join(
         [
             liquid_wrap_json_field(f", {field}", field, view_name)
-            for field in json_field_filters
+            for field in json_field_filters_with_suggestions
         ]
     )
 
@@ -1695,7 +1694,7 @@ USING (state_code, unit_of_analysis, all_attributes, period, start_date, end_dat
 
     # Generate a dimension and filter field for every inputted filter field name
     json_field_filter_lookml_fields: List[LookMLViewField] = []
-    for field in json_field_filters:
+    for field, suggestions in json_field_filters_with_suggestions.items():
         json_dimension = DimensionLookMLViewField(
             field_name=field,
             parameters=[
@@ -1719,14 +1718,7 @@ USING (state_code, unit_of_analysis, all_attributes, period, start_date, end_dat
                 LookMLFieldParameter.sql(
                     f"{{% condition {field}_filter %}} ${{{field}}} {{% endcondition %}}"
                 ),
-                LookMLFieldParameter.suggestions(
-                    sorted(
-                        [
-                            snake_to_title(builder.task_type_name)
-                            for builder in DEDUPED_TASK_COMPLETION_EVENT_VB
-                        ]
-                    )
-                ),
+                LookMLFieldParameter.suggestions(suggestions),
             ],
         )
         json_field_filter_lookml_fields.append(json_filter)
