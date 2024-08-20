@@ -43,9 +43,6 @@ class DatetimeParsersColumnValidation(RawDataColumnImportBlockingValidation):
     """
 
     datetime_sql_parsers: List[str]
-    validation_type: RawDataImportBlockingValidationType = (
-        RawDataImportBlockingValidationType.DATETIME_PARSERS
-    )
 
     @classmethod
     def create_column_validation(
@@ -67,6 +64,10 @@ class DatetimeParsersColumnValidation(RawDataColumnImportBlockingValidation):
             column_name=column.name,
             datetime_sql_parsers=column.datetime_sql_parsers,
         )
+
+    @staticmethod
+    def validation_type() -> RawDataImportBlockingValidationType:
+        return RawDataImportBlockingValidationType.DATETIME_PARSERS
 
     @staticmethod
     def validation_applies_to_column(column: RawTableColumnInfo) -> bool:
@@ -100,13 +101,13 @@ class DatetimeParsersColumnValidation(RawDataColumnImportBlockingValidation):
         if results:
             # At least one datetime value didn't parse correctly
             return RawDataImportBlockingValidationFailure(
-                validation_type=self.validation_type,
+                validation_type=self.validation_type(),
+                validation_query=self.query,
                 error_msg=(
                     f"Found column [{self.column_name}] on raw file [{self.file_tag}] "
                     f"not matching any of the datetime_sql_parsers defined in its configuration YAML."
                     f"\nDefined parsers: [{', '.join(self.datetime_sql_parsers)}]."
                     f"\nFirst value that does not parse: [{results[0][self.column_name]}]."
-                    f"\nValidation query: {self.query}"
                 ),
             )
         # All datetime values parsed

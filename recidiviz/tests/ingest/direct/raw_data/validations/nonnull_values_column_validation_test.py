@@ -49,8 +49,8 @@ class TestNonNullValuesColumnValidation(ColumnValidationTestCase):
     def test_validation_failure(self) -> None:
         expected_error = RawDataImportBlockingValidationFailure(
             validation_type=RawDataImportBlockingValidationType.NONNULL_VALUES,
-            error_msg=f"Found column [{self.sad_col_name}] on raw file [{self.file_tag}] with only null values."
-            f"\nValidation query: {self.create_validation(self.sad_col).query}",
+            validation_query=self.create_validation(self.sad_col).query,
+            error_msg=f"Found column [{self.sad_col_name}] on raw file [{self.file_tag}] with only null values.",
         )
 
         self.validation_failure_test(expected_error)

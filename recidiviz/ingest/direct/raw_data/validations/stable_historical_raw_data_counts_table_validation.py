@@ -74,9 +74,9 @@ class StableHistoricalRawDataCountsTableValidation(
 ):
     """Verify that the current raw data row count is within an acceptable range of the historical median for that file tag."""
 
-    validation_type: RawDataImportBlockingValidationType = (
-        RawDataImportBlockingValidationType.STABLE_HISTORICAL_RAW_DATA_COUNTS
-    )
+    @staticmethod
+    def validation_type() -> RawDataImportBlockingValidationType:
+        return RawDataImportBlockingValidationType.STABLE_HISTORICAL_RAW_DATA_COUNTS
 
     @staticmethod
     def validation_applies_to_table(file_config: DirectIngestRawFileConfig) -> bool:
@@ -123,11 +123,11 @@ class StableHistoricalRawDataCountsTableValidation(
             > ROW_COUNT_PERCENT_CHANGE_TOLERANCE
         ):
             return RawDataImportBlockingValidationFailure(
-                validation_type=self.validation_type,
+                validation_type=self.validation_type(),
+                validation_query=self.query,
                 error_msg=(
-                    f"Median historical raw rows count [{median}] is more than [{ROW_COUNT_PERCENT_CHANGE_TOLERANCE}] different than the current count [{temp_table_row_count}]."
-                    f"\nFile tag: [{self.file_tag}]."
-                    f"\nValidation query: {self.query}"
+                    f"Median historical raw rows count [{median}] is more than [{ROW_COUNT_PERCENT_CHANGE_TOLERANCE}] "
+                    f"different than the current count [{temp_table_row_count}] for file [{self.file_tag}]."
                 ),
             )
 

@@ -85,11 +85,11 @@ class TestDatetimeParsersColumnValidation(ColumnValidationTestCase):
     def test_validation_failure(self) -> None:
         expected_error = RawDataImportBlockingValidationFailure(
             validation_type=RawDataImportBlockingValidationType.DATETIME_PARSERS,
+            validation_query=self.create_validation(self.sad_col).query,
             error_msg=f"Found column [{self.sad_col_name}] on raw file [{self.file_tag}] "
             f"not matching any of the datetime_sql_parsers defined in its configuration YAML."
             f"\nDefined parsers: [{', '.join(self.datetime_sql_parsers)}]."
-            f"\nFirst value that does not parse: [5D]."
-            f"\nValidation query: {self.create_validation(self.sad_col).query}",
+            f"\nFirst value that does not parse: [5D].",
         )
 
         self.validation_failure_test(expected_error)

@@ -102,6 +102,7 @@ class ColumnValidationTestCase(BigQueryEmulatorTestCase):
             self.fail("Expected error not found")
 
         self.assertEqual(expected_error.validation_type, error.validation_type)
+        self.assertEqual(expected_error.validation_query, error.validation_query)
         self.assertEqual(expected_error.error_msg, error.error_msg)
 
     def validation_success_test(

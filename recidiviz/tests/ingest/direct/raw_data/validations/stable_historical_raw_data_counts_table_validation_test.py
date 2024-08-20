@@ -362,9 +362,9 @@ class TestStableHistoricalRawDataCountsTableValidation(BigQueryEmulatorTestCase)
         row_count = 1
         expected_error = RawDataImportBlockingValidationFailure(
             validation_type=RawDataImportBlockingValidationType.STABLE_HISTORICAL_RAW_DATA_COUNTS,
-            error_msg=f"Median historical raw rows count [{self.expected_median}] is more than [{ROW_COUNT_PERCENT_CHANGE_TOLERANCE}] different than the current count [{row_count}]."
-            f"\nFile tag: [{self.file_tag}]."
-            f"\nValidation query: {self.validation.query}",
+            validation_query=self.validation.query,
+            error_msg=f"Median historical raw rows count [{self.expected_median}] is more than [{ROW_COUNT_PERCENT_CHANGE_TOLERANCE}]"
+            f" different than the current count [{row_count}] for file [{self.file_tag}].",
         )
         data = [{"col1": "test"}]
         self._load_data(temp_table_data=data)
@@ -376,4 +376,5 @@ class TestStableHistoricalRawDataCountsTableValidation(BigQueryEmulatorTestCase)
             self.fail("Expected an error to be returned.")
 
         self.assertEqual(expected_error.validation_type, error.validation_type)
+        self.assertEqual(expected_error.validation_query, error.validation_query)
         self.assertEqual(expected_error.error_msg, error.error_msg)
