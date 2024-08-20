@@ -24,7 +24,7 @@ from google.cloud.discoveryengine_v1.services.search_service.pagers import Searc
 from recidiviz.prototypes.case_note_search.case_note_search import (
     FAKE_CASE_NOTES_ENGINE_ID,
     case_note_search,
-    extract_case_notes_results,
+    extract_case_notes_results_unstructured_data,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 
@@ -83,11 +83,11 @@ class TestCaseNoteFunctions(TestCase):
                 "preview": "This is an extractive answer",  # Uses extractive_answer since snippet is None.
             }
         ]
-        results = extract_case_notes_results(mock_pager)
+        results = extract_case_notes_results_unstructured_data(mock_pager)
         self.assertEqual(results, expected_result)
 
     @patch(
-        "recidiviz.prototypes.case_note_search.case_note_search.extract_case_notes_results"
+        "recidiviz.prototypes.case_note_search.case_note_search.extract_case_notes_results_unstructured_data"
     )
     @patch(
         "recidiviz.prototypes.case_note_search.case_note_search.DiscoveryEngineInterface"
