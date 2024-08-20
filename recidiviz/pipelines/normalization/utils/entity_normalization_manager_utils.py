@@ -28,7 +28,6 @@ from recidiviz.persistence.entity.state.entities import (
     StateSupervisionViolationResponse,
 )
 from recidiviz.persistence.entity.state.normalized_entities import (
-    NormalizedStateIncarcerationSentence,
     NormalizedStateSupervisionPeriod,
     NormalizedStateSupervisionSentence,
     NormalizedStateSupervisionViolation,
@@ -95,7 +94,6 @@ def normalized_periods_for_calculations(
     incarceration_periods: List[StateIncarcerationPeriod],
     supervision_periods: List[StateSupervisionPeriod],
     normalized_violation_responses: List[NormalizedStateSupervisionViolationResponse],
-    incarceration_sentences: List[NormalizedStateIncarcerationSentence],
     supervision_sentences: List[NormalizedStateSupervisionSentence],
     staff_external_id_to_staff_id: Dict[Tuple[str, str], int],
 ) -> Tuple[
@@ -147,12 +145,11 @@ def normalized_periods_for_calculations(
     )
 
     ip_normalization_manager = IncarcerationPeriodNormalizationManager(
-        person_id=person_id,
         incarceration_periods=incarceration_periods,
         normalization_delegate=ip_normalization_delegate,
         normalized_supervision_period_index=supervision_period_index,
         normalized_violation_responses=normalized_violation_responses,
-        incarceration_sentences=incarceration_sentences,
+        person_id=person_id,
         earliest_death_date=earliest_death_date,
     )
 

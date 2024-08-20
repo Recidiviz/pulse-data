@@ -40,17 +40,20 @@ class UsMeIncarcerationNormalizationDelegate(
 ):
     """US_ME implementation of the StateSpecificIncarcerationNormalizationDelegate."""
 
+    def __init__(
+        self, incarceration_sentences: List[NormalizedStateIncarcerationSentence]
+    ) -> None:
+        self._incarceration_sentences = incarceration_sentences
+
     def incarceration_admission_reason_override(
-        self,
-        incarceration_period: StateIncarcerationPeriod,
-        incarceration_sentences: List[NormalizedStateIncarcerationSentence],
+        self, incarceration_period: StateIncarcerationPeriod
     ) -> Optional[StateIncarcerationPeriodAdmissionReason]:
         """If there is a revocation sentence with an intake date within a week of the same start date of this
         period, then we assume the period's admission reason was a revocation."""
-        if not incarceration_sentences:
+        if not self._incarceration_sentences:
             return incarceration_period.admission_reason
 
-        for incarceration_sentence in incarceration_sentences:
+        for incarceration_sentence in self._incarceration_sentences:
             if not incarceration_sentence.sentence_metadata:
                 continue
             sentence_metadata = json.loads(incarceration_sentence.sentence_metadata)

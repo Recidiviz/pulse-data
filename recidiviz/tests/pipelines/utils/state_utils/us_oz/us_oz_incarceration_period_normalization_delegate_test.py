@@ -44,13 +44,13 @@ class TestUsOzIncarcerationNormalizationDelegate(unittest.TestCase):
         )
         self.assertEqual(
             self.delegate.incarceration_admission_reason_override(
-                lotr_period_no_admission_reason, None
+                lotr_period_no_admission_reason
             ),
             StateIncarcerationPeriodAdmissionReason.RETURN_FROM_ESCAPE,
         )
         self.assertEqual(
             self.delegate.incarceration_admission_reason_override(
-                lotr_period_no_admission_reason, None
+                lotr_period_no_admission_reason
             ),
             StateIncarcerationPeriodAdmissionReason.RETURN_FROM_ESCAPE,
         )
@@ -61,7 +61,7 @@ class TestUsOzIncarcerationNormalizationDelegate(unittest.TestCase):
         )
         self.assertEqual(
             self.delegate.incarceration_admission_reason_override(
-                sm_period_with_admission_reason, None
+                sm_period_with_admission_reason
             ),
             StateIncarcerationPeriodAdmissionReason.RETURN_FROM_ESCAPE,
         )
@@ -70,7 +70,7 @@ class TestUsOzIncarcerationNormalizationDelegate(unittest.TestCase):
         )
         self.assertNotEqual(
             self.delegate.incarceration_admission_reason_override(
-                vfds_period_no_admission_reason, None
+                vfds_period_no_admission_reason
             ),
             StateIncarcerationPeriodAdmissionReason.RETURN_FROM_ESCAPE,
         )
@@ -81,7 +81,7 @@ class TestUsOzIncarcerationNormalizationDelegate(unittest.TestCase):
         )
         self.assertEqual(
             self.delegate.incarceration_admission_reason_override(
-                vfds_period_with_admission_reason, None
+                vfds_period_with_admission_reason
             ),
             StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
         )
@@ -90,7 +90,7 @@ class TestUsOzIncarcerationNormalizationDelegate(unittest.TestCase):
         )
         self.assertEqual(
             self.delegate.incarceration_admission_reason_override(
-                hg_period_no_admission_reason, None
+                hg_period_no_admission_reason
             ),
             StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
         )

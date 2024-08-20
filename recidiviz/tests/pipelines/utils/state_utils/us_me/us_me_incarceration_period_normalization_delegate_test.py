@@ -37,9 +37,6 @@ _STATE_CODE = StateCode.US_ME.value
 class TestUsMeIncarcerationNormalizationDelegate(unittest.TestCase):
     """Tests functions in TestUsMeIncarcerationNormalizationDelegate."""
 
-    def setUp(self) -> None:
-        self.delegate = UsMeIncarcerationNormalizationDelegate()
-
     def test_incarceration_admission_reason_override_revocation(
         self,
     ) -> None:
@@ -63,11 +60,10 @@ class TestUsMeIncarcerationNormalizationDelegate(unittest.TestCase):
                 '"IS_REVOCATION_SENTENCE": "Y"}',
             ),
         ]
+        delegate = UsMeIncarcerationNormalizationDelegate(incarceration_sentences)
         self.assertEqual(
             StateIncarcerationPeriodAdmissionReason.REVOCATION,
-            self.delegate.incarceration_admission_reason_override(
-                incarceration_period, incarceration_sentences
-            ),
+            delegate.incarceration_admission_reason_override(incarceration_period),
         )
 
     def test_incarceration_admission_reason_override_no_revocation_within_date_range(
@@ -94,11 +90,10 @@ class TestUsMeIncarcerationNormalizationDelegate(unittest.TestCase):
                 '"IS_REVOCATION_SENTENCE": "Y"}',
             ),
         ]
+        delegate = UsMeIncarcerationNormalizationDelegate(incarceration_sentences)
         self.assertEqual(
             StateIncarcerationPeriodAdmissionReason.TRANSFER,
-            self.delegate.incarceration_admission_reason_override(
-                incarceration_period, incarceration_sentences
-            ),
+            delegate.incarceration_admission_reason_override(incarceration_period),
         )
 
     def test_incarceration_admission_reason_override_not_revocation(
@@ -125,9 +120,8 @@ class TestUsMeIncarcerationNormalizationDelegate(unittest.TestCase):
                 '"IS_REVOCATION_SENTENCE": "N"}',
             ),
         ]
+        delegate = UsMeIncarcerationNormalizationDelegate(incarceration_sentences)
         self.assertEqual(
             StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
-            self.delegate.incarceration_admission_reason_override(
-                incarceration_period, incarceration_sentences
-            ),
+            delegate.incarceration_admission_reason_override(incarceration_period),
         )

@@ -44,7 +44,6 @@ from recidiviz.persistence.entity.normalized_entities_utils import (
 from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
 from recidiviz.persistence.entity.state.normalized_entities import (
     NormalizedStateIncarcerationPeriod,
-    NormalizedStateIncarcerationSentence,
     NormalizedStateSupervisionViolationResponse,
 )
 from recidiviz.pipelines.normalization.utils.normalization_managers.entity_normalization_manager import (
@@ -82,13 +81,13 @@ class PurposeForIncarcerationInfo:
     purpose_for_incarceration_subtype: Optional[str] = attr.ib(default=None)
 
 
-# pylint: disable=unused-argument
 class StateSpecificIncarcerationNormalizationDelegate(StateSpecificDelegate):
     """Interface for state-specific decisions involved in normalizing
     incarceration periods for calculations."""
 
-    def normalize_period_if_commitment_from_supervision(  # pylint: disable=unused-argument
+    def normalize_period_if_commitment_from_supervision(
         self,
+        # pylint: disable=unused-argument
         incarceration_period_list_index: int,
         sorted_incarceration_periods: List[StateIncarcerationPeriod],
         original_sorted_incarceration_periods: List[StateIncarcerationPeriod],
@@ -105,11 +104,7 @@ class StateSpecificIncarcerationNormalizationDelegate(StateSpecificDelegate):
         return sorted_incarceration_periods[incarceration_period_list_index]
 
     def incarceration_admission_reason_override(
-        self,
-        incarceration_period: StateIncarcerationPeriod,
-        # TODO(#25800): When the delegate instantiation is refactored, we should be able to pass
-        #  incarceration_sentences only to state-specific delegates that need them via the constructor.
-        incarceration_sentences: List[NormalizedStateIncarcerationSentence],
+        self, incarceration_period: StateIncarcerationPeriod
     ) -> Optional[StateIncarcerationPeriodAdmissionReason]:
         """States may have specific logic that determines the admission reason for an
         incarceration period.
@@ -139,8 +134,9 @@ class StateSpecificIncarcerationNormalizationDelegate(StateSpecificDelegate):
         By default, uses the one on the incarceration period as ingested."""
         return incarceration_period.facility
 
-    def get_pfi_info_for_period_if_commitment_from_supervision(  # pylint: disable=unused-argument
+    def get_pfi_info_for_period_if_commitment_from_supervision(
         self,
+        # pylint: disable=unused-argument
         incarceration_period_list_index: int,
         sorted_incarceration_periods: List[StateIncarcerationPeriod],
         # TODO(#25800): When the delegate instantiation is refactored, we should be able to pass
@@ -164,8 +160,9 @@ class StateSpecificIncarcerationNormalizationDelegate(StateSpecificDelegate):
             purpose_for_incarceration_subtype=None,
         )
 
-    def get_incarceration_admission_violation_type(  # pylint: disable=unused-argument
+    def get_incarceration_admission_violation_type(
         self,
+        # pylint: disable=unused-argument
         incarceration_period: StateIncarcerationPeriod,
     ) -> Optional[StateSupervisionViolationType]:
         """State-specific implementations of this class should return a
@@ -177,8 +174,9 @@ class StateSpecificIncarcerationNormalizationDelegate(StateSpecificDelegate):
         """
         return None
 
-    def handle_erroneously_set_temporary_custody_period(  # pylint: disable=unused-argument
+    def handle_erroneously_set_temporary_custody_period(
         self,
+        # pylint: disable=unused-argument
         incarceration_period: StateIncarcerationPeriod,
         previous_incarceration_period: Optional[StateIncarcerationPeriod],
     ) -> StateIncarcerationPeriod:
@@ -246,6 +244,7 @@ class StateSpecificIncarcerationNormalizationDelegate(StateSpecificDelegate):
 
     def infer_additional_periods(
         self,
+        # pylint: disable=unused-argument
         person_id: int,
         incarceration_periods: List[StateIncarcerationPeriod],
         # TODO(#25800): When the delegate instantiation is refactored, we should be able to pass
@@ -270,7 +269,6 @@ class IncarcerationPeriodNormalizationManager(EntityNormalizationManager):
         normalized_violation_responses: List[
             NormalizedStateSupervisionViolationResponse
         ],
-        incarceration_sentences: List[NormalizedStateIncarcerationSentence],
         person_id: int,
         earliest_death_date: Optional[date] = None,
     ):
@@ -285,7 +283,6 @@ class IncarcerationPeriodNormalizationManager(EntityNormalizationManager):
         # normalization
         self._normalized_supervision_period_index = normalized_supervision_period_index
         self._violation_responses = normalized_violation_responses
-        self._incarceration_sentences = incarceration_sentences
 
         # The end date of the earliest incarceration or supervision period ending in
         # death. None if no periods end in death.
@@ -376,7 +373,7 @@ class IncarcerationPeriodNormalizationManager(EntityNormalizationManager):
 
         # Process fields on final incarceration period set
         mid_processing_periods = self._process_fields_on_final_incarceration_period_set(
-            mid_processing_periods, self._incarceration_sentences
+            mid_processing_periods
         )
 
         # Generates map of admisson violation type information
@@ -1122,9 +1119,7 @@ class IncarcerationPeriodNormalizationManager(EntityNormalizationManager):
         )
 
     def _process_fields_on_final_incarceration_period_set(
-        self,
-        incarceration_periods: List[StateIncarcerationPeriod],
-        incarceration_sentences: List[NormalizedStateIncarcerationSentence],
+        self, incarceration_periods: List[StateIncarcerationPeriod]
     ) -> List[StateIncarcerationPeriod]:
         """After all incarceration periods are processed, continue to update fields of remaining
         incarceration periods prior to adding to the index by:
@@ -1142,9 +1137,7 @@ class IncarcerationPeriodNormalizationManager(EntityNormalizationManager):
         for ip in incarceration_periods:
             # for admission reasons changes inferred using periods and incarceration sentences
             ip.admission_reason = (
-                self.normalization_delegate.incarceration_admission_reason_override(
-                    ip, incarceration_sentences
-                )
+                self.normalization_delegate.incarceration_admission_reason_override(ip)
             )
             # for facility
             ip.facility = self.normalization_delegate.incarceration_facility_override(
