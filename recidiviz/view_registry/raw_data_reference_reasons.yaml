@@ -490,9 +490,6 @@ US_ME:
   CIS_125_CURRENT_STATUS_HIST:
     task_eligibility_criteria_us_me.no_detainers_warrants_or_other: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
-  CIS_128_EMPLOYMENT_HISTORY:
-    workflows_views.us_me_custody_reclassification_review_form_record: |-
-      Usage reason unknown. Grandfathered in 04/18/2024.
   CIS_1301_INVESTIGATION:
     workflows_views.us_me_complete_transfer_to_sccp_form_record: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
@@ -620,6 +617,18 @@ US_ME:
     workflows_views.us_me_furlough_release_form_record: |-
       Notes are not ingested and we surface them in workflows.
     workflows_views.us_me_work_release_form_record: |-
+      Notes are not ingested and we surface them in workflows.
+  CIS_2082_JOB_CODE:
+    workflows_views.us_me_custody_reclassification_review_form_record: |-
+      Notes are not ingested and we surface them in workflows.
+  CIS_2084_JOB_NAME_CODE:
+    workflows_views.us_me_custody_reclassification_review_form_record: |-
+      Notes are not ingested and we surface them in workflows.
+  CIS_208_JOB_DEFN:
+    workflows_views.us_me_custody_reclassification_review_form_record: |-
+      Notes are not ingested and we surface them in workflows.
+  CIS_210_JOB_ASSIGN:
+    workflows_views.us_me_custody_reclassification_review_form_record: |-
       Notes are not ingested and we surface them in workflows.
   CIS_300_Personal_Property:
     workflows_views.us_me_complete_transfer_to_sccp_form_record: |-
