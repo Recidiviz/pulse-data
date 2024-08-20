@@ -54,13 +54,12 @@ class TestSupervisionPeriodNormalizationManager(unittest.TestCase):
         sp_normalization_manager = SupervisionPeriodNormalizationManager(
             person_id=123,
             supervision_periods=supervision_periods,
-            delegate=UsXxSupervisionNormalizationDelegate(),
-            earliest_death_date=earliest_death_date,
             incarceration_periods=[],
-            supervision_sentences=[],
+            delegate=UsXxSupervisionNormalizationDelegate(),
             staff_external_id_to_staff_id=build_staff_external_id_to_staff_id_map(
                 STATE_PERSON_TO_STATE_STAFF_LIST
             ),
+            earliest_death_date=earliest_death_date,
         )
 
         (
@@ -422,13 +421,12 @@ class TestSupervisionPeriodNormalizationManager(unittest.TestCase):
         sp_normalization_manager = SupervisionPeriodNormalizationManager(
             person_id=123,
             supervision_periods=supervision_periods,
-            delegate=UsXxSupervisionNormalizationDelegate(),
-            earliest_death_date=None,
             incarceration_periods=[],
-            supervision_sentences=[],
+            delegate=UsXxSupervisionNormalizationDelegate(),
             staff_external_id_to_staff_id=build_staff_external_id_to_staff_id_map(
                 STATE_PERSON_TO_STATE_STAFF_LIST
             ),
+            earliest_death_date=None,
         )
 
         (
@@ -477,13 +475,12 @@ class TestSupervisionPeriodNormalizationManager(unittest.TestCase):
         sp_normalization_manager = SupervisionPeriodNormalizationManager(
             person_id=123,
             supervision_periods=supervision_periods,
-            delegate=UsXxSupervisionNormalizationDelegate(),
-            earliest_death_date=None,
             incarceration_periods=[],
-            supervision_sentences=[],
+            delegate=UsXxSupervisionNormalizationDelegate(),
             staff_external_id_to_staff_id=build_staff_external_id_to_staff_id_map(
                 STATE_PERSON_TO_STATE_STAFF_LIST
             ),
+            earliest_death_date=None,
         )
 
         (

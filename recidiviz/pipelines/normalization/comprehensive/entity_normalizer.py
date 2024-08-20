@@ -318,13 +318,13 @@ def all_normalized_person_entities(
         sp_normalization_delegate=get_state_specific_supervision_period_normalization_delegate(
             state_code.value,
             assessments,
+            normalized_supervision_sentences,
             incarceration_periods,
             sentences,
         ),
         incarceration_periods=incarceration_periods,
         supervision_periods=supervision_periods,
         normalized_violation_responses=normalized_violation_responses,
-        supervision_sentences=normalized_supervision_sentences,
         staff_external_id_to_staff_id=staff_external_id_to_staff_id,
     )
 
