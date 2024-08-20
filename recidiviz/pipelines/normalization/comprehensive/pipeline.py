@@ -43,9 +43,6 @@ from recidiviz.big_query.big_query_view import BigQueryViewBuilder
 from recidiviz.calculator.query.state.views.reference.state_person_to_state_staff import (
     STATE_PERSON_TO_STATE_STAFF_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.reference.us_mo_sentence_statuses import (
-    US_MO_SENTENCE_STATUSES_VIEW_BUILDER,
-)
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.database import schema_utils
 from recidiviz.persistence.database.schema.state import schema
@@ -162,24 +159,6 @@ class ComprehensiveNormalizationPipeline(BasePipeline[NormalizationPipelineParam
             entities.StateStaff: [],
         }
 
-    @classmethod
-    def state_specific_input_reference_view_builders(
-        cls,
-    ) -> Dict[Type[Entity], Dict[StateCode, List[BigQueryViewBuilder]]]:
-        return {
-            entities.StatePerson: {
-                # We need to bring in the US_MO sentence status table to do
-                # do state-specific processing of the sentences for normalizing
-                # supervision periods.
-                StateCode.US_MO: [
-                    # TODO(#30199): Actually stop pulling this view into the pipeline at
-                    #  all now that we're not using it and delete this view.
-                    US_MO_SENTENCE_STATUSES_VIEW_BUILDER
-                ],
-            },
-            entities.StateStaff: {},
-        }
-
     # TODO(#29514): Update this to build reference queries from templates that we can
     #  inject the state-specific us_xx_state dataset into.
     @classmethod
@@ -191,14 +170,6 @@ class ComprehensiveNormalizationPipeline(BasePipeline[NormalizationPipelineParam
     ) -> Dict[str, StateFilteredQueryProvider]:
         all_builders = {}
         for vb in cls.input_reference_view_builders()[root_entity_cls]:
-            all_builders[vb.view_id] = StateFilteredQueryProvider(
-                original_query=vb.build(address_overrides=address_overrides),
-                state_code_filter=state_code,
-            )
-        builders_by_state = cls.state_specific_input_reference_view_builders()[
-            root_entity_cls
-        ]
-        for vb in builders_by_state.get(state_code, []):
             all_builders[vb.view_id] = StateFilteredQueryProvider(
                 original_query=vb.build(address_overrides=address_overrides),
                 state_code_filter=state_code,

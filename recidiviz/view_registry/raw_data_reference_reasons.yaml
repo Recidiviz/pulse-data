@@ -958,9 +958,6 @@ US_MO:
   LANTERN_DA_RA_LIST:
     reference_views.ingested_product_users: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
-  LBAKRCOD_TAK146:
-    reference_views.us_mo_sentence_statuses: |-
-      Usage reason unknown. Grandfathered in 04/18/2024.
   LBAKRDTA_TAK015:
     analyst_data.us_mo_screeners_preprocessed: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
@@ -980,13 +977,8 @@ US_MO:
   LBAKRDTA_TAK023:
     analyst_data.us_mo_program_tracks: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
-  LBAKRDTA_TAK025:
-    reference_views.us_mo_sentence_statuses: |-
-      Usage reason unknown. Grandfathered in 04/18/2024.
   LBAKRDTA_TAK026:
     analyst_data.projected_discharges: |-
-      Usage reason unknown. Grandfathered in 04/18/2024.
-    reference_views.us_mo_sentence_statuses: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
   LBAKRDTA_TAK033:
     analyst_data.us_mo_restrictive_housing_record: |-

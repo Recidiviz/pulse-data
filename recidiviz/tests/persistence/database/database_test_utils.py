@@ -556,7 +556,7 @@ def generate_test_staff(
     external_ids: Optional[List[state_schema.StateStaffExternalId]] = None,
     location_periods: Optional[List[state_schema.StateStaffLocationPeriod]] = None,
     role_periods: Optional[List[state_schema.StateStaffRolePeriod]] = None,
-    supervisor_periods: Optional[List[state_schema.StateStaffLocationPeriod]] = None,
+    supervisor_periods: Optional[List[state_schema.StateStaffSupervisorPeriod]] = None,
     caseload_type_periods: Optional[
         List[state_schema.StateStaffCaseloadTypePeriod]
     ] = None,
