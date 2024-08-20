@@ -34,10 +34,14 @@ from recidiviz.aggregated_metrics.models.aggregated_metric import (
     PeriodSpanAggregatedMetric,
     SpanMetricConditionsMixin,
 )
+from recidiviz.aggregated_metrics.models.aggregated_metric_configurations import (
+    DEDUPED_TASK_COMPLETION_EVENT_VB,
+)
 from recidiviz.calculator.query.state.views.analyst_data.models.metric_unit_of_analysis_type import (
     METRIC_UNITS_OF_OBSERVATION_BY_TYPE,
     MetricUnitOfObservationType,
 )
+from recidiviz.common.str_field_utils import snake_to_title
 from recidiviz.tools.looker.aggregated_metrics.custom_metrics_lookml_utils import (
     ASSIGNMENT_NAME_TO_TYPES,
     generate_assignment_event_metric_view,
@@ -103,7 +107,15 @@ def main(
             ],
             view_name,
             additional_view_fields=[],
-            json_field_filters=["task_type"],
+            json_field_filters_with_suggestions={
+                "task_type": sorted(
+                    snake_to_title(builder.task_type_name)
+                    for builder in DEDUPED_TASK_COMPLETION_EVENT_VB
+                ),
+                "system_type": ["Incarceration", "Supervision"],
+                "task_type_is_live": ["True", "False"],
+                "task_type_is_fully_launched": ["True", "False"],
+            },
         ).write(output_directory, source_script_path=__file__)
 
         for unit_of_observation_type in set(
@@ -147,7 +159,12 @@ def main(
                 ],
                 view_name,
                 unit_of_observation=unit_of_observation,
-                json_field_filters=["task_type"],
+                json_field_filters=[
+                    "task_type",
+                    "system_type",
+                    "task_type_is_live",
+                    "task_type_is_fully_launched",
+                ],
             ).write(output_subdirectory, source_script_path=__file__)
 
             generate_period_event_metric_view(
@@ -159,7 +176,12 @@ def main(
                 ],
                 view_name,
                 unit_of_observation=unit_of_observation,
-                json_field_filters=["task_type"],
+                json_field_filters=[
+                    "task_type",
+                    "system_type",
+                    "task_type_is_live",
+                    "task_type_is_fully_launched",
+                ],
             ).write(output_subdirectory, source_script_path=__file__)
 
             generate_assignment_span_metric_view(
@@ -171,7 +193,12 @@ def main(
                 ],
                 view_name,
                 unit_of_observation=unit_of_observation,
-                json_field_filters=["task_type"],
+                json_field_filters=[
+                    "task_type",
+                    "system_type",
+                    "task_type_is_live",
+                    "task_type_is_fully_launched",
+                ],
             ).write(output_subdirectory, source_script_path=__file__)
 
             generate_assignment_event_metric_view(
@@ -183,7 +210,12 @@ def main(
                 ],
                 view_name,
                 unit_of_observation=unit_of_observation,
-                json_field_filters=["task_type"],
+                json_field_filters=[
+                    "task_type",
+                    "system_type",
+                    "task_type_is_live",
+                    "task_type_is_fully_launched",
+                ],
             ).write(output_subdirectory, source_script_path=__file__)
 
 
