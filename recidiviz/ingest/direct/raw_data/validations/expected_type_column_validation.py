@@ -20,11 +20,15 @@ from typing import Any, Dict, List
 import attr
 from google.cloud.bigquery.enums import StandardSqlTypeNames as BigQueryFieldType
 
-from recidiviz.ingest.direct.raw_data.raw_file_configs import RawTableColumnFieldType
-from recidiviz.ingest.direct.types.raw_data_import_blocking_validation_types import (
-    RawDataTableImportBlockingValidation,
-    RawDataTableImportBlockingValidationFailure,
-    RawDataTableImportBlockingValidationType,
+from recidiviz.big_query.big_query_address import BigQueryAddress
+from recidiviz.ingest.direct.raw_data.raw_file_configs import (
+    RawTableColumnFieldType,
+    RawTableColumnInfo,
+)
+from recidiviz.ingest.direct.types.raw_data_import_blocking_validation import (
+    RawDataColumnImportBlockingValidation,
+    RawDataImportBlockingValidationFailure,
+    RawDataImportBlockingValidationType,
 )
 from recidiviz.utils.string import StrictStringFormatter
 
@@ -45,14 +49,36 @@ COLUMN_TYPE_TO_BIG_QUERY_TYPE = {
 
 
 @attr.define
-class ExpectedTypeColumnValidation(RawDataTableImportBlockingValidation):
+class ExpectedTypeColumnValidation(RawDataColumnImportBlockingValidation):
     """Validation that checks if a column has values that can't be cast to the expected type"""
 
-    column_name: str
     column_type: RawTableColumnFieldType
-    validation_type: RawDataTableImportBlockingValidationType = (
-        RawDataTableImportBlockingValidationType.EXPECTED_TYPE
+    validation_type: RawDataImportBlockingValidationType = (
+        RawDataImportBlockingValidationType.EXPECTED_TYPE
     )
+
+    @classmethod
+    def create_column_validation(
+        cls,
+        file_tag: str,
+        project_id: str,
+        temp_table_address: BigQueryAddress,
+        column: RawTableColumnInfo,
+    ) -> "ExpectedTypeColumnValidation":
+        return cls(
+            file_tag=file_tag,
+            project_id=project_id,
+            temp_table_address=temp_table_address,
+            column_name=column.name,
+            column_type=column.field_type,
+        )
+
+    @staticmethod
+    def validation_applies_to_column(column: RawTableColumnInfo) -> bool:
+        return (
+            COLUMN_TYPE_TO_BIG_QUERY_TYPE.get(column.field_type)
+            != BigQueryFieldType.STRING
+        )
 
     def build_query(self) -> str:
         big_query_type = COLUMN_TYPE_TO_BIG_QUERY_TYPE.get(self.column_type)
@@ -60,6 +86,7 @@ class ExpectedTypeColumnValidation(RawDataTableImportBlockingValidation):
             raise ValueError(
                 f"BigQuery type not found for column type {self.column_type.value}"
             )
+
         if big_query_type == BigQueryFieldType.STRING:
             raise ValueError(
                 f"field_type [{self.column_type.value}] has BigQuery type {BigQueryFieldType.STRING.value}, "
@@ -79,10 +106,10 @@ class ExpectedTypeColumnValidation(RawDataTableImportBlockingValidation):
 
     def get_error_from_results(
         self, results: List[Dict[str, Any]]
-    ) -> RawDataTableImportBlockingValidationFailure | None:
+    ) -> RawDataImportBlockingValidationFailure | None:
         if results:
             # At least one row found with a value that can't be cast to the expected type
-            return RawDataTableImportBlockingValidationFailure(
+            return RawDataImportBlockingValidationFailure(
                 validation_type=self.validation_type,
                 error_msg=(
                     f"Found column [{self.column_name}] on raw file [{self.file_tag}] "

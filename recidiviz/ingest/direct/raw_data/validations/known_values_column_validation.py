@@ -19,10 +19,12 @@ from typing import Any, Dict, List
 
 import attr
 
-from recidiviz.ingest.direct.types.raw_data_import_blocking_validation_types import (
-    RawDataTableImportBlockingValidation,
-    RawDataTableImportBlockingValidationFailure,
-    RawDataTableImportBlockingValidationType,
+from recidiviz.big_query.big_query_address import BigQueryAddress
+from recidiviz.ingest.direct.raw_data.raw_file_configs import RawTableColumnInfo
+from recidiviz.ingest.direct.types.raw_data_import_blocking_validation import (
+    RawDataColumnImportBlockingValidation,
+    RawDataImportBlockingValidationFailure,
+    RawDataImportBlockingValidationType,
 )
 from recidiviz.utils.string import StrictStringFormatter
 
@@ -35,16 +37,38 @@ LIMIT 1
 
 
 @attr.define
-class KnownValuesColumnValidation(RawDataTableImportBlockingValidation):
+class KnownValuesColumnValidation(RawDataColumnImportBlockingValidation):
     """Validation that checks if a column has values that are not one of the known_values supplied in the column config
     validation runs on all columns with supplied known_values unless explicitly exempt.
     """
 
-    column_name: str
     known_values: List[str]
-    validation_type: RawDataTableImportBlockingValidationType = (
-        RawDataTableImportBlockingValidationType.KNOWN_VALUES
+    validation_type: RawDataImportBlockingValidationType = (
+        RawDataImportBlockingValidationType.KNOWN_VALUES
     )
+
+    @classmethod
+    def create_column_validation(
+        cls,
+        file_tag: str,
+        project_id: str,
+        temp_table_address: BigQueryAddress,
+        column: RawTableColumnInfo,
+    ) -> "KnownValuesColumnValidation":
+        if not column.known_values:
+            raise ValueError(f"known_values for {column.name} must not be empty")
+
+        return cls(
+            project_id=project_id,
+            temp_table_address=temp_table_address,
+            file_tag=file_tag,
+            column_name=column.name,
+            known_values=[known_value.value for known_value in column.known_values],
+        )
+
+    @staticmethod
+    def validation_applies_to_column(column: RawTableColumnInfo) -> bool:
+        return column.known_values is not None
 
     def build_query(self) -> str:
         if not self.known_values:
@@ -61,10 +85,10 @@ class KnownValuesColumnValidation(RawDataTableImportBlockingValidation):
 
     def get_error_from_results(
         self, results: List[Dict[str, Any]]
-    ) -> RawDataTableImportBlockingValidationFailure | None:
+    ) -> RawDataImportBlockingValidationFailure | None:
         if results:
             # At least one row found with a value not in the known_values set
-            return RawDataTableImportBlockingValidationFailure(
+            return RawDataImportBlockingValidationFailure(
                 validation_type=self.validation_type,
                 error_msg=(
                     f"Found column [{self.column_name}] on raw file [{self.file_tag}] "
