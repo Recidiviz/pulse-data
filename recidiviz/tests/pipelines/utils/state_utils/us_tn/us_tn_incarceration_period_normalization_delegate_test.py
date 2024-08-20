@@ -626,12 +626,11 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
         sp_index = default_normalized_sp_index_for_tests(normalized_supervision_periods)
 
         ip_normalization_manager = IncarcerationPeriodNormalizationManager(
-            person_id=42000001234,
             incarceration_periods=incarceration_periods,
             normalization_delegate=UsTnIncarcerationNormalizationDelegate(),
             normalized_supervision_period_index=sp_index,
             normalized_violation_responses=violation_responses,
-            incarceration_sentences=[],
+            person_id=42000001234,
             earliest_death_date=earliest_death_date,
         )
 

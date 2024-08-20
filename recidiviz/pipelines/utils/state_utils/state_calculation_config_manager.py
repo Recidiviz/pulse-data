@@ -29,6 +29,7 @@ from recidiviz.persistence.entity.state.entities import (
 )
 from recidiviz.persistence.entity.state.normalized_entities import (
     NormalizedStateAssessment,
+    NormalizedStateIncarcerationSentence,
     NormalizedStatePerson,
     NormalizedStateSupervisionContact,
     NormalizedStateSupervisionPeriod,
@@ -913,7 +914,7 @@ def get_state_specific_assessment_normalization_delegate(
 
 
 def get_state_specific_incarceration_period_normalization_delegate(
-    state_code: str,
+    state_code: str, incarceration_sentences: List[NormalizedStateIncarcerationSentence]
 ) -> StateSpecificIncarcerationNormalizationDelegate:
     """Returns the type of IncarcerationNormalizationDelegate that should be used for
     normalizing StateIncarcerationPeriod entities from a given |state_code|."""
@@ -928,7 +929,7 @@ def get_state_specific_incarceration_period_normalization_delegate(
     if state_code == StateCode.US_MA.value:
         return UsMaIncarcerationNormalizationDelegate()
     if state_code == StateCode.US_ME.value:
-        return UsMeIncarcerationNormalizationDelegate()
+        return UsMeIncarcerationNormalizationDelegate(incarceration_sentences)
     if state_code == StateCode.US_MI.value:
         return UsMiIncarcerationNormalizationDelegate()
     if state_code == StateCode.US_MO.value:

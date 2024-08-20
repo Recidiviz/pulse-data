@@ -39,7 +39,6 @@ from recidiviz.persistence.entity.normalized_entities_utils import (
 )
 from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
 from recidiviz.persistence.entity.state.normalized_entities import (
-    NormalizedStateIncarcerationSentence,
     NormalizedStateSupervisionPeriod,
 )
 from recidiviz.pipelines.normalization.utils.normalization_managers.incarceration_period_normalization_manager import (
@@ -74,9 +73,7 @@ class UsMiIncarcerationNormalizationDelegate(
     _MAX_INFERRENCE_GAP_LENGTH = 30
 
     def incarceration_admission_reason_override(
-        self,
-        incarceration_period: StateIncarcerationPeriod,
-        incarceration_sentences: List[NormalizedStateIncarcerationSentence],
+        self, incarceration_period: StateIncarcerationPeriod
     ) -> Optional[StateIncarcerationPeriodAdmissionReason]:
         if (
             incarceration_period.admission_reason

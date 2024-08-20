@@ -34,6 +34,7 @@ from recidiviz.persistence.entity.state.entities import (
 )
 from recidiviz.persistence.entity.state.normalized_entities import (
     NormalizedStateAssessment,
+    NormalizedStateIncarcerationSentence,
     NormalizedStatePerson,
     NormalizedStateSupervisionContact,
     NormalizedStateSupervisionPeriod,
@@ -141,7 +142,7 @@ def get_state_specific_sentence_normalization_delegate(
 
 
 def get_state_specific_incarceration_period_normalization_delegate(
-    state_code: str,
+    state_code: str, incarceration_sentences: List[NormalizedStateIncarcerationSentence]
 ) -> StateSpecificIncarcerationNormalizationDelegate:
     if state_code == StateCode.US_XX.value:
         return UsXxIncarcerationNormalizationDelegate()

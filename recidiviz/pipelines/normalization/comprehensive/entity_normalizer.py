@@ -313,7 +313,7 @@ def all_normalized_person_entities(
     ) = normalized_periods_for_calculations(
         person_id=assert_type(person.person_id, int),
         ip_normalization_delegate=get_state_specific_incarceration_period_normalization_delegate(
-            state_code.value
+            state_code.value, normalized_incarceration_sentences
         ),
         sp_normalization_delegate=get_state_specific_supervision_period_normalization_delegate(
             state_code.value,
@@ -324,7 +324,6 @@ def all_normalized_person_entities(
         incarceration_periods=incarceration_periods,
         supervision_periods=supervision_periods,
         normalized_violation_responses=normalized_violation_responses,
-        incarceration_sentences=normalized_incarceration_sentences,
         supervision_sentences=normalized_supervision_sentences,
         staff_external_id_to_staff_id=staff_external_id_to_staff_id,
     )
