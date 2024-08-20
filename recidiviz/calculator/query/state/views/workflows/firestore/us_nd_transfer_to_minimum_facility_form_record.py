@@ -32,6 +32,7 @@ from recidiviz.ingest.direct.dataset_config import raw_latest_views_dataset_for_
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.task_eligibility.dataset_config import (
     task_eligibility_spans_state_specific_dataset,
+    task_eligibility_criteria_state_specific_dataset,
 )
 from recidiviz.task_eligibility.utils.almost_eligible_query_fragments import (
     clients_eligible,
@@ -41,6 +42,11 @@ from recidiviz.task_eligibility.utils.us_nd_query_fragments import (
     get_infractions_as_case_notes,
     get_positive_behavior_reports_as_case_notes,
     get_program_assignments_as_case_notes,
+    get_offender_case_notes,
+    SSI_NOTE_WHERE_CLAUSE,
+    HEALTH_NOTE_TEXT_REGEX,
+    TRAINING_PROGRAMMING_NOTE_TEXT_REGEX,
+    WORK_NOTE_TEXT_REGEX,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -76,6 +82,12 @@ case_notes_cte AS (
 
     UNION ALL
 
+    -- Social Security Insurance due to disabilities
+    {get_offender_case_notes(criteria = 'Social Security Insurance', 
+                             additional_where_clause=SSI_NOTE_WHERE_CLAUSE)}
+
+    UNION ALL
+
     -- Assignments (this includes programming, career readiness and jobs)
     {get_program_assignments_as_case_notes(
         additional_where_clause="NOT REGEXP_CONTAINS(spa.program_id, r'MENTAL HEALTH')")}
@@ -83,6 +95,59 @@ case_notes_cte AS (
     UNION ALL
 
     ({get_infractions_as_case_notes()})
+
+    UNION ALL
+
+    -- Health Assignments
+    {get_program_assignments_as_case_notes(
+        additional_where_clause=f"REGEXP_CONTAINS(spa.program_id, r'{HEALTH_NOTE_TEXT_REGEX}')", 
+        criteria='Health')}
+
+    UNION ALL
+
+    -- Training/Program Assignments
+    {get_program_assignments_as_case_notes(
+        additional_where_clause=f"REGEXP_CONTAINS(spa.program_id, r'{TRAINING_PROGRAMMING_NOTE_TEXT_REGEX}')", 
+        criteria='Programming')}
+
+    UNION ALL
+
+    -- Job Assignments
+    {get_program_assignments_as_case_notes(
+        additional_where_clause=f"REGEXP_CONTAINS(spa.program_id, r'{WORK_NOTE_TEXT_REGEX}')", 
+        criteria='Jobs')}
+
+    UNION ALL 
+    
+    -- Is this person required to be transferred to MRCC?
+    SELECT 
+        peid.external_id,
+        'May have to be transferred to MRCC' AS criteria,
+        "This person has" AS note_title,
+        CONCAT(
+            IF(
+                SAFE_CAST(JSON_EXTRACT_SCALAR(reason, '$.has_an_aomms_sentence') AS BOOL),
+                'Armed Offender Minimum Mandatory Sentence (AOMMS) -',
+                ''),
+            IF(
+                SAFE_CAST(JSON_EXTRACT_SCALAR(reason, '$.has_registration_requirements') AS BOOL),
+                'Registration requirements -',
+                ''),
+            IF(
+                SAFE_CAST(JSON_EXTRACT_SCALAR(reason, '$.has_to_serve_85_percent_of_sentence') AS BOOL),
+                '85% sentence',
+                '') 
+        ) AS note_body,
+        wr.start_date AS event_date
+    FROM `{{project_id}}.{{task_eligibility_criteria_dataset}}.requires_committee_approval_for_work_release_materialized` wr
+    INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` peid
+        USING(person_id, state_code)
+    INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person` sp
+        USING(person_id, state_code)
+    WHERE meets_criteria
+        AND CURRENT_DATE BETWEEN start_date AND IFNULL(end_date, '9999-12-31')
+        AND peid.id_type = 'US_ND_ELITE'
+        AND sp.gender = 'MALE'
 ), 
 json_to_array_cte AS (
     {json_to_array_cte('current_incarceration_pop_cte')}
@@ -108,6 +173,9 @@ US_ND_TRANSFER_TO_MINIMUM_FACILITY_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     normalized_state_dataset=NORMALIZED_STATE_DATASET,
     sessions_dataset=SESSIONS_DATASET,
     task_eligibility_dataset=task_eligibility_spans_state_specific_dataset(
+        StateCode.US_ND
+    ),
+    task_eligibility_criteria_dataset=task_eligibility_criteria_state_specific_dataset(
         StateCode.US_ND
     ),
     raw_data_up_to_date_views_dataset=raw_latest_views_dataset_for_region(
