@@ -16,7 +16,7 @@
 # =============================================================================
 """Manages state-specific methodology decisions made throughout the calculation pipelines."""
 from datetime import date
-from typing import Any, Dict, List, Optional, Set, Type
+from typing import Dict, List, Optional, Set, Type
 
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
 from recidiviz.common.constants.states import StateCode
@@ -24,6 +24,7 @@ from recidiviz.persistence.entity.state.entities import (
     StateAssessment,
     StateIncarcerationPeriod,
     StatePerson,
+    StateSentence,
     StateStaffSupervisorPeriod,
 )
 from recidiviz.persistence.entity.state.normalized_entities import (
@@ -960,9 +961,7 @@ def get_state_specific_supervision_period_normalization_delegate(
     state_code: str,
     assessments: List[StateAssessment],
     incarceration_periods: List[StateIncarcerationPeriod],
-    # TODO(#30199): Remove MO sentence statuses table dependency in favor of
-    #  state_sentence_status_snapshot data
-    us_mo_sentence_statuses_list: Optional[List[Dict[str, Any]]],
+    sentences: List[StateSentence],
 ) -> StateSpecificSupervisionNormalizationDelegate:
     """Returns the type of SupervisionNormalizationDelegate that should be used for
     normalizing StateSupervisionPeriod entities from a given |state_code|."""
@@ -985,13 +984,7 @@ def get_state_specific_supervision_period_normalization_delegate(
     if state_code == StateCode.US_MI.value:
         return UsMiSupervisionNormalizationDelegate()
     if state_code == StateCode.US_MO.value:
-        if us_mo_sentence_statuses_list is None:
-            raise ValueError(
-                "Missing US_MO sentence status view for UsMoSupervisionNormalizationDelegate"
-            )
-        return UsMoSupervisionNormalizationDelegate(
-            sentence_statuses_list=us_mo_sentence_statuses_list
-        )
+        return UsMoSupervisionNormalizationDelegate(sentences=sentences)
     if state_code == StateCode.US_NE.value:
         return UsNeSupervisionNormalizationDelegate()
     if state_code == StateCode.US_NC.value:

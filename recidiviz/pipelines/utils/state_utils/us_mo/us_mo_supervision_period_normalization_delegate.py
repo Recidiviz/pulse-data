@@ -15,10 +15,10 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """US_MO implementation of the supervision normalization delegate"""
-import itertools
+import logging
 from collections import defaultdict
 from datetime import date
-from typing import Any, Dict, List, Optional, Set
+from typing import Dict, List, Optional, Set
 
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionLevel,
@@ -46,12 +46,9 @@ from recidiviz.persistence.entity.normalized_entities_utils import (
     update_normalized_entity_with_globally_unique_id,
 )
 from recidiviz.persistence.entity.state.entities import (
+    StateSentence,
     StateSupervisionCaseTypeEntry,
     StateSupervisionPeriod,
-)
-from recidiviz.persistence.entity.state.normalized_entities import (
-    NormalizedStateIncarcerationSentence,
-    NormalizedStateSupervisionSentence,
 )
 from recidiviz.pipelines.normalization.utils.normalization_managers.supervision_period_normalization_manager import (
     StateSpecificSupervisionNormalizationDelegate,
@@ -63,6 +60,7 @@ from recidiviz.pipelines.utils.state_utils.us_mo.us_mo_sentence_classification i
 from recidiviz.pipelines.utils.supervision_type_identification import (
     sentence_supervision_types_to_supervision_period_supervision_type,
 )
+from recidiviz.utils.types import assert_type
 
 
 class UsMoSupervisionNormalizationDelegate(
@@ -70,25 +68,27 @@ class UsMoSupervisionNormalizationDelegate(
 ):
     """US_MO implementation of the supervision normalization delegate"""
 
-    def __init__(self, sentence_statuses_list: List[Dict[str, Any]]) -> None:
-        self._sentence_statuses: Dict[
+    def __init__(self, sentences: List[StateSentence]) -> None:
+        self._sentence_statuses_by_sentence: Dict[
             str, List[UsMoSentenceStatus]
-        ] = self._get_sentence_statuses_by_sentence(sentence_statuses_list)
+        ] = self._get_sentence_statuses_by_sentence(sentences)
         self._supervision_type_spans = self._get_supervision_type_spans_by_sentence()
         self._validate_supervision_type_spans()
 
     @staticmethod
     def _get_sentence_statuses_by_sentence(
-        sentence_statuses_list: List[Dict[str, Any]]
+        sentences: List[StateSentence],
     ) -> Dict[str, List[UsMoSentenceStatus]]:
         sentence_status_dict = defaultdict(list)
-        for sentence_status_row in sentence_statuses_list:
-            sentence_status = UsMoSentenceStatus.build_from_dictionary(
-                sentence_status_row
-            )
-            if sentence_status:
-                sentence_status_dict[sentence_status.sentence_external_id].append(
-                    sentence_status
+        for sentence in sentences:
+            if not sentence.sentence_status_snapshots:
+                logging.warning(
+                    "Found sentence [%s] with no sentence statuses",
+                    sentence.external_id,
+                )
+            for status_snapshot in sentence.sentence_status_snapshots:
+                sentence_status_dict[sentence.external_id].append(
+                    UsMoSentenceStatus.from_sentence_status_snapshot(status_snapshot)
                 )
         return sentence_status_dict
 
@@ -99,7 +99,10 @@ class UsMoSupervisionNormalizationDelegate(
         sentence between certain critical dates where the type may have changed for all
         sentences."""
         supervision_type_spans: Dict[str, List[SupervisionTypeSpan]] = defaultdict(list)
-        for sentence_external_id, sentence_statuses in self._sentence_statuses.items():
+        for (
+            sentence_external_id,
+            sentence_statuses,
+        ) in self._sentence_statuses_by_sentence.items():
             all_critical_statuses = [
                 status
                 for status in sentence_statuses
@@ -153,8 +156,8 @@ class UsMoSupervisionNormalizationDelegate(
         ):
             return supervision_type
 
-        # If the most recent status in a day does not give us enough information to tell the supervision type, look to
-        # other statuses on that day.
+        # If the most recent status in a day does not give us enough information to tell
+        # the supervision type, look to other statuses on that day.
         for status in critical_day_statuses:
             if (
                 status.supervision_type_status_classification is not None
@@ -190,32 +193,24 @@ class UsMoSupervisionNormalizationDelegate(
                     )
 
     def split_periods_based_on_sentences(
-        self,
-        person_id: int,
-        supervision_periods: List[StateSupervisionPeriod],
-        incarceration_sentences: List[NormalizedStateIncarcerationSentence],
-        supervision_sentences: List[NormalizedStateSupervisionSentence],
+        self, person_id: int, supervision_periods: List[StateSupervisionPeriod]
     ) -> List[StateSupervisionPeriod]:
         """Generates supervision periods based on sentences and critical statuses
         that denote changes in supervision type.
 
         This assumes that the input supervision periods are already chronologically
         sorted."""
-        sentences = itertools.chain(incarceration_sentences, supervision_sentences)
         supervision_type_spans: List[SupervisionTypeSpan] = []
         all_statuses_by_date: Dict[date, Set[UsMoSentenceStatus]] = defaultdict(set)
-        for sentence in sentences:
-            if not sentence.external_id:
-                continue
-            sentence_statuses: List[UsMoSentenceStatus] = self._sentence_statuses[
-                sentence.external_id
-            ]
+        for (
+            sentence_external_id,
+            sentence_statuses,
+        ) in self._sentence_statuses_by_sentence.items():
             type_spans: List[SupervisionTypeSpan] = self._supervision_type_spans[
-                sentence.external_id
+                sentence_external_id
             ]
             for status in sentence_statuses:
-                if status.status_date:
-                    all_statuses_by_date[status.status_date].add(status)
+                all_statuses_by_date[assert_type(status.status_date, date)].add(status)
             for supervision_type_span in type_spans:
                 supervision_type_spans.append(supervision_type_span)
 

@@ -36,11 +36,10 @@ from recidiviz.common.constants.state.state_supervision_sentence import (
     StateSupervisionSentenceSupervisionType,
 )
 from recidiviz.persistence.entity.state.entities import (
+    StateSentence,
+    StateSentenceStatusSnapshot,
     StateSupervisionCaseTypeEntry,
     StateSupervisionPeriod,
-)
-from recidiviz.persistence.entity.state.normalized_entities import (
-    NormalizedStateSupervisionSentence,
 )
 from recidiviz.pipelines.utils.state_utils.us_mo.us_mo_sentence_classification import (
     SupervisionTypeSpan,
@@ -147,48 +146,54 @@ class TestUsMoSupervisionPeriodNormalizationDelegate(unittest.TestCase):
             supervising_officer_staff_external_id_type="MO_STAFF",
         )
 
-        supervision_sentence = NormalizedStateSupervisionSentence(
+        sentence = StateSentence(
             state_code="US_MO",
-            supervision_sentence_id=111,
-            effective_date=date(2020, 9, 1),
-            completion_date=date(2020, 10, 1),
             external_id="ss1",
-            status=StateSentenceStatus.COMPLETED,
-            supervision_type=StateSupervisionSentenceSupervisionType.PAROLE,
+            sentence_status_snapshots=[
+                StateSentenceStatusSnapshot(
+                    sequence_num=1,
+                    state_code="US_MO",
+                    status_update_datetime=datetime.datetime(2020, 9, 1),
+                    status=StateSentenceStatus.SERVING,
+                    status_raw_text='40O1010@@"PAROLE RELEASE "',
+                    sentence_status_snapshot_id=None,
+                    person=None,
+                    sentence=None,
+                ),
+                StateSentenceStatusSnapshot(
+                    sequence_num=2,
+                    state_code="US_MO",
+                    status_update_datetime=datetime.datetime(2020, 9, 15),
+                    status=StateSentenceStatus.COMPLETED,
+                    status_raw_text='99O2010@@"PAROLE DISCHARGE "',
+                    sentence_status_snapshot_id=None,
+                    person=None,
+                    sentence=None,
+                ),
+                StateSentenceStatusSnapshot(
+                    sequence_num=3,
+                    state_code="US_MO",
+                    status_update_datetime=datetime.datetime(2020, 9, 15),
+                    status=StateSentenceStatus.SERVING,
+                    status_raw_text='15I1000@@"NEW COURT PROBATION "',
+                    sentence_status_snapshot_id=None,
+                    person=None,
+                    sentence=None,
+                ),
+                StateSentenceStatusSnapshot(
+                    sequence_num=4,
+                    state_code="US_MO",
+                    status_update_datetime=datetime.datetime(2020, 10, 1),
+                    status=StateSentenceStatus.COMPLETED,
+                    status_raw_text='99O1000@@"COURT PROBATION DISCHARGE "',
+                    sentence_status_snapshot_id=None,
+                    person=None,
+                    sentence=None,
+                ),
+            ],
         )
 
-        delegate = UsMoSupervisionNormalizationDelegate(
-            [
-                {
-                    "sentence_external_id": supervision_sentence.external_id,
-                    "sentence_status_external_id": f"{supervision_sentence.external_id}-1",
-                    "status_code": "40O1010",
-                    "status_date": "20200901",
-                    "status_description": "Parole Release",
-                },
-                {
-                    "sentence_external_id": supervision_sentence.external_id,
-                    "sentence_status_external_id": f"{supervision_sentence.external_id}-2",
-                    "status_code": "99O2010",
-                    "status_date": "20200915",
-                    "status_description": "Parole Discharge",
-                },
-                {
-                    "sentence_external_id": supervision_sentence.external_id,
-                    "sentence_status_external_id": f"{supervision_sentence.external_id}-3",
-                    "status_code": "15I1000",
-                    "status_date": "20200915",
-                    "status_description": "New Court Probation",
-                },
-                {
-                    "sentence_external_id": supervision_sentence.external_id,
-                    "sentence_status_external_id": f"{supervision_sentence.external_id}-4",
-                    "status_code": "99O1000",
-                    "status_date": "20201001",
-                    "status_description": "Court Probation Discharge",
-                },
-            ]
-        )
+        delegate = UsMoSupervisionNormalizationDelegate([sentence])
 
         expected_periods = [
             StateSupervisionPeriod.new_with_defaults(
@@ -244,52 +249,58 @@ class TestUsMoSupervisionPeriodNormalizationDelegate(unittest.TestCase):
         results = delegate.split_periods_based_on_sentences(
             person_id=self.person_id,
             supervision_periods=[supervision_period],
-            incarceration_sentences=[],
-            supervision_sentences=[supervision_sentence],
         )
         self.assertEqual(expected_periods, results)
 
     def test_split_periods_based_on_sentences_no_periods(self) -> None:
-        supervision_sentence = NormalizedStateSupervisionSentence(
+        sentence = StateSentence(
             state_code="US_MO",
-            supervision_sentence_id=111,
-            effective_date=date(2020, 9, 1),
-            completion_date=date(2020, 10, 1),
             external_id="ss1",
-            status=StateSentenceStatus.COMPLETED,
-            supervision_type=StateSupervisionSentenceSupervisionType.PAROLE,
+            sentence_status_snapshots=[
+                StateSentenceStatusSnapshot(
+                    sequence_num=1,
+                    state_code="US_MO",
+                    status_update_datetime=datetime.datetime(2020, 9, 1),
+                    status=StateSentenceStatus.SERVING,
+                    status_raw_text='40O1010@@"PAROLE RELEASE "',
+                    sentence_status_snapshot_id=None,
+                    person=None,
+                    sentence=None,
+                ),
+                StateSentenceStatusSnapshot(
+                    sequence_num=2,
+                    state_code="US_MO",
+                    status_update_datetime=datetime.datetime(2020, 9, 15),
+                    status=StateSentenceStatus.COMPLETED,
+                    status_raw_text='99O2010@@"PAROLE DISCHARGE "',
+                    sentence_status_snapshot_id=None,
+                    person=None,
+                    sentence=None,
+                ),
+                StateSentenceStatusSnapshot(
+                    sequence_num=3,
+                    state_code="US_MO",
+                    status_update_datetime=datetime.datetime(2020, 9, 15),
+                    status=StateSentenceStatus.SERVING,
+                    status_raw_text='15I1000@@"NEW COURT PROBATION "',
+                    sentence_status_snapshot_id=None,
+                    person=None,
+                    sentence=None,
+                ),
+                StateSentenceStatusSnapshot(
+                    sequence_num=4,
+                    state_code="US_MO",
+                    status_update_datetime=datetime.datetime(2020, 10, 1),
+                    status=StateSentenceStatus.COMPLETED,
+                    status_raw_text='99O1000@@"COURT PROBATION DISCHARGE "',
+                    sentence_status_snapshot_id=None,
+                    person=None,
+                    sentence=None,
+                ),
+            ],
         )
         delegate = UsMoSupervisionNormalizationDelegate(
-            [
-                {
-                    "sentence_external_id": supervision_sentence.external_id,
-                    "sentence_status_external_id": f"{supervision_sentence.external_id}-1",
-                    "status_code": "40O1010",
-                    "status_date": "20200901",
-                    "status_description": "Parole Release",
-                },
-                {
-                    "sentence_external_id": supervision_sentence.external_id,
-                    "sentence_status_external_id": f"{supervision_sentence.external_id}-2",
-                    "status_code": "99O2010",
-                    "status_date": "20200915",
-                    "status_description": "Parole Discharge",
-                },
-                {
-                    "sentence_external_id": supervision_sentence.external_id,
-                    "sentence_status_external_id": f"{supervision_sentence.external_id}-3",
-                    "status_code": "15I1000",
-                    "status_date": "20200915",
-                    "status_description": "New Court Probation",
-                },
-                {
-                    "sentence_external_id": supervision_sentence.external_id,
-                    "sentence_status_external_id": f"{supervision_sentence.external_id}-4",
-                    "status_code": "99O1000",
-                    "status_date": "20201001",
-                    "status_description": "Court Probation Discharge",
-                },
-            ],
+            [sentence],
         )
 
         expected_periods = [
@@ -324,8 +335,6 @@ class TestUsMoSupervisionPeriodNormalizationDelegate(unittest.TestCase):
         results = delegate.split_periods_based_on_sentences(
             person_id=self.person_id,
             supervision_periods=[],
-            incarceration_sentences=[],
-            supervision_sentences=[supervision_sentence],
         )
 
         self.assertEqual(expected_periods, results)
@@ -343,40 +352,43 @@ class TestUsMoSupervisionPeriodNormalizationDelegate(unittest.TestCase):
             supervising_officer_staff_external_id_type="MO_STAFF",
         )
 
-        supervision_sentence = NormalizedStateSupervisionSentence(
+        sentence = StateSentence(
             state_code="US_MO",
-            supervision_sentence_id=111,
-            effective_date=date(2020, 9, 1),
-            completion_date=date(2020, 10, 1),
             external_id="ss1",
-            status=StateSentenceStatus.COMPLETED,
-            supervision_type=StateSupervisionSentenceSupervisionType.PAROLE,
-        )
-        delegate = UsMoSupervisionNormalizationDelegate(
-            [
-                {
-                    "sentence_external_id": supervision_sentence.external_id,
-                    "sentence_status_external_id": f"{supervision_sentence.external_id}-1",
-                    "status_code": "40O1010",
-                    "status_date": "20200901",
-                    "status_description": "Parole Release",
-                },
-                {
-                    "sentence_external_id": supervision_sentence.external_id,
-                    "sentence_status_external_id": f"{supervision_sentence.external_id}-2",
-                    "status_code": "99O2010",
-                    "status_date": "20200915",
-                    "status_description": "Parole Discharge",
-                },
-                {
-                    "sentence_external_id": supervision_sentence.external_id,
-                    "sentence_status_external_id": f"{supervision_sentence.external_id}-3",
-                    "status_code": "15I1000",
-                    "status_date": "20200915",
-                    "status_description": "New Court Probation",
-                },
+            sentence_status_snapshots=[
+                StateSentenceStatusSnapshot(
+                    sequence_num=1,
+                    state_code="US_MO",
+                    status_update_datetime=datetime.datetime(2020, 9, 1),
+                    status=StateSentenceStatus.SERVING,
+                    status_raw_text='40O1010@@"PAROLE RELEASE "',
+                    sentence_status_snapshot_id=None,
+                    person=None,
+                    sentence=None,
+                ),
+                StateSentenceStatusSnapshot(
+                    sequence_num=2,
+                    state_code="US_MO",
+                    status_update_datetime=datetime.datetime(2020, 9, 15),
+                    status=StateSentenceStatus.COMPLETED,
+                    status_raw_text='99O2010@@"PAROLE DISCHARGE "',
+                    sentence_status_snapshot_id=None,
+                    person=None,
+                    sentence=None,
+                ),
+                StateSentenceStatusSnapshot(
+                    sequence_num=3,
+                    state_code="US_MO",
+                    status_update_datetime=datetime.datetime(2020, 9, 15),
+                    status=StateSentenceStatus.SERVING,
+                    status_raw_text='15I1000@@"NEW COURT PROBATION "',
+                    sentence_status_snapshot_id=None,
+                    person=None,
+                    sentence=None,
+                ),
             ],
         )
+        delegate = UsMoSupervisionNormalizationDelegate(sentences=[sentence])
 
         expected_periods = [
             StateSupervisionPeriod.new_with_defaults(
@@ -414,8 +426,6 @@ class TestUsMoSupervisionPeriodNormalizationDelegate(unittest.TestCase):
         results = delegate.split_periods_based_on_sentences(
             person_id=self.person_id,
             supervision_periods=[supervision_period],
-            incarceration_sentences=[],
-            supervision_sentences=[supervision_sentence],
         )
 
         self.assertEqual(expected_periods, results)
@@ -450,39 +460,44 @@ class TestUsMoSupervisionPeriodNormalizationDelegate(unittest.TestCase):
             supervising_officer_staff_external_id_type="MO_STAFF",
         )
 
-        supervision_sentence = NormalizedStateSupervisionSentence(
+        sentence = StateSentence(
             state_code="US_MO",
-            supervision_sentence_id=111,
-            effective_date=date(2020, 9, 1),
-            completion_date=date(2020, 10, 1),
             external_id="ss1",
-            status=StateSentenceStatus.SUSPENDED,
-            supervision_type=StateSupervisionSentenceSupervisionType.PROBATION,
+            sentence_status_snapshots=[
+                StateSentenceStatusSnapshot(
+                    sequence_num=1,
+                    state_code="US_MO",
+                    status_update_datetime=datetime.datetime(2020, 9, 1),
+                    status=StateSentenceStatus.SERVING,
+                    status_raw_text='15I1000@@"NEW COURT PROBATION "',
+                    sentence_status_snapshot_id=None,
+                    person=None,
+                    sentence=None,
+                ),
+                StateSentenceStatusSnapshot(
+                    sequence_num=2,
+                    state_code="US_MO",
+                    status_update_datetime=datetime.datetime(2020, 9, 15),
+                    status=StateSentenceStatus.SERVING,
+                    status_raw_text='65L9100@@"OFFENDER DECLARED ABSCONDER "',
+                    sentence_status_snapshot_id=None,
+                    person=None,
+                    sentence=None,
+                ),
+                StateSentenceStatusSnapshot(
+                    sequence_num=3,
+                    state_code="US_MO",
+                    status_update_datetime=datetime.datetime(2020, 10, 1),
+                    status=StateSentenceStatus.SUSPENDED,
+                    status_raw_text='65O2015@@"COURT PROBATION SUSPENSION "',
+                    sentence_status_snapshot_id=None,
+                    person=None,
+                    sentence=None,
+                ),
+            ],
         )
         delegate = UsMoSupervisionNormalizationDelegate(
-            [
-                {
-                    "sentence_external_id": supervision_sentence.external_id,
-                    "sentence_status_external_id": f"{supervision_sentence.external_id}-1",
-                    "status_code": "15I1000",
-                    "status_date": "20200901",
-                    "status_description": "New Court Probation",
-                },
-                {
-                    "sentence_external_id": supervision_sentence.external_id,
-                    "sentence_status_external_id": f"{supervision_sentence.external_id}-2",
-                    "status_code": "65L9100",
-                    "status_date": "20200915",
-                    "status_description": "Offender Declared Absconder",
-                },
-                {
-                    "sentence_external_id": supervision_sentence.external_id,
-                    "sentence_status_external_id": f"{supervision_sentence.external_id}-3",
-                    "status_code": "65O2015",
-                    "status_date": "20201001",
-                    "status_description": "Court Probation Suspension",
-                },
-            ],
+            [sentence],
         )
 
         expected_periods = [
@@ -503,8 +518,6 @@ class TestUsMoSupervisionPeriodNormalizationDelegate(unittest.TestCase):
         results = delegate.split_periods_based_on_sentences(
             person_id=self.person_id,
             supervision_periods=[supervision_period_1, supervision_period_2],
-            incarceration_sentences=[],
-            supervision_sentences=[supervision_sentence],
         )
 
         self.assertEqual(expected_periods, results)
@@ -512,13 +525,22 @@ class TestUsMoSupervisionPeriodNormalizationDelegate(unittest.TestCase):
     def test_supervision_type_new_probation(self) -> None:
         delegate = UsMoSupervisionNormalizationDelegate(
             [
-                {
-                    "sentence_external_id": "1345495-20190808-1",
-                    "sentence_status_external_id": "1345495-20190808-1-1",
-                    "status_code": "15I1000",
-                    "status_date": "20190808",
-                    "status_description": "New Court Probation",
-                }
+                StateSentence(
+                    external_id="1345495-20190808-1",
+                    state_code="US_MO",
+                    sentence_status_snapshots=[
+                        StateSentenceStatusSnapshot(
+                            sequence_num=1,
+                            state_code="US_MO",
+                            status_update_datetime=datetime.datetime(2019, 8, 8),
+                            status=StateSentenceStatus.SERVING,
+                            status_raw_text='15I1000@@"NEW COURT PROBATION "',
+                            sentence_status_snapshot_id=None,
+                            person=None,
+                            sentence=None,
+                        ),
+                    ],
+                )
             ]
         )
 
@@ -533,20 +555,32 @@ class TestUsMoSupervisionPeriodNormalizationDelegate(unittest.TestCase):
     def test_supervision_type_parole(self) -> None:
         delegate = UsMoSupervisionNormalizationDelegate(
             [
-                {
-                    "sentence_external_id": "1167633-20171012-2",
-                    "sentence_status_external_id": "1167633-20171012-2-1",
-                    "status_code": "10I1000",
-                    "status_date": "20171012",
-                    "status_description": "New Court Comm-Institution",
-                },
-                {
-                    "sentence_external_id": "1167633-20171012-2",
-                    "sentence_status_external_id": "1167633-20171012-2-2",
-                    "status_code": "40O1010",
-                    "status_date": "20190913",
-                    "status_description": "Parole Release",
-                },
+                StateSentence(
+                    external_id="1167633-20171012-2",
+                    state_code="US_MO",
+                    sentence_status_snapshots=[
+                        StateSentenceStatusSnapshot(
+                            sequence_num=1,
+                            state_code="US_MO",
+                            status_update_datetime=datetime.datetime(2017, 10, 12),
+                            status=StateSentenceStatus.SERVING,
+                            status_raw_text='10I1000@@"NEW COURT COMM-INSTITUTION "',
+                            sentence_status_snapshot_id=None,
+                            person=None,
+                            sentence=None,
+                        ),
+                        StateSentenceStatusSnapshot(
+                            sequence_num=2,
+                            state_code="US_MO",
+                            status_update_datetime=datetime.datetime(2019, 9, 13),
+                            status=StateSentenceStatus.SERVING,
+                            status_raw_text='40O1010@@"PAROLE RELEASE "',
+                            sentence_status_snapshot_id=None,
+                            person=None,
+                            sentence=None,
+                        ),
+                    ],
+                )
             ]
         )
 
@@ -562,13 +596,22 @@ class TestUsMoSupervisionPeriodNormalizationDelegate(unittest.TestCase):
         # Court Parole is actually probation
         delegate = UsMoSupervisionNormalizationDelegate(
             [
-                {
-                    "sentence_external_id": "1344959-20190718-1",
-                    "sentence_status_external_id": "1344959-20190718-1-1",
-                    "status_code": "15I1200",
-                    "status_date": "20190718",
-                    "status_description": "New Court Parole",
-                }
+                StateSentence(
+                    external_id="1344959-20190718-1",
+                    state_code="US_MO",
+                    sentence_status_snapshots=[
+                        StateSentenceStatusSnapshot(
+                            sequence_num=1,
+                            state_code="US_MO",
+                            status_update_datetime=datetime.datetime(2019, 7, 18),
+                            status=StateSentenceStatus.SERVING,
+                            status_raw_text='15I1200@@"NEW COURT PAROLE "',
+                            sentence_status_snapshot_id=None,
+                            person=None,
+                            sentence=None,
+                        ),
+                    ],
+                )
             ]
         )
 
@@ -583,34 +626,52 @@ class TestUsMoSupervisionPeriodNormalizationDelegate(unittest.TestCase):
     def test_supervision_type_conditional_release_cr(self) -> None:
         delegate = UsMoSupervisionNormalizationDelegate(
             [
-                {
-                    "sentence_external_id": "505542-20120927-1",
-                    "sentence_status_external_id": "505542-20120927-1-1",
-                    "status_code": "15I1000",
-                    "status_date": "20150808",
-                    "status_description": "New Court Probation",
-                },
-                {
-                    "sentence_external_id": "505542-20120927-1",
-                    "sentence_status_external_id": "505542-20120927-1-11",
-                    "status_code": "40I2300",
-                    "status_date": "20151105",
-                    "status_description": "Prob Rev Ret-Technical",
-                },
-                {
-                    "sentence_external_id": "505542-20120927-1",
-                    "sentence_status_external_id": "505542-20120927-1-12",
-                    "status_code": "45O2000",
-                    "status_date": "20151105",
-                    "status_description": "Prob Rev-Technical",
-                },
-                {
-                    "sentence_external_id": "505542-20120927-1",
-                    "sentence_status_external_id": "505542-20120927-1-13",
-                    "status_code": "40O3020",
-                    "status_date": "20180527",
-                    "status_description": "CR To Custody/Detainer",
-                },
+                StateSentence(
+                    external_id="505542-20120927-1",
+                    state_code="US_MO",
+                    sentence_status_snapshots=[
+                        StateSentenceStatusSnapshot(
+                            sequence_num=1,
+                            state_code="US_MO",
+                            status_update_datetime=datetime.datetime(2015, 8, 8),
+                            status=StateSentenceStatus.SERVING,
+                            status_raw_text='15I1000@@"NEW COURT PROBATION "',
+                            sentence_status_snapshot_id=None,
+                            person=None,
+                            sentence=None,
+                        ),
+                        StateSentenceStatusSnapshot(
+                            sequence_num=11,
+                            state_code="US_MO",
+                            status_update_datetime=datetime.datetime(2015, 11, 5),
+                            status=StateSentenceStatus.SERVING,
+                            status_raw_text='40I2300@@"PROB REV RET-TECHNICAL "',
+                            sentence_status_snapshot_id=None,
+                            person=None,
+                            sentence=None,
+                        ),
+                        StateSentenceStatusSnapshot(
+                            sequence_num=12,
+                            state_code="US_MO",
+                            status_update_datetime=datetime.datetime(2015, 11, 5),
+                            status=StateSentenceStatus.SERVING,
+                            status_raw_text='45O2000@@"PROB REV-TECHNICAL "',
+                            sentence_status_snapshot_id=None,
+                            person=None,
+                            sentence=None,
+                        ),
+                        StateSentenceStatusSnapshot(
+                            sequence_num=13,
+                            state_code="US_MO",
+                            status_update_datetime=datetime.datetime(2018, 5, 27),
+                            status=StateSentenceStatus.SERVING,
+                            status_raw_text='40O3020@@"CR TO CUSTODY/DETAINER "',
+                            sentence_status_snapshot_id=None,
+                            person=None,
+                            sentence=None,
+                        ),
+                    ],
+                )
             ]
         )
 
@@ -625,41 +686,62 @@ class TestUsMoSupervisionPeriodNormalizationDelegate(unittest.TestCase):
     def test_supervision_type_board_holdover_release(self) -> None:
         delegate = UsMoSupervisionNormalizationDelegate(
             [
-                {
-                    "sentence_external_id": "1333144-20180912-1",
-                    "sentence_status_external_id": "1333144-20180912-1-1",
-                    "status_code": "10I1000",
-                    "status_date": "20180912",
-                    "status_description": "New Court Comm-Institution",
-                },
-                {
-                    "sentence_external_id": "1333144-20180912-1",
-                    "sentence_status_external_id": "1333144-20180912-1-2",
-                    "status_code": "40O1010",
-                    "status_date": "20190131",
-                    "status_description": "Parole Release",
-                },
-                {
-                    "sentence_external_id": "1333144-20180912-1",
-                    "sentence_status_external_id": "1333144-20180912-1-5",
-                    "status_code": "45O0050",
-                    "status_date": "20191003",
-                    "status_description": "Board Holdover",
-                },
-                {
-                    "sentence_external_id": "1333144-20180912-1",
-                    "sentence_status_external_id": "1333144-20180912-1-4",
-                    "status_code": "40I0050",
-                    "status_date": "20191003",
-                    "status_description": "Board Holdover",
-                },
-                {
-                    "sentence_external_id": "1333144-20180912-1",
-                    "sentence_status_external_id": "1333144-20180912-1-7",
-                    "status_code": "40O0050",
-                    "status_date": "20191029",
-                    "status_description": "Board Holdover Release",
-                },
+                StateSentence(
+                    external_id="1333144-20180912-1",
+                    state_code="US_MO",
+                    sentence_status_snapshots=[
+                        StateSentenceStatusSnapshot(
+                            sequence_num=1,
+                            state_code="US_MO",
+                            status_update_datetime=datetime.datetime(2018, 9, 12),
+                            status=StateSentenceStatus.SERVING,
+                            status_raw_text='10I1000@@"NEW COURT COMM-INSTITUTION "',
+                            sentence_status_snapshot_id=None,
+                            person=None,
+                            sentence=None,
+                        ),
+                        StateSentenceStatusSnapshot(
+                            sequence_num=2,
+                            state_code="US_MO",
+                            status_update_datetime=datetime.datetime(2019, 1, 31),
+                            status=StateSentenceStatus.SERVING,
+                            status_raw_text='40O1010@@"PAROLE RELEASE "',
+                            sentence_status_snapshot_id=None,
+                            person=None,
+                            sentence=None,
+                        ),
+                        StateSentenceStatusSnapshot(
+                            sequence_num=5,
+                            state_code="US_MO",
+                            status_update_datetime=datetime.datetime(2019, 10, 3),
+                            status=StateSentenceStatus.SERVING,
+                            status_raw_text='45O0050@@"BOARD HOLDOVER "',
+                            sentence_status_snapshot_id=None,
+                            person=None,
+                            sentence=None,
+                        ),
+                        StateSentenceStatusSnapshot(
+                            sequence_num=4,
+                            state_code="US_MO",
+                            status_update_datetime=datetime.datetime(2019, 10, 3),
+                            status=StateSentenceStatus.SERVING,
+                            status_raw_text='40I0050@@"BOARD HOLDOVER "',
+                            sentence_status_snapshot_id=None,
+                            person=None,
+                            sentence=None,
+                        ),
+                        StateSentenceStatusSnapshot(
+                            sequence_num=7,
+                            state_code="US_MO",
+                            status_update_datetime=datetime.datetime(2019, 10, 29),
+                            status=StateSentenceStatus.SERVING,
+                            status_raw_text='40O0050@@"BOARD HOLDOVER RELEASE "',
+                            sentence_status_snapshot_id=None,
+                            person=None,
+                            sentence=None,
+                        ),
+                    ],
+                )
             ]
         )
 
@@ -674,27 +756,42 @@ class TestUsMoSupervisionPeriodNormalizationDelegate(unittest.TestCase):
     def test_supervision_type_lifetime_supervision(self) -> None:
         delegate = UsMoSupervisionNormalizationDelegate(
             [
-                {
-                    "sentence_external_id": "13252-20160627-1",
-                    "sentence_status_external_id": "13252-20160627-1-1",
-                    "status_code": "10I1000",
-                    "status_date": "20160627",
-                    "status_description": "New Court Comm-Institution",
-                },
-                {
-                    "sentence_external_id": "13252-20160627-1",
-                    "sentence_status_external_id": "13252-20160627-1-2",
-                    "status_code": "90O1070",
-                    "status_date": "20190415",
-                    "status_description": "Director's Rel Comp-Life Supv",
-                },
-                {
-                    "sentence_external_id": "13252-20160627-1",
-                    "sentence_status_external_id": "13252-20160627-1-3",
-                    "status_code": "40O6020",
-                    "status_date": "20190415",
-                    "status_description": "Release for Lifetime Supv",
-                },
+                StateSentence(
+                    external_id="13252-20160627-1",
+                    state_code="US_MO",
+                    sentence_status_snapshots=[
+                        StateSentenceStatusSnapshot(
+                            sequence_num=1,
+                            state_code="US_MO",
+                            status_update_datetime=datetime.datetime(2016, 6, 27),
+                            status=StateSentenceStatus.SERVING,
+                            status_raw_text='10I1000@@"NEW COURT COMM-INSTITUTION "',
+                            sentence_status_snapshot_id=None,
+                            person=None,
+                            sentence=None,
+                        ),
+                        StateSentenceStatusSnapshot(
+                            sequence_num=2,
+                            state_code="US_MO",
+                            status_update_datetime=datetime.datetime(2019, 4, 15),
+                            status=StateSentenceStatus.SERVING,
+                            status_raw_text='90O1070@@"DIRECTOR\'S REL COMP-LIFE SUPV "',
+                            sentence_status_snapshot_id=None,
+                            person=None,
+                            sentence=None,
+                        ),
+                        StateSentenceStatusSnapshot(
+                            sequence_num=3,
+                            state_code="US_MO",
+                            status_update_datetime=datetime.datetime(2019, 4, 15),
+                            status=StateSentenceStatus.SERVING,
+                            status_raw_text='40O6020@@"RELEASE FOR LIFETIME SUPV "',
+                            sentence_status_snapshot_id=None,
+                            person=None,
+                            sentence=None,
+                        ),
+                    ],
+                )
             ]
         )
 
@@ -709,27 +806,42 @@ class TestUsMoSupervisionPeriodNormalizationDelegate(unittest.TestCase):
     def test_supervision_type_lifetime_supervision_after_inst_completion(self) -> None:
         delegate = UsMoSupervisionNormalizationDelegate(
             [
-                {
-                    "sentence_external_id": "13252-20160627-1",
-                    "sentence_status_external_id": "13252-20160627-1-1",
-                    "status_code": "10I1000",
-                    "status_date": "20160627",
-                    "status_description": "New Court Comm-Institution",
-                },
-                {
-                    "sentence_external_id": "13252-20160627-1",
-                    "sentence_status_external_id": "13252-20160627-1-2",
-                    "status_code": "90O1010",
-                    "status_date": "20190415",
-                    "status_description": "Inst. Expiration of Sentence",
-                },
-                {
-                    "sentence_external_id": "13252-20160627-1",
-                    "sentence_status_external_id": "13252-20160627-1-3",
-                    "status_code": "40O6020",
-                    "status_date": "20190415",
-                    "status_description": "Release for Lifetime Supv",
-                },
+                StateSentence(
+                    external_id="13252-20160627-1",
+                    state_code="US_MO",
+                    sentence_status_snapshots=[
+                        StateSentenceStatusSnapshot(
+                            sequence_num=1,
+                            state_code="US_MO",
+                            status_update_datetime=datetime.datetime(2016, 6, 27),
+                            status=StateSentenceStatus.SERVING,
+                            status_raw_text='10I1000@@"NEW COURT COMM-INSTITUTION "',
+                            sentence_status_snapshot_id=None,
+                            person=None,
+                            sentence=None,
+                        ),
+                        StateSentenceStatusSnapshot(
+                            sequence_num=2,
+                            state_code="US_MO",
+                            status_update_datetime=datetime.datetime(2019, 4, 15),
+                            status=StateSentenceStatus.COMPLETED,
+                            status_raw_text='90O1010@@"INST. EXPIRATION OF SENTENCE "',
+                            sentence_status_snapshot_id=None,
+                            person=None,
+                            sentence=None,
+                        ),
+                        StateSentenceStatusSnapshot(
+                            sequence_num=3,
+                            state_code="US_MO",
+                            status_update_datetime=datetime.datetime(2019, 4, 15),
+                            status=StateSentenceStatus.SERVING,
+                            status_raw_text='40O6020@@"RELEASE FOR LIFETIME SUPV "',
+                            sentence_status_snapshot_id=None,
+                            person=None,
+                            sentence=None,
+                        ),
+                    ],
+                )
             ]
         )
 
@@ -744,20 +856,32 @@ class TestUsMoSupervisionPeriodNormalizationDelegate(unittest.TestCase):
     def test_lifetime_supervision_no_supervision_in(self) -> None:
         delegate = UsMoSupervisionNormalizationDelegate(
             [
-                {
-                    "sentence_external_id": "1096616-20060515-3",
-                    "sentence_status_external_id": "1096616-20060515-3-5",
-                    "status_code": "20I1000",
-                    "status_date": "20090611",
-                    "status_description": "Court Comm-Inst-Addl Charge",
-                },
-                {
-                    "sentence_external_id": "1096616-20060515-3",
-                    "sentence_status_external_id": "1096616-20060515-3-10",
-                    "status_code": "90O1070",
-                    "status_date": "20151129",
-                    "status_description": "Director's Rel Comp-Life Supv",
-                },
+                StateSentence(
+                    external_id="1096616-20060515-3",
+                    state_code="US_MO",
+                    sentence_status_snapshots=[
+                        StateSentenceStatusSnapshot(
+                            sequence_num=5,
+                            state_code="US_MO",
+                            status_update_datetime=datetime.datetime(2009, 6, 11),
+                            status=StateSentenceStatus.SERVING,
+                            status_raw_text='20I1000@@"COURT COMM-INST-ADDL CHARGE "',
+                            sentence_status_snapshot_id=None,
+                            person=None,
+                            sentence=None,
+                        ),
+                        StateSentenceStatusSnapshot(
+                            sequence_num=10,
+                            state_code="US_MO",
+                            status_update_datetime=datetime.datetime(2015, 11, 29),
+                            status=StateSentenceStatus.SERVING,
+                            status_raw_text='90O1070@@"DIRECTOR\'S REL COMP-LIFE SUPV "',
+                            sentence_status_snapshot_id=None,
+                            person=None,
+                            sentence=None,
+                        ),
+                    ],
+                )
             ]
         )
 
@@ -772,27 +896,42 @@ class TestUsMoSupervisionPeriodNormalizationDelegate(unittest.TestCase):
     def test_probation_after_investigation_status_list_unsorted(self) -> None:
         delegate = UsMoSupervisionNormalizationDelegate(
             [
-                {
-                    "sentence_external_id": "282443-20180427-1",
-                    "sentence_status_external_id": "282443-20180427-1-3",
-                    "status_code": "35I1000",
-                    "status_date": "20180525",
-                    "status_description": "Court Probation-Revisit",
-                },
-                {
-                    "sentence_external_id": "282443-20180427-1",
-                    "sentence_status_external_id": "282443-20180427-1-2",
-                    "status_code": "95O5630",
-                    "status_date": "20180525",
-                    "status_description": "SAR Cancelled by Court",
-                },
-                {
-                    "sentence_external_id": "282443-20180427-1",
-                    "sentence_status_external_id": "282443-20180427-1-1",
-                    "status_code": "05I5600",
-                    "status_date": "20180427",
-                    "status_description": "New Sentencing Assessment",
-                },
+                StateSentence(
+                    external_id="282443-20180427-1",
+                    state_code="US_MO",
+                    sentence_status_snapshots=[
+                        StateSentenceStatusSnapshot(
+                            sequence_num=3,
+                            state_code="US_MO",
+                            status_update_datetime=datetime.datetime(2018, 5, 25),
+                            status=StateSentenceStatus.SERVING,
+                            status_raw_text='35I1000@@"COURT PROBATION-REVISIT "',
+                            sentence_status_snapshot_id=None,
+                            person=None,
+                            sentence=None,
+                        ),
+                        StateSentenceStatusSnapshot(
+                            sequence_num=2,
+                            state_code="US_MO",
+                            status_update_datetime=datetime.datetime(2018, 5, 25),
+                            status=StateSentenceStatus.SERVING,
+                            status_raw_text='95O5630@@"SAR CANCELLED BY COURT "',
+                            sentence_status_snapshot_id=None,
+                            person=None,
+                            sentence=None,
+                        ),
+                        StateSentenceStatusSnapshot(
+                            sequence_num=1,
+                            state_code="US_MO",
+                            status_update_datetime=datetime.datetime(2018, 4, 27),
+                            status=StateSentenceStatus.SERVING,
+                            status_raw_text='05I5600@@"NEW SENTENCING ASSESSMENT "',
+                            sentence_status_snapshot_id=None,
+                            person=None,
+                            sentence=None,
+                        ),
+                    ],
+                )
             ]
         )
 
@@ -807,27 +946,42 @@ class TestUsMoSupervisionPeriodNormalizationDelegate(unittest.TestCase):
     def test_diversion_probation_after_investigation(self) -> None:
         delegate = UsMoSupervisionNormalizationDelegate(
             [
-                {
-                    "sentence_external_id": "1324786-20180214-1",
-                    "sentence_status_external_id": "1324786-20180214-1-1",
-                    "status_code": "05I5500",
-                    "status_date": "20180214",
-                    "status_description": "New Diversion Investigation",
-                },
-                {
-                    "sentence_external_id": "1324786-20180214-1",
-                    "sentence_status_external_id": "1324786-20180214-1-2",
-                    "status_code": "95O5500",
-                    "status_date": "20180323",
-                    "status_description": "Diversion Invest Completed",
-                },
-                {
-                    "sentence_external_id": "1324786-20180214-1",
-                    "sentence_status_external_id": "1324786-20180214-1-3",
-                    "status_code": "35I2000",
-                    "status_date": "20180323",
-                    "status_description": "Diversion Supv-Revisit",
-                },
+                StateSentence(
+                    external_id="1324786-20180214-1",
+                    state_code="US_MO",
+                    sentence_status_snapshots=[
+                        StateSentenceStatusSnapshot(
+                            sequence_num=1,
+                            state_code="US_MO",
+                            status_update_datetime=datetime.datetime(2018, 2, 14),
+                            status=StateSentenceStatus.SERVING,
+                            status_raw_text='05I5500@@"NEW DIVERSION INVESTIGATION "',
+                            sentence_status_snapshot_id=None,
+                            person=None,
+                            sentence=None,
+                        ),
+                        StateSentenceStatusSnapshot(
+                            sequence_num=2,
+                            state_code="US_MO",
+                            status_update_datetime=datetime.datetime(2018, 3, 23),
+                            status=StateSentenceStatus.SERVING,
+                            status_raw_text='95O5500@@"DIVERSION INVEST COMPLETED "',
+                            sentence_status_snapshot_id=None,
+                            person=None,
+                            sentence=None,
+                        ),
+                        StateSentenceStatusSnapshot(
+                            sequence_num=3,
+                            state_code="US_MO",
+                            status_update_datetime=datetime.datetime(2018, 3, 23),
+                            status=StateSentenceStatus.SERVING,
+                            status_raw_text='35I2000@@"DIVERSION SUPV-REVISIT "',
+                            sentence_status_snapshot_id=None,
+                            person=None,
+                            sentence=None,
+                        ),
+                    ],
+                )
             ]
         )
 
@@ -852,27 +1006,42 @@ class TestUsMoSupervisionPeriodNormalizationDelegate(unittest.TestCase):
     def test_diversion_probation_after_community_court_ref_investigation(self) -> None:
         delegate = UsMoSupervisionNormalizationDelegate(
             [
-                {
-                    "sentence_external_id": "1324786-20180214-1",
-                    "sentence_status_external_id": "1324786-20180214-1-1",
-                    "status_code": "05I5100",
-                    "status_date": "20180214",
-                    "status_description": "New Community Corr Court Ref",
-                },
-                {
-                    "sentence_external_id": "1324786-20180214-1",
-                    "sentence_status_external_id": "1324786-20180214-1-2",
-                    "status_code": "95O5100",
-                    "status_date": "20180323",
-                    "status_description": "Comm Corr Court Ref Closed",
-                },
-                {
-                    "sentence_external_id": "1324786-20180214-1",
-                    "sentence_status_external_id": "1324786-20180214-1-3",
-                    "status_code": "35I2000",
-                    "status_date": "20180323",
-                    "status_description": "Diversion Supv-Revisit",
-                },
+                StateSentence(
+                    external_id="1324786-20180214-1",
+                    state_code="US_MO",
+                    sentence_status_snapshots=[
+                        StateSentenceStatusSnapshot(
+                            sequence_num=1,
+                            state_code="US_MO",
+                            status_update_datetime=datetime.datetime(2018, 2, 14),
+                            status=StateSentenceStatus.SERVING,
+                            status_raw_text='05I5100@@"NEW COMMUNITY CORR COURT REF "',
+                            sentence_status_snapshot_id=None,
+                            person=None,
+                            sentence=None,
+                        ),
+                        StateSentenceStatusSnapshot(
+                            sequence_num=2,
+                            state_code="US_MO",
+                            status_update_datetime=datetime.datetime(2018, 3, 23),
+                            status=StateSentenceStatus.SERVING,
+                            status_raw_text='95O5100@@"COMM CORR COURT REF CLOSED "',
+                            sentence_status_snapshot_id=None,
+                            person=None,
+                            sentence=None,
+                        ),
+                        StateSentenceStatusSnapshot(
+                            sequence_num=3,
+                            state_code="US_MO",
+                            status_update_datetime=datetime.datetime(2018, 3, 23),
+                            status=StateSentenceStatus.SERVING,
+                            status_raw_text='35I2000@@"DIVERSION SUPV-REVISIT "',
+                            sentence_status_snapshot_id=None,
+                            person=None,
+                            sentence=None,
+                        ),
+                    ],
+                )
             ]
         )
 
@@ -887,27 +1056,42 @@ class TestUsMoSupervisionPeriodNormalizationDelegate(unittest.TestCase):
     def test_interstate_compact_parole_classified_as_probation(self) -> None:
         delegate = UsMoSupervisionNormalizationDelegate(
             [
-                {
-                    "sentence_external_id": "165467-20171227-1",
-                    "sentence_status_external_id": "165467-20171227-1-1",
-                    "status_code": "05I5200",
-                    "status_date": "20171227",
-                    "status_description": "New Interstate Compact-Invest",
-                },
-                {
-                    "sentence_external_id": "165467-20171227-1",
-                    "sentence_status_external_id": "165467-20171227-1-2",
-                    "status_code": "95O5200",
-                    "status_date": "20180123",
-                    "status_description": "Interstate Invest Closed",
-                },
-                {
-                    "sentence_external_id": "165467-20171227-1",
-                    "sentence_status_external_id": "165467-20171227-1-3",
-                    "status_code": "35I4100",
-                    "status_date": "20180129",
-                    "status_description": "IS Compact-Parole-Revisit",
-                },
+                StateSentence(
+                    external_id="165467-20171227-1",
+                    state_code="US_MO",
+                    sentence_status_snapshots=[
+                        StateSentenceStatusSnapshot(
+                            sequence_num=1,
+                            state_code="US_MO",
+                            status_update_datetime=datetime.datetime(2017, 12, 27),
+                            status=StateSentenceStatus.SERVING,
+                            status_raw_text='05I5200@@"NEW INTERSTATE COMPACT-INVEST "',
+                            sentence_status_snapshot_id=None,
+                            person=None,
+                            sentence=None,
+                        ),
+                        StateSentenceStatusSnapshot(
+                            sequence_num=2,
+                            state_code="US_MO",
+                            status_update_datetime=datetime.datetime(2018, 1, 23),
+                            status=StateSentenceStatus.SERVING,
+                            status_raw_text='95O5200@@"INTERSTATE INVEST CLOSED "',
+                            sentence_status_snapshot_id=None,
+                            person=None,
+                            sentence=None,
+                        ),
+                        StateSentenceStatusSnapshot(
+                            sequence_num=3,
+                            state_code="US_MO",
+                            status_update_datetime=datetime.datetime(2018, 1, 29),
+                            status=StateSentenceStatus.SERVING,
+                            status_raw_text='35I4100@@"IS COMPACT-PAROLE-REVISIT "',
+                            sentence_status_snapshot_id=None,
+                            person=None,
+                            sentence=None,
+                        ),
+                    ],
+                )
             ]
         )
 
@@ -922,20 +1106,32 @@ class TestUsMoSupervisionPeriodNormalizationDelegate(unittest.TestCase):
     def test_interstate_compact_parole_classified_as_probation_2(self) -> None:
         delegate = UsMoSupervisionNormalizationDelegate(
             [
-                {
-                    "sentence_external_id": "1269010-20140403-1",
-                    "sentence_status_external_id": "1269010-20140403-1-1",
-                    "status_code": "10I4000",
-                    "status_date": "20140403",
-                    "status_description": "New Interstate Compact-Inst",
-                },
-                {
-                    "sentence_external_id": "1269010-20140403-1",
-                    "sentence_status_external_id": "1269010-20140403-1-2",
-                    "status_code": "40O7400",
-                    "status_date": "20151118",
-                    "status_description": "IS Compact Parole to Missouri",
-                },
+                StateSentence(
+                    external_id="1269010-20140403-1",
+                    state_code="US_MO",
+                    sentence_status_snapshots=[
+                        StateSentenceStatusSnapshot(
+                            sequence_num=1,
+                            state_code="US_MO",
+                            status_update_datetime=datetime.datetime(2014, 4, 3),
+                            status=StateSentenceStatus.SERVING,
+                            status_raw_text='10I4000@@"NEW INTERSTATE COMPACT-INST "',
+                            sentence_status_snapshot_id=None,
+                            person=None,
+                            sentence=None,
+                        ),
+                        StateSentenceStatusSnapshot(
+                            sequence_num=2,
+                            state_code="US_MO",
+                            status_update_datetime=datetime.datetime(2015, 11, 18),
+                            status=StateSentenceStatus.SERVING,
+                            status_raw_text='40O7400@@"IS COMPACT PAROLE TO MISSOURI "',
+                            sentence_status_snapshot_id=None,
+                            person=None,
+                            sentence=None,
+                        ),
+                    ],
+                )
             ]
         )
 
@@ -950,41 +1146,62 @@ class TestUsMoSupervisionPeriodNormalizationDelegate(unittest.TestCase):
     def test_probation_starts_same_day_as_new_investigation(self) -> None:
         delegate = UsMoSupervisionNormalizationDelegate(
             [
-                {
-                    "sentence_external_id": "1344336-20190703-1",
-                    "sentence_status_external_id": "1344336-20190703-1-1",
-                    "status_code": "05I5210",
-                    "status_date": "20190703",
-                    "status_description": "IS Comp-Reporting Instr Given",
-                },
-                {
-                    "sentence_external_id": "1344336-20190703-1",
-                    "sentence_status_external_id": "1344336-20190703-1-2",
-                    "status_code": "95O5210",
-                    "status_date": "20190716",
-                    "status_description": "IS Comp-Report Instruct Closed",
-                },
-                {
-                    "sentence_external_id": "1344336-20190703-1",
-                    "sentence_status_external_id": "1344336-20190703-1-3",
-                    "status_code": "35I5200",
-                    "status_date": "20190716",
-                    "status_description": "IS Compact-Invest-Revisit",
-                },
-                {
-                    "sentence_external_id": "1344336-20190703-1",
-                    "sentence_status_external_id": "1344336-20190703-1-4",
-                    "status_code": "95O5200",
-                    "status_date": "20190716",
-                    "status_description": "Interstate Invest Closed",
-                },
-                {
-                    "sentence_external_id": "1344336-20190703-1",
-                    "sentence_status_external_id": "1344336-20190703-1-5",
-                    "status_code": "35I4000",
-                    "status_date": "20190716",
-                    "status_description": "IS Compact-Prob-Revisit",
-                },
+                StateSentence(
+                    external_id="1344336-20190703-1",
+                    state_code="US_MO",
+                    sentence_status_snapshots=[
+                        StateSentenceStatusSnapshot(
+                            sequence_num=1,
+                            state_code="US_MO",
+                            status_update_datetime=datetime.datetime(2019, 7, 3),
+                            status=StateSentenceStatus.SERVING,
+                            status_raw_text='05I5210@@"IS COMP-REPORTING INSTR GIVEN "',
+                            sentence_status_snapshot_id=None,
+                            person=None,
+                            sentence=None,
+                        ),
+                        StateSentenceStatusSnapshot(
+                            sequence_num=2,
+                            state_code="US_MO",
+                            status_update_datetime=datetime.datetime(2019, 7, 16),
+                            status=StateSentenceStatus.SERVING,
+                            status_raw_text='95O5210@@"IS COMP-REPORT INSTRUCT CLOSED "',
+                            sentence_status_snapshot_id=None,
+                            person=None,
+                            sentence=None,
+                        ),
+                        StateSentenceStatusSnapshot(
+                            sequence_num=3,
+                            state_code="US_MO",
+                            status_update_datetime=datetime.datetime(2019, 7, 16),
+                            status=StateSentenceStatus.SERVING,
+                            status_raw_text='35I5200@@"IS COMPACT-INVEST-REVISIT "',
+                            sentence_status_snapshot_id=None,
+                            person=None,
+                            sentence=None,
+                        ),
+                        StateSentenceStatusSnapshot(
+                            sequence_num=4,
+                            state_code="US_MO",
+                            status_update_datetime=datetime.datetime(2019, 7, 16),
+                            status=StateSentenceStatus.SERVING,
+                            status_raw_text='95O5200@@"INTERSTATE INVEST CLOSED "',
+                            sentence_status_snapshot_id=None,
+                            person=None,
+                            sentence=None,
+                        ),
+                        StateSentenceStatusSnapshot(
+                            sequence_num=5,
+                            state_code="US_MO",
+                            status_update_datetime=datetime.datetime(2019, 7, 16),
+                            status=StateSentenceStatus.SERVING,
+                            status_raw_text='35I4000@@"IS COMPACT-PROB-REVISIT "',
+                            sentence_status_snapshot_id=None,
+                            person=None,
+                            sentence=None,
+                        ),
+                    ],
+                )
             ]
         )
 
@@ -999,27 +1216,42 @@ class TestUsMoSupervisionPeriodNormalizationDelegate(unittest.TestCase):
     def test_resentenced_probation_revisit(self) -> None:
         delegate = UsMoSupervisionNormalizationDelegate(
             [
-                {
-                    "sentence_external_id": "1254438-20130418-2",
-                    "sentence_status_external_id": "1254438-20130418-2-2",
-                    "status_code": "25I1000",
-                    "status_date": "20140610",
-                    "status_description": "Court Probation-Addl Charge",
-                },
-                {
-                    "sentence_external_id": "1254438-20130418-2",
-                    "sentence_status_external_id": "1254438-20130418-2-8",
-                    "status_code": "95O1040",
-                    "status_date": "20170717",
-                    "status_description": "Resentenced",
-                },
-                {
-                    "sentence_external_id": "1254438-20130418-2",
-                    "sentence_status_external_id": "1254438-20130418-2-9",
-                    "status_code": "35I1000",
-                    "status_date": "20170717",
-                    "status_description": "Court Probation-Revisit",
-                },
+                StateSentence(
+                    external_id="1254438-20130418-2",
+                    state_code="US_MO",
+                    sentence_status_snapshots=[
+                        StateSentenceStatusSnapshot(
+                            sequence_num=2,
+                            state_code="US_MO",
+                            status_update_datetime=datetime.datetime(2014, 6, 10),
+                            status=StateSentenceStatus.SERVING,
+                            status_raw_text='25I1000@@"COURT PROBATION-ADDL CHARGE "',
+                            sentence_status_snapshot_id=None,
+                            person=None,
+                            sentence=None,
+                        ),
+                        StateSentenceStatusSnapshot(
+                            sequence_num=8,
+                            state_code="US_MO",
+                            status_update_datetime=datetime.datetime(2017, 7, 17),
+                            status=StateSentenceStatus.SERVING,
+                            status_raw_text='95O1040@@"RESENTENCED "',
+                            sentence_status_snapshot_id=None,
+                            person=None,
+                            sentence=None,
+                        ),
+                        StateSentenceStatusSnapshot(
+                            sequence_num=9,
+                            state_code="US_MO",
+                            status_update_datetime=datetime.datetime(2017, 7, 17),
+                            status=StateSentenceStatus.SERVING,
+                            status_raw_text='35I1000@@"COURT PROBATION-REVISIT "',
+                            sentence_status_snapshot_id=None,
+                            person=None,
+                            sentence=None,
+                        ),
+                    ],
+                )
             ]
         )
 
@@ -1034,34 +1266,58 @@ class TestUsMoSupervisionPeriodNormalizationDelegate(unittest.TestCase):
     def test_release_to_field_other_sentence(self) -> None:
         delegate = UsMoSupervisionNormalizationDelegate(
             [
-                {
-                    "sentence_external_id": "1328840-20180523-3",
-                    "sentence_status_external_id": "1328840-20180523-3-2",
-                    "status_code": "25I1000",
-                    "status_date": "20180523",
-                    "status_description": "Court Probation-Addl Charge",
-                },
-                {
-                    "sentence_external_id": "1328840-20180523-3",
-                    "sentence_status_external_id": "1328840-20180523-3-3",
-                    "status_code": "40I7000",
-                    "status_date": "20181011",
-                    "status_description": "Field Supv to DAI-Oth Sentence",
-                },
-                {
-                    "sentence_external_id": "1328840-20180523-3",
-                    "sentence_status_external_id": "1328840-20180523-3-4",
-                    "status_code": "45O7000",
-                    "status_date": "20181011",
-                    "status_description": "Field to DAI-Other Sentence",
-                },
-                {
-                    "sentence_external_id": "1328840-20180523-3",
-                    "sentence_status_external_id": "1328840-20180523-3-5",
-                    "status_code": "40O7000",
-                    "status_date": "20181017",
-                    "status_description": "Rel to Field-DAI Other Sent",
-                },
+                StateSentence(
+                    external_id="1344336-20190703-1",
+                    state_code="US_MO",
+                    sentence_status_snapshots=[
+                        StateSentenceStatusSnapshot(
+                            sequence_num=2,
+                            state_code="US_MO",
+                            status_update_datetime=datetime.datetime(2018, 5, 23),
+                            status=StateSentenceStatus.SERVING,
+                            status_raw_text='25I1000@@"COURT PROBATION-ADDL CHARGE "',
+                            sentence_status_snapshot_id=None,
+                            person=None,
+                            sentence=None,
+                        ),
+                    ],
+                ),
+                StateSentence(
+                    external_id="1328840-20180523-3",
+                    state_code="US_MO",
+                    sentence_status_snapshots=[
+                        StateSentenceStatusSnapshot(
+                            sequence_num=3,
+                            state_code="US_MO",
+                            status_update_datetime=datetime.datetime(2018, 10, 11),
+                            status=StateSentenceStatus.SERVING,
+                            status_raw_text='40I7000@@"FIELD SUPV TO DAI-OTH SENTENCE "',
+                            sentence_status_snapshot_id=None,
+                            person=None,
+                            sentence=None,
+                        ),
+                        StateSentenceStatusSnapshot(
+                            sequence_num=4,
+                            state_code="US_MO",
+                            status_update_datetime=datetime.datetime(2018, 10, 11),
+                            status=StateSentenceStatus.SERVING,
+                            status_raw_text='45O7000@@"FIELD TO DAI-OTHER SENTENCE "',
+                            sentence_status_snapshot_id=None,
+                            person=None,
+                            sentence=None,
+                        ),
+                        StateSentenceStatusSnapshot(
+                            sequence_num=5,
+                            state_code="US_MO",
+                            status_update_datetime=datetime.datetime(2018, 10, 17),
+                            status=StateSentenceStatus.SERVING,
+                            status_raw_text='40O7000@@"REL TO FIELD-DAI OTHER SENT "',
+                            sentence_status_snapshot_id=None,
+                            person=None,
+                            sentence=None,
+                        ),
+                    ],
+                ),
             ]
         )
 
@@ -1070,33 +1326,55 @@ class TestUsMoSupervisionPeriodNormalizationDelegate(unittest.TestCase):
                 delegate._supervision_type_spans["1328840-20180523-3"],
                 self.validation_date,
             ),
+            StateSupervisionSentenceSupervisionType.INTERNAL_UNKNOWN,
+        )
+        self.assertEqual(
+            self.get_sentence_supervision_type_on_day(
+                delegate._supervision_type_spans["1344336-20190703-1"],
+                self.validation_date,
+            ),
             StateSupervisionSentenceSupervisionType.PROBATION,
         )
 
     def test_prob_rev_codes_not_applicable(self) -> None:
         delegate = UsMoSupervisionNormalizationDelegate(
             [
-                {
-                    "sentence_external_id": "1163420-20180116-1",
-                    "sentence_status_external_id": "1163420-20180116-1-1",
-                    "status_code": "15I1000",
-                    "status_date": "20180116",
-                    "status_description": "New Court Probation",
-                },
-                {
-                    "sentence_external_id": "1163420-20180116-1",
-                    "sentence_status_external_id": "1163420-20180116-1-3",
-                    "status_code": "95O2120",
-                    "status_date": "20180925",
-                    "status_description": "Prob Rev-Codes Not Applicable",
-                },
-                {
-                    "sentence_external_id": "1163420-20180116-1",
-                    "sentence_status_external_id": "1163420-20180116-1-4",
-                    "status_code": "35I1000",
-                    "status_date": "20180925",
-                    "status_description": "Court Probation-Revisit",
-                },
+                StateSentence(
+                    external_id="1163420-20180116-1",
+                    state_code="US_MO",
+                    sentence_status_snapshots=[
+                        StateSentenceStatusSnapshot(
+                            sequence_num=1,
+                            state_code="US_MO",
+                            status_update_datetime=datetime.datetime(2018, 1, 16),
+                            status=StateSentenceStatus.SERVING,
+                            status_raw_text='15I1000@@"NEW COURT PROBATION "',
+                            sentence_status_snapshot_id=None,
+                            person=None,
+                            sentence=None,
+                        ),
+                        StateSentenceStatusSnapshot(
+                            sequence_num=3,
+                            state_code="US_MO",
+                            status_update_datetime=datetime.datetime(2018, 9, 25),
+                            status=StateSentenceStatus.SERVING,
+                            status_raw_text='95O2120@@"PROB REV-CODES NOT APPLICABLE "',
+                            sentence_status_snapshot_id=None,
+                            person=None,
+                            sentence=None,
+                        ),
+                        StateSentenceStatusSnapshot(
+                            sequence_num=4,
+                            state_code="US_MO",
+                            status_update_datetime=datetime.datetime(2018, 9, 25),
+                            status=StateSentenceStatus.SERVING,
+                            status_raw_text='35I1000@@"COURT PROBATION-REVISIT "',
+                            sentence_status_snapshot_id=None,
+                            person=None,
+                            sentence=None,
+                        ),
+                    ],
+                )
             ]
         )
 
@@ -1111,13 +1389,22 @@ class TestUsMoSupervisionPeriodNormalizationDelegate(unittest.TestCase):
     def test_incarcerated_on_date(self) -> None:
         delegate = UsMoSupervisionNormalizationDelegate(
             [
-                {
-                    "sentence_external_id": "13252-20160627-1",
-                    "sentence_status_external_id": "13252-20160627-1-1",
-                    "status_code": "10I1000",
-                    "status_date": "20160627",
-                    "status_description": "New Court Comm-Institution",
-                }
+                StateSentence(
+                    external_id="is1",
+                    state_code="US_MO",
+                    sentence_status_snapshots=[
+                        StateSentenceStatusSnapshot(
+                            sequence_num=1,
+                            state_code="US_MO",
+                            status_update_datetime=datetime.datetime(2016, 6, 27),
+                            status=StateSentenceStatus.SERVING,
+                            status_raw_text='10I1000@@"NEW COURT COMM-INSTITUTION "',
+                            sentence_status_snapshot_id=None,
+                            person=None,
+                            sentence=None,
+                        ),
+                    ],
+                )
             ]
         )
 
@@ -1132,41 +1419,62 @@ class TestUsMoSupervisionPeriodNormalizationDelegate(unittest.TestCase):
     def test_suspended_and_reinstated(self) -> None:
         delegate = UsMoSupervisionNormalizationDelegate(
             [
-                {
-                    "sentence_external_id": "1001298-20160310-1",
-                    "sentence_status_external_id": "1001298-20160310-1-1",
-                    "status_code": "15I1000",
-                    "status_date": "20160310",
-                    "status_description": "New Court Probation",
-                },
-                {
-                    "sentence_external_id": "1001298-20160310-1",
-                    "sentence_status_external_id": "1001298-20160310-1-2",
-                    "status_code": "65O2015",
-                    "status_date": "20160712",
-                    "status_description": "Court Probation Suspension",
-                },
-                {
-                    "sentence_external_id": "1001298-20160310-1",
-                    "sentence_status_external_id": "1001298-20160310-1-3",
-                    "status_code": "65I2015",
-                    "status_date": "20180726",
-                    "status_description": "Court Probation Reinstated",
-                },
-                {
-                    "sentence_external_id": "1001298-20160310-1",
-                    "sentence_status_external_id": "1001298-20160310-1-4",
-                    "status_code": "65O2015",
-                    "status_date": "20191030",
-                    "status_description": "Court Probation Suspension",
-                },
-                {
-                    "sentence_external_id": "1001298-20160310-1",
-                    "sentence_status_external_id": "1001298-20160310-1-5",
-                    "status_code": "99O1000",
-                    "status_date": "20200220",
-                    "status_description": "Court Probation Discharge",
-                },
+                StateSentence(
+                    external_id="1001298-20160310-1",
+                    state_code="US_MO",
+                    sentence_status_snapshots=[
+                        StateSentenceStatusSnapshot(
+                            sequence_num=1,
+                            state_code="US_MO",
+                            status_update_datetime=datetime.datetime(2016, 3, 10),
+                            status=StateSentenceStatus.SERVING,
+                            status_raw_text='15I1000@@"NEW COURT PROBATION "',
+                            sentence_status_snapshot_id=None,
+                            person=None,
+                            sentence=None,
+                        ),
+                        StateSentenceStatusSnapshot(
+                            sequence_num=2,
+                            state_code="US_MO",
+                            status_update_datetime=datetime.datetime(2016, 7, 12),
+                            status=StateSentenceStatus.SUSPENDED,
+                            status_raw_text='65O2015@@"COURT PROBATION SUSPENSION "',
+                            sentence_status_snapshot_id=None,
+                            person=None,
+                            sentence=None,
+                        ),
+                        StateSentenceStatusSnapshot(
+                            sequence_num=3,
+                            state_code="US_MO",
+                            status_update_datetime=datetime.datetime(2018, 7, 26),
+                            status=StateSentenceStatus.SERVING,
+                            status_raw_text='65I2015@@"COURT PROBATION REINSTATED "',
+                            sentence_status_snapshot_id=None,
+                            person=None,
+                            sentence=None,
+                        ),
+                        StateSentenceStatusSnapshot(
+                            sequence_num=4,
+                            state_code="US_MO",
+                            status_update_datetime=datetime.datetime(2019, 10, 30),
+                            status=StateSentenceStatus.SUSPENDED,
+                            status_raw_text='65O2015@@"COURT PROBATION SUSPENSION "',
+                            sentence_status_snapshot_id=None,
+                            person=None,
+                            sentence=None,
+                        ),
+                        StateSentenceStatusSnapshot(
+                            sequence_num=5,
+                            state_code="US_MO",
+                            status_update_datetime=datetime.datetime(2020, 2, 20),
+                            status=StateSentenceStatus.COMPLETED,
+                            status_raw_text='99O1000@@"COURT PROBATION DISCHARGE "',
+                            sentence_status_snapshot_id=None,
+                            person=None,
+                            sentence=None,
+                        ),
+                    ],
+                )
             ]
         )
 
@@ -1209,27 +1517,42 @@ class TestUsMoSupervisionPeriodNormalizationDelegate(unittest.TestCase):
     def test_release_to_field_other_sentence_lookback(self) -> None:
         delegate = UsMoSupervisionNormalizationDelegate(
             [
-                {
-                    "sentence_external_id": "1061945-20030505-7",
-                    "sentence_status_external_id": "1061945-20030505-7-26",
-                    "status_code": "35I1000",
-                    "status_date": "20180716",
-                    "status_description": "Court Probation-Revisit",
-                },
-                {
-                    "sentence_external_id": "1061945-20030505-7",
-                    "sentence_status_external_id": "1061945-20030505-7-28",
-                    "status_code": "40I7000",
-                    "status_date": "20180716",
-                    "status_description": "Field Supv to DAI-Oth Sentence",
-                },
-                {
-                    "sentence_external_id": "1061945-20030505-7",
-                    "sentence_status_external_id": "1061945-20030505-7-30",
-                    "status_code": "40O7000",
-                    "status_date": "20180816",
-                    "status_description": "Rel to Field-DAI Other Sent",
-                },
+                StateSentence(
+                    external_id="1061945-20030505-7",
+                    state_code="US_MO",
+                    sentence_status_snapshots=[
+                        StateSentenceStatusSnapshot(
+                            sequence_num=26,
+                            state_code="US_MO",
+                            status_update_datetime=datetime.datetime(2018, 7, 16),
+                            status=StateSentenceStatus.SERVING,
+                            status_raw_text='35I1000@@"COURT PROBATION-REVISIT "',
+                            sentence_status_snapshot_id=None,
+                            person=None,
+                            sentence=None,
+                        ),
+                        StateSentenceStatusSnapshot(
+                            sequence_num=28,
+                            state_code="US_MO",
+                            status_update_datetime=datetime.datetime(2018, 7, 16),
+                            status=StateSentenceStatus.SERVING,
+                            status_raw_text='40I7000@@"FIELD SUPV TO DAI-OTH SENTENCE "',
+                            sentence_status_snapshot_id=None,
+                            person=None,
+                            sentence=None,
+                        ),
+                        StateSentenceStatusSnapshot(
+                            sequence_num=30,
+                            state_code="US_MO",
+                            status_update_datetime=datetime.datetime(2018, 8, 16),
+                            status=StateSentenceStatus.SERVING,
+                            status_raw_text='40O7000@@"REL TO FIELD-DAI OTHER SENT "',
+                            sentence_status_snapshot_id=None,
+                            person=None,
+                            sentence=None,
+                        ),
+                    ],
+                )
             ]
         )
 
@@ -1244,36 +1567,54 @@ class TestUsMoSupervisionPeriodNormalizationDelegate(unittest.TestCase):
     def test_release_to_field_statuses_cancel_each_other_out(self) -> None:
         delegate = UsMoSupervisionNormalizationDelegate(
             [
-                {
-                    "sentence_external_id": "1061945-20030505-7",
-                    "sentence_status_external_id": "1061945-20030505-7-26",
-                    "status_code": "35I1000",
-                    "status_date": "20180716",
-                    "status_description": "Court Probation-Revisit",
-                },
-                # These three statuses below all happened in the same day and represent a commitment and
-                # release to supervision.
-                {
-                    "sentence_external_id": "1061945-20030505-7",
-                    "sentence_status_external_id": "1061945-20030505-7-28",
-                    "status_code": "40I7000",
-                    "status_date": "20180716",
-                    "status_description": "Field Supv to DAI-Oth Sentence",
-                },
-                {
-                    "sentence_external_id": "1061945-20030505-7",
-                    "sentence_status_external_id": "1061945-20030505-7-29",
-                    "status_code": "45O7000",
-                    "status_date": "20180716",
-                    "status_description": "Field to DAI-Other Sentence",
-                },
-                {
-                    "sentence_external_id": "1061945-20030505-7",
-                    "sentence_status_external_id": "1061945-20030505-7-30",
-                    "status_code": "40O7000",
-                    "status_date": "20180716",
-                    "status_description": "Rel to Field-DAI Other Sent",
-                },
+                StateSentence(
+                    external_id="1061945-20030505-7",
+                    state_code="US_MO",
+                    sentence_status_snapshots=[
+                        StateSentenceStatusSnapshot(
+                            sequence_num=26,
+                            state_code="US_MO",
+                            status_update_datetime=datetime.datetime(2018, 7, 16),
+                            status=StateSentenceStatus.SERVING,
+                            status_raw_text='35I1000@@"COURT PROBATION-REVISIT "',
+                            sentence_status_snapshot_id=None,
+                            person=None,
+                            sentence=None,
+                        ),
+                        # These three statuses below all happened in the same day and represent a commitment and
+                        # release to supervision.
+                        StateSentenceStatusSnapshot(
+                            sequence_num=28,
+                            state_code="US_MO",
+                            status_update_datetime=datetime.datetime(2018, 7, 16),
+                            status=StateSentenceStatus.SERVING,
+                            status_raw_text='40I7000@@"FIELD SUPV TO DAI-OTH SENTENCE "',
+                            sentence_status_snapshot_id=None,
+                            person=None,
+                            sentence=None,
+                        ),
+                        StateSentenceStatusSnapshot(
+                            sequence_num=29,
+                            state_code="US_MO",
+                            status_update_datetime=datetime.datetime(2018, 7, 16),
+                            status=StateSentenceStatus.SERVING,
+                            status_raw_text='45O7000@@"FIELD TO DAI-OTHER SENTENCE "',
+                            sentence_status_snapshot_id=None,
+                            person=None,
+                            sentence=None,
+                        ),
+                        StateSentenceStatusSnapshot(
+                            sequence_num=30,
+                            state_code="US_MO",
+                            status_update_datetime=datetime.datetime(2018, 7, 16),
+                            status=StateSentenceStatus.SERVING,
+                            status_raw_text='40O7000@@"REL TO FIELD-DAI OTHER SENT "',
+                            sentence_status_snapshot_id=None,
+                            person=None,
+                            sentence=None,
+                        ),
+                    ],
+                )
             ]
         )
 
@@ -1288,20 +1629,32 @@ class TestUsMoSupervisionPeriodNormalizationDelegate(unittest.TestCase):
     def test_interstate_transfer_not_on_supervision(self) -> None:
         delegate = UsMoSupervisionNormalizationDelegate(
             [
-                {
-                    "sentence_external_id": "1343861-20190620-2",
-                    "sentence_status_external_id": "1343861-20190620-2-2",
-                    "status_code": "25I1000",
-                    "status_date": "20190710",
-                    "status_description": "Court Probation-Addl Charge",
-                },
-                {
-                    "sentence_external_id": "1343861-20190620-2",
-                    "sentence_status_external_id": "1343861-20190620-2-3",
-                    "status_code": "75O3000",
-                    "status_date": "20190814",
-                    "status_description": "MO Field-Interstate Transfer",
-                },
+                StateSentence(
+                    external_id="1343861-20190620-2",
+                    state_code="US_MO",
+                    sentence_status_snapshots=[
+                        StateSentenceStatusSnapshot(
+                            sequence_num=2,
+                            state_code="US_MO",
+                            status_update_datetime=datetime.datetime(2019, 7, 10),
+                            status=StateSentenceStatus.SERVING,
+                            status_raw_text='25I1000@@"COURT PROBATION-ADDL CHARGE "',
+                            sentence_status_snapshot_id=None,
+                            person=None,
+                            sentence=None,
+                        ),
+                        StateSentenceStatusSnapshot(
+                            sequence_num=3,
+                            state_code="US_MO",
+                            status_update_datetime=datetime.datetime(2019, 8, 14),
+                            status=StateSentenceStatus.SERVING,
+                            status_raw_text='75O3000@@"MO FIELD-INTERSTATE TRANSFER "',
+                            sentence_status_snapshot_id=None,
+                            person=None,
+                            sentence=None,
+                        ),
+                    ],
+                )
             ]
         )
 
@@ -1316,20 +1669,32 @@ class TestUsMoSupervisionPeriodNormalizationDelegate(unittest.TestCase):
     def test_interstate_transfer_same_day_as_new_charge(self) -> None:
         delegate = UsMoSupervisionNormalizationDelegate(
             [
-                {
-                    "sentence_external_id": "1343861-20190620-2",
-                    "sentence_status_external_id": "1343861-20190620-2-2",
-                    "status_code": "25I1000",
-                    "status_date": "20190710",
-                    "status_description": "Court Probation-Addl Charge",
-                },
-                {
-                    "sentence_external_id": "1343861-20190620-2",
-                    "sentence_status_external_id": "1343861-20190620-2-3",
-                    "status_code": "75O3000",
-                    "status_date": "20190710",
-                    "status_description": "MO Field-Interstate Transfer",
-                },
+                StateSentence(
+                    external_id="1343861-20190620-2",
+                    state_code="US_MO",
+                    sentence_status_snapshots=[
+                        StateSentenceStatusSnapshot(
+                            sequence_num=2,
+                            state_code="US_MO",
+                            status_update_datetime=datetime.datetime(2019, 7, 10),
+                            status=StateSentenceStatus.SERVING,
+                            status_raw_text='25I1000@@"COURT PROBATION-ADDL CHARGE "',
+                            sentence_status_snapshot_id=None,
+                            person=None,
+                            sentence=None,
+                        ),
+                        StateSentenceStatusSnapshot(
+                            sequence_num=3,
+                            state_code="US_MO",
+                            status_update_datetime=datetime.datetime(2019, 7, 10),
+                            status=StateSentenceStatus.SERVING,
+                            status_raw_text='75O3000@@"MO FIELD-INTERSTATE TRANSFER "',
+                            sentence_status_snapshot_id=None,
+                            person=None,
+                            sentence=None,
+                        ),
+                    ],
+                )
             ]
         )
 
@@ -1344,34 +1709,52 @@ class TestUsMoSupervisionPeriodNormalizationDelegate(unittest.TestCase):
     def test_probation_reinstated_on_validation_date(self) -> None:
         delegate = UsMoSupervisionNormalizationDelegate(
             [
-                {
-                    "sentence_external_id": "1313746-20170505-1",
-                    "sentence_status_external_id": "1313746-20170505-1-1",
-                    "status_code": "15I1000",
-                    "status_date": "20170505",
-                    "status_description": "New Court Probation",
-                },
-                {
-                    "sentence_external_id": "1313746-20170505-1",
-                    "sentence_status_external_id": "1313746-20170505-1-2",
-                    "status_code": "65O2015",
-                    "status_date": "20191001",
-                    "status_description": "Court Probation Suspension",
-                },
-                {
-                    "sentence_external_id": "1313746-20170505-1",
-                    "sentence_status_external_id": "1313746-20170505-1-3",
-                    "status_code": "65I2015",
-                    "status_date": "20191031",
-                    "status_description": "Court Probation Reinstated",
-                },
-                {
-                    "sentence_external_id": "1313746-20170505-1",
-                    "sentence_status_external_id": "1313746-20170505-1-4",
-                    "status_code": "99O1011",
-                    "status_date": "20200201",
-                    "status_description": "Ct Prob ECC Disc-CONFIDENTIAL",
-                },
+                StateSentence(
+                    external_id="1313746-20170505-1",
+                    state_code="US_MO",
+                    sentence_status_snapshots=[
+                        StateSentenceStatusSnapshot(
+                            sequence_num=1,
+                            state_code="US_MO",
+                            status_update_datetime=datetime.datetime(2017, 5, 5),
+                            status=StateSentenceStatus.SERVING,
+                            status_raw_text='15I1000@@"NEW COURT PROBATION "',
+                            sentence_status_snapshot_id=None,
+                            person=None,
+                            sentence=None,
+                        ),
+                        StateSentenceStatusSnapshot(
+                            sequence_num=2,
+                            state_code="US_MO",
+                            status_update_datetime=datetime.datetime(2019, 10, 1),
+                            status=StateSentenceStatus.SUSPENDED,
+                            status_raw_text='65O2015@@"COURT PROBATION SUSPENSION "',
+                            sentence_status_snapshot_id=None,
+                            person=None,
+                            sentence=None,
+                        ),
+                        StateSentenceStatusSnapshot(
+                            sequence_num=3,
+                            state_code="US_MO",
+                            status_update_datetime=datetime.datetime(2019, 10, 31),
+                            status=StateSentenceStatus.SERVING,
+                            status_raw_text='65I2015@@"COURT PROBATION REINSTATED "',
+                            sentence_status_snapshot_id=None,
+                            person=None,
+                            sentence=None,
+                        ),
+                        StateSentenceStatusSnapshot(
+                            sequence_num=4,
+                            state_code="US_MO",
+                            status_update_datetime=datetime.datetime(2020, 2, 1),
+                            status=StateSentenceStatus.COMPLETED,
+                            status_raw_text='99O1011@@"CT PROB ECC DISC-CONFIDENTIAL "',
+                            sentence_status_snapshot_id=None,
+                            person=None,
+                            sentence=None,
+                        ),
+                    ],
+                )
             ]
         )
 
@@ -1386,20 +1769,32 @@ class TestUsMoSupervisionPeriodNormalizationDelegate(unittest.TestCase):
     def test_conditional_release(self) -> None:
         delegate = UsMoSupervisionNormalizationDelegate(
             [
-                {
-                    "sentence_external_id": "1123534-20041220-5",
-                    "sentence_status_external_id": "1123534-20041220-5-18",
-                    "status_code": "20I1000",
-                    "status_date": "20130603",
-                    "status_description": "Court Comm-Inst-Addl Charge",
-                },
-                {
-                    "sentence_external_id": "1123534-20041220-5",
-                    "sentence_status_external_id": "1123534-20041220-5-21",
-                    "status_code": "40O3010",
-                    "status_date": "20180525",
-                    "status_description": "Conditional Release",
-                },
+                StateSentence(
+                    external_id="1123534-20041220-5",
+                    state_code="US_MO",
+                    sentence_status_snapshots=[
+                        StateSentenceStatusSnapshot(
+                            sequence_num=18,
+                            state_code="US_MO",
+                            status_update_datetime=datetime.datetime(2013, 6, 3),
+                            status=StateSentenceStatus.SERVING,
+                            status_raw_text='20I1000@@"COURT COMM-INST-ADDL CHARGE "',
+                            sentence_status_snapshot_id=None,
+                            person=None,
+                            sentence=None,
+                        ),
+                        StateSentenceStatusSnapshot(
+                            sequence_num=21,
+                            state_code="US_MO",
+                            status_update_datetime=datetime.datetime(2018, 5, 25),
+                            status=StateSentenceStatus.SERVING,
+                            status_raw_text='40O3010@@"CONDITIONAL RELEASE "',
+                            sentence_status_snapshot_id=None,
+                            person=None,
+                            sentence=None,
+                        ),
+                    ],
+                )
             ]
         )
 
@@ -1414,41 +1809,62 @@ class TestUsMoSupervisionPeriodNormalizationDelegate(unittest.TestCase):
     def test_conditional_re_release(self) -> None:
         delegate = UsMoSupervisionNormalizationDelegate(
             [
-                {
-                    "sentence_external_id": "1123534-20041220-5",
-                    "sentence_status_external_id": "1123534-20041220-5-18",
-                    "status_code": "20I1000",
-                    "status_date": "20130603",
-                    "status_description": "Court Comm-Inst-Addl Charge",
-                },
-                {
-                    "sentence_external_id": "1123534-20041220-5",
-                    "sentence_status_external_id": "1123534-20041220-5-21",
-                    "status_code": "40O3010",
-                    "status_date": "20180525",
-                    "status_description": "Conditional Release",
-                },
-                {
-                    "sentence_external_id": "1123534-20041220-5",
-                    "sentence_status_external_id": "1123534-20041220-5-31",
-                    "status_code": "40I3060",
-                    "status_date": "20190509",
-                    "status_description": "CR Ret-Treatment Center",
-                },
-                {
-                    "sentence_external_id": "1123534-20041220-5",
-                    "sentence_status_external_id": "1123534-20041220-5-32",
-                    "status_code": "45O3060",
-                    "status_date": "20190509",
-                    "status_description": "CR Ret-Treatment Center",
-                },
-                {
-                    "sentence_external_id": "1123534-20041220-5",
-                    "sentence_status_external_id": "1123534-20041220-5-34",
-                    "status_code": "40O3030",
-                    "status_date": "20191022",
-                    "status_description": "Conditional Re-Release",
-                },
+                StateSentence(
+                    external_id="1123534-20041220-5",
+                    state_code="US_MO",
+                    sentence_status_snapshots=[
+                        StateSentenceStatusSnapshot(
+                            sequence_num=18,
+                            state_code="US_MO",
+                            status_update_datetime=datetime.datetime(2013, 6, 3),
+                            status=StateSentenceStatus.SERVING,
+                            status_raw_text='20I1000@@"COURT COMM-INST-ADDL CHARGE "',
+                            sentence_status_snapshot_id=None,
+                            person=None,
+                            sentence=None,
+                        ),
+                        StateSentenceStatusSnapshot(
+                            sequence_num=21,
+                            state_code="US_MO",
+                            status_update_datetime=datetime.datetime(2018, 5, 25),
+                            status=StateSentenceStatus.SERVING,
+                            status_raw_text='40O3010@@"CONDITIONAL RELEASE "',
+                            sentence_status_snapshot_id=None,
+                            person=None,
+                            sentence=None,
+                        ),
+                        StateSentenceStatusSnapshot(
+                            sequence_num=31,
+                            state_code="US_MO",
+                            status_update_datetime=datetime.datetime(2019, 5, 9),
+                            status=StateSentenceStatus.SERVING,
+                            status_raw_text='40I3060@@"CR RET-TREATMENT CENTER "',
+                            sentence_status_snapshot_id=None,
+                            person=None,
+                            sentence=None,
+                        ),
+                        StateSentenceStatusSnapshot(
+                            sequence_num=32,
+                            state_code="US_MO",
+                            status_update_datetime=datetime.datetime(2019, 5, 9),
+                            status=StateSentenceStatus.SERVING,
+                            status_raw_text='45O3060@@"CR RET-TREATMENT CENTER "',
+                            sentence_status_snapshot_id=None,
+                            person=None,
+                            sentence=None,
+                        ),
+                        StateSentenceStatusSnapshot(
+                            sequence_num=34,
+                            state_code="US_MO",
+                            status_update_datetime=datetime.datetime(2019, 10, 22),
+                            status=StateSentenceStatus.SERVING,
+                            status_raw_text='40O3030@@"CONDITIONAL RE-RELEASE "',
+                            sentence_status_snapshot_id=None,
+                            person=None,
+                            sentence=None,
+                        ),
+                    ],
+                )
             ]
         )
 
@@ -1463,27 +1879,42 @@ class TestUsMoSupervisionPeriodNormalizationDelegate(unittest.TestCase):
     def test_interstate_transfer_and_return_same_day(self) -> None:
         delegate = UsMoSupervisionNormalizationDelegate(
             [
-                {
-                    "sentence_external_id": "1291992-20151103-1",
-                    "sentence_status_external_id": "1291992-20151103-1-3",
-                    "status_code": "35I1000",
-                    "status_date": "20160105",
-                    "status_description": "Court Probation-Revisit",
-                },
-                {
-                    "sentence_external_id": "1291992-20151103-1",
-                    "sentence_status_external_id": "1291992-20151103-1-5",
-                    "status_code": "75I3000",
-                    "status_date": "20160111",
-                    "status_description": "MO Field-Interstate Returned",
-                },
-                {
-                    "sentence_external_id": "1291992-20151103-1",
-                    "sentence_status_external_id": "1291992-20151103-1-4",
-                    "status_code": "75O3000",
-                    "status_date": "20160111",
-                    "status_description": "MO Field-Interstate Transfer",
-                },
+                StateSentence(
+                    external_id="1291992-20151103-1",
+                    state_code="US_MO",
+                    sentence_status_snapshots=[
+                        StateSentenceStatusSnapshot(
+                            sequence_num=3,
+                            state_code="US_MO",
+                            status_update_datetime=datetime.datetime(2016, 1, 5),
+                            status=StateSentenceStatus.SERVING,
+                            status_raw_text='35I1000@@"COURT PROBATION-REVISIT "',
+                            sentence_status_snapshot_id=None,
+                            person=None,
+                            sentence=None,
+                        ),
+                        StateSentenceStatusSnapshot(
+                            sequence_num=5,
+                            state_code="US_MO",
+                            status_update_datetime=datetime.datetime(2016, 1, 11),
+                            status=StateSentenceStatus.SERVING,
+                            status_raw_text='75I3000@@"MO FIELD-INTERSTATE RETURNED "',
+                            sentence_status_snapshot_id=None,
+                            person=None,
+                            sentence=None,
+                        ),
+                        StateSentenceStatusSnapshot(
+                            sequence_num=4,
+                            state_code="US_MO",
+                            status_update_datetime=datetime.datetime(2016, 1, 11),
+                            status=StateSentenceStatus.SERVING,
+                            status_raw_text='75O3000@@"MO FIELD-INTERSTATE TRANSFER "',
+                            sentence_status_snapshot_id=None,
+                            person=None,
+                            sentence=None,
+                        ),
+                    ],
+                )
             ]
         )
 
@@ -1498,34 +1929,52 @@ class TestUsMoSupervisionPeriodNormalizationDelegate(unittest.TestCase):
     def test_crc_converted_from_dai_to_parole(self) -> None:
         delegate = UsMoSupervisionNormalizationDelegate(
             [
-                {
-                    "sentence_external_id": "38140-19800131-8",
-                    "sentence_status_external_id": "38140-19800131-8-1",
-                    "status_code": "10I1000",
-                    "status_date": "19800131",
-                    "status_description": "New Court Comm-Institution",
-                },
-                {
-                    "sentence_external_id": "38140-19800131-8",
-                    "sentence_status_external_id": "38140-19800131-8-8",
-                    "status_code": "40O4099",
-                    "status_date": "19950918",
-                    "status_description": "Inmate Release to RF",
-                },
-                {
-                    "sentence_external_id": "38140-19800131-8",
-                    "sentence_status_external_id": "38140-19800131-8-18",
-                    "status_code": "40N1010",
-                    "status_date": "20020220",
-                    "status_description": "Parole Assigned To CRC",
-                },
-                {
-                    "sentence_external_id": "38140-19800131-8",
-                    "sentence_status_external_id": "38140-19800131-8-27",
-                    "status_code": "40O6000",
-                    "status_date": "20080701",
-                    "status_description": "Converted-CRC DAI to CRC Field",
-                },
+                StateSentence(
+                    external_id="38140-19800131-8",
+                    state_code="US_MO",
+                    sentence_status_snapshots=[
+                        StateSentenceStatusSnapshot(
+                            sequence_num=1,
+                            state_code="US_MO",
+                            status_update_datetime=datetime.datetime(1980, 1, 31),
+                            status=StateSentenceStatus.SERVING,
+                            status_raw_text='10I1000@@"NEW COURT COMM-INSTITUTION "',
+                            sentence_status_snapshot_id=None,
+                            person=None,
+                            sentence=None,
+                        ),
+                        StateSentenceStatusSnapshot(
+                            sequence_num=8,
+                            state_code="US_MO",
+                            status_update_datetime=datetime.datetime(1995, 9, 18),
+                            status=StateSentenceStatus.SERVING,
+                            status_raw_text='40O4099@@"INMATE RELEASE TO RF "',
+                            sentence_status_snapshot_id=None,
+                            person=None,
+                            sentence=None,
+                        ),
+                        StateSentenceStatusSnapshot(
+                            sequence_num=18,
+                            state_code="US_MO",
+                            status_update_datetime=datetime.datetime(2002, 2, 20),
+                            status=StateSentenceStatus.SERVING,
+                            status_raw_text='40N1010@@"PAROLE ASSIGNED TO CRC "',
+                            sentence_status_snapshot_id=None,
+                            person=None,
+                            sentence=None,
+                        ),
+                        StateSentenceStatusSnapshot(
+                            sequence_num=27,
+                            state_code="US_MO",
+                            status_update_datetime=datetime.datetime(2008, 7, 1),
+                            status=StateSentenceStatus.SERVING,
+                            status_raw_text='40O6000@@"CONVERTED-CRC DAI TO CRC FIELD "',
+                            sentence_status_snapshot_id=None,
+                            person=None,
+                            sentence=None,
+                        ),
+                    ],
+                )
             ]
         )
 
@@ -1552,13 +2001,22 @@ class TestUsMoSupervisionPeriodNormalizationDelegate(unittest.TestCase):
     def test_no_previous_supervision(self) -> None:
         delegate = UsMoSupervisionNormalizationDelegate(
             [
-                {
-                    "sentence_external_id": "1000044-20100920-1",
-                    "sentence_status_external_id": "1000044-20100920-1-6",
-                    "status_code": "10I1000",
-                    "status_date": "20120125",
-                    "status_description": "New Court Comm-Institution",
-                },
+                StateSentence(
+                    external_id="1000044-20100920-1",
+                    state_code="US_MO",
+                    sentence_status_snapshots=[
+                        StateSentenceStatusSnapshot(
+                            sequence_num=6,
+                            state_code="US_MO",
+                            status_update_datetime=datetime.datetime(2012, 1, 25),
+                            status=StateSentenceStatus.SERVING,
+                            status_raw_text='10I1000@@"NEW COURT COMM-INSTITUTION "',
+                            sentence_status_snapshot_id=None,
+                            person=None,
+                            sentence=None,
+                        ),
+                    ],
+                )
             ]
         )
 
@@ -1574,55 +2032,82 @@ class TestUsMoSupervisionPeriodNormalizationDelegate(unittest.TestCase):
     def test_board_hold_revocation(self) -> None:
         delegate = UsMoSupervisionNormalizationDelegate(
             [
-                {
-                    "sentence_external_id": "1000044-20100920-1",
-                    "sentence_status_external_id": "1000044-20100920-1-6",
-                    "status_code": "10I1000",
-                    "status_date": "20120125",
-                    "status_description": "New Court Comm-Institution",
-                },
-                {
-                    "sentence_external_id": "1000044-20100920-1",
-                    "sentence_status_external_id": "1000044-20100920-1-7",
-                    "status_code": "40O1010",
-                    "status_date": "20150507",
-                    "status_description": "Parole Release",
-                },
-                {
-                    "sentence_external_id": "1000044-20100920-1",
-                    "sentence_status_external_id": "1000044-20100920-1-9",
-                    "status_code": "40I0050",
-                    "status_date": "20171108",
-                    "status_description": "Board Holdover",
-                },
-                {
-                    "sentence_external_id": "1000044-20100920-1",
-                    "sentence_status_external_id": "1000044-20100920-1-10",
-                    "status_code": "45O0050",
-                    "status_date": "20171108",
-                    "status_description": "Board Holdover",
-                },
-                {
-                    "sentence_external_id": "1000044-20100920-1",
-                    "sentence_status_external_id": "1000044-20100920-1-12",
-                    "status_code": "50N1010",
-                    "status_date": "20171130",
-                    "status_description": "Parole Update-Tech Viol",
-                },
-                {
-                    "sentence_external_id": "1000044-20100920-1",
-                    "sentence_status_external_id": "1000044-20100920-1-13",
-                    "status_code": "40O1010",
-                    "status_date": "20180330",
-                    "status_description": "Parole Release",
-                },
-                {
-                    "sentence_external_id": "1000044-20100920-1",
-                    "sentence_status_external_id": "1000044-20100920-1-13",
-                    "status_code": "95O2010",
-                    "status_date": "20190120",
-                    "status_description": "Parole Completion",
-                },
+                StateSentence(
+                    external_id="1000044-20100920-1",
+                    state_code="US_MO",
+                    sentence_status_snapshots=[
+                        StateSentenceStatusSnapshot(
+                            sequence_num=6,
+                            state_code="US_MO",
+                            status_update_datetime=datetime.datetime(2012, 1, 25),
+                            status=StateSentenceStatus.SERVING,
+                            status_raw_text='10I1000@@"NEW COURT COMM-INSTITUTION "',
+                            sentence_status_snapshot_id=None,
+                            person=None,
+                            sentence=None,
+                        ),
+                        StateSentenceStatusSnapshot(
+                            sequence_num=7,
+                            state_code="US_MO",
+                            status_update_datetime=datetime.datetime(2015, 5, 7),
+                            status=StateSentenceStatus.SERVING,
+                            status_raw_text='40O1010@@"PAROLE RELEASE "',
+                            sentence_status_snapshot_id=None,
+                            person=None,
+                            sentence=None,
+                        ),
+                        StateSentenceStatusSnapshot(
+                            sequence_num=9,
+                            state_code="US_MO",
+                            status_update_datetime=datetime.datetime(2017, 11, 8),
+                            status=StateSentenceStatus.SERVING,
+                            status_raw_text='40I0050@@"BOARD HOLDOVER "',
+                            sentence_status_snapshot_id=None,
+                            person=None,
+                            sentence=None,
+                        ),
+                        StateSentenceStatusSnapshot(
+                            sequence_num=10,
+                            state_code="US_MO",
+                            status_update_datetime=datetime.datetime(2017, 11, 8),
+                            status=StateSentenceStatus.SERVING,
+                            status_raw_text='45O0050@@"BOARD HOLDOVER "',
+                            sentence_status_snapshot_id=None,
+                            person=None,
+                            sentence=None,
+                        ),
+                        StateSentenceStatusSnapshot(
+                            sequence_num=12,
+                            state_code="US_MO",
+                            status_update_datetime=datetime.datetime(2017, 11, 30),
+                            status=StateSentenceStatus.SERVING,
+                            status_raw_text='50N1010@@"PAROLE UPDATE-TECH VIOL "',
+                            sentence_status_snapshot_id=None,
+                            person=None,
+                            sentence=None,
+                        ),
+                        StateSentenceStatusSnapshot(
+                            sequence_num=13,
+                            state_code="US_MO",
+                            status_update_datetime=datetime.datetime(2018, 3, 30),
+                            status=StateSentenceStatus.SERVING,
+                            status_raw_text='40O1010@@"PAROLE RELEASE "',
+                            sentence_status_snapshot_id=None,
+                            person=None,
+                            sentence=None,
+                        ),
+                        StateSentenceStatusSnapshot(
+                            sequence_num=13,
+                            state_code="US_MO",
+                            status_update_datetime=datetime.datetime(2019, 1, 20),
+                            status=StateSentenceStatus.COMPLETED,
+                            status_raw_text='95O2010@@"PAROLE COMPLETION "',
+                            sentence_status_snapshot_id=None,
+                            person=None,
+                            sentence=None,
+                        ),
+                    ],
+                )
             ]
         )
 

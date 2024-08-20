@@ -41,7 +41,6 @@ from recidiviz.persistence.entity.state.entities import (
     StateSupervisionPeriod,
 )
 from recidiviz.persistence.entity.state.normalized_entities import (
-    NormalizedStateIncarcerationSentence,
     NormalizedStateSupervisionSentence,
 )
 from recidiviz.pipelines.normalization.utils.normalization_managers.entity_normalization_manager import (
@@ -123,15 +122,7 @@ class StateSpecificSupervisionNormalizationDelegate(abc.ABC, StateSpecificDelega
         return supervision_period.termination_reason
 
     def split_periods_based_on_sentences(
-        self,
-        person_id: int,
-        supervision_periods: List[StateSupervisionPeriod],
-        # TODO(#25800): When the delegate instantiation is refactored, we should be able to pass
-        #  incarceration_sentences only to state-specific delegates that need them via the constructor.
-        incarceration_sentences: List[NormalizedStateIncarcerationSentence],
-        # TODO(#25800): When the delegate instantiation is refactored, we should be able to pass
-        #  supervision_sentences only to state-specific delegates that need them via the constructor.
-        supervision_sentences: List[NormalizedStateSupervisionSentence],
+        self, person_id: int, supervision_periods: List[StateSupervisionPeriod]
     ) -> List[StateSupervisionPeriod]:
         """Some states may use sentence information to split a period of supervision
         into multiple distinct periods with specific attributes. For example, if the
@@ -160,7 +151,6 @@ class SupervisionPeriodNormalizationManager(EntityNormalizationManager):
         supervision_periods: List[StateSupervisionPeriod],
         incarceration_periods: List[StateIncarcerationPeriod],
         delegate: StateSpecificSupervisionNormalizationDelegate,
-        incarceration_sentences: List[NormalizedStateIncarcerationSentence],
         supervision_sentences: List[NormalizedStateSupervisionSentence],
         staff_external_id_to_staff_id: Dict[Tuple[str, str], int],
         earliest_death_date: Optional[datetime.date] = None,
@@ -172,7 +162,6 @@ class SupervisionPeriodNormalizationManager(EntityNormalizationManager):
         ] = None
         self.staff_external_id_to_staff_id = staff_external_id_to_staff_id
         self.delegate = delegate
-        self._incarceration_sentences = incarceration_sentences
         self._supervision_sentences = supervision_sentences
         self._incarceration_periods = incarceration_periods
 
@@ -209,10 +198,7 @@ class SupervisionPeriodNormalizationManager(EntityNormalizationManager):
             )
 
             mid_processing_periods = self.delegate.split_periods_based_on_sentences(
-                self._person_id,
-                mid_processing_periods,
-                self._incarceration_sentences,
-                self._supervision_sentences,
+                self._person_id, mid_processing_periods
             )
 
             if self.earliest_death_date:

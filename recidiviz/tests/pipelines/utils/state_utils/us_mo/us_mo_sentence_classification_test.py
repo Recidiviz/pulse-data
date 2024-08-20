@@ -17,7 +17,6 @@
 """Tests for classes and helpers in us_mo_sentence_classification.py."""
 import datetime
 import unittest
-from typing import Optional
 
 from recidiviz.pipelines.utils.state_utils.us_mo.us_mo_sentence_classification import (
     UsMoSentenceStatus,
@@ -31,47 +30,11 @@ class UsMoSentenceStatusTest(unittest.TestCase):
         self, status_code: str, status_description: str
     ) -> UsMoSentenceStatus:
         return UsMoSentenceStatus(
-            sentence_status_external_id="1000038-20180619-1-2",
-            sentence_external_id="1000038-20180619-1",
             status_code=status_code,
             status_date=datetime.date(year=2019, month=5, day=10),
+            sequence_num=0,
             status_description=status_description,
         )
-
-    def test_parse_sentence_status(self) -> None:
-        # Arrange
-        raw_dict = {
-            "sentence_status_external_id": "1000038-20180619-1-2",
-            "status_code": "40I2105",
-            "status_date": "20190510",
-            "status_description": "Prob Rev-New Felon-120 Day Trt",
-            "sentence_external_id": "1000038-20180619-1",
-        }
-
-        # Act
-        output = UsMoSentenceStatus.build_from_dictionary(raw_dict)
-
-        # Assert
-        self.assertEqual(
-            output,
-            UsMoSentenceStatus(
-                sentence_status_external_id="1000038-20180619-1-2",
-                sentence_external_id="1000038-20180619-1",
-                status_code="40I2105",
-                status_date=datetime.date(year=2019, month=5, day=10),
-                status_description="Prob Rev-New Felon-120 Day Trt",
-                is_supervision_in_status=False,
-                is_supervision_out_status=False,
-                is_incarceration_out_status=False,
-                is_sentence_termimination_status=False,
-                is_investigation_status=False,
-                is_lifetime_supervision_start_status=False,
-                is_supervision_type_critical_status=False,
-            ),
-        )
-
-        assert output is not None
-        self.assertEqual(output.person_external_id, "1000038")
 
     def test_incarceration_supervision_in_out_statuses(self) -> None:
         sup_in_status = self._build_test_status(
@@ -117,22 +80,6 @@ class UsMoSentenceStatusTest(unittest.TestCase):
         code, descript = '40I7000@@"Field Supv to DAI-Oth Sentence"'.split("@@")
         stat = self._build_test_status(status_code=code, status_description=descript)
         self.assertEqual(stat.status_description, '"FIELD SUPV TO DAI-OTH SENTENCE"')
-
-    def test_status_description_converter_handles_build_from_dictionary(self) -> None:
-        # Builer allows None values to sneak in
-        stat: Optional[UsMoSentenceStatus] = UsMoSentenceStatus.build_from_dictionary(
-            {
-                "status_code": "05I5000",
-                "status_description": None,
-                "status_date": None,
-                "sentence_status_external_id": None,
-                "sentence_external_id": "000-1000",
-            }
-        )
-        # We check it isn't None for MyPy
-        if stat is None:
-            raise ValueError("UsMoSentenceStatus should not be None")
-        self.assertEqual(stat.status_description, "")
 
     def test_is_investigation_status(self) -> None:
         investigation_statuses = [

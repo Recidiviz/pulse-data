@@ -16,15 +16,12 @@
 # =============================================================================
 """Entity normalizer for normalizing all entities with configured normalization
 processes."""
-from typing import Any, Dict, List, Optional, Sequence, Tuple, Type
+from typing import Any, Dict, List, Sequence, Tuple, Type
 
 from more_itertools import one
 
 from recidiviz.calculator.query.state.views.reference.state_person_to_state_staff import (
     STATE_PERSON_TO_STATE_STAFF_VIEW_NAME,
-)
-from recidiviz.calculator.query.state.views.reference.us_mo_sentence_statuses import (
-    US_MO_SENTENCE_STATUSES_VIEW_NAME,
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.base_entity import Entity
@@ -127,15 +124,6 @@ class ComprehensiveEntityNormalizer:
                 ],
             )
 
-        if US_MO_SENTENCE_STATUSES_VIEW_NAME in normalizer_args:
-            us_mo_sentence_statuses_list = [
-                a
-                for a in normalizer_args[US_MO_SENTENCE_STATUSES_VIEW_NAME]
-                if isinstance(a, dict)
-            ]
-        else:
-            us_mo_sentence_statuses_list = None
-
         person = one(normalizer_args[StatePerson.__name__])
         if person.person_id != root_entity_id:
             raise ValueError(
@@ -161,7 +149,6 @@ class ComprehensiveEntityNormalizer:
             state_person_to_state_staff=normalizer_args[
                 STATE_PERSON_TO_STATE_STAFF_VIEW_NAME
             ],
-            us_mo_sentence_statuses_list=us_mo_sentence_statuses_list,
         )
 
     def _normalize_person_entities(
@@ -170,18 +157,13 @@ class ComprehensiveEntityNormalizer:
         incarceration_periods: List[StateIncarcerationPeriod],
         incarceration_sentences: List[StateIncarcerationSentence],
         supervision_sentences: List[StateSupervisionSentence],
-        # TODO(#30199): Actually use these sentences instead of
-        #  us_mo_sentence_statuses_list and remove the pylint exemption.
-        sentences: List[StateSentence],  # pylint: disable=unused-argument
+        sentences: List[StateSentence],
         supervision_periods: List[StateSupervisionPeriod],
         violation_responses: List[StateSupervisionViolationResponse],
         program_assignments: List[StateProgramAssignment],
         assessments: List[StateAssessment],
         supervision_contacts: List[StateSupervisionContact],
         state_person_to_state_staff: List[Dict[str, Any]],
-        # TODO(#30199): Remove MO sentence statuses table dependency in favor of
-        #  state_sentence_status_snapshot data
-        us_mo_sentence_statuses_list: Optional[List[Dict[str, Any]]],
     ) -> EntityNormalizerResult:
         """Normalizes all entities rooted with StatePerson with corresponding normalization managers."""
 
@@ -197,10 +179,10 @@ class ComprehensiveEntityNormalizer:
             program_assignments=program_assignments,
             incarceration_sentences=incarceration_sentences,
             supervision_sentences=supervision_sentences,
+            sentences=sentences,
             assessments=assessments,
             supervision_contacts=supervision_contacts,
             staff_external_id_to_staff_id=staff_external_id_to_staff_id,
-            us_mo_sentence_statuses_list=us_mo_sentence_statuses_list,
         )
 
         return processed_entities
@@ -242,9 +224,7 @@ def all_normalized_person_entities(
     assessments: List[StateAssessment],
     supervision_contacts: List[StateSupervisionContact],
     staff_external_id_to_staff_id: Dict[Tuple[str, str], int],
-    # TODO(#30199): Remove MO sentence statuses table dependency in favor of
-    #  state_sentence_status_snapshot data
-    us_mo_sentence_statuses_list: Optional[List[Dict[str, Any]]],
+    sentences: List[StateSentence],
 ) -> EntityNormalizerResult:
     """Normalizes all entities that have corresponding comprehensive managers.
 
@@ -339,7 +319,7 @@ def all_normalized_person_entities(
             state_code.value,
             assessments,
             incarceration_periods,
-            us_mo_sentence_statuses_list,
+            sentences,
         ),
         incarceration_periods=incarceration_periods,
         supervision_periods=supervision_periods,

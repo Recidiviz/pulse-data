@@ -19,7 +19,7 @@ provides helpers for mocking delegates.
 """
 from datetime import date
 from types import FunctionType, ModuleType
-from typing import Any, Dict, List, Optional, Set
+from typing import Any, List, Optional, Set
 
 from mock import patch
 
@@ -29,6 +29,7 @@ from recidiviz.persistence.entity.state.entities import (
     StateAssessment,
     StateIncarcerationPeriod,
     StatePerson,
+    StateSentence,
     StateStaffSupervisorPeriod,
 )
 from recidiviz.persistence.entity.state.normalized_entities import (
@@ -152,9 +153,7 @@ def get_state_specific_supervision_period_normalization_delegate(
     state_code: str,
     assessments: List[StateAssessment],
     incarceration_periods: List[StateIncarcerationPeriod],
-    # TODO(#30199): Remove MO sentence statuses table dependency in favor of
-    #  state_sentence_status_snapshot data
-    us_mo_sentence_statuses_list: Optional[List[Dict[str, Any]]],
+    sentences: List[StateSentence],
 ) -> StateSpecificSupervisionNormalizationDelegate:
     if state_code == StateCode.US_XX.value:
         return UsXxSupervisionNormalizationDelegate()
