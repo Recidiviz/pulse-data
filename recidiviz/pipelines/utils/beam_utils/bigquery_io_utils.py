@@ -56,10 +56,8 @@ class ReadFromBigQuery(beam.PTransform):
         self._query = query
 
     def expand(self, input_or_inputs: PBegin) -> beam.PCollection[Dict[str, Any]]:
-        return input_or_inputs | "Read from BigQuery" >> beam.io.Read(
-            beam.io.ReadFromBigQuery(
-                query=self._query, use_standard_sql=True, validate=True
-            )
+        return input_or_inputs | "Read from BigQuery" >> beam.io.ReadFromBigQuery(
+            query=self._query, use_standard_sql=True, validate=True
         )
 
 
@@ -70,7 +68,8 @@ class WriteToBigQuery(beam.io.WriteToBigQuery):
         self,
         output_dataset: str,
         output_table: str,
-        write_disposition: beam.io.BigQueryDisposition,
+        # Must be one of the values defined in beam.io.BigQueryDisposition
+        write_disposition: str,
         schema: Optional[bigquery.TableSchema] = None,
     ):
         super().__init__(

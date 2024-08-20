@@ -252,6 +252,15 @@ class RunValidations(beam.PTransform):
         self, input_or_inputs: beam.PCollection[RootEntity]
     ) -> beam.PCollection[RootEntity]:
         entity_names = sorted(self.expected_output_entities)
+
+        @with_input_types(Tuple[EntityClassName, EntityCriticalFieldsDict], int)
+        @with_output_types(int)
+        def partition_fn(
+            entity_name_and_fields: Tuple[EntityClassName, EntityCriticalFieldsDict],
+            num_partitions: int,  # pylint: disable=unused-argument
+        ) -> int:
+            return entity_names.index(entity_name_and_fields[0])
+
         entity_type_partitions: List[
             beam.PCollection[Tuple[EntityClassName, EntityCriticalFieldsDict]]
         ] = (
@@ -264,9 +273,8 @@ class RunValidations(beam.PTransform):
             )
             | "Partition all entities by type"
             >> beam.Partition(
-                lambda entity_name_and_fields, num_partitions: entity_names.index(
-                    entity_name_and_fields[0]
-                ),
+                # apache-beam expects this type to be "WithTypeHints"
+                partition_fn,  # type: ignore[arg-type]
                 len(entity_names),
             )
         )

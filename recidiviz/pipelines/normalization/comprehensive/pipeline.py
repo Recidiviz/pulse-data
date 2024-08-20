@@ -431,7 +431,7 @@ class NormalizedEntityTreeWritableDicts(beam.DoFn):
             AdditionalAttributesMap,
         ],
         state_code: str,
-    ) -> Generator[Dict[str, Any], None, None,]:
+    ) -> Generator[beam.pvalue.TaggedOutput, None, None,]:
         """The beam.io.WriteToBigQuery transform requires elements to be in dictionary
         form, where the values are in formats as required by BigQuery I/O connector.
 
