@@ -36,7 +36,15 @@ class RawDataImportBlockingValidationFailure:
     """Represents a failure encountered while running a RawDataTableImportBlockingValidation"""
 
     validation_type: RawDataImportBlockingValidationType
+    validation_query: str
     error_msg: str
+
+    def __str__(self) -> str:
+        return (
+            f"Error: {self.error_msg}"
+            f"\nValidation type: {self.validation_type.value}"
+            f"\nValidation query: {self.validation_query}"
+        )
 
 
 @attr.define
@@ -50,6 +58,11 @@ class RawDataImportBlockingValidation:
 
     def __attrs_post_init__(self) -> None:
         self.query = self.build_query()
+
+    @staticmethod
+    @abc.abstractmethod
+    def validation_type() -> RawDataImportBlockingValidationType:
+        """Each subclass must define its own validation type."""
 
     @abc.abstractmethod
     def get_error_from_results(
@@ -121,3 +134,22 @@ class RawDataTableImportBlockingValidation(RawDataImportBlockingValidation):
     @abc.abstractmethod
     def validation_applies_to_table(file_config: DirectIngestRawFileConfig) -> bool:
         """Implemented by subclasses to determine if the validation applies to the given table"""
+
+
+class RawDataImportBlockingValidationError(Exception):
+    """Raised when one or more pre-import validations fail for a given file tag."""
+
+    def __init__(
+        self, file_tag: str, failures: List[RawDataImportBlockingValidationFailure]
+    ):
+        self.file_tag = file_tag
+        self.failures = failures
+
+    def __str__(self) -> str:
+        return (
+            f"{len(self.failures)} pre-import validation(s) failed for file [{self.file_tag}]."
+            f"\n{self._get_failure_messages()}"
+        )
+
+    def _get_failure_messages(self) -> str:
+        return "\n\n".join([str(failure) for failure in self.failures])

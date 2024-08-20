@@ -83,11 +83,11 @@ class TestExpectedTypeColumnValidation(ColumnValidationTestCase):
     def test_validation_failure(self) -> None:
         expected_error = RawDataImportBlockingValidationFailure(
             validation_type=RawDataImportBlockingValidationType.EXPECTED_TYPE,
-            error_msg=f"Found column [{self.sad_col_name}] on raw file [{self.file_tag}] "
-            f"not matching the field_type defined in its configuration YAML."
-            f"Defined type: [{self.column_type.value}]."
-            f"\nFirst value that does not parse: [5D]."
-            f"\nValidation query: {self.create_validation(self.sad_col).query}",
+            validation_query=self.create_validation(self.sad_col).query,
+            error_msg=f"Found column [{self.sad_col_name}] on raw file [{self.file_tag}]"
+            f" not matching the field_type defined in its configuration YAML."
+            f"\nDefined type: [{self.column_type.value}]."
+            f"\nFirst value that does not parse: [5D].",
         )
 
         self.validation_failure_test(expected_error)

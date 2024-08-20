@@ -53,9 +53,6 @@ class ExpectedTypeColumnValidation(RawDataColumnImportBlockingValidation):
     """Validation that checks if a column has values that can't be cast to the expected type"""
 
     column_type: RawTableColumnFieldType
-    validation_type: RawDataImportBlockingValidationType = (
-        RawDataImportBlockingValidationType.EXPECTED_TYPE
-    )
 
     @classmethod
     def create_column_validation(
@@ -72,6 +69,10 @@ class ExpectedTypeColumnValidation(RawDataColumnImportBlockingValidation):
             column_name=column.name,
             column_type=column.field_type,
         )
+
+    @staticmethod
+    def validation_type() -> RawDataImportBlockingValidationType:
+        return RawDataImportBlockingValidationType.EXPECTED_TYPE
 
     @staticmethod
     def validation_applies_to_column(column: RawTableColumnInfo) -> bool:
@@ -110,13 +111,13 @@ class ExpectedTypeColumnValidation(RawDataColumnImportBlockingValidation):
         if results:
             # At least one row found with a value that can't be cast to the expected type
             return RawDataImportBlockingValidationFailure(
-                validation_type=self.validation_type,
+                validation_type=self.validation_type(),
+                validation_query=self.query,
                 error_msg=(
-                    f"Found column [{self.column_name}] on raw file [{self.file_tag}] "
-                    f"not matching the field_type defined in its configuration YAML."
-                    f"Defined type: [{self.column_type.value}]."
+                    f"Found column [{self.column_name}] on raw file [{self.file_tag}]"
+                    f" not matching the field_type defined in its configuration YAML."
+                    f"\nDefined type: [{self.column_type.value}]."
                     f"\nFirst value that does not parse: [{results[0][self.column_name]}]."
-                    f"\nValidation query: {self.query}"
                 ),
             )
         # All rows can be cast to the expected type

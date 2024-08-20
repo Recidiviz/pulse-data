@@ -39,9 +39,9 @@ LIMIT 1
 class NonNullValuesColumnValidation(RawDataColumnImportBlockingValidation):
     """Validation to check if a column has only null values, runs on all columns unless explicitly exempt."""
 
-    validation_type: RawDataImportBlockingValidationType = (
-        RawDataImportBlockingValidationType.NONNULL_VALUES
-    )
+    @staticmethod
+    def validation_type() -> RawDataImportBlockingValidationType:
+        return RawDataImportBlockingValidationType.NONNULL_VALUES
 
     @staticmethod
     def validation_applies_to_column(_column: RawTableColumnInfo) -> bool:
@@ -64,7 +64,7 @@ class NonNullValuesColumnValidation(RawDataColumnImportBlockingValidation):
             return None
         # Found only null values
         return RawDataImportBlockingValidationFailure(
-            validation_type=self.validation_type,
-            error_msg=f"Found column [{self.column_name}] on raw file [{self.file_tag}] with only null values."
-            f"\nValidation query: {self.query}",
+            validation_type=self.validation_type(),
+            validation_query=self.query,
+            error_msg=f"Found column [{self.column_name}] on raw file [{self.file_tag}] with only null values.",
         )

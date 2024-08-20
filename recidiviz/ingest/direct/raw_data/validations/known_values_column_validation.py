@@ -43,9 +43,6 @@ class KnownValuesColumnValidation(RawDataColumnImportBlockingValidation):
     """
 
     known_values: List[str]
-    validation_type: RawDataImportBlockingValidationType = (
-        RawDataImportBlockingValidationType.KNOWN_VALUES
-    )
 
     @classmethod
     def create_column_validation(
@@ -65,6 +62,10 @@ class KnownValuesColumnValidation(RawDataColumnImportBlockingValidation):
             column_name=column.name,
             known_values=[known_value.value for known_value in column.known_values],
         )
+
+    @staticmethod
+    def validation_type() -> RawDataImportBlockingValidationType:
+        return RawDataImportBlockingValidationType.KNOWN_VALUES
 
     @staticmethod
     def validation_applies_to_column(column: RawTableColumnInfo) -> bool:
@@ -89,13 +90,13 @@ class KnownValuesColumnValidation(RawDataColumnImportBlockingValidation):
         if results:
             # At least one row found with a value not in the known_values set
             return RawDataImportBlockingValidationFailure(
-                validation_type=self.validation_type,
+                validation_type=self.validation_type(),
+                validation_query=self.query,
                 error_msg=(
                     f"Found column [{self.column_name}] on raw file [{self.file_tag}] "
                     f"not matching any of the known_values defined in its configuration YAML.."
                     f"\nDefined known values: [{', '.join(self.known_values)}]."
                     f"\nFirst value that does not parse: [{results[0][self.column_name]}]."
-                    f"\n Validation query: {self.query}"
                 ),
             )
         # All rows have values in the known_values set
