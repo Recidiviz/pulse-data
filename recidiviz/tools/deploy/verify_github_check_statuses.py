@@ -90,12 +90,13 @@ def verify_github_check_statuses(
         check_runs_by_name[check_run.name].append(check_run)
 
     check_runs = [
+        # Pick the most recent run
         sorted(
             check_runs,
             key=lambda c: c.started_at
             if c.started_at
-            else datetime.datetime(year=datetime.MAXYEAR, month=1, day=1),
-        )[0]
+            else datetime.datetime(year=datetime.MINYEAR, month=1, day=1),
+        )[-1]
         for check_runs in check_runs_by_name.values()
     ]
 
