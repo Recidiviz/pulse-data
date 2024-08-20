@@ -169,7 +169,6 @@ class TestNormalizedPeriodsForCalculations(unittest.TestCase):
             incarceration_periods=[incarceration_period],
             supervision_periods=[supervision_period],
             normalized_violation_responses=[],
-            supervision_sentences=[],
             staff_external_id_to_staff_id=build_staff_external_id_to_staff_id_map(
                 STATE_PERSON_TO_STATE_STAFF_LIST
             ),
@@ -198,7 +197,6 @@ class TestNormalizedPeriodsForCalculations(unittest.TestCase):
             incarceration_periods=[incarceration_period],
             supervision_periods=[],
             normalized_violation_responses=[],
-            supervision_sentences=[],
             staff_external_id_to_staff_id=build_staff_external_id_to_staff_id_map(
                 STATE_PERSON_TO_STATE_STAFF_LIST
             ),
@@ -225,7 +223,6 @@ class TestNormalizedPeriodsForCalculations(unittest.TestCase):
             incarceration_periods=[],
             supervision_periods=[supervision_period],
             normalized_violation_responses=[],
-            supervision_sentences=[],
             staff_external_id_to_staff_id=build_staff_external_id_to_staff_id_map(
                 STATE_PERSON_TO_STATE_STAFF_LIST
             ),
@@ -242,7 +239,6 @@ class TestNormalizedPeriodsForCalculations(unittest.TestCase):
             incarceration_periods=[],
             supervision_periods=[],
             normalized_violation_responses=[],
-            supervision_sentences=[],
             staff_external_id_to_staff_id=build_staff_external_id_to_staff_id_map(
                 STATE_PERSON_TO_STATE_STAFF_LIST
             ),

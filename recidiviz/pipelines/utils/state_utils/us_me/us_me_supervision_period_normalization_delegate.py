@@ -46,20 +46,23 @@ class UsMeSupervisionNormalizationDelegate(
 ):
     """US_ME implementation of the supervision pre-processing delegate"""
 
-    def __init__(self, assessments: List[StateAssessment]):
+    def __init__(
+        self,
+        assessments: List[StateAssessment],
+        supervision_sentences: List[NormalizedStateSupervisionSentence],
+    ):
         self._assessments = assessments
+        self._supervision_sentences = supervision_sentences
 
     def supervision_termination_reason_override(
-        self,
-        supervision_period: StateSupervisionPeriod,
-        supervision_sentences: List[NormalizedStateSupervisionSentence],
+        self, supervision_period: StateSupervisionPeriod
     ) -> Optional[StateSupervisionPeriodTerminationReason]:
         """If there was a revocation sentence status with a completion date within a week of the supervision period's
         end date, then we assume the period's termination reason was a revocation."""
-        if not supervision_sentences:
+        if not self._supervision_sentences:
             return supervision_period.termination_reason
 
-        for supervision_sentence in supervision_sentences:
+        for supervision_sentence in self._supervision_sentences:
             if (
                 supervision_sentence.completion_date
                 and supervision_period.end_date_exclusive

@@ -163,6 +163,7 @@ class TestStateCalculationConfigManager(unittest.TestCase):
                 state_code.value,
                 incarceration_periods=[],
                 assessments=[],
+                supervision_sentences=[],
                 sentences=[],
             )
 
