@@ -57,21 +57,25 @@ INGESTED_PRODUCT_USERS_QUERY_TEMPLATE = f"""
         GROUP BY LOWER(email), emp_info.BDGNO
     ),
     nd_users AS (
-        SELECT
+        SELECT DISTINCT
             'US_ND' AS state_code,
             CONCAT(LOWER(loginname), "@nd.gov") AS email_address,
             'supervision_staff' AS roles,
             IFNULL(STRING_AGG(DISTINCT SITEID, ','), '') AS district,
-            OFFICER as external_id,
+            CASE WHEN 
+                ids.external_id_to_map IS NOT NULL THEN ids.external_id_mapped
+                ELSE OFFICER 
+            END AS external_id,
             FNAME AS first_name,
-            LNAME AS last_name,
+            -- There is one officer in ND who has two entries in docstars_officers to account for
+            -- specialized caseloads, but she is only one person.
+            REGEXP_REPLACE(LNAME, ' - OS', '') AS last_name,
             CAST(NULL AS STRING) AS pseudonymized_id,
         FROM `{{project_id}}.{{us_nd_raw_data_up_to_date_dataset}}.docstars_officers_latest`
         LEFT JOIN `{{project_id}}.{{static_reference_tables_dataset}}.agent_multiple_ids_map` ids
             ON OFFICER = ids.external_id_to_map AND 'US_ND' = ids.state_code
         WHERE
             CAST(status AS STRING) = "(1)"
-            AND ids.external_id_to_map IS NULL
         GROUP BY email_address, external_id, first_name, last_name
     ),
     state_staff_users AS (
