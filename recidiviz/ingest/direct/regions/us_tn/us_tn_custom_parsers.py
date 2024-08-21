@@ -26,11 +26,6 @@ my_flat_field:
 """
 from typing import Optional
 
-from recidiviz.common.constants.state.state_incarceration_period import (
-    StateIncarcerationPeriodAdmissionReason,
-    StateIncarcerationPeriodHousingUnitType,
-    StateIncarcerationPeriodReleaseReason,
-)
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.state.state_shared_enums import StateCustodialAuthority
 from recidiviz.common.constants.state.state_supervision_sentence import (
@@ -116,74 +111,6 @@ def parse_custodial_authority(raw_text: str) -> StateCustodialAuthority:
         return StateCustodialAuthority.INTERNAL_UNKNOWN
 
     return StateCustodialAuthority.INTERNAL_UNKNOWN
-
-
-def parse_housing_unit_type(raw_text: str) -> StateIncarcerationPeriodHousingUnitType:
-    """
-    Returns the StateCustodialAuthority associated with an incarceration period using the site and site type columns.
-    """
-    (
-        _,
-        segregation_type,
-        _,
-    ) = raw_text.split("-")
-
-    if (
-        # The following codes are the only types of Segregation that are considered permanent stays:
-        # -- ASE: ADMINISTRATIVE SEGREGATION
-        # -- MSG: MANDATORY SEGREGATION
-        # -- PCB: PROTECTIVE CUSTODY
-        segregation_type
-        in ("ASE", "MSG", "PCB")
-    ):
-        # TODO(#22252): Remap these values so we can deprecate PERMANENT_SOLITARY_CONFINEMENT
-        return StateIncarcerationPeriodHousingUnitType.PERMANENT_SOLITARY_CONFINEMENT
-    if (
-        # The following codes are considered temporary stays:
-        # -- HCE: HOLDING CELL
-        # -- INV: SEGREGATION PEND INVESTIGATION
-        # -- IPT: IMPOSED PROBATED TIME
-        # -- MET: TEMP. MED. OR COURT TRANSIENT
-        # -- PUN: PUNITIVE SEGREGATION
-        # -- QUA: QUARANTINE
-        # -- SIP: STAFF/INMATE PROVOCATION
-        # -- SPD: SEGREGATION PEND DISC. HEARING
-        # -- TSD: TAMPERING W/SECURITY EQUIP
-        # -- TSE: THERAPEUTIC SEGREGATION
-        segregation_type
-        in ("HCE", "INV", "IPT", "MET", "PUN", "QUA", "SIP", "SPD", "TSD", "TSE")
-    ):
-        return StateIncarcerationPeriodHousingUnitType.TEMPORARY_SOLITARY_CONFINEMENT
-
-    # We should not return any INTERNAL_UNKNOWN since we are assigning all segregation stays to either PERMANENT or TEMPORARY.
-    # For incarceration periods with housing units that are not seg, we default them to GENERAL.
-    return StateIncarcerationPeriodHousingUnitType.INTERNAL_UNKNOWN
-
-
-def parse_segregation_admission_reason(
-    raw_text: str,
-) -> StateIncarcerationPeriodAdmissionReason:
-    """
-    Returns the StateIncarcerationPeriodAdmissionReason of TRANSFER for all Segregation periods
-    """
-    if raw_text:
-        return StateIncarcerationPeriodAdmissionReason.TRANSFER
-
-    # We should not return any INTERNAL_UNKNOWN since we are assigning all segregation stays to TRANSFER
-    return StateIncarcerationPeriodAdmissionReason.INTERNAL_UNKNOWN
-
-
-def parse_segregation_release_reason(
-    raw_text: str,
-) -> StateIncarcerationPeriodReleaseReason:
-    """
-    Returns the StateIncarcerationPeriodReleaseReason of TRANSFER for all Segregation periods
-    """
-    if raw_text:
-        return StateIncarcerationPeriodReleaseReason.TRANSFER
-
-    # We should not return any INTERNAL_UNKNOWN since we are assigning all segregation stays to TRANSFER
-    return StateIncarcerationPeriodReleaseReason.INTERNAL_UNKNOWN
 
 
 def get_punishment_days(
