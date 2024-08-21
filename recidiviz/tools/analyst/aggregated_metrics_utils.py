@@ -60,6 +60,7 @@ from recidiviz.calculator.query.state.views.analyst_data.models.metric_populatio
 from recidiviz.calculator.query.state.views.analyst_data.models.metric_unit_of_analysis_type import (
     METRIC_UNITS_OF_ANALYSIS_BY_TYPE,
     MetricUnitOfAnalysisType,
+    get_static_attributes_query_for_unit_of_analysis,
 )
 
 
@@ -253,6 +254,20 @@ LEFT JOIN
 USING
     ({unit_of_analysis.get_primary_key_columns_query_string()}, start_date, end_date, period)"""
 
+    # Aggregate static attributes
+    static_attributes_query = get_static_attributes_query_for_unit_of_analysis(
+        unit_of_analysis.type
+    )
+    if static_attributes_query:
+        join_clause = f"""
+LEFT JOIN
+    ({get_static_attributes_query_for_unit_of_analysis(unit_of_analysis.type)})
+USING
+    ({unit_of_analysis.get_primary_key_columns_query_string()})
+"""
+    else:
+        join_clause = ""
+
     # Use a final SELECT statement to exclude 'period' and rename 'period_alt' to 'period'
     final_select_statement = f"""
     SELECT
@@ -262,7 +277,8 @@ USING
             ELSE period
         END AS period
     FROM (
-        {all_joins_query_template}
+        {all_joins_query_template} 
+        {join_clause}
     ) subquery
     """
 
