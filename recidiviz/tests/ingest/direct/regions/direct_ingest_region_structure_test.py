@@ -765,7 +765,7 @@ class TestControllerWithIngestManifestCollection(unittest.TestCase):
                 f"{extra_fixture_directories}",
             )
 
-    def _get_ingest_view_to_test_names(
+    def _get_ingest_view_to_ingest_view_test_names(
         self, state_code: StateCode
     ) -> Dict[str, Set[str]]:
         """For the given state, returns a dictionary mapping from ingest_view_name to
@@ -836,9 +836,6 @@ class TestControllerWithIngestManifestCollection(unittest.TestCase):
                 )
             ingest_view_to_test_names[ingest_view_name] = test_names
 
-        # Every ingest view is tested by the pipeline integration test
-        for test_names in ingest_view_to_test_names.values():
-            test_names.add(PIPELINE_INTEGRATION_TEST_NAME)
         return ingest_view_to_test_names
 
     def test_all_ingest_views_have_corresponding_test(self) -> None:
@@ -873,7 +870,9 @@ class TestControllerWithIngestManifestCollection(unittest.TestCase):
         }
 
         for state_code in get_existing_direct_ingest_states():
-            ingest_view_to_test_names = self._get_ingest_view_to_test_names(state_code)
+            ingest_view_to_test_names = self._get_ingest_view_to_ingest_view_test_names(
+                state_code
+            )
             region = direct_ingest_regions.get_direct_ingest_region(
                 region_code=state_code.value
             )
@@ -963,7 +962,7 @@ class TestControllerWithIngestManifestCollection(unittest.TestCase):
                 )
         return fixture_paths_by_type
 
-    def test_ingest_view_test_fixtures_match_existing_tests(self) -> None:
+    def test_ingest_view_test_fixtures_match_existing_ingest_view_tests(self) -> None:
         for region_code in get_existing_direct_ingest_states():
             fixtures_by_type = self._get_fixture_file_paths_by_fixture_type(region_code)
 
@@ -979,17 +978,28 @@ class TestControllerWithIngestManifestCollection(unittest.TestCase):
                     fixture.ingest_view_name()
                 ].append(fixture)
 
-            ingest_view_to_existing_test_names = self._get_ingest_view_to_test_names(
-                region_code
+            ingest_view_to_existing_ingest_view_test_names = (
+                self._get_ingest_view_to_ingest_view_test_names(region_code)
             )
 
-            ingest_views_with_tests = set(ingest_view_to_existing_test_names)
-            ingest_views_with_fixtures = set(
-                ingest_view_results_fixtures_by_ingest_view
+            ingest_views_with_tests = set(
+                ingest_view_to_existing_ingest_view_test_names
             )
+            ingest_views_with_ingest_view_test_result_fixtures = set()
+            for (
+                ingest_view,
+                results_fixtures,
+            ) in ingest_view_results_fixtures_by_ingest_view.items():
+                if any(
+                    f
+                    for f in results_fixtures
+                    if f.test_name() != PIPELINE_INTEGRATION_TEST_NAME
+                ):
+                    ingest_views_with_ingest_view_test_result_fixtures.add(ingest_view)
 
             if ingest_views_with_fixtures_no_test := (
-                ingest_views_with_fixtures - ingest_views_with_tests
+                ingest_views_with_ingest_view_test_result_fixtures
+                - ingest_views_with_tests
             ):
                 raise ValueError(
                     f"Found ingest view result fixture files for these ingest views "
@@ -1000,7 +1010,8 @@ class TestControllerWithIngestManifestCollection(unittest.TestCase):
                 )
 
             if ingest_views_with_test_no_fixtures := (
-                ingest_views_with_tests - ingest_views_with_fixtures
+                ingest_views_with_tests
+                - ingest_views_with_ingest_view_test_result_fixtures
             ):
                 raise ValueError(
                     f"Found tests for these ingest views but no associated fixture "
@@ -1025,15 +1036,20 @@ class TestControllerWithIngestManifestCollection(unittest.TestCase):
             # At this point we can assume the set of keys is the same
             for (
                 ingest_view_name,
-                existing_test_names,
-            ) in ingest_view_to_existing_test_names.items():
+                existing_ingest_view_test_names,
+            ) in ingest_view_to_existing_ingest_view_test_names.items():
                 ingest_view_results_fixtures = (
                     ingest_view_results_fixtures_by_ingest_view[ingest_view_name]
                 )
-                fixture_test_names = {
-                    f.test_name() for f in ingest_view_results_fixtures
+                fixture_ingest_view_test_names = {
+                    f.test_name()
+                    for f in ingest_view_results_fixtures
+                    if f.test_name() != PIPELINE_INTEGRATION_TEST_NAME
                 }
-                if extra_fixture_names := fixture_test_names - existing_test_names:
+                if (
+                    extra_fixture_names := fixture_ingest_view_test_names
+                    - existing_ingest_view_test_names
+                ):
                     unused_fixture_paths = {
                         f.full_path()
                         for f in ingest_view_results_fixtures
@@ -1051,7 +1067,7 @@ class TestControllerWithIngestManifestCollection(unittest.TestCase):
                 ) in view_collector.get_query_builder_by_view_name(
                     ingest_view_name
                 ).raw_table_dependency_configs:
-                    for test_name in existing_test_names:
+                    for test_name in existing_ingest_view_test_names:
                         raw_table_arg_name_to_existing_tests[
                             raw_data_dependency.raw_table_dependency_arg_name
                         ].add(test_name)
@@ -1092,11 +1108,16 @@ class TestControllerWithIngestManifestCollection(unittest.TestCase):
             # At this point we can assume the set of raw data keys is the same
             for (
                 raw_table_arg,
-                existing_test_names,
+                existing_ingest_view_test_names,
             ) in raw_table_arg_name_to_existing_tests.items():
                 raw_data_fixtures = raw_table_arg_name_to_fixtures[raw_table_arg]
-                fixture_test_names = {f.test_name() for f in raw_data_fixtures}
-                if extra_fixture_names := fixture_test_names - existing_test_names:
+                fixture_ingest_view_test_names = {
+                    f.test_name() for f in raw_data_fixtures
+                }
+                if (
+                    extra_fixture_names := fixture_ingest_view_test_names
+                    - existing_ingest_view_test_names
+                ):
                     unused_fixture_paths = {
                         f.full_path()
                         for f in raw_data_fixtures
