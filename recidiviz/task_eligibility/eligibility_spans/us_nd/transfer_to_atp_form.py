@@ -29,6 +29,7 @@ from recidiviz.task_eligibility.criteria.general import (
     incarcerated_at_least_30_days_in_same_facility,
     incarcerated_at_least_90_days,
     not_in_work_release,
+    no_escape_in_current_incarceration,
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_nd import (
     incarceration_within_1_year_of_ftcd_or_prd_or_cpp_release,
@@ -41,6 +42,9 @@ from recidiviz.task_eligibility.criteria_condition import (
     NotEligibleCriteriaCondition,
     PickNCompositeCriteriaCondition,
     TimeDependentCriteriaCondition,
+)
+from recidiviz.task_eligibility.eligibility_spans.us_nd.transfer_to_minimum_facility_form import (
+    INCARCERATION_NOT_WITHIN_3_MONTHS_OF_FTCD,
 )
 from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
@@ -66,7 +70,9 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         incarcerated_at_least_90_days.VIEW_BUILDER,
         incarcerated_at_least_30_days_in_same_facility.VIEW_BUILDER,
         no_detainers_or_warrants.VIEW_BUILDER,
+        INCARCERATION_NOT_WITHIN_3_MONTHS_OF_FTCD,
         no_recent_referrals_to_minimum_housing.VIEW_BUILDER,
+        no_escape_in_current_incarceration.VIEW_BUILDER,
     ],
     completion_event_builder=granted_work_release.VIEW_BUILDER,
     almost_eligible_condition=PickNCompositeCriteriaCondition(
