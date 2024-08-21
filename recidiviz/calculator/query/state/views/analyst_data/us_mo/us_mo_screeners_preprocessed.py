@@ -179,7 +179,22 @@ SELECT
     NULL AS score_type_value,
     NULL AS override_score_value,
 FROM `{project_id}.{normalized_state_dataset}.state_assessment`    
-WHERE state_code = 'US_MO'
+WHERE state_code = 'US_MO' AND
+    -- TODO(#31029): This union can be simplified by removing the next subquery and pulling
+    -- both types of assessment from ingested data once #30728 is merged.
+    assessment_type_raw_text IN (
+        'DIVERSION INSTRUMENT',
+        'PRISON SCREENING TOOL',
+        'COMMUNITY SUPERVISION SCREENING TOOL - 9 ITEMS',
+        'COMMUNITY SUPERVISION SCREENING TOOL - 4 ITEMS',
+        'COMMUNITY SUPERVISION TOOL',
+        'PRISON INTAKE TOOL',
+        'REENTRY TOOL',
+        'REENTRY INSTRUMENT',
+        'SUPPLEMENTAL REENTRY TOOL'
+    )
+
+    
 -- There are 2% duplicates on person_id and assessment_date, so we prioritize
 -- prison intake and community supervision tool
 QUALIFY RANK() OVER(PARTITION BY person_id, assessment_date 
