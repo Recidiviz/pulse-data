@@ -278,7 +278,8 @@ class OpportunitySingleConfigurationPromoteAPI(MethodView):
                 message=f"No config matching {opportunity_type=} {config_id=}",
             )
 
-        config_dict = config.to_dict()
+        # Filter out nulled optional fields
+        config_dict = {k: v for (k, v) in config.to_dict().items() if v is not None}
 
         # The created_by of the promoted config should be the email of the user,
         # and if this wasn't specified here, we'd get the staging CR service account.
@@ -288,6 +289,7 @@ class OpportunitySingleConfigurationPromoteAPI(MethodView):
         config_dict["created_by"] = user_email
 
         # Remove these fields because the new request body should follow the OpportunityConfigurationRequestSchema type
+        config_dict.pop("opportunity_type")
         config_dict.pop("status")
         config_dict.pop("created_at")
 

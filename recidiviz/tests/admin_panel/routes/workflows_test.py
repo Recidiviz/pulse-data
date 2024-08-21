@@ -546,7 +546,6 @@ class WorkflowsAdminPanelEndpointTests(TestCase):
                     responses.matchers.json_params_matcher(
                         {
                             "stateCode": "US_ID",
-                            "opportunityType": "usIdSLD",
                             "displayName": "display",
                             "methodologyUrl": "url",
                             "initialHeader": "header",

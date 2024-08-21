@@ -57,6 +57,7 @@ class OpportunityConfigurationRequestSchema(WorkflowsConfigSchema):
 
     description = fields.Str(required=True)
     created_by = fields.Str(allow_none=True)
+    staging_id = fields.Int(allow_none=True)
 
 
 class OpportunityConfigurationResponseSchema(OpportunityConfigurationRequestSchema):
