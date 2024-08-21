@@ -1,0 +1,48 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_VantagePointAssessments` to corresponding
+# Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  - RECORD_KEY
+  - AssessmentID
+  - RISK_ASSESSMENT_TOTAL
+  - CALCULATED_SUPER_LVL
+  - ASSESSMENT_DATE
+  - CASELOAD
+  - COMMUNITY_SUPER_LVL
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: RECORD_KEY
+          id_type: $literal("US_OR_RECORD_KEY")
+    assessments:
+      - StateAssessment:
+          external_id:
+            $concat:
+              $values:
+                - RECORD_KEY
+                - AssessmentID
+          assessment_class: $literal_enum(StateAssessmentClass.RISK)
+          assessment_date: ASSESSMENT_DATE
+          assessment_score: RISK_ASSESSMENT_TOTAL
+          assessment_level:
+            $enum_mapping:
+              $raw_text: CALCULATED_SUPER_LVL
+              $mappings:
+                StateAssessmentLevel.LOW:
+                  - LOW
+                StateAssessmentLevel.MEDIUM:
+                  - MED
+                StateAssessmentLevel.HIGH:
+                  - HI
+          assessment_metadata:
+            $json_dict:
+              ACTUAL_COMMUNITY_SUPER_LEVEL: COMMUNITY_SUPER_LVL
+          conducting_staff_external_id: CASELOAD
+          conducting_staff_external_id_type:
+            $conditional:
+              - $if:
+                  $not_null: CASELOAD
+                $then: $literal("US_OR_CASELOAD")
