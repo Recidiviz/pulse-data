@@ -38,10 +38,9 @@ from apache_beam.typehints import with_input_types, with_output_types
 from more_itertools import one
 
 from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
-from recidiviz.big_query.big_query_query_provider import StateFilteredQueryProvider
-from recidiviz.big_query.big_query_view import BigQueryViewBuilder
-from recidiviz.calculator.query.state.views.reference.state_person_to_state_staff import (
-    STATE_PERSON_TO_STATE_STAFF_VIEW_BUILDER,
+from recidiviz.big_query.big_query_query_provider import (
+    BigQueryQueryProvider,
+    StateFilteredQueryProvider,
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.database import schema_utils
@@ -56,6 +55,10 @@ from recidiviz.persistence.entity.state import entities
 from recidiviz.pipelines.base_pipeline import BasePipeline
 from recidiviz.pipelines.normalization.comprehensive.entity_normalizer import (
     ComprehensiveEntityNormalizer,
+)
+from recidiviz.pipelines.normalization.comprehensive.state_person_to_state_staff_query_provider import (
+    STATE_PERSON_TO_STATE_STAFF_QUERY_NAME,
+    get_state_person_to_state_staff_query_provider,
 )
 from recidiviz.pipelines.normalization.pipeline_parameters import (
     NormalizationPipelineParameters,
@@ -96,6 +99,7 @@ from recidiviz.pipelines.utils.beam_utils.extractor_utils import (
     ExtractRootEntityDataForPipeline,
 )
 from recidiviz.pipelines.utils.execution_utils import TableRow, kwargs_for_entity_lists
+from recidiviz.utils import metadata
 from recidiviz.utils.types import assert_type
 
 
@@ -149,18 +153,22 @@ class ComprehensiveNormalizationPipeline(BasePipeline[NormalizationPipelineParam
         }
 
     @classmethod
-    def input_reference_view_builders(
+    def input_reference_query_providers(
         cls,
-    ) -> Dict[Type[Entity], List[BigQueryViewBuilder]]:
+        state_code: StateCode,
+        address_overrides: BigQueryAddressOverrides | None,
+    ) -> Dict[Type[Entity], Dict[str, BigQueryQueryProvider]]:
         return {
-            entities.StatePerson: [
-                STATE_PERSON_TO_STATE_STAFF_VIEW_BUILDER,
-            ],
-            entities.StateStaff: [],
+            entities.StatePerson: {
+                STATE_PERSON_TO_STATE_STAFF_QUERY_NAME: get_state_person_to_state_staff_query_provider(
+                    project_id=metadata.project_id(),
+                    state_code=state_code,
+                    address_overrides=address_overrides,
+                ),
+            },
+            entities.StateStaff: {},
         }
 
-    # TODO(#29514): Update this to build reference queries from templates that we can
-    #  inject the state-specific us_xx_state dataset into.
     @classmethod
     def _input_query_providers_for_root_entity(
         cls,
@@ -168,28 +176,30 @@ class ComprehensiveNormalizationPipeline(BasePipeline[NormalizationPipelineParam
         state_code: StateCode,
         address_overrides: BigQueryAddressOverrides | None,
     ) -> Dict[str, StateFilteredQueryProvider]:
-        all_builders = {}
-        for vb in cls.input_reference_view_builders()[root_entity_cls]:
-            all_builders[vb.view_id] = StateFilteredQueryProvider(
-                original_query=vb.build(address_overrides=address_overrides),
+        all_providers = {}
+        for query_name, query_provider in cls.input_reference_query_providers(
+            state_code, address_overrides
+        )[root_entity_cls].items():
+            all_providers[query_name] = StateFilteredQueryProvider(
+                original_query=query_provider.get_query(),
                 state_code_filter=state_code,
             )
-        return all_builders
+        return all_providers
 
     @classmethod
     def all_input_reference_query_providers(
         cls, state_code: StateCode, address_overrides: BigQueryAddressOverrides | None
     ) -> Dict[str, StateFilteredQueryProvider]:
-        all_builders: Dict[str, StateFilteredQueryProvider] = {}
+        all_providers: Dict[str, StateFilteredQueryProvider] = {}
 
         for root_entity_cls in [entities.StatePerson, entities.StateStaff]:
-            all_builders = {
-                **all_builders,
+            all_providers = {
+                **all_providers,
                 **cls._input_query_providers_for_root_entity(
                     root_entity_cls, state_code, address_overrides
                 ),
             }
-        return all_builders
+        return all_providers
 
     @classmethod
     def required_entity_normalization_managers(

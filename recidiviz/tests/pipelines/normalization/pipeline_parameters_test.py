@@ -19,7 +19,6 @@ import json
 import unittest
 from unittest.mock import MagicMock, patch
 
-from recidiviz.calculator.query.state.dataset_config import STATE_BASE_DATASET
 from recidiviz.common.constants.states import StateCode
 from recidiviz.pipelines.normalization.comprehensive.pipeline import (
     ComprehensiveNormalizationPipeline,
@@ -53,13 +52,13 @@ class TestNormalizationPipelineParameters(unittest.TestCase):
         self.assertEqual(pipeline_parameters.region, "us-west1")
         self.assertEqual(pipeline_parameters.job_name, "us-oz-normalization")
 
-        self.assertEqual(STATE_BASE_DATASET, pipeline_parameters.state_data_input)
+        self.assertEqual("us_oz_state", pipeline_parameters.state_data_input)
         self.assertEqual("us_oz_normalized_state", pipeline_parameters.output)
         self.assertFalse(pipeline_parameters.is_sandbox_pipeline)
 
     def test_parameters_with_sandbox_prefix(self) -> None:
         input_dataset_overrides_json = json.dumps(
-            {STATE_BASE_DATASET: "some_completely_different_dataset"}
+            {"us_oz_state": "some_completely_different_dataset"}
         )
         pipeline_parameters = NormalizationPipelineParameters(
             project="recidiviz-456",
@@ -98,8 +97,8 @@ class TestNormalizationPipelineParameters(unittest.TestCase):
     )
     def test_check_for_valid_input_dataset_overrides(self) -> None:
         input_dataset_overrides_json = json.dumps(
-            # The normalization pipelines read from state, not us_xx_state
-            {"us_xx_state": "some_completely_different_dataset"}
+            # The normalization pipelines read from us_xx_state, not state
+            {"state": "some_completely_different_dataset"}
         )
         pipeline_parameters = NormalizationPipelineParameters(
             project="recidiviz-456",
@@ -113,9 +112,9 @@ class TestNormalizationPipelineParameters(unittest.TestCase):
         )
         with self.assertRaisesRegex(
             ValueError,
-            r"Found original dataset \[us_xx_state\] in overrides which is not "
+            r"Found original dataset \[state\] in overrides which is not "
             r"a dataset this pipeline reads from. Datasets you can override: "
-            r"\['state'\].",
+            r"\['us_xx_state'\].",
         ):
             pipeline_parameters.check_for_valid_input_dataset_overrides(
                 get_all_reference_query_input_datasets_for_pipeline(
@@ -126,7 +125,7 @@ class TestNormalizationPipelineParameters(unittest.TestCase):
 
         input_dataset_overrides_json = json.dumps(
             # This is a valid override
-            {"state": "some_completely_different_dataset"}
+            {"us_xx_state": "some_completely_different_dataset"}
         )
         pipeline_parameters = NormalizationPipelineParameters(
             project="recidiviz-456",

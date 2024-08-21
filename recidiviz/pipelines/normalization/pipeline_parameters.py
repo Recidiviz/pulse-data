@@ -19,9 +19,9 @@ from typing import List, Optional, Set
 
 import attr
 
-from recidiviz.calculator.query.state.dataset_config import STATE_BASE_DATASET
 from recidiviz.common import attr_validators
 from recidiviz.common.constants.states import StateCode
+from recidiviz.pipelines.ingest.dataset_config import state_dataset_for_state_code
 from recidiviz.pipelines.normalization.dataset_config import (
     normalized_state_dataset_for_state_code_legacy_normalization_output,
 )
@@ -36,10 +36,9 @@ class NormalizationPipelineParameters(PipelineParameters):
     @property
     def state_data_input(self) -> str:
         return self.get_input_dataset(
-            # TODO(#29514): Update to reference state-specific
-            #  us_xx_state dataset using the state_dataset_for_state_code
-            #  helper.
-            STATE_BASE_DATASET
+            default_dataset_id=state_dataset_for_state_code(
+                state_code=StateCode(self.state_code)
+            )
         )
 
     person_filter_ids: Optional[str] = attr.ib(

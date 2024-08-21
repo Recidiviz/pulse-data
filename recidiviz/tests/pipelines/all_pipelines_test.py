@@ -21,8 +21,6 @@ from unittest.mock import MagicMock, patch
 
 from recidiviz.calculator.query.state.dataset_config import (
     NORMALIZED_STATE_DATASET,
-    REFERENCE_VIEWS_DATASET,
-    STATE_BASE_DATASET,
     STATIC_REFERENCE_TABLES_DATASET,
 )
 from recidiviz.datasets.static_data.config import EXTERNAL_REFERENCE_DATASET
@@ -40,6 +38,7 @@ from recidiviz.persistence.entity.state.normalized_entities import (
     NormalizedStatePersonEthnicity,
     NormalizedStatePersonRace,
 )
+from recidiviz.pipelines.ingest.dataset_config import state_dataset_for_state_code
 from recidiviz.pipelines.ingest.state.pipeline import StateIngestPipeline
 from recidiviz.pipelines.metrics.base_metric_pipeline import MetricPipeline
 from recidiviz.pipelines.normalization.comprehensive.pipeline import (
@@ -52,7 +51,6 @@ from recidiviz.pipelines.utils.pipeline_run_utils import (
     collect_all_pipeline_classes,
     collect_all_pipeline_names,
 )
-from recidiviz.tools.find_unused_bq_views import get_all_pipeline_input_views
 
 
 class TestPipelineNames(unittest.TestCase):
@@ -71,28 +69,11 @@ class TestReferenceViews(unittest.TestCase):
     @patch(
         "recidiviz.utils.metadata.project_id", MagicMock(return_value="recidiviz-456")
     )
-    def test_all_reference_views_in_dataset(self) -> None:
-        """Asserts that all the reference views required by the pipelines are in the
-        reference_views dataset."""
-        for state_code in get_existing_direct_ingest_states():
-            for view_address in get_all_pipeline_input_views(
-                state_code, address_overrides=None
-            ):
-                self.assertEqual(
-                    REFERENCE_VIEWS_DATASET,
-                    view_address.dataset_id,
-                    f"Found view [{view_address.to_str()}] that is referenced by "
-                    f"pipelines but which does not live in the reference_views dataset.",
-                )
-
-    @patch(
-        "recidiviz.utils.metadata.project_id", MagicMock(return_value="recidiviz-456")
-    )
-    def test_input_reference_views_have_valid_parents(self) -> None:
-        """Require that all view builder queries for view builders referenced by the
-        our calc pipelines only query an allowed subset of source tables. We don't want
-        our reference queries to be querying other views because those are not updated
-        before pipelines run post-deploy.
+    def test_input_reference_queries_have_valid_parents(self) -> None:
+        """Require that all reference queries used by the calc pipelines only query an
+        allowed subset of source tables. We don't want our reference queries to be
+        querying other views because those are not updated before pipelines run
+        post-deploy.
         """
         all_pipelines_allowed_datasets = {
             *{
@@ -116,7 +97,9 @@ class TestReferenceViews(unittest.TestCase):
                 if issubclass(pipeline, ComprehensiveNormalizationPipeline):
                     allowed_parent_datasets = {
                         *all_pipelines_allowed_datasets,
-                        STATE_BASE_DATASET,
+                        state_dataset_for_state_code(
+                            state_code=state_code,
+                        ),
                     }
                 elif issubclass(
                     pipeline, (MetricPipeline, SupplementalDatasetPipeline)

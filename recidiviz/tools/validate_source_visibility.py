@@ -218,6 +218,13 @@ def main() -> int:
             "recidiviz.common",
             "recidiviz.utils",
         }
+
+        if "metrics" in pipeline.__name__:
+            valid_prefixes = valid_prefixes.union(
+                {
+                    "recidiviz.calculator.query.state.dataset_config",
+                }
+            )
         if "metrics" in pipeline.__name__ or "normalization" in pipeline.__name__:
             valid_prefixes = valid_prefixes.union(
                 {
@@ -226,19 +233,12 @@ def main() -> int:
                     "recidiviz.big_query.big_query_utils",
                     "recidiviz.big_query.big_query_view",
                     "recidiviz.big_query.constants",
-                    "recidiviz.calculator.query.state.dataset_config",
                     # TODO(#8118): Remove this dependency once IP pre-processing no
                     #  longer relies on ingest mappings
                     "recidiviz.ingest.direct",
                     "recidiviz.persistence",
                 }
             )
-            if "normalization" in pipeline.__name__:
-                valid_prefixes = valid_prefixes.union(
-                    {
-                        "recidiviz.calculator.query.state.views.reference",
-                    }
-                )
 
         if "us_ix_case_note" in pipeline.__name__:
             valid_prefixes = valid_prefixes.union(
