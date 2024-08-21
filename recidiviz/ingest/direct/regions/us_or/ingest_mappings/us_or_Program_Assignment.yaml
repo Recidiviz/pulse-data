@@ -47,10 +47,12 @@ output:
                   - AUTO # Closed by transfer program
                 StateProgramAssignmentParticipationStatus.DENIED:
                   - RJIN # Rejected at Intake
+                  - DENL # Denial
                 StateProgramAssignmentParticipationStatus.REFUSED:
                   - REFU # AIC Refused to Enter
-                  - DENL # Denial
                   - NOSH # No show
+                StateProgramAssignmentParticipationStatus.INTERNAL_UNKNOWN:
+                  - NOTX # erroneous value
           start_date: ENTRY_DATE
           referral_date: REFER_DATE
           program_location_id: LOCATION
