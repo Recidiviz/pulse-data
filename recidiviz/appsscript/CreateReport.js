@@ -285,10 +285,46 @@ function copyAndPopulateWorkflowSection(
         // Replace text
         elementCopy.replaceText("{{workflow_name}}", workflow);
         elementCopy.replaceText("{{start_date}}", startDate);
-        elementCopy.replaceText(
-          "{{region_most_opps_granted}}",
-          workflowToMaxOpportunityGrantedLocation[workflow]
-        );
+
+        const maxOpportunityGrantedLocation =
+          workflowToMaxOpportunityGrantedLocation[workflow];
+        if (maxOpportunityGrantedLocation !== null) {
+          let largestNumberString =
+            ", with the largest number of opportunities granted in ";
+          let currentElement = elementCopy.replaceText(
+            "{{region_most_opps_granted}}",
+            `${largestNumberString}${maxOpportunityGrantedLocation}`
+          );
+
+          if (currentElement.findText(largestNumberString) !== null) {
+            const startBlueIndex =
+              currentElement
+                .findText(largestNumberString)
+                .getEndOffsetInclusive() + 1;
+            const endBlueIndex = currentElement
+              .findText(maxOpportunityGrantedLocation)
+              .getEndOffsetInclusive();
+            var style = {};
+            style[DocumentApp.Attribute.FOREGROUND_COLOR] = "#0000FF";
+            currentElement
+              .editAsText()
+              .setAttributes(startBlueIndex, endBlueIndex, style);
+          }
+        } else {
+          elementCopy.replaceText("{{region_most_opps_granted}}", "");
+        }
+
+        if (
+          elementCopy.findText("Impact breaks down regionally as follows:") !==
+          null
+        ) {
+          if (workflowToOpportunityGranted[workflow] === 1) {
+            elementCopy.replaceText("{{people have}}", "person has");
+          } else {
+            elementCopy.replaceText("{{people have}}", "people have");
+          }
+        }
+
         elementCopy.replaceText(
           "{{total_transferred}}",
           workflowToOpportunityGranted[workflow].toLocaleString()
