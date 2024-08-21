@@ -56,7 +56,6 @@ output:
               $mappings:
                 StateAssessmentType.INTERNAL_UNKNOWN:
                   - "Diversion Instrument" # One record with this entry in DB.
-                  - "Prison Screening Tool"
                 StateAssessmentType.ORAS_COMMUNITY_SUPERVISION_SCREENING:
                   - "Community Supervision Screening Tool - 9 Items"
                   - "Community Supervision Screening Tool - 4 Items"
@@ -69,6 +68,8 @@ output:
                   - "Reentry Instrument"
                 StateAssessmentType.ORAS_SUPPLEMENTAL_REENTRY:
                   - "Supplemental Reentry Tool"
+                StateAssessmentType.ORAS_PRISON_SCREENING:
+                  - "Prison Screening Tool"
           assessment_level:
             $enum_mapping:
               $raw_text: RISK_LEVEL
