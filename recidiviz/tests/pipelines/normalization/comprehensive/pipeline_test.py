@@ -21,7 +21,6 @@ from typing import Any, Dict, Iterable, List, Optional, Set, Type
 from unittest.mock import patch
 
 from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
-from recidiviz.calculator.query.state.dataset_config import STATE_BASE_DATASET
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_period import (
@@ -99,7 +98,7 @@ class TestComprehensiveNormalizationPipeline(unittest.TestCase):
         """Runs a test version of the normalization pipeline."""
         read_from_bq_constructor = (
             self.fake_bq_source_factory.create_fake_bq_source_constructor(
-                expected_entities_dataset=STATE_BASE_DATASET,
+                expected_entities_dataset=f"{state_code.lower()}_state",
                 data_dict=data_dict,
             )
         )

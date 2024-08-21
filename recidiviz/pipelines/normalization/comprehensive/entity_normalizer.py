@@ -20,9 +20,6 @@ from typing import Any, Dict, List, Sequence, Tuple, Type
 
 from more_itertools import one
 
-from recidiviz.calculator.query.state.views.reference.state_person_to_state_staff import (
-    STATE_PERSON_TO_STATE_STAFF_VIEW_NAME,
-)
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.normalized_entities_utils import (
@@ -48,6 +45,9 @@ from recidiviz.persistence.entity.state.entities import (
 from recidiviz.persistence.entity.state.normalized_entities import (
     NormalizedStateIncarcerationSentence,
     NormalizedStateSupervisionSentence,
+)
+from recidiviz.pipelines.normalization.comprehensive.state_person_to_state_staff_query_provider import (
+    STATE_PERSON_TO_STATE_STAFF_QUERY_NAME,
 )
 from recidiviz.pipelines.normalization.utils.entity_normalization_manager_utils import (
     normalized_periods_for_calculations,
@@ -147,7 +147,7 @@ class ComprehensiveEntityNormalizer:
             assessments=normalizer_args[StateAssessment.__name__],
             supervision_contacts=normalizer_args[StateSupervisionContact.__name__],
             state_person_to_state_staff=normalizer_args[
-                STATE_PERSON_TO_STATE_STAFF_VIEW_NAME
+                STATE_PERSON_TO_STATE_STAFF_QUERY_NAME
             ],
         )
 

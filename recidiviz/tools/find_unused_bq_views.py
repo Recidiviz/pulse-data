@@ -24,13 +24,7 @@ Usage:
 from typing import Dict, Optional, Set
 
 from recidiviz.aggregated_metrics.dataset_config import AGGREGATED_METRICS_DATASET_ID
-from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
 from recidiviz.big_query.big_query_address import BigQueryAddress
-from recidiviz.big_query.big_query_query_provider import (
-    BigQueryQueryProvider,
-    SimpleBigQueryQueryProvider,
-    StateFilteredQueryProvider,
-)
 from recidiviz.big_query.big_query_view import BigQueryView
 from recidiviz.big_query.big_query_view_dag_walker import BigQueryViewDagWalker
 from recidiviz.calculator.query.experiments.views.experiments import (
@@ -145,12 +139,8 @@ from recidiviz.calculator.query.state.views.workflows.workflows_usage import (
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.dataset_config import raw_latest_views_dataset_for_region
-from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
-    get_existing_direct_ingest_states,
-)
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.metrics.export.export_config import VIEW_COLLECTION_EXPORT_INDEX
-from recidiviz.pipelines.utils.pipeline_run_utils import collect_all_pipeline_classes
 from recidiviz.task_eligibility.candidate_populations.general.non_temporary_custody_incarceration_population import (
     VIEW_BUILDER as NON_TEMPORARY_CUSTODY_INCARCERATION_POPULATION_VIEW_BUILDER,
 )
@@ -353,66 +343,6 @@ def _get_all_metric_export_addresses() -> Set[BigQueryAddress]:
     return export_addresses
 
 
-# TODO(#29518): Once we have migrated all pipelines to build reference queries from
-#  query templates that query source tables directly (i.e. don't have any dependency on
-#  deployed views), we can remove this logic.
-def get_all_pipeline_input_views(
-    state_code: StateCode, address_overrides: BigQueryAddressOverrides | None
-) -> Dict[BigQueryAddress, BigQueryView]:
-    """Returns any actual views that back the query providers used in pipelines."""
-    input_views: Dict[BigQueryAddress, BigQueryView] = {}
-    for pipeline in collect_all_pipeline_classes():
-        pipeline_input_views = {}
-        for state_filtered_provider in pipeline.all_input_reference_query_providers(
-            state_code, address_overrides
-        ).values():
-            provider: BigQueryQueryProvider | str = state_filtered_provider
-            while True:
-                if isinstance(provider, StateFilteredQueryProvider):
-                    provider = provider.original_query
-                    continue
-
-                if isinstance(provider, (str, SimpleBigQueryQueryProvider)):
-                    break
-
-                if isinstance(provider, BigQueryView):
-                    break
-
-                raise ValueError(f"Found unexpected provider type [{type(provider)}]")
-
-            if not isinstance(provider, BigQueryView):
-                continue
-            underlying_view = provider
-            if underlying_view.address in pipeline_input_views:
-                raise ValueError(
-                    f"Found duplicate builder defined for pipeline "
-                    f"[{pipeline.pipeline_name()}] in state [{state_code.value}]. Within"
-                    f"each pipeline, the list returned by "
-                    f"all_input_reference_view_builders() should not contain duplicate"
-                    f"views."
-                )
-            pipeline_input_views[underlying_view.address] = underlying_view
-        input_views = {**input_views, **pipeline_input_views}
-
-    if not input_views:
-        raise ValueError(
-            "Found no pipeline input views - if all pipelines have been migrated to "
-            "use reference queries with no backing views, this function can be "
-            "deleted!"
-        )
-    return input_views
-
-
-def _get_all_dataflow_pipeline_referenced_view_addresses() -> Set[BigQueryAddress]:
-    return {
-        address
-        for state_code in get_existing_direct_ingest_states()
-        for address in get_all_pipeline_input_views(
-            state_code=state_code, address_overrides=None
-        )
-    }
-
-
 def _should_ignore_unused_address(address: BigQueryAddress) -> bool:
     """Returns true for views that may not be in use but can be ignored if they happen
     to be. These views are not tracked in UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON because
@@ -448,13 +378,6 @@ def _should_ignore_unused_address(address: BigQueryAddress) -> bool:
     return False
 
 
-def get_product_referenced_addresses() -> Set[BigQueryAddress]:
-    return (
-        _get_all_metric_export_addresses()
-        | _get_all_dataflow_pipeline_referenced_view_addresses()
-    )
-
-
 def _get_single_project_unused_addresses(
     all_views_dag_walker: BigQueryViewDagWalker, ignore_exemptions: bool
 ) -> Set[BigQueryAddress]:
@@ -463,7 +386,7 @@ def _get_single_project_unused_addresses(
     """
 
     all_in_use_addresses = (
-        get_product_referenced_addresses() | LOOKER_REFERENCED_ADDRESSES
+        _get_all_metric_export_addresses() | LOOKER_REFERENCED_ADDRESSES
     )
     if not ignore_exemptions:
         all_in_use_addresses = all_in_use_addresses | set(

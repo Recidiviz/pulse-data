@@ -247,7 +247,7 @@ confirm_cmd python -m recidiviz.tools.calculator.run_sandbox_calculation_pipelin
 	--project "${PROJECT_ID}" \
 	--output_sandbox_prefix "${SANDBOX_PREFIX}" \
 	--state_code "${STATE_CODE}" \
-	--input_dataset_overrides_json "{\"state\": \"${SANDBOX_STATE_DATASET}\"}"
+	--input_dataset_overrides_json "{\"${STANDARD_STATE_SPECIFIC_STATE_DATASET}\": \"${SANDBOX_STATE_DATASET}\"}"
 
 echo "If applicable, you should confirm that the normalization pipeline is complete before proceeding."
 

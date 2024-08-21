@@ -21,9 +21,6 @@ from typing import Any, Dict, List, Optional, Sequence, Union
 
 import attr
 
-from recidiviz.calculator.query.state.views.reference.state_person_to_state_staff import (
-    STATE_PERSON_TO_STATE_STAFF_VIEW_NAME,
-)
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateSpecializedPurposeForIncarceration,
 )
@@ -65,6 +62,9 @@ from recidiviz.persistence.entity.state.normalized_state_entity import (
 from recidiviz.pipelines.normalization.comprehensive import entity_normalizer, pipeline
 from recidiviz.pipelines.normalization.comprehensive.entity_normalizer import (
     EntityNormalizerResult,
+)
+from recidiviz.pipelines.normalization.comprehensive.state_person_to_state_staff_query_provider import (
+    STATE_PERSON_TO_STATE_STAFF_QUERY_NAME,
 )
 from recidiviz.pipelines.normalization.utils.normalized_entity_conversion_utils import (
     convert_entity_trees_to_normalized_versions,
@@ -145,7 +145,7 @@ class TestNormalizeEntities(unittest.TestCase):
             StateAssessment.__name__: assessments or [],
             StatePerson.__name__: persons or [],
             StateSupervisionContact.__name__: supervision_contacts or [],
-            STATE_PERSON_TO_STATE_STAFF_VIEW_NAME: state_person_to_state_staff or [],
+            STATE_PERSON_TO_STATE_STAFF_QUERY_NAME: state_person_to_state_staff or [],
         }
 
         assert self.full_graph_person.person_id is not None
@@ -494,7 +494,7 @@ class TestNormalizeEntitiesConvertedToNormalized(unittest.TestCase):
             StateAssessment.__name__: assessments or [],
             StatePerson.__name__: persons or [],
             StateSupervisionContact.__name__: supervision_contacts or [],
-            STATE_PERSON_TO_STATE_STAFF_VIEW_NAME: state_person_to_state_staff or [],
+            STATE_PERSON_TO_STATE_STAFF_QUERY_NAME: state_person_to_state_staff or [],
         }
 
         assert self.full_graph_person.person_id is not None

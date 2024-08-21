@@ -15,17 +15,16 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Persons to a staff member that the person is affiliated with."""
-
-from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
-from recidiviz.calculator.query.state import dataset_config
-from recidiviz.utils.environment import GCP_PROJECT_STAGING
-from recidiviz.utils.metadata import local_project_id_override
-
-STATE_PERSON_TO_STATE_STAFF_VIEW_NAME = "state_person_to_state_staff"
-
-STATE_PERSON_TO_STATE_STAFF_DESCRIPTION = (
-    """View with one row per state staff member a state person is affiliated with."""
+from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
+from recidiviz.big_query.big_query_query_builder import BigQueryQueryBuilder
+from recidiviz.big_query.big_query_query_provider import (
+    BigQueryQueryProvider,
+    SimpleBigQueryQueryProvider,
 )
+from recidiviz.common.constants.states import StateCode
+from recidiviz.pipelines.ingest.dataset_config import state_dataset_for_state_code
+
+STATE_PERSON_TO_STATE_STAFF_QUERY_NAME = "state_person_to_state_staff"
 
 STATE_PERSON_TO_STATE_STAFF_QUERY_TEMPLATE = """
 SELECT
@@ -38,9 +37,9 @@ FROM (
     sp.supervising_officer_staff_external_id_type AS staff_external_id_type,
     sp.state_code
   FROM 
-    `{project_id}.{state_base_dataset}.state_supervision_period` sp
+    `{project_id}.{state_specific_state_dataset}.state_supervision_period` sp
   JOIN
-    `{project_id}.{state_base_dataset}.state_staff_external_id` sid
+    `{project_id}.{state_specific_state_dataset}.state_staff_external_id` sid
   ON 
     sp.state_code = sid.state_code AND
     sp.supervising_officer_staff_external_id = sid.external_id AND 
@@ -55,9 +54,9 @@ FROM (
     sa.conducting_staff_external_id_type AS staff_external_id_type,
     sa.state_code
   FROM 
-    `{project_id}.{state_base_dataset}.state_assessment` sa
+    `{project_id}.{state_specific_state_dataset}.state_assessment` sa
   JOIN
-    `{project_id}.{state_base_dataset}.state_staff_external_id` sid
+    `{project_id}.{state_specific_state_dataset}.state_staff_external_id` sid
   ON 
     sa.state_code = sid.state_code AND
     sa.conducting_staff_external_id = sid.external_id AND 
@@ -72,9 +71,9 @@ FROM (
     sc.contacting_staff_external_id_type AS staff_external_id_type,
     sc.state_code
   FROM 
-    `{project_id}.{state_base_dataset}.state_supervision_contact` sc
+    `{project_id}.{state_specific_state_dataset}.state_supervision_contact` sc
   JOIN
-    `{project_id}.{state_base_dataset}.state_staff_external_id` sid
+    `{project_id}.{state_specific_state_dataset}.state_staff_external_id` sid
   ON 
     sc.state_code = sid.state_code AND
     sc.contacting_staff_external_id = sid.external_id AND 
@@ -90,9 +89,9 @@ FROM (
     pa.referring_staff_external_id_type AS staff_external_id_type,
     pa.state_code
   FROM 
-    `{project_id}.{state_base_dataset}.state_program_assignment` pa
+    `{project_id}.{state_specific_state_dataset}.state_program_assignment` pa
   JOIN
-    `{project_id}.{state_base_dataset}.state_staff_external_id` sid
+    `{project_id}.{state_specific_state_dataset}.state_staff_external_id` sid
   ON 
     pa.state_code = sid.state_code AND
     pa.referring_staff_external_id = sid.external_id AND 
@@ -107,23 +106,30 @@ FROM (
     svr.deciding_staff_external_id_type AS staff_external_id_type,
     svr.state_code
   FROM 
-    `{project_id}.{state_base_dataset}.state_supervision_violation_response` svr
+    `{project_id}.{state_specific_state_dataset}.state_supervision_violation_response` svr
   JOIN
-    `{project_id}.{state_base_dataset}.state_staff_external_id` sid
+    `{project_id}.{state_specific_state_dataset}.state_staff_external_id` sid
   ON 
     svr.state_code = sid.state_code AND
     svr.deciding_staff_external_id = sid.external_id AND 
     svr.deciding_staff_external_id_type = sid.id_type    
 )
 """
-STATE_PERSON_TO_STATE_STAFF_VIEW_BUILDER = SimpleBigQueryViewBuilder(
-    dataset_id=dataset_config.REFERENCE_VIEWS_DATASET,
-    view_id=STATE_PERSON_TO_STATE_STAFF_VIEW_NAME,
-    view_query_template=STATE_PERSON_TO_STATE_STAFF_QUERY_TEMPLATE,
-    description=STATE_PERSON_TO_STATE_STAFF_DESCRIPTION,
-    state_base_dataset=dataset_config.STATE_BASE_DATASET,
-)
 
-if __name__ == "__main__":
-    with local_project_id_override(GCP_PROJECT_STAGING):
-        STATE_PERSON_TO_STATE_STAFF_VIEW_BUILDER.build_and_print()
+
+def get_state_person_to_state_staff_query_provider(
+    project_id: str,
+    state_code: StateCode,
+    address_overrides: BigQueryAddressOverrides | None,
+) -> BigQueryQueryProvider:
+    query_builder = BigQueryQueryBuilder(address_overrides=address_overrides)
+
+    formatted_query = query_builder.build_query(
+        project_id=project_id,
+        query_template=STATE_PERSON_TO_STATE_STAFF_QUERY_TEMPLATE,
+        query_format_kwargs={
+            "state_specific_state_dataset": state_dataset_for_state_code(state_code)
+        },
+    )
+
+    return SimpleBigQueryQueryProvider(query=formatted_query)
