@@ -95,6 +95,9 @@ columns:
     is_pii: True
   - name: Death_Description_Tx
     is_pii: True
+  - name: Altered_Death_Description_Tx
+    description: The death description, if it's been changed at all.
+    is_pii: True
   - name: Death_Ind
   - name: Delete_Comment_Tx
     is_pii: True
