@@ -574,6 +574,23 @@ class ActionStrategyType(Enum):
 
 
 @attr.s
+class ActionStrategySurfacedEvent:
+    # The state code of the user
+    state_code: str = attr.ib()
+    # The pseudonymized id of the user (supervisor)
+    user_pseudonymized_id: str = attr.ib()
+    # The officer's pseudonymized id
+    officer_pseudonymized_id: str = attr.ib()
+    # The action strategy enum value
+    action_strategy: str = attr.ib()
+    # Timestamp
+    timestamp: datetime = attr.ib()
+
+    def to_json(self) -> Dict[str, Any]:
+        return cattrs.unstructure(self)
+
+
+@attr.s
 class OutliersActionStrategy:
     events: List[ActionStrategySurfacedEvents] = attr.ib()
 

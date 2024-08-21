@@ -167,6 +167,12 @@ snapshots[
 )
 
 snapshots[
+    "TestOutliersQuerier.TestOutliersQuerier test_get_most_recent_action_strategy_surfaced_event_for_supervisor"
+] = GenericRepr(
+    "ActionStrategySurfacedEvent(state_code='US_PA', user_pseudonymized_id='hash1', officer_pseudonymized_id=None, action_strategy='ACTION_STRATEGY_60_PERC_OUTLIERS', timestamp=datetime.date(2024, 6, 1))"
+)
+
+snapshots[
     "TestOutliersQuerier.TestOutliersQuerier test_get_officer_level_report_data_by_supervisor"
 ] = {
     "101": GenericRepr(

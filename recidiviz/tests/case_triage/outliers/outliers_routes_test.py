@@ -22,6 +22,7 @@ from typing import Callable, Optional
 from unittest import mock
 from unittest.mock import MagicMock, call, patch
 
+import freezegun
 import pytest
 from flask import Flask
 from flask.testing import FlaskClient
@@ -2016,6 +2017,119 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
             response.json,
             {
                 "message": "Invalid request body. Expected keys: ['hasDismissedDataUnavailableNote', 'hasDismissedRateOver100PercentNote', 'hasSeenOnboarding']. Found keys: ['notARealKey']",
+            },
+        )
+
+    @freezegun.freeze_time(datetime(2024, 8, 20, 0, 0, 0, 0))
+    @patch(
+        "recidiviz.case_triage.outliers.outliers_authorization.get_outliers_enabled_states",
+    )
+    def test_patch_action_strategy_success(
+        self,
+        mock_enabled_states: MagicMock,
+    ) -> None:
+        self.mock_authorization_handler.side_effect = self.auth_side_effect(
+            state_code="us_pa", external_id="102", pseudonymized_id="hashhash"
+        )
+        mock_enabled_states.return_value = ["US_PA"]
+
+        # The PATCH endpoint returns the new event
+        response = self.test_client.patch(
+            "/outliers/US_PA/action_strategies/hashhash",
+            headers={"Origin": "http://localhost:3000"},
+            json={
+                "userPseudonymizedId": "hashhash",
+                "officerPseudonymizedId": "officerHash",
+                "actionStrategy": ActionStrategyType.ACTION_STRATEGY_OUTLIER_ABSCONSION.value,
+            },
+        )
+
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        self.snapshot.assert_match(response.json, name="test_patch_action_strategy_success")  # type: ignore[attr-defined]
+
+    @patch(
+        "recidiviz.case_triage.outliers.outliers_authorization.get_outliers_enabled_states",
+    )
+    def test_patch_action_strategy_mismatch(
+        self,
+        mock_enabled_states: MagicMock,
+    ) -> None:
+        self.mock_authorization_handler.side_effect = self.auth_side_effect(
+            state_code="us_pa", external_id="101", pseudonymized_id="hash-101"
+        )
+        mock_enabled_states.return_value = ["US_PA"]
+
+        response = self.test_client.patch(
+            "/outliers/US_PA/action_strategies/hashhash",
+            headers={"Origin": "http://localhost:3000"},
+            json={
+                "userPseudonymizedId": "hashhash",
+                "officerPseudonymizedId": "officerHash",
+                "actionStrategy": ActionStrategyType.ACTION_STRATEGY_OUTLIER_ABSCONSION.value,
+            },
+        )
+
+        self.assertEqual(response.status_code, HTTPStatus.UNAUTHORIZED)
+        self.assertEqual(
+            response.json,
+            {
+                "message": "Non-recidiviz user with pseudonymized_id hash-101 is attempting to update action strategies for a user that isn't themselves: hashhash"
+            },
+        )
+
+    @patch(
+        "recidiviz.case_triage.outliers.outliers_authorization.get_outliers_enabled_states",
+    )
+    def test_patch_action_strategy_missing_request_body(
+        self,
+        mock_enabled_states: MagicMock,
+    ) -> None:
+        self.mock_authorization_handler.side_effect = self.auth_side_effect(
+            state_code="us_pa", external_id="101", pseudonymized_id="hashhash"
+        )
+        mock_enabled_states.return_value = ["US_PA"]
+
+        response = self.test_client.patch(
+            "/outliers/US_PA/action_strategies/hashhash",
+            headers={
+                "Origin": "http://localhost:3000",
+                "Content-Type": "application/json",
+            },
+            json={},
+        )
+
+        self.assertEqual(response.status_code, HTTPStatus.BAD_REQUEST)
+        self.assertEqual(
+            response.json,
+            {
+                "message": "Missing request body",
+            },
+        )
+
+    @patch(
+        "recidiviz.case_triage.outliers.outliers_authorization.get_outliers_enabled_states",
+    )
+    def test_patch_action_strategy_invalid_request(
+        self,
+        mock_enabled_states: MagicMock,
+    ) -> None:
+        self.maxDiff = None
+        self.mock_authorization_handler.side_effect = self.auth_side_effect(
+            state_code="us_pa", external_id="101", pseudonymized_id="hashhash"
+        )
+        mock_enabled_states.return_value = ["US_PA"]
+
+        response = self.test_client.patch(
+            "/outliers/US_PA/action_strategies/hashhash",
+            headers={"Origin": "http://localhost:3000"},
+            json={"fakeKey": True},
+        )
+
+        self.assertEqual(response.status_code, HTTPStatus.BAD_REQUEST)
+        self.assertEqual(
+            response.json,
+            {
+                "message": "Invalid request body. Expected keys: ['actionStrategy', 'officerPseudonymizedId', 'userPseudonymizedId']. Found keys: ['fakeKey']",
             },
         )
 

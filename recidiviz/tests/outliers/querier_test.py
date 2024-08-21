@@ -37,6 +37,8 @@ from recidiviz.outliers.constants import (
 )
 from recidiviz.outliers.querier.querier import OutliersQuerier
 from recidiviz.outliers.types import (
+    ActionStrategySurfacedEvent,
+    ActionStrategyType,
     CaseloadCategory,
     ConfigurationStatus,
     OutliersBackendConfig,
@@ -875,3 +877,55 @@ class TestOutliersQuerier(InsightsDbTestCase):
             supervisor_pseudonymized_id=pseudo_id
         )
         self.snapshot.assert_match(result, name="test_get_action_strategy_surfaced_events_for_supervisor")  # type: ignore[attr-defined]
+
+    def test_get_most_recent_action_strategy_surfaced_event_for_supervisor(
+        self,
+    ) -> None:
+        pseudo_id = "hash1"
+        querier = OutliersQuerier(StateCode.US_PA)
+        result = querier.get_most_recent_action_strategy_surfaced_event_for_supervisor(
+            supervisor_pseudonymized_id=pseudo_id
+        )
+        self.snapshot.assert_match(result, name="test_get_most_recent_action_strategy_surfaced_event_for_supervisor")  # type: ignore[attr-defined]
+
+    def test_insert_action_strategy_surfaced_event_success(self) -> None:
+        querier = OutliersQuerier(StateCode.US_PA)
+        pseudo_id = "hash1"
+        event = ActionStrategySurfacedEvent(
+            state_code="US_PA",
+            user_pseudonymized_id=pseudo_id,
+            officer_pseudonymized_id="officer_hash",
+            action_strategy=ActionStrategyType.ACTION_STRATEGY_OUTLIER_3_MONTHS.value,
+            timestamp=datetime.now(),
+        )
+        querier.insert_action_strategy_surfaced_event(event=event)
+
+        new_event = (
+            querier.get_most_recent_action_strategy_surfaced_event_for_supervisor(
+                supervisor_pseudonymized_id=pseudo_id
+            )
+        )
+
+        self.assertIsNotNone(new_event)
+        self.assertTrue(new_event.user_pseudonymized_id == event.user_pseudonymized_id)
+        self.assertTrue(
+            new_event.officer_pseudonymized_id == event.officer_pseudonymized_id
+        )
+        self.assertTrue(new_event.action_strategy == event.action_strategy)
+        self.assertTrue(new_event.timestamp == event.timestamp.date())
+
+    def test_insert_action_strategy_surfaced_event_duplicate_failure(self) -> None:
+        querier = OutliersQuerier(StateCode.US_PA)
+        pseudo_id = "hash1"
+        event = ActionStrategySurfacedEvent(
+            state_code="US_PA",
+            user_pseudonymized_id=pseudo_id,
+            officer_pseudonymized_id="officer_hash",
+            action_strategy=ActionStrategyType.ACTION_STRATEGY_OUTLIER_3_MONTHS.value,
+            timestamp=datetime.now(),
+        )
+        querier.insert_action_strategy_surfaced_event(event=event)
+
+        # Insert same event twice should raise error
+        with self.assertRaises(IntegrityError):
+            querier.insert_action_strategy_surfaced_event(event=event)
