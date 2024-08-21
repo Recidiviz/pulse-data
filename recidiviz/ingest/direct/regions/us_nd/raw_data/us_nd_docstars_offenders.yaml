@@ -11,6 +11,7 @@ file_description: |-
 
   Note: this table does not include historical record of this aforementioned data.
 data_classification: source
+always_historical_export: True
 primary_key_cols:
   - SID
 is_primary_person_table: True
