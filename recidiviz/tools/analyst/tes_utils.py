@@ -185,33 +185,23 @@ def gen_tes_spans_by_removing_each_criteria_once(
     return df_task_query[relevant_columns]
 
 
-def gen_tes_spans_by_adding_each_criteria_one_by_one(
-    df_task_query: pd.DataFrame,
-) -> pd.DataFrame:
+def sort_criteria_least_to_most_impactful_cumulative_impact(
+    criteria_names: List, df_task_query: pd.DataFrame
+) -> List:
     """
-    This function takes as input a data frame with the candidate population and adds
-    each criteria one by one to understand how eligibility changes after each addition.
-
-    I.e. takes a TES Task Query data frame and returns additional columns:
-        - everyone_is_eligible: 1 for every span, 0 otherwise
-        - add_{criteria}: 1 if the first criteria is met, 0 otherwise
-        - add_{criteria}: 1 if the first and second criteria are met, 0 otherwise
-        - ...
-    The last of these columns should have the same values as is_eligible.
+    Calculate the impact of each criteria. Select the least impactful and add it to the
+    final list, remove that name from the criteria_names list. Then, use the remaining
+    eligible population (considering the least impactful criteria from the previous step)
+    and run the process again. This ensures we add the least impactful criteria in each
+    step
 
     Args:
-        df_task_query (pd.DataFrame): TES Task Query data frame
+        crtieria_names (List): list returned by get_criteria_names_from_tes_reasons
+        df_task_query_copy (DataFrame): DataFrame that indicates eligible population and
+            inelegible_criteria
     """
     df_task_query_copy = df_task_query.copy()
-    # Retrieve all criteria_names from reason blob
-    criteria_names = get_criteria_names_from_tes_reasons(df_task_query_copy)
-
-    # Calculate the impact of each criteria. Necessary to add criteria in correct order
-    criteria_names = get_criteria_names_from_tes_reasons(df_task_query)
     final_sorted_lst = []
-
-    # Calculate the impact of each criteria. Select the least impactful, add it to the final list
-    # Run this process until we sorted every criteria. This ensures we are adding the least impactful in each step
     while criteria_names:
         criteria_impact = {}
         for criteria in criteria_names:
@@ -249,6 +239,32 @@ def gen_tes_spans_by_adding_each_criteria_one_by_one(
         # Check if df_set is empty to avoid further processing
         if df_task_query_copy.empty:
             break
+    return final_sorted_lst
+
+
+def gen_tes_spans_by_adding_each_criteria_one_by_one(
+    df_task_query: pd.DataFrame,
+) -> pd.DataFrame:
+    """
+    This function takes as input a data frame with the candidate population and adds
+    each criteria one by one to understand how eligibility changes after each addition.
+
+    I.e. takes a TES Task Query data frame and returns additional columns:
+        - everyone_is_eligible: 1 for every span, 0 otherwise
+        - add_{criteria}: 1 if the first criteria is met, 0 otherwise
+        - add_{criteria}: 1 if the first and second criteria are met, 0 otherwise
+        - ...
+    The last of these columns should have the same values as is_eligible.
+
+    Args:
+        df_task_query (pd.DataFrame): TES Task Query data frame
+    """
+    # Retrieve all criteria_names from reason blob
+    criteria_names = get_criteria_names_from_tes_reasons(df_task_query)
+    # Sort criteria_names from least impactful to most impactful
+    final_sorted_lst = sort_criteria_least_to_most_impactful_cumulative_impact(
+        criteria_names, df_task_query
+    )
 
     # Add criteria one by one and remove folks that become ineligible after each added criteria
     df_task_query["everyone_is_eligible"] = 1
