@@ -38,17 +38,18 @@ Idaho resident metadata
 
 
 US_IX_RESIDENT_METADATA_VIEW_QUERY_TEMPLATE = f"""
-WITH crc_facility AS (
+WITH release_district AS (
     SELECT
         cs.person_id,
-        r.CRC_FACILITY AS crc_facility
+        COALESCE(JSON_VALUE(ref.location_metadata, '$.supervision_district_name'), 'UNKNOWN') AS release_district
     FROM `{{project_id}}.sessions.compartment_sessions_materialized` cs
-    LEFT JOIN `{{project_id}}.normalized_state.state_person_external_id` pei
-        ON cs.person_id = pei.person_id
-        AND cs.state_code = pei.state_code
-        AND pei.id_type = "US_IX_DOC"
-    LEFT JOIN `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.RECIDIVIZ_REFERENCE_release_to_crc_facility_mappings_latest` r
-        ON r.RELEASE_FACILITY = UPPER(cs.facility_name_end)
+    LEFT JOIN `{{project_id}}.normalized_state.state_incarceration_period` ip
+        ON cs.person_id = ip.person_id
+        AND ip.release_date IS NULL
+    LEFT JOIN `{{project_id}}.reference_views.us_ix_location_metadata_materialized` ref
+        ON ip.county_code = REPLACE(ref.location_external_id, 'ATLAS-', '')
+        AND ref.state_code = 'US_IX'
+        AND ref.location_type = 'CITY_COUNTY'
     WHERE 
         {today_between_start_date_and_nullable_end_date_exclusive_clause(
             start_date_column="cs.start_date",
@@ -56,10 +57,22 @@ WITH crc_facility AS (
         )}
         AND cs.compartment_level_1 = 'INCARCERATION'
         AND cs.state_code = "US_IX"
-    )
+    --get the latest incarceration period per resident if there are multiple open periods 
+    QUALIFY ROW_NUMBER() OVER(PARTITION BY cs.person_id ORDER BY ip.admission_date DESC)=1
+),
+crc_facility AS (
+    SELECT 
+        rd.person_id,
+        ARRAY_AGG(r.CRC_FACILITY) AS crc_facilities
+    FROM release_district rd
+    LEFT JOIN `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.RECIDIVIZ_REFERENCE_release_to_crc_facility_mappings_latest` r
+        ON rd.RELEASE_DISTRICT = r.RELEASE_DISTRICT
+    WHERE r.CRC_FACILITY IS NOT NULL
+    GROUP BY 1
+)
 SELECT 
     c.person_id,
-    c.crc_facility,
+    c.crc_facilities,
     tentative_parole_date AS tentative_parole_date,
     initial_parole_hearing_date,
     next_parole_hearing_date

@@ -8,11 +8,11 @@ custom_line_terminator: "\n"
 data_classification: source
 primary_key_cols:
   - CRC_FACILITY
-  - RELEASE_FACILITY
+  - RELEASE_DISTRICT
 columns:
   - name: CRC_FACILITY
     description: CRC request district
-  - name: RELEASE_FACILITY
-    description: Release facility name
+  - name: RELEASE_DISTRICT
+    description: Release district
 is_code_file: True
 update_cadence: IRREGULAR
