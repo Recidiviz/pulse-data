@@ -457,6 +457,16 @@ snapshots["TestOutliersRoutes.TestOutliersRoutes test_get_supervisors"] = {
 }
 
 snapshots[
+    "TestOutliersRoutes.TestOutliersRoutes test_patch_action_strategy_success"
+] = {
+    "actionStrategy": "ACTION_STRATEGY_OUTLIER_ABSCONSION",
+    "officerPseudonymizedId": "officerHash",
+    "stateCode": "US_PA",
+    "timestamp": "Tue, 20 Aug 2024 00:00:00 GMT",
+    "userPseudonymizedId": "hashhash",
+}
+
+snapshots[
     "TestOutliersRoutes.TestOutliersRoutes test_update_user_info_for_supervisor"
 ] = {
     "entity": {

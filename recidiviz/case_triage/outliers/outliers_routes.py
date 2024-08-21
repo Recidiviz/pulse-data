@@ -36,7 +36,11 @@ from recidiviz.common.common_utils import convert_nested_dictionary_keys
 from recidiviz.common.constants.states import StateCode
 from recidiviz.common.str_field_utils import snake_to_camel, to_snake_case
 from recidiviz.outliers.querier.querier import OutliersQuerier
-from recidiviz.outliers.types import OutliersActionStrategy, PersonName
+from recidiviz.outliers.types import (
+    ActionStrategySurfacedEvent,
+    OutliersActionStrategy,
+    PersonName,
+)
 from recidiviz.utils.flask_exception import FlaskException
 from recidiviz.utils.types import assert_type
 
@@ -776,5 +780,63 @@ def create_outliers_api_blueprint() -> Blueprint:
 
         action_strategies_json[supervisor.pseudonymized_id] = None
         return jsonify(action_strategies_json)
+
+    @api.patch("/<state>/action_strategies/<supervisor_pseudonymized_id>")
+    def patch_action_strategies(
+        state: str, supervisor_pseudonymized_id: str
+    ) -> Response:
+        state_code = StateCode(state.upper())
+        querier = OutliersQuerier(state_code)
+
+        user_context: UserContext = g.user_context
+        user_external_id = user_context.user_external_id
+        user_pseudonymized_id = user_context.pseudonymized_id
+
+        if (
+            supervisor_pseudonymized_id != user_pseudonymized_id
+            and user_external_id != "RECIDIVIZ"
+        ):
+            # Return an unauthorized error if the requesting user is updating information about someone else
+            # and the requesting user is not a Recidiviz user
+            return jsonify_response(
+                f"Non-recidiviz user with pseudonymized_id {user_pseudonymized_id} is attempting to update action strategies for a user that isn't themselves: {supervisor_pseudonymized_id}",
+                HTTPStatus.UNAUTHORIZED,
+            )
+        if not request.json:
+            return jsonify_response("Missing request body", HTTPStatus.BAD_REQUEST)
+
+        request_json = convert_nested_dictionary_keys(
+            assert_type(request.json, dict), to_snake_case
+        )
+
+        expected_keys = {
+            "user_pseudonymized_id",
+            "officer_pseudonymized_id",
+            "action_strategy",
+        }
+        if len(request_json) == 0 or not set(request_json.keys()).issubset(
+            expected_keys
+        ):
+            return jsonify_response(
+                f"Invalid request body. Expected keys: {[snake_to_camel(k) for k in sorted(expected_keys)]}. Found keys: {[snake_to_camel(k) for k in request_json]}",
+                HTTPStatus.BAD_REQUEST,
+            )
+        event = ActionStrategySurfacedEvent(
+            state_code=state_code.value,
+            user_pseudonymized_id=request_json["user_pseudonymized_id"],
+            officer_pseudonymized_id=request_json["officer_pseudonymized_id"],
+            action_strategy=request_json["action_strategy"],
+            timestamp=datetime.now(),
+        )
+        querier.insert_action_strategy_surfaced_event(event)
+
+        # Return new action strategy surfaced event
+        new_event = (
+            querier.get_most_recent_action_strategy_surfaced_event_for_supervisor(
+                supervisor_pseudonymized_id
+            )
+        )
+        event_json = convert_nested_dictionary_keys(new_event.to_json(), snake_to_camel)
+        return jsonify(event_json)
 
     return api

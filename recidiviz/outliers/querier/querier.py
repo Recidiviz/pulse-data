@@ -40,6 +40,7 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.outliers.constants import DEFAULT_NUM_LOOKBACK_PERIODS
 from recidiviz.outliers.outliers_configs import get_outliers_backend_config
 from recidiviz.outliers.types import (
+    ActionStrategySurfacedEvent,
     ConfigurationStatus,
     ExcludedSupervisionOfficerEntity,
     MetricContext,
@@ -1498,3 +1499,40 @@ class OutliersQuerier:
             )
 
             return supervisor_events
+
+    def get_most_recent_action_strategy_surfaced_event_for_supervisor(
+        self, supervisor_pseudonymized_id: str
+    ) -> ActionStrategySurfacedEvent:
+        """
+        Gets the most recent ActionStrategySurfacedEvent for a given supervisor.
+        """
+        with self.insights_database_session() as session:
+            supervisor_event = (
+                session.query(ActionStrategySurfacedEvents)
+                .filter(
+                    ActionStrategySurfacedEvents.user_pseudonymized_id
+                    == supervisor_pseudonymized_id
+                )
+                .with_entities(
+                    ActionStrategySurfacedEvents.state_code,
+                    ActionStrategySurfacedEvents.user_pseudonymized_id,
+                    ActionStrategySurfacedEvents.officer_pseudonymized_id,
+                    ActionStrategySurfacedEvents.action_strategy,
+                    ActionStrategySurfacedEvents.timestamp,
+                )
+                .order_by(ActionStrategySurfacedEvents.timestamp.desc())
+                .first()
+            )
+
+            return ActionStrategySurfacedEvent(**supervisor_event)
+
+    def insert_action_strategy_surfaced_event(
+        self, event: ActionStrategySurfacedEvent
+    ) -> None:
+        """
+        Inserts an ActionStrategySurfacedEvent into the action_strategy_surfaced_events table.
+        """
+        with self.insights_database_session() as session:
+            insert_stmt = insert(ActionStrategySurfacedEvents).values(event.to_json())
+            session.execute(insert_stmt)
+            session.commit()
