@@ -18,6 +18,16 @@ steps:
     id: build-prototype-image
     waitFor:
       - recidiviz-base
+  # Tag the image as latest.
+  - name: "gcr.io/cloud-builders/gcloud"
+    entrypoint: "bash"
+    args:
+      - "-c"
+      - |
+        gcloud artifacts docker tags add "us-central1-docker.pkg.dev/recidiviz-staging/prototypes/main:$COMMIT_SHA" "us-central1-docker.pkg.dev/recidiviz-staging/prototypes/main:latest"
+    id: tag-as-latest
+    waitFor:
+      - build-prototype-image
   # Deploy the image to Cloud Run.
   - name: "gcr.io/cloud-builders/gcloud"
     args:
@@ -28,6 +38,8 @@ steps:
       - "--platform=managed" # Specify Cloud Run (fully managed)
       - "--region=us-central1" # Specify the region where your Cloud Run service will be deployed
     id: run-deploy
+    waitFor:
+      - build-prototype-image
 timeout: 3600s
 options:
   machineType: N1_HIGHCPU_32

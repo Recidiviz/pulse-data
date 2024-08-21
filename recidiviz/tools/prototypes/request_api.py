@@ -29,9 +29,11 @@ python -m recidiviz.tools.prototypes.request_api search '{"query":"housing updat
 
 python -m recidiviz.tools.prototypes.request_api search '{"query":"housing updates"}' get --target_env staging --token {}
 
+python -m recidiviz.tools.prototypes.request_api search '{"query":"housing updates"}' get --target_env prod --token {}
+
 Optional params:
     --token: The user can provide a request token which would override the M2M token. A
-        token is necessary for hitting the staging endpoint.
+        token is necessary for hitting the staging and production endpoints.
 
 """
 import argparse
@@ -44,6 +46,7 @@ from recidiviz.utils.secrets import get_secret_from_local_directory
 
 LOCALHOST_URL = "http://localhost:8080/"
 STAGING_URL = "https://prototypes-qqec6jbn6a-uc.a.run.app/"
+PROD_URL = "https://prototypes-buq47yc7fa-uc.a.run.app/"
 
 request_string_to_request_type = {
     "get": "GET",
@@ -98,7 +101,12 @@ def make_request_to_api(
     }
 
     # Make the request
-    url = STAGING_URL if target_env == "staging" else LOCALHOST_URL
+    if target_env == "staging":
+        url = STAGING_URL
+    elif target_env == "prod":
+        url = PROD_URL
+    else:
+        url = LOCALHOST_URL
     try:
         if request_type == "GET":
             response = s.get(url + endpoint, headers=headers, params=body)
@@ -136,7 +144,7 @@ if __name__ == "__main__":
         "--target_env",
         help="What environment to point the request to",
         default="dev",
-        choices=["dev", "staging"],
+        choices=["dev", "staging", "prod"],
     )
     parser.add_argument("--token", help="Valid auth0 token to use")
     args = parser.parse_args()
