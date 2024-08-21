@@ -276,10 +276,19 @@ class StateIngestPipelineTestCase(BigQueryEmulatorTestCase, IngestRegionTestMixi
                 if MATERIALIZATION_TIME_COL_NAME in columns:
                     columns_to_ignore.append(MATERIALIZATION_TIME_COL_NAME)
 
-                self.compare_table_to_fixture(
-                    address,
-                    expected_output_fixture_path=fixture_path,
-                    columns_to_ignore=columns_to_ignore,
-                    create_expected=create_expected,
-                    expect_missing_fixtures_on_empty_results=True,
-                )
+                try:
+                    self.compare_table_to_fixture(
+                        address,
+                        expected_output_fixture_path=fixture_path,
+                        columns_to_ignore=columns_to_ignore,
+                        create_expected=create_expected,
+                        expect_missing_fixtures_on_empty_results=True,
+                    )
+                except FileNotFoundError as e:
+                    raise ValueError(
+                        f"No fixture file found corresponding to results for "
+                        f"[{address.to_str()}]. Expected to find fixture at path "
+                        f"[{fixture_path}]. If you expect the test to produce results "
+                        f"for [{address.to_str()}], then rerun this test with "
+                        f"create_expected=True to generate the fixture."
+                    ) from e
