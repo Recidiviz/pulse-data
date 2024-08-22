@@ -26,8 +26,8 @@ VIEW_QUERY_TEMPLATE = """
 WITH first_reported_supervisor AS 
     # First, identify the first ever reported surpervisor for each staff member sent to us by TN
     (SELECT
-    external_id as StaffID, 
-    StaffSupervisorID,
+    UPPER(external_id) as StaffID, 
+    UPPER(StaffSupervisorID) as StaffSupervisorID,
     update_datetime as UpdateDate
 FROM 
     (SELECT
@@ -41,9 +41,9 @@ WHERE SEQ = 1),
 # Then, determine when the supervisor sent for a given person has changed since the last time TN sent us a roster
 supervisor_change_recorded AS (
   SELECT 
-      external_id as StaffID, 
-      SupervisorID as CurrentStaffSupervisorID,
-      LAG(SupervisorID) OVER (PARTITION BY external_id ORDER BY update_datetime ASC) as PreviousStaffSupervisorID,
+      UPPER(external_id) as StaffID, 
+      UPPER(SupervisorID) as CurrentStaffSupervisorID,
+      LAG(UPPER(SupervisorID)) OVER (PARTITION BY external_id ORDER BY update_datetime ASC) as PreviousStaffSupervisorID,
       update_datetime as UpdateDate
   FROM {RECIDIVIZ_REFERENCE_staff_supervisor_and_caseload_roster@ALL}
   WHERE external_id IS NOT NULL
