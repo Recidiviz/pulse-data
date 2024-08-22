@@ -13,6 +13,22 @@ from snapshottest import Snapshot
 snapshots = Snapshot()
 
 snapshots[
+    "TestOutliersRoutes.TestOutliersRoutes test_get_action_strategies_3_months_as_outlier_already_surfaced"
+] = {"hash2": None, "hash4": None, "hash6": None}
+
+snapshots[
+    "TestOutliersRoutes.TestOutliersRoutes test_get_action_strategies_3_months_as_outlier_eligible"
+] = {
+    "hash2": None,
+    "hash4": "ACTION_STRATEGY_OUTLIER_3_MONTHS",
+    "hash6": "ACTION_STRATEGY_OUTLIER_3_MONTHS",
+}
+
+snapshots[
+    "TestOutliersRoutes.TestOutliersRoutes test_get_action_strategies_3_months_as_outlier_ineligible"
+] = {"hash2": None, "hash5": None, "hash7": "ACTION_STRATEGY_OUTLIER", "hash8": None}
+
+snapshots[
     "TestOutliersRoutes.TestOutliersRoutes test_get_action_strategies_as_outlier_already_surfaced"
 ] = {"hash2": None, "hashhash": None, "hashhashhash": None}
 

@@ -15,13 +15,15 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Outliers-related types"""
-from datetime import datetime
+
+from datetime import date, datetime
 from enum import Enum
 from typing import Any, Dict, List, Optional
 
 import attr
 import cattrs
 from cattrs.gen import make_dict_unstructure_fn, override
+from dateutil.relativedelta import relativedelta
 
 from recidiviz.aggregated_metrics.models.aggregated_metric import EventCountMetric
 from recidiviz.calculator.query.state.views.analyst_data.insights_caseload_category_sessions import (
@@ -592,7 +594,17 @@ class ActionStrategySurfacedEvent:
 
 @attr.s
 class OutliersActionStrategy:
+    """
+    Class that contains eligibility logic for each action strategy.
+    """
+
     events: List[ActionStrategySurfacedEvents] = attr.ib()
+
+    def check_at_least_one_calendar_month_before(self, timestamp: date) -> bool:
+        current_date = date.today()
+        one_month_before = current_date.replace(day=1) - relativedelta(months=1)
+
+        return timestamp < one_month_before.replace(day=1)
 
     # Officer is eligible for ACTION_STRATEGY_OUTLIER if they are an outlier and this prompt has not surfaced
     def action_strategy_outlier_eligible(
@@ -606,6 +618,76 @@ class OutliersActionStrategy:
         ]
         return is_outlier and len(disqualifying_events) == 0
 
+    def is_consecutive(self, statuses: Dict, index: int) -> bool:
+        # not consecutive
+        curr_date = datetime.fromisoformat(statuses[index]["end_date"])
+        prev_date = datetime.fromisoformat(statuses[index + 1]["end_date"])
+        two_dates_ago = datetime.fromisoformat(statuses[index + 2]["end_date"])
+        if curr_date != prev_date + relativedelta(
+            months=1
+        ) or prev_date != two_dates_ago + relativedelta(months=1):
+            return False
+
+        # ensure outlier status
+        return (
+            statuses[index]["status"] == "FAR"
+            and statuses[index + 1]["status"] == "FAR"
+            and statuses[index + 2]["status"] == "FAR"
+        )
+
+    # Checks if the given officer has been an outlier for 3 consecutive months
+    def check_for_consecutive_3_months(self, officer: SupervisionOfficerEntity) -> bool:
+        outlier_metrics = officer.outlier_metrics
+        for metric in outlier_metrics:
+            statuses = metric["statuses_over_time"]
+            if len(statuses) >= 3:
+                for i in range(len(statuses) - 2):
+                    is_consecutive = self.is_consecutive(statuses, i)
+                    if is_consecutive:
+                        return True
+        return False
+
+    def action_strategy_outlier_3_months_eligible(
+        self,
+        officer: SupervisionOfficerEntity,
+    ) -> bool:
+        """
+        Officer is eligible for ACTION_STRATEGY_OUTLIER_3_MONTHS if (1) they are an outlier on any metric for 3+ consecutive months, (2) this action strategy was not yet surfaced, (3) ACTION_STRATEGY_OUTLIER has surfaced (4) ACTION_STRATEGY_60_PERC_OUTLIERS has surfaced in previous months (excluding current month).
+        """
+        is_eligible = self.check_for_consecutive_3_months(officer)
+        if not is_eligible:
+            return False
+
+        officer_pseudo_id = officer.pseudonymized_id
+        disqualifying_events = [
+            e
+            for e in self.events
+            if e.officer_pseudonymized_id == officer_pseudo_id
+            and e.action_strategy
+            == ActionStrategyType.ACTION_STRATEGY_OUTLIER_3_MONTHS.value
+        ]
+        if len(disqualifying_events) > 0:
+            return False
+
+        outlier_as_surfaced = False
+        sixty_perc_outlier_as_surfaced = False
+        for e in self.events:
+            if e.officer_pseudonymized_id == officer_pseudo_id:
+                if (
+                    e.action_strategy
+                    == ActionStrategyType.ACTION_STRATEGY_OUTLIER.value
+                    and self.check_at_least_one_calendar_month_before(e.timestamp)
+                ):
+                    outlier_as_surfaced = True
+            if (
+                e.action_strategy
+                == ActionStrategyType.ACTION_STRATEGY_60_PERC_OUTLIERS.value
+                and self.check_at_least_one_calendar_month_before(e.timestamp)
+            ):
+
+                sixty_perc_outlier_as_surfaced = True
+        return outlier_as_surfaced or sixty_perc_outlier_as_surfaced
+
     def get_eligible_action_strategy_for_officer(
         self, officer: SupervisionOfficerEntity
     ) -> Optional[str]:
@@ -613,4 +695,6 @@ class OutliersActionStrategy:
         officer_pseudo_id = officer.pseudonymized_id
         if self.action_strategy_outlier_eligible(officer_pseudo_id, is_outlier):
             return ActionStrategyType.ACTION_STRATEGY_OUTLIER.value
+        if self.action_strategy_outlier_3_months_eligible(officer):
+            return ActionStrategyType.ACTION_STRATEGY_OUTLIER_3_MONTHS.value
         return None
