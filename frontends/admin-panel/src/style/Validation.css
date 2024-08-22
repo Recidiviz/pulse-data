@@ -57,7 +57,8 @@ tr.validation-table-row > td.ant-table-cell > div {
 }
 
 .ant-alert-description code {
-  background-color: #eee;
+  background-color: #161616;
+  border: 1px solid #2E2E2E;
   display: block;
   padding: 5px;
 }
@@ -70,6 +71,9 @@ tr.validation-table-row > td.ant-table-cell > div {
 @media (prefers-color-scheme: light) {
   .tooltip-content {
     background: #fff !important;
+  }
+  .ant-alert-description code {
+    background-color: white;
   }
 }
 
