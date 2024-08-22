@@ -17,6 +17,7 @@
 """Implements helper functions for use in Auth endpoint tests."""
 
 import json
+from datetime import datetime
 from typing import Any, List, Optional, Union
 
 from sqlalchemy import sql
@@ -51,6 +52,7 @@ def generate_fake_rosters(
     first_name: Optional[str] = None,
     last_name: Optional[str] = None,
     pseudonymized_id: Optional[str] = None,
+    created_datetime: Optional[datetime] = None,
 ) -> Roster:
     return Roster(
         state_code=region_code,
@@ -63,6 +65,7 @@ def generate_fake_rosters(
         last_name=last_name,
         pseudonymized_id=pseudonymized_id,
         user_hash=generate_user_hash(email.lower()),
+        created_datetime=created_datetime,
     )
 
 
@@ -91,6 +94,7 @@ def generate_fake_user_overrides(
     last_name: Optional[str] = None,
     blocked: bool = False,
     pseudonymized_id: Optional[str] = None,
+    created_datetime: Optional[datetime] = None,
 ) -> UserOverride:
     return UserOverride(
         state_code=region_code,
@@ -104,6 +108,7 @@ def generate_fake_user_overrides(
         blocked=blocked,
         user_hash=generate_user_hash(email.lower()),
         pseudonymized_id=pseudonymized_id,
+        created_datetime=created_datetime,
     )
 
 

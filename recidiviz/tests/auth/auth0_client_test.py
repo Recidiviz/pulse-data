@@ -75,7 +75,7 @@ class Auth0ClientTest(TestCase):
 
         self.mock_client.users.list.assert_called_with(
             per_page=25,
-            fields=["user_id", "email", "app_metadata"],
+            fields=["user_id", "email", "app_metadata", "last_login"],
             q='email: "one@test.gov" or email: "two@test.gov"',
         )
         self.assertEqual(returned_users, expected_users)
