@@ -59,6 +59,7 @@ Auth0User = TypedDict(
         "app_metadata": Union[
             JusticeCountsAuth0AppMetadata, CaseTriageAuth0AppMetadata
         ],
+        "last_login": str,
     },
 )
 
@@ -186,7 +187,7 @@ class Auth0Client:
             lucene_query = self._create_search_users_by_email_query(emails_to_query)
             response = self.client.users.list(
                 per_page=MAX_RESULTS_PER_PAGE,
-                fields=["user_id", "email", "app_metadata"],
+                fields=["user_id", "email", "app_metadata", "last_login"],
                 q=lucene_query,
             )
             # TODO(#22888) Remove when Auth0 fixes their type hints

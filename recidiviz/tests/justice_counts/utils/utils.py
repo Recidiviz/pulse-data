@@ -212,6 +212,7 @@ class JusticeCountsSchemaTestObjects:
             "app_metadata": JusticeCountsAuth0AppMetadata(
                 agency_ids=[], has_seen_onboarding={}
             ),
+            "last_login": "2024-01-01",
         }
 
         # Users

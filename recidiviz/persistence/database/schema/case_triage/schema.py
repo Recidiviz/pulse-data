@@ -55,6 +55,9 @@ class Roster(CaseTriageBase, CreatedAndUpdatedDateTimesMixin):
     user_hash = Column(String(255), nullable=False)
     pseudonymized_id = Column(String(255), nullable=True)
 
+    def __repr__(self) -> str:
+        return f"Roster(state_code={self.state_code}, email_address={self.email_address}, external_id={self.external_id}, roles={self.roles}, district={self.district}, first_name={self.first_name}, last_name={self.last_name})"
+
 
 class UserOverride(CaseTriageBase, CreatedAndUpdatedDateTimesMixin):
     """Used when a single user needs to be added, removed, or modified without uploading a new roster."""
@@ -71,6 +74,9 @@ class UserOverride(CaseTriageBase, CreatedAndUpdatedDateTimesMixin):
     blocked = Column(Boolean, nullable=True, default=False)
     user_hash = Column(String(255), nullable=False)
     pseudonymized_id = Column(String(255), nullable=True)
+
+    def __repr__(self) -> str:
+        return f"UserOverride(state_code={self.state_code}, email_address={self.email_address}, external_id={self.external_id}, roles={self.roles}, district={self.district}, first_name={self.first_name}, last_name={self.last_name}, blocked={self.blocked})"
 
 
 class StateRolePermissions(CaseTriageBase, CreatedAndUpdatedDateTimesMixin):
