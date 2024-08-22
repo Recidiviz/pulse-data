@@ -152,7 +152,7 @@ class DirectIngestRawFileMetadataManager:
         ) as session:
             metadata = self._get_raw_file_metadata_for_path(session, path)
             return convert_schema_object_to_entity(
-                metadata, DirectIngestRawFileMetadata, populate_back_edges=False
+                metadata, DirectIngestRawFileMetadata, populate_direct_back_edges=False
             )
 
     def has_raw_file_been_processed(self, path: GcsfsFilePath) -> bool:
@@ -198,7 +198,9 @@ class DirectIngestRawFileMetadataManager:
 
             return [
                 convert_schema_object_to_entity(
-                    metadata, DirectIngestRawFileMetadata, populate_back_edges=False
+                    metadata,
+                    DirectIngestRawFileMetadata,
+                    populate_direct_back_edges=False,
                 )
                 for metadata in results
             ]
@@ -260,9 +262,13 @@ class DirectIngestRawFileMetadataManager:
                     num_unprocessed_files=result.num_unprocessed_files,
                     latest_processed_time=result.latest_processed_time,
                     latest_discovery_time=result.latest_discovery_time,
-                    latest_update_datetime=result.latest_update_datetime
-                    if not isinstance(result.latest_update_datetime, str)
-                    else datetime.datetime.fromisoformat(result.latest_update_datetime),
+                    latest_update_datetime=(
+                        result.latest_update_datetime
+                        if not isinstance(result.latest_update_datetime, str)
+                        else datetime.datetime.fromisoformat(
+                            result.latest_update_datetime
+                        )
+                    ),
                 )
                 for result in results
             ]
@@ -308,7 +314,7 @@ class DirectIngestRawFileMetadataManager:
                 convert_schema_object_to_entity(
                     schema.DirectIngestRawFileMetadata(**result),
                     DirectIngestRawFileMetadata,
-                    populate_back_edges=False,
+                    populate_direct_back_edges=False,
                 )
                 for result in results
             ]
@@ -327,7 +333,9 @@ class DirectIngestRawFileMetadataManager:
 
             return [
                 convert_schema_object_to_entity(
-                    metadata, DirectIngestRawFileMetadata, populate_back_edges=False
+                    metadata,
+                    DirectIngestRawFileMetadata,
+                    populate_direct_back_edges=False,
                 )
                 for metadata in results
             ]

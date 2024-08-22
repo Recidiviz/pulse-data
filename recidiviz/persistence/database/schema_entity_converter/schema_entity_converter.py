@@ -128,29 +128,37 @@ def _get_field_index_for_db_entity(db_entity: DatabaseEntity) -> EntityFieldInde
     return EntityFieldIndex.for_entities_module(entities_module)
 
 
+# TODO(#32430): consider adding more full-featured support here for more complex object
+# relationships
 def convert_schema_object_to_entity(
     schema_object: DatabaseEntity,
     entity_type: Type[EntityT],
     *,
-    populate_back_edges: bool,
+    populate_direct_back_edges: bool,
 ) -> EntityT:
-    conncted_schema_objects = [schema_object]
+    """This function is designed to ONLY convert the provided |schema_object| and its
+    subtree. If |populate_direct_back_edges| is set to True, we will only convert
+    direct backedges of the root object and conversion may fail if the object (or it's
+    subtree) have backedges that are not included in the set of the |schema_object|,
+    |schema_object|'s forward edges and |schema_object|'s direct backedges.
+    """
+    connected_schema_objects = [schema_object]
 
-    if populate_back_edges:
+    if populate_direct_back_edges:
         field_index = _get_field_index_for_db_entity(schema_object)
         for backedge_key in field_index.get_all_entity_fields(
             entity_type, EntityFieldType.BACK_EDGE
         ):
             if attribute := getattr(schema_object, backedge_key):
-                conncted_schema_objects.append(attribute)
+                connected_schema_objects.append(attribute)
 
     result_list = convert_schema_objects_to_entity(
-        conncted_schema_objects, populate_back_edges=populate_back_edges
+        connected_schema_objects, populate_back_edges=populate_direct_back_edges
     )
 
-    if len(result_list) != len(conncted_schema_objects):
+    if len(result_list) != len(connected_schema_objects):
         raise AssertionError(
-            f"Call to convert {len(conncted_schema_objects)} objects returned "
+            f"Call to convert {len(connected_schema_objects)} objects returned "
             f"{len(result_list)} objects"
         )
 

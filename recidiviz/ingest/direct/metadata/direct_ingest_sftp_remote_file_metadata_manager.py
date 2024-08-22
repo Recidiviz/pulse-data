@@ -49,7 +49,7 @@ class DirectIngestSftpRemoteFileMetadataManager:
         entity_metadata = convert_schema_object_to_entity(
             schema_metadata,
             DirectIngestSftpRemoteFileMetadata,
-            populate_back_edges=False,
+            populate_direct_back_edges=False,
         )
 
         if not isinstance(entity_metadata, DirectIngestSftpRemoteFileMetadata):
@@ -74,7 +74,9 @@ class DirectIngestSftpRemoteFileMetadataManager:
                 .one()
             )
             return convert_schema_object_to_entity(
-                metadata, DirectIngestSftpRemoteFileMetadata, populate_back_edges=False
+                metadata,
+                DirectIngestSftpRemoteFileMetadata,
+                populate_direct_back_edges=False,
             )
 
     def has_remote_file_been_discovered(
@@ -146,7 +148,7 @@ class DirectIngestSftpRemoteFileMetadataManager:
                 convert_schema_object_to_entity(
                     result,
                     DirectIngestSftpRemoteFileMetadata,
-                    populate_back_edges=False,
+                    populate_direct_back_edges=False,
                 )
                 for result in results
             ]
