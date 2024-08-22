@@ -15,21 +15,48 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Defines a based class for ingest pipeline integration tests"""
+from typing import Any, Iterable
 from unittest.mock import patch
+
+import apache_beam as beam
+from apache_beam.pvalue import PBegin
 
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_contents_context import (
     IngestViewContentsContextImpl,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
-from recidiviz.tests.ingest.direct.regions.legacy_state_specific_ingest_pipeline_integration_test_case import (
-    FakeGenerateIngestViewResults,
+from recidiviz.pipelines.ingest.state.generate_ingest_view_results import (
+    GenerateIngestViewResults,
 )
 from recidiviz.tests.pipelines.ingest.state.pipeline_test_case import (
     StateIngestPipelineTestCase,
 )
 
 PIPELINE_INTEGRATION_TEST_NAME = "pipeline_integration"
+
+
+class FakeGenerateIngestViewResults(GenerateIngestViewResults):
+    def __init__(
+        self,
+        project_id: str,
+        state_code: StateCode,
+        ingest_view_name: str,
+        raw_data_tables_to_upperbound_dates: dict[str, str],
+        raw_data_source_instance: DirectIngestInstance,
+        fake_ingest_view_results: Iterable[dict[str, Any]],
+    ) -> None:
+        super().__init__(
+            project_id,
+            state_code,
+            ingest_view_name,
+            raw_data_tables_to_upperbound_dates,
+            raw_data_source_instance,
+        )
+        self.fake_ingest_view_results = fake_ingest_view_results
+
+    def expand(self, input_or_inputs: PBegin) -> beam.PCollection[dict[str, Any]]:
+        return input_or_inputs | beam.Create(self.fake_ingest_view_results)
 
 
 class StateSpecificIngestPipelineIntegrationTestCase(StateIngestPipelineTestCase):
