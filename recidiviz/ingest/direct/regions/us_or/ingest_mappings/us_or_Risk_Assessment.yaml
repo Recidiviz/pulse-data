@@ -10,7 +10,8 @@ input_columns:
   - ASSESSMENT_DATE
   - CASELOAD
   - COMMUNITY_SUPER_LVL
-unused_columns: []
+unused_columns:
+  - CASELOAD
 output:
   StatePerson:
     external_ids:
@@ -40,9 +41,3 @@ output:
           assessment_metadata:
             $json_dict:
               ACTUAL_COMMUNITY_SUPER_LEVEL: COMMUNITY_SUPER_LVL
-          conducting_staff_external_id: CASELOAD
-          conducting_staff_external_id_type:
-            $conditional:
-              - $if:
-                  $not_null: CASELOAD
-                $then: $literal("US_OR_CASELOAD")
