@@ -347,9 +347,7 @@ def main(
                 query_job = bq_client.run_query_async(
                     query_str=deletion_query, use_query_cache=True, http_timeout=60.0
                 )
-                # the ``timeout`` parameter, similarly to the above, is the timeout
-                # associated with underlying http calls, not the function call as a whole
-                query_job.result(timeout=60.0)
+                query_job.result(timeout=60.0 * 10)
                 logging.info(
                     "[%s] Marking %d metadata rows as invalidated...",
                     file_tag,
