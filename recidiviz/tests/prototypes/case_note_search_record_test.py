@@ -35,16 +35,13 @@ class TestCaseNoteSearchRecordInterface(PrototypesDatabaseTestCase):
                 "user_external_id": "user_123",
                 "client_external_id": "client_456",
                 "state_code": "CA",
-                "search_term": "test search",
+                "query": "test search",
                 "page_size": 10,
+                "with_snippet": False,
                 "filter_conditions": {"status": "open"},
                 "max_extractive_answer_count": 3,
                 "max_snippet_count": 5,
-                "summary_result_count": 2,
-                "case_note_ids": ["note1", "note2"],
-                "extractive_answer": "This is an extractive answer.",
-                "snippet": "This is a snippet.",
-                "summary": "This is a summary.",
+                "results": {"results": [{"document_id": "11111"}], "error": None},
             }
             await CaseNoteSearchRecordInterface.write_record(
                 session=session, **test_data  # type: ignore[arg-type]
@@ -60,18 +57,13 @@ class TestCaseNoteSearchRecordInterface(PrototypesDatabaseTestCase):
             self.assertEqual(record.user_external_id, test_data["user_external_id"])
             self.assertEqual(record.client_external_id, test_data["client_external_id"])
             self.assertEqual(record.state_code, test_data["state_code"])
-            self.assertEqual(record.search_term, test_data["search_term"])
+            self.assertEqual(record.query, test_data["query"])
             self.assertEqual(record.page_size, test_data["page_size"])
+            self.assertEqual(record.with_snippet, test_data["with_snippet"])
             self.assertEqual(record.filter_conditions, test_data["filter_conditions"])
             self.assertEqual(
                 record.max_extractive_answer_count,
                 test_data["max_extractive_answer_count"],
             )
             self.assertEqual(record.max_snippet_count, test_data["max_snippet_count"])
-            self.assertEqual(
-                record.summary_result_count, test_data["summary_result_count"]
-            )
-            self.assertEqual(record.case_note_ids, test_data["case_note_ids"])
-            self.assertEqual(record.extractive_answer, test_data["extractive_answer"])
-            self.assertEqual(record.snippet, test_data["snippet"])
-            self.assertEqual(record.summary, test_data["summary"])
+            self.assertEqual(record.results, test_data["results"])

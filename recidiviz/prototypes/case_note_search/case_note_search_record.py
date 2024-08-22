@@ -16,7 +16,7 @@
 # =============================================================================
 """Implements the CaseNoteSearchRecordInterface class."""
 import datetime
-from typing import Dict, List, Optional
+from typing import Any, Dict, Optional
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -32,22 +32,17 @@ class CaseNoteSearchRecordInterface:
         user_external_id: Optional[str] = None,
         client_external_id: Optional[str] = None,
         state_code: Optional[str] = None,
-        search_term: Optional[str] = None,
+        query: Optional[str] = None,
         page_size: Optional[int] = None,
+        with_snippet: Optional[bool] = None,
         filter_conditions: Optional[Dict] = None,
         max_extractive_answer_count: Optional[int] = None,
         max_snippet_count: Optional[int] = None,
-        summary_result_count: Optional[int] = None,
-        case_note_ids: Optional[List[str]] = None,
-        extractive_answer: Optional[str] = None,
-        snippet: Optional[str] = None,
-        summary: Optional[str] = None,
+        results: Optional[Dict[str, Any]] = None,
     ) -> None:
         """Write case note search record entries."""
         if filter_conditions is None:
             filter_conditions = {}
-        if case_note_ids is None:
-            case_note_ids = []
 
         async with session:
             new_record = CaseNoteSearchRecord(
@@ -55,16 +50,13 @@ class CaseNoteSearchRecordInterface:
                 client_external_id=client_external_id,
                 state_code=state_code,
                 timestamp=datetime.datetime.now(tz=datetime.timezone.utc),
-                search_term=search_term,
+                query=query,
                 page_size=page_size,
+                with_snippet=with_snippet,
                 filter_conditions=filter_conditions,
                 max_extractive_answer_count=max_extractive_answer_count,
                 max_snippet_count=max_snippet_count,
-                summary_result_count=summary_result_count,
-                case_note_ids=case_note_ids,
-                extractive_answer=extractive_answer,
-                snippet=snippet,
-                summary=summary,
+                results=results,
             )
             session.add(new_record)
             await session.commit()

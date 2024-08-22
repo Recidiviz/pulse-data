@@ -65,10 +65,13 @@ class CaseNoteSearchRecord(WorkflowsBase):
     # -- Request Values --
 
     # The search term entered into the tool
-    search_term = Column(String)
+    query = Column(String)
 
     # The page size limit used in the request.
     page_size = Column(Integer)
+
+    # Whether or not a snippet was requested.
+    with_snippet = Column(Boolean)
 
     # The filter conditions sent to the Discovery Engine.
     filter_conditions = Column(JSON)
@@ -79,22 +82,12 @@ class CaseNoteSearchRecord(WorkflowsBase):
     # The max number of snippets the engine should return.
     max_snippet_count = Column(Integer)
 
-    # The number of summary results to return.
-    summary_result_count = Column(Integer)
-
     # -- Result Values --
 
-    # The ids of the case notes returned by the Discovery Engine.
-    case_note_ids = Column(ARRAY(String))
-
-    # The extractive answer returned by the Discovery Engine, if requested.
-    extractive_answer = Column(String)
-
-    # The snippet returned by the Discovery Engine, if requested.
-    snippet = Column(String)
-
-    # The summary returned by the Discovery Engine, if requested.
-    summary = Column(String)
+    # The results returned by the Discovery Engine.
+    # See the case_note_search.case_note_search() doc-string for up-to-date
+    # documentation of the fields in 'results'.
+    results = Column(JSON)
 
 
 class Opportunity(WorkflowsBase):
