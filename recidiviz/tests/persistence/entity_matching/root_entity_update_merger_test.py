@@ -42,9 +42,6 @@ from recidiviz.persistence.entity.base_entity import RootEntity
 from recidiviz.persistence.entity_matching.root_entity_update_merger import (
     RootEntityUpdateMerger,
 )
-from recidiviz.tests.ingest.direct.regions.legacy_state_specific_ingest_pipeline_integration_test_case import (
-    launch_entity_tree_html_diff_comparison,
-)
 from recidiviz.tests.persistence.entity.state.entities_test_utils import (
     generate_full_graph_state_person,
 )
@@ -60,6 +57,7 @@ from recidiviz.tests.persistence.entity_matching.us_xx_entity_builders import (
     make_supervision_sentence,
     make_task_deadline,
 )
+from recidiviz.tests.test_debug_helpers import launch_entity_tree_html_diff_comparison
 from recidiviz.utils.environment import in_ci
 
 _FULL_NAME_1 = '{"given_names": "FIRST1", "middle_names": "", "name_suffix": "", "surname": "LAST1"}'
