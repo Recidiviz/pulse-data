@@ -175,18 +175,16 @@ DATAFLOW_SESSIONS_QUERY_TEMPLATE = f"""
     population_with_location_names AS (
         SELECT
             population_cte.*,
-            supervision_locations.supervision_office_name,
-            supervision_locations.supervision_district_name,
-            supervision_locations.supervision_region_name,
-            incarceration_locations.facility_name,
+            locations.supervision_office_name,
+            locations.supervision_district_name,
+            locations.supervision_region_name,
+            locations.facility_name,
         FROM population_cte
-        LEFT JOIN `{{project_id}}.{{sessions_dataset}}.session_location_names_materialized` supervision_locations
-            ON supervision_locations.state_code = population_cte.state_code
-            AND IFNULL(supervision_locations.supervision_district, "UNKNOWN") = IFNULL(population_cte.supervision_district, "UNKNOWN")
-            AND IFNULL(supervision_locations.supervision_office, "UNKNOWN") = IFNULL(population_cte.supervision_office, "UNKNOWN")
-        LEFT JOIN `{{project_id}}.{{sessions_dataset}}.session_location_names_materialized` incarceration_locations
-            ON incarceration_locations.state_code = population_cte.state_code
-            AND incarceration_locations.facility = population_cte.facility
+        LEFT JOIN `{{project_id}}.{{sessions_dataset}}.session_location_names_materialized` locations
+            ON locations.state_code = population_cte.state_code
+            AND IFNULL(locations.supervision_district, "UNKNOWN") = IFNULL(population_cte.supervision_district, "UNKNOWN")
+            AND IFNULL(locations.supervision_office, "UNKNOWN") = IFNULL(population_cte.supervision_office, "UNKNOWN")
+            AND IFNULL(locations.facility, "UNKNOWN") = IFNULL(population_cte.facility, "UNKNOWN")
     )
     ,
     last_day_of_data_by_state_and_source AS
