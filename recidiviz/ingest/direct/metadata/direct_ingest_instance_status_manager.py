@@ -196,7 +196,7 @@ class DirectIngestInstanceStatusManager:
             )
 
         return convert_schema_object_to_entity(
-            results, DirectIngestInstanceStatus, populate_back_edges=False
+            results, DirectIngestInstanceStatus, populate_direct_back_edges=False
         )
 
     def _get_most_recent_row_with_status(
@@ -217,7 +217,7 @@ class DirectIngestInstanceStatusManager:
 
         if results:
             return convert_schema_object_to_entity(
-                results, DirectIngestInstanceStatus, populate_back_edges=False
+                results, DirectIngestInstanceStatus, populate_direct_back_edges=False
             )
 
         return None
@@ -244,7 +244,7 @@ class DirectIngestInstanceStatusManager:
 
         return [
             convert_schema_object_to_entity(
-                result, DirectIngestInstanceStatus, populate_back_edges=False
+                result, DirectIngestInstanceStatus, populate_direct_back_edges=False
             )
             for result in results
         ]

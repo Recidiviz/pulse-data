@@ -111,7 +111,7 @@ class DirectIngestRawFileMetadataManagerV2:
             return convert_schema_object_to_entity(
                 metadata,
                 entities.DirectIngestRawBigQueryFileMetadata,
-                populate_back_edges=True,
+                populate_direct_back_edges=False,
             )
 
     def get_raw_gcs_file_metadata(
@@ -127,7 +127,7 @@ class DirectIngestRawFileMetadataManagerV2:
             return convert_schema_object_to_entity(
                 metadata,
                 entities.DirectIngestRawGCSFileMetadata,
-                populate_back_edges=True,
+                populate_direct_back_edges=False,
             )
 
     # --- file discovery logic ---------------------------------------------------------
@@ -186,10 +186,10 @@ class DirectIngestRawFileMetadataManagerV2:
             return convert_schema_object_to_entity(
                 new_gcs_file,
                 entities.DirectIngestRawGCSFileMetadata,
-                populate_back_edges=True,
+                populate_direct_back_edges=False,
             )
 
-    def regiester_raw_big_query_file_for_paths(
+    def register_raw_big_query_file_for_paths(
         self, paths: List[GcsfsFilePath]
     ) -> entities.DirectIngestRawBigQueryFileMetadata:
         """Given a list of |paths| that have already been marked as discovered in the
@@ -269,7 +269,7 @@ class DirectIngestRawFileMetadataManagerV2:
             return convert_schema_object_to_entity(
                 new_bq_file,
                 entities.DirectIngestRawBigQueryFileMetadata,
-                populate_back_edges=True,
+                populate_direct_back_edges=False,
             )
 
     # --- file processed logic ---------------------------------------------------------
@@ -278,20 +278,23 @@ class DirectIngestRawFileMetadataManagerV2:
         """Checks whether the file at this path has already been marked as processed
         (i.e. this GCS path has finished being uploaded to BigQuery)
         """
-        try:
-            metadata = self.get_raw_gcs_file_metadata(path)
-        except ValueError:
-            # For raw data files, if a file's metadata is not present in the database,
-            # then it is assumed to be not processed, as it is seen as not existing.
-            return False
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            try:
+                metadata = self._get_gcs_raw_file_metadata_for_path(session, path)
+            except ValueError:
+                # For raw data files, if a file's metadata is not present in the database,
+                # then it is assumed to be not processed, as it is seen as not existing.
+                return False
 
-        return (
-            metadata.bq_file is not None
-            and metadata.bq_file.file_processed_time is not None
-        )
+            return (
+                metadata.bq_file is not None
+                and metadata.bq_file.file_processed_time is not None
+            )
 
     def has_raw_biq_query_file_been_processed(self, file_id: int) -> bool:
-        """Checks whether this concpetual file_id has already been marked as processed
+        """Checks whether this conceptual file_id has already been marked as processed
         (i.e. all GCS paths associated with this conceptual file have finished being
         uploaded to BigQuery)
         """
@@ -374,13 +377,13 @@ class DirectIngestRawFileMetadataManagerV2:
                     convert_schema_object_to_entity(
                         big_query_file,
                         entities.DirectIngestRawBigQueryFileMetadata,
-                        populate_back_edges=True,
+                        populate_direct_back_edges=False,
                     )
                 )
 
             return result_dict
 
-    # TODO(#29133) re-implement this function once we deteremine what the new admin
+    # TODO(#29133) re-implement this function once we determine what the new admin
     # panel will display
     def get_metadata_for_all_raw_files_in_region(
         self,
@@ -408,7 +411,7 @@ class DirectIngestRawFileMetadataManagerV2:
                 convert_schema_object_to_entity(
                     result,
                     entities.DirectIngestRawBigQueryFileMetadata,
-                    populate_back_edges=True,
+                    populate_direct_back_edges=False,
                 )
                 for result in results
             ]

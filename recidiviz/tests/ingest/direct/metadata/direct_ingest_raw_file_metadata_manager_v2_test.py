@@ -163,7 +163,7 @@ class DirectIngestRawFileMetadataV2ManagerTest(unittest.TestCase):
         self.assertIsInstance(metadata, DirectIngestRawGCSFileMetadata)
         self.assertIsNotNone(metadata.gcs_file_id)
         self.assertEqual(expected_metadata, metadata)
-        self.assertIsNotNone(metadata.bq_file)
+        self.assertIsNotNone(metadata.file_id)
 
     @freeze_time("2015-01-02T03:04:06")
     def test_get_raw_gcs_file_metadata_unique_to_state(self) -> None:
@@ -220,7 +220,7 @@ class DirectIngestRawFileMetadataV2ManagerTest(unittest.TestCase):
                 raw_unprocessed_path
             )
         )
-        self.assertIsNotNone(metadata.bq_file)
+        self.assertIsNotNone(metadata.file_id)
 
     def test_has_raw_gcs_file_been_discovered_chunked_single(self) -> None:
         fixed_datetime = datetime.datetime(2121, 2, 1, 2, 1, 2, tzinfo=datetime.UTC)
@@ -259,11 +259,11 @@ class DirectIngestRawFileMetadataV2ManagerTest(unittest.TestCase):
             r"Found multiple file tags \[file_tag, file_tag_two_point_oh\], "
             r"but only expected one.",
         ):
-            _ = self.raw_metadata_manager.regiester_raw_big_query_file_for_paths(
+            _ = self.raw_metadata_manager.register_raw_big_query_file_for_paths(
                 [*file_paths_of_same_file_tag, file_path_diff_tag]
             )
 
-        bq_metadata = self.raw_metadata_manager.regiester_raw_big_query_file_for_paths(
+        bq_metadata = self.raw_metadata_manager.register_raw_big_query_file_for_paths(
             file_paths_of_same_file_tag[:4]
         )
 
@@ -282,14 +282,12 @@ class DirectIngestRawFileMetadataV2ManagerTest(unittest.TestCase):
             ValueError,
             r"Found unexpected number of paths: expected \[\d\] but found \[\d\]",
         ):
-            _ = self.raw_metadata_manager.regiester_raw_big_query_file_for_paths(
+            _ = self.raw_metadata_manager.register_raw_big_query_file_for_paths(
                 file_paths_of_same_file_tag
             )
 
-        bq_metadata_2 = (
-            self.raw_metadata_manager.regiester_raw_big_query_file_for_paths(
-                file_paths_of_same_file_tag[4:]
-            )
+        bq_metadata_2 = self.raw_metadata_manager.register_raw_big_query_file_for_paths(
+            file_paths_of_same_file_tag[4:]
         )
 
         self.assertEqual(
@@ -323,9 +321,9 @@ class DirectIngestRawFileMetadataV2ManagerTest(unittest.TestCase):
                 raw_unprocessed_path
             )
         )
-        self.assertIsNone(metadata.bq_file)
+        self.assertIsNone(metadata.file_id)
 
-        bq_metadata = self.raw_metadata_manager.regiester_raw_big_query_file_for_paths(
+        bq_metadata = self.raw_metadata_manager.register_raw_big_query_file_for_paths(
             [raw_unprocessed_path]
         )
 
@@ -333,9 +331,8 @@ class DirectIngestRawFileMetadataV2ManagerTest(unittest.TestCase):
             raw_unprocessed_path
         )
 
-        self.assertIsNotNone(gcs_metadata.bq_file)
+        self.assertIsNotNone(gcs_metadata.file_id)
         self.assertEqual(bq_metadata.file_id, gcs_metadata.file_id)
-        self.assertEqual(bq_metadata, gcs_metadata.bq_file)
 
     def test_has_raw_gcs_file_been_discovered_returns_false_for_no_rows(self) -> None:
         # Arrange
@@ -362,11 +359,10 @@ class DirectIngestRawFileMetadataV2ManagerTest(unittest.TestCase):
             raw_unprocessed_path
         )
 
-        assert metadata.bq_file is not None
+        assert metadata.file_id is not None
+        print(metadata.file_id)
 
-        self.raw_metadata_manager.mark_raw_big_query_file_as_processed(
-            metadata.bq_file.file_id
-        )
+        self.raw_metadata_manager.mark_raw_big_query_file_as_processed(metadata.file_id)
 
         # Assert
         self.assertTrue(
@@ -405,7 +401,7 @@ class DirectIngestRawFileMetadataV2ManagerTest(unittest.TestCase):
             )
         )
 
-        metadata = self.raw_metadata_manager.regiester_raw_big_query_file_for_paths(
+        metadata = self.raw_metadata_manager.register_raw_big_query_file_for_paths(
             [raw_unprocessed_path]
         )
 
@@ -485,12 +481,12 @@ class DirectIngestRawFileMetadataV2ManagerTest(unittest.TestCase):
             raw_unprocessed_path
         )
 
-        assert metadata.bq_file is not None
+        assert metadata.file_id is not None
 
         processed_time = datetime.datetime(2015, 1, 2, 3, 5, 5, tzinfo=datetime.UTC)
         with freeze_time(processed_time):
             self.raw_metadata_manager.mark_raw_big_query_file_as_processed(
-                metadata.bq_file.file_id
+                metadata.file_id
             )
 
     def test_mark_raw_file_as_processed_but_is_invalidated(self) -> None:
@@ -650,7 +646,9 @@ class DirectIngestRawFileMetadataV2ManagerTest(unittest.TestCase):
             self.assertEqual(
                 expected_gcs_metadata,
                 convert_schema_object_to_entity(
-                    metadata, DirectIngestRawGCSFileMetadata, populate_back_edges=False
+                    metadata,
+                    DirectIngestRawGCSFileMetadata,
+                    populate_direct_back_edges=False,
                 ),
             )
 
@@ -668,7 +666,7 @@ class DirectIngestRawFileMetadataV2ManagerTest(unittest.TestCase):
                 convert_schema_object_to_entity(
                     metadata,
                     DirectIngestRawBigQueryFileMetadata,
-                    populate_back_edges=False,
+                    populate_direct_back_edges=False,
                 ),
             )
 
@@ -767,7 +765,9 @@ class DirectIngestRawFileMetadataV2ManagerTest(unittest.TestCase):
                 expected_gcs,
                 [
                     convert_schema_object_to_entity(
-                        file, DirectIngestRawGCSFileMetadata, populate_back_edges=False
+                        file,
+                        DirectIngestRawGCSFileMetadata,
+                        populate_direct_back_edges=False,
                     )
                     for file in metadata
                 ],
@@ -788,7 +788,7 @@ class DirectIngestRawFileMetadataV2ManagerTest(unittest.TestCase):
                     convert_schema_object_to_entity(
                         file,
                         DirectIngestRawBigQueryFileMetadata,
-                        populate_back_edges=False,
+                        populate_direct_back_edges=False,
                     )
                     for file in metadata
                 ],

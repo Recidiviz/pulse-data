@@ -570,7 +570,9 @@ class DirectIngestRawFileMetadataManagerTest(unittest.TestCase):
             self.assertEqual(
                 expected_metadata,
                 convert_schema_object_to_entity(
-                    metadata, DirectIngestRawFileMetadata, populate_back_edges=False
+                    metadata,
+                    DirectIngestRawFileMetadata,
+                    populate_direct_back_edges=False,
                 ),
             )
 
@@ -628,7 +630,9 @@ class DirectIngestRawFileMetadataManagerTest(unittest.TestCase):
             self.assertEqual(
                 expected_metadata,
                 convert_schema_object_to_entity(
-                    metadata, DirectIngestRawFileMetadata, populate_back_edges=False
+                    metadata,
+                    DirectIngestRawFileMetadata,
+                    populate_direct_back_edges=False,
                 ),
             )
 
