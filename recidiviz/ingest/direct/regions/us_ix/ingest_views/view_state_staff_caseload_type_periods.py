@@ -190,7 +190,7 @@ VIEW_QUERY_TEMPLATE = f""",
             SELECT 
                 *
             FROM transitional_periods
-            WHERE EmployeeTypeName in ("Business Operations Manager") 
+            WHERE EmployeeTypeName in ("Business Operations Manager","Business Operations Manager - PSI") 
             OR LOWER(StaffId) LIKE "%bench%"
             OR TO_HEX(SHA256(officer_EmployeeId)) = 
             "f826ecc1611f62c4707ad52da9883fc15f69a1cddda43250c364fc2457ba4b06")
