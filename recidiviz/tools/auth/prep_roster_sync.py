@@ -36,6 +36,7 @@ from datetime import UTC, datetime
 from dateutil.relativedelta import relativedelta
 from sqlalchemy import delete, func, select
 from sqlalchemy.dialects.postgresql import insert
+from sqlalchemy.engine import Row
 from sqlalchemy.orm import Session
 
 from recidiviz.auth.auth0_client import Auth0Client
@@ -191,6 +192,84 @@ def get_existing_users_missing_from_roster_sync(
     )
 
 
+def role_is_equivalent(current_role: str, roster_sync_role: str) -> bool:
+    return roster_sync_role == current_role or (
+        current_role == "supervision_staff"
+        and roster_sync_role
+        in ["SUPERVISION_OFFICER", "SUPERVISION_OFFICER_SUPERVISOR"]
+    )
+
+
+def get_role_updates(current_user: UserOverride, roster_sync_user: Roster) -> list[str]:
+    """Returns a list of roles we want the current user to have based on their current data and
+    roster sync data. Updates the current role to the roster sync role if they're "equivalent".
+    Otherwise, their current role and any non-unknown roster sync roles are added to the user's
+    roster data."""
+    roster_sync_role = (
+        roster_sync_user.roles
+    )  # Even though this says "roles", it's actually a single string
+
+    # Preserve their current roles by adding an override for them, along with their roster sync role
+    # if not "UNKNOWN". If one of their roles matches a roster sync role, update it to the roster
+    # sync version.
+    updated_roles = {
+        (roster_sync_role if role_is_equivalent(role, roster_sync_role) else role)
+        for role in current_user.roles
+    }
+    if roster_sync_role != "UNKNOWN":
+        updated_roles.add(roster_sync_role)
+
+    # Return the updated roles regardless of whether they match the current roles, because if the
+    # current user is only in Roster then their current role will be clobbered when we turn on
+    # roster sync. We could check against that case but it's easier to just add the override
+    # regardless. Sort them so that we have determinism in tests.
+    return sorted(updated_roles)
+
+
+def find_and_handle_diffs_single_user(
+    current_user: Row, roster_sync_user: Roster
+) -> dict:
+    role_updates = get_role_updates(UserOverride(**current_user), roster_sync_user)
+
+    # TODO(#32585): Handle diffs for non-role fields so overrides are updated to match the roster sync values
+    return {
+        "state_code": current_user.state_code,
+        "email_address": current_user.email_address,
+        "user_hash": current_user.user_hash,
+        "roles": role_updates,
+    }
+
+
+def find_and_handle_diffs(
+    session: Session, roster_sync_users: list[Roster], state_code: str
+) -> list[tuple[UserOverride, dict]]:
+    """Look for users with diffs between the roster sync output and the existing roster data, and
+    return a tuple(current data, user override to add) for each one.
+    Because the role types that are output from the roster sync query are mutually exclusive from
+    the ones that exist in the admin panel for non-roster-sync states today, this will output a diff
+    for all current users who appear in the roster sync query."""
+    roster_sync_user_by_email = {user.email_address: user for user in roster_sync_users}
+    existing_users = session.execute(
+        _EXISTING_USER_QUERY.filter(
+            func.coalesce(UserOverride.state_code, Roster.state_code) == state_code
+        )
+    ).all()
+
+    changes = []
+    for user in existing_users:
+        if user.email_address not in roster_sync_user_by_email:
+            # Existing users missing from the synced roster are handled in get_missing_users(), so
+            # we can ignore them here
+            continue
+        override_to_add = find_and_handle_diffs_single_user(
+            user, roster_sync_user_by_email[user.email_address]
+        )
+        # Return the original user and the new update to make it easier to log the diff
+        changes.append((UserOverride(**user), override_to_add))
+
+    return changes
+
+
 def remove_users(session: Session, user_emails_to_delete: set[str]) -> None:
     session.execute(
         delete(UserOverride).where(
@@ -229,7 +308,10 @@ def prepare_for_roster_sync(
     (because they've logged in recently or were recently added), add a UserOverride for them so we
     don't delete them.
 
-    TODO(#32585): Handle role differences to make sure we preserve users' current levels of access
+    For all users in the roster sync query who are already in our roster, update their data to match
+    what the roster sync query says. Users with role differences are updated in such a way as to
+    preserve their current levels of access.
+
     TODO(#32585): Handle diffs for non-role fields so overrides are updated to match the roster sync values
     """
 
@@ -246,13 +328,26 @@ def prepare_for_roster_sync(
         session, auth0_client, roster_sync_users, state_code
     )
 
+    # Handle users who have entries in roster sync and the existing roster tables that differ
+    users_with_diffs = find_and_handle_diffs(session, roster_sync_users, state_code)
+
     logging.info(
         """\n\n✂️ Deleting the following users:\n%s
         \n\n🛟 Adding missing users to UserOverride:\n%s
+         \n\n🛼 Updating roles in UserOverride for the following users:\n%s
         """,
         "\n".join(users_who_will_be_deleted),
         "\n".join(
             [str(user) for user in users_missing_from_roster_sync_who_should_remain]
+        ),
+        "\n".join(
+            [
+                f"{from_user.email_address}: {from_user.roles} -> {to_user['roles']}"
+                for (from_user, to_user) in users_with_diffs
+                # We're actually adding overrides even if they match, but for inspecting diffs it'll
+                # be easier if we only show the ones that don't match
+                if set(from_user.roles) != to_user["roles"]
+            ]
         ),
     )
     if dry_run:
@@ -263,6 +358,7 @@ def prepare_for_roster_sync(
 
     remove_users(session, users_who_will_be_deleted)
     add_user_overrides(session, users_missing_from_roster_sync_who_should_remain)
+    add_user_overrides(session, [to_user for (from_user, to_user) in users_with_diffs])
 
 
 def parse_arguments(argv: list[str]) -> tuple[argparse.Namespace, list[str]]:

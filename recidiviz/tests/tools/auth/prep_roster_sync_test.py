@@ -40,7 +40,9 @@ from recidiviz.tests.auth.helpers import (
 from recidiviz.tools.auth.prep_roster_sync import (
     _EXISTING_USER_QUERY,
     add_user_overrides,
+    find_and_handle_diffs,
     get_existing_users_missing_from_roster_sync,
+    get_role_updates,
     prepare_for_roster_sync,
     remove_users,
 )
@@ -104,8 +106,8 @@ class PrepRosterSyncTest(TestCase):
             email="user_in_sync_query@testdomain.com",
             region_code="US_XX",
             external_id="234",
-            role="supervision_officer",
-            roles=["supervision_officer"],
+            role="supervision_staff",
+            roles=["supervision_staff"],
             district="D2",
             first_name="Test",
             last_name="User",
@@ -156,6 +158,32 @@ class PrepRosterSyncTest(TestCase):
             first_name="Test",
             last_name="User",
             pseudonymized_id="pseudo-678",
+            created_datetime=datetime.fromisoformat("2023-01-01"),
+        )
+
+        self.user_with_equivalent_role = generate_fake_user_overrides(
+            email="user_with_equivalent_role@testdomain.com",
+            region_code="US_XX",
+            external_id="789",
+            role="supervision_staff",
+            roles=["supervision_staff", "tt group"],
+            district="D7",
+            first_name="Test",
+            last_name="User",
+            pseudonymized_id="pseudo-789",
+            created_datetime=datetime.fromisoformat("2023-01-01"),
+        )
+
+        self.user_with_different_role = generate_fake_user_overrides(
+            email="user_with_different_role@testdomain.com",
+            region_code="US_XX",
+            external_id="890",
+            role="leadership_role",
+            roles=["leadership_role", "tt group"],
+            district="D8",
+            first_name="Test",
+            last_name="User",
+            pseudonymized_id="pseudo-890",
             created_datetime=datetime.fromisoformat("2023-01-01"),
         )
 
@@ -427,6 +455,122 @@ class PrepRosterSyncTest(TestCase):
         # show up.
         self.snapshot.assert_match(all_user_overrides, name="test_add_user_overrides")  # type: ignore[attr-defined]
 
+    def test_get_role_updates_equivalent(self) -> None:
+        # the roster sync query returns "roles" as a string, so construct our test one that way
+        roster_sync_user = Roster(
+            email_address="user_in_sync_query@testdomain.com",
+            state_code="US_XX",
+            role="SUPERVISION_OFFICER",
+            roles="SUPERVISION_OFFICER",
+        )
+        current_user = generate_fake_user_overrides(
+            email="user_in_sync_query@testdomain.com",
+            region_code="US_XX",
+            role="supervision_staff",
+            roles=["supervision_staff"],
+        )
+
+        expected_updates = ["SUPERVISION_OFFICER"]
+        self.assertEqual(
+            get_role_updates(current_user, roster_sync_user), expected_updates
+        )
+
+    def test_get_role_updates_not_equivalent(self) -> None:
+        # the roster sync query returns "roles" as a string, so construct our test one that way
+        roster_sync_user = Roster(
+            email_address="user_in_sync_query@testdomain.com",
+            state_code="US_XX",
+            role="SUPERVISION_OFFICER",
+            roles="SUPERVISION_OFFICER",
+        )
+        current_user = generate_fake_user_overrides(
+            email="user_in_sync_query@testdomain.com",
+            region_code="US_XX",
+            role="supervision_leadership",
+            roles=["supervision_leadership"],
+        )
+
+        expected_updates = ["SUPERVISION_OFFICER", "supervision_leadership"]
+        self.assertEqual(
+            get_role_updates(current_user, roster_sync_user), expected_updates
+        )
+
+    def test_get_role_updates_multiple_roles(self) -> None:
+        # the roster sync query returns "roles" as a string, so construct our test one that way
+        roster_sync_user = Roster(
+            email_address="user_in_sync_query@testdomain.com",
+            state_code="US_XX",
+            role="SUPERVISION_OFFICER",
+            roles="SUPERVISION_OFFICER",
+        )
+        current_user = generate_fake_user_overrides(
+            email="user_in_sync_query@testdomain.com",
+            region_code="US_XX",
+            role="supervision_leadership",
+            roles=["supervision_leadership", "supervision_staff", "tt group"],
+        )
+
+        expected_updates = ["SUPERVISION_OFFICER", "supervision_leadership", "tt group"]
+        self.assertEqual(
+            get_role_updates(current_user, roster_sync_user), expected_updates
+        )
+
+    def test_get_role_updates_unknown_role(self) -> None:
+        # the roster sync query returns "roles" as a string, so construct our test one that way
+        roster_sync_user = Roster(
+            email_address="user_in_sync_query@testdomain.com",
+            state_code="US_XX",
+            role="UNKNOWN",
+            roles="UNKNOWN",
+        )
+        current_user = generate_fake_user_overrides(
+            email="user_in_sync_query@testdomain.com",
+            region_code="US_XX",
+            role="supervision_staff",
+            roles=["supervision_leadership", "supervision_staff"],
+        )
+
+        expected_updates = ["supervision_leadership", "supervision_staff"]
+        self.assertEqual(
+            get_role_updates(current_user, roster_sync_user), expected_updates
+        )
+
+    def test_find_and_handle_diffs(self) -> None:
+        self.session.add_all(
+            [
+                self.user_to_delete_both_roster,
+                self.user_to_delete_uo_only,
+                self.user_in_sync_query,
+                self.recently_logged_in_user_uo,
+                self.recently_logged_in_user_roster,
+                self.recently_created_user,
+                self.user_with_equivalent_role,
+                self.user_with_different_role,
+            ]
+        )
+        # the roster sync query returns "roles" as a string, so construct our test ones that way
+        roster_sync_users = [
+            Roster(
+                email_address="user_in_sync_query@testdomain.com",
+                state_code="US_XX",
+                role="UNKNOWN",
+                roles="UNKNOWN",
+            ),
+            Roster(
+                email_address="user_with_equivalent_role@testdomain.com",
+                state_code="US_XX",
+                role="SUPERVISION_OFFICER",
+                roles="SUPERVISION_OFFICER",
+            ),
+            Roster(
+                email_address="user_with_different_role@testdomain.com",
+                state_code="US_XX",
+                role="SUPERVISION_OFFICER",
+                roles="SUPERVISION_OFFICER",
+            ),
+        ]
+        self.snapshot.assert_match(find_and_handle_diffs(self.session, roster_sync_users, "US_XX"), name="test_find_and_handle_diffs")  # type: ignore[attr-defined]
+
     @patch("recidiviz.tools.auth.prep_roster_sync.prompt_for_confirmation")
     @patch("recidiviz.tools.auth.prep_roster_sync.get_roster_sync_output")
     @patch(
@@ -447,17 +591,32 @@ class PrepRosterSyncTest(TestCase):
                 self.recently_logged_in_user_uo,
                 self.recently_logged_in_user_roster,
                 self.recently_created_user,
+                self.user_with_equivalent_role,
+                self.user_with_different_role,
             ]
         )
 
-        # Assuming roster sync returns 1 of our users
+        # Assuming roster sync returns 3 of our users
         roster_sync_users: list[Roster] = [
-            generate_fake_rosters(
-                email="user_in_sync_query@testdomain.com",
-                region_code="US_XX",
+            # the roster sync query returns "roles" as a string, so construct our test ones that way
+            Roster(
+                email_address="user_in_sync_query@testdomain.com",
+                state_code="US_XX",
                 role="leadership_role",
-                roles=["leadership_role"],
-            )
+                roles="leadership_role",
+            ),
+            Roster(
+                email_address="user_with_equivalent_role@testdomain.com",
+                state_code="US_XX",
+                role="SUPERVISION_OFFICER",
+                roles="SUPERVISION_OFFICER",
+            ),
+            Roster(
+                email_address="user_with_different_role@testdomain.com",
+                state_code="US_XX",
+                role="SUPERVISION_OFFICER",
+                roles="SUPERVISION_OFFICER",
+            ),
         ]
         mock_roster_sync_output.return_value = roster_sync_users
 
@@ -479,17 +638,21 @@ class PrepRosterSyncTest(TestCase):
 
         # We expect the user who will be synced, the user who was added recently, and the user who
         # logged in recently to continue to exist as they were before.
+        # We also expect the users with diffs to have overrides.
         self.assertEqual(
             {user.email_address for user in new_overrides},
             {
                 "user_in_sync_query@testdomain.com",
                 "recently_created_user@testdomain.com",
                 "recently_logged_in_user@testdomain.com",
+                "user_with_different_role@testdomain.com",
+                "user_with_equivalent_role@testdomain.com",
             },
         )
 
-        # Also double check that the values match our expectations- specifically,
-        # recently_logged_in_user@testdomain.com should have the merged value in UserOverride
+        # Also double check that the values match our expectations:
+        # - recently_logged_in_user@testdomain.com should have the merged value in UserOverride
+        # - the users with role diffs should have the correct roles
         self.snapshot.assert_match(new_roster, name="test_full_roster")  # type: ignore[attr-defined]
         self.snapshot.assert_match(new_overrides, name="test_full_user_override")  # type: ignore[attr-defined]
 
@@ -510,17 +673,32 @@ class PrepRosterSyncTest(TestCase):
                 self.recently_logged_in_user_uo,
                 self.recently_logged_in_user_roster,
                 self.recently_created_user,
+                self.user_with_equivalent_role,
+                self.user_with_different_role,
             ]
         )
 
-        # Assuming roster sync returns 1 of our users
+        # Assuming roster sync returns 3 of our users
         roster_sync_users: list[Roster] = [
-            generate_fake_rosters(
-                email="user_in_sync_query@testdomain.com",
-                region_code="US_XX",
+            # the roster sync query returns "roles" as a string, so construct our test ones that way
+            Roster(
+                email_address="user_in_sync_query@testdomain.com",
+                state_code="US_XX",
                 role="leadership_role",
-                roles=["leadership_role"],
-            )
+                roles="leadership_role",
+            ),
+            Roster(
+                email_address="user_with_equivalent_role@testdomain.com",
+                state_code="US_XX",
+                role="SUPERVISION_OFFICER",
+                roles="SUPERVISION_OFFICER",
+            ),
+            Roster(
+                email_address="user_with_different_role@testdomain.com",
+                state_code="US_XX",
+                role="SUPERVISION_OFFICER",
+                roles="SUPERVISION_OFFICER",
+            ),
         ]
         mock_roster_sync_output.return_value = roster_sync_users
 
@@ -567,17 +745,32 @@ class PrepRosterSyncTest(TestCase):
                 self.recently_logged_in_user_uo,
                 self.recently_logged_in_user_roster,
                 self.recently_created_user,
+                self.user_with_equivalent_role,
+                self.user_with_different_role,
             ]
         )
 
-        # Assuming roster sync returns 1 of our users
+        # Assuming roster sync returns 3 of our users
         roster_sync_users: list[Roster] = [
-            generate_fake_rosters(
-                email="user_in_sync_query@testdomain.com",
-                region_code="US_XX",
+            # the roster sync query returns "roles" as a string, so construct our test ones that way
+            Roster(
+                email_address="user_in_sync_query@testdomain.com",
+                state_code="US_XX",
                 role="leadership_role",
-                roles=["leadership_role"],
-            )
+                roles="leadership_role",
+            ),
+            Roster(
+                email_address="user_with_equivalent_role@testdomain.com",
+                state_code="US_XX",
+                role="SUPERVISION_OFFICER",
+                roles="SUPERVISION_OFFICER",
+            ),
+            Roster(
+                email_address="user_with_different_role@testdomain.com",
+                state_code="US_XX",
+                role="SUPERVISION_OFFICER",
+                roles="SUPERVISION_OFFICER",
+            ),
         ]
         mock_roster_sync_output.return_value = roster_sync_users
 
