@@ -262,9 +262,7 @@ class SpreadsheetInterface:
             system=spreadsheet.system, agency=agency, session=session
         )
 
-        xls, file_name = workbook_standardizer.standardize_workbook(
-            file=file, file_name=file_name
-        )
+        xls = workbook_standardizer.standardize_workbook(file=file, file_name=file_name)
 
         uploader = WorkbookUploader(
             agency=agency,
@@ -280,7 +278,6 @@ class SpreadsheetInterface:
         ) = uploader.upload_workbook(
             session=session,
             xls=xls,
-            filename=file_name,
             upload_method=upload_method,
         )
         is_ingest_successful = all(

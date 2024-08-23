@@ -45,6 +45,10 @@ class UploadMethod(enum.Enum):
     AUTOMATED_BULK_UPLOAD = "AUTOMATED_BULK_UPLOAD"
 
 
+# Column headers for single-page upload.
+BREAKDOWN_CATEGORY = "breakdown_category"
+BREAKDOWN = "breakdown"
+
 # Used to infer agency_id from bucket name during Automatic Upload
 AUTOMATIC_UPLOAD_BUCKET_REGEX = re.compile(r".*-ingest-agency-(?P<agency_id>[0-9]+)")
 

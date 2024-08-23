@@ -133,7 +133,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                     agency=prosecution_agency,
                     session=session,
                 )
-                xls, file_name = standardizer.standardize_workbook(
+                xls = standardizer.standardize_workbook(
                     file=file.read(), file_name=file_name
                 )
             workbook_uploader = WorkbookUploader(
@@ -146,7 +146,6 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             _, metric_key_to_errors = workbook_uploader.upload_workbook(
                 session=session,
                 xls=xls,
-                filename=file_name,
                 upload_method=UploadMethod.BULK_UPLOAD,
             )
 
@@ -198,7 +197,6 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             workbook_uploader.upload_workbook(
                 session=session,
                 xls=pd.ExcelFile(file_path),
-                filename=file_path,
                 upload_method=UploadMethod.BULK_UPLOAD,
             )
 
@@ -257,7 +255,6 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             workbook_uploader.upload_workbook(
                 session=session,
                 xls=pd.ExcelFile(excel_file_path),
-                filename=excel_file_path,
                 upload_method=UploadMethod.BULK_UPLOAD,
             )
 
@@ -302,7 +299,6 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             workbook_uploader.upload_workbook(
                 session=session,
                 xls=pd.ExcelFile(file_path),
-                filename=file_path,
                 upload_method=UploadMethod.BULK_UPLOAD,
             )
 
@@ -337,7 +333,6 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             workbook_uploader.upload_workbook(
                 session=session,
                 xls=pd.ExcelFile(file_path),
-                filename=file_path,
                 upload_method=UploadMethod.BULK_UPLOAD,
             )
 
@@ -370,7 +365,6 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             workbook_uploader.upload_workbook(
                 session=session,
                 xls=pd.ExcelFile(file_path),
-                filename=file_path,
                 upload_method=UploadMethod.BULK_UPLOAD,
             )
             reports = ReportInterface.get_reports_by_agency_id(
@@ -622,7 +616,6 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             workbook_uploader.upload_workbook(
                 session=session,
                 xls=pd.ExcelFile(file_path),
-                filename=file_path,
                 upload_method=UploadMethod.BULK_UPLOAD,
             )
 
@@ -716,7 +709,6 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             _, metric_key_to_errors = workbook_uploader.upload_workbook(
                 session=session,
                 xls=pd.ExcelFile(excel_file_path),
-                filename=excel_file_path,
                 upload_method=UploadMethod.BULK_UPLOAD,
             )
 
@@ -764,7 +756,6 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             _, metric_key_to_errors = workbook_uploader.upload_workbook(
                 session=session,
                 xls=pd.ExcelFile(excel_file_path),
-                filename=excel_file_path,
                 upload_method=UploadMethod.BULK_UPLOAD,
             )
 
@@ -810,7 +801,6 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             _, metric_key_to_errors = workbook_uploader.upload_workbook(
                 session=session,
                 xls=pd.ExcelFile(file_path),
-                filename=file_path,
                 upload_method=UploadMethod.BULK_UPLOAD,
             )
             # There should be no errors because calls for service metric is missing
@@ -858,7 +848,6 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             metric_key_to_datapoint_jsons, _ = workbook_uploader.upload_workbook(
                 session=session,
                 xls=pd.ExcelFile(file_path),
-                filename=file_path,
                 upload_method=UploadMethod.BULK_UPLOAD,
             )
 
@@ -917,7 +906,6 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             _, metric_key_to_errors = workbook_uploader.upload_workbook(
                 session=session,
                 xls=pd.ExcelFile(file_path),
-                filename=file_path,
                 upload_method=UploadMethod.BULK_UPLOAD,
             )
             self.assertEqual(len(metric_key_to_errors), 3)
@@ -966,7 +954,6 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             _, metric_key_to_errors = workbook_uploader.upload_workbook(
                 session=session,
                 xls=pd.ExcelFile(file_path),
-                filename=file_path,
                 upload_method=UploadMethod.BULK_UPLOAD,
             )
             self.assertEqual(len(metric_key_to_errors), 8)
@@ -1026,7 +1013,6 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             workbook_uploader.upload_workbook(
                 session=session,
                 xls=pd.ExcelFile(file_path),
-                filename=file_path,
                 upload_method=UploadMethod.BULK_UPLOAD,
             )
             # Make sure reports were created
@@ -1046,7 +1032,6 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             workbook_uploader.upload_workbook(
                 session=session,
                 xls=pd.ExcelFile(file_path),
-                filename=file_path,
                 upload_method=UploadMethod.BULK_UPLOAD,
             )
             session.commit()
@@ -1069,7 +1054,6 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             workbook_uploader.upload_workbook(
                 session=session,
                 xls=pd.ExcelFile(file_path),
-                filename=file_path,
                 upload_method=UploadMethod.BULK_UPLOAD,
             )
             session.commit()
@@ -1102,7 +1086,6 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             workbook_uploader.upload_workbook(
                 session=session,
                 xls=pd.ExcelFile(file_path),
-                filename=file_path,
                 upload_method=UploadMethod.BULK_UPLOAD,
             )
             session.commit()
@@ -1133,7 +1116,6 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             workbook_uploader.upload_workbook(
                 session=session,
                 xls=pd.ExcelFile(file_path),
-                filename=file_path,
                 upload_method=UploadMethod.BULK_UPLOAD,
             )
             session.commit()
@@ -1177,7 +1159,6 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             workbook_uploader.upload_workbook(
                 session=session,
                 xls=pd.ExcelFile(file_path),
-                filename=file_path,
                 upload_method=UploadMethod.BULK_UPLOAD,
             )
             reports = ReportInterface.get_reports_by_agency_id(
@@ -1202,7 +1183,6 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             workbook_uploader.upload_workbook(
                 session=session,
                 xls=pd.ExcelFile(file_path),
-                filename=file_path,
                 upload_method=UploadMethod.BULK_UPLOAD,
             )
             self.assertEqual(len(workbook_uploader.updated_reports), 0)
@@ -1217,7 +1197,6 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             workbook_uploader.upload_workbook(
                 session=session,
                 xls=pd.ExcelFile(file_path),
-                filename=file_path,
                 upload_method=UploadMethod.BULK_UPLOAD,
             )
             reports = ReportInterface.get_reports_by_agency_id(
@@ -1271,7 +1250,6 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             workbook_uploader.upload_workbook(
                 session=session,
                 xls=pd.ExcelFile(file_path),
-                filename=file_path,
                 upload_method=UploadMethod.BULK_UPLOAD,
             )
             super_agency_reports = ReportInterface.get_reports_by_agency_id(
@@ -1296,10 +1274,24 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             prosecution_agency = AgencyInterface.get_agency_by_id(
                 session=session, agency_id=self.prosecution_agency_id
             )
+            file_name = "test_single_page_combined.xlsx"
             file_path = create_combined_excel_file(
                 system=schema.System.PROSECUTION,
-                file_name="test_single_page_combined.xlsx",
+                file_name=file_name,
             )
+            with open(
+                file_path,
+                mode="rb",
+            ) as file:
+                standardizer = WorkbookStandardizer(
+                    system=schema.System.PROSECUTION,
+                    agency=prosecution_agency,
+                    session=session,
+                )
+                xls = standardizer.standardize_workbook(
+                    file=file.read(), file_name=file_name
+                )
+
             workbook_uploader = WorkbookUploader(
                 system=schema.System.PROSECUTION,
                 agency=prosecution_agency,
@@ -1308,8 +1300,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             )
             workbook_uploader.upload_workbook(
                 session=session,
-                xls=pd.ExcelFile(file_path),
-                filename=file_path,
+                xls=xls,
                 upload_method=UploadMethod.BULK_UPLOAD,
             )
             self.assertEqual(len(workbook_uploader.metric_key_to_errors), 0)
@@ -1360,3 +1351,4 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                 ].dimension_to_value[ProsecutionStaffType.LEGAL_STAFF],
                 10,
             )
+        os.remove(file_name)

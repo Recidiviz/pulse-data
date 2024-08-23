@@ -18,7 +18,6 @@
 
 import datetime
 import logging
-import math
 from collections import defaultdict
 from itertools import groupby
 from typing import Any, Dict, List, Optional, Set, Tuple
@@ -27,9 +26,6 @@ import pandas as pd
 from sqlalchemy.orm import Session
 
 from recidiviz.common.text_analysis import TextAnalyzer, TextMatchingConfiguration
-from recidiviz.justice_counts.bulk_upload.bulk_upload_helpers import (
-    separate_file_name_from_system,
-)
 from recidiviz.justice_counts.bulk_upload.spreadsheet_uploader import (
     SpreadsheetUploader,
 )
@@ -40,9 +36,6 @@ from recidiviz.justice_counts.report import ReportInterface
 from recidiviz.justice_counts.types import DatapointJson
 from recidiviz.justice_counts.utils.constants import AUTOMATIC_UPLOAD_ID, UploadMethod
 from recidiviz.justice_counts.utils.datapoint_utils import get_value
-from recidiviz.justice_counts.utils.metric_breakdown_to_sheet_name import (
-    METRIC_BREAKDOWN_PAIR_TO_SHEET_NAME,
-)
 from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.persistence.database.schema.justice_counts.schema import ReportStatus
 
@@ -113,7 +106,6 @@ class WorkbookUploader:
         self,
         session: Session,
         xls: pd.ExcelFile,
-        filename: Optional[str],
         upload_method: UploadMethod,
     ) -> Tuple[
         Dict[str, List[DatapointJson]],
@@ -172,17 +164,6 @@ class WorkbookUploader:
         # infer an aggregate value when one is explicitly given.
         # Note that the regular sorting will work for this case, since
         # foobar will always come before foobar_by_xxx alphabetically.
-
-        # If there is a single sheet in the workbook, and the sheet has a column called "metric",
-        # we are assuming it is a single-page template with data for multiple metrics.
-        # In this case, we convert it to the standard multi-page template.
-        if len(xls.sheet_names) == 1:
-            df_combined = pd.read_excel(xls)
-            if "metric" in df_combined.columns:
-                xls = self._transform_combined_metric_file_upload(
-                    df=df_combined,
-                    filename=filename,
-                )
 
         actual_sheet_names = sorted(xls.sheet_names)
 
@@ -343,114 +324,3 @@ class WorkbookUploader:
                     ),
                     status=ReportStatus.DRAFT.value,
                 )
-
-    def _transform_combined_metric_file_upload(
-        self,
-        df: pd.DataFrame,
-        filename: Optional[str],
-    ) -> pd.ExcelFile:
-        """
-        This function transforms an uploaded file that contains only 1 sheet.
-        In this case, the file contains a single sheet that includes data for
-        more than 1 metric (distinguished by the 'metric' column). This function breaks
-        the data up by metric and breakdown_category (if present). It then exports the
-        data into a temporary excel file that contains one sheet per metric/breakdown.
-        It then loads the new temporary file and returns the xls to continue the rest of
-        the Bulk Upload process.
-        """
-        filename = (
-            separate_file_name_from_system(file_name=filename)
-            if filename is not None
-            else ""
-        )
-        with pd.ExcelWriter(  # pylint: disable=abstract-class-instantiated
-            filename
-        ) as writer:
-            for metric in df["metric"].unique():
-                metric_df = df[df["metric"] == metric]
-                if "breakdown_category" not in df.columns:
-                    metric_df = self._process_metric_df(df=metric_df)
-                    metric_df.to_excel(writer, sheet_name=metric, index=False)
-                    continue
-
-                for breakdown_category in metric_df["breakdown_category"].unique():
-                    # example breakdown_category: funding_type, biological_sex, race/ethnicity
-                    if isinstance(breakdown_category, float) and math.isnan(
-                        breakdown_category
-                    ):
-                        # If the value for the breakdown_category column is empty (i.e. nan)
-                        # that means this an aggregate metric row
-                        aggregate_df = metric_df[
-                            metric_df["breakdown_category"].isnull()
-                        ]
-                        aggregate_df = self._process_metric_df(df=aggregate_df)
-                        aggregate_df.to_excel(writer, sheet_name=metric, index=False)
-                    else:
-                        breakdown_df = metric_df[
-                            metric_df["breakdown_category"] == breakdown_category
-                        ]
-                        try:
-                            # Need to get proper/expected sheet name for breakdown
-                            sheet_name = METRIC_BREAKDOWN_PAIR_TO_SHEET_NAME[
-                                metric, breakdown_category
-                            ]
-                            breakdown_df = self._process_metric_df(
-                                df=breakdown_df, breakdown_category=breakdown_category
-                            )
-                            breakdown_df.to_excel(
-                                writer, sheet_name=sheet_name, index=False
-                            )
-                        except KeyError:
-                            # Don't raise error if the we cannot find the sheet name based
-                            # upon the metric / breakdown category. The Category Not Recognized Warning
-                            # will be added to metric_key_to_error in the fuzzy_match_against_options
-                            # method.
-                            continue
-
-        xls = pd.ExcelFile(filename)
-        return xls
-
-    def _process_metric_df(
-        self,
-        df: pd.DataFrame,
-        breakdown_category: Optional[str] = None,
-    ) -> pd.DataFrame:
-        """
-        Helper function to process/convert a dataframe from single-page bulk upload.
-        This function drops and renames columns so that they align with what the rest
-        of the Bulk Upload flow expects.
-        """
-        # Drop any columns in which the entire column is empty
-        # Examples of this:
-        # - month column for annual metrics
-        # - breakdown_category and breakdown columns for aggregate metrics
-        df = df.dropna(
-            axis=1,
-            how="all",
-        )
-        # Drop metric column
-        # We already used this to break up the single sheet into multiple sheets
-        # (1 sheet for each metric)
-        # This column would cause an error further in the Bulk Upload flow if kept
-        df = df.drop(
-            labels=["metric"],
-            axis=1,
-        )
-        # Drop breakdown_category column
-        # We already used this column to get the appropriate sheet_name for the given
-        # (metric, breakdown) pair
-        # This column would cause an error further in the Bulk Upload flow if kept
-        if "breakdown_category" in df.columns:
-            df = df.drop(
-                labels=["breakdown_category"],
-                axis=1,
-            )
-        # Rename breakdown_value, aggregate_value, and breakdown columns if present
-        # The rest of the Bulk Upload flow will expect 'value' and the breakdown_category
-        df = df.rename(
-            {
-                "breakdown": breakdown_category,
-            },
-            axis=1,
-        )
-        return df
