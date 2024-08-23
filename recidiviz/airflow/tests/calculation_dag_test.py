@@ -727,6 +727,8 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
             self.recidiviz_dataflow_operator_patcher.start()
         )
 
+        self.found_pipelines_to_fail: list[tuple[StateCode, str]] = []
+
     def tearDown(self) -> None:
         super().tearDown()
         self.environment_patcher.stop()
@@ -740,6 +742,27 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
         self.cloud_sql_query_operator_patcher.stop()
         self.recidiviz_dataflow_operator_patcher.stop()
 
+    def _mock_fail_dataflow_pipeline(
+        self, state_code: StateCode, pipeline_name: str
+    ) -> None:
+        """Fails the node associated with the given state/pipeline."""
+
+        def fail_us_yy_ingest_operator_constructor(
+            *args: Any, **kwargs: Any
+        ) -> BaseOperator:
+            pipeline_params = kwargs["body"].operator.op_kwargs["params_no_overrides"]
+            if (
+                state_code == StateCode(pipeline_params.state_code.upper())
+                and pipeline_name == pipeline_params.pipeline
+            ):
+                self.found_pipelines_to_fail.append((state_code, pipeline_name))
+                return fake_failing_operator_constructor(*args, **kwargs)
+            return fake_operator_constructor(*args, **kwargs)
+
+        self.mock_dataflow_operator_constructor.side_effect = (
+            fail_us_yy_ingest_operator_constructor
+        )
+
     def test_calculation_dag(self) -> None:
         from recidiviz.airflow.dags.calculation_dag import create_calculation_dag
 
@@ -752,6 +775,19 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
                 run_conf={
                     "ingest_instance": "PRIMARY",
                 },
+                expected_success_task_id_regexes=[
+                    r"^initialize_dag.*",
+                    r"^update_big_query_table_schemata",
+                    r"^bq_refresh.*",
+                    r"^ingest.*",
+                    r"^update_state",
+                    r"^normalization.*",
+                    r"^update_normalized_state",
+                    r"^post_normalization_pipelines\.[a-zA-Z]*",
+                    r"^update_managed_views_all",
+                    r"^validations.*",
+                    r"^metric_exports.*",
+                ],
             )
 
     def test_calculation_dag_with_state(self) -> None:
@@ -767,10 +803,13 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
                     "ingest_instance": "PRIMARY",
                     "state_code_filter": "US_XX",
                 },
+                expected_success_task_id_regexes=[
+                    r"^initialize_dag.handle_params_check",
+                ],
                 expected_failure_task_id_regexes=[
                     # This fails because no sandbox prefix arg is set when there is a
                     # state_code_filter.
-                    r"verify_parameters",
+                    r"^initialize_dag.verify_parameters",
                 ],
                 expected_skipped_task_id_regexes=[
                     r"wait_to_continue_or_cancel",
@@ -796,16 +835,9 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
     def test_calculation_dag_fail_single_ingest_pipeline(self) -> None:
         from recidiviz.airflow.dags.calculation_dag import create_calculation_dag
 
-        def fail_us_yy_ingest_operator_constructor(
-            *args: Any, **kwargs: Any
-        ) -> BaseOperator:
-            task_id = kwargs["body"].operator.task_id
-            if "us_yy" in task_id:
-                return fake_failing_operator_constructor(*args, **kwargs)
-            return fake_operator_constructor(*args, **kwargs)
-
-        self.mock_dataflow_operator_constructor.side_effect = (
-            fail_us_yy_ingest_operator_constructor
+        self._mock_fail_dataflow_pipeline(
+            state_code=StateCode.US_YY,
+            pipeline_name="ingest",
         )
 
         dag = create_calculation_dag()
@@ -825,6 +857,126 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
                 ],
                 # No downstream processes are skipped!
                 expected_skipped_task_id_regexes=[],
+                expected_success_task_id_regexes=[
+                    r"^initialize_dag.*",
+                    r"^update_big_query_table_schemata",
+                    r"bq_refresh.*",
+                    r"^ingest.branch_start",
+                    r"^ingest.US_XX_start",
+                    r"^ingest.us_xx_dataflow.*",
+                    r"^ingest.US_YY_start",
+                    r"^ingest.us_yy_dataflow.initialize_dataflow_pipeline.*",
+                    r"^ingest.us_yy_dataflow.us-yy-ingest.create_flex_template.*",
+                    r"^ingest_completed",
+                    r"^update_state",
+                    r"^normalization\.[a-zA-Z]*",
+                    r"^normalization_completed",
+                    r"^update_normalized_state",
+                    r"^post_normalization_pipelines\.[a-zA-Z]*",
+                    r"^update_managed_views_all",
+                    r"^validations.*",
+                    r"^metric_exports.*",
+                ],
+            )
+
+            self.assertEqual(
+                [(StateCode.US_YY, "ingest")], self.found_pipelines_to_fail
+            )
+
+    def test_calculation_dag_fail_single_normalization_pipeline(self) -> None:
+        from recidiviz.airflow.dags.calculation_dag import create_calculation_dag
+
+        self._mock_fail_dataflow_pipeline(
+            state_code=StateCode.US_YY,
+            pipeline_name="comprehensive_normalization",
+        )
+
+        dag = create_calculation_dag()
+
+        with Session(bind=self.engine) as session:
+            self.run_dag_test(
+                dag,
+                session=session,
+                run_conf={
+                    "ingest_instance": "PRIMARY",
+                },
+                expected_failure_task_id_regexes=[
+                    r"^normalization.us-yy-normalization.run_pipeline",
+                    r"^normalization.branch_end",
+                ],
+                # No downstream processes are skipped!
+                expected_skipped_task_id_regexes=[],
+                expected_success_task_id_regexes=[
+                    r"^initialize_dag.*",
+                    r"^update_big_query_table_schemata",
+                    r"bq_refresh.*",
+                    r"^ingest.*",
+                    r"^update_state",
+                    r"normalization.branch_start",
+                    r"normalization.US_XX_start",
+                    r"^normalization.us-xx-normalization.*",
+                    r"normalization.US_YY_start",
+                    r"normalization.us-yy-normalization.create_flex_template",
+                    r"^normalization_completed",
+                    r"^update_normalized_state",
+                    r"^post_normalization_pipelines\.[a-zA-Z]*",
+                    r"^update_managed_views_all",
+                    r"^validations.*",
+                    r"^metric_exports.*",
+                ],
+            )
+            self.assertEqual(
+                [(StateCode.US_YY, "comprehensive_normalization")],
+                self.found_pipelines_to_fail,
+            )
+
+    def test_calculation_dag_fail_single_metric_pipeline(self) -> None:
+        from recidiviz.airflow.dags.calculation_dag import create_calculation_dag
+
+        self._mock_fail_dataflow_pipeline(
+            state_code=StateCode.US_XX,
+            pipeline_name="pipeline_no_limit",
+        )
+
+        dag = create_calculation_dag()
+
+        with Session(bind=self.engine) as session:
+            self.run_dag_test(
+                dag,
+                session=session,
+                run_conf={
+                    "ingest_instance": "PRIMARY",
+                },
+                expected_failure_task_id_regexes=[
+                    r"^post_normalization_pipelines.US_XX_dataflow_pipelines.full-us-xx-pipeline-no-limit.run_pipeline",
+                    r"^post_normalization_pipelines.branch_end",
+                    # TODO(#32596): A single state-specific metric pipeline failure
+                    #  should not make the whole rest of the DAG fail.
+                    r"^update_managed_views_all",
+                    r"^metric_exports.*",
+                    r"^validations.*",
+                ],
+                expected_success_task_id_regexes=[
+                    r"^initialize_dag.*",
+                    r"^update_big_query_table_schemata",
+                    r"^bq_refresh.*",
+                    r"^ingest.*",
+                    r"^update_state",
+                    r"^normalization.*",
+                    r"^update_normalized_state",
+                    r"^post_normalization_pipelines.branch_start",
+                    # All metric pipelines for other states run
+                    r"^post_normalization_pipelines.US_YY.*",
+                    r"^post_normalization_pipelines.US_XX_start",
+                    # Completely different pipeline for US_XX runs
+                    r"^post_normalization_pipelines.US_XX_dataflow_pipelines.us-xx-pipeline-with-limit-36.*",
+                    r"^post_normalization_pipelines.US_XX_dataflow_pipelines.full-us-xx-pipeline-no-limit.create_flex_template",
+                ],
+            )
+
+            self.assertEqual(
+                [(StateCode.US_XX, "pipeline_no_limit")],
+                self.found_pipelines_to_fail,
             )
 
     def test_calculation_dag_fails_downstream_of_schema_update(self) -> None:
@@ -874,11 +1026,12 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
                     r"ingest_completed",
                     r"normalization_completed",
                 ],
-                check_test_matches_all_task_ids=True,
             )
 
     def test_bq_refresh_does_not_block_view_update(self) -> None:
-        """Tests that OPERATIONS and CASE TRIAGE failure doesn't block the view update."""
+        """Tests that OPERATIONS and CASE TRIAGE failure doesn't block the view update
+        or other downstream processes.
+        """
         from recidiviz.airflow.dags.calculation_dag import create_calculation_dag
 
         self.mock_kubernetes_pod_operator_constructor.side_effect = lambda **kwargs: (
@@ -903,6 +1056,17 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
                 },
                 expected_failure_task_id_regexes=[
                     r"bq_refresh.refresh_bq_dataset_",
+                ],
+                expected_success_task_id_regexes=[
+                    r"^initialize_dag.*",
+                    r"^update_big_query_table_schemata",
+                    r"bq_refresh.bq_refresh_completed",
+                    r"^ingest.*",
+                    r"^update_state",
+                    r"^normalization.*",
+                    r"^update_normalized_state",
+                    r"^post_normalization_pipelines\.[a-zA-Z]*",
+                    r"^update_managed_views_all",
                 ],
             )
 

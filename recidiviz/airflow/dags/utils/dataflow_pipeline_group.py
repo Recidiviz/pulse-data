@@ -93,13 +93,13 @@ def build_dataflow_pipeline_task_group(
 
     Returns both the overall task group and the actual dataflow pipeline task.
     """
-    params_no_overrides = delegate.get_default_parameters()
     with TaskGroup(
-        group_id=params_no_overrides.job_name,
+        group_id=delegate.get_default_parameters().job_name,
     ) as dataflow_pipeline_group:
 
         @task(task_id=CREATE_FLEX_TEMPLATE_TASK_ID)
         def create_flex_template(
+            params_no_overrides: PipelineParameters,
             upstream_task_outputs_map: Dict[str, Any],
             *,
             dag_run: Optional[DagRun] = None,
@@ -130,12 +130,13 @@ def build_dataflow_pipeline_task_group(
 
         run_pipeline = RecidivizDataflowFlexTemplateOperator(
             task_id=DATAFLOW_OPERATOR_TASK_ID,
-            location=params_no_overrides.region,
+            location=delegate.get_default_parameters().region,
             body=create_flex_template(
-                {
+                params_no_overrides=delegate.get_default_parameters(),
+                upstream_task_outputs_map={
                     operator.task_id: operator.output
                     for operator in delegate.get_input_operators()
-                }
+                },
             ),
             project_id=get_project_id(),
         )

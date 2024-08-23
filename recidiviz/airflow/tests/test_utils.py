@@ -129,7 +129,6 @@ class AirflowIntegrationTest(unittest.TestCase):
         expected_skipped_task_id_regexes: Optional[List[str]] = None,
         expected_success_task_id_regexes: Optional[List[str]] = None,
         skip_checking_task_statuses: Optional[bool] = False,
-        check_test_matches_all_task_ids: Optional[bool] = False,
     ) -> DagTestResult:
         """
         A Modified version of 'dag.test' that runs the full dag and allows
@@ -138,15 +137,6 @@ class AirflowIntegrationTest(unittest.TestCase):
         of the given regex patterns in expected_*_task_id_regexes.
         Failure messages are stored in self.failure_messages.
         """
-        if check_test_matches_all_task_ids and not (
-            expected_failure_task_id_regexes
-            or expected_skipped_task_id_regexes
-            or expected_success_task_id_regexes
-        ):
-            raise ValueError(
-                "This test is marked to check against all task IDs, but no expected regex patterns have been passed in"
-            )
-
         failure_messages: Dict[str, str] = {}
 
         def add_logger_if_needed(ti: TaskInstance) -> None:
@@ -214,7 +204,6 @@ class AirflowIntegrationTest(unittest.TestCase):
                 expected_failure_task_id_regexes,
                 expected_skipped_task_id_regexes,
                 expected_success_task_id_regexes,
-                check_test_matches_all_task_ids,
             )
 
         return DagTestResult(self._get_dag_run_state(session), failure_messages)
@@ -227,12 +216,12 @@ class AirflowIntegrationTest(unittest.TestCase):
         expected_failure_regexes: Optional[List[str]] = None,
         expected_skipped_regexes: Optional[List[str]] = None,
         expected_success_regexes: Optional[List[str]] = None,
-        check_test_matches_all_task_ids: Optional[bool] = False,
     ) -> None:
         """
-        Check that the task statuses are as expected for |run_id|. If expected_failure_ids
-        or expected_skipped_ids are provided, then the task statuses must match the
-        expected statuses. Otherwise, the task statuses must be SUCCESS.
+        Check that the task statuses are as expected for |run_id|. If
+        expected_failure_ids or expected_skipped_ids are provided, then the task
+        statuses must match the expected statuses. Otherwise, the task statuses must be
+        SUCCESS.
         """
         expected_failure_task_ids = _find_task_ids_for_given_search_regexes(
             dag, expected_failure_regexes or []
@@ -240,22 +229,31 @@ class AirflowIntegrationTest(unittest.TestCase):
         expected_skipped_task_ids = _find_task_ids_for_given_search_regexes(
             dag, expected_skipped_regexes or []
         )
-        expected_success_task_ids = _find_task_ids_for_given_search_regexes(
-            dag, expected_success_regexes or []
+        expected_success_task_ids = (
+            _find_task_ids_for_given_search_regexes(dag, expected_success_regexes)
+            if expected_success_regexes is not None
+            else None
         )
         if inter := expected_failure_task_ids.intersection(expected_skipped_task_ids):
             raise ValueError(
-                f"Task ID regexes created failed and skipped task IDs that overlap: {inter}"
+                f"Task ID regexes created failed and skipped task IDs that overlap: "
+                f"{inter}"
             )
-        if inter := expected_failure_task_ids.intersection(expected_success_task_ids):
+        if expected_success_task_ids is not None and (
+            inter := expected_failure_task_ids.intersection(expected_success_task_ids)
+        ):
             raise ValueError(
-                f"Task ID regexes created failed and success task IDs that overlap {inter}"
+                f"Task ID regexes created failed and success task IDs that overlap "
+                f"{inter}"
             )
-        if inter := expected_skipped_task_ids.intersection(expected_success_task_ids):
+        if expected_success_task_ids is not None and (
+            inter := expected_skipped_task_ids.intersection(expected_success_task_ids)
+        ):
             raise ValueError(
-                f"Task ID regexes created skipped and success task IDs that overlap {inter}"
+                f"Task ID regexes created skipped and success task IDs that overlap "
+                f"{inter}"
             )
-        if check_test_matches_all_task_ids:
+        if expected_success_task_ids is not None:
             unmatched_task_ids = set(t.task_id for t in dag.tasks) - (
                 expected_failure_task_ids
                 | expected_skipped_task_ids
@@ -263,7 +261,8 @@ class AirflowIntegrationTest(unittest.TestCase):
             )
             if unmatched_task_ids:
                 raise ValueError(
-                    f"Found task IDs not covered by this test: {','.join(unmatched_task_ids)}"
+                    f"Found task IDs not covered by this test: "
+                    f"{','.join(unmatched_task_ids)}"
                 )
 
         status_errors: List[Exception] = []
@@ -288,24 +287,20 @@ class AirflowIntegrationTest(unittest.TestCase):
                 status_errors.append(
                     ValueError(f"Task [{task_instance.task_id}] failed unexpectedly")
                 )
-            if (
-                task_state == TaskInstanceState.SUCCESS
-                and task_instance.task_id
-                in expected_failure_task_ids | expected_skipped_task_ids
-            ):
-                status_errors.append(
-                    ValueError(f"Task [{task_instance.task_id}] succeeded unexpectedly")
-                )
-            if (
-                task_state == TaskInstanceState.SUCCESS
-                and expected_success_regexes is not None
-                and task_instance.task_id not in expected_success_task_ids
-            ):
-                status_errors.append(
-                    ValueError(
-                        f"Task [{task_instance.task_id}] did not succeed as expected"
+
+            if task_state == TaskInstanceState.SUCCESS:
+                if (
+                    expected_success_task_ids is not None
+                    and task_instance.task_id not in expected_success_task_ids
+                ) or (
+                    task_instance.task_id
+                    in expected_failure_task_ids | expected_skipped_task_ids
+                ):
+                    status_errors.append(
+                        ValueError(
+                            f"Task [{task_instance.task_id}] succeeded unexpectedly"
+                        )
                     )
-                )
 
             if task_state not in [
                 TaskInstanceState.SUCCESS,
