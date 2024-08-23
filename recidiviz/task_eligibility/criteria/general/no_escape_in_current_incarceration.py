@@ -62,6 +62,7 @@ INNER JOIN escape_related_sentences e
   ON cs.person_id = e.person_id
     AND cs.state_code = e.state_code
     AND e.date_imposed BETWEEN cs.start_date AND IFNULL(cs.end_date, '9999-12-31')
+WHERE cs.start_date != cs.end_date
 GROUP BY 1,2,3,4,5
 ORDER BY start_date
 """
@@ -83,6 +84,7 @@ VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = StateAgnosticTaskCr
             description="The most recent escape date",
         ),
     ],
+    meets_criteria_default=True,
 )
 
 if __name__ == "__main__":
