@@ -2703,7 +2703,6 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         uploader.upload_workbook(
             session=self.session,
             xls=pd.ExcelFile(self.law_enforcement_excel_path),
-            filename=self.law_enforcement_excel_file_name,
             upload_method=UploadMethod.BULK_UPLOAD,
         )
         self.session.commit()
@@ -2756,7 +2755,6 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         uploader.upload_workbook(
             session=self.session,
             xls=pd.ExcelFile(self.law_enforcement_excel_path),
-            filename=self.law_enforcement_excel_file_name,
             upload_method=UploadMethod.BULK_UPLOAD,
         )
         self.session.commit()
