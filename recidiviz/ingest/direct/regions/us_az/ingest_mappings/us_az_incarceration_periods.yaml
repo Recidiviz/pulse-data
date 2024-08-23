@@ -261,3 +261,13 @@ output:
                   $not_null: county_jail_location
                 $then: $literal_enum(StateCustodialAuthority.COUNTY)
               - $else: $literal_enum(StateCustodialAuthority.STATE_PRISON)
+          specialized_purpose_for_incarceration:
+            $conditional:
+              - $if:
+                  $in:
+                    $value: admission_reason
+                    $options:
+                      - $literal("SHOCK Incarceration Commitment")
+                      - $literal("SHOCK Incarceration Violator")
+                $then: $literal_enum(StateSpecializedPurposeForIncarceration.SHOCK_INCARCERATION)
+              - $else: $literal_enum(StateSpecializedPurposeForIncarceration.GENERAL)
