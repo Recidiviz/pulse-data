@@ -296,18 +296,18 @@ def parse_staff_caseload_type(raw_text: str) -> Optional[StateStaffCaseloadType]
     who do not have a specialized value in their location have a general caseload."""
     if raw_text:
         if raw_text.upper() in (
-            "ELECTRONIC MONITORING UNIT",
-            "TUCSON ELECTRONIC MONITORING UNIT",
+            "3",  # "ELECTRONIC MONITORING UNIT"
+            "36",  # "TUCSON ELECTRONIC MONITORING UNIT"
         ):
             return StateStaffCaseloadType.ELECTRONIC_MONITORING
-        if raw_text.upper() == "SEX OFFENDER COORDINATION UNIT":
+        if raw_text.upper() == "16":  # "SEX OFFENDER COORDINATION UNIT"
             return StateStaffCaseloadType.SEX_OFFENSE
-        if raw_text.upper() == "WARRANT SERVICE AND HEARINGS UNIT":
+        if raw_text.upper() == "21":  # "WARRANT SERVICE AND HEARINGS UNIT"
             return StateStaffCaseloadType.OTHER_COURT
         if raw_text.upper() in (
-            "SPECIAL SUPERVISION UNIT",
-            "INTERSTATE COMPACT UNIT",
-            "ADULT ADMINISTRATOR OFFICE",
+            "25",  # "SPECIAL SUPERVISION UNIT"
+            "4",  # "INTERSTATE COMPACT UNIT"
+            "27",  # "ADULT ADMINISTRATOR OFFICE"
         ):
             return StateStaffCaseloadType.INTERNAL_UNKNOWN
         return StateStaffCaseloadType.GENERAL
