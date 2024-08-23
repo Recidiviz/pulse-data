@@ -81,13 +81,13 @@ INGESTED_PRODUCT_USERS_QUERY_TEMPLATE = f"""
     state_staff_users AS (
         SELECT
             state_code,
-            email AS email_address,
+            LOWER(email) AS email_address,
             CASE
                 WHEN is_supervision_officer_supervisor THEN "{RosterPredefinedRoles.SUPERVISION_OFFICER_SUPERVISOR.value}"
                 WHEN is_supervision_officer THEN "{RosterPredefinedRoles.SUPERVISION_OFFICER.value}"
                 ELSE "{RosterPredefinedRoles.UNKNOWN.value}"
             END AS roles,
-            supervision_district_id AS district,
+            district,
             external_id,
             given_names AS first_name,
             surname AS last_name,
