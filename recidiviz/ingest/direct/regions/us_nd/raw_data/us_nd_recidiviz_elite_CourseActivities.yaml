@@ -213,3 +213,4 @@ columns:
       Seemingly a code for the address at which the program occurs? Formatted as "98,2XX.00", or blank.
       TODO(#18645): Clarify with ND.
 always_historical_export: False
+update_cadence: IRREGULAR
