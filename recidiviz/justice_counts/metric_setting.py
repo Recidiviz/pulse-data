@@ -129,6 +129,9 @@ class MetricSettingInterface:
             existing_setting.metric_interface = handle_invariants(
                 apply_updates(deepcopy(existing_setting.metric_interface), updates)
             )
+            existing_setting.last_updated = datetime.datetime.now(
+                tz=datetime.timezone.utc
+            )
 
         else:
             session.add(
@@ -136,6 +139,8 @@ class MetricSettingInterface:
                     agency_id=agency.id,
                     metric_definition_key=agency_metric_updates.key,
                     metric_interface=agency_metric_updates.to_storage_json(),
+                    last_updated=datetime.datetime.now(tz=datetime.timezone.utc),
+                    created_at=datetime.datetime.now(tz=datetime.timezone.utc),
                 )
             )
         # Add metric setting history entry.
