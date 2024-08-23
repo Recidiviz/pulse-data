@@ -94,6 +94,7 @@ sanitized_internal_metrics AS (
       CASE
         WHEN state_code IN ('US_MO','US_TN')
           THEN level_1_supervision_location_external_id
+        WHEN state_code = 'US_AZ' THEN UPPER(level_2_supervision_location_external_id)
         ELSE level_2_supervision_location_external_id
       END AS supervising_district_external_id,
   FROM `{{project_id}}.{{materialized_metrics_dataset}}.most_recent_supervision_population_span_metrics_materialized` dataflow
