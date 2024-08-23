@@ -315,6 +315,11 @@ ENTITIES_WITH_EXPECTED_STABLE_COUNTS_OVER_TIME: Dict[str, StableCountsTableConfi
                         date(2023, 11, 1),  # Stale data in staging, no issue in prod
                         date(2023, 12, 1),  # Stale data in staging, no issue in prod
                     ],
+                    StateCode.US_MI: [
+                        date(
+                            2023, 9, 1
+                        ),  # This is the date MI went through a database migration and then violations data started getting entered differently.
+                    ],
                 },
             )
         ]
