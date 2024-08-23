@@ -33,6 +33,7 @@ from recidiviz.persistence.entity.state.entities import (
 from recidiviz.pipelines.normalization.utils.normalization_managers.supervision_period_normalization_manager import (
     StateSpecificSupervisionNormalizationDelegate,
 )
+from recidiviz.utils import environment
 
 
 class UsPaSupervisionNormalizationDelegate(
@@ -59,6 +60,11 @@ class UsPaSupervisionNormalizationDelegate(
         supplied and this new supervision period is implied to be an open period, indicating
         active absconsion.
         """
+        # TODO(#32672): No longer needed in staging because the revised supervision periods view (supervision_periods_v5) gated
+        # to staging now ingests absconsion periods. Remove this entirely when supervision_periods_v5 gets ungated to prod
+        if not environment.in_gcp_production():
+            return supervision_periods
+
         admission_dates = sorted(
             [
                 ip.admission_date
