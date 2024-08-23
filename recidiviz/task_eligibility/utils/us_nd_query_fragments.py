@@ -216,7 +216,6 @@ TRAINING_PROGRAMMING_NOTE_TEXT_REGEX = "|".join(
         "CAREER",
         "EDUCATION",
         "SKILLS",
-        "WORK",
         "CAREER",
     ]
 )
@@ -232,6 +231,7 @@ WORK_NOTE_TEXT_REGEX = "|".join(
         "ASST",
         "JOB",
         "EMPLOYMENT",
+        "WORK",
     ]
 )
 
@@ -258,7 +258,18 @@ def get_program_assignments_as_case_notes(
     SELECT 
         peid.external_id,
         '{criteria}' AS criteria,
-        spa.participation_status AS note_title,
+        CASE 
+            WHEN spa.participation_status = 'IN_PROGRESS' THEN 'In Progress'
+            WHEN spa.participation_status = 'PENDING' THEN 'Pending'
+            WHEN spa.participation_status IN ('DISCHARGED', 
+                                            'DISCHARGED_SUCCESSFUL', 
+                                            'DISCHARGED_UNSUCCESSFUL', 
+                                            'DISCHARGED_SUCCESSFUL_WITH_DISCRETION', 
+                                            'DISCHARGED_OTHER', 
+                                            'DISCHARGED_UNKNOWN') THEN 'Discharged'
+            WHEN spa.participation_status = 'DECEASED' THEN 'Deceased'
+            ELSE 'Unknown Status'
+        END AS note_title,
         CONCAT(
             spa.program_location_id,
             " - ",

@@ -79,6 +79,7 @@ case_notes_cte AS (
     {get_program_assignments_as_case_notes(
         additional_where_clause="REGEXP_CONTAINS(spa.program_id, r'MENTAL HEALTH')", 
         criteria='Mental Health')}
+    QUALIFY ROW_NUMBER() OVER(PARTITION BY peid.external_id, note_title, note_body ORDER BY event_date DESC) = 1
 
     UNION ALL
 
