@@ -17,6 +17,7 @@
 """Tools for cohort-based analysis."""
 
 import datetime
+import warnings
 from typing import Iterable, List, Optional, Union
 
 import matplotlib.patches as mpatches
@@ -38,6 +39,48 @@ def get_month_delta(start_date: datetime.date, end_date: datetime.date) -> int:
     Returns the number of months between two dates
     """
     return calendar_unit_date_diff(start_date, end_date, "months")
+
+
+# helper function for dealing with full observability
+# TODO(#32670): Warn less often once we're comfortable with this functionality
+def _process_full_observability(
+    df: pd.DataFrame,
+    time_to_mature_field: str,
+    time_index: Iterable[int],
+    full_observability: bool,
+    suppress_full_observability_warning: bool,
+) -> pd.DataFrame:
+    """
+    Checks for full observability, optionally issues a warning if there are any cohorts without full observability, and
+    drops those cohorts if full_observability is True.
+    """
+    # mark instances that don't have the full window of time_index available in which an event can occur
+    df["incomplete_observability"] = df[time_to_mature_field] < max(time_index)
+    if full_observability:
+        if (
+            df["incomplete_observability"].any() > 0
+            and not suppress_full_observability_warning
+        ):
+            warnings.warn(
+                "Warning: dropping cohorts that do not have full observability. To suppress this warning, "
+                + "set suppress_full_observability_warning=True."
+            )
+        df = df[~df["incomplete_observability"]]
+        if df.empty:
+            raise ValueError(
+                f"No cohort starts have full observability as of max(`time_index`) = {max(time_index)}."
+            )
+    elif (
+        df["incomplete_observability"].any() > 0
+        and not suppress_full_observability_warning
+    ):
+        warnings.warn(
+            "Warning: some cohort starts do not have full observability. To automatically drop these cohorts from "
+            + "the calculation, set full_observability=True. To suppress this warning, set "
+            + "suppress_full_observability_warning=True."
+        )
+
+    return df
 
 
 def add_time_unit_to_date(
@@ -272,9 +315,10 @@ def gen_cohort_status_df(
     last_day_of_data: Optional[datetime.datetime] = None,
     cohort_attribute_col: Optional[Union[str, List[str]]] = None,
     status_attribute_col: Optional[str] = None,
+    full_observability: bool = False,
+    suppress_full_observability_warning: bool = False,
 ) -> pd.DataFrame:
     # TODO(#23152): Consolidate cohort time at status and cohort event rate functions
-    # TODO(#23153): Add warning to cohort functions when full cohort is not used in every time index calculation
     """
     Returns a dataframe indexed by the original columns with values for `days_at_status`
     calculated across time indices. When a `status_attribute_col` is specified, the dataframe
@@ -325,10 +369,19 @@ def gen_cohort_status_df(
         that the days at status metrics should be disaggregated by. If no list is specified, the
         metrics are calculated across all cohort starts.
 
-     status_attribute_col: Optional[str]
+    status_attribute_col: Optional[str]
         Single field in `status_df` that represent attributes of the status
         that the days at status metrics should be disaggregated by. If no list is specified, the
         metrics are calculated across all statuses.
+
+    full_observability: bool, default=False
+        If True, only cohorts that have had the full amount of time to mature as of
+        max(`time_index`) are included. If False, all cohorts are included, which
+        may result in downward sloping event curves.
+
+    suppress_full_observability_warning: bool, default=False
+        If False, a warning will be issued if there are any cohorts that don't have
+        full observability. If True, this warning won't be issued.
     """
     if isinstance(join_field, str):
         join_field_list = [join_field]
@@ -416,7 +469,15 @@ def gen_cohort_status_df(
         1,
     )
 
-    # Unnest the cohort_df by the the time index series and then subset for those cohort
+    cohort_df = _process_full_observability(
+        cohort_df,
+        time_to_mature_field,
+        time_index,
+        full_observability,
+        suppress_full_observability_warning,
+    )
+
+    # Unnest the cohort_df by the time index series and then subset for those cohort
     # starts that have matured by the time index
     cohort_start_x_evaluation_months = pd.merge(cohort_df, time_df, how="cross")
 
@@ -628,10 +689,11 @@ def gen_aggregated_cohort_event_df(
     last_day_of_data: Optional[datetime.datetime] = None,
     cohort_attribute_col: Optional[Union[str, List[str]]] = None,
     event_attribute_col: Optional[Union[str, List[str]]] = None,
+    full_observability: bool = True,
+    suppress_full_observability_warning: bool = False,
 ) -> pd.DataFrame:
-    # TODO(#23153): Add warning to cohort functions when full cohort is not used in every time index calculation
     """
-    Returns an dataframe aggregated by cohort time index as well as any cohort or event
+    Returns a dataframe aggregated by cohort time index as well as any cohort or event
     attributes and calculates the cohort size at that time index, the number of events
     that have occurred by that time index, and the event rate by that time index.
 
@@ -666,10 +728,19 @@ def gen_aggregated_cohort_event_df(
         that the event rate should be disaggregated by. If no list is specified, the
         overall event rate is calculated.
 
-     event_attribute_col: Optional[Union[str, List[str]]]
+    event_attribute_col: Optional[Union[str, List[str]]]
         Single field or list of fields in `df` that represent attributes of the event
         that the event rate should be disaggregated by. If no list is specified, the
         overall event rate is calculated.
+
+    full_observability: bool, default=True
+        If True, only cohorts that have had the full amount of time to mature as of
+        max(`time_index`) are included. If False, all cohorts are included, which
+        may result in downward sloping event curves.
+
+    suppress_full_observability_warning: bool, default=False
+        If False, a warning will be issued if there are any cohorts that don't have
+        full observability. If True, this warning won't be issued.
     """
 
     # handle attribute columns which can be a list, a string, or None
@@ -743,6 +814,14 @@ def gen_aggregated_cohort_event_df(
             1,
         )
         + 1
+    )
+
+    df = _process_full_observability(
+        df,
+        time_to_mature_field,
+        time_index,
+        full_observability,
+        suppress_full_observability_warning,
     )
 
     # cross join the dataframe with the time index dataframe
