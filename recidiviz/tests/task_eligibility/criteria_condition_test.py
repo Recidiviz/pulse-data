@@ -25,6 +25,7 @@ from recidiviz.task_eligibility.criteria_condition import (
     LessThanCriteriaCondition,
     NotEligibleCriteriaCondition,
     PickNCompositeCriteriaCondition,
+    ReasonDateInCalendarWeekCriteriaCondition,
     TimeDependentCriteriaCondition,
 )
 from recidiviz.task_eligibility.reasons_field import ReasonsField
@@ -53,6 +54,11 @@ TIME_DEPENDENT_CRITERIA_CONDITION = TimeDependentCriteriaCondition(
     interval_length=1,
     interval_date_part=BigQueryDateInterval.MONTH,
     description="Time dependent criteria condition",
+)
+REASON_DATE_IN_CALENDAR_WEEK_CONDITION = ReasonDateInCalendarWeekCriteriaCondition(
+    criteria=CRITERIA_4_STATE_SPECIFIC,
+    reasons_date_field="latest_violation_date",
+    description="Reason date in calendar week criteria condition",
 )
 
 
@@ -211,6 +217,46 @@ class TestTimeDependentCriteriaCondition(unittest.TestCase):
                 interval_date_part=BigQueryDateInterval.MONTH,
                 description="Time dependent criteria condition",
             )
+
+
+class TestReasonDateInCalendarWeekCriteriaCondition(unittest.TestCase):
+    """Tests for the ReasonDateInCalendarWeekCriteriaCondition class."""
+
+    def test_reason_date_in_calendar_week_criteria_condition(self) -> None:
+        """Checks a single ReasonDateInCalendarWeekCriteriaCondition"""
+        self.assertEqual(
+            [CRITERIA_4_STATE_SPECIFIC],
+            REASON_DATE_IN_CALENDAR_WEEK_CONDITION.get_criteria_builders(),
+        )
+        self.assertEqual(
+            "Reason date in calendar week criteria condition",
+            REASON_DATE_IN_CALENDAR_WEEK_CONDITION.description,
+        )
+        self.assertEqual(
+            {
+                "US_KY_CRITERIA_4": [
+                    "DATE_TRUNC(SAFE_CAST(JSON_VALUE(reason_v2, '$.latest_violation_date') AS DATE), WEEK(SUNDAY))"
+                ],
+            },
+            REASON_DATE_IN_CALENDAR_WEEK_CONDITION.get_critical_date_parsing_fragments_by_criteria(),
+        )
+        expected_query_template = """
+    SELECT
+        * EXCEPT(criteria_reason),
+        -- Parse out the date relevant for the almost eligibility
+        IFNULL(
+            DATE_TRUNC(SAFE_CAST(JSON_VALUE(criteria_reason, '$.reason.latest_violation_date') AS DATE), WEEK(SUNDAY)) <= start_date,
+            FALSE
+        ) AS is_almost_eligible,
+    FROM potential_almost_eligible,
+    UNNEST(JSON_QUERY_ARRAY(reasons_v2)) AS criteria_reason
+    WHERE "US_KY_CRITERIA_4" IN UNNEST(ineligible_criteria)
+        AND SAFE_CAST(JSON_VALUE(criteria_reason, '$.criteria_name') AS STRING) = "US_KY_CRITERIA_4"
+"""
+        self.assertEqual(
+            expected_query_template,
+            REASON_DATE_IN_CALENDAR_WEEK_CONDITION.get_criteria_query_fragment(),
+        )
 
 
 class TestPickNCompositeCriteriaCondition(unittest.TestCase):

@@ -29,6 +29,9 @@ from recidiviz.task_eligibility.criteria.state_specific.us_mo import (
     no_d1_sanction_after_restrictive_housing_start,
     no_hearing_after_restrictive_housing_start,
 )
+from recidiviz.task_eligibility.criteria_condition import (
+    ReasonDateInCalendarWeekCriteriaCondition,
+)
 from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
 )
@@ -49,6 +52,11 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         no_d1_sanction_after_restrictive_housing_start.VIEW_BUILDER,
     ],
     completion_event_builder=hearing_occurred.VIEW_BUILDER,
+    almost_eligible_condition=ReasonDateInCalendarWeekCriteriaCondition(
+        criteria=initial_hearing_past_due_date.VIEW_BUILDER,
+        reasons_date_field="next_review_date",
+        description="Initial restrictive housing review review due this week",
+    ),
 )
 
 if __name__ == "__main__":

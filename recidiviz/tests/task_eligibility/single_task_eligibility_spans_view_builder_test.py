@@ -29,6 +29,7 @@ from recidiviz.task_eligibility.criteria_condition import (
     LessThanOrEqualCriteriaCondition,
     NotEligibleCriteriaCondition,
     PickNCompositeCriteriaCondition,
+    ReasonDateInCalendarWeekCriteriaCondition,
     TimeDependentCriteriaCondition,
 )
 from recidiviz.task_eligibility.reasons_field import ReasonsField
@@ -1025,12 +1026,10 @@ class TestSingleTaskEligibilitySpansBigQueryViewBuilder(BigQueryEmulatorTestCase
                                 value=1,
                                 description="Less than value criteria condition",
                             ),
-                            TimeDependentCriteriaCondition(
+                            ReasonDateInCalendarWeekCriteriaCondition(
                                 criteria=TEST_CRITERIA_BUILDER_3,
                                 reasons_date_field="test_reason_date",
-                                interval_length=7,
-                                interval_date_part=BigQueryDateInterval.DAY,
-                                description="Time dependent criteria condition",
+                                description="Reason date in calendar week criteria condition",
                             ),
                         ],
                         at_least_n_conditions_true=2,
@@ -1136,7 +1135,7 @@ class TestSingleTaskEligibilitySpansBigQueryViewBuilder(BigQueryEmulatorTestCase
                     "task_name": TES_QUERY_BUILDER.task_name,
                     "task_eligibility_span_id": 3,
                     "start_date": date(2024, 2, 15),
-                    "end_date": date(2024, 3, 11),
+                    "end_date": date(2024, 3, 17),
                     "is_eligible": False,
                     "is_almost_eligible": False,
                     "reasons": [
@@ -1178,7 +1177,7 @@ class TestSingleTaskEligibilitySpansBigQueryViewBuilder(BigQueryEmulatorTestCase
                     "person_id": 12345,
                     "task_name": TES_QUERY_BUILDER.task_name,
                     "task_eligibility_span_id": 4,
-                    "start_date": date(2024, 3, 11),
+                    "start_date": date(2024, 3, 17),
                     "end_date": date(2024, 3, 18),
                     "is_eligible": False,
                     "is_almost_eligible": True,

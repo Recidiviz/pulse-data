@@ -30,6 +30,7 @@ from recidiviz.task_eligibility.criteria_condition import (
     LessThanOrEqualCriteriaCondition,
     NotEligibleCriteriaCondition,
     PickNCompositeCriteriaCondition,
+    ReasonDateInCalendarWeekCriteriaCondition,
     TimeDependentCriteriaCondition,
 )
 from recidiviz.task_eligibility.reasons_field import ReasonsField
@@ -162,6 +163,7 @@ def _almost_eligibile_conditions_docs_for_tes_view(
         view_builder.almost_eligible_condition,
         (
             TimeDependentCriteriaCondition,
+            ReasonDateInCalendarWeekCriteriaCondition,
             NotEligibleCriteriaCondition,
             LessThanCriteriaCondition,
             LessThanOrEqualCriteriaCondition,
@@ -191,6 +193,7 @@ def _almost_eligibile_conditions_docs_for_tes_view(
                 condition,
                 (
                     TimeDependentCriteriaCondition,
+                    ReasonDateInCalendarWeekCriteriaCondition,
                     NotEligibleCriteriaCondition,
                     LessThanCriteriaCondition,
                     LessThanOrEqualCriteriaCondition,
@@ -218,6 +221,7 @@ def _almost_eligibile_conditions_docs_for_tes_view(
 def _create_table_matrix_for_almost_eligible_conditions(
     almost_eligible_condition: Union[
         TimeDependentCriteriaCondition,
+        ReasonDateInCalendarWeekCriteriaCondition,
         NotEligibleCriteriaCondition,
         LessThanCriteriaCondition,
         LessThanOrEqualCriteriaCondition,

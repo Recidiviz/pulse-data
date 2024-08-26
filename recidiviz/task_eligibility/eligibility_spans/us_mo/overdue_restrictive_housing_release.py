@@ -29,6 +29,9 @@ from recidiviz.task_eligibility.criteria.state_specific.us_mo import (
     in_restrictive_housing,
     no_active_d1_sanctions,
 )
+from recidiviz.task_eligibility.criteria_condition import (
+    ReasonDateInCalendarWeekCriteriaCondition,
+)
 from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
 )
@@ -49,6 +52,11 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         d1_sanction_after_restrictive_housing_start.VIEW_BUILDER,
     ],
     completion_event_builder=transfer_out_of_solitary_confinement.VIEW_BUILDER,
+    almost_eligible_condition=ReasonDateInCalendarWeekCriteriaCondition(
+        criteria=no_active_d1_sanctions.VIEW_BUILDER,
+        reasons_date_field="latest_sanction_end_date",
+        description="Restrictive housing release due this week",
+    ),
 )
 
 if __name__ == "__main__":
