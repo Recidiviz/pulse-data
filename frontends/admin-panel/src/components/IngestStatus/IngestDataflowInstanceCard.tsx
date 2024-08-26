@@ -336,14 +336,14 @@ const IngestDataflowInstanceCard: React.FC<IngestDataflowInstanceCardProps> = ({
               <NewTabLink
                 href={`http://go/prod-ingest-dataflow-logs/${mostRecentPipelineInfo.name}`}
               >
-                go/staging-ingest-dataflow-logs/
+                go/prod-ingest-dataflow-logs/
                 {mostRecentPipelineInfo.name}
               </NewTabLink>
             ) : (
               <NewTabLink
                 href={`http://go/staging-ingest-dataflow-logs/${mostRecentPipelineInfo.name}`}
               >
-                go/prod-ingest-dataflow-logs/
+                go/staging-ingest-dataflow-logs/
                 {mostRecentPipelineInfo.name}
               </NewTabLink>
             )}
