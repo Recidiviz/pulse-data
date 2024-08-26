@@ -275,11 +275,6 @@ jobs:
   big-query-emulator-tests:
     name: BigQuery Emulator Tests
     runs-on: ubuntu-20.04
-    # The default retry strategy for the BigQuery Python SDK lasts 10 minutes.
-    # If the emulator encounters an incorrect / unknown error that is continuously retried,
-    # we'd rather the process time out than incur additional billed minutes.
-    # Debugging can be done locally to find the root error
-    timeout-minutes: 7
     strategy:
       fail-fast: false
       matrix:
@@ -299,17 +294,17 @@ jobs:
             --suite-count ${{matrix.suite-count}} \
             --suite=${{ matrix.suite }} \
             --durations=25
+        # The default retry strategy for the BigQuery Python SDK lasts 10 minutes.
+        # If the emulator encounters an incorrect / unknown error that is continuously retried,
+        # we'd rather the process time out than incur additional billed minutes.
+        # Debugging can be done locally to find the root error
+        timeout-minutes: 7
       - name: Remove the emulator docker containers
         if: ${{ always() }}
         run: pipenv run python -m recidiviz.tests.utils.big_query_emulator_control prune_all
   bigquery-view-graph-validation:
     name: BigQuery View Graph Validation
     runs-on: ubuntu-20.04
-    # The default retry strategy for the BigQuery Python SDK lasts 10 minutes.
-    # If the emulator encounters an incorrect / unknown error that is continuously retried,
-    # we'd rather the process time out than incur additional billed minutes.
-    # Debugging can be done locally to find the root error
-    timeout-minutes: 7
     strategy:
       fail-fast: true
       matrix:
@@ -322,6 +317,11 @@ jobs:
         run: pipenv run python -m recidiviz.tests.utils.big_query_emulator_control pull_image
       - name: Load view graph to emulator
         run: pipenv run pytest -s "recidiviz/tests/big_query/view_graph_validation_test.py::${{matrix.project == 'production' && 'ProductionViewGraphTest' || 'StagingViewGraphTest'}}"
+        # The default retry strategy for the BigQuery Python SDK lasts 10 minutes.
+        # If the emulator encounters an incorrect / unknown error that is continuously retried,
+        # we'd rather the process time out than incur additional billed minutes.
+        # Debugging can be done locally to find the root error
+        timeout-minutes: 7
       - name: Remove the emulator docker container
         if: ${{ always() }}
         run: pipenv run python -m recidiviz.tests.utils.big_query_emulator_control prune_all
