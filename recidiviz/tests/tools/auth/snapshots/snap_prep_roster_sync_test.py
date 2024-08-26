@@ -35,6 +35,18 @@ snapshots["PrepRosterSyncTest.PrepRosterSyncTest test_find_and_handle_diffs"] = 
     ),
     (
         GenericRepr(
+            "UserOverride(state_code=US_XX, email_address=user_with_different_district@testdomain.com, external_id=901, roles=['supervision_staff'], district=D9, first_name=Test, last_name=User, blocked=False)"
+        ),
+        {
+            "district": "changed district",
+            "email_address": "user_with_different_district@testdomain.com",
+            "roles": ["supervision_staff"],
+            "state_code": "US_XX",
+            "user_hash": "SC00iF1/9zEtxqivkgXMaxoBD2ZyzfIaEo+Fha/FHLg=",
+        },
+    ),
+    (
+        GenericRepr(
             "UserOverride(state_code=US_XX, email_address=user_with_different_role@testdomain.com, external_id=890, roles=['leadership_role', 'tt group'], district=D8, first_name=Test, last_name=User, blocked=False)"
         ),
         {
@@ -71,7 +83,13 @@ snapshots["PrepRosterSyncTest.PrepRosterSyncTest test_full_user_override"] = [
         "UserOverride(state_code=US_XX, email_address=recently_logged_in_user@testdomain.com, external_id=123, roles=['supervision_officer', 'custom_role'], district=D2, first_name=Test, last_name=User, blocked=False)"
     ),
     GenericRepr(
+        "UserOverride(state_code=US_XX, email_address=user_with_multiple_diffs@testdomain.com, external_id=012, roles=['SUPERVISION_OFFICER'], district=changed district, first_name=changed name, last_name=User, blocked=False)"
+    ),
+    GenericRepr(
         "UserOverride(state_code=US_XX, email_address=user_with_equivalent_role@testdomain.com, external_id=789, roles=['SUPERVISION_OFFICER', 'tt group'], district=D7, first_name=Test, last_name=User, blocked=False)"
+    ),
+    GenericRepr(
+        "UserOverride(state_code=US_XX, email_address=user_with_different_district@testdomain.com, external_id=901, roles=['supervision_staff'], district=changed district, first_name=Test, last_name=User, blocked=False)"
     ),
     GenericRepr(
         "UserOverride(state_code=US_XX, email_address=user_with_different_role@testdomain.com, external_id=890, roles=['SUPERVISION_OFFICER', 'leadership_role', 'tt group'], district=D8, first_name=Test, last_name=User, blocked=False)"

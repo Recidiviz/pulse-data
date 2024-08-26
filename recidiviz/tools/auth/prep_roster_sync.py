@@ -239,14 +239,26 @@ def get_role_updates(current_user: UserOverride, roster_sync_user: Roster) -> li
 def find_and_handle_diffs_single_user(
     current_user: Row, roster_sync_user: Roster
 ) -> dict:
-    role_updates = get_role_updates(UserOverride(**current_user), roster_sync_user)
+    """For a single user, return the updates that need to be made to have our roster rables match
+    what is returned by the roster sync query while still preserving the user's current level of
+    access. If the roster sync query does not return a value for a field, use what's currently in
+    our roster tables.
+    Returns a dict that maps to a UserOverride entry where the primary keys + fields to change are
+    filled in."""
+    updates = {
+        "roles": get_role_updates(UserOverride(**current_user), roster_sync_user)
+    }
 
-    # TODO(#32585): Handle diffs for non-role fields so overrides are updated to match the roster sync values
+    for field in ["external_id", "district", "first_name", "last_name"]:
+        roster_sync_field = getattr(roster_sync_user, field)
+        if roster_sync_field is not None and current_user[field] != roster_sync_field:
+            updates[field] = roster_sync_field
+
     return {
         "state_code": current_user.state_code,
         "email_address": current_user.email_address,
         "user_hash": current_user.user_hash,
-        "roles": role_updates,
+        **updates,
     }
 
 
@@ -321,8 +333,6 @@ def prepare_for_roster_sync(
     For all users in the roster sync query who are already in our roster, update their data to match
     what the roster sync query says. Users with role differences are updated in such a way as to
     preserve their current levels of access.
-
-    TODO(#32585): Handle diffs for non-role fields so overrides are updated to match the roster sync values
     """
 
     # Read in what the output of roster sync will be for a state.
@@ -344,7 +354,10 @@ def prepare_for_roster_sync(
     logging.info(
         """\n\n✂️ Deleting the following users:\n%s
         \n\n🛟 Adding missing users to UserOverride:\n%s
-         \n\n🛼 Updating roles in UserOverride for the following users:\n%s
+        \n\n🛼 Updating roles in UserOverride for the following users:\n%s
+        \n\n📛 Updating name in UserOverride for the following users:\n%s
+        \n\n🗺️ Updating district in UserOverride for the following users:\n%s
+        \n\n🪪 Updating external IDs in UserOverride for the following users:\n%s
         """,
         "\n".join(users_who_will_be_deleted),
         "\n".join(
@@ -352,11 +365,49 @@ def prepare_for_roster_sync(
         ),
         "\n".join(
             [
-                f"{from_user.email_address}: {from_user.roles} -> {to_user['roles']}"
-                for (from_user, to_user) in users_with_diffs
+                f"{existing_user_entry.email_address}: {existing_user_entry.roles} -> {roster_sync_user['roles']}"
+                for (existing_user_entry, roster_sync_user) in users_with_diffs
                 # We're actually adding overrides even if they match, but for inspecting diffs it'll
                 # be easier if we only show the ones that don't match
-                if set(from_user.roles) != to_user["roles"]
+                if set(existing_user_entry.roles) != set(roster_sync_user["roles"])
+            ]
+        ),
+        "\n".join(
+            [
+                f"{existing_user_entry.email_address}: {existing_user_entry.first_name} {existing_user_entry.last_name} -> {roster_sync_user.get('first_name', existing_user_entry.first_name)} {roster_sync_user.get('last_name', existing_user_entry.last_name)}"
+                for (existing_user_entry, roster_sync_user) in users_with_diffs
+                if (
+                    ("first_name" in roster_sync_user)
+                    != (existing_user_entry.first_name is not None)
+                    or (
+                        "first_name" in roster_sync_user
+                        and existing_user_entry.first_name.lower()
+                        != roster_sync_user["first_name"].lower()
+                    )
+                )
+                or (
+                    ("last_name" in roster_sync_user)
+                    != (existing_user_entry.last_name is not None)
+                    or (
+                        "last_name" in roster_sync_user
+                        and existing_user_entry.last_name.lower()
+                        != roster_sync_user["last_name"].lower()
+                    )
+                )
+            ]
+        ),
+        "\n".join(
+            [
+                f"{existing_user_entry.email_address}: {existing_user_entry.district} -> {roster_sync_user['district']}"
+                for (existing_user_entry, roster_sync_user) in users_with_diffs
+                if "district" in roster_sync_user
+            ]
+        ),
+        "\n".join(
+            [
+                f"{existing_user_entry.email_address}: {existing_user_entry.external_id} -> {roster_sync_user['external_id']}"
+                for (existing_user_entry, roster_sync_user) in users_with_diffs
+                if "external_id" in roster_sync_user
             ]
         ),
     )
@@ -368,7 +419,13 @@ def prepare_for_roster_sync(
 
     remove_users(session, users_who_will_be_deleted)
     add_user_overrides(session, users_missing_from_roster_sync_who_should_remain)
-    add_user_overrides(session, [to_user for (from_user, to_user) in users_with_diffs])
+    add_user_overrides(
+        session,
+        [
+            roster_sync_user
+            for (existing_user_entry, roster_sync_user) in users_with_diffs
+        ],
+    )
 
 
 def parse_arguments(argv: list[str]) -> tuple[argparse.Namespace, list[str]]:

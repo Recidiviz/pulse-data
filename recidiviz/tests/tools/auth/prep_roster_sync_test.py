@@ -187,6 +187,32 @@ class PrepRosterSyncTest(TestCase):
             created_datetime=datetime.fromisoformat("2023-01-01"),
         )
 
+        self.user_with_different_district = generate_fake_user_overrides(
+            email="user_with_different_district@testdomain.com",
+            region_code="US_XX",
+            external_id="901",
+            role="supervision_staff",
+            roles=["supervision_staff"],
+            district="D9",
+            first_name="Test",
+            last_name="User",
+            pseudonymized_id="pseudo-901",
+            created_datetime=datetime.fromisoformat("2023-01-01"),
+        )
+
+        self.user_with_multiple_diffs = generate_fake_user_overrides(
+            email="user_with_multiple_diffs@testdomain.com",
+            region_code="US_XX",
+            external_id="012",
+            role="supervision_staff",
+            roles=["supervision_staff"],
+            district="D0",
+            first_name="Test",
+            last_name="User",
+            pseudonymized_id="pseudo-012",
+            created_datetime=datetime.fromisoformat("2023-01-01"),
+        )
+
         self.tn_d20_user = generate_fake_user_overrides(
             email="tn_d20_user@testdomain.com",
             region_code="US_TN",
@@ -585,6 +611,7 @@ class PrepRosterSyncTest(TestCase):
                 self.recently_created_user,
                 self.user_with_equivalent_role,
                 self.user_with_different_role,
+                self.user_with_different_district,
             ]
         )
         # the roster sync query returns "roles" as a string, so construct our test ones that way
@@ -606,6 +633,21 @@ class PrepRosterSyncTest(TestCase):
                 state_code="US_XX",
                 role="SUPERVISION_OFFICER",
                 roles="SUPERVISION_OFFICER",
+            ),
+            Roster(
+                email_address="user_with_different_district@testdomain.com",
+                state_code="US_XX",
+                role="UNKNOWN",
+                roles="UNKNOWN",
+                district="changed district",
+            ),
+            Roster(
+                email_address="user_with_multiple_diffs@testdomain.com",
+                state_code="US_XX",
+                role="SUPERVISION_OFFICER",
+                roles="SUPERVISION_OFFICER",
+                district="changed district",
+                first_name="changed name",
             ),
         ]
         self.snapshot.assert_match(find_and_handle_diffs(self.session, roster_sync_users, "US_XX"), name="test_find_and_handle_diffs")  # type: ignore[attr-defined]
@@ -632,10 +674,12 @@ class PrepRosterSyncTest(TestCase):
                 self.recently_created_user,
                 self.user_with_equivalent_role,
                 self.user_with_different_role,
+                self.user_with_different_district,
+                self.user_with_multiple_diffs,
             ]
         )
 
-        # Assuming roster sync returns 3 of our users
+        # Assuming roster sync returns 5 of our users
         roster_sync_users: list[Roster] = [
             # the roster sync query returns "roles" as a string, so construct our test ones that way
             Roster(
@@ -655,6 +699,21 @@ class PrepRosterSyncTest(TestCase):
                 state_code="US_XX",
                 role="SUPERVISION_OFFICER",
                 roles="SUPERVISION_OFFICER",
+            ),
+            Roster(
+                email_address="user_with_different_district@testdomain.com",
+                state_code="US_XX",
+                role="UNKNOWN",
+                roles="UNKNOWN",
+                district="changed district",
+            ),
+            Roster(
+                email_address="user_with_multiple_diffs@testdomain.com",
+                state_code="US_XX",
+                role="SUPERVISION_OFFICER",
+                roles="SUPERVISION_OFFICER",
+                district="changed district",
+                first_name="changed name",
             ),
         ]
         mock_roster_sync_output.return_value = roster_sync_users
@@ -686,12 +745,15 @@ class PrepRosterSyncTest(TestCase):
                 "recently_logged_in_user@testdomain.com",
                 "user_with_different_role@testdomain.com",
                 "user_with_equivalent_role@testdomain.com",
+                "user_with_different_district@testdomain.com",
+                "user_with_multiple_diffs@testdomain.com",
             },
         )
 
         # Also double check that the values match our expectations:
         # - recently_logged_in_user@testdomain.com should have the merged value in UserOverride
         # - the users with role diffs should have the correct roles
+        # - the users with other diffs should have the changed values for the fields with diffs
         self.snapshot.assert_match(new_roster, name="test_full_roster")  # type: ignore[attr-defined]
         self.snapshot.assert_match(new_overrides, name="test_full_user_override")  # type: ignore[attr-defined]
 
@@ -755,6 +817,8 @@ class PrepRosterSyncTest(TestCase):
                 self.recently_created_user,
                 self.user_with_equivalent_role,
                 self.user_with_different_role,
+                self.user_with_different_district,
+                self.user_with_multiple_diffs,
             ]
         )
 
@@ -827,6 +891,8 @@ class PrepRosterSyncTest(TestCase):
                 self.recently_created_user,
                 self.user_with_equivalent_role,
                 self.user_with_different_role,
+                self.user_with_different_district,
+                self.user_with_multiple_diffs,
             ]
         )
 
