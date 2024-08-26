@@ -72,7 +72,7 @@ parole_count_id_level_info_base AS (
         NULL as parole_count_id_termination_reason,
         NULL as parole_count_id_termination_date,
         ri.RelCountyResidence as county_of_residence,
-        ri.RelFinalRiskGrade as supervision_level,
+        p.Grade as supervision_level,
         ri.RelDO as most_recent_district_office,
         0 AS is_history_row,
          -- the entry_priority partition will only grab one active period at a time, so release_id won't be relevant
@@ -80,6 +80,7 @@ parole_count_id_level_info_base AS (
       FROM {dbo_Release} r
       JOIN {dbo_ReleaseInfo} ri USING (ParoleNumber, ParoleCountID)
       JOIN {dbo_RelStatus} rs USING (ParoleNumber, ParoleCountID)
+      LEFT JOIN {dbo_Parolee} p USING(ParoleNumber, ParoleCountID)
 
       UNION ALL
 
