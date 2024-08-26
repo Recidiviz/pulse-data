@@ -25,11 +25,11 @@ Make sure to run the case triage initialize development script to get local secr
 
 Example usage:
 
-python -m recidiviz.tools.prototypes.request_api search '{"query":"housing updates"}' get --target_env dev
+python -m recidiviz.tools.prototypes.request_api search '{"query":"housing updates", "user_id":"fake_id", "state_code":"US_ID"}' get --target_env dev
 
-python -m recidiviz.tools.prototypes.request_api search '{"query":"housing updates"}' get --target_env staging --token {}
+python -m recidiviz.tools.prototypes.request_api search '{"query":"housing updates", "user_id":"fake_id", "state_code":"US_ID"}' get --target_env staging --token {}
 
-python -m recidiviz.tools.prototypes.request_api search '{"query":"housing updates"}' get --target_env prod --token {}
+python -m recidiviz.tools.prototypes.request_api search '{"query":"housing updates", "user_id":"fake_id", "state_code":"US_ID"}' get --target_env prod --token {}
 
 Optional params:
     --token: The user can provide a request token which would override the M2M token. A

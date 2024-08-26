@@ -28,6 +28,7 @@ from recidiviz.prototypes.case_note_search.case_note_authorization import (
     on_successful_authorization,
 )
 from recidiviz.prototypes.case_note_search.case_note_search import case_note_search
+from recidiviz.prototypes.case_note_search.exact_match import STATE_CODE_CONVERTER
 
 ALLOWED_ORIGINS = [
     r"http\://localhost:3000",
@@ -96,24 +97,61 @@ async def add_cors_headers(
 
 @app.route("/search", methods=["GET"])
 async def search_case_notes() -> Response:
+    """Endpoint which queries the Discovery Engine, records the input parameters and
+    results, and returns the engine output.
+
+    Required params:
+        * query: The case note search query.
+        * user_id: The external id of the user making the query.
+        * state_code: The state case notes to query.
+
+    Optional params:
+        * page_size (default 20): The number of case notes to return.
+        * with_snippet (default True): Whether to request engine-created snippets.
+        * external_id (defauly None): If populated, we only fetch case notes pertaining
+            to the provided external id.
+    """
+    # Required params.
     query = request.args.get("query", type=str)
     if query is None:
         response = jsonify({"error": "Missing required parameter 'query'"})
         response.status_code = 400
         return response
+    user_id = request.args.get("user_id", type=str)
+    if user_id is None:
+        response = jsonify({"error": "Missing required parameter 'user_id'"})
+        response.status_code = 400
+        return response
+    state_code = request.args.get("state_code", type=str)
+    if state_code is None or state_code.lower() not in STATE_CODE_CONVERTER:
+        response = jsonify(
+            {"error": f"State code {state_code} not supported for this endpoint."}
+        )
+        response.status_code = 400
+        return response
 
+    # Optional params.
     page_size = request.args.get("page_size", default=20, type=int)
     with_snippet = request.args.get(
         "with_snippet", default=True, type=lambda v: v.lower() == "true"
     )
     external_id = request.args.get("external_id", default=None, type=str)
 
+    def get_state_code_for_filter(state_code: str) -> str:
+        """Some state codes used for filtering are different than standard state codes.
+        e.g. Idaho notes are stored as US_IX for now."""
+        return STATE_CODE_CONVERTER[state_code.lower()]
+
+    # Query the Discovery Engine.
+    filter_conditions = {}
+    if external_id is not None:
+        filter_conditions["external_id"] = [external_id]
+    if state_code is not None:
+        filter_conditions["state_code"] = [get_state_code_for_filter(state_code)]
     case_note_response = case_note_search(
         query=query,
         page_size=page_size,
         with_snippet=with_snippet,
-        filter_conditions={"external_id": [external_id]}
-        if external_id is not None
-        else None,
+        filter_conditions=filter_conditions,
     )
     return jsonify(case_note_response)
