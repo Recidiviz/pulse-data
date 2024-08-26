@@ -38,6 +38,7 @@ from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder impor
 from recidiviz.task_eligibility.utils.state_dataset_query_fragments import (
     extract_object_from_json,
 )
+from recidiviz.utils.string import StrictStringFormatter
 
 AnyTaskCriteriaViewBuilder = (
     TaskCriteriaBigQueryViewBuilder
@@ -195,52 +196,45 @@ class LessThanOrEqualCriteriaCondition(_ComparatorCriteriaCondition):
         return "<="
 
 
-class TimeDependentCriteriaCondition(CriteriaCondition):
+class _DateComparatorCriteriaCondition(CriteriaCondition):
     """
-    Condition relating to a date within the criteria reasons fields. The condition will be true for the portion of the
-    original eligibility criteria span that has passed the reasons date MINUS the interval window.
-    Example:
-        Almost eligible if 3 months before `eligible_date`
-        TimeDependentCriteriaCondition(
-            criteria=example_criteria_view_builder,
-            reasons_date_field="eligible_date",
-            interval_length=3,
-            interval_date_part=BigQueryDateInterval.MONTH,
-        )
-
-    A negative |interval_length| value will create an interval window that starts _after_ the reasons date for criteria
-    such as "almost eligible 3 months after reasons date".
+    Condition relating to a date value within the criteria reasons fields. The condition will be true for the portion
+    of the original criteria span beginning on the critical date as defined in the
+    |critical_date_condition_query_template|
     """
 
     criteria: AnyTaskCriteriaViewBuilder
     reasons_date_field: ReasonsField
-    interval_length: int
-    interval_date_part: BigQueryDateInterval
+    critical_date_condition_query_template: str
 
     def __init__(
         self,
         criteria: AnyTaskCriteriaViewBuilder,
         reasons_date_field: str,
-        interval_length: int,
-        interval_date_part: BigQueryDateInterval,
+        critical_date_condition_query_template: str,
         description: str,
-    ) -> None:
-        """
-        Initialize the TimeDependentCriteriaCondition and validate that the reasons field is defined within the criteria
-        and the reasons field type is DATE.
-        """
+    ):
+        """Initialize the _DateComparatorCriteriaCondition object and validate the inputs"""
+        self.criteria = criteria
         self.reasons_date_field = get_criteria_reason_field(
             criteria, reasons_date_field
         )
-
+        # Check the reasons field is a DATE type
         if self.reasons_date_field.type != bigquery.enums.SqlTypeNames.DATE:
             raise ValueError(
                 f"Reason date field {self.reasons_date_field} is of type {self.reasons_date_field.type.value}, "
                 f"expected type {bigquery.enums.SqlTypeNames.DATE.value}"
             )
-        self.criteria = criteria
-        self.interval_length = interval_length
-        self.interval_date_part = interval_date_part
+        # Check the {reason_field} formatting variable is in the date query template string
+        if "{reasons_date}" not in critical_date_condition_query_template:
+            raise ValueError(
+                "Expected {reasons_date} formatting variable within the "
+                f"{criteria.criteria_name} CustomTimeDependentCriteriaCondition: "
+                + critical_date_condition_query_template
+            )
+        self.critical_date_condition_query_template = (
+            critical_date_condition_query_template
+        )
         super().__init__(description)
 
     def get_criteria_builders(
@@ -260,8 +254,8 @@ SELECT
     -- Parse out the date relevant for the almost eligibility
     IFNULL(
         {self._get_criteria_condition_date_fragment(
-                json_reasons_column="criteria_reason",
-                nested_reason=True
+            json_reasons_column="criteria_reason",
+            nested_reason=True
         )} <= start_date,
         FALSE
     ) AS is_almost_eligible,
@@ -269,10 +263,10 @@ FROM potential_almost_eligible,
 UNNEST(JSON_QUERY_ARRAY(reasons_v2)) AS criteria_reason
 WHERE "{self.criteria.criteria_name}" IN UNNEST(ineligible_criteria)
     AND {extract_object_from_json(
-        json_column="criteria_reason",
-        object_column="criteria_name",
-        object_type="STRING",
-    )} = "{self.criteria.criteria_name}"
+            json_column="criteria_reason",
+            object_column="criteria_name",
+            object_type="STRING",
+        )} = "{self.criteria.criteria_name}"
 """,
             " " * 4,
         )
@@ -300,12 +294,86 @@ WHERE "{self.criteria.criteria_name}" IN UNNEST(ineligible_criteria)
             if nested_reason
             else self.reasons_date_field.name
         )
-        return f"""DATE_SUB({
-            extract_object_from_json(
+        return StrictStringFormatter().format(
+            self.critical_date_condition_query_template,
+            reasons_date=extract_object_from_json(
                 json_column=json_reasons_column,
                 object_column=object_column,
                 object_type=str(self.reasons_date_field.type.value),
-            )}, INTERVAL {self.interval_length} {self.interval_date_part.value})"""
+            ),
+        )
+
+
+class TimeDependentCriteriaCondition(_DateComparatorCriteriaCondition):
+    """
+    Condition relating to a date within the criteria reasons fields. The condition will be true for the portion of the
+    original eligibility criteria span that has passed the reasons date MINUS the interval window.
+    Example:
+        Almost eligible if 3 months before `eligible_date`
+        TimeDependentCriteriaCondition(
+            criteria=example_criteria_view_builder,
+            reasons_date_field="eligible_date",
+            interval_length=3,
+            interval_date_part=BigQueryDateInterval.MONTH,
+        )
+
+    A negative |interval_length| value will create an interval window that starts _after_ the reasons date for criteria
+    such as "almost eligible 3 months after reasons date".
+    """
+
+    def __init__(
+        self,
+        criteria: AnyTaskCriteriaViewBuilder,
+        reasons_date_field: str,
+        interval_length: int,
+        interval_date_part: BigQueryDateInterval,
+        description: str,
+    ) -> None:
+        """
+        Initialize the TimeDependentCriteriaCondition and validate that the reasons field is defined within the criteria
+        and the reasons field type is DATE.
+        """
+        critical_date_condition_query_template = f"""DATE_SUB({{reasons_date}}, INTERVAL {interval_length} {interval_date_part.value})"""
+        super().__init__(
+            criteria,
+            reasons_date_field,
+            critical_date_condition_query_template,
+            description,
+        )
+
+
+class ReasonDateInCalendarWeekCriteriaCondition(_DateComparatorCriteriaCondition):
+    """
+    Condition relating to a date within the criteria reasons fields. The condition will be true for the portion of the
+    original eligibility criteria span starting the Sunday before the reasons date and ending on the reasons date
+    (end date exclusive).
+    Example:
+        Almost eligible if `eligible_date` is within the calendar week (starting Sunday)
+        ReasonDateInCalendarWeekCriteriaCondition(
+            criteria=example_criteria_view_builder,
+            reasons_date_field="eligible_date",
+        )
+    """
+
+    def __init__(
+        self,
+        criteria: AnyTaskCriteriaViewBuilder,
+        reasons_date_field: str,
+        description: str,
+    ) -> None:
+        """
+        Initialize the ReasonDateInCalendarWeekCriteriaCondition with a critical date query template for the Sunday
+        before the reasons date
+        """
+        critical_date_condition_query_template = (
+            "DATE_TRUNC({reasons_date}, WEEK(SUNDAY))"
+        )
+        super().__init__(
+            criteria,
+            reasons_date_field,
+            critical_date_condition_query_template,
+            description,
+        )
 
 
 class PickNCompositeCriteriaCondition(CriteriaCondition):
