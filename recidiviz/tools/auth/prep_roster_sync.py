@@ -34,7 +34,7 @@ import sys
 from datetime import UTC, datetime
 
 from dateutil.relativedelta import relativedelta
-from sqlalchemy import delete, func, select
+from sqlalchemy import delete, func, or_, select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.engine import Row
 from sqlalchemy.orm import Session
@@ -121,13 +121,25 @@ def get_existing_users_missing_from_roster_sync(
     appear in the admin panel once roster sync is turned on (since they won't appear in the Roster
     table then)."""
     roster_users = (
-        session.execute(select(Roster).filter(Roster.state_code == state_code))
+        session.execute(
+            select(Roster).filter(
+                Roster.state_code == state_code,
+                # Exclude D20 users because we're trying not to make any changes to them
+                # TODO(#25566): Add them back in
+                or_(Roster.state_code != "US_TN", Roster.district != "20"),
+            )
+        )
         .scalars()
         .all()
     )
     user_override_users = (
         session.execute(
-            select(UserOverride).filter(UserOverride.state_code == state_code)
+            select(UserOverride).filter(
+                UserOverride.state_code == state_code,
+                # Exclude D20 users because we're trying not to make any changes to them
+                # TODO(#25566): Add them back in
+                or_(UserOverride.state_code != "US_TN", UserOverride.district != "20"),
+            )
         )
         .scalars()
         .all()
@@ -162,8 +174,6 @@ def get_existing_users_missing_from_roster_sync(
         for user in user_override_users
         if user.created_datetime >= datetime.now() - _RECENTLY_ADDED_TO_ROSTER_TIMEDETLA
     }
-
-    # TODO(#25566): Add logic to keep TN D20 users because we're going to start out not syncing them
 
     # query the merged roster/user override table results for the users we want to keep, and return
     # them as a list of UserOverrides to add back in.
