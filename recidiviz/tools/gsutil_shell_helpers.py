@@ -17,7 +17,10 @@
 """Helpers for calling gsutil commands inside of Python scripts."""
 import logging
 import os
-from typing import List, Optional, Set
+from multiprocessing.pool import ThreadPool
+from typing import List, Optional, Set, Tuple
+
+from tqdm import tqdm
 
 from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath
 from recidiviz.common.date import is_between_date_strs_inclusive, is_date_str
@@ -53,7 +56,7 @@ def gsutil_ls(
             )
         flags = "-d"
 
-    command = f'gsutil ls {flags} "{gs_path}"'
+    command = f'gsutil {_GSUTIL_PARALLEL_COMMAND_OPTIONS} ls {flags} "{gs_path}"'
     try:
         res = run_command(
             command, assert_success=True, timeout_sec=GSUTIL_DEFAULT_TIMEOUT_SEC
@@ -179,25 +182,45 @@ def gsutil_get_storage_subdirs_containing_raw_files(
     # We return all subdirectories in the date range if there are no filters for file tags.
     if not any(filters):
         return sorted(list(subdirs_in_date_range))
-    subdirs_containing_files = set()
-    for subdir in subdirs_in_date_range:
-        for file_tag_filter in filters:
-            path = subdir + f"/*{file_tag_filter}*"
-            try:
-                located_matching_files = "\n\t * ".join(gsutil_ls(path))
-                logging.info(
-                    "Found the following files matching the file_tag_filter='%s' in the GCS "
-                    "subdirectory='%s':\n\t * %s",
-                    file_tag_filter,
-                    subdir,
-                    located_matching_files,
-                )
-                subdirs_containing_files.add(subdir)
-            except Exception:
-                logging.info(
-                    "Files matching the file_tag_filter='%s' were not present in the "
-                    "GCS subdirectory='%s'",
-                    file_tag_filter,
-                    subdir,
-                )
+
+    subdirs_to_search = subdirs_in_date_range
+    subdirs_containing_files: Set[str] = set()
+    thread_pool = ThreadPool(processes=16)
+
+    for file_tag_filter in filters:
+        progress = tqdm(
+            desc=f"Searching for [{file_tag_filter}] in [{len(subdirs_to_search)}] subdirs...",
+            total=len(subdirs_to_search),
+        )
+
+        paths_to_search = [
+            (
+                subdir,
+                file_tag_filter,
+                subdirs_containing_files,
+                progress,
+            )
+            for subdir in subdirs_to_search
+        ]
+        thread_pool.map(_parallel_get_storage_subdirs, paths_to_search)
+        progress.close()
+
+        # if we find a single match for a filter inside of a subdir, we've already marked
+        # it as containing files so we dont need to revisit
+        subdirs_to_search = subdirs_to_search - subdirs_containing_files
+
+        if not subdirs_to_search:
+            break
+
     return sorted(list(subdirs_containing_files))
+
+
+def _parallel_get_storage_subdirs(args: Tuple[str, str, Set[str], tqdm]) -> None:
+    subdir, file_filter, subdirs_containing_files, progress = args
+    path = subdir + f"/*{file_filter}*"
+    results = gsutil_ls(path, allow_empty=True)
+    # if we find any results, add them to |args.subdirs_containing_files|
+    if results:
+        subdirs_containing_files.add(subdir)
+
+    progress.update(1)
