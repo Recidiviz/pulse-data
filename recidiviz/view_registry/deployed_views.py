@@ -115,6 +115,7 @@ def build_all_deployed_views_dag_walker() -> BigQueryViewDagWalker:
 DEPLOYED_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED: Set[str] = {
     "aggregated_metrics",
     "analyst_data",
+    "case_notes_prototype_views",
     "case_triage",
     "census_managed_views",
     "covid_public_data",
