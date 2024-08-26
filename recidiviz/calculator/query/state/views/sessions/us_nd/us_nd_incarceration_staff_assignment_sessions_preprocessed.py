@@ -37,6 +37,7 @@ US_ND_INCARCERATION_STAFF_ASSIGNMENT_SESSIONS_PREPROCESSED_VIEW_DESCRIPTION = (
 )
 
 US_ND_INCARCERATION_STAFF_ASSIGNMENT_SESSIONS_PREPROCESSED_QUERY_TEMPLATE = f"""
+#TODO(#32753): Ingest these mappings
 WITH elite_OffenderProgramProfiles_generated_view AS (
     SELECT * FROM `{{project_id}}.{{usnd_raw_data_up_to_date_dataset}}.elite_OffenderProgramProfiles_latest`
 ),
@@ -116,8 +117,8 @@ SELECT
     NULL AS incarceration_staff_assignment_id,
     staff_id AS incarceration_staff_assignment_external_id,
     "INCARCERATION_STAFF" AS incarceration_staff_assignment_role_type,
-    -- US_ND doesn't have role subtypes yet
-    CAST(NULL AS STRING) AS incarceration_staff_assignment_role_subtype,
+    -- We are only surfacing folks who have a person assigned, so we can assume they are counselors/CMs
+    "COUNSELOR" AS incarceration_staff_assignment_role_subtype,
     ROW_NUMBER() OVER (PARTITION BY person_id, start_date, end_date
                 /* Prioritize cases in the following order 
                         1) Staff is active (as opposed to inactive)

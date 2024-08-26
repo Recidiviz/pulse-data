@@ -34,6 +34,7 @@ US_ME_INCARCERATION_STAFF_ASSIGNMENT_SESSIONS_PREPROCESSED_VIEW_DESCRIPTION = ""
     Note that there are apparently some stray non-incarceration (supervision) caseloads in this dataset."""
 
 US_ME_INCARCERATION_STAFF_ASSIGNMENT_SESSIONS_PREPROCESSED_QUERY_TEMPLATE = """
+# TODO(#32754): Ingest these mappings
     SELECT DISTINCT
         "US_ME" AS state_code,
         pei.person_id,
@@ -43,9 +44,9 @@ US_ME_INCARCERATION_STAFF_ASSIGNMENT_SESSIONS_PREPROCESSED_QUERY_TEMPLATE = """
         -- US_ME doesn't have staff internal id's yet
         NULL AS incarceration_staff_assignment_id,
         IFNULL(ids.external_id_mapped, Cis_900_Employee_Id) AS incarceration_staff_assignment_external_id,
+        -- We are only surfacing folks who have a person assigned, so we can assume they are counselors/CMs
         "INCARCERATION_STAFF" AS incarceration_staff_assignment_role_type,
-        -- US_ME doesn't have role subtypes yet
-        CAST(NULL AS STRING) AS incarceration_staff_assignment_role_subtype,
+        "COUNSELOR" AS incarceration_staff_assignment_role_subtype,
         ROW_NUMBER() OVER (PARTITION BY Cis_100_Client_Id 
                     /* Prioritize cases in the following order 
                             1) NULL Supervision_End_Date
