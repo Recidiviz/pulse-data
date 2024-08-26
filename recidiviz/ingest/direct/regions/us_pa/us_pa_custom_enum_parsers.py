@@ -22,7 +22,6 @@ my_enum_field:
     $raw_text: MY_CSV_COL
     $custom_parser: us_pa_custom_enum_parsers.<function name>
 """
-
 import datetime
 from collections import OrderedDict
 from typing import Dict, List, Optional
@@ -35,6 +34,7 @@ from recidiviz.common.constants.state.state_incarceration_period import (
     StateSpecializedPurposeForIncarceration,
 )
 from recidiviz.common.constants.state.state_person import StateResidencyStatus
+from recidiviz.common.constants.state.state_shared_enums import StateCustodialAuthority
 from recidiviz.common.constants.state.state_staff_role_period import (
     StateStaffRoleSubtype,
 )
@@ -42,6 +42,7 @@ from recidiviz.common.constants.state.state_supervision_contact import (
     StateSupervisionContactLocation,
 )
 from recidiviz.common.constants.state.state_supervision_period import (
+    StateSupervisionPeriodAdmissionReason,
     StateSupervisionPeriodSupervisionType,
     get_most_relevant_supervision_type,
 )
@@ -333,6 +334,31 @@ def _retrieve_release_reason_mapping(
     return release_reason
 
 
+SUPERVISION_PERIOD_CUSTODIAL_AUTHORITY_TO_STR_MAPPINGS: Dict[
+    StateCustodialAuthority, List[str]
+] = {
+    StateCustodialAuthority.SUPERVISION_AUTHORITY: [
+        "02",  # Paroled from SCI to PBPP Supervision
+        "03",  # Reparoled from SCI to PBPP Supervision
+        "04",  # Sentenced to Probation by County Judge and Supervised by PBPP
+        "05",  # Special Parole sentenced by County and Supervised by PBPP
+        "4A",  # ARD (Accelerated Rehabilitative Disposition) case - Sentenced by County Judge, Supervised by PBPP
+        "4B",  # PWV (Probation Without Verdict) case - Sentenced by County Judge and Supervised by PBPP
+        "4C",  # COOP case - Offender on both PBPP and County Supervision
+        "B2",  # Released according to Boot Camp Law
+        "C2",  # CCC Parole
+        "C3",  # CCC Reparole
+        "R2",  # RSAT Parole
+        "R3",  # RSAT Reparole
+        "06",  # Paroled/Reparoled by other state and transferred to PA
+        "07",  # Sentenced to Probation by other state and transferred to PA
+    ],
+    StateCustodialAuthority.INTERNAL_UNKNOWN: [
+        "08",  # Other States’ Deferred Sentence
+        "09",  # Emergency Release - used for COVID releases
+    ],
+}
+
 SUPERVISION_PERIOD_SUPERVISION_TYPE_TO_STR_MAPPINGS: Dict[
     StateSupervisionPeriodSupervisionType, List[str]
 ] = {
@@ -362,16 +388,53 @@ SUPERVISION_PERIOD_SUPERVISION_TYPE_TO_STR_MAPPINGS: Dict[
     ],
 }
 
+SUPERVISION_PERIOD_ADMISSION_REASON_TO_STR_MAPPINGS: Dict[
+    StateSupervisionPeriodAdmissionReason, List[str]
+] = {
+    StateSupervisionPeriodAdmissionReason.RELEASE_FROM_INCARCERATION: [
+        "02",  # Paroled from SCI to PBPP Supervision
+        "03",  # Reparoled from SCI to PBPP Supervision
+        "B2",  # Released according to Boot Camp Law
+        "C2",  # CCC Parole
+        "C3",  # CCC Reparole
+        "R2",  # RSAT Parole
+        "R3",  # RSAT Reparole
+    ],
+    StateSupervisionPeriodAdmissionReason.COURT_SENTENCE: [
+        "04",  # Sentenced to Probation by County Judge and Supervised by PBPP
+        "05",  # Special Parole sentenced by County and Supervised by PBPP
+        "4A",  # ARD case - Sentenced by County Judge and Supervised by PBPP
+        "4B",  # PWV case - Sentenced by County Judge and Supervised by PBPP
+        "4C",  # COOP case - Offender on both PBPP and County Supervision
+    ],
+    StateSupervisionPeriodAdmissionReason.INTERNAL_UNKNOWN: [
+        "08",  # Other States' Deferred Sentence
+        "09",  # Emergency Release - used for COVID releases
+    ],
+    StateSupervisionPeriodAdmissionReason.TRANSFER_FROM_OTHER_JURISDICTION: [
+        "06",  # Paroled/Reparoled by other state and transferred to PA
+        "07",  # Sentenced to Probation by other state and transferred to PA
+    ],
+}
+
 MOVEMENT_CODE_TO_INCARCERATION_PERIOD_ADMISSION_REASON_MAPPINGS: Dict[
     str, StateIncarcerationPeriodAdmissionReason
 ] = invert_enum_to_str_mappings(
     INCARCERATION_PERIOD_ADMISSION_REASON_TO_MOVEMENT_CODE_MAPPINGS
 )
 
+STR_TO_SUPERVISION_PERIOD_CUSTODIAL_AUTHORITY_MAPPINGS: Dict[
+    str, StateCustodialAuthority
+] = invert_enum_to_str_mappings(SUPERVISION_PERIOD_CUSTODIAL_AUTHORITY_TO_STR_MAPPINGS)
+
 
 STR_TO_SUPERVISION_PERIOD_SUPERVISION_TYPE_MAPPINGS: Dict[
     str, StateSupervisionPeriodSupervisionType
 ] = invert_enum_to_str_mappings(SUPERVISION_PERIOD_SUPERVISION_TYPE_TO_STR_MAPPINGS)
+
+STR_TO_SUPERVISION_PERIOD_ADMISSION_REASON_MAPPINGS: Dict[
+    str, StateSupervisionPeriodAdmissionReason
+] = invert_enum_to_str_mappings(SUPERVISION_PERIOD_ADMISSION_REASON_TO_STR_MAPPINGS)
 
 
 def residency_status_from_address(raw_text: str) -> StateResidencyStatus:
@@ -704,6 +767,87 @@ def supervision_period_supervision_type_mapper(
         supervision_types.add(supervision_type)
 
     return get_most_relevant_supervision_type(supervision_types)
+
+
+def supervision_period_custodial_authority_mapper(
+    raw_text: str,
+) -> Optional[StateCustodialAuthority]:
+    """Maps a list of supervision type codes to a custodial authority enum."""
+    if not raw_text:
+        return None
+
+    custodial_authority_strs = raw_text.split(",")
+
+    custodial_authorities = set()
+    for custodial_authority_str in custodial_authority_strs:
+        custodial_authority = (
+            STR_TO_SUPERVISION_PERIOD_CUSTODIAL_AUTHORITY_MAPPINGS.get(
+                custodial_authority_str, None
+            )
+        )
+        if not custodial_authority:
+            raise ValueError(
+                f"No mapping for supervision period custodial authority {custodial_authority_str}"
+            )
+
+        custodial_authorities.add(custodial_authority)
+
+    if StateCustodialAuthority.SUPERVISION_AUTHORITY in custodial_authorities:
+        return StateCustodialAuthority.SUPERVISION_AUTHORITY
+
+    if StateCustodialAuthority.OTHER_STATE in custodial_authorities:
+        return StateCustodialAuthority.OTHER_STATE
+
+    if StateCustodialAuthority.INTERNAL_UNKNOWN in custodial_authorities:
+        return StateCustodialAuthority.INTERNAL_UNKNOWN
+
+    raise ValueError(
+        f"Unexpected custodial authority in provided custodial_authorities set: [{custodial_authorities}]"
+    )
+
+
+def supervision_period_admission_reason_mapper(
+    raw_text: str,
+) -> Optional[StateSupervisionPeriodAdmissionReason]:
+    """Maps a list of supervision period admission reason codes to an admisison reason enum."""
+    if not raw_text:
+        return None
+
+    admission_reason_strs = raw_text.split(",")
+
+    admission_reasons = set()
+    for admission_reason_str in admission_reason_strs:
+        admission_reason = STR_TO_SUPERVISION_PERIOD_ADMISSION_REASON_MAPPINGS.get(
+            admission_reason_str, None
+        )
+        if not admission_reason:
+            raise ValueError(
+                f"No mapping for supervision period admission reason {admission_reason_str}"
+            )
+
+        admission_reasons.add(admission_reason)
+
+    if (
+        StateSupervisionPeriodAdmissionReason.RELEASE_FROM_INCARCERATION
+        in admission_reasons
+    ):
+        return StateSupervisionPeriodAdmissionReason.RELEASE_FROM_INCARCERATION
+
+    if StateSupervisionPeriodAdmissionReason.COURT_SENTENCE in admission_reasons:
+        return StateSupervisionPeriodAdmissionReason.COURT_SENTENCE
+
+    if (
+        StateSupervisionPeriodAdmissionReason.TRANSFER_FROM_OTHER_JURISDICTION
+        in admission_reasons
+    ):
+        return StateSupervisionPeriodAdmissionReason.TRANSFER_FROM_OTHER_JURISDICTION
+
+    if StateSupervisionPeriodAdmissionReason.INTERNAL_UNKNOWN in admission_reasons:
+        return StateSupervisionPeriodAdmissionReason.INTERNAL_UNKNOWN
+
+    raise ValueError(
+        f"Unexpected admission reason in provided admission_reasons set: [{admission_reasons}]"
+    )
 
 
 def role_subtype_mapper(raw_text: str) -> Optional[StateStaffRoleSubtype]:

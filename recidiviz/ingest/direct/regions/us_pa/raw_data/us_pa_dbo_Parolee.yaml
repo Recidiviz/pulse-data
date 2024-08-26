@@ -17,19 +17,33 @@ columns:
     field_type: person_external_id
     external_id_type: US_PA_PBPP
   - name: ptype_BoardParole
+    description: Supervision type board parole
   - name: ptype_BoardReParole
+    description: Supervision type board re-parole
   - name: Ptype_SpecProbParole
+    description: Supervision type special probation/parole
   - name: Ptype_OtherStateParole
+    description: Supervision type other state parole
   - name: Ptype_OtherStateProb
+    description: Supervision type other state probation
   - name: Pa_Drugs
+    description: Boolean Flag Indicating Drug Problems
   - name: PA_Alcoholic
+    description: Boolean Flag Indicating Alchohol Problems
   - name: PA_Psychiatric
+    description: Boolean Flag Indicating Psychiatric Problems
   - name: PA_PastAssaultive
+    description: Boolean Flag Indicating Past Assaultive Behavior/History
   - name: PA_Sexual
+    description: Boolean Flag Indicating Sex Offender Behavior/History
   - name: PA_Assaultive
+    description: Boolean Flag Indicating Assaultive Behavior/History
   - name: PA_DomesticViolence
+    description: Boolean Flag Indicating Domestic Violence Behavior/History
   - name: PA_Commutation
+    description: Boolean Flag Indicating Commutation
   - name: PA_Other
+    description: Other indicator
     is_pii: True
   - name: DOB
     is_pii: True
@@ -85,7 +99,9 @@ columns:
     description: |-
       Supervisor Position ID Number
   - name: Sex
+    description: Sex
   - name: Race
+    description: Race
   - name: Height
   - name: Weight
   - name: Hair
@@ -94,23 +110,32 @@ columns:
   - name: MaritalStatus
   - name: PA_OtherDesc
   - name: ParoleType
+    description: Parole type
   - name: ParoleType2
+    description: Parole type 2
   - name: dobid
     is_pii: True
   - name: SexOffenderCode
+    description: Sex offender code
   - name: ParoleCountID
-    is_pii: True
     description: |-
       External ID for a particular stint of a particular person under supervision by PADOC
   - name: Miscellaneous
     is_pii: True
   - name: BoardParole
+    description: Boolean indicator for whether this is a board parole term
   - name: BoardReParole
+    description: Boolean indicator for whether this is a board reparole term
   - name: SpecProbParole
+    description: Boolean indicator for whether this is a special probation parole term
   - name: OtherStateParole
+    description: Boolean indicator for whether this is an other state parole term
   - name: OtherStateProb
+    description: Boolean indicator for whether this is an other state probation term
   - name: Grade
+    description: Supervision level
   - name: GradeDate
+    description: Superision level grade date
   - name: Act97
 
 table_relationships:

@@ -13,16 +13,16 @@ input_columns:
   - admission_reason
   - termination_reason
   - status_code
-  - status_code_update
-  - next_status_code
   - supervision_type
   - county_of_residence
   - supervision_level
-  - condition_codes
-  - supervising_officer_id
   - district_office
+  - supervising_officer_id
   - district_sub_office_id
   - supervision_location_org_code
+  - condition_codes
+  - next_status_code
+  - prev_status_code
   - period_seq_num
 unused_columns: []
 output:
@@ -56,48 +56,33 @@ output:
               - $else:
                   $enum_mapping:
                     $raw_text: supervision_type
-                    $mappings:
-                      StateSupervisionPeriodSupervisionType.DUAL:
-                        - "4C" # COOP case - Offender on both PBPP and County Supervision
-                      StateSupervisionPeriodSupervisionType.PAROLE:
-                        - "02" # Paroled from SCI to PBPP Supervision
-                        - "03" # Reparoled from SCI to PBPP Supervision
-                        - "05" # Special Parole sentenced by County and Supervised by PBPP
-                        - "06" # Paroled/Reparoled by other state and transferred to PA
-                        - "B2" # Released according to Boot Camp Law
-                        - "C2" # CCC Parole
-                        - "C3" # CCC Reparole
-                        - "R2" # RSAT Parole
-                        - "R3" # RSAT Reparole
-                      StateSupervisionPeriodSupervisionType.PROBATION:
-                        - "04" # Sentenced to Probation by County Judge and Supervised by PBPP
-                        - "07" # Sentenced to Probation by other state and transferred to PA
-                        - "4A" # ARD (Accelerated Rehabilitative Disposition) case - Sentenced by County Judge, Supervised by PBPP
-                        - "4B" # PWV (Probation Without Verdict) case - Sentenced by County Judge and Supervised by PBPP
-                      StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN:
-                        - "08" # Other States’ Deferred Sentence
-                        - "09" # Emergency Release - used for COVID releases
+                    $custom_parser: us_pa_custom_enum_parsers.supervision_period_supervision_type_mapper
           admission_reason:
             $conditional:
               - $if:
-                  $in:
-                    $value: status_code_update
-                    $options:
-                      - $literal("20") # UCV Violation (New Offense) Detention
-                      - $literal("22") # UCV Violation (Tech & New Offense) Detention
-                      - $literal("32") # UCV Violation (Tech) Detention
-                      - $literal("34") # UCV Violation (New Offense) Detention
-                      - $literal("36") # CV Violation (New Offense) Detention
-                      - $literal("29") # Absconder Status - Not Reporting
-                      - $literal("30") # UCV and Absconder Status
-                      # These detainer statuses indicate that the person has been paroled by the Board and released to a detainer
-                      # At this point, their location is only being tracked administratively by the PBPP
-                      - $literal("50") # Federal/US Marshall Detainer
-                      - $literal("51") # Other State Detainer
-                      - $literal("52") # INS Detainer
+                  $and:
+                    - $not:
+                        $equal:
+                          - prev_status_code
+                          - status_code
+                    - $in:
+                        $value: status_code
+                        $options:
+                          - $literal("20") # UCV Violation (New Offense) Detention
+                          - $literal("22") # UCV Violation (Tech & New Offense) Detention
+                          - $literal("32") # UCV Violation (Tech) Detention
+                          - $literal("34") # UCV Violation (New Offense) Detention
+                          - $literal("36") # CV Violation (New Offense) Detention
+                          - $literal("29") # Absconder Status - Not Reporting
+                          - $literal("30") # UCV and Absconder Status
+                          # These detainer statuses indicate that the person has been paroled by the Board and released to a detainer
+                          # At this point, their location is only being tracked administratively by the PBPP
+                          - $literal("50") # Federal/US Marshall Detainer
+                          - $literal("51") # Other State Detainer
+                          - $literal("52") # INS Detainer
                 $then:
                   $enum_mapping:
-                    $raw_text: status_code_update
+                    $raw_text: status_code
                     $mappings:
                       StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE:
                         - "20" # UCV Violation (New Offense) Detention
@@ -116,27 +101,7 @@ output:
                 $then:
                   $enum_mapping:
                     $raw_text: admission_reason
-                    $mappings:
-                      StateSupervisionPeriodAdmissionReason.RELEASE_FROM_INCARCERATION:
-                        - "02" # Paroled from SCI to PBPP Supervision
-                        - "03" # Reparoled from SCI to PBPP Supervision
-                        - "B2" # Released according to Boot Camp Law
-                        - "C2" # CCC Parole
-                        - "C3" # CCC Reparole
-                        - "R2" # RSAT Parole
-                        - "R3" # RSAT Reparole
-                      StateSupervisionPeriodAdmissionReason.COURT_SENTENCE:
-                        - "04" # Sentenced to Probation by County Judge and Supervised by PBPP
-                        - "05" # Special Parole sentenced by County and Supervised by PBPP
-                        - "4A" # ARD case - Sentenced by County Judge and Supervised by PBPP
-                        - "4B" # PWV case - Sentenced by County Judge and Supervised by PBPP
-                        - "4C" # COOP case - Offender on both PBPP and County Supervision
-                      StateSupervisionPeriodAdmissionReason.INTERNAL_UNKNOWN:
-                        - "08" # Other States' Deferred Sentence
-                        - "09" # Emergency Release - used for COVID releases
-                      StateSupervisionPeriodAdmissionReason.TRANSFER_FROM_OTHER_JURISDICTION:
-                        - "06" # Paroled/Reparoled by other state and transferred to PA
-                        - "07" # Sentenced to Probation by other state and transferred to PA
+                    $custom_parser: us_pa_custom_enum_parsers.supervision_period_admission_reason_mapper
               - $else: $literal_enum(StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE)
           start_date: start_date
           termination_reason:
@@ -229,29 +194,20 @@ output:
                         - "52" # INS Detainer
                       StateCustodialAuthority.OTHER_STATE:
                         - "51" # Other State Detainer
+              - $else_if:
+                  $equal:
+                    - $literal("FEDERA")
+                    - county_of_residence
+                $then:
+                  $enum_mapping:
+                    $raw_text: county_of_residence
+                    $mappings:
+                      StateCustodialAuthority.FEDERAL:
+                        - "FEDERA"
               - $else:
                   $enum_mapping:
                     $raw_text: supervision_type
-                    $mappings:
-                      StateCustodialAuthority.SUPERVISION_AUTHORITY:
-                        - "02" # Paroled from SCI to PBPP Supervision
-                        - "03" # Reparoled from SCI to PBPP Supervision
-                        - "04" # Sentenced to Probation by County Judge and Supervised by PBPP
-                        - "05" # Special Parole sentenced by County and Supervised by PBPP
-                        - "4A" # ARD (Accelerated Rehabilitative Disposition) case - Sentenced by County Judge, Supervised by PBPP
-                        - "4B" # PWV (Probation Without Verdict) case - Sentenced by County Judge and Supervised by PBPP
-                        - "4C" # COOP case - Offender on both PBPP and County Supervision
-                        - "B2" # Released according to Boot Camp Law
-                        - "C2" # CCC Parole
-                        - "C3" # CCC Reparole
-                        - "R2" # RSAT Parole
-                        - "R3" # RSAT Reparole
-                      StateCustodialAuthority.OTHER_STATE:
-                        - "06" # Paroled/Reparoled by other state and transferred to PA
-                        - "07" # Sentenced to Probation by other state and transferred to PA
-                      StateCustodialAuthority.INTERNAL_UNKNOWN:
-                        - "08" # Other States’ Deferred Sentence
-                        - "09" # Emergency Release - used for COVID releases
+                    $custom_parser: us_pa_custom_enum_parsers.supervision_period_custodial_authority_mapper
           supervision_level:
             $conditional:
               - $if:

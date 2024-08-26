@@ -23,12 +23,8 @@ currently and previously supervised people.
 
 Since probation is supervised by the county in PA, the vast majority of supervision periods in this view are parole periods.
 
-TODO(#31202): In the raw data, each individual is identified by a ParoleNumber, and each supervision stint has a ParoleCountId.  This view assumes for now that each 
-ParoleCountId is a distinct and non-overlapping period of supervision and thus groups/infers information by ParoleCountId.  However, this may not be true
-in practice because there are some overlapping dates in the raw data (whether intentional or due to data entry errors), and so currently this draft of the
-view still results in some overlapping supervision periods.  We will revise this view when we get some more clarity from PA about whether these overlapping
-parole counts are meaningful or data errors.  (Since PA overwrites their data in place, it's also possible that we are observing deleted data?? Will also
-get some clarity from PA about that).
+Remaining known issues:
+- There are some overlapping supervision periods due to some people having multiple ParoleNumbers that cannot be associated until ingest time (since PA IDs are complicated and require graph searching)
 """
 
 from recidiviz.calculator.query.sessions_query_fragments import aggregate_adjacent_spans
@@ -40,412 +36,523 @@ from recidiviz.utils.metadata import local_project_id_override
 
 VIEW_QUERY_TEMPLATE = f"""WITH
 
--- From the dbo_Release table that stores currently active release information, get all information
--- we've observed over time for admission reason (RelEntryCodeofCase) and parole start date (RelReleaseDate).
--- Also pull in update_datetime as a possible period start/end date to use later.
-dbo_Release_dates AS (
-  SELECT 
+-- This CTE grabs all parole start info (parole start date and admission reason) from the history table 
+-- (which holds all release info that's archived once a person is discharged) and from the current table.
+-- In cases where release info appears for a person and parole count in both the current and archived table
+-- (which happens in cases where the info has been archived sometime after we first started receiving data
+-- from PA), we'll prioritize the final info from the history table.
+-- We filter out ParoleCountIds that are "-1" (which are invalid/errors) and "0" (which usually denote incarceration related info).
+-- Parole counts -1 do no appear in teh dbo_Release table.
+
+all_parole_start_info AS (
+    SELECT DISTINCT
+      ParoleNumber,
+      ParoleCountId,
+      SAFE.PARSE_DATE('%Y%m%d', HReReldate) AS parole_start_date,
+      HreEntryCode as admission_reason
+    FROM {{dbo_Hist_Release}}
+    WHERE ParoleCountId NOT IN ('0', '-1')
+    
+    UNION DISTINCT 
+    
+    SELECT DISTINCT 
+      ParoleNumber,
+      ParoleCountId,
+      DATE(CAST(RelReleaseDateYear AS INT64), CAST(RelReleaseDateMonth AS INT64), CAST(RelReleaseDateDay AS INT64)) AS parole_start_date,
+      RelEntryCodeofCase AS admission_reason
+    FROM {{dbo_Release}}
+    WHERE ParoleCountId <> '0'
+),
+
+-- This CTE grabs the start and end dates for all parole terms we want to keep in our final 
+-- set of supervision periods.  We exclude parole terms that have deletion codes 50 and 51 since
+-- those are parole terms that were recorded in error.  We also exclude parole terms that start
+-- and end on the same day as those are likely also data entry errors.  We only observe information
+-- about deletion codes and end dates from the dbo_Hist_Release table which is why we have to join
+-- that table on in this CTE.
+
+parole_counts_to_keep AS (
+  SELECT DISTINCT
     ParoleNumber,
     ParoleCountId,
-    RelEntryCodeOfCase,
-    SAFE.PARSE_DATE('%Y%m%d', CONCAT(RelReleaseDateYear, RelReleaseDateMonth, RelReleaseDateDay)) as RelReleaseDate,
-    update_datetime
-  from {{dbo_Release@ALL}}
+    parole_start_date,
+    SAFE.PARSE_DATE('%Y%m%d', HReDelDate) AS parole_end_date
+  FROM all_parole_start_info
+  LEFT JOIN {{dbo_Hist_Release}} USING(ParoleNumber, ParoleCountId)
+  WHERE ParoleCountId NOT IN ('0', '-1')
+       AND (HReDelCode IS NULL OR HReDelCode NOT IN ('50', '51'))
+       AND (HReDelDate IS NULL OR HReReldate < HReDelDate)
 ),
 
--- From the dbo_ReleaseInfo table that stores currently active release information, get all information
--- we've observed over time for supervision level (RelFinalRiskGrade), supervision county (RelCountyResidence),
--- and supervision district (RelDo).
--- Also pull in update_datetime as a possible period start/end date to use later.
-dbo_ReleaseInfo_dates AS (
-  SELECT 
-    ParoleNumber, 
-    ParoleCountId, 
-    RelFinalRiskGrade, 
-    RelCountyResidence,
-    RelDO,
-    update_datetime
+-- Since people can be on dual supervision in PA, they could have multiple releases
+-- from incarceration recorded from them on the same day with different admission reasons
+-- (ex: both parole and special probation).  This CTE dedups parole start information to
+-- one row per date by string aggregating the distinct admission reasons that occur on the same
+-- date.  We also note the highest parole count id associated with this parole start date for
+-- reference later.
+
+deduped_parole_starts AS (
+  SELECT
+    ParoleNumber,
+    parole_start_date,
+    parole_start_date AS key_date,
+    STRING_AGG(DISTINCT admission_reason ORDER BY admission_reason) AS admission_reason,
+    MAX(CAST(ParoleCountId as INT64)) AS highest_parole_count_start
+  FROM all_parole_start_info
+  INNER JOIN parole_counts_to_keep USING(ParoleNumber, ParoleCountId, parole_start_date)
+  GROUP BY 1,2,3
+),
+
+
+-- This CTE compiles parole end/discharge information (termination reason and parole date) as well
+-- as supervision attributes at the time of discharge (status code, supervision county, supervision
+-- level, and district office).  Since there are sometimes multiple discharges recorded on the same
+-- day (in cases of dual supervision), this CTE dedups it to a single set of parole end information
+-- per date by prioritizing the parole end record with the highest HReleaseId (which are assigned
+-- sequentially).  We also track the highest parole count id associated with this parole end date 
+-- for reference later.
+
+parole_ends AS (
+  SELECT DISTINCT
+    ParoleNumber,
+    HReStatcode AS status_code,
+    HReDelCode as termination_reason,
+    SAFE.PARSE_DATE('%Y%m%d', HReDelDate) AS parole_end_date,
+    SAFE.PARSE_DATE('%Y%m%d', HReDelDate) AS key_date,
+    HReCntyRes AS county,
+    HReGradeSup AS supervision_level,
+    HReDo AS district_office,
+    MAX(CAST(ParoleCountId AS INT64)) 
+      OVER(PARTITION BY ParoleNumber, SAFE.PARSE_DATE('%Y%m%d', HReDelDate)) AS highest_parole_count_end
+  FROM {{dbo_Hist_Release}}
+  INNER JOIN parole_counts_to_keep USING(ParoleNumber, ParoleCountId)
+  QUALIFY ROW_NUMBER() 
+        OVER(PARTITION BY ParoleNumber, key_date
+              ORDER BY CAST(HReleaseId as INT64) DESC) = 1
+),
+
+-- This CTE tracks updates in release info such as county and district office over time.
+-- In cases where there are multiple updates to release info on the same date, this CTE
+-- prioritizes the updates associated with the highest parole count id.
+-- Note: because there are no dates associated with the updates for these fields in the 
+--       raw table, we use the update_datetime of the file as an approximation.
+
+dbo_ReleaseInfo_other AS (
+  SELECT DISTINCT
+      ParoleNumber,
+      RelCountyResidence AS county,
+      RelDO as district_office,
+      update_datetime AS key_date
   FROM {{dbo_ReleaseInfo@ALL}}
+  INNER JOIN parole_counts_to_keep USING(ParoleNumber, ParoleCountId)
+  WHERE (RelCountyResidence IS NOT NULL OR RelDO IS NOT NULL)
+  QUALIFY ROW_NUMBER() 
+          OVER(PARTITION BY ParoleNumber, key_date
+                ORDER BY CAST(ParoleCountId AS INT64) DESC) = 1
 ),
 
--- From the dbo_RelStatus table that stores currently active release information, get all information
--- we've observed over time for supervision status (RelStatusCode).
--- Also pull in update_datetime as a possible period start/end date to use later.
-dbo_RelStatus_dates AS (
-  SELECT 
-    ParoleNumber, 
-    ParoleCountId, 
-    RelStatusCode,
+-- This CTE tracks updates in supervision level from the release info table over time.
+-- In cases where there are multiple updates to supervision level on the same date, this CTE
+-- prioritizes the updates associated with the highest parole count id.
+
+dbo_ReleaseInfo_levels AS (
+  SELECT DISTINCT
+      ParoleNumber, 
+      GREATEST(
+        DATE(CAST(relCurrentRiskGradeDateYear AS INT64), 
+            CAST(relCurrentRiskGradeDateMonth AS INT64), 
+            CAST(relCurrentRiskGradeDateDay AS INT64)),
+        parole_start_date
+      ) AS key_date,
+      RelFinalRiskGrade as supervision_level,
+  FROM {{dbo_ReleaseInfo@ALL}}
+  INNER JOIN parole_counts_to_keep USING(ParoleNumber, ParoleCountId)
+  WHERE relCurrentRiskGrade IS NOT NULL
+  QUALIFY ROW_NUMBER() 
+    OVER(PARTITION BY ParoleNumber, key_date
+        ORDER BY CAST(ParoleCountId AS INT64) DESC) = 1 
+),
+
+-- This CTE tracks updates in supervision status from the status table over time.
+-- If the status was updated before the parole start date for this parole count id, we
+-- associate the status update with the parole start date.
+-- In cases where there are multiple updates to supervision status on the same date, this CTE
+-- prioritizes the updates associated with the highest parole count id and the most recent update_datetime.
+
+dbo_RelStatus AS (
+  SELECT DISTINCT
+    ParoleNumber,
+    ParoleCountId,
+    RelStatusCode AS status_code,
+    GREATEST(
+      DATE(CAST(RelStatusDateYear AS INT64), CAST(RelStatusDateMonth AS INT64), CAST(RelStatusDateDay AS INT64)),
+      parole_start_date
+    ) AS key_date,
     update_datetime
   FROM {{dbo_RelStatus@ALL}}
+  INNER JOIN parole_counts_to_keep USING(ParoleNumber, ParoleCountId)
+  WHERE RelStatusCode IS NOT NULL
+  QUALIFY ROW_NUMBER() 
+      OVER(PARTITION BY ParoleNumber, key_date
+           ORDER BY CAST(ParoleCountId AS INT64) DESC, update_datetime DESC) = 1
 ),
 
--- Identify all parole counts that only appear in the historical release table (dbo_Hist_Release) and 
--- don't ever appear in the current release table (dbo_Release).  This encompasses all parole counts
--- whose information was already archived before we started receiving data from Pennsylvania.
-historical_parole_counts AS (
-  select
-    DISTINCT
-    ParoleNumber,
-    ParoleCountId
-  from {{dbo_Hist_Release@ALL}}
+-- This CTE tracks updates in supervision officer assignment from the officer assignment table over time.
+-- If the supervision officer was updated before the parole start date for this parole count id, we
+-- associate the supervision officer update with the parole start date.
+-- In cases where there are multiple updates to supervision officer on the same date, this CTE
+-- prioritizes the updates associated with the highest parole count id and the last assignment based on timestamp.
+-- In cases where a single officer has multiple employee numbers, we associate the officer with the most recently 
+-- seen employee number.
+-- Finally, we also use the supervision location org code found in the supervisor field of the officer assignment
+-- table to glean some additional supervision location data using a location reference table we've compiled.
 
-  except distinct 
+dbo_RelAgentHistory AS (
 
-  select 
-    DISTINCT
-    ParoleNumber,
-    ParoleCountId
-  from {{dbo_Release@ALL}}
+    WITH 
+      -- For each agent (identified by agent name), get the most recent EmpNum id for each person.
+      -- There are only 16 times where a staff member has multiple EmpNum over time
+      agent_employee_numbers AS (
+        SELECT
+          AgentName,
+          Agent_EmpNum,
+        FROM {{dbo_RelAgentHistory}}
+        QUALIFY ROW_NUMBER() 
+                  OVER(PARTITION BY AgentName 
+                      ORDER BY CAST((Agent_EmpNum IS NOT NULL) AS INT64) DESC, CAST(LastModifiedDateTime AS DATETIME) DESC, ParoleNumber DESC, CAST(ParoleCountID AS INT64) DESC) = 1
+      )
+
+      SELECT 
+        * EXCEPT(level_2_supervision_location_external_id, level_1_supervision_location_external_id, supervision_location_org_code),
+        level_2_supervision_location_external_id AS district_office,
+        level_1_supervision_location_external_id AS district_sub_office_id,
+        CAST(supervision_location_org_code AS STRING) AS supervision_location_org_code,
+      FROM (
+          SELECT DISTINCT 
+            ParoleNumber,
+            CASE 
+              WHEN AgentName LIKE '%Vacant, Position%' OR AgentName LIKE '%Position, Vacant%' 
+                THEN 'VACANT'
+              ELSE curr.Agent_EmpNum
+              END AS supervising_officer_id,
+            GREATEST(DATE(CAST(LastModifiedDateTime AS DATETIME)), parole_start_date) AS key_date,
+            CAST(SPLIT(SupervisorName, ' ')[SAFE_OFFSET(ARRAY_LENGTH(SPLIT(SupervisorName, ' '))-2)] AS INT64) AS supervision_location_org_code,
+          FROM {{dbo_RelAgentHistory}}
+          LEFT JOIN agent_employee_numbers curr USING(AgentName)
+          INNER JOIN parole_counts_to_keep USING(ParoleNumber, ParoleCountId)
+          WHERE AgentName IS NOT NULL
+          QUALIFY ROW_NUMBER() OVER(PARTITION BY ParoleNumber, key_date
+                                ORDER BY CAST(ParoleCountId AS INT64) DESC, CAST(LastModifiedDateTime AS DATETIME) DESC) = 1
+      )
+    LEFT JOIN {{RECIDIVIZ_REFERENCE_supervision_location_ids}}
+      ON CAST(Org_cd as INT64) = supervision_location_org_code
 ),
 
--- From the dbo_ConditionCode table, get all information we've observed over time for supervision 
--- conditions (dbo_ConditionCode), filtering out ParoleCountId = -1 (which we're told are invalid data)
--- Also pull in update_datetime as a possible period start/end date to use later.
--- TODO(#31214): What do we do about ParoleCountId = 0 since ParoleCountIds = '0' only appear in this table 
--- and rarely in other release tables? Question out to PA research.
-dbo_ConditionCode_dates AS (
-  SELECT
-    ParoleNumber,
-    ParoleCountID,
-    update_datetime,
-    STRING_AGG(DISTINCT CndConditionCode, ',' ORDER BY CndConditionCode) as condition_codes,
-  FROM {{dbo_ConditionCode@ALL}} cc
-  WHERE ParoleCountId <> '-1'
-  GROUP BY ParoleNumber, ParoleCountID, update_datetime
-),
+-- This CTE tracks updates in supervision level from the parolee table over time.
+-- In cases where there are multiple updates to supervision level on the same date, this CTE
+-- prioritizes the updates associated with the highest parole count id and most recent update datetime.
+-- We also note the earliest supervision level date that we observe in this table for each person for
+-- reference later (when we choose which source of data to get supervision level from).
 
--- For all ParoleCountIds that were active at some point after we started receiving data from PA,
--- grab all conditions data we've observed over time
-current_conditions AS (
-  SELECT  dbo_ConditionCode_dates.*
-  FROM dbo_ConditionCode_dates
-  LEFT JOIN historical_parole_counts USING(ParoleNumber, ParoleCountID)
-  WHERE historical_parole_counts.ParoleNumber IS NULL
-),
-
--- For all ParoleCountIds that were already archived by the time we started receiving data from PA,
--- grab the last/most recent conditions 
--- (not sure why we see conditions updated in this table after the ParoleCountId had already been 
---  archived, but in those cases, we want to go with the final set of conditions)
-historical_conditions AS (
-  SELECT * EXCEPT(update_datetime, recency)
+dbo_Parolee_levels AS (
+  SELECT *,
+    MIN(key_date) OVER(PARTITION BY ParoleNumber) AS first_appearance_date
   FROM (
-    SELECT 
-      dbo_ConditionCode_dates.*,
-      ROW_NUMBER() OVER(PARTITION BY ParoleNumber, ParoleCountID ORDER BY update_datetime desc) AS recency
-    FROM dbo_ConditionCode_dates
-    INNER JOIN historical_parole_counts USING(ParoleNumber, ParoleCountID)
-  )
-  WHERE recency = 1
-),
-
--- Join all information we get from the current release tables together by ParoleNumber, ParoleCountId, and update_datetime
--- Create a row number variable that tracks ordering of rows within a parole count id
-current_release_info AS (
-  SELECT
-    ParoleNumber, 
-    ParoleCountId,
-    -1 as HReleaseId,
-    RelStatusCode AS status_code,
-    RelEntryCodeOfCase as supervision_type,
-    RelReleaseDate as parole_start_date,
-    CAST(NULL AS STRING) as termination_reason,
-    CAST(NULL AS DATE) as parole_end_date,
-    RelCountyResidence as county_of_residence,
-    RelFinalRiskGrade as supervision_level,
-    RelDO as district_office,
-    condition_codes,
-    update_datetime,
-    ROW_NUMBER() OVER(PARTITION BY ParoleNumber, ParoleCountId ORDER BY update_datetime) as rn
-  FROM dbo_Release_dates
-  FULL OUTER JOIN dbo_ReleaseInfo_dates USING(ParoleNumber, ParoleCountId, update_datetime)
-  FULL OUTER JOIN dbo_RelStatus_dates USING(ParoleNumber, ParoleCountId, update_datetime)
-  FULL OUTER JOIN current_conditions USING(ParoleNumber, ParoleCountId, update_datetime)
-),
-
--- Gather all information from the dbo_Hist_Release table, which contains all archived release information,
--- which means this will include all releases that were archived before we started receiving data, as well
--- as all releases that have been archived since we started receiving data.
--- For each ParoleCountId, we filter down to the row with the most recent HReleaseId and updatedatetime
--- and we filter out any ParoleCountIds that are '-1' since we're told those are invalid data.
--- 
--- TODO(#31216): should we not filter down to the most recent HReleaseId?
-dbo_Hist_Release_dates AS (
-  SELECT * EXCEPT(recency)
-  FROM (
-    SELECT 
-      ParoleNumber, 
-      ParoleCountId,
-      CAST(HReleaseId AS INT64) as HReleaseId,
-      HReStatcode as status_code,
-      HReEntryCode as supervision_type,
-      SAFE.PARSE_DATE('%Y%m%d', HReReldate) as parole_start_date,
-      HReDelCode as termination_reason,
-      -- Sometimes HReDelDate is earlier than HReReldate, so reset those to be one day after (TODO(#31217) OR EXCLUDE??)
-      -- As of now, there are ~700 cases of this
-      GREATEST(DATE_ADD(SAFE.PARSE_DATE('%Y%m%d', HReReldate), INTERVAL 1 DAY), SAFE.PARSE_DATE('%Y%m%d', HReDelDate)) as parole_end_date,
-      HReCntyRes as county_of_residence,
-      HReGradeSup as supervision_level,
-      HReDo as district_office,
-      condition_codes,
-      ROW_NUMBER() OVER(PARTITION BY ParoleNumber, ParoleCountId ORDER BY CAST(HReleaseId AS INT64) DESC, update_datetime DESC) as recency
-    FROM {{dbo_Hist_Release@ALL}}
-    LEFT JOIN historical_conditions USING(ParoleNumber, ParoleCountId)
-    WHERE ParoleCountId <> '-1'
-  )
-  WHERE recency = 1
-),
-
--- For each agent (identified by agent name), get the most recent EmpNum id for each person.
--- There are only 16 times where a staff member has multiple EmpNum over time
-agent_employee_numbers AS (
-  select
-    AgentName,
-    Agent_EmpNum
-  from (
-  select
-    AgentName,
-    Agent_EmpNum,
-    ROW_NUMBER() OVER(PARTITION BY AgentName ORDER BY CAST(LastModifiedDateTime AS DATETIME) DESC, ParoleNumber, CAST(ParoleCountID AS INT64)) as recency_rank
-  from {{dbo_RelAgentHistory}}
-  )
-  WHERE recency_rank = 1
-),
-
--- Gather supervision agent assignments over time from the dbo_RelAgentHistory table.
--- This table is ledger-style, so instead of pulling update_datetime and using the @ALL table,
--- we can just pull from the _latest view of the original table directly and use LastModifiedDateTime
--- as the update_datetime.
--- We also merge on RECIDIVIZ_REFERENCE_supervision_location_ids to get additional supervision information.
--- This table is mapped on using the supervision location org code that's found in the SupervisorName field.
--- When there are multiple assignments within the same d ay, we keep only the final assignment on that day
-
-dbo_RelAgentHistory_dates AS (
-  select * EXCEPT(level_2_supervision_location_external_id, level_1_supervision_location_external_id, supervision_location_org_code),
-    level_2_supervision_location_external_id AS district_office,
-    level_1_supervision_location_external_id AS district_sub_office_id,
-    CAST(supervision_location_org_code AS STRING) AS supervision_location_org_code,
-  from (
-    select DISTINCT
-      ParoleNumber,
-      CAST(ParoleCountId as INT64) as ParoleCountId,
-      CAST(LastModifiedDateTime AS DATETIME) as update_datetime,
-      CASE 
-        WHEN AgentName LIKE '%Vacant, Position%' OR AgentName LIKE '%Position, Vacant%' 
-          THEN 'VACANT'
-        ELSE curr.Agent_EmpNum
-        END AS supervising_officer_id,
-      CAST(SPLIT(SupervisorName, ' ')[SAFE_OFFSET(ARRAY_LENGTH(SPLIT(SupervisorName, ' '))-2)] AS INT64) AS supervision_location_org_code,
-      ROW_NUMBER() OVER(PARTITION BY ParoleNumber, ParoleCountId, DATE(CAST(LastModifiedDateTime AS DATETIME)) ORDER BY CAST(LastModifiedDateTime AS DATETIME) DESC) as recency
-    from {{dbo_RelAgentHistory}} hist
-    left join agent_employee_numbers curr USING(AgentName)
-  )
-  LEFT JOIN {{RECIDIVIZ_REFERENCE_supervision_location_ids}}
-    ON CAST(Org_cd AS INT64) = supervision_location_org_code
-  -- if there are multiple agents assigned on the same day, only keep the final one
-  WHERE recency = 1
-),
-
--- Union all the release information together and cast ParoleCountIds and HReleaseIds properly as integers for sorting purposes later
--- 
-unioned_release_info_as_edges AS (
-
-  -- for every ParoleCount that appears in the current data that's not the earliest record, add an edge for the date we observe a change in the information
-  (select 
-    ParoleNumber,
-    status_code,
-    supervision_type,
-    parole_start_date,
-    termination_reason,
-    parole_end_date,
-    county_of_residence,
-    supervision_level,
-    district_office,
-    condition_codes,
-    DATE(update_datetime) as update_datetime,
-    CAST(ParoleCountId AS INT64) as ParoleCountId,
-    CAST(HReleaseId AS INT64) as HReleaseId,
-    CAST(NULL as STRING) as admission_reason
-  from current_release_info
-  where rn <> 1)
-
-  UNION DISTINCT
-
-  -- for every ParoleCount that appears in the current data, add a starting edge for the earliest record that starts on the parole_start_date
-  (select 
-    ParoleNumber,
-    status_code,
-    supervision_type,
-    parole_start_date,
-    termination_reason,
-    parole_end_date,
-    county_of_residence,
-    supervision_level,
-    district_office,
-    condition_codes,
-    parole_start_date as update_datetime,
-    CAST(ParoleCountId AS INT64) as ParoleCountId,
-    CAST(HReleaseId AS INT64) as HReleaseId,
-    supervision_type as admission_reason
-  from current_release_info
-  where rn = 1)
-
-  UNION DISTINCT
-
-  -- for ParoleCounts that only appear in the historical data, add a starting edge
-  -- that starts on the parole_start_date
-  (select 
-    * EXCEPT(HReleaseId, ParoleCountId), 
-    parole_start_date as update_datetime,
-    CAST(ParoleCountId AS INT64) as ParoleCountId,
-    CAST(HReleaseId AS INT64) as HReleaseId,
-    supervision_type as admission_reason
-  from dbo_Hist_Release_dates
-  inner join historical_parole_counts USING(ParoleNumber, ParoleCountId))
-
-  UNION DISTINCT
-
-  -- for all ParoleCounts that appear in the historical data, add an ending edge
-  -- that occurs on the parole_end_date
-  (select 
-    * EXCEPT(HReleaseId, ParoleCountId), 
-    parole_end_date as update_datetime,
-    CAST(ParoleCountId AS INT64) as ParoleCountId,
-    CAST(HReleaseId AS INT64) as HReleaseId,
-    CAST(NULL as STRING) as admission_reason
-  from dbo_Hist_Release_dates)
-),
-
--- Filter down to only keep rows where parole start date is not null and parole start date is distinct 
--- from parole end date if parole end date is not null since both are scenarios are data entry errors
-final_combined_info_from_release_tables AS (
-  SELECT *
-  FROM unioned_release_info_as_edges
+    SELECT distinct 
+        ParoleNumber, 
+        Grade AS supervision_level, 
+        GREATEST(COALESCE(SAFE.PARSE_DATE('%m/%d/%Y', GradeDate), SAFE.PARSE_DATE('%d/%m/%Y', GradeDate)), parole_start_date) AS key_date,
+    FROM {{dbo_Parolee@ALL}}
+    INNER JOIN parole_counts_to_keep USING(ParoleNumber, ParoleCountId)
     WHERE 
-      parole_start_date IS NOT NULL
-      AND (parole_start_date <> parole_end_date OR parole_end_date IS NULL)
+      Grade IS NOT NULL
+      AND COALESCE(SAFE.PARSE_DATE('%m/%d/%Y', GradeDate), SAFE.PARSE_DATE('%d/%m/%Y', GradeDate))  IS NOT NULL
+    QUALIFY ROW_NUMBER() 
+            OVER(PARTITION BY ParoleNumber, key_date
+                  ORDER BY CAST(ParoleCountId as INT64) DESC, update_datetime DESC) = 1
+  )
 ),
 
--- Join on data from release tables with supervision agent assignment data, and then use LAST_VALUE
--- to fill in information across rows.
--- For termination_reason, and parole_end_date, we'll fill in with the last seen value across all rows within the parole count.
--- For all other variables, we'll fill in with the most recently seen non-null value for each row within the parole count.
-supervision_statuses_filled_in AS (
-  SELECT
-    ParoleNumber,
-    ParoleCountId,
-    update_datetime,
-    HReleaseId,
-    admission_reason,
-    LAST_VALUE(status_code IGNORE NULLS) OVER (parole_count_window) as status_code,
-    LAST_VALUE(supervision_type IGNORE NULLS) OVER (parole_count_window) as supervision_type,
-    LAST_VALUE(parole_start_date IGNORE NULLS) OVER (parole_count_window) as parole_start_date,
-    LAST_VALUE(county_of_residence IGNORE NULLS) OVER (parole_count_window) as county_of_residence,
-    LAST_VALUE(supervision_level IGNORE NULLS) OVER (parole_count_window) as supervision_level,
-    LAST_VALUE(condition_codes IGNORE NULLS) OVER (parole_count_window) as condition_codes,
-    LAST_VALUE(supervising_officer_id IGNORE NULLS) OVER (parole_count_window) as supervising_officer_id,
-    LAST_VALUE(agent.district_office IGNORE NULLS) OVER (parole_count_window) as agent_district_office,
-    LAST_VALUE(release.district_office IGNORE NULLS) OVER (parole_count_window) as release_district_office,
-    LAST_VALUE(district_sub_office_id IGNORE NULLS) OVER (parole_count_window) as district_sub_office_id,
-    LAST_VALUE(supervision_location_org_code IGNORE NULLS) OVER (parole_count_window) as supervision_location_org_code,
-    LAST_VALUE(termination_reason IGNORE NULLS) OVER
-      (
-      PARTITION BY ParoleNumber, ParoleCountID
-      ORDER BY update_datetime, HReleaseId
-      ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOllOWING
-      ) as termination_reason,
-    LAST_VALUE(parole_end_date IGNORE NULLS) OVER
-      (
-      PARTITION BY ParoleNumber, ParoleCountID
-      ORDER BY update_datetime, HReleaseId
-      ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOllOWING
-      ) as parole_end_date,
-  FROM final_combined_info_from_release_tables release
-  -- should we join on by ParoleCountId or no?
-  FULL OUTER JOIN dbo_RelAgentHistory_dates agent USING(ParoleNumber, ParoleCountID, update_datetime)
-  WINDOW parole_count_window AS (
-    PARTITION BY ParoleNumber, ParoleCountID
-    ORDER BY update_datetime, HReleaseId
-    ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW)
-),
+-- This CTE tracks updates to the special conditions imposed by the parole board over time.
+-- We pull special conditions from the condition code table and join on the board action table
+-- to get the date the parole board imposed the conditions.  We then filter down to just special 
+-- conditions (which are the condition codes bookended by the START and END condition codes), and 
+-- then string aggregate all conditions associated with a single ParoleNumber, ParoleCountId, and key_date.
+-- 
+-- Sometimes special conditions for supervision are imposed for ParoleCountId = 0, which sometimes
+-- happens before a person's release onto supervision, or in other cases during an active parole term.
+-- In these cases, we reassign the ParoleCountId from 0 to be (in the following priority order):
+--   * whatever non-zero parole count id period the parole board action date overlaps with
+--   * whatever the next non-zero parole count id period is after the parole board action date
+-- If neither of those exist, then we leave ParoleCountId as 0.
+-- 
+-- Based on this newly revised ParoleCountId, if the board action date is before
+-- the parole start date, we associate the special conditions with the parole start date.
+--
+-- Finally, if there are multiple sets of conditions assigned on the same day, we prioritize
+-- the set associated with the highest parole count id.
 
--- Filter down to rows where the filled in parole start date is not null and rows where update_datetime is on or after 
--- the filled in parole start date (because otherwise those would be agent assignments that occur before the supervision start date).
--- Also filter out cases that were opened in error (which end with termination reason 50).
--- Finally, create a next_update_datetime that is set to the next seen update_datetime within the ParoleCountId
-supervision_statuses_cleaned AS (
-  SELECT 
-    *,
-    COALESCE(agent_district_office, release_district_office) AS district_office,
-    LEAD(update_datetime) OVER (PARTITION BY ParoleNumber, ParoleCountId ORDER BY ParoleCountId, update_datetime, HReleaseId) as next_update_datetime
-  from supervision_statuses_filled_in
-  WHERE 
-    parole_start_date is not null
-    AND update_datetime >= parole_start_date
-    -- Case was not opened in error
-    AND (termination_reason <> '50' or termination_reason is null)
-),
+dbo_ConditionCode AS (
+  WITH 
+  special_conditions AS (
+    SELECT DISTINCT *
+    FROM (
+      SELECT
+        ParoleNumber,
+        ParoleCountId,
+        BdActionID,
+        DATE(CAST(BdActDateYear AS INT64), CAST(BdActDateMonth AS INT64), CAST(BdActDateDay AS INT64)) AS board_action_date,
+        CndConditionCode,
+        SUM(CAST((CndConditionCode = "START") AS INT64)) OVER (wind) AS conditions_started,
+        SUM(CAST((CndConditionCode = "END") AS INT64)) OVER (wind) AS conditions_ended,
+      FROM {{dbo_ConditionCode}} cc
+      -- there are only 6 cases where board action date gets updated for a unique ParoleNumber, ParoleCountId, BdActionID over time, 
+      -- and they all happened in the 1990's so going to ignore those changes 
+      LEFT JOIN {{dbo_BoardAction}} ba 
+        USING(ParoleNumber, ParoleCountId, BdActionID)
+      WINDOW wind AS (
+        PARTITION BY ParoleNumber, ParoleCountId, BdActionID ORDER BY CAST(ConditionCodeID AS INT64) ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
+      )
+    )
+    WHERE conditions_started = 1 AND conditions_ended = 0 AND CndConditionCode <> 'START' 
+  ),
+  special_conditions_with_pcs AS (
+    SELECT DISTINCT * EXCEPT(ParoleCountId),
+      CASE WHEN ParoleCountId = '0'
+            THEN COALESCE(current_pc, next_pc, CAST(ParoleCountId as INT64))
+           ELSE CAST(ParoleCountId as INT64)
+           END AS ParoleCountId,
+    COALESCE(GREATEST(board_action_date, parole_start_date), board_action_date) AS key_date
+    FROM (
+      SELECT DISTINCT
+        sp.*,
+        COALESCE(
+          LEAST(pc_current.parole_start_date, pc_next.parole_start_date),
+          COALESCE(pc_current.parole_start_date, pc_next.parole_start_date)
+        ) AS parole_start_date,
+        MIN(CAST(pc_next.ParoleCountId AS INT64)) OVER(PARTITION BY sp.ParoleNumber, sp.ParoleCountId, BdActionID) AS next_pc,
+        MIN(CAST(pc_current.ParoleCountId AS INT64)) OVER(PARTITION BY sp.ParoleNumber, sp.ParoleCountId, BdActionID) AS current_pc,
+      FROM special_conditions sp
+      LEFT JOIN parole_counts_to_keep pc_next
+        ON board_action_date < pc_next.parole_start_date AND sp.ParoleNumber = pc_next.ParoleNumber
+      LEFT JOIN parole_counts_to_keep pc_current
+        ON board_action_date BETWEEN pc_current.parole_start_date AND COALESCE(pc_current.parole_end_date, DATE(9999,1,1)) AND sp.ParoleNumber = pc_current.ParoleNumber
+    )
+  )
 
--- This CTE:
---   filters down to rows where the next_update_datetime is before or on the parole_end_date, 
---   creates next_status_code and prev_status_code, 
---   sets termination_reason only for the last row for a parole count id,
---   create status_code_update,
---   filters down to where tatus is not Awaiting Death Certificate or Deported
---   start_date <= end_date
-initial_periods AS (
-  SELECT
-    ParoleNumber,
-    ParoleCountId,
-    update_datetime as start_date,
-    COALESCE(next_update_datetime, parole_end_date) AS end_date,
-    admission_reason,
-    -- only keep termination reason if it's the last row for a parole count id
-    IF(next_update_datetime = parole_end_date, termination_reason, CAST(NULL AS STRING)) AS termination_reason,
-    status_code,
-    -- set status_code_update as status_code only if it's the first appearance of this status_code
-    IF(status_code = prev_status_code, NULL, status_code) as status_code_update,
-    next_status_code,
-    supervision_type,
-    county_of_residence,
-    supervision_level,
-    condition_codes,
-    NULLIF(supervising_officer_id, 'VACANT') as supervising_officer_id,
-    district_office,
-    district_sub_office_id,
-    supervision_location_org_code,
+  SELECT *
   FROM (
     SELECT
-      *,
-      LEAD(status_code) OVER (PARTITION BY ParoleNumber, ParoleCountId ORDER BY update_datetime, HReleaseId) as next_status_code,
-      LAG(status_code) OVER (PARTITION BY ParoleNumber, ParoleCountId ORDER BY update_datetime, HReleaseId) as prev_status_code
-    FROM supervision_statuses_cleaned
-    WHERE (COALESCE(next_update_datetime, DATE(9999,9,9)) <= COALESCE(parole_end_date, DATE(9999,9,9)))
+        special_conditions_with_pcs.ParoleNumber,
+        special_conditions_with_pcs.ParoleCountId,
+        GREATEST(key_date, pc_keep.parole_start_date) AS key_date,
+        STRING_AGG(DISTINCT CndConditionCode, ',' ORDER BY CndConditionCode) AS condition_codes,
+    FROM special_conditions_with_pcs
+    INNER JOIN parole_counts_to_keep pc_keep
+      ON special_conditions_with_pcs.ParoleNumber = pc_keep.ParoleNumber
+      AND special_conditions_with_pcs.ParoleCountId = CAST(pc_keep.ParoleCountId AS INT64)
+    GROUP BY 1,2,3
   )
-  -- where supervision status is not:
-  --   19 (Deceased - Awaiting Death Certificate)
-  --   54 (Deported)
-  WHERE status_code not in ('19', '54')
-    -- start_date is before or equal to end date (sometimes there are overlapping ParoleCounts)
-    AND update_datetime <= COALESCE(next_update_datetime, parole_end_date, DATE(9999,9,9))
+  QUALIFY ROW_NUMBER() OVER(PARTITION BY ParoleNumber, key_date ORDER BY CAST(ParoleCountId AS INT64) DESC) = 1
 ),
 
--- Aggregate adjacent spans into a single period if the attributes of the adjacent spans are equal
+-- This CTE joins all key dates and attributes from each source into a single table using ParoleNumber and key_date.
+-- In this CTE, we also make some decisions about which data source to use for attributes that have multiple sources:
+--
+--   * If the key date is before the first appearance of supervision level in the dbo_Parolee table, we source level
+--     from the parole end history table or from the release info table.  If the key date is after the first appearnce fo supervision
+--     level in the dbo_Parolee table, we source level from the dbo_Parolee table.
+--
+--   * We prioritize district office information from the officer assignment, then from the parole end history table, and then finally
+--     from the release info table
+--
+--   *  We prioritize status information from the parole ends history table and then the status table.
+--
+-- We also keep track of the highest parole count started vs ended at the time of each key date for reference later.
+
+joined AS (
+  SELECT
+      ParoleNumber,
+      key_date,
+      admission_reason,
+      deduped_parole_starts.parole_start_date,
+      COALESCE(parole_ends.status_code, dbo_RelStatus.status_code) AS status_code,
+      parole_end_date,
+      termination_reason,
+      COALESCE(parole_ends.county, dbo_ReleaseInfo_other.county) AS county_of_residence,
+      CASE WHEN key_date < appearance.first_appearance_date THEN COALESCE(parole_ends.supervision_level, dbo_ReleaseInfo_levels.supervision_level)
+          ELSE dbo_Parolee_levels.supervision_level
+          END AS supervision_level,
+      COALESCE(dbo_RelAgentHistory.district_office, parole_ends.district_office, dbo_ReleaseInfo_other.district_office) AS district_office,
+      supervising_officer_id,
+      district_sub_office_id,
+      supervision_location_org_code,
+      condition_codes,
+      MAX(COALESCE(highest_parole_count_start, 0)) OVER(PARTITION BY ParoleNumber ORDER BY key_date ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS highest_parole_count_started,
+      MAX(COALESCE(highest_parole_count_end, 0)) OVER(PARTITION BY ParoleNumber ORDER BY key_date ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS highest_parole_count_ended,
+  FROM deduped_parole_starts
+  FULL OUTER JOIN parole_ends USING(ParoleNumber, key_date)
+  FULL OUTER JOIN dbo_ReleaseInfo_other USING(ParoleNumber, key_date)
+  FULL OUTER JOIN dbo_ReleaseInfo_levels USING(ParoleNumber, key_date)
+  FULL OUTER JOIN dbo_RelStatus USING(ParoleNumber, key_date)
+  FULL OUTER JOIN dbo_RelAgentHistory USING(ParoleNumber, key_date)
+  FULL OUTER JOIN dbo_Parolee_levels USING(ParoleNumber, key_date)
+  FULL OUTER JOIN dbo_ConditionCode USING(ParoleNumber, key_date)
+  LEFT JOIN (SELECT distinct ParoleNumber, first_appearance_date from dbo_Parolee_levels) appearance USING(ParoleNumber)
+  WHERE 
+    key_date is not null
+),
+
+-- Because clients can have overlapping parole count ids in the case of dual supervision, we use this CTE
+-- to reconstruct term counts to account for overlapping parole count ids.  Using the highest parole count ids
+-- started and ended by each key date, we determine whether each key date corresponds with a START supervision 
+-- edge (a person was previously not on supervision but now starts supervision as of this date), 
+-- a TRANSITION edge (an attribute of supervision has changed but supervision has already started and continues),
+-- or an END edge (all active parole count ids that have been open as of this date ends as of this date).
+-- A key date with a NULL edge type is a key date associated with a time where all parole counts that were opened
+-- as of that date have already been closed, and therefore shoudl be filtered out.
+-- We assign a new term_count field to mark spans from a START to an END edge.
+
+dates_by_term AS (
+  SELECT 
+    *,
+    SUM(CAST(edge_type = 'START' as INT64)) OVER(PARTITION BY ParoleNumber ORDER BY key_date) AS term_count,
+  FROM (
+    SELECT *,
+      CASE
+          WHEN COALESCE(prev_highest_parole_count_started, 0) = COALESCE(prev_highest_parole_count_ended, 0)
+                AND highest_parole_count_started > highest_parole_count_ended
+              THEN "START"
+          WHEN highest_parole_count_started > highest_parole_count_ended
+              THEN "TRANSITION"
+          WHEN highest_parole_count_started = highest_parole_count_ended
+                AND parole_end_date IS NOT NULL
+              THEN "END"
+          ELSE NULL
+        END AS edge_type        
+    FROM (
+      SELECT *,
+        LAG(highest_parole_count_started) OVER(PARTITION BY ParoleNumber ORDER BY key_date) AS prev_highest_parole_count_started,
+        LAG(highest_parole_count_ended) OVER(PARTITION BY ParoleNumber ORDER BY key_date) AS prev_highest_parole_count_ended
+      FROM joined
+    )
+  )
+  WHERE edge_type IS NOT NULL
+),
+
+-- Since we receive updates for different supervision attributes on different dates, 
+-- we use LAST_VALUE to pull in the most recent non-null value for each attribute within each term count.
+-- 
+-- For supervision conditions, we string aggregate all condition codes we've seen imposed up until this point
+-- in the term count.  (Since STRING_AGG doesn't allow us to use distinct and order by in the same function all,
+-- there might be some duplicates in condition codes values in this step if two sets of conditions
+-- were imposed within a single term count, and some of the conditions overlapped)
+
+filled_in_last_value AS (
+  SELECT
+    ParoleNumber,
+    term_count,
+    key_date,
+    admission_reason,
+    termination_reason,
+    LAST_VALUE(admission_reason IGNORE NULLS) OVER(term_window_backwards) AS supervision_type,
+    LAST_VALUE(status_code IGNORE NULLS) OVER(term_window_backwards) AS status_code,
+    LAST_VALUE(county_of_residence IGNORE NULLS) OVER(term_window_backwards) AS county_of_residence,
+    LAST_VALUE(supervision_level IGNORE NULLS) OVER(term_window_backwards) AS supervision_level,
+    LAST_VALUE(district_office IGNORE NULLS) OVER(term_window_backwards) AS district_office,
+    LAST_VALUE(supervising_officer_id IGNORE NULLS) OVER(term_window_backwards) AS supervising_officer_id,
+    LAST_VALUE(district_sub_office_id IGNORE NULLS) OVER(term_window_backwards) AS district_sub_office_id,
+    LAST_VALUE(supervision_location_org_code IGNORE NULLS) OVER(term_window_backwards) AS supervision_location_org_code,
+    STRING_AGG(condition_codes, ',') OVER(term_window_backwards) AS condition_codes,
+    edge_type
+  FROM dates_by_term
+  WINDOW term_window_backwards AS (
+    PARTITION BY ParoleNumber, term_count ORDER BY key_date
+    ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
+    )
+),
+
+-- For supervision attributes that come from tables that don't have an update date
+-- specifically associated with that update and instead we use the update_datetime
+-- of when we received the file (which means that there will be cases where we 
+-- see a delay between the actual update and when we actually see it appear in the data,
+-- especially if they're updates made before we started receiving the data),
+-- we also fill in any remaining nulls by looking forward within a term count and 
+-- finding the first non-null value for that attribute.
+
+filled_in_first_value AS (
+  SELECT
+    ParoleNumber,
+    term_count,
+    key_date,
+    admission_reason,
+    termination_reason,
+    supervision_type,
+    -- we will miss some statuses from earlier years because we only use last value and not first value
+    -- but i think that's fine since we don't usually look that far back and we don't map anything using
+    -- the status code we would assume by default (23 = active).
+    status_code,
+    FIRST_VALUE(county_of_residence IGNORE NULLS) OVER(term_window_forward) AS county_of_residence,
+    FIRST_VALUE(supervision_level IGNORE NULLS) OVER(term_window_forward) AS supervision_level,
+    FIRST_VALUE(district_office IGNORE NULLS) OVER(term_window_forward) AS district_office,
+    supervising_officer_id,
+    district_sub_office_id,
+    supervision_location_org_code,
+    condition_codes,
+    edge_type
+  FROM filled_in_last_value
+  WINDOW term_window_forward AS (
+    PARTITION BY ParoleNumber, term_count ORDER BY key_date
+    ROWS BETWEEN CURRENT ROW AND UNBOUNDED FOLLOWING
+    )
+),
+
+-- This CTE constructs initial periods by using key_date as the start date of each
+-- period and then using the next key date as the end date of each period. 
+-- We also keep track of the next status code associated with the next key date,
+-- and reassign termination reason to be the termination reason associated with the next
+-- key date.
+-- Finally, we filter out any of these constructed periods that have status 19 or 24
+-- (deceased and deported), as well as any periods that start with an END edge.
+
+initial_periods AS (
+  SELECT *
+  FROM (
+    SELECT * EXCEPT(key_date, termination_reason),
+      key_date AS start_date,
+      LEAD(key_date) OVER(PARTITION BY ParoleNumber ORDER BY key_date) AS end_date,
+      LEAD(termination_reason) OVER(term_window) AS termination_reason,
+      LEAD(status_code) OVER(term_window) AS next_status_code
+    FROM filled_in_first_value
+    WINDOW term_window AS (
+      PARTITION BY ParoleNumber, term_count ORDER BY key_date
+    )
+  )
+  -- filter out periods where the status is deceased and deported
+  WHERE (status_code IS NULL or status_code NOT IN ('19', '54'))
+  -- filter to periods that start with a start edge or a transition edge
+    AND edge_type IN ('START', 'TRANSITION')
+),
+
+-- Next, we stick everything through the aggregate adjacent spans function to collapse
+-- adjacent spans that share the same attributes
 final_periods AS (
     {aggregate_adjacent_spans(
         table_name="initial_periods",
-        attribute=["admission_reason", "termination_reason", "status_code", "status_code_update", "next_status_code", "supervision_type", "county_of_residence", "supervision_level", "condition_codes", "supervising_officer_id", "district_office", "district_sub_office_id", "supervision_location_org_code",],
-        index_columns=["ParoleNumber"])}
+        attribute=["admission_reason", "termination_reason", "status_code", "supervision_type", "county_of_residence", "supervision_level", "district_office", "supervising_officer_id", "district_sub_office_id", "supervision_location_org_code", "condition_codes", "next_status_code"],
+        index_columns=["ParoleNumber", "term_count"])}
 )
 
--- finally, select all columns except those created by the aggregate_adjacent_spans function,
--- create a period sequnece number, and exclude periods that have the same start and end date
-select 
-  * EXCEPT(session_id, date_gap_id),
-  ROW_NUMBER() OVER(PARTITION BY ParoleNumber ORDER BY start_date) as period_seq_num
-from final_periods
-where (start_date <> end_date or end_date is null)
+-- Finally, we take the final periods and then create a period_seq_num to use in the external id
+-- and create a prev_status_code variable to use in the mapping
+SELECT 
+  * EXCEPT(session_id, date_gap_id, term_count),
+  LAG(status_code) OVER(term_window) AS prev_status_code,
+  ROW_NUMBER() OVER(PARTITION BY ParoleNumber ORDER BY start_date, end_date NULLS LAST) AS period_seq_num
+FROM final_periods
+WINDOW term_window AS (
+  PARTITION BY ParoleNumber, term_count ORDER BY start_date, end_date NULLS LAST
+)
 """
 
 VIEW_BUILDER = DirectIngestViewQueryBuilder(
