@@ -28,18 +28,18 @@ Note: This is an *overwrite* script - it will delete all fake_case_notes/ data b
 writing new case notes.
 
 Usage (make sure to remove the dry run flag):
-python -m recidiviz.tools.prototypes.generate_fake_case_notes --sheet-id=XXX --dry-run=False
+python -m recidiviz.tools.prototypes.generate_fake_case_notes --sheet-id=1WN90U9k9fuwfWNkYdPK35mtfyLzo4-Cl7EYKrbchdDc --dry-run=False
 
 """
 
 import argparse
 import json
-from typing import List
+from typing import Any, List
 from urllib.error import HTTPError
 
 import attr
 import pandas as pd
-from google.cloud import storage
+from google.cloud import storage  # type: ignore
 
 from recidiviz.utils.params import str_to_bool
 
@@ -60,10 +60,16 @@ class CaseNote:
     """A struct to define all the required fields of a case note."""
 
     text: str
+    state_code: str
     external_id: str
     date: str
     contact_mode: str
     note_type: str
+
+
+# Count the number of fields in a class
+def count_fields(cls: Any) -> int:
+    return len(cls.__annotations__)
 
 
 def read_case_notes_from_public_sheet(sheet_id: str) -> List[CaseNote]:
@@ -77,16 +83,17 @@ def read_case_notes_from_public_sheet(sheet_id: str) -> List[CaseNote]:
 
     documents = []
     for _, row in df.iterrows():
-        if len(row) != 5:
+        if len(row) != count_fields(CaseNote):
             print("Invalid row: ", str(row))
             continue
         documents.append(
             CaseNote(
                 text=str(row[0]),
-                external_id=str(row[1]),
-                date=str(row[2]),
-                contact_mode=str(row[3]),
-                note_type=str(row[4]),
+                state_code=str(row[1]),
+                external_id=str(row[2]),
+                date=str(row[3]),
+                contact_mode=str(row[4]),
+                note_type=str(row[5]),
             )
         )
     return documents
@@ -138,6 +145,7 @@ def create_case_notes(dry_run: bool, sheet_id: str) -> None:
                     "id": str(note_id),
                     "jsonData": json.dumps(
                         {
+                            "state_code": document.state_code,
                             "external_id": document.external_id,
                             "date": document.date,
                             "contact_mode": document.contact_mode,
