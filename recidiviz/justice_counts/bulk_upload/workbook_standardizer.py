@@ -270,7 +270,7 @@ class WorkbookStandardizer:
             )
 
         if BREAKDOWN_CATEGORY not in df.columns and (
-            BREAKDOWN in df.columns and df[BREAKDOWN].isna().all() is False
+            BREAKDOWN in df.columns and bool(df[BREAKDOWN].isna().all()) is False
         ):
             # If there is a breakdown column with data but no breakdown_category column, throw an error.
             is_missing_column.add(
@@ -279,7 +279,7 @@ class WorkbookStandardizer:
 
         if BREAKDOWN not in df.columns and (
             BREAKDOWN_CATEGORY in df.columns
-            and df[BREAKDOWN_CATEGORY].isna().all() is False
+            and bool(df[BREAKDOWN_CATEGORY].isna().all()) is False
         ):
             # If there is a breakdown_category column with data but no breakdown column, throw an error.
             is_missing_column.add(
