@@ -43,6 +43,9 @@ from recidiviz.calculator.query.state.views.outliers.outliers_views import (
 from recidiviz.calculator.query.state.views.population_projection.population_projection_views import (
     POPULATION_PROJECTION_VIEW_BUILDERS,
 )
+from recidiviz.calculator.query.state.views.prototypes.case_note_search.case_note_search_views import (
+    CASE_NOTE_SEARCH_VIEW_BUILDERS,
+)
 from recidiviz.calculator.query.state.views.public_dashboard.public_dashboard_views import (
     PUBLIC_DASHBOARD_VIEW_BUILDERS,
 )
@@ -85,6 +88,7 @@ VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE: Sequence[BigQueryViewBuilder] = list(
             IMPACT_DASHBOARD_VIEW_BUILDERS,
             CASE_INSIGHTS_VIEW_BUILDERS,
             SENTENCING_VIEW_BUILDERS,
+            CASE_NOTE_SEARCH_VIEW_BUILDERS,
         )
     )
 )

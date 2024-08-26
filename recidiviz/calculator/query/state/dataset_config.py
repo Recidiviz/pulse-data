@@ -83,6 +83,9 @@ SPARK_OUTPUT_DATASET: str = "spark_public_output_data"
 # Where the PSI tools datasets live
 SENTENCING_OUTPUT_DATASET: str = "sentencing_views"
 
+# Where the Case Notes Prototype datasets live
+CASE_NOTES_PROTOTYPE_DATASET: str = "case_notes_prototype_views"
+
 # Contains views that select the most recent data for each spark simulation tag from spark_public_output_data
 SPARK_OUTPUT_DATASET_MOST_RECENT: str = "spark_public_output_data_most_recent"
 
