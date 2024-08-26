@@ -59,6 +59,12 @@ DATE_RANGE:
         This is a small file with only ~1000 rows, so even small fluctuations cause this
         to fail on % change. This date had a reasonable change of 22 rows, so we exclude
         it from the failures.
+    - file_tag: LBCMDATA_APFX91
+      datetime_start_inclusive: "2024-08-11T00:00:00Z"
+      datetime_end_exclusive: "2024-08-17T00:00:00Z"
+      exclusion_reason:
+        See above - this date range covers a ~3% increase and decrease for the ~1000 row
+        table, so we can exclude it.
   US_AR:
     - file_tag: RELEASEDATECHANGE
       datetime_start_inclusive: "2024-06-12T00:00:00Z"

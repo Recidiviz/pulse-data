@@ -33,3 +33,4 @@ columns:
     description: |-
       Row Modify Date
 always_historical_export: True
+update_cadence: IRREGULAR
