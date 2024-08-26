@@ -28,11 +28,6 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.dataset_config import (
     task_eligibility_spans_state_specific_dataset,
 )
-from recidiviz.task_eligibility.utils.almost_eligible_query_fragments import (
-    clients_eligible,
-    json_to_array_cte,
-    x_time_away_from_eligibility,
-)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -45,23 +40,16 @@ US_PA_TRANSFER_TO_ADMINISTRATIVE_SUPERVISION_FORM_RECORD_DESCRIPTION = """
     """
 US_PA_TRANSFER_TO_ADMINISTRATIVE_SUPERVISION_FORM_RECORD_QUERY_TEMPLATE = f"""
 WITH
-  current_supervision_pop_cte AS ( {join_current_task_eligibility_spans_with_external_id(state_code="'US_PA'",
-      tes_task_query_view='complete_transfer_to_administrative_supervision_request_materialized',
-      id_type="'US_PA_PBPP'")} ),
-  json_to_array_cte AS (
-        {json_to_array_cte('current_supervision_pop_cte')}
-  ),
   eligible_and_almost_eligible AS (
-    -- ELIGIBLE
-    {clients_eligible(from_cte = 'current_supervision_pop_cte')}
-    UNION ALL 
-    -- ALMOST ELIGIBLE (<3 months remaining before time served criteria is met)
-    {x_time_away_from_eligibility(time_interval= 3, date_part= 'MONTH',
-        criteria_name= 'ON_PAROLE_AT_LEAST_ONE_YEAR',
-        from_cte_table_name = "json_to_array_cte")}
+    {join_current_task_eligibility_spans_with_external_id(
+        state_code="'US_PA'",
+        tes_task_query_view='complete_transfer_to_administrative_supervision_request_materialized',
+        id_type="'US_PA_PBPP'",
+        eligible_and_almost_eligible_only=True,
+    )}
   )
-  SELECT 
-    * 
+  SELECT
+    * EXCEPT (is_almost_eligible)
   FROM eligible_and_almost_eligible
 """
 

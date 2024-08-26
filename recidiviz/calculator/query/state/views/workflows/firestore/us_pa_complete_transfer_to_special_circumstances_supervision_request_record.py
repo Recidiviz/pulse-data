@@ -28,11 +28,6 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.dataset_config import (
     task_eligibility_spans_state_specific_dataset,
 )
-from recidiviz.task_eligibility.utils.almost_eligible_query_fragments import (
-    clients_eligible,
-    json_to_array_cte,
-    x_time_away_from_eligibility,
-)
 from recidiviz.task_eligibility.utils.us_pa_query_fragments import violations_helper
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -46,27 +41,13 @@ Query for relevant metadata needed to support special circumstances supervision 
 """
 
 US_PA_COMPLETE_TRANSFER_TO_SPECIAL_CIRCUMSTANCES_SUPERVISION_REQUEST_RECORD_QUERY_TEMPLATE = f"""
-WITH current_supervision_pop_cte AS (
-{join_current_task_eligibility_spans_with_external_id(state_code="'US_PA'",
+WITH eligible_and_almost_eligible AS (
+{join_current_task_eligibility_spans_with_external_id(
+    state_code="'US_PA'",
     tes_task_query_view='complete_transfer_to_special_circumstances_supervision_request_materialized',
-    id_type="'US_PA_PBPP'")} 
-),
-
-json_to_array_cte AS (
-    {json_to_array_cte('current_supervision_pop_cte')}
-),
-
-eligible_and_almost_eligible AS (
-
-    -- ELIGIBLE
-    {clients_eligible(from_cte = 'current_supervision_pop_cte')}
-
-    UNION ALL 
-
-    -- ALMOST ELIGIBLE (<6 months remaining before time served criteria is met)
-    {x_time_away_from_eligibility(time_interval= 6, date_part= 'MONTH',
-        criteria_name= 'US_PA_MEETS_SPECIAL_CIRCUMSTANCES_CRITERIA_FOR_TIME_SERVED',
-        from_cte_table_name = "json_to_array_cte")}
+    id_type="'US_PA_PBPP'",
+    eligible_and_almost_eligible_only=True,
+)}
 ),
 
 case_notes_cte AS (
