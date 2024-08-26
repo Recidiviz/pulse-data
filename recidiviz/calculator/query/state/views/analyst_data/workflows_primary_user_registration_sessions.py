@@ -38,10 +38,12 @@ information where available."""
 PRIMARY_USER_ROLE_TYPES_BY_SYSTEM_TYPE: Dict[WorkflowsSystemType, List[str]] = {
     WorkflowsSystemType.INCARCERATION: [
         "facilities_staff",
+        "facilities_line_staff",
     ],
     WorkflowsSystemType.SUPERVISION: [
         "supervision_officer",
         "supervision_staff",
+        "supervision_line_staff",
     ],
 }
 PRIMARY_USER_ROLE_TYPES = sorted(
