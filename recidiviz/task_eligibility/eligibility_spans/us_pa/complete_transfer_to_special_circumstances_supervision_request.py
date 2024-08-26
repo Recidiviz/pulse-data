@@ -16,7 +16,7 @@
 # =============================================================================
 """Shows the spans of time during which someone in PA is eligible for transfer
 to Special Circumstances supervision."""
-
+from recidiviz.big_query.big_query_utils import BigQueryDateInterval
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.candidate_populations.general import (
     probation_parole_dual_active_supervision_population,
@@ -34,6 +34,7 @@ from recidiviz.task_eligibility.criteria.state_specific.us_pa import (
     not_eligible_for_admin_supervision,
     serving_special_case,
 )
+from recidiviz.task_eligibility.criteria_condition import TimeDependentCriteriaCondition
 from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
 )
@@ -97,6 +98,13 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         supervision_level_is_not_limited.VIEW_BUILDER,
     ],
     completion_event_builder=transfer_to_special_circumstances_supervision.VIEW_BUILDER,
+    almost_eligible_condition=TimeDependentCriteriaCondition(
+        criteria=meets_special_circumstances_criteria_for_time_served.VIEW_BUILDER,
+        reasons_date_field="eligible_date",
+        interval_length=6,
+        interval_date_part=BigQueryDateInterval.MONTH,
+        description="Within 6 months of meeting the time served requirement",
+    ),
 )
 
 
