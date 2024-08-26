@@ -20,7 +20,10 @@ in eligibility have occurred.
 """
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
-from recidiviz.calculator.query.state.dataset_config import WORKFLOWS_VIEWS_DATASET
+from recidiviz.calculator.query.state.dataset_config import (
+    REFERENCE_VIEWS_DATASET,
+    WORKFLOWS_VIEWS_DATASET,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.validation.views import dataset_config
@@ -83,6 +86,10 @@ previous_export_count AS (
     PARTITION BY state_code, opportunity_type
     ORDER BY export_date DESC
   ) = 1
+),
+current_live_opportunities AS (
+  SELECT DISTINCT state_code, opportunity_type
+  FROM `{project_id}.{reference_views_dataset}.workflows_opportunity_configs_materialized`
 )
 SELECT
   state_code AS region_code,
@@ -94,6 +101,8 @@ FROM current_eligibility_records
 CROSS JOIN UNNEST(current_eligibility_records.all_eligible_opportunities) AS opportunity_type
 FULL OUTER JOIN previous_export_count
   USING (state_code, opportunity_type)
+INNER JOIN current_live_opportunities
+  USING (state_code, opportunity_type)
 GROUP BY 1, 2, 3, 4
 ORDER BY 1, 2, 3
 """
@@ -104,6 +113,7 @@ CLIENT_AND_RESIDENT_RECORD_PERCENT_CHANGE_IN_ELIGIBILITY_EXCEEDED_VIEW_BUILDER =
     view_query_template=CLIENT_AND_RESIDENT_RECORD_PERCENT_CHANGE_IN_ELIGIBILITY_EXCEEDED_QUERY_TEMPLATE,
     description=CLIENT_AND_RESIDENT_RECORD_PERCENT_CHANGE_IN_ELIGIBILITY_EXCEEDED_DESCRIPTION,
     workflows_views_dataset=WORKFLOWS_VIEWS_DATASET,
+    reference_views_dataset=REFERENCE_VIEWS_DATASET,
     should_materialize=True,
 )
 
