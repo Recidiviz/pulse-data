@@ -160,6 +160,7 @@ from recidiviz.validation.views.dataset_config import (
     VIEWS_DATASET as VALIDATION_VIEWS_DATASET,
 )
 from recidiviz.view_registry.deployed_views import build_all_deployed_views_dag_walker
+from recidiviz.calculator.query.state.dataset_config import IMPACT_REPORTS_DATASET_ID
 
 # List of views that are definitely referenced in Looker (as of 11/29/23). This list is
 # incomplete and you should add to this list / update the date in this comment as you
@@ -351,6 +352,8 @@ DATASETS_REFERENCED_BY_MISC_PROCESSES = {
     # Contains views referencing the output of Spark population projection runs. These
     # views are used to build Spark reports.
     SPARK_OUTPUT_DATASET_MOST_RECENT,
+    # Views in this dataset are aggregated metrics related to impact reports
+    IMPACT_REPORTS_DATASET_ID,
 }
 
 

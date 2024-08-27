@@ -409,6 +409,7 @@ USING
             "task_type_is_fully_launched",
             "is_eligible",
             "ineligible_criteria",
+            "is_almost_eligible",
         ],
         span_start_date_col="start_date",
         span_end_date_col="end_date",

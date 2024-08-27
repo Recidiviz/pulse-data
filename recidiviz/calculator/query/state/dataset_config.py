@@ -113,3 +113,6 @@ AUTH0_PROD_ACTION_LOGS: str = "auth0_prod_action_logs"
 
 # Views that contain legacy events logged from Auth0 actions via Segment
 AUTH0_EVENTS: str = "auth0_events"
+
+# Views that contain aggregated metrics related to impact reports
+IMPACT_REPORTS_DATASET_ID = "impact_reports"
