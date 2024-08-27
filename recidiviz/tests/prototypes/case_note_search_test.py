@@ -22,7 +22,7 @@ from unittest.mock import MagicMock, patch
 from google.cloud.discoveryengine_v1.services.search_service.pagers import SearchPager
 
 from recidiviz.prototypes.case_note_search.case_note_search import (
-    FAKE_CASE_NOTES_ENGINE_ID,
+    CASE_NOTE_SEARCH_ENGINE_ID,
     case_note_search,
     extract_case_notes_results_unstructured_data,
 )
@@ -87,7 +87,7 @@ class TestCaseNoteFunctions(TestCase):
         self.assertEqual(results, expected_result)
 
     @patch(
-        "recidiviz.prototypes.case_note_search.case_note_search.extract_case_notes_results_unstructured_data"
+        "recidiviz.prototypes.case_note_search.case_note_search.extract_case_notes_results_structured_data"
     )
     @patch(
         "recidiviz.prototypes.case_note_search.case_note_search.DiscoveryEngineInterface"
@@ -99,7 +99,7 @@ class TestCaseNoteFunctions(TestCase):
     ) -> None:
         query = "test query"
         page_size = 10
-        filter_conditions = {"external_id": ["1234", "6789"]}
+        filter_conditions = {"external_id": ["1234", "6789"], "state_code": ["US_ME"]}
 
         mock_search_pager = MagicMock(spec=SearchPager)
         mock_discovery_interface_instance = mock_discovery_engine_interface.return_value
@@ -123,7 +123,7 @@ class TestCaseNoteFunctions(TestCase):
         self.assertEqual(results, {"results": [case_note_data], "error": None})
 
         mock_discovery_engine_interface.assert_called_once_with(
-            project_id=GCP_PROJECT_STAGING, engine_id=FAKE_CASE_NOTES_ENGINE_ID
+            project_id=GCP_PROJECT_STAGING, engine_id=CASE_NOTE_SEARCH_ENGINE_ID
         )
         mock_discovery_interface_instance.search.assert_called_once_with(
             query=query,
