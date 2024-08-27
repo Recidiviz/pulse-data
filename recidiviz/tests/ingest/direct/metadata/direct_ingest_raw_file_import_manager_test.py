@@ -16,6 +16,7 @@
 # =============================================================================
 """Implements tests for DirectIngestRawFileImportManager."""
 import datetime
+import re
 from datetime import timedelta
 from typing import Optional, Type
 from unittest import TestCase
@@ -32,6 +33,7 @@ from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
 )
 from recidiviz.ingest.direct.metadata.direct_ingest_raw_file_import_manager import (
     DirectIngestRawFileImportManager,
+    DirectIngestRawFileImportStatusBuckets,
 )
 from recidiviz.ingest.direct.metadata.direct_ingest_raw_file_metadata_manager_v2 import (
     DirectIngestRawFileMetadataManagerV2,
@@ -866,3 +868,98 @@ class DirectIngestRawFileImportManagerTest(TestCase):
 
         assert len(invalidated) == 5
         assert len(valid) == 5
+
+    def test_import_run_summary_empty(self) -> None:
+        assert self.us_xx_manager.get_most_recent_import_run_summary() is None
+
+    def test_import_run_summary(self) -> None:
+        fixed_datetime = datetime.datetime(2022, 10, 1, 0, 0, 0, tzinfo=datetime.UTC)
+
+        file_tag_1_path = _make_unprocessed_raw_data_path(
+            path_str="bucket/file_tag_1.csv",
+            dt=fixed_datetime,
+        )
+
+        file_tag_2_path = _make_unprocessed_raw_data_path(
+            path_str="bucket/file_tag_2.csv",
+            dt=fixed_datetime,
+        )
+
+        file_1 = self.us_raw_file_xx_manager.mark_raw_gcs_file_as_discovered(
+            file_tag_1_path
+        )
+        file_2 = self.us_raw_file_xx_manager.mark_raw_gcs_file_as_discovered(
+            file_tag_2_path
+        )
+
+        assert file_1.file_id is not None
+        assert file_2.file_id is not None
+
+        with freeze_time(fixed_datetime + timedelta(hours=1)):
+            import_run = self.us_xx_manager.start_import_run("test-run-1")
+            file_import_1 = self.us_xx_manager.start_file_import(
+                file_1.file_id, import_run.import_run_id, False
+            )
+            file_import_2 = self.us_xx_manager.start_file_import(
+                file_2.file_id, import_run.import_run_id, False
+            )
+
+            self.us_xx_manager.update_file_import_by_id(
+                file_import_1.file_import_id,
+                import_status=DirectIngestRawFileImportStatus.FAILED_LOAD_STEP,
+            )
+            self.us_xx_manager.update_file_import_by_id(
+                file_import_2.file_import_id,
+                import_status=DirectIngestRawFileImportStatus.FAILED_UNKNOWN,
+            )
+
+            summary = self.us_xx_manager.get_most_recent_import_run_summary()
+
+            assert summary is not None
+            assert summary.import_run_start == fixed_datetime + timedelta(hours=1)
+            assert summary.count_by_status_bucket == {
+                DirectIngestRawFileImportStatusBuckets.FAILED: 2
+            }
+
+        with freeze_time(fixed_datetime + timedelta(hours=2)):
+            import_run = self.us_xx_manager.start_import_run("test-run-2")
+            file_import_1 = self.us_xx_manager.start_file_import(
+                file_1.file_id, import_run.import_run_id, False
+            )
+            file_import_2 = self.us_xx_manager.start_file_import(
+                file_2.file_id, import_run.import_run_id, False
+            )
+
+            self.us_xx_manager.update_file_import_by_id(
+                file_import_1.file_import_id,
+                import_status=DirectIngestRawFileImportStatus.SUCCEEDED,
+                raw_rows=1,
+            )
+            self.us_xx_manager.update_file_import_by_id(
+                file_import_2.file_import_id,
+                import_status=DirectIngestRawFileImportStatus.FAILED_UNKNOWN,
+            )
+
+            summary = self.us_xx_manager.get_most_recent_import_run_summary()
+
+            assert summary is not None
+            assert summary.import_run_start == fixed_datetime + timedelta(hours=2)
+            assert summary.count_by_status_bucket == {
+                DirectIngestRawFileImportStatusBuckets.FAILED: 1,
+                DirectIngestRawFileImportStatusBuckets.SUCCEEDED: 1,
+            }
+
+
+class DirectIngestRawFileImportStatusBucketsTest(TestCase):
+    def test_all_statuses_covered(self) -> None:
+        for status in DirectIngestRawFileImportStatus:
+            DirectIngestRawFileImportStatusBuckets.from_session_status(status)
+
+    def test_missing_status_fails(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            re.escape(
+                "Unrecognized import status: eeek; please add it to the list of values in recidiviz/ingest/direct/metadata/direct_ingest_raw_file_import_manager.py"
+            ),
+        ):
+            DirectIngestRawFileImportStatusBuckets.from_session_status("eeek")  # type: ignore

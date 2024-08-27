@@ -822,18 +822,35 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
 
     # TODO(#28239): delete once raw data import dag is enabled in all states
     @bp.route(
-        "/api/ingest_operations/is_raw_data_import_dag_enabled",
-        methods=["POST"],
+        "/api/ingest_operations/is_raw_data_import_dag_enabled/<state_code_str>/<instance_str>",
     )
-    def _is_raw_data_import_dag_enabled() -> Tuple[Union[str, Response], HTTPStatus]:
-        try:
-            request_json = assert_type(request.json, dict)
-            state_code = StateCode(request_json["stateCode"])
-            ingest_instance = DirectIngestInstance(request_json["instance"].upper())
-        except ValueError:
-            return "Invalid input data", HTTPStatus.BAD_REQUEST
+    def _is_raw_data_import_dag_enabled(
+        state_code_str: str,
+        instance_str: str,
+    ) -> Tuple[Union[str, Response], HTTPStatus]:
+        state_code = StateCode(state_code_str)
+        ingest_instance = DirectIngestInstance(instance_str.upper())
 
         return (
             jsonify(is_raw_data_import_dag_enabled(state_code, ingest_instance)),
+            HTTPStatus.OK,
+        )
+
+    @bp.route(
+        "/api/ingest_operations/all_latest_raw_data_import_run_info",
+    )
+    def _all_latest_raw_data_import_run_info() -> Tuple[Response, HTTPStatus]:
+
+        all_import_run_summaries = (
+            get_ingest_operations_store().get_all_latest_raw_data_import_run_info()
+        )
+
+        return (
+            jsonify(
+                {
+                    state_code.value: summary.for_api() if summary else None
+                    for state_code, summary in all_import_run_summaries.items()
+                }
+            ),
             HTTPStatus.OK,
         )

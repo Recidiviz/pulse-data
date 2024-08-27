@@ -33,6 +33,10 @@ from recidiviz.common.constants.operations.direct_ingest_instance_status import 
     DirectIngestStatus,
 )
 from recidiviz.common.constants.states import StateCode
+from recidiviz.ingest.direct.metadata.direct_ingest_raw_file_import_manager import (
+    DirectIngestRawFileImportStatusBuckets,
+    LatestDirectIngestRawFileImportRunSummary,
+)
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.persistence.entity.operations.entities import DirectIngestInstanceStatus
 
@@ -317,10 +321,9 @@ class IngestOpsEndpointTests(TestCase):
     )
     def test_raw_data_dag_enabled(self) -> None:
         # Act
-        response = self.client.post(
-            "/api/ingest_operations/is_raw_data_import_dag_enabled",
+        response = self.client.get(
+            "/api/ingest_operations/is_raw_data_import_dag_enabled/US_XX/PRIMARY",
             headers={"X-Appengine-Inbound-Appid": "recidiviz-456"},
-            json={"stateCode": "US_XX", "instance": "PRIMARY"},
         )
 
         # Assert
@@ -333,12 +336,46 @@ class IngestOpsEndpointTests(TestCase):
     )
     def test_raw_data_dag_not_enabled(self) -> None:
         # Act
-        response = self.client.post(
-            "/api/ingest_operations/is_raw_data_import_dag_enabled",
+        response = self.client.get(
+            "/api/ingest_operations/is_raw_data_import_dag_enabled/US_XX/PRIMARY",
             headers={"X-Appengine-Inbound-Appid": "recidiviz-456"},
-            json={"stateCode": "US_XX", "instance": "PRIMARY"},
         )
 
         # Assert
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json, False)
+
+    def test_all_latest_raw_data_import_run_info(self) -> None:
+        # Arrange
+        self.mock_store.get_all_latest_raw_data_import_run_info.return_value = {
+            StateCode.US_XX: LatestDirectIngestRawFileImportRunSummary(
+                import_run_start=datetime(2022, 8, 29, tzinfo=pytz.UTC),
+                count_by_status_bucket={
+                    DirectIngestRawFileImportStatusBuckets.SUCCEEDED: 10,
+                    DirectIngestRawFileImportStatusBuckets.FAILED: 5,
+                },
+            ),
+            StateCode.US_YY: None,
+        }
+
+        # Act
+        response = self.client.get(
+            "/api/ingest_operations/all_latest_raw_data_import_run_info",
+            headers={"X-Appengine-Inbound-Appid": "recidiviz-456"},
+        )
+
+        # Assert
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response.json,
+            {
+                "US_XX": {
+                    "importRunStart": "2022-08-29T00:00:00+00:00",
+                    "countByStatusBucket": [
+                        {"importStatus": "Succeeded", "fileCount": 10},
+                        {"importStatus": "Failed", "fileCount": 5},
+                    ],
+                },
+                "US_YY": None,
+            },
+        )
