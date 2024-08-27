@@ -9,6 +9,9 @@ services:
     volumes:
       - "./recidiviz:/app/recidiviz/"
       - "~/.config:/root/.config" # use user's credentials to access GCP APIs
+      - workflows_db_socket:/cloudsql/workflows
+    depends_on:
+      - workflows_db
     ports:
       - "8080:8080"
     command: pipenv run hypercorn recidiviz.prototypes.app:app --bind 0.0.0.0:8080 --reload

@@ -29,6 +29,10 @@ from google.cloud.discoveryengine_v1.services.search_service.pagers import Searc
 logging.basicConfig(level=logging.ERROR)
 logger = logging.getLogger(__name__)
 
+MAX_EXTRACTIVE_ANSWER_COUNT = 1
+MAX_SNIPPET_COUNT = 1
+SUMMARY_RESULT_COUNT = 10
+
 
 @attr.define(kw_only=True)
 class DiscoveryEngineInterface:
@@ -82,15 +86,15 @@ class DiscoveryEngineInterface:
             # https://cloud.google.com/python/docs/reference/discoveryengine/latest/google.cloud.discoveryengine_v1.types.SearchRequest
             content_search_spec = discoveryengine.SearchRequest.ContentSearchSpec(
                 extractive_content_spec=discoveryengine.SearchRequest.ContentSearchSpec.ExtractiveContentSpec(
-                    max_extractive_answer_count=1  # Ensuring extractive answer is always present.
+                    max_extractive_answer_count=MAX_EXTRACTIVE_ANSWER_COUNT  # Ensuring extractive answer is always present.
                 ),
                 snippet_spec=discoveryengine.SearchRequest.ContentSearchSpec.SnippetSpec(
-                    max_snippet_count=1  # Only one snippet per document.
+                    max_snippet_count=MAX_SNIPPET_COUNT  # Only one snippet per document.
                 )
                 if with_snippet
                 else None,
                 summary_spec=discoveryengine.SearchRequest.ContentSearchSpec.SummarySpec(
-                    summary_result_count=10  # The number of documents used to generate the summary. Maximum is 10.
+                    summary_result_count=SUMMARY_RESULT_COUNT  # The number of documents used to generate the summary. Maximum is 10.
                 )
                 if with_summary
                 else None,
