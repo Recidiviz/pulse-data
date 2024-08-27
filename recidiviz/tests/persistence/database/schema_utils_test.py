@@ -108,7 +108,8 @@ class TestSchemaUtils(unittest.TestCase):
             "DirectIngestRawDataResourceLock",
             "DirectIngestRawBigQueryFileMetadata",
             "DirectIngestRawGCSFileMetadata",
-            "DirectIngestRawDataImportSession",
+            "DirectIngestRawFileImportRun",
+            "DirectIngestRawFileImport",
             "DirectIngestRawDataFlashStatus",
         ]
 
@@ -221,7 +222,8 @@ class TestSchemaUtils(unittest.TestCase):
             "direct_ingest_raw_data_resource_lock",
             "direct_ingest_raw_big_query_file_metadata",
             "direct_ingest_raw_gcs_file_metadata",
-            "direct_ingest_raw_data_import_session",
+            "direct_ingest_raw_file_import_run",
+            "direct_ingest_raw_file_import",
             "direct_ingest_raw_data_flash_status",
         ]
         workflows_table_names = [

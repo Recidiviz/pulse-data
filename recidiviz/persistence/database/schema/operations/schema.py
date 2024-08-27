@@ -67,18 +67,18 @@ direct_ingest_lock_actor = Enum(
 
 direct_ingest_lock_resource = Enum(
     enum_canonical_strings.direct_ingest_lock_resource_bucket,
-    enum_canonical_strings.direct_ingest_lock_resource_operations_databse,
+    enum_canonical_strings.direct_ingest_lock_resource_operations_database,
     enum_canonical_strings.direct_ingest_lock_resource_big_query_raw_data_dataset,
     name="direct_ingest_lock_resource",
 )
 
-direct_ingest_import_session_status = Enum(
-    enum_canonical_strings.direct_ingest_import_session_status_started,
-    enum_canonical_strings.direct_ingest_import_session_status_succeeded,
-    enum_canonical_strings.direct_ingest_import_session_status_failed_unknown,
-    enum_canonical_strings.direct_ingest_import_session_status_failed_load_step,
-    enum_canonical_strings.direct_ingest_import_session_status_failed_pre_import_normalization_step,
-    name="direct_ingest_import_session_status",
+direct_ingest_file_import_status = Enum(
+    enum_canonical_strings.direct_ingest_raw_file_import_status_started,
+    enum_canonical_strings.direct_ingest_raw_file_import_status_succeeded,
+    enum_canonical_strings.direct_ingest_raw_file_import_status_failed_unknown,
+    enum_canonical_strings.direct_ingest_raw_file_import_status_failed_load_step,
+    enum_canonical_strings.direct_ingest_raw_file_import_status_failed_pre_import_normalization_step,
+    name="direct_ingest_file_import_status",
 )
 
 
@@ -314,7 +314,12 @@ class DirectIngestDataflowRawTableUpperBounds(OperationsBase):
 
 
 class DirectIngestRawDataResourceLock(OperationsBase):
-    """A record of direct ingest raw data resource locks over time."""
+    """A record of direct ingest raw data resource locks over time.
+
+    n.b. while this table is defined here, it is also queried in the airflow context with
+    raw sql, so any updates the table schema must also be propagated to the raw data
+    import dag's sql query
+    """
 
     __tablename__ = "direct_ingest_raw_data_resource_lock"
 
@@ -361,7 +366,12 @@ class DirectIngestRawDataResourceLock(OperationsBase):
 
 
 class DirectIngestRawBigQueryFileMetadata(OperationsBase):
-    """Metadata known about a "conceptual" file_id that exists in BigQuery."""
+    """Metadata known about a "conceptual" file_id that exists in BigQuery.
+
+    n.b. while this table is defined here, it is also queried in the airflow context with
+    raw sql, so any updates the table schema must also be propagated to the raw data
+    import dag's sql query
+    """
 
     __tablename__ = "direct_ingest_raw_big_query_file_metadata"
 
@@ -391,18 +401,19 @@ class DirectIngestRawBigQueryFileMetadata(OperationsBase):
     file_processed_time = Column(DateTime(timezone=True), nullable=True)
 
     # References to the literal CSV files associated with this "conceptual" file
-    gcs_files = relationship(
-        "DirectIngestRawGCSFileMetadata", backref="bq_file", lazy="selectin"
-    )
+    gcs_files = relationship("DirectIngestRawGCSFileMetadata", back_populates="bq_file")
 
-    # The import sessions associated with this bq_file
-    import_sessions = relationship(
-        "DirectIngestRawDataImportSession", backref="bq_file", lazy="selectin"
-    )
+    # File imports associated with this bq_file
+    file_imports = relationship("DirectIngestRawFileImport", back_populates="bq_file")
 
 
 class DirectIngestRawGCSFileMetadata(OperationsBase):
-    """Metadata known about a raw data csv file that exists in Google Cloud Storage."""
+    """Metadata known about a raw data csv file that exists in Google Cloud Storage.
+
+    n.b. while this table is defined here, it is also queried in the airflow context with
+    raw sql, so any updates the table schema must also be propagated to the raw data
+    import dag's sql query
+    """
 
     __tablename__ = "direct_ingest_raw_gcs_file_metadata"
 
@@ -429,6 +440,10 @@ class DirectIngestRawGCSFileMetadata(OperationsBase):
         index=True,
     )
 
+    bq_file = relationship(
+        "DirectIngestRawBigQueryFileMetadata", back_populates="gcs_files"
+    )
+
     region_code = Column(String(255), nullable=False, index=True)
 
     # The instance of the bucket that this raw data file was discovered in.
@@ -448,14 +463,54 @@ class DirectIngestRawGCSFileMetadata(OperationsBase):
     file_discovery_time = Column(DateTime(timezone=True), nullable=False)
 
 
-class DirectIngestRawDataImportSession(OperationsBase):
-    """Each rows corresponds to an attempt to import an entry in the DirectIngestRawBigQueryFileMetadata
-    table into BigQuery.
+class DirectIngestRawFileImportRun(OperationsBase):
+    """Each row corresponds to a state-and-ingest-specific run of the raw data import
+    DAG
+
+    n.b. while this table is defined here, it is also queried in the airflow context with
+    raw sql, so any updates the table schema must also be propagated to the raw data
+    import dag's sql query
     """
 
-    __tablename__ = "direct_ingest_raw_data_import_session"
+    __tablename__ = "direct_ingest_raw_file_import_run"
 
-    import_session_id = Column(Integer, primary_key=True)
+    import_run_id = Column(Integer, primary_key=True)
+
+    # The id of the raw data import run which should match DagRun::run_id in the airflow
+    # metadata database
+    dag_run_id = Column(String(255), nullable=True, index=True)
+
+    # Time when the import run started
+    import_run_start = Column(DateTime(timezone=True), nullable=False)
+
+    # Time when the import run ended
+    import_run_end = Column(DateTime(timezone=True))
+
+    # The region code associated with the raw data import run
+    region_code = Column(String(255), nullable=False, index=True)
+
+    # The raw data instance associated with the raw data import run
+    raw_data_instance = Column(direct_ingest_instance, nullable=False, index=True)
+
+    # The imports associated with this import run
+    file_imports = relationship(
+        "DirectIngestRawFileImport", back_populates="import_run"
+    )
+
+
+class DirectIngestRawFileImport(OperationsBase):
+    """Each rows corresponds to an attempt to import an entry in the direct_ingest_raw_big_query_file_metadata
+    table into BigQuery. This table has DAG-run-level information about a raw file
+    import, which will change over the lifecycle of an import.
+
+    n.b. while this table is defined here, it sis also queried in the airflow context with
+    raw sql, so any updates the table schema must also be propagated to the raw data
+    import dag's sql query
+    """
+
+    __tablename__ = "direct_ingest_raw_file_import"
+
+    file_import_id = Column(Integer, primary_key=True)
 
     # The file_id from the direct_ingest_raw_big_query_file_metadata table
     file_id = Column(
@@ -470,23 +525,40 @@ class DirectIngestRawDataImportSession(OperationsBase):
         index=True,
     )
 
-    # Status of this import session
-    import_status = Column(direct_ingest_import_session_status, nullable=False)
+    bq_file = relationship(
+        "DirectIngestRawBigQueryFileMetadata", back_populates="file_imports"
+    )
 
-    # Time when the import started
-    import_start = Column(DateTime(timezone=True), nullable=False)
+    # The import_run_id from the direct_ingest_raw_file_import_run associated with this
+    # import
+    import_run_id = Column(
+        Integer,
+        ForeignKey(
+            "direct_ingest_raw_file_import_run.import_run_id",
+            deferrable=True,
+            initially="DEFERRED",
+            name="direct_ingest_raw_file_import_run_import_run_id_fkey",
+        ),
+        nullable=False,
+        index=True,
+    )
 
-    # Time when the import ended
-    import_end = Column(DateTime(timezone=True))
+    import_run = relationship(
+        "DirectIngestRawFileImportRun", back_populates="file_imports"
+    )
 
+    # Status of the raw file import
+    import_status = Column(direct_ingest_file_import_status, nullable=False)
+
+    # The region code associated with the raw data import
     region_code = Column(String(255), nullable=False, index=True)
 
-    # The instance that this raw data was imported to.
+    # The raw data instance associated with the raw data import
     raw_data_instance = Column(direct_ingest_instance, nullable=False, index=True)
 
     # Whether or not historical diffs were performed during the import of this file (or
     # would have been had the import successfully made it to that stage)
-    historical_diffs_active = Column(Boolean, nullable=False)
+    historical_diffs_active = Column(Boolean, nullable=True)
 
     # The number of rows included in the raw data file. If historical_diffs_active,
     # this number will not be equal to the number of rows added to the raw data table.
@@ -501,7 +573,7 @@ class DirectIngestRawDataImportSession(OperationsBase):
     __table_args__ = (
         CheckConstraint(
             "import_status != 'SUCCEEDED' OR (import_status = 'SUCCEEDED' AND raw_rows IS NOT NULL)",
-            name="all_succeeded_import_sessions_must_have_non_null_rows",
+            name="all_succeeded_imports_must_have_non_null_rows",
         ),
         CheckConstraint(
             "(historical_diffs_active IS FALSE OR import_status != 'SUCCEEDED')"

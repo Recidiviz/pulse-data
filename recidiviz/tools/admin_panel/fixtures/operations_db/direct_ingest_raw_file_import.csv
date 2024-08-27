@@ -1,0 +1,6 @@
+file_import_id,import_run_id,file_id,import_status,region_code,raw_data_instance,historical_diffs_active,raw_rows,net_new_or_updated_rows,deleted_rows
+1,1,90731,FAILED_UNKNOWN,US_CO,PRIMARY,False,,,
+2,1,90731,FAILED_UNKNOWN,US_CO,PRIMARY,False,,,
+3,1,90731,SUCCEEDED,US_CO,PRIMARY,False,1,,
+4,1,90743,FAILED_UNKNOWN,US_CO,PRIMARY,False,,,
+5,1,90743,STARTED,US_CO,PRIMARY,False,,,

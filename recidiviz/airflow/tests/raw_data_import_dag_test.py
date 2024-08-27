@@ -163,7 +163,11 @@ class RawDataImportDagSequencingTest(AirflowIntegrationTest):
         step_2_task_ids = [
             ["get_all_unprocessed_gcs_file_metadata"],
             ["get_all_unprocessed_bq_file_metadata"],
-            ["coalesce_results_and_errors", "split_by_pre_import_normalization_type"],
+            [
+                "write_import_start",
+                "coalesce_results_and_errors",
+                "split_by_pre_import_normalization_type",
+            ],
         ]
 
         for root in step_2_root.roots:
@@ -280,7 +284,7 @@ class RawDataImportDagSequencingTest(AirflowIntegrationTest):
                     "move_successfully_imported_paths_to_storage",
                     "clean_up_temporary_files",
                     "clean_up_temporary_tables",
-                    "write_import_sessions",
+                    "write_import_completions",
                 ],
                 ["write_file_processed_time"],
                 ["ensure_release_resource_locks_release_if_acquired"],
@@ -289,7 +293,7 @@ class RawDataImportDagSequencingTest(AirflowIntegrationTest):
             [
                 [
                     "move_successfully_imported_paths_to_storage",
-                    "write_import_sessions",
+                    "write_import_completions",
                     "clean_up_temporary_tables",
                     "clean_up_temporary_files",
                 ],
@@ -299,7 +303,7 @@ class RawDataImportDagSequencingTest(AirflowIntegrationTest):
             [
                 [
                     "move_successfully_imported_paths_to_storage",
-                    "write_import_sessions",
+                    "write_import_completions",
                     "clean_up_temporary_files",
                     "clean_up_temporary_tables",
                 ],
@@ -406,6 +410,7 @@ class RawDataImportOperationsRegistrationIntegrationTest(AirflowIntegrationTest)
                 "raw_data_branching.us_xx_primary_import_branch.get_all_unprocessed_gcs_file_metadata",
                 "raw_data_branching.us_xx_primary_import_branch.get_all_unprocessed_bq_file_metadata",
                 "raw_data_branching.us_xx_primary_import_branch.split_by_pre_import_normalization_type",
+                "raw_data_branching.us_xx_primary_import_branch.write_import_start",
             ],
             include_upstream=False,
             include_downstream=False,
@@ -561,6 +566,12 @@ class RawDataImportOperationsRegistrationIntegrationTest(AirflowIntegrationTest)
                 ),
             ]
 
+            file_imports = session.execute(
+                text("SELECT file_id, import_status FROM direct_ingest_raw_file_import")
+            )
+
+            assert set(file_imports) == {(1, "STARTED"), (2, "STARTED"), (3, "STARTED")}
+
     def test_chunked_files(self) -> None:
         # step 2 input
         self.list_normalized_unprocessed_files_mock.side_effect = fake_operator_with_return_value(
@@ -586,6 +597,7 @@ class RawDataImportOperationsRegistrationIntegrationTest(AirflowIntegrationTest)
                 "raw_data_branching.us_xx_primary_import_branch.get_all_unprocessed_gcs_file_metadata",
                 "raw_data_branching.us_xx_primary_import_branch.get_all_unprocessed_bq_file_metadata",
                 "raw_data_branching.us_xx_primary_import_branch.split_by_pre_import_normalization_type",
+                "raw_data_branching.us_xx_primary_import_branch.write_import_start",
             ],
             include_upstream=False,
             include_downstream=False,
@@ -744,6 +756,12 @@ class RawDataImportOperationsRegistrationIntegrationTest(AirflowIntegrationTest)
                     datetime.datetime.fromisoformat("2024-01-27T19:35:33:617135Z"),
                 ),
             }
+
+            file_imports = session.execute(
+                text("SELECT file_id, import_status FROM direct_ingest_raw_file_import")
+            )
+
+            assert set(file_imports) == {(1, "STARTED")}
 
 
 class RawDataImportDagPreImportNormalizationIntegrationTest(AirflowIntegrationTest):
@@ -2386,7 +2404,7 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
         # compatibility issues w/ freezegun, see https://github.com/apache/airflow/pull/25511#issuecomment-1204297524
         self.frozen_time = datetime.datetime(2024, 1, 26, 3, 4, 6, tzinfo=datetime.UTC)
         self.processed_time_patcher = patch(
-            "recidiviz.airflow.dags.utils.cloud_sql.datetime",
+            "recidiviz.airflow.dags.raw_data.write_import_completions_query_generator.datetime",
         )
         self.processed_time_patcher.start().datetime.now.return_value = self.frozen_time
 
@@ -2475,6 +2493,7 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
                     r".*_primary_import_branch\.list_normalized_unprocessed_gcs_file_paths",
                     r".*_primary_import_branch\.get_all_unprocessed_gcs_file_metadata",
                     r".*_primary_import_branch\.get_all_unprocessed_bq_file_metadata",
+                    r".*_primary_import_branch\.write_import_start",
                     r".*_primary_import_branch\.split_by_pre_import_normalization_type",
                     r".*_primary_import_branch\.pre_import_normalization\.*",
                     r"raw_data_branching\.branch_end",
@@ -2482,7 +2501,7 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
                 expected_skipped_task_id_regexes=[
                     r".*_primary_import_branch\.coalesce_import_ready_files",
                     r".*_primary_import_branch\.biq_query_load\..*",
-                    r".*_primary_import_branch\.cleanup_and_storage.*",
+                    r".*_primary_import_branch\.cleanup_and_storage\..*",
                     # non-primary branches
                     "_secondary_import_branch_start",
                     r".*_secondary_import_branch\.(?!ensure_release_resource_locks_release_if_acquired)",
@@ -2518,6 +2537,7 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
                     # downstream failures
                     r".*_primary_import_branch\.get_all_unprocessed_gcs_file_metadata",
                     r".*_primary_import_branch\.get_all_unprocessed_bq_file_metadata",
+                    r".*_primary_import_branch\.write_import_start",
                     r".*_primary_import_branch\.split_by_pre_import_normalization_type",
                     r".*_primary_import_branch\.pre_import_normalization\.*",
                 ],
@@ -2615,13 +2635,13 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
                 )
             }
 
-            import_sessions = session.execute(
+            import_runs = session.execute(
                 text(
-                    "SELECT import_session_id, file_id, import_status, raw_rows FROM direct_ingest_raw_data_import_session"
+                    "SELECT file_import_id, file_id, import_status, raw_rows FROM direct_ingest_raw_file_import"
                 )
             )
 
-            assert set(import_sessions) == {(1, 1, "SUCCEEDED", 100)}
+            assert set(import_runs) == {(1, 1, "SUCCEEDED", 100)}
 
             # (4) resource locks are released
             for lock_released in session.execute(
@@ -2710,13 +2730,13 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
                 )
             }
 
-            import_sessions = session.execute(
+            import_runs = session.execute(
                 text(
-                    "SELECT import_session_id, file_id, import_status, raw_rows FROM direct_ingest_raw_data_import_session"
+                    "SELECT file_import_id, file_id, import_status, raw_rows FROM direct_ingest_raw_file_import"
                 )
             )
 
-            assert set(import_sessions) == {(1, 1, "SUCCEEDED", 100)}
+            assert set(import_runs) == {(1, 1, "SUCCEEDED", 100)}
 
             # (4) resource locks are released
             for lock_released in session.execute(
@@ -2821,13 +2841,13 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
                 )
             }
 
-            import_sessions = session.execute(
+            import_runs = session.execute(
                 text(
-                    "select import_session_id, file_id, import_status, raw_rows from direct_ingest_raw_data_import_session"
+                    "select file_import_id, file_id, import_status, raw_rows from direct_ingest_raw_file_import"
                 )
             )
 
-            assert set(import_sessions) == {(1, 1, "SUCCEEDED", 100)}
+            assert set(import_runs) == {(1, 1, "SUCCEEDED", 100)}
 
             # (4) resource locks are released
             for lock_released in session.execute(
@@ -2936,13 +2956,13 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
                 ),
             }
 
-            import_sessions = session.execute(
+            import_runs = session.execute(
                 text(
-                    "select file_id, import_status, raw_rows from direct_ingest_raw_data_import_session"
+                    "select file_id, import_status, raw_rows from direct_ingest_raw_file_import"
                 )
             )
 
-            assert set(import_sessions) == {
+            assert set(import_runs) == {
                 (1, "SUCCEEDED", 100),
                 (2, "SUCCEEDED", 100),
                 (3, "SUCCEEDED", 100),
@@ -2980,6 +3000,8 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
                     # us_ll primary had no files
                     r"raw_data_branching\.us_ll_primary_import_branch\.pre_import_normalization\.(?!generate_file_chunking_pod_arguments)",
                     r"raw_data_branching\.us_ll_primary_import_branch\.biq_query_load\..*",
+                    r"raw_data_branching\.us_ll_primary_import_branch\.cleanup_and_storage\.write_import_completions",
+                    r"raw_data_branching\.us_ll_primary_import_branch\.cleanup_and_storage\.write_file_processed_time",
                 ],
             )
             self.assertEqual(DagRunState.SUCCESS, result.dag_run_state)
@@ -3033,13 +3055,13 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
                 )
             }
 
-            import_sessions = session.execute(
+            import_runs = session.execute(
                 text(
-                    "select import_session_id, file_id, import_status, raw_rows from direct_ingest_raw_data_import_session"
+                    "select file_import_id, file_id, import_status, raw_rows from direct_ingest_raw_file_import"
                 )
             )
 
-            assert set(import_sessions) == {(1, 1, "SUCCEEDED", 100)}
+            assert set(import_runs) == {(1, 1, "SUCCEEDED", 100)}
 
             # (4) resource locks are released
             for lock_released in session.execute(
@@ -3146,13 +3168,13 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
                 ),
             }
 
-            import_sessions = session.execute(
+            import_runs = session.execute(
                 text(
-                    "select file_id, import_status, raw_rows from direct_ingest_raw_data_import_session"
+                    "select file_id, import_status, raw_rows from direct_ingest_raw_file_import"
                 )
             )
 
-            assert set(import_sessions) == {
+            assert set(import_runs) == {
                 (1, "SUCCEEDED", 100),
                 (2, "SUCCEEDED", 100),
             }
@@ -3276,13 +3298,13 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
                 ),
             }
 
-            import_sessions = session.execute(
+            import_runs = session.execute(
                 text(
-                    "select import_status, raw_rows from direct_ingest_raw_data_import_session"
+                    "select import_status, raw_rows from direct_ingest_raw_file_import"
                 )
             )
 
-            assert sorted(import_sessions, key=lambda x: x[0]) == [
+            assert sorted(import_runs, key=lambda x: x[0]) == [
                 ("FAILED_PRE_IMPORT_NORMALIZATION_STEP", None),
                 ("SUCCEEDED", 100),
             ]
@@ -3380,13 +3402,13 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
                 ),
             }
 
-            import_sessions = session.execute(
+            import_runs = session.execute(
                 text(
-                    "select import_status, raw_rows from direct_ingest_raw_data_import_session"
+                    "select import_status, raw_rows from direct_ingest_raw_file_import"
                 )
             )
 
-            assert sorted(import_sessions, key=lambda x: x[0]) == [
+            assert sorted(import_runs, key=lambda x: x[0]) == [
                 ("FAILED_PRE_IMPORT_NORMALIZATION_STEP", None),
                 ("FAILED_PRE_IMPORT_NORMALIZATION_STEP", None),
                 ("SUCCEEDED", 100),
@@ -3480,13 +3502,13 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
                 ),
             }
 
-            import_sessions = session.execute(
+            import_runs = session.execute(
                 text(
-                    "select import_status, raw_rows from direct_ingest_raw_data_import_session"
+                    "select import_status, raw_rows from direct_ingest_raw_file_import"
                 )
             )
 
-            assert sorted(import_sessions, key=lambda x: x[0]) == [
+            assert sorted(import_runs, key=lambda x: x[0]) == [
                 ("FAILED_PRE_IMPORT_NORMALIZATION_STEP", None),
                 ("FAILED_PRE_IMPORT_NORMALIZATION_STEP", None),
                 ("SUCCEEDED", 100),
@@ -3612,13 +3634,13 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
                 ),
             }
 
-            import_sessions = session.execute(
+            import_runs = session.execute(
                 text(
-                    "select import_status, raw_rows from direct_ingest_raw_data_import_session"
+                    "select import_status, raw_rows from direct_ingest_raw_file_import"
                 )
             )
 
-            assert sorted(import_sessions, key=lambda x: x[0]) == [
+            assert sorted(import_runs, key=lambda x: x[0]) == [
                 ("FAILED_PRE_IMPORT_NORMALIZATION_STEP", None),
                 ("SUCCEEDED", 100),
             ]
@@ -3713,13 +3735,13 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
                 ),
             }
 
-            import_sessions = session.execute(
+            import_runs = session.execute(
                 text(
-                    "select import_status, raw_rows from direct_ingest_raw_data_import_session"
+                    "select import_status, raw_rows from direct_ingest_raw_file_import"
                 )
             )
 
-            assert sorted(import_sessions, key=lambda x: x[0]) == [
+            assert sorted(import_runs, key=lambda x: x[0]) == [
                 ("FAILED_PRE_IMPORT_NORMALIZATION_STEP", None),
                 ("FAILED_PRE_IMPORT_NORMALIZATION_STEP", None),
                 ("SUCCEEDED", 100),
@@ -3813,13 +3835,13 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
                 ),
             }
 
-            import_sessions = session.execute(
+            import_runs = session.execute(
                 text(
-                    "select import_status, raw_rows from direct_ingest_raw_data_import_session"
+                    "select import_status, raw_rows from direct_ingest_raw_file_import"
                 )
             )
 
-            assert sorted(import_sessions, key=lambda x: x[0]) == [
+            assert sorted(import_runs, key=lambda x: x[0]) == [
                 ("FAILED_PRE_IMPORT_NORMALIZATION_STEP", None),
                 ("FAILED_PRE_IMPORT_NORMALIZATION_STEP", None),
                 ("SUCCEEDED", 100),
@@ -3944,13 +3966,13 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
                 ),
             }
 
-            import_sessions = session.execute(
+            import_runs = session.execute(
                 text(
-                    "select import_status, raw_rows from direct_ingest_raw_data_import_session"
+                    "select import_status, raw_rows from direct_ingest_raw_file_import"
                 )
             )
 
-            assert sorted(import_sessions, key=lambda x: x[0]) == [
+            assert sorted(import_runs, key=lambda x: x[0]) == [
                 ("FAILED_LOAD_STEP", None),
                 ("SUCCEEDED", 100),
             ]
@@ -4046,13 +4068,13 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
                 ),
             }
 
-            import_sessions = session.execute(
+            import_runs = session.execute(
                 text(
-                    "select import_status, raw_rows from direct_ingest_raw_data_import_session"
+                    "select import_status, raw_rows from direct_ingest_raw_file_import"
                 )
             )
 
-            assert sorted(import_sessions, key=lambda x: x[0]) == [
+            assert sorted(import_runs, key=lambda x: x[0]) == [
                 ("FAILED_LOAD_STEP", None),
                 ("FAILED_LOAD_STEP", None),
                 ("SUCCEEDED", 100),
@@ -4146,13 +4168,13 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
                 ),
             }
 
-            import_sessions = session.execute(
+            import_runs = session.execute(
                 text(
-                    "select import_status, raw_rows from direct_ingest_raw_data_import_session"
+                    "select import_status, raw_rows from direct_ingest_raw_file_import"
                 )
             )
 
-            assert sorted(import_sessions, key=lambda x: x[0]) == [
+            assert sorted(import_runs, key=lambda x: x[0]) == [
                 ("FAILED_LOAD_STEP", None),
                 ("FAILED_LOAD_STEP", None),
                 ("SUCCEEDED", 100),
@@ -4283,13 +4305,13 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
                 ),
             }
 
-            import_sessions = session.execute(
+            import_runs = session.execute(
                 text(
-                    "select import_status, raw_rows from direct_ingest_raw_data_import_session"
+                    "select import_status, raw_rows from direct_ingest_raw_file_import"
                 )
             )
 
-            assert sorted(import_sessions, key=lambda x: x[0]) == [
+            assert sorted(import_runs, key=lambda x: x[0]) == [
                 ("FAILED_LOAD_STEP", None),
                 ("SUCCEEDED", 100),
             ]
@@ -4386,13 +4408,13 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
                 ),
             }
 
-            import_sessions = session.execute(
+            import_runs = session.execute(
                 text(
-                    "select import_status, raw_rows from direct_ingest_raw_data_import_session"
+                    "select import_status, raw_rows from direct_ingest_raw_file_import"
                 )
             )
 
-            assert sorted(import_sessions, key=lambda x: x[0]) == [
+            assert sorted(import_runs, key=lambda x: x[0]) == [
                 ("FAILED_LOAD_STEP", None),
                 ("FAILED_LOAD_STEP", None),
                 ("SUCCEEDED", 100),
@@ -4490,13 +4512,13 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
                 ),
             }
 
-            import_sessions = session.execute(
+            import_runs = session.execute(
                 text(
-                    "select import_status, raw_rows from direct_ingest_raw_data_import_session"
+                    "select import_status, raw_rows from direct_ingest_raw_file_import"
                 )
             )
 
-            assert sorted(import_sessions, key=lambda x: x[0]) == [
+            assert sorted(import_runs, key=lambda x: x[0]) == [
                 ("FAILED_LOAD_STEP", None),
                 ("FAILED_LOAD_STEP", None),
                 ("SUCCEEDED", 100),

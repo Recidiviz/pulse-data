@@ -611,7 +611,7 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
             return f"{error}", HTTPStatus.INTERNAL_SERVER_ERROR
 
     # TODO(#29133) update to use DirectIngestRawFileMetadataManagerV2
-    # TODO(#29133) add call to DirectIngestRawDataImportSessionManager.transfer_metadata_to_new_instance
+    # TODO(#29133) add call to DirectIngestRawFileImportRunManager.transfer_metadata_to_new_instance
     @bp.route(
         "/api/ingest_operations/flash_primary_db/transfer_raw_data_metadata_to_new_instance",
         methods=["POST"],

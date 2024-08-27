@@ -42,7 +42,12 @@ from recidiviz.persistence.errors import (
 
 
 class DirectIngestRawDataResourceLockManager:
-    """Class for managing reads and writes to DirectIngestRawDataResourceLock"""
+    """Class for managing reads and writes to DirectIngestRawDataResourceLock
+
+    n.b. while this class manages interaction w/ our file metadata tables, they are also
+    queried in the airflow context with raw sql. all relevant updates to the table's
+    logic must also be reflected in the raw data import dag's query logic.
+    """
 
     def __init__(
         self,

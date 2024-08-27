@@ -90,11 +90,14 @@ from recidiviz.airflow.dags.raw_data.raw_data_branching import (
 from recidiviz.airflow.dags.raw_data.release_resource_lock_sql_query_generator import (
     ReleaseRawDataResourceLockSqlQueryGenerator,
 )
+from recidiviz.airflow.dags.raw_data.write_file_import_start_sql_query_generator import (
+    WriteImportStartCloudSqlGenerator,
+)
 from recidiviz.airflow.dags.raw_data.write_file_processed_time_to_bq_file_metadata_sql_query_generator import (
     WriteFileProcessedTimeToBQFileMetadataSqlQueryGenerator,
 )
-from recidiviz.airflow.dags.raw_data.write_import_session_query_generator import (
-    WriteImportSessionSqlQueryGenerator,
+from recidiviz.airflow.dags.raw_data.write_import_completions_query_generator import (
+    WriteImportCompletionsSqlQueryGenerator,
 )
 from recidiviz.airflow.dags.utils.branching_by_key import create_branching_by_key
 from recidiviz.airflow.dags.utils.cloud_sql import cloud_sql_conn_id_for_schema_type
@@ -189,6 +192,16 @@ def create_single_state_code_ingest_instance_raw_data_import_branch(
             ),
         )
 
+        write_import_start = CloudSqlQueryOperator(
+            task_id="write_import_start",
+            cloud_sql_conn_id=operations_cloud_sql_conn_id,
+            query_generator=WriteImportStartCloudSqlGenerator(
+                region_code=state_code.value,
+                raw_data_instance=raw_data_instance,
+                get_all_unprocessed_bq_file_metadata_task_id=get_all_unprocessed_bq_file_metadata.task_id,
+            ),
+        )
+
         files_to_process = split_by_pre_import_normalization_type(
             region_code=state_code.value,
             serialized_bq_metadata=get_all_unprocessed_bq_file_metadata.output,
@@ -198,6 +211,7 @@ def create_single_state_code_ingest_instance_raw_data_import_branch(
             list_normalized_unprocessed_gcs_file_paths
             >> get_all_unprocessed_gcs_file_metadata
             >> get_all_unprocessed_bq_file_metadata
+            >> write_import_start
             >> files_to_process
         )
 
@@ -305,13 +319,14 @@ def create_single_state_code_ingest_instance_raw_data_import_branch(
                 append_results,
             )
 
-            write_import_sessions = CloudSqlQueryOperator(
-                task_id="write_import_sessions",
+            write_import_completions = CloudSqlQueryOperator(
+                task_id="write_import_completions",
                 cloud_sql_conn_id=operations_cloud_sql_conn_id,
-                query_generator=WriteImportSessionSqlQueryGenerator(
+                query_generator=WriteImportCompletionsSqlQueryGenerator(
                     region_code=state_code.value,
                     raw_data_instance=raw_data_instance,
                     coalesce_results_and_errors_task_id=clean_and_storage_jobs.operator.task_id,
+                    write_import_start_task_id=write_import_start.task_id,
                 ),
             )
 
@@ -319,7 +334,7 @@ def create_single_state_code_ingest_instance_raw_data_import_branch(
                 task_id="write_file_processed_time",
                 cloud_sql_conn_id=operations_cloud_sql_conn_id,
                 query_generator=WriteFileProcessedTimeToBQFileMetadataSqlQueryGenerator(
-                    write_import_session_task_id=write_import_sessions.task_id
+                    write_import_run_task_id=write_import_completions.task_id
                 ),
             )
 
@@ -334,14 +349,15 @@ def create_single_state_code_ingest_instance_raw_data_import_branch(
                 raw_data_instance,
                 clean_and_storage_jobs[PROCESSED_PATHS_TO_RENAME],
             )
+
             clean_and_storage_jobs >> [
-                write_import_sessions,
+                write_import_completions,
                 cleaned_temporary_files,
                 cleaned_temporary_tables,
                 renamed_imported_paths,
             ]
 
-            write_import_sessions >> write_file_processed_times
+            write_import_completions >> write_file_processed_times
 
         big_query_load >> cleanup_and_storage
 

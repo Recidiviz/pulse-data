@@ -1,0 +1,2 @@
+import_run_id,dag_run_id,import_run_start,import_run_end,region_code,raw_data_instance
+1,manual__2024-05-22T18:03:12.913850+00:00,2022-05-02T14:56:11.907873,2022-05-02T15:56:11.907873,US_CO,PRIMARY

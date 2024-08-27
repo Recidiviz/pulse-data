@@ -111,12 +111,12 @@ class TestStableHistoricalRawDataCountsTableValidation(BigQueryEmulatorTestCase)
         If no data is provided, it will use the default data attributes of the class.
         """
         operations_dataset = "operations"
-        import_sessions_table = "direct_ingest_raw_data_import_session"
+        file_import_table = "direct_ingest_raw_data_file_import"
         bq_metadata_table = "direct_ingest_raw_big_query_file_metadata"
         temp_table = "test_table"
 
         table_data = {
-            import_sessions_table: (
+            file_import_table: (
                 sessions_data
                 if sessions_data is not None
                 else self.default_sessions_data
@@ -134,7 +134,7 @@ class TestStableHistoricalRawDataCountsTableValidation(BigQueryEmulatorTestCase)
         }
 
         table_schemas = {
-            import_sessions_table: [
+            file_import_table: [
                 schema_field_for_type("file_id", int),
                 schema_field_for_type("raw_rows", int),
                 schema_field_for_type("import_status", str),
@@ -153,8 +153,8 @@ class TestStableHistoricalRawDataCountsTableValidation(BigQueryEmulatorTestCase)
         }
 
         table_addresses = {
-            import_sessions_table: BigQueryAddress(
-                dataset_id=operations_dataset, table_id=import_sessions_table
+            file_import_table: BigQueryAddress(
+                dataset_id=operations_dataset, table_id=file_import_table
             ),
             bq_metadata_table: BigQueryAddress(
                 dataset_id=operations_dataset, table_id=bq_metadata_table
@@ -162,7 +162,7 @@ class TestStableHistoricalRawDataCountsTableValidation(BigQueryEmulatorTestCase)
             temp_table: self.temp_table_address,
         }
 
-        for table in [import_sessions_table, bq_metadata_table, temp_table]:
+        for table in [file_import_table, bq_metadata_table, temp_table]:
             self._create_and_load_table(
                 table_address=table_addresses[table],
                 schema=table_schemas[table],
