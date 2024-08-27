@@ -609,6 +609,113 @@ def violations_within_time_interval_criteria_builder(
     )
 
 
+def incarceration_violations_within_time_interval_criteria_builder(
+    criteria_name: str,
+    description: str,
+    incident_type: str = "",
+    where_clause: str = "",
+    bool_column: str = "False AS meets_criteria,",
+    date_interval: int = 12,
+    date_part: str = "MONTH",
+    violation_date_name_in_reason_blob: str = "latest_violations",
+    display_single_violation_date: bool = False,
+    state_code: Optional[StateCode] = None,
+) -> TaskCriteriaBigQueryViewBuilder:
+    """
+    Returns a criteria query that has spans of time when incarceration violations that meet
+    certain conditions set by the user (<violation_type> and <where clause>) occurred.
+    Args:
+        criteria_name (str): Name of the criteria
+        description (str): Description of the criteria
+        incident_type (str, optional): Specifies the violation types that should be
+            counted towards the criteria. Should only include values inside the
+            StateIncarcerationIncidentType enum. Example: "AND sii.incident_type = 'VIOLENCE' "
+            Defaults to ''.
+        where_clause (str, optional): _description_. Defaults to ''.
+        bool_column (str, optional): _description_. Defaults to "False AS meets_criteria,".
+        date_interval (int, optional): Number of <date_part> when the violation
+            will be counted as valid. Defaults to 12 (e.g. it could be 12 months).
+        date_part (str, optional): Supports any of the BigQuery date_part values:
+            "DAY", "WEEK","MONTH","QUARTER","YEAR". Defaults to "MONTH".
+        violation_date_name_in_reason_blob (str, optional): Name of the violation_date
+            field in the reason blob. Defaults to "latest_convictions".
+        display_single_violation_date (bool, optional): Show only the latest violation in
+            the reason blob. Defaults to False, showing all violations in the given time
+            period.
+        state_code (str, optional): State code for which to return a state-specific view
+            builder. Defaults to None, returning a state-agnostic view builder.
+    Returns:
+        TaskCriteriaBigQueryViewBuilder: CTE query that shows the spans of
+            time when the violations that meet certain conditions set by the user
+            (<incident_type> and <where clause>) occurred. The span of time for the validity of
+            each violation starts at incident_date and ends after a period specified by
+            the user (in <date_interval> and <date_part>)
+    """
+
+    violation_date_content_in_reason_blob = (
+        "ARRAY_AGG(violation_date IGNORE NULLS ORDER BY violation_date DESC)"
+    )
+    if display_single_violation_date:
+        violation_date_content_in_reason_blob += "[OFFSET(0)]"
+
+    criteria_query = f"""
+    WITH incarceration_violations AS (
+        SELECT
+            sii.state_code,
+            sii.person_id,
+            incident_date AS start_date,
+            DATE_ADD(incident_date, INTERVAL {date_interval} {date_part}) AS end_date,
+            incident_date AS violation_date,
+            {bool_column}
+        FROM `{{project_id}}.normalized_state.state_incarceration_incident` sii
+        {incident_type}
+        {where_clause}
+    ), 
+    {create_sub_sessions_with_attributes('incarceration_violations')}
+    SELECT 
+        state_code,
+        person_id,
+        start_date,
+        end_date,
+        LOGICAL_AND(meets_criteria) AS meets_criteria,
+        TO_JSON(STRUCT({violation_date_content_in_reason_blob} AS {violation_date_name_in_reason_blob})) AS reason,
+        {violation_date_content_in_reason_blob} AS {violation_date_name_in_reason_blob},
+    FROM sub_sessions_with_attributes
+    GROUP BY 1,2,3,4
+    """
+
+    if state_code:
+        # TODO(#26803): Remove this once Oregon fits within state-agnostic logic
+        return StateSpecificTaskCriteriaBigQueryViewBuilder(
+            criteria_name=criteria_name,
+            description=description,
+            criteria_spans_query_template=criteria_query,
+            state_code=state_code,
+            meets_criteria_default=True,
+            reasons_fields=[
+                ReasonsField(
+                    name=violation_date_name_in_reason_blob,
+                    type=bigquery.enums.StandardSqlTypeNames.DATE,
+                    description="Date when the violation occurred",
+                ),
+            ],
+        )
+
+    return StateAgnosticTaskCriteriaBigQueryViewBuilder(
+        criteria_name=criteria_name,
+        description=description,
+        criteria_spans_query_template=criteria_query,
+        meets_criteria_default=True,
+        reasons_fields=[
+            ReasonsField(
+                name=violation_date_name_in_reason_blob,
+                type=bigquery.enums.StandardSqlTypeNames.DATE,
+                description="Date when the violation occurred",
+            ),
+        ],
+    )
+
+
 def is_past_completion_date_criteria_builder(
     criteria_name: str,
     description: str,
