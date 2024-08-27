@@ -41,7 +41,13 @@ from recidiviz.persistence.entity.operations import entities
 
 # TODO(#28239) migrate this manager back to DirectIngestRawFileMetadataManager
 class DirectIngestRawFileMetadataManagerV2:
-    """Handles writing to and from our file metadata tables"""
+    """Handles writing to and from our file metadata tables.
+
+
+    n.b. while this class manages interaction w/ our file metadata tables, they are also
+    queried in the airflow context with raw sql. all relevant updates to the tables'
+    logic must also be reflected in the raw data import dag's query logic.
+    """
 
     def __init__(
         self,

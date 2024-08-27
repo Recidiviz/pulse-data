@@ -46,10 +46,10 @@ class WriteFileProcessedTimeToBQFileMetadataSqlQueryGenerator(
 
     def __init__(
         self,
-        write_import_session_task_id: str,
+        write_import_run_task_id: str,
     ) -> None:
         super().__init__()
-        self._write_import_session_task_id = write_import_session_task_id
+        self._write_import_run_task_id = write_import_run_task_id
 
     def execute_postgres_query(
         self,
@@ -63,7 +63,7 @@ class WriteFileProcessedTimeToBQFileMetadataSqlQueryGenerator(
             for metadata_str in operator.xcom_pull(
                 context,
                 key="return_value",
-                task_ids=self._write_import_session_task_id,
+                task_ids=self._write_import_run_task_id,
             )
         ]
 

@@ -28,7 +28,7 @@ class DirectIngestRawDataResourceLockResource(OperationsEnum):
 
     BUCKET = operations_enum_strings.direct_ingest_lock_resource_bucket
     OPERATIONS_DATABASE = (
-        operations_enum_strings.direct_ingest_lock_resource_operations_databse
+        operations_enum_strings.direct_ingest_lock_resource_operations_database
     )
     BIG_QUERY_RAW_DATA_DATASET = (
         operations_enum_strings.direct_ingest_lock_resource_big_query_raw_data_dataset

@@ -28,8 +28,8 @@ from recidiviz.common.constants.csv import (
     DEFAULT_CSV_ENCODING,
     DEFAULT_CSV_LINE_TERMINATOR,
 )
-from recidiviz.common.constants.operations.direct_ingest_raw_data_import_session import (
-    DirectIngestRawDataImportSessionStatus,
+from recidiviz.common.constants.operations.direct_ingest_raw_file_import import (
+    DirectIngestRawFileImportStatus,
 )
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRawFileConfig,
@@ -44,10 +44,10 @@ from recidiviz.ingest.direct.types.raw_data_import_types import (
     PreImportNormalizationType,
     PreImportNormalizedCsvChunkResult,
     PreImportNormalizedFileResult,
-    RawBigQueryFileImportSummary,
     RawBigQueryFileMetadata,
     RawBigQueryFileProcessedTime,
     RawDataAppendImportError,
+    RawFileImport,
     RawFileLoadAndPrepError,
     RawFileProcessingError,
     RawGCSFileMetadata,
@@ -406,16 +406,16 @@ class TestSerialization(unittest.TestCase):
         )
         self._validate_serialization(original, RawBigQueryFileMetadata)
 
-    def test_import_summary(self) -> None:
-        original = RawBigQueryFileImportSummary(
+    def test_raw_file_import(self) -> None:
+        original = RawFileImport(
             file_id=1,
-            import_status=DirectIngestRawDataImportSessionStatus.FAILED_UNKNOWN,
+            import_status=DirectIngestRawFileImportStatus.FAILED_UNKNOWN,
             raw_rows=1,
             historical_diffs_active=True,
             net_new_or_updated_rows=None,
             deleted_rows=1,
         )
-        self._validate_serialization(original, RawBigQueryFileImportSummary)
+        self._validate_serialization(original, RawFileImport)
 
     def test_update_ready_metadata(self) -> None:
         original = RawBigQueryFileProcessedTime(

@@ -30,12 +30,12 @@ from recidiviz.common.attr_mixins import BuildableAttr, DefaultableAttr
 from recidiviz.common.constants.operations.direct_ingest_instance_status import (
     DirectIngestStatus,
 )
-from recidiviz.common.constants.operations.direct_ingest_raw_data_import_session import (
-    DirectIngestRawDataImportSessionStatus,
-)
 from recidiviz.common.constants.operations.direct_ingest_raw_data_resource_lock import (
     DirectIngestRawDataLockActor,
     DirectIngestRawDataResourceLockResource,
+)
+from recidiviz.common.constants.operations.direct_ingest_raw_file_import import (
+    DirectIngestRawFileImportStatus,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.persistence.entity.base_entity import Entity
@@ -169,7 +169,12 @@ class DirectIngestDataflowRawTableUpperBounds(Entity, BuildableAttr, Defaultable
 
 @attr.s(eq=False)
 class DirectIngestRawDataResourceLock(Entity, BuildableAttr, DefaultableAttr):
-    """A record of direct ingest raw data resource locks over time."""
+    """A record of direct ingest raw data resource locks over time.
+
+    n.b. while this entity object is defined here, it is also queried in the airflow
+    context with raw sql. any updates this entity must also be propagated to the raw
+    data import dag's sql queries
+    """
 
     lock_id: int = attr.ib()
     # The actor who is acquiring the lock
@@ -184,13 +189,18 @@ class DirectIngestRawDataResourceLock(Entity, BuildableAttr, DefaultableAttr):
     lock_acquisition_time: datetime.datetime = attr.ib()
     # The TTL for this lock in seconds
     lock_ttl_seconds: Optional[int] = attr.ib()
-    # Descirption for why the lock was acquired
+    # Description for why the lock was acquired
     lock_description: str = attr.ib()
 
 
 @attr.s(eq=False)
 class DirectIngestRawBigQueryFileMetadata(Entity, BuildableAttr, DefaultableAttr):
-    """Metadata known about a "conceptual" file_id that exists in BigQuery."""
+    """Metadata known about a "conceptual" file_id that exists in BigQuery.
+
+    n.b. while this entity object is defined here, it is also queried in the airflow
+    context with raw sql. any updates this entity must also be propagated to the raw
+    data import dag's sql queries
+    """
 
     # "Conceptual" file id that corresponds to a single, conceptual file sent to us by
     # the state. For raw files states send us in chunks (such as ContactNoteComment),
@@ -218,15 +228,18 @@ class DirectIngestRawBigQueryFileMetadata(Entity, BuildableAttr, DefaultableAttr
     gcs_files: List["DirectIngestRawGCSFileMetadata"] = attr.ib(
         factory=list, validator=attr_validators.is_list
     )
-    # Import sessions associated with this bq file
-    import_sessions: List["DirectIngestRawDataImportSession"] = attr.ib(
-        factory=list, validator=attr_validators.is_list
-    )
+    # File imports associated with this bq_file
+    file_imports: List["DirectIngestRawFileImport"] = attr.ib(factory=list)
 
 
 @attr.s(eq=False)
 class DirectIngestRawGCSFileMetadata(Entity, BuildableAttr, DefaultableAttr):
-    """Metadata known about a raw data csv file that exists in Google Cloud Storage."""
+    """Metadata known about a raw data csv file that exists in Google Cloud Storage.
+
+    n.b. while this entity object is defined here, it is also queried in the airflow
+    context with raw sql. any updates this entity must also be propagated to the raw
+    data import dag's sql queries
+    """
 
     # An id that corresponds to the literal file in Google Cloud Storage. a single file
     # will always have a single gcs_file_id.
@@ -255,37 +268,86 @@ class DirectIngestRawGCSFileMetadata(Entity, BuildableAttr, DefaultableAttr):
     file_discovery_time: datetime.datetime = attr.ib(
         validator=attr_validators.is_utc_timezone_aware_datetime
     )
-    # Conecptual Big Query file associated with this GCS file
+    # Conceptual Big Query file associated with this GCS file
     bq_file: Optional["DirectIngestRawBigQueryFileMetadata"] = attr.ib(default=None)
 
 
 @attr.s(eq=False)
-class DirectIngestRawDataImportSession(Entity, BuildableAttr, DefaultableAttr):
+class DirectIngestRawFileImportRun(Entity, BuildableAttr, DefaultableAttr):
+    """Each row corresponds to a state-and-ingest-specific run of the raw data import
+    DAG
 
-    import_session_id: int = attr.ib()
+    n.b. this object's schema reflects the database schema defined in
+    recidiviz/persistence/database/schema/operations/schema.py, but this object is
+    populated by raw sql queries in the airflow context.
+    """
+
+    import_run_id: int = attr.ib()
+    # The id of the raw data import run which should match DagRun::run_id in the airflow
+    # metadata database
+    dag_run_id: str = attr.ib(validator=attr_validators.is_str)
+    # Time when the import run started
+    import_run_start: datetime.datetime = attr.ib(
+        validator=attr_validators.is_utc_timezone_aware_datetime
+    )
+    # Time when the import run ended
+    import_run_end: datetime.datetime = attr.ib(
+        validator=attr_validators.is_utc_timezone_aware_datetime
+    )
+    # The region code associated with the raw data import run
+    region_code: str = attr.ib(validator=attr_validators.is_str)
+    # The raw data instance associated with the raw data import run
+    raw_data_instance: DirectIngestInstance = attr.ib(
+        validator=attr.validators.in_(DirectIngestInstance)
+    )
+    # The imports associated with this import run
+    file_imports: List["DirectIngestRawFileImport"] = attr.ib(factory=list)
+
+
+@attr.s(eq=False)
+class DirectIngestRawFileImport(Entity, BuildableAttr, DefaultableAttr):
+    """Each rows corresponds to an attempt to import an entry in the direct_ingest_raw_big_query_file_metadata
+    table into BigQuery. This table has DAG-run-level information about a raw file
+    import, which will change over the lifecycle of an import.
+
+    n.b. while this entity object is defined here, it is also queried in the airflow
+    context with raw sql. any updates this entity must also be propagated to the raw
+    data import dag's sql queries
+    """
+
+    file_import_id: int = attr.ib()
     # The file_id from the direct_ingest_raw_big_query_file_metadata table
-    file_id: int = attr.ib()
-    # Status of this import session
-    import_status: DirectIngestRawDataImportSessionStatus = attr.ib()
-    # Time when the import started
-    import_start: datetime.datetime = attr.ib()
-    # Time when the import ended
-    import_end: datetime.datetime = attr.ib()
-    region_code: str = attr.ib()
-    # The instance that this raw data was imported to.
-    raw_data_instance: DirectIngestInstance = attr.ib()
+    file_id: int = attr.ib(validator=attr_validators.is_int)
+    # The import_run_id from the direct_ingest_raw_file_import_run associated with this
+    # import
+    import_run_id: int = attr.ib(validator=attr_validators.is_int)
+    # Status of the raw file import
+    import_status: DirectIngestRawFileImportStatus = attr.ib(
+        validator=attr.validators.in_(DirectIngestRawFileImportStatus)
+    )
+    # The region code associated with the raw data import
+    region_code: str = attr.ib(validator=attr_validators.is_str)
+    # The raw data instance associated with the raw data import
+    raw_data_instance: DirectIngestInstance = attr.ib(
+        validator=attr.validators.in_(DirectIngestInstance)
+    )
     # Whether or not historical diffs were performed during the import of this file (or
     # would have been had the import successfully made it to that stage)
-    historical_diffs_active: bool = attr.ib()
+    historical_diffs_active: bool = attr.ib(validator=attr_validators.is_bool)
     # The number of rows included in the raw data file. If historical_diffs_active,
     # this number will not be equal to the number of rows added to the raw data table.
-    raw_rows: int = attr.ib()
+    raw_rows: Optional[int] = attr.ib(validator=attr_validators.is_opt_int)
     # Number of net new or updated rows added during the diffing process
-    net_new_or_updated_rows: int = attr.ib()
+    net_new_or_updated_rows: Optional[int] = attr.ib(
+        validator=attr_validators.is_opt_int
+    )
     # Number of rows added with is_deleted as True during the diffing process
-    deleted_rows: int = attr.ib()
-    # File object from direct_ingest_raw_big_query_file_metadata table
+    deleted_rows: Optional[int] = attr.ib(validator=attr_validators.is_opt_int)
+
+    # RawBigQueryFile object from direct_ingest_raw_big_query_file_metadata table
     bq_file: Optional["DirectIngestRawBigQueryFileMetadata"] = attr.ib(default=None)
+    # ImportRun object from direct_ingest_raw_file_import_run table
+    import_run: Optional["DirectIngestRawFileImportRun"] = attr.ib(default=None)
 
 
 @attr.s(eq=False)

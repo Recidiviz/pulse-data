@@ -25,17 +25,17 @@ from more_itertools import one
 
 from recidiviz.airflow.dags.raw_data.file_metadata_tasks import (
     MAX_BQ_LOAD_JOBS,
-    _build_import_summaries_for_errors,
-    _build_import_summaries_for_results,
-    _reconcile_import_summaries_and_bq_metadata,
+    _build_file_imports_for_errors,
+    _build_file_imports_for_results,
+    _reconcile_file_imports_and_bq_metadata,
     coalesce_import_ready_files,
     coalesce_results_and_errors,
     split_by_pre_import_normalization_type,
 )
 from recidiviz.airflow.dags.raw_data.metadata import (
     APPEND_READY_FILE_BATCHES,
+    FILE_IMPORTS,
     IMPORT_READY_FILES,
-    IMPORT_SUMMARIES,
     PROCESSED_PATHS_TO_RENAME,
     REQUIRES_PRE_IMPORT_NORMALIZATION_FILES,
     REQUIRES_PRE_IMPORT_NORMALIZATION_FILES_BQ_METADATA,
@@ -46,8 +46,8 @@ from recidiviz.airflow.dags.raw_data.metadata import (
 from recidiviz.airflow.dags.raw_data.utils import get_direct_ingest_region_raw_config
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
-from recidiviz.common.constants.operations.direct_ingest_raw_data_import_session import (
-    DirectIngestRawDataImportSessionStatus,
+from recidiviz.common.constants.operations.direct_ingest_raw_file_import import (
+    DirectIngestRawFileImportStatus,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.direct.types.raw_data_import_types import (
@@ -55,9 +55,9 @@ from recidiviz.ingest.direct.types.raw_data_import_types import (
     AppendReadyFileBatch,
     AppendSummary,
     ImportReadyFile,
-    RawBigQueryFileImportSummary,
     RawBigQueryFileMetadata,
     RawDataAppendImportError,
+    RawFileImport,
     RawFileLoadAndPrepError,
     RawFileProcessingError,
     RawGCSFileMetadata,
@@ -252,7 +252,7 @@ class CoalesceResultsAndErrorsTest(TestCase):
             {SKIPPED_FILE_ERRORS: [], APPEND_READY_FILE_BATCHES: []},
             [],
         ) == {
-            IMPORT_SUMMARIES: [],
+            FILE_IMPORTS: [],
             PROCESSED_PATHS_TO_RENAME: [],
             TEMPORARY_PATHS_TO_CLEAN: [],
             TEMPORARY_TABLES_TO_CLEAN: [],
@@ -274,7 +274,7 @@ class CoalesceResultsAndErrorsTest(TestCase):
                 None,
             )
 
-    def test_build_import_summaries_for_results_all_matching(self) -> None:
+    def test_build_file_imports_for_results_all_matching(self) -> None:
         summaries = [
             AppendSummary(file_id=1, historical_diffs_active=False),
             AppendSummary(file_id=2, historical_diffs_active=False),
@@ -359,7 +359,7 @@ class CoalesceResultsAndErrorsTest(TestCase):
             )
         ]
 
-        import_summaries, files = _build_import_summaries_for_results(
+        file_imports, files = _build_file_imports_for_results(
             summaries, append_ready_file_batches
         )
 
@@ -369,8 +369,8 @@ class CoalesceResultsAndErrorsTest(TestCase):
             for file in batch
         ]
 
-        for i, summary in enumerate(import_summaries.values()):
-            assert summary == RawBigQueryFileImportSummary.from_load_results(
+        for i, summary in enumerate(file_imports.values()):
+            assert summary == RawFileImport.from_load_results(
                 append_ready_files[i], summaries[i]
             )
 
@@ -380,7 +380,7 @@ class CoalesceResultsAndErrorsTest(TestCase):
             for path in metadata.import_ready_file.original_file_paths
         )
 
-    def test_build_import_summaries_for_results_missing(self) -> None:
+    def test_build_file_imports_for_results_missing(self) -> None:
         summaries = [
             AppendSummary(file_id=1, historical_diffs_active=False),
             AppendSummary(file_id=2, historical_diffs_active=False),
@@ -465,7 +465,7 @@ class CoalesceResultsAndErrorsTest(TestCase):
             )
         ]
 
-        import_summaries, files = _build_import_summaries_for_results(
+        file_imports, files = _build_file_imports_for_results(
             summaries, append_ready_file_batches
         )
 
@@ -475,12 +475,12 @@ class CoalesceResultsAndErrorsTest(TestCase):
             for file in batch
         ]
 
-        assert 3 not in import_summaries
-        assert 4 not in import_summaries
+        assert 3 not in file_imports
+        assert 4 not in file_imports
 
-        assert len(import_summaries) == 2
-        for i, summary in enumerate(import_summaries.values()):
-            assert summary == RawBigQueryFileImportSummary.from_load_results(
+        assert len(file_imports) == 2
+        for i, summary in enumerate(file_imports.values()):
+            assert summary == RawFileImport.from_load_results(
                 append_ready_files[i], summaries[i]
             )
 
@@ -490,7 +490,7 @@ class CoalesceResultsAndErrorsTest(TestCase):
             for path in metadata.import_ready_file.original_file_paths
         )
 
-    def test_build_import_summaries_for_errors_bq_errors(self) -> None:
+    def test_build_file_imports_for_errors_bq_errors(self) -> None:
         load_errors = [
             # no temp files, no temp table
             RawFileLoadAndPrepError(
@@ -541,7 +541,7 @@ class CoalesceResultsAndErrorsTest(TestCase):
 
         raw_region_config = get_direct_ingest_region_raw_config("US_XX")
 
-        import_summaries, temp_files, temp_tables = _build_import_summaries_for_errors(
+        file_imports, temp_files, temp_tables = _build_file_imports_for_errors(
             raw_region_config,
             DirectIngestInstance.PRIMARY,
             [],
@@ -550,10 +550,10 @@ class CoalesceResultsAndErrorsTest(TestCase):
             append_errors,
         )
 
-        assert len(import_summaries) == 4
+        assert len(file_imports) == 4
         assert (
-            one({summary.import_status for summary in import_summaries.values()})
-            == DirectIngestRawDataImportSessionStatus.FAILED_LOAD_STEP
+            one({summary.import_status for summary in file_imports.values()})
+            == DirectIngestRawFileImportStatus.FAILED_LOAD_STEP
         )
 
         assert temp_files == load_errors[1].pre_import_normalized_file_paths
@@ -562,7 +562,7 @@ class CoalesceResultsAndErrorsTest(TestCase):
             load_errors[2].temp_table,
         ]
 
-    def test_build_import_summaries_for_errors_processing_errors_single_chunk_fail_all_fail(
+    def test_build_file_imports_for_errors_processing_errors_single_chunk_fail_all_fail(
         self,
     ) -> None:
         bq_metadata = [
@@ -620,7 +620,7 @@ class CoalesceResultsAndErrorsTest(TestCase):
 
         raw_region_config = get_direct_ingest_region_raw_config("US_XX")
 
-        import_summaries, temp_files, temp_tables = _build_import_summaries_for_errors(
+        file_imports, temp_files, temp_tables = _build_file_imports_for_errors(
             raw_region_config,
             DirectIngestInstance.PRIMARY,
             bq_metadata,
@@ -629,16 +629,16 @@ class CoalesceResultsAndErrorsTest(TestCase):
             [],
         )
 
-        assert len(import_summaries) == 1
-        assert 2 in import_summaries
+        assert len(file_imports) == 1
+        assert 2 in file_imports
         assert (
-            import_summaries[2].import_status
-            == DirectIngestRawDataImportSessionStatus.FAILED_PRE_IMPORT_NORMALIZATION_STEP
+            file_imports[2].import_status
+            == DirectIngestRawFileImportStatus.FAILED_PRE_IMPORT_NORMALIZATION_STEP
         )
         assert not temp_tables
         assert temp_files == processing_errors[0].temporary_file_paths
 
-    def test_build_import_summaries_for_errors_processing_errors_both(self) -> None:
+    def test_build_file_imports_for_errors_processing_errors_both(self) -> None:
         bq_metadata = [
             RawBigQueryFileMetadata(
                 file_id=1,
@@ -704,7 +704,7 @@ class CoalesceResultsAndErrorsTest(TestCase):
 
         raw_region_config = get_direct_ingest_region_raw_config("US_XX")
 
-        import_summaries, temp_files, temp_tables = _build_import_summaries_for_errors(
+        file_imports, temp_files, temp_tables = _build_file_imports_for_errors(
             raw_region_config,
             DirectIngestInstance.PRIMARY,
             bq_metadata,
@@ -713,11 +713,11 @@ class CoalesceResultsAndErrorsTest(TestCase):
             [],
         )
 
-        assert len(import_summaries) == 1
-        assert 2 in import_summaries
+        assert len(file_imports) == 1
+        assert 2 in file_imports
         assert (
-            import_summaries[2].import_status
-            == DirectIngestRawDataImportSessionStatus.FAILED_PRE_IMPORT_NORMALIZATION_STEP
+            file_imports[2].import_status
+            == DirectIngestRawFileImportStatus.FAILED_PRE_IMPORT_NORMALIZATION_STEP
         )
         assert not temp_tables
         assert temp_files == [
@@ -726,7 +726,7 @@ class CoalesceResultsAndErrorsTest(TestCase):
             for path in error.temporary_file_paths or []
         ]
 
-    def test_build_import_summaries_for_errors_processing_pruning_propagated(
+    def test_build_file_imports_for_errors_processing_pruning_propagated(
         self,
     ) -> None:
         self.pruning_mock.return_value = True
@@ -864,37 +864,33 @@ class CoalesceResultsAndErrorsTest(TestCase):
             ],
         )
 
-        assert len(result[IMPORT_SUMMARIES]) == len(bq_metadata)
-        summaries = [
-            RawBigQueryFileImportSummary.deserialize(s)
-            for s in result[IMPORT_SUMMARIES]
-        ]
+        assert len(result[FILE_IMPORTS]) == len(bq_metadata)
+        summaries = [RawFileImport.deserialize(s) for s in result[FILE_IMPORTS]]
         assert summaries[0].file_id == 3
         assert summaries[0].historical_diffs_active is True
         assert (
             summaries[0].import_status
-            == DirectIngestRawDataImportSessionStatus.FAILED_LOAD_STEP
+            == DirectIngestRawFileImportStatus.FAILED_LOAD_STEP
         )
         assert summaries[1].file_id == 2
         assert summaries[1].historical_diffs_active is False
         assert (
             summaries[1].import_status
-            == DirectIngestRawDataImportSessionStatus.FAILED_LOAD_STEP
+            == DirectIngestRawFileImportStatus.FAILED_LOAD_STEP
         )
         assert summaries[2].file_id == 1
         assert summaries[2].historical_diffs_active is False
         assert (
             summaries[2].import_status
-            == DirectIngestRawDataImportSessionStatus.FAILED_PRE_IMPORT_NORMALIZATION_STEP
+            == DirectIngestRawFileImportStatus.FAILED_PRE_IMPORT_NORMALIZATION_STEP
         )
         assert summaries[3].file_id == 4
         assert summaries[3].historical_diffs_active is True
         assert (
-            summaries[3].import_status
-            == DirectIngestRawDataImportSessionStatus.FAILED_UNKNOWN
+            summaries[3].import_status == DirectIngestRawFileImportStatus.FAILED_UNKNOWN
         )
 
-    def test_reconcile_import_summaries_and_bq_metadata_all_accounted_for(self) -> None:
+    def test_reconcile_file_imports_and_bq_metadata_all_accounted_for(self) -> None:
         bq_metadata = [
             RawBigQueryFileMetadata(
                 file_id=1,
@@ -959,29 +955,29 @@ class CoalesceResultsAndErrorsTest(TestCase):
         ]
 
         successful_imports = {
-            1: RawBigQueryFileImportSummary(
+            1: RawFileImport(
                 file_id=1,
-                import_status=DirectIngestRawDataImportSessionStatus.SUCCEEDED,
+                import_status=DirectIngestRawFileImportStatus.SUCCEEDED,
                 historical_diffs_active=False,
             ),
-            2: RawBigQueryFileImportSummary(
+            2: RawFileImport(
                 file_id=2,
-                import_status=DirectIngestRawDataImportSessionStatus.SUCCEEDED,
+                import_status=DirectIngestRawFileImportStatus.SUCCEEDED,
                 historical_diffs_active=False,
             ),
         }
 
         failed_imports = {
-            3: RawBigQueryFileImportSummary(
+            3: RawFileImport(
                 file_id=3,
-                import_status=DirectIngestRawDataImportSessionStatus.FAILED_LOAD_STEP,
+                import_status=DirectIngestRawFileImportStatus.FAILED_LOAD_STEP,
                 historical_diffs_active=False,
             )
         }
 
         raw_region_config = get_direct_ingest_region_raw_config("US_XX")
 
-        missing_import_summaries = _reconcile_import_summaries_and_bq_metadata(
+        missing_file_imports = _reconcile_file_imports_and_bq_metadata(
             raw_region_config,
             DirectIngestInstance.PRIMARY,
             bq_metadata,
@@ -989,9 +985,9 @@ class CoalesceResultsAndErrorsTest(TestCase):
             failed_imports,
         )
 
-        assert not missing_import_summaries
+        assert not missing_file_imports
 
-    def test__reconcile_import_summaries_and_bq_metadata_some_missing(self) -> None:
+    def test__reconcile_file_imports_and_bq_metadata_some_missing(self) -> None:
         bq_metadata = [
             RawBigQueryFileMetadata(
                 file_id=1,
@@ -1056,16 +1052,16 @@ class CoalesceResultsAndErrorsTest(TestCase):
         ]
 
         successful_imports = {
-            1: RawBigQueryFileImportSummary(
+            1: RawFileImport(
                 file_id=1,
-                import_status=DirectIngestRawDataImportSessionStatus.SUCCEEDED,
+                import_status=DirectIngestRawFileImportStatus.SUCCEEDED,
                 historical_diffs_active=False,
             ),
         }
 
         raw_region_config = get_direct_ingest_region_raw_config("US_XX")
 
-        missing_import_summaries = _reconcile_import_summaries_and_bq_metadata(
+        missing_file_imports = _reconcile_file_imports_and_bq_metadata(
             raw_region_config,
             DirectIngestInstance.PRIMARY,
             bq_metadata,
@@ -1073,10 +1069,10 @@ class CoalesceResultsAndErrorsTest(TestCase):
             {},
         )
 
-        assert len(missing_import_summaries) == 2
-        assert missing_import_summaries[0].file_id == 2
-        assert missing_import_summaries[1].file_id == 3
+        assert len(missing_file_imports) == 2
+        assert missing_file_imports[0].file_id == 2
+        assert missing_file_imports[1].file_id == 3
         assert (
-            one({summary.import_status for summary in missing_import_summaries})
-            == DirectIngestRawDataImportSessionStatus.FAILED_UNKNOWN
+            one({summary.import_status for summary in missing_file_imports})
+            == DirectIngestRawFileImportStatus.FAILED_UNKNOWN
         )

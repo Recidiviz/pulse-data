@@ -42,7 +42,7 @@ _DESCRIPTION_TEMPLATE = (
 )
 
 # TODO(#28239) replace this query (expensive, full db scan) with one that just looks
-# at the import sessions table as we will be recording the number of rows imported there
+# at the file import table as we will be recording the number of rows imported there
 _SUB_QUERY_TEMPLATE = """
   SELECT file_tag, most_recent_rows_datetime, hours_stale FROM (
     SELECT 

@@ -31,7 +31,7 @@ RESOURCE_LOCK_ACQUISITION_DESCRIPTION = (
 RESOURCE_LOCK_TTL_SECONDS_PRIMARY = 3 * 60 * 60  # 3 hours
 RESOURCE_LOCK_TTL_SECONDS_SECONDARY = 3 * 60 * 60  # 6 hours
 
-
+IMPORT_RUN_ID: str = "import_run_id"
 SKIPPED_FILE_ERRORS: str = "skipped_file_errors"
 APPEND_READY_FILE_BATCHES: str = "append_ready_file_batches"
 IMPORT_READY_FILES: str = "import_ready_files"
@@ -39,7 +39,7 @@ REQUIRES_PRE_IMPORT_NORMALIZATION_FILES_BQ_METADATA: str = (
     "requires_pre_import_normalization_files_big_query_metadata"
 )
 REQUIRES_PRE_IMPORT_NORMALIZATION_FILES: str = "requires_pre_import_normalization_files"
-IMPORT_SUMMARIES: str = "import_summaries"
+FILE_IMPORTS: str = "file_imports"
 PROCESSED_PATHS_TO_RENAME: str = "processed_paths_to_rename"
 TEMPORARY_PATHS_TO_CLEAN: str = "temporary_paths_to_clean"
 TEMPORARY_TABLES_TO_CLEAN: str = "temporary_tables_to_clean"

@@ -37,8 +37,10 @@ from recidiviz.ingest.direct.types.raw_data_import_types import (
 from recidiviz.persistence.database.schema.operations.schema import OperationsBase
 
 
-class WriteImportSessionSqlQueryGeneratorTest(CloudSqlQueryGeneratorUnitTest):
-    """Unit tests for WriteImportSessionSqlQueryGenerator"""
+class WriteFileProcessedTimeToBQFileMetadataSqlQueryGeneratorTest(
+    CloudSqlQueryGeneratorUnitTest
+):
+    """Unit tests for WriteFileProcessedTimeToBQFileMetadataSqlQueryGenerator"""
 
     metas = [OperationsBase]
     mock_operator = create_autospec(CloudSqlQueryOperator)
@@ -47,7 +49,7 @@ class WriteImportSessionSqlQueryGeneratorTest(CloudSqlQueryGeneratorUnitTest):
     def setUp(self) -> None:
         super().setUp()
         self.generator = WriteFileProcessedTimeToBQFileMetadataSqlQueryGenerator(
-            write_import_session_task_id="task_id",
+            write_import_run_task_id="task_id",
         )
         self.mock_pg_hook = PostgresHook(postgres_conn_id=self.conn_id)
 

@@ -40,7 +40,7 @@ WITH historical_data AS (
     SELECT 
         raw_rows
     FROM 
-        `{project_id}.operations.direct_ingest_raw_data_import_session`
+        `{project_id}.operations.direct_ingest_raw_data_file_import`
     WHERE 
         file_id IN (
             SELECT file_id 

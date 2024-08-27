@@ -34,8 +34,8 @@ from recidiviz.cloud_storage.gcsfs_csv_chunk_boundary_finder import CsvChunkBoun
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common import attr_validators
 from recidiviz.common.constants.csv import DEFAULT_CSV_ENCODING
-from recidiviz.common.constants.operations.direct_ingest_raw_data_import_session import (
-    DirectIngestRawDataImportSessionStatus,
+from recidiviz.common.constants.operations.direct_ingest_raw_file_import import (
+    DirectIngestRawFileImportStatus,
 )
 from recidiviz.ingest.direct.gcs.filename_parts import (
     DirectIngestRawFilenameParts,
@@ -55,14 +55,14 @@ class RawDataImportError(BaseError):
     """The base error type for all errors that exist in the raw data import dag.
 
     Attributes:
-        error_type (DirectIngestRawDataImportSessionStatus): the error type that
+        error_type (DirectIngestRawFileImportStatus): the error type that
             corresponds to where the error occurred within the raw data import dag
         error_msg (str): an error message, including any relevant stack traces.
 
     """
 
-    error_type: DirectIngestRawDataImportSessionStatus = attr.ib(
-        validator=attr.validators.instance_of(DirectIngestRawDataImportSessionStatus)
+    error_type: DirectIngestRawFileImportStatus = attr.ib(
+        validator=attr.validators.instance_of(DirectIngestRawFileImportStatus)
     )
     error_msg: str = attr.ib(validator=attr_validators.is_str)
 
@@ -86,7 +86,7 @@ class RawFileProcessingError(RawDataImportError):
             by the state associated with this error
         temporary_file_paths (Optional[List[GcsfsFilePath]]): any temporary files
             created during pre-import normalization
-        error_type (DirectIngestRawDataImportSessionStatus): defaults to
+        error_type (DirectIngestRawFileImportStatus): defaults to
             FAILED_PRE_IMPORT_NORMALIZATION_STEP.
         error_msg (str): an error message, including any relevant stack traces.
 
@@ -98,9 +98,9 @@ class RawFileProcessingError(RawDataImportError):
     temporary_file_paths: Optional[List[GcsfsFilePath]] = attr.ib(
         validator=attr.validators.optional(attr_validators.is_list_of(GcsfsFilePath))
     )
-    error_type: DirectIngestRawDataImportSessionStatus = attr.ib(
-        default=DirectIngestRawDataImportSessionStatus.FAILED_PRE_IMPORT_NORMALIZATION_STEP,
-        validator=attr.validators.in_(DirectIngestRawDataImportSessionStatus),
+    error_type: DirectIngestRawFileImportStatus = attr.ib(
+        default=DirectIngestRawFileImportStatus.FAILED_PRE_IMPORT_NORMALIZATION_STEP,
+        validator=attr.validators.in_(DirectIngestRawFileImportStatus),
     )
 
     def __str__(self) -> str:
@@ -127,7 +127,7 @@ class RawFileProcessingError(RawDataImportError):
     def deserialize(json_str: str) -> "RawFileProcessingError":
         data = json.loads(json_str)
         return RawFileProcessingError(
-            error_type=DirectIngestRawDataImportSessionStatus(data["error_type"]),
+            error_type=DirectIngestRawFileImportStatus(data["error_type"]),
             original_file_path=GcsfsFilePath.from_absolute_path(
                 data["original_file_path"]
             ),
@@ -159,7 +159,7 @@ class RawFileLoadAndPrepError(RawDataImportError):
             created during pre-import normalization
         temp_table (Optional[BigQueryAddress]): temporary big query table created during
             the load step
-        error_type (DirectIngestRawDataImportSessionStatus): defaults to FAILED_LOAD_STEP
+        error_type (DirectIngestRawFileImportStatus): defaults to FAILED_LOAD_STEP
         error_msg (str): an error message, including any relevant stack traces.
     """
 
@@ -177,9 +177,9 @@ class RawFileLoadAndPrepError(RawDataImportError):
     temp_table: Optional[BigQueryAddress] = attr.ib(
         validator=attr.validators.optional(attr.validators.instance_of(BigQueryAddress))
     )
-    error_type: DirectIngestRawDataImportSessionStatus = attr.ib(
-        default=DirectIngestRawDataImportSessionStatus.FAILED_LOAD_STEP,
-        validator=attr.validators.in_(DirectIngestRawDataImportSessionStatus),
+    error_type: DirectIngestRawFileImportStatus = attr.ib(
+        default=DirectIngestRawFileImportStatus.FAILED_LOAD_STEP,
+        validator=attr.validators.in_(DirectIngestRawFileImportStatus),
     )
 
     def __str__(self) -> str:
@@ -207,7 +207,7 @@ class RawFileLoadAndPrepError(RawDataImportError):
         data = json.loads(json_str)
         return RawFileLoadAndPrepError(
             file_id=data["file_id"],
-            error_type=DirectIngestRawDataImportSessionStatus(data["error_type"]),
+            error_type=DirectIngestRawFileImportStatus(data["error_type"]),
             temp_table=(
                 None
                 if data["temp_table"] is None
@@ -240,7 +240,7 @@ class RawDataAppendImportError(RawDataImportError):
         file_id (int): file_id that failed to append to the raw data table
         raw_temp_table (BigQueryAddress): the address of the temp big query address that
             stores the raw data that failed append to the raw data table
-        error_type (DirectIngestRawDataImportSessionStatus): defaults to FAILED_LOAD_STEP
+        error_type (DirectIngestRawFileImportStatus): defaults to FAILED_LOAD_STEP
         error_msg (str): an error message, including any relevant stack traces.
     """
 
@@ -248,9 +248,9 @@ class RawDataAppendImportError(RawDataImportError):
     raw_temp_table: BigQueryAddress = attr.ib(
         validator=attr.validators.instance_of(BigQueryAddress)
     )
-    error_type: DirectIngestRawDataImportSessionStatus = attr.ib(
-        default=DirectIngestRawDataImportSessionStatus.FAILED_LOAD_STEP,
-        validator=attr.validators.in_(DirectIngestRawDataImportSessionStatus),
+    error_type: DirectIngestRawFileImportStatus = attr.ib(
+        default=DirectIngestRawFileImportStatus.FAILED_LOAD_STEP,
+        validator=attr.validators.in_(DirectIngestRawFileImportStatus),
     )
 
     def __str__(self) -> str:
@@ -273,7 +273,7 @@ class RawDataAppendImportError(RawDataImportError):
     def deserialize(json_str: str) -> "RawDataAppendImportError":
         data = json.loads(json_str)
         return RawDataAppendImportError(
-            error_type=DirectIngestRawDataImportSessionStatus(data["error_type"]),
+            error_type=DirectIngestRawFileImportStatus(data["error_type"]),
             raw_temp_table=BigQueryAddress.from_str(data["raw_temp_table"]),
             error_msg=data["error_msg"],
             file_id=data["file_id"],
@@ -292,7 +292,11 @@ class RawDataAppendImportError(RawDataImportError):
 @attr.define
 class RawGCSFileMetadata(BaseResult):
     """This represents metadata about a single literal file (e.g. a CSV) that is stored
-    in GCS
+    in GCS.
+
+    n.b. this object's schema reflects the database schema defined in
+    recidiviz/persistence/database/schema/operations/schema.py, but this object is
+    populated by raw sql queries in the airflow context.
 
     Attributes:
         gcs_file_id (int): an id that corresponds to the literal file in Google Cloud
@@ -339,6 +343,10 @@ class RawGCSFileMetadata(BaseResult):
 class RawBigQueryFileMetadata(BaseResult):
     """This represents metadata about a "conceptual" file_id that exists in BigQuery,
     made up of at least one literal csv file |gcs_files|.
+
+    n.b. this object's schema reflects the database schema defined in
+    recidiviz/persistence/database/schema/operations/schema.py, but this object is
+    populated by raw sql queries in the airflow context.
 
     Attributes:
         gcs_files (List[RawGCSFileMetadata]): a list of RawGCSFileMetadata
@@ -786,7 +794,7 @@ class ImportReadyFile(BaseResult):
 class AppendReadyFile(BaseResult):
     """Summary from DirectIngestRawFileLoadManager.load_and_prep_paths step that will
     be combined with AppendSummary to build a row in the
-    direct_ingest_raw_data_import_session operations table.
+    direct_ingest_raw_file_import_run operations table.
 
     Attributes:
         import_ready_file (ImportReadyFile): metadata required for load_and_prep_paths
@@ -827,7 +835,7 @@ class AppendReadyFile(BaseResult):
 class AppendSummary(BaseResult):
     """Summary from DirectIngestRawFileLoadManager.append_to_raw_data_table step that
     will be combined with AppendReadyFile to build a row in the
-    direct_ingest_raw_data_import_session operations table.
+    direct_ingest_raw_file_import_run operations table.
 
     Attributes:
         file_id (int): file_id associated with this append summary
@@ -919,13 +927,17 @@ class AppendReadyFileBatch(BaseResult):
 
 
 @attr.define
-class RawBigQueryFileImportSummary(BaseResult):
+class RawFileImport(BaseResult):
     """Metadata about an import session needed to write a new row to the
-    direct_ingest_raw_data_import_session table.
+    direct_ingest_raw_file_import table.
+
+    n.b. this object's schema reflects the database schema defined in
+    recidiviz/persistence/database/schema/operations/schema.py, but this object is
+    populated by raw sql queries in the airflow context.
 
     Attributes:
         file_id (int): conceptual file_id associated with the import
-        import_status (DirectIngestRawDataImportSessionStatus): the imports status
+        import_status (DirectIngestRawFileImportStatus): the imports status
         historical_diffs_active (bool): whether or not historical diffs were performed
             during the import of this file (or would have been had the import
             successfully made it to that stage)
@@ -940,8 +952,8 @@ class RawBigQueryFileImportSummary(BaseResult):
     """
 
     file_id: int = attr.ib(validator=attr_validators.is_int)
-    import_status: DirectIngestRawDataImportSessionStatus = attr.ib(
-        validator=attr.validators.in_(DirectIngestRawDataImportSessionStatus)
+    import_status: DirectIngestRawFileImportStatus = attr.ib(
+        validator=attr.validators.in_(DirectIngestRawFileImportStatus)
     )
     historical_diffs_active: bool = attr.ib(validator=attr_validators.is_bool)
     raw_rows: Optional[int] = attr.ib(
@@ -967,11 +979,11 @@ class RawBigQueryFileImportSummary(BaseResult):
         )
 
     @staticmethod
-    def deserialize(json_str: str) -> "RawBigQueryFileImportSummary":
+    def deserialize(json_str: str) -> "RawFileImport":
         data = assert_type(json.loads(json_str), dict)
-        return RawBigQueryFileImportSummary(
+        return RawFileImport(
             file_id=data["file_id"],
-            import_status=DirectIngestRawDataImportSessionStatus(data["import_status"]),
+            import_status=DirectIngestRawFileImportStatus(data["import_status"]),
             historical_diffs_active=data["historical_diffs_active"],
             raw_rows=data["raw_rows"],
             net_new_or_updated_rows=data["net_new_or_updated_rows"],
@@ -981,9 +993,9 @@ class RawBigQueryFileImportSummary(BaseResult):
     @classmethod
     def from_load_results(
         cls, append_ready_file: AppendReadyFile, append_summary: AppendSummary
-    ) -> "RawBigQueryFileImportSummary":
-        return RawBigQueryFileImportSummary(
-            import_status=DirectIngestRawDataImportSessionStatus.SUCCEEDED,
+    ) -> "RawFileImport":
+        return RawFileImport(
+            import_status=DirectIngestRawFileImportStatus.SUCCEEDED,
             file_id=append_ready_file.import_ready_file.file_id,
             raw_rows=append_ready_file.raw_rows_count,
             net_new_or_updated_rows=append_summary.net_new_or_updated_rows,
@@ -1026,10 +1038,12 @@ class RawBigQueryFileProcessedTime(BaseResult):
         )
 
     @classmethod
-    def from_new_import_session_row(
-        cls, row: Tuple[int, str, datetime.datetime]
+    def from_file_id_and_import_run_end(
+        cls, file_id: int, import_run_end: datetime.datetime
     ) -> "RawBigQueryFileProcessedTime":
-        return RawBigQueryFileProcessedTime(file_id=row[0], file_processed_time=row[2])
+        return RawBigQueryFileProcessedTime(
+            file_id=file_id, file_processed_time=import_run_end
+        )
 
 
 # --------------------------------------------------------------------------------------
