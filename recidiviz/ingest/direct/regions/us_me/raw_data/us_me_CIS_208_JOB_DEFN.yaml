@@ -107,3 +107,20 @@ columns:
       role the employee has in this case.
   - name: CIS_2082_COMM_AGCY_CD
     description: Used to join to CIS_2082.
+  - name: adult_ind
+    description: Likely unused.
+  - name: adult_medicaid_ind
+    description: Likely unused.
+  - name: juvenile_ind
+    description: Likely unused.
+  - name: juvenile_medicaid_ind
+    description: Likely unused.
+  - name: person_contacted_cd
+    description: Likely unused.
+  - name: person_contacted_desc
+    description: Likely unused.
+    is_pii: True
+  - name: system_ref_comments_tx
+    is_pii: True
+  - name: system_ref_tx
+    is_pii: True
