@@ -17,13 +17,16 @@
 """Handles writing to and from our file metadata tables"""
 import datetime
 from collections import defaultdict
-from typing import Any, Dict, List, Optional
+from typing import Dict, List, Optional
 
 from more_itertools import one
-from sqlalchemy import and_, asc, func, select
+from sqlalchemy import and_, asc, case, func, select
 
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.ingest.direct.gcs.filename_parts import filename_parts_from_path
+from recidiviz.ingest.direct.metadata.direct_ingest_raw_file_metadata_manager import (
+    DirectIngestRawFileMetadataSummary,
+)
 from recidiviz.ingest.direct.types.direct_ingest_constants import (
     DIRECT_INGEST_UNPROCESSED_PREFIX,
 )
@@ -389,12 +392,106 @@ class DirectIngestRawFileMetadataManagerV2:
 
             return result_dict
 
-    # TODO(#29133) re-implement this function once we determine what the new admin
-    # panel will display
     def get_metadata_for_all_raw_files_in_region(
         self,
-    ) -> List[Any]:
-        raise NotImplementedError
+    ) -> List[DirectIngestRawFileMetadataSummary]:
+        """Returns all operations DB raw file metadata rows for the given region."""
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            results = (
+                session.query(
+                    schema.DirectIngestRawGCSFileMetadata.file_tag.label("file_tag"),
+                    func.count(
+                        schema.DirectIngestRawBigQueryFileMetadata.file_id.distinct()
+                    )
+                    .filter(
+                        schema.DirectIngestRawBigQueryFileMetadata.file_processed_time.isnot(
+                            None
+                        ),
+                        schema.DirectIngestRawBigQueryFileMetadata.file_id.isnot(None),
+                    )
+                    .label("num_processed_files"),
+                    func.count(
+                        schema.DirectIngestRawBigQueryFileMetadata.file_id.distinct()
+                    )
+                    .filter(
+                        schema.DirectIngestRawBigQueryFileMetadata.file_processed_time.is_(
+                            None
+                        ),
+                        schema.DirectIngestRawBigQueryFileMetadata.file_id.isnot(None),
+                    )
+                    .label("num_unprocessed_files"),
+                    func.count(1)
+                    .filter(
+                        # pylint: disable=singleton-comparison
+                        schema.DirectIngestRawGCSFileMetadata.file_id
+                        == None,
+                    )
+                    .label("num_ungrouped_files"),
+                    func.max(
+                        schema.DirectIngestRawBigQueryFileMetadata.file_processed_time
+                    )
+                    .filter(
+                        schema.DirectIngestRawBigQueryFileMetadata.file_id.isnot(None)
+                    )
+                    .label("latest_processed_time"),
+                    func.max(
+                        schema.DirectIngestRawGCSFileMetadata.file_discovery_time
+                    ).label("latest_discovery_time"),
+                    func.max(
+                        case(
+                            [
+                                (
+                                    schema.DirectIngestRawBigQueryFileMetadata.file_processed_time.is_(
+                                        None
+                                    ),
+                                    None,
+                                )
+                            ],
+                            else_=schema.DirectIngestRawBigQueryFileMetadata.update_datetime,
+                        )
+                    )
+                    .filter(
+                        schema.DirectIngestRawBigQueryFileMetadata.file_id.isnot(None)
+                    )
+                    .label("latest_update_datetime"),
+                )
+                .select_from(
+                    schema.DirectIngestRawGCSFileMetadata,
+                )
+                .join(schema.DirectIngestRawBigQueryFileMetadata, isouter=True)
+                .filter(
+                    schema.DirectIngestRawGCSFileMetadata.region_code
+                    == self.region_code,
+                    schema.DirectIngestRawGCSFileMetadata.raw_data_instance
+                    == self.raw_data_instance.value,
+                    schema.DirectIngestRawBigQueryFileMetadata.is_invalidated.isnot(
+                        True
+                    ),
+                )
+                .group_by(schema.DirectIngestRawGCSFileMetadata.file_tag)
+                .order_by(schema.DirectIngestRawGCSFileMetadata.file_tag)
+                .all()
+            )
+            return [
+                DirectIngestRawFileMetadataSummary(
+                    file_tag=result.file_tag,
+                    num_processed_files=result.num_processed_files,
+                    num_unprocessed_files=result.num_unprocessed_files,
+                    num_ungrouped_files=result.num_ungrouped_files,
+                    latest_processed_time=result.latest_processed_time,
+                    latest_discovery_time=result.latest_discovery_time,
+                    latest_update_datetime=(
+                        result.latest_update_datetime
+                        if not isinstance(result.latest_update_datetime, str)
+                        else datetime.datetime.fromisoformat(
+                            result.latest_update_datetime
+                        )
+                    ),
+                )
+                for result in results
+            ]
 
     def get_non_invalidated_raw_big_query_files(
         self,

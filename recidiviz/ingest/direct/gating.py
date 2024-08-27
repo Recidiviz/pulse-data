@@ -45,7 +45,7 @@ STAGING_SECONDARY_ENABLED_STATES: Set[StateCode] = {
 # TODO(#28239): delete once raw data import DAG is live
 def is_raw_data_import_dag_enabled(
     state_code: StateCode,
-    instance: DirectIngestInstance,
+    raw_data_instance: DirectIngestInstance,
     project_id: Optional[str] = None,
 ) -> bool:
 
@@ -55,7 +55,7 @@ def is_raw_data_import_dag_enabled(
     if project_id == GCP_PROJECT_PRODUCTION:
         enabled_states_for_project_and_raw_data_instance = (
             PRODUCTION_PRIMARY_ENABLED_STATES
-            if instance == DirectIngestInstance.PRIMARY
+            if raw_data_instance == DirectIngestInstance.PRIMARY
             else PRODUCTION_SECONDARY_ENABLED_STATES
         )
 
@@ -64,7 +64,7 @@ def is_raw_data_import_dag_enabled(
     if project_id == GCP_PROJECT_STAGING:
         enabled_states_for_project_and_raw_data_instance = (
             STAGING_PRIMARY_ENABLED_STATES
-            if instance == DirectIngestInstance.PRIMARY
+            if raw_data_instance == DirectIngestInstance.PRIMARY
             else STAGING_SECONDARY_ENABLED_STATES
         )
 

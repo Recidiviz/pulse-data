@@ -27,6 +27,7 @@ from more_itertools import one
 from sqlalchemy import and_, case, func
 
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
+from recidiviz.common import attr_validators
 from recidiviz.ingest.direct.gcs.filename_parts import filename_parts_from_path
 from recidiviz.ingest.direct.types.direct_ingest_constants import (
     DIRECT_INGEST_UNPROCESSED_PREFIX,
@@ -44,14 +45,39 @@ from recidiviz.persistence.entity.operations.entities import DirectIngestRawFile
 from recidiviz.utils import environment
 
 
-@attr.define()
+@attr.define
 class DirectIngestRawFileMetadataSummary:
-    file_tag: str
-    num_unprocessed_files: int
-    num_processed_files: int
-    latest_discovery_time: datetime.datetime
-    latest_processed_time: Optional[datetime.datetime]
-    latest_update_datetime: Optional[datetime.datetime]
+    """Summary object for each file tag in the operations database.
+
+    Attributes:
+        file_tag (str): the file tag associated with the raw files
+        num_processed_files (int): the number of files that have been successfully
+            imported into BigQuery
+        num_unprocessed_files (int): the number of valid files that have been discovered
+            but not yet imported
+        num_ungrouped_files (int): the number of chunked, raw GCS files that have been
+            discovered but not yet grouped into conceptual files
+        latest_discovery_time (datetime.datetime): the most recent datetime that a GCS
+            file has been discovered for this file tag
+        latest_processed_time (datetime.datetime): the most recent successful import time
+            for a this file tag
+        latest_update_datetime (datetime.datetime): the greatest update_datetime associated
+            with a file that has been successfully imported for this file tag
+    """
+
+    file_tag: str = attr.ib(validator=attr_validators.is_str)
+    num_processed_files: int = attr.ib(validator=attr_validators.is_int)
+    num_unprocessed_files: int = attr.ib(validator=attr_validators.is_int)
+    num_ungrouped_files: int = attr.ib(validator=attr_validators.is_int)
+    latest_discovery_time: datetime.datetime = attr.ib(
+        validator=attr_validators.is_utc_timezone_aware_datetime
+    )
+    latest_processed_time: Optional[datetime.datetime] = attr.ib(
+        validator=attr_validators.is_opt_datetime
+    )
+    latest_update_datetime: Optional[datetime.datetime] = attr.ib(
+        validator=attr_validators.is_opt_datetime
+    )
 
 
 # TODO(#28239) remove this manager once raw data import dag is fully rolled out
@@ -260,6 +286,7 @@ class DirectIngestRawFileMetadataManager:
                     file_tag=result.file_tag,
                     num_processed_files=result.num_processed_files,
                     num_unprocessed_files=result.num_unprocessed_files,
+                    num_ungrouped_files=0,
                     latest_processed_time=result.latest_processed_time,
                     latest_discovery_time=result.latest_discovery_time,
                     latest_update_datetime=(

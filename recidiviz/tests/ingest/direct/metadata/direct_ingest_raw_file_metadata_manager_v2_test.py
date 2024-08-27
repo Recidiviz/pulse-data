@@ -30,6 +30,9 @@ from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
     DirectIngestGCSFileSystem,
     to_normalized_unprocessed_raw_file_path,
 )
+from recidiviz.ingest.direct.metadata.direct_ingest_raw_file_metadata_manager import (
+    DirectIngestRawFileMetadataSummary,
+)
 from recidiviz.ingest.direct.metadata.direct_ingest_raw_file_metadata_manager_v2 import (
     DirectIngestRawFileMetadataManagerV2,
 )
@@ -47,6 +50,7 @@ from recidiviz.persistence.entity.operations.entities import (
     DirectIngestRawGCSFileMetadata,
 )
 from recidiviz.tools.postgres import local_persistence_helpers, local_postgres_helpers
+from recidiviz.utils.types import assert_type
 
 
 def _fake_eq(e1: Entity, e2: Entity) -> bool:
@@ -360,7 +364,6 @@ class DirectIngestRawFileMetadataV2ManagerTest(unittest.TestCase):
         )
 
         assert metadata.file_id is not None
-        print(metadata.file_id)
 
         self.raw_metadata_manager.mark_raw_big_query_file_as_processed(metadata.file_id)
 
@@ -547,10 +550,6 @@ class DirectIngestRawFileMetadataV2ManagerTest(unittest.TestCase):
         )
 
         assert metadata.is_invalidated is True
-
-    def test_get_metadata_for_all_raw_files_in_region_not_implemented(self) -> None:
-        with self.assertRaises(NotImplementedError):
-            self.raw_metadata_manager.get_metadata_for_all_raw_files_in_region()
 
     @freeze_time("2015-01-02T03:04:06")
     def test_get_unprocessed_raw_files_eligible_for_import_when_no_files(self) -> None:
@@ -1088,3 +1087,509 @@ class DirectIngestRawFileMetadataV2ManagerTest(unittest.TestCase):
             },
             results,
         )
+
+    def test_get_metadata_for_all_raw_files_in_region_empty(self) -> None:
+        self.assertListEqual(
+            [],
+            self.raw_metadata_manager.get_metadata_for_all_raw_files_in_region(),
+        )
+
+    def test_get_metadata_for_all_raw_files_in_region(self) -> None:
+
+        dt = datetime.datetime(2022, 10, 1, 0, 0, 0, tzinfo=datetime.UTC)
+
+        # case: all processed, no unprocessed
+        for day in range(0, 3):
+            update_dt = dt + timedelta(days=day)
+            file = _make_unprocessed_raw_data_path(
+                path_str="bucket/file_tag_1.csv",
+                dt=update_dt,
+            )
+            with freeze_time(update_dt + timedelta(hours=1)):
+                gcs_file = self.raw_metadata_manager.mark_raw_gcs_file_as_discovered(
+                    file
+                )
+            with freeze_time(update_dt + timedelta(hours=2)):
+                self.raw_metadata_manager.mark_raw_big_query_file_as_processed(
+                    assert_type(gcs_file.file_id, int)
+                )
+
+        # case: some processed, some unprocessed
+        for day in range(0, 3):
+            update_dt = dt + timedelta(days=day)
+            file = _make_unprocessed_raw_data_path(
+                path_str="bucket/file_tag_2.csv",
+                dt=update_dt,
+            )
+            with freeze_time(update_dt + timedelta(hours=1)):
+                gcs_file = self.raw_metadata_manager.mark_raw_gcs_file_as_discovered(
+                    file
+                )
+            if day == 2:
+                continue
+            with freeze_time(update_dt + timedelta(hours=2)):
+                self.raw_metadata_manager.mark_raw_big_query_file_as_processed(
+                    assert_type(gcs_file.file_id, int)
+                )
+
+        # case: none processed, some unprocessed
+        for day in range(0, 3):
+            update_dt = dt + timedelta(days=day)
+            file = _make_unprocessed_raw_data_path(
+                path_str="bucket/file_tag_3.csv",
+                dt=update_dt,
+            )
+            with freeze_time(update_dt + timedelta(hours=1)):
+                gcs_file = self.raw_metadata_manager.mark_raw_gcs_file_as_discovered(
+                    file
+                )
+
+        # case: some processed, some unprocessed, but max values are invalidated
+        for day in range(0, 4):
+            update_dt = dt + timedelta(days=day)
+            file = _make_unprocessed_raw_data_path(
+                path_str="bucket/file_tag_4.csv",
+                dt=update_dt,
+            )
+            with freeze_time(update_dt + timedelta(hours=1)):
+                gcs_file = self.raw_metadata_manager.mark_raw_gcs_file_as_discovered(
+                    file
+                )
+
+            if day == 3:
+                continue
+            with freeze_time(update_dt + timedelta(hours=2)):
+                self.raw_metadata_manager.mark_raw_big_query_file_as_processed(
+                    assert_type(gcs_file.file_id, int)
+                )
+            if day == 2:
+                with SessionFactory.using_database(self.database_key) as session:
+                    self.raw_metadata_manager.mark_raw_big_query_file_as_invalidated_by_file_id(
+                        session, assert_type(gcs_file.file_id, int)
+                    )
+
+        expected_list = [
+            # case: all processed, no unprocessed
+            DirectIngestRawFileMetadataSummary(
+                file_tag="file_tag_1",
+                num_unprocessed_files=0,
+                num_processed_files=3,
+                num_ungrouped_files=0,
+                latest_processed_time=datetime.datetime(
+                    2022, 10, 3, 2, 0, 0, tzinfo=datetime.UTC
+                ),
+                latest_discovery_time=datetime.datetime(
+                    2022, 10, 3, 1, 0, 0, tzinfo=datetime.UTC
+                ),
+                latest_update_datetime=datetime.datetime(
+                    2022, 10, 3, 0, 0, 0, tzinfo=datetime.UTC
+                ),
+            ),
+            # case: some processed, some unprocessed
+            DirectIngestRawFileMetadataSummary(
+                file_tag="file_tag_2",
+                num_unprocessed_files=1,
+                num_processed_files=2,
+                num_ungrouped_files=0,
+                latest_processed_time=datetime.datetime(
+                    2022, 10, 2, 2, 0, 0, tzinfo=datetime.UTC
+                ),
+                latest_discovery_time=datetime.datetime(
+                    2022, 10, 3, 1, 0, 0, tzinfo=datetime.UTC
+                ),
+                latest_update_datetime=datetime.datetime(
+                    2022, 10, 2, 0, 0, 0, tzinfo=datetime.UTC
+                ),
+            ),
+            # case: none processed, some unprocessed
+            DirectIngestRawFileMetadataSummary(
+                file_tag="file_tag_3",
+                num_unprocessed_files=3,
+                num_processed_files=0,
+                num_ungrouped_files=0,
+                latest_processed_time=None,
+                latest_discovery_time=datetime.datetime(
+                    2022, 10, 3, 1, 0, 0, tzinfo=datetime.UTC
+                ),
+                latest_update_datetime=None,
+            ),
+            # case: some processed, some unprocessed, but max values are invalidated
+            DirectIngestRawFileMetadataSummary(
+                file_tag="file_tag_4",
+                num_unprocessed_files=1,
+                num_processed_files=2,
+                num_ungrouped_files=0,
+                latest_processed_time=datetime.datetime(
+                    2022, 10, 2, 2, 0, 0, tzinfo=datetime.UTC
+                ),
+                latest_discovery_time=datetime.datetime(
+                    2022, 10, 4, 1, 0, 0, tzinfo=datetime.UTC
+                ),
+                latest_update_datetime=datetime.datetime(
+                    2022, 10, 2, 0, 0, 0, tzinfo=datetime.UTC
+                ),
+            ),
+        ]
+
+        self.assertListEqual(
+            expected_list,
+            self.raw_metadata_manager.get_metadata_for_all_raw_files_in_region(),
+        )
+
+    def test_get_metadata_for_all_raw_files_in_region_chunked(self) -> None:
+
+        dt = datetime.datetime(2022, 10, 1, 0, 0, 0, tzinfo=datetime.UTC)
+
+        # case: not chunked, all processed, no unprocessed
+        for day in range(0, 3):
+            update_dt = dt + timedelta(days=day)
+            file = _make_unprocessed_raw_data_path(
+                path_str="bucket/file_tag_0.csv",
+                dt=update_dt,
+            )
+            with freeze_time(update_dt + timedelta(hours=1)):
+                gcs_file = self.raw_metadata_manager.mark_raw_gcs_file_as_discovered(
+                    file
+                )
+            with freeze_time(update_dt + timedelta(hours=10)):
+                self.raw_metadata_manager.mark_raw_big_query_file_as_processed(
+                    assert_type(gcs_file.file_id, int)
+                )
+
+        num_chunks = 3
+
+        # case: chunked, all processed, no unprocessed
+        for day in range(0, 3):
+            update_dt = dt + timedelta(days=day)
+
+            paths = []
+            for chunk_num in range(num_chunks):
+                file = _make_unprocessed_raw_data_path(
+                    path_str=f"bucket/file_tag_1-{chunk_num}.csv",
+                    dt=update_dt,
+                )
+                with freeze_time(update_dt + timedelta(hours=1 + chunk_num)):
+                    gcs_file = (
+                        self.raw_metadata_manager.mark_raw_gcs_file_as_discovered(
+                            file, is_chunked_file=True
+                        )
+                    )
+                    paths.append(file)
+
+            bq_file = self.raw_metadata_manager.register_raw_big_query_file_for_paths(
+                paths
+            )
+
+            with freeze_time(update_dt + timedelta(hours=10)):
+                self.raw_metadata_manager.mark_raw_big_query_file_as_processed(
+                    bq_file.file_id
+                )
+
+        # case: chunked, some processed, some unprocessed
+        for day in range(0, 3):
+            update_dt = dt + timedelta(days=day)
+
+            paths = []
+            for chunk_num in range(num_chunks):
+                file = _make_unprocessed_raw_data_path(
+                    path_str=f"bucket/file_tag_2-{chunk_num}.csv",
+                    dt=update_dt,
+                )
+                with freeze_time(update_dt + timedelta(hours=1 + chunk_num)):
+                    gcs_file = (
+                        self.raw_metadata_manager.mark_raw_gcs_file_as_discovered(
+                            file, is_chunked_file=True
+                        )
+                    )
+                    paths.append(file)
+
+            bq_file = self.raw_metadata_manager.register_raw_big_query_file_for_paths(
+                paths
+            )
+
+            if day == 2:
+                continue
+            with freeze_time(update_dt + timedelta(hours=10)):
+                self.raw_metadata_manager.mark_raw_big_query_file_as_processed(
+                    bq_file.file_id
+                )
+
+        # case: chunked, none processed, some unprocessed
+        for day in range(0, 3):
+            update_dt = dt + timedelta(days=day)
+
+            paths = []
+            for chunk_num in range(num_chunks):
+                file = _make_unprocessed_raw_data_path(
+                    path_str=f"bucket/file_tag_3-{chunk_num}.csv",
+                    dt=update_dt,
+                )
+                with freeze_time(update_dt + timedelta(hours=1 + chunk_num)):
+                    gcs_file = (
+                        self.raw_metadata_manager.mark_raw_gcs_file_as_discovered(
+                            file, is_chunked_file=True
+                        )
+                    )
+                    paths.append(file)
+
+            self.raw_metadata_manager.register_raw_big_query_file_for_paths(paths)
+
+        # case: chunked some processed, some unprocessed, but max values are invalidated
+        for day in range(0, 4):
+            update_dt = dt + timedelta(days=day)
+
+            paths = []
+            for chunk_num in range(num_chunks):
+                file = _make_unprocessed_raw_data_path(
+                    path_str=f"bucket/file_tag_4-{chunk_num}.csv",
+                    dt=update_dt,
+                )
+                with freeze_time(update_dt + timedelta(hours=1 + chunk_num)):
+                    gcs_file = (
+                        self.raw_metadata_manager.mark_raw_gcs_file_as_discovered(
+                            file, is_chunked_file=True
+                        )
+                    )
+                    paths.append(file)
+
+            bq_file = self.raw_metadata_manager.register_raw_big_query_file_for_paths(
+                paths
+            )
+
+            if day == 3:
+                continue
+            with freeze_time(update_dt + timedelta(hours=10)):
+                self.raw_metadata_manager.mark_raw_big_query_file_as_processed(
+                    bq_file.file_id
+                )
+
+            if day == 2:
+                with SessionFactory.using_database(self.database_key) as session:
+                    self.raw_metadata_manager.mark_raw_big_query_file_as_invalidated_by_file_id(
+                        session, bq_file.file_id
+                    )
+
+        # case: chunked not grouped, some processed, some not
+        for day in range(0, 4):
+            update_dt = dt + timedelta(days=day)
+
+            paths = []
+            for chunk_num in range(num_chunks):
+                file = _make_unprocessed_raw_data_path(
+                    path_str=f"bucket/file_tag_5-{chunk_num}.csv",
+                    dt=update_dt,
+                )
+                with freeze_time(update_dt + timedelta(hours=1 + chunk_num)):
+                    gcs_file = (
+                        self.raw_metadata_manager.mark_raw_gcs_file_as_discovered(
+                            file, is_chunked_file=True
+                        )
+                    )
+                    paths.append(file)
+
+            if day == 2:
+                continue
+
+            bq_file = self.raw_metadata_manager.register_raw_big_query_file_for_paths(
+                paths
+            )
+
+            if day == 3:
+                continue
+            with freeze_time(update_dt + timedelta(hours=10)):
+                self.raw_metadata_manager.mark_raw_big_query_file_as_processed(
+                    bq_file.file_id
+                )
+
+        expected_list = [
+            # case: not chunked, all processed, no unprocessed
+            DirectIngestRawFileMetadataSummary(
+                file_tag="file_tag_0",
+                num_unprocessed_files=0,
+                num_processed_files=3,
+                num_ungrouped_files=0,
+                latest_processed_time=datetime.datetime(
+                    2022, 10, 3, 10, 0, 0, tzinfo=datetime.UTC
+                ),
+                latest_discovery_time=datetime.datetime(
+                    2022, 10, 3, 1, 0, 0, tzinfo=datetime.UTC
+                ),
+                latest_update_datetime=datetime.datetime(
+                    2022, 10, 3, 0, 0, 0, tzinfo=datetime.UTC
+                ),
+            ),
+            # case: chunked, all processed, no unprocessed
+            DirectIngestRawFileMetadataSummary(
+                file_tag="file_tag_1",
+                num_unprocessed_files=0,
+                num_processed_files=3,
+                num_ungrouped_files=0,
+                latest_processed_time=datetime.datetime(
+                    2022, 10, 3, 10, 0, 0, tzinfo=datetime.UTC
+                ),
+                latest_discovery_time=datetime.datetime(
+                    2022, 10, 3, 3, 0, 0, tzinfo=datetime.UTC
+                ),
+                latest_update_datetime=datetime.datetime(
+                    2022, 10, 3, 0, 0, 0, tzinfo=datetime.UTC
+                ),
+            ),
+            # case: chunked, some processed, some unprocessed
+            DirectIngestRawFileMetadataSummary(
+                file_tag="file_tag_2",
+                num_unprocessed_files=1,
+                num_processed_files=2,
+                num_ungrouped_files=0,
+                latest_processed_time=datetime.datetime(
+                    2022, 10, 2, 10, 0, 0, tzinfo=datetime.UTC
+                ),
+                latest_discovery_time=datetime.datetime(
+                    2022, 10, 3, 3, 0, 0, tzinfo=datetime.UTC
+                ),
+                latest_update_datetime=datetime.datetime(
+                    2022, 10, 2, 0, 0, 0, tzinfo=datetime.UTC
+                ),
+            ),
+            # case: chunked, none processed, some unprocessed
+            DirectIngestRawFileMetadataSummary(
+                file_tag="file_tag_3",
+                num_unprocessed_files=3,
+                num_processed_files=0,
+                num_ungrouped_files=0,
+                latest_processed_time=None,
+                latest_discovery_time=datetime.datetime(
+                    2022, 10, 3, 3, 0, 0, tzinfo=datetime.UTC
+                ),
+                latest_update_datetime=None,
+            ),
+            # case: chunked some processed, some unprocessed, but max values are invalidated
+            DirectIngestRawFileMetadataSummary(
+                file_tag="file_tag_4",
+                num_unprocessed_files=1,
+                num_processed_files=2,
+                num_ungrouped_files=0,
+                latest_processed_time=datetime.datetime(
+                    2022, 10, 2, 10, 0, 0, tzinfo=datetime.UTC
+                ),
+                latest_discovery_time=datetime.datetime(
+                    2022, 10, 4, 3, 0, 0, tzinfo=datetime.UTC
+                ),
+                latest_update_datetime=datetime.datetime(
+                    2022, 10, 2, 0, 0, 0, tzinfo=datetime.UTC
+                ),
+            ),
+            DirectIngestRawFileMetadataSummary(
+                file_tag="file_tag_5",
+                num_unprocessed_files=1,
+                num_processed_files=2,
+                num_ungrouped_files=3,
+                latest_processed_time=datetime.datetime(
+                    2022, 10, 2, 10, 0, 0, tzinfo=datetime.UTC
+                ),
+                latest_discovery_time=datetime.datetime(
+                    2022, 10, 4, 3, 0, 0, tzinfo=datetime.UTC
+                ),
+                latest_update_datetime=datetime.datetime(
+                    2022, 10, 2, 0, 0, 0, tzinfo=datetime.UTC
+                ),
+            ),
+        ]
+
+        self.assertListEqual(
+            expected_list,
+            self.raw_metadata_manager.get_metadata_for_all_raw_files_in_region(),
+        )
+
+    def test_get_metadata_for_all_raw_files_in_region_chunked_nulls_not_included_in_distinct(
+        self,
+    ) -> None:
+
+        curr_dt = datetime.datetime(2022, 10, 1, 0, 0, 0, tzinfo=datetime.UTC)
+        yesterday_processed = None
+        yesterday_update = None
+        num_chunks = 3
+
+        for day in range(3):
+
+            # chunked not grouped, make sure they don't show up in anywhere else
+            paths = []
+            for chunk_num in range(num_chunks):
+                file = _make_unprocessed_raw_data_path(
+                    path_str=f"bucket/file_tag_0-{chunk_num}.csv",
+                    dt=curr_dt,
+                )
+                with freeze_time(curr_dt + timedelta(hours=1 + chunk_num)):
+                    self.raw_metadata_manager.mark_raw_gcs_file_as_discovered(
+                        file, is_chunked_file=True
+                    )
+
+                    paths.append(file)
+
+            expected_list = [
+                DirectIngestRawFileMetadataSummary(
+                    file_tag="file_tag_0",
+                    num_unprocessed_files=0,
+                    num_processed_files=day,
+                    num_ungrouped_files=3,
+                    latest_processed_time=yesterday_processed,
+                    latest_discovery_time=curr_dt + timedelta(hours=3),
+                    latest_update_datetime=yesterday_update,
+                ),
+            ]
+
+            self.assertListEqual(
+                expected_list,
+                self.raw_metadata_manager.get_metadata_for_all_raw_files_in_region(),
+            )
+
+            # chunked and grouped
+
+            bq_file = self.raw_metadata_manager.register_raw_big_query_file_for_paths(
+                paths
+            )
+
+            expected_list_after_grouping = [
+                DirectIngestRawFileMetadataSummary(
+                    file_tag="file_tag_0",
+                    num_unprocessed_files=1,
+                    num_processed_files=day,
+                    num_ungrouped_files=0,
+                    latest_processed_time=yesterday_processed,
+                    latest_discovery_time=curr_dt + timedelta(hours=3),
+                    latest_update_datetime=yesterday_update,
+                ),
+            ]
+
+            self.assertListEqual(
+                expected_list_after_grouping,
+                self.raw_metadata_manager.get_metadata_for_all_raw_files_in_region(),
+            )
+
+            with freeze_time(curr_dt + timedelta(hours=10)):
+                self.raw_metadata_manager.mark_raw_big_query_file_as_processed(
+                    bq_file.file_id
+                )
+
+            # chunked and grouped and processed
+            latest_processed = curr_dt + timedelta(hours=10)
+
+            expected_list_after_processed = [
+                DirectIngestRawFileMetadataSummary(
+                    file_tag="file_tag_0",
+                    num_unprocessed_files=0,
+                    num_processed_files=day + 1,
+                    num_ungrouped_files=0,
+                    latest_processed_time=latest_processed,
+                    latest_discovery_time=curr_dt + timedelta(hours=3),
+                    latest_update_datetime=curr_dt,
+                ),
+            ]
+
+            self.assertListEqual(
+                expected_list_after_processed,
+                self.raw_metadata_manager.get_metadata_for_all_raw_files_in_region(),
+            )
+
+            yesterday_processed = latest_processed
+            yesterday_update = curr_dt
+            curr_dt = curr_dt + timedelta(days=1)
