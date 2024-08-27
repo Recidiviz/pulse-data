@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Run import-blocking validations on a raw data temp table in BigQuery."""
+import datetime
 from concurrent import futures
 from typing import List, Type
 
@@ -47,7 +48,6 @@ from recidiviz.ingest.direct.types.raw_data_import_blocking_validation import (
     RawDataImportBlockingValidation,
     RawDataImportBlockingValidationError,
     RawDataImportBlockingValidationFailure,
-    RawDataTableImportBlockingValidation,
 )
 
 MAX_THREADS = 4  # TODO(#29946) determine reasonable default
@@ -57,9 +57,6 @@ COLUMN_VALIDATION_CLASSES: List[Type[RawDataColumnImportBlockingValidation]] = [
     KnownValuesColumnValidation,
     ExpectedTypeColumnValidation,
     DatetimeParsersColumnValidation,
-]
-TABLE_VALIDATION_CLASSES: List[Type[RawDataTableImportBlockingValidation]] = [
-    StableHistoricalRawDataCountsTableValidation
 ]
 
 
@@ -82,7 +79,10 @@ class DirectIngestRawTablePreImportValidator:
         self.big_query_client = big_query_client
 
     def _collect_validations_to_run(
-        self, file_tag: str, temp_table_address: BigQueryAddress
+        self,
+        file_tag: str,
+        file_update_datetime: datetime.datetime,
+        temp_table_address: BigQueryAddress,
     ) -> List[RawDataImportBlockingValidation]:
         """Collect all validations to be run on the temp table.
         This method gathers both table-level and column-level validations, checking if
@@ -91,19 +91,20 @@ class DirectIngestRawTablePreImportValidator:
         all_validations: List[RawDataImportBlockingValidation] = []
         raw_file_config = self.region_raw_file_config.raw_file_configs[file_tag]
 
-        for table_validation_cls in TABLE_VALIDATION_CLASSES:
-            if not raw_file_config.file_is_exempt_from_validation(
-                table_validation_cls.validation_type()
-            ) and table_validation_cls.validation_applies_to_table(raw_file_config):
-                all_validations.append(
-                    table_validation_cls.create_table_validation(
-                        file_tag,
-                        self.project_id,
-                        temp_table_address,
-                        self.region_code,
-                        self.raw_data_instance,
-                    )
+        if not raw_file_config.file_is_exempt_from_validation(
+            StableHistoricalRawDataCountsTableValidation.validation_type()
+        ) and StableHistoricalRawDataCountsTableValidation.should_run_validation(
+            raw_file_config, self.region_code, file_tag, file_update_datetime
+        ):
+            all_validations.append(
+                StableHistoricalRawDataCountsTableValidation.create_table_validation(
+                    file_tag,
+                    self.project_id,
+                    temp_table_address,
+                    self.region_code,
+                    self.raw_data_instance,
                 )
+            )
 
         for column in raw_file_config.columns:
             for col_validation_cls in COLUMN_VALIDATION_CLASSES:
@@ -149,7 +150,10 @@ class DirectIngestRawTablePreImportValidator:
         return errors
 
     def run_raw_data_temp_table_validations(
-        self, file_tag: str, temp_table_address: BigQueryAddress
+        self,
+        file_tag: str,
+        file_update_datetime: datetime.datetime,
+        temp_table_address: BigQueryAddress,
     ) -> None:
         """Run all applicable validation queries against the temp raw table in BigQuery and
         raise a RawDataImportBlockingValidationError if any validations don't meet the success criteria.
@@ -157,7 +161,9 @@ class DirectIngestRawTablePreImportValidator:
 
         validations_to_run: List[
             RawDataImportBlockingValidation
-        ] = self._collect_validations_to_run(file_tag, temp_table_address)
+        ] = self._collect_validations_to_run(
+            file_tag, file_update_datetime, temp_table_address
+        )
 
         failures = self._execute_validation_queries_concurrently(validations_to_run)
 

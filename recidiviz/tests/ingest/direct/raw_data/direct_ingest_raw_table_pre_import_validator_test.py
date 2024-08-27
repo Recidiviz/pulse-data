@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Unit tests for direct_ingest_raw_table_pre_import_validator.py."""
+import datetime
 import textwrap
 import unittest
 from unittest.mock import MagicMock
@@ -56,6 +57,7 @@ class TestDirectIngestRawTablePreImportValidator(unittest.TestCase):
         self.region_code = "us_xx"
         self.raw_data_instance = DirectIngestInstance.PRIMARY
         self.file_tag = "myFile"
+        self.file_update_datetime = datetime.datetime.now()
         self.column_name = "Col1"
 
         self.raw_file_config = DirectIngestRawFileConfig(
@@ -114,7 +116,7 @@ class TestDirectIngestRawTablePreImportValidator(unittest.TestCase):
 
         # should not raise any exceptions
         validator.run_raw_data_temp_table_validations(
-            self.file_tag, self.temp_table_address
+            self.file_tag, self.file_update_datetime, self.temp_table_address
         )
 
         # should be called for historical stable counts validation and non-null validation for Col1
@@ -137,6 +139,10 @@ class TestDirectIngestRawTablePreImportValidator(unittest.TestCase):
         )
         expected_error_msg = (
             f"1 pre-import validation(s) failed for file [{self.file_tag}]."
+            f" If you wish [{self.file_tag}] to be permanently excluded from any validation, "
+            " please add the validation_type and exemption_reason to import_blocking_validation_exemptions"
+            " for a table-wide exemption or to import_blocking_column_validation_exemptions"
+            " for a column-specific exemption in the raw file config."
             f"\nError: Found column [{self.column_name}] on raw file [{self.file_tag}] with only null values."
             f"\nValidation type: {RawDataImportBlockingValidationType.NONNULL_VALUES.value}"
             "\nValidation query: "
@@ -150,7 +156,7 @@ class TestDirectIngestRawTablePreImportValidator(unittest.TestCase):
             RawDataImportBlockingValidationError,
         ) as context:
             validator.run_raw_data_temp_table_validations(
-                self.file_tag, self.temp_table_address
+                self.file_tag, self.file_update_datetime, self.temp_table_address
             )
 
         self.assertEqual(textwrap.dedent(str(context.exception)), expected_error_msg)

@@ -148,6 +148,10 @@ class RawDataImportBlockingValidationError(Exception):
     def __str__(self) -> str:
         return (
             f"{len(self.failures)} pre-import validation(s) failed for file [{self.file_tag}]."
+            f" If you wish [{self.file_tag}] to be permanently excluded from any validation, "
+            " please add the validation_type and exemption_reason to import_blocking_validation_exemptions"
+            " for a table-wide exemption or to import_blocking_column_validation_exemptions"
+            " for a column-specific exemption in the raw file config."
             f"\n{self._get_failure_messages()}"
         )
 

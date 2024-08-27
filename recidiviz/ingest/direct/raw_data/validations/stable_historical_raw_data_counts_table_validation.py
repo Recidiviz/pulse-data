@@ -15,22 +15,26 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Validation to check if the current raw data row count is within an acceptable range of the historical median for that file tag."""
+import datetime
 import logging
 from typing import Any, Dict, List
 
 import attr
 from more_itertools import one
 
+from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.raw_data.raw_file_configs import DirectIngestRawFileConfig
+from recidiviz.ingest.direct.raw_data.validations.stable_historical_raw_data_counts_table_validation_config import (
+    STABLE_HISTORICAL_COUNTS_TABLE_VALIDATION_CONFIG_YAML,
+    StableHistoricalCountsDateRangeExclusion,
+    StableHistoricalRawDataCountsTableValidationConfig,
+)
 from recidiviz.ingest.direct.types.raw_data_import_blocking_validation import (
     RawDataImportBlockingValidationFailure,
     RawDataImportBlockingValidationType,
     RawDataTableImportBlockingValidation,
 )
 from recidiviz.utils.string import StrictStringFormatter
-
-ROW_COUNT_PERCENT_CHANGE_TOLERANCE = 0.1
-ROW_COUNT_LOOKBACK_DAYS = 90
 
 RAW_ROWS_MEDIAN_KEY = "raw_rows_median"
 TEMP_TABLE_ROW_COUNT_KEY = "temp_table_row_count"
@@ -49,7 +53,7 @@ WITH historical_data AS (
             AND is_invalidated = False
             AND region_code = '{region_code}'
             AND raw_data_instance = '{raw_data_instance}'
-            AND update_datetime > TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL {ROW_COUNT_LOOKBACK_DAYS} DAY)
+            {datetime_filter}
         )
     AND import_status = 'SUCCEEDED'
 ),
@@ -66,6 +70,8 @@ SELECT
 FROM 
     median_data;
 """
+_TIME_WINDOW_TEMPLATE = " AND update_datetime > TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL {time_window_lookback_days} DAY)"
+_DATE_EXCLUSION_TEMPLATE = " AND update_datetime NOT BETWEEN PARSE_TIMESTAMP('%FT%T', '{datetime_start_inclusive}') AND PARSE_TIMESTAMP('%FT%T', '{datetime_end_exclusive}')"
 
 
 @attr.define
@@ -74,13 +80,80 @@ class StableHistoricalRawDataCountsTableValidation(
 ):
     """Verify that the current raw data row count is within an acceptable range of the historical median for that file tag."""
 
+    row_count_percent_change_tolerance: float = attr.ib(init=False)
+    time_window_lookback_days: int = attr.ib(init=False)
+    date_range_exclusions: List[StableHistoricalCountsDateRangeExclusion] = attr.ib(
+        init=False
+    )
+    validation_config: StableHistoricalRawDataCountsTableValidationConfig = attr.ib(
+        factory=StableHistoricalRawDataCountsTableValidationConfig
+    )
+
+    def __attrs_post_init__(self) -> None:
+        self.row_count_percent_change_tolerance = (
+            self.validation_config.get_custom_percent_change_tolerance(
+                StateCode(self.region_code.upper()), self.file_tag
+            )
+        )
+        self.date_range_exclusions = self.validation_config.get_date_range_exclusions(
+            StateCode(self.region_code.upper()), self.file_tag
+        )
+        self.time_window_lookback_days = (
+            self.validation_config.get_time_window_lookback_days()
+        )
+        super().__attrs_post_init__()
+
     @staticmethod
     def validation_type() -> RawDataImportBlockingValidationType:
         return RawDataImportBlockingValidationType.STABLE_HISTORICAL_RAW_DATA_COUNTS
 
     @staticmethod
-    def validation_applies_to_table(file_config: DirectIngestRawFileConfig) -> bool:
+    def validation_applies_to_table(
+        file_config: DirectIngestRawFileConfig,
+    ) -> bool:
         return file_config.always_historical_export
+
+    @staticmethod
+    def should_run_validation(
+        file_config: DirectIngestRawFileConfig,
+        region_code: str,
+        file_tag: str,
+        file_update_datetime: datetime.datetime,
+    ) -> bool:
+        """Returns True if always_historical_export is True for the file tag
+        and file's update_datetime doesn't fall within a date range that is
+        excluded for that file in stable_historical_counts_table_validation_config.yaml.
+        """
+
+        return StableHistoricalRawDataCountsTableValidation.validation_applies_to_table(
+            file_config
+        ) and not StableHistoricalRawDataCountsTableValidationConfig().datetime_is_excluded(
+            StateCode(region_code.upper()),
+            file_tag,
+            datetime_to_check=file_update_datetime,
+        )
+
+    def _build_datetime_filter(self) -> str:
+        return "".join(
+            [
+                StrictStringFormatter().format(
+                    _TIME_WINDOW_TEMPLATE,
+                    time_window_lookback_days=self.time_window_lookback_days,
+                )
+            ]
+            + [
+                StrictStringFormatter().format(
+                    _DATE_EXCLUSION_TEMPLATE,
+                    datetime_start_inclusive=exlusion.format_for_query(
+                        exlusion.datetime_start_inclusive
+                    ),
+                    datetime_end_exclusive=exlusion.format_for_query(
+                        exlusion.datetime_end_exclusive
+                    ),
+                )
+                for exlusion in self.date_range_exclusions
+            ]
+        )
 
     def build_query(self) -> str:
         return StrictStringFormatter().format(
@@ -93,7 +166,7 @@ class StableHistoricalRawDataCountsTableValidation(
             raw_data_instance=self.raw_data_instance.value,
             RAW_ROWS_MEDIAN_KEY=RAW_ROWS_MEDIAN_KEY,
             TEMP_TABLE_ROW_COUNT_KEY=TEMP_TABLE_ROW_COUNT_KEY,
-            ROW_COUNT_LOOKBACK_DAYS=ROW_COUNT_LOOKBACK_DAYS,
+            datetime_filter=self._build_datetime_filter(),
         )
 
     def get_error_from_results(
@@ -120,14 +193,18 @@ class StableHistoricalRawDataCountsTableValidation(
         temp_table_row_count = stats[TEMP_TABLE_ROW_COUNT_KEY]
         if (
             abs(median - temp_table_row_count) / float(median)
-            > ROW_COUNT_PERCENT_CHANGE_TOLERANCE
+            > self.row_count_percent_change_tolerance
         ):
             return RawDataImportBlockingValidationFailure(
                 validation_type=self.validation_type(),
                 validation_query=self.query,
                 error_msg=(
-                    f"Median historical raw rows count [{median}] is more than [{ROW_COUNT_PERCENT_CHANGE_TOLERANCE}] "
-                    f"different than the current count [{temp_table_row_count}] for file [{self.file_tag}]."
+                    f"Median historical raw rows count [{median}] is more than [{self.row_count_percent_change_tolerance}]"
+                    f" different than the current count [{temp_table_row_count}] for file [{self.file_tag}]."
+                    " If you want to alter the percent change threshold or add a date range to be excluded when calculating the historical median,"
+                    f" please add an entry for [{self.file_tag}] in {STABLE_HISTORICAL_COUNTS_TABLE_VALIDATION_CONFIG_YAML}"
+                    " If you want the validation to be skipped for this import, you can add a date range exclusion that"
+                    " includes the file's update_datetime."
                 ),
             )
 
