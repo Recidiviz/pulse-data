@@ -47,10 +47,33 @@ WITH
         id_type="'US_PA_PBPP'",
         eligible_and_almost_eligible_only=True,
     )}
+  ),
+  form_information AS (
+    SELECT person_id,
+        LOGICAL_OR(offense_type = 'DRUGS' 
+            OR (description LIKE '%DRUG%' AND offense_type IS NULL)
+            OR (description LIKE '%MARIJUANA%' AND offense_type IS NULL)
+            OR (description LIKE '%MARA%' AND offense_type IS NULL)
+            OR (description LIKE '%COCAINE%' AND offense_type IS NULL)
+            OR (description LIKE '%HALLUCINOGEN%' AND offense_type IS NULL)
+            ) AS form_information_drug_charge,
+        LOGICAL_OR(statute LIKE '%CS13A14%' 
+            OR description LIKE '%ADMINISTER/DISPENSE/DELIVERY BY PRACTITIONER%') AS form_information_statue_14,
+        LOGICAL_OR(statute LIKE '%CS13A30%' 
+            OR description LIKE '%MANUFACTURE/SALE/DELIVER OR POSSESS W/INTENT TO%') AS form_information_statue_30,
+        LOGICAL_OR(statute LIKE '%CS13A37%' 
+            OR description LIKE '%POSSESS EXCESSIVE AMOUNTS OF STERIODS%') AS form_information_statue_37, 
+            -- steroids is misspelled in the data
+    FROM `{{project_id}}.{{normalized_state_dataset}}.state_charge`
+    WHERE state_code = 'US_PA'
+    GROUP BY 1
   )
   SELECT
-    * EXCEPT (is_almost_eligible)
+    eligible_and_almost_eligible.* EXCEPT(is_almost_eligible),
+    form_information.* EXCEPT(person_id),
   FROM eligible_and_almost_eligible
+  LEFT JOIN form_information
+    ON eligible_and_almost_eligible.person_id = form_information.person_id 
 """
 
 US_PA_TRANSFER_TO_ADMINISTRATIVE_SUPERVISION_FORM_RECORD_VIEW_BUILDER = SimpleBigQueryViewBuilder(
