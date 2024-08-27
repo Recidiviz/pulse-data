@@ -24,11 +24,17 @@ from recidiviz.task_eligibility.candidate_populations.general import (
 from recidiviz.task_eligibility.completion_events.general import early_discharge
 from recidiviz.task_eligibility.criteria.general import (
     custody_level_is_minimum,
+    no_nonviolent_incarceration_violation_within_6_months,
+    not_serving_for_arson_offense,
     not_serving_for_sexual_offense,
     not_serving_for_violent_offense,
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_az import (
+    meets_functional_literacy,
+    no_active_felony_detainers,
+    no_major_violent_violation_during_incarceration,
     serving_assault_or_aggravated_assault_or_robbery,
+    time_90_days_before_release,
 )
 from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
@@ -49,8 +55,9 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     description=_DESCRIPTION,
     candidate_population_view_builder=general_incarceration_population.VIEW_BUILDER,
     criteria_spans_view_builders=[
-        custody_level_is_minimum.VIEW_BUILDER,
+        time_90_days_before_release.VIEW_BUILDER,
         not_serving_for_sexual_offense.VIEW_BUILDER,
+        not_serving_for_arson_offense.VIEW_BUILDER,
         # TODO(#31768): we have to fix this bug
         OrTaskCriteriaGroup(
             criteria_name="US_AZ_SERVING_NONVIOLENT_OFFENSE_WITH_B1B_EXCEPTIONS",
@@ -60,6 +67,11 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
             ],
             allowed_duplicate_reasons_keys=[],
         ),
+        no_active_felony_detainers.VIEW_BUILDER,
+        custody_level_is_minimum.VIEW_BUILDER,
+        no_nonviolent_incarceration_violation_within_6_months.VIEW_BUILDER,
+        no_major_violent_violation_during_incarceration.VIEW_BUILDER,
+        meets_functional_literacy.VIEW_BUILDER,
     ],
     completion_event_builder=early_discharge.VIEW_BUILDER,
 )

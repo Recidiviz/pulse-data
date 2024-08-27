@@ -74,6 +74,17 @@ class WorkflowsOpportunityConfig:
 
 WORKFLOWS_OPPORTUNITY_CONFIGS = [
     WorkflowsOpportunityConfig(
+        state_code=StateCode.US_AZ,
+        opportunity_type="usAzReleaseToTPR",
+        experiment_id="US_AZ_RELEASE_TO_TPR_WORKFLOWS",
+        opportunity_record_view_name="us_az_release_to_tpr_request_record_materialized",
+        task_completion_event=TaskCompletionEventType.EARLY_DISCHARGE,
+        source_filename="us_az_release_to_tpr_request_record.json",
+        export_collection_name="US_AZ-TPRReferrals",
+        opportunity_type_path_str="TPR",
+        person_record_type=PersonRecordType.RESIDENT,
+    ),
+    WorkflowsOpportunityConfig(
         state_code=StateCode.US_CA,
         opportunity_type="usCaSupervisionLevelDowngrade",
         experiment_id="US_CA_SUPERVISION_LEVEL_DOWNGRADE",
