@@ -23,10 +23,15 @@ from google.cloud.bigquery import SchemaField
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_utils import schema_field_for_type
+from recidiviz.common.local_file_paths import filepath_relative_to_caller
 from recidiviz.ingest.direct.raw_data.validations.stable_historical_raw_data_counts_table_validation import (
     RAW_ROWS_MEDIAN_KEY,
-    ROW_COUNT_PERCENT_CHANGE_TOLERANCE,
     StableHistoricalRawDataCountsTableValidation,
+)
+from recidiviz.ingest.direct.raw_data.validations.stable_historical_raw_data_counts_table_validation_config import (
+    STABLE_HISTORICAL_COUNTS_TABLE_VALIDATION_CONFIG_YAML,
+    StableHistoricalCountsValidationConfigLoader,
+    StableHistoricalRawDataCountsTableValidationConfig,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.direct.types.raw_data_import_blocking_validation import (
@@ -48,15 +53,27 @@ class TestStableHistoricalRawDataCountsTableValidation(BigQueryEmulatorTestCase)
 
         self.file_tag = "test_file_tag"
         self.temp_table = "test_table"
+        self.region_code = "us_xx"
+        self.ingest_instance = DirectIngestInstance.PRIMARY
         self.temp_table_address = BigQueryAddress(
             dataset_id="test_dataset", table_id=self.temp_table
+        )
+        config_path = filepath_relative_to_caller(
+            "stable_counts_validation_test_config.yaml", "configs"
+        )
+
+        self.validation_config = StableHistoricalRawDataCountsTableValidationConfig(
+            config_loader=StableHistoricalCountsValidationConfigLoader(
+                config_path=config_path
+            )
         )
         self.validation = StableHistoricalRawDataCountsTableValidation(
             file_tag=self.file_tag,
             project_id=self.project_id,
             temp_table_address=self.temp_table_address,
-            region_code="us_xx",
-            raw_data_instance=DirectIngestInstance.PRIMARY,
+            region_code=self.region_code,
+            raw_data_instance=self.ingest_instance,
+            validation_config=self.validation_config,
         )
 
         self.expected_median = 10
@@ -73,27 +90,27 @@ class TestStableHistoricalRawDataCountsTableValidation(BigQueryEmulatorTestCase)
         self.default_bq_metadata_data = [
             {
                 "file_id": 1,
-                "file_tag": "test_file_tag",
+                "file_tag": self.file_tag,
                 "is_invalidated": False,
                 "update_datetime": self.update_datetime,
-                "region_code": "us_xx",
-                "raw_data_instance": "PRIMARY",
+                "region_code": self.region_code,
+                "raw_data_instance": self.ingest_instance.value,
             },
             {
                 "file_id": 2,
-                "file_tag": "test_file_tag",
+                "file_tag": self.file_tag,
                 "is_invalidated": False,
                 "update_datetime": self.update_datetime,
-                "region_code": "us_xx",
-                "raw_data_instance": "PRIMARY",
+                "region_code": self.region_code,
+                "raw_data_instance": self.ingest_instance.value,
             },
             {
                 "file_id": 3,
-                "file_tag": "test_file_tag",
+                "file_tag": self.file_tag,
                 "is_invalidated": False,
                 "update_datetime": self.update_datetime,
-                "region_code": "us_xx",
-                "raw_data_instance": "PRIMARY",
+                "region_code": self.region_code,
+                "raw_data_instance": self.ingest_instance.value,
             },
         ]
         self.default_temp_table_data = [{"col1": "test"} for _ in range(11)]
@@ -190,11 +207,11 @@ class TestStableHistoricalRawDataCountsTableValidation(BigQueryEmulatorTestCase)
         bq_metadata_data = self.default_bq_metadata_data + [
             {
                 "file_id": 4,
-                "file_tag": "test_file_tag",
+                "file_tag": self.file_tag,
                 "is_invalidated": False,
                 "update_datetime": self.update_datetime,
-                "region_code": "us_xx",
-                "raw_data_instance": "PRIMARY",
+                "region_code": self.region_code,
+                "raw_data_instance": self.ingest_instance.value,
             }
         ]
         self._load_data(sessions_data=sessions_data, bq_metadata_data=bq_metadata_data)
@@ -206,7 +223,7 @@ class TestStableHistoricalRawDataCountsTableValidation(BigQueryEmulatorTestCase)
 
         self.assertEqual(median, self.expected_median)
 
-    def ignore_different_file_tag(self) -> None:
+    def test_ignore_different_file_tag(self) -> None:
         # Imports with a different file tag should be ignored
         sessions_data = self.default_sessions_data + [
             {"file_id": 4, "raw_rows": 2000, "import_status": "SUCCEEDED"}
@@ -217,8 +234,8 @@ class TestStableHistoricalRawDataCountsTableValidation(BigQueryEmulatorTestCase)
                 "file_tag": "test_file_tag_other",
                 "is_invalidated": False,
                 "update_datetime": self.update_datetime,
-                "region_code": "us_xx",
-                "raw_data_instance": "PRIMARY",
+                "region_code": self.region_code,
+                "raw_data_instance": self.ingest_instance.value,
             }
         ]
         self._load_data(sessions_data=sessions_data, bq_metadata_data=bq_metadata_data)
@@ -238,11 +255,11 @@ class TestStableHistoricalRawDataCountsTableValidation(BigQueryEmulatorTestCase)
         bq_metadata_data = self.default_bq_metadata_data + [
             {
                 "file_id": 4,
-                "file_tag": "test_file_tag",
+                "file_tag": self.file_tag,
                 "is_invalidated": True,
                 "update_datetime": self.update_datetime,
-                "region_code": "us_xx",
-                "raw_data_instance": "PRIMARY",
+                "region_code": self.region_code,
+                "raw_data_instance": self.ingest_instance.value,
             }
         ]
         self._load_data(sessions_data=sessions_data, bq_metadata_data=bq_metadata_data)
@@ -262,11 +279,11 @@ class TestStableHistoricalRawDataCountsTableValidation(BigQueryEmulatorTestCase)
         bq_metadata_data = self.default_bq_metadata_data + [
             {
                 "file_id": 4,
-                "file_tag": "test_file_tag",
+                "file_tag": self.file_tag,
                 "is_invalidated": False,
                 "update_datetime": self.update_datetime,
                 "region_code": "us_yy",
-                "raw_data_instance": "PRIMARY",
+                "raw_data_instance": self.ingest_instance.value,
             }
         ]
         self._load_data(sessions_data=sessions_data, bq_metadata_data=bq_metadata_data)
@@ -286,10 +303,10 @@ class TestStableHistoricalRawDataCountsTableValidation(BigQueryEmulatorTestCase)
         bq_metadata_data = self.default_bq_metadata_data + [
             {
                 "file_id": 4,
-                "file_tag": "test_file_tag",
+                "file_tag": self.file_tag,
                 "is_invalidated": False,
                 "update_datetime": self.update_datetime,
-                "region_code": "us_xx",
+                "region_code": self.region_code,
                 "raw_data_instance": "SECONDARY",
             }
         ]
@@ -309,11 +326,11 @@ class TestStableHistoricalRawDataCountsTableValidation(BigQueryEmulatorTestCase)
         bq_metadata_data = self.default_bq_metadata_data + [
             {
                 "file_id": 4,
-                "file_tag": "test_file_tag",
+                "file_tag": self.file_tag,
                 "is_invalidated": False,
-                "update_datetime": "2023-01-01T00:00:00Z",
-                "region_code": "us_xx",
-                "raw_data_instance": "PRIMARY",
+                "update_datetime": "2001-01-01T00:00:00Z",
+                "region_code": self.region_code,
+                "raw_data_instance": self.ingest_instance.value,
             }
         ]
         self._load_data(sessions_data=sessions_data, bq_metadata_data=bq_metadata_data)
@@ -363,8 +380,12 @@ class TestStableHistoricalRawDataCountsTableValidation(BigQueryEmulatorTestCase)
         expected_error = RawDataImportBlockingValidationFailure(
             validation_type=RawDataImportBlockingValidationType.STABLE_HISTORICAL_RAW_DATA_COUNTS,
             validation_query=self.validation.query,
-            error_msg=f"Median historical raw rows count [{self.expected_median}] is more than [{ROW_COUNT_PERCENT_CHANGE_TOLERANCE}]"
-            f" different than the current count [{row_count}] for file [{self.file_tag}].",
+            error_msg=f"Median historical raw rows count [{self.expected_median}] is more than [{self.validation.row_count_percent_change_tolerance}]"
+            f" different than the current count [{row_count}] for file [{self.file_tag}]."
+            " If you want to alter the percent change threshold or add a date range to be excluded when calculating the historical median,"
+            f" please add an entry for [{self.file_tag}] in {STABLE_HISTORICAL_COUNTS_TABLE_VALIDATION_CONFIG_YAML}"
+            " If you want the validation to be skipped for this import, you can add a date range exclusion that"
+            " includes the file's update_datetime.",
         )
         data = [{"col1": "test"}]
         self._load_data(temp_table_data=data)
@@ -378,3 +399,101 @@ class TestStableHistoricalRawDataCountsTableValidation(BigQueryEmulatorTestCase)
         self.assertEqual(expected_error.validation_type, error.validation_type)
         self.assertEqual(expected_error.validation_query, error.validation_query)
         self.assertEqual(expected_error.error_msg, error.error_msg)
+
+    def test_custom_percent_change_tolerance(self) -> None:
+        # Config file specifies 0.25 percent tolerance for ft_custom_config
+        file_tag = "ft_custom_config"
+        bq_metadata_data = [
+            {
+                "file_id": 1,
+                "file_tag": file_tag,
+                "is_invalidated": False,
+                "update_datetime": self.update_datetime,
+                "region_code": self.region_code,
+                "raw_data_instance": self.ingest_instance.value,
+            },
+            {
+                "file_id": 2,
+                "file_tag": file_tag,
+                "is_invalidated": False,
+                "update_datetime": self.update_datetime,
+                "region_code": self.region_code,
+                "raw_data_instance": self.ingest_instance.value,
+            },
+            {
+                "file_id": 3,
+                "file_tag": file_tag,
+                "is_invalidated": False,
+                "update_datetime": self.update_datetime,
+                "region_code": self.region_code,
+                "raw_data_instance": self.ingest_instance.value,
+            },
+        ]
+        temp_table_data = [{"col1": "test"} for _ in range(8)]
+        self._load_data(
+            bq_metadata_data=bq_metadata_data,
+            temp_table_data=temp_table_data,
+        )
+        validation = StableHistoricalRawDataCountsTableValidation(
+            file_tag=file_tag,
+            project_id=self.project_id,
+            temp_table_address=self.temp_table_address,
+            region_code=self.region_code,
+            raw_data_instance=self.ingest_instance,
+            validation_config=self.validation_config,
+        )
+
+        results = self.query(validation.query)
+        error = validation.get_error_from_results(results.to_dict("records"))
+
+        self.assertIsNone(error)
+
+    def test_date_range_exclusions(self) -> None:
+        # Config file specifies date range exclusions for ft_custom_config
+        file_tag = "ft_custom_config"
+        bq_metadata_data = [
+            {
+                "file_id": 1,
+                "file_tag": file_tag,
+                "is_invalidated": False,
+                "update_datetime": self.update_datetime,
+                "region_code": self.region_code,
+                "raw_data_instance": self.ingest_instance.value,
+            },
+            {
+                "file_id": 2,
+                "file_tag": file_tag,
+                "is_invalidated": False,
+                "update_datetime": self.update_datetime,
+                "region_code": self.region_code,
+                "raw_data_instance": self.ingest_instance.value,
+            },
+            {
+                "file_id": 3,
+                "file_tag": file_tag,
+                "is_invalidated": False,
+                # Change to value within excluded date range
+                "update_datetime": datetime.datetime.fromisoformat(
+                    "2024-08-07T00:00:00Z"
+                ),
+                "region_code": self.region_code,
+                "raw_data_instance": self.ingest_instance.value,
+            },
+        ]
+        temp_table_data = [{"col1": "test"} for _ in range(7)]
+        self._load_data(
+            bq_metadata_data=bq_metadata_data, temp_table_data=temp_table_data
+        )
+        validation = StableHistoricalRawDataCountsTableValidation(
+            file_tag=file_tag,
+            project_id=self.project_id,
+            temp_table_address=self.temp_table_address,
+            region_code=self.region_code,
+            raw_data_instance=self.ingest_instance,
+            validation_config=self.validation_config,
+        )
+
+        results = self.query(validation.query)
+        error = validation.get_error_from_results(results.to_dict("records"))
+
+        self.assertIsNone(error)

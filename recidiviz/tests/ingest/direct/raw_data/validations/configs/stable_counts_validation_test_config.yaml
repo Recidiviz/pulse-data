@@ -1,0 +1,34 @@
+# Recidiviz - a data platform for criminal justice reform
+# Copyright (C) 2024 Recidiviz, Inc.
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+# =============================================================================
+# This file should mirror the format of recidiviz/ingest/direct/raw_data/validations/configs/stable_historical_counts_table_validation_config.yaml
+defaults:
+  time_window_lookback_days: 10000
+  percent_change_tolerance: 0.1
+custom:
+  US_XX:
+    file_tags:
+      ft_custom_config:
+        tolerance_override:
+          percent_change_tolerance: 0.2
+          reason: "This is an example of a custom percent change tolerance for a
+            specific file in a specific state."
+        date_range_exclusions:
+          - datetime_start_inclusive: "2024-08-01T00:00:00Z"
+            datetime_end_exclusive: "2024-08-15T00:00:00Z"
+            reason:
+              "This is an example of a date range exclusion for a specific file
+              in a specific state."
