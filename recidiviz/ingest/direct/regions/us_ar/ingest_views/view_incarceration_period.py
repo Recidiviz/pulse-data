@@ -665,14 +665,14 @@ SELECT
   entry_reason,
   exit_code,
   exit_reason,
-  op.ORGANIZATIONNAME,
+  loc AS location_id,
   op.ORGANIZATIONTYPE,
   op.ORGCOUNTYCODE,
   ROW_NUMBER() OVER (PARTITION BY sp.OFFENDERID ORDER BY sp.start_date) AS SEQ
 FROM sealed_periods sp
 LEFT JOIN {ORGANIZATIONPROF} op
-ON sp.loc = op.PARTYID
-WHERE sp.loc IN (
+ON loc = op.PARTYID
+WHERE loc IN (
   SELECT PARTYID 
   FROM facility_locs
 )

@@ -14,7 +14,7 @@ input_columns:
   - entry_reason
   - exit_code
   - exit_reason
-  - ORGANIZATIONNAME
+  - location_id
   - ORGANIZATIONTYPE
   - ORGCOUNTYCODE
   - SEQ
@@ -39,7 +39,7 @@ output:
           admission_date: start_date
           release_date: end_date
           county_code: ORGCOUNTYCODE
-          facility: ORGANIZATIONNAME
+          facility: location_id
           housing_unit: HOUSINGAREANAME
           housing_unit_category:
             $enum_mapping:
