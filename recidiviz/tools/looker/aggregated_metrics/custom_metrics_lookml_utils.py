@@ -53,6 +53,7 @@ from recidiviz.calculator.query.state.views.analyst_data.models.metric_unit_of_a
     MetricUnitOfObservationType,
     get_static_attributes_query_for_unit_of_analysis,
 )
+from recidiviz.common.constants.state.state_person import StateGender, StateRace
 from recidiviz.common.str_field_utils import snake_to_title
 from recidiviz.looker.lookml_view import LookMLView
 from recidiviz.looker.lookml_view_field import (
@@ -954,9 +955,9 @@ def generate_person_assignments_with_attributes_view(
     {{% endif %}}
 
       WHERE
-      {{% condition {view_name}.gender %}}pd.gender{{% endcondition %}}
+      {{% condition {view_name}.gender %}}INITCAP(REPLACE(pd.gender, '_', ' ')){{% endcondition %}}
       AND {{% condition {view_name}.is_female %}}pd.gender LIKE "FEMALE"{{% endcondition %}}
-      AND {{% condition {view_name}.race %}}pd.prioritized_race_or_ethnicity{{% endcondition %}}
+      AND {{% condition {view_name}.race %}}INITCAP(REPLACE(pd.prioritized_race_or_ethnicity,'_',' ')){{% endcondition %}}
       AND {{% condition {view_name}.is_nonwhite %}}pd.prioritized_race_or_ethnicity != "WHITE"{{% endcondition %}}
       AND {{% condition {view_name}.experiment_id %}}experiment_id{{% endcondition %}}
       AND {{% condition {view_name}.variant_id %}}variant_id{{% endcondition %}}
@@ -971,7 +972,10 @@ def generate_person_assignments_with_attributes_view(
                 LookMLFieldParameter.type(LookMLFieldType.STRING),
                 LookMLFieldParameter.view_label("Attributes"),
                 LookMLFieldParameter.group_label("Person Attributes"),
-                LookMLFieldParameter.sql("${TABLE}.gender"),
+                LookMLFieldParameter.sql("INITCAP(REPLACE(${TABLE}.gender, '_', ' '))"),
+                LookMLFieldParameter.suggestions(
+                    sorted([snake_to_title(member.value) for member in StateGender])
+                ),
             ],
         ),
         DimensionLookMLViewField(
@@ -993,7 +997,10 @@ def generate_person_assignments_with_attributes_view(
                 LookMLFieldParameter.type(LookMLFieldType.STRING),
                 LookMLFieldParameter.view_label("Attributes"),
                 LookMLFieldParameter.group_label("Person Attributes"),
-                LookMLFieldParameter.sql("${TABLE}.race"),
+                LookMLFieldParameter.sql("INITCAP(REPLACE(${TABLE}.race, '_', ' '))"),
+                LookMLFieldParameter.suggestions(
+                    sorted([snake_to_title(member.value) for member in StateRace])
+                ),
             ],
         ),
         DimensionLookMLViewField(
