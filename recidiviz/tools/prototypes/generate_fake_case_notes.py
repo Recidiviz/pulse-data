@@ -28,7 +28,7 @@ Note: This is an *overwrite* script - it will delete all fake_case_notes/ data b
 writing new case notes.
 
 Usage (make sure to remove the dry run flag):
-python -m recidiviz.tools.prototypes.generate_fake_case_notes --sheet-id=1WN90U9k9fuwfWNkYdPK35mtfyLzo4-Cl7EYKrbchdDc --dry-run=False
+python -m recidiviz.tools.prototypes.generate_fake_case_notes --sheet-id=<token> --dry-run=False
 
 """
 
