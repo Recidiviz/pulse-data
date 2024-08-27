@@ -59,7 +59,6 @@ THESE_INGEST_VIEWS_HAVE_UNDOCUMENTED_CTES: Dict[StateCode, Dict[str, List[str]]]
             "supervisory_changes",
             "tl_periods",
         ],
-        "supervision_sentence": ["sc_cleaned"],
         "supervision_violation": ["offenses", "offenses_and_sanctions", "sanctions"],
     },
     StateCode.US_PA: {
