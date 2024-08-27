@@ -18,10 +18,14 @@
 DirectIngestRawFileImportRun
 """
 import datetime
+from collections import defaultdict
+from enum import Enum
 from typing import Any, Dict, List, Optional
 
-from sqlalchemy import and_, select
+import attr
+from sqlalchemy import and_, select, text
 
+from recidiviz.common import attr_validators
 from recidiviz.common.constants.operations.direct_ingest_raw_file_import import (
     DirectIngestRawFileImportStatus,
 )
@@ -35,6 +39,70 @@ from recidiviz.persistence.database.session import Session
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.persistence.entity.operations import entities
+
+
+class DirectIngestRawFileImportStatusBuckets(Enum):
+    """Higher-level status buckets for DirectIngestRawFileImportStatus"""
+
+    IN_PROGRESS: str = "IN_PROGRESS"
+    SUCCEEDED: str = "SUCCEEDED"
+    FAILED: str = "FAILED"
+
+    @classmethod
+    def from_session_status(
+        cls, status: DirectIngestRawFileImportStatus
+    ) -> "DirectIngestRawFileImportStatusBuckets":
+        match status:
+            case DirectIngestRawFileImportStatus.SUCCEEDED:
+                return cls.SUCCEEDED
+            case DirectIngestRawFileImportStatus.STARTED:
+                return cls.IN_PROGRESS
+            case DirectIngestRawFileImportStatus.FAILED_LOAD_STEP:
+                return cls.FAILED
+            case DirectIngestRawFileImportStatus.FAILED_PRE_IMPORT_NORMALIZATION_STEP:
+                return cls.FAILED
+            case DirectIngestRawFileImportStatus.FAILED_UNKNOWN:
+                return cls.FAILED
+            case _:
+                raise ValueError(
+                    f"Unrecognized import status: {status}; please add it to the list "
+                    f"of values in recidiviz/ingest/direct/metadata/direct_ingest_raw_file_import_manager.py"
+                )
+
+    def for_api(self) -> str:
+        return self.value.replace("_", " ").title()
+
+
+@attr.define
+class LatestDirectIngestRawFileImportRunSummary:
+    """Summary for the most recent import run.
+
+    Attributes:
+        import_run_start (datetime): the import_start time associated with the values in
+            |count_by_status|.
+        count_by_status_bucket (Dict[DirectIngestRawFileImportStatusBuckets, int]): the
+            number of file_ids associated with each of status bucket type found in the
+            import sessions table for |import_start|.
+    """
+
+    import_run_start: datetime.datetime = attr.ib(
+        validator=attr_validators.is_utc_timezone_aware_datetime
+    )
+    count_by_status_bucket: Dict[DirectIngestRawFileImportStatusBuckets, int] = attr.ib(
+        validator=attr_validators.is_dict
+    )
+
+    def for_api(self) -> Dict:
+        """Serializes the instance status as a dictionary that can be passed to the
+        frontend.
+        """
+        return {
+            "importRunStart": self.import_run_start.isoformat(),
+            "countByStatusBucket": [
+                {"importStatus": status.for_api(), "fileCount": count}
+                for status, count in self.count_by_status_bucket.items()
+            ],
+        }
 
 
 class DirectIngestRawFileImportManager:
@@ -316,6 +384,63 @@ class DirectIngestRawFileImportManager:
                 )
                 for import_run in import_runs
             ]
+
+    def get_most_recent_import_run_summary(
+        self,
+    ) -> Optional[LatestDirectIngestRawFileImportRunSummary]:
+        """Builds a LatestDirectIngestRawFileImportRunSummary object, if any imports
+        runs exist.
+        """
+        with SessionFactory.using_database(self.database_key) as session:
+
+            query = f"""
+                SELECT 
+                    ir.import_run_start,
+                    fi.import_status AS file_import_status,
+                    count(fi.import_status) AS num_file_imports
+                FROM 
+                    direct_ingest_raw_file_import AS fi
+                JOIN
+                    direct_ingest_raw_file_import_run AS ir
+                ON 
+                    fi.import_run_id = ir.import_run_id
+                    AND ir.import_run_start = (
+                            SELECT max(import_run_start)
+                            FROM 
+                                direct_ingest_raw_file_import_run
+                            WHERE
+                                region_code = '{self.region_code}'
+                                AND raw_data_instance = '{self.raw_data_instance.value}'
+
+                        )
+                GROUP BY
+                    ir.import_run_start,
+                    fi.import_status
+            """
+
+            results = session.execute(text(query))
+
+            count_by_status_bucket: Dict[
+                DirectIngestRawFileImportStatusBuckets, int
+            ] = defaultdict(int)
+            import_run_start: Optional[datetime.datetime] = None
+            for result in results:
+                if not import_run_start:
+                    import_run_start = result.import_run_start
+                count_by_status_bucket[
+                    DirectIngestRawFileImportStatusBuckets.from_session_status(
+                        DirectIngestRawFileImportStatus(result.file_import_status)
+                    )
+                ] += result.num_file_imports
+
+            return (
+                LatestDirectIngestRawFileImportRunSummary(
+                    import_run_start=import_run_start,
+                    count_by_status_bucket=count_by_status_bucket,
+                )
+                if import_run_start is not None
+                else None
+            )
 
     def transfer_metadata_to_new_instance(
         self,

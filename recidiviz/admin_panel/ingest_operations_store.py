@@ -55,6 +55,10 @@ from recidiviz.ingest.direct.gcs.filename_parts import filename_parts_from_path
 from recidiviz.ingest.direct.metadata.direct_ingest_instance_status_manager import (
     DirectIngestInstanceStatusManager,
 )
+from recidiviz.ingest.direct.metadata.direct_ingest_raw_file_import_manager import (
+    DirectIngestRawFileImportManager,
+    LatestDirectIngestRawFileImportRunSummary,
+)
 from recidiviz.ingest.direct.metadata.direct_ingest_raw_file_metadata_manager import (
     DirectIngestRawFileMetadataManager,
     DirectIngestRawFileMetadataSummary,
@@ -470,6 +474,17 @@ class IngestOperationsStore(AdminPanelStore):
             ingest_statuses[state_code] = instance_to_status_dict
 
         return ingest_statuses
+
+    def get_all_latest_raw_data_import_run_info(
+        self,
+    ) -> Dict[StateCode, Optional[LatestDirectIngestRawFileImportRunSummary]]:
+        raw_data_import_history = {}
+        for state_code in get_direct_ingest_states_launched_in_env():
+            raw_data_import_history[state_code] = DirectIngestRawFileImportManager(
+                state_code.value, DirectIngestInstance.PRIMARY
+            ).get_most_recent_import_run_summary()
+
+        return raw_data_import_history
 
     @staticmethod
     def calculate_if_file_is_stale(
