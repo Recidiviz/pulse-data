@@ -155,7 +155,7 @@ class TestGetAlertingServiceFromTask(unittest.TestCase):
                 self._make_incident(
                     dag_id=get_calculation_dag_id(_PROJECT_ID),
                     task_id=(
-                        "ingest.us_nd_dataflow.initialize_dataflow_pipeline."
+                        "ingest.us_nd_dataflow.initialize_ingest_pipeline."
                         "check_for_valid_watermarks"
                     ),
                 )

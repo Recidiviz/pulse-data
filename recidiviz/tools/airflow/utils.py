@@ -38,6 +38,10 @@ def await_environment_state(
     client = service.EnvironmentsClient()
 
     while environment := client.get_environment(request={"name": environment_name}):
+        if environment.state == types.Environment.State.ERROR:
+            raise ValueError(
+                f"Environment entered ERROR [{environment.state}] state - aborting."
+            )
         if environment.state in retry_states:
             logging.info("Environment is in state %s. Sleeping...", environment.state)
             time.sleep(30)

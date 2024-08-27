@@ -34,9 +34,6 @@ from recidiviz.airflow.dags.calculation.constants import (
 from recidiviz.airflow.dags.calculation.dataflow.metrics_pipeline_task_group_delegate import (
     MetricsDataflowPipelineTaskGroupDelegate,
 )
-from recidiviz.airflow.dags.calculation.dataflow.normalization_pipeline_task_group_delegate import (
-    NormalizationDataflowPipelineTaskGroupDelegate,
-)
 from recidiviz.airflow.dags.calculation.dataflow.single_ingest_pipeline_group import (
     create_single_ingest_pipeline_group,
 )
@@ -71,7 +68,7 @@ from recidiviz.metrics.export.products.product_configs import (
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.pipelines.config_paths import PIPELINE_CONFIG_YAML_PATH
 from recidiviz.pipelines.dataflow_orchestration_utils import (
-    get_normalization_pipeline_enabled_states,
+    get_ingest_pipeline_enabled_states,
 )
 from recidiviz.utils.yaml_dict import YAMLDict
 
@@ -233,21 +230,9 @@ def create_pipeline_configs_by_state(
 
 def ingest_pipeline_branches_by_state_code() -> Dict[str, TaskGroup]:
     branches_by_state_code = {}
-    for state_code in get_normalization_pipeline_enabled_states():
-        group = create_single_ingest_pipeline_group(state_code)
-        branches_by_state_code[state_code.value] = group
-    return branches_by_state_code
-
-
-def normalization_pipeline_branches_by_state_code() -> Dict[str, TaskGroup]:
-    branches_by_state_code = {}
-    for state_code in get_normalization_pipeline_enabled_states():
-        group, _pipeline_task = build_dataflow_pipeline_task_group(
-            delegate=NormalizationDataflowPipelineTaskGroupDelegate(
-                state_code=state_code
-            ),
-        )
-        branches_by_state_code[state_code.value] = group
+    for state_code in get_ingest_pipeline_enabled_states():
+        ingest_group = create_single_ingest_pipeline_group(state_code)
+        branches_by_state_code[state_code.value] = ingest_group
     return branches_by_state_code
 
 
@@ -373,50 +358,47 @@ def create_calculation_dag() -> None:
     initialize_dag = initialize_calculation_dag_group()
     initialize_dag >> update_big_query_table_schemata >> bq_refresh
 
-    # --- step 2: ingest -----------------------------------
-    with TaskGroup(group_id="ingest") as ingest_task_group:
-        ingest_pipelines_by_state = ingest_pipeline_branches_by_state_code()
+    # --- step 2: ingest and normalization -----------------------------------
+    with TaskGroup(
+        group_id="ingest_and_normalization"
+    ) as ingest_and_normalization_task_group:
+        ingest_and_normalization_pipelines_by_state = (
+            ingest_pipeline_branches_by_state_code()
+        )
         create_branching_by_key(
-            ingest_pipelines_by_state, select_state_code_parameter_branch
+            ingest_and_normalization_pipelines_by_state,
+            select_state_code_parameter_branch,
         )
 
-    ingest_completed = EmptyOperator(
-        task_id="ingest_completed", trigger_rule=TriggerRule.ALL_DONE
+    ingest_and_normalization_completed = EmptyOperator(
+        task_id="ingest_and_normalization_completed", trigger_rule=TriggerRule.ALL_DONE
     )
-    # If the schema updates successfully, run ingest for all states
-    update_big_query_table_schemata >> ingest_task_group >> ingest_completed
+    # If the schema updates successfully, run ingest pipelines, followed by
+    # normalization pipelines for all states.
+    (
+        update_big_query_table_schemata
+        >> ingest_and_normalization_task_group
+        >> ingest_and_normalization_completed
+    )
 
-    # If the schema updates successfully, update the state dataset after ingest is complete
+    # If the schema updates successfully, update the state and normalized_state atasets
+    # after ingest and normalization pipelines complete.
     # We keep the schema update as a dependency. If a single state ingest fails, we do not
     # want to block the rest of the DAG. However, if the schema update fails, the ingest
     # tasks go into 'upstream failed'. We do not want to continue in that case.
     update_state_dataset = execute_update_state()
-    [update_big_query_table_schemata, ingest_completed] >> update_state_dataset
-
-    # --- step 3: normalization -----------------------------------
-    with TaskGroup(group_id="normalization") as normalization_task_group:
-        normalization_pipelines_by_state = (
-            normalization_pipeline_branches_by_state_code()
-        )
-        create_branching_by_key(
-            normalization_pipelines_by_state, select_state_code_parameter_branch
-        )
-
-    normalization_completed = EmptyOperator(
-        task_id="normalization_completed", trigger_rule=TriggerRule.ALL_DONE
-    )
     update_normalized_state_dataset = execute_update_normalized_state()
 
-    # Normalization pipelines should run after the state dataset
-    # is updated, but complete before normalized_state dataset
-    # is refreshed. It shouldn't run if we failed to update the schema.
-    update_state_dataset >> normalization_task_group >> normalization_completed
     [
-        normalization_completed,
         update_big_query_table_schemata,
+        ingest_and_normalization_completed,
+    ] >> update_state_dataset
+    [
+        update_big_query_table_schemata,
+        ingest_and_normalization_completed,
     ] >> update_normalized_state_dataset
 
-    # --- step 4: metrics pipelines -----------------------------------
+    # --- step 3: metrics pipelines -----------------------------------
     with TaskGroup(
         group_id="post_normalization_pipelines"
     ) as post_normalization_pipelines:
@@ -432,7 +414,7 @@ def create_calculation_dag() -> None:
     # metric pipelines for the state are triggered.
     update_normalized_state_dataset >> post_normalization_pipelines
 
-    # --- step 5: managed views -----------------------------------
+    # --- step 4: managed views -----------------------------------
     # When ingest, normalization, and metrics pipelines are finished,
     # we want to update all managed views with the updated data.
     # We also wait until the BigQuery refresh to ops and case triage is complete
@@ -452,7 +434,7 @@ def create_calculation_dag() -> None:
             # We turn on validations (may still be in dev mode) as soon as there is
             # any ingest output that may feed into our BQ views.
             validation_branches_by_state_code(
-                states_to_validate=normalization_pipelines_by_state.keys()
+                states_to_validate=ingest_and_normalization_pipelines_by_state.keys()
             ),
             select_state_code_parameter_branch,
         )
