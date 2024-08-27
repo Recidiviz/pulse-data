@@ -57,6 +57,7 @@ class RawTableSchemaUtilsTest(unittest.TestCase):
             region_code=self.fake_state.value.lower(),
             raw_file_configs={
                 "raw_data_table": DirectIngestRawFileConfig(
+                    state_code=self.fake_state,
                     file_tag="raw_data_table",
                     file_path="some-path",
                     file_description="some-description",

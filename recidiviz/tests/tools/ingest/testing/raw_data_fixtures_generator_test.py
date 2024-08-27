@@ -23,6 +23,7 @@ from unittest import mock
 import attr
 from mock import Mock
 
+from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRawFileConfig,
     DirectIngestRegionRawFileConfig,
@@ -66,6 +67,7 @@ class RawDataFixturesGeneratorTest(unittest.TestCase):
         self.root_entity_external_id_columns: List[str] = []
         self.columns_to_randomize: List[str] = []
         raw_table_config = DirectIngestRawFileConfig(
+            state_code=StateCode(self.region_code.upper()),
             file_tag="raw_data_table",
             file_path="some path",
             file_description="some description",

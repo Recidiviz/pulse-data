@@ -97,6 +97,7 @@ class DirectIngestRawDataTableLatestViewBuilderTest(unittest.TestCase):
         self.mock_project_id_fn = self.metadata_patcher.start()
         self.mock_project_id_fn.return_value = self.project_id
         self.raw_file_config = DirectIngestRawFileConfig(
+            state_code=StateCode.US_XX,
             file_tag="table_name",
             file_path="path/to/file.yaml",
             file_description="file description",

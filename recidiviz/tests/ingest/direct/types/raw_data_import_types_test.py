@@ -31,6 +31,7 @@ from recidiviz.common.constants.csv import (
 from recidiviz.common.constants.operations.direct_ingest_raw_file_import import (
     DirectIngestRawFileImportStatus,
 )
+from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRawFileConfig,
     RawDataClassification,
@@ -62,6 +63,7 @@ class PreImportNormalizationTypeTest(unittest.TestCase):
 
     def setUp(self) -> None:
         self.sparse_config = DirectIngestRawFileConfig(
+            state_code=StateCode.US_XX,
             file_tag="myFile",
             file_path="/path/to/myFile.yaml",
             file_description="This is a raw data file",

@@ -41,6 +41,7 @@ class HydrateDatetimeSqlParsersTest(unittest.TestCase):
     def setUp(self) -> None:
         # Basic raw file info
         self.sparse_config = DirectIngestRawFileConfig(
+            state_code=StateCode.US_XX,
             file_tag="myFile",
             file_path="/path/to/myFile.yaml",
             file_description="This is a raw data file",

@@ -21,6 +21,7 @@ import unittest
 from unittest.mock import MagicMock
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
+from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.raw_data.direct_ingest_raw_table_pre_import_validator import (
     DirectIngestRawTablePreImportValidator,
 )
@@ -61,6 +62,7 @@ class TestDirectIngestRawTablePreImportValidator(unittest.TestCase):
         self.column_name = "Col1"
 
         self.raw_file_config = DirectIngestRawFileConfig(
+            state_code=StateCode(self.region_code.upper()),
             file_tag=self.file_tag,
             file_path="/path/to/myFile.yaml",
             file_description="This is a raw data file",

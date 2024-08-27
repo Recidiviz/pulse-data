@@ -56,6 +56,7 @@ class DirectIngestRawFileNormalizationPassTest(unittest.TestCase):
             region_module=fake_regions,
         )
         self.sparse_config = DirectIngestRawFileConfig(
+            state_code=StateCode.US_XX,
             file_tag="myFile",
             file_path="/path/to/myFile.yaml",
             file_description="This is a raw data file",
