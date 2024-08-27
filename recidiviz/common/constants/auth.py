@@ -22,6 +22,6 @@ from enum import Enum
 class RosterPredefinedRoles(Enum):
     # Note: These are inspired by, but do not need to match exactly,
     # recidiviz.common.constants.state.state_staff_role_period.StateStaffRoleSubtype
-    SUPERVISION_OFFICER = "SUPERVISION_OFFICER"
+    SUPERVISION_LINE_STAFF = "SUPERVISION_LINE_STAFF"
     SUPERVISION_OFFICER_SUPERVISOR = "SUPERVISION_OFFICER_SUPERVISOR"
     UNKNOWN = "UNKNOWN"

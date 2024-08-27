@@ -84,7 +84,7 @@ INGESTED_PRODUCT_USERS_QUERY_TEMPLATE = f"""
             LOWER(email) AS email_address,
             CASE
                 WHEN is_supervision_officer_supervisor THEN "{RosterPredefinedRoles.SUPERVISION_OFFICER_SUPERVISOR.value}"
-                WHEN is_supervision_officer THEN "{RosterPredefinedRoles.SUPERVISION_OFFICER.value}"
+                WHEN is_supervision_officer THEN "{RosterPredefinedRoles.SUPERVISION_LINE_STAFF.value}"
                 ELSE "{RosterPredefinedRoles.UNKNOWN.value}"
             END AS roles,
             district,

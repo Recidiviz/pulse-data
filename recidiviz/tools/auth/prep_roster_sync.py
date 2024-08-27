@@ -41,6 +41,7 @@ from sqlalchemy.orm import Session
 
 from recidiviz.auth.auth0_client import Auth0Client
 from recidiviz.big_query.big_query_client import BigQueryClient, BigQueryClientImpl
+from recidiviz.common.constants.auth import RosterPredefinedRoles
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.database.schema.case_triage.schema import (
     Roster,
@@ -206,7 +207,10 @@ def role_is_equivalent(current_role: str, roster_sync_role: str) -> bool:
     return roster_sync_role == current_role or (
         current_role == "supervision_staff"
         and roster_sync_role
-        in ["SUPERVISION_OFFICER", "SUPERVISION_OFFICER_SUPERVISOR"]
+        in [
+            RosterPredefinedRoles.SUPERVISION_LINE_STAFF.value,
+            RosterPredefinedRoles.SUPERVISION_OFFICER_SUPERVISOR.value,
+        ]
     )
 
 

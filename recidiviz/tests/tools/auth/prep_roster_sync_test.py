@@ -85,8 +85,8 @@ class PrepRosterSyncTest(TestCase):
             email="recently_logged_in_user@testdomain.com",
             region_code="US_XX",
             external_id="123",
-            role="supervision_officer",
-            roles=["supervision_officer"],
+            role="SUPERVISION_LINE_STAFF",
+            roles=["SUPERVISION_LINE_STAFF"],
             district="D1",
             first_name="Test",
             last_name="User",
@@ -97,7 +97,7 @@ class PrepRosterSyncTest(TestCase):
         self.recently_logged_in_user_uo = generate_fake_user_overrides(
             email="recently_logged_in_user@testdomain.com",
             region_code="US_XX",
-            roles=["supervision_officer", "custom_role"],
+            roles=["SUPERVISION_LINE_STAFF", "custom_role"],
             district="D2",
             created_datetime=datetime.fromisoformat("2023-02-01"),
         )
@@ -119,8 +119,8 @@ class PrepRosterSyncTest(TestCase):
             email="recently_created_user@testdomain.com",
             region_code="US_XX",
             external_id="345",
-            role="supervision_officer",
-            roles=["supervision_officer"],
+            role="SUPERVISION_LINE_STAFF",
+            roles=["SUPERVISION_LINE_STAFF"],
             district="D3",
             first_name="Test",
             last_name="User",
@@ -131,8 +131,8 @@ class PrepRosterSyncTest(TestCase):
             email="user_to_delete_roster_and_uo@testdomain.com",
             region_code="US_XX",
             external_id="456",
-            role="supervision_officer",
-            roles=["supervision_officer"],
+            role="SUPERVISION_LINE_STAFF",
+            roles=["SUPERVISION_LINE_STAFF"],
             district="D4",
             first_name="Test",
             last_name="User",
@@ -152,8 +152,8 @@ class PrepRosterSyncTest(TestCase):
             email="user_to_delete_uo_only@testdomain.com",
             region_code="US_XX",
             external_id="678",
-            role="supervision_officer",
-            roles=["supervision_officer"],
+            role="SUPERVISION_LINE_STAFF",
+            roles=["SUPERVISION_LINE_STAFF"],
             district="D6",
             first_name="Test",
             last_name="User",
@@ -217,8 +217,8 @@ class PrepRosterSyncTest(TestCase):
             email="tn_d20_user@testdomain.com",
             region_code="US_TN",
             external_id="020",
-            role="supervision_officer",
-            roles=["supervision_officer"],
+            role="SUPERVISION_LINE_STAFF",
+            roles=["SUPERVISION_LINE_STAFF"],
             district="20",
             first_name="Test",
             last_name="User",
@@ -355,8 +355,8 @@ class PrepRosterSyncTest(TestCase):
                 "first_name": "Test",
                 "last_name": "User",
                 "pseudonymized_id": "pseudo-123",
-                "role": "supervision_officer",
-                "roles": ["supervision_officer", "custom_role"],
+                "role": "SUPERVISION_LINE_STAFF",
+                "roles": ["SUPERVISION_LINE_STAFF", "custom_role"],
                 "state_code": "US_XX",
                 "user_hash": "On9z4tx1lZK9NfTUmCrAucJRuDsvNDZvT4JknYfHlUU=",
             }
@@ -417,8 +417,8 @@ class PrepRosterSyncTest(TestCase):
                 "first_name": "Test",
                 "last_name": "User",
                 "pseudonymized_id": "pseudo-123",
-                "role": "supervision_officer",
-                "roles": ["supervision_officer", "custom_role"],
+                "role": "SUPERVISION_LINE_STAFF",
+                "roles": ["SUPERVISION_LINE_STAFF", "custom_role"],
                 "state_code": "US_XX",
                 "user_hash": "On9z4tx1lZK9NfTUmCrAucJRuDsvNDZvT4JknYfHlUU=",
             }
@@ -525,8 +525,8 @@ class PrepRosterSyncTest(TestCase):
         roster_sync_user = Roster(
             email_address="user_in_sync_query@testdomain.com",
             state_code="US_XX",
-            role="SUPERVISION_OFFICER",
-            roles="SUPERVISION_OFFICER",
+            role="SUPERVISION_LINE_STAFF",
+            roles="SUPERVISION_LINE_STAFF",
         )
         current_user = generate_fake_user_overrides(
             email="user_in_sync_query@testdomain.com",
@@ -535,7 +535,7 @@ class PrepRosterSyncTest(TestCase):
             roles=["supervision_staff"],
         )
 
-        expected_updates = ["SUPERVISION_OFFICER"]
+        expected_updates = ["SUPERVISION_LINE_STAFF"]
         self.assertEqual(
             get_role_updates(current_user, roster_sync_user), expected_updates
         )
@@ -545,8 +545,8 @@ class PrepRosterSyncTest(TestCase):
         roster_sync_user = Roster(
             email_address="user_in_sync_query@testdomain.com",
             state_code="US_XX",
-            role="SUPERVISION_OFFICER",
-            roles="SUPERVISION_OFFICER",
+            role="SUPERVISION_LINE_STAFF",
+            roles="SUPERVISION_LINE_STAFF",
         )
         current_user = generate_fake_user_overrides(
             email="user_in_sync_query@testdomain.com",
@@ -555,7 +555,7 @@ class PrepRosterSyncTest(TestCase):
             roles=["supervision_leadership"],
         )
 
-        expected_updates = ["SUPERVISION_OFFICER", "supervision_leadership"]
+        expected_updates = ["SUPERVISION_LINE_STAFF", "supervision_leadership"]
         self.assertEqual(
             get_role_updates(current_user, roster_sync_user), expected_updates
         )
@@ -565,8 +565,8 @@ class PrepRosterSyncTest(TestCase):
         roster_sync_user = Roster(
             email_address="user_in_sync_query@testdomain.com",
             state_code="US_XX",
-            role="SUPERVISION_OFFICER",
-            roles="SUPERVISION_OFFICER",
+            role="SUPERVISION_LINE_STAFF",
+            roles="SUPERVISION_LINE_STAFF",
         )
         current_user = generate_fake_user_overrides(
             email="user_in_sync_query@testdomain.com",
@@ -575,7 +575,11 @@ class PrepRosterSyncTest(TestCase):
             roles=["supervision_leadership", "supervision_staff", "tt group"],
         )
 
-        expected_updates = ["SUPERVISION_OFFICER", "supervision_leadership", "tt group"]
+        expected_updates = [
+            "SUPERVISION_LINE_STAFF",
+            "supervision_leadership",
+            "tt group",
+        ]
         self.assertEqual(
             get_role_updates(current_user, roster_sync_user), expected_updates
         )
@@ -625,14 +629,14 @@ class PrepRosterSyncTest(TestCase):
             Roster(
                 email_address="user_with_equivalent_role@testdomain.com",
                 state_code="US_XX",
-                role="SUPERVISION_OFFICER",
-                roles="SUPERVISION_OFFICER",
+                role="SUPERVISION_LINE_STAFF",
+                roles="SUPERVISION_LINE_STAFF",
             ),
             Roster(
                 email_address="user_with_different_role@testdomain.com",
                 state_code="US_XX",
-                role="SUPERVISION_OFFICER",
-                roles="SUPERVISION_OFFICER",
+                role="SUPERVISION_LINE_STAFF",
+                roles="SUPERVISION_LINE_STAFF",
             ),
             Roster(
                 email_address="user_with_different_district@testdomain.com",
@@ -644,8 +648,8 @@ class PrepRosterSyncTest(TestCase):
             Roster(
                 email_address="user_with_multiple_diffs@testdomain.com",
                 state_code="US_XX",
-                role="SUPERVISION_OFFICER",
-                roles="SUPERVISION_OFFICER",
+                role="SUPERVISION_LINE_STAFF",
+                roles="SUPERVISION_LINE_STAFF",
                 district="changed district",
                 first_name="changed name",
             ),
@@ -691,14 +695,14 @@ class PrepRosterSyncTest(TestCase):
             Roster(
                 email_address="user_with_equivalent_role@testdomain.com",
                 state_code="US_XX",
-                role="SUPERVISION_OFFICER",
-                roles="SUPERVISION_OFFICER",
+                role="SUPERVISION_LINE_STAFF",
+                roles="SUPERVISION_LINE_STAFF",
             ),
             Roster(
                 email_address="user_with_different_role@testdomain.com",
                 state_code="US_XX",
-                role="SUPERVISION_OFFICER",
-                roles="SUPERVISION_OFFICER",
+                role="SUPERVISION_LINE_STAFF",
+                roles="SUPERVISION_LINE_STAFF",
             ),
             Roster(
                 email_address="user_with_different_district@testdomain.com",
@@ -710,8 +714,8 @@ class PrepRosterSyncTest(TestCase):
             Roster(
                 email_address="user_with_multiple_diffs@testdomain.com",
                 state_code="US_XX",
-                role="SUPERVISION_OFFICER",
-                roles="SUPERVISION_OFFICER",
+                role="SUPERVISION_LINE_STAFF",
+                roles="SUPERVISION_LINE_STAFF",
                 district="changed district",
                 first_name="changed name",
             ),
@@ -834,14 +838,14 @@ class PrepRosterSyncTest(TestCase):
             Roster(
                 email_address="user_with_equivalent_role@testdomain.com",
                 state_code="US_XX",
-                role="SUPERVISION_OFFICER",
-                roles="SUPERVISION_OFFICER",
+                role="SUPERVISION_LINE_STAFF",
+                roles="SUPERVISION_LINE_STAFF",
             ),
             Roster(
                 email_address="user_with_different_role@testdomain.com",
                 state_code="US_XX",
-                role="SUPERVISION_OFFICER",
-                roles="SUPERVISION_OFFICER",
+                role="SUPERVISION_LINE_STAFF",
+                roles="SUPERVISION_LINE_STAFF",
             ),
         ]
         mock_roster_sync_output.return_value = roster_sync_users
@@ -908,14 +912,14 @@ class PrepRosterSyncTest(TestCase):
             Roster(
                 email_address="user_with_equivalent_role@testdomain.com",
                 state_code="US_XX",
-                role="SUPERVISION_OFFICER",
-                roles="SUPERVISION_OFFICER",
+                role="SUPERVISION_LINE_STAFF",
+                roles="SUPERVISION_LINE_STAFF",
             ),
             Roster(
                 email_address="user_with_different_role@testdomain.com",
                 state_code="US_XX",
-                role="SUPERVISION_OFFICER",
-                roles="SUPERVISION_OFFICER",
+                role="SUPERVISION_LINE_STAFF",
+                roles="SUPERVISION_LINE_STAFF",
             ),
         ]
         mock_roster_sync_output.return_value = roster_sync_users
