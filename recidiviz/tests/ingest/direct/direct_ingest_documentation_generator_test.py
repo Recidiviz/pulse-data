@@ -124,6 +124,7 @@ class DirectIngestDocumentationGeneratorTest(unittest.TestCase):
             "tagColumnsMissing": ["view_one"],
             "tagNotHistorical": [],
             "tagPrimaryKeyColsMissing": [],
+            "tagExemptFromValidations": [],
         }
         mock_downstream_referencing_views.return_value = defaultdict(
             set,
@@ -153,6 +154,7 @@ found in `us_ww_raw_data_up_to_date_views`.
 |----------------------------------------------------------------|----------------------------|------------------------------------------|
 |[multiLineDescription](raw_data/multiLineDescription.md)        |view_one,<br />view_two     |dataset.view_four,<br />dataset.view_three|
 |[tagColumnsMissing](raw_data/tagColumnsMissing.md)              |view_one                    |dataset.view_four                         |
+|[tagExemptFromValidations](raw_data/tagExemptFromValidations.md)|                            |                                          |
 |[tagNotHistorical](raw_data/tagNotHistorical.md)                |                            |                                          |
 |[tagPrimaryKeyColsMissing](raw_data/tagPrimaryKeyColsMissing.md)|                            |                                          |
 """
@@ -183,7 +185,22 @@ tagColumnsMissing file description
 |Column|Column Description|Part of Primary Key?|Distinct Values|Is PII?|
 |------|------------------|--------------------|---------------|-------|
 """
+        expected_tag_exempt_from_validations = """## tagExemptFromValidations
 
+tag with import-blocking validation exemptions
+
+|Column|Column Description|Part of Primary Key?|Distinct Values|Is PII?|Import-Blocking Validation Exemptions|
+|------|------------------|--------------------|---------------|-------|-------------------------------------|
+|COL1  |COL1 description  |YES                 |N/A            |False  |N/A                                  |
+|COL2  |COL2 description  |                    |N/A            |False  |<ul><li>NONNULL_VALUES</li></ul>     |
+
+
+### Table-Wide Import-Blocking Validation Exemptions
+
+|         Validation Type         |Exemption Reason|
+|---------------------------------|----------------|
+|STABLE_HISTORICAL_RAW_DATA_COUNTS|reason          |
+"""
         expected_tag_not_historical = """## tagNotHistorical
 
 tagNotHistorical file description
@@ -215,11 +232,11 @@ tagPrimaryKeyColsMissing file description
 |--------------------|-----------|--------------------------------------------------------------------|
 |multiLineDescription|ONE TO MANY|tagPrimaryKeyColsMissing.column_1 = multiLineDescription.col_name_1a|
 """
-
         expected_documentation = {
             "multiLineDescription.md": expected_multi_line,
             "raw_data.md": expected_raw_data,
             "tagColumnsMissing.md": expected_tag_columns_missing,
+            "tagExemptFromValidations.md": expected_tag_exempt_from_validations,
             "tagNotHistorical.md": expected_tag_not_historical,
             "tagPrimaryKeyColsMissing.md": expected_tag_primary_key_cols_missing,
         }

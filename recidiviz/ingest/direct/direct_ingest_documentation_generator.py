@@ -17,7 +17,7 @@
 
 """Functionality for generating documentation about our direct ingest integrations."""
 from collections import defaultdict
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 from pytablewriter import MarkdownTableWriter
 
@@ -31,6 +31,8 @@ from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     ColumnEnumValueInfo,
     DirectIngestRawFileConfig,
     DirectIngestRegionRawFileConfig,
+    ImportBlockingValidationExemption,
+    RawTableColumnInfo,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder_collector import (
@@ -154,6 +156,19 @@ class DirectIngestDocumentationGenerator:
             )
             return list_contents
 
+        def _get_column_import_blocking_validation_exemption_list(
+            import_blocking_validation_exemptions: Optional[
+                List[ImportBlockingValidationExemption]
+            ],
+        ) -> str:
+            if not import_blocking_validation_exemptions:
+                return "N/A"
+            list_contents = "".join(
+                f"<li>{exemption.validation_type.value}</li>"
+                for exemption in import_blocking_validation_exemptions
+            )
+            return f"<ul>{list_contents}</ul>"
+
         def _get_table_relationship_info(
             raw_file_config: DirectIngestRawFileConfig,
         ) -> str:
@@ -177,28 +192,73 @@ class DirectIngestDocumentationGenerator:
 
             return section_contents
 
-        documentation = (
-            f"## {raw_file_config.file_tag}\n\n{raw_file_config.file_description}\n\n"
-        )
+        def _get_table_import_blocking_exemptions(
+            raw_file_config: DirectIngestRawFileConfig,
+        ) -> str:
+            if not raw_file_config.import_blocking_validation_exemptions:
+                return ""
+            section_contents = (
+                "\n\n### Table-Wide Import-Blocking Validation Exemptions\n\n"
+            )
+            section_contents += MarkdownTableWriter(
+                headers=["Validation Type", "Exemption Reason"],
+                value_matrix=[
+                    [
+                        exemption.validation_type.value,
+                        exemption.exemption_reason,
+                    ]
+                    for exemption in raw_file_config.import_blocking_validation_exemptions
+                ],
+                # Margin values other than 0 have nondeterministic spacing. Do not
+                # change.
+                margin=0,
+            ).dumps()
 
-        table_matrix = [
-            [
+            return section_contents
+
+        def _get_raw_data_column_row(
+            column: RawTableColumnInfo, has_exemptions: bool
+        ) -> List[Any]:
+            row_values = [
                 column.name,
                 column.description or "<No documentation>",
                 _is_primary_key(column.name),
                 _get_enum_bullets(column.known_values),
                 column.is_pii,
             ]
+            if has_exemptions:
+                row_values.append(
+                    _get_column_import_blocking_validation_exemption_list(
+                        column.import_blocking_column_validation_exemptions
+                    )
+                )
+            return row_values
+
+        documentation = (
+            f"## {raw_file_config.file_tag}\n\n{raw_file_config.file_description}\n\n"
+        )
+
+        has_exemptions = any(
+            column.import_blocking_column_validation_exemptions
+            for column in raw_file_config.columns
+        )
+
+        table_matrix = [
+            _get_raw_data_column_row(column, has_exemptions)
             for column in raw_file_config.columns
         ]
+        headers = [
+            "Column",
+            "Column Description",
+            "Part of Primary Key?",
+            "Distinct Values",
+            "Is PII?",
+        ]
+        if has_exemptions:
+            headers.append("Import-Blocking Validation Exemptions")
+
         writer = MarkdownTableWriter(
-            headers=[
-                "Column",
-                "Column Description",
-                "Part of Primary Key?",
-                "Distinct Values",
-                "Is PII?",
-            ],
+            headers=headers,
             value_matrix=table_matrix,
             # Margin values other than 0 have nondeterministic spacing. Do not change.
             margin=0,
@@ -206,6 +266,8 @@ class DirectIngestDocumentationGenerator:
         documentation += writer.dumps()
 
         documentation += _get_table_relationship_info(raw_file_config)
+
+        documentation += _get_table_import_blocking_exemptions(raw_file_config)
 
         return documentation
 
