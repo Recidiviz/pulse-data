@@ -194,6 +194,11 @@ resource "google_cloudfunctions2_function" "filename_normalization" {
   event_trigger {
     event_type   = "google.cloud.pubsub.topic.v1.messagePublished"
     pubsub_topic = google_pubsub_topic.raw_data_storage_notification_topic.id
+    # Retry failed invocations with an exponential backoff for up to 24 hours.
+    # If cloud function retries are disabled, we would not be able to rely on
+    # the pub/sub retry mechanism as each invocation is treated as a success
+    # and pub/sub messages are acknowledged even if an error occurs.
+    retry_policy = "RETRY_POLICY_RETRY"
   }
 
   service_config {

@@ -253,11 +253,41 @@ class TestNormalizeFilename(TestCase):
         mock_requests: MagicMock,
         _mock_fs: MagicMock,
     ) -> None:
+        mock_requests.post.return_value.status_code = 200
         zip_event = self._build_pubsub_cloudevent(
             file_name=f"unprocessed{self.relative_file_path}.zip"
         )
 
         normalize_filename(zip_event)
+
+        mock_requests.post.assert_called_once()
+
+    @patch("recidiviz.cloud_functions.ingest_filename_normalization.fs")
+    @patch("recidiviz.cloud_functions.ingest_filename_normalization.requests")
+    @patch("recidiviz.cloud_functions.ingest_filename_normalization._get_access_token")
+    @patch(
+        "recidiviz.cloud_functions.ingest_filename_normalization.DirectIngestGCSFileSystem.is_normalized_file_path",
+        return_value=True,
+    )
+    @patch(
+        "recidiviz.cloud_functions.ingest_filename_normalization.is_raw_data_import_dag_enabled",
+        return_value=True,
+    )
+    def test_raises_zipfile_error(
+        self,
+        _mock_dag_disabled: MagicMock,
+        _mock_is_normalized: MagicMock,
+        _mock_get_token: MagicMock,
+        mock_requests: MagicMock,
+        _mock_fs: MagicMock,
+    ) -> None:
+        mock_requests.post.return_value.status_code = 504
+        zip_event = self._build_pubsub_cloudevent(
+            file_name=f"unprocessed{self.relative_file_path}.zip"
+        )
+
+        with self.assertRaises(RuntimeError):
+            normalize_filename(zip_event)
 
         mock_requests.post.assert_called_once()
 
@@ -282,6 +312,7 @@ class TestNormalizeFilename(TestCase):
         _mock_is_normalized: MagicMock,
         mock_fs: MagicMock,
     ) -> None:
+        _mock_post.return_value.status_code = 200
         zip_event = self._build_pubsub_cloudevent(
             file_name=f"processed{self.relative_file_path}.zip"
         )

@@ -57,7 +57,18 @@ fs: Optional[DirectIngestGCSFileSystem] = None
 def normalize_filename(cloud_event: CloudEvent) -> None:
     """Function to normalize ingest filenames in GCS triggered by a finalized object event in GCS.
     If the file is a zip file, it will invoke another cloud function to handle the unzipping
-    in order to allocate more memory to the process."""
+    in order to allocate more memory to the process.
+
+    If we encounter any error with base class ValueError, including GCSBlobDoesNotExistError,
+    we will log the error and return without raising an exception, so if a file is moved or
+    deleted or renamed by another process while we are executing we won't retry the operation.
+    If an unexpected error is encountered, like a transient google service error, we will raise
+    an exception and the cloud function will be retried.
+
+    If the zipfile handler function returns a status code other than 200,
+    we will raise an exception to retry the operation. We retry the operation from the normalize_filename
+    function because the zipfile handler function is an HTTP function that doesn't support native retries.
+    """
 
     data_str = base64.b64decode(cloud_event.data["message"]["data"]).decode()
     data = json.loads(data_str)
@@ -149,6 +160,10 @@ def normalize_filename(cloud_event: CloudEvent) -> None:
             severity="ERROR" if response.status_code != 200 else "INFO",
             message=f"Response from zipfile handler function: {response.status_code} - {response.text}",
         )
+        if response.status_code != 200:
+            raise RuntimeError(
+                f"Error invoking zipfile handler function: {response.status_code} - {response.text}"
+            )
 
 
 def _invoke_zipfile_handler(bucket: str, relative_file_path: str) -> requests.Response:
@@ -173,7 +188,12 @@ def _get_access_token(audience: str) -> str:
 @functions_framework.http
 def handle_zipfile(request: Request) -> Tuple[str, HTTPStatus]:
     """Function to handle zip files in GCS triggered by HTTP POST request.
-    If the file is a zip file, it will be unzipped and moved to deprecated storage."""
+    If the file is a zip file, it will be unzipped and moved to deprecated storage.
+
+    Function will return 200 OK if the file is not a zip file, if the unzipping fails with a ValueError,
+    or if the unzipping is successful.
+    If the request data is missing, it will return 400 BAD REQUEST.
+    """
     if (data := request.get_json(silent=True)) is None:
         error_msg = f"Missing data in request: {request}"
         cloud_functions_log(severity="ERROR", message=error_msg)
@@ -232,8 +252,8 @@ def handle_zipfile(request: Request) -> Tuple[str, HTTPStatus]:
             ),
         )
     except ValueError as e:
-        error_msg = f"Error unzipping file [{path.abs_path()}]: {e}"
-        cloud_functions_log(severity="ERROR", message=error_msg)
-        return error_msg, HTTPStatus.INTERNAL_SERVER_ERROR
+        cloud_functions_log(
+            severity="ERROR", message=f"Error unzipping file [{path.abs_path()}]: {e}"
+        )
 
     return "OK", HTTPStatus.OK
