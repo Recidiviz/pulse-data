@@ -243,15 +243,15 @@ def main(
                 results[PruningStatus.NOT_ELIGIBLE].append(file_tag)
                 continue
 
-            if raw_file_configs[file_tag].always_historical_export is False:
+            if raw_file_configs[file_tag].is_exempt_from_raw_data_pruning():
                 logging.info(
-                    "[%s][Skipping] `always_historical_export` set to False.",
+                    "[%s][Skipping] `is_exempt_from_raw_data_pruning()` is True.",
                     file_tag,
                 )
                 results[PruningStatus.NOT_ELIGIBLE].append(file_tag)
                 continue
             logging.info(
-                "[%s] `always_historical_export` set to True. Moving forward with raw data pruning.",
+                "[%s] `is_exempt_from_raw_data_pruning()` is False. Moving forward with raw data pruning.",
                 file_tag,
             )
 

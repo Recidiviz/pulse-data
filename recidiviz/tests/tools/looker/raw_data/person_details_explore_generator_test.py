@@ -23,6 +23,7 @@ from typing import List
 import attr
 from freezegun import freeze_time
 
+from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRawFileConfig,
     DirectIngestRegionRawFileConfig,
@@ -67,6 +68,7 @@ class RawDataTreeEdgesTest(unittest.TestCase):
         # Basic raw file info
         # We need at least one column with a description to get tree edges
         self.sparse_config = DirectIngestRawFileConfig(
+            state_code=StateCode.US_XX,
             file_tag="myFile",
             file_path="/path/to/myFile.yaml",
             file_description="This is a raw data file",

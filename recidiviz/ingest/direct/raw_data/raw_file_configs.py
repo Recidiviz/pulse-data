@@ -28,6 +28,7 @@ from more_itertools import one
 from recidiviz.common import attr_validators
 from recidiviz.common.constants.csv import DEFAULT_CSV_LINE_TERMINATOR
 from recidiviz.common.constants.encoding import COMMON_RAW_FILE_ENCODINGS
+from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct import regions
 from recidiviz.ingest.direct import regions as direct_ingest_regions_module
 from recidiviz.ingest.direct.raw_data.raw_table_relationship_info import (
@@ -317,6 +318,8 @@ class DirectIngestRawFileDefaultConfig:
 @attr.s(frozen=True)
 class DirectIngestRawFileConfig:
     """Struct for storing any configuration for raw data imports for a certain file tag."""
+
+    state_code: StateCode = attr.ib(validator=attr.validators.instance_of(StateCode))
 
     # The file tag / table name that this file will get written to
     file_tag: str = attr.ib(validator=attr_validators.is_non_empty_str)
@@ -609,12 +612,20 @@ class DirectIngestRawFileConfig:
         return None
 
     def is_exempt_from_raw_data_pruning(self) -> bool:
-        # TODO(#19528): remove gating once raw data pruning can be done on ContactNoteComment.
-        if self.file_tag == "ContactNoteComment":
+        # Map tracking file tags to the reasons they are exempt from raw data pruning.
+        exempt_files: Dict[StateCode, Dict[str, str]] = {
+            StateCode.US_TN: {
+                # TODO(#19528): remove gating once raw data pruning can be done on ContactNoteComment.
+                "ContactNoteComment": "THis file is split up into chunks and we do not know how to prune chunked files yet"
+            }
+        }
+
+        if self.file_tag in exempt_files.get(self.state_code, {}):
             return True
 
         if not self.always_historical_export:
-            # We currently only conduct raw data pruning on raw files that are always historical.
+            # We currently only conduct raw data pruning on raw files that are always
+            # historical.
             return True
 
         return self.no_valid_primary_keys
@@ -670,6 +681,7 @@ class DirectIngestRawFileConfig:
     @classmethod
     def from_yaml_dict(
         cls,
+        state_code: StateCode,
         file_tag: str,
         file_path: str,
         default_encoding: str,
@@ -830,6 +842,7 @@ class DirectIngestRawFileConfig:
             )
 
         return DirectIngestRawFileConfig(
+            state_code=state_code,
             file_tag=file_tag,
             file_path=file_path,
             file_description=file_description,
@@ -1095,6 +1108,7 @@ class DirectIngestRegionRawFileConfig:
                 )
 
             raw_data_configs[file_tag] = DirectIngestRawFileConfig.from_yaml_dict(
+                StateCode(self.region_code.upper()),
                 file_tag,
                 yaml_file_path,
                 default_config.default_encoding,

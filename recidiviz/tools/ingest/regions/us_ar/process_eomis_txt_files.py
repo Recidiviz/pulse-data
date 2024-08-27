@@ -334,6 +334,7 @@ def _update_config_using_sheet(
     ]
 
     return DirectIngestRawFileConfig(
+        state_code=original_config.state_code,
         file_tag=original_config.file_tag,
         file_path=original_config.file_path,
         file_description=desc,

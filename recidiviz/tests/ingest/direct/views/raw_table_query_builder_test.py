@@ -23,6 +23,7 @@ import mock
 from mock import patch
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
+from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.raw_data.direct_ingest_raw_table_schema_builder import (
     RawDataTableBigQuerySchemaBuilder,
 )
@@ -46,7 +47,9 @@ class RawTableQueryBuilderTest(BigQueryEmulatorTestCase):
 
     def setUp(self) -> None:
         super().setUp()
+        self.state_code = StateCode.US_XX
         self.raw_file_config = DirectIngestRawFileConfig(
+            state_code=self.state_code,
             file_tag="table_name",
             file_path="path/to/file.yaml",
             file_description="file description",
@@ -101,7 +104,7 @@ class RawTableQueryBuilderTest(BigQueryEmulatorTestCase):
         )
         self.query_builder = RawTableQueryBuilder(
             project_id=self.project_id,
-            region_code="us_xx",
+            region_code=self.state_code.value.lower(),
             raw_data_source_instance=DirectIngestInstance.PRIMARY,
         )
 

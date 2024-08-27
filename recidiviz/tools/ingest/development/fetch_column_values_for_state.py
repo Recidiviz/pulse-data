@@ -58,7 +58,7 @@ from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAG
 def _get_known_values(
     column: RawTableColumnInfo,
     file_tag: str,
-    region_code: str,
+    state_code: StateCode,
     project_id: str,
     bq_client: BigQueryClientImpl,
     sandbox_dataset_prefix: Optional[str],
@@ -69,7 +69,7 @@ def _get_known_values(
         return column
 
     raw_data_dataset = raw_tables_dataset_for_region(
-        state_code=StateCode(region_code.upper()),
+        state_code=state_code,
         # Raw data is only directly uploaded by states to PRIMARY.
         instance=DirectIngestInstance.PRIMARY,
         sandbox_dataset_prefix=sandbox_dataset_prefix,
@@ -106,7 +106,6 @@ ORDER BY
 
 def _update_enum_known_values(
     original_config: DirectIngestRawFileConfig,
-    region_code: str,
     project_id: str,
     bq_client: BigQueryClientImpl,
     sandbox_dataset_prefix: Optional[str],
@@ -115,7 +114,7 @@ def _update_enum_known_values(
         _get_known_values(
             column,
             original_config.file_tag,
-            region_code,
+            original_config.state_code,
             project_id,
             bq_client,
             sandbox_dataset_prefix,
@@ -124,6 +123,7 @@ def _update_enum_known_values(
     ]
 
     return DirectIngestRawFileConfig(
+        state_code=original_config.state_code,
         file_tag=original_config.file_tag,
         file_path=original_config.file_path,
         file_description=original_config.file_description,
@@ -175,7 +175,6 @@ def main(
     ]:
         updated_raw_file_config = _update_enum_known_values(
             original_raw_file_config,
-            state_code,
             project_id,
             bq_client,
             sandbox_dataset_prefix,
