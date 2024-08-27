@@ -474,6 +474,7 @@ class DirectIngestRawFileMetadataManagerTest(unittest.TestCase):
                 file_tag="file_tag",
                 num_unprocessed_files=1,
                 num_processed_files=1,
+                num_ungrouped_files=0,
                 latest_processed_time=datetime.datetime(
                     2015, 1, 2, 3, 5, 5, tzinfo=pytz.UTC
                 ),
@@ -488,6 +489,7 @@ class DirectIngestRawFileMetadataManagerTest(unittest.TestCase):
                 file_tag="other_tag",
                 num_unprocessed_files=1,
                 num_processed_files=0,
+                num_ungrouped_files=0,
                 latest_processed_time=None,
                 latest_discovery_time=datetime.datetime(
                     2015, 1, 2, 3, 6, 6, tzinfo=pytz.UTC
