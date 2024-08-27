@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Defines a view that shows all transfers to special circumstances supervision"""
+"""Defines a view that shows all transfers to administrative supervision"""
 
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.common.constants.states import StateCode
@@ -26,7 +26,7 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 _DESCRIPTION = (
-    """Defines a view that shows all transfers to special circumstances supervision"""
+    """Defines a view that shows all transfers to administrative supervision"""
 )
 
 _QUERY_TEMPLATE = """
@@ -35,13 +35,13 @@ SELECT
   person_id,
   start_date AS completion_event_date,
 FROM `{project_id}.{sessions_dataset}.supervision_level_raw_text_sessions_materialized`
-WHERE supervision_level_raw_text like '%SPC%' 
+WHERE supervision_level_raw_text like '%ADM%' 
     AND state_code = 'US_PA'
 """
 
 VIEW_BUILDER: StateSpecificTaskCompletionEventBigQueryViewBuilder = StateSpecificTaskCompletionEventBigQueryViewBuilder(
     state_code=StateCode.US_PA,
-    completion_event_type=TaskCompletionEventType.TRANSFER_TO_SPECIAL_CIRCUMSTANCES_SUPERVISION,
+    completion_event_type=TaskCompletionEventType.TRANSFER_TO_ADMINISTRATIVE_SUPERVISION,
     description=_DESCRIPTION,
     completion_event_query_template=_QUERY_TEMPLATE,
     sessions_dataset=dataset_config.SESSIONS_DATASET,

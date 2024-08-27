@@ -22,8 +22,8 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.candidate_populations.general import (
     probation_parole_dual_active_supervision_population,
 )
-from recidiviz.task_eligibility.completion_events.general import (
-    transfer_to_limited_supervision,
+from recidiviz.task_eligibility.completion_events.state_specific.us_pa import (
+    transfer_to_administrative_supervision,
 )
 from recidiviz.task_eligibility.criteria.general import (
     on_parole_at_least_one_year,
@@ -57,7 +57,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         fulfilled_requirements.VIEW_BUILDER,
         not_serving_ineligible_offense_for_admin_supervision.VIEW_BUILDER,
     ],
-    completion_event_builder=transfer_to_limited_supervision.VIEW_BUILDER,
+    completion_event_builder=transfer_to_administrative_supervision.VIEW_BUILDER,
     almost_eligible_condition=TimeDependentCriteriaCondition(
         criteria=on_parole_at_least_one_year.VIEW_BUILDER,
         reasons_date_field="minimum_time_served_date",
