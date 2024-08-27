@@ -8,7 +8,6 @@ input_columns:
   - SENTENCECOMPONENT
   - COMPSTATUSCODE
   - COMPSTATUSDATE
-  - SUPVTYPE
   - OFFENSEDATE
   - SENTENCEIMPOSEDDATE
   - PROBATIONTERMY
@@ -17,19 +16,19 @@ input_columns:
   - EXTENDEDTERMY
   - EXTENDEDTERMM
   - EXTENDEDTERMD
-  - FELONYMISDCLASS
   - SERIOUSNESSLEVEL
   - STATUTE1
   - STATUTE2
   - STATUTE3
   - STATUTE4
   - NUMBERCOUNTS
+  - FELONYMISDCLASS
+  - PAROLEEXPIRATION
+  - DATEPAROLED
   - SUPVPERIODBEGINDATE
-  - SUPVSTARTDATE
-  - SUPVTERMDATE
-  - LENGTHPAROLEYEAR
-  - LENGTHPAROLEMONTH
-  - LENGTHPAROLEDAY
+  - last_min_term_date
+  - parole_days
+  - SUPVTYPE
 unused_columns: []
 variables:
   - is_prob:
@@ -51,8 +50,6 @@ output:
                 - COMMITMENTPREFIX
                 - SENTENCECOMPONENT
                 - SUPVTYPE
-                - SUPVPERIODBEGINDATE
-                - SUPVSTARTDATE
           supervision_type:
             $enum_mapping:
               $raw_text: SUPVTYPE
@@ -83,9 +80,20 @@ output:
                   - "B" # Interstate Compact Returned
                   - "E" # Death
                   - "G" # Released on Probation
-          effective_date: SUPVSTARTDATE
+          effective_date:
+            $conditional:
+              - $if: $variable(is_prob)
+                $then: SUPVPERIODBEGINDATE
+              - $else_if:
+                  $not_null: DATEPAROLED
+                $then: DATEPAROLED
+              - $else: SUPVPERIODBEGINDATE
           date_imposed: SENTENCEIMPOSEDDATE
-          projected_completion_date: SUPVTERMDATE
+          projected_completion_date:
+            $conditional:
+              - $if: $variable(is_prob)
+                $then: last_min_term_date
+              - $else: PAROLEEXPIRATION
           completion_date:
             $conditional:
               - $if:
@@ -132,13 +140,7 @@ output:
                             years: EXTENDEDTERMY
                             months: EXTENDEDTERMM
                             days: EXTENDEDTERMD
-              - $else:
-                  $custom:
-                    $function: us_ar_custom_parsers.max_length_days_from_ymd
-                    $args:
-                      years: LENGTHPAROLEYEAR
-                      months: LENGTHPAROLEMONTH
-                      days: LENGTHPAROLEDAY
+              - $else: parole_days
           charges:
             - StateCharge:
                 external_id:
