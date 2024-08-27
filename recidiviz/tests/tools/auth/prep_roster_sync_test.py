@@ -213,6 +213,19 @@ class PrepRosterSyncTest(TestCase):
             created_datetime=datetime.fromisoformat("2023-01-01"),
         )
 
+        self.user_to_keep_unchanged = generate_fake_rosters(
+            email="user_to_keep_unchanged@testdomain.com",
+            region_code="US_XX",
+            external_id="1234",
+            role="supervision_staff",
+            roles=["supervision_staff"],
+            district="D12",
+            first_name="Test",
+            last_name="User",
+            pseudonymized_id="pseudo-1234",
+            created_datetime=datetime.fromisoformat("2023-01-01"),
+        )
+
         self.tn_d20_user = generate_fake_user_overrides(
             email="tn_d20_user@testdomain.com",
             region_code="US_TN",
@@ -266,6 +279,7 @@ class PrepRosterSyncTest(TestCase):
                 auth0_client=mock.ANY,
                 roster_sync_users=roster_sync_users,
                 state_code="US_XX",
+                emails_of_users_to_keep_unchanged=[],
             ),
             (expected_overrides, expected_deletions),
         )
@@ -311,6 +325,7 @@ class PrepRosterSyncTest(TestCase):
                 auth0_client=mock.ANY,
                 roster_sync_users=roster_sync_users,
                 state_code="US_XX",
+                emails_of_users_to_keep_unchanged=[],
             ),
             (expected_overrides, expected_deletions),
         )
@@ -372,6 +387,7 @@ class PrepRosterSyncTest(TestCase):
                 auth0_client=mock.ANY,
                 roster_sync_users=roster_sync_users,
                 state_code="US_XX",
+                emails_of_users_to_keep_unchanged=[],
             ),
             (expected_overrides, expected_deletions),
         )
@@ -379,7 +395,62 @@ class PrepRosterSyncTest(TestCase):
     @patch(
         "recidiviz.tools.auth.prep_roster_sync.get_recently_logged_in_users_by_email"
     )
-    def test_get_missing_users_one_roster_sync_one_login_one_recently_added(
+    def test_get_missing_users_unchanged_user(
+        self, mock_recent_users: MagicMock
+    ) -> None:
+        self.session.add_all(
+            [
+                self.user_to_delete_both_roster,
+                self.user_to_delete_both_uo,
+                self.user_to_delete_uo_only,
+                self.user_to_keep_unchanged,
+            ]
+        )
+
+        # Assuming roster sync returns nobody
+        roster_sync_users: list[Roster] = []
+
+        # And none of these users have logged in recently
+        mock_recent_users.return_value = []
+
+        # The user to keep unchanged should be kept
+        expected_overrides: list[dict] = [
+            {
+                "blocked": None,
+                "district": "D12",
+                "email_address": "user_to_keep_unchanged@testdomain.com",
+                "external_id": "1234",
+                "first_name": "Test",
+                "last_name": "User",
+                "pseudonymized_id": "pseudo-1234",
+                "role": "supervision_staff",
+                "roles": ["supervision_staff"],
+                "state_code": "US_XX",
+                "user_hash": "HDT8/pUJRRPlwYzN8Ds5PsZAV5//h1UzKb+lzBA9qVY=",
+            },
+        ]
+        expected_deletions = {
+            "user_to_delete_roster_and_uo@testdomain.com",
+            "user_to_delete_uo_only@testdomain.com",
+        }
+
+        self.assertEqual(
+            get_existing_users_missing_from_roster_sync(
+                session=self.session,
+                auth0_client=mock.ANY,
+                roster_sync_users=roster_sync_users,
+                state_code="US_XX",
+                emails_of_users_to_keep_unchanged=[
+                    "user_to_keep_unchanged@testdomain.com"
+                ],
+            ),
+            (expected_overrides, expected_deletions),
+        )
+
+    @patch(
+        "recidiviz.tools.auth.prep_roster_sync.get_recently_logged_in_users_by_email"
+    )
+    def test_get_missing_users_one_roster_sync_one_login_one_recently_added_one_unchanged(
         self, mock_recent_users: MagicMock
     ) -> None:
         self.session.add_all(
@@ -391,6 +462,7 @@ class PrepRosterSyncTest(TestCase):
                 self.recently_logged_in_user_roster,
                 self.recently_logged_in_user_uo,
                 self.recently_created_user,
+                self.user_to_keep_unchanged,
             ]
         )
 
@@ -407,7 +479,8 @@ class PrepRosterSyncTest(TestCase):
         # And one of our remaining users has logged in recently
         mock_recent_users.return_value = ["recently_logged_in_user@testdomain.com"]
 
-        # The recently logged in user should get an override, the other original user should be removed, and the recently added user should be ignored
+        # The recently logged in user and user to keep unchanged should get overrides, the other
+        # original user should be removed, and the recently added user should be ignored
         expected_overrides = [
             {
                 "blocked": False,
@@ -421,7 +494,20 @@ class PrepRosterSyncTest(TestCase):
                 "roles": ["SUPERVISION_LINE_STAFF", "custom_role"],
                 "state_code": "US_XX",
                 "user_hash": "On9z4tx1lZK9NfTUmCrAucJRuDsvNDZvT4JknYfHlUU=",
-            }
+            },
+            {
+                "blocked": None,
+                "district": "D12",
+                "email_address": "user_to_keep_unchanged@testdomain.com",
+                "external_id": "1234",
+                "first_name": "Test",
+                "last_name": "User",
+                "pseudonymized_id": "pseudo-1234",
+                "role": "supervision_staff",
+                "roles": ["supervision_staff"],
+                "state_code": "US_XX",
+                "user_hash": "HDT8/pUJRRPlwYzN8Ds5PsZAV5//h1UzKb+lzBA9qVY=",
+            },
         ]
         expected_deletions = {
             "user_to_delete_roster_and_uo@testdomain.com",
@@ -434,6 +520,9 @@ class PrepRosterSyncTest(TestCase):
                 auth0_client=mock.ANY,
                 roster_sync_users=roster_sync_users,
                 state_code="US_XX",
+                emails_of_users_to_keep_unchanged=[
+                    "user_to_keep_unchanged@testdomain.com"
+                ],
             ),
             (expected_overrides, expected_deletions),
         )
@@ -460,6 +549,7 @@ class PrepRosterSyncTest(TestCase):
                 auth0_client=mock.ANY,
                 roster_sync_users=roster_sync_users,
                 state_code="US_TN",
+                emails_of_users_to_keep_unchanged=[],
             ),
             (expected_overrides, expected_deletions),
         )
@@ -616,6 +706,7 @@ class PrepRosterSyncTest(TestCase):
                 self.user_with_equivalent_role,
                 self.user_with_different_role,
                 self.user_with_different_district,
+                self.user_to_keep_unchanged,
             ]
         )
         # the roster sync query returns "roles" as a string, so construct our test ones that way
@@ -653,8 +744,24 @@ class PrepRosterSyncTest(TestCase):
                 district="changed district",
                 first_name="changed name",
             ),
+            Roster(
+                email_address="user_to_keep_unchanged@testdomain.com",
+                state_code="US_XX",
+                role="UNKNOWN",
+                roles="UNKNOWN",
+            ),
         ]
-        self.snapshot.assert_match(find_and_handle_diffs(self.session, roster_sync_users, "US_XX"), name="test_find_and_handle_diffs")  # type: ignore[attr-defined]
+        self.snapshot.assert_match(  # type: ignore[attr-defined]
+            find_and_handle_diffs(
+                session=self.session,
+                roster_sync_users=roster_sync_users,
+                state_code="US_XX",
+                emails_of_users_to_keep_unchanged=[
+                    "user_to_keep_unchanged@testdomain.com"
+                ],
+            ),
+            name="test_find_and_handle_diffs",
+        )
 
     @patch("recidiviz.tools.auth.prep_roster_sync.prompt_for_confirmation")
     @patch("recidiviz.tools.auth.prep_roster_sync.get_roster_sync_output")
@@ -680,6 +787,7 @@ class PrepRosterSyncTest(TestCase):
                 self.user_with_different_role,
                 self.user_with_different_district,
                 self.user_with_multiple_diffs,
+                self.user_to_keep_unchanged,
             ]
         )
 
@@ -719,6 +827,13 @@ class PrepRosterSyncTest(TestCase):
                 district="changed district",
                 first_name="changed name",
             ),
+            Roster(
+                email_address="user_to_keep_unchanged@testdomain.com",
+                state_code="US_XX",
+                role="UNKNOWN",
+                roles="UNKNOWN",
+                district="changed district",
+            ),
         ]
         mock_roster_sync_output.return_value = roster_sync_users
 
@@ -729,6 +844,7 @@ class PrepRosterSyncTest(TestCase):
             session=self.session,
             dry_run=False,
             state_code="US_XX",
+            emails_of_users_to_keep_unchanged=["user_to_keep_unchanged@testdomain.com"],
             project_id=mock.ANY,
             sandbox_prefix=mock.ANY,
             bq_client=mock.ANY,
@@ -738,15 +854,16 @@ class PrepRosterSyncTest(TestCase):
         new_roster = self.session.execute(select(Roster)).scalars().all()
         new_overrides = self.session.execute(select(UserOverride)).scalars().all()
 
-        # We expect the user who will be synced, the user who was added recently, and the user who
-        # logged in recently to continue to exist as they were before.
-        # We also expect the users with diffs to have overrides.
+        # We expect the user who will be synced, the user who was added recently, the user who
+        # logged in recently, and the user we asked to keep unchanged to continue to exist as they
+        # were before. We also expect the users with diffs to have overrides.
         self.assertEqual(
             {user.email_address for user in new_overrides},
             {
                 "user_in_sync_query@testdomain.com",
                 "recently_created_user@testdomain.com",
                 "recently_logged_in_user@testdomain.com",
+                "user_to_keep_unchanged@testdomain.com",
                 "user_with_different_role@testdomain.com",
                 "user_with_equivalent_role@testdomain.com",
                 "user_with_different_district@testdomain.com",
@@ -793,6 +910,7 @@ class PrepRosterSyncTest(TestCase):
             sandbox_prefix=mock.ANY,
             bq_client=mock.ANY,
             auth0_client=mock.ANY,
+            emails_of_users_to_keep_unchanged=[],
         )
 
         new_roster = self.session.execute(select(Roster)).scalars().all()
@@ -823,6 +941,7 @@ class PrepRosterSyncTest(TestCase):
                 self.user_with_different_role,
                 self.user_with_different_district,
                 self.user_with_multiple_diffs,
+                self.user_to_keep_unchanged,
             ]
         )
 
@@ -860,6 +979,7 @@ class PrepRosterSyncTest(TestCase):
             session=self.session,
             dry_run=True,
             state_code="US_XX",
+            emails_of_users_to_keep_unchanged=["user_to_keep_unchanged@testdomain.com"],
             project_id=mock.ANY,
             sandbox_prefix=mock.ANY,
             bq_client=mock.ANY,
@@ -897,6 +1017,7 @@ class PrepRosterSyncTest(TestCase):
                 self.user_with_different_role,
                 self.user_with_different_district,
                 self.user_with_multiple_diffs,
+                self.user_to_keep_unchanged,
             ]
         )
 
@@ -938,6 +1059,7 @@ class PrepRosterSyncTest(TestCase):
             sandbox_prefix=mock.ANY,
             bq_client=mock.ANY,
             auth0_client=mock.ANY,
+            emails_of_users_to_keep_unchanged=["user_to_keep_unchanged@testdomain.com"],
         )
 
         new_roster = self.session.execute(select(Roster)).scalars().all()
