@@ -16,6 +16,7 @@
 # =============================================================================
 """Prototype endpoints."""
 import re
+from copy import deepcopy
 from http import HTTPStatus
 from typing import Optional, Union
 
@@ -28,6 +29,9 @@ from recidiviz.prototypes.case_note_search.case_note_authorization import (
     on_successful_authorization,
 )
 from recidiviz.prototypes.case_note_search.case_note_search import case_note_search
+from recidiviz.prototypes.case_note_search.case_note_search_record import (
+    record_case_note_search,
+)
 from recidiviz.prototypes.case_note_search.exact_match import STATE_CODE_CONVERTER
 
 ALLOWED_ORIGINS = [
@@ -154,4 +158,22 @@ async def search_case_notes() -> Response:
         with_snippet=with_snippet,
         filter_conditions=filter_conditions,
     )
+
+    # Record the query and results in the case note records table.
+    try:
+        await record_case_note_search(
+            user_external_id=user_id,
+            client_external_id=external_id,
+            state_code=state_code,
+            query=query,
+            page_size=page_size,
+            filter_conditions=filter_conditions,
+            with_snippet=with_snippet,
+            results=deepcopy(case_note_response),
+        )
+    except Exception as e:
+        response = jsonify({"error": str(e)})
+        response.status_code = 500
+        return response
+
     return jsonify(case_note_response)
