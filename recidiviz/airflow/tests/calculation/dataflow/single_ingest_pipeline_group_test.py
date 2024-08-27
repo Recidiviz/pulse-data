@@ -228,6 +228,7 @@ class TestSingleIngestPipelineGroupIntegration(AirflowIntegrationTest):
                     r"us_xx_dataflow\.us-xx-ingest.*",
                     r".*write_ingest_job_completion",
                     r".*write_upper_bounds",
+                    r"\.us-xx-normalization\.",
                     _DOWNSTREAM_TASK_ID,
                 ],
             )
@@ -236,7 +237,7 @@ class TestSingleIngestPipelineGroupIntegration(AirflowIntegrationTest):
     @patch(
         "recidiviz.airflow.dags.calculation.dataflow.single_ingest_pipeline_group._check_for_valid_watermarks"
     )
-    def test_initialize_dataflow_pipeline_fails_when_watermark_datetime_greater_than_max_update_datetime(
+    def test_initialize_ingest_pipeline_fails_when_watermark_datetime_greater_than_max_update_datetime(
         self,
         mock_check_for_valid_watermarks: MagicMock,
     ) -> None:
@@ -259,6 +260,7 @@ class TestSingleIngestPipelineGroupIntegration(AirflowIntegrationTest):
                     r"us_xx_dataflow\.us-xx-ingest.*",
                     r".*write_ingest_job_completion",
                     r".*write_upper_bounds",
+                    r"\.us-xx-normalization\.",
                     _DOWNSTREAM_TASK_ID,
                 ],
             )
@@ -287,6 +289,7 @@ class TestSingleIngestPipelineGroupIntegration(AirflowIntegrationTest):
                     r"us_xx_dataflow\.us-xx-ingest.*",
                     r".*write_ingest_job_completion",
                     r".*write_upper_bounds",
+                    r"\.us-xx-normalization\.",
                     _DOWNSTREAM_TASK_ID,
                 ],
             )
@@ -295,7 +298,7 @@ class TestSingleIngestPipelineGroupIntegration(AirflowIntegrationTest):
     @patch(
         "recidiviz.airflow.dags.calculation.dataflow.single_ingest_pipeline_group._check_for_valid_watermarks"
     )
-    def test_initialize_dataflow_pipeline_when_watermark_datetime_less_than_max_update_datetime(
+    def test_initialize_ingest_pipeline_when_watermark_datetime_less_than_max_update_datetime(
         self,
         mock_check_for_valid_watermarks: MagicMock,
     ) -> None:
@@ -328,6 +331,7 @@ class TestSingleIngestPipelineGroupIntegration(AirflowIntegrationTest):
                     r"us_xx_dataflow\.us-xx-ingest\.run_pipeline",
                     r".*write_ingest_job_completion",
                     r".*write_upper_bounds",
+                    r"\.us-xx-normalization\.",
                     _DOWNSTREAM_TASK_ID,
                 ],
             )

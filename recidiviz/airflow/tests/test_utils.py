@@ -260,9 +260,11 @@ class AirflowIntegrationTest(unittest.TestCase):
                 | expected_success_task_ids
             )
             if unmatched_task_ids:
+                task_ids_str = "\n".join(
+                    f" * {task_id}" for task_id in sorted(unmatched_task_ids)
+                )
                 raise ValueError(
-                    f"Found task IDs not covered by this test: "
-                    f"{','.join(unmatched_task_ids)}"
+                    f"Found task IDs not covered by this test: \n{task_ids_str}"
                 )
 
         status_errors: List[Exception] = []

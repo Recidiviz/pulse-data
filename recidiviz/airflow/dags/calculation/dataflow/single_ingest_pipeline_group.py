@@ -27,6 +27,9 @@ from airflow.utils.task_group import TaskGroup
 from recidiviz.airflow.dags.calculation.dataflow.ingest_pipeline_task_group_delegate import (
     IngestDataflowPipelineTaskGroupDelegate,
 )
+from recidiviz.airflow.dags.calculation.dataflow.normalization_pipeline_task_group_delegate import (
+    NormalizationDataflowPipelineTaskGroupDelegate,
+)
 from recidiviz.airflow.dags.calculation.ingest.add_ingest_job_completion_sql_query_generator import (
     AddIngestJobCompletionSqlQueryGenerator,
 )
@@ -134,16 +137,17 @@ def _verify_raw_data_flashing_not_in_progress(
     )
 
 
-def _initialize_dataflow_pipeline(
+def _initialize_ingest_pipeline(
     state_code: StateCode,
     operations_cloud_sql_conn_id: str,
 ) -> Tuple[TaskGroup, CloudSqlQueryOperator]:
     """
-    Initializes the dataflow pipeline by getting the max update datetimes and watermarks and checking if the pipeline should run.
-    Returns the task group and the get_max_update_datetimes task for use in downstream tasks.
+    Initializes the dataflow pipeline by getting the max update datetimes and watermarks
+    and checking if the pipeline should run. Returns the task group and the
+    get_max_update_datetimes task for use in downstream tasks.
     """
 
-    with TaskGroup("initialize_dataflow_pipeline") as initialize_dataflow_pipeline:
+    with TaskGroup("initialize_ingest_pipeline") as initialize_ingest_pipeline:
         check_ingest_pipeline_should_run_in_dag = (
             handle_ingest_pipeline_should_run_in_dag_check(
                 _ingest_pipeline_should_run_in_dag(state_code).output
@@ -178,12 +182,12 @@ def _initialize_dataflow_pipeline(
             >> _verify_raw_data_flashing_not_in_progress(state_code)
         )
 
-    return initialize_dataflow_pipeline, get_max_update_datetimes
+    return initialize_ingest_pipeline, get_max_update_datetimes
 
 
 def create_single_ingest_pipeline_group(state_code: StateCode) -> TaskGroup:
     """
-    Creates a dataflow pipeline operator for the given state.
+    Creates a group that runs ingest and normalization logic for the given state.
     """
 
     operations_cloud_sql_conn_id = cloud_sql_conn_id_for_schema_type(
@@ -192,9 +196,9 @@ def create_single_ingest_pipeline_group(state_code: StateCode) -> TaskGroup:
 
     with TaskGroup(f"{state_code.value.lower()}_dataflow") as dataflow:
         (
-            initialize_dataflow_pipeline,
+            initialize_ingest_pipeline,
             get_max_update_datetimes,
-        ) = _initialize_dataflow_pipeline(state_code, operations_cloud_sql_conn_id)
+        ) = _initialize_ingest_pipeline(state_code, operations_cloud_sql_conn_id)
 
         dataflow_pipeline_group, run_pipeline = build_dataflow_pipeline_task_group(
             delegate=IngestDataflowPipelineTaskGroupDelegate(
@@ -222,11 +226,18 @@ def create_single_ingest_pipeline_group(state_code: StateCode) -> TaskGroup:
             ),
         )
 
+        normalization_pipeline_group = build_dataflow_pipeline_task_group(
+            delegate=NormalizationDataflowPipelineTaskGroupDelegate(
+                state_code=state_code
+            ),
+        )
+
         (
-            initialize_dataflow_pipeline
+            initialize_ingest_pipeline
             >> dataflow_pipeline_group
             >> write_ingest_job_completion
             >> write_upper_bounds
+            >> normalization_pipeline_group
         )
 
     return dataflow
