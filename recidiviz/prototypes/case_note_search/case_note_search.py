@@ -31,12 +31,7 @@ from google.cloud.discoveryengine_v1.services.search_service.pagers import Searc
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.tools.prototypes.discovery_engine import DiscoveryEngineInterface
 from recidiviz.tools.prototypes.gcs_bucket_reader import GCSBucketReader
-from recidiviz.utils.environment import (
-    GCP_PROJECT_PRODUCTION,
-    GCP_PROJECT_STAGING,
-    get_gcp_environment,
-    in_development,
-)
+from recidiviz.utils.environment import GCP_PROJECT_STAGING
 
 IDAHO_CASE_NOTES_ENGINE_ID = "id-case-notes-new_1717011992933"
 FAKE_CASE_NOTES_ENGINE_ID = "fake-case-note-search_1723492600856"
@@ -210,12 +205,9 @@ def case_note_search(
 
         In the error case, the response is {"results": [], "error": <error_description>}.
     """
-    # Use real case notes for local development and production development. Otherwise
-    # use fake data.
-    if in_development() or get_gcp_environment() == GCP_PROJECT_PRODUCTION:
-        engine_id = CASE_NOTE_SEARCH_ENGINE_ID
-    else:
-        engine_id = FAKE_CASE_NOTES_ENGINE_ID
+
+    # Use real case notes for local development, staging, and production development.
+    engine_id = CASE_NOTE_SEARCH_ENGINE_ID
 
     # Explicitly disable snippets if running the engine on structured data, since
     # snippets, extractive answers, and summaries are disabled for structed data stores.
