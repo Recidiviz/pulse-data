@@ -384,7 +384,7 @@ joined AS (
           ELSE dbo_Parolee_levels.supervision_level
           END AS supervision_level,
       COALESCE(dbo_RelAgentHistory.district_office, parole_ends.district_office, dbo_ReleaseInfo_other.district_office) AS district_office,
-      supervising_officer_id,
+      NULLIF(supervising_officer_id, 'VACANT') as supervising_officer_id,
       district_sub_office_id,
       supervision_location_org_code,
       condition_codes,
