@@ -72,7 +72,10 @@ snapshots["PrepRosterSyncTest.PrepRosterSyncTest test_find_and_handle_diffs"] = 
 snapshots["PrepRosterSyncTest.PrepRosterSyncTest test_full_roster"] = [
     GenericRepr(
         "Roster(state_code=US_XX, email_address=recently_logged_in_user@testdomain.com, external_id=123, roles=['SUPERVISION_LINE_STAFF'], district=D1, first_name=Test, last_name=User)"
-    )
+    ),
+    GenericRepr(
+        "Roster(state_code=US_XX, email_address=user_to_keep_unchanged@testdomain.com, external_id=1234, roles=['supervision_staff'], district=D12, first_name=Test, last_name=User)"
+    ),
 ]
 
 snapshots["PrepRosterSyncTest.PrepRosterSyncTest test_full_user_override"] = [
@@ -81,6 +84,9 @@ snapshots["PrepRosterSyncTest.PrepRosterSyncTest test_full_user_override"] = [
     ),
     GenericRepr(
         "UserOverride(state_code=US_XX, email_address=recently_logged_in_user@testdomain.com, external_id=123, roles=['SUPERVISION_LINE_STAFF', 'custom_role'], district=D2, first_name=Test, last_name=User, blocked=False)"
+    ),
+    GenericRepr(
+        "UserOverride(state_code=US_XX, email_address=user_to_keep_unchanged@testdomain.com, external_id=1234, roles=['supervision_staff'], district=D12, first_name=Test, last_name=User, blocked=None)"
     ),
     GenericRepr(
         "UserOverride(state_code=US_XX, email_address=user_with_multiple_diffs@testdomain.com, external_id=012, roles=['SUPERVISION_LINE_STAFF'], district=changed district, first_name=changed name, last_name=User, blocked=False)"

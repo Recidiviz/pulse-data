@@ -54,6 +54,7 @@ from recidiviz.tools.postgres.cloudsql_proxy_control import cloudsql_proxy_contr
 from recidiviz.tools.utils.script_helpers import prompt_for_confirmation
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
+from recidiviz.utils.params import str_to_list
 
 _RECENTLY_LOGGED_IN_TIMEDELTA = relativedelta(years=1)
 _RECENTLY_ADDED_TO_ROSTER_TIMEDETLA = relativedelta(months=3)
@@ -116,11 +117,15 @@ def get_existing_users_missing_from_roster_sync(
     auth0_client: Auth0Client,
     roster_sync_users: list[Roster],
     state_code: str,
+    emails_of_users_to_keep_unchanged: list[str],
 ) -> tuple[list[dict], set[str]]:
-    """If a user has logged in within the last year but is not in the roster sync query, add
-    them to UserOverride with their current Roster+UserOverride merged data so that they still
-    appear in the admin panel once roster sync is turned on (since they won't appear in the Roster
-    table then)."""
+    """If a user either:
+      1. has logged in within the last year
+      2. was added to the product roster recently
+      3. is explicitly being kept unchanged
+    and is not in the roster sync query, add them to UserOverride with their current
+    Roster+UserOverride merged data so that they still appear in the admin panel once roster sync is
+    turned on (since they won't appear in the Roster table then)."""
     roster_users = (
         session.execute(
             select(Roster).filter(
@@ -166,6 +171,13 @@ def get_existing_users_missing_from_roster_sync(
         )
     )
 
+    # Also add overrides for users we explicitly asked to keep unchanged. Even though these users
+    # might not be missing from the roster sync query, piggyback on the logic to add UserOverrides
+    # for users we want to keep exactly as they currently are.
+    users_to_keep_overrides_for = missing_users_who_logged_in_in_last_year.union(
+        emails_of_users_to_keep_unchanged
+    )
+
     # Also keep ones who were added to the roster in the last 3 months in case they just haven't had
     # an opportunity to log in yet. Since non-roster-sync users are only added to UserOverride now,
     # we don't need to query Roster for these users, and we also don't need to add them back to
@@ -181,17 +193,19 @@ def get_existing_users_missing_from_roster_sync(
     users_to_add_to_user_override_results = session.execute(
         _EXISTING_USER_QUERY.filter(
             func.coalesce(UserOverride.email_address, Roster.email_address).in_(
-                missing_users_who_logged_in_in_last_year
+                users_to_keep_overrides_for
             )
         )
     ).all()
 
-    # Keep users who logged in in the last year and ones who were added to our user mgmt recently,
-    # and delete the rest of the users who don't show up in roster sync.
+    # Keep users who logged in in the last year, ones who were added to our user mgmt recently,
+    # and ones who we explicitly asked to remain unchanged. Delete the rest of the users who don't
+    # show up in roster sync.
     users_who_will_be_deleted = (
         existing_emails_missing_from_roster_sync
         - missing_users_who_logged_in_in_last_year
         - existing_recently_added_users
+        - set(emails_of_users_to_keep_unchanged)
     )
 
     return (
@@ -267,7 +281,10 @@ def find_and_handle_diffs_single_user(
 
 
 def find_and_handle_diffs(
-    session: Session, roster_sync_users: list[Roster], state_code: str
+    session: Session,
+    roster_sync_users: list[Roster],
+    state_code: str,
+    emails_of_users_to_keep_unchanged: list[str],
 ) -> list[tuple[UserOverride, dict]]:
     """Look for users with diffs between the roster sync output and the existing roster data, and
     return a tuple(current data, user override to add) for each one.
@@ -286,6 +303,11 @@ def find_and_handle_diffs(
         if user.email_address not in roster_sync_user_by_email:
             # Existing users missing from the synced roster are handled in get_missing_users(), so
             # we can ignore them here
+            continue
+        if user.email_address in emails_of_users_to_keep_unchanged:
+            # Users who we've explicitly asked to keep unchanged are also handled in
+            # get_missing_users() because they need a UserOverride in the same way users who logged
+            # in recently do, so we can also ignore them here.
             continue
         override_to_add = find_and_handle_diffs_single_user(
             user, roster_sync_user_by_email[user.email_address]
@@ -324,6 +346,7 @@ def prepare_for_roster_sync(
     project_id: str,
     state_code: str,
     sandbox_prefix: str,
+    emails_of_users_to_keep_unchanged: list[str],
     bq_client: BigQueryClient,
     auth0_client: Auth0Client,
 ) -> None:
@@ -349,19 +372,25 @@ def prepare_for_roster_sync(
         users_missing_from_roster_sync_who_should_remain,
         users_who_will_be_deleted,
     ) = get_existing_users_missing_from_roster_sync(
-        session, auth0_client, roster_sync_users, state_code
+        session,
+        auth0_client,
+        roster_sync_users,
+        state_code,
+        emails_of_users_to_keep_unchanged,
     )
 
     # Handle users who have entries in roster sync and the existing roster tables that differ
-    users_with_diffs = find_and_handle_diffs(session, roster_sync_users, state_code)
+    users_with_diffs = find_and_handle_diffs(
+        session, roster_sync_users, state_code, emails_of_users_to_keep_unchanged
+    )
 
     logging.info(
-        """\n\n✂️ Deleting the following users:\n%s
-        \n\n🛟 Adding missing users to UserOverride:\n%s
-        \n\n🛼 Updating roles in UserOverride for the following users:\n%s
-        \n\n📛 Updating name in UserOverride for the following users:\n%s
-        \n\n🗺️ Updating district in UserOverride for the following users:\n%s
-        \n\n🪪 Updating external IDs in UserOverride for the following users:\n%s
+        """\n\n✂️ Deleting the following users who have not logged on in 1+ year and were not recently added to the roster:\n%s
+        \n\n🛟 Keeping the following users who do not appear in the roster sync query:\n%s
+        \n\n🛼 Updating roles for the following users:\n%s
+        \n\n📛 Updating name for the following users:\n%s
+        \n\n🗺️ Updating district for the following users:\n%s
+        \n\n🪪 Updating external IDs for the following users:\n%s
         """,
         "\n".join(users_who_will_be_deleted),
         "\n".join(
@@ -433,7 +462,7 @@ def prepare_for_roster_sync(
 
 
 def parse_arguments(argv: list[str]) -> tuple[argparse.Namespace, list[str]]:
-    """Parses the arguments needed to call the cleanup_user_overrides function."""
+    """Parses the arguments needed to call the prepare_for_roster_sync function."""
     parser = argparse.ArgumentParser()
 
     parser.add_argument(
@@ -454,6 +483,16 @@ def parse_arguments(argv: list[str]) -> tuple[argparse.Namespace, list[str]]:
         "--sandbox_prefix",
         type=str,
         required=True,
+    )
+
+    parser.add_argument(
+        "--emails_of_users_to_keep_unchanged",
+        help="Comma-separated list of user email addresses to keep in the product roster exactly "
+        "as they currently are regardless of whether this script says they should be deleted or "
+        "modified",
+        type=str_to_list,
+        required=False,
+        default=[],
     )
 
     parser.add_argument("--dry_run", dest="dry_run", action="store_true")
@@ -479,6 +518,7 @@ if __name__ == "__main__":
             project_id=known_args.project_id,
             state_code=known_args.state_code.value,
             sandbox_prefix=known_args.sandbox_prefix,
+            emails_of_users_to_keep_unchanged=known_args.emails_of_users_to_keep_unchanged,
             bq_client=BigQueryClientImpl(),
             auth0_client=Auth0Client(),
         )
