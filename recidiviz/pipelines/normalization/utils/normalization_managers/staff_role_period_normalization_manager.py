@@ -24,8 +24,14 @@ from recidiviz.persistence.entity.normalized_entities_utils import (
     AdditionalAttributesMap,
 )
 from recidiviz.persistence.entity.state.entities import StateStaffRolePeriod
+from recidiviz.persistence.entity.state.normalized_entities import (
+    NormalizedStateStaffRolePeriod,
+)
 from recidiviz.pipelines.normalization.utils.normalization_managers.entity_normalization_manager import (
     EntityNormalizationManager,
+)
+from recidiviz.pipelines.normalization.utils.normalized_entity_conversion_utils import (
+    convert_entity_trees_to_normalized_versions,
 )
 from recidiviz.pipelines.utils.state_utils.state_specific_delegate import (
     StateSpecificDelegate,
@@ -57,6 +63,19 @@ class StaffRolePeriodNormalizationManager(EntityNormalizationManager):
         self._normalized_staff_role_periods_and_additional_attributes: Optional[
             Tuple[List[StateStaffRolePeriod], AdditionalAttributesMap]
         ] = None
+
+    def get_normalized_role_periods(
+        self,
+    ) -> list[NormalizedStateStaffRolePeriod]:
+        (
+            processed_staff_role_periods,
+            additional_staff_role_period_attributes,
+        ) = self.normalized_staff_role_periods_and_additional_attributes()
+        return convert_entity_trees_to_normalized_versions(
+            processed_staff_role_periods,
+            NormalizedStateStaffRolePeriod,
+            additional_staff_role_period_attributes,
+        )
 
     def normalized_staff_role_periods_and_additional_attributes(
         self,

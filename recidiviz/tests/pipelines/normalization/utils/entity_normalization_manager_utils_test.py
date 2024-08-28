@@ -47,13 +47,9 @@ from recidiviz.persistence.entity.state.entities import (
 from recidiviz.pipelines.normalization.utils import entity_normalization_manager_utils
 from recidiviz.pipelines.normalization.utils.entity_normalization_manager_utils import (
     normalized_periods_for_calculations,
-    normalized_violation_responses_from_processed_versions,
 )
 from recidiviz.pipelines.normalization.utils.normalization_managers.entity_normalization_manager import (
     EntityNormalizationManager,
-)
-from recidiviz.pipelines.normalization.utils.normalization_managers.supervision_violation_responses_normalization_manager import (
-    ViolationResponseNormalizationManager,
 )
 from recidiviz.pipelines.utils.execution_utils import (
     build_staff_external_id_to_staff_id_map,
@@ -63,13 +59,6 @@ from recidiviz.pipelines.utils.state_utils.templates.us_xx.us_xx_incarceration_p
 )
 from recidiviz.pipelines.utils.state_utils.templates.us_xx.us_xx_supervision_period_normalization_delegate import (
     UsXxSupervisionNormalizationDelegate,
-)
-from recidiviz.pipelines.utils.state_utils.templates.us_xx.us_xx_violation_response_normalization_delegate import (
-    UsXxViolationResponseNormalizationDelegate,
-)
-from recidiviz.tests.persistence.entity.normalized_entities_utils_test import (
-    get_normalized_violation_tree,
-    get_violation_tree,
 )
 
 STATE_PERSON_TO_STATE_STAFF_LIST = [
@@ -305,120 +294,3 @@ class TestNormalizedPeriodsForCalculations(unittest.TestCase):
                 )
 
             self.assertEqual(normalized_entities, all_entities_in_subtree)
-
-
-class TestNormalizedViolationResponsesFromProcessedVersions(unittest.TestCase):
-    """Tests the normalized_violation_responses_from_processed_versions function."""
-
-    def setUp(self) -> None:
-        self.delegate = UsXxViolationResponseNormalizationDelegate()
-
-    def test_normalized_violation_responses_from_processed_versions(self) -> None:
-        violation = get_violation_tree()
-
-        violation_responses = violation.supervision_violation_responses
-
-        normalization_manager = ViolationResponseNormalizationManager(
-            person_id=123,
-            violation_responses=violation_responses,
-            delegate=self.delegate,
-            staff_external_id_to_staff_id=build_staff_external_id_to_staff_id_map(
-                STATE_PERSON_TO_STATE_STAFF_LIST
-            ),
-        )
-
-        (
-            processed_violation_responses,
-            additional_attributes,
-        ) = normalization_manager.normalized_violation_responses_for_calculations()
-
-        normalized_responses = normalized_violation_responses_from_processed_versions(
-            processed_violation_responses=processed_violation_responses,
-            additional_vr_attributes=additional_attributes,
-        )
-
-        expected_responses = (
-            get_normalized_violation_tree().supervision_violation_responses
-        )
-
-        self.assertEqual(expected_responses, normalized_responses)
-
-    def test_normalized_violation_responses_from_processed_versions_multiple_violations(
-        self,
-    ) -> None:
-        violation_1 = get_violation_tree(starting_id_value=123)
-        violation_2 = get_violation_tree(starting_id_value=456)
-
-        violation_responses = (
-            violation_1.supervision_violation_responses
-            + violation_2.supervision_violation_responses
-        )
-
-        normalization_manager = ViolationResponseNormalizationManager(
-            person_id=123,
-            violation_responses=violation_responses,
-            delegate=self.delegate,
-            staff_external_id_to_staff_id=build_staff_external_id_to_staff_id_map(
-                STATE_PERSON_TO_STATE_STAFF_LIST
-            ),
-        )
-
-        (
-            processed_violation_responses,
-            additional_attributes,
-        ) = normalization_manager.normalized_violation_responses_for_calculations()
-
-        normalized_responses = normalized_violation_responses_from_processed_versions(
-            processed_violation_responses=processed_violation_responses,
-            additional_vr_attributes=additional_attributes,
-        )
-
-        expected_violation_1 = get_normalized_violation_tree(starting_id_value=123)
-        expected_violation_2 = get_normalized_violation_tree(starting_id_value=456)
-
-        # Normalization sorts violation responses in this order
-        expected_violation_1.supervision_violation_responses[0].sequence_num = 0  # type: ignore[attr-defined]
-        expected_violation_2.supervision_violation_responses[0].sequence_num = 1  # type: ignore[attr-defined]
-        expected_violation_1.supervision_violation_responses[1].sequence_num = 2  # type: ignore[attr-defined]
-        expected_violation_2.supervision_violation_responses[1].sequence_num = 3  # type: ignore[attr-defined]
-
-        expected_responses = (
-            expected_violation_1.supervision_violation_responses
-            + expected_violation_2.supervision_violation_responses
-        )
-
-        self.assertEqual(expected_responses, normalized_responses)
-
-    def test_normalized_violation_responses_from_processed_versions_no_violation(
-        self,
-    ) -> None:
-        violation = get_violation_tree()
-
-        violation_responses = violation.supervision_violation_responses
-        for vr in violation_responses:
-            vr.supervision_violation = None
-
-        normalization_manager = ViolationResponseNormalizationManager(
-            person_id=123,
-            violation_responses=violation_responses,
-            delegate=self.delegate,
-            staff_external_id_to_staff_id=build_staff_external_id_to_staff_id_map(
-                STATE_PERSON_TO_STATE_STAFF_LIST
-            ),
-        )
-
-        additional_attributes = (
-            normalization_manager.additional_attributes_map_for_normalized_vrs(
-                violation_responses=violation_responses
-            )
-        )
-
-        with self.assertRaises(ValueError) as e:
-            _ = normalized_violation_responses_from_processed_versions(
-                processed_violation_responses=violation_responses,
-                additional_vr_attributes=additional_attributes,
-            )
-
-        self.assertTrue(
-            "Found empty supervision_violation on response" in e.exception.args[0]
-        )

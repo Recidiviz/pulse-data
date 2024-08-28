@@ -40,8 +40,14 @@ from recidiviz.persistence.entity.state.entities import (
     StateSupervisionCaseTypeEntry,
     StateSupervisionPeriod,
 )
+from recidiviz.persistence.entity.state.normalized_entities import (
+    NormalizedStateSupervisionPeriod,
+)
 from recidiviz.pipelines.normalization.utils.normalization_managers.entity_normalization_manager import (
     EntityNormalizationManager,
+)
+from recidiviz.pipelines.normalization.utils.normalized_entity_conversion_utils import (
+    convert_entity_trees_to_normalized_versions,
 )
 from recidiviz.pipelines.utils.state_utils.state_specific_delegate import (
     StateSpecificDelegate,
@@ -168,6 +174,17 @@ class SupervisionPeriodNormalizationManager(EntityNormalizationManager):
     @staticmethod
     def normalized_entity_classes() -> List[Type[Entity]]:
         return [StateSupervisionPeriod, StateSupervisionCaseTypeEntry]
+
+    def get_normalized_supervision_periods(
+        self,
+    ) -> list[NormalizedStateSupervisionPeriod]:
+        (
+            processed_sps,
+            additional_attributes,
+        ) = self.normalized_supervision_periods_and_additional_attributes()
+        return convert_entity_trees_to_normalized_versions(
+            processed_sps, NormalizedStateSupervisionPeriod, additional_attributes
+        )
 
     def normalized_supervision_periods_and_additional_attributes(
         self,

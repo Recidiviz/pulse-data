@@ -103,9 +103,6 @@ def convert_entity_trees_to_normalized_versions(
     if not root_entities:
         return converted_entities
 
-    if not additional_attributes_map:
-        raise ValueError("Found empty additional_attributes_map.")
-
     normalized_entities_by_id: Dict[
         NormalizedEntityKey, NormalizedStateEntity
     ] = defaultdict()

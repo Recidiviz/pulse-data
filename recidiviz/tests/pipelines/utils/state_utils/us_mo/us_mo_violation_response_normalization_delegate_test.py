@@ -50,9 +50,11 @@ from recidiviz.pipelines.utils.state_utils.us_mo.us_mo_violation_response_normal
 from recidiviz.pipelines.utils.state_utils.us_mo.us_mo_violations_delegate import (
     LAW_CITATION_SUBTYPE_STR,
 )
+from recidiviz.tests.persistence.entity.state.entities_test_utils import (
+    hydrate_bidirectional_relationships_on_expected_response,
+)
 from recidiviz.tests.pipelines.normalization.utils.normalization_managers.supervision_violation_responses_normalization_manager_test import (
     STATE_PERSON_TO_STATE_STAFF_LIST,
-    hydrate_bidirectional_relationships_on_expected_response,
 )
 
 

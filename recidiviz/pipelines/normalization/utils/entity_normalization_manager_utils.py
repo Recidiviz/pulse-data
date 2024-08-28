@@ -24,12 +24,9 @@ from recidiviz.persistence.entity.normalized_entities_utils import (
 from recidiviz.persistence.entity.state.entities import (
     StateIncarcerationPeriod,
     StateSupervisionPeriod,
-    StateSupervisionViolation,
-    StateSupervisionViolationResponse,
 )
 from recidiviz.persistence.entity.state.normalized_entities import (
     NormalizedStateSupervisionPeriod,
-    NormalizedStateSupervisionViolation,
     NormalizedStateSupervisionViolationResponse,
 )
 from recidiviz.pipelines.normalization.utils.normalization_managers.assessment_normalization_manager import (
@@ -161,57 +158,3 @@ def normalized_periods_for_calculations(
         (processed_ips, additional_ip_attributes),
         (processed_sps, additional_sp_attributes),
     )
-
-
-def normalized_violation_responses_from_processed_versions(
-    processed_violation_responses: List[StateSupervisionViolationResponse],
-    additional_vr_attributes: AdditionalAttributesMap,
-) -> List[NormalizedStateSupervisionViolationResponse]:
-    """Converts the entity trees connected to the |processed_violation_responses|
-    into their Normalized versions.
-
-    First, identifies the list of distinct StateSupervisionViolations in the list of
-    StateSupervisionViolationResponse entity trees. Then, converts those distinct
-    entity trees to the Normalized versions. Finally, assembles and returns the list of
-    distinct NormalizedStateSupervisionViolationResponses.
-    """
-    distinct_processed_violations: List[StateSupervisionViolation] = []
-
-    # We must convert the entity tree from the StateSupervisionViolation roots,
-    # otherwise we will drop the StateSupervisionViolations that are attached to the
-    # responses.
-    for response in processed_violation_responses:
-        if not response.supervision_violation:
-            raise ValueError(
-                "Found empty supervision_violation on response: " f"{response}."
-            )
-
-        if response.supervision_violation not in distinct_processed_violations:
-            distinct_processed_violations.append(response.supervision_violation)
-
-    normalized_violations = convert_entity_trees_to_normalized_versions(
-        root_entities=distinct_processed_violations,
-        normalized_entity_class=NormalizedStateSupervisionViolation,
-        additional_attributes_map=additional_vr_attributes,
-    )
-
-    distinct_normalized_violation_responses: List[
-        NormalizedStateSupervisionViolationResponse
-    ] = []
-
-    for normalized_violation in normalized_violations:
-        for normalized_response in normalized_violation.supervision_violation_responses:
-            if not isinstance(
-                normalized_response, NormalizedStateSupervisionViolationResponse
-            ):
-                raise ValueError(
-                    "Found supervision_violation_responses entry that is "
-                    "not of type "
-                    "NormalizedStateSupervisionViolationResponse. Type "
-                    f"is: {type(normalized_response)}."
-                )
-
-            if normalized_response not in distinct_normalized_violation_responses:
-                distinct_normalized_violation_responses.append(normalized_response)
-
-    return distinct_normalized_violation_responses

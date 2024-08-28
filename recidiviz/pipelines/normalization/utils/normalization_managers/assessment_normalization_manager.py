@@ -29,8 +29,14 @@ from recidiviz.persistence.entity.normalized_entities_utils import (
     merge_additional_attributes_maps,
 )
 from recidiviz.persistence.entity.state.entities import StateAssessment
+from recidiviz.persistence.entity.state.normalized_entities import (
+    NormalizedStateAssessment,
+)
 from recidiviz.pipelines.normalization.utils.normalization_managers.entity_normalization_manager import (
     EntityNormalizationManager,
+)
+from recidiviz.pipelines.normalization.utils.normalized_entity_conversion_utils import (
+    convert_entity_trees_to_normalized_versions,
 )
 from recidiviz.pipelines.utils.state_utils.state_specific_delegate import (
     StateSpecificDelegate,
@@ -83,6 +89,15 @@ class AssessmentNormalizationManager(EntityNormalizationManager):
     @staticmethod
     def normalized_entity_classes() -> List[Type[Entity]]:
         return [StateAssessment]
+
+    def get_normalized_assessments(self) -> list[NormalizedStateAssessment]:
+        (
+            processed_assessments,
+            additional_attributes,
+        ) = self.normalized_assessments_and_additional_attributes()
+        return convert_entity_trees_to_normalized_versions(
+            processed_assessments, NormalizedStateAssessment, additional_attributes
+        )
 
     def normalized_assessments_and_additional_attributes(
         self,

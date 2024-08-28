@@ -66,7 +66,7 @@ from recidiviz.pipelines.normalization.utils.normalized_entity_conversion_utils 
     convert_entity_trees_to_normalized_versions,
     fields_unique_to_normalized_class,
 )
-from recidiviz.tests.persistence.entity.normalized_entities_utils_test import (
+from recidiviz.tests.persistence.entity.state.entities_test_utils import (
     get_normalized_violation_tree,
     get_violation_tree,
 )

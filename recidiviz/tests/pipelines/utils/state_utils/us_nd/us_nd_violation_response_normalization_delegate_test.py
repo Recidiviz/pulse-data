@@ -43,9 +43,11 @@ from recidiviz.pipelines.utils.execution_utils import (
 from recidiviz.pipelines.utils.state_utils.us_nd.us_nd_violation_response_normalization_delegate import (
     UsNdViolationResponseNormalizationDelegate,
 )
+from recidiviz.tests.persistence.entity.state.entities_test_utils import (
+    hydrate_bidirectional_relationships_on_expected_response,
+)
 from recidiviz.tests.pipelines.normalization.utils.normalization_managers.supervision_violation_responses_normalization_manager_test import (
     STATE_PERSON_TO_STATE_STAFF_LIST,
-    hydrate_bidirectional_relationships_on_expected_response,
 )
 
 

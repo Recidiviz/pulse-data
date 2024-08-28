@@ -70,13 +70,11 @@ from recidiviz.pipelines.normalization.utils.normalized_entity_conversion_utils 
     convert_entity_trees_to_normalized_versions,
 )
 from recidiviz.pipelines.utils.execution_utils import TableRow
-from recidiviz.tests.persistence.entity.normalized_entities_utils_test import (
-    get_normalized_violation_tree,
-    get_violation_tree,
-)
 from recidiviz.tests.persistence.entity.state.entities_test_utils import (
     generate_full_graph_state_person,
     generate_full_graph_state_staff,
+    get_normalized_violation_tree,
+    get_violation_tree,
 )
 from recidiviz.tests.pipelines.fake_state_calculation_config_manager import (
     start_pipeline_delegate_getter_patchers,

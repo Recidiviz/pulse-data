@@ -27,8 +27,14 @@ from recidiviz.persistence.entity.normalized_entities_utils import (
     merge_additional_attributes_maps,
 )
 from recidiviz.persistence.entity.state.entities import StateSupervisionContact
+from recidiviz.persistence.entity.state.normalized_entities import (
+    NormalizedStateSupervisionContact,
+)
 from recidiviz.pipelines.normalization.utils.normalization_managers.entity_normalization_manager import (
     EntityNormalizationManager,
+)
+from recidiviz.pipelines.normalization.utils.normalized_entity_conversion_utils import (
+    convert_entity_trees_to_normalized_versions,
 )
 
 
@@ -45,6 +51,17 @@ class SupervisionContactNormalizationManager(EntityNormalizationManager):
             Tuple[List[StateSupervisionContact], AdditionalAttributesMap]
         ] = None
         self.staff_external_id_to_staff_id = staff_external_id_to_staff_id
+
+    def get_normalized_supervision_contacts(
+        self,
+    ) -> list[NormalizedStateSupervisionContact]:
+        (
+            processed_contacts,
+            additional_attributes,
+        ) = self.normalized_supervision_contacts_and_additional_attributes()
+        return convert_entity_trees_to_normalized_versions(
+            processed_contacts, NormalizedStateSupervisionContact, additional_attributes
+        )
 
     def normalized_supervision_contacts_and_additional_attributes(
         self,
