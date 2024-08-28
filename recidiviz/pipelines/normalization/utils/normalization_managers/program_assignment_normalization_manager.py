@@ -28,8 +28,14 @@ from recidiviz.persistence.entity.normalized_entities_utils import (
     merge_additional_attributes_maps,
 )
 from recidiviz.persistence.entity.state.entities import StateProgramAssignment
+from recidiviz.persistence.entity.state.normalized_entities import (
+    NormalizedStateProgramAssignment,
+)
 from recidiviz.pipelines.normalization.utils.normalization_managers.entity_normalization_manager import (
     EntityNormalizationManager,
+)
+from recidiviz.pipelines.normalization.utils.normalized_entity_conversion_utils import (
+    convert_entity_trees_to_normalized_versions,
 )
 
 
@@ -47,6 +53,19 @@ class ProgramAssignmentNormalizationManager(EntityNormalizationManager):
             Tuple[List[StateProgramAssignment], AdditionalAttributesMap]
         ] = None
         self.staff_external_id_to_staff_id = staff_external_id_to_staff_id
+
+    def get_normalized_program_assignments(
+        self,
+    ) -> list[NormalizedStateProgramAssignment]:
+        (
+            processed_program_assignments,
+            additional_pa_attributes,
+        ) = self.normalized_program_assignments_and_additional_attributes()
+        return convert_entity_trees_to_normalized_versions(
+            processed_program_assignments,
+            NormalizedStateProgramAssignment,
+            additional_pa_attributes,
+        )
 
     def normalized_program_assignments_and_additional_attributes(
         self,

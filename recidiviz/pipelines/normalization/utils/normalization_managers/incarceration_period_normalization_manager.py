@@ -49,6 +49,9 @@ from recidiviz.persistence.entity.state.normalized_entities import (
 from recidiviz.pipelines.normalization.utils.normalization_managers.entity_normalization_manager import (
     EntityNormalizationManager,
 )
+from recidiviz.pipelines.normalization.utils.normalized_entity_conversion_utils import (
+    convert_entity_trees_to_normalized_versions,
+)
 from recidiviz.pipelines.utils.entity_normalization.normalized_supervision_period_index import (
     NormalizedSupervisionPeriodIndex,
 )
@@ -291,6 +294,17 @@ class IncarcerationPeriodNormalizationManager(EntityNormalizationManager):
     @staticmethod
     def normalized_entity_classes() -> List[Type[Entity]]:
         return [StateIncarcerationPeriod]
+
+    def get_normalized_incarceration_periods(
+        self,
+    ) -> list[NormalizedStateIncarcerationPeriod]:
+        (
+            processed_ips,
+            additional_attributes,
+        ) = self.normalized_incarceration_periods_and_additional_attributes()
+        return convert_entity_trees_to_normalized_versions(
+            processed_ips, NormalizedStateIncarcerationPeriod, additional_attributes
+        )
 
     def normalized_incarceration_periods_and_additional_attributes(
         self,

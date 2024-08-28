@@ -31,8 +31,15 @@ from recidiviz.persistence.entity.state.entities import (
     StateIncarcerationSentence,
     StateSupervisionSentence,
 )
+from recidiviz.persistence.entity.state.normalized_entities import (
+    NormalizedStateIncarcerationSentence,
+    NormalizedStateSupervisionSentence,
+)
 from recidiviz.pipelines.normalization.utils.normalization_managers.entity_normalization_manager import (
     EntityNormalizationManager,
+)
+from recidiviz.pipelines.normalization.utils.normalized_entity_conversion_utils import (
+    convert_entity_trees_to_normalized_versions,
 )
 from recidiviz.pipelines.utils.state_utils.state_specific_delegate import (
     StateSpecificDelegate,
@@ -97,6 +104,42 @@ class SentenceNormalizationManager(EntityNormalizationManager):
             (StateCharge, StateSupervisionSentence),
             (StateCharge, StateIncarcerationSentence),
         ]
+
+    def get_normalized_sentences(
+        self,
+    ) -> tuple[
+        list[NormalizedStateIncarcerationSentence],
+        list[NormalizedStateSupervisionSentence],
+    ]:
+        """Generates and returns a list of NormalizedStateIncarcerationSentence and
+        NormalizedStateSupervisionSentence from the un-normalized inputs to this
+        SentenceNormalizationManager class.
+        """
+        (
+            processed_incarceration_sentences,
+            additional_incarceration_sentence_attributes,
+        ) = self.normalized_incarceration_sentences_and_additional_attributes()
+
+        (
+            processed_supervision_sentences,
+            additional_supervision_sentence_attributes,
+        ) = self.normalized_supervision_sentences_and_additional_attributes()
+
+        normalized_incarceration_sentences = (
+            convert_entity_trees_to_normalized_versions(
+                processed_incarceration_sentences,
+                NormalizedStateIncarcerationSentence,
+                additional_incarceration_sentence_attributes,
+            )
+        )
+
+        normalized_supervision_sentences = convert_entity_trees_to_normalized_versions(
+            processed_supervision_sentences,
+            NormalizedStateSupervisionSentence,
+            additional_supervision_sentence_attributes,
+        )
+
+        return normalized_incarceration_sentences, normalized_supervision_sentences
 
     def normalized_incarceration_sentences_and_additional_attributes(
         self,

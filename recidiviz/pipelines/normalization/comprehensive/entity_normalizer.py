@@ -51,7 +51,6 @@ from recidiviz.pipelines.normalization.comprehensive.state_person_to_state_staff
 )
 from recidiviz.pipelines.normalization.utils.entity_normalization_manager_utils import (
     normalized_periods_for_calculations,
-    normalized_violation_responses_from_processed_versions,
 )
 from recidiviz.pipelines.normalization.utils.normalization_managers.assessment_normalization_manager import (
     AssessmentNormalizationManager,
@@ -70,6 +69,7 @@ from recidiviz.pipelines.normalization.utils.normalization_managers.supervision_
 )
 from recidiviz.pipelines.normalization.utils.normalization_managers.supervision_violation_responses_normalization_manager import (
     ViolationResponseNormalizationManager,
+    normalized_violation_responses_from_processed_versions,
 )
 from recidiviz.pipelines.normalization.utils.normalized_entity_conversion_utils import (
     convert_entity_trees_to_normalized_versions,
