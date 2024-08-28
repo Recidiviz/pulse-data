@@ -59,7 +59,7 @@ incarceration_sentence_expiration AS (
     SELECT DISTINCT
         REPLACE(REPLACE(OFFENDER_BOOK_ID,',',''), '.00', '') AS person_external_id,
         CONCAT(REPLACE(REPLACE(OFFENDER_BOOK_ID,',',''), '.00', ''),'-', SENTENCE_SEQ) AS sentence_external_id,
-        SENTENCE_EXPIRY_DATE AS eligible_date,
+        PROBABLE_RELEASE_DATE AS eligible_date,
         COALESCE(MODIFY_DATETIME, 
             -- If the sentence expiration date has never been modified, assume it was
             -- last updated when the sentence was imposed
