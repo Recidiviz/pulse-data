@@ -49,4 +49,10 @@ columns:
     description: Maximum age requirement for opportunity
   - name: district
     description: District the opportunity was added by (Not necessarily the only district the opportunity is available for)
+  - name: lastUpdatedDate
+    description: The date this opportunity was last updated
+  - name: genders
+    description: Gender restrictions for community opportunity. If null, then none exist.
+  - name: genericDescription
+    description: A generic description of the community opportunity
 update_cadence: IRREGULAR

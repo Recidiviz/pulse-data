@@ -84,6 +84,10 @@ SENTENCING_COMMUNITY_OPPORTUNITY_RECORD_VIEW_BUILDER = (
             "minAge",
             "maxAge",
             "district",
+            "additionalNotes",
+            "lastUpdatedDate",
+            "genders",
+            "genericDescription",
         ],
     )
 )

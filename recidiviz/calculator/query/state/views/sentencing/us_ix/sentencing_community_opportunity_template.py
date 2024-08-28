@@ -111,18 +111,31 @@ WITH community_opp_info AS (
             WHEN ASAMLevelCriteria LIKE "%Any%" THEN 'Any'
             WHEN ASAMLevelCriteria IS NULL THEN NULL
         END as asamLevelOfCareRecommendationCriterion,
+        CONCAT(
+            CASE WHEN genders LIKE "%Men%" THEN 'Men,' ELSE '' END,
+            CASE WHEN genders LIKE "%Women%" THEN 'Women,' ELSE '' END,
+            CASE WHEN genders IS NULL THEN NULL ELSE NULL END
+        ) AS gendersConcat,
         substanceUseDisorderCriteria AS diagnosedSubstanceUseDisorderCriterion,
         CAST(minLSIRScore AS INT64) AS minLSIRScoreCriterion,
-        CAST(maxLSIRScore AS INT64) AS maxLsirScoreCriterion
+        CAST(maxLSIRScore AS INT64) AS maxLsirScoreCriterion,
+        AdditionalNotes AS additionalNotes,
+        DATE(lastUpdatedDate) AS lastUpdatedDate,
+        genericDescription
    FROM `{project_id}.{us_ix_raw_data_up_to_date_dataset}.RECIDIVIZ_REFERENCE_community_opportunities_latest`)
 
    SELECT 
         *,
         "US_IX" AS state_code,
-        SPLIT(LEFT(needsAddressedConcat, LENGTH(needsAddressedConcat)-1)) AS NeedsAddressed,
-            CASE 
-                WHEN mentalHealthConcat LIKE "%Any%" THEN SPLIT("Any")
-                WHEN mentalHealthConcat IS NOT NULL THEN SPLIT(LEFT(mentalHealthConcat, LENGTH(mentalHealthConcat)-1))
-            END AS diagnosedMentalHealthDiagnosisCriterion
+        CASE
+            WHEN needsAddressedConcat = ''
+            THEN NULL
+            ELSE  SPLIT(LEFT(needsAddressedConcat, LENGTH(needsAddressedConcat)-1))
+        END AS NeedsAddressed,
+        CASE 
+            WHEN mentalHealthConcat LIKE "%Any%" THEN SPLIT("Any")
+            WHEN mentalHealthConcat IS NOT NULL THEN SPLIT(LEFT(mentalHealthConcat, LENGTH(mentalHealthConcat)-1))
+        END AS diagnosedMentalHealthDiagnosisCriterion,
+        SPLIT(LEFT(gendersConcat, LENGTH(gendersConcat)-1)) as genders
     FROM community_opp_info
 """
