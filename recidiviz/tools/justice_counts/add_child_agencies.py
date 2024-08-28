@@ -92,7 +92,7 @@ def add_child_agencies(
     child_agency_data: List[
         Dict[str, str]
     ],  # we expect each dictionary to have at least
-    #  a "name" key and optionally a "county" key.
+    #  a "name" key and optionally a "county" and "custom_name" key.
     dry_run: bool,
     super_agency_id: int,
     user_id_to_role: Dict[int, str],
@@ -140,9 +140,10 @@ def add_child_agencies(
                 str(len(child_agency_data)),
                 super_agency.name,
             )
-            for child_agency_name_to_county in child_agency_data:
-                child_agency_name = child_agency_name_to_county.get("name")
-                county_fips = child_agency_name_to_county.get("county")
+            for row in child_agency_data:
+                child_agency_name = row.get("name")
+                county_fips = row.get("county")
+                custom_child_agency_name = row.get("custom_name")
                 child_agency_county_code = sanitize_county_name(
                     county_fips_to_county_code.get(county_fips, "")
                 )
@@ -172,11 +173,17 @@ def add_child_agencies(
                         state_code=super_agency.state_code,
                         systems=systems,
                         fips_county_code=child_agency_county_code,
+                        custom_child_agency_name=custom_child_agency_name,
                     )
 
                     msg = "" if dry_run is False else "DRY RUN:"
-                    msg += "Adding Child Agency: %s with county %s"
-                    logger.info(msg, child_agency_name, child_agency_county_code)
+                    msg += "Adding Child Agency: %s with county %s and custom name %s"
+                    logger.info(
+                        msg,
+                        child_agency_name,
+                        child_agency_county_code,
+                        custom_child_agency_name,
+                    )
 
                 agency_user_account_associations: List[
                     schema.AgencyUserAccountAssociation
@@ -205,6 +212,8 @@ if __name__ == "__main__":
     agency_columns = ["name"]
     if "county" in pd.read_excel(xls, sheet_name="agencies", nrows=0).columns:
         agency_columns.append("county")
+    if "custom_name" in pd.read_excel(xls, sheet_name="agencies", nrows=0).columns:
+        agency_columns.append("custom_name")
 
     # Extract the 'agencies' sheet into a list of dictionaries with 'name' and optionally 'county' keys
     agency_names_df = pd.read_excel(xls, sheet_name="agencies", usecols=agency_columns)
