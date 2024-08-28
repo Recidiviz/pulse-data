@@ -217,20 +217,36 @@ FROM cleaned_union u
 LEFT JOIN cleaned_names n USING(StaffId)
 LEFT JOIN agg_staff_ids a ON u.Email = a.Email
 LEFT JOIN agg_employee_ids e ON u.Email = e.Email
-LEFT JOIN agg_employee_cds c ON u.StaffId = c.StaffId)
+LEFT JOIN agg_employee_cds c ON u.StaffId = c.StaffId),
+
+-- During this CTE, we make sure to remove any emails that deviate from the expected
+-- formating. This step is done last because email (regardless of formatting) is used to
+-- deduplicate staff.
+clean_emails_cte AS 
+(
+    SELECT DISTINCT
+       FirstName,
+        MiddleName,
+        LastName,
+        Suffix,
+        CASE 
+            WHEN REGEXP_CONTAINS(Email, r"@") 
+                AND NOT REGEXP_CONTAINS(Email, r"[ (),:;<>[\\]\\\\]")
+                AND SUBSTR(Email, 1, STRPOS(Email, '@') - 1) NOT IN ("X", "UNKNOWN", "NONE", "NONAME", "NOBODY")
+            THEN Email
+            ELSE NULL
+        END AS Email,
+        StaffId,
+        StaffIds,
+        employeeIds,
+        employeeCodes
+    FROM colapsed_union_on_email
+    where rn = 1 AND FirstName IS NOT NULL AND LastName IS NOT NULL
+)
 
 SELECT
-    FirstName,
-    MiddleName,
-    LastName,
-    Suffix,
-    Email,
-    StaffId,
-    StaffIds,
-    employeeIds,
-    employeeCodes
-FROM colapsed_union_on_email
-where rn = 1 and Email is not null;
+    *
+FROM clean_emails_cte;
 """
 
 VIEW_BUILDER = DirectIngestViewQueryBuilder(
