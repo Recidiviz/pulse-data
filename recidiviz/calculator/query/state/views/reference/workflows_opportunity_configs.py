@@ -339,17 +339,6 @@ WORKFLOWS_OPPORTUNITY_CONFIGS = [
     ),
     WorkflowsOpportunityConfig(
         state_code=StateCode.US_MO,
-        opportunity_type="usMoRestrictiveHousingStatusHearing",
-        experiment_id="US_MO_ADMINISTRATIVE_SEGREGATION_WORKFLOWS",
-        opportunity_record_view_name="us_mo_overdue_restrictive_housing_hearing_record_materialized",
-        task_completion_event=TaskCompletionEventType.REVIEW_HEARING_OCCURRED,
-        source_filename="us_mo_overdue_restrictive_housing_hearing_record.json",
-        export_collection_name="US_MO-restrictiveHousingStatusHearingReferrals",
-        opportunity_type_path_str="restrictiveHousingStatusHearing",
-        person_record_type=PersonRecordType.RESIDENT,
-    ),
-    WorkflowsOpportunityConfig(
-        state_code=StateCode.US_MO,
         opportunity_type="usMoOverdueRestrictiveHousingRelease",
         experiment_id="US_MO_RESTRICTIVE_HOUSING_WORKFLOWS",
         opportunity_record_view_name="us_mo_overdue_restrictive_housing_release_record_materialized",
