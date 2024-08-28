@@ -22,7 +22,7 @@ pipenv run python -m recidiviz.prototypes.case_note_search.exact_match
 """
 
 import json
-from typing import Any, Dict
+from typing import Any, Dict, List, Optional
 
 import pandas as pd
 import pandas_gbq
@@ -30,7 +30,7 @@ import pandas_gbq
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 
 CASE_NOTES_BQ_TABLE_NAME = (
-    "recidiviz-staging.bpacker_case_notes_prototype_views.case_notes_materialized"
+    "recidiviz-staging.case_notes_prototype_views.case_notes_materialized"
 )
 
 ID_COLUMN_NAME = "id"
@@ -39,54 +39,58 @@ DATA_COLUMN_NAME = "jsonData"
 STATE_CODE_CONVERTER = {"us_id": "US_IX", "us_me": "US_ME"}
 
 
-def load_all_case_notes(external_id: str, state_code: str) -> pd.DataFrame:
-    # Convert state codes into how they are represented in the BQ view.
-    if state_code.lower() in STATE_CODE_CONVERTER:
-        state_code = STATE_CODE_CONVERTER[state_code]
-
-    query = f"""
-    select *
-    from {CASE_NOTES_BQ_TABLE_NAME}
-    where JSON_EXTRACT_SCALAR(JsonData, '$.external_id') = '{external_id}'
-    and JSON_EXTRACT_SCALAR(JsonData, '$.state_code') = '{state_code}'
-    """
-    return pandas_gbq.read_gbq(query, project_id=GCP_PROJECT_STAGING)
-
-
-def filter_dataframe_by_note_body(df: pd.DataFrame, query_term: str) -> pd.DataFrame:
-    """
-    Filters the DataFrame to return only rows where the JsonData.note_body field
-    contains an exact match of the query_term.
-    """
-
-    def contains_exact_match(json_str: str, query_term: str) -> bool:
-        try:
-            data = json.loads(json_str)
-            return query_term.lower() in data.get("note_body").lower()
-        except Exception:
-            return False
-
-    filtered_df = df[
-        df[DATA_COLUMN_NAME].apply(contains_exact_match, query_term=query_term)
-    ]
-    return filtered_df
+def validate_state_codes(state_codes: List[str]) -> None:
+    """Validates that the provided state code is supported."""
+    for state_code in state_codes:
+        if state_code not in STATE_CODE_CONVERTER.values():
+            raise ValueError(
+                f"State code {state_code} is not present in the state code converter."
+            )
 
 
 def exact_match_search(
-    query_term: str, external_id: str, state_code: str
+    query_term: str,
+    external_ids: Optional[List[str]] = None,
+    state_codes: Optional[List[str]] = None,
+    limit: Optional[int] = 20,
 ) -> Dict[str, Any]:
-    """The current implementation reads all case notes from the BQ materialized view,
-    filters by state_code and external_id, and then returns all case notes that have an
-    exact match to the search term.
-
-    Returns a map from document_id to the document data.
     """
-    all_case_notes: pd.DataFrame = load_all_case_notes(
-        external_id=external_id, state_code=state_code
-    )
+    Load case notes from bigquery that contain the query substring and are present
+    in the list of external_ids and state_codes.
 
-    contains_exact_match_df: pd.DataFrame = filter_dataframe_by_note_body(
-        all_case_notes, query_term=query_term
+    Returns a map from document_id to the document jsonData.
+    """
+    # Base query that filters for a substring match.
+    query = f"""
+    select *
+    from {CASE_NOTES_BQ_TABLE_NAME}
+    where LOWER(JSON_EXTRACT_SCALAR(JsonData, '$.note_body')) LIKE LOWER('%{query_term}%')
+    """
+
+    # Optionally add external_ids condition
+    if external_ids is not None:
+        format_external_ids = "','".join(external_ids)
+        query = (
+            query
+            + f"and JSON_EXTRACT_SCALAR(JsonData, '$.external_id') in ('{format_external_ids}')"
+        )
+
+    # Optionally add state_codes condition
+    if state_codes is not None:
+        validate_state_codes(state_codes)
+        format_state_codes = "','".join(state_codes)
+        query = (
+            query
+            + f"and JSON_EXTRACT_SCALAR(JsonData, '$.state_code') in ('{format_state_codes}')"
+        )
+
+    # Optionally limit the number of results returned, since loading a ton of notes from
+    # bigquery is slow.
+    if limit is not None:
+        query = query + f"limit {limit}"
+
+    contains_exact_match_df: pd.DataFrame = pandas_gbq.read_gbq(
+        query, project_id=GCP_PROJECT_STAGING
     )
 
     # Return a dict instead of a dataframe object.

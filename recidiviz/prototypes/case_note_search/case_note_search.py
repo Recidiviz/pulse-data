@@ -29,6 +29,7 @@ from typing import Any, Dict, List, Optional
 from google.cloud.discoveryengine_v1.services.search_service.pagers import SearchPager
 
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
+from recidiviz.prototypes.case_note_search.exact_match import exact_match_search
 from recidiviz.tools.prototypes.discovery_engine import DiscoveryEngineInterface
 from recidiviz.tools.prototypes.gcs_bucket_reader import GCSBucketReader
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
@@ -40,6 +41,9 @@ CASE_NOTE_SEARCH_ENGINE_ID = "case-note-search_1723818974584"
 # The discovery engine returns different results depending on whether we are using
 # structured or unstructured data.
 STRUCTURED_DATASETS = {CASE_NOTE_SEARCH_ENGINE_ID}
+
+# We currently only support exact match for case notes stored in BigQuery.
+EXACT_MATCH_SUPPORTED = {CASE_NOTE_SEARCH_ENGINE_ID}
 
 
 def download_full_case_note(gcs_link: str) -> Optional[str]:
@@ -92,6 +96,33 @@ def get_preview(
     if full_case_note:
         return full_case_note[:n]
     raise ValueError("No case note generated.")
+
+
+def exact_match_json_data_to_results(json_data: Dict[str, Any]) -> Dict[str, Any]:
+    """Converts a jsonData dict (the format stored in BigQuery) into a Results dict (the
+    format this endpoint returns).
+
+    The jsonData object is a dict with the following fields:
+        * state_code
+        * external_id
+        * note_id
+        * note_body
+        * note_title
+        * note_date
+        * note_type
+        * note_mode
+    """
+    return {
+        "document_id": json_data.get("note_id", None),
+        "date": json_data.get("note_date", None),
+        "contact_mode": json_data.get("note_mode", None),
+        "note_type": json_data.get("note_type", None),
+        "note_title": json_data.get("note_title", None),
+        "extractive_answer": None,
+        "snippet": None,
+        "preview": get_preview(json_data.get("note_body", None)),
+        "case_note": json_data.get("note_body", None),
+    }
 
 
 def extract_case_notes_results_unstructured_data(
@@ -230,6 +261,41 @@ def case_note_search(
             results = extract_case_notes_results_structured_data(search_pager)
         else:
             results = extract_case_notes_results_unstructured_data(search_pager)
+
+        # Supplement results with exact match results.
+        # For now, we ONLY support exact match supplementation for engines with data in
+        # BigQuery.
+        if engine_id in EXACT_MATCH_SUPPORTED:
+            exact_match_json_data: Dict[str, Any] = exact_match_search(
+                query_term=query,
+                external_ids=filter_conditions.get("external_id", None)
+                if filter_conditions
+                else None,
+                state_codes=filter_conditions.get("state_code", None)
+                if filter_conditions
+                else None,
+                limit=page_size,
+            )
+            # Exact matches are formated as jsonData currently, and need to be
+            # reformatted as Results.
+            id_to_exact_match_result = {
+                id: exact_match_json_data_to_results(json_data)
+                for id, json_data in exact_match_json_data.items()
+            }
+            # Filter out results that are present in id_to_exact_match_result.
+            results = [
+                result
+                for result in results
+                if result["document_id"] not in id_to_exact_match_result
+            ]
+
+            # Combine exact match results and search engine results. Exact match results
+            # go in the front of the list.
+            results = list(id_to_exact_match_result.values()) + results
+
+            # Truncate, if the page size is exceeded.
+            results = results[:page_size]
+
         return {
             "results": results,
             "error": None,
