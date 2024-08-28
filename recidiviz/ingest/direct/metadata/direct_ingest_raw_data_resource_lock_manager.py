@@ -16,7 +16,9 @@
 # =============================================================================
 """Class for managing reads and writes to DirectIngestRawDataResourceLock"""
 import datetime
-from typing import List, Optional
+from collections import defaultdict
+from enum import Enum
+from typing import Dict, List, Optional
 
 from more_itertools import one
 from sqlalchemy import text
@@ -41,6 +43,27 @@ from recidiviz.persistence.errors import (
 )
 
 
+class DirectIngestRawDataLockStatus(Enum):
+    """Summary status for a raw data resource lock to be displayed in the admin panel"""
+
+    FREE: str = "FREE"
+    HELD: str = "HELD"
+
+    @classmethod
+    def from_lock_actor(
+        cls, actor: Optional[DirectIngestRawDataLockActor]
+    ) -> "DirectIngestRawDataLockStatus":
+        if not actor:
+            return cls.FREE
+        match actor:
+            case DirectIngestRawDataLockActor.ADHOC:
+                return cls.HELD
+            case DirectIngestRawDataLockActor.PROCESS:
+                return cls.HELD
+            case _:
+                raise ValueError(f"Unrecognized actor type: {actor}")
+
+
 class DirectIngestRawDataResourceLockManager:
     """Class for managing reads and writes to DirectIngestRawDataResourceLock
 
@@ -58,7 +81,7 @@ class DirectIngestRawDataResourceLockManager:
         self.database_key = SQLAlchemyDatabaseKey.for_schema(SchemaType.OPERATIONS)
         self.raw_data_source_instance = raw_data_source_instance
 
-    def _get_unreleased_locks_for_resoures(
+    def _get_unreleased_locks_for_resources(
         self, resources: List[DirectIngestRawDataResourceLockResource], session: Session
     ) -> List[schema.DirectIngestRawDataResourceLock]:
         """Returns locks that have released set to False for the provided |resources|,
@@ -93,13 +116,13 @@ class DirectIngestRawDataResourceLockManager:
             > lock.lock_ttl_seconds
         )
 
-    def _update_unreleased_but_expired_locks_for_resoures(
+    def _update_unreleased_but_expired_locks_for_resources(
         self, resources: List[DirectIngestRawDataResourceLockResource], session: Session
     ) -> List[schema.DirectIngestRawDataResourceLock]:
         """Returns all locks for the provided |resources| that are unreleased,
         releasing but not returning any locks that were unreleased but expired.
         """
-        unreleased_locks = self._get_unreleased_locks_for_resoures(resources, session)
+        unreleased_locks = self._get_unreleased_locks_for_resources(resources, session)
 
         unreleased_not_expired_locks: List[schema.DirectIngestRawDataResourceLock] = []
         for unreleased_lock in unreleased_locks:
@@ -150,23 +173,42 @@ class DirectIngestRawDataResourceLockManager:
 
         return one(lock)
 
-    def get_most_recent_locks_for_resources(
+    def get_current_lock_summary(
         self,
-        resources: List[DirectIngestRawDataResourceLockResource],
+    ) -> Dict[DirectIngestRawDataLockStatus, int]:
+        """Returns a map of the lock status to the number of locks with that status."""
+        resources = list(DirectIngestRawDataResourceLockResource)
+        lock_status_counts: Dict[DirectIngestRawDataLockStatus, int] = defaultdict(int)
+        lock_resource_to_holder = {
+            lock.lock_resource: (lock.lock_actor if not lock.released else None)
+            for lock in self.get_most_recent_locks_for_resources(resources)
+        }
+
+        for resource in resources:
+            lock_status = DirectIngestRawDataLockStatus.from_lock_actor(
+                lock_resource_to_holder.get(resource)
+            )
+            lock_status_counts[lock_status] += 1
+
+        return lock_status_counts
+
+    def get_most_recent_locks_for_resources(
+        self, resources: List[DirectIngestRawDataResourceLockResource]
     ) -> List[entities.DirectIngestRawDataResourceLock]:
         """Returns the most recent locks (as dictated by lock lock_acquisition_time), if
         they exist, for the provided |resources|."""
         resource_str = ",".join([f"'{resource.value}'" for resource in resources])
 
         with SessionFactory.using_database(self.database_key) as session:
-            self._update_unreleased_but_expired_locks_for_resoures(resources, session)
-            # flush here so chnages are propogated for us to read w/ our next query
+            self._update_unreleased_but_expired_locks_for_resources(resources, session)
+            # flush here so changes are propagated for us to read w/ our next query
             session.flush()
 
             query = f"""
               SELECT
                 lock_id,
                 lock_resource,
+                lock_actor,
                 region_code,
                 raw_data_source_instance,
                 released,
@@ -219,7 +261,7 @@ class DirectIngestRawDataResourceLockManager:
     def release_lock_by_id(
         self, lock_id: int
     ) -> entities.DirectIngestRawDataResourceLock:
-        """Releases the lock asscoatied with the provided |lock_id|. If the lock does
+        """Releases the lock associated with the provided |lock_id|. If the lock does
         not exist, a LookupError will be raised. If the lock is already released,
         a DirectIngestRawDataResourceLockAlreadyReleasedError will be raised.
         """
@@ -251,7 +293,7 @@ class DirectIngestRawDataResourceLockManager:
         with SessionFactory.using_database(
             self.database_key, autocommit=False
         ) as session:
-            unreleased_locks = self._update_unreleased_but_expired_locks_for_resoures(
+            unreleased_locks = self._update_unreleased_but_expired_locks_for_resources(
                 resources, session
             )
 

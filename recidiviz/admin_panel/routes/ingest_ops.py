@@ -854,3 +854,25 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
             ),
             HTTPStatus.OK,
         )
+
+    @bp.route(
+        "/api/ingest_operations/all_current_lock_summaries",
+    )
+    def _all_current_lock_summaries() -> Tuple[Response, HTTPStatus]:
+
+        all_current_lock_summaries = (
+            get_ingest_operations_store().get_all_current_lock_summaries()
+        )
+
+        return (
+            jsonify(
+                {
+                    state_code.value: {
+                        lock_status.value: count
+                        for lock_status, count in lock_summary.items()
+                    }
+                    for state_code, lock_summary in all_current_lock_summaries.items()
+                }
+            ),
+            HTTPStatus.OK,
+        )
