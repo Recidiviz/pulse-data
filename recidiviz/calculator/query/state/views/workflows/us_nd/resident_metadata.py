@@ -26,7 +26,10 @@ from recidiviz.calculator.query.state.dataset_config import (
     WORKFLOWS_VIEWS_DATASET,
 )
 from recidiviz.common.constants.states import StateCode
-from recidiviz.ingest.direct.dataset_config import raw_tables_dataset_for_region
+from recidiviz.ingest.direct.dataset_config import (
+    raw_latest_views_dataset_for_region,
+    raw_tables_dataset_for_region,
+)
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.task_eligibility.utils.us_nd_query_fragments import (
     parole_review_dates_query,
@@ -47,11 +50,29 @@ latest_parole_review_dates AS (
     SELECT *
     FROM parole_review_dates
     QUALIFY ROW_NUMBER() OVER(PARTITION BY state_code, person_id ORDER BY parole_review_date DESC) = 1
+),
+parole_date AS (
+    SELECT 
+        peid.state_code,
+        peid.person_id,
+        MAX(SAFE_CAST(LEFT(eo.PAROLE_DATE, 10) AS DATE)) AS parole_date,
+    FROM `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.elite_offendersentenceaggs_latest` eo
+    INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` peid
+    ON peid.external_id = eo.OFFENDER_BOOK_ID
+        AND peid.state_code = 'US_ND'
+        AND peid.id_type = 'US_ND_ELITE_BOOKING'
+    WHERE eo.PAROLE_DATE IS NOT NULL
+        AND SAFE_CAST(LEFT(eo.FINAL_SENT_EXP_DATE, 10) AS DATE) > CURRENT_DATE
+    GROUP BY 1,2
 )
 
-SELECT prd.*
+SELECT 
+    prd.*,
+    pd.parole_date,
 FROM `{{project_id}}.{{sessions_dataset}}.compartment_sessions_materialized` cs
 INNER JOIN latest_parole_review_dates prd
+    USING(person_id, state_code)
+LEFT JOIN parole_date pd
     USING(person_id, state_code)
 WHERE cs.compartment_level_1 = 'INCARCERATION'
     AND cs.state_code = 'US_ND'
@@ -68,6 +89,9 @@ US_ND_RESIDENT_METADATA_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     description=US_ND_RESIDENT_METADATA_VIEW_DESCRIPTION,
     normalized_state_dataset=NORMALIZED_STATE_DATASET,
     raw_data_dataset=raw_tables_dataset_for_region(
+        state_code=StateCode.US_ND, instance=DirectIngestInstance.PRIMARY
+    ),
+    raw_data_up_to_date_views_dataset=raw_latest_views_dataset_for_region(
         state_code=StateCode.US_ND, instance=DirectIngestInstance.PRIMARY
     ),
     sessions_dataset=SESSIONS_DATASET,
