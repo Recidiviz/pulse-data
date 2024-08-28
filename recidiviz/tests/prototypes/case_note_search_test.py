@@ -28,6 +28,9 @@ from recidiviz.prototypes.case_note_search.case_note_search import (
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 
+# Not a real engine ID. We mock out the call to the discovery engine.
+TEST_SEARCH_ENGINE_ID = "TEST_SEARCH_ENGINE_ID"
+
 
 class MockDocument:
     def __init__(
@@ -92,8 +95,10 @@ class TestCaseNoteFunctions(TestCase):
     @patch(
         "recidiviz.prototypes.case_note_search.case_note_search.DiscoveryEngineInterface"
     )
+    @patch("recidiviz.prototypes.case_note_search.case_note_search.exact_match_search")
     def test_case_note_search(
         self,
+        mock_exact_match_search: MagicMock,
         mock_discovery_engine_interface: MagicMock,
         mock_extract_case_notes_results: MagicMock,
     ) -> None:
@@ -119,6 +124,9 @@ class TestCaseNoteFunctions(TestCase):
 
         mock_extract_case_notes_results.return_value = [case_note_data]
 
+        # Mock exact_match_search to return an empty dictionary
+        mock_exact_match_search.return_value = {}
+
         results = case_note_search(query, page_size, filter_conditions)
         self.assertEqual(results, {"results": [case_note_data], "error": None})
 
@@ -132,3 +140,11 @@ class TestCaseNoteFunctions(TestCase):
             with_snippet=False,
         )
         mock_extract_case_notes_results.assert_called_once_with(mock_search_pager)
+
+        # Ensure exact_match_search is called with the correct parameters
+        mock_exact_match_search.assert_called_once_with(
+            query_term=query,
+            external_ids=filter_conditions.get("external_id", None),
+            state_codes=filter_conditions.get("state_code", None),
+            limit=page_size,
+        )
