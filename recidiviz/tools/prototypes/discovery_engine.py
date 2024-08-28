@@ -49,19 +49,48 @@ class DiscoveryEngineInterface:
         return f"projects/{self.project_id}/locations/us/collections/default_collection/engines/{self.engine_id}/servingConfigs/default_config"
 
     @staticmethod
-    def _format_filter_condition(filter_conditions: Dict[str, List[str]]) -> str:
-        """Format the filter conditions for SearchRequest use."""
+    def _format_filter_condition(
+        include_filter_conditions: Optional[Dict[str, List[str]]] = None,
+        exclude_filter_conditions: Optional[Dict[str, List[str]]] = None,
+    ) -> Optional[str]:
+        """Format the filter conditions for SearchRequest use.
+
+        Converts `include_filter_conditions`
+            * from: {'state_code': ['US_ME'], 'external_id':['XXXX', 'YYYY']}
+            * to: state_code: ANY('US_ME') AND external_id: ANY('XXXX', 'YYYY')
+
+        Converts `exclude_filter_conditions`
+            * from: {'note_type': ['Confidential', 'Private']}
+            * to: NOT note_type: ANY('Confidential', 'Private')
+        """
+        if include_filter_conditions is None and exclude_filter_conditions is None:
+            return None
+        if include_filter_conditions is None:
+            include_filter_conditions = {}
+        if exclude_filter_conditions is None:
+            exclude_filter_conditions = {}
+
         formatted_conditions = []
-        for field, values in filter_conditions.items():
+        for field, values in include_filter_conditions.items():
+            if len(values) == 0:
+                continue
             values_as_str = ", ".join([f'"{value}"' for value in values])
             formatted_conditions.append(f"{field}: ANY({values_as_str})")
-        return " ".join(formatted_conditions)
+
+        for field, values in exclude_filter_conditions.items():
+            if len(values) == 0:
+                continue
+            values_as_str = ", ".join([f'"{value}"' for value in values])
+            formatted_conditions.append(f"NOT {field}: ANY({values_as_str})")
+
+        return " AND ".join(formatted_conditions)
 
     def search(
         self,
         query: str,
         page_size: int = 10,
-        filter_conditions: Optional[Dict[str, List[str]]] = None,
+        include_filter_conditions: Optional[Dict[str, List[str]]] = None,
+        exclude_filter_conditions: Optional[Dict[str, List[str]]] = None,
         with_snippet: bool = False,
         with_summary: bool = False,
     ) -> SearchPager:
@@ -104,10 +133,9 @@ class DiscoveryEngineInterface:
                 query=query,
                 page_size=page_size,
                 filter=DiscoveryEngineInterface._format_filter_condition(
-                    filter_conditions
-                )
-                if filter_conditions
-                else None,
+                    include_filter_conditions=include_filter_conditions,
+                    exclude_filter_conditions=exclude_filter_conditions,
+                ),
                 query_expansion_spec=discoveryengine.SearchRequest.QueryExpansionSpec(
                     condition=discoveryengine.SearchRequest.QueryExpansionSpec.Condition.AUTO,
                 ),

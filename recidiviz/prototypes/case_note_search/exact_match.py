@@ -36,7 +36,12 @@ CASE_NOTES_BQ_TABLE_NAME = (
 ID_COLUMN_NAME = "id"
 DATA_COLUMN_NAME = "jsonData"
 
+# Maps frontend state codes to state codes used in the data storage backend system.
 STATE_CODE_CONVERTER = {"us_id": "US_IX", "us_me": "US_ME"}
+
+# We use this set for validation purposes - to catch misuse early and have helpful error
+# responses.
+SUPPORTED_FILTER_FIELDS = {"state_code", "external_id", "note_type"}
 
 
 def validate_state_codes(state_codes: List[str]) -> None:
@@ -44,14 +49,26 @@ def validate_state_codes(state_codes: List[str]) -> None:
     for state_code in state_codes:
         if state_code not in STATE_CODE_CONVERTER.values():
             raise ValueError(
-                f"State code {state_code} is not present in the state code converter."
+                f"State code {state_code} is not present in the state code converter. Supported values are {list(STATE_CODE_CONVERTER.values())}"
             )
+
+
+def validate_includes_excludes(includes_excludes: Dict[str, List[str]]) -> None:
+    """Detect if the user is trying to filter on unsupported field values."""
+    for field, values in includes_excludes.items():
+        if field not in SUPPORTED_FILTER_FIELDS:
+            raise ValueError(
+                f"Filter field {field} is not supported by exact match search. Supported values are {list(SUPPORTED_FILTER_FIELDS)}"
+            )
+        # Validate state code inputs.
+        if field == "state_code":
+            validate_state_codes(values)
 
 
 def exact_match_search(
     query_term: str,
-    external_ids: Optional[List[str]] = None,
-    state_codes: Optional[List[str]] = None,
+    include_filter_conditions: Optional[Dict[str, List[str]]] = None,
+    exclude_filter_conditions: Optional[Dict[str, List[str]]] = None,
     limit: Optional[int] = 20,
 ) -> Dict[str, Any]:
     """
@@ -60,6 +77,14 @@ def exact_match_search(
 
     Returns a map from document_id to the document jsonData.
     """
+    if include_filter_conditions is None:
+        include_filter_conditions = {}
+    if exclude_filter_conditions is None:
+        exclude_filter_conditions = {}
+    # Validate includes and excludes fields, to aid in debugging.
+    validate_includes_excludes(include_filter_conditions)
+    validate_includes_excludes(exclude_filter_conditions)
+
     # Base query that filters for a substring match.
     query = f"""
     select *
@@ -67,21 +92,24 @@ def exact_match_search(
     where LOWER(JSON_EXTRACT_SCALAR(JsonData, '$.note_body')) LIKE LOWER('%{query_term}%')
     """
 
-    # Optionally add external_ids condition
-    if external_ids is not None:
-        format_external_ids = "','".join(external_ids)
+    def format_condition(values: List[str]) -> str:
+        """Helper function to format filter conditions."""
+        return "','".join(values)
+
+    # Incorporate include filter conditions.
+    for field, values in include_filter_conditions.items():
+        formatted_values = format_condition(values)
         query = (
             query
-            + f"and JSON_EXTRACT_SCALAR(JsonData, '$.external_id') in ('{format_external_ids}')"
+            + f"and JSON_EXTRACT_SCALAR(JsonData, '$.{field}') in ('{formatted_values}')"
         )
 
-    # Optionally add state_codes condition
-    if state_codes is not None:
-        validate_state_codes(state_codes)
-        format_state_codes = "','".join(state_codes)
+    # Incorporate exclude filter conditions.
+    for field, values in exclude_filter_conditions.items():
+        formatted_values = format_condition(values)
         query = (
             query
-            + f"and JSON_EXTRACT_SCALAR(JsonData, '$.state_code') in ('{format_state_codes}')"
+            + f"and not JSON_EXTRACT_SCALAR(JsonData, '$.{field}') in ('{formatted_values}')"
         )
 
     # Optionally limit the number of results returned, since loading a ton of notes from

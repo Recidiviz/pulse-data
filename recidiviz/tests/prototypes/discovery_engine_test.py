@@ -42,7 +42,7 @@ class TestDiscoveryEngineInterface(TestCase):
             "note_type": ["Supervision Notes"],
         }
         expected = (
-            'external_id: ANY("12345", "23456") note_type: ANY("Supervision Notes")'
+            'external_id: ANY("12345", "23456") AND note_type: ANY("Supervision Notes")'
         )
         self.assertEqual(
             self.interface._format_filter_condition(  # pylint: disable=protected-access
@@ -67,10 +67,12 @@ class TestDiscoveryEngineInterface(TestCase):
 
         query = "this is a query"
         page_size = 10
-        filter_conditions = {"field": ["value"]}
+        include_filter_conditions = {"field": ["value"]}
 
         result = self.interface.search(
-            query=query, page_size=page_size, filter_conditions=filter_conditions
+            query=query,
+            page_size=page_size,
+            include_filter_conditions=include_filter_conditions,
         )
 
         self.assertEqual(result, "this is the query return value")
