@@ -1,21 +1,29 @@
 # yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
 manifest_language: 1.0.0
 input_columns:
-  - Employee_Id
-  - First_Name
-  - Middle_Name
-  - Last_Name
+  - Employee_Ids
+  - First_Name_sorted
+  - Last_Name_sorted
   - Email_Tx
 unused_columns: []
 output:
   StateStaff:
     external_ids:
-      - StateStaffExternalId:
-          external_id: Employee_Id
-          id_type: $literal("US_ME_EMPLOYEE")
+      - $foreach:
+          $iterable: Employee_Ids
+          $result:
+            StateStaffExternalId:
+              external_id: $iter_item
+              id_type: $literal("US_ME_EMPLOYEE")
+      - $conditional:
+          - $if:
+              $not_null: Email_Tx
+            $then:
+              StateStaffExternalId:
+                external_id: Email_Tx
+                id_type: $literal("US_ME_EMPLOYEE_EMAIL")
     full_name:
       $person_name:
-        $given_names: First_Name
-        $middle_names: Middle_Name
-        $surname: Last_Name
+        $given_names: First_Name_sorted
+        $surname: Last_Name_sorted
     email: Email_Tx

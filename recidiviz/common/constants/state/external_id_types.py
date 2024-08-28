@@ -111,6 +111,8 @@ US_TN_STAFF_EMAIL = "US_TN_STAFF_EMAIL"
 US_ME_DOC = "US_ME_DOC"
 # Identifier for the type of state staff id provided by the ME system
 US_ME_EMPLOYEE = "US_ME_EMPLOYEE"
+# Employee email ID
+US_ME_EMPLOYEE_EMAIL = "US_ME_EMPLOYEE_EMAIL"
 
 # MI Offender Number
 US_MI_DOC = "US_MI_DOC"

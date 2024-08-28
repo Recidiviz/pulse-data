@@ -23,13 +23,30 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 VIEW_QUERY_TEMPLATE = """
+WITH 
+-- Lower() and trim() the email.
+cleaned AS (
+  SELECT 
+    * EXCEPT (Email_Tx),
+    LOWER(TRIM(Email_Tx)) AS Email_Tx
+  FROM {CIS_900_EMPLOYEE}
+)
 SELECT 
-    Employee_Id,
-    First_Name,
-    Middle_Name,
-    Last_Name,
+    STRING_AGG(DISTINCT Employee_Id) AS Employee_Ids,
+    -- If there are multiple names per email, sort alphabetically and pick the most
+    -- recently modified name. This will sometimes be the case when someone has
+    -- multiple employee IDs, and someones name is slightly different in one version of
+    -- the IDs.
+    ARRAY_AGG(First_Name ORDER BY Modified_On_Date || First_Name || Last_Name DESC)[SAFE_OFFSET(0)] First_Name_sorted,
+    ARRAY_AGG(Last_Name ORDER BY Modified_On_Date || First_Name || Last_Name DESC)[SAFE_OFFSET(0)] Last_Name_sorted,
     Email_Tx
-FROM {CIS_900_EMPLOYEE}
+FROM cleaned
+-- Ignore invalid emails.
+WHERE REGEXP_CONTAINS(Email_Tx, r"@")
+AND NOT(REGEXP_CONTAINS(Email_Tx, r"[ (),:;<>[\\]\\\\]"))
+
+-- Group by email and name because some people have multiple employee IDs. 
+GROUP BY Email_Tx
 """
 
 
