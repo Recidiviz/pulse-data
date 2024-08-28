@@ -133,10 +133,18 @@ class TestCaseNoteFunctions(TestCase):
         mock_discovery_engine_interface.assert_called_once_with(
             project_id=GCP_PROJECT_STAGING, engine_id=CASE_NOTE_SEARCH_ENGINE_ID
         )
+        exclude_filter_conditions = {
+            "note_type": [
+                "Investigation (Confidential)",
+                "Mental Health (Confidential)",
+                "FIAT - Confidential",
+            ]
+        }
         mock_discovery_interface_instance.search.assert_called_once_with(
             query=query,
             page_size=page_size,
-            filter_conditions=filter_conditions,
+            include_filter_conditions=filter_conditions,
+            exclude_filter_conditions=exclude_filter_conditions,
             with_snippet=False,
         )
         mock_extract_case_notes_results.assert_called_once_with(mock_search_pager)
@@ -144,7 +152,7 @@ class TestCaseNoteFunctions(TestCase):
         # Ensure exact_match_search is called with the correct parameters
         mock_exact_match_search.assert_called_once_with(
             query_term=query,
-            external_ids=filter_conditions.get("external_id", None),
-            state_codes=filter_conditions.get("state_code", None),
+            include_filter_conditions=filter_conditions,
+            exclude_filter_conditions=exclude_filter_conditions,
             limit=page_size,
         )

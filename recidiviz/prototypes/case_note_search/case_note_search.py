@@ -46,6 +46,29 @@ STRUCTURED_DATASETS = {CASE_NOTE_SEARCH_ENGINE_ID}
 EXACT_MATCH_SUPPORTED = {CASE_NOTE_SEARCH_ENGINE_ID}
 
 
+def set_hardcoded_excludes() -> Dict[str, List[str]]:
+    """The case note types we are excluding are:
+        * `Investigation (Confidential)` - only occurs in Maine notes.
+        * `Mental Health (Confidential)` - only occurs in Maine notes.
+        * `FIAT - Confidential` - only occurs in Maine notes.
+
+    These note types are only present in Maine, but we are excluding the note types from
+    all case note search results. This is a simpler exclude-logic to get right, and
+    should be fine for now.
+
+    TODO(#32811): Extend excludes logic to support different roles other than POs.
+
+    Note: The includes/excludes matching is case-sensitive.
+    """
+    return {
+        "note_type": [
+            "Investigation (Confidential)",
+            "Mental Health (Confidential)",
+            "FIAT - Confidential",
+        ]
+    }
+
+
 def download_full_case_note(gcs_link: str) -> Optional[str]:
     """Download the full case note document from GCS."""
     gcs_file = GcsfsFilePath.from_absolute_path(gcs_link)
@@ -254,7 +277,8 @@ def case_note_search(
         search_pager = discovery_interface.search(
             query=query,
             page_size=page_size,
-            filter_conditions=filter_conditions,
+            include_filter_conditions=filter_conditions,
+            exclude_filter_conditions=set_hardcoded_excludes(),
             with_snippet=with_snippet,
         )
         if engine_id in STRUCTURED_DATASETS:
@@ -268,12 +292,8 @@ def case_note_search(
         if engine_id in EXACT_MATCH_SUPPORTED:
             exact_match_json_data: Dict[str, Any] = exact_match_search(
                 query_term=query,
-                external_ids=filter_conditions.get("external_id", None)
-                if filter_conditions
-                else None,
-                state_codes=filter_conditions.get("state_code", None)
-                if filter_conditions
-                else None,
+                include_filter_conditions=filter_conditions,
+                exclude_filter_conditions=set_hardcoded_excludes(),
                 limit=page_size,
             )
             # Exact matches are formated as jsonData currently, and need to be
@@ -311,7 +331,8 @@ if __name__ == "__main__":
     # Example usage of case_note_search.
     case_note_response = case_note_search(
         query="job status",
-        page_size=1,
+        page_size=10,
         with_snippet=True,
+        filter_conditions={"state_code": ["US_ME"]},
     )
     print(json.dumps(case_note_response, indent=2, default=str))
