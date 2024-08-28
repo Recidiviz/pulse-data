@@ -47,6 +47,7 @@ SUPERVISION_STAFF_RECORD_QUERY_TEMPLATE = """
                 IF(state_code = "US_CA", role_subtype_primary, CAST(NULL AS STRING)) AS role_subtype,
                 supervisor_external_id,
                 supervisor_external_ids,
+                pseudonymized_id
             FROM `{project_id}.reference_views.current_staff_materialized` current_staff
             INNER JOIN caseload_staff_external_ids ids
                 USING (state_code, external_id)
@@ -71,6 +72,7 @@ SUPERVISION_STAFF_RECORD_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
         "role_subtype",
         "supervisor_external_id",
         "supervisor_external_ids",
+        "pseudonymized_id",
     ],
     should_materialize=True,
 )
