@@ -33,6 +33,9 @@ from recidiviz.common.constants.operations.direct_ingest_instance_status import 
     DirectIngestStatus,
 )
 from recidiviz.common.constants.states import StateCode
+from recidiviz.ingest.direct.metadata.direct_ingest_raw_data_resource_lock_manager import (
+    DirectIngestRawDataLockStatus,
+)
 from recidiviz.ingest.direct.metadata.direct_ingest_raw_file_import_manager import (
     DirectIngestRawFileImportStatusBuckets,
     LatestDirectIngestRawFileImportRunSummary,
@@ -377,5 +380,31 @@ class IngestOpsEndpointTests(TestCase):
                     ],
                 },
                 "US_YY": None,
+            },
+        )
+
+    def test_all_current_lock_summaries(self) -> None:
+        # Arrange
+        self.mock_store.get_all_current_lock_summaries.return_value = {
+            StateCode.US_XX: {DirectIngestRawDataLockStatus.HELD: 3},
+            StateCode.US_YY: {
+                DirectIngestRawDataLockStatus.FREE: 2,
+                DirectIngestRawDataLockStatus.HELD: 1,
+            },
+        }
+
+        # Act
+        response = self.client.get(
+            "/api/ingest_operations/all_current_lock_summaries",
+            headers={"X-Appengine-Inbound-Appid": "recidiviz-456"},
+        )
+
+        # Assert
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response.json,
+            {
+                "US_XX": {"HELD": 3},
+                "US_YY": {"FREE": 2, "HELD": 1},
             },
         )

@@ -33,6 +33,7 @@ from recidiviz.ingest.direct.metadata import (
     direct_ingest_raw_data_resource_lock_manager,
 )
 from recidiviz.ingest.direct.metadata.direct_ingest_raw_data_resource_lock_manager import (
+    DirectIngestRawDataLockStatus,
     DirectIngestRawDataResourceLockAlreadyReleasedError,
     DirectIngestRawDataResourceLockHeldError,
     DirectIngestRawDataResourceLockManager,
@@ -278,12 +279,50 @@ class DirectIngestRawDataResourceLockManagerTest(TestCase):
             assert lock.released is True
             assert lock.lock_id in expired_lock_ids
 
+    def test_get_current_lock_summary(self) -> None:
+        current_locks = self.us_xx_manager.get_current_lock_summary()
+        assert current_locks == {DirectIngestRawDataLockStatus.FREE: 3}
+
+        old_time = datetime.datetime(2024, 1, 1, 1, 1, 1)
+        with freeze_time(old_time):
+            _ = self.us_xx_manager.acquire_lock_for_resources(
+                self.all_resources,
+                DirectIngestRawDataLockActor.PROCESS,
+                "testing-testing-123",
+                ttl_seconds=60 * 60,
+            )
+
+        current_locks = self.us_xx_manager.get_current_lock_summary()
+
+        assert current_locks == {DirectIngestRawDataLockStatus.FREE: 3}
+
+        held_locks = self.us_xx_manager.acquire_lock_for_resources(
+            self.all_resources,
+            DirectIngestRawDataLockActor.PROCESS,
+            "testing-testing-123",
+            ttl_seconds=60 * 100,
+        )
+
+        current_locks = self.us_xx_manager.get_current_lock_summary()
+
+        assert current_locks == {DirectIngestRawDataLockStatus.HELD: 3}
+
+        released = held_locks[0]
+        self.us_xx_manager.release_lock_by_id(released.lock_id)
+
+        current_locks_two = self.us_xx_manager.get_current_lock_summary()
+
+        assert current_locks_two == {
+            DirectIngestRawDataLockStatus.HELD: 2,
+            DirectIngestRawDataLockStatus.FREE: 1,
+        }
+
     def test_lock_acquire_race_condition_on_commit(self) -> None:
         """Simulates a race condition, wherein two proceeses try to commit new locks.
         Worker 1 creates a new lock but before it commits its transaction, a
         second worker process swoop in to create a new lock and commits it. The
         expected behavior here is to have the second worker's acquisition complete and
-        the first worker who, despite technically being first to make the intiial query
+        the first worker who, despite technically being first to make the initial query
         fail because they were second to committing their transaction
         """
 
@@ -326,7 +365,7 @@ class DirectIngestRawDataResourceLockManagerTest(TestCase):
         """simulates a race condition wherein two process create locks but at the same
         time but one commits its locks before the other. the expected behavior here is
         to have the second worker's acquisition complete and have the first worker
-        who, despite technically being first to make the intiial query, will fail
+        who, despite technically being first to make the initial query, will fail
         because they were second to committing their transaction
         """
 
@@ -350,7 +389,7 @@ class DirectIngestRawDataResourceLockManagerTest(TestCase):
             )
 
         with after(
-            f"{LOCK_MANAGER_PACKAGE_NAME}.DirectIngestRawDataResourceLockManager._update_unreleased_but_expired_locks_for_resoures",
+            f"{LOCK_MANAGER_PACKAGE_NAME}.DirectIngestRawDataResourceLockManager._update_unreleased_but_expired_locks_for_resources",
             worker_two,
         ):
             with self.assertRaisesRegex(
@@ -379,7 +418,7 @@ class DirectIngestRawDataResourceLockManagerTest(TestCase):
     def test_lock_acquire_race_condition_with_active_expired_before_update_commit(
         self,
     ) -> None:
-        """simulates a "norepeatable read" situation wherein worker 1 reads an
+        """simulates a "non-repeatable read" situation wherein worker 1 reads an
         unreleased but expired lock and attempts to update it. after reading, but before
         worker 1 can commit the update, worker 2 reads the same unreleased but expired
         lock and commits an update to it and adds a new lock. worker 1 then tries to
@@ -407,7 +446,7 @@ class DirectIngestRawDataResourceLockManagerTest(TestCase):
             )
 
         with after(
-            f"{LOCK_MANAGER_PACKAGE_NAME}.DirectIngestRawDataResourceLockManager._get_unreleased_locks_for_resoures",
+            f"{LOCK_MANAGER_PACKAGE_NAME}.DirectIngestRawDataResourceLockManager._get_unreleased_locks_for_resources",
             worker_two,
         ):
             with self.assertRaisesRegex(
@@ -432,3 +471,12 @@ class DirectIngestRawDataResourceLockManagerTest(TestCase):
         assert len(most_recent_lock) == 1
         assert persisted_lock
         assert most_recent_lock[0].lock_id == persisted_lock[0].lock_id
+
+
+class DirectIngestRawDataLockStatusTest(TestCase):
+    """Tests for DirectIngestRawDataLockStatus"""
+
+    def test_actor_mapping(self) -> None:
+        DirectIngestRawDataLockStatus.from_lock_actor(None)
+        for actor in list(DirectIngestRawDataLockActor):
+            DirectIngestRawDataLockStatus.from_lock_actor(actor)
