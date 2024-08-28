@@ -30,7 +30,10 @@ It also produces ingerred sentence groups that only exist in normalized_state:
 """
 from typing import Dict, List
 
-from recidiviz.common.constants.state.state_sentence import StateSentenceType
+from recidiviz.common.constants.state.state_sentence import (
+    StateSentenceType,
+    StateSentencingAuthority,
+)
 from recidiviz.common.ncic import get_description
 from recidiviz.persistence.entity.entity_utils import set_backedges
 from recidiviz.persistence.entity.state.entities import (
@@ -164,7 +167,9 @@ def normalize_sentence(
         state_code=sentence.state_code,
         sentence_type=assert_type(sentence.sentence_type, StateSentenceType),
         sentence_type_raw_text=sentence.sentence_type_raw_text,
-        sentencing_authority=sentence.sentencing_authority,
+        sentencing_authority=assert_type(
+            sentence.sentencing_authority, StateSentencingAuthority
+        ),
         sentencing_authority_raw_text=sentence.sentencing_authority_raw_text,
         sentence_group_external_id=sentence.sentence_group_external_id,
         imposed_date=sentence.imposed_date,

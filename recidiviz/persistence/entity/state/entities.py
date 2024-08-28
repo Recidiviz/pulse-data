@@ -193,8 +193,8 @@ class StatePersonAddressPeriod(EnumEntity, BuildableAttr, DefaultableAttr):
         default=None, validator=attr_validators.is_opt_str
     )
 
-    address_start_date: Optional[datetime.date] = attr.ib(
-        default=None, validator=attr_validators.is_opt_date
+    address_start_date: datetime.date = attr.ib(
+        default=None, validator=attr_validators.is_date
     )
 
     address_end_date: Optional[datetime.date] = attr.ib(

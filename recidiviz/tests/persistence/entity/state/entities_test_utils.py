@@ -766,6 +766,7 @@ def generate_full_graph_state_person(
         external_id="SENTENCE_EXTERNAL_ID_1",
         sentence_group_external_id="SENTENCE_GROUP_EXTERNAL_ID_1",
         sentence_metadata='{"BS_CCI": "", "BS_CRQ": "0", "SENTENCE_FLAG": "SENTENCE: 120 DAY"}',
+        sentencing_authority=StateSentencingAuthority.COUNTY,
         sentence_type=StateSentenceType.STATE_PRISON,
         imposed_date=datetime.date(year=1956, month=3, day=16),
         is_life=True,
@@ -861,6 +862,7 @@ def generate_full_graph_state_person(
         address_zip="10000",
         address_county="GLACIER COUNTY",
         address_type=StatePersonAddressType.PHYSICAL_RESIDENCE,
+        address_start_date=datetime.date(2020, 1, 1),
     )
     person.address_periods = [address_period]
 

@@ -196,6 +196,7 @@ class TestDeserializeEntityFactories(unittest.TestCase):
                 address_zip="10000",
                 address_county="GLACIER COUNTY",
                 address_type=StatePersonAddressType.PHYSICAL_RESIDENCE,
+                address_start_date="2020-01-01",
             )
         )
 
@@ -208,6 +209,7 @@ class TestDeserializeEntityFactories(unittest.TestCase):
             address_zip="10000",
             address_county="GLACIER COUNTY",
             address_type=StatePersonAddressType.PHYSICAL_RESIDENCE,
+            address_start_date=date(2020, 1, 1),
         )
 
         self.assertEqual(expected_result, result)
