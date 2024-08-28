@@ -17,8 +17,6 @@
 
 import { Alert, Layout, Spin, Table } from "antd";
 import { ColumnsType } from "antd/lib/table";
-import classNames from "classnames";
-import moment from "moment";
 import { useEffect, useState } from "react";
 import { useHistory } from "react-router-dom";
 
@@ -37,30 +35,21 @@ import StateSelectorPageHeader from "../general/StateSelectorPageHeader";
 import NewTabLink from "../NewTabLink";
 import {
   DataflowIngestPipelineJobResponse,
-  DataflowIngestPipelineStatus,
+  DataflowJobStatusMetadata,
   IngestInstanceStatusResponse,
-  JobState,
   QueueMetadata,
   QueueState,
   StateIngestQueuesStatuses,
 } from "./constants";
 import {
-  getIngestQueuesCumalativeState,
-  getQueueColor,
+  getIngestQueuesCumulativeState,
+  getJobMetadataForCell,
+  getLegacyIngestStatusSortedOrder,
   getQueueStatusSortedOrder,
-  getStatusSortedOrder,
-  renderStatusCell,
+  renderDataflowStatusCell,
+  renderIngestQueuesCell,
+  renderLegacyIngestStatusCell,
 } from "./ingestStatusUtils";
-
-export interface IngestDataflowJobCellFormattingInfo {
-  color: string;
-  sortRank: number;
-}
-
-export type DataflowJobStatusMetadata = {
-  status: JobState;
-  terminationTime: number | undefined;
-};
 
 export type IngestInstanceDataflowStatusTableInfo = {
   stateCode: string;
@@ -109,7 +98,7 @@ const IngestDataflowCurrentStatusSummary = (): JSX.Element => {
       // QueueState for that state.
       const queueStatusSummaries: QueueState[] = queueStatusResponsesJson.map(
         (queueInfos): QueueState => {
-          return getIngestQueuesCumalativeState(queueInfos);
+          return getIngestQueuesCumulativeState(queueInfos);
         }
       );
       // Turn lists back into map of stateCode -> QueueStatus
@@ -141,57 +130,6 @@ const IngestDataflowCurrentStatusSummary = (): JSX.Element => {
     return <Alert message="Failed to load raw data statuses." type="error" />;
   }
 
-  function getCurrentStatus(
-    pipelineStatus: DataflowIngestPipelineStatus | null
-  ): JobState {
-    if (pipelineStatus == null) {
-      return JobState.NO_JOB_RUNS;
-    }
-    if (pipelineStatus.terminationState === "JOB_STATE_DONE") {
-      return JobState.SUCCEEDED;
-    }
-    if (pipelineStatus.terminationState === "JOB_STATE_FAILED") {
-      return JobState.FAILED;
-    }
-    throw new Error("Unknown job state found");
-  }
-
-  const queueStatusColorDict: {
-    [color: string]: IngestDataflowJobCellFormattingInfo;
-  } = {
-    SUCCEEDED: {
-      color: "job-succeeded",
-      sortRank: 1,
-    },
-    FAILED: {
-      color: "job-failed",
-      sortRank: 2,
-    },
-    NO_JOB_RUNS: {
-      color: "job-no-runs",
-      sortRank: 3,
-    },
-    NOT_ENABLED: {
-      color: "job-dataflow-not-enabled",
-      sortRank: 4,
-    },
-  };
-
-  function getJobStateColor(currentState: JobState): string {
-    return queueStatusColorDict[currentState].color;
-  }
-
-  // for primary
-  function getJobMetadataForCell(
-    key: string,
-    pipelineStatuses: DataflowIngestPipelineJobResponse
-  ): DataflowJobStatusMetadata {
-    return {
-      status: getCurrentStatus(pipelineStatuses[key]),
-      terminationTime: pipelineStatuses[key]?.terminationTime,
-    };
-  }
-
   const dataSource: IngestInstanceDataflowStatusTableInfo[] = Object.keys(
     dataflowPipelines
   ).map((key) => {
@@ -220,30 +158,6 @@ const IngestDataflowCurrentStatusSummary = (): JSX.Element => {
     };
   });
 
-  const renderDataflowStatusCell = (
-    statusMetadata: DataflowJobStatusMetadata
-  ) => {
-    return (
-      <div className={classNames(getJobStateColor(statusMetadata.status))}>
-        {statusMetadata.status}
-        {statusMetadata.terminationTime
-          ? `\n(${moment(
-              new Date(statusMetadata.terminationTime * 1000)
-            ).fromNow()})`
-          : null}
-      </div>
-    );
-  };
-
-  const renderIngestQueuesCell = (queueInfo: string | undefined) => {
-    if (queueInfo === undefined) {
-      return <Spin />;
-    }
-    const queueColor = getQueueColor(queueInfo);
-
-    return <div className={classNames(queueColor)}>{queueInfo}</div>;
-  };
-
   const columns: ColumnsType<IngestInstanceDataflowStatusTableInfo> = [
     {
       title: "State Code",
@@ -265,6 +179,7 @@ const IngestDataflowCurrentStatusSummary = (): JSX.Element => {
         <span>{renderDataflowStatusCell(ingestPipelineStatus)}</span>
       ),
     },
+    // TODO(#28239): remove once the raw data import dag is fully rolled out
     {
       title: "Raw Data Status (Primary)",
       dataIndex: "primary",
@@ -272,32 +187,34 @@ const IngestDataflowCurrentStatusSummary = (): JSX.Element => {
 
       render: (value, record: IngestInstanceDataflowStatusTableInfo) => (
         <span>
-          {renderStatusCell(
+          {renderLegacyIngestStatusCell(
             record.primaryRawDataStatus,
             record.primaryRawDataTimestamp
           )}
         </span>
       ),
       sorter: (a, b) =>
-        getStatusSortedOrder().indexOf(a.primaryRawDataStatus) -
-        getStatusSortedOrder().indexOf(b.primaryRawDataStatus),
+        getLegacyIngestStatusSortedOrder().indexOf(a.primaryRawDataStatus) -
+        getLegacyIngestStatusSortedOrder().indexOf(b.primaryRawDataStatus),
     },
+    // TODO(#28239): remove once the raw data import dag is fully rolled out
     {
       title: "Raw Data Status (Secondary)",
       dataIndex: "secondary",
       key: "secondary",
       render: (value, record: IngestInstanceDataflowStatusTableInfo) => (
         <span>
-          {renderStatusCell(
+          {renderLegacyIngestStatusCell(
             record.secondaryRawDataStatus,
             record.secondaryRawDataTimestamp
           )}
         </span>
       ),
       sorter: (a, b) =>
-        getStatusSortedOrder().indexOf(a.secondaryRawDataStatus) -
-        getStatusSortedOrder().indexOf(b.secondaryRawDataStatus),
+        getLegacyIngestStatusSortedOrder().indexOf(a.secondaryRawDataStatus) -
+        getLegacyIngestStatusSortedOrder().indexOf(b.secondaryRawDataStatus),
     },
+    // TODO(#28239): remove once the raw data import dag is fully rolled out
     {
       title: "Queue Status",
       dataIndex: "queueInfo",

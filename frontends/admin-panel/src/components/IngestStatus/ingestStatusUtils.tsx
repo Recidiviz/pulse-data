@@ -15,25 +15,35 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
+import { Spin } from "antd";
 import classNames from "classnames";
 import moment from "moment";
 
 import { GCP_STORAGE_BASE_URL } from "../general/constants";
-import { QueueMetadata, QueueState } from "./constants";
+import {
+  DataflowIngestPipelineJobResponse,
+  DataflowIngestPipelineStatus,
+  DataflowJobState,
+  DataflowJobStatusMetadata,
+  QueueMetadata,
+  QueueState,
+} from "./constants";
 
-export interface DirectIngestStatusFormattingInfo {
-  status: string;
+export interface DirectIngestCellFormattingInfo {
   color: string;
   sortRank: number;
+}
+
+export interface DirectIngestStatusFormattingInfo
+  extends DirectIngestCellFormattingInfo {
+  status: string;
   message: string;
 }
 
-export interface IngestQueuesCellFormattingInfo {
-  color: string;
-  sortRank: number;
-}
+// TODO(#28239): remove once the raw data import dag is fully rolled out
+// --- legacy ingest instance status utils ---------------------------------------------
 
-const statusFormattingInfo: {
+const legacyIngestStatusFormattingInfo: {
   [status: string]: DirectIngestStatusFormattingInfo;
 } = {
   READY_TO_FLASH: {
@@ -108,24 +118,123 @@ const statusFormattingInfo: {
   },
 };
 
-export const getStatusBoxColor = (status: string): string => {
-  return statusFormattingInfo[status].color;
+export const getLegacyIngestStatusBoxColor = (status: string): string => {
+  return legacyIngestStatusFormattingInfo[status].color;
 };
 
-export const getStatusMessage = (status: string, timestamp: string): string => {
+export const getLegacyIngestStatusMessage = (
+  status: string,
+  timestamp: string
+): string => {
   const dt = new Date(timestamp);
   const timeAgo = moment(dt).fromNow();
-  return `${statusFormattingInfo[status].message} (${timeAgo})`;
+  return `${legacyIngestStatusFormattingInfo[status].message} (${timeAgo})`;
 };
 
-export const getStatusSortedOrder = (): string[] => {
-  return Object.values(statusFormattingInfo)
+export const getLegacyIngestStatusSortedOrder = (): string[] => {
+  return Object.values(legacyIngestStatusFormattingInfo)
     .sort((info) => info.sortRank)
     .map((info) => info.status);
 };
 
+export const renderLegacyIngestStatusCell = (
+  status: string,
+  timestamp: string
+): React.ReactElement => {
+  const statusColorClassName = getLegacyIngestStatusBoxColor(status);
+  const statusMessage = getLegacyIngestStatusMessage(status, timestamp);
+
+  return (
+    <div className={classNames("ingest-status-cell", statusColorClassName)}>
+      {statusMessage}
+    </div>
+  );
+};
+
+// --- dataflow pipeline status utils --------------------------------------------------
+
+const jobStateColorDict: {
+  [color: string]: DirectIngestCellFormattingInfo;
+} = {
+  SUCCEEDED: {
+    color: "job-succeeded",
+    sortRank: 1,
+  },
+  FAILED: {
+    color: "job-failed",
+    sortRank: 2,
+  },
+  NO_JOB_RUNS: {
+    color: "job-no-runs",
+    sortRank: 3,
+  },
+  NOT_ENABLED: {
+    color: "job-dataflow-not-enabled",
+    sortRank: 4,
+  },
+};
+
+function getCurrentStatus(
+  pipelineStatus: DataflowIngestPipelineStatus | null
+): DataflowJobState {
+  if (pipelineStatus == null) {
+    return DataflowJobState.NO_JOB_RUNS;
+  }
+  if (pipelineStatus.terminationState === "JOB_STATE_DONE") {
+    return DataflowJobState.SUCCEEDED;
+  }
+  if (pipelineStatus.terminationState === "JOB_STATE_FAILED") {
+    return DataflowJobState.FAILED;
+  }
+  throw new Error("Unknown job state found");
+}
+
+function getDataflowJobStateColor(currentState: DataflowJobState): string {
+  return jobStateColorDict[currentState].color;
+}
+
+// for primary only
+export function getJobMetadataForCell(
+  key: string,
+  pipelineStatuses: DataflowIngestPipelineJobResponse
+): DataflowJobStatusMetadata {
+  return {
+    status: getCurrentStatus(pipelineStatuses[key]),
+    terminationTime: pipelineStatuses[key]?.terminationTime,
+  };
+}
+
+export const getDataflowEnabledSortedOrder = (
+  dataflowEnabled: boolean | undefined
+): number => {
+  if (!dataflowEnabled) {
+    return 0;
+  }
+  return dataflowEnabled ? 1 : 0;
+};
+
+export const renderDataflowStatusCell = (
+  statusMetadata: DataflowJobStatusMetadata
+) => {
+  return (
+    <div
+      className={classNames(getDataflowJobStateColor(statusMetadata.status))}
+    >
+      {statusMetadata.status}
+      {statusMetadata.terminationTime
+        ? `\n(${moment(
+            new Date(statusMetadata.terminationTime * 1000)
+          ).fromNow()})`
+        : null}
+    </div>
+  );
+};
+
+// TODO(#28239): remove once the raw data import dag is fully rolled out
+// --- ingest queue status utils -------------------------------------------------------
+
 const queueStatusColorDict: {
-  [color: string]: IngestQueuesCellFormattingInfo;
+  [color: string]: DirectIngestCellFormattingInfo;
 } = {
   PAUSED: {
     color: "queue-status-not-running",
@@ -145,20 +254,6 @@ const queueStatusColorDict: {
   },
 };
 
-export const renderStatusCell = (
-  status: string,
-  timestamp: string
-): React.ReactElement => {
-  const statusColorClassName = getStatusBoxColor(status);
-  const statusMessage = getStatusMessage(status, timestamp);
-
-  return (
-    <div className={classNames("ingest-status-cell", statusColorClassName)}>
-      {statusMessage}
-    </div>
-  );
-};
-
 export const getQueueColor = (queueInfo: string): string => {
   return queueStatusColorDict[queueInfo].color;
 };
@@ -173,25 +268,7 @@ export const getQueueStatusSortedOrder = (
   return queueStatusColorDict[queueInfo].sortRank;
 };
 
-export const getDataflowEnabledSortedOrder = (
-  dataflowEnabled: boolean | undefined
-): number => {
-  if (!dataflowEnabled) {
-    return 0;
-  }
-  return dataflowEnabled ? 1 : 0;
-};
-
-export function getGCPBucketURL(
-  fileDirectoryPath: string,
-  fileTag: string
-): string {
-  return `${GCP_STORAGE_BASE_URL.concat(
-    fileDirectoryPath
-  )}?prefix=&forceOnObjectsSortingFiltering=true&pageState=(%22StorageObjectListTable%22:(%22f%22:%22%255B%257B_22k_22_3A_22_22_2C_22t_22_3A10_2C_22v_22_3A_22_5C_22${fileTag}_5C_22_22%257D%255D%22))`;
-}
-
-export function getIngestQueuesCumalativeState(
+export function getIngestQueuesCumulativeState(
   queueInfos: QueueMetadata[]
 ): QueueState {
   return queueInfos
@@ -205,6 +282,26 @@ export function getIngestQueuesCumalativeState(
       }
       return QueueState.MIXED_STATUS;
     }, QueueState.UNKNOWN);
+}
+
+export const renderIngestQueuesCell = (queueInfo: string | undefined) => {
+  if (queueInfo === undefined) {
+    return <Spin />;
+  }
+  const queueColor = getQueueColor(queueInfo);
+
+  return <div className={classNames(queueColor)}>{queueInfo}</div>;
+};
+
+// --- misc status utils ---------------------------------------------------------------
+
+export function getGCPBucketURL(
+  fileDirectoryPath: string,
+  fileTag: string
+): string {
+  return `${GCP_STORAGE_BASE_URL.concat(
+    fileDirectoryPath
+  )}?prefix=&forceOnObjectsSortingFiltering=true&pageState=(%22StorageObjectListTable%22:(%22f%22:%22%255B%257B_22k_22_3A_22_22_2C_22t_22_3A10_2C_22v_22_3A_22_5C_22${fileTag}_5C_22_22%257D%255D%22))`;
 }
 
 export function removeUnderscore(a: string): string {

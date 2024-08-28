@@ -48,11 +48,11 @@ import {
   DataflowIngestPipelineAdditionalMetadata,
   DataflowIngestPipelineStatus,
   DataflowIngestRawDataWatermarks,
+  DataflowJobState,
   DirectIngestInstance,
   IngestInstanceResources,
   IngestRawFileProcessingStatus,
   IngestViewResultRowCounts,
-  JobState,
   StateDatasetRowCounts,
 } from "./constants";
 import IngestRawFileProcessingStatusTable from "./IngestRawFileProcessingStatusTable";
@@ -78,12 +78,12 @@ interface IngestDataflowInstanceCardProps {
   stateCode: string;
 }
 
-function displayJobState(status: string): JobState {
+function displayJobState(status: string): DataflowJobState {
   if (status === "JOB_STATE_DONE") {
-    return JobState.SUCCEEDED;
+    return DataflowJobState.SUCCEEDED;
   }
   if (status === "JOB_STATE_FAILED") {
-    return JobState.FAILED;
+    return DataflowJobState.FAILED;
   }
   throw new Error(`Found unknown job state ${status}`);
 }

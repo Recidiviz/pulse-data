@@ -15,12 +15,19 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
+// --- general constants ---------------------------------------------------------------
 export enum DirectIngestInstance {
   PRIMARY = "PRIMARY",
   SECONDARY = "SECONDARY",
 }
 
-export enum JobState {
+// --- dataflow-related constants ------------------------------------------------------
+export type DataflowJobStatusMetadata = {
+  status: DataflowJobState;
+  terminationTime: number | undefined;
+};
+
+export enum DataflowJobState {
   SUCCEEDED = "SUCCEEDED",
   FAILED = "FAILED",
   NO_JOB_RUNS = "NO_JOB_RUNS",
@@ -38,6 +45,10 @@ export type DataflowIngestPipelineStatus = {
   duration: number;
 };
 
+export type DataflowIngestPipelineJobResponse = {
+  [stateCode: string]: DataflowIngestPipelineStatus | null;
+};
+
 export type DataflowIngestPipelineAdditionalMetadata = {
   ingestViewResultsDatasetName: string;
   stateResultsDatasetName: string;
@@ -47,6 +58,8 @@ export interface DataflowIngestRawDataWatermarks {
   [fileName: string]: Date;
 }
 
+// TODO(#28239): remove once the raw data import dag is fully rolled ou
+// --- ingest-related constants --------------------------------------------------------
 export interface IngestViewResultRowCounts {
   [ingestViewName: string]: number;
 }
@@ -54,10 +67,6 @@ export interface IngestViewResultRowCounts {
 export interface StateDatasetRowCounts {
   [dataset: string]: number;
 }
-
-export type DataflowIngestPipelineJobResponse = {
-  [stateCode: string]: DataflowIngestPipelineStatus | null;
-};
 
 export enum IngestStatus {
   RAW_DATA_REIMPORT_STARTED = "RAW_DATA_REIMPORT_STARTED",
@@ -85,6 +94,9 @@ export type IngestInstanceStatusResponse = {
   };
 };
 
+// TODO(#28239): remove once the raw data import dag is fully rolled ou
+// --- queue-related constants ---------------------------------------------------------
+
 export enum QueueState {
   PAUSED = "PAUSED",
   RUNNING = "RUNNING",
@@ -96,6 +108,12 @@ export type QueueMetadata = {
   name: string;
   state: QueueState;
 };
+
+export type StateIngestQueuesStatuses = {
+  [stateCode: string]: QueueState;
+};
+
+// --- raw data import dag related constants -------------------------------------------
 
 export type IngestInstanceResources = {
   storageDirectoryPath: string;
@@ -114,9 +132,7 @@ export type IngestRawFileProcessingStatus = {
   isStale: boolean;
 };
 
-export type StateIngestQueuesStatuses = {
-  [stateCode: string]: QueueState;
-};
+// --- string constants ----------------------------------------------------------------
 
 export const ANCHOR_DATAFLOW_LATEST_JOB = "dataflow_latest_job";
 export const ANCHOR_INGEST_RAW_DATA = "ingest_raw_data";
