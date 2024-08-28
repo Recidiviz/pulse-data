@@ -677,8 +677,8 @@ def generate_full_graph_state_person(
         charge_notes=None,
     )
 
-    supervision_sentence.charges = [charge, charge2, charge3]
-    incarceration_sentence.charges = [charge, charge2, charge3]
+    supervision_sentence.charges = [charge, charge2]
+    incarceration_sentence.charges = [charge3]
 
     early_discharge_1 = entities.StateEarlyDischarge.new_with_defaults(
         external_id="ed1",
@@ -1267,8 +1267,8 @@ def generate_full_graph_normalized_state_person() -> normalized_entities.Normali
         charge_notes=None,
     )
 
-    supervision_sentence.charges = [charge, charge2, charge3]
-    incarceration_sentence.charges = [charge, charge2, charge3]
+    supervision_sentence.charges = [charge, charge2]
+    incarceration_sentence.charges = [charge3]
 
     early_discharge_1 = normalized_entities.NormalizedStateEarlyDischarge(
         early_discharge_id=1,

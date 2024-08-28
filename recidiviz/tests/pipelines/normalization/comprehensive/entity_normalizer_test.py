@@ -268,39 +268,33 @@ class TestNormalizeEntities(unittest.TestCase):
             }
         )
 
-        expected_additional_attributes_map.update(
-            {
-                StateCharge.__name__: {
-                    charge.charge_id: {
-                        "ncic_code_external": charge.ncic_code,
-                        "ncic_category_external": None,
-                        "description_external": charge.description,
-                        "is_violent_external": charge.is_violent,
-                        "is_drug_external": charge.is_drug,
-                        "is_sex_offense_external": charge.is_sex_offense,
-                    }
-                    for supervision_sentence in self.full_graph_person.supervision_sentences
-                    for charge in supervision_sentence.charges
-                    if charge.charge_id
-                }
+        expected_additional_attributes_map[StateCharge.__name__] = {
+            charge.charge_id: {
+                "ncic_code_external": charge.ncic_code,
+                "ncic_category_external": None,
+                "description_external": charge.description,
+                "is_violent_external": charge.is_violent,
+                "is_drug_external": charge.is_drug,
+                "is_sex_offense_external": charge.is_sex_offense,
             }
-        )
+            for supervision_sentence in self.full_graph_person.supervision_sentences
+            for charge in supervision_sentence.charges
+            if charge.charge_id
+        }
 
-        expected_additional_attributes_map.update(
+        expected_additional_attributes_map[StateCharge.__name__].update(
             {
-                StateCharge.__name__: {
-                    charge.charge_id: {
-                        "ncic_code_external": charge.ncic_code,
-                        "ncic_category_external": None,
-                        "description_external": charge.description,
-                        "is_violent_external": charge.is_violent,
-                        "is_drug_external": charge.is_drug,
-                        "is_sex_offense_external": charge.is_sex_offense,
-                    }
-                    for incarceration_sentence in self.full_graph_person.incarceration_sentences
-                    for charge in incarceration_sentence.charges
-                    if charge.charge_id
+                charge.charge_id: {
+                    "ncic_code_external": charge.ncic_code,
+                    "ncic_category_external": None,
+                    "description_external": charge.description,
+                    "is_violent_external": charge.is_violent,
+                    "is_drug_external": charge.is_drug,
+                    "is_sex_offense_external": charge.is_sex_offense,
                 }
+                for incarceration_sentence in self.full_graph_person.incarceration_sentences
+                for charge in incarceration_sentence.charges
+                if charge.charge_id
             }
         )
 

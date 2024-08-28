@@ -139,6 +139,23 @@ class SentenceNormalizationManager(EntityNormalizationManager):
             additional_supervision_sentence_attributes,
         )
 
+        charge_by_external_id = {}
+        all_sentences: list[
+            NormalizedStateIncarcerationSentence | NormalizedStateSupervisionSentence
+        ] = [*normalized_incarceration_sentences, *normalized_supervision_sentences]
+        for sentence in all_sentences:
+            for charge in sentence.charges:
+                if charge.external_id not in charge_by_external_id:
+                    charge_by_external_id[charge.external_id] = charge
+                    continue
+                raise ValueError(
+                    "No support in the legacy sentence schema for many-to-one "
+                    "relationships between sentences and charges. If you have a state "
+                    "with many to one relationships between sentences and charges, "
+                    "hydrate sentences via the v2 sentencing schema instead (i.e. "
+                    "StateSentence)."
+                )
+
         return normalized_incarceration_sentences, normalized_supervision_sentences
 
     def normalized_incarceration_sentences_and_additional_attributes(
