@@ -1178,6 +1178,8 @@ US_ND:
   elite_offendersentenceaggs:
     sessions.us_nd_incarceration_sentences_preprocessed: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
+    workflows_views.us_nd_resident_metadata: |-
+      Parole Dates are flagged as resident metadata.
   elite_offendersentences:
     sessions.us_nd_consecutive_sentences_preprocessed: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
