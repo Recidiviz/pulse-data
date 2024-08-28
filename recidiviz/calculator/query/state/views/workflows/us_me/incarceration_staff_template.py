@@ -16,13 +16,15 @@
 # =============================================================================
 """View logic to prepare US_ME incarceration staff data for Workflows"""
 
-US_ME_INCARCERATION_STAFF_TEMPLATE = """
+from recidiviz.calculator.query.bq_utils import get_pseudonymized_id_query_str
+
+US_ME_INCARCERATION_STAFF_TEMPLATE = f"""
     WITH 
     caseload_staff_ids AS (
         SELECT DISTINCT
             officer_id AS id,
             state_code,
-        FROM `{project_id}.{workflows_dataset}.resident_record_materialized`
+        FROM `{{project_id}}.{{workflows_dataset}}.resident_record_materialized`
         WHERE state_code = "US_ME"
         AND officer_id IS NOT NULL
     )
@@ -35,12 +37,13 @@ US_ME_INCARCERATION_STAFF_TEMPLATE = """
             UPPER(state_table.First_Name) as given_names,
             UPPER(state_table.Last_Name) as surname,
             CAST(NULL AS STRING) AS role_subtype,
+            {get_pseudonymized_id_query_str("IF(state_code = 'US_IX', 'US_ID', state_code) || id")} AS pseudonymized_id 
         FROM caseload_staff_ids ids
         -- TODO(#31900): Pull this from sessions preprocessing, not raw data.
-        LEFT JOIN `{project_id}.{us_me_raw_data_up_to_date_dataset}.CIS_900_EMPLOYEE_latest` state_table
+        LEFT JOIN `{{project_id}}.{{us_me_raw_data_up_to_date_dataset}}.CIS_900_EMPLOYEE_latest` state_table
             ON state_table.Employee_Id = ids.id
     )
     SELECT 
-        {columns}
+        {{columns}}
     FROM caseload_staff
 """

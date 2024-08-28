@@ -39,8 +39,8 @@ INCARCERATION_STAFF_RECORD_DESCRIPTION = """
 
 INCARCERATION_STAFF_RECORD_QUERY_TEMPLATE = f"""
     WITH 
-          me_staff AS ({US_ME_INCARCERATION_STAFF_TEMPLATE}),
-          nd_staff AS ({US_ND_INCARCERATION_STAFF_TEMPLATE})
+        me_staff AS ({US_ME_INCARCERATION_STAFF_TEMPLATE}),
+        nd_staff AS ({US_ND_INCARCERATION_STAFF_TEMPLATE})
     SELECT {{columns}} FROM me_staff    
     UNION ALL
     
@@ -60,6 +60,7 @@ INCARCERATION_STAFF_RECORD_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
         "given_names",
         "surname",
         "role_subtype",
+        "pseudonymized_id",
     ],
     workflows_dataset=dataset_config.WORKFLOWS_VIEWS_DATASET,
     us_me_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(

@@ -17,13 +17,15 @@
 """View logic to prepare US_ND incarceration staff data for Workflows"""
 
 
-US_ND_INCARCERATION_STAFF_TEMPLATE = """
+from recidiviz.calculator.query.bq_utils import get_pseudonymized_id_query_str
+
+US_ND_INCARCERATION_STAFF_TEMPLATE = f"""
     WITH
     caseload_staff_ids AS (
         SELECT DISTINCT
             officer_id AS id,
             state_code,
-        FROM `{project_id}.{workflows_dataset}.resident_record_materialized`
+        FROM `{{project_id}}.{{workflows_dataset}}.resident_record_materialized`
         WHERE state_code = "US_ND"
         AND officer_id IS NOT NULL
     )
@@ -36,11 +38,12 @@ US_ND_INCARCERATION_STAFF_TEMPLATE = """
             UPPER(state_table.FIRST_NAME) as given_names,
             UPPER(state_table.LAST_NAME) as surname,
             CAST(NULL AS STRING) AS role_subtype,
+            {get_pseudonymized_id_query_str("IF(state_code = 'US_IX', 'US_ID', state_code) || id")} AS pseudonymized_id 
         FROM caseload_staff_ids ids
-        INNER JOIN `{project_id}.{us_nd_raw_data_up_to_date_dataset}.recidiviz_elite_staff_members_latest` state_table
+        INNER JOIN `{{project_id}}.{{us_nd_raw_data_up_to_date_dataset}}.recidiviz_elite_staff_members_latest` state_table
             ON REPLACE(REPLACE(state_table.STAFF_ID, '.00',''), ',', '') = ids.id
     )
     SELECT 
-        {columns}
+        {{columns}}
     FROM caseload_staff
 """
