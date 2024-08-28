@@ -27,8 +27,8 @@ import {
 import { DirectIngestInstance, IngestInstanceStatusInfo } from "./constants";
 import IngestActionButton from "./IngestActionButton";
 import {
-  getStatusBoxColor,
-  getStatusMessage,
+  getLegacyIngestStatusBoxColor,
+  getLegacyIngestStatusMessage,
   removeUnderscore,
 } from "./ingestStatusUtils";
 
@@ -59,7 +59,10 @@ const IngestInstanceActionsPageHeader: React.FC<
   const IngestInstanceStatusPopoverContent = (
     <div>
       {statusInfo
-        ? getStatusMessage(statusInfo.status, statusInfo.statusTimestamp)
+        ? getLegacyIngestStatusMessage(
+            statusInfo.status,
+            statusInfo.statusTimestamp
+          )
         : null}
     </div>
   );
@@ -75,7 +78,7 @@ const IngestInstanceActionsPageHeader: React.FC<
                   className={classNames(
                     "tag",
                     "tag-with-color",
-                    getStatusBoxColor(statusInfo.status)
+                    getLegacyIngestStatusBoxColor(statusInfo.status)
                   )}
                 >
                   {removeUnderscore(statusInfo.status)}

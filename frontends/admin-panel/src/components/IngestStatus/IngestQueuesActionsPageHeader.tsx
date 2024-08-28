@@ -26,7 +26,7 @@ import {
 import { QueueMetadata } from "./constants";
 import IngestActionButton from "./IngestActionButton";
 import {
-  getIngestQueuesCumalativeState,
+  getIngestQueuesCumulativeState,
   getQueueColor,
   removeUnderscore,
 } from "./ingestStatusUtils";
@@ -82,7 +82,7 @@ const IngestQueuesActionsPageHeader: React.FC<
 export default IngestQueuesActionsPageHeader;
 
 function createIngestQueueStatusTag(queueStates: QueueMetadata[]): JSX.Element {
-  const queueState = getIngestQueuesCumalativeState(queueStates).toString();
+  const queueState = getIngestQueuesCumulativeState(queueStates).toString();
   return (
     <div
       className={classNames("tag", "tag-with-color", getQueueColor(queueState))}
