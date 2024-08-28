@@ -899,7 +899,7 @@ class NormalizedStateSentence(NormalizedStateEntity, HasExternalIdEntity):
 
     # The class of authority imposing this sentence: COUNTY, STATE, etc.
     # A value of COUNTY means a county court imposed this sentence.
-    sentencing_authority: StateSentencingAuthority | None = attr.ib(
+    sentencing_authority: StateSentencingAuthority = attr.ib(
         validator=attr.validators.instance_of(StateSentencingAuthority)
     )
     sentencing_authority_raw_text: str | None = attr.ib(
