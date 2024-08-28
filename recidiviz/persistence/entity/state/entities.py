@@ -2102,7 +2102,6 @@ class StateStaff(
             attr_validators.is_opt_valid_email,
             exempted_states={
                 StateCode.US_AR,  # TODO(#29046): Remove AR exemption after email fix
-                StateCode.US_ME,  # TODO(#31928): Remove ME exemption after email fix
                 StateCode.US_IX,  # TODO(#31930): Remove IX exemption after email fix
             },
         ),
