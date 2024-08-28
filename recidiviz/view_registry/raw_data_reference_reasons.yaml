@@ -994,8 +994,6 @@ US_MO:
       Usage reason unknown. Grandfathered in 04/18/2024.
     analyst_data.us_mo_restrictive_housing_record: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
-    workflows_views.us_mo_overdue_restrictive_housing_hearing_record: |-
-      Usage reason unknown. Grandfathered in 04/18/2024.
   LANTERN_DA_RA_LIST:
     reference_views.ingested_product_users: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
@@ -1024,8 +1022,6 @@ US_MO:
   LBAKRDTA_TAK033:
     analyst_data.us_mo_restrictive_housing_record: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
-    workflows_views.us_mo_overdue_restrictive_housing_hearing_record: |-
-      Usage reason unknown. Grandfathered in 04/18/2024.
   LBAKRDTA_TAK034:
     reference_views.supervision_location_ids_to_names: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
@@ -1046,8 +1042,6 @@ US_MO:
       Usage reason unknown. Grandfathered in 04/18/2024.
   LBAKRDTA_TAK194:
     analyst_data.us_mo_restrictive_housing_record: |-
-      Usage reason unknown. Grandfathered in 04/18/2024.
-    workflows_views.us_mo_overdue_restrictive_housing_hearing_record: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
   LBAKRDTA_TAK204:
     analyst_data.us_mo_screeners_preprocessed: |-
@@ -1074,14 +1068,10 @@ US_MO:
       Usage reason unknown. Grandfathered in 04/18/2024.
     analyst_data.us_mo_restrictive_housing_record: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
-    workflows_views.us_mo_overdue_restrictive_housing_hearing_record: |-
-      Usage reason unknown. Grandfathered in 04/18/2024.
   OFNDR_PDB_CLASS_SCHEDULE_ENROLLMENTS:
     analyst_data.us_mo_program_tracks: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
     analyst_data.us_mo_restrictive_housing_record: |-
-      Usage reason unknown. Grandfathered in 04/18/2024.
-    workflows_views.us_mo_overdue_restrictive_housing_hearing_record: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
   OFNDR_PDB_OFNDR_ASMNTS:
     analyst_data.us_mo_screeners_preprocessed: |-
@@ -1095,8 +1085,6 @@ US_MO:
     analyst_data.us_mo_restrictive_housing_record: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
     analyst_data.us_mo_screeners_preprocessed: |-
-      Usage reason unknown. Grandfathered in 04/18/2024.
-    workflows_views.us_mo_overdue_restrictive_housing_hearing_record: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
   RECIDIVIZ_REFERENCE_supervision_district_to_name:
     reference_views.supervision_location_ids_to_names: |-

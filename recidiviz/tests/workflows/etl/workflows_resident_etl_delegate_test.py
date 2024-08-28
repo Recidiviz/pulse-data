@@ -101,7 +101,9 @@ class WorkflowsResidentETLDelegateTest(TestCase):
                         "anotherTopLevelKey": "jackalope",
                     },
                     "sccpEligibilityDate": None,
-                    "allEligibleOpportunities": ["usMoRestrictiveHousingStatusHearing"],
+                    "allEligibleOpportunities": [
+                        "usMoOverdueRestrictiveHousingReviewHearing"
+                    ],
                     "usTnFacilityAdmissionDate": None,
                     "usMePortionNeededEligibleDate": None,
                 },
@@ -258,7 +260,9 @@ class WorkflowsResidentETLDelegateTest(TestCase):
                         "anotherTopLevelKey": "US_IX",
                     },
                     "sccpEligibilityDate": None,
-                    "allEligibleOpportunities": ["usMoRestrictiveHousingStatusHearing"],
+                    "allEligibleOpportunities": [
+                        "usMoOverdueRestrictiveHousingReviewHearing"
+                    ],
                     "usTnFacilityAdmissionDate": None,
                     "usMePortionNeededEligibleDate": None,
                 },
