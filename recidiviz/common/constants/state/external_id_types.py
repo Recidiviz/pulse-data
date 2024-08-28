@@ -151,3 +151,8 @@ US_OZ_LDS = "US_OZ_LDS"
 US_AZ_PERSON_ID = "US_AZ_PERSON_ID"
 # AZ ADC Number - only residents and clients, used by AZ internally
 US_AZ_ADC_NUMBER = "US_AZ_ADC_NUMBER"
+
+# TX person TDCJ number, could be assigned many to a single person
+US_TX_TDCJ = "US_TX_TDCJ"
+# TX person SID number, assigned only once
+US_TX_SID = "US_TX_SID"
