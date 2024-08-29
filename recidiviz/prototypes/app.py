@@ -152,7 +152,7 @@ async def search_case_notes() -> Response:
         filter_conditions["external_id"] = [external_id]
     if state_code is not None:
         filter_conditions["state_code"] = [get_state_code_for_filter(state_code)]
-    case_note_response = case_note_search(
+    case_note_response = await case_note_search(
         query=query,
         page_size=page_size,
         with_snippet=with_snippet,

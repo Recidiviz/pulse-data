@@ -23,10 +23,13 @@ pipenv run python -m recidiviz.prototypes.case_note_search.case_note_search
 
 """
 
+import asyncio
 import json
 from typing import Any, Dict, List, Optional
 
-from google.cloud.discoveryengine_v1.services.search_service.pagers import SearchPager
+from google.cloud.discoveryengine_v1.services.search_service.pagers import (
+    SearchAsyncPager,
+)
 
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.prototypes.case_note_search.exact_match import exact_match_search
@@ -149,10 +152,10 @@ def exact_match_json_data_to_results(json_data: Dict[str, Any]) -> Dict[str, Any
 
 
 def extract_case_notes_results_unstructured_data(
-    pager: SearchPager,
+    pager: SearchAsyncPager,
 ) -> List[Dict[str, Any]]:
     """
-    Extract relevant information from a SearchPager object for case note search results.
+    Extract relevant information from a SearchAsyncPager object for case note search results.
     """
     results = []
     for result in pager.results:
@@ -183,7 +186,7 @@ def extract_case_notes_results_unstructured_data(
             )
         except Exception as e:
             raise ValueError(
-                f"Could not parse SearchPager results. document.id = {document_id}"
+                f"Could not parse SearchAsyncPager results. document.id = {document_id}"
             ) from e
     return results
 
@@ -195,10 +198,10 @@ def get_note_body(result: Any) -> Optional[str]:
 
 
 def extract_case_notes_results_structured_data(
-    pager: SearchPager,
+    pager: SearchAsyncPager,
 ) -> List[Dict[str, Any]]:
     """
-    Extract relevant information from a SearchPager object for case note search results.
+    Extract relevant information from a SearchAsyncPager object for case note search results.
     """
     results = []
     for result in pager.results:
@@ -222,12 +225,12 @@ def extract_case_notes_results_structured_data(
             )
         except Exception as e:
             raise ValueError(
-                f"Could not parse SearchPager results. document.id = {document_id}"
+                f"Could not parse SearchAsyncPager results. document.id = {document_id}"
             ) from e
     return results
 
 
-def case_note_search(
+async def case_note_search(
     query: str,
     page_size: int = 10,
     filter_conditions: Optional[Dict[str, List[str]]] = None,
@@ -274,7 +277,7 @@ def case_note_search(
             project_id=GCP_PROJECT_STAGING,
             engine_id=engine_id,
         )
-        search_pager = discovery_interface.search(
+        search_pager = await discovery_interface.search(
             query=query,
             page_size=page_size,
             include_filter_conditions=filter_conditions,
@@ -328,11 +331,15 @@ def case_note_search(
 
 
 if __name__ == "__main__":
-    # Example usage of case_note_search.
-    case_note_response = case_note_search(
-        query="job status",
-        page_size=10,
-        with_snippet=True,
-        filter_conditions={"state_code": ["US_ME"]},
+    # Use asyncio to run the async function. This is necessary for running an async
+    # function in a syncronous environment.
+    case_note_response = asyncio.run(
+        case_note_search(
+            query="job status",
+            page_size=10,
+            with_snippet=True,
+            filter_conditions={"state_code": ["US_ME"]},
+        )
     )
+
     print(json.dumps(case_note_response, indent=2, default=str))

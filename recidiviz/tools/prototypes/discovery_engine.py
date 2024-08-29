@@ -24,7 +24,9 @@ from typing import Dict, List, Optional
 import attr
 from google.api_core.client_options import ClientOptions
 from google.cloud import discoveryengine_v1 as discoveryengine
-from google.cloud.discoveryengine_v1.services.search_service.pagers import SearchPager
+from google.cloud.discoveryengine_v1.services.search_service.pagers import (
+    SearchAsyncPager,
+)
 
 logging.basicConfig(level=logging.ERROR)
 logger = logging.getLogger(__name__)
@@ -85,7 +87,7 @@ class DiscoveryEngineInterface:
 
         return " AND ".join(formatted_conditions)
 
-    def search(
+    async def search(
         self,
         query: str,
         page_size: int = 10,
@@ -93,7 +95,7 @@ class DiscoveryEngineInterface:
         exclude_filter_conditions: Optional[Dict[str, List[str]]] = None,
         with_snippet: bool = False,
         with_summary: bool = False,
-    ) -> SearchPager:
+    ) -> SearchAsyncPager:
         """
         Executes a search query against Google Vertex AI's Discovery Engine.
 
@@ -147,12 +149,12 @@ class DiscoveryEngineInterface:
                 else None,
             )
             # Using the US-based client for all searches.
-            client = discoveryengine.SearchServiceClient(
+            client = discoveryengine.SearchServiceAsyncClient(
                 client_options=ClientOptions(
                     api_endpoint="us-discoveryengine.googleapis.com"
                 )
             )
-            response = client.search(request)
+            response = await client.search(request)
             return response
 
         # Log error and raise.
