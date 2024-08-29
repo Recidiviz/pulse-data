@@ -56,28 +56,6 @@ INGESTED_PRODUCT_USERS_QUERY_TEMPLATE = f"""
         WHERE email IS NOT NULL
         GROUP BY LOWER(email), emp_info.BDGNO
     ),
-    nd_users AS (
-        SELECT DISTINCT
-            'US_ND' AS state_code,
-            CONCAT(LOWER(loginname), "@nd.gov") AS email_address,
-            'supervision_staff' AS roles,
-            IFNULL(STRING_AGG(DISTINCT SITEID, ','), '') AS district,
-            CASE WHEN 
-                ids.external_id_to_map IS NOT NULL THEN ids.external_id_mapped
-                ELSE OFFICER 
-            END AS external_id,
-            FNAME AS first_name,
-            -- There is one officer in ND who has two entries in docstars_officers to account for
-            -- specialized caseloads, but she is only one person.
-            REGEXP_REPLACE(LNAME, ' - OS', '') AS last_name,
-            CAST(NULL AS STRING) AS pseudonymized_id,
-        FROM `{{project_id}}.{{us_nd_raw_data_up_to_date_dataset}}.docstars_officers_latest`
-        LEFT JOIN `{{project_id}}.{{static_reference_tables_dataset}}.agent_multiple_ids_map` ids
-            ON OFFICER = ids.external_id_to_map AND 'US_ND' = ids.state_code
-        WHERE
-            CAST(status AS STRING) = "(1)"
-        GROUP BY email_address, external_id, first_name, last_name
-    ),
     state_staff_users AS (
         SELECT
             state_code,
@@ -99,8 +77,6 @@ INGESTED_PRODUCT_USERS_QUERY_TEMPLATE = f"""
     all_users AS (
         SELECT * FROM mo_users
         UNION ALL
-        SELECT * FROM nd_users
-        UNION ALL
         SELECT * FROM state_staff_users
         -- Exclude D20 users because we're trying not to make any changes to them
         -- TODO(#25566): Add them back in
@@ -118,11 +94,17 @@ INGESTED_PRODUCT_USERS_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
     us_mo_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
         state_code=StateCode.US_MO, instance=DirectIngestInstance.PRIMARY
     ),
-    us_nd_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
-        state_code=StateCode.US_ND, instance=DirectIngestInstance.PRIMARY
+    state_staff_states=list_to_query_string(
+        [
+            "US_AR",
+            "US_CA",
+            "US_ME",
+            "US_MI",
+            "US_ND",
+            "US_PA",
+        ],
+        quoted=True,
     ),
-    static_reference_tables_dataset=dataset_config.STATIC_REFERENCE_TABLES_DATASET,
-    state_staff_states=list_to_query_string(["US_MI", "US_PA"], quoted=True),
     columns=[
         "state_code",
         "email_address",
