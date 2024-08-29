@@ -35,12 +35,11 @@ from recidiviz.case_triage.workflows.utils import jsonify_response
 from recidiviz.common.common_utils import convert_nested_dictionary_keys
 from recidiviz.common.constants.states import StateCode
 from recidiviz.common.str_field_utils import snake_to_camel, to_snake_case
-from recidiviz.outliers.querier.querier import OutliersQuerier
-from recidiviz.outliers.types import (
-    ActionStrategySurfacedEvent,
-    OutliersActionStrategy,
-    PersonName,
+from recidiviz.outliers.outliers_action_strategy_qualifier import (
+    OutliersActionStrategyQualifier,
 )
+from recidiviz.outliers.querier.querier import OutliersQuerier
+from recidiviz.outliers.types import ActionStrategySurfacedEvent, PersonName
 from recidiviz.utils.flask_exception import FlaskException
 from recidiviz.utils.types import assert_type
 
@@ -770,15 +769,17 @@ def create_outliers_api_blueprint() -> Blueprint:
         supervisor_events = querier.get_action_strategy_surfaced_events_for_supervisor(
             supervisor.pseudonymized_id
         )
-        action_strategies = OutliersActionStrategy(events=supervisor_events)
+        qualifier = OutliersActionStrategyQualifier(events=supervisor_events)
         for officer in officer_entities:
             action_strategies_json[
                 officer.pseudonymized_id
-            ] = action_strategies.get_eligible_action_strategy_for_officer(
-                officer=officer
-            )
+            ] = qualifier.get_eligible_action_strategy_for_officer(officer=officer)
 
-        action_strategies_json[supervisor.pseudonymized_id] = None
+        action_strategies_json[
+            supervisor.pseudonymized_id
+        ] = qualifier.get_eligible_action_strategy_for_supervisor(
+            officers=officer_entities
+        )
         return jsonify(action_strategies_json)
 
     @api.patch("/<state>/action_strategies/<supervisor_pseudonymized_id>")

@@ -40,6 +40,7 @@ from recidiviz.outliers.constants import (
     VIOLATION_RESPONSES,
 )
 from recidiviz.outliers.types import (
+    ActionStrategySurfacedEvent,
     ActionStrategyType,
     CaseloadCategory,
     ExcludedSupervisionOfficerEntity,
@@ -776,11 +777,12 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
             ]
 
             mock_get_events.return_value = [
-                ActionStrategySurfacedEvents(
+                ActionStrategySurfacedEvent(
                     state_code="us_pa",
                     user_pseudonymized_id=pseudo_id,
                     officer_pseudonymized_id="hashhash",
                     action_strategy=ActionStrategyType.ACTION_STRATEGY_OUTLIER.value,
+                    timestamp=date(2023, 4, 1),
                 ),
             ]
 
@@ -923,28 +925,28 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
             ]
 
             mock_get_events.return_value = [
-                ActionStrategySurfacedEvents(
+                ActionStrategySurfacedEvent(
                     state_code="us_pa",
                     user_pseudonymized_id=pseudo_id,
                     officer_pseudonymized_id="hash4",
                     action_strategy=ActionStrategyType.ACTION_STRATEGY_OUTLIER.value,
                     timestamp=date(2023, 4, 1),
                 ),
-                ActionStrategySurfacedEvents(
+                ActionStrategySurfacedEvent(
                     state_code="us_pa",
                     user_pseudonymized_id=pseudo_id,
                     officer_pseudonymized_id="hash6",
                     action_strategy=ActionStrategyType.ACTION_STRATEGY_OUTLIER.value,
                     timestamp=date(2023, 4, 1),
                 ),
-                ActionStrategySurfacedEvents(
+                ActionStrategySurfacedEvent(
                     state_code="us_pa",
                     user_pseudonymized_id=pseudo_id,
                     officer_pseudonymized_id="hash4",
                     action_strategy=ActionStrategyType.ACTION_STRATEGY_60_PERC_OUTLIERS.value,
                     timestamp=date(2023, 4, 1),
                 ),
-                ActionStrategySurfacedEvents(
+                ActionStrategySurfacedEvent(
                     state_code="us_pa",
                     user_pseudonymized_id=pseudo_id,
                     officer_pseudonymized_id="hash6",
@@ -1126,28 +1128,28 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
             ]
 
             mock_get_events.return_value = [
-                ActionStrategySurfacedEvents(
+                ActionStrategySurfacedEvent(
                     state_code="us_pa",
                     user_pseudonymized_id=pseudo_id,
                     officer_pseudonymized_id="hash5",
                     action_strategy=ActionStrategyType.ACTION_STRATEGY_OUTLIER.value,
                     timestamp=date(2023, 4, 1),
                 ),
-                ActionStrategySurfacedEvents(
+                ActionStrategySurfacedEvent(
                     state_code="us_pa",
                     user_pseudonymized_id=pseudo_id,
                     officer_pseudonymized_id="hash5",
                     action_strategy=ActionStrategyType.ACTION_STRATEGY_60_PERC_OUTLIERS.value,
                     timestamp=date(2023, 4, 1),
                 ),
-                ActionStrategySurfacedEvents(
+                ActionStrategySurfacedEvent(
                     state_code="us_pa",
                     user_pseudonymized_id=pseudo_id,
                     officer_pseudonymized_id="hash7",
                     action_strategy=ActionStrategyType.ACTION_STRATEGY_60_PERC_OUTLIERS.value,
                     timestamp=date(2023, 5, 1),
                 ),
-                ActionStrategySurfacedEvents(
+                ActionStrategySurfacedEvent(
                     state_code="us_pa",
                     user_pseudonymized_id=pseudo_id,
                     officer_pseudonymized_id="hash8",
@@ -1293,33 +1295,33 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
             ]
 
             mock_get_events.return_value = [
-                ActionStrategySurfacedEvents(
+                ActionStrategySurfacedEvent(
                     state_code="us_pa",
                     user_pseudonymized_id=pseudo_id,
                     officer_pseudonymized_id="hash4",
                     action_strategy=ActionStrategyType.ACTION_STRATEGY_OUTLIER.value,
-                    timestamp="Tue, 20 Aug 2024 00:00:00 GMT",
+                    timestamp=date(2024, 8, 20),
                 ),
-                ActionStrategySurfacedEvents(
+                ActionStrategySurfacedEvent(
                     state_code="us_pa",
                     user_pseudonymized_id=pseudo_id,
                     officer_pseudonymized_id="hash6",
                     action_strategy=ActionStrategyType.ACTION_STRATEGY_OUTLIER.value,
-                    timestamp="Tue, 20 Aug 2024 00:00:00 GMT",
+                    timestamp=date(2024, 8, 20),
                 ),
-                ActionStrategySurfacedEvents(
+                ActionStrategySurfacedEvent(
                     state_code="us_pa",
                     user_pseudonymized_id=pseudo_id,
                     officer_pseudonymized_id="hash4",
                     action_strategy=ActionStrategyType.ACTION_STRATEGY_OUTLIER_3_MONTHS.value,
-                    timestamp="Tue, 20 Aug 2024 00:00:00 GMT",
+                    timestamp=date(2024, 8, 20),
                 ),
-                ActionStrategySurfacedEvents(
+                ActionStrategySurfacedEvent(
                     state_code="us_pa",
                     user_pseudonymized_id=pseudo_id,
                     officer_pseudonymized_id="hash6",
                     action_strategy=ActionStrategyType.ACTION_STRATEGY_OUTLIER_3_MONTHS.value,
-                    timestamp="Tue, 20 Aug 2024 00:00:00 GMT",
+                    timestamp=date(2024, 8, 20),
                 ),
             ]
 
@@ -1330,6 +1332,166 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
 
             self.assertEqual(HTTPStatus.OK, response.status_code)
             self.snapshot.assert_match(response.json, name="test_get_action_strategies_3_months_as_outlier_already_surfaced")  # type: ignore[attr-defined]
+
+    @patch(
+        "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_action_strategy_surfaced_events_for_supervisor",
+    )
+    @patch(
+        "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_supervisor_entity_from_pseudonymized_id",
+    )
+    @patch(
+        "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_officers_for_supervisor",
+    )
+    @patch(
+        "recidiviz.case_triage.outliers.outliers_authorization.get_outliers_enabled_states",
+    )
+    def test_get_action_strategy_60_perc_outliers_eligible_eligible(
+        self,
+        mock_enabled_states: MagicMock,
+        mock_get_outliers: MagicMock,
+        mock_get_supervisor: MagicMock,
+        mock_get_events: MagicMock,
+    ) -> None:
+        pseudo_id = "supervisorHash"
+        self.mock_authorization_handler.side_effect = self.auth_side_effect(
+            state_code="us_pa",
+            external_id="102",
+            pseudonymized_id=pseudo_id,
+        )
+        mock_enabled_states.return_value = ["US_PA"]
+
+        with SessionFactory.using_database(self.insights_database_key) as session:
+            mock_get_supervisor.return_value = (
+                session.query(SupervisionOfficerSupervisor)
+                .filter(SupervisionOfficerSupervisor.external_id == "102")
+                .first()
+            )
+
+            mock_get_outliers.return_value = [
+                SupervisionOfficerEntity(
+                    full_name=PersonName(
+                        **{"given_names": "DRACO", "surname": "MALFOY"}
+                    ),
+                    external_id="1",
+                    pseudonymized_id="hash1",
+                    supervisor_external_id="102",
+                    supervisor_external_ids=["102"],
+                    district="Hogwarts",
+                    caseload_type=None,
+                    caseload_category="ALL",
+                    outlier_metrics=[
+                        {
+                            "metric_id": "metric_one",
+                            "statuses_over_time": [
+                                {
+                                    "end_date": "2023-05-01",
+                                    "metric_rate": 0.1,
+                                    "status": "FAR",
+                                },
+                            ],
+                        }
+                    ],
+                    top_x_pct_metrics=[
+                        {
+                            "metric_id": "incarceration_starts_and_inferred",
+                            "top_x_pct": 10,
+                        }
+                    ],
+                    avg_daily_population=10.0,
+                ),
+                SupervisionOfficerEntity(
+                    full_name=PersonName(
+                        **{"given_names": "HARRY", "surname": "POTTER"}
+                    ),
+                    external_id="2",
+                    pseudonymized_id="hash2",
+                    supervisor_external_id="102",
+                    supervisor_external_ids=["102"],
+                    district="Hogwarts",
+                    caseload_type=None,
+                    caseload_category="ALL",
+                    outlier_metrics=[
+                        {
+                            "metric_id": "metric_one",
+                            "statuses_over_time": [
+                                {
+                                    "end_date": "2023-05-01",
+                                    "metric_rate": 0.1,
+                                    "status": "FAR",
+                                },
+                            ],
+                        }
+                    ],
+                    top_x_pct_metrics=[
+                        {
+                            "metric_id": "incarceration_starts_and_inferred",
+                            "top_x_pct": 10,
+                        }
+                    ],
+                    avg_daily_population=10.0,
+                ),
+                SupervisionOfficerEntity(
+                    full_name=PersonName(
+                        **{"given_names": "HERMOINE", "surname": "GRANGER"}
+                    ),
+                    external_id="3",
+                    pseudonymized_id="hash3",
+                    supervisor_external_id="102",
+                    supervisor_external_ids=["102"],
+                    district="Hogwarts",
+                    caseload_type=None,
+                    caseload_category="ALL",
+                    outlier_metrics=[
+                        {
+                            "metric_id": "metric_one",
+                            "statuses_over_time": [
+                                {
+                                    "end_date": "2023-05-01",
+                                    "metric_rate": 0.1,
+                                    "status": "FAR",
+                                },
+                            ],
+                        }
+                    ],
+                    top_x_pct_metrics=[
+                        {
+                            "metric_id": "incarceration_starts_and_inferred",
+                            "top_x_pct": 10,
+                        }
+                    ],
+                    avg_daily_population=10.0,
+                ),
+                SupervisionOfficerEntity(
+                    full_name=PersonName(
+                        **{"given_names": "RON", "surname": "WHATSHISNAME"}
+                    ),
+                    external_id="4",
+                    pseudonymized_id="hash4",
+                    supervisor_external_id="102",
+                    supervisor_external_ids=["102"],
+                    district="Hogwarts",
+                    caseload_type=None,
+                    caseload_category="ALL",
+                    outlier_metrics=[],
+                    top_x_pct_metrics=[
+                        {
+                            "metric_id": "incarceration_starts_and_inferred",
+                            "top_x_pct": 10,
+                        }
+                    ],
+                    avg_daily_population=10.0,
+                ),
+            ]
+
+            mock_get_events.return_value = []
+
+            response = self.test_client.get(
+                "/outliers/us_pa/action_strategies/supervisorHash",
+                headers={"Origin": "http://localhost:3000"},
+            )
+
+            self.assertEqual(HTTPStatus.OK, response.status_code)
+            self.snapshot.assert_match(response.json, name="test_get_action_strategy_60_perc_outliers_eligible_eligible")  # type: ignore[attr-defined]
 
     @patch(
         "recidiviz.case_triage.outliers.outliers_authorization.get_outliers_enabled_states",
