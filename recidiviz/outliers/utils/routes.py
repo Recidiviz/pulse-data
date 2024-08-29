@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Endpoints for Outliers utils endpoints"""
+"""Endpoints for Outliers utils endpoints."""
 from http import HTTPStatus
 from typing import Tuple
 
