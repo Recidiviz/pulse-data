@@ -384,7 +384,7 @@ WITH min_referrals AS (
         END AS evaluation_result,
         reoa.ASSESS_COMMENT_TEXT AS assess_comment_text,
         reoa.COMMITTE_COMMENT_TEXT AS committee_comment_text,
-        SAFE_CAST(LEFT(reoa.EVALUATION_DATE, 10) AS DATE) AS evaluation_date,
+        SAFE_CAST(LEFT(COALESCE(reoa.EVALUATION_DATE, reoa.ASSESSMENT_DATE), 10) AS DATE) AS evaluation_date,
         SAFE_CAST(LEFT(reoa.NEXT_REVIEW_DATE, 10) AS DATE) AS next_review_date,
     FROM `{project_id}.{raw_data_up_to_date_views_dataset}.recidiviz_elite_OffenderAssessments_latest` reoa
     LEFT JOIN `{project_id}.{raw_data_up_to_date_views_dataset}.recidiviz_elite_Assessments_latest` rea
