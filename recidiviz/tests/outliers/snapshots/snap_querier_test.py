@@ -16,22 +16,22 @@ snapshots[
     "TestOutliersQuerier.TestOutliersQuerier test_get_action_strategy_surfaced_events_for_supervisor"
 ] = [
     GenericRepr(
-        "('hash1', 'officerhash1', 'ACTION_STRATEGY_OUTLIER', datetime.date(2024, 4, 2))"
+        "ActionStrategySurfacedEvent(state_code='US_PA', user_pseudonymized_id='hash1', officer_pseudonymized_id='officerhash1', action_strategy='ACTION_STRATEGY_OUTLIER', timestamp=datetime.date(2024, 4, 2))"
     ),
     GenericRepr(
-        "('hash1', 'officerhash1', 'ACTION_STRATEGY_OUTLIER_3_MONTHS', datetime.date(2024, 5, 1))"
+        "ActionStrategySurfacedEvent(state_code='US_PA', user_pseudonymized_id='hash1', officer_pseudonymized_id='officerhash1', action_strategy='ACTION_STRATEGY_OUTLIER_3_MONTHS', timestamp=datetime.date(2024, 5, 1))"
     ),
     GenericRepr(
-        "('hash1', 'officerhash1', 'ACTION_STRATEGY_OUTLIER_ABSCONSION', datetime.date(2024, 4, 4))"
+        "ActionStrategySurfacedEvent(state_code='US_PA', user_pseudonymized_id='hash1', officer_pseudonymized_id='officerhash1', action_strategy='ACTION_STRATEGY_OUTLIER_ABSCONSION', timestamp=datetime.date(2024, 4, 4))"
     ),
     GenericRepr(
-        "('hash1', 'officerhash1', 'ACTION_STRATEGY_OUTLIER_NEW_OFFICER', datetime.date(2024, 4, 5))"
+        "ActionStrategySurfacedEvent(state_code='US_PA', user_pseudonymized_id='hash1', officer_pseudonymized_id='officerhash1', action_strategy='ACTION_STRATEGY_OUTLIER_NEW_OFFICER', timestamp=datetime.date(2024, 4, 5))"
     ),
     GenericRepr(
-        "('hash1', 'officerhash2', 'ACTION_STRATEGY_OUTLIER', datetime.date(2024, 4, 3))"
+        "ActionStrategySurfacedEvent(state_code='US_PA', user_pseudonymized_id='hash1', officer_pseudonymized_id='officerhash2', action_strategy='ACTION_STRATEGY_OUTLIER', timestamp=datetime.date(2024, 4, 3))"
     ),
     GenericRepr(
-        "('hash1', None, 'ACTION_STRATEGY_60_PERC_OUTLIERS', datetime.date(2024, 6, 1))"
+        "ActionStrategySurfacedEvent(state_code='US_PA', user_pseudonymized_id='hash1', officer_pseudonymized_id=None, action_strategy='ACTION_STRATEGY_60_PERC_OUTLIERS', timestamp=datetime.date(2024, 6, 1))"
     ),
 ]
 

@@ -36,6 +36,15 @@ snapshots[
     "TestOutliersRoutes.TestOutliersRoutes test_get_action_strategies_as_outlier_eligible"
 ] = {"hash2": None, "hashhash": "ACTION_STRATEGY_OUTLIER", "hashhashhash": None}
 
+snapshots[
+    "TestOutliersRoutes.TestOutliersRoutes test_get_action_strategy_60_perc_outliers_eligible_eligible"
+] = {
+    "hash1": "ACTION_STRATEGY_OUTLIER",
+    "hash2": "ACTION_STRATEGY_60_PERC_OUTLIERS",
+    "hash3": "ACTION_STRATEGY_OUTLIER",
+    "hash4": None,
+}
+
 snapshots["TestOutliersRoutes.TestOutliersRoutes test_get_benchmarks"] = {
     "metrics": [
         {

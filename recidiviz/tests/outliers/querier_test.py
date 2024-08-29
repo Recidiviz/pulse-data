@@ -896,7 +896,7 @@ class TestOutliersQuerier(InsightsDbTestCase):
             user_pseudonymized_id=pseudo_id,
             officer_pseudonymized_id="officer_hash",
             action_strategy=ActionStrategyType.ACTION_STRATEGY_OUTLIER_3_MONTHS.value,
-            timestamp=datetime.now(),
+            timestamp=datetime.now().date(),
         )
         querier.insert_action_strategy_surfaced_event(event=event)
 
@@ -912,7 +912,7 @@ class TestOutliersQuerier(InsightsDbTestCase):
             new_event.officer_pseudonymized_id == event.officer_pseudonymized_id
         )
         self.assertTrue(new_event.action_strategy == event.action_strategy)
-        self.assertTrue(new_event.timestamp == event.timestamp.date())
+        self.assertTrue(new_event.timestamp == event.timestamp)
 
     def test_insert_action_strategy_surfaced_event_duplicate_failure(self) -> None:
         querier = OutliersQuerier(StateCode.US_PA)

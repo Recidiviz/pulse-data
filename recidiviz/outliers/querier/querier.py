@@ -1478,7 +1478,7 @@ class OutliersQuerier:
 
     def get_action_strategy_surfaced_events_for_supervisor(
         self, supervisor_pseudonymized_id: str
-    ) -> ActionStrategySurfacedEvents:
+    ) -> List[ActionStrategySurfacedEvent]:
         """
         Gets the ActionStrategySurfacedEvents for a given supervisor.
         """
@@ -1490,6 +1490,7 @@ class OutliersQuerier:
                     == supervisor_pseudonymized_id
                 )
                 .with_entities(
+                    ActionStrategySurfacedEvents.state_code,
                     ActionStrategySurfacedEvents.user_pseudonymized_id,
                     ActionStrategySurfacedEvents.officer_pseudonymized_id,
                     ActionStrategySurfacedEvents.action_strategy,
@@ -1498,7 +1499,7 @@ class OutliersQuerier:
                 .all()
             )
 
-            return supervisor_events
+            return [ActionStrategySurfacedEvent(**event) for event in supervisor_events]
 
     def get_most_recent_action_strategy_surfaced_event_for_supervisor(
         self, supervisor_pseudonymized_id: str
