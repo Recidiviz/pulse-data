@@ -397,3 +397,10 @@ export const isRawDataDAGIsEnabled = async (
     }
   );
 };
+
+// Get all latest ingest raw data import run info
+export const getAllLatestRawDataImportRunInfo = async (): Promise<Response> => {
+  return getResource(
+    "/api/ingest_operations/all_latest_raw_data_import_run_info"
+  );
+};

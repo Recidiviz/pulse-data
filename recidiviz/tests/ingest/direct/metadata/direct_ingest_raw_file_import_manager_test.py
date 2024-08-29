@@ -96,9 +96,12 @@ class DirectIngestRawFileImportManagerTest(TestCase):
             _fake_eq,
         )
         self.entity_eq_patcher.start()
+        self.project_id_patcher = patch("recidiviz.utils.metadata.project_id")
+        self.project_id_patcher.start().return_value = "recidiviz-456"
 
     def tearDown(self) -> None:
         self.entity_eq_patcher.stop()
+        self.project_id_patcher.stop()
         local_persistence_helpers.teardown_on_disk_postgresql_database(
             self.operations_key
         )
@@ -870,7 +873,11 @@ class DirectIngestRawFileImportManagerTest(TestCase):
         assert len(valid) == 5
 
     def test_import_run_summary_empty(self) -> None:
-        assert self.us_xx_manager.get_most_recent_import_run_summary() is None
+        assert self.us_xx_manager.get_most_recent_import_run_summary().for_api() == {
+            "isEnabled": False,
+            "importRunStart": None,
+            "countByStatusBucket": [],
+        }
 
     def test_import_run_summary(self) -> None:
         fixed_datetime = datetime.datetime(2022, 10, 1, 0, 0, 0, tzinfo=datetime.UTC)
@@ -939,6 +946,46 @@ class DirectIngestRawFileImportManagerTest(TestCase):
                 file_import_2.file_import_id,
                 import_status=DirectIngestRawFileImportStatus.FAILED_UNKNOWN,
             )
+
+            summary = self.us_xx_manager.get_most_recent_import_run_summary()
+
+            assert summary is not None
+            assert summary.is_enabled is False
+            assert summary.import_run_start == fixed_datetime + timedelta(hours=2)
+            assert summary.count_by_status_bucket == {
+                DirectIngestRawFileImportStatusBuckets.FAILED: 1,
+                DirectIngestRawFileImportStatusBuckets.SUCCEEDED: 1,
+            }
+        with freeze_time(fixed_datetime + timedelta(hours=2)):
+            us_yy_manager = DirectIngestRawFileImportManager(
+                region_code="US_YY", raw_data_instance=DirectIngestInstance.PRIMARY
+            )
+            import_run = us_yy_manager.start_import_run("test-run-2")
+            file_import_1 = us_yy_manager.start_file_import(
+                file_1.file_id, import_run.import_run_id, False
+            )
+            file_import_2 = us_yy_manager.start_file_import(
+                file_2.file_id, import_run.import_run_id, False
+            )
+
+            us_yy_manager.update_file_import_by_id(
+                file_import_1.file_import_id,
+                import_status=DirectIngestRawFileImportStatus.STARTED,
+                raw_rows=1,
+            )
+            us_yy_manager.update_file_import_by_id(
+                file_import_2.file_import_id,
+                import_status=DirectIngestRawFileImportStatus.FAILED_UNKNOWN,
+            )
+
+            yy_summary = us_yy_manager.get_most_recent_import_run_summary()
+
+            assert yy_summary is not None
+            assert yy_summary.import_run_start == fixed_datetime + timedelta(hours=2)
+            assert yy_summary.count_by_status_bucket == {
+                DirectIngestRawFileImportStatusBuckets.IN_PROGRESS: 1,
+                DirectIngestRawFileImportStatusBuckets.FAILED: 1,
+            }
 
             summary = self.us_xx_manager.get_most_recent_import_run_summary()
 

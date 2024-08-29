@@ -29,6 +29,8 @@ from recidiviz.common import attr_validators
 from recidiviz.common.constants.operations.direct_ingest_raw_file_import import (
     DirectIngestRawFileImportStatus,
 )
+from recidiviz.common.constants.states import StateCode
+from recidiviz.ingest.direct.gating import is_raw_data_import_dag_enabled
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.persistence.database.schema.operations import schema
 from recidiviz.persistence.database.schema_entity_converter.schema_entity_converter import (
@@ -70,22 +72,26 @@ class DirectIngestRawFileImportStatusBuckets(Enum):
                 )
 
     def for_api(self) -> str:
-        return self.value.replace("_", " ").title()
+        return self.value.replace("_", " ")
 
 
+# TODO(#28239): remove is_enabled once the raw data import dag is fully rolled out
 @attr.define
 class LatestDirectIngestRawFileImportRunSummary:
     """Summary for the most recent import run.
 
     Attributes:
-        import_run_start (datetime): the import_start time associated with the values in
-            |count_by_status|.
+        is_enabled (bool): whether or not the raw data import dag is enabled for this
+            state pair
+        import_run_start (datetime | None): the import_start time associated with the
+            values in |count_by_status|.
         count_by_status_bucket (Dict[DirectIngestRawFileImportStatusBuckets, int]): the
             number of file_ids associated with each of status bucket type found in the
             import sessions table for |import_start|.
     """
 
-    import_run_start: datetime.datetime = attr.ib(
+    is_enabled: bool = attr.ib(validator=attr_validators.is_bool)
+    import_run_start: Optional[datetime.datetime] = attr.ib(
         validator=attr_validators.is_utc_timezone_aware_datetime
     )
     count_by_status_bucket: Dict[DirectIngestRawFileImportStatusBuckets, int] = attr.ib(
@@ -97,7 +103,10 @@ class LatestDirectIngestRawFileImportRunSummary:
         frontend.
         """
         return {
-            "importRunStart": self.import_run_start.isoformat(),
+            "isEnabled": self.is_enabled,
+            "importRunStart": self.import_run_start.isoformat()
+            if self.import_run_start
+            else self.import_run_start,
             "countByStatusBucket": [
                 {"importStatus": status.for_api(), "fileCount": count}
                 for status, count in self.count_by_status_bucket.items()
@@ -387,7 +396,7 @@ class DirectIngestRawFileImportManager:
 
     def get_most_recent_import_run_summary(
         self,
-    ) -> Optional[LatestDirectIngestRawFileImportRunSummary]:
+    ) -> LatestDirectIngestRawFileImportRunSummary:
         """Builds a LatestDirectIngestRawFileImportRunSummary object, if any imports
         runs exist.
         """
@@ -404,15 +413,23 @@ class DirectIngestRawFileImportManager:
                     direct_ingest_raw_file_import_run AS ir
                 ON 
                     fi.import_run_id = ir.import_run_id
-                    AND ir.import_run_start = (
-                            SELECT max(import_run_start)
+                    AND ir.import_run_id = (
+                            SELECT import_run_id
                             FROM 
                                 direct_ingest_raw_file_import_run
                             WHERE
                                 region_code = '{self.region_code}'
                                 AND raw_data_instance = '{self.raw_data_instance.value}'
-
+                                AND import_run_start = (
+                                    SELECT max(import_run_start)
+                                    FROM 
+                                        direct_ingest_raw_file_import_run
+                                    WHERE
+                                        region_code = '{self.region_code}'
+                                        AND raw_data_instance = '{self.raw_data_instance.value}'
+                                )
                         )
+
                 GROUP BY
                     ir.import_run_start,
                     fi.import_status
@@ -433,13 +450,12 @@ class DirectIngestRawFileImportManager:
                     )
                 ] += result.num_file_imports
 
-            return (
-                LatestDirectIngestRawFileImportRunSummary(
-                    import_run_start=import_run_start,
-                    count_by_status_bucket=count_by_status_bucket,
-                )
-                if import_run_start is not None
-                else None
+            return LatestDirectIngestRawFileImportRunSummary(
+                is_enabled=is_raw_data_import_dag_enabled(
+                    StateCode(self.region_code), self.raw_data_instance
+                ),
+                import_run_start=import_run_start,
+                count_by_status_bucket=count_by_status_bucket,
             )
 
     def transfer_metadata_to_new_instance(

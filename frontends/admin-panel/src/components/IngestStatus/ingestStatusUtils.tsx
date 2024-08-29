@@ -27,6 +27,9 @@ import {
   DataflowJobStatusMetadata,
   QueueMetadata,
   QueueState,
+  RawDataImportRunState,
+  RawDataImportRunStatus,
+  RawDataImportRunStatusInfo,
 } from "./constants";
 
 export interface DirectIngestCellFormattingInfo {
@@ -292,6 +295,121 @@ export const renderIngestQueuesCell = (queueInfo: string | undefined) => {
 
   return <div className={classNames(queueColor)}>{queueInfo}</div>;
 };
+
+// --- raw data import dag status utils ------------------------------------------------
+
+const rawDataImportRunColorStatusDict: {
+  [color: string]: DirectIngestCellFormattingInfo;
+} = {
+  SUCCEEDED: {
+    color: "raw-data-import-success",
+    sortRank: 1,
+  },
+  HAS_FAILURE: {
+    color: "raw-data-import-failure",
+    sortRank: 2,
+  },
+  IN_PROGRESS: {
+    color: "raw-data-import-in-progress",
+    sortRank: 3,
+  },
+  NO_JOB_RUNS: {
+    color: "raw-data-import-no-runs",
+    sortRank: 4,
+  },
+  NOT_ENABLED: {
+    color: "raw-data-import-not-enabled",
+    sortRank: 5,
+  },
+};
+
+function getColorStatusForInfo(
+  rawDataImportRunStatus: RawDataImportRunStatusInfo
+): DirectIngestCellFormattingInfo {
+  if (!rawDataImportRunStatus.isEnabled) {
+    return rawDataImportRunColorStatusDict.NOT_ENABLED;
+  }
+
+  if (!rawDataImportRunStatus.importRunStart) {
+    return rawDataImportRunColorStatusDict.NO_JOB_RUNS;
+  }
+
+  const hasInProgress = rawDataImportRunStatus.countByStatusBucket.reduce(
+    (reduced, val) =>
+      reduced || val.importStatus === RawDataImportRunState.IN_PROGRESS,
+    false
+  );
+
+  if (hasInProgress) {
+    return rawDataImportRunColorStatusDict.IN_PROGRESS;
+  }
+
+  const hasFailures = rawDataImportRunStatus.countByStatusBucket.reduce(
+    (reduced, val) =>
+      reduced || val.importStatus === RawDataImportRunState.FAILED,
+    false
+  );
+
+  if (hasFailures) {
+    return rawDataImportRunColorStatusDict.HAS_FAILURE;
+  }
+
+  return rawDataImportRunColorStatusDict.SUCCEEDED;
+}
+
+function getRawDataImportRunStatusColor(
+  rawDataImportRunStatus: RawDataImportRunStatusInfo
+): string {
+  return getColorStatusForInfo(rawDataImportRunStatus).color;
+}
+
+const getRawDataFileStatusMessage = (
+  runStatus: RawDataImportRunStatus
+): string => {
+  const plural = runStatus.fileCount === 1 ? "" : "s";
+  return `${runStatus.fileCount} file${plural} ${runStatus.importStatus}`;
+};
+
+const getRawDataStatusMessage = (
+  rawDataImportRunStatus: RawDataImportRunStatusInfo
+): string => {
+  let statusString = "";
+  if (!rawDataImportRunStatus.isEnabled) {
+    statusString = "Not Enabled";
+  } else if (!rawDataImportRunStatus.importRunStart) {
+    statusString = "No Runs Found";
+  } else {
+    const dt = new Date(rawDataImportRunStatus.importRunStart);
+    const timeAgo = moment(dt).fromNow();
+    const runStatusString = rawDataImportRunStatus.countByStatusBucket.reduce(
+      (reduced, val) => `${reduced}${getRawDataFileStatusMessage(val)}\n`,
+      ""
+    );
+    statusString = `${runStatusString} (${timeAgo})`;
+  }
+  return statusString;
+};
+
+export const renderRawDataImportRunStatusCell = (
+  rawDataImportRunStatus: RawDataImportRunStatusInfo
+) => {
+  return (
+    <div
+      className={classNames(
+        "raw-data-import-cell",
+        getRawDataImportRunStatusColor(rawDataImportRunStatus)
+      )}
+    >
+      {getRawDataStatusMessage(rawDataImportRunStatus)}
+    </div>
+  );
+};
+
+export function getRawDataImportRunStatusSortedOrder(
+  rawDataImportRunStatus: RawDataImportRunStatusInfo
+): number {
+  return getColorStatusForInfo(rawDataImportRunStatus).sortRank;
+}
 
 // --- misc status utils ---------------------------------------------------------------
 

@@ -481,7 +481,7 @@ class IngestOperationsStore(AdminPanelStore):
 
     def get_all_latest_raw_data_import_run_info(
         self,
-    ) -> Dict[StateCode, Optional[LatestDirectIngestRawFileImportRunSummary]]:
+    ) -> Dict[StateCode, LatestDirectIngestRawFileImportRunSummary]:
         raw_data_import_history = {}
         for state_code in get_direct_ingest_states_launched_in_env():
             raw_data_import_history[state_code] = DirectIngestRawFileImportManager(
