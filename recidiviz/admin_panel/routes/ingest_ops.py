@@ -848,7 +848,7 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
         return (
             jsonify(
                 {
-                    state_code.value: summary.for_api() if summary else None
+                    state_code.value: summary.for_api()
                     for state_code, summary in all_import_run_summaries.items()
                 }
             ),

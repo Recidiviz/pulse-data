@@ -23,6 +23,7 @@ import { useHistory } from "react-router-dom";
 import {
   getAllIngestInstanceStatuses,
   getAllLatestDataflowJobs,
+  getAllLatestRawDataImportRunInfo,
   getIngestQueuesState,
 } from "../../AdminPanelAPI/IngestOperations";
 import { useFetchedDataJSON } from "../../hooks";
@@ -39,6 +40,8 @@ import {
   IngestInstanceStatusResponse,
   QueueMetadata,
   QueueState,
+  RawDataImportRunStatusInfo,
+  RawDataImportRunStatusResponse,
   StateIngestQueuesStatuses,
 } from "./constants";
 import {
@@ -46,9 +49,11 @@ import {
   getJobMetadataForCell,
   getLegacyIngestStatusSortedOrder,
   getQueueStatusSortedOrder,
+  getRawDataImportRunStatusSortedOrder,
   renderDataflowStatusCell,
   renderIngestQueuesCell,
   renderLegacyIngestStatusCell,
+  renderRawDataImportRunStatusCell,
 } from "./ingestStatusUtils";
 
 export type IngestInstanceDataflowStatusTableInfo = {
@@ -59,6 +64,7 @@ export type IngestInstanceDataflowStatusTableInfo = {
   primaryRawDataTimestamp: string;
   secondaryRawDataTimestamp: string;
   queueInfo: string | undefined;
+  rawDataImportRunStatus: RawDataImportRunStatusInfo;
 };
 
 const IngestDataflowCurrentStatusSummary = (): JSX.Element => {
@@ -72,6 +78,13 @@ const IngestDataflowCurrentStatusSummary = (): JSX.Element => {
     useFetchedDataJSON<IngestInstanceStatusResponse>(
       getAllIngestInstanceStatuses
     );
+
+  const {
+    loading: loadingRawDataImportRunStatuses,
+    data: rawDataImportRunStatuses,
+  } = useFetchedDataJSON<RawDataImportRunStatusResponse>(
+    getAllLatestRawDataImportRunInfo
+  );
 
   const [stateIngestQueueStatuses, setStateIngestQueueStatuses] = useState<
     StateIngestQueuesStatuses | undefined
@@ -112,7 +125,11 @@ const IngestDataflowCurrentStatusSummary = (): JSX.Element => {
     loadAllStatesQueueStatuses();
   }, [rawDataStatuses]);
 
-  if (dataflowPipelinesLoading || loadingRawDataStatuses) {
+  if (
+    dataflowPipelinesLoading ||
+    loadingRawDataStatuses ||
+    loadingRawDataImportRunStatuses
+  ) {
     return (
       <div className="center">
         <Spin size="large" />
@@ -128,6 +145,15 @@ const IngestDataflowCurrentStatusSummary = (): JSX.Element => {
 
   if (rawDataStatuses === undefined) {
     return <Alert message="Failed to load raw data statuses." type="error" />;
+  }
+
+  if (rawDataImportRunStatuses === undefined) {
+    return (
+      <Alert
+        message="Failed to load raw data import dag statuses"
+        type="error"
+      />
+    );
   }
 
   const dataSource: IngestInstanceDataflowStatusTableInfo[] = Object.keys(
@@ -147,6 +173,8 @@ const IngestDataflowCurrentStatusSummary = (): JSX.Element => {
     const secondaryRawDataTimestamp: string =
       stateRawDataStatuses.secondary.statusTimestamp;
 
+    const rawDataImportRunStatus = rawDataImportRunStatuses[key];
+
     return {
       stateCode: key,
       ingestPipelineStatus: getJobMetadataForCell(key, dataflowPipelines),
@@ -155,6 +183,7 @@ const IngestDataflowCurrentStatusSummary = (): JSX.Element => {
       primaryRawDataTimestamp,
       secondaryRawDataTimestamp,
       queueInfo,
+      rawDataImportRunStatus,
     };
   });
 
@@ -181,7 +210,7 @@ const IngestDataflowCurrentStatusSummary = (): JSX.Element => {
     },
     // TODO(#28239): remove once the raw data import dag is fully rolled out
     {
-      title: "Raw Data Status (Primary)",
+      title: "Legacy Raw Data Status (Primary)",
       dataIndex: "primary",
       key: "primary",
 
@@ -199,7 +228,7 @@ const IngestDataflowCurrentStatusSummary = (): JSX.Element => {
     },
     // TODO(#28239): remove once the raw data import dag is fully rolled out
     {
-      title: "Raw Data Status (Secondary)",
+      title: "Legacy Raw Data Status (Secondary)",
       dataIndex: "secondary",
       key: "secondary",
       render: (value, record: IngestInstanceDataflowStatusTableInfo) => (
@@ -225,6 +254,18 @@ const IngestDataflowCurrentStatusSummary = (): JSX.Element => {
       sorter: (a, b) =>
         getQueueStatusSortedOrder(a.queueInfo) -
         getQueueStatusSortedOrder(b.queueInfo),
+    },
+    {
+      title: "Most Recent Raw Data Import Status",
+      dataIndex: "rawDataImportRunStatus",
+      key: "rawDataImportRunStatus",
+
+      render: (rawDataImportRunStatus: RawDataImportRunStatusInfo) => (
+        <span>{renderRawDataImportRunStatusCell(rawDataImportRunStatus)}</span>
+      ),
+      sorter: (a, b) =>
+        getRawDataImportRunStatusSortedOrder(a.rawDataImportRunStatus) -
+        getRawDataImportRunStatusSortedOrder(b.rawDataImportRunStatus),
     },
   ];
 

@@ -58,7 +58,7 @@ export interface DataflowIngestRawDataWatermarks {
   [fileName: string]: Date;
 }
 
-// TODO(#28239): remove once the raw data import dag is fully rolled ou
+// TODO(#28239): remove once the raw data import dag is fully rolled out
 // --- ingest-related constants --------------------------------------------------------
 export interface IngestViewResultRowCounts {
   [ingestViewName: string]: number;
@@ -94,6 +94,29 @@ export type IngestInstanceStatusResponse = {
   };
 };
 
+// --- raw data import dag related constants -------------------------------------------
+
+export enum RawDataImportRunState {
+  SUCCEEDED = "SUCCEEDED",
+  FAILED = "FAILED",
+  IN_PROGRESS = "IN PROGRESS",
+}
+
+export type RawDataImportRunStatus = {
+  importStatus: RawDataImportRunState;
+  fileCount: number;
+};
+
+export type RawDataImportRunStatusInfo = {
+  isEnabled: boolean;
+  importRunStart: string | undefined;
+  countByStatusBucket: RawDataImportRunStatus[];
+};
+
+export type RawDataImportRunStatusResponse = {
+  [stateCode: string]: RawDataImportRunStatusInfo;
+};
+
 // TODO(#28239): remove once the raw data import dag is fully rolled ou
 // --- queue-related constants ---------------------------------------------------------
 
@@ -113,7 +136,7 @@ export type StateIngestQueuesStatuses = {
   [stateCode: string]: QueueState;
 };
 
-// --- raw data import dag related constants -------------------------------------------
+// --- raw data related constants ------------------------------------------------------
 
 export type IngestInstanceResources = {
   storageDirectoryPath: string;

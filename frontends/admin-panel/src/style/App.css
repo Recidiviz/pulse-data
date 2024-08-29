@@ -266,3 +266,39 @@ tr.metadata-table-row > td.ant-table-cell > div {
   font-weight: bold;
   border-radius: 15px;
 }
+
+
+.raw-data-import-cell {
+  color: #ffffff;
+  background-color: #389e0d;
+  width: 150px;
+  white-space: pre-line;
+  text-align: center;
+  font-weight: bold;
+  border-radius: 15px;
+}
+
+.raw-data-import-no-runs{
+  color: #ffffff;
+  background-color: #444444;
+}
+
+.raw-data-import-not-enabled{
+  color: #ffffff;
+  background-color: #2e2e2e;
+}
+
+.raw-data-import-in-progress{
+  color: #ffffff;
+  background-color: #444444;
+}
+
+.raw-data-import-failure{
+  color: #ffffff;
+  background-color: #f5222d;
+}
+
+.raw-data-import-success{
+  color: #ffffff;
+  background-color: #389e0d;
+}
