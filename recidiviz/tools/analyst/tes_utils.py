@@ -18,7 +18,7 @@
 
 import datetime
 import json
-from typing import List
+from typing import List, Union, Dict, Optional, Tuple
 
 import numpy as np
 import pandas as pd
@@ -78,7 +78,12 @@ def get_eligible_clients_over_time(
 
 
 def get_task_query(
-    task_name: str, state_code: str, project_id: str = "recidiviz-staging"
+    task_name: str,
+    state_code: str,
+    project_id: str = "recidiviz-staging",
+    race: bool = False,
+    gender: bool = False,
+    age: bool = False,
 ) -> pd.DataFrame:
     """
     Gets the data for a given task from the 'task_eligibility.all_tasks_materialized'
@@ -89,21 +94,43 @@ def get_task_query(
         task_name (str): The name of the task. E.g., 'TRANSFER_TO_XCRC_REQUEST'.
         state_code (str): The state code. E.g., 'US_IX'.
         project_id (str): The project ID. Defaults to 'recidiviz-staging'.
+        race (bool): Indicates if we want to analyze races
+        gender (bool): Indicates if we want to analyze genders
+        age (bool): Indicates if we want to analyze age groups
 
     Returns:
         pd.DataFrame: DataFrame containing modified task eligibility data.
     """
     # Define the SQL query
-    current_query = f"""
-    SELECT 
-        * EXCEPT (end_date, start_date, end_reason, task_name, task_eligibility_span_id),
-        IFNULL( IF(start_date > '3000-01-01', NULL, start_date), CURRENT_DATE) AS start_date,
-        IFNULL( IF(end_date > '3000-01-01', NULL, end_date), CURRENT_DATE) AS end_date,
-    FROM `{project_id}.task_eligibility.all_tasks_materialized` s
-    WHERE state_code = '{state_code}'
-        AND task_name = '{task_name}'
-    ORDER BY 1,2,3
-    """
+    # Join demographics if user calls any of them
+    if race or gender or age:
+        current_query = f"""
+        SELECT
+            s.* EXCEPT (end_date, start_date, end_reason, task_name, task_eligibility_span_id),
+            d.prioritized_race_or_ethnicity AS race,
+            d.birthdate AS birthdate,
+            d.gender AS gender,
+            IF(s.start_date > '3000-01-01', CURRENT_DATE("US/Eastern"), s.start_date) AS start_date,
+            IF(s.end_date > '3000-01-01', CURRENT_DATE("US/Eastern"), s.end_date) AS end_date
+        FROM `{project_id}.task_eligibility.all_tasks_materialized` s
+        LEFT JOIN `{project_id}.sessions.person_demographics_materialized` d
+            ON s.person_id = d.person_id
+            AND s.state_code = d.state_code
+        WHERE s.state_code = '{state_code}'
+            AND s.task_name = '{task_name}'
+        ORDER BY 1,2,3
+        """
+    else:
+        current_query = f"""
+        SELECT
+            s.* EXCEPT (end_date, start_date, end_reason, task_name, task_eligibility_span_id),
+            IF(s.start_date > '3000-01-01', CURRENT_DATE("US/Eastern"), s.start_date) AS start_date,
+            IF(s.end_date > '3000-01-01', CURRENT_DATE("US/Eastern"), s.end_date) AS end_date
+        FROM `{project_id}.task_eligibility.all_tasks_materialized` s
+        WHERE s.state_code = '{state_code}'
+            AND s.task_name = '{task_name}'
+        ORDER BY 1,2,3
+        """
 
     # Read data from BigQuery into a DataFrame
     df = pd.read_gbq(
@@ -354,9 +381,75 @@ def count_people_per_month(
     return agg_df
 
 
+def create_dfs_dict_demographics(
+    df: pd.DataFrame,
+    races: Optional[List[str]] = None,
+    genders: Optional[List[str]] = None,
+    age_brackets: Optional[List[Tuple[int, int]]] = None,
+) -> Dict:
+    """
+    If we want to analyze demographics, create a dictionary that has the name of the group
+    as key and the dataframe as value. Only use it if any demographic element is provided
+
+    Inputs:
+        df (DataFrame): output of get_task_query
+        races (list): Races we want to analyze (WHITE, BLACK, HISPANIC, etc). Optional
+        genders (list): Genders we want to analyze (MALE, FEMALE, TRANS_MALE, etc). Optional
+        age_brackets (list): Age groups we want to analyze (Example: [(18, 25), (25, 40), (40, 60), (60, 100)]). Optional
+    """
+    # Generate cumulative filtered data frames by each demographic indicated
+    dfs_dict = {}
+    if genders:
+        for gen in genders:
+            # Filter to have df per gender
+            gender_df = df[df["gender"] == gen].copy()
+            # Define key using that gender and store filtered df
+            dfs_dict[f"gender_{gen}"] = gender_df
+    else:
+        dfs_dict["all"] = df
+
+    # If we have one df per gender, now break up each one by age bracket. If we didnt have genders, break up initial df
+    if age_brackets:
+        age_dfs_dict = {}
+        for key, gender_df in dfs_dict.items():
+            gender_df["birthdate"] = pd.to_datetime(gender_df["birthdate"])
+            gender_df["age"] = (
+                gender_df["end_date"] - gender_df["birthdate"]
+            ).dt.days // 365
+            for min_age, max_age in age_brackets:
+                gender_age_filtered_df = gender_df[
+                    (gender_df["age"] >= min_age) & (gender_df["age"] < max_age)
+                ].copy()
+                age_key = f"{key}_age_{min_age}_{max_age}"
+                age_dfs_dict[age_key] = gender_age_filtered_df
+        dfs_dict = age_dfs_dict
+
+    # Break up each df stored by race
+    if races:
+        race_age_gender_dfs_dict = {}
+        for key, gender_age_filtered_df in dfs_dict.items():
+            for r in races:
+                race_age_gender_filtered_df = gender_age_filtered_df[
+                    gender_age_filtered_df["race"] == r
+                ].copy()
+                race_age_gender_key = f"{key}_race_{r}"
+                race_age_gender_dfs_dict[
+                    race_age_gender_key
+                ] = race_age_gender_filtered_df
+        dfs_dict = race_age_gender_dfs_dict
+
+    # Final data frames can be the result of filtering initial df by any combination of demographics
+    return dfs_dict
+
+
 def count_tes_spans_per_month_adding_each_criteria_one_by_one(
-    task_name: str, state_code: str, project_id: str = "recidiviz-staging"
-) -> pd.DataFrame:
+    task_name: str,
+    state_code: str,
+    project_id: str = "recidiviz-staging",
+    races: Optional[List[str]] = None,
+    genders: Optional[List[str]] = None,
+    age_brackets: Optional[List[Tuple[int, int]]] = None,
+) -> Union[pd.DataFrame, Dict]:
     """
     Counts the number of eligible folks per month by adding each of the relevant
     criteria one by one, from least restrictive to most restrictive. I.e., the first
@@ -368,11 +461,45 @@ def count_tes_spans_per_month_adding_each_criteria_one_by_one(
         task_name (str): The name of the task. E.g., 'TRANSFER_TO_XCRC_REQUEST'.
         state_code (str): The state code. E.g., 'US_IX'.
         project_id (str): The project ID. Defaults to 'recidiviz-staging'.
+        race (bool): Indicates if we want to analyze races
+        gender (bool): Indicates if we want to analyze genders
+        age (bool): Indicates if we want to analyze age groups
+        races (list): Races we want to analyze (WHITE, BLACK, HISPANIC, etc)
+        genders (list): Genders we want to analyze (MALE, FEMALE, TRANS_MALE, etc)
+        age_brackets (list): Age groups we want to analyze (Example: [(18, 25), (25, 40), (40, 60), (60, 100)])
 
     Returns:
         pd.DataFrame: DataFrame containing processed task data.
     """
+    # Booleans are true iff respective list is not empty
+    race = bool(races)
+    gender = bool(genders)
+    age = bool(age_brackets)
 
+    if race or gender or age:
+        # Pull task query data to PD
+        initial_df = get_task_query(
+            task_name, state_code, project_id, race, gender, age
+        )
+        demographics_dfs_dict = create_dfs_dict_demographics(
+            initial_df, races, genders, age_brackets
+        )
+        final_dfs_dict = {}
+
+        for demographic_name, df_set in demographics_dfs_dict.items():
+            if df_set.empty:
+                print(
+                    f"Warning: DataFrame '{demographic_name}' is empty. Skipping processing."
+                )
+                continue
+            # Generate tes spans for each demographic group
+            df_set = gen_tes_spans_by_adding_each_criteria_one_by_one(df_set)
+            agg_df = count_people_per_month(df_set)
+            final_dfs_dict[demographic_name] = agg_df
+
+        return final_dfs_dict
+
+    # If all demographics are False, return only one dataframe
     # Pull task query data to PD
     df = get_task_query(task_name, state_code, project_id)
 
@@ -380,13 +507,17 @@ def count_tes_spans_per_month_adding_each_criteria_one_by_one(
 
     # Group by month
     agg_df = count_people_per_month(result_df)
-
     return agg_df
 
 
 def count_tes_spans_per_month_removing_each_criteria_once(
-    task_name: str, state_code: str, project_id: str = "recidiviz-staging"
-) -> pd.DataFrame:
+    task_name: str,
+    state_code: str,
+    project_id: str = "recidiviz-staging",
+    races: Optional[List[str]] = None,
+    genders: Optional[List[str]] = None,
+    age_brackets: Optional[List[Tuple[int, int]]] = None,
+) -> Union[pd.DataFrame, Dict]:
     """
     Counts the number of eligible folks per month if we removed one criteria from the
     eligibility list. This does not successively remove each criteria, like
@@ -403,15 +534,48 @@ def count_tes_spans_per_month_removing_each_criteria_once(
     Returns:
         pd.DataFrame: DataFrame containing processed task data.
     """
-
+    # Booleans are true iff respective list is not empty
+    race = bool(races)
+    gender = bool(genders)
+    age = bool(age_brackets)
     # Pull task query data to PD
-    df = get_task_query(task_name, state_code, project_id)
+    all_population_df = get_task_query(
+        task_name, state_code, project_id, race, gender, age
+    )
+    if race or gender or age:
+        # Pull task query data to PD
+        demographics_dfs_dict = create_dfs_dict_demographics(
+            all_population_df, races, genders, age_brackets
+        )
+        final_dict = {}
 
+        for demographics_name, df_set in demographics_dfs_dict.items():
+            if (
+                df_set.empty
+                or not df_set.select_dtypes(include=[np.number]).columns.any()
+            ):
+                print(f"Warning: No data to process for {demographics_name}")
+                continue
+            # Remove criteria one by one in the original dataframe
+            all_population_df = gen_tes_spans_by_removing_each_criteria_once(df_set)
+            # Group by month
+            agg_df = count_people_per_month(all_population_df)
+            # substract the number of eligible folks to each column
+            for col in range(1, len(agg_df.columns)):
+                agg_df[agg_df.columns[col]] = (
+                    agg_df[agg_df.columns[col]] - agg_df["is_eligible"]
+                )
+
+            agg_df.drop(columns="is_eligible", inplace=True)
+            final_dict[demographics_name] = agg_df
+        return final_dict
+
+    # If no demographics are provided, return only one dataframe for all population
     # Remove criteria one by one in the original dataframe
-    df = gen_tes_spans_by_removing_each_criteria_once(df)
+    all_population_df = gen_tes_spans_by_removing_each_criteria_once(all_population_df)
 
     # Group by month
-    agg_df = count_people_per_month(df)
+    agg_df = count_people_per_month(all_population_df)
 
     # substract the number of eligible folks to each column
     for col in range(1, len(agg_df.columns)):
@@ -420,5 +584,4 @@ def count_tes_spans_per_month_removing_each_criteria_once(
         )
 
     agg_df.drop(columns="is_eligible", inplace=True)
-
     return agg_df
