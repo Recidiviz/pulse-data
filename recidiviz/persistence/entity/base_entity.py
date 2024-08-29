@@ -144,9 +144,11 @@ class EnumEntity(Entity):
     @classmethod
     def get_enum_field_name(cls) -> str:
         """Returns the singular enum field associated with this EnumEntity."""
-        field_info_dict = attribute_field_type_reference_for_class(cls)
+        class_reference = attribute_field_type_reference_for_class(cls)
         enum_fields = {
-            field for field, info in field_info_dict.items() if info.enum_cls
+            field
+            for field in class_reference.fields
+            if class_reference.get_field_info(field).enum_cls
         }
         if len(enum_fields) != 1:
             raise ValueError(
@@ -159,8 +161,8 @@ class EnumEntity(Entity):
     def get_raw_text_field_name(cls) -> str:
         """Returns the singular enum raw text associated with this EnumEntity."""
         raw_text_field = f"{cls.get_enum_field_name()}{cls.RAW_TEXT_FIELD_SUFFIX}"
-        field_info_dict = attribute_field_type_reference_for_class(cls)
-        if raw_text_field not in field_info_dict:
+        class_fields = attribute_field_type_reference_for_class(cls).fields
+        if raw_text_field not in class_fields:
             raise ValueError(
                 f"Expected to find field [{raw_text_field}] on entity [{cls.__name__}]"
             )

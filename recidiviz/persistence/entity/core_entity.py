@@ -73,7 +73,7 @@ class CoreEntity:
     @classmethod
     def has_field(cls, field: str) -> bool:
         if is_attr_decorated(cls):
-            return field in attribute_field_type_reference_for_class(cls)
+            return field in attribute_field_type_reference_for_class(cls).fields
         return hasattr(cls, field)
 
     @classmethod

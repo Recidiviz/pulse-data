@@ -17,10 +17,10 @@
 """Logic for Attr objects that can be built with a Builder."""
 import datetime
 from enum import Enum
+from functools import cached_property
 from typing import Any, Callable, Dict, Optional, Set, Type, TypeVar
 
 import attr
-from more_itertools import one
 
 from recidiviz.common.attr_utils import (
     get_enum_cls,
@@ -67,11 +67,99 @@ class CachedAttributeInfo:
     seq_number: int = attr.ib()
 
 
+@attr.define(kw_only=True, frozen=True)
+class CachedClassAttributeReference:
+    """Class that caches information about entities on a particular attrs class."""
+
+    attr_cls: type
+    field_to_attribute_info: dict[str, CachedAttributeInfo]
+
+    @cached_property
+    def field_name_for_referenced_class_name(self) -> dict[str, str]:
+        result = {}
+        for field, info in self.field_to_attribute_info.items():
+            if not info.referenced_cls_name:
+                continue
+
+            if info.referenced_cls_name in result:
+                raise ValueError(
+                    f"Class {self.attr_cls} stores more than one reference to class "
+                    f"{info.referenced_cls_name}."
+                )
+            result[info.referenced_cls_name] = field
+        return result
+
+    def get_field_info(self, field_name: str) -> CachedAttributeInfo:
+        return self.field_to_attribute_info[field_name]
+
+    @cached_property
+    def fields(self) -> set[str]:
+        """Returns the names of fields on the attrs class."""
+        return set(self.field_to_attribute_info.keys())
+
+    @cached_property
+    def sorted_fields(self) -> list[str]:
+        """Returns the names of fields on the attrs class, sorted by declaration order."""
+        sorted_info = sorted(
+            self.field_to_attribute_info.values(),
+            key=lambda x: x.seq_number,
+        )
+
+        return [info.attribute.name for info in sorted_info]
+
+    def field_type_for_field_name(self, field_name: str) -> BuildableAttrFieldType:
+        """Returns the BuildableAttrFieldType of the Attribute on the attrs class with
+        the name matching the given |field_name|."""
+        return self.get_field_info(field_name).field_type
+
+    def field_attribute_for_field_name(self, field_name: str) -> attr.Attribute:
+        """Returns the Attribute on the attrs class for the given |field_name|."""
+        return self.get_field_info(field_name).attribute
+
+    def field_enum_cls_for_field_name(self, field_name: str) -> Optional[Type[Enum]]:
+        """Returns the enum class of the Attribute on the attrs class with the name
+        matching the given |field_name|. Returns None if the field is not an enum.
+        """
+        reference = self.field_to_attribute_info
+        return reference[field_name].enum_cls if field_name in reference else None
+
+    def field_name_storing_referenced_cls_name(
+        self, referenced_cls_name: str
+    ) -> Optional[str]:
+        """Returns the name of the field on the attrs class that stores a reference to a
+        class with the name |referenced_cls_name|, if one exists.
+
+        Returns None if there are no fields on the attrs class storing a reference to a
+        |referenced_cls_name| class. Raises an error if there exists more than one field
+        storing the class.
+        """
+        if not isinstance(referenced_cls_name, str):
+            raise ValueError(
+                f"Expected a referenced_cls_name with type str, found: "
+                f"{referenced_cls_name}"
+            )
+
+        if referenced_cls_name not in self.field_name_for_referenced_class_name:
+            # There are no fields on the attr_cls that store a type with the name
+            # matching the |referenced_cls_name|
+            return None
+        return self.field_name_for_referenced_class_name[referenced_cls_name]
+
+    def field_referenced_cls_name_for_field_name(
+        self, field_name: str
+    ) -> Optional[str]:
+        """Returns the name of the class referenced by the Attribute on the attrs class
+        with the name matching the given |field_name|. Returns None if the field is not
+        a FORWARD_REF or LIST type field.
+        """
+        return self.get_field_info(field_name).referenced_cls_name
+
+
 # Cached _class_structure_reference value
-_class_structure_reference: Optional[Dict[Type, Dict[str, CachedAttributeInfo]]] = None
+_class_structure_reference: Optional[Dict[Type, CachedClassAttributeReference]] = None
 
 
-def _get_class_structure_reference() -> Dict[Type, Dict[str, CachedAttributeInfo]]:
+def _get_class_structure_reference() -> Dict[Type, CachedClassAttributeReference]:
     """Returns the cached _class_structure_reference object, if it exists. If the
     _class_structure_reference is None, instantiates it as an empty dict."""
     global _class_structure_reference
@@ -88,7 +176,7 @@ def _clear_class_structure_reference() -> None:
 
 def attribute_field_type_reference_for_class(
     cls: Type,
-) -> Dict[str, CachedAttributeInfo]:
+) -> CachedClassAttributeReference:
     """Returns a dictionary mapping the attributes of the given class to the type of
     field the attribute is and, if the field is of type ENUM, the class of Enum stored
     in the field.
@@ -114,12 +202,16 @@ def attr_field_type_for_field_name(
 ) -> BuildableAttrFieldType:
     """Returns the BuildableAttrFieldType of the Attribute on the |cls| with the name
     matching the given |field_name|."""
-    return attribute_field_type_reference_for_class(cls)[field_name].field_type
+    return attribute_field_type_reference_for_class(cls).field_type_for_field_name(
+        field_name
+    )
 
 
 def attr_field_attribute_for_field_name(cls: Type, field_name: str) -> attr.Attribute:
     """Returns the Attribute on the |cls| for the given |field_name|."""
-    return attribute_field_type_reference_for_class(cls)[field_name].attribute
+    return attribute_field_type_reference_for_class(cls).field_attribute_for_field_name(
+        field_name
+    )
 
 
 def attr_field_enum_cls_for_field_name(
@@ -128,8 +220,9 @@ def attr_field_enum_cls_for_field_name(
     """Returns the enum class of the Attribute on the |cls| with the name
     matching the given |field_name|. Returns None if the field is not an enum.
     """
-    reference = attribute_field_type_reference_for_class(cls)
-    return reference[field_name].enum_cls if field_name in reference else None
+    return attribute_field_type_reference_for_class(cls).field_enum_cls_for_field_name(
+        field_name
+    )
 
 
 def attr_field_name_storing_referenced_cls_name(
@@ -142,28 +235,9 @@ def attr_field_name_storing_referenced_cls_name(
     |referenced_cls_name| class. Raises an error if there exists more than one field
     storing the class.
     """
-    if not isinstance(referenced_cls_name, str):
-        raise ValueError(
-            f"Expected a referenced_cls_name with type str, found: {referenced_cls_name}"
-        )
-    fields_storing_referenced_cls = [
-        field
-        for field, info in attribute_field_type_reference_for_class(base_cls).items()
-        if info.referenced_cls_name and info.referenced_cls_name == referenced_cls_name
-    ]
-
-    if not fields_storing_referenced_cls:
-        # There are no fields on the base_cls that store a type with the name matching
-        # the |referenced_cls_name|
-        return None
-
-    if len(fields_storing_referenced_cls) > 1:
-        raise ValueError(
-            f"Class {base_cls} stores more than one reference to class "
-            f"{referenced_cls_name}."
-        )
-
-    return one(fields_storing_referenced_cls)
+    return attribute_field_type_reference_for_class(
+        base_cls
+    ).field_name_storing_referenced_cls_name(referenced_cls_name)
 
 
 def attr_field_referenced_cls_name_for_field_name(
@@ -173,12 +247,14 @@ def attr_field_referenced_cls_name_for_field_name(
     name matching the given |field_name|. Returns None if the field is not a FORWARD_REF
     or LIST type field.
     """
-    return attribute_field_type_reference_for_class(cls)[field_name].referenced_cls_name
+    return attribute_field_type_reference_for_class(
+        cls
+    ).field_referenced_cls_name_for_field_name(field_name)
 
 
 def _map_attr_to_type_for_class(
     cls: Type,
-) -> Dict[str, CachedAttributeInfo]:
+) -> CachedClassAttributeReference:
     """Helper function for attribute_field_type_reference_for_class to map attributes
     to their BuildableAttrFieldType for a class if the attributes of the class aren't
     yet in the cached _class_structure_reference.
@@ -278,7 +354,9 @@ def _map_attr_to_type_for_class(
                 f"Attribute type: {attribute.type}"
             )
 
-    return attr_field_types
+    return CachedClassAttributeReference(
+        attr_cls=cls, field_to_attribute_info=attr_field_types
+    )
 
 
 class DefaultableAttr:
@@ -409,8 +487,9 @@ class BuildableAttr:
 
         cls_builder = cls.builder()
 
-        attributes_and_types = attribute_field_type_reference_for_class(cls)
-        for field, cached_attribute_info in attributes_and_types.items():
+        class_field_reference = attribute_field_type_reference_for_class(cls)
+        for field in class_field_reference.fields:
+            cached_attribute_info = class_field_reference.get_field_info(field)
             field_type = cached_attribute_info.field_type
             if field in build_dict:
                 if field_type == BuildableAttrFieldType.FORWARD_REF:

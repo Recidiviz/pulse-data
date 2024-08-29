@@ -416,7 +416,7 @@ class StateDatasetValidator:
         )
 
         source_table_columns = {f.name for f in source_table.schema_fields}
-        entity_fields = set(attribute_field_type_reference_for_class(entity_cls))
+        entity_fields = attribute_field_type_reference_for_class(entity_cls).fields
 
         # The only columns that live on the source table but do not match attribute
         # names on the entity are foreign key columns.
@@ -437,7 +437,9 @@ FROM ({filtered_with_new_cols})"""
         provided |entity_cls|.
         """
         enum_classes = set()
-        for attr_info in attribute_field_type_reference_for_class(entity_cls).values():
+        class_reference = attribute_field_type_reference_for_class(entity_cls)
+        for field_name in class_reference.fields:
+            attr_info = class_reference.get_field_info(field_name)
             if not attr_info.referenced_cls_name:
                 continue
             entity_cls = get_entity_class_in_module_with_name(

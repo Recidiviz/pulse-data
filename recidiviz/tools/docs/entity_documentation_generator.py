@@ -63,9 +63,9 @@ def _get_all_entity_enum_classes() -> Set[Type[StateEntityEnum]]:
 
     state_enum_classes: Set[Type[StateEntityEnum]] = set()
     for entity_class in entity_classes:
-        for field_info in attribute_field_type_reference_for_class(
-            entity_class
-        ).values():
+        class_reference = attribute_field_type_reference_for_class(entity_class)
+        for field in class_reference.fields:
+            field_info = class_reference.get_field_info(field)
             if not (enum_class := field_info.enum_cls):
                 continue
 

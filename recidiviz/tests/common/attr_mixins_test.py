@@ -480,7 +480,7 @@ class CachedClassStructureReferenceTests(unittest.TestCase):
 
         attr_field_type_ref = attribute_field_type_reference_for_class(
             FakeBuildableAttrDeluxe
-        )
+        ).field_to_attribute_info
 
         self.assertEqual(expected_attr_field_type_ref, attr_field_type_ref)
 

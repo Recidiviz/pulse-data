@@ -63,14 +63,11 @@ def _get_bq_schema_for_entity_class(
 ) -> list[SchemaField]:
     """Derives a BQ table schema for the provided Entity class."""
     schema = []
+    attr_class_reference = attribute_field_type_reference_for_class(entity_cls)
     # Sort fields by their declaration order so we produce schemas with
     # deterministic column orders.
-    sorted_field_info = sorted(
-        attribute_field_type_reference_for_class(entity_cls).values(),
-        key=lambda x: x.seq_number,
-    )
-    for field_info in sorted_field_info:
-        field = field_info.attribute.name
+    for field in attr_class_reference.sorted_fields:
+        field_info = attr_class_reference.get_field_info(field)
         if not field_info.referenced_cls_name:
             # This is a flat field
             schema.append(schema_field_for_attribute(field, field_info.attribute))

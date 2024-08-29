@@ -79,21 +79,24 @@ def _metrics_with_field(field_name: str) -> List[Type[RecidivizMetric]]:
     return [
         metric
         for metric in DATAFLOW_METRICS_TO_TABLES
-        if field_name in attribute_field_type_reference_for_class(metric)
+        if field_name in attribute_field_type_reference_for_class(metric).fields
     ]
 
 
 def all_enum_fields_across_all_metrics_with_field_value(enum_value: str) -> Set[str]:
-    """Returns all fields across all metric classes that are enums that could be a certain value."""
-    return {
-        field_name
-        for metric in DATAFLOW_METRICS_TO_TABLES
-        for field_name, cached_attribute_info in attribute_field_type_reference_for_class(
-            metric
-        ).items()
-        if (enum_cls := cached_attribute_info.enum_cls)
-        and enum_value in enum_cls.__members__
-    }
+    """Returns all fields across all metric classes that are enums that could be a
+    certain value.
+    """
+    result = set()
+    for metric in DATAFLOW_METRICS_TO_TABLES:
+        metric_class_ref = attribute_field_type_reference_for_class(metric)
+        for field_name in metric_class_ref.fields:
+            cached_attribute_info = metric_class_ref.get_field_info(field_name)
+            if (
+                enum_cls := cached_attribute_info.enum_cls
+            ) and enum_value in enum_cls.__members__:
+                result.add(field_name)
+    return result
 
 
 def _validate_metric_has_all_fields(
@@ -101,8 +104,9 @@ def _validate_metric_has_all_fields(
 ) -> None:
     """Asserts that the given |metric| class contains all of the fields in |fields_to_validate|.
     Raises an error if the metric does not contain all of the fields."""
+    class_reference = attribute_field_type_reference_for_class(metric)
     for field in fields_to_validate:
-        if field not in attribute_field_type_reference_for_class(metric):
+        if field not in class_reference.fields:
             raise ValueError(
                 f"The {metric.__name__} does not contain metric field: " f"{field}."
             )

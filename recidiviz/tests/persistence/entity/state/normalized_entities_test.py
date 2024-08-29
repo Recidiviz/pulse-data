@@ -162,7 +162,7 @@ class TestNormalizedEntities(unittest.TestCase):
     def test_normalized_entities_correct_setup(self) -> None:
         for normalized_entity_class in self.normalized_entity_classes:
             normalized_entity_class_name = normalized_entity_class.__name__
-            normalized_entity_fields = attribute_field_type_reference_for_class(
+            normalized_entity_class_ref = attribute_field_type_reference_for_class(
                 normalized_entity_class
             )
             self.assertTrue(
@@ -179,7 +179,10 @@ class TestNormalizedEntities(unittest.TestCase):
                 f"Class [{normalized_entity_class_name}] does not start with the "
                 f"{NORMALIZED_PREFIX} prefix",
             )
-            for field_name, normalized_field_info in normalized_entity_fields.items():
+            for field_name in normalized_entity_class_ref.fields:
+                normalized_field_info = normalized_entity_class_ref.get_field_info(
+                    field_name
+                )
                 if normalized_field_info.referenced_cls_name:
                     self.assertTrue(
                         normalized_field_info.referenced_cls_name.startswith(
@@ -216,7 +219,10 @@ class TestNormalizedEntities(unittest.TestCase):
 
         for entity_class in entity_classes:
             entity_class_name = entity_class.__name__
-            entity_fields = attribute_field_type_reference_for_class(entity_class)
+            entity_class_reference = attribute_field_type_reference_for_class(
+                entity_class
+            )
+            entity_fields = entity_class_reference.fields
 
             normalized_entity_class_name = f"{NORMALIZED_PREFIX}{entity_class_name}"
             if (
@@ -231,9 +237,11 @@ class TestNormalizedEntities(unittest.TestCase):
             normalized_entity_class = self.normalized_entity_classes_by_name[
                 normalized_entity_class_name
             ]
-            normalized_entity_fields = attribute_field_type_reference_for_class(
-                normalized_entity_class
+
+            normalized_entity_class_reference = (
+                attribute_field_type_reference_for_class(normalized_entity_class)
             )
+            normalized_entity_fields = normalized_entity_class_reference.fields
 
             missing_normalized_entity_fields = (
                 set(entity_fields)
@@ -247,7 +255,10 @@ class TestNormalizedEntities(unittest.TestCase):
                     f"{missing_normalized_entity_fields}"
                 )
 
-            for field_name, normalized_field_info in normalized_entity_fields.items():
+            for field_name in normalized_entity_fields:
+                normalized_field_info = (
+                    normalized_entity_class_reference.get_field_info(field_name)
+                )
                 if field_name not in entity_fields:
                     # This is a new field only present on the normalized entity
                     attribute = normalized_field_info.attribute
@@ -259,7 +270,7 @@ class TestNormalizedEntities(unittest.TestCase):
                         )
 
                     continue
-                entity_field_info = entity_fields[field_name]
+                entity_field_info = entity_class_reference.get_field_info(field_name)
                 self.assertEqual(
                     normalized_field_info.field_type,
                     entity_field_info.field_type,

@@ -110,7 +110,9 @@ class CreatePersonIdToStaffIdMapping(beam.PTransform):
         def _get_referenced_staff_external_id(
             entity: Entity, _dag_edges: list[EntityDagEdge]
         ) -> StaffExternalId | None:
-            for field_name in attribute_field_type_reference_for_class(type(entity)):
+            for field_name in attribute_field_type_reference_for_class(
+                type(entity)
+            ).fields:
                 if field_name.endswith("staff_external_id"):
                     staff_external_id = getattr(entity, field_name)
                     staff_external_id_type = getattr(entity, f"{field_name}_type")

@@ -78,9 +78,9 @@ def serialize_entity_into_json(
     entity_field_dict: Dict[str, Any] = {}
 
     entity_cls = entity.__class__
-    for field_name, field_info in attribute_field_type_reference_for_class(
-        entity_cls
-    ).items():
+    class_reference = attribute_field_type_reference_for_class(entity_cls)
+    for field_name in class_reference.fields:
+        field_info = class_reference.get_field_info(field_name)
         if not field_info.referenced_cls_name:
             # This is a flat field
             entity_field_dict[field_name] = getattr(entity, field_name)

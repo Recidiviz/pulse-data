@@ -246,9 +246,9 @@ class EntityFieldIndex:
         back_edges = set()
         forward_edges = set()
         flat_fields = set()
-        for field, field_info in attribute_field_type_reference_for_class(
-            entity_cls
-        ).items():
+        class_reference = attribute_field_type_reference_for_class(entity_cls)
+        for field in class_reference.fields:
+            field_info = class_reference.get_field_info(field)
             if field_info.referenced_cls_name:
                 if self.direction_checker.is_back_edge(entity_cls, field):
                     back_edges.add(field)
