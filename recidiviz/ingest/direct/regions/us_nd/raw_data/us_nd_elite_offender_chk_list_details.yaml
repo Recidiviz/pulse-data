@@ -1,0 +1,63 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: elite_offender_chk_list_details
+file_description: |-
+  This is a table that tracks data entered into six different checklists across the Elite
+  system. The table is designed so that each combination of checklist category and 
+  checklist code can all be answered with either Yes or No.
+data_classification: source
+primary_key_cols:
+  - OFFENDER_BOOK_ID
+  - CHECK_LIST_CATEGORY
+  - CHECK_LIST_CODE
+  - LIST_SEQ
+always_historical_export: True
+columns:
+  - name: OFFENDER_BOOK_ID
+    description: |-
+      External ID of a booking for a particular person, i.e. a new series of interactions with the justice system due to a new offense.
+    is_pii: True
+    field_type: person_external_id
+    external_id_type: US_ND_ELITE_BOOKING
+  - name: CHECK_LIST_CATEGORY
+    description: The type of checklist
+    known_values:
+      - value: ID'S
+        description: Types of identification a person may have
+      - value: TRANFAC
+        description: Unknown
+      - value: PAR
+        description: Types of parole
+      - value: RRITRNG
+        description: Unknown, related to Rough Rider program
+      - value: REL
+        description: Unknown.
+      - value: RRIRETRNG
+        description: Unknown, related to Rough Rider program
+  - name: CHECK_LIST_CODE
+    description: The specific item on the checklist
+  - name: CONFIRMED_FLAG
+    description: Yes / No does the person meet this requirement
+  - name: LIST_SEQ
+    description: The sequence
+  - name: SEAL_FLAG
+    description: Unknown.
+  - name: CREATE_USER_ID
+    description: The ID of the user who created the record.
+    is_pii: True
+  - name: CREATE_DATETIME
+    field_type: datetime
+    description: |-
+      When this record was first created in the source system.
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S', {col_name})"
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y  %H:%M:%S %p', {col_name})"
+  - name: MODIFY_DATETIME
+    field_type: datetime
+    description: |-
+      When this record was most recently modified in the source system.
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S', {col_name})"
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y  %H:%M:%S %p', {col_name})"
+  - name: MODIFY_USER_ID
+    description: The ID of the user who last modified the record.
+    is_pii: True
