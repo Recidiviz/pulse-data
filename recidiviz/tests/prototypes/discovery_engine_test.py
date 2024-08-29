@@ -16,13 +16,18 @@
 # =============================================================================
 """This class implements tests for the Prototypes DiscoveryEngineInterface class."""
 
-from unittest import TestCase
-from unittest.mock import MagicMock, patch
+from unittest import IsolatedAsyncioTestCase
+from unittest.mock import AsyncMock, MagicMock, patch
+
+from google.cloud.discoveryengine_v1 import SearchRequest, SearchResponse
+from google.cloud.discoveryengine_v1.services.search_service import (
+    SearchServiceAsyncClient,
+)
 
 from recidiviz.tools.prototypes.discovery_engine import DiscoveryEngineInterface
 
 
-class TestDiscoveryEngineInterface(TestCase):
+class TestDiscoveryEngineInterface(IsolatedAsyncioTestCase):
     """Implements tests for the Prototypes TestDiscoveryEngineInterface class."""
 
     def setUp(self) -> None:
@@ -51,31 +56,55 @@ class TestDiscoveryEngineInterface(TestCase):
             expected,
         )
 
+    @patch.object(SearchServiceAsyncClient, "search", new_callable=AsyncMock)
     @patch(
-        "recidiviz.tools.prototypes.discovery_engine.discoveryengine.SearchServiceClient"
+        "google.cloud.discoveryengine_v1.services.search_service.SearchServiceAsyncClient.__init__",
+        lambda self, *args, **kwargs: None,
     )
-    @patch("recidiviz.tools.prototypes.discovery_engine.discoveryengine.SearchRequest")
-    def test_search_success(
-        self, MockSearchRequest: MagicMock, MockSearchServiceClient: MagicMock
-    ) -> None:
-        mock_client_instance = MagicMock()
-        mock_client_instance.search.return_value = "this is the query return value"
-        MockSearchServiceClient.return_value = mock_client_instance
+    async def test_search_success(self, mock_search: MagicMock) -> None:
+        mock_response = MagicMock(spec=SearchResponse)
+        mock_search.return_value = mock_response
 
-        mock_search_request_instance = MagicMock()
-        MockSearchRequest.return_value = mock_search_request_instance
-
-        query = "this is a query"
+        query = "test query"
         page_size = 10
         include_filter_conditions = {"field": ["value"]}
+        exclude_filter_conditions = {"field_to_exclude": ["exclude_value"]}
 
-        result = self.interface.search(
+        response = await self.interface.search(
             query=query,
             page_size=page_size,
             include_filter_conditions=include_filter_conditions,
+            exclude_filter_conditions=exclude_filter_conditions,
+            with_snippet=True,
+            with_summary=True,
         )
 
-        self.assertEqual(result, "this is the query return value")
-        mock_client_instance.search.assert_called_once_with(
-            mock_search_request_instance
+        self.assertEqual(response, mock_response)
+        mock_search.assert_called_once()
+        called_request = mock_search.call_args[0][0]
+
+        self.assertIsInstance(called_request, SearchRequest)
+        self.assertEqual(called_request.query, query)
+        self.assertEqual(called_request.page_size, page_size)
+        self.assertEqual(
+            called_request.filter,
+            'field: ANY("value") AND NOT field_to_exclude: ANY("exclude_value")',
         )
+        self.assertEqual(called_request.serving_config, self.interface.serving_config)
+
+    @patch.object(SearchServiceAsyncClient, "search", new_callable=AsyncMock)
+    @patch(
+        "google.cloud.discoveryengine_v1.services.search_service.SearchServiceAsyncClient.__init__",
+        lambda self, *args, **kwargs: None,
+    )
+    async def test_search_with_error(self, mock_search: MagicMock) -> None:
+        mock_search.side_effect = Exception("Test Exception")
+
+        query = "test query"
+
+        # Ensure the exception is raised
+        with self.assertRaises(Exception) as context:
+            await self.interface.search(query=query)
+
+        self.assertIn("Test Exception", str(context.exception))
+        mock_search.assert_called_once()

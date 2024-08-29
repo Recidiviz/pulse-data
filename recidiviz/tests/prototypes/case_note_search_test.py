@@ -16,8 +16,8 @@
 # =============================================================================
 """This class implements tests for the case note search module."""
 from typing import Any
-from unittest import TestCase
-from unittest.mock import MagicMock, patch
+from unittest import IsolatedAsyncioTestCase
+from unittest.mock import AsyncMock, MagicMock, patch
 
 from google.cloud.discoveryengine_v1.services.search_service.pagers import SearchPager
 
@@ -46,7 +46,7 @@ class MockResult:
         self.document = document
 
 
-class TestCaseNoteFunctions(TestCase):
+class TestCaseNoteFunctions(IsolatedAsyncioTestCase):
     """This class implements tests for the case note search module."""
 
     @patch("recidiviz.prototypes.case_note_search.case_note_search.GCSBucketReader")
@@ -96,19 +96,22 @@ class TestCaseNoteFunctions(TestCase):
         "recidiviz.prototypes.case_note_search.case_note_search.DiscoveryEngineInterface"
     )
     @patch("recidiviz.prototypes.case_note_search.case_note_search.exact_match_search")
-    def test_case_note_search(
+    async def test_case_note_search(
         self,
         mock_exact_match_search: MagicMock,
-        mock_discovery_engine_interface: MagicMock,
+        mock_discovery_engine_interface: AsyncMock,
         mock_extract_case_notes_results: MagicMock,
     ) -> None:
         query = "test query"
         page_size = 10
         filter_conditions = {"external_id": ["1234", "6789"], "state_code": ["US_ME"]}
 
+        # Set up the mock for the DiscoveryEngineInterface instance
         mock_search_pager = MagicMock(spec=SearchPager)
         mock_discovery_interface_instance = mock_discovery_engine_interface.return_value
-        mock_discovery_interface_instance.search.return_value = mock_search_pager
+        mock_discovery_interface_instance.search = AsyncMock(
+            return_value=mock_search_pager
+        )
 
         case_note_data = {
             "document_id": "123",
@@ -127,7 +130,7 @@ class TestCaseNoteFunctions(TestCase):
         # Mock exact_match_search to return an empty dictionary
         mock_exact_match_search.return_value = {}
 
-        results = case_note_search(query, page_size, filter_conditions)
+        results = await case_note_search(query, page_size, filter_conditions)
         self.assertEqual(results, {"results": [case_note_data], "error": None})
 
         mock_discovery_engine_interface.assert_called_once_with(
