@@ -104,6 +104,9 @@ const OpportunityConfigurationForm = ({
       autoComplete="off"
       initialValues={initial}
     >
+      <Form.Item label="Name" name="displayName" rules={[{ required: true }]}>
+        <Input />
+      </Form.Item>
       <Form.Item
         label="Configuration Description"
         name="description"
@@ -111,10 +114,6 @@ const OpportunityConfigurationForm = ({
       >
         <Input />
       </Form.Item>
-      <Form.Item label="Name" name="displayName" rules={[{ required: true }]}>
-        <Input />
-      </Form.Item>
-
       <Form.Item label="Feature Variant" name="featureVariant">
         <Input />
       </Form.Item>
@@ -128,15 +127,15 @@ const OpportunityConfigurationForm = ({
       <Form.Item label="Eligibility Date Text" name="eligibilityDateText">
         <Input />
       </Form.Item>
-      <Form.Item label="Tooltip Eligibility Text" name="tooltipEligibilityText">
-        <Input />
-      </Form.Item>
       <Form.Item
         label="Hide Denial Revert?"
         name="hideDenialRevert"
         valuePropName="checked"
       >
         <Checkbox />
+      </Form.Item>
+      <Form.Item label="Tooltip Eligibility Text" name="tooltipEligibilityText">
+        <Input />
       </Form.Item>
       <Form.Item
         label="Call To Action"
@@ -204,6 +203,12 @@ const OpportunityConfigurationForm = ({
           <Select.Option value="NORMAL">NORMAL</Select.Option>
           <Select.Option value="HIGH">HIGH</Select.Option>
         </Select>
+      </Form.Item>
+      <Form.Item label="Tab Groups" name="tabGroups">
+        <Input />
+      </Form.Item>
+      <Form.Item label="Compare By" name="compareBy">
+        <Input />
       </Form.Item>
       <MultiEntry label="Notifications" name="notifications">
         {({ name, ...field }) => {
