@@ -328,9 +328,9 @@ def validate_root_entity(root_entity: RootEntityT) -> List[Error]:
     error_messages.extend(_unique_constraint_check(entities_by_cls))
 
     for entity_cls, entities in entities_by_cls.items():
-        for field_name, field_info in attribute_field_type_reference_for_class(
-            entity_cls
-        ).items():
+        class_reference = attribute_field_type_reference_for_class(entity_cls)
+        for field_name in class_reference.fields:
+            field_info = class_reference.get_field_info(field_name)
             validator = field_info.attribute.validator
             if isinstance(validator, ParsingOptionalOnlyValidator):
                 for entity in entities:

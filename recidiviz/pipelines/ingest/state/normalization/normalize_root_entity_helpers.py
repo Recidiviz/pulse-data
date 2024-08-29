@@ -56,9 +56,11 @@ def build_normalized_root_entity(
             entities that needed non-standard normalization.
     """
     normalized_root_entity_kwargs = {**root_entity_subtree_kwargs}
-    for field, field_info in attribute_field_type_reference_for_class(
+    class_reference = attribute_field_type_reference_for_class(
         normalized_root_entity_cls
-    ).items():
+    )
+    for field in class_reference.fields:
+        field_info = class_reference.get_field_info(field)
         if field in normalized_root_entity_kwargs:
             continue
         pre_normalization_field_value = assert_type(

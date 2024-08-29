@@ -96,9 +96,9 @@ class TestStateEntities(TestCase):
         for cls in get_all_entity_classes_in_module(entities):
             if not issubclass(cls, EnumEntity):
                 continue
-            field_info_dict = attribute_field_type_reference_for_class(cls)
+            class_reference = attribute_field_type_reference_for_class(cls)
 
-            if "external_id" in field_info_dict:
+            if "external_id" in class_reference.fields:
                 raise ValueError(
                     f"Found EnumEntity [{cls.__name__}] with an external_id field. "
                     f"EnumEntity entities should not have an external_id."
@@ -106,8 +106,8 @@ class TestStateEntities(TestCase):
 
             enum_fields = {
                 field_name
-                for field_name, info in field_info_dict.items()
-                if info.enum_cls
+                for field_name in class_reference.fields
+                if class_reference.get_field_info(field_name).enum_cls
             }
             if len(enum_fields) > 1:
                 raise ValueError(
