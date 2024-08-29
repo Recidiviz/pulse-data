@@ -30,11 +30,11 @@ US_IX_CASE_NOTES_QUERY_TEMPLATE = """
         'US_IX' as state_code,
         OffenderId as external_id,
         OffenderNoteId as note_id,
-        Details as note_body,
-        '' as note_title,
-        NoteDate as note_date,
-        NoteTypeDesc as note_type,
-        ContactModeDesc as note_mode 
+        min(Details) as note_body,
+        min('') as note_title,
+        min(NoteDate) as note_date,
+        min(NoteTypeDesc) as note_type,
+        STRING_AGG(ContactModeDesc, ",") as note_mode
     FROM `{project_id}.us_ix_raw_data_up_to_date_views.ind_OffenderNote_latest` notes
     LEFT JOIN `{project_id}.us_ix_raw_data_up_to_date_views.ind_OffenderNoteInfo_latest` noteInfo
      USING(OffenderNoteInfoId)
@@ -46,8 +46,7 @@ US_IX_CASE_NOTES_QUERY_TEMPLATE = """
      USING (OffenderNoteStatusId)
     LEFT JOIN `{project_id}.us_ix_raw_data_up_to_date_views.ref_NoteType_latest`
      USING(NoteTypeId)
-    LEFT JOIN `{project_id}.us_ix_raw_data_up_to_date_views.com_PSIReport_latest` psi
-     USING(OffenderId)
+    GROUP BY 1, 2, 3
 """
 
 US_IX_CASE_NOTES_VIEW_BUILDER = SimpleBigQueryViewBuilder(
