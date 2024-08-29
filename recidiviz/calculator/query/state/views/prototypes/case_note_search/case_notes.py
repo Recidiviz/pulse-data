@@ -32,19 +32,34 @@ CASE_NOTES_VIEW_DESCRIPTION = """All case notes formatted as JSON. This allows f
     """
 
 CASE_NOTES_QUERY_TEMPLATE = """
-    SELECT 
-        CONCAT("US_IX", "_", external_id, "_", note_id) as id,
-        TO_JSON_STRING(STRUCT(state_code, external_id, note_id, note_body, note_title, note_date, note_type, note_mode))
-            as jsonData
-    FROM `{project_id}.{case_notes_prototype_dataset}.us_ix_case_notes`
-
-    UNION ALL    
-
-    SELECT 
-        CONCAT("US_ME", "_", external_id, "_", note_id) as id,
-        TO_JSON_STRING(STRUCT(state_code, external_id, note_id, note_body, note_title, note_date, note_type, note_mode))
-            as jsonData
-    FROM `{project_id}.{case_notes_prototype_dataset}.us_me_case_notes`
+    SELECT id, jsonData
+    FROM
+        (
+        SELECT
+            notes.state_code,
+            notes.external_id,
+            CONCAT("US_IX", "_", notes.external_id, "_", note_id) as id,
+            TO_JSON_STRING(STRUCT(notes.state_code, notes.external_id, note_id, note_body, note_title, note_date, note_type, note_mode))
+                as jsonData,
+        FROM `{project_id}.{case_notes_prototype_dataset}.us_ix_case_notes` notes
+    
+        UNION ALL    
+    
+        SELECT
+            notes.state_code,
+            notes.external_id,
+            CONCAT("US_ME", "_", notes.external_id, "_", note_id) as id,
+            TO_JSON_STRING(STRUCT(notes.state_code, notes.external_id, note_id, note_body, note_title, note_date, note_type, note_mode))
+                as jsonData,
+        FROM `{project_id}.{case_notes_prototype_dataset}.us_me_case_notes` notes
+        ) all_notes
+    # Filter to only those who are currently on supervision
+    # TODO(#32764): Also include those who are currently incarcerated once a use case requires it
+    INNER JOIN `{project_id}.normalized_state.state_person_external_id` spei
+        ON all_notes.state_code = spei.state_code AND all_notes.external_id = spei.external_id
+    INNER JOIN `{project_id}.sessions.compartment_sessions_materialized` cs
+        ON cs.state_code = spei.state_code AND cs.person_id = spei.person_id
+    WHERE cs.compartment_level_1 = 'SUPERVISION' AND cs.end_date_exclusive IS NULL
 """
 
 CASE_NOTES_VIEW_BUILDER = SimpleBigQueryViewBuilder(

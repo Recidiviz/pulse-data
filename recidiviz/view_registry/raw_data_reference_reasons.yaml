@@ -200,8 +200,6 @@ US_IX:
     sessions.us_ix_parole_board_hearing_sessions: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
   com_PSIReport:
-    case_notes_prototype_views.us_ix_case_notes: |-
-      Notes are not ingested and we surface them in the case notes prototypes.
     sentencing_views.sentencing_case_record: |-
       Used to grab PSI information. 05/21/24
     sentencing_views.sentencing_client_record: |-
