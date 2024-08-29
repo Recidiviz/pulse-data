@@ -241,7 +241,7 @@ clean_emails_cte AS
         employeeIds,
         employeeCodes
     FROM colapsed_union_on_email
-    where rn = 1 AND FirstName IS NOT NULL AND LastName IS NOT NULL
+    where rn = 1 AND (FirstName IS NOT NULL OR LastName IS NOT NULL)
 )
 
 SELECT
