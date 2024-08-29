@@ -25,6 +25,7 @@ my_enum_field:
 
 from typing import List, Optional
 
+from recidiviz.common.constants.state.state_assessment import StateAssessmentLevel
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
@@ -53,6 +54,21 @@ GENERAL_BED_USES: List[str] = [
     "L",  # Medium Custody
     "M",  # Minimum Custody
 ]
+
+
+def parse_arora_score(raw_text: str) -> Optional[StateAssessmentLevel]:
+    """Custom parser retrieving assessment levels from ARORA scores. Scores of 0-4 are
+    in the minimum category, 5-9 is low, 10-12 is moderate, and 13+ is high."""
+    if not raw_text.isnumeric():
+        return None
+    asmt_score = int(raw_text)
+    if asmt_score < 5:
+        return StateAssessmentLevel.MINIMUM
+    if asmt_score <= 9:
+        return StateAssessmentLevel.LOW
+    if asmt_score <= 12:
+        return StateAssessmentLevel.MODERATE
+    return StateAssessmentLevel.HIGH
 
 
 def parse_housing_category(
