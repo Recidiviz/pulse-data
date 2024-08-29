@@ -1136,9 +1136,6 @@ US_ND:
       Usage reason unknown. Grandfathered in 04/18/2024.
     workflows_views.us_nd_complete_discharge_early_from_supervision_record: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
-  docstars_officers:
-    reference_views.ingested_product_users: |-
-      Usage reason unknown. Grandfathered in 04/18/2024.
   elite_OffenderCaseNotes:
     workflows_views.us_nd_transfer_to_atp_form_record: |-
       We need case notes related to SSI.
