@@ -139,21 +139,24 @@ def get_touched_raw_data_regions(touched_files: Optional[List[str]]) -> Set[str]
     If modified files are not provided, greps for touched files in the direct ingest
     regions directories.
     """
-
-    if not touched_files:
-        regions_dir_path = os.path.relpath(
-            os.path.dirname(regions_module.__file__),
-            os.path.dirname(os.path.dirname(recidiviz.__file__)),
-        )
+    regions_dir_path = os.path.relpath(
+        os.path.dirname(regions_module.__file__),
+        os.path.dirname(os.path.dirname(recidiviz.__file__)),
+    )
+    if touched_files is None:
         res = subprocess.run(
             f'git diff --cached --name-only | grep "{regions_dir_path}"',
             shell=True,
             stdout=subprocess.PIPE,
             check=True,
         )
-        touched_files = res.stdout.decode().splitlines()
+        touched_region_files = res.stdout.decode().splitlines()
+    else:
+        touched_region_files = [
+            file for file in touched_files if file.startswith(regions_dir_path)
+        ]
 
-    region_names = {file.split("/")[4] for file in touched_files}
+    region_names = {file.split("/")[4] for file in touched_region_files}
     return {
         region_name
         for region_name in region_names
@@ -185,11 +188,14 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     # Arbitrary project ID - we just need to build views in order to obtain raw table dependencies
     with local_project_id_override(GCP_PROJECT_STAGING):
         modified = False
+        regions_to_generate_docs_for = set()
         if not args.force_all:
-            touched_raw_data_regions = get_touched_raw_data_regions(args.filenames)
-        else:
-            touched_raw_data_regions = get_existing_region_codes()
-        for region_code in sorted(touched_raw_data_regions):
+            regions_to_generate_docs_for = get_touched_raw_data_regions(args.filenames)
+
+        if not regions_to_generate_docs_for:
+            regions_to_generate_docs_for = get_existing_region_codes()
+
+        for region_code in sorted(regions_to_generate_docs_for):
             if not StateCode.is_state_code(region_code):
                 logging.info(
                     "Skipping raw data documentation for non-state region [%s]",

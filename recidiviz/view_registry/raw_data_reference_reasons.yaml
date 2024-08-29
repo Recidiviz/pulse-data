@@ -1,3 +1,9 @@
+# This file should include reasons why you had to use the given raw data table in a BQ view outside of ingest.
+# Please do your best to include the reason why you could not reference ingested data in the normalized_state
+# dataset instead. Possible reasons might include:
+# 1) No way to represent the information we need in the normalized_state schema
+# 2) Not enough time to ingest the data needed and we should refactor to use ingested data soon
+# 3) Other? Please elaborate.
 US_AR:
   ADDRESS:
     reference_views.us_ar_location_metadata: |-
