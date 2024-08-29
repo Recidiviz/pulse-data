@@ -1,0 +1,45 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_arora_assessment` to the corresponding
+# Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  - OFFENDERID
+  - RCDATETIME
+  - RISKASSESSMENTTYPE
+  - RISK2SCORE
+  - STAFFIDPERFASSESS
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: OFFENDERID
+          id_type: $literal("US_AR_OFFENDERID")
+    assessments:
+      - StateAssessment:
+          external_id:
+            $concat:
+              $values:
+                - OFFENDERID
+                - RCDATETIME
+          assessment_date: RCDATETIME
+          assessment_class: $literal_enum(StateAssessmentClass.RISK)
+          assessment_type:
+            # TODO(#32831): It's OK for now that there isn't a StateAssessmentType enum for
+            # the ARORA assessment type, since only ARORA assessments are being ingested in AR
+            # currently. At some point, we should add an enum value for the ARORA assessment type;
+            # this will become necessary once we start ingesting other types of assessments in AR.
+            $enum_mapping:
+              $raw_text: RISKASSESSMENTTYPE
+              $mappings:
+                StateAssessmentType.INTERNAL_UNKNOWN:
+                  - 6a # ARORA Risk/Needs Assessment
+                  - 6b # ARORA Re-Assessment Instrument
+                  - 6c # ARORA Pre-Release Risk Assessment
+          conducting_staff_external_id: STAFFIDPERFASSESS
+          conducting_staff_external_id_type: $literal("US_AR_PARTYID")
+          assessment_score: RISK2SCORE
+          assessment_level:
+            $enum_mapping:
+              $raw_text: RISK2SCORE
+              $custom_parser: us_ar_custom_enum_parsers.parse_arora_score
