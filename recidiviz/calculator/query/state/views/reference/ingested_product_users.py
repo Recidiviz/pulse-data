@@ -19,7 +19,6 @@
 from recidiviz.big_query.selected_columns_big_query_view import (
     SelectedColumnsBigQueryViewBuilder,
 )
-from recidiviz.calculator.query.bq_utils import list_to_query_string
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.common.constants.auth import RosterPredefinedRoles
 from recidiviz.common.constants.states import StateCode
@@ -58,7 +57,7 @@ INGESTED_PRODUCT_USERS_QUERY_TEMPLATE = f"""
     ),
     state_staff_users AS (
         SELECT
-            state_code,
+            IF(state_code="US_IX", "US_ID", state_code) AS state_code,
             LOWER(email) AS email_address,
             CASE
                 WHEN is_supervision_officer_supervisor THEN "{RosterPredefinedRoles.SUPERVISION_OFFICER_SUPERVISOR.value}"
@@ -71,7 +70,7 @@ INGESTED_PRODUCT_USERS_QUERY_TEMPLATE = f"""
             surname AS last_name,
             pseudonymized_id
         FROM `{{project_id}}.reference_views.current_staff_materialized`
-        WHERE state_code IN ({{state_staff_states}})
+        WHERE state_code != "US_MO"
         AND email IS NOT NULL
     ),
     all_users AS (
@@ -93,17 +92,6 @@ INGESTED_PRODUCT_USERS_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
     description=INGESTED_PRODUCT_USERS_DESCRIPTION,
     us_mo_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
         state_code=StateCode.US_MO, instance=DirectIngestInstance.PRIMARY
-    ),
-    state_staff_states=list_to_query_string(
-        [
-            "US_AR",
-            "US_CA",
-            "US_ME",
-            "US_MI",
-            "US_ND",
-            "US_PA",
-        ],
-        quoted=True,
     ),
     columns=[
         "state_code",
