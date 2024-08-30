@@ -4,7 +4,7 @@ file_description: |-
   This file contains previous ID information
 data_classification: source
 primary_key_cols:
-  - inmateNumber
+  - internalId
 columns:
   - name: internalId
     description: |-

@@ -36,7 +36,7 @@ columns:
       TODO(#31972): Fill in with answers from NE
   - name: INST_RLSE_DT
     description: |-
-      TODO(#31972): Fill in with answers from NE
+      Institution release date if they leave DCS.
   - name: LAST_ACTIVITY_TS
     description: |-
       TODO(#31972): Fill in with answers from NE
@@ -45,4 +45,4 @@ columns:
       TODO(#31972): Fill in with answers from NE
   - name: LOCT_RELEASE_DT
     description: |-
-      TODO(#31972): Fill in with answers from NE
+      Release out of location.
