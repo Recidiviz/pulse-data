@@ -16,6 +16,7 @@
 # =============================================================================
 """Implements user validations for workflows APIs. """
 import datetime
+import logging
 import os
 from typing import Any, Dict, List
 
@@ -64,16 +65,27 @@ def on_successful_authorization(claims: Dict[str, Any]) -> None:
     )
     app_metadata = claims[f"{os.environ['AUTH0_CLAIM_NAMESPACE']}/app_metadata"]
     g.is_recidiviz_user = app_metadata["stateCode"].upper() == "RECIDIVIZ"
-    g.feature_variants = {
-        fv: params
-        for fv, params in app_metadata.get("featureVariants", {}).items()
-        if "activeDate" not in params
-        or datetime.datetime.fromisoformat(params["activeDate"])
-        # Handle both naive and UTC activeDates
-        < datetime.datetime.now(
-            tz=datetime.datetime.fromisoformat(params["activeDate"]).tzinfo
-        )
-    }
+
+    g.feature_variants = {}
+    for fv, params in app_metadata.get("featureVariants", {}).items():
+        if isinstance(params, dict):
+            # Only include FVs with no date, or with a date that parses correctly & is in the past
+            if "activeDate" not in params or datetime.datetime.fromisoformat(
+                params["activeDate"]
+            ) < datetime.datetime.now(
+                tz=datetime.datetime.fromisoformat(params["activeDate"]).tzinfo
+            ):
+                g.feature_variants[fv] = params
+        elif params is True:
+            g.feature_variants[fv] = {}
+        elif params is not False and params is not None:
+            id_for_error = app_metadata.get("pseudonymizedId", "unknown")
+            logging.error(
+                "User with id %s has feature value %s with non-dict/bool value %s",
+                id_for_error,
+                fv,
+                params,
+            )
 
 
 def get_workflows_external_request_enabled_states() -> List[str]:
