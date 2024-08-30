@@ -157,8 +157,7 @@ def parse_results(
                 print(f"### Row {i}", file=logfile)
                 print(f"Ingest View Result: {row}", file=logfile)
                 traceback.print_exception(
-                    type(result),
-                    value=result,
+                    result,
                     file=logfile,
                 )
             elif isinstance(result, Entity) and write_results:
