@@ -436,6 +436,8 @@ class SupervisionOfficerSupervisorEntity:
     email: str = attr.ib()
     # Whether the supervisor has outliers in the latest period
     has_outliers: bool = attr.ib()
+    # The unit the supervisor's in
+    supervision_unit: Optional[str] = attr.ib()
 
     def to_json(self) -> Dict[str, Any]:
         return cattrs.unstructure(self)

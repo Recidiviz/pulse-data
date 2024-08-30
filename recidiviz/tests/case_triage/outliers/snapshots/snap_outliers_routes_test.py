@@ -477,6 +477,7 @@ snapshots["TestOutliersRoutes.TestOutliersRoutes test_get_supervisors"] = {
             "hasOutliers": True,
             "pseudonymizedId": "hash2",
             "supervisionDistrict": "2",
+            "supervisionUnit": "central",
         }
     ]
 }
@@ -506,6 +507,7 @@ snapshots[
         "hasOutliers": True,
         "pseudonymizedId": "hashhash",
         "supervisionDistrict": "2",
+        "supervisionUnit": "central",
     },
     "hasDismissedDataUnavailableNote": False,
     "hasDismissedRateOver100PercentNote": False,
@@ -526,6 +528,7 @@ snapshots["TestOutliersRoutes.TestOutliersRoutes test_user_info_for_recidiviz_us
         "hasOutliers": True,
         "pseudonymizedId": "hashhash",
         "supervisionDistrict": "2",
+        "supervisionUnit": "central",
     },
     "hasDismissedDataUnavailableNote": False,
     "hasDismissedRateOver100PercentNote": False,
@@ -548,6 +551,7 @@ snapshots[
         "hasOutliers": True,
         "pseudonymizedId": "hashhash",
         "supervisionDistrict": "2",
+        "supervisionUnit": "central",
     },
     "hasDismissedDataUnavailableNote": False,
     "hasDismissedRateOver100PercentNote": False,
