@@ -264,6 +264,57 @@ class AttrValidatorsTest(unittest.TestCase):
         ok = today - datetime.timedelta(days=7)
         _ = _TestClass(my_required_not_future_date=ok, my_optional_not_future_date=ok)
 
+    def test_is_utc_timezone_aware_datetimes_validators(self) -> None:
+        @attr.s
+        class _TestClass:
+            my_required_utc_aware_datetime: datetime.date = attr.ib(
+                validator=attr_validators.is_utc_timezone_aware_datetime
+            )
+            my_optional_utc_aware_datetime: Optional[datetime.date] = attr.ib(
+                validator=attr_validators.is_opt_utc_timezone_aware_datetime,
+                default=None,
+            )
+
+        utc_tz = datetime.datetime.now(tz=datetime.UTC)
+        non_utc = datetime.datetime.now(tz=datetime.timezone.max)
+
+        # throw when non utc timezone
+        with self.assertRaises(ValueError):
+            _ = _TestClass(my_required_utc_aware_datetime=non_utc)
+
+        with self.assertRaises(ValueError):
+            _ = _TestClass(
+                my_required_utc_aware_datetime=utc_tz,
+                my_optional_utc_aware_datetime=non_utc,
+            )
+
+        no_tz = datetime.datetime.now(tz=None)
+
+        # throw when no timezone
+        with self.assertRaises(ValueError):
+            _ = _TestClass(my_required_utc_aware_datetime=no_tz)
+
+        with self.assertRaises(ValueError):
+            _ = _TestClass(
+                my_required_utc_aware_datetime=utc_tz,
+                my_optional_utc_aware_datetime=no_tz,
+            )
+
+        # throw when not a date
+        with self.assertRaises(ValueError):
+            _ = _TestClass(my_required_utc_aware_datetime=1)  # type: ignore[arg-type]
+
+        with self.assertRaises(ValueError):
+            _ = _TestClass(
+                my_required_utc_aware_datetime=utc_tz,
+                my_optional_utc_aware_datetime=1,  # type: ignore[arg-type]
+            )
+
+        # doesn't crash
+        _ok = _TestClass(
+            my_required_utc_aware_datetime=utc_tz, my_optional_utc_aware_datetime=utc_tz
+        )
+
 
 @attr.s
 class _TestEmailClass:

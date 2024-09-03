@@ -54,16 +54,22 @@ def is_non_empty_str(_instance: Any, _attribute: attr.Attribute, value: str) -> 
         raise ValueError("String value should not be empty.")
 
 
-def is_utc_timezone_aware_datetime(
+def is_opt_utc_timezone_aware_datetime(
     _instance: Any, _attribute: attr.Attribute, value: Optional[datetime.datetime]
 ) -> None:
-    if value:
-        if value.tzinfo is None:
-            raise ValueError("Expected timezone value to not be empty")
-        if value.tzinfo not in (pytz.UTC, datetime.timezone.utc):
-            raise ValueError(
-                f"Expected timezone value to be UTC, found: {value.tzinfo}"
-            )
+    if value is not None:
+        is_utc_timezone_aware_datetime(_instance, _attribute, value)
+
+
+def is_utc_timezone_aware_datetime(
+    _instance: Any, _attribute: attr.Attribute, value: datetime.datetime
+) -> None:
+    if not isinstance(value, datetime.datetime):
+        raise ValueError(f"Expected datetime, found {type(value)}")
+    if value.tzinfo is None:
+        raise ValueError("Expected timezone value to not be empty")
+    if value.tzinfo not in (pytz.UTC, datetime.timezone.utc):
+        raise ValueError(f"Expected timezone value to be UTC, found: {value.tzinfo}")
 
 
 def is_not_future_date(

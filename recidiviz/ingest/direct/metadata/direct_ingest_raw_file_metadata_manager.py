@@ -57,8 +57,8 @@ class DirectIngestRawFileMetadataSummary:
             but not yet imported
         num_ungrouped_files (int): the number of chunked, raw GCS files that have been
             discovered but not yet grouped into conceptual files
-        latest_discovery_time (datetime.datetime): the most recent datetime that a GCS
-            file has been discovered for this file tag
+        latest_discovery_time (datetime.datetime | None): the most recent datetime that
+            a GCS file has been discovered for this file tag
         latest_processed_time (datetime.datetime): the most recent successful import time
             for a this file tag
         latest_update_datetime (datetime.datetime): the greatest update_datetime associated
@@ -73,10 +73,10 @@ class DirectIngestRawFileMetadataSummary:
         validator=attr_validators.is_utc_timezone_aware_datetime
     )
     latest_processed_time: Optional[datetime.datetime] = attr.ib(
-        validator=attr_validators.is_opt_datetime
+        validator=attr_validators.is_opt_utc_timezone_aware_datetime
     )
     latest_update_datetime: Optional[datetime.datetime] = attr.ib(
-        validator=attr_validators.is_opt_datetime
+        validator=attr_validators.is_opt_utc_timezone_aware_datetime
     )
 
 

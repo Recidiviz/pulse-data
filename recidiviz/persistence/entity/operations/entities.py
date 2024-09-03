@@ -91,7 +91,7 @@ class DirectIngestRawFileMetadata(Entity, BuildableAttr, DefaultableAttr):
     file_discovery_time: datetime.datetime = attr.ib()
     # Time when we have finished fully processing this file by uploading to BQ.
     file_processed_time: Optional[datetime.datetime] = attr.ib(
-        validator=attr_validators.is_utc_timezone_aware_datetime
+        validator=attr_validators.is_opt_utc_timezone_aware_datetime
     )
 
     update_datetime: datetime.datetime = attr.ib(
@@ -222,7 +222,7 @@ class DirectIngestRawBigQueryFileMetadata(Entity, BuildableAttr, DefaultableAttr
     is_invalidated: bool = attr.ib(validator=attr_validators.is_bool)
     # Time when all parts of this conceptual file finished uploading to BigQuery
     file_processed_time: Optional[datetime.datetime] = attr.ib(
-        validator=attr_validators.is_utc_timezone_aware_datetime
+        validator=attr_validators.is_opt_utc_timezone_aware_datetime
     )
     # The literal CSV files associated with this "conceptual" file
     gcs_files: List["DirectIngestRawGCSFileMetadata"] = attr.ib(
@@ -291,8 +291,8 @@ class DirectIngestRawFileImportRun(Entity, BuildableAttr, DefaultableAttr):
         validator=attr_validators.is_utc_timezone_aware_datetime
     )
     # Time when the import run ended
-    import_run_end: datetime.datetime = attr.ib(
-        validator=attr_validators.is_utc_timezone_aware_datetime
+    import_run_end: Optional[datetime.datetime] = attr.ib(
+        validator=attr_validators.is_opt_utc_timezone_aware_datetime
     )
     # The region code associated with the raw data import run
     region_code: str = attr.ib(validator=attr_validators.is_str)

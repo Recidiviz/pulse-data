@@ -92,7 +92,7 @@ class LatestDirectIngestRawFileImportRunSummary:
 
     is_enabled: bool = attr.ib(validator=attr_validators.is_bool)
     import_run_start: Optional[datetime.datetime] = attr.ib(
-        validator=attr_validators.is_utc_timezone_aware_datetime
+        validator=attr_validators.is_opt_utc_timezone_aware_datetime
     )
     count_by_status_bucket: Dict[DirectIngestRawFileImportStatusBuckets, int] = attr.ib(
         validator=attr_validators.is_dict
