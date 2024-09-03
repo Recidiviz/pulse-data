@@ -1,0 +1,59 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: LKOffenseArrest
+file_description: |-
+  Offense arrest lookup information
+data_classification: source
+primary_key_cols:
+  - pkCode
+columns:
+  - name: pkCode
+    description: |-
+      Offense code
+  - name: description
+    description: |-
+      description of code
+  - name: sexualOffense
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: dnaSampleRequired
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: startDate
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: endDate
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: createdBy
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: createdDate
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: modifiedBy
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: modifiedDate
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: severityCategoryCode
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: violentOffense
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: classificationCategory1
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: classificationCategory2
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: classificationCategory3
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: classificationCategory4
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: version
+    description: |-
+      TODO(#31972): Fill in with answers from NE

@@ -1,222 +1,204 @@
 # yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
-file_tag: CTS_Inmate
+file_tag: Offense
 file_description: |-
-  This file contains information on adults in custody.
+  This file contains offense information
 data_classification: source
 primary_key_cols:
-  - ID_NBR
+  - pkOffenseId
 columns:
-  - name: ID_NBR
+  - name: pkOffenseId
     description: |-
-      Unique ID number for each person
+      Offense if
+  - name: inmateNumber
+    description: |-
+      internal id number
     is_pii: True
-  - name: NAME_TITLE
+  - name: fkOffenseTypeCode
     description: |-
-      Name title (mr, mrs, etc)
-  - name: LAST_OR_NICK_NAME
+      Offense type code
+  - name: docketCount
     description: |-
-      Last name, or nickname
-    is_pii: True
-  - name: FIRST_NAME
+      Docket count
+  - name: offenseCount
     description: |-
-      First name
-    is_pii: True
-  - name: MIDDLE_NAME
+      offense count
+  - name: docketNumber
     description: |-
-      Middle Name
-  - name: NAME_EXTENSION
+      docket number
+  - name: habitualCrime
     description: |-
-      Extension of name
-  - name: RECEIVED_DATE
-    description: |-
-      Date information received
-  - name: GENDER_CD
-    description: |-
-      Gender code
-  - name: TERM_TO_FOLLOW_IND
+      TODO(#31972)
+  - name: precedence
     description: |-
       TODO(#31972): Fill in with answers from NE
-  - name: SID_NBR
-    description: |-
-      Unique ID for individuals
-    is_pii: True
-  - name: BIRTH_DATE
-    description: |-
-      Date of birth
-    is_pii: True
-  - name: DNA_TESTING_CD
-    is_pii: True
-  - name: DRUG_DEP_IND
+  - name: minimumYear
     description: |-
       TODO(#31972): Fill in with answers from NE
-  - name: NBR_OF_DEPENDENTS
-  - name: OCCUPATION_ID
+  - name: minimumMonth
     description: |-
       TODO(#31972): Fill in with answers from NE
-  - name: HOME_ADDR_LINE1
-    description: |-
-      Home address
-    is_pii: True
-  - name: HOME_ADDR_LINE2
+  - name: minimumDay
     description: |-
       TODO(#31972): Fill in with answers from NE
-  - name: HOME_CITY
-    description: |-
-      Address city
-  - name: HOME_ZIP5
+  - name: minimumTerm
     description: |-
       TODO(#31972): Fill in with answers from NE
-  - name: HOME_ZIP4
+  - name: maximumYear
     description: |-
       TODO(#31972): Fill in with answers from NE
-  - name: HOME_ZIP2
+  - name: maximumMonth
     description: |-
       TODO(#31972): Fill in with answers from NE
-  - name: GED_RCVD_DT
+  - name: maximumDay
     description: |-
       TODO(#31972): Fill in with answers from NE
-  - name: LAST_PSYCH_EVAL_DT
+  - name: maximumTerm
     description: |-
       TODO(#31972): Fill in with answers from NE
-  - name: PSYCH_EXAM_RSN_CD
+  - name: mandatoryYear
     description: |-
       TODO(#31972): Fill in with answers from NE
-  - name: CTS115_REPORT_IND
+  - name: mandatoryMonth
     description: |-
       TODO(#31972): Fill in with answers from NE
-  - name: CTS120_REPORT_IND
+  - name: mandatoryDay
     description: |-
       TODO(#31972): Fill in with answers from NE
-  - name: CTS122_REPORT_IND
+  - name: mandatoryterm
     description: |-
       TODO(#31972): Fill in with answers from NE
-  - name: HEIGHT_FEET
+  - name: arrestDate
     description: |-
       TODO(#31972): Fill in with answers from NE
-  - name: HEIGHT_INCH
+  - name: fkFelonyMisdemeanorCode
     description: |-
       TODO(#31972): Fill in with answers from NE
-  - name: BODY_WEIGHT
+  - name: fkOffenseAttemptCode
     description: |-
       TODO(#31972): Fill in with answers from NE
-  - name: EYE_COLOR
+  - name: fkOffenseArrestCode
     description: |-
       TODO(#31972): Fill in with answers from NE
-  - name: HAIR_COLOR
+  - name: fkOffenseRunCode
     description: |-
       TODO(#31972): Fill in with answers from NE
-  - name: NBR_OF_SIBLINGS
-  - name: PLEA_BARGAIN_IND
+  - name: fkCountyCode
     description: |-
       TODO(#31972): Fill in with answers from NE
-  - name: PREV_ID_NBR
-    description: |-
-      Previous ID
-    is_pii: True
-  - name: PREV_ADMIS_STAT_CD
+  - name: convictedSexualOffense
     description: |-
       TODO(#31972): Fill in with answers from NE
-  - name: ADMIS_STAT_CD
+  - name: beginDate
     description: |-
       TODO(#31972): Fill in with answers from NE
-  - name: COUNTRY_CD
+  - name: deadTimeDays
     description: |-
       TODO(#31972): Fill in with answers from NE
-  - name: JURIS_CD
+  - name: jailTimeDays
     description: |-
       TODO(#31972): Fill in with answers from NE
-  - name: JURIS_STATE_CD
+  - name: fkGoodTimeLawCode
     description: |-
       TODO(#31972): Fill in with answers from NE
-  - name: COUNSELOR_CD
+  - name: convictedDescription
     description: |-
       TODO(#31972): Fill in with answers from NE
-  - name: RELIGION_CD
+  - name: barAssociationNumber
     description: |-
       TODO(#31972): Fill in with answers from NE
-  - name: RACE_CD
-    description: |-
-      Code indicating race
-  - name: MARITAL_STATUS_CD
+  - name: createdBy
     description: |-
       TODO(#31972): Fill in with answers from NE
-  - name: STATE_CD
+  - name: createdDate
     description: |-
       TODO(#31972): Fill in with answers from NE
-  - name: FAMILY_STATUS_CD
-  - name: LAST_ACTIVITY_TS
+  - name: modifiedBy
     description: |-
       TODO(#31972): Fill in with answers from NE
-  - name: LAST_ACTIVITY_ID
+  - name: modifiedDate
     description: |-
       TODO(#31972): Fill in with answers from NE
-  - name: BIRTH_CITY
-  - name: BIRTH_STATE_CD
-  - name: BIRTH_COUNTRY_CD
-  - name: CURR_REC_CNTR_CD
+  - name: offenseBeginDate
     description: |-
       TODO(#31972): Fill in with answers from NE
-  - name: CURR_LOCT_PRFX_CD
+  - name: offenseAttempt
     description: |-
       TODO(#31972): Fill in with answers from NE
-  - name: CURR_LOCT_SUFX_DSC
+  - name: offenseAid
     description: |-
       TODO(#31972): Fill in with answers from NE
-  - name: CONTACT_ADDR_LINE1
+  - name: offenseConspiracy
     description: |-
       TODO(#31972): Fill in with answers from NE
-  - name: CONTACT_ADDR_LINE2
+  - name: offenseMandatoryMinimum
     description: |-
       TODO(#31972): Fill in with answers from NE
-  - name: CONTACT_CITY
+  - name: fkOffenseGoodTimeLawCode
     description: |-
       TODO(#31972): Fill in with answers from NE
-  - name: CONTACT_STATE_CD
+  - name: controlling
     description: |-
       TODO(#31972): Fill in with answers from NE
-  - name: CONTACT_ZIP5
+  - name: offenseCommittedDate
     description: |-
       TODO(#31972): Fill in with answers from NE
-  - name: CONTACT_ZIP4
+  - name: statute
     description: |-
       TODO(#31972): Fill in with answers from NE
-  - name: CONTACT_ZIP2
+  - name: version
     description: |-
       TODO(#31972): Fill in with answers from NE
-  - name: CONTACT_PHONE_NBR
+  - name: convertedData
     description: |-
       TODO(#31972): Fill in with answers from NE
-    is_pii: True
-  - name: CONTACT_RELATION
+  - name: minimumYear3Dig
     description: |-
       TODO(#31972): Fill in with answers from NE
-  - name: PROBATION_ID
+  - name: minimumMonth2Dig
     description: |-
       TODO(#31972): Fill in with answers from NE
-  - name: PROB_BEGIN_DT
+  - name: minimumDay2Dig
     description: |-
       TODO(#31972): Fill in with answers from NE
-  - name: PROB_END_DT
+  - name: maximumYear3Dig
     description: |-
       TODO(#31972): Fill in with answers from NE
-  - name: ISP_OFFICER_NBR
+  - name: maximumMonth2Dig
     description: |-
       TODO(#31972): Fill in with answers from NE
-  - name: LST_GRD_CMPLT
+  - name: maximumDay2Dig
     description: |-
       TODO(#31972): Fill in with answers from NE
-  - name: PARD_COMUT_DT
+  - name: mandatoryYear3Dig
     description: |-
       TODO(#31972): Fill in with answers from NE
-  - name: PARD_COMUT_CD
+  - name: mandatoryMonth2Dig
     description: |-
       TODO(#31972): Fill in with answers from NE
-  - name: GUN_CLAUSE_IND
+  - name: mandatoryDay2Dig
     description: |-
       TODO(#31972): Fill in with answers from NE
-  - name: AFTER_HOURS_IND
+  - name: prsYear
     description: |-
       TODO(#31972): Fill in with answers from NE
-  - name: SOUNDEX_LAST_NAME
+  - name: prsMonth
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: prsDay
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: prsSource
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: courtType
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: lsoOrdered
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: validDocketNumberFormat
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: docketNumberOrig
     description: |-
       TODO(#31972): Fill in with answers from NE

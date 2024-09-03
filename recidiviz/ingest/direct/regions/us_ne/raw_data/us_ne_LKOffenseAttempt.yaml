@@ -1,0 +1,35 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: LKOffenseAttempt
+file_description: |-
+  Attmpted offense information
+data_classification: source
+primary_key_cols:
+  - pkCode
+columns:
+  - name: pkCode
+    description: |-
+      Code of attempted offense
+  - name: description
+    description: |-
+      code description
+  - name: startDate
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: endDate
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: createdBy
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: createdDate
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: modifiedBy
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: modifiedDate
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: version
+    description: |-
+      TODO(#31972): Fill in with answers from NE

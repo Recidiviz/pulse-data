@@ -29,8 +29,6 @@ columns:
   - name: receivedDate
     description: |-
       Date information received
-  - name: fbiNumber
-    is_pii: True
   - name: dob
     description: |-
       Date of birth
