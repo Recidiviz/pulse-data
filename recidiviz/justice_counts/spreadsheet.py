@@ -398,9 +398,10 @@ class SpreadsheetInterface:
                 metric_definition.system == schema.System.SUPERVISION
                 and metric_key_to_disaggregation_status.get(metric_definition.key)
                 is True
+                and len(ingest_result.metric_key_to_errors[metric_definition.key]) == 0
             ):
-                # If the metric is part of the supervision system, but the metric is disaggregated by
-                # supervision subsystem, don't display any messages for that metric.
+                # If the metric is part of the supervision system and there are no metric-wide errors,
+                # but the metric is disaggregated by supervision subsystem, don't display any messages for that metric.
                 continue
 
             sheet_name_to_metricfile = SYSTEM_TO_FILENAME_TO_METRICFILE[

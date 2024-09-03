@@ -17,6 +17,7 @@
 """Functionality for bulk upload of a spreadsheet into the Justice Counts database."""
 
 import datetime
+import logging
 import math
 from collections import defaultdict
 from itertools import groupby
@@ -111,7 +112,6 @@ class SpreadsheetUploader:
         the sheet could contain metrics for supervision, parole, or probation.
         This is indicated by the `system` column. In this case, we break up
         the rows by system, and then ingest one system at a time."""
-
         if (
             len(self.child_agency_name_to_agency) > 0
             and self.system != schema.System.SUPERAGENCY
@@ -748,7 +748,7 @@ class SpreadsheetUploader:
             system = row.get("system")
             metric_file = get_metricfile_by_sheet_name(
                 sheet_name=self.sheet_name,
-                system=system if system is not None else self.system,
+                system=schema.System[system] if system is not None else self.system,
             )
             if agency_name is None:
                 actual_columns = {col for col in row.keys() if col != "unnamed: 0"}
@@ -796,7 +796,6 @@ class SpreadsheetUploader:
                         )
                     )
                 return INVALID_CHILD_AGENCY
-
             return normalized_agency_name
 
         agency_name_to_rows = {}
@@ -886,6 +885,11 @@ class SpreadsheetUploader:
         if not isinstance(e, JusticeCountsBulkUploadException):
             # If an error is not a JusticeCountsBulkUploadException, wrap it
             # in a JusticeCountsBulkUploadException and label it unexpected.
+            logging.error(  # Log Unexpected Errors to Sentry
+                "[Bulk Upload] %s experienced an unexpected server error during upload. Error: %s",
+                self.agency.name,
+                e,
+            )
             return JusticeCountsBulkUploadException(
                 title="Unexpected Error",
                 message_type=BulkUploadMessageType.ERROR,
@@ -896,5 +900,6 @@ class SpreadsheetUploader:
                     else UNEXPECTED_ERROR
                 ),
             )
+
         e.sheet_name = sheet_name
         return e
