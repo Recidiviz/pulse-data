@@ -18,19 +18,17 @@
     felony detainer"""
 from google.cloud import bigquery
 
-from recidiviz.calculator.query.state.dataset_config import (
-    NORMALIZED_STATE_DATASET,
-    SESSIONS_DATASET,
+from recidiviz.calculator.query.bq_utils import nonnull_end_date_clause
+from recidiviz.calculator.query.sessions_query_fragments import (
+    create_sub_sessions_with_attributes,
 )
+from recidiviz.calculator.query.state.dataset_config import NORMALIZED_STATE_DATASET
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.dataset_config import raw_latest_views_dataset_for_region
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
-)
-from recidiviz.task_eligibility.utils.critical_date_query_fragments import (
-    critical_date_has_passed_spans_cte,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -41,54 +39,61 @@ _DESCRIPTION = """Describes spans of time during which a candidate does not have
     felony detainer"""
 
 _QUERY_TEMPLATE = f"""
-    WITH detainer_status AS ( 
+    WITH detainer_status AS (
         SELECT
           pei.state_code,
-          pei.person_id, 
-          PARSE_DATE('%m/%d/%Y', SPLIT(eval.CREATE_DTM, ' ')[OFFSET(0)] ) AS critical_date,
-          ACTIVE_FELONY_DETAINER,
+          pei.person_id,
+          CAST(SPLIT(DATE_PLACED, ' ')[OFFSET(0)] AS DATE) AS start_date,
+          CAST(SPLIT(CANCEL_DTM, ' ')[OFFSET(0)] AS DATE) AS end_date,
+          CAST(SPLIT(DATE_PLACED, ' ')[OFFSET(0)] AS DATE) AS detainer_start_date,
+          FALSE AS meets_criteria,
         FROM
-          `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.AZ_DOC_TRANSITION_PRG_EVAL_latest` eval
-        INNER JOIN 
-        `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.AZ_DOC_TRANSITION_PRG_ELIG_latest` map_to_docid
-        USING (TRANSITION_PRG_ELIGIBILITY_ID)
-        LEFT JOIN `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.DOC_EPISODE_latest` doc_ep
-        USING(DOC_ID)
-        LEFT JOIN `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.PERSON_latest` person
-        USING(PERSON_ID)
-        INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
-        ON ADC_NUMBER = external_id 
-        AND pei.state_code = 'US_AZ'
-        AND pei.id_type = 'US_AZ_ADC_NUMBER'
+          `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.AZ_DOC_HWD_DETAINER_latest` hwd_detainer
+        LEFT JOIN
+          `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.DOC_EPISODE_latest` doc_ep
+        USING
+          (DOC_ID)
+        LEFT JOIN
+          `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.PERSON_latest` person
+        USING
+          (PERSON_ID)
+        LEFT JOIN
+          `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.LOOKUPS_latest` status
+        ON
+          (hwd_detainer.STATUS_ID = LOOKUP_ID)
+        INNER JOIN
+          `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
+        ON
+          ADC_NUMBER = external_id
+        WHERE
+          status.DESCRIPTION = 'Detainer Saved'
+          AND pei.state_code = 'US_AZ'
+          AND pei.id_type = 'US_AZ_ADC_NUMBER'
     ),
-    critical_date_spans AS (
-        SELECT 
-          detainer_status.state_code,
-          detainer_status.person_id,
-          detainer_status.critical_date,
-          sesh.start_date AS start_datetime,
-          sesh.end_date AS end_datetime, 
-        FROM detainer_status
-        INNER JOIN `{{project_id}}.{{sessions_dataset}}.compartment_sessions_materialized` sesh
-        ON detainer_status.person_id = sesh.person_id
-        AND critical_date BETWEEN sesh.start_date and IFNULL(sesh.end_date_exclusive, '9999-12-31')
-        WHERE ACTIVE_FELONY_DETAINER = 'Y'
-        -- Get the most recent felony detainer for a given session
-        QUALIFY ROW_NUMBER() OVER (PARTITION BY state_code, person_id, sesh.session_id ORDER BY critical_date DESC) = 1
-    ),
-    {critical_date_has_passed_spans_cte()}
+    {create_sub_sessions_with_attributes('detainer_status')},
+    dedup_cte AS (
     SELECT 
         state_code,
         person_id,
         start_date,
         end_date,
-        NOT critical_date_has_passed AS meets_criteria,
+        meets_criteria,
+        MAX(detainer_start_date) AS detainer_start_date,
+    FROM sub_sessions_with_attributes
+    GROUP BY 1,2,3,4,5
+    )
+    SELECT 
+        state_code,
+        person_id,
+        start_date,
+        end_date,
+        meets_criteria AS meets_criteria,
         TO_JSON(STRUCT(
-            critical_date AS latest_detainer_date
+            detainer_start_date AS latest_detainer_date
         )) AS reason,
-        critical_date AS latest_detainer_date,
-    FROM critical_date_has_passed_spans
-    WHERE start_date != end_date
+        detainer_start_date AS latest_detainer_date,
+    FROM dedup_cte
+    WHERE start_date != {nonnull_end_date_clause('end_date')}
 """
 
 _REASONS_FIELDS = [
@@ -111,7 +116,6 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
             instance=DirectIngestInstance.PRIMARY,
         ),
         normalized_state_dataset=NORMALIZED_STATE_DATASET,
-        sessions_dataset=SESSIONS_DATASET,
         meets_criteria_default=True,
     )
 )

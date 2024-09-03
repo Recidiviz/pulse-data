@@ -71,6 +71,9 @@ US_AZ:
     analyst_data.us_az_home_plan_preprocessed: |-
       There is no place to store "Home Plan" reentry planning information in our schema,
       and this info is relevant to a reentry analysis in AZ.
+  AZ_DOC_HWD_DETAINER:
+    task_eligibility_criteria_us_az.no_active_felony_detainers: |-
+      Needed information on when detainers are placed on residents, this information is not ingested.
   AZ_DOC_PRISON:
     reference_views.us_az_location_metadata: |-
       We pull all prison facility locations from this raw data into the location metadata view.
@@ -85,19 +88,15 @@ US_AZ:
       We don't ingest early discharge data.
   AZ_DOC_TRANSITION_PRG_ELIG:
     task_eligibility_criteria_us_az.meets_functional_literacy: |-
-      Needed information on when detainers are placed on residents, this information is not ingested.
-    task_eligibility_criteria_us_az.no_active_felony_detainers: |-
-      Needed information on when detainers are placed on residents, this information is not ingested.
+      Needed information on when residents meet literacy requirements, this information is not ingested.
   AZ_DOC_TRANSITION_PRG_EVAL:
     task_eligibility_criteria_us_az.meets_functional_literacy: |-
-      Needed information on when detainers are placed on residents, this information is not ingested.
-    task_eligibility_criteria_us_az.no_active_felony_detainers: |-
-      Needed information on when detainers are placed on residents, this information is not ingested.
+      Needed information on when residents meet literacy requirements, this information is not ingested.
   DOC_EPISODE:
     task_eligibility_criteria_us_az.meets_functional_literacy: |-
-      Needed information on when detainers are placed on residents, this information is not ingested.
+      Needed a way to map the different ids in AZ to one another.
     task_eligibility_criteria_us_az.no_active_felony_detainers: |-
-      Needed a way to map the different ids in AZ to one another
+      Needed a way to map the different ids in AZ to one another.
   DPP_OFFICE_LOCATION:
     reference_views.us_az_location_metadata: |-
       We pull all supervision locations from this raw data into the location metadata view.
@@ -112,13 +111,16 @@ US_AZ:
       and this info is relevant to a reentry analysis in AZ.
     reference_views.us_az_location_metadata: |-
       We decode location names in the location metadata view.
+    task_eligibility_criteria_us_az.no_active_felony_detainers: |-
+      Needed information on when detainers are placed on residents, this information is not ingested.
   MEA_PROFILES:
     us_az_validation.supervision_population_person_level: |-
       This table is used to join officer names available in external data to PERSON_IDs
       used internally in the external comparison validation view.
   PERSON:
     task_eligibility_criteria_us_az.meets_functional_literacy: |-
-      Needed information on when detainers are placed on residents, this information is not ingested.
+      This table is used to convert ADC_NUMBER identifiers available in external data
+      into PERSON_ID identifiers used internally in the external comparison validation view.
     task_eligibility_criteria_us_az.no_active_felony_detainers: |-
       This table is used to convert ADC_NUMBER identifiers available in external data
       into PERSON_ID identifiers used internally in the external comparison validation view.
