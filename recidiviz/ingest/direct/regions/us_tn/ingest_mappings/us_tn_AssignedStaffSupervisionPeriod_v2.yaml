@@ -219,6 +219,7 @@ output:
                         - ICU # IN CUST ON TDOC/BOPP SENT
                         - ZCU # VIOLATOR IN CUSTODY
                         - 9DT # ADM - DETAINER
+                        - 7IC # IN CUSTODY
 
                       StateSupervisionLevel.UNASSIGNED:
                         - 2IN # RESTRICTED - INTAKE
@@ -294,4 +295,4 @@ output:
                         - ZSS # SUSPENDED SUPV PAROLE
                         - ZTS # TEMPORARY STATUS
                         - ZTV # TECHNICAL VIOLATOR
-                        - 7IC # Unknown
+                        - 7AB # #TODO(#32942): Update with answer from TN
