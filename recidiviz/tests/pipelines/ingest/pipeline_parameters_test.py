@@ -73,7 +73,7 @@ class TestIngestPipelineParameters(unittest.TestCase):
             "us_oz_normalized_state_new", pipeline_parameters.normalized_output
         )
         self.assertFalse(pipeline_parameters.is_sandbox_pipeline)
-        self.assertFalse(pipeline_parameters.run_normalization)
+        self.assertTrue(pipeline_parameters.run_normalization)
 
     def test_creation_all_fields_secondary(self) -> None:
         pipeline_parameters = IngestPipelineParameters(
