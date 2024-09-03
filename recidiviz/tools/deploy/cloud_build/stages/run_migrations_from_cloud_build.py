@@ -122,7 +122,7 @@ class RunMigrations(DeploymentStageInterface):
                     "--run-connection-test & sleep 2; "
                     "pipenv run python -m recidiviz.tools.migrations.run_migrations_to_head "
                     "--no-launch-proxy "
-                    f"--database {schema_type} "
+                    f"--database {schema_type.value} "
                     "--skip-db-name-check "
                 ),
             )
