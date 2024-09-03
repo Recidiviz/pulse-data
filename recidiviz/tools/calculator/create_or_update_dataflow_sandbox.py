@@ -68,6 +68,8 @@ TEMP_DATAFLOW_DATASET_DEFAULT_TABLE_EXPIRATION_MS = 72 * 60 * 60 * 1000
 
 SANDBOX_TYPES = [
     METRICS_PIPELINE_NAME,
+    # TODO(#31741): Remove this and update docstring once combined ingest and
+    #  normalization pipelines are launched in all states.
     NORMALIZATION_PIPELINE_NAME,
     SUPPLEMENTAL_PIPELINE_NAME,
     INGEST_PIPELINE_NAME,
@@ -142,7 +144,12 @@ def create_or_update_dataflow_sandbox(
             )
 
         # Filter down to relevant collections based on filters
-        if pipeline in (INGEST_PIPELINE_NAME, NORMALIZATION_PIPELINE_NAME):
+        if pipeline in (
+            INGEST_PIPELINE_NAME,
+            # TODO(#31741): Remove this and update docstring once combined ingest and
+            #  normalization pipelines are launched in all states.
+            NORMALIZATION_PIPELINE_NAME,
+        ):
             pipeline_collections = [
                 c
                 for c in pipeline_collections

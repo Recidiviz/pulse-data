@@ -19,6 +19,8 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.utils import environment
 
 
+# TODO(#31741): Delete this function once we've shipped combined ingest and
+#  normalization
 def should_run_normalization_in_ingest(state_code: StateCode) -> bool:
     """This gate determines whether we should output normalized entities from the ingest
     pipeline but does not determine whether we read that data downstream.
@@ -35,6 +37,8 @@ def should_run_normalization_in_ingest(state_code: StateCode) -> bool:
     return state_code in staging_launched_states
 
 
+# TODO(#31741): Delete this function once we've shipped combined ingest and
+#  normalization
 def is_combined_ingest_and_normalization_launched_in_env(state_code: StateCode) -> bool:
     """This gate determines whether downstream processes read from the ingest pipeline
     normalization output.

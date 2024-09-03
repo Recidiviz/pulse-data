@@ -47,7 +47,7 @@ class IngestPipelineParameters(PipelineParameters):
 
     run_normalization_override: bool = attr.ib(default=None)
 
-    # TODO(#29517): Remove this flag once merged normalization pipelines are launched
+    # TODO(#31741): Remove this flag once merged normalization pipelines are launched
     #  to all states.
     @property
     def run_normalization(self) -> bool:

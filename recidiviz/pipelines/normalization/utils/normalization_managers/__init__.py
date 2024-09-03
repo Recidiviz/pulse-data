@@ -14,3 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
+
+# TODO(#31741): Move all classes in this package to
+#  recidiviz/pipelines/ingest/normalization once we've shipped the combined ingest and
+#  normalization pipelines.

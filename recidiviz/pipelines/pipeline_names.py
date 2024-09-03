@@ -17,6 +17,8 @@
 """Constants for the different pipeline names"""
 
 INGEST_PIPELINE_NAME = "ingest"
+# TODO(#31741): All usages of this should be eliminated once combined ingest and
+#  normalization pipelines are launched in all states.
 NORMALIZATION_PIPELINE_NAME = "normalization"
 SUPPLEMENTAL_PIPELINE_NAME = "supplemental"
 METRICS_PIPELINE_NAME = "metrics"

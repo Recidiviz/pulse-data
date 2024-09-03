@@ -83,6 +83,8 @@ NORMALIZATION_MANAGERS: List[Type[EntityNormalizationManager]] = [
 
 # TODO(#10084) Combine incarceration and supervision period normalization
 # TODO(#25800) Instantiate incarceration and supervision delegates with their state-specific data
+# TODO(#31741): Move this function to recidiviz/pipelines/ingest/normalization once
+#  we've shipped the combined ingest and normalization pipelines.
 def normalized_periods_for_calculations(
     person_id: int,
     ip_normalization_delegate: StateSpecificIncarcerationNormalizationDelegate,

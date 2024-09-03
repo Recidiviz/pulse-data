@@ -86,6 +86,8 @@ from recidiviz.utils.metadata import local_project_id_override
 
 PIPELINE_PARAMETER_TYPES: Dict[str, Type[PipelineParameters]] = {
     "metrics": MetricsPipelineParameters,
+    # TODO(#31741): Remove support for normalization and update docstring once
+    #  combined ingest and normalization pipelines are launched in all states.
     "normalization": NormalizationPipelineParameters,
     "supplemental": SupplementalPipelineParameters,
 }

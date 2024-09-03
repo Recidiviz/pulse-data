@@ -14,3 +14,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
+
+# TODO(#31741): Delete this packages and all references once we've shipped combined
+#  ingest and normalization

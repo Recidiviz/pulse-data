@@ -71,6 +71,10 @@ NormalizedEntityKey = Tuple[Type[NormalizedStateEntity], int]
 # Cached _unique_fields_reference value
 _unique_fields_reference: Optional[Dict[Type[NormalizedStateEntity], Set[str]]] = None
 
+# TODO(#31741): Once combined ingest and normalization pipelines have shipped and
+#  pipeline code has been deleted, audit this file for unused code and move any still
+#  used code to recidiviz/pipelines/ingest/normalization.
+
 
 def convert_entity_trees_to_normalized_versions(
     root_entities: Sequence[Entity],

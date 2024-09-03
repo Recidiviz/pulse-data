@@ -103,6 +103,8 @@ from recidiviz.utils import metadata
 from recidiviz.utils.types import assert_type
 
 
+# TODO(#31741): Delete this pipeline and all references once we've shipped combined
+#  ingest and normalization
 # TODO(#21376) Properly refactor once strategy for separate normalization is defined.
 class ComprehensiveNormalizationPipeline(BasePipeline[NormalizationPipelineParameters]):
     """Defines the entity normalization pipeline that normalizes all entities with
