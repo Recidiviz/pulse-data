@@ -38,7 +38,6 @@ import * as OnCall from "../navigation/OnCall";
 import DataFreshnessView from "./DataFreshnessView";
 import DatasetView from "./Datasets/DatasetView";
 import DemoAppManagementView from "./DemoAppManagement/DemoAppManagementView";
-import DirectSandboxRawImport from "./DirectSandboxRawImportView";
 import FlashDatabaseChecklist from "./FlashDatabaseChecklist";
 import IngestStatusView from "./IngestStatus";
 import InsightsConfigurationsView from "./Insights/InsightsConfigurationsView";
@@ -114,10 +113,6 @@ const items: MenuProps["items"] = [
   getItem("Ingest", "ingest_group", null, [
     getItem("Ingest Status", IngestOperations.INGEST_DATAFLOW_ROUTE),
     getItem("Flash Databases", IngestOperations.FLASH_DB_CHECKLIST_ROUTE),
-    getItem(
-      "Sandbox Raw Data Import",
-      IngestOperations.DIRECT_SANDBOX_RAW_IMPORT
-    ),
     getItem("Data Freshness", DatasetMetadata.DATA_FRESHNESS_ROUTE),
     getItem(
       "State Dataset",
@@ -262,11 +257,6 @@ const App = (): JSX.Element => {
           <Route
             path={DatasetMetadata.VALIDATION_STATUS_ROUTE}
             component={ValidationStatusOverview}
-          />
-          <Route
-            exact
-            path={IngestOperations.DIRECT_SANDBOX_RAW_IMPORT}
-            component={DirectSandboxRawImport}
           />
           <Route
             path={IngestOperations.INGEST_DATAFLOW_ROUTE}

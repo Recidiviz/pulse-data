@@ -66,18 +66,6 @@ def _id_for_file(state_code: StateCode, file_name: str) -> int:
     return int.from_bytes(checksum.digest(), byteorder="big")
 
 
-def check_is_valid_sandbox_bucket(bucket: GcsfsBucketPath) -> None:
-    if (
-        "test" not in bucket.bucket_name
-        and "scratch" not in bucket.bucket_name
-        and "sandbox" not in bucket.bucket_name
-    ):
-        raise ValueError(
-            f"Invalid bucket [{bucket.bucket_name}] - must have 'test', "
-            f"'sandbox', or 'scratch' in the name."
-        )
-
-
 class Status(Enum):
     SUCCEEDED = "succeeded"
     SKIPPED = "skipped"

@@ -104,42 +104,6 @@ export const getIngestRawFileProcessingStatus = async (
   );
 };
 
-// Import raw files to BigQuery Sandbox
-export const importRawDataToSandbox = async (
-  stateCode: string,
-  sandboxDatasetPrefix: string,
-  sourceBucket: string,
-  fileTagFilters: string[] | undefined
-): Promise<Response> => {
-  return postWithURLAndBody(
-    `/api/ingest_operations/direct/sandbox_raw_data_import`,
-    {
-      stateCode,
-      sandboxDatasetPrefix,
-      sourceBucket,
-      fileTagFilters,
-    }
-  );
-};
-
-// Get list of sandbox buckets
-export const listSandboxBuckets = async (): Promise<Response> => {
-  return postWithURLAndBody(
-    `/api/ingest_operations/direct/list_sandbox_buckets`
-  );
-};
-
-// Get list of raw files and dates in sandbox bucket
-export const listRawFilesInSandboxBucket = async (
-  stateCode: string,
-  sourceBucket: string
-): Promise<Response> => {
-  return postWithURLAndBody(`/api/ingest_operations/direct/list_raw_files`, {
-    stateCode,
-    sourceBucket,
-  });
-};
-
 // Invalidate ingest pipeline runs for a state and instance
 export const invalidateIngestPipelineRuns = async (
   stateCode: string,
