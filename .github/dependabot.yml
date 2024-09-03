@@ -1,0 +1,13 @@
+# Please see the documentation for all configuration options:
+# https://docs.github.com/github/administering-a-repository/configuration-options-for-dependency-updates
+#
+# Dependabot will also open PRs to address security vulnerabilities.
+# The security patch settings can be found here:
+# https://github.com/Recidiviz/pulse-data/settings/security_analysis
+version: 2
+updates:
+  - package-ecosystem: "npm" # See documentation for possible values
+    directories:
+      - "**/*"
+    schedule:
+      interval: "weekly"
