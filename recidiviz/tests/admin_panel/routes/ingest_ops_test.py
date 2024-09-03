@@ -32,10 +32,11 @@ from recidiviz.admin_panel.routes.ingest_ops import add_ingest_ops_routes
 from recidiviz.common.constants.operations.direct_ingest_instance_status import (
     DirectIngestStatus,
 )
-from recidiviz.common.constants.states import StateCode
-from recidiviz.ingest.direct.metadata.direct_ingest_raw_data_resource_lock_manager import (
-    DirectIngestRawDataLockStatus,
+from recidiviz.common.constants.operations.direct_ingest_raw_data_resource_lock import (
+    DirectIngestRawDataLockActor,
+    DirectIngestRawDataResourceLockResource,
 )
+from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.metadata.direct_ingest_raw_file_import_manager import (
     DirectIngestRawFileImportStatusBuckets,
     LatestDirectIngestRawFileImportRunSummary,
@@ -396,10 +397,15 @@ class IngestOpsEndpointTests(TestCase):
     def test_all_current_lock_summaries(self) -> None:
         # Arrange
         self.mock_store.get_all_current_lock_summaries.return_value = {
-            StateCode.US_XX: {DirectIngestRawDataLockStatus.HELD: 3},
+            StateCode.US_XX: {
+                DirectIngestRawDataResourceLockResource.BIG_QUERY_RAW_DATA_DATASET: None,
+                DirectIngestRawDataResourceLockResource.BUCKET: None,
+                DirectIngestRawDataResourceLockResource.OPERATIONS_DATABASE: None,
+            },
             StateCode.US_YY: {
-                DirectIngestRawDataLockStatus.FREE: 2,
-                DirectIngestRawDataLockStatus.HELD: 1,
+                DirectIngestRawDataResourceLockResource.BIG_QUERY_RAW_DATA_DATASET: DirectIngestRawDataLockActor.PROCESS,
+                DirectIngestRawDataResourceLockResource.BUCKET: DirectIngestRawDataLockActor.PROCESS,
+                DirectIngestRawDataResourceLockResource.OPERATIONS_DATABASE: DirectIngestRawDataLockActor.PROCESS,
             },
         }
 
@@ -414,7 +420,15 @@ class IngestOpsEndpointTests(TestCase):
         self.assertEqual(
             response.json,
             {
-                "US_XX": {"HELD": 3},
-                "US_YY": {"FREE": 2, "HELD": 1},
+                "US_XX": {
+                    "BUCKET": None,
+                    "OPERATIONS_DATABASE": None,
+                    "BIG_QUERY_RAW_DATA_DATASET": None,
+                },
+                "US_YY": {
+                    "BUCKET": "PROCESS",
+                    "OPERATIONS_DATABASE": "PROCESS",
+                    "BIG_QUERY_RAW_DATA_DATASET": "PROCESS",
+                },
             },
         )

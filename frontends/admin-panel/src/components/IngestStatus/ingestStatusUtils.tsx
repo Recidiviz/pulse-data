@@ -30,6 +30,8 @@ import {
   RawDataImportRunState,
   RawDataImportRunStatus,
   RawDataImportRunStatusInfo,
+  RawDataResourceLockActor,
+  RawDataResourceLockStatuses,
 } from "./constants";
 
 export interface DirectIngestCellFormattingInfo {
@@ -37,9 +39,15 @@ export interface DirectIngestCellFormattingInfo {
   sortRank: number;
 }
 
-export interface DirectIngestStatusFormattingInfo
+export interface DirectIngestCellFormattingAndStatusInfo
   extends DirectIngestCellFormattingInfo {
+  color: string;
+  sortRank: number;
   status: string;
+}
+
+export interface DirectIngestStatusFormattingInfo
+  extends DirectIngestCellFormattingAndStatusInfo {
   message: string;
 }
 
@@ -410,6 +418,71 @@ export function getRawDataImportRunStatusSortedOrder(
 ): number {
   return getColorStatusForInfo(rawDataImportRunStatus).sortRank;
 }
+
+// --- raw data resource lock status utils ---------------------------------------------
+
+const rawDataResourceLockColorStatusDict: {
+  [color: string]: DirectIngestCellFormattingAndStatusInfo;
+} = {
+  BLOCKING: {
+    status: "RAW DATA IMPORT BLOCKED BY MANUAL PROCESS",
+    color: "resource-locks-blocking",
+    sortRank: 1,
+  },
+  NOT_BLOCKING: {
+    status: "No manual holds",
+    color: "resource-locks-not-blocking",
+    sortRank: 2,
+  },
+};
+
+const getRawDataResourceLockStatusMessage = (
+  rawDataResourceLockStatus: RawDataResourceLockStatuses
+): string => {
+  return getRawDataResourceLockStateForStatuses(rawDataResourceLockStatus)
+    .status;
+};
+
+function getRawDataResourceLockStateColor(
+  rawDataResourceLockStatus: RawDataResourceLockStatuses
+): string {
+  return getRawDataResourceLockStateForStatuses(rawDataResourceLockStatus)
+    .color;
+}
+
+function getRawDataResourceLockStateForStatuses(
+  rawDataResourceLockStatus: RawDataResourceLockStatuses
+): DirectIngestCellFormattingAndStatusInfo {
+  const hasManualHold = Object.values(rawDataResourceLockStatus).reduce(
+    (result, holder) => result || holder === RawDataResourceLockActor.ADHOC,
+    false
+  );
+  return hasManualHold
+    ? rawDataResourceLockColorStatusDict.BLOCKING
+    : rawDataResourceLockColorStatusDict.NOT_BLOCKING;
+}
+
+export function getRawDataResourceLockStateSortedOrder(
+  rawDataResourceLockStatus: RawDataResourceLockStatuses
+): number {
+  return getRawDataResourceLockStateForStatuses(rawDataResourceLockStatus)
+    .sortRank;
+}
+
+export const renderRawDataResourceLockStatusesCell = (
+  rawDataResourceLockStatus: RawDataResourceLockStatuses
+) => {
+  return (
+    <div
+      className={classNames(
+        "resource-lock-cell",
+        getRawDataResourceLockStateColor(rawDataResourceLockStatus)
+      )}
+    >
+      {getRawDataResourceLockStatusMessage(rawDataResourceLockStatus)}
+    </div>
+  );
+};
 
 // --- misc status utils ---------------------------------------------------------------
 

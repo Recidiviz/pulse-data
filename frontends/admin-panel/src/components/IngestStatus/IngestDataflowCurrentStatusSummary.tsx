@@ -24,6 +24,7 @@ import {
   getAllIngestInstanceStatuses,
   getAllLatestDataflowJobs,
   getAllLatestRawDataImportRunInfo,
+  getAllLatestRawDataResourceLockInfo,
   getIngestQueuesState,
 } from "../../AdminPanelAPI/IngestOperations";
 import { useFetchedDataJSON } from "../../hooks";
@@ -42,6 +43,8 @@ import {
   QueueState,
   RawDataImportRunStatusInfo,
   RawDataImportRunStatusResponse,
+  RawDataResourceLockStatuses,
+  RawDataResourceLockStatusesResponse,
   StateIngestQueuesStatuses,
 } from "./constants";
 import {
@@ -50,10 +53,12 @@ import {
   getLegacyIngestStatusSortedOrder,
   getQueueStatusSortedOrder,
   getRawDataImportRunStatusSortedOrder,
+  getRawDataResourceLockStateSortedOrder,
   renderDataflowStatusCell,
   renderIngestQueuesCell,
   renderLegacyIngestStatusCell,
   renderRawDataImportRunStatusCell,
+  renderRawDataResourceLockStatusesCell,
 } from "./ingestStatusUtils";
 
 export type IngestInstanceDataflowStatusTableInfo = {
@@ -65,6 +70,7 @@ export type IngestInstanceDataflowStatusTableInfo = {
   secondaryRawDataTimestamp: string;
   queueInfo: string | undefined;
   rawDataImportRunStatus: RawDataImportRunStatusInfo;
+  rawDataResourceLockStatus: RawDataResourceLockStatuses;
 };
 
 const IngestDataflowCurrentStatusSummary = (): JSX.Element => {
@@ -84,6 +90,13 @@ const IngestDataflowCurrentStatusSummary = (): JSX.Element => {
     data: rawDataImportRunStatuses,
   } = useFetchedDataJSON<RawDataImportRunStatusResponse>(
     getAllLatestRawDataImportRunInfo
+  );
+
+  const {
+    loading: loadingRawDataResourceLockStatuses,
+    data: rawDataResourceLockStatuses,
+  } = useFetchedDataJSON<RawDataResourceLockStatusesResponse>(
+    getAllLatestRawDataResourceLockInfo
   );
 
   const [stateIngestQueueStatuses, setStateIngestQueueStatuses] = useState<
@@ -128,7 +141,8 @@ const IngestDataflowCurrentStatusSummary = (): JSX.Element => {
   if (
     dataflowPipelinesLoading ||
     loadingRawDataStatuses ||
-    loadingRawDataImportRunStatuses
+    loadingRawDataImportRunStatuses ||
+    loadingRawDataResourceLockStatuses
   ) {
     return (
       <div className="center">
@@ -155,6 +169,14 @@ const IngestDataflowCurrentStatusSummary = (): JSX.Element => {
       />
     );
   }
+  if (rawDataResourceLockStatuses === undefined) {
+    return (
+      <Alert
+        message="Failed to load raw data resource lock statuses"
+        type="error"
+      />
+    );
+  }
 
   const dataSource: IngestInstanceDataflowStatusTableInfo[] = Object.keys(
     dataflowPipelines
@@ -174,6 +196,7 @@ const IngestDataflowCurrentStatusSummary = (): JSX.Element => {
       stateRawDataStatuses.secondary.statusTimestamp;
 
     const rawDataImportRunStatus = rawDataImportRunStatuses[key];
+    const rawDataResourceLockStatus = rawDataResourceLockStatuses[key];
 
     return {
       stateCode: key,
@@ -184,6 +207,7 @@ const IngestDataflowCurrentStatusSummary = (): JSX.Element => {
       secondaryRawDataTimestamp,
       queueInfo,
       rawDataImportRunStatus,
+      rawDataResourceLockStatus,
     };
   });
 
@@ -266,6 +290,20 @@ const IngestDataflowCurrentStatusSummary = (): JSX.Element => {
       sorter: (a, b) =>
         getRawDataImportRunStatusSortedOrder(a.rawDataImportRunStatus) -
         getRawDataImportRunStatusSortedOrder(b.rawDataImportRunStatus),
+    },
+    {
+      title: "New Raw Data Import Blocked by Manual Hold?",
+      dataIndex: "rawDataResourceLockStatus",
+      key: "rawDataResourceLockStatus",
+
+      render: (rawDataResourceLockStatus: RawDataResourceLockStatuses) => (
+        <span>
+          {renderRawDataResourceLockStatusesCell(rawDataResourceLockStatus)}
+        </span>
+      ),
+      sorter: (a, b) =>
+        getRawDataResourceLockStateSortedOrder(a.rawDataResourceLockStatus) -
+        getRawDataResourceLockStateSortedOrder(b.rawDataResourceLockStatus),
     },
   ];
 

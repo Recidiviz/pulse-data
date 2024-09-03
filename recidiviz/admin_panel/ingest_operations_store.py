@@ -35,6 +35,10 @@ from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath, GcsfsFilePath
 from recidiviz.common.constants.operations.direct_ingest_instance_status import (
     DirectIngestStatus,
 )
+from recidiviz.common.constants.operations.direct_ingest_raw_data_resource_lock import (
+    DirectIngestRawDataLockActor,
+    DirectIngestRawDataResourceLockResource,
+)
 from recidiviz.common.constants.states import StateCode
 from recidiviz.common.serialization import attr_from_json_dict, attr_to_json_dict
 from recidiviz.ingest.direct import direct_ingest_regions
@@ -56,7 +60,6 @@ from recidiviz.ingest.direct.metadata.direct_ingest_instance_status_manager impo
     DirectIngestInstanceStatusManager,
 )
 from recidiviz.ingest.direct.metadata.direct_ingest_raw_data_resource_lock_manager import (
-    DirectIngestRawDataLockStatus,
     DirectIngestRawDataResourceLockManager,
 )
 from recidiviz.ingest.direct.metadata.direct_ingest_raw_file_import_manager import (
@@ -492,14 +495,20 @@ class IngestOperationsStore(AdminPanelStore):
 
     def get_all_current_lock_summaries(
         self,
-    ) -> Dict[StateCode, Dict[DirectIngestRawDataLockStatus, int]]:
+    ) -> Dict[
+        StateCode,
+        Dict[
+            DirectIngestRawDataResourceLockResource,
+            Optional[DirectIngestRawDataLockActor],
+        ],
+    ]:
         """For each state, returns a map of the lock status to the number of locks with
         that status
         """
         return {
             state_code: DirectIngestRawDataResourceLockManager(
                 region_code=state_code.value,
-                raw_data_source_instance=DirectIngestInstance.SECONDARY,
+                raw_data_source_instance=DirectIngestInstance.PRIMARY,
             ).get_current_lock_summary()
             for state_code in get_direct_ingest_states_launched_in_env()
         }

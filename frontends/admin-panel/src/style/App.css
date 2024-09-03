@@ -267,7 +267,6 @@ tr.metadata-table-row > td.ant-table-cell > div {
   border-radius: 15px;
 }
 
-
 .raw-data-import-cell {
   color: #ffffff;
   background-color: #389e0d;
@@ -283,14 +282,9 @@ tr.metadata-table-row > td.ant-table-cell > div {
   background-color: #444444;
 }
 
-.raw-data-import-not-enabled{
-  color: #ffffff;
-  background-color: #2e2e2e;
-}
-
-.raw-data-import-in-progress{
-  color: #ffffff;
-  background-color: #444444;
+.raw-data-import-mixed{
+  color: #000000;
+  background-color: #ffff00;
 }
 
 .raw-data-import-failure{
@@ -299,6 +293,31 @@ tr.metadata-table-row > td.ant-table-cell > div {
 }
 
 .raw-data-import-success{
+  color: #ffffff;
+  background-color: #389e0d;
+}
+
+.raw-data-import-not-enabled{
+  color: #ffffff;
+  background-color: #2e2e2e;
+}
+
+.resource-lock-cell {
+  color: #ffffff;
+  background-color: #DEF2C8;
+  width: 150px;
+  white-space: pre-line;
+  text-align: center;
+  font-weight: bold;
+  border-radius: 15px;
+}
+
+.resource-locks-blocking{
+  color: #ffffff;
+  background-color: #f5222d;
+}
+
+.resource-locks-not-blocking{
   color: #ffffff;
   background-color: #389e0d;
 }

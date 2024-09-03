@@ -22,6 +22,7 @@ from unittest import TestCase
 
 import pytest
 from freezegun import freeze_time
+from more_itertools import one
 from sqlalchemy.exc import IntegrityError
 
 from recidiviz.common.constants.operations.direct_ingest_raw_data_resource_lock import (
@@ -33,7 +34,6 @@ from recidiviz.ingest.direct.metadata import (
     direct_ingest_raw_data_resource_lock_manager,
 )
 from recidiviz.ingest.direct.metadata.direct_ingest_raw_data_resource_lock_manager import (
-    DirectIngestRawDataLockStatus,
     DirectIngestRawDataResourceLockAlreadyReleasedError,
     DirectIngestRawDataResourceLockHeldError,
     DirectIngestRawDataResourceLockManager,
@@ -281,7 +281,11 @@ class DirectIngestRawDataResourceLockManagerTest(TestCase):
 
     def test_get_current_lock_summary(self) -> None:
         current_locks = self.us_xx_manager.get_current_lock_summary()
-        assert current_locks == {DirectIngestRawDataLockStatus.FREE: 3}
+        assert current_locks == {
+            DirectIngestRawDataResourceLockResource.BIG_QUERY_RAW_DATA_DATASET: None,
+            DirectIngestRawDataResourceLockResource.BUCKET: None,
+            DirectIngestRawDataResourceLockResource.OPERATIONS_DATABASE: None,
+        }
 
         old_time = datetime.datetime(2024, 1, 1, 1, 1, 1)
         with freeze_time(old_time):
@@ -294,7 +298,11 @@ class DirectIngestRawDataResourceLockManagerTest(TestCase):
 
         current_locks = self.us_xx_manager.get_current_lock_summary()
 
-        assert current_locks == {DirectIngestRawDataLockStatus.FREE: 3}
+        assert current_locks == {
+            DirectIngestRawDataResourceLockResource.BIG_QUERY_RAW_DATA_DATASET: None,
+            DirectIngestRawDataResourceLockResource.BUCKET: None,
+            DirectIngestRawDataResourceLockResource.OPERATIONS_DATABASE: None,
+        }
 
         held_locks = self.us_xx_manager.acquire_lock_for_resources(
             self.all_resources,
@@ -305,16 +313,27 @@ class DirectIngestRawDataResourceLockManagerTest(TestCase):
 
         current_locks = self.us_xx_manager.get_current_lock_summary()
 
-        assert current_locks == {DirectIngestRawDataLockStatus.HELD: 3}
+        assert current_locks == {
+            DirectIngestRawDataResourceLockResource.BIG_QUERY_RAW_DATA_DATASET: DirectIngestRawDataLockActor.PROCESS,
+            DirectIngestRawDataResourceLockResource.BUCKET: DirectIngestRawDataLockActor.PROCESS,
+            DirectIngestRawDataResourceLockResource.OPERATIONS_DATABASE: DirectIngestRawDataLockActor.PROCESS,
+        }
 
-        released = held_locks[0]
+        released = one(
+            filter(
+                lambda x: x.lock_resource
+                == DirectIngestRawDataResourceLockResource.BUCKET,
+                held_locks,
+            )
+        )
         self.us_xx_manager.release_lock_by_id(released.lock_id)
 
         current_locks_two = self.us_xx_manager.get_current_lock_summary()
 
         assert current_locks_two == {
-            DirectIngestRawDataLockStatus.HELD: 2,
-            DirectIngestRawDataLockStatus.FREE: 1,
+            DirectIngestRawDataResourceLockResource.BIG_QUERY_RAW_DATA_DATASET: DirectIngestRawDataLockActor.PROCESS,
+            DirectIngestRawDataResourceLockResource.BUCKET: None,
+            DirectIngestRawDataResourceLockResource.OPERATIONS_DATABASE: DirectIngestRawDataLockActor.PROCESS,
         }
 
     def test_lock_acquire_race_condition_on_commit(self) -> None:
@@ -471,12 +490,3 @@ class DirectIngestRawDataResourceLockManagerTest(TestCase):
         assert len(most_recent_lock) == 1
         assert persisted_lock
         assert most_recent_lock[0].lock_id == persisted_lock[0].lock_id
-
-
-class DirectIngestRawDataLockStatusTest(TestCase):
-    """Tests for DirectIngestRawDataLockStatus"""
-
-    def test_actor_mapping(self) -> None:
-        DirectIngestRawDataLockStatus.from_lock_actor(None)
-        for actor in list(DirectIngestRawDataLockActor):
-            DirectIngestRawDataLockStatus.from_lock_actor(actor)
