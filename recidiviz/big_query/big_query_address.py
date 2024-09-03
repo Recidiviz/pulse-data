@@ -17,6 +17,8 @@
 """Defines a type that represents the (dataset_id, table_id) address of a BigQuery view
 or table.
 """
+import re
+
 import attr
 from google.cloud import bigquery
 from google.cloud.bigquery import DatasetReference, TableReference
@@ -63,6 +65,19 @@ class BigQueryAddress:
             dataset_id=self.dataset_id,
             table_id=self.table_id,
         )
+
+    def is_state_specific_address(self) -> bool:
+        """Returns true if either of the dataset_id or table_id starts with a state code
+        prefix ('us_xx_') or ends with a state code suffix ('_us_xx').
+        """
+        is_state_specific = False
+        for s in [self.dataset_id, self.table_id]:
+            s_lower = s.lower()
+            is_state_specific |= bool(re.match("^us_[a-z]{2}_.*$", s_lower)) or bool(
+                re.match("^.*_us_[a-z]{2}$", s_lower)
+            )
+
+        return is_state_specific
 
 
 @attr.s(frozen=True, kw_only=True, order=True)

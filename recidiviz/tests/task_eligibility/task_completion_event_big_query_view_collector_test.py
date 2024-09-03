@@ -29,7 +29,6 @@ from recidiviz.task_eligibility.task_completion_event_big_query_view_builder imp
 from recidiviz.task_eligibility.task_completion_event_big_query_view_collector import (
     TaskCompletionEventBigQueryViewCollector,
 )
-from recidiviz.view_registry.datasets import is_state_specific_address
 
 
 @patch("recidiviz.utils.metadata.project_id", Mock(return_value="recidiviz-456"))
@@ -133,7 +132,7 @@ class TestTaskCompletionEventBigQueryViewCollector(unittest.TestCase):
                 view = builder.build()
 
                 for parent_address in view.parent_tables:
-                    if is_state_specific_address(parent_address):
+                    if parent_address.is_state_specific_address():
                         raise ValueError(
                             f"Found state-specific address [{parent_address}] "
                             f"referenced from state-agnostic completion event view "

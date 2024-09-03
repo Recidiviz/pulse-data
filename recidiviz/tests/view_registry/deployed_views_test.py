@@ -59,6 +59,7 @@ from recidiviz.ingest.direct.views.direct_ingest_latest_view_collector import (
 from recidiviz.metrics.export.export_config import VIEW_COLLECTION_EXPORT_INDEX
 from recidiviz.source_tables.collect_all_source_table_configs import (
     build_source_table_repository_for_collected_schemata,
+    get_all_source_table_datasets,
 )
 from recidiviz.utils import metadata
 from recidiviz.utils.environment import (
@@ -76,7 +77,6 @@ from recidiviz.validation.views.dataset_config import (
 from recidiviz.validation.views.state.primary_keys_unique_across_all_states import (
     PRIMARY_KEYS_UNIQUE_ACROSS_ALL_STATES_VIEW_BUILDER,
 )
-from recidiviz.view_registry.datasets import VIEW_SOURCE_TABLE_DATASETS
 from recidiviz.view_registry.deployed_views import (
     all_deployed_view_builders,
     deployed_view_builders,
@@ -245,7 +245,7 @@ class DeployedViewsTest(unittest.TestCase):
                 candidate_view_builders = deployed_view_builders()
 
                 views = build_views_to_update(
-                    view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
+                    view_source_table_datasets=get_all_source_table_datasets(),
                     candidate_view_builders=candidate_view_builders,
                     address_overrides=None,
                 )
@@ -259,7 +259,7 @@ class DeployedViewsTest(unittest.TestCase):
                     parent_address
                     for parent_address in view.parent_tables
                     if (
-                        parent_address.dataset_id not in VIEW_SOURCE_TABLE_DATASETS
+                        parent_address.dataset_id not in get_all_source_table_datasets()
                         and parent_address not in view_addresses
                     )
                 }
@@ -279,7 +279,7 @@ class DeployedViewsTest(unittest.TestCase):
         )
 
         views = build_views_to_update(
-            view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
+            view_source_table_datasets=get_all_source_table_datasets(),
             candidate_view_builders=deployed_view_builders(),
             address_overrides=None,
         )
@@ -307,7 +307,7 @@ class ViewDagInvariantTests(unittest.TestCase):
         with patch("recidiviz.utils.metadata.project_id", return_value="recidiviz-456"):
             view_builders = deployed_view_builders()
             views = build_views_to_update(
-                view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
+                view_source_table_datasets=get_all_source_table_datasets(),
                 candidate_view_builders=view_builders,
                 address_overrides=None,
             )

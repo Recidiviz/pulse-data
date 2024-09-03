@@ -27,29 +27,16 @@ import pandas as pd
 from statsmodels.stats.proportion import proportion_confint  # type: ignore
 
 from recidiviz.entrypoints.entrypoint_interface import EntrypointInterface
+from recidiviz.entrypoints.sentencing.datasets import (
+    CASE_INSIGHTS_RATES_ADDRESS,
+    CASE_INSIGHTS_RATES_SCHEMA,
+)
 from recidiviz.tools.analyst.cohort_methods import (
     gen_aggregated_cohort_event_df,
     gen_cohort_time_to_first_event,
 )
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 
-CASE_INSIGHTS_RATES_TABLE_NAME = "sentencing.case_insights_rates"
-CASE_INSIGHTS_RATES_SCHEMA = [
-    {"name": "state_code", "type": "STRING", "mode": "REQUIRED"},
-    {"name": "gender", "type": "STRING", "mode": "REQUIRED"},
-    {"name": "assessment_score_bucket_start", "type": "INT64", "mode": "REQUIRED"},
-    {"name": "assessment_score_bucket_end", "type": "INT64", "mode": "REQUIRED"},
-    {"name": "most_severe_description", "type": "STRING", "mode": "REQUIRED"},
-    {"name": "recidivism_rollup", "type": "STRING", "mode": "REQUIRED"},
-    {"name": "recidivism_num_records", "type": "INT64", "mode": "REQUIRED"},
-    {"name": "recidivism_probation_series", "type": "STRING", "mode": "NULLABLE"},
-    {"name": "recidivism_rider_series", "type": "STRING", "mode": "NULLABLE"},
-    {"name": "recidivism_term_series", "type": "STRING", "mode": "NULLABLE"},
-    {"name": "disposition_num_records", "type": "INT64", "mode": "REQUIRED"},
-    {"name": "disposition_probation_pc", "type": "FLOAT", "mode": "REQUIRED"},
-    {"name": "disposition_rider_pc", "type": "FLOAT", "mode": "REQUIRED"},
-    {"name": "disposition_term_pc", "type": "FLOAT", "mode": "REQUIRED"},
-]
 # Comma-delimited strings of supported states
 SUPPORTED_STATES_STR = "'US_IX'"
 UNKNOWN_ATTRIBUTE = "UNKNOWN"
@@ -110,10 +97,6 @@ class WriteRecidivismRatesToBQEntrypoint(EntrypointInterface):
     @staticmethod
     def run_entrypoint(args: argparse.Namespace) -> None:
         write_case_insights_data_to_bq(project_id=args.project_id)
-
-
-def return_schema() -> List[Dict[str, str]]:
-    return CASE_INSIGHTS_RATES_SCHEMA
 
 
 def get_gendered_assessment_score_bucket_range(
@@ -539,7 +522,7 @@ def write_case_insights_data_to_bq(project_id: str) -> None:
     schema_cols = list(map(lambda x: x["name"], CASE_INSIGHTS_RATES_SCHEMA))
     final_table = final_table[schema_cols]
     final_table.to_gbq(
-        destination_table=CASE_INSIGHTS_RATES_TABLE_NAME,
+        destination_table=CASE_INSIGHTS_RATES_ADDRESS.to_str(),
         project_id=project_id,
         table_schema=CASE_INSIGHTS_RATES_SCHEMA,
         if_exists="replace",

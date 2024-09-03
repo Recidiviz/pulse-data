@@ -79,6 +79,10 @@ def build_state_output_source_table_collection(
             DataflowPipelineSourceTableLabel(INGEST_PIPELINE_NAME),
             StateSpecificSourceTableLabel(state_code=state_code),
         ],
+        description=(
+            f"Contains un-normalized versions of the entities produced by the ingest "
+            f"pipeline for {state_code.value}."
+        ),
     )
     for table_id, schema_fields in get_bq_schema_for_entities_module(entities).items():
         collection.add_source_table(table_id=table_id, schema_fields=schema_fields)
@@ -99,6 +103,10 @@ def build_normalized_state_output_source_table_collection(
             DataflowPipelineSourceTableLabel(INGEST_PIPELINE_NAME),
             StateSpecificSourceTableLabel(state_code=state_code),
         ],
+        description=(
+            "Contains normalized versions of the entities in the state dataset "
+            f"produced by the ingest pipeline for {state_code.value}."
+        ),
     )
     for table_id, schema_fields in get_bq_schema_for_entities_module(
         normalized_entities
@@ -174,6 +182,10 @@ def _build_ingest_view_source_table_collections(
                 DataflowPipelineSourceTableLabel(pipeline_name=INGEST_PIPELINE_NAME),
                 StateSpecificSourceTableLabel(state_code=state_code),
             ],
+            description=(
+                f"Contains materialized ingest view results produced by the ingest "
+                f"pipeline for {state_code.value}."
+            ),
         )
         dataset_to_source_table_collection[dataset_id] = source_table_collection
 

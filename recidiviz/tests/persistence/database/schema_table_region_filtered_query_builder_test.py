@@ -97,6 +97,7 @@ class BaseSchemaTableRegionFilteredQueryBuilderTest(unittest.TestCase):
     """Base test class for SchemaTableRegionFilteredQueryBuilder subclass tests."""
 
     def setUp(self) -> None:
+        get_all_table_classes_in_schema.cache_clear()
         self.fake_operations_table = sqlalchemy.Table(
             "fake_operations_table",
             OperationsBase.metadata,

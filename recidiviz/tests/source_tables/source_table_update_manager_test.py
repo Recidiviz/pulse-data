@@ -119,6 +119,7 @@ class TestSourceTableUpdateManager(BigQueryEmulatorTestCase):
                     description="Raw data table",
                 )
             },
+            description="Description for dataset test_dataset",
         )
 
         self.source_table_update_manager.update(
@@ -136,6 +137,7 @@ class TestSourceTableUpdateManager(BigQueryEmulatorTestCase):
                     description="Raw data table",
                 )
             },
+            description="Description for dataset test_dataset",
         )
 
         with self.assertRaises(ValueError):
@@ -159,6 +161,7 @@ class TestSourceTableUpdateManager(BigQueryEmulatorTestCase):
         with_clustering = SourceTableCollection(
             dataset_id="test_dataset",
             source_tables_by_address={table_address: table_config},
+            description="Description for dataset test_dataset",
         )
         self.source_table_update_manager.update(source_table_collection=with_clustering)
 
@@ -174,6 +177,7 @@ class TestSourceTableUpdateManager(BigQueryEmulatorTestCase):
                             clustering_fields=None,
                         )
                     },
+                    description="Description for dataset test_dataset",
                 )
             )
 
@@ -194,6 +198,7 @@ class TestSourceTableUpdateManager(BigQueryEmulatorTestCase):
         collection = SourceTableCollection(
             dataset_id="test_dataset",
             source_tables_by_address={table_address: table_config},
+            description="Description for dataset test_dataset",
         )
         self.source_table_update_manager.update(source_table_collection=collection)
 
@@ -204,6 +209,7 @@ class TestSourceTableUpdateManager(BigQueryEmulatorTestCase):
                 source_tables_by_address={
                     table_address: attr.evolve(table_config, clustering_fields=[])
                 },
+                description="Description for dataset test_dataset",
             ),
         )
 
@@ -238,6 +244,7 @@ class TestSourceTableUpdateManagerRecreateOnError(BigQueryEmulatorTestCase):
             SourceTableCollection(
                 dataset_id=cls.dataset_id,
                 source_tables_by_address={cls.table_address: cls.existing_table_config},
+                description=f"Description for dataset {cls.dataset_id}",
             )
         ]
 
@@ -276,6 +283,7 @@ class TestSourceTableUpdateManagerRecreateOnError(BigQueryEmulatorTestCase):
                         recreate_on_update_error=False,
                         allow_field_deletions=False,
                     ),
+                    description="Description for dataset test_dataset",
                 )
             )
 
@@ -291,6 +299,7 @@ class TestSourceTableUpdateManagerRecreateOnError(BigQueryEmulatorTestCase):
                 source_tables_by_address={
                     self.table_address: self.updated_table_config
                 },
+                description="Description for dataset test_dataset",
             ),
         )
 
@@ -304,7 +313,10 @@ class SourceTableUpdateManagerDryRunTest(BigQueryEmulatorTestCase):
 
     @classmethod
     def get_source_tables(cls) -> list[SourceTableCollection]:
-        collection = SourceTableCollection(dataset_id="test_dataset")
+        collection = SourceTableCollection(
+            dataset_id="test_dataset",
+            description="Description for dataset test_dataset",
+        )
         collection.add_source_table(
             "test_table_unmodified",
             schema_fields=[

@@ -42,6 +42,10 @@ def build_unioned_state_source_table_collection() -> SourceTableCollection:
         labels=[
             UnionedStateAgnosticSourceTableLabel(STATE_BASE_DATASET),
         ],
+        description=(
+            "Ingested state data. For each state it pulls data from the "
+            "most recent ingest pipeline output."
+        ),
     )
     for table_id, schema_fields in get_bq_schema_for_entities_module(
         state_entities
@@ -63,6 +67,11 @@ def build_unioned_normalized_state_source_table_collection() -> SourceTableColle
             UnionedStateAgnosticSourceTableLabel(NORMALIZED_STATE_DATASET),
             NormalizedStateAgnosticEntitySourceTableLabel(),
         ],
+        description=(
+            "Contains normalized versions of the entities in the "
+            "state dataset produced by the normalization pipeline, and copies of "
+            "non-normalized entities from the state dataset."
+        ),
     )
     for table_id, schema_fields in get_bq_schema_for_entities_module(
         normalized_entities

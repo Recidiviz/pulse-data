@@ -279,7 +279,13 @@ class SourceTableCollection:
     multiple collections.
     """
 
+    # The dataset where this collection of tables lives. There may or may not be other
+    # tables in this datasest.
     dataset_id: str
+
+    # The description for this collection of tables
+    description: str
+
     # Update configs can be overridden, but default to the most precautionary configuration available
     update_config: SourceTableCollectionUpdateConfig = attr.ib(
         factory=SourceTableCollectionUpdateConfig.static

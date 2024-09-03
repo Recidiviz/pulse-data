@@ -46,15 +46,17 @@ def raw_latest_views_dataset_for_region(
 def raw_data_pruning_new_raw_data_dataset(
     state_code: StateCode, instance: DirectIngestInstance
 ) -> str:
-    """Returns the dataset containing new raw data temporarily housed in BQ for raw data diff queries that used in
-    raw data pruning."""
+    """Returns the dataset containing new raw data temporarily housed in BQ for raw data
+    diff queries that used in raw data pruning."""
     return f"pruning_{state_code.value.lower()}_new_raw_data_{instance.value.lower()}"
 
 
 def raw_data_pruning_raw_data_diff_results_dataset(
     state_code: StateCode, instance: DirectIngestInstance
 ) -> str:
-    """Returns the dataset containing the temporary results of raw data diff queries that used in raw data pruning."""
+    """Returns the dataset containing the temporary results of raw data diff queries
+    that are used in raw data pruning.
+    """
     return f"pruning_{state_code.value.lower()}_raw_data_diff_results_{instance.value.lower()}"
 
 

@@ -26,7 +26,9 @@ from recidiviz.calculator.query.state.dataset_config import (
     DATAFLOW_METRICS_DATASET,
     DATAFLOW_METRICS_MATERIALIZED_DATASET,
 )
-from recidiviz.view_registry.datasets import VIEW_SOURCE_TABLE_DATASETS
+from recidiviz.source_tables.collect_all_source_table_configs import (
+    get_all_source_table_datasets,
+)
 from recidiviz.view_registry.deployed_views import deployed_view_builders
 
 
@@ -108,7 +110,7 @@ def address_overrides_for_view_builders(
             )
 
     if override_source_datasets:
-        for dataset in VIEW_SOURCE_TABLE_DATASETS:
+        for dataset in get_all_source_table_datasets():
             address_overrides_builder.register_sandbox_override_for_entire_dataset(
                 dataset
             )

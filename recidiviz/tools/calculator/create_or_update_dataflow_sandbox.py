@@ -128,7 +128,7 @@ def create_or_update_dataflow_sandbox(
     ]
 
     for pipeline in pipelines:
-        pipeline_collections = dataflow_source_tables.get_collections(
+        pipeline_collections = dataflow_source_tables.get_collections_with_labels(
             labels=[DataflowPipelineSourceTableLabel(pipeline_name=pipeline)]
         )
 

@@ -37,10 +37,12 @@ from recidiviz.big_query.view_update_manager_utils import (
     cleanup_datasets_and_delete_unmanaged_views,
     get_managed_view_and_materialized_table_addresses_by_dataset,
 )
+from recidiviz.source_tables.collect_all_source_table_configs import (
+    get_all_source_table_datasets,
+)
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.utils.params import str_to_bool
-from recidiviz.view_registry.datasets import VIEW_SOURCE_TABLE_DATASETS
 from recidiviz.view_registry.deployed_views import (
     DEPLOYED_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED,
     deployed_view_builders,
@@ -69,7 +71,7 @@ def main() -> None:
 
     with local_project_id_override(args.project_id):
         views = build_views_to_update(
-            view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
+            view_source_table_datasets=get_all_source_table_datasets(),
             candidate_view_builders=deployed_view_builders(),
             address_overrides=None,
         )

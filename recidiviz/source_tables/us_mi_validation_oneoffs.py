@@ -34,10 +34,10 @@ from recidiviz.validation.views.external_data.regions.us_mi.incarceration_popula
 
 
 def collect_duplicative_us_mi_validation_oneoffs() -> list[SourceTableCollection]:
-    """There are some validation oneoffs that are made up of hundreds of source tables, so we define them in code,
-    rather than duplicating the YAML files.
+    """There are some validation oneoffs that are made up of hundreds of source tables,
+    so we define them in code, rather than duplicating the YAML files.
     """
-    source_tables = [
+    cb_971_source_tables = [
         *build_cb_971_report_schemas(),
         *build_cb_971_supervision_report_schemas(),
     ]
@@ -47,8 +47,12 @@ def collect_duplicative_us_mi_validation_oneoffs() -> list[SourceTableCollection
         dataset_id=dataset_id,
         update_config=SourceTableCollectionUpdateConfig.unmanaged(),
         source_tables_by_address={
-            source_table.address: source_table for source_table in source_tables
+            source_table.address: source_table for source_table in cb_971_source_tables
         },
+        description=(
+            f"Contains one-off validation data provided directly by "
+            f"{StateCode.US_MI.get_state()}."
+        ),
     )
 
     orc_report_collection = SourceTableCollection(
@@ -61,6 +65,10 @@ def collect_duplicative_us_mi_validation_oneoffs() -> list[SourceTableCollection
             source_table.address: source_table
             for source_table in build_orc_report_schemas()
         },
+        description=(
+            f"Contains one-off validation data provided directly by "
+            f"{StateCode.US_MI.get_state()}."
+        ),
     )
 
     return [

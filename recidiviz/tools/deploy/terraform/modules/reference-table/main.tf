@@ -17,7 +17,7 @@
 
 locals {
   gcs_file_name = "${var.table_name}.csv"
-  source_tables = "${var.recidiviz_root}/source_tables/schema"
+  source_tables = "${var.recidiviz_root}/source_tables/externally_managed"
 }
 
 resource "google_storage_bucket_object" "table_data" {

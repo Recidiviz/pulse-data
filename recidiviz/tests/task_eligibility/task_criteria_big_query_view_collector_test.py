@@ -27,7 +27,6 @@ from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
 from recidiviz.task_eligibility.task_criteria_big_query_view_collector import (
     TaskCriteriaBigQueryViewCollector,
 )
-from recidiviz.view_registry.datasets import is_state_specific_address
 
 
 @patch("recidiviz.utils.metadata.project_id", Mock(return_value="recidiviz-456"))
@@ -85,7 +84,7 @@ class TestTaskCriteriaBigQueryViewCollector(unittest.TestCase):
                 view = builder.build()
 
                 for parent_address in view.parent_tables:
-                    if is_state_specific_address(parent_address):
+                    if parent_address.is_state_specific_address():
                         raise ValueError(
                             f"Found state-specific address [{parent_address}] "
                             f"referenced from state-agnostic criteria view "

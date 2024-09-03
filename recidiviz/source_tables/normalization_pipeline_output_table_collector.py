@@ -92,6 +92,10 @@ def build_normalization_pipeline_output_source_table_collections() -> list[
             dataset_id=normalized_state_dataset_for_state_code_legacy_normalization_output(
                 state_code=state_code
             ),
+            description=(
+                "Contains normalized versions of the entities in the state dataset "
+                f"produced by the normalization pipeline for {state_code.value}."
+            ),
         )
         for state_code in get_direct_ingest_states_existing_in_env()
     ]

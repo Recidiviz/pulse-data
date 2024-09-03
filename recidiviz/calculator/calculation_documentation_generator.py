@@ -50,6 +50,11 @@ from recidiviz.common import attr_validators
 from recidiviz.common.attr_utils import get_enum_cls
 from recidiviz.common.constants.states import StateCode
 from recidiviz.common.file_system import delete_files, get_all_files_recursive
+from recidiviz.ingest.direct.dataset_config import (
+    raw_latest_views_dataset_for_region,
+    raw_tables_dataset_for_region,
+)
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.metrics.export.export_config import VIEW_COLLECTION_EXPORT_INDEX
 from recidiviz.metrics.export.products.product_configs import (
     PRODUCTS_CONFIG_PATH,
@@ -75,19 +80,37 @@ from recidiviz.pipelines.metrics.utils.metric_utils import (
     RecidivizMetricType,
 )
 from recidiviz.pipelines.metrics.violation.metrics import ViolationMetric
+from recidiviz.source_tables.collect_all_source_table_configs import (
+    get_all_source_table_datasets,
+    get_all_source_table_datasets_to_descriptions,
+)
 from recidiviz.tools.docs.summary_file_generator import update_summary_file
 from recidiviz.tools.docs.utils import persist_file_contents
 from recidiviz.utils.environment import GCP_PROJECT_STAGING, GCPEnvironment
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.utils.string import StrictStringFormatter
 from recidiviz.utils.yaml_dict import YAMLDict
-from recidiviz.view_registry.datasets import (
-    LATEST_VIEW_DATASETS,
-    RAW_TABLE_DATASETS,
-    VIEW_SOURCE_TABLE_DATASETS,
-    VIEW_SOURCE_TABLE_DATASETS_TO_DESCRIPTIONS,
-)
 from recidiviz.view_registry.deployed_views import all_deployed_view_builders
+
+RAW_TABLE_DATASETS = {
+    raw_tables_dataset_for_region(
+        state_code=state_code,
+        instance=instance,
+        sandbox_dataset_prefix=None,
+    )
+    for instance in DirectIngestInstance
+    for state_code in StateCode
+}
+
+LATEST_VIEW_DATASETS = {
+    raw_latest_views_dataset_for_region(
+        state_code=state_code,
+        instance=instance,
+        sandbox_dataset_prefix=None,
+    )
+    for instance in DirectIngestInstance
+    for state_code in StateCode
+}
 
 ESCAPED_DOUBLE_UNDERSCORE = r"\__"
 DATASETS_TO_SKIP_VIEW_DOCUMENTATION = LATEST_VIEW_DATASETS
@@ -205,7 +228,7 @@ class CalculationDocumentationGenerator:
         all_view_builders = all_deployed_view_builders()
         self.view_builders_by_address = {vb.address: vb for vb in all_view_builders}
         views_to_update = build_views_to_update(
-            view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
+            view_source_table_datasets=get_all_source_table_datasets(),
             candidate_view_builders=all_view_builders,
             address_overrides=None,
         )
@@ -484,12 +507,13 @@ class CalculationDocumentationGenerator:
         Given a set of BigQueryAddresses, returns a str list of
         those addresses, organized by dataset.
         """
+        datasets_to_descriptions = get_all_source_table_datasets_to_descriptions()
         datasets_to_addresses = self._get_addresses_by_dataset(addresses)
         views_str = ""
         for dataset, address_list in datasets_to_addresses.items():
             views_str += f"#### {dataset}\n"
             views_str += (
-                f"_{VIEW_SOURCE_TABLE_DATASETS_TO_DESCRIPTIONS[dataset]}_\n"
+                f"_{datasets_to_descriptions[dataset]}_\n"
                 if source_tables_section
                 else ""
             )
@@ -656,7 +680,7 @@ class CalculationDocumentationGenerator:
             for address in all_parent_addresses
             # Metric info will be included in the metric-specific section
             if address.dataset_id
-            in VIEW_SOURCE_TABLE_DATASETS - {DATAFLOW_METRICS_DATASET}
+            in get_all_source_table_datasets() - {DATAFLOW_METRICS_DATASET}
         }
 
         metric_view_addresses = {
@@ -847,7 +871,7 @@ class CalculationDocumentationGenerator:
         products_section: bool,
     ) -> str:
         """Gitbook-specific formatting for the generated dependency tree."""
-        is_source_table = address.dataset_id in VIEW_SOURCE_TABLE_DATASETS
+        is_source_table = address.dataset_id in get_all_source_table_datasets()
         is_raw_data_table = address.dataset_id in RAW_TABLE_DATASETS
         is_raw_data_view = address.dataset_id in LATEST_VIEW_DATASETS
         is_metric = address.dataset_id in DATAFLOW_METRICS_DATASET
