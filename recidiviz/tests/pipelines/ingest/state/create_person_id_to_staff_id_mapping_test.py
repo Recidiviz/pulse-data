@@ -70,6 +70,19 @@ STATE_STAFF_2 = NormalizedStateStaff(
     ],
 )
 
+STATE_STAFF_1_CONFLICTING = NormalizedStateStaff(
+    staff_id=789,
+    state_code=StateCode.US_XX.value,
+    external_ids=[
+        NormalizedStateStaffExternalId(
+            staff_external_id_id=1234,
+            state_code=StateCode.US_XX.value,
+            id_type="US_XX_STAFF_ID_TYPE",
+            external_id="A123",
+        )
+    ],
+)
+
 STATE_PERSON_1 = StatePerson(
     person_id=789,
     state_code=StateCode.US_XX.value,
@@ -261,3 +274,57 @@ class TestCreatePersonIdToStaffIdMapping(BigQueryEmulatorTestCase):
         ) | CreatePersonIdToStaffIdMapping()
         assert_that(output, equal_to(expected_output))
         self.test_pipeline.run()
+
+    def test_create_person_id_to_staff_id_missing_staff(self) -> None:
+        input_state_persons = self.test_pipeline | "Create input StatePerson" >> beam.Create(
+            [
+                # This person references external ids of both STATE_STAFF_1 and
+                # STATE_STAFF_2
+                STATE_PERSON_2,
+            ]
+        )
+        input_state_staff = self.test_pipeline | "Create input NormalizedStateStaff" >> beam.Create(
+            [
+                # STATE_STAFF_2 is missing from this list
+                STATE_STAFF_1,
+            ]
+        )
+
+        _ = (
+            input_state_staff,
+            input_state_persons,
+        ) | CreatePersonIdToStaffIdMapping()
+
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Did not find any ingest StateStaff corresponding to "
+            r"\(external_id, id_type\)=",
+        ):
+            self.test_pipeline.run()
+
+    def test_create_person_id_to_staff_id_multiple_conflicting_staff(self) -> None:
+        input_state_persons = (
+            self.test_pipeline
+            | "Create input StatePerson" >> beam.Create([STATE_PERSON_1])
+        )
+        input_state_staff = (
+            self.test_pipeline
+            | "Create input NormalizedStateStaff"
+            >> beam.Create(
+                [
+                    STATE_STAFF_1,
+                    STATE_STAFF_1_CONFLICTING,
+                ]
+            )
+        )
+
+        _ = (
+            input_state_staff,
+            input_state_persons,
+        ) | CreatePersonIdToStaffIdMapping()
+
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Found more than one ingested StateStaff with \(external_id, id_type\)=",
+        ):
+            self.test_pipeline.run()
