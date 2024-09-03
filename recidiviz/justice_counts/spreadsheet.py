@@ -36,16 +36,13 @@ from recidiviz.justice_counts.agency_user_account_association import (
     AgencyUserAccountAssociationInterface,
 )
 from recidiviz.justice_counts.bulk_upload.bulk_upload_helpers import BulkUploadResult
-from recidiviz.justice_counts.bulk_upload.workbook_standardizer import (
-    WorkbookStandardizer,
-)
+from recidiviz.justice_counts.bulk_upload.bulk_upload_metadata import BulkUploadMetadata
 from recidiviz.justice_counts.bulk_upload.workbook_uploader import WorkbookUploader
 from recidiviz.justice_counts.exceptions import (
     BulkUploadMessageType,
     JusticeCountsBulkUploadException,
     JusticeCountsServerError,
 )
-from recidiviz.justice_counts.metric_setting import MetricSettingInterface
 from recidiviz.justice_counts.metricfiles.metricfile_registry import (
     SYSTEM_TO_FILENAME_TO_METRICFILE,
 )
@@ -54,7 +51,6 @@ from recidiviz.justice_counts.metrics.metric_interface import MetricInterface
 from recidiviz.justice_counts.utils.constants import (
     ERRORS_WARNINGS_JSON_BUCKET_PROD,
     ERRORS_WARNINGS_JSON_BUCKET_STAGING,
-    UploadMethod,
 )
 from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.utils import metadata
@@ -239,9 +235,7 @@ class SpreadsheetInterface:
     def ingest_spreadsheet(
         session: Session,
         spreadsheet: schema.Spreadsheet,
-        metric_key_to_metric_interface: Dict[str, MetricInterface],
         agency: schema.Agency,
-        upload_method: UploadMethod,
         file: Any,
         file_name: str,
         auth0_user_id: Optional[str] = None,
@@ -257,40 +251,32 @@ class SpreadsheetInterface:
                 .filter(schema.UserAccount.auth0_user_id == auth0_user_id)
                 .one()
             )
-
-        workbook_standardizer = WorkbookStandardizer(
-            system=spreadsheet.system, agency=agency, session=session
-        )
-
-        xls = workbook_standardizer.standardize_workbook(file=file, file_name=file_name)
-
-        uploader = WorkbookUploader(
+        bulk_upload_metadata = BulkUploadMetadata(
             agency=agency,
             system=spreadsheet.system,
-            child_agency_name_to_agency=workbook_standardizer.child_agency_name_to_agency,
-            metric_key_to_errors=workbook_standardizer.metric_key_to_errors,
             user_account=user_account,
-            metric_key_to_metric_interface=metric_key_to_metric_interface,
-        )
-        (
-            metric_key_to_datapoint_jsons,
-            metric_key_to_errors,
-        ) = uploader.upload_workbook(
             session=session,
-            xls=xls,
-            upload_method=upload_method,
         )
+
+        uploader = WorkbookUploader(
+            metadata=bulk_upload_metadata,
+        )
+
+        uploader.upload_workbook(file=file, file_name=file_name)
+
         is_ingest_successful = all(
             isinstance(e, JusticeCountsBulkUploadException)
             and e.message_type != BulkUploadMessageType.ERROR
-            for e in itertools.chain(*metric_key_to_errors.values())
+            for e in itertools.chain(
+                *bulk_upload_metadata.metric_key_to_errors.values()
+            )
         )
 
         ingest_result = BulkUploadResult(
             spreadsheet=spreadsheet,
             existing_report_ids=uploader.existing_report_ids,
-            metric_key_to_datapoint_jsons=metric_key_to_datapoint_jsons,
-            metric_key_to_errors=metric_key_to_errors,  # TODO(#31446) Replace with workbook_standardizer.metric_key_to_errors after WorkbookStandardizer rollout
+            metric_key_to_datapoint_jsons=bulk_upload_metadata.metric_key_to_datapoint_jsons,
+            metric_key_to_errors=bulk_upload_metadata.metric_key_to_errors,
             updated_reports=uploader.updated_reports,
         )
 
@@ -299,7 +285,7 @@ class SpreadsheetInterface:
             SpreadsheetInterface.log_errors_and_update_spreadsheet_status(
                 spreadsheet=spreadsheet,
                 agency_id=agency.id,
-                metric_key_to_errors=metric_key_to_errors,  # TODO(#31446) Replace with workbook_standardizer.metric_key_to_errors  after WorkbookStandardizer rollout
+                metric_key_to_errors=bulk_upload_metadata.metric_key_to_errors,
             )
 
         else:
@@ -510,7 +496,6 @@ class SpreadsheetInterface:
         system: schema.System,
         agency: schema.Agency,
         file_name: str,
-        upload_method: UploadMethod,
     ) -> BulkUploadResult:
         """Given a filename, an agency, and a system, this method copies the
         file from the agency's bulk upload bucket to GCS bucket where we store
@@ -537,12 +522,6 @@ class SpreadsheetInterface:
         # fetching data for the Uploaded Files page in the Settings tab.
         gcs_file_system.copy(source_path, destination_path)
 
-        metric_key_to_metric_interface = (
-            MetricSettingInterface.get_metric_key_to_metric_interface(
-                session=session, agency=agency
-            )
-        )
-
         file_bytes = gcs_file_system.download_as_bytes(path=source_path)
 
         return SpreadsheetInterface.ingest_spreadsheet(
@@ -550,8 +529,6 @@ class SpreadsheetInterface:
             spreadsheet=spreadsheet,
             auth0_user_id=None,
             agency=agency,
-            metric_key_to_metric_interface=metric_key_to_metric_interface,
-            upload_method=upload_method,
             file=file_bytes,
             file_name=file_name,
         )

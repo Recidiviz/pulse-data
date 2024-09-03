@@ -20,6 +20,7 @@ import os
 import pytest
 
 from recidiviz.justice_counts.agency import AgencyInterface
+from recidiviz.justice_counts.bulk_upload.bulk_upload_metadata import BulkUploadMetadata
 from recidiviz.justice_counts.bulk_upload.workbook_standardizer import (
     WorkbookStandardizer,
 )
@@ -56,9 +57,10 @@ class TestJusticeCountsWorkbookStandardizer(JusticeCountsDatabaseTestCase):
             prison_agency = AgencyInterface.get_agency_by_id(
                 session=session, agency_id=self.prison_agency_id
             )
-            workbook_standardizer = WorkbookStandardizer(
+            metadata = BulkUploadMetadata(
                 system=schema.System.PRISONS, agency=prison_agency, session=session
             )
+            workbook_standardizer = WorkbookStandardizer(metadata=metadata)
             file_name = "test_prison_csv"
             file_path = create_csv_file(
                 system=schema.System.PRISONS,
@@ -73,10 +75,10 @@ class TestJusticeCountsWorkbookStandardizer(JusticeCountsDatabaseTestCase):
                 workbook_standardizer.standardize_workbook(
                     file=file.read(), file_name=file_name + ".csv"
                 )
-            self.assertEqual(len(workbook_standardizer.metric_key_to_errors), 1)
-            self.assertEqual(len(workbook_standardizer.metric_key_to_errors[None]), 1)
+            self.assertEqual(len(metadata.metric_key_to_errors), 1)
+            self.assertEqual(len(metadata.metric_key_to_errors[None]), 1)
             self.assertEqual(
-                workbook_standardizer.metric_key_to_errors[None][0].title,
+                metadata.metric_key_to_errors[None][0].title,
                 "Invalid File Name for CSV",
             )
             os.remove(file_name + ".xlsx")
@@ -87,10 +89,10 @@ class TestJusticeCountsWorkbookStandardizer(JusticeCountsDatabaseTestCase):
             prison_agency = AgencyInterface.get_agency_by_id(
                 session=session, agency_id=self.prison_agency_id
             )
-
-            workbook_standardizer = WorkbookStandardizer(
+            metadata = BulkUploadMetadata(
                 system=schema.System.PRISONS, agency=prison_agency, session=session
             )
+            workbook_standardizer = WorkbookStandardizer(metadata=metadata)
             file_name = "test_prison.xlsx"
             file_path = create_excel_file(
                 system=schema.System.LAW_ENFORCEMENT,
@@ -105,10 +107,10 @@ class TestJusticeCountsWorkbookStandardizer(JusticeCountsDatabaseTestCase):
                 workbook_standardizer.standardize_workbook(
                     file=file.read(), file_name=file_name
                 )
-            self.assertEqual(len(workbook_standardizer.metric_key_to_errors), 1)
-            self.assertEqual(len(workbook_standardizer.metric_key_to_errors[None]), 1)
+            self.assertEqual(len(metadata.metric_key_to_errors), 1)
+            self.assertEqual(len(metadata.metric_key_to_errors[None]), 1)
             self.assertEqual(
-                workbook_standardizer.metric_key_to_errors[None][0].title,
+                metadata.metric_key_to_errors[None][0].title,
                 "Invalid Sheet Name",
             )
             os.remove(file_name)

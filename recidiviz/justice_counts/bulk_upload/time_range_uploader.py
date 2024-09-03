@@ -21,11 +21,11 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from sqlalchemy.orm import Session
 
-from recidiviz.common.text_analysis import TextAnalyzer
 from recidiviz.justice_counts.bulk_upload.bulk_upload_helpers import (
     fuzzy_match_against_options,
     get_column_value,
 )
+from recidiviz.justice_counts.bulk_upload.bulk_upload_metadata import BulkUploadMetadata
 from recidiviz.justice_counts.datapoint import DatapointUniqueKey
 from recidiviz.justice_counts.dimensions.base import DimensionBase
 from recidiviz.justice_counts.exceptions import (
@@ -39,7 +39,6 @@ from recidiviz.justice_counts.metrics.metric_disaggregation_data import (
 from recidiviz.justice_counts.metrics.metric_interface import MetricInterface
 from recidiviz.justice_counts.report import ReportInterface
 from recidiviz.justice_counts.types import DatapointJson
-from recidiviz.justice_counts.utils.constants import UploadMethod
 from recidiviz.persistence.database.schema.justice_counts import schema
 
 
@@ -49,27 +48,18 @@ class TimeRangeUploader:
     def __init__(
         self,
         agency: schema.Agency,
+        metadata: BulkUploadMetadata,
         time_range: Tuple[datetime.date, datetime.date],
         rows_for_this_time_range: List[Dict[str, Any]],
-        text_analyzer: TextAnalyzer,
         metricfile: MetricFile,
         existing_datapoints_dict: Dict[DatapointUniqueKey, schema.Datapoint],
-        agency_name_to_metric_key_to_timerange_to_total_value: Dict[
-            str,
-            Dict[str, Dict[Tuple[datetime.date, datetime.date], Optional[int]]],
-        ],
-        user_account: Optional[schema.UserAccount] = None,
     ) -> None:
         self.time_range = time_range
-        self.user_account = user_account
+        self.metadata = metadata
         self.existing_datapoints_dict = existing_datapoints_dict
         self.agency = agency
         self.rows_for_this_time_range = rows_for_this_time_range
-        self.text_analyzer = text_analyzer
         self.metricfile = metricfile
-        self.agency_name_to_metric_key_to_timerange_to_total_value = (
-            agency_name_to_metric_key_to_timerange_to_total_value
-        )
 
     def upload_time_range(
         self,
@@ -80,11 +70,7 @@ class TimeRangeUploader:
         time_range_to_year_month: Dict[
             Tuple[datetime.date, datetime.date], Tuple[int, int]
         ],
-        metric_key_to_errors: Dict[
-            Optional[str], List[JusticeCountsBulkUploadException]
-        ],
         metric_key: str,
-        upload_method: UploadMethod,
         existing_report: Optional[List[schema.Report]] = None,
     ) -> Tuple[schema.Report, List[DatapointJson]]:
         """Uploads rows for a certain time period and saves them in the JC database."""
@@ -105,13 +91,14 @@ class TimeRangeUploader:
                 year=year,
                 month=month,
                 frequency=reporting_frequency.value,
-                user_account_id=self.user_account.id
-                if self.user_account is not None
-                else None,
+                user_account_id=(
+                    self.metadata.user_account.id
+                    if self.metadata.user_account is not None
+                    else None
+                ),
             )
 
         report_metric = self._get_report_metric_for_time_range(
-            metric_key_to_errors=metric_key_to_errors,
             metric_key=metric_key,
         )
 
@@ -122,11 +109,11 @@ class TimeRangeUploader:
             histories=histories,
             report=report,
             report_metric=report_metric,
-            user_account=self.user_account,
+            user_account=self.metadata.user_account,
             uploaded_via_breakdown_sheet=self.metricfile.disaggregation is not None,
             existing_datapoints_dict=self.existing_datapoints_dict,
             agency=self.agency,
-            upload_method=upload_method,
+            upload_method=self.metadata.upload_method,
         )
 
         if existing_report is None:
@@ -138,9 +125,6 @@ class TimeRangeUploader:
 
     def _get_report_metric_for_time_range(
         self,
-        metric_key_to_errors: Dict[
-            Optional[str], List[JusticeCountsBulkUploadException]
-        ],
         metric_key: str,
     ) -> MetricInterface:
         """Given a a set of rows from the CSV that all correspond to a single
@@ -176,11 +160,11 @@ class TimeRangeUploader:
                 row=row,
                 column_name="value",
                 column_type=float,
-                analyzer=self.text_analyzer,
-                metric_key_to_errors=metric_key_to_errors,
+                analyzer=self.metadata.text_analyzer,
                 metric_key=metric_key,
+                metric_key_to_errors=self.metadata.metric_key_to_errors,
             )
-            self.agency_name_to_metric_key_to_timerange_to_total_value[
+            self.metadata.agency_name_to_metric_key_to_timerange_to_total_value[
                 self.agency.name
             ][self.metricfile.definition.key][self.time_range] = aggregate_value
         else:  # metricfile.disaggregation is not None
@@ -198,8 +182,8 @@ class TimeRangeUploader:
                     row=row,
                     column_name="value",
                     column_type=float,
-                    analyzer=self.text_analyzer,
-                    metric_key_to_errors=metric_key_to_errors,
+                    analyzer=self.metadata.text_analyzer,
+                    metric_key_to_errors=self.metadata.metric_key_to_errors,
                     metric_key=metric_key,
                 )
 
@@ -209,8 +193,8 @@ class TimeRangeUploader:
                     row=row,
                     column_name=self.metricfile.disaggregation_column_name,
                     column_type=str,
-                    analyzer=self.text_analyzer,
-                    metric_key_to_errors=metric_key_to_errors,
+                    analyzer=self.metadata.text_analyzer,
+                    metric_key_to_errors=self.metadata.metric_key_to_errors,
                     metric_key=metric_key,
                 )
 
@@ -224,13 +208,13 @@ class TimeRangeUploader:
                         member.value for member in self.metricfile.disaggregation  # type: ignore[attr-defined]
                     ]
                     disaggregation_value = fuzzy_match_against_options(
-                        analyzer=self.text_analyzer,
+                        analyzer=self.metadata.text_analyzer,
+                        metric_key_to_errors=self.metadata.metric_key_to_errors,
                         text=disaggregation_value,
                         options=disaggregation_options,
                         category_name=self.metricfile.disaggregation_column_name.replace(
                             "_", " "
                         ).title(),
-                        metric_key_to_errors=metric_key_to_errors,
                         metric_key=metric_key,
                     )
                     matching_disaggregation_member = self.metricfile.disaggregation(
@@ -250,7 +234,7 @@ class TimeRangeUploader:
             # Check that the sum of the disaggregate values is equal to that of the
             # aggregate and surface warning if the difference > 1.
             previously_saved_aggregate_value = (
-                self.agency_name_to_metric_key_to_timerange_to_total_value.get(
+                self.metadata.agency_name_to_metric_key_to_timerange_to_total_value.get(
                     self.agency.name, {}
                 )
                 .get(self.metricfile.definition.key, {})
@@ -268,15 +252,17 @@ class TimeRangeUploader:
                     message_type=BulkUploadMessageType.WARNING,
                     description=description,
                 )
-                metric_key_to_errors[metric_key].append(breakdown_total_warning)
+                self.metadata.metric_key_to_errors[metric_key].append(
+                    breakdown_total_warning
+                )
 
         return MetricInterface(
             key=self.metricfile.definition.key,
             value=aggregate_value,
             contexts=[],
-            aggregated_dimensions=[
-                MetricAggregatedDimensionData(dimension_to_value=dimension_to_value)
-            ]
-            if dimension_to_value is not None
-            else [],
+            aggregated_dimensions=(
+                [MetricAggregatedDimensionData(dimension_to_value=dimension_to_value)]
+                if dimension_to_value is not None
+                else []
+            ),
         )

@@ -23,9 +23,7 @@ import pandas as pd
 import pytest
 
 from recidiviz.justice_counts.agency import AgencyInterface
-from recidiviz.justice_counts.bulk_upload.workbook_standardizer import (
-    WorkbookStandardizer,
-)
+from recidiviz.justice_counts.bulk_upload.bulk_upload_metadata import BulkUploadMetadata
 from recidiviz.justice_counts.bulk_upload.workbook_uploader import WorkbookUploader
 from recidiviz.justice_counts.dimensions.common import CaseSeverityType
 from recidiviz.justice_counts.dimensions.law_enforcement import CallType, ForceType
@@ -51,7 +49,6 @@ from recidiviz.justice_counts.metrics import (
 from recidiviz.justice_counts.metrics.metric_interface import MetricInterface
 from recidiviz.justice_counts.report import ReportInterface
 from recidiviz.justice_counts.user_account import UserAccountInterface
-from recidiviz.justice_counts.utils.constants import UploadMethod
 from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.tests.justice_counts.spreadsheet_helpers import (
@@ -124,40 +121,28 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                 add_invalid_sheet_name=True,
                 file_name=file_name,
             )
+            metadata = BulkUploadMetadata(
+                system=schema.System.PROSECUTION,
+                agency=prosecution_agency,
+                session=session,
+                user_account=user_account,
+            )
             with open(
                 file_path,
                 mode="rb",
             ) as file:
-                standardizer = WorkbookStandardizer(
-                    system=schema.System.PROSECUTION,
-                    agency=prosecution_agency,
-                    session=session,
-                )
-                xls = standardizer.standardize_workbook(
-                    file=file.read(), file_name=file_name
-                )
-            workbook_uploader = WorkbookUploader(
-                system=schema.System.PROSECUTION,
-                agency=prosecution_agency,
-                user_account=user_account,
-                metric_key_to_metric_interface={},
-                metric_key_to_errors=standardizer.metric_key_to_errors,
-            )
-            _, metric_key_to_errors = workbook_uploader.upload_workbook(
-                session=session,
-                xls=xls,
-                upload_method=UploadMethod.BULK_UPLOAD,
-            )
+                workbook_uploader = WorkbookUploader(metadata=metadata)
+                workbook_uploader.upload_workbook(file=file, file_name=file_name)
 
-            self.assertEqual(len(metric_key_to_errors), 2)
-            invalid_file_name_error = metric_key_to_errors.get(None, []).pop()
+            self.assertEqual(len(metadata.metric_key_to_errors), 2)
+            invalid_file_name_error = metadata.metric_key_to_errors.get(None, []).pop()
             self.assertTrue(
                 "The following sheet names do not correspond to a metric for your agency: gender."
                 in invalid_file_name_error.description
             )
             cases_disposed_errors: List[
                 JusticeCountsBulkUploadException
-            ] = metric_key_to_errors.get(prosecution.cases_disposed.key, [])
+            ] = metadata.metric_key_to_errors.get(prosecution.cases_disposed.key, [])
             self.assertEqual(len(cases_disposed_errors), 2)
             cases_disposed_by_type_month_error = cases_disposed_errors[0]
             cases_disposed_by_type_sum_error = cases_disposed_errors[1]
@@ -185,20 +170,23 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             prison_agency = AgencyInterface.get_agency_by_id(
                 session=session, agency_id=self.prison_agency_id
             )
+            file_name = "test_prison.xlsx"
             file_path = create_excel_file(
-                system=schema.System.PRISONS, file_name="test_prison.xlsx"
+                system=schema.System.PRISONS, file_name=file_name
             )
-            workbook_uploader = WorkbookUploader(
+
+            metadata = BulkUploadMetadata(
                 system=schema.System.PRISONS,
                 agency=prison_agency,
-                user_account=user_account,
-                metric_key_to_metric_interface={},
-            )
-            workbook_uploader.upload_workbook(
                 session=session,
-                xls=pd.ExcelFile(file_path),
-                upload_method=UploadMethod.BULK_UPLOAD,
+                user_account=user_account,
             )
+            workbook_uploader = WorkbookUploader(metadata=metadata)
+            with open(
+                file_path,
+                mode="rb",
+            ) as file:
+                workbook_uploader.upload_workbook(file=file, file_name=file_name)
 
             reports = ReportInterface.get_reports_by_agency_id(
                 session=session,
@@ -226,6 +214,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                 0,
             )
             self.assertEqual(metrics[1].value, 20)
+            os.remove(file_name)
 
     def test_prison_csv(self) -> None:
         """Bulk upload prison metrics into an empty database."""
@@ -236,28 +225,32 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             prison_agency = AgencyInterface.get_agency_by_id(
                 session=session, agency_id=self.prison_agency_id
             )
-            file_name = "test_prison_csv.csv"
+            csv_file_name = "test_prison_csv.csv"
             file_path = create_csv_file(
-                system=schema.System.PRISONS, metric="admissions", file_name=file_name
+                system=schema.System.PRISONS,
+                metric="admissions",
+                file_name=csv_file_name,
             )
-            workbook_uploader = WorkbookUploader(
+
+            metadata = BulkUploadMetadata(
                 system=schema.System.PRISONS,
                 agency=prison_agency,
+                session=session,
                 user_account=user_account,
-                metric_key_to_metric_interface={},
             )
+            workbook_uploader = WorkbookUploader(metadata=metadata)
 
             # Convert csv file to excel
             csv_df = pd.read_csv(file_path)
+            excel_file_name = "test_prison_csv.xlsx"
             excel_file_path = file_path[0 : file_path.index(".csv")] + ".xlsx"
             csv_df.to_excel(excel_file_path, sheet_name="admissions")
 
-            workbook_uploader.upload_workbook(
-                session=session,
-                xls=pd.ExcelFile(excel_file_path),
-                upload_method=UploadMethod.BULK_UPLOAD,
-            )
-
+            with open(
+                excel_file_path,
+                mode="rb",
+            ) as file:
+                workbook_uploader.upload_workbook(file=file, file_name=excel_file_name)
             reports = ReportInterface.get_reports_by_agency_id(
                 session=session,
                 agency_id=self.prison_agency_id,
@@ -277,6 +270,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             self.assertEqual(reports[4].datapoints[0].value, "10.0")
             self.assertEqual(reports[5].instance, "01 2021 Metrics")
             self.assertEqual(reports[5].datapoints[0].value, "10.0")
+            os.remove(excel_file_name)
 
     def test_prosecution(self) -> None:
         """Bulk upload prosecution metrics from excel spreadsheet."""
@@ -287,20 +281,23 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             prosecution_agency = AgencyInterface.get_agency_by_id(
                 session=session, agency_id=self.prosecution_agency_id
             )
+            file_name = "test_prosecution.xlsx"
             file_path = create_excel_file(
-                system=schema.System.PROSECUTION, file_name="test_prosecution.xlsx"
+                system=schema.System.PROSECUTION, file_name=file_name
             )
-            workbook_uploader = WorkbookUploader(
+            metadata = BulkUploadMetadata(
                 system=schema.System.PROSECUTION,
                 agency=prosecution_agency,
-                user_account=user_account,
-                metric_key_to_metric_interface={},
-            )
-            workbook_uploader.upload_workbook(
                 session=session,
-                xls=pd.ExcelFile(file_path),
-                upload_method=UploadMethod.BULK_UPLOAD,
+                user_account=user_account,
             )
+            workbook_uploader = WorkbookUploader(metadata=metadata)
+
+            with open(
+                file_path,
+                mode="rb",
+            ) as file:
+                workbook_uploader.upload_workbook(file=file, file_name=file_name)
 
             reports = ReportInterface.get_reports_by_agency_id(
                 session=session,
@@ -309,6 +306,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             )
             reports_by_instance = {report.instance: report for report in reports}
             self._test_prosecution(reports_by_instance=reports_by_instance)
+            os.remove(file_name)
 
     def test_law_enforcement(self) -> None:
         """Bulk upload law_enforcement metrics from excel spreadsheet."""
@@ -320,21 +318,22 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             law_enforcement_agency = AgencyInterface.get_agency_by_id(
                 session=session, agency_id=self.law_enforcement_agency_id
             )
+            file_name = "test_law_enforcement.xlsx"
             file_path = create_excel_file(
-                system=schema.System.LAW_ENFORCEMENT,
-                file_name="test_law_enforcement.xlsx",
+                system=schema.System.LAW_ENFORCEMENT, file_name=file_name
             )
-            workbook_uploader = WorkbookUploader(
+            metadata = BulkUploadMetadata(
                 system=schema.System.LAW_ENFORCEMENT,
                 agency=law_enforcement_agency,
-                user_account=user_account,
-                metric_key_to_metric_interface={},
-            )
-            workbook_uploader.upload_workbook(
                 session=session,
-                xls=pd.ExcelFile(file_path),
-                upload_method=UploadMethod.BULK_UPLOAD,
+                user_account=user_account,
             )
+            workbook_uploader = WorkbookUploader(metadata=metadata)
+            with open(
+                file_path,
+                mode="rb",
+            ) as file:
+                workbook_uploader.upload_workbook(file=file, file_name=file_name)
 
             reports = ReportInterface.get_reports_by_agency_id(
                 session=session,
@@ -343,6 +342,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             )
             reports_by_instance = {report.instance: report for report in reports}
             self._test_law_enforcement(reports_by_instance=reports_by_instance)
+            os.remove(file_name)
 
     def test_supervision(self) -> None:
         """Bulk upload supervision metrics from excel spreadsheet."""
@@ -353,27 +353,32 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             supervision_agency = AgencyInterface.get_agency_by_id(
                 session=session, agency_id=self.supervision_agency_id
             )
+            file_name = "test_supervision.xlsx"
             file_path = create_excel_file(
-                system=schema.System.SUPERVISION, file_name="test_supervision.xlsx"
+                system=schema.System.SUPERVISION, file_name=file_name
             )
-            workbook_uploader = WorkbookUploader(
+            metadata = BulkUploadMetadata(
                 system=schema.System.SUPERVISION,
                 agency=supervision_agency,
-                user_account=user_account,
-                metric_key_to_metric_interface={},
-            )
-            workbook_uploader.upload_workbook(
                 session=session,
-                xls=pd.ExcelFile(file_path),
-                upload_method=UploadMethod.BULK_UPLOAD,
+                user_account=user_account,
             )
+            workbook_uploader = WorkbookUploader(metadata=metadata)
+            with open(
+                file_path,
+                mode="rb",
+            ) as file:
+                workbook_uploader.upload_workbook(file=file, file_name=file_name)
+
             reports = ReportInterface.get_reports_by_agency_id(
                 session=session,
                 agency_id=self.supervision_agency_id,
                 include_datapoints=True,
             )
+
             reports_by_instance = {report.instance: report for report in reports}
             self._test_supervision(reports_by_instance=reports_by_instance)
+            os.remove(file_name)
 
     def _test_prosecution(self, reports_by_instance: Dict[str, schema.Report]) -> None:
         """Spot check an annual and monthly report."""
@@ -600,24 +605,27 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             law_enforcement_agency = AgencyInterface.get_agency_by_id(
                 session=session, agency_id=self.law_enforcement_agency_id
             )
+            file_name = "test_infer_aggregate_value_with_total.xlsx"
             file_path = create_excel_file(
                 system=schema.System.LAW_ENFORCEMENT,
                 sheet_names_to_skip={"reported_crime"},
                 sheet_names_to_vary_values={"arrests"},
-                file_name="test_infer_aggregate_value_with_total.xlsx",
+                file_name=file_name,
             )
 
-            workbook_uploader = WorkbookUploader(
+            metadata = BulkUploadMetadata(
                 system=schema.System.LAW_ENFORCEMENT,
                 agency=law_enforcement_agency,
-                user_account=user_account,
-                metric_key_to_metric_interface={},
-            )
-            workbook_uploader.upload_workbook(
                 session=session,
-                xls=pd.ExcelFile(file_path),
-                upload_method=UploadMethod.BULK_UPLOAD,
+                user_account=user_account,
             )
+
+            with open(
+                file_path,
+                mode="rb",
+            ) as file:
+                workbook_uploader = WorkbookUploader(metadata=metadata)
+                workbook_uploader.upload_workbook(file=file, file_name=file_name)
 
             reports = ReportInterface.get_reports_by_agency_id(
                 session=session,
@@ -667,6 +675,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                         )
                     )
                     self.assertEqual(sum(inferred_value), 30)
+            os.remove(file_name)
 
     def test_no_missing_breakdown_sheet_warnings_for_csv(
         self,
@@ -683,37 +692,40 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             law_enforcement_agency = AgencyInterface.get_agency_by_id(
                 session=session, agency_id=self.law_enforcement_agency_id
             )
-            file_name = "test_law_enforcement_csv.csv"
+            csv_file_name = "test_law_enforcement_csv.csv"
             file_path = create_csv_file(
                 system=schema.System.LAW_ENFORCEMENT,
                 metric="arrests",
-                file_name=file_name,
+                file_name=csv_file_name,
             )
 
             # Convert csv file to excel
             csv_df = pd.read_csv(file_path)
             excel_file_path = file_path.replace(".csv", ".xlsx")
+            excel_file_name = "test_law_enforcement_csv.xlsx"
             csv_df.to_excel(
                 excel_file_path,
                 sheet_name="arrests",
                 columns=["year", "month", "value"],
             )
 
-            workbook_uploader = WorkbookUploader(
+            metadata = BulkUploadMetadata(
                 system=schema.System.LAW_ENFORCEMENT,
                 agency=law_enforcement_agency,
+                session=session,
                 user_account=user_account,
-                metric_key_to_metric_interface={},
             )
 
-            _, metric_key_to_errors = workbook_uploader.upload_workbook(
-                session=session,
-                xls=pd.ExcelFile(excel_file_path),
-                upload_method=UploadMethod.BULK_UPLOAD,
-            )
+            with open(
+                excel_file_path,
+                mode="rb",
+            ) as file:
+                workbook_uploader = WorkbookUploader(metadata=metadata)
+                workbook_uploader.upload_workbook(file=file, file_name=excel_file_name)
 
             # No Missing Breakdown Sheet warnings.
-            self.assertEqual(len(metric_key_to_errors), 0)
+            self.assertEqual(len(metadata.metric_key_to_errors), 0)
+            os.remove(excel_file_name)
 
     def test_no_missing_total_sheet_warnings_for_csv(
         self,
@@ -730,37 +742,40 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             law_enforcement_agency = AgencyInterface.get_agency_by_id(
                 session=session, agency_id=self.law_enforcement_agency_id
             )
-            file_name = "test_law_enforcement_csv.csv"
+            csv_file_name = "test_law_enforcement_csv.csv"
             file_path = create_csv_file(
                 system=schema.System.LAW_ENFORCEMENT,
                 metric="arrests_by_type",
-                file_name=file_name,
+                file_name=csv_file_name,
             )
 
             # Convert csv file to excel
             csv_df = pd.read_csv(file_path)
             excel_file_path = file_path.replace(".csv", ".xlsx")
+            excel_file_name = "test_law_enforcement_csv.xlsx"
             csv_df.to_excel(
                 excel_file_path,
                 sheet_name="arrests_by_type",
                 columns=["year", "month", "offense_type", "value"],
             )
 
-            workbook_uploader = WorkbookUploader(
+            metadata = BulkUploadMetadata(
                 system=schema.System.LAW_ENFORCEMENT,
                 agency=law_enforcement_agency,
+                session=session,
                 user_account=user_account,
-                metric_key_to_metric_interface={},
             )
 
-            _, metric_key_to_errors = workbook_uploader.upload_workbook(
-                session=session,
-                xls=pd.ExcelFile(excel_file_path),
-                upload_method=UploadMethod.BULK_UPLOAD,
-            )
+            with open(
+                excel_file_path,
+                mode="rb",
+            ) as file:
+                workbook_uploader = WorkbookUploader(metadata=metadata)
+                workbook_uploader.upload_workbook(file=file, file_name=excel_file_name)
 
             # No Missing Total Sheet warnings.
-            self.assertEqual(len(metric_key_to_errors), 0)
+            self.assertEqual(len(metadata.metric_key_to_errors), 0)
+            os.remove(excel_file_name)
 
     def test_missing_metrics_disabled_metrics(
         self,
@@ -782,30 +797,33 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                 session=session,
                 user_account=user,
             )
-
+            file_name = "test_missing_metrics_disabled_metrics.xlsx"
             file_path = create_excel_file(
                 system=schema.System.LAW_ENFORCEMENT,
                 sheet_names_to_skip={
                     "calls_for_service",
                     "calls_for_service_by_type",
                 },
-                file_name="test_missing_metrics_disabled_metrics.xlsx",
+                file_name=file_name,
             )
 
-            workbook_uploader = WorkbookUploader(
+            metadata = BulkUploadMetadata(
                 system=schema.System.LAW_ENFORCEMENT,
                 agency=agency,
-                user_account=user,
-                metric_key_to_metric_interface={agency_metric.key: agency_metric},
-            )
-            _, metric_key_to_errors = workbook_uploader.upload_workbook(
                 session=session,
-                xls=pd.ExcelFile(file_path),
-                upload_method=UploadMethod.BULK_UPLOAD,
+                user_account=user,
             )
+            workbook_uploader = WorkbookUploader(metadata=metadata)
+            with open(
+                file_path,
+                mode="rb",
+            ) as file:
+                workbook_uploader.upload_workbook(file=file, file_name=file_name)
+
             # There should be no errors because calls for service metric is missing
             # but it is disabled.
-            self.assertEqual(len(metric_key_to_errors), 0)
+            self.assertEqual(len(metadata.metric_key_to_errors), 0)
+            os.remove(file_name)
 
     def test_metrics_disaggregated_by_supervision(
         self,
@@ -827,7 +845,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                 session=session, agency=agency, agency_metric_updates=metric_interface
             )
             session.commit()
-
+            file_name = "test_metrics_disaggregated_by_supervision.xlsx"
             file_path = create_excel_file(
                 system=schema.System.SUPERVISION,
                 metric_key_to_subsystems={
@@ -836,43 +854,55 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                         schema.System.PROBATION,
                     ]
                 },
-                file_name="test_metrics_disaggregated_by_supervision.xlsx",
+                file_name=file_name,
             )
 
-            workbook_uploader = WorkbookUploader(
+            metadata = BulkUploadMetadata(
                 system=schema.System.SUPERVISION,
                 agency=agency,
-                user_account=user,
-                metric_key_to_metric_interface={metric_interface.key: metric_interface},
-            )
-            metric_key_to_datapoint_jsons, _ = workbook_uploader.upload_workbook(
                 session=session,
-                xls=pd.ExcelFile(file_path),
-                upload_method=UploadMethod.BULK_UPLOAD,
+                user_account=user,
             )
+            workbook_uploader = WorkbookUploader(metadata=metadata)
+            with open(
+                file_path,
+                mode="rb",
+            ) as file:
+                workbook_uploader.upload_workbook(
+                    file=file,
+                    file_name=file_name,
+                )
 
             # There should be datapoints for parole and probation funding, but none for supervision
             self.assertTrue(
-                len(metric_key_to_datapoint_jsons.get("SUPERVISION_FUNDING", [])) == 0
+                len(
+                    metadata.metric_key_to_datapoint_jsons.get(
+                        "SUPERVISION_FUNDING", []
+                    )
+                )
+                == 0
             )
             self.assertTrue(
-                len(metric_key_to_datapoint_jsons.get("PAROLE_FUNDING", [])) > 0
+                len(metadata.metric_key_to_datapoint_jsons.get("PAROLE_FUNDING", []))
+                > 0
             )
             self.assertTrue(
                 all(
                     d["agency_name"] == agency.name
-                    for d in metric_key_to_datapoint_jsons["PAROLE_FUNDING"]
+                    for d in metadata.metric_key_to_datapoint_jsons["PAROLE_FUNDING"]
                 )
             )
             self.assertTrue(
-                len(metric_key_to_datapoint_jsons.get("PROBATION_FUNDING", [])) > 0
+                len(metadata.metric_key_to_datapoint_jsons.get("PROBATION_FUNDING", []))
+                > 0
             )
             self.assertTrue(
                 all(
                     d["agency_name"] == agency.name
-                    for d in metric_key_to_datapoint_jsons["PROBATION_FUNDING"]
+                    for d in metadata.metric_key_to_datapoint_jsons["PROBATION_FUNDING"]
                 )
             )
+            os.remove(file_name)
 
     def test_unexpected_column_name(
         self,
@@ -890,31 +920,40 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             # 'month' when frequency is annual
             # 'system' when not a Supervision system
             # disaggregation with disaggregation_column_name is None
+            file_name = "test_unexpected_column_name.xlsx"
             file_path = create_excel_file(
                 system=schema.System.PRISONS,
                 unexpected_month_sheet_name="staff",
                 unexpected_system_sheet_name="admissions",
                 unexpected_disaggregation_sheet_name="population_by_type",
-                file_name="test_unexpected_column_name.xlsx",
+                file_name=file_name,
             )
-            workbook_uploader = WorkbookUploader(
+            metadata = BulkUploadMetadata(
                 system=schema.System.PRISONS,
                 agency=prison_agency,
-                user_account=user_account,
-                metric_key_to_metric_interface={},
-            )
-            _, metric_key_to_errors = workbook_uploader.upload_workbook(
                 session=session,
-                xls=pd.ExcelFile(file_path),
-                upload_method=UploadMethod.BULK_UPLOAD,
+                user_account=user_account,
             )
-            self.assertEqual(len(metric_key_to_errors), 3)
+
+            with open(
+                file_path,
+                mode="rb",
+            ) as file:
+                workbook_uploader = WorkbookUploader(metadata=metadata)
+                workbook_uploader.upload_workbook(file=file, file_name=file_name)
+
+            self.assertEqual(len(metadata.metric_key_to_errors), 3)
             # 1 warning because metric was reported as monthly even though it is an annual metric.
-            self.assertEqual(len(metric_key_to_errors[prisons.staff.key]), 1)
+            self.assertEqual(len(metadata.metric_key_to_errors[prisons.staff.key]), 1)
             # 1 warning because an unexpected system column was in the sheet.
-            self.assertEqual(len(metric_key_to_errors[prisons.admissions.key]), 1)
+            self.assertEqual(
+                len(metadata.metric_key_to_errors[prisons.admissions.key]), 1
+            )
             # 1 warning for unexpected disaggregation.
-            self.assertEqual(len(metric_key_to_errors[prisons.daily_population.key]), 1)
+            self.assertEqual(
+                len(metadata.metric_key_to_errors[prisons.daily_population.key]), 1
+            )
+            os.remove(file_name)
 
     def test_breakdown_sum_warning(
         self,
@@ -929,6 +968,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             prison_agency = AgencyInterface.get_agency_by_id(
                 session=session, agency_id=self.prison_agency_id
             )
+            file_name = "test_breakdown_sum_warning.xlsx"
             file_path = create_excel_file(
                 system=schema.System.PRISONS,
                 sheet_names_to_vary_values={
@@ -943,43 +983,53 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                     "releases_by_type",
                     "grievances_upheld_by_type",
                 },
-                file_name="test_breakdown_sum_warning.xlsx",
+                file_name=file_name,
             )
-            workbook_uploader = WorkbookUploader(
+            metadata = BulkUploadMetadata(
                 system=schema.System.PRISONS,
                 agency=prison_agency,
-                user_account=user_account,
-                metric_key_to_metric_interface={},
-            )
-            _, metric_key_to_errors = workbook_uploader.upload_workbook(
                 session=session,
-                xls=pd.ExcelFile(file_path),
-                upload_method=UploadMethod.BULK_UPLOAD,
+                user_account=user_account,
             )
-            self.assertEqual(len(metric_key_to_errors), 8)
+            with open(
+                file_path,
+                mode="rb",
+            ) as file:
+                workbook_uploader = WorkbookUploader(metadata=metadata)
+                workbook_uploader.upload_workbook(file_name=file_name, file=file)
+            self.assertEqual(len(metadata.metric_key_to_errors), 8)
             # Annual metrics have a row for 2 years
             # Monthly metrics have a row for 2 years, 2 months for each year
             # admissions (monthly) x admissions_by_type = 4
-            self.assertEqual(len(metric_key_to_errors[prisons.admissions.key]), 4)
+            self.assertEqual(
+                len(metadata.metric_key_to_errors[prisons.admissions.key]), 4
+            )
             # expenses (annual) x expenses_by_type = 2
-            self.assertEqual(len(metric_key_to_errors[prisons.expenses.key]), 2)
+            self.assertEqual(
+                len(metadata.metric_key_to_errors[prisons.expenses.key]), 2
+            )
             # funding (annual) x funding_by_type = 2
-            self.assertEqual(len(metric_key_to_errors[prisons.funding.key]), 2)
+            self.assertEqual(len(metadata.metric_key_to_errors[prisons.funding.key]), 2)
             # grievances_upheld (annual) x grievances_upheld_by_type = 2
             self.assertEqual(
-                len(metric_key_to_errors[prisons.grievances_upheld.key]), 2
+                len(metadata.metric_key_to_errors[prisons.grievances_upheld.key]), 2
             )
             # population (monthly), population_by_type, population_by_race, population_by_biological_sex
             # 4 x 3 = 12
             self.assertEqual(
-                len(metric_key_to_errors[prisons.daily_population.key]), 12
+                len(metadata.metric_key_to_errors[prisons.daily_population.key]), 12
             )
             # readmission (annual) x readmissions_by_type = 2
-            self.assertEqual(len(metric_key_to_errors[prisons.readmissions.key]), 2)
+            self.assertEqual(
+                len(metadata.metric_key_to_errors[prisons.readmissions.key]), 2
+            )
             # releases (monthly) x releases_by_type = 4
-            self.assertEqual(len(metric_key_to_errors[prisons.releases.key]), 4)
+            self.assertEqual(
+                len(metadata.metric_key_to_errors[prisons.releases.key]), 4
+            )
             # total_staff (annual) x staff_by_type = 2
-            self.assertEqual(len(metric_key_to_errors[prisons.staff.key]), 2)
+            self.assertEqual(len(metadata.metric_key_to_errors[prisons.staff.key]), 2)
+            os.remove(file_name)
 
     def test_update_report_status(
         self,
@@ -999,22 +1049,26 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                 sheetnames_with_null_data={"use_of_force"},
                 file_name=file_name,
             )
-            workbook_uploader = WorkbookUploader(
+            metadata = BulkUploadMetadata(
                 system=schema.System.PRISONS,
                 agency=prison_agency,
+                session=session,
                 user_account=user_account,
-                metric_key_to_metric_interface={},
             )
             # Get existing reports for this agency (there should not be any at first)
             reports = ReportInterface.get_reports_by_agency_id(
                 session, agency_id=self.prison_agency_id, include_datapoints=True
             )
             self.assertEqual(reports, [])
-            workbook_uploader.upload_workbook(
-                session=session,
-                xls=pd.ExcelFile(file_path),
-                upload_method=UploadMethod.BULK_UPLOAD,
-            )
+
+            with open(
+                file_path,
+                mode="rb",
+            ) as file:
+
+                workbook_uploader = WorkbookUploader(metadata=metadata)
+                workbook_uploader.upload_workbook(file_name=file_name, file=file)
+
             # Make sure reports were created
             reports = ReportInterface.get_reports_by_agency_id(
                 session, agency_id=self.prison_agency_id, include_datapoints=True
@@ -1029,11 +1083,14 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                 )
 
             # Case 1: Upload workbook with no changes to the datapoints
-            workbook_uploader.upload_workbook(
-                session=session,
-                xls=pd.ExcelFile(file_path),
-                upload_method=UploadMethod.BULK_UPLOAD,
-            )
+            with open(
+                file_path,
+                mode="rb",
+            ) as file:
+
+                workbook_uploader = WorkbookUploader(metadata=metadata)
+                workbook_uploader.upload_workbook(file_name=file_name, file=file)
+
             session.commit()
             # Check that reports have not been set to draft (no changes were actually made)
             reports = ReportInterface.get_reports_by_agency_id(
@@ -1051,11 +1108,20 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                 sheetnames_with_null_data={"use_of_force"},
                 file_name=file_name,
             )
-            workbook_uploader.upload_workbook(
+            metadata = BulkUploadMetadata(
+                system=schema.System.PRISONS,
+                agency=prison_agency,
                 session=session,
-                xls=pd.ExcelFile(file_path),
-                upload_method=UploadMethod.BULK_UPLOAD,
+                user_account=user_account,
             )
+            with open(
+                file_path,
+                mode="rb",
+            ) as file:
+
+                workbook_uploader = WorkbookUploader(metadata=metadata)
+                workbook_uploader.upload_workbook(file_name=file_name, file=file)
+
             session.commit()
             reports = ReportInterface.get_reports_by_agency_id(
                 session, agency_id=self.prison_agency_id, include_datapoints=True
@@ -1083,11 +1149,20 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                 sheetnames_with_null_data={"use_of_force"},
                 file_name=file_name,
             )
-            workbook_uploader.upload_workbook(
+            metadata = BulkUploadMetadata(
+                system=schema.System.PRISONS,
+                agency=prison_agency,
                 session=session,
-                xls=pd.ExcelFile(file_path),
-                upload_method=UploadMethod.BULK_UPLOAD,
+                user_account=user_account,
             )
+            with open(
+                file_path,
+                mode="rb",
+            ) as file:
+
+                workbook_uploader = WorkbookUploader(metadata=metadata)
+                workbook_uploader.upload_workbook(file_name=file_name, file=file)
+
             session.commit()
             reports = ReportInterface.get_reports_by_agency_id(
                 session, agency_id=self.prison_agency_id, include_datapoints=True
@@ -1113,11 +1188,19 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                 sheet_names_to_vary_values={"admissions"},
                 file_name=file_name,
             )
-            workbook_uploader.upload_workbook(
+            metadata = BulkUploadMetadata(
+                system=schema.System.PRISONS,
+                agency=prison_agency,
                 session=session,
-                xls=pd.ExcelFile(file_path),
-                upload_method=UploadMethod.BULK_UPLOAD,
+                user_account=user_account,
             )
+            with open(
+                file_path,
+                mode="rb",
+            ) as file:
+
+                workbook_uploader = WorkbookUploader(metadata=metadata)
+                workbook_uploader.upload_workbook(file_name=file_name, file=file)
             session.commit()
             reports = ReportInterface.get_reports_by_agency_id(
                 session, agency_id=self.prison_agency_id, include_datapoints=True
@@ -1127,6 +1210,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             self.assertEqual(reports[0].status.value, "DRAFT")
             self.assertEqual(reports[3].status.value, "DRAFT")
             self.assertEqual(reports[6].status.value, "DRAFT")
+            os.remove(file_name)
 
     def test_update_existing_report_and_creating_new_report(self) -> None:
         """
@@ -1142,25 +1226,31 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             prison_agency = AgencyInterface.get_agency_by_id(
                 session=session, agency_id=self.prison_agency_id
             )
+            file_name = "test_update_report_status.xlsx"
             file_path = create_excel_file(
                 system=schema.System.PRISONS,
                 sheet_names_to_skip={"funding"},
                 sheetnames_with_null_data={"use_of_force"},
-                file_name="test_update_report_status.xlsx",
-            )
-            workbook_uploader = WorkbookUploader(
-                system=schema.System.PRISONS,
-                agency=prison_agency,
-                user_account=user_account,
-                metric_key_to_metric_interface={},
+                file_name=file_name,
             )
 
-            # Create 9 reports
-            workbook_uploader.upload_workbook(
+            metadata = BulkUploadMetadata(
+                system=schema.System.PRISONS,
+                agency=prison_agency,
                 session=session,
-                xls=pd.ExcelFile(file_path),
-                upload_method=UploadMethod.BULK_UPLOAD,
+                user_account=user_account,
             )
+
+            with open(
+                file_path,
+                mode="rb",
+            ) as file:
+                workbook_uploader = WorkbookUploader(metadata=metadata)
+                workbook_uploader.upload_workbook(
+                    file=file,
+                    file_name=file_name,
+                )
+
             reports = ReportInterface.get_reports_by_agency_id(
                 session, agency_id=self.prison_agency_id, include_datapoints=True
             )
@@ -1180,11 +1270,19 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             self.assertEqual(len(new_report_ids), 9)
 
             # Upload workbook with no changes to the datapoints
-            workbook_uploader.upload_workbook(
+            metadata = BulkUploadMetadata(
+                system=schema.System.PRISONS,
+                agency=prison_agency,
                 session=session,
-                xls=pd.ExcelFile(file_path),
-                upload_method=UploadMethod.BULK_UPLOAD,
+                user_account=user_account,
             )
+
+            with open(
+                file_path,
+                mode="rb",
+            ) as file:
+                workbook_uploader = WorkbookUploader(metadata=metadata)
+                workbook_uploader.upload_workbook(file=file, file_name=file_name)
             self.assertEqual(len(workbook_uploader.updated_reports), 0)
 
             # Upload workbook with changes to the datapoints that affect Report IDs 7 & 8
@@ -1192,13 +1290,21 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                 system=schema.System.PRISONS,
                 sheet_names_to_vary_values={"funding"},
                 sheetnames_with_null_data={"use_of_force"},
-                file_name="test_update_report_status.xlsx",
+                file_name=file_name,
             )
-            workbook_uploader.upload_workbook(
+            metadata = BulkUploadMetadata(
+                system=schema.System.PRISONS,
+                agency=prison_agency,
                 session=session,
-                xls=pd.ExcelFile(file_path),
-                upload_method=UploadMethod.BULK_UPLOAD,
+                user_account=user_account,
             )
+
+            with open(
+                file_path,
+                mode="rb",
+            ) as file:
+                workbook_uploader = WorkbookUploader(metadata=metadata)
+                workbook_uploader.upload_workbook(file=file, file_name=file_name)
             reports = ReportInterface.get_reports_by_agency_id(
                 session, agency_id=self.prison_agency_id, include_datapoints=True
             )
@@ -1215,6 +1321,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             }
             # Since only 2 out of 9 reports were updated, we should expect the other 7 reports to be in the `unchanged_reports` set
             self.assertEqual(len(unchanged_reports), 7)
+            os.remove(file_name)
 
     def test_ingest_super_agency(self) -> None:
         """
@@ -1231,27 +1338,27 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             child_agencies = AgencyInterface.get_child_agencies_for_agency(
                 session=session, agency=super_agency
             )
+            metadata = BulkUploadMetadata(
+                agency=super_agency,
+                system=schema.System.PRISONS,
+                session=session,
+                user_account=user_account,
+            )
+            file_name = "test_update_report_status.xlsx"
             file_path = create_excel_file(
                 system=schema.System.PRISONS,
                 child_agencies=child_agencies,
-                file_name="test_update_report_status.xlsx",
-            )
-            workbook_uploader = WorkbookUploader(
-                system=schema.System.PRISONS,
-                agency=super_agency,
-                user_account=user_account,
-                metric_key_to_metric_interface={},
-                child_agency_name_to_agency={
-                    a.name.strip().lower(): a for a in child_agencies
-                },
+                file_name=file_name,
             )
 
-            # Create 18 reports, 9 reports for each child agency
-            workbook_uploader.upload_workbook(
-                session=session,
-                xls=pd.ExcelFile(file_path),
-                upload_method=UploadMethod.BULK_UPLOAD,
-            )
+            workbook_uploader = WorkbookUploader(metadata=metadata)
+            with open(
+                file_path,
+                mode="rb",
+            ) as file:
+                # Create 18 reports, 9 reports for each child agency
+                workbook_uploader.upload_workbook(file=file, file_name=file_name)
+
             super_agency_reports = ReportInterface.get_reports_by_agency_id(
                 session, agency_id=self.prison_super_agency_id
             )
@@ -1264,6 +1371,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                 session, agency_id=child_agencies[1].id
             )
             self.assertEqual(len(affiliate_agency_B_reports), 9)
+            os.remove(file_name)
 
     def test_single_page_multiple_metrics(self) -> None:
         """Bulk upload single page file that contains data for mulitple metrics."""
@@ -1279,31 +1387,22 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                 system=schema.System.PROSECUTION,
                 file_name=file_name,
             )
+
+            metadata = BulkUploadMetadata(
+                system=schema.System.PROSECUTION,
+                agency=prosecution_agency,
+                session=session,
+                user_account=user_account,
+            )
+            workbook_uploader = WorkbookUploader(metadata=metadata)
             with open(
                 file_path,
                 mode="rb",
             ) as file:
-                standardizer = WorkbookStandardizer(
-                    system=schema.System.PROSECUTION,
-                    agency=prosecution_agency,
-                    session=session,
-                )
-                xls = standardizer.standardize_workbook(
-                    file=file.read(), file_name=file_name
-                )
 
-            workbook_uploader = WorkbookUploader(
-                system=schema.System.PROSECUTION,
-                agency=prosecution_agency,
-                user_account=user_account,
-                metric_key_to_metric_interface={},
-            )
-            workbook_uploader.upload_workbook(
-                session=session,
-                xls=xls,
-                upload_method=UploadMethod.BULK_UPLOAD,
-            )
-            self.assertEqual(len(workbook_uploader.metric_key_to_errors), 0)
+                workbook_uploader.upload_workbook(file=file, file_name=file_name)
+
+            self.assertEqual(len(metadata.metric_key_to_errors), 0)
 
             reports = ReportInterface.get_reports_by_agency_id(
                 session=session,
