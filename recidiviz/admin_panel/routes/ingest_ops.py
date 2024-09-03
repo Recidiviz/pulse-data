@@ -191,12 +191,15 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
             ingest_instance = DirectIngestInstance(ingest_instance_str.upper())
         except ValueError:
             return "invalid parameters provided", HTTPStatus.BAD_REQUEST
-        ingest_file_processing_status = (
-            get_ingest_operations_store().get_ingest_raw_file_processing_status(
+        ingest_file_processing_statuses = (
+            get_ingest_operations_store().get_ingest_raw_file_processing_statuses(
                 state_code, ingest_instance
             )
         )
-        return jsonify(ingest_file_processing_status), HTTPStatus.OK
+        return (
+            jsonify([status.for_api() for status in ingest_file_processing_statuses]),
+            HTTPStatus.OK,
+        )
 
     @bp.route("/api/ingest_operations/direct/sandbox_raw_data_import", methods=["POST"])
     def _sandbox_raw_data_import() -> Tuple[Union[str, Response], HTTPStatus]:

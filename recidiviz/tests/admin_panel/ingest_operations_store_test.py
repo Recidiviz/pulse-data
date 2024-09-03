@@ -256,24 +256,24 @@ class IngestOperationsStoreRawFileProcessingStatusTest(IngestOperationsStoreTest
         )
 
         with local_project_id_override(GCP_PROJECT_STAGING):
-            result = self.operations_store.get_ingest_raw_file_processing_status(
+            result = self.operations_store.get_ingest_raw_file_processing_statuses(
                 StateCode.US_XX, DirectIngestInstance.PRIMARY
             )
 
         self.assertEqual(len(self.us_xx_expected_file_tags), len(result))
-        self.assertIn("tagBasicData", [x["fileTag"] for x in result])
+        self.assertIn("tagBasicData", [x.file_tag for x in result])
         for status in result:
-            if status["fileTag"] == "tagBasicData":
-                self.assertTrue(status["hasConfig"])
-                self.assertEqual(status["numberFilesInBucket"], 0)
-                self.assertEqual(status["numberUnprocessedFiles"], 1)
-                self.assertEqual(status["numberProcessedFiles"], 0)
-                self.assertEqual(status["numberUngroupedFiles"], 0)
-                self.assertEqual(status["fileTag"], "tagBasicData")
-                self.assertIsNotNone(status["latestDiscoveryTime"])
-                self.assertIsNone(status["latestProcessedTime"])
-                self.assertIsNone(status["latestUpdateDatetime"])
-                self.assertIsNotNone(status["isStale"])
+            if status.file_tag == "tagBasicData":
+                self.assertTrue(status.has_config)
+                self.assertEqual(status.num_files_in_bucket, 0)
+                self.assertEqual(status.num_unprocessed_files, 1)
+                self.assertEqual(status.num_processed_files, 0)
+                self.assertEqual(status.num_ungrouped_files, 0)
+                self.assertEqual(status.file_tag, "tagBasicData")
+                self.assertIsNotNone(status.latest_discovery_time)
+                self.assertIsNone(status.latest_processed_time)
+                self.assertIsNone(status.latest_update_datetime)
+                self.assertIsNotNone(status.is_stale)
                 break
 
     def test_get_ingest_file_processing_status_returns_processed_list(self) -> None:
@@ -292,24 +292,24 @@ class IngestOperationsStoreRawFileProcessingStatusTest(IngestOperationsStoreTest
         manager.mark_raw_file_as_processed(file_path)
 
         with local_project_id_override(GCP_PROJECT_STAGING):
-            result = self.operations_store.get_ingest_raw_file_processing_status(
+            result = self.operations_store.get_ingest_raw_file_processing_statuses(
                 StateCode.US_XX, DirectIngestInstance.PRIMARY
             )
 
         self.assertEqual(len(self.us_xx_expected_file_tags), len(result))
-        self.assertIn("tagBasicData", [x["fileTag"] for x in result])
+        self.assertIn("tagBasicData", [x.file_tag for x in result])
         for status in result:
-            if status["fileTag"] == "tagBasicData":
-                self.assertTrue(status["hasConfig"])
-                self.assertEqual(status["numberFilesInBucket"], 0)
-                self.assertEqual(status["numberUnprocessedFiles"], 1)
-                self.assertEqual(status["numberProcessedFiles"], 1)
-                self.assertEqual(status["numberUngroupedFiles"], 0)
-                self.assertEqual(status["fileTag"], "tagBasicData")
-                self.assertIsNotNone(status["latestDiscoveryTime"])
-                self.assertIsNotNone(status["latestProcessedTime"])
-                self.assertIsNotNone(status["latestUpdateDatetime"])
-                self.assertIsNotNone(status["isStale"])
+            if status.file_tag == "tagBasicData":
+                self.assertTrue(status.has_config)
+                self.assertEqual(status.num_files_in_bucket, 0)
+                self.assertEqual(status.num_unprocessed_files, 1)
+                self.assertEqual(status.num_processed_files, 1)
+                self.assertEqual(status.num_ungrouped_files, 0)
+                self.assertEqual(status.file_tag, "tagBasicData")
+                self.assertIsNotNone(status.latest_discovery_time)
+                self.assertIsNotNone(status.latest_processed_time)
+                self.assertIsNotNone(status.latest_update_datetime)
+                self.assertIsNotNone(status.is_stale)
                 break
 
     def test_get_ingest_file_processing_status_returns_list_with_files_in_bucket(
@@ -332,24 +332,24 @@ class IngestOperationsStoreRawFileProcessingStatusTest(IngestOperationsStoreTest
         self.fs.test_add_path(path=file_path2, local_path=None)
 
         with local_project_id_override(GCP_PROJECT_STAGING):
-            result = self.operations_store.get_ingest_raw_file_processing_status(
+            result = self.operations_store.get_ingest_raw_file_processing_statuses(
                 StateCode.US_XX, DirectIngestInstance.PRIMARY
             )
 
         self.assertEqual(len(self.us_xx_expected_file_tags), len(result))
-        self.assertIn("tagBasicData", [x["fileTag"] for x in result])
+        self.assertIn("tagBasicData", [x.file_tag for x in result])
         for status in result:
-            if status["fileTag"] == "tagBasicData":
-                self.assertTrue(status["hasConfig"])
-                self.assertEqual(status["numberFilesInBucket"], 1)
-                self.assertEqual(status["numberUnprocessedFiles"], 1)
-                self.assertEqual(status["numberProcessedFiles"], 1)
-                self.assertEqual(status["numberUngroupedFiles"], 0)
-                self.assertEqual(status["fileTag"], "tagBasicData")
-                self.assertIsNotNone(status["latestDiscoveryTime"])
-                self.assertIsNotNone(status["latestProcessedTime"])
-                self.assertIsNotNone(status["latestUpdateDatetime"])
-                self.assertIsNotNone(status["isStale"])
+            if status.file_tag == "tagBasicData":
+                self.assertTrue(status.has_config)
+                self.assertEqual(status.num_files_in_bucket, 1)
+                self.assertEqual(status.num_unprocessed_files, 1)
+                self.assertEqual(status.num_processed_files, 1)
+                self.assertEqual(status.num_ungrouped_files, 0)
+                self.assertEqual(status.file_tag, "tagBasicData")
+                self.assertIsNotNone(status.latest_discovery_time)
+                self.assertIsNotNone(status.latest_processed_time)
+                self.assertIsNotNone(status.latest_update_datetime)
+                self.assertIsNotNone(status.is_stale)
                 break
 
     def test_get_ingest_file_processing_status_returns_list_multiple_file_tags(
@@ -369,24 +369,24 @@ class IngestOperationsStoreRawFileProcessingStatusTest(IngestOperationsStoreTest
         manager.mark_raw_file_as_discovered(file_path2)
 
         with local_project_id_override(GCP_PROJECT_STAGING):
-            result = self.operations_store.get_ingest_raw_file_processing_status(
+            result = self.operations_store.get_ingest_raw_file_processing_statuses(
                 StateCode.US_XX, DirectIngestInstance.PRIMARY
             )
 
         self.assertEqual(len(self.us_xx_expected_file_tags), len(result))
-        self.assertIn("tagBasicData", [x["fileTag"] for x in result])
-        self.assertIn("tagMoreBasicData", [x["fileTag"] for x in result])
+        self.assertIn("tagBasicData", [x.file_tag for x in result])
+        self.assertIn("tagMoreBasicData", [x.file_tag for x in result])
         for status in result:
-            if status["fileTag"] == "tagBasicData":
-                self.assertTrue(status["hasConfig"])
-                self.assertEqual(status["numberUnprocessedFiles"], 1)
-                self.assertEqual(status["numberProcessedFiles"], 0)
-                self.assertEqual(status["fileTag"], "tagBasicData")
-            elif status["fileTag"] == "tagMoreBasicData":
-                self.assertTrue(status["hasConfig"])
-                self.assertEqual(status["numberUnprocessedFiles"], 1)
-                self.assertEqual(status["numberProcessedFiles"], 0)
-                self.assertEqual(status["fileTag"], "tagMoreBasicData")
+            if status.file_tag == "tagBasicData":
+                self.assertTrue(status.has_config)
+                self.assertEqual(status.num_unprocessed_files, 1)
+                self.assertEqual(status.num_processed_files, 0)
+                self.assertEqual(status.file_tag, "tagBasicData")
+            elif status.file_tag == "tagMoreBasicData":
+                self.assertTrue(status.has_config)
+                self.assertEqual(status.num_unprocessed_files, 1)
+                self.assertEqual(status.num_processed_files, 0)
+                self.assertEqual(status.file_tag, "tagMoreBasicData")
 
     def test_get_ingest_file_processing_status_returns_list_with_unrecognized_files_in_bucket(
         self,
@@ -401,43 +401,43 @@ class IngestOperationsStoreRawFileProcessingStatusTest(IngestOperationsStoreTest
         self.fs.test_add_path(path=file_path2, local_path=None)
 
         with local_project_id_override(GCP_PROJECT_STAGING):
-            result = self.operations_store.get_ingest_raw_file_processing_status(
+            result = self.operations_store.get_ingest_raw_file_processing_statuses(
                 StateCode.US_XX, DirectIngestInstance.PRIMARY
             )
 
         self.assertEqual(len(self.us_xx_expected_file_tags) + 1, len(result))
-        self.assertIn("UNRECOGNIZED_FILE_TAG", [x["fileTag"] for x in result])
+        self.assertIn("UNRECOGNIZED_FILE_TAG", [x.file_tag for x in result])
         for status in result:
-            if status["fileTag"] == "UNRECOGNIZED_FILE_TAG":
-                self.assertFalse(status["hasConfig"])
-                self.assertEqual(2, status["numberFilesInBucket"])
-                self.assertEqual(0, status["numberUnprocessedFiles"])
-                self.assertEqual(0, status["numberProcessedFiles"])
-                self.assertEqual(status["numberUngroupedFiles"], 0)
-                self.assertEqual(status["fileTag"], "UNRECOGNIZED_FILE_TAG")
-                self.assertIsNone(status["latestDiscoveryTime"])
-                self.assertIsNone(status["latestProcessedTime"])
-                self.assertIsNone(status["latestUpdateDatetime"])
-                self.assertFalse(result[0]["isStale"])
+            if status.file_tag == "UNRECOGNIZED_FILE_TAG":
+                self.assertFalse(status.has_config)
+                self.assertEqual(2, status.num_files_in_bucket)
+                self.assertEqual(0, status.num_unprocessed_files)
+                self.assertEqual(0, status.num_processed_files)
+                self.assertEqual(status.num_ungrouped_files, 0)
+                self.assertEqual(status.file_tag, "UNRECOGNIZED_FILE_TAG")
+                self.assertIsNone(status.latest_discovery_time)
+                self.assertIsNone(status.latest_processed_time)
+                self.assertIsNone(status.latest_update_datetime)
+        self.assertFalse(result[0].is_stale)
 
     def test_get_ingest_file_processing_status_returns_list_with_secondary_instance(
         self,
     ) -> None:
         with local_project_id_override(GCP_PROJECT_STAGING):
-            result = self.operations_store.get_ingest_raw_file_processing_status(
+            result = self.operations_store.get_ingest_raw_file_processing_statuses(
                 StateCode.US_XX, DirectIngestInstance.SECONDARY
             )
 
         self.assertEqual(len(self.us_xx_expected_file_tags), len(result))
-        self.assertTrue(result[0]["hasConfig"])
-        self.assertEqual(result[0]["numberFilesInBucket"], 0)
-        self.assertEqual(result[0]["numberUnprocessedFiles"], 0)
-        self.assertEqual(result[0]["numberProcessedFiles"], 0)
-        self.assertIsNotNone(result[0]["fileTag"])
-        self.assertIsNone(result[0]["latestDiscoveryTime"])
-        self.assertIsNone(result[0]["latestProcessedTime"])
-        self.assertIsNone(result[0]["latestUpdateDatetime"])
-        self.assertFalse(result[0]["isStale"])
+        self.assertTrue(result[0].has_config)
+        self.assertEqual(result[0].num_files_in_bucket, 0)
+        self.assertEqual(result[0].num_unprocessed_files, 0)
+        self.assertEqual(result[0].num_processed_files, 0)
+        self.assertIsNotNone(result[0].file_tag)
+        self.assertIsNone(result[0].latest_discovery_time)
+        self.assertIsNone(result[0].latest_processed_time)
+        self.assertIsNone(result[0].latest_update_datetime)
+        self.assertFalse(result[0].is_stale)
 
     def test_get_ingest_file_processing_status_catches_file_in_subdir(
         self,
@@ -452,24 +452,24 @@ class IngestOperationsStoreRawFileProcessingStatusTest(IngestOperationsStoreTest
         self.fs.test_add_path(path=file_path2, local_path=None)
 
         with local_project_id_override(GCP_PROJECT_STAGING):
-            result = self.operations_store.get_ingest_raw_file_processing_status(
+            result = self.operations_store.get_ingest_raw_file_processing_statuses(
                 StateCode.US_XX, DirectIngestInstance.PRIMARY
             )
 
         self.assertEqual(len(self.us_xx_expected_file_tags) + 1, len(result))
-        self.assertIn("IGNORED_IN_SUBDIRECTORY", [x["fileTag"] for x in result])
+        self.assertIn("IGNORED_IN_SUBDIRECTORY", [x.file_tag for x in result])
         for status in result:
-            if status["fileTag"] == "IGNORED_IN_SUBDIRECTORY":
-                self.assertFalse(status["hasConfig"])
-                self.assertEqual(2, status["numberFilesInBucket"])
-                self.assertEqual(0, status["numberUnprocessedFiles"])
-                self.assertEqual(0, status["numberProcessedFiles"])
-                self.assertEqual(status["numberUngroupedFiles"], 0)
-                self.assertEqual(status["fileTag"], "IGNORED_IN_SUBDIRECTORY")
-                self.assertIsNone(status["latestDiscoveryTime"])
-                self.assertIsNone(status["latestProcessedTime"])
-                self.assertIsNone(status["latestUpdateDatetime"])
-                self.assertFalse(status["isStale"])
+            if status.file_tag == "IGNORED_IN_SUBDIRECTORY":
+                self.assertFalse(status.has_config)
+                self.assertEqual(2, status.num_files_in_bucket)
+                self.assertEqual(0, status.num_unprocessed_files)
+                self.assertEqual(0, status.num_processed_files)
+                self.assertEqual(status.num_ungrouped_files, 0)
+                self.assertEqual(status.file_tag, "IGNORED_IN_SUBDIRECTORY")
+                self.assertIsNone(status.latest_discovery_time)
+                self.assertIsNone(status.latest_processed_time)
+                self.assertIsNone(status.latest_update_datetime)
+                self.assertFalse(status.is_stale)
 
     def test_get_ingest_file_processing_status_catches_unnormalized_file(
         self,
@@ -484,24 +484,24 @@ class IngestOperationsStoreRawFileProcessingStatusTest(IngestOperationsStoreTest
         self.fs.test_add_path(path=file_path2, local_path=None)
 
         with local_project_id_override(GCP_PROJECT_STAGING):
-            result = self.operations_store.get_ingest_raw_file_processing_status(
+            result = self.operations_store.get_ingest_raw_file_processing_statuses(
                 StateCode.US_XX, DirectIngestInstance.PRIMARY
             )
 
         self.assertEqual(len(self.us_xx_expected_file_tags) + 1, len(result))
-        self.assertIn("UNNORMALIZED", [x["fileTag"] for x in result])
+        self.assertIn("UNNORMALIZED", [x.file_tag for x in result])
         for status in result:
-            if status["fileTag"] == "UNNORMALIZED":
-                self.assertFalse(status["hasConfig"])
-                self.assertEqual(2, status["numberFilesInBucket"])
-                self.assertEqual(0, status["numberUnprocessedFiles"])
-                self.assertEqual(0, status["numberProcessedFiles"])
-                self.assertEqual(status["numberUngroupedFiles"], 0)
-                self.assertEqual(status["fileTag"], "UNNORMALIZED")
-                self.assertIsNone(status["latestDiscoveryTime"])
-                self.assertIsNone(status["latestProcessedTime"])
-                self.assertIsNone(status["latestUpdateDatetime"])
-                self.assertFalse(status["isStale"])
+            if status.file_tag == "UNNORMALIZED":
+                self.assertFalse(status.has_config)
+                self.assertEqual(2, status.num_files_in_bucket)
+                self.assertEqual(0, status.num_unprocessed_files)
+                self.assertEqual(0, status.num_processed_files)
+                self.assertEqual(status.num_ungrouped_files, 0)
+                self.assertEqual(status.file_tag, "UNNORMALIZED")
+                self.assertIsNone(status.latest_discovery_time)
+                self.assertIsNone(status.latest_processed_time)
+                self.assertIsNone(status.latest_update_datetime)
+                self.assertFalse(status.is_stale)
 
 
 class IngestOperationsStoreCachingTest(IngestOperationsStoreTestBase):
