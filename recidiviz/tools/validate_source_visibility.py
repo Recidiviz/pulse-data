@@ -301,6 +301,7 @@ def main() -> int:
         valid_module_prefixes=make_module_matcher(
             {
                 "recidiviz.airflow.tests",
+                "recidiviz.tests.metrics.export.fixtures",
                 "recidiviz.tests.pipelines",
                 "recidiviz.tests.test_setup_utils",
                 "recidiviz.tools.postgres.local_postgres_helpers",

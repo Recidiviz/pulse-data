@@ -296,10 +296,7 @@ def metric_export_branches_by_state_code(
 
     # For every state with post-normalization pipelines enabled, we can create metric
     # exports, if any are configured for that state.
-    for (
-        state_code,
-        metric_pipelines_group,
-    ) in post_normalization_pipelines_by_state.items():
+    for state_code in post_normalization_pipelines_by_state:
         relevant_product_exports = ProductConfigs.from_file(
             path=PRODUCTS_CONFIG_PATH
         ).get_export_configs_for_job_filter(state_code)
@@ -307,8 +304,6 @@ def metric_export_branches_by_state_code(
             continue
         with TaskGroup(group_id=f"{state_code}_metric_exports") as state_metric_exports:
             create_metric_view_data_export_nodes(relevant_product_exports)
-
-        metric_pipelines_group >> state_metric_exports
 
         branches_by_state_code[state_code] = state_metric_exports
 
@@ -413,10 +408,19 @@ def create_calculation_dag() -> None:
             post_normalization_pipelines_by_state, select_state_code_parameter_branch
         )
 
+    post_normalization_pipelines_completed = EmptyOperator(
+        task_id="post_normalization_pipelines_completed",
+        trigger_rule=TriggerRule.ALL_DONE,
+    )
+
     # This ensures that all of the normalization pipelines for a state will
     # run and the normalized_state dataset will be updated before the
     # metric pipelines for the state are triggered.
-    update_normalized_state_dataset >> post_normalization_pipelines
+    (
+        update_normalized_state_dataset
+        >> post_normalization_pipelines
+        >> post_normalization_pipelines_completed
+    )
 
     # --- step 4: managed views -----------------------------------
     # When ingest, normalization, and metrics pipelines are finished,
@@ -428,7 +432,7 @@ def create_calculation_dag() -> None:
         update_state_dataset,
         update_normalized_state_dataset,
         bq_refresh_completed,
-        post_normalization_pipelines,
+        post_normalization_pipelines_completed,
     ] >> update_all_views
 
     # --- step 5: validations and metric exports -----------------------------------
@@ -445,12 +449,27 @@ def create_calculation_dag() -> None:
 
     with TaskGroup(group_id="metric_exports") as metric_exports:
         with TaskGroup(group_id=STATE_SPECIFIC_METRIC_EXPORTS_GROUP_ID):
-            create_branching_by_key(
-                metric_export_branches_by_state_code(
-                    post_normalization_pipelines_by_state
-                ),
-                select_state_code_parameter_branch,
+            metric_export_branches_by_state = metric_export_branches_by_state_code(
+                post_normalization_pipelines_by_state
             )
+            create_branching_by_key(
+                metric_export_branches_by_state, select_state_code_parameter_branch
+            )
+
+            # If any ingest or metric pipeline fails, do not run the export for that
+            # state.
+            for (
+                state_code,
+                metric_export_branch,
+            ) in metric_export_branches_by_state.items():
+                (
+                    ingest_and_normalization_pipelines_by_state[state_code]
+                    >> metric_export_branch
+                )
+                (
+                    post_normalization_pipelines_by_state[state_code]
+                    >> metric_export_branch
+                )
 
         product_configs = ProductConfigs.from_file(path=PRODUCTS_CONFIG_PATH)
         for export_config in product_configs.get_product_agnostic_export_configs():
