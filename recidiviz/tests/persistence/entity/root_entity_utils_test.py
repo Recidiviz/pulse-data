@@ -18,7 +18,7 @@
 import unittest
 
 from recidiviz.persistence.entity.root_entity_utils import (
-    get_entity_class_name_to_root_entity_class_name,
+    get_entity_class_to_root_entity_class,
     get_root_entity_class_for_entity,
     get_root_entity_id,
 )
@@ -95,13 +95,42 @@ class RootEntityUtilsTest(unittest.TestCase):
         self.assertEqual(789, get_root_entity_id(staff_external_id))
         self.assertEqual(789, get_root_entity_id(staff))
 
-    def test_get_entity_class_name_to_root_entity_class_name(self) -> None:
-        root_entity_mapping = get_entity_class_name_to_root_entity_class_name(
+    def test_get_entity_class_to_root_entity_class(self) -> None:
+        root_entity_mapping = get_entity_class_to_root_entity_class(
             entities_module=entities
         )
 
-        self.assertEqual("state_person", root_entity_mapping["state_assessment"])
-        self.assertEqual("state_person", root_entity_mapping["state_person"])
+        self.assertEqual(
+            entities.StatePerson, root_entity_mapping[entities.StateAssessment]
+        )
+        self.assertEqual(
+            entities.StatePerson, root_entity_mapping[entities.StatePerson]
+        )
 
-        self.assertEqual("state_staff", root_entity_mapping["state_staff_role_period"])
-        self.assertEqual("state_staff", root_entity_mapping["state_staff"])
+        self.assertEqual(
+            entities.StateStaff, root_entity_mapping[entities.StateStaffRolePeriod]
+        )
+        self.assertEqual(entities.StateStaff, root_entity_mapping[entities.StateStaff])
+
+    def test_get_entity_class_to_root_entity_class_normalized(self) -> None:
+        root_entity_mapping = get_entity_class_to_root_entity_class(
+            entities_module=normalized_entities
+        )
+
+        self.assertEqual(
+            normalized_entities.NormalizedStatePerson,
+            root_entity_mapping[normalized_entities.NormalizedStateAssessment],
+        )
+        self.assertEqual(
+            normalized_entities.NormalizedStatePerson,
+            root_entity_mapping[normalized_entities.NormalizedStatePerson],
+        )
+
+        self.assertEqual(
+            normalized_entities.NormalizedStateStaff,
+            root_entity_mapping[normalized_entities.NormalizedStateStaffRolePeriod],
+        )
+        self.assertEqual(
+            normalized_entities.NormalizedStateStaff,
+            root_entity_mapping[normalized_entities.NormalizedStateStaff],
+        )

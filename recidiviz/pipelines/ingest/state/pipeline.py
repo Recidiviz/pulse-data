@@ -270,6 +270,7 @@ class StateIngestPipeline(BasePipeline[IngestPipelineParameters]):
             | RunValidations(
                 expected_output_entity_classes=expected_output_entity_classes,
                 state_code=state_code,
+                entities_module=state_entities,
             )
         )
 

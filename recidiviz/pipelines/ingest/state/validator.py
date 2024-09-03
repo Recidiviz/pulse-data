@@ -30,11 +30,15 @@ from recidiviz.common.date import DurationMixin
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.entity_utils import get_all_entities_from_tree
 from recidiviz.persistence.entity.state import entities as state_entities
+from recidiviz.persistence.entity.state import normalized_entities
 from recidiviz.persistence.entity.state.entity_field_validators import (
     ParsingOptionalOnlyValidator,
 )
+from recidiviz.persistence.entity.state.normalized_entities import (
+    EntityBackedgeValidator,
+)
 from recidiviz.persistence.entity.state.state_entity_mixins import LedgerEntityMixin
-from recidiviz.persistence.persistence_utils import RootEntityT
+from recidiviz.persistence.persistence_utils import NormalizedRootEntityT, RootEntityT
 from recidiviz.pipelines.ingest.state.constants import EntityKey, Error
 from recidiviz.utils.types import assert_type
 
@@ -62,7 +66,9 @@ def state_allows_multiple_ids_same_type_for_state_staff(state_code: str) -> bool
     return False
 
 
-def _external_id_checks(root_entity: RootEntityT) -> Iterable[Error]:
+def _external_id_checks(
+    root_entity: RootEntityT | NormalizedRootEntityT,
+) -> Iterable[Error]:
     """This function yields error messages relating to the external IDs of a root entity. Namely,
     - If there is not an external ID.
     - If there are multiple IDs of the same type in a state that doesn't allow it.
@@ -74,11 +80,17 @@ def _external_id_checks(root_entity: RootEntityT) -> Iterable[Error]:
             f"external_id: {root_entity}"
         )
 
-    if isinstance(root_entity, state_entities.StatePerson):
+    if isinstance(
+        root_entity,
+        (state_entities.StatePerson, normalized_entities.NormalizedStatePerson),
+    ):
         allows_multiple_ids_same_type = (
             state_allows_multiple_ids_same_type_for_state_person(root_entity.state_code)
         )
-    elif isinstance(root_entity, state_entities.StateStaff):
+    elif isinstance(
+        root_entity,
+        (state_entities.StateStaff, normalized_entities.NormalizedStateStaff),
+    ):
         allows_multiple_ids_same_type = (
             state_allows_multiple_ids_same_type_for_state_staff(root_entity.state_code)
         )
@@ -117,7 +129,7 @@ def _unique_constraint_check(
             for unique_key in grouped_entities:
                 if (n_entities := len(grouped_entities[unique_key])) == 1:
                     continue
-                error_msg = f"Found [{n_entities}] {entity_cls.get_entity_name()} entities with ({unique_key})"
+                error_msg = f"Found [{n_entities}] {entity_cls.__name__} entities with ({unique_key})"
 
                 entities_to_show = min(3, n_entities)
                 entities_str = "\n  * ".join(
@@ -284,7 +296,7 @@ def _sentencing_entities_checks(
 
 
 def ledger_entity_checks(
-    root_entiy: RootEntityT,
+    root_entiy: RootEntityT | NormalizedRootEntityT,
     entity_cls: Type[LedgerEntityMixin],
     ledger_objects: Sequence[LedgerEntityMixin],
 ) -> Optional[Error]:
@@ -319,7 +331,7 @@ def ledger_entity_checks(
 
 
 def duration_entity_checks(
-    root_entity: RootEntityT,
+    root_entity: RootEntityT | NormalizedRootEntityT,
     entity_cls: Type[DurationMixin],
     duration_objects: Sequence[DurationMixin],
 ) -> Optional[Error]:
@@ -335,7 +347,9 @@ def duration_entity_checks(
     return None
 
 
-def validate_root_entity(root_entity: RootEntityT) -> List[Error]:
+def validate_root_entity(
+    root_entity: RootEntityT | NormalizedRootEntityT,
+) -> List[Error]:
     """The assumed input is a root entity with hydrated children entities attached to it.
     This function checks if the root entity does not violate any entity tree specific
     checks. This function returns a list of errors, where each error corresponds to
@@ -358,9 +372,11 @@ def validate_root_entity(root_entity: RootEntityT) -> List[Error]:
         for field_name in class_reference.fields:
             field_info = class_reference.get_field_info(field_name)
             validator = field_info.attribute.validator
-            if isinstance(validator, ParsingOptionalOnlyValidator):
+            if isinstance(
+                validator, (ParsingOptionalOnlyValidator, EntityBackedgeValidator)
+            ):
                 for entity in entities:
-                    if entity.get_field(field_name) is not None:
+                    if entity.get_field(field_name):
                         continue
                     error_messages.append(
                         f"Found entity [{entity.limited_pii_repr()}] with null "
@@ -369,31 +385,50 @@ def validate_root_entity(root_entity: RootEntityT) -> List[Error]:
                     )
 
     if isinstance(root_entity, state_entities.StatePerson):
-        error_messages.extend(_sentencing_entities_checks(root_entity))
+        error_messages.extend(_get_state_person_specific_errors(root_entity))
+    if isinstance(root_entity, normalized_entities.NormalizedStatePerson):
+        error_messages.extend(_get_normalized_state_person_specific_errors(root_entity))
 
-        if err := duration_entity_checks(
+    return error_messages
+
+
+def _get_state_person_specific_errors(
+    root_entity: state_entities.StatePerson,
+) -> List[str]:
+    error_messages: list[str] = []
+    error_messages.extend(_sentencing_entities_checks(root_entity))
+
+    if err := duration_entity_checks(
+        root_entity,
+        state_entities.StateIncarcerationPeriod,
+        root_entity.incarceration_periods,
+    ):
+        error_messages.append(err)
+
+    if err := duration_entity_checks(
+        root_entity,
+        state_entities.StateSupervisionPeriod,
+        root_entity.supervision_periods,
+    ):
+        error_messages.append(err)
+
+    # Ensure StateTaskDeadline passes ledger checks
+    if root_entity.task_deadlines:
+        if err := ledger_entity_checks(
             root_entity,
-            state_entities.StateIncarcerationPeriod,
-            root_entity.incarceration_periods,
+            state_entities.StateTaskDeadline,
+            root_entity.task_deadlines,
         ):
             error_messages.append(err)
+    return error_messages
 
-        if err := duration_entity_checks(
-            root_entity,
-            state_entities.StateSupervisionPeriod,
-            root_entity.supervision_periods,
-        ):
-            error_messages.append(err)
 
-        # Ensure StateTaskDeadline passes ledger checks
-        if root_entity.task_deadlines:
-            if err := ledger_entity_checks(
-                root_entity,
-                state_entities.StateTaskDeadline,
-                root_entity.task_deadlines,
-            ):
-                error_messages.append(err)
-
+def _get_normalized_state_person_specific_errors(
+    root_entity: normalized_entities.NormalizedStatePerson,
+) -> List[str]:
+    assert_type(root_entity, normalized_entities.NormalizedStatePerson)
+    error_messages: list[str] = []
+    # TODO(#29517): Add validation logic for NormalizedStatePerson.
     return error_messages
 
 

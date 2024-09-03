@@ -93,11 +93,11 @@ def get_root_entity_class_for_entity(entity_cls: Type[Entity]) -> Type[RootEntit
 
 
 @cache
-def get_entity_class_name_to_root_entity_class_name(
+def get_entity_class_to_root_entity_class(
     entities_module: ModuleType,
-) -> Dict[str, str]:
-    """Returns a dictionary that maps from entity name (e.g. 'state_assessment')
-    to the corresponding root entity name (e.g. 'state_person').
+) -> Dict[type[Entity], type[Entity]]:
+    """Returns a dictionary that maps from entity class to the corresponding root entity
+    class.
     """
     result = {}
     for entity_cls in get_all_entity_classes_in_module(entities_module):
@@ -107,5 +107,5 @@ def get_entity_class_name_to_root_entity_class_name(
                 f"Expected root_entity_class to be an Entity subclass, "
                 f"found: {root_entity_class}"
             )
-        result[entity_cls.get_entity_name()] = root_entity_class.get_entity_name()
+        result[entity_cls] = assert_subclass(root_entity_class, Entity)
     return result
