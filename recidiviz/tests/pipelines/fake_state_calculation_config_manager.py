@@ -23,8 +23,11 @@ from typing import Any, List, Optional, Set
 
 from mock import patch
 
+from recidiviz.common.constants.state.state_assessment import (
+    StateAssessmentClass,
+    StateAssessmentType,
+)
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
-from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.state.entities import (
     StateAssessment,
     StateIncarcerationPeriod,
@@ -78,36 +81,6 @@ from recidiviz.pipelines.utils.state_utils.state_specific_supervision_delegate i
 from recidiviz.pipelines.utils.state_utils.state_specific_violations_delegate import (
     StateSpecificViolationDelegate,
 )
-from recidiviz.pipelines.utils.state_utils.templates.us_xx.us_xx_assessment_normalization_delegate import (
-    UsXxAssessmentNormalizationDelegate,
-)
-from recidiviz.pipelines.utils.state_utils.templates.us_xx.us_xx_commitment_from_supervision_utils import (
-    UsXxCommitmentFromSupervisionDelegate,
-)
-from recidiviz.pipelines.utils.state_utils.templates.us_xx.us_xx_incarceration_delegate import (
-    UsXxIncarcerationDelegate,
-)
-from recidiviz.pipelines.utils.state_utils.templates.us_xx.us_xx_incarceration_period_normalization_delegate import (
-    UsXxIncarcerationNormalizationDelegate,
-)
-from recidiviz.pipelines.utils.state_utils.templates.us_xx.us_xx_sentence_normalization_delegate import (
-    UsXxSentenceNormalizationDelegate,
-)
-from recidiviz.pipelines.utils.state_utils.templates.us_xx.us_xx_staff_role_period_normalization_delegate import (
-    UsXxStaffRolePeriodNormalizationDelegate,
-)
-from recidiviz.pipelines.utils.state_utils.templates.us_xx.us_xx_supervision_delegate import (
-    UsXxSupervisionDelegate,
-)
-from recidiviz.pipelines.utils.state_utils.templates.us_xx.us_xx_supervision_period_normalization_delegate import (
-    UsXxSupervisionNormalizationDelegate,
-)
-from recidiviz.pipelines.utils.state_utils.templates.us_xx.us_xx_violation_response_normalization_delegate import (
-    UsXxViolationResponseNormalizationDelegate,
-)
-from recidiviz.pipelines.utils.state_utils.templates.us_xx.us_xx_violations_delegate import (
-    UsXxViolationDelegate,
-)
 from recidiviz.utils.range_querier import RangeQuerier
 
 # pylint:disable=unused-argument
@@ -117,38 +90,26 @@ def get_state_specific_staff_role_period_normalization_delegate(
     state_code: str,
     staff_supervisor_periods: List[StateStaffSupervisorPeriod],
 ) -> StateSpecificStaffRolePeriodNormalizationDelegate:
-    if state_code == StateCode.US_XX.value:
-        return UsXxStaffRolePeriodNormalizationDelegate()
-
-    raise ValueError(f"Unexpected state code [{state_code}]")
+    return StateSpecificStaffRolePeriodNormalizationDelegate()
 
 
 def get_state_specific_violation_response_normalization_delegate(
     state_code: str,
     incarceration_periods: List[StateIncarcerationPeriod],
 ) -> StateSpecificViolationResponseNormalizationDelegate:
-    if state_code == StateCode.US_XX.value:
-        return UsXxViolationResponseNormalizationDelegate()
-
-    raise ValueError(f"Unexpected state code [{state_code}]")
+    return StateSpecificViolationResponseNormalizationDelegate()
 
 
 def get_state_specific_sentence_normalization_delegate(
     state_code: str,
 ) -> StateSpecificSentenceNormalizationDelegate:
-    if state_code == StateCode.US_XX.value:
-        return UsXxSentenceNormalizationDelegate()
-
-    raise ValueError(f"Unexpected state code [{state_code}]")
+    return StateSpecificSentenceNormalizationDelegate()
 
 
 def get_state_specific_incarceration_period_normalization_delegate(
     state_code: str, incarceration_sentences: List[NormalizedStateIncarcerationSentence]
 ) -> StateSpecificIncarcerationNormalizationDelegate:
-    if state_code == StateCode.US_XX.value:
-        return UsXxIncarcerationNormalizationDelegate()
-
-    raise ValueError(f"Unexpected state code [{state_code}]")
+    return StateSpecificIncarcerationNormalizationDelegate()
 
 
 def get_state_specific_supervision_period_normalization_delegate(
@@ -158,19 +119,14 @@ def get_state_specific_supervision_period_normalization_delegate(
     incarceration_periods: List[StateIncarcerationPeriod],
     sentences: List[StateSentence],
 ) -> StateSpecificSupervisionNormalizationDelegate:
-    if state_code == StateCode.US_XX.value:
-        return UsXxSupervisionNormalizationDelegate()
-
-    raise ValueError(f"Unexpected state code [{state_code}]")
+    return StateSpecificSupervisionNormalizationDelegate()
 
 
 def get_state_specific_assessment_normalization_delegate(
     state_code: str,
     person: StatePerson,
 ) -> StateSpecificAssessmentNormalizationDelegate:
-    if state_code == StateCode.US_XX.value:
-        return UsXxAssessmentNormalizationDelegate()
-    raise ValueError(f"Unexpected state code [{state_code}]")
+    return StateSpecificAssessmentNormalizationDelegate()
 
 
 def get_state_specific_case_compliance_manager(
@@ -190,35 +146,39 @@ def get_state_specific_case_compliance_manager(
 def get_state_specific_commitment_from_supervision_delegate(
     state_code: str,
 ) -> StateSpecificCommitmentFromSupervisionDelegate:
-    if state_code == StateCode.US_XX.value:
-        return UsXxCommitmentFromSupervisionDelegate()
-    raise ValueError(f"Unexpected state code [{state_code}]")
+    return StateSpecificCommitmentFromSupervisionDelegate()
 
 
 def get_state_specific_violation_delegate(
     state_code: str,
 ) -> StateSpecificViolationDelegate:
-    if state_code == StateCode.US_XX.value:
-        return UsXxViolationDelegate()
-    raise ValueError(f"Unexpected state code [{state_code}]")
+    return StateSpecificViolationDelegate()
 
 
 def get_state_specific_incarceration_delegate(
     state_code: str,
 ) -> StateSpecificIncarcerationDelegate:
-    if state_code == StateCode.US_XX.value:
-        return UsXxIncarcerationDelegate()
+    return StateSpecificIncarcerationDelegate()
 
-    raise ValueError(f"Unexpected state code [{state_code}]")
+
+class GenericTestStateSupervisionDelegate(StateSpecificSupervisionDelegate):
+    def assessment_types_to_include_for_class(
+        self, assessment_class: StateAssessmentClass
+    ) -> Optional[List[StateAssessmentType]]:
+        """For unit tests, we support all types of assessments."""
+        if assessment_class == StateAssessmentClass.RISK:
+            return [
+                StateAssessmentType.LSIR,
+                StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
+                StateAssessmentType.ORAS_COMMUNITY_SUPERVISION_SCREENING,
+            ]
+        return None
 
 
 def get_state_specific_supervision_delegate(
     state_code: str,
 ) -> StateSpecificSupervisionDelegate:
-    if state_code == StateCode.US_XX.value:
-        return UsXxSupervisionDelegate()
-
-    raise ValueError(f"Unexpected state code [{state_code}]")
+    return GenericTestStateSupervisionDelegate()
 
 
 def get_all_delegate_getter_fn_names() -> Set[str]:

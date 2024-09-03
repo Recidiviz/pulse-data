@@ -6088,7 +6088,7 @@ class TestFindAssessmentScoreChange(unittest.TestCase):
         termination_date = date(2016, 3, 12)
 
         with patch.object(
-            UsXxSupervisionDelegate,
+            StateSpecificSupervisionDelegate,
             "get_index_of_first_reliable_supervision_assessment",
             return_value=0,
         ):

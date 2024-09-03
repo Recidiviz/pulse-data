@@ -124,8 +124,6 @@ class IngestPipelineParameters(PipelineParameters):
             "raw_data_source_instance",
             "ingest_views_to_run",
             "ingest_view_results_only",
-            # TODO(#29517): Remove this from the sandbox indicator params list once we
-            #  actually want to start running normalization logic in deployed pipelines.
             "run_normalization_override",
         }
 
