@@ -97,10 +97,12 @@ APP_ENGINE_PROD_IMAGE_URL="us-docker.pkg.dev/recidiviz-123/appengine/default:${G
 echo "Starting deploy of main app - default"
 copy_docker_image_to_repository "${APP_ENGINE_STAGING_IMAGE_URL}" "${APP_ENGINE_PROD_IMAGE_URL}"
 
-
-# TODO(#3928): Migrate deploy of app engine services to terraform.
-GAE_VERSION=$(echo "${GIT_VERSION_TAG}" | tr '.' '-') || exit_on_fail
-run_cmd gcloud -q app deploy prod.yaml --project="${PROJECT}" --version="${GAE_VERSION}" --image-url="${APP_ENGINE_PROD_IMAGE_URL}"
+run_cmd pipenv run python -m recidiviz.tools.deploy.cloud_build.deployment_stage_runner \
+  --project-id "${PROJECT}" \
+  --version-tag "${VERSION_TAG}" \
+  --commit-ref "${COMMIT_HASH}" \
+  --stage "DeployAppEngine" \
+  --promote
 
 echo "Deploy succeeded - triggering post-deploy jobs."
 post_deploy_triggers 'recidiviz-123'

@@ -17,8 +17,6 @@
 """Build configuration for deploying app engine"""
 import argparse
 
-from google.cloud.devtools.cloudbuild_v1 import BuildStep
-
 from recidiviz.tools.deploy.cloud_build.artifact_registry_repository import (
     ArtifactRegistryDockerImageRepository,
     ImageKind,
@@ -26,6 +24,7 @@ from recidiviz.tools.deploy.cloud_build.artifact_registry_repository import (
 from recidiviz.tools.deploy.cloud_build.build_configuration import (
     BuildConfiguration,
     DeploymentContext,
+    build_step_for_gcloud_command,
     build_step_for_shell_command,
 )
 from recidiviz.tools.deploy.cloud_build.constants import BUILDER_GCLOUD
@@ -38,23 +37,34 @@ from recidiviz.utils.metadata import project_id
 GCLOUD_IMAGE = "gcr.io/google.com/cloudsdktool/cloud-sdk:slim"
 
 
+APP_ENGINE_CONFIGS = {
+    GCP_PROJECT_STAGING: "/workspace/staging.yaml",
+    GCP_PROJECT_PRODUCTION: "/workspace/prod.yaml",
+}
+
+
 class DeployAppEngine(DeploymentStageInterface):
     """Deployment stage for deploying app engine"""
 
     @staticmethod
     def get_parser() -> argparse.ArgumentParser:
-        return argparse.ArgumentParser()
+        parser = argparse.ArgumentParser()
+        parser.add_argument(
+            "--promote",
+            action=argparse.BooleanOptionalAction,
+        )
+        return parser
 
     def configure_build(
-        self, deployment_context: DeploymentContext, _: argparse.Namespace
+        self,
+        deployment_context: DeploymentContext,
+        args: argparse.Namespace,
     ) -> BuildConfiguration:
         """Build configration for deploying app engine"""
-        if project_id() == GCP_PROJECT_STAGING:
-            app_engine_config = "staging.yaml"
-        elif project_id() == GCP_PROJECT_PRODUCTION:
-            app_engine_config = "production.yaml"
-        else:
-            raise ValueError("Must be deploying app engine to staging/production")
+        try:
+            app_engine_config = APP_ENGINE_CONFIGS[project_id()]
+        except KeyError as e:
+            raise KeyError("Must be deploying app engine to staging/production") from e
 
         app_engine = ArtifactRegistryDockerImageRepository.from_file()[
             ImageKind.APP_ENGINE
@@ -68,37 +78,42 @@ class DeployAppEngine(DeploymentStageInterface):
                 name=BUILDER_GCLOUD,
                 command='echo "Downloaded latest image!"',
             ),
-            build_step_for_shell_command(
-                id_="fetch-appengine-config",
-                name=app_engine_image,
-                # wait_for: `-` indicates that the step should be run immediately rather than the default of running
-                # after all previous steps.
-                # https://cloud.google.com/build/docs/configuring-builds/configure-build-step-order
-                wait_for="-",
-                # Extracts the app engine YAML config from the `appengine` docker image and extracts it to the
-                # Cloud Build workspace
-                command=f"cp /app/{app_engine_config} /workspace/{app_engine_config}",
-            ),
-            BuildStep(
-                id="deploy-appengine",
-                name=BUILDER_GCLOUD,
-                entrypoint="gcloud",
+            build_step_for_gcloud_command(
+                id_="deploy-app-engine",
                 args=[
-                    "-q",
+                    "--project",
+                    deployment_context.project_id,
                     "app",
                     "deploy",
-                    "--no-promote",
-                    f"/workspace/{app_engine_config}",
-                    "--project",
-                    "${_PROJECT_ID}",
+                    app_engine_config,
+                    "--promote" if args.promote else "--no-promote",
                     "--image-url",
                     app_engine_image,
-                    "--verbosity=debug",
+                    "--version",
+                    # Replace characters that are not allowed in app engine version names with hyphens
+                    deployment_context.version_tag.replace(".", "-"),
                 ],
             ),
         ]
 
+        # If we aren't promoting the version to serve traffic, it can be stopped to avoid billing for idle instances.
+        if not args.promote:
+            build_steps.append(
+                build_step_for_gcloud_command(
+                    id_="stop-idle-version",
+                    args=[
+                        "--project",
+                        deployment_context.project_id,
+                        "app",
+                        "versions",
+                        "stop",
+                        deployment_context.version_tag,
+                    ],
+                )
+            )
+
         return BuildConfiguration(
             steps=build_steps,
+            uses_source=True,
             timeout_seconds=15 * 60,
         )

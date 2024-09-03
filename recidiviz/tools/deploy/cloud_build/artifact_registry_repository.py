@@ -69,7 +69,7 @@ class ArtifactRegistryDockerImageRepository:
         return f"{self.host_name}/{self.project_id}/{self.repository_id}"
 
     def build_url(self, commit_ref: str) -> str:
-        return f"{self._base_url}/build/{commit_ref}"
+        return f"{self._base_url}/build:{commit_ref}"
 
     def version_url(self, version_tag: str) -> str:
         return f"{self._base_url}/default:{version_tag}"

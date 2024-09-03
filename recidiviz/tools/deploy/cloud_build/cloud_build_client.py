@@ -86,7 +86,7 @@ class CloudBuildClient:
             )
             if not log_output_printed:
                 log_output_printed = True
-                logging.info("Logs can be found at [%s]", build.log_url)
+                logging.info("Logs can be found at %s", build.log_url)
 
             logging.info(
                 "Build %s is in status %s",
@@ -96,7 +96,7 @@ class CloudBuildClient:
             if build.status not in UNFINISHED_BUILD_STATES:
                 if build.status == Build.Status.FAILURE:
                     raise RuntimeError(
-                        f"Build failed, check Cloud Build logs at [{build.log_url}]!"
+                        f"Build failed! Check Cloud Build logs at {build.log_url}"
                     )
 
                 return build

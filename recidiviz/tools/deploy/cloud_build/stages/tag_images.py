@@ -17,8 +17,6 @@
 """Build configuration for tagging images"""
 import argparse
 
-from google.cloud.devtools.cloudbuild_v1 import BuildStep
-
 from recidiviz.tools.deploy.cloud_build.artifact_registry_repository import (
     ArtifactRegistryDockerImageRepository,
     ImageKind,
@@ -26,6 +24,7 @@ from recidiviz.tools.deploy.cloud_build.artifact_registry_repository import (
 from recidiviz.tools.deploy.cloud_build.build_configuration import (
     BuildConfiguration,
     DeploymentContext,
+    build_step_for_gcloud_command,
     build_step_for_shell_command,
 )
 from recidiviz.tools.deploy.cloud_build.constants import BUILDER_GCLOUD
@@ -69,12 +68,9 @@ class TagImages(DeploymentStageInterface):
             repository = artifact_registries[image]
             build_steps.append(
                 # Tags the build/commit_ref image with the default:version and default:latest
-                BuildStep(
-                    id=f"tag-{repository.repository_id}-image",
-                    name=BUILDER_GCLOUD,
-                    entrypoint="gcloud",
+                build_step_for_gcloud_command(
+                    id_=f"tag-{repository.repository_id}-image",
                     args=[
-                        "-q",
                         "container",
                         "images",
                         "add-tag",
