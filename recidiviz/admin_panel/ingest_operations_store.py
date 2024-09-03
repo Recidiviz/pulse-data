@@ -122,13 +122,13 @@ class IngestRawFileProcessingStatus:
 
     file_tag: str = attr.ib(validator=attr_validators.is_str)
     latest_discovery_time: Optional[datetime] = attr.ib(
-        default=None, validator=attr_validators.is_utc_timezone_aware_datetime
+        default=None, validator=attr_validators.is_opt_utc_timezone_aware_datetime
     )
     latest_processed_time: Optional[datetime] = attr.ib(
-        default=None, validator=attr_validators.is_utc_timezone_aware_datetime
+        default=None, validator=attr_validators.is_opt_utc_timezone_aware_datetime
     )
     latest_update_datetime: Optional[datetime] = attr.ib(
-        default=None, validator=attr_validators.is_utc_timezone_aware_datetime
+        default=None, validator=attr_validators.is_opt_utc_timezone_aware_datetime
     )
     has_config: bool = attr.ib(default=False, validator=attr_validators.is_bool)
     num_files_in_bucket: int = attr.ib(default=0, validator=attr_validators.is_int)
