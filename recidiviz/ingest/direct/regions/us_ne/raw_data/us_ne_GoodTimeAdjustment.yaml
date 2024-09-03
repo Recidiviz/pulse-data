@@ -1,0 +1,78 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: GoodTimeAdjustment
+file_description: |-
+  This file contains information on good time adjustments on sentences
+data_classification: source
+primary_key_cols:
+  - pkGoodTimeAdjustmentId
+columns:
+  - name: pkGoodTimeAdjustmentId
+    description: |-
+      Good time adjustment id
+  - name: inmateNumber
+    description: |-
+      internal id number
+    is_pii: True
+  - name: fkRecCenterCode
+    description: |-
+      Rec center code
+  - name: transactionDate
+    description: |-
+      Date of transaction
+  - name: fkTransactionTypeCode
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: actionDate
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: misconductNumber
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: count
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: fkViolationCode
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: paroleGoodTimeDays
+    description: |-
+      Parole good time days
+  - name: meritGoodTimeDays
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: goodBehaviorDays
+    description: |-
+      Good behavior days
+  - name: restorable
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: includeInCalculation
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: manualIncludeInd
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: allowFixDate
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: mrNumber
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: convertedData
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: createdBy
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: createdDate
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: modifiedBy
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: modifiedDate
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: version
+    description: |-
+      TODO(#31972): Fill in with answers from NE

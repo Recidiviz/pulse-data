@@ -1,0 +1,67 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: E03_REC_CNTR
+file_description: |-
+  Rec center lookup table
+data_classification: source
+primary_key_cols:
+  - REC_CNTR_CD
+columns:
+  - name: REC_CNTR_CD
+    description: |-
+      Rec center code
+  - name: REC_CNTR_DSC
+    description: |-
+      Rec center description
+  - name: INST_FACILITY_IND
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: CRIMNL_JSTCE_ID
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: FACILITY_NAME
+    description: |-
+      Name of facility
+  - name: MAIL_ADDR_LINE1
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: MAIL_ADDR_LINE2
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: MAIL_ADDR_CITY
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: MAIL_ADDR_STATE
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: MAIL_ADDR_ZIP5
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: MAIL_ADDR_ZIP4
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: PHONE_NUMBER
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: FAX_NUMBER
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: DIRECTOR_NAME
+    description: |-
+      Director name
+    is_pii: True
+  - name: DIRECTOR_TITLE
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: WARRANT_SUPV_NAME
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+    is_pii: True
+  - name: WARRANT_SUPV_TITLE
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: WARRANT_SUPV_DEPT
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: COUNTY_CD
+    description: |-
+      TODO(#31972): Fill in with answers from NE

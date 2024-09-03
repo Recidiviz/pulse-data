@@ -1,0 +1,14 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: A03_ADMIS_TYPE
+file_description: |-
+  Admission type code lookup table
+data_classification: source
+primary_key_cols:
+  - ADMIS_TYPE_CD
+columns:
+  - name: ADMIS_TYPE_CD
+    description: |-
+      Admission type code
+  - name: ADMIS_TYPE_DSC
+    description: |-
+      Admission type description
