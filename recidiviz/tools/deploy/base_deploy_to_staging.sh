@@ -84,7 +84,6 @@ if [[ -n ${DEBUG_BUILD_NAME} ]]; then
     VERSION_TAG=${VERSION_TAG}-${DEBUG_BUILD_NAME}
 fi
 DOCKER_IMAGE_TAG=${VERSION_TAG}
-GAE_VERSION=$(echo "$VERSION_TAG" | tr '.' '-')
 
 update_deployment_status "${DEPLOYMENT_STATUS_STARTED}" "${PROJECT_ID}" "${COMMIT_HASH:0:7}" "${VERSION_TAG}"
 
@@ -216,26 +215,14 @@ else
     echo "Skipping configuration and pipeline deploy steps for debug or no promote release build."
 fi
 
-# TODO(#3928): Migrate deploy of app engine services to terraform.
 echo "Deploying application - default"
-verify_hash "$COMMIT_HASH"
-run_cmd gcloud -q app deploy ${PROMOTE_FLAGS} staging.yaml \
-       --project "$PROJECT_ID" \
-       --version "${GAE_VERSION}" \
-       --image-url "${APP_ENGINE_IMAGE_URL}" \
-       --verbosity=debug
+run_cmd pipenv run python -m recidiviz.tools.deploy.cloud_build.deployment_stage_runner \
+  --project-id "${PROJECT_ID}" \
+  --version-tag "${VERSION_TAG}" \
+  --commit-ref "${COMMIT_HASH}" \
+  --stage "DeployAppEngine" \
+  "${PROMOTE_FLAGS}"
 
-if [[ -n ${PROMOTE} ]]; then
-    echo "App deployed to \`${GAE_VERSION}\`.$PROJECT_ID.appspot.com"
-else
-    echo "App deployed (but not promoted) to \`${GAE_VERSION}\`.$PROJECT_ID.appspot.com"
-    echo "Stopping unpromoted version ${VERSION_TAG} now that it is healthy"
-    run_cmd gcloud app versions stop \
-        --project "${PROJECT_ID}"    \
-        --quiet                      \
-        --verbosity debug            \
-        "${GAE_VERSION}"
-fi
 
 if [[ -n ${PROMOTE} ]]; then
     echo "Deploy succeeded - triggering post-deploy jobs."

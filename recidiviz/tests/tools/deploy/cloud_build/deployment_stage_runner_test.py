@@ -26,6 +26,7 @@ from recidiviz.tools.deploy.cloud_build.deployment_stage_runner import (
     AVAILABLE_DEPLOYMENT_STAGES,
 )
 from recidiviz.tools.deploy.cloud_build.stages.build_images import BuildImages
+from recidiviz.tools.deploy.cloud_build.stages.deploy_app_engine import DeployAppEngine
 from recidiviz.tools.deploy.cloud_build.stages.run_migrations_from_cloud_build import (
     RunMigrations,
 )
@@ -50,6 +51,7 @@ class DeploymentStepRunnerTest(unittest.TestCase):
     def test_parse(self) -> None:
         stage_args = {
             BuildImages: argparse.Namespace(images=[ImageKind.APP_ENGINE]),
+            DeployAppEngine: argparse.Namespace(promote=False),
             TagImages: argparse.Namespace(images=[ImageKind.APP_ENGINE]),
             RunMigrations: argparse.Namespace(schema_types=[SchemaType.OPERATIONS]),
         }

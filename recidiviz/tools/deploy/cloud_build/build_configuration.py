@@ -29,6 +29,7 @@ from google.cloud.devtools.cloudbuild_v1 import (
 )
 
 from recidiviz.common.google_cloud.protobuf_builder import ProtoPlusBuilder
+from recidiviz.tools.deploy.cloud_build.constants import BUILDER_GCLOUD
 from recidiviz.utils.secrets import get_secret
 from recidiviz.utils.types import assert_type
 
@@ -61,6 +62,7 @@ class BuildConfiguration:
     # )
     secrets: dict[str, str] = attr.ib(factory=dict)
     # If set to true, Cloud Build will do a shallow checkout of the specified commit ref prior to running the build
+    # The repository is cloned into the /workspace/ directory
     uses_source: bool = attr.ib(default=False)
     # Cloud Build will cancel the build if it does not complete within the specified timeframe
     timeout_seconds: int = attr.ib(
@@ -146,4 +148,20 @@ def build_step_for_shell_command(
         name=name,
         wait_for=wait_for,
         env=env,
+    )
+
+
+def build_step_for_gcloud_command(
+    args: list[str],
+    *,
+    id_: str,
+    wait_for: list[str] | str | None = None,
+) -> BuildStep:
+    """Helper function to create a BuildStep that runs a gcloud command with our default arguments"""
+    return BuildStep(
+        id=id_,
+        name=BUILDER_GCLOUD,
+        entrypoint="gcloud",
+        args=["--quiet", "--verbosity=debug", *args],
+        wait_for=wait_for,
     )
