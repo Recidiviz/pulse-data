@@ -21,6 +21,7 @@ from collections import Counter, defaultdict
 from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional, Union
 
+import attr
 import pytz
 from google.cloud import tasks_v2
 
@@ -32,6 +33,7 @@ from recidiviz.admin_panel.ingest_dataflow_operations import (
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath, GcsfsFilePath
+from recidiviz.common import attr_validators
 from recidiviz.common.constants.operations.direct_ingest_instance_status import (
     DirectIngestStatus,
 )
@@ -91,6 +93,92 @@ from recidiviz.utils import metadata
 from recidiviz.utils.types import assert_type
 
 BucketSummaryType = Dict[str, Union[str, int]]
+
+
+@attr.define
+class IngestRawFileProcessingStatus:
+    """Contains metadata about a raw file tag's ingest processing status
+
+    Attributes:
+        file_tag (str): the file tag associated with the raw files
+        has_config (bool): whether or not we have a raw file config yaml for this raw
+            data file
+        num_processed_files (int): the number of files that have been successfully
+            imported into BigQuery
+        num_unprocessed_files (int): the number of valid files that have been discovered
+            but not yet imported
+        num_ungrouped_files (int): the number of chunked, raw GCS files that have been
+            discovered but not yet grouped into conceptual files
+        latest_discovery_time (datetime.datetime | None): the most recent datetime that
+            a GCS file has been discovered for this file tag
+        latest_processed_time (datetime.datetime | None): the most recent successful
+            import time for a this file tag
+        latest_update_datetime (datetime.datetime | None): the greatest update_datetime
+            associated with a file that has been successfully imported for this file tag
+        is_stale (bool): whether or not this file is deemed "stale", meaning that for
+            qualifying files, the number of hours between the |latest_discovery_time| and
+            now exceeds the update cadence plus twelve hours
+    """
+
+    file_tag: str = attr.ib(validator=attr_validators.is_str)
+    latest_discovery_time: Optional[datetime] = attr.ib(
+        default=None, validator=attr_validators.is_utc_timezone_aware_datetime
+    )
+    latest_processed_time: Optional[datetime] = attr.ib(
+        default=None, validator=attr_validators.is_utc_timezone_aware_datetime
+    )
+    latest_update_datetime: Optional[datetime] = attr.ib(
+        default=None, validator=attr_validators.is_utc_timezone_aware_datetime
+    )
+    has_config: bool = attr.ib(default=False, validator=attr_validators.is_bool)
+    num_files_in_bucket: int = attr.ib(default=0, validator=attr_validators.is_int)
+    num_processed_files: int = attr.ib(default=0, validator=attr_validators.is_int)
+    num_unprocessed_files: int = attr.ib(default=0, validator=attr_validators.is_int)
+    num_ungrouped_files: int = attr.ib(default=0, validator=attr_validators.is_int)
+    is_stale: bool = attr.ib(default=False, validator=attr_validators.is_bool)
+
+    @classmethod
+    def from_metadata(
+        cls,
+        file_tag: str,
+        metadata_summary: Optional[DirectIngestRawFileMetadataSummary],
+        **kwargs: Any,
+    ) -> "IngestRawFileProcessingStatus":
+        if metadata_summary:
+            return cls(
+                file_tag=metadata_summary.file_tag,
+                num_processed_files=metadata_summary.num_processed_files,
+                num_unprocessed_files=metadata_summary.num_unprocessed_files,
+                num_ungrouped_files=metadata_summary.num_ungrouped_files,
+                latest_discovery_time=metadata_summary.latest_discovery_time,
+                latest_processed_time=metadata_summary.latest_processed_time,
+                latest_update_datetime=metadata_summary.latest_update_datetime,
+                **kwargs,
+            )
+
+        return cls(file_tag=file_tag, **kwargs)
+
+    @staticmethod
+    def _datetime_for_api(dt: Optional[datetime]) -> Optional[str]:
+        return dt.isoformat() if isinstance(dt, datetime) else dt
+
+    def for_api(self) -> Dict[str, Any]:
+        """Returns an instance of IngestRawFileProcessingStatus in a format that is
+        ready to consume by the frontend and matches the format of
+        constants::IngestRawFileProcessingStatus
+        """
+        return {
+            "fileTag": self.file_tag,
+            "hasConfig": self.has_config,
+            "numberFilesInBucket": self.num_files_in_bucket,
+            "numberUnprocessedFiles": self.num_unprocessed_files,
+            "numberProcessedFiles": self.num_processed_files,
+            "numberUngroupedFiles": self.num_ungrouped_files,
+            "latestDiscoveryTime": self._datetime_for_api(self.latest_discovery_time),
+            "latestProcessedTime": self._datetime_for_api(self.latest_processed_time),
+            "latestUpdateDatetime": self._datetime_for_api(self.latest_update_datetime),
+            "isStale": self.is_stale,
+        }
 
 
 class IngestOperationsStore(AdminPanelStore):
@@ -325,20 +413,14 @@ class IngestOperationsStore(AdminPanelStore):
             "ingestBucketPath": ingest_bucket_path.abs_path(),
         }
 
-    def get_ingest_raw_file_processing_status(
+    def get_ingest_raw_file_processing_statuses(
         self, state_code: StateCode, ingest_instance: DirectIngestInstance
-    ) -> List[Dict[str, Any]]:
-        """Returns a list of dictionaries containing the following info for filetags in the provided instance:
-        i.e. [{
-            fileTag: the file tag name,
-            hasConfig: whether a raw file config exists for this file tag,
-            numberFilesInBucket: number of files in the ingest bucket for this file tag,
-            numberUnprocessedFiles: number of files that have not been processed for this file tag,
-            numberProcessedFiles: number of files that have been processed,
-            latestDiscoveryTime: most recent discovery time for this file tag,
-            latestProcessedTime: most recent processed time for this file tag,
-            containsDelayedFiles: if there are files that are more than 24 hours delayed from the latestProcessedTime,
-        }]
+    ) -> List[IngestRawFileProcessingStatus]:
+        """Builds an IngestRawFileProcessingStatus object for each file_tag found in the
+        |state_code| and |ingest_instance| specific version of the following resources:
+            - ingest file bucket
+            - file metadata operations db table
+            - raw file configs
         """
         formatted_state_code = state_code.value.lower()
         region = get_direct_ingest_region(formatted_state_code)
@@ -364,53 +446,24 @@ class IngestOperationsStore(AdminPanelStore):
 
         all_file_tag_metadata = []
         for file_tag in all_file_tags:
-            file_tag_metadata = {
-                "fileTag": file_tag,
-                "hasConfig": False,
-                "numberFilesInBucket": 0,
-                "numberUnprocessedFiles": 0,
-                "numberProcessedFiles": 0,
-                "numberUngroupedFiles": 0,
-                "latestDiscoveryTime": None,
-                "latestProcessedTime": None,
-                "latestUpdateDatetime": None,
-                "isStale": False,
-            }
 
-            if file_tag in tags_with_configs:
-                file_tag_metadata["hasConfig"] = True
-            if file_tag in ingest_bucket_file_tag_counts:
-                file_tag_metadata[
-                    "numberFilesInBucket"
-                ] = ingest_bucket_file_tag_counts[file_tag]
+            metadata_summary = operations_db_file_tag_summaries.get(file_tag)
+            has_config = file_tag in tags_with_configs
+            num_files_in_bucket = ingest_bucket_file_tag_counts.get(file_tag, 0)
+            is_stale = self.calculate_if_file_is_stale(
+                metadata_summary.latest_discovery_time if metadata_summary else None,
+                region_config.raw_file_configs.get(file_tag),
+            )
 
-            if file_tag in operations_db_file_tag_summaries:
-                summary = operations_db_file_tag_summaries[file_tag]
+            processing_status = IngestRawFileProcessingStatus.from_metadata(
+                file_tag=file_tag,
+                metadata_summary=metadata_summary,
+                has_config=has_config,
+                num_files_in_bucket=num_files_in_bucket,
+                is_stale=is_stale,
+            )
 
-                if file_tag in region_config.raw_file_configs:
-                    raw_file_config = region_config.raw_file_configs[file_tag]
-                    file_tag_metadata["isStale"] = self.calculate_if_file_is_stale(
-                        summary.latest_discovery_time, raw_file_config
-                    )
-
-                file_tag_metadata = {
-                    **file_tag_metadata,
-                    "numberUnprocessedFiles": summary.num_unprocessed_files,
-                    "numberProcessedFiles": summary.num_processed_files,
-                    "numberUngroupedFiles": summary.num_ungrouped_files,
-                    "latestDiscoveryTime": summary.latest_discovery_time.isoformat(),
-                    "latestProcessedTime": (
-                        summary.latest_processed_time.isoformat()
-                        if summary.latest_processed_time
-                        else None
-                    ),
-                    "latestUpdateDatetime": (
-                        summary.latest_update_datetime.isoformat()
-                        if summary.latest_update_datetime
-                        else None
-                    ),
-                }
-            all_file_tag_metadata.append(file_tag_metadata)
+            all_file_tag_metadata.append(processing_status)
 
         return all_file_tag_metadata
 
@@ -532,8 +585,12 @@ class IngestOperationsStore(AdminPanelStore):
 
     @staticmethod
     def calculate_if_file_is_stale(
-        latest_discovery_time: datetime, config: DirectIngestRawFileConfig
+        latest_discovery_time: Optional[datetime],
+        config: Optional[DirectIngestRawFileConfig],
     ) -> bool:
+
+        if not latest_discovery_time or not config:
+            return False
 
         if not config.has_regularly_updated_data():
             return False
