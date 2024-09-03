@@ -60,7 +60,7 @@ class RunMigrations(DeploymentStageInterface):
             type=lambda schema_types: [
                 SchemaType(schema_type)
                 for schema_type in str_to_list(schema_types)
-                if schema_type in available_schema_types
+                if SchemaType(schema_type) in available_schema_types
             ],
             default=available_schema_types,
             help=f"Comma delimited string of SchemaType values. Choices: {schema_types_str}",
@@ -122,6 +122,7 @@ class RunMigrations(DeploymentStageInterface):
                     "--run-connection-test & sleep 2; "
                     "pipenv run python -m recidiviz.tools.migrations.run_migrations_to_head "
                     "--no-launch-proxy "
+                    f"--project-id {deployment_context.project_id} "
                     f"--database {schema_type.value} "
                     "--skip-db-name-check "
                 ),

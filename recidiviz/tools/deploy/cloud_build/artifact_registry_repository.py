@@ -22,7 +22,7 @@ from functools import cached_property
 import attr
 
 import recidiviz
-from recidiviz.utils.metadata import project_id
+from recidiviz.utils import metadata
 from recidiviz.utils.yaml_dict import YAMLDict
 
 ARTIFACT_REGISTRY_CONFIG_PATH = os.path.join(
@@ -85,7 +85,7 @@ class ArtifactRegistryDockerImageRepository:
             ImageKind(
                 repository_config["repository_id"]
             ): ArtifactRegistryDockerImageRepository(
-                project_id=project_id(), **repository_config
+                project_id=metadata.project_id(), **repository_config
             )
             for repository_config in yaml_dict.pop("repositories", dict).values()
             if repository_config["format"] == "DOCKER"
