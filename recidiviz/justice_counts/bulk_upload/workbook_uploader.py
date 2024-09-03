@@ -18,23 +18,21 @@
 
 import datetime
 import logging
-from collections import defaultdict
 from itertools import groupby
 from typing import Any, Dict, List, Optional, Set, Tuple
 
 import pandas as pd
-from sqlalchemy.orm import Session
 
-from recidiviz.common.text_analysis import TextAnalyzer, TextMatchingConfiguration
+from recidiviz.justice_counts.bulk_upload.bulk_upload_metadata import BulkUploadMetadata
 from recidiviz.justice_counts.bulk_upload.spreadsheet_uploader import (
     SpreadsheetUploader,
 )
+from recidiviz.justice_counts.bulk_upload.workbook_standardizer import (
+    WorkbookStandardizer,
+)
 from recidiviz.justice_counts.datapoint import DatapointInterface
-from recidiviz.justice_counts.exceptions import JusticeCountsBulkUploadException
-from recidiviz.justice_counts.metrics.metric_interface import MetricInterface
 from recidiviz.justice_counts.report import ReportInterface
-from recidiviz.justice_counts.types import DatapointJson
-from recidiviz.justice_counts.utils.constants import AUTOMATIC_UPLOAD_ID, UploadMethod
+from recidiviz.justice_counts.utils.constants import AUTOMATIC_UPLOAD_ID
 from recidiviz.justice_counts.utils.datapoint_utils import get_value
 from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.persistence.database.schema.justice_counts.schema import ReportStatus
@@ -45,84 +43,31 @@ class WorkbookUploader:
 
     def __init__(
         self,
-        system: schema.System,
-        agency: schema.Agency,
-        metric_key_to_metric_interface: Dict[str, MetricInterface],
-        child_agency_name_to_agency: Optional[Dict[str, schema.Agency]] = None,
-        user_account: Optional[schema.UserAccount] = None,
-        metric_key_to_errors: Optional[
-            Dict[Optional[str], List[JusticeCountsBulkUploadException]]
-        ] = None,  # TODO(#31446) Remove this parameter after complete rollout of WorkbookStandardizer
+        metadata: BulkUploadMetadata,
     ) -> None:
-        self.system = system
-        self.agency = agency
-        self.user_account = user_account
-        # metric_key_to_metric_interface maps metric keys to that agency's metric
-        # interface for that metric. These metric interfaces only hold metric setting
-        # information (such as if the metric is enabled or disabled, the metric's custom
-        # reporting frequency, etc.), and do not hold information from reports (such as
-        # aggregate or disaggregate report datapoints). The metric interfaces are passed
-        # in already populated and won't be edited during the upload.
-        self.metric_key_to_metric_interface = metric_key_to_metric_interface
-        # metric_key_to_errors starts out empty and will be populated with
-        # each metric's errors.
-        self.metric_key_to_errors: Dict[
-            Optional[str], List[JusticeCountsBulkUploadException]
-        ] = (
-            defaultdict(list) if metric_key_to_errors is None else metric_key_to_errors
-        )
-        # metric_key_to_datapoint_jsons starts out empty and will be populated with
-        # the ingested datapoints for each metric. We need these datapoints because
-        # we send these to the frontend after the upload so it can render
-        # the review page.
-        self.metric_key_to_datapoint_jsons: Dict[
-            str, List[DatapointJson]
-        ] = defaultdict(list)
-        self.text_analyzer = TextAnalyzer(
-            configuration=TextMatchingConfiguration(
-                # We don't want to treat "other" as a stop word,
-                # because it's a valid breakdown category. We
-                # also don't want to treat "not" as a stop word because
-                # it is an important distinction between breakdowns
-                # (i.e Not Hispanic v. Hispanic).
-                stop_words_to_remove={"other", "not"}
-            )
-        )
-        self.agency_name_to_metric_key_to_timerange_to_total_value: Dict[
-            str,
-            Dict[str, Dict[Tuple[datetime.date, datetime.date], Optional[int]]],
-        ] = defaultdict(lambda: defaultdict(dict))
-        # A list of existing report IDs
+        self.metadata = metadata
         self.existing_report_ids: List[int]
         # A set of existing report IDs that have been changed/updated after bulk upload
         self.updated_reports: Set[schema.Report] = set()
         # A set of uploaded report IDs will be used to create the `unchanged_reports` set
         self.uploaded_reports: Set[schema.Report] = set()
-        # A child agency is an agency that the current agency has the permission to
-        # upload data for. child_agency_name_to_agency maps child agency name to agency.
-        self.child_agency_name_to_agency = child_agency_name_to_agency or {}
 
-    def upload_workbook(
-        self,
-        session: Session,
-        xls: pd.ExcelFile,
-        upload_method: UploadMethod,
-    ) -> Tuple[
-        Dict[str, List[DatapointJson]],
-        Dict[Optional[str], List[JusticeCountsBulkUploadException]],
-    ]:
+    def upload_workbook(self, file: Any, file_name: str) -> None:
         """
         Iterate through all tabs in an Excel spreadsheet and upload them
         to the Justice Counts database.
         upload_filetype: The type of file that was originally uploaded (CSV, XLSX, etc).
         """
+
+        workbook_standardizer = WorkbookStandardizer(metadata=self.metadata)
+        xls = workbook_standardizer.standardize_workbook(file=file, file_name=file_name)
         # 1. Fetch existing reports and datapoints for this agency, so that
         # we know what objects to update vs. what new objects to create.
-        agency_ids = [a.id for a in self.child_agency_name_to_agency.values()] + [
-            self.agency.id
-        ]
+        agency_ids = [
+            a.id for a in self.metadata.child_agency_name_to_agency.values()
+        ] + [self.metadata.agency.id]
         reports = ReportInterface.get_reports_by_agency_ids(
-            session, agency_ids=agency_ids, include_datapoints=True
+            self.metadata.session, agency_ids=agency_ids, include_datapoints=True
         )
         self.existing_report_ids = [report.id for report in reports]
         reports_sorted_by_agency_id = sorted(reports, key=lambda x: x.source_id)
@@ -133,10 +78,6 @@ class WorkbookUploader:
                 key=lambda x: x.source_id,
             )
         }
-
-        agency_id_to_time_range_to_reports: Dict[
-            int, Dict[Tuple[Any, Any], List[schema.Report]]
-        ] = defaultdict(dict)
 
         for agency_id, curr_reports in reports_by_agency_id.items():
             reports_sorted_by_time_range = sorted(
@@ -149,7 +90,9 @@ class WorkbookUploader:
                     key=lambda x: (x.date_range_start, x.date_range_end),
                 )
             }
-            agency_id_to_time_range_to_reports[agency_id] = reports_by_time_range
+            self.metadata.agency_id_to_time_range_to_reports[
+                agency_id
+            ] = reports_by_time_range
 
         existing_datapoints_dict = ReportInterface.get_existing_datapoints_dict(
             reports=reports
@@ -190,46 +133,29 @@ class WorkbookUploader:
             if len(rows) == 0:
                 continue
             spreadsheet_uploader = SpreadsheetUploader(
-                text_analyzer=self.text_analyzer,
-                system=self.system,
-                agency=self.agency,
-                user_account=self.user_account,
-                metric_key_to_metric_interface=self.metric_key_to_metric_interface,
+                metadata=self.metadata,
                 sheet_name=sheet_name,
-                agency_id_to_time_range_to_reports=agency_id_to_time_range_to_reports,
                 existing_datapoints_dict=existing_datapoints_dict,
-                agency_name_to_metric_key_to_timerange_to_total_value=self.agency_name_to_metric_key_to_timerange_to_total_value,
-                child_agency_name_to_agency=self.child_agency_name_to_agency,
             )
             spreadsheet_uploader.upload_sheet(
-                session=session,
                 inserts=inserts,
                 updates=updates,
                 histories=histories,
                 rows=rows,
-                metric_key_to_datapoint_jsons=self.metric_key_to_datapoint_jsons,
-                metric_key_to_errors=self.metric_key_to_errors,
                 uploaded_reports=self.uploaded_reports,
-                upload_method=upload_method,
             )
 
         # 4. For any report that was updated, set its status to DRAFT
         self._update_report_status(
             existing_datapoints_dict_changed=existing_datapoints_dict,
             existing_datapoints_dict_unchanged=existing_datapoints_dict_unchanged,
-            agency_id_to_time_range_to_reports=agency_id_to_time_range_to_reports,
         )
 
         DatapointInterface.flush_report_datapoints(
-            session=session,
+            session=self.metadata.session,
             inserts=inserts,
             updates=updates,
             histories=histories,
-        )
-
-        return (
-            self.metric_key_to_datapoint_jsons,
-            self.metric_key_to_errors,
         )
 
     def _update_report_status(
@@ -241,9 +167,6 @@ class WorkbookUploader:
         existing_datapoints_dict_unchanged: Dict[
             Tuple[datetime.date, datetime.date, int, str, Optional[str], Optional[str]],
             Optional[float],
-        ],
-        agency_id_to_time_range_to_reports: Dict[
-            int, Dict[Tuple[Any, Any], List[schema.Report]]
         ],
     ) -> None:
         """
@@ -265,9 +188,9 @@ class WorkbookUploader:
             # let's not assume that a previously existing report exists with the
             # correct/new time range. In other words, don't attempt to update report
             # statuses for reports that do not exist.
-            updated_reports = agency_id_to_time_range_to_reports.get(agency_id, {}).get(
-                ((different_key[0], different_key[1])), []
-            )
+            updated_reports = self.metadata.agency_id_to_time_range_to_reports.get(
+                agency_id, {}
+            ).get(((different_key[0], different_key[1])), [])
             if len(updated_reports) == 0:
                 continue
             updated_report = updated_reports[0]
@@ -281,8 +204,8 @@ class WorkbookUploader:
             ReportInterface.update_report_metadata(
                 report=updated_report,
                 editor_id=(
-                    self.user_account.id
-                    if self.user_account is not None
+                    self.metadata.user_account.id
+                    if self.metadata.user_account is not None
                     else AUTOMATIC_UPLOAD_ID
                 ),
                 status=ReportStatus.DRAFT.value,
@@ -305,7 +228,7 @@ class WorkbookUploader:
                 # let's not assume that a previously existing report exists with the
                 # correct/new time range. In other words, don't attempt to update report
                 # statuses for reports that do not exist.
-                updated_reports = agency_id_to_time_range_to_reports.get(
+                updated_reports = self.metadata.agency_id_to_time_range_to_reports.get(
                     agency_id, {}
                 ).get(((unique_key[0], unique_key[1])), [])
                 if len(updated_reports) == 0:
@@ -318,8 +241,8 @@ class WorkbookUploader:
                 ReportInterface.update_report_metadata(
                     report=updated_report,
                     editor_id=(
-                        self.user_account.id
-                        if self.user_account is not None
+                        self.metadata.user_account.id
+                        if self.metadata.user_account is not None
                         else AUTOMATIC_UPLOAD_ID
                     ),
                     status=ReportStatus.DRAFT.value,

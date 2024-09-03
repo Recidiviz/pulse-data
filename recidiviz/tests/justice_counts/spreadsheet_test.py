@@ -38,7 +38,6 @@ from recidiviz.justice_counts.metrics.custom_reporting_frequency import (
 )
 from recidiviz.justice_counts.metrics.metric_interface import MetricInterface
 from recidiviz.justice_counts.spreadsheet import SpreadsheetInterface
-from recidiviz.justice_counts.utils.constants import UploadMethod
 from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.tests.justice_counts.spreadsheet_helpers import create_excel_file
@@ -61,7 +60,7 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
     def test_ingest_spreadsheet(self) -> None:
         with SessionFactory.using_database(self.database_key) as session:
             user = self.test_schema_objects.test_user_A
-            agency = self.test_schema_objects.test_agency_E
+            agency = self.test_schema_objects.test_agency_A
             session.add_all([user, agency])
             session.commit()
             session.refresh(user)
@@ -92,8 +91,6 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
                     spreadsheet=spreadsheet,
                     auth0_user_id=user.auth0_user_id,
                     agency=agency,
-                    metric_key_to_metric_interface={},
-                    upload_method=UploadMethod.BULK_UPLOAD,
                 )
 
                 spreadsheet = session.query(schema.Spreadsheet).one()
@@ -134,8 +131,6 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
                 spreadsheet=spreadsheet,
                 auth0_user_id=user.auth0_user_id,
                 agency=agency,
-                metric_key_to_metric_interface={},
-                upload_method=UploadMethod.BULK_UPLOAD,
             )
 
             spreadsheet = session.query(schema.Spreadsheet).one()
@@ -218,8 +213,6 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
                     spreadsheet=spreadsheet,
                     auth0_user_id=user.auth0_user_id,
                     agency=agency,
-                    metric_key_to_metric_interface=metric_key_to_metric_interface,
-                    upload_method=UploadMethod.BULK_UPLOAD,
                 )
 
             metric_definitions = (
@@ -400,8 +393,6 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
                 spreadsheet=spreadsheet,
                 auth0_user_id=user.auth0_user_id,
                 agency=agency,
-                metric_key_to_metric_interface={},
-                upload_method=UploadMethod.BULK_UPLOAD,
             )
 
             spreadsheet = session.query(schema.Spreadsheet).one()

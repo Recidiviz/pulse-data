@@ -16,11 +16,11 @@
 # =============================================================================
 """Implements tests for the Justice Counts Control Panel backend API."""
 import datetime
+import os
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 from unittest import mock
 
-import pandas as pd
 import pytest
 from flask import g, session
 from freezegun import freeze_time
@@ -36,6 +36,7 @@ from recidiviz.justice_counts.agency import AgencyInterface
 from recidiviz.justice_counts.agency_user_account_association import (
     AgencyUserAccountAssociationInterface,
 )
+from recidiviz.justice_counts.bulk_upload.bulk_upload_metadata import BulkUploadMetadata
 from recidiviz.justice_counts.bulk_upload.workbook_uploader import WorkbookUploader
 from recidiviz.justice_counts.control_panel.config import Config
 from recidiviz.justice_counts.control_panel.server import create_app
@@ -149,6 +150,8 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         self.fs_patcher.stop()
         self.client_patcher.stop()
         self.secrets_patcher.stop()
+        if os.path.exists(self.law_enforcement_excel_file_name):
+            os.remove(self.law_enforcement_excel_file_name)
 
     def get_engine(self) -> Engine:
         return self.session.get_bind()
@@ -2693,18 +2696,22 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         self.session.commit()
         self.session.flush()
         agency = self.test_schema_objects.test_agency_A
+        user = self.test_schema_objects.test_user_A
 
-        uploader = WorkbookUploader(
-            agency=agency,
+        metadata = BulkUploadMetadata(
             system=schema.System.LAW_ENFORCEMENT,
-            user_account=self.test_schema_objects.test_user_A,
-            metric_key_to_metric_interface={},
-        )
-        uploader.upload_workbook(
+            agency=agency,
             session=self.session,
-            xls=pd.ExcelFile(self.law_enforcement_excel_path),
-            upload_method=UploadMethod.BULK_UPLOAD,
+            user_account=user,
         )
+        workbook_uploader = WorkbookUploader(metadata=metadata)
+        with open(
+            self.law_enforcement_excel_path,
+            mode="rb",
+        ) as file:
+            workbook_uploader.upload_workbook(
+                file=file, file_name=self.law_enforcement_excel_file_name
+            )
         self.session.commit()
 
         # No data has been published; feed should be empty
@@ -2745,18 +2752,22 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         self.session.commit()
         self.session.flush()
         agency = self.test_schema_objects.test_agency_A
+        user = self.test_schema_objects.test_user_A
 
-        uploader = WorkbookUploader(
-            agency=agency,
+        metadata = BulkUploadMetadata(
             system=schema.System.LAW_ENFORCEMENT,
-            user_account=self.test_schema_objects.test_user_A,
-            metric_key_to_metric_interface={},
-        )
-        uploader.upload_workbook(
+            agency=agency,
             session=self.session,
-            xls=pd.ExcelFile(self.law_enforcement_excel_path),
-            upload_method=UploadMethod.BULK_UPLOAD,
+            user_account=user,
         )
+        workbook_uploader = WorkbookUploader(metadata=metadata)
+        with open(
+            self.law_enforcement_excel_path,
+            mode="rb",
+        ) as file:
+            workbook_uploader.upload_workbook(
+                file=file, file_name=self.law_enforcement_excel_file_name
+            )
         self.session.commit()
 
         # No data has been published; feed should not be empty

@@ -17,7 +17,6 @@
 """Helpers for bulk upload functionality."""
 
 import calendar
-from collections import defaultdict
 from datetime import date
 from typing import Any, Dict, List, Optional, Set, Tuple, Type
 
@@ -188,11 +187,11 @@ class BulkUploadResult:
     def __init__(
         self,
         spreadsheet: schema.Spreadsheet,
+        metric_key_to_datapoint_jsons: Dict[str, List[DatapointJson]],
+        metric_key_to_errors: Dict[
+            Optional[str], List[JusticeCountsBulkUploadException]
+        ],
         existing_report_ids: Optional[List[int]] = None,
-        metric_key_to_datapoint_jsons: Optional[Dict[str, List[DatapointJson]]] = None,
-        metric_key_to_errors: Optional[
-            Dict[Optional[str], List[JusticeCountsBulkUploadException]]
-        ] = None,
         updated_reports: Optional[Set[schema.Report]] = None,
         unchanged_reports: Optional[Set[schema.Report]] = None,
     ):
@@ -202,28 +201,18 @@ class BulkUploadResult:
         Args:
             spreadsheet (schema.Spreadsheet): The spreadsheet containing the data to be uploaded.
             existing_report_ids (List[int]): A list of IDs of existing reports.
-            metric_key_to_datapoint_jsons (Optional[Dict[str, List[DatapointJson]]]): A dictionary mapping metric keys to lists of datapoint JSON objects.
+            metric_key_to_datapoint_jsons (Dict[str, List[DatapointJson]]): A dictionary mapping metric keys to lists of datapoint JSON objects.
                 Defaults to an empty defaultdict of lists.
-            metric_key_to_errors (Optional[Dict[Optional[str], List[JusticeCountsBulkUploadException]]]): A dictionary mapping metric keys to lists of errors encountered during the bulk upload process.
+            metric_key_to_errors (Dict[Optional[str], List[JusticeCountsBulkUploadException]]): A dictionary mapping metric keys to lists of errors encountered during the bulk upload process.
                 Defaults to an empty defaultdict of lists.
             updated_reports (Optional[Set[schema.Report]]): A set of reports that have been updated.
                 Defaults to an empty set.
             unchanged_reports (Optional[Set[schema.Report]]): A set of reports that remain unchanged.
                 Defaults to an empty set.
         """
-        self.metric_key_to_datapoint_jsons: Dict[str, List[DatapointJson]] = (
-            metric_key_to_datapoint_jsons
-            if metric_key_to_datapoint_jsons is not None
-            else defaultdict()
-        )
+        self.metric_key_to_datapoint_jsons = metric_key_to_datapoint_jsons
 
-        self.metric_key_to_errors: Dict[
-            Optional[str], List[JusticeCountsBulkUploadException]
-        ] = (
-            metric_key_to_errors
-            if metric_key_to_errors is not None
-            else defaultdict(list)
-        )
+        self.metric_key_to_errors = metric_key_to_errors
 
         self.updated_reports: Set[schema.Report] = (
             updated_reports if updated_reports is not None else set()

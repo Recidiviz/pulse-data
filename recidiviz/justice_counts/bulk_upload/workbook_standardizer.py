@@ -23,22 +23,21 @@ import math
 from collections import defaultdict
 from functools import cached_property
 from io import StringIO
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any, Dict, Optional, Set, Tuple
 
 import pandas as pd
-from sqlalchemy.orm import Session
 
 from recidiviz.justice_counts.agency import AgencyInterface
 from recidiviz.justice_counts.bulk_upload.bulk_upload_helpers import (
     separate_file_name_from_system,
 )
+from recidiviz.justice_counts.bulk_upload.bulk_upload_metadata import BulkUploadMetadata
 from recidiviz.justice_counts.exceptions import (
     BulkUploadMessageType,
     JusticeCountsBulkUploadException,
 )
 from recidiviz.justice_counts.metric_setting import MetricSettingInterface
 from recidiviz.justice_counts.metricfiles.metricfile_registry import (
-    SYSTEM_TO_METRICFILES,
     get_metricfile_by_sheet_name,
 )
 from recidiviz.justice_counts.metrics.metric_interface import MetricInterface
@@ -53,16 +52,8 @@ from recidiviz.persistence.database.schema.justice_counts import schema
 class WorkbookStandardizer:
     """Standardizes Excel workbooks to comply with the Justice Counts technical specification."""
 
-    def __init__(
-        self, system: schema.System, agency: schema.Agency, session: Session
-    ) -> None:
-        self.session = session
-        self.system = system
-        self.agency = agency
-        self.metric_files = SYSTEM_TO_METRICFILES[system]
-        self.metric_key_to_errors: Dict[
-            Optional[str], List[JusticeCountsBulkUploadException]
-        ] = defaultdict(list)
+    def __init__(self, metadata: BulkUploadMetadata) -> None:
+        self.metadata = metadata
         self.invalid_sheet_names: Set[str] = set()
         self.is_csv_upload = False
 
@@ -78,7 +69,7 @@ class WorkbookStandardizer:
         """
 
         child_agencies = AgencyInterface.get_child_agencies_for_agency(
-            session=self.session, agency=self.agency
+            session=self.metadata.session, agency=self.metadata.agency
         )
 
         child_agency_name_to_agency = {}
@@ -100,7 +91,7 @@ class WorkbookStandardizer:
     @cached_property
     def metric_key_to_metric_interface(self) -> Dict[str, MetricInterface]:
         return MetricSettingInterface.get_metric_key_to_metric_interface(
-            session=self.session, agency=self.agency
+            session=self.metadata.session, agency=self.metadata.agency
         )
 
     def get_new_file_name_and_sheet_name(self, file_name: str) -> Tuple[str, str]:
@@ -220,7 +211,7 @@ class WorkbookStandardizer:
             )
             is_missing_column = True
         elif df[column].isna().all():
-            title = f"Empty '{column}' column"
+            title = f"Empty '{column}' Column"
             description = (
                 f"No data was provided in the '{column}' column in your sheet. "
             )
@@ -229,7 +220,7 @@ class WorkbookStandardizer:
         if is_missing_column is True:
             if column == "month":
                 description += "Since the 'month' column is missing, your data will be recorded with an annual reporting frequency. The 'month' column should include integers ranging from 1 to 12."
-            self.metric_key_to_errors[metric_key].append(
+            self.metadata.metric_key_to_errors[metric_key].append(
                 JusticeCountsBulkUploadException(
                     title=title,
                     description=description,
@@ -451,7 +442,7 @@ class WorkbookStandardizer:
                 standardized_sheet_name = self._standardize_string(sheet_name)
                 if (
                     get_metricfile_by_sheet_name(
-                        sheet_name=standardized_sheet_name, system=self.system
+                        sheet_name=standardized_sheet_name, system=self.metadata.system
                     )
                     is not None
                 ):
@@ -493,14 +484,17 @@ class WorkbookStandardizer:
         """
 
         valid_file_names = ", ".join(
-            [metric_file.canonical_filename for metric_file in self.metric_files]
+            [
+                metric_file.canonical_filename
+                for metric_file in self.metadata.metric_files
+            ]
         )
         if self.is_csv_upload:
             csv_error_description = (
                 f"The file name '{self.invalid_sheet_names.pop()}' does not correspond to a metric for your agency. "
                 f"For CSV uploads, the file name should exactly match one of the following options: {valid_file_names}."
             )
-            self.metric_key_to_errors[None].append(
+            self.metadata.metric_key_to_errors[None].append(
                 # The None key in metric_key_to_errors is designated for non-metric
                 # errors.These are errors that cannot be attributed to a particular
                 # metric, such as this one, where we are not able to tell what metric
@@ -519,7 +513,7 @@ class WorkbookStandardizer:
             f"Valid options include {valid_file_names}."
         )
 
-        self.metric_key_to_errors[None].append(
+        self.metadata.metric_key_to_errors[None].append(
             JusticeCountsBulkUploadException(
                 title="Invalid Sheet Name",
                 message_type=BulkUploadMessageType.ERROR,
