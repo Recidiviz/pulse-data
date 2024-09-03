@@ -27,8 +27,11 @@ def should_run_normalization_in_ingest(state_code: StateCode) -> bool:
     prod_launched_states: set[StateCode] = set()
     if environment.in_gcp_production():
         return state_code in prod_launched_states
-    # TODO(#29517): Add states here as we launch combined pipelines to staging
-    staging_launched_states: set[StateCode] = set()
+    staging_launched_states: set[StateCode] = {
+        *prod_launched_states,
+        StateCode.US_OZ,
+        # TODO(#29517): Add states here as we launch combined pipelines to staging
+    }
     return state_code in staging_launched_states
 
 
@@ -40,6 +43,8 @@ def is_combined_ingest_and_normalization_launched_in_env(state_code: StateCode) 
     prod_launched_states: set[StateCode] = set()
     if environment.in_gcp_production():
         return state_code in prod_launched_states
-    # TODO(#29517): Add states here as we launch combined pipelines to staging
-    staging_launched_states: set[StateCode] = set()
+    staging_launched_states: set[StateCode] = {
+        *prod_launched_states,
+        # TODO(#29517): Add states here as we launch combined pipelines to staging
+    }
     return state_code in staging_launched_states
