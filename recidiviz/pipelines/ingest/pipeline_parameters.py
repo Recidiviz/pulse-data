@@ -86,7 +86,17 @@ class IngestPipelineParameters(PipelineParameters):
             )
         )
 
+    # If set to true, will only run the pipeline through ingest view result generation
+    # and materialization steps, but will not run ingest mappings or normalization.
     ingest_view_results_only: bool = attr.ib(
+        default=False,
+        validator=attr_validators.is_bool,
+        converter=attr.converters.to_bool,
+    )
+
+    # If set to true, will only run the pipeline through ingest view and mapping steps
+    # but will not run normalization.
+    pre_normalization_only: bool = attr.ib(
         default=False,
         validator=attr_validators.is_bool,
         converter=attr.converters.to_bool,
@@ -111,6 +121,14 @@ class IngestPipelineParameters(PipelineParameters):
         default=None, validator=attr_validators.is_opt_str
     )
 
+    def __attrs_post_init__(self) -> None:
+        super().__attrs_post_init__()
+        if self.ingest_view_results_only and self.pre_normalization_only:
+            raise ValueError(
+                "Can only set the ingest_view_results_only or pre_normalization_only "
+                "but not both"
+            )
+
     @property
     def flex_template_name(self) -> str:
         return "ingest"
@@ -124,6 +142,7 @@ class IngestPipelineParameters(PipelineParameters):
             "raw_data_source_instance",
             "ingest_views_to_run",
             "ingest_view_results_only",
+            "pre_normalization_only",
             "run_normalization_override",
         }
 

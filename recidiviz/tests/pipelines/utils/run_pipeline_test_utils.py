@@ -252,6 +252,15 @@ def default_arg_list_for_pipeline(
                     str(ingest_view_results_only),
                 ]
             )
+        if pre_normalization_only := additional_pipeline_args.get(
+            "pre_normalization_only"
+        ):
+            pipeline_args.extend(
+                [
+                    "--pre_normalization_only",
+                    str(pre_normalization_only),
+                ]
+            )
         if run_normalization_override := additional_pipeline_args.get(
             "run_normalization_override"
         ):
