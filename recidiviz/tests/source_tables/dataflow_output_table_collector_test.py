@@ -63,8 +63,10 @@ class TestDataflowOutputTableCollector(unittest.TestCase):
         us_xx_label = StateSpecificSourceTableLabel(state_code=StateCode.US_XX)
         us_yy_label = StateSpecificSourceTableLabel(state_code=StateCode.US_YY)
 
-        normalization_collections = self.source_table_repository.get_collections(
-            labels=[pipeline_output_label]
+        normalization_collections = (
+            self.source_table_repository.get_collections_with_labels(
+                labels=[pipeline_output_label]
+            )
         )
         self.assertEqual(len(normalization_collections), 2)
 
@@ -80,11 +82,15 @@ class TestDataflowOutputTableCollector(unittest.TestCase):
         ]
         self.assertListEqual(collected_labels, expected_labels)
 
-        us_xx_normalized_collection = self.source_table_repository.get_collection(
-            labels=[pipeline_output_label, us_xx_label]
+        us_xx_normalized_collection = (
+            self.source_table_repository.get_collection_with_labels(
+                labels=[pipeline_output_label, us_xx_label]
+            )
         )
-        us_yy_normalized_collection = self.source_table_repository.get_collection(
-            labels=[pipeline_output_label, us_yy_label]
+        us_yy_normalized_collection = (
+            self.source_table_repository.get_collection_with_labels(
+                labels=[pipeline_output_label, us_yy_label]
+            )
         )
 
         self.assert_source_tables_match(
@@ -136,12 +142,14 @@ class TestDataflowOutputTableCollector(unittest.TestCase):
 
     def test_supplemental(self) -> None:
         """Tests the expected output schema of supplemental pipelines."""
-        supplemental_collection = self.source_table_repository.get_collection(
-            labels=[
-                DataflowPipelineSourceTableLabel(
-                    pipeline_name=SUPPLEMENTAL_PIPELINE_NAME
-                )
-            ]
+        supplemental_collection = (
+            self.source_table_repository.get_collection_with_labels(
+                labels=[
+                    DataflowPipelineSourceTableLabel(
+                        pipeline_name=SUPPLEMENTAL_PIPELINE_NAME
+                    )
+                ]
+            )
         )
 
         self.assert_source_tables_match(
@@ -153,7 +161,7 @@ class TestDataflowOutputTableCollector(unittest.TestCase):
 
     def test_metrics(self) -> None:
         """Tests the expected output schema of metrics pipelines."""
-        metric_collection = self.source_table_repository.get_collection(
+        metric_collection = self.source_table_repository.get_collection_with_labels(
             labels=[
                 DataflowPipelineSourceTableLabel(pipeline_name=METRICS_PIPELINE_NAME)
             ]

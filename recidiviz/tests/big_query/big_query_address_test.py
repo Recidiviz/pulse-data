@@ -148,3 +148,36 @@ class TestBigQueryAddress(unittest.TestCase):
             ValueError, "Input must be in the format 'dataset.table'."
         ):
             BigQueryAddress.from_str(".my_table")
+
+    def test_is_state_specific_address(self) -> None:
+        state_specific_addresses = [
+            BigQueryAddress.from_str("us_xx_raw_data.my_table"),
+            BigQueryAddress.from_str("my_dataset.us_xx_table"),
+            BigQueryAddress.from_str("my_dataset_us_xx.my_table"),
+            BigQueryAddress.from_str("my_dataset.my_table_us_xx"),
+            BigQueryAddress.from_str("US_XX_raw_data.my_table"),
+            BigQueryAddress.from_str("my_dataset.Us_Xx_table"),
+            BigQueryAddress.from_str("my_dataset_Us_Xx.my_table"),
+            BigQueryAddress.from_str("my_dataset.my_table_US_XX"),
+        ]
+
+        for address in state_specific_addresses:
+            self.assertTrue(
+                address.is_state_specific_address(),
+                f"Expected address [{address.to_str()}] to be identified as a "
+                f"state-specific address",
+            )
+
+        not_state_specific_addresses = [
+            BigQueryAddress.from_str("my_dataset.my_table"),
+            BigQueryAddress.from_str("us_states.my_table"),
+            BigQueryAddress.from_str("my_dataset.us_states"),
+            BigQueryAddress.from_str("my_dataset.US_STATES"),
+        ]
+
+        for address in not_state_specific_addresses:
+            self.assertFalse(
+                address.is_state_specific_address(),
+                f"Did not expect address [{address.to_str()}] to be identified as a "
+                f"state-specific address",
+            )

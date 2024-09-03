@@ -113,6 +113,9 @@ from recidiviz.common.git import (
     get_hash_of_deployed_commit,
     is_commit_in_current_branch,
 )
+from recidiviz.source_tables.collect_all_source_table_configs import (
+    get_all_source_table_datasets,
+)
 from recidiviz.tools.utils.arg_parsers import str_to_address_list
 from recidiviz.tools.utils.script_helpers import prompt_for_confirmation
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
@@ -121,7 +124,6 @@ from recidiviz.utils.params import str_to_bool, str_to_list
 from recidiviz.view_registry.address_overrides_factory import (
     address_overrides_for_view_builders,
 )
-from recidiviz.view_registry.datasets import VIEW_SOURCE_TABLE_DATASETS
 from recidiviz.view_registry.deployed_views import deployed_view_builders
 
 
@@ -504,7 +506,7 @@ def _load_views_changed_on_branch_to_sandbox(
     view_builders_in_full_dag = deployed_view_builders()
 
     all_views = build_views_to_update(
-        view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
+        view_source_table_datasets=get_all_source_table_datasets(),
         candidate_view_builders=view_builders_in_full_dag,
         address_overrides=None,
     )
@@ -609,7 +611,7 @@ def _load_collected_views_to_sandbox(
     )
 
     create_managed_dataset_and_deploy_views_for_view_builders(
-        view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
+        view_source_table_datasets=get_all_source_table_datasets(),
         view_builders_to_update=collected_builders,
         address_overrides=sandbox_address_overrides,
         # Don't clean up datasets when running a sandbox script

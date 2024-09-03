@@ -17,6 +17,7 @@
 """Contains utilities to collect and build source tables"""
 import glob
 import os.path
+from functools import cache
 from itertools import groupby
 from types import ModuleType
 
@@ -50,6 +51,9 @@ from recidiviz.persistence.database.bq_refresh.cloud_sql_to_bq_refresh_config im
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.source_tables.dataflow_output_table_collector import (
     get_dataflow_output_source_table_collections,
+)
+from recidiviz.source_tables.externally_managed.datasets import (
+    EXTERNALLY_MANAGED_DATASETS_TO_DESCRIPTIONS,
 )
 from recidiviz.source_tables.sentencing_source_table_collection import (
     collect_sentencing_source_tables,
@@ -97,6 +101,10 @@ def build_raw_data_source_table_collections_for_state_and_instance(
             dataset_id=raw_data_pruning_new_raw_data_dataset(state_code, instance),
             labels=labels,
             default_table_expiration_ms=ONE_DAY_MS,
+            description=(
+                "Contains intermediate results of the raw data import process that "
+                "will be queried as part of the automatic raw data pruning process."
+            ),
         ),
         SourceTableCollection(
             dataset_id=raw_data_pruning_raw_data_diff_results_dataset(
@@ -104,6 +112,10 @@ def build_raw_data_source_table_collections_for_state_and_instance(
             ),
             labels=labels,
             default_table_expiration_ms=ONE_DAY_MS,
+            description=(
+                "Contains intermediate results of the raw data import process that "
+                "will be queried as part of the automatic raw data pruning process."
+            ),
         ),
         SourceTableCollection(
             dataset_id=raw_data_temp_load_dataset(state_code, instance),
@@ -113,6 +125,10 @@ def build_raw_data_source_table_collections_for_state_and_instance(
             # by default (i.e. those that have a import-blocking validation)
             # failure we'd like to be able to inspect
             default_table_expiration_ms=ONE_DAY_MS,
+            description=(
+                "Contains intermediate results of the raw data import process that "
+                "will be queried as part of the automatic raw data pruning process."
+            ),
         ),
     ]
 
@@ -124,6 +140,7 @@ def build_raw_data_source_table_collections_for_state_and_instance(
         # Changes to raw data source tables must be manually executed by implementation engineers
         update_config=SourceTableCollectionUpdateConfig.static(),
         labels=labels,
+        description=f"Raw data tables from {StateCode.get_state(state_code)}",
     )
 
     collections.append(raw_data_collection)
@@ -171,6 +188,7 @@ def _collect_cloudsql_mirror_source_table_collections() -> list[SourceTableColle
             dataset_id=export_config.multi_region_dataset(
                 dataset_override_prefix=None,
             ),
+            description=export_config.multi_region_dataset_description(),
         )
         results.append(collection)
 
@@ -186,14 +204,16 @@ def _collect_cloudsql_mirror_source_table_collections() -> list[SourceTableColle
     return results
 
 
-def _collect_externally_managed_source_table_collections(
+def collect_externally_managed_source_table_collections(
     project_id: str | None,
 ) -> list[SourceTableCollection]:
     """
     Collects all externally managed source tables.
     We declare datasets here where we are only interested in validating a subset of fields.
     """
-    yaml_paths = glob.glob(os.path.join(os.path.dirname(__file__), "schema/**/*.yaml"))
+    yaml_paths = glob.glob(
+        os.path.join(os.path.dirname(__file__), "externally_managed/**/*.yaml")
+    )
 
     def _source_table_sorter(source_table: SourceTableConfig) -> str:
         return source_table.address.dataset_id
@@ -232,6 +252,7 @@ def _collect_externally_managed_source_table_collections(
                 if (not project_id or not source_table.deployed_projects)
                 or (project_id in source_table.deployed_projects)
             },
+            description=EXTERNALLY_MANAGED_DATASETS_TO_DESCRIPTIONS[dataset_id],
         )
         for dataset_id, source_tables in source_tables_by_dataset
     ]
@@ -245,9 +266,7 @@ def build_source_table_repository_for_collected_schemata(
     """
     return SourceTableRepository(
         source_table_collections=[
-            *_collect_externally_managed_source_table_collections(
-                project_id=project_id
-            ),
+            *collect_externally_managed_source_table_collections(project_id=project_id),
             *collect_raw_data_source_table_collections(),
             *_collect_cloudsql_mirror_source_table_collections(),
             *collect_duplicative_us_mi_validation_oneoffs(),
@@ -257,6 +276,31 @@ def build_source_table_repository_for_collected_schemata(
             *collect_sentencing_source_tables(),
         ],
     )
+
+
+@cache
+def get_all_source_table_datasets_to_descriptions() -> dict[str, str]:
+    datasets_to_descriptions: dict[str, str] = {}
+    for c in build_source_table_repository_for_collected_schemata(
+        project_id=None
+    ).source_table_collections:
+        if (
+            c.dataset_id in datasets_to_descriptions
+            and c.description != datasets_to_descriptions[c.dataset_id]
+        ):
+            raise ValueError(
+                f"Found description for dataset {c.dataset_id} [{c.description}] which "
+                f"has conflicting versions across source table configurations. "
+                f"Conflicting description: [{datasets_to_descriptions[c.dataset_id]}]"
+            )
+
+        datasets_to_descriptions[c.dataset_id] = c.description
+    return datasets_to_descriptions
+
+
+@cache
+def get_all_source_table_datasets() -> set[str]:
+    return set(get_all_source_table_datasets_to_descriptions())
 
 
 if __name__ == "__main__":

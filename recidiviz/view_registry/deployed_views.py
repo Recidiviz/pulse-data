@@ -43,6 +43,9 @@ from recidiviz.ingest.views.view_config import (
     VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE as INGEST_METADATA_VIEW_BUILDERS,
 )
 from recidiviz.persistence.database.schema_type import SchemaType
+from recidiviz.source_tables.collect_all_source_table_configs import (
+    get_all_source_table_datasets,
+)
 from recidiviz.task_eligibility.view_config import (
     get_view_builders_for_views_to_update as get_task_eligibility_view_builders,
 )
@@ -53,7 +56,6 @@ from recidiviz.validation.views.view_config import (
 from recidiviz.validation.views.view_config import (
     get_view_builders_for_views_to_update as get_validation_view_builders,
 )
-from recidiviz.view_registry.datasets import VIEW_SOURCE_TABLE_DATASETS
 
 
 def _all_deployed_view_builders() -> List[BigQueryViewBuilder]:
@@ -100,7 +102,7 @@ def build_all_deployed_views_dag_walker() -> BigQueryViewDagWalker:
     """
     return BigQueryViewDagWalker(
         build_views_to_update(
-            view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
+            view_source_table_datasets=get_all_source_table_datasets(),
             candidate_view_builders=all_deployed_view_builders(),
             address_overrides=None,
         )

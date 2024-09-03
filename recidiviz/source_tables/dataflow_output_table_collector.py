@@ -29,6 +29,7 @@ def get_dataflow_output_source_table_collections() -> list[SourceTableCollection
         labels=[DataflowPipelineSourceTableLabel(METRICS_PIPELINE_NAME)],
         update_config=SourceTableCollectionUpdateConfig.regenerable(),
         dataset_id=DATAFLOW_METRICS_DATASET,
+        description="Stores output of metric Dataflow pipeline jobs.",
     )
 
     for metric_class, table_id in dataflow_config.DATAFLOW_METRICS_TO_TABLES.items():
@@ -52,6 +53,10 @@ def get_dataflow_output_source_table_collections() -> list[SourceTableCollection
         labels=[DataflowPipelineSourceTableLabel(SUPPLEMENTAL_PIPELINE_NAME)],
         update_config=SourceTableCollectionUpdateConfig.regenerable(),
         dataset_id=SUPPLEMENTAL_DATA_DATASET,
+        description=(
+            "Stores output of supplemental Dataflow pipelines, one-off pipelines that "
+            "are not standard ingest or metric pipelines."
+        ),
     )
 
     for (

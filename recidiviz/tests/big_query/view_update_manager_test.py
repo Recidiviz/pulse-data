@@ -29,6 +29,9 @@ from recidiviz.big_query.big_query_table_checker import BigQueryTableChecker
 from recidiviz.big_query.big_query_view import BigQueryView, SimpleBigQueryViewBuilder
 from recidiviz.big_query.constants import TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS
 from recidiviz.big_query.view_update_manager import execute_update_all_managed_views
+from recidiviz.source_tables.collect_all_source_table_configs import (
+    get_all_source_table_datasets,
+)
 from recidiviz.utils.environment import (
     GCP_PROJECT_PRODUCTION,
     GCP_PROJECT_STAGING,
@@ -37,7 +40,6 @@ from recidiviz.utils.environment import (
 from recidiviz.view_registry.address_overrides_factory import (
     address_overrides_for_view_builders,
 )
-from recidiviz.view_registry.datasets import VIEW_SOURCE_TABLE_DATASETS
 from recidiviz.view_registry.deployed_views import (
     DEPLOYED_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED,
     all_deployed_view_builders,
@@ -68,6 +70,8 @@ class ViewManagerTest(unittest.TestCase):
             "recidiviz.big_query.big_query_table_checker.BigQueryClientImpl"
         )
         self.client_patcher_2.start()
+
+        self.view_source_table_datasets = get_all_source_table_datasets()
 
     def tearDown(self) -> None:
         self.client_patcher.stop()
@@ -107,7 +111,7 @@ class ViewManagerTest(unittest.TestCase):
         ]
 
         view_update_manager.create_managed_dataset_and_deploy_views_for_view_builders(
-            view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
+            view_source_table_datasets=self.view_source_table_datasets,
             view_builders_to_update=mock_view_builders,
             historically_managed_datasets_to_clean=None,
         )
@@ -195,7 +199,7 @@ class ViewManagerTest(unittest.TestCase):
         self.mock_client.create_or_update_view.side_effect = mock_create_or_update
 
         view_update_manager.create_managed_dataset_and_deploy_views_for_view_builders(
-            view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
+            view_source_table_datasets=self.view_source_table_datasets,
             view_builders_to_update=mock_view_builders,
             historically_managed_datasets_to_clean=None,
         )
@@ -306,7 +310,7 @@ class ViewManagerTest(unittest.TestCase):
         self.mock_client.create_or_update_view.side_effect = mock_create_or_update
 
         view_update_manager.create_managed_dataset_and_deploy_views_for_view_builders(
-            view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
+            view_source_table_datasets=self.view_source_table_datasets,
             view_builders_to_update=mock_view_builders,
             historically_managed_datasets_to_clean=None,
         )
@@ -386,7 +390,7 @@ class ViewManagerTest(unittest.TestCase):
 
         view_update_manager.create_managed_dataset_and_deploy_views_for_view_builders(
             view_builders_to_update=mock_view_builders,
-            view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
+            view_source_table_datasets=self.view_source_table_datasets,
             historically_managed_datasets_to_clean=None,
         )
 
@@ -478,7 +482,7 @@ class ViewManagerTest(unittest.TestCase):
         )
 
         view_update_manager.create_managed_dataset_and_deploy_views_for_view_builders(
-            view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
+            view_source_table_datasets=self.view_source_table_datasets,
             view_builders_to_update=mock_view_builders,
             address_overrides=address_overrides,
             historically_managed_datasets_to_clean=None,
@@ -627,7 +631,7 @@ class ViewManagerTest(unittest.TestCase):
         for view_builder in all_deployed_view_builders():
             self.assertNotIn(
                 view_builder.dataset_id,
-                VIEW_SOURCE_TABLE_DATASETS,
+                self.view_source_table_datasets,
                 f"Found view [{view_builder.view_id}] in source-table-only "
                 f"dataset [{view_builder.dataset_id}]",
             )
@@ -732,7 +736,7 @@ class ViewManagerTest(unittest.TestCase):
         self.mock_client.dataset_exists.return_value = True
 
         view_update_manager.create_managed_dataset_and_deploy_views_for_view_builders(
-            view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
+            view_source_table_datasets=self.view_source_table_datasets,
             view_builders_to_update=mock_view_builders,
             historically_managed_datasets_to_clean=historically_managed_datasets,
         )
@@ -863,7 +867,7 @@ class ViewManagerTest(unittest.TestCase):
                 )
 
     def test_no_source_table_datasets_registered_as_managed(self) -> None:
-        for source_table_dataset_id in VIEW_SOURCE_TABLE_DATASETS:
+        for source_table_dataset_id in self.view_source_table_datasets:
             self.assertNotIn(
                 source_table_dataset_id,
                 DEPLOYED_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED,

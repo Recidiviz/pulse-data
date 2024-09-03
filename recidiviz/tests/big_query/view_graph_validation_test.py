@@ -33,6 +33,7 @@ from recidiviz.ingest.views.dataset_config import (
 )
 from recidiviz.source_tables.collect_all_source_table_configs import (
     build_source_table_repository_for_collected_schemata,
+    get_all_source_table_datasets,
 )
 from recidiviz.source_tables.source_table_config import SourceTableCollection
 from recidiviz.tests.big_query.big_query_emulator_test_case import (
@@ -43,7 +44,6 @@ from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.validation.views.view_config import (
     CROSS_PROJECT_VALIDATION_VIEW_BUILDERS,
 )
-from recidiviz.view_registry.datasets import VIEW_SOURCE_TABLE_DATASETS
 from recidiviz.view_registry.deployed_views import all_deployed_view_builders
 
 DEFAULT_TEMPORARY_TABLE_EXPIRATION = 60 * 60 * 1000  # 1 hour
@@ -191,6 +191,7 @@ class BaseViewGraphTest(BigQueryEmulatorTestCase):
                         address: repository.source_tables[address]
                         for address in list(source_table_addresses)
                     },
+                    description=f"Fake description for dataset {dataset_id}",
                 )
                 for dataset_id, source_table_addresses in groupby(
                     sorted(
@@ -213,7 +214,7 @@ class BaseViewGraphTest(BigQueryEmulatorTestCase):
             if view_builder.address not in skipped_views
         ]
         create_managed_dataset_and_deploy_views_for_view_builders(
-            view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
+            view_source_table_datasets=get_all_source_table_datasets(),
             view_builders_to_update=view_builders_to_update,
             address_overrides=None,
             # This script does not do any clean up of previously managed views

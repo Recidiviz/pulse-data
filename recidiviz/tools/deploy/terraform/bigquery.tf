@@ -16,7 +16,7 @@
 # =============================================================================
 
 locals {
-  source_tables = "${local.recidiviz_root}/source_tables/schema/"
+  source_tables = "${local.recidiviz_root}/source_tables/externally_managed/"
 }
 
 resource "google_project_service" "bigquery_connection_api" {

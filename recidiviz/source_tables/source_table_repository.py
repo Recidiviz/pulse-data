@@ -43,7 +43,7 @@ class SourceTableRepository:
             for source_table in collection.source_tables
         }
 
-    def get_collections(
+    def get_collections_with_labels(
         self, labels: list[SourceTableLabel]
     ) -> list[SourceTableCollection]:
         return [
@@ -52,8 +52,26 @@ class SourceTableRepository:
             if all(collection.has_label(label) for label in labels)
         ]
 
-    def get_collection(self, labels: list[SourceTableLabel]) -> SourceTableCollection:
-        return one(self.get_collections(labels=labels))
+    def get_collections_with_dataset_id(
+        self, dataset_id: str
+    ) -> list[SourceTableCollection]:
+        return [
+            collection
+            for collection in self.source_table_collections
+            if collection.dataset_id == dataset_id
+        ]
+
+    @cached_property
+    def source_datasets(self) -> list[str]:
+        return sorted({a.dataset_id for a in self.source_tables})
+
+    def get_collection_with_labels(
+        self, labels: list[SourceTableLabel]
+    ) -> SourceTableCollection:
+        return one(self.get_collections_with_labels(labels=labels))
+
+    def get_collection_with_dataset_id(self, dataset_id: str) -> SourceTableCollection:
+        return one(self.get_collections_with_dataset_id(dataset_id=dataset_id))
 
     def collections_labelled_with(
         self, label_type: type[SourceTableLabel]

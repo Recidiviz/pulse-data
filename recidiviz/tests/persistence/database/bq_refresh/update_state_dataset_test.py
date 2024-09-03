@@ -28,6 +28,9 @@ from recidiviz.big_query.constants import TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_
 from recidiviz.calculator.query.state.dataset_config import STATE_BASE_DATASET
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.database.bq_refresh import update_state_dataset
+from recidiviz.source_tables.collect_all_source_table_configs import (
+    get_all_source_table_datasets,
+)
 from recidiviz.source_tables.ingest_pipeline_output_table_collector import (
     build_ingest_pipeline_output_source_table_collections,
 )
@@ -39,7 +42,6 @@ from recidiviz.tests.big_query.big_query_emulator_test_case import (
     BigQueryEmulatorTestCase,
 )
 from recidiviz.tests.persistence.entity import fake_entities
-from recidiviz.view_registry.datasets import VIEW_SOURCE_TABLE_DATASETS
 
 UPDATE_STATE_DATASET_PACKAGE_NAME = update_state_dataset.__name__
 TEST_PROJECT = "test-project"
@@ -124,7 +126,7 @@ class UpdateStateDatasetTest(unittest.TestCase):
         self.entities_module_patcher.stop()
 
     def test_output_dataset_is_source(self) -> None:
-        self.assertTrue(STATE_BASE_DATASET in VIEW_SOURCE_TABLE_DATASETS)
+        self.assertTrue(STATE_BASE_DATASET in get_all_source_table_datasets())
 
     def test_combine_ingest_sources(self) -> None:
         # Act

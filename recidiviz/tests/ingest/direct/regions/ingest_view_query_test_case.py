@@ -102,6 +102,7 @@ class IngestViewEmulatorQueryTestCase(BigQueryEmulatorTestCase, IngestRegionTest
             dataset_id=collection.dataset_id,
             update_config=collection.update_config,
             labels=collection.labels,
+            description=collection.description,
         )
         for file_tag in cls.ingest_view().raw_data_table_dependency_file_tags:
             address = BigQueryAddress(

@@ -36,7 +36,9 @@ from recidiviz.big_query.big_query_view_dag_walker import (
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRegionRawFileConfig,
 )
-from recidiviz.view_registry.datasets import VIEW_SOURCE_TABLE_DATASETS
+from recidiviz.source_tables.collect_all_source_table_configs import (
+    get_all_source_table_datasets,
+)
 from recidiviz.view_registry.deployed_views import all_deployed_view_builders
 
 LATEST_VIEW_DATASET_REGEX = re.compile(r"(us_[a-z]{2})_raw_data_up_to_date_views")
@@ -1186,7 +1188,7 @@ class TestBigQueryViewDagWalkerBase(unittest.TestCase):
     def assertIsValidSourceDataTable(
         child_view_key: BigQueryAddress, source_table_key: BigQueryAddress
     ) -> None:
-        if source_table_key.dataset_id in VIEW_SOURCE_TABLE_DATASETS:
+        if source_table_key.dataset_id in get_all_source_table_datasets():
             return
 
         raise ValueError(

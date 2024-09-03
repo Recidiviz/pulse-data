@@ -88,10 +88,15 @@ def get_foreign_key_constraints(table: Table) -> List[ForeignKeyConstraint]:
 
 def get_table_class_by_name(table_name: str, schema_type: SchemaType) -> Table:
     """Return a Table class object by its table_name"""
-    for table in get_all_table_classes_in_schema(schema_type):
-        if table.name == table_name:
-            return table
-    raise ValueError(f"{table_name}: Table name not found in list of tables.")
+    tables_by_name = {t.name: t for t in get_all_table_classes_in_schema(schema_type)}
+
+    if table_name not in tables_by_name:
+        raise ValueError(
+            f"{table_name}: Table name not found in list of tables: "
+            f"{sorted(tables_by_name)}"
+        )
+
+    return tables_by_name[table_name]
 
 
 def get_region_code_col(schema_type: SchemaType, table: Table) -> str:
@@ -119,7 +124,10 @@ def is_association_table(table_name: str) -> bool:
 @functools.cache
 def get_all_table_classes_in_schema(schema_type: SchemaType) -> List[Table]:
     metadata_base = schema_type_to_schema_base(schema_type)
-    return metadata_base.metadata.sorted_tables
+    tables = metadata_base.metadata.sorted_tables
+    if not tables:
+        raise ValueError(f"Found no tables in schema [{schema_type.value}]")
+    return tables
 
 
 def get_pathways_database_entities() -> List[Type[DatabaseEntity]]:

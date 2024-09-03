@@ -28,7 +28,9 @@ from recidiviz.persistence.database.bq_refresh.cloud_sql_to_bq_refresh_config im
     CloudSqlToBQConfig,
 )
 from recidiviz.persistence.database.schema_type import SchemaType
-from recidiviz.view_registry.datasets import VIEW_SOURCE_TABLE_DATASETS
+from recidiviz.source_tables.collect_all_source_table_configs import (
+    get_all_source_table_datasets,
+)
 
 
 class CloudSqlToBQConfigTest(unittest.TestCase):
@@ -41,6 +43,8 @@ class CloudSqlToBQConfigTest(unittest.TestCase):
             for schema_type in self.schema_types
             if CloudSqlToBQConfig.is_valid_schema_type(schema_type)
         ]
+
+        self.view_source_table_datasets = get_all_source_table_datasets()
 
     def test_for_schema_type_raises_error(self) -> None:
         with self.assertRaises(ValueError):
@@ -62,28 +66,28 @@ class CloudSqlToBQConfigTest(unittest.TestCase):
             config = CloudSqlToBQConfig.for_schema_type(schema_type)
             dataset = config.regional_dataset(dataset_override_prefix=None)
             self.assertTrue(dataset.endswith("regional"))
-            self.assertTrue(dataset not in VIEW_SOURCE_TABLE_DATASETS)
+            self.assertTrue(dataset not in self.view_source_table_datasets)
 
             dataset_with_prefix = config.regional_dataset(
                 dataset_override_prefix="prefix"
             )
             self.assertTrue(dataset_with_prefix.startswith("prefix_"))
             self.assertTrue(dataset_with_prefix.endswith("regional"))
-            self.assertTrue(dataset_with_prefix not in VIEW_SOURCE_TABLE_DATASETS)
+            self.assertTrue(dataset_with_prefix not in self.view_source_table_datasets)
 
     def test_multi_region_dataset(self) -> None:
         for schema_type in self.enabled_schema_types:
             config = CloudSqlToBQConfig.for_schema_type(schema_type)
             dataset = config.multi_region_dataset(dataset_override_prefix=None)
             self.assertFalse(dataset.endswith("regional"))
-            self.assertTrue(dataset in VIEW_SOURCE_TABLE_DATASETS)
+            self.assertTrue(dataset in self.view_source_table_datasets)
 
             dataset_with_prefix = config.multi_region_dataset(
                 dataset_override_prefix="prefix"
             )
             self.assertTrue(dataset_with_prefix.startswith("prefix_"))
             self.assertFalse(dataset_with_prefix.endswith("regional"))
-            self.assertTrue(dataset_with_prefix not in VIEW_SOURCE_TABLE_DATASETS)
+            self.assertTrue(dataset_with_prefix not in self.view_source_table_datasets)
 
     def test_get_tables_to_export(self) -> None:
         """Assert that get_tables_to_export returns a list of type sqlalchemy.Table"""

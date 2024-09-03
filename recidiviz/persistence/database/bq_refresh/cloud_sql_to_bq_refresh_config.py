@@ -99,6 +99,20 @@ class CloudSqlToBQConfig:
             dest_dataset = f"{dataset_override_prefix}_{dest_dataset}"
         return dest_dataset
 
+    def multi_region_dataset_description(self) -> str:
+        if self.schema_type == SchemaType.OPERATIONS:
+            return (
+                "Internal Recidiviz operations data loaded from the operations "
+                "CloudSQL instance."
+            )
+        if self.schema_type == SchemaType.JUSTICE_COUNTS:
+            return (
+                "Justice Counts data loaded from the justice-counts CloudSQL instance."
+            )
+        if self.schema_type == SchemaType.CASE_TRIAGE:
+            return "Case Triage data loaded from the case-triage CloudSQL instance."
+        raise ValueError(f"Unexpected schema_type [{self.schema_type}].")
+
     @property
     def database_key(self) -> SQLAlchemyDatabaseKey:
         """Returns a key for the database associated with a particular schema."""

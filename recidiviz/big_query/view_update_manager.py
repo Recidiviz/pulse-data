@@ -45,12 +45,14 @@ from recidiviz.big_query.view_update_manager_utils import (
 )
 from recidiviz.monitoring.instruments import get_monitoring_instrument
 from recidiviz.monitoring.keys import CounterInstrumentKey
+from recidiviz.source_tables.collect_all_source_table_configs import (
+    get_all_source_table_datasets,
+)
 from recidiviz.utils import structured_logging
 from recidiviz.utils.environment import gcp_only
 from recidiviz.view_registry.address_overrides_factory import (
     address_overrides_for_view_builders,
 )
-from recidiviz.view_registry.datasets import VIEW_SOURCE_TABLE_DATASETS
 from recidiviz.view_registry.deployed_views import (
     DEPLOYED_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED,
     deployed_view_builders,
@@ -77,7 +79,7 @@ def execute_update_all_managed_views(sandbox_prefix: Optional[str]) -> None:
     view_builders = deployed_view_builders()
 
     create_managed_dataset_and_deploy_views_for_view_builders(
-        view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
+        view_source_table_datasets=get_all_source_table_datasets(),
         view_builders_to_update=view_builders,
         historically_managed_datasets_to_clean=DEPLOYED_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED,
         address_overrides=address_overrides_for_view_builders(
