@@ -94,9 +94,9 @@ class CloudBuildClient:
                 build.status.name,
             )
             if build.status not in UNFINISHED_BUILD_STATES:
-                if build.status == Build.Status.FAILURE:
+                if build.status != Build.Status.SUCCESS:
                     raise RuntimeError(
-                        f"Build failed! Check Cloud Build logs at {build.log_url}"
+                        f"Build was not successful got [{build.status}], check Cloud Build logs at {build.log_url}"
                     )
 
                 return build

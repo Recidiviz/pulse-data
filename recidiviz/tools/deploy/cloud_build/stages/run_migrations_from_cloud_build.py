@@ -62,6 +62,7 @@ class RunMigrations(DeploymentStageInterface):
                 for schema_type in str_to_list(schema_types)
                 if schema_type in available_schema_types
             ],
+            default=available_schema_types,
             help=f"Comma delimited string of SchemaType values. Choices: {schema_types_str}",
         )
 
@@ -102,7 +103,7 @@ class RunMigrations(DeploymentStageInterface):
             prefetch_image_step,
         ]
 
-        for schema_type in SchemaType:
+        for schema_type in args.schema_types:
             if not schema_type.has_cloud_sql_instance:
                 continue
 
