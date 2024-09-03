@@ -868,8 +868,8 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
             jsonify(
                 {
                     state_code.value: {
-                        lock_status.value: count
-                        for lock_status, count in lock_summary.items()
+                        resource.value: maybe_actor.value if maybe_actor else None
+                        for resource, maybe_actor in lock_summary.items()
                     }
                     for state_code, lock_summary in all_current_lock_summaries.items()
                 }

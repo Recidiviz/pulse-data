@@ -404,3 +404,9 @@ export const getAllLatestRawDataImportRunInfo = async (): Promise<Response> => {
     "/api/ingest_operations/all_latest_raw_data_import_run_info"
   );
 };
+
+// Get all latest raw data resource lock info
+export const getAllLatestRawDataResourceLockInfo =
+  async (): Promise<Response> => {
+    return getResource("/api/ingest_operations/all_current_lock_summaries");
+  };

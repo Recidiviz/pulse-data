@@ -117,6 +117,28 @@ export type RawDataImportRunStatusResponse = {
   [stateCode: string]: RawDataImportRunStatusInfo;
 };
 
+// --- raw data resource lock related constants ----------------------------------------
+export enum RawDataResourceLockResource {
+  BUCKET = "BUCKET",
+  OPERATIONS_DATABASE = "OPERATIONS_DATABASE",
+  BIG_QUERY_RAW_DATA_DATASET = "BIG_QUERY_RAW_DATA_DATASET",
+}
+
+export enum RawDataResourceLockActor {
+  ADHOC = "ADHOC",
+  PROCESS = "PROCESS",
+}
+
+export type RawDataResourceLockStatuses = {
+  [lockStatus in keyof RawDataResourceLockResource]:
+    | RawDataResourceLockActor
+    | undefined;
+};
+
+export type RawDataResourceLockStatusesResponse = {
+  [stateCode: string]: RawDataResourceLockStatuses;
+};
+
 // TODO(#28239): remove once the raw data import dag is fully rolled ou
 // --- queue-related constants ---------------------------------------------------------
 

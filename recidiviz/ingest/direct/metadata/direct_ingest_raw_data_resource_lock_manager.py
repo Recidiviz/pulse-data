@@ -16,8 +16,6 @@
 # =============================================================================
 """Class for managing reads and writes to DirectIngestRawDataResourceLock"""
 import datetime
-from collections import defaultdict
-from enum import Enum
 from typing import Dict, List, Optional
 
 from more_itertools import one
@@ -41,27 +39,6 @@ from recidiviz.persistence.errors import (
     DirectIngestRawDataResourceLockAlreadyReleasedError,
     DirectIngestRawDataResourceLockHeldError,
 )
-
-
-class DirectIngestRawDataLockStatus(Enum):
-    """Summary status for a raw data resource lock to be displayed in the admin panel"""
-
-    FREE: str = "FREE"
-    HELD: str = "HELD"
-
-    @classmethod
-    def from_lock_actor(
-        cls, actor: Optional[DirectIngestRawDataLockActor]
-    ) -> "DirectIngestRawDataLockStatus":
-        if not actor:
-            return cls.FREE
-        match actor:
-            case DirectIngestRawDataLockActor.ADHOC:
-                return cls.HELD
-            case DirectIngestRawDataLockActor.PROCESS:
-                return cls.HELD
-            case _:
-                raise ValueError(f"Unrecognized actor type: {actor}")
 
 
 class DirectIngestRawDataResourceLockManager:
@@ -175,22 +152,19 @@ class DirectIngestRawDataResourceLockManager:
 
     def get_current_lock_summary(
         self,
-    ) -> Dict[DirectIngestRawDataLockStatus, int]:
-        """Returns a map of the lock status to the number of locks with that status."""
+    ) -> Dict[
+        DirectIngestRawDataResourceLockResource, Optional[DirectIngestRawDataLockActor]
+    ]:
+        """Returns a map of the lock resource to the actor who holds it."""
         resources = list(DirectIngestRawDataResourceLockResource)
-        lock_status_counts: Dict[DirectIngestRawDataLockStatus, int] = defaultdict(int)
         lock_resource_to_holder = {
             lock.lock_resource: (lock.lock_actor if not lock.released else None)
             for lock in self.get_most_recent_locks_for_resources(resources)
         }
 
-        for resource in resources:
-            lock_status = DirectIngestRawDataLockStatus.from_lock_actor(
-                lock_resource_to_holder.get(resource)
-            )
-            lock_status_counts[lock_status] += 1
-
-        return lock_status_counts
+        return {
+            resource: lock_resource_to_holder.get(resource) for resource in resources
+        }
 
     def get_most_recent_locks_for_resources(
         self, resources: List[DirectIngestRawDataResourceLockResource]
