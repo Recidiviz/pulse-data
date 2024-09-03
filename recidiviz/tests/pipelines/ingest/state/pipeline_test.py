@@ -85,7 +85,7 @@ class TestStateIngestPipeline(StateIngestPipelineTestCase):
             run_normalization_override=True,
         )
 
-    # TODO(#29517): We should be able to delete this test once we've enabled
+    # TODO(#31741): We should be able to delete this test once we've enabled
     #  normalization in ingest for all states.
     def test_state_ingest_pipeline_no_normalization(self) -> None:
         self.setup_region_raw_data_bq_tables(

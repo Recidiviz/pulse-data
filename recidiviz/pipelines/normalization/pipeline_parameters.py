@@ -29,6 +29,8 @@ from recidiviz.pipelines.pipeline_names import NORMALIZATION_PIPELINE_NAME
 from recidiviz.pipelines.pipeline_parameters import PipelineParameters
 
 
+# TODO(#31741): Delete this class and all references once we've shipped combined
+#  ingest and normalization
 @attr.define(kw_only=True)
 class NormalizationPipelineParameters(PipelineParameters):
     """Class for normalization pipeline parameters"""

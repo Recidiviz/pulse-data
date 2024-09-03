@@ -92,6 +92,8 @@ EntityNormalizerContext = Dict[str, Any]
 EntityNormalizerResult = Tuple[Dict[str, Sequence[Entity]], AdditionalAttributesMap]
 
 
+# TODO(#31741): Delete this class and all references once we've shipped combined
+#  ingest and normalization
 class ComprehensiveEntityNormalizer:
     """Entity normalizer class for the normalization pipeline that normalizes all
     entities with configured normalization processes."""

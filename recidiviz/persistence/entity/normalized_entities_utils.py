@@ -67,7 +67,7 @@ from recidiviz.persistence.entity.state.state_entity_mixins import (
 # These entities have base classes managed by NormalizationManagers in
 # our previous (and still existing) implementation of normalization.
 # Our new implementation will produced normalized versions of all entities.
-# TODO(#29517) Delete this when normalization and ingest are fully merged,
+# TODO(#31741) Delete this when normalization and ingest are fully merged,
 # and the old implementation of normalization is deleted.
 LEGACY_NORMALIZATION_ENTITY_CLASSES: List[Type[NormalizedStateEntity]] = [
     NormalizedStateIncarcerationPeriod,

@@ -28,6 +28,8 @@ def normalized_state_dataset_for_state_code_legacy_normalization_output(
     return f"{state_code.value.lower()}_normalized_state"
 
 
+# TODO(#31741): Move this function to recidiviz/pipelines/ingest once we've shipped
+#  combined ingest and normalization.
 def normalized_state_dataset_for_state_code_ingest_pipeline_output(
     state_code: StateCode, sandbox_dataset_prefix: str | None = None
 ) -> str:

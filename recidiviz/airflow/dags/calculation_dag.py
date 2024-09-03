@@ -236,6 +236,10 @@ def ingest_pipeline_branches_by_state_code() -> Dict[str, TaskGroup]:
     return branches_by_state_code
 
 
+# TODO(#31741): Once combined ingest and normalization pipelines are launched in all
+#  states, remove all references of "normalization" from the calc DAG. This would become
+#  "post_ingest_pipeline_branches". The "ingest_and_normalization" tasks will just
+#  become "ingest".
 def post_normalization_pipeline_branches_by_state_code() -> Dict[str, TaskGroup]:
     """Creates a TaskGroup for each state that contains all the post-normalization pipelines for that state."""
     metric_pipelines = _get_pipeline_config().pop_dicts("metric_pipelines")
