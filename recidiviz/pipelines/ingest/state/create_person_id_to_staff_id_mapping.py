@@ -143,8 +143,20 @@ class CreatePersonIdToStaffIdMapping(beam.PTransform):
         """
         staff_external_id = staff_external_id_to_grouped_ids[0]
         grouped_ids = staff_external_id_to_grouped_ids[1]
+        staff_ids = list(grouped_ids[STAFF_IDS_KEY])
 
-        staff_id = one(grouped_ids[STAFF_IDS_KEY])
+        staff_id = one(
+            staff_ids,
+            too_short=ValueError(
+                f"Did not find any ingest StateStaff corresponding to "
+                f"(external_id, id_type)={staff_external_id}"
+            ),
+            too_long=ValueError(
+                f"Found more than one ingested StateStaff with "
+                f"(external_id, id_type)={staff_external_id}. staff_id values: "
+                f"{staff_ids}"
+            ),
+        )
 
         return [
             (person_id, (staff_external_id, staff_id))
