@@ -239,6 +239,7 @@ class StateIngestPipelineTestCase(BigQueryEmulatorTestCase, IngestRegionTestMixi
         test_name: str,
         create_expected: bool = False,
         ingest_view_results_only: bool = False,
+        pre_normalization_only: bool = False,
         ingest_views_to_run: Optional[str] = None,
         raw_data_upper_bound_dates_json_override: Optional[str] = None,
         run_normalization_override: bool = False,
@@ -258,6 +259,7 @@ class StateIngestPipelineTestCase(BigQueryEmulatorTestCase, IngestRegionTestMixi
             write_to_bq_constructor=self.create_fake_bq_write_sink_constructor,
             # Additional pipeline arguments
             ingest_view_results_only=ingest_view_results_only,
+            pre_normalization_only=pre_normalization_only,
             ingest_views_to_run=ingest_views_to_run,
             raw_data_upper_bound_dates_json=(
                 raw_data_upper_bound_dates_json_override

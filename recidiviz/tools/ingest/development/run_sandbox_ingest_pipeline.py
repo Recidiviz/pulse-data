@@ -37,6 +37,7 @@ Examples:
         --output_sandbox_prefix my_prefix \
         --raw_data_source_instance SECONDARY \
         --ingest_view_results_only True \
+        --pre_normalization_only True \
         --run_normalization_override True \
         --skip_build True \
         --ingest_views_to_run "person staff" \
@@ -222,6 +223,18 @@ def run_sandbox_ingest_pipeline(
         "Using raw data watermarks from latest run: %s",
         params.raw_data_upper_bound_dates_json,
     )
+
+    if params.ingest_views_to_run and not params.pre_normalization_only:
+        prompt_for_confirmation(
+            f"⚠️This pipeline will run entity normalization against a limited set of "
+            f"ingest views: {params.ingest_views_to_run}. Normalization may crash or "
+            f"produce unpredictable results if this set of views was not selected "
+            f"carefully. For example, you cannot normalize entities that reference "
+            f"staff external_id values without also ingesting the view(s) that produce "
+            f"StateStaff. It's generally advised that you pair the "
+            f"--ingest_views_to_run argument with --pre_normalization_only. Are you "
+            f"sure you want to proceed?"
+        )
 
     if params.run_normalization:
         prompt_for_confirmation(

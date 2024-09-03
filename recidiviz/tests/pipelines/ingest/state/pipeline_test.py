@@ -110,6 +110,19 @@ class TestStateIngestPipeline(StateIngestPipelineTestCase):
             run_normalization_override=True,
         )
 
+    def test_state_ingest_pipeline_pre_normalization_only(self) -> None:
+        self.setup_region_raw_data_bq_tables(
+            test_name=INTEGRATION_RAW_DATA_INPUTS_FIXTURES_NAME
+        )
+        self.run_test_ingest_pipeline(
+            test_name="integration_pre_normalization_only",
+            pre_normalization_only=True,
+            raw_data_upper_bound_dates_json_override=self.us_dd_upper_date_bound_overrides,
+            # Even if the run_normalization flag is True, we still should only produce
+            # ingest view results and state dataset results!
+            run_normalization_override=True,
+        )
+
     def test_state_ingest_pipeline_ingest_views_to_run_subset(self) -> None:
         self.setup_region_raw_data_bq_tables(
             test_name=INTEGRATION_RAW_DATA_INPUTS_FIXTURES_NAME

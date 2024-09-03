@@ -290,6 +290,9 @@ class StateIngestPipeline(BasePipeline[IngestPipelineParameters]):
             )
         )
 
+        if self.pipeline_parameters.pre_normalization_only:
+            return
+
         if self.pipeline_parameters.run_normalization:
             expected_output_normalized_entity_classes = (
                 get_expected_output_normalized_entity_classes(

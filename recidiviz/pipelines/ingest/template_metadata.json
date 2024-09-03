@@ -55,6 +55,13 @@
         "isOptional": true
       },
       {
+        "name": "pre_normalization_only",
+        "label": "If set to true, only run the pipeline through ingest view and mapping steps but do not run normalization.",
+        "helpText": "If set to true, only run the pipeline through ingest view and mapping steps but do not run normalization.",
+        "regexes": ["True|False"],
+        "isOptional": true
+      },
+      {
         "name": "run_normalization_override",
         "label": "Run normalization override",
         "helpText": "If set to true, will run normalization logic and write output to the {output_sandbox_prefix}_us_xx_normalized_state dataset even if combined ingest and normalization pipelines aren't launched in this state.",
