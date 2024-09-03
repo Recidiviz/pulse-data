@@ -48,6 +48,7 @@ from recidiviz.ingest.direct.direct_ingest_cloud_task_queue_manager import (
     get_direct_ingest_queues_for_state,
 )
 from recidiviz.ingest.direct.direct_ingest_regions import get_direct_ingest_region
+from recidiviz.ingest.direct.gating import is_raw_data_import_dag_enabled
 from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
     DirectIngestGCSFileSystem,
 )
@@ -69,6 +70,9 @@ from recidiviz.ingest.direct.metadata.direct_ingest_raw_file_import_manager impo
 from recidiviz.ingest.direct.metadata.direct_ingest_raw_file_metadata_manager import (
     DirectIngestRawFileMetadataManager,
     DirectIngestRawFileMetadataSummary,
+)
+from recidiviz.ingest.direct.metadata.direct_ingest_raw_file_metadata_manager_v2 import (
+    DirectIngestRawFileMetadataManagerV2,
 )
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRawFileConfig,
@@ -366,6 +370,7 @@ class IngestOperationsStore(AdminPanelStore):
                 "numberFilesInBucket": 0,
                 "numberUnprocessedFiles": 0,
                 "numberProcessedFiles": 0,
+                "numberUngroupedFiles": 0,
                 "latestDiscoveryTime": None,
                 "latestProcessedTime": None,
                 "latestUpdateDatetime": None,
@@ -392,6 +397,7 @@ class IngestOperationsStore(AdminPanelStore):
                     **file_tag_metadata,
                     "numberUnprocessedFiles": summary.num_unprocessed_files,
                     "numberProcessedFiles": summary.num_processed_files,
+                    "numberUngroupedFiles": summary.num_ungrouped_files,
                     "latestDiscoveryTime": summary.latest_discovery_time.isoformat(),
                     "latestProcessedTime": (
                         summary.latest_processed_time.isoformat()
@@ -450,9 +456,20 @@ class IngestOperationsStore(AdminPanelStore):
         """Returns the raw file metadata summary for all file tags
         in a given state_code in the operations DB
         """
-        raw_file_metadata_manager = DirectIngestRawFileMetadataManager(
-            region_code=state_code.value,
-            raw_data_instance=ingest_instance,
+        raw_file_metadata_manager: Union[
+            DirectIngestRawFileMetadataManager, DirectIngestRawFileMetadataManagerV2
+        ] = (
+            DirectIngestRawFileMetadataManager(
+                region_code=state_code.value,
+                raw_data_instance=ingest_instance,
+            )
+            if not is_raw_data_import_dag_enabled(
+                state_code, raw_data_instance=ingest_instance
+            )
+            else DirectIngestRawFileMetadataManagerV2(
+                region_code=state_code.value,
+                raw_data_instance=ingest_instance,
+            )
         )
         return {
             raw_file_metadata.file_tag: raw_file_metadata

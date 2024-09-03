@@ -170,6 +170,7 @@ export type IngestRawFileProcessingStatus = {
   hasConfig: boolean;
   numberFilesInBucket: number;
   numberUnprocessedFiles: number;
+  numberUngroupedFiles: number;
   numberProcessedFiles: number;
   latestDiscoveryTime: string | null;
   latestProcessedTime: string | null;
