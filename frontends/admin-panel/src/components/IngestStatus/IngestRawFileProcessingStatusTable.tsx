@@ -94,6 +94,7 @@ const IngestRawFileProcessingStatusTable: React.FC<
       title: "# Pending Upload",
       dataIndex: "numberUnprocessedFiles",
       key: "numberUnprocessedFiles",
+      render: (_, record) => renderNumberUnprocessedFiles(record),
       sorter: {
         compare: (a, b) =>
           optionalNumberSort(
@@ -151,6 +152,23 @@ function renderLatestDiscoveryTime(
   return (
     <div className={classNames({ "ingest-danger": tooFarPastLatest })}>
       {status.latestDiscoveryTime}
+    </div>
+  );
+}
+
+function renderNumberUnprocessedFiles(status: IngestRawFileProcessingStatus) {
+  const unGroupedText =
+    status.numberUngroupedFiles === 0
+      ? ""
+      : ` (${status.numberUngroupedFiles} ungrouped chunks)`;
+  return (
+    <div
+      className={classNames({
+        "ingest-danger": status.numberUngroupedFiles !== 0,
+      })}
+    >
+      {status.numberUnprocessedFiles}
+      {unGroupedText}
     </div>
   );
 }
