@@ -67,6 +67,15 @@ class StateSpecificSentenceNormalizationDelegate(StateSpecificDelegate):
         By default, returns the supervision sentence itself."""
         return supervision_sentence
 
+    @property
+    def correct_early_completed_statuses(self) -> bool:
+        """
+        If True, if we see a StateSentenceStatusSnapshot that is not the last status for a sentence which
+        has status COMPLETED, correct that status to SERVING. Otherwise, we'll throw if we see a COMPLETED
+        status that is followed by other statuses.
+        """
+        return False
+
 
 class SentenceNormalizationManager(EntityNormalizationManager):
     """Interface for generalized and state-specific normalization of StateCharges

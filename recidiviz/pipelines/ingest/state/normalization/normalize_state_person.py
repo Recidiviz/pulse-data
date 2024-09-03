@@ -100,13 +100,16 @@ def build_normalized_state_person(
         staff_external_id_to_staff_id=staff_external_id_to_staff_id,
     ).get_normalized_violations()
 
+    sentencing_delegate = get_state_specific_sentence_normalization_delegate(
+        state_code.value
+    )
     (
         normalized_incarceration_sentences,
         normalized_supervision_sentences,
     ) = SentenceNormalizationManager(
         person.incarceration_sentences,
         person.supervision_sentences,
-        delegate=get_state_specific_sentence_normalization_delegate(state_code.value),
+        delegate=sentencing_delegate,
     ).get_normalized_sentences()
 
     normalized_program_assignments = ProgramAssignmentNormalizationManager(
@@ -143,7 +146,9 @@ def build_normalized_state_person(
         staff_external_id_to_staff_id=staff_external_id_to_staff_id,
     ).get_normalized_supervision_periods()
 
-    normalized_sentences = get_normalized_sentences(sentences=person.sentences)
+    normalized_sentences = get_normalized_sentences(
+        sentences=person.sentences, delegate=sentencing_delegate
+    )
     normalized_sentence_groups = get_normalized_sentence_groups(
         sentence_groups=person.sentence_groups
     )

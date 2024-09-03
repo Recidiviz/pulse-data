@@ -23,32 +23,50 @@ import attrs
 
 from recidiviz.common.constants.state.state_charge import StateChargeV2Status
 from recidiviz.common.constants.state.state_sentence import (
+    StateSentenceStatus,
     StateSentenceType,
     StateSentencingAuthority,
 )
+from recidiviz.common.constants.states import StateCode
+from recidiviz.common.date import as_datetime
 from recidiviz.persistence.entity.state.entities import (
     StateChargeV2,
     StateSentence,
     StateSentenceGroup,
     StateSentenceGroupLength,
     StateSentenceLength,
+    StateSentenceStatusSnapshot,
 )
 from recidiviz.persistence.entity.state.normalized_entities import (
     NormalizedStateChargeV2,
+    NormalizedStateSentenceStatusSnapshot,
 )
 from recidiviz.pipelines.ingest.state.normalization.normalize_sentences import (
     get_normalized_sentence_groups,
     get_normalized_sentences,
     normalize_charge_v2,
 )
+from recidiviz.pipelines.normalization.utils.normalization_managers.sentence_normalization_manager import (
+    StateSpecificSentenceNormalizationDelegate,
+)
 from recidiviz.utils.types import assert_type
+
+
+class FakeDelegateThatCorrectsCompleted(StateSpecificSentenceNormalizationDelegate):
+    @property
+    def correct_early_completed_statuses(self) -> bool:
+        return True
 
 
 class TestSentenceV2Normalization(unittest.TestCase):
     """Tests the normalization functionality for V2 sentencing entities."""
 
     def setUp(self) -> None:
+        self.state_code = StateCode.US_XX
         self.state_code_value = "US_XX"
+        self.start_date = datetime.date(2022, 1, 1)
+        self.start_dt = as_datetime(self.start_date)
+        self.delegate = StateSpecificSentenceNormalizationDelegate()
 
     def _new_charge(self, id_num: int) -> StateChargeV2:
         return StateChargeV2(
@@ -99,7 +117,7 @@ class TestSentenceV2Normalization(unittest.TestCase):
         sentence = self._new_sentence(1)
         sentence.charges = [charge]
         charge.sentences = [sentence]
-        normalized_sentences = get_normalized_sentences([sentence])
+        normalized_sentences = get_normalized_sentences([sentence], self.delegate)
         normalized_sentence = normalized_sentences[0]
         assert len(normalized_sentence.charges) == 1
         normalized_charge = normalized_sentence.charges[0]
@@ -115,7 +133,7 @@ class TestSentenceV2Normalization(unittest.TestCase):
         sentence.charges = charges
         for charge in charges:
             charge.sentences = [sentence]
-        normalized_sentences = get_normalized_sentences([sentence])
+        normalized_sentences = get_normalized_sentences([sentence], self.delegate)
         assert len(normalized_sentences) == 1
         normalized_sentence = normalized_sentences[0]
         assert len(normalized_sentence.charges) == 2
@@ -132,7 +150,7 @@ class TestSentenceV2Normalization(unittest.TestCase):
         charge.sentences = sentences
         for sentence in sentences:
             sentence.charges = [charge]
-        normalized_sentences = get_normalized_sentences(sentences)
+        normalized_sentences = get_normalized_sentences(sentences, self.delegate)
         for normalized_sentence in normalized_sentences:
             assert len(normalized_sentence.charges) == 1
             normalized_charge = normalized_sentence.charges[0]
@@ -157,7 +175,7 @@ class TestSentenceV2Normalization(unittest.TestCase):
         sentences[2].charges.append(charges[1])
         charges[1].sentences.append(sentences[2])
 
-        normalized_sentences = get_normalized_sentences(sentences)
+        normalized_sentences = get_normalized_sentences(sentences, self.delegate)
         assert len(normalized_sentences) == 3
 
         # Check the first charge is related to all sentences
@@ -179,22 +197,21 @@ class TestSentenceV2Normalization(unittest.TestCase):
 
     def test_get_normalized_sentences_length_empty_projected_fields(self) -> None:
         sentence = self._new_sentence(1)
-        start_date = datetime.datetime(2022, 1, 1)
         sentence.sentence_lengths = [
             StateSentenceLength(
                 state_code=self.state_code_value,
                 sentence_length_id=111,
-                length_update_datetime=start_date,
+                length_update_datetime=self.start_dt,
                 sentence_length_days_min=42,
             ),
             StateSentenceLength(
                 state_code=self.state_code_value,
                 sentence_length_id=222,
-                length_update_datetime=start_date + datetime.timedelta(days=10),
+                length_update_datetime=self.start_dt + datetime.timedelta(days=10),
                 sentence_length_days_min=49,
             ),
         ]
-        normalized_sentence = get_normalized_sentences([sentence])[0]
+        normalized_sentence = get_normalized_sentences([sentence], self.delegate)[0]
         normalized_lengths = sorted(
             normalized_sentence.sentence_lengths, key=lambda s: s.partition_key
         )
@@ -209,36 +226,35 @@ class TestSentenceV2Normalization(unittest.TestCase):
         self,
     ) -> None:
         sentence = self._new_sentence(1)
-        start_date = datetime.datetime(2022, 1, 1)
         sentence.sentence_lengths = [
             StateSentenceLength(
                 state_code=self.state_code_value,
                 sentence_length_id=111,
-                length_update_datetime=start_date,
+                length_update_datetime=self.start_dt,
                 # These are intended to be backwards
                 sentence_length_days_max=142,
                 sentence_length_days_min=149,
                 # These are intended to be backwards
-                projected_completion_date_max_external=start_date
+                projected_completion_date_max_external=self.start_dt
                 + datetime.timedelta(days=142),
-                projected_completion_date_min_external=start_date
+                projected_completion_date_min_external=self.start_dt
                 + datetime.timedelta(days=149),
             ),
             StateSentenceLength(
                 state_code=self.state_code_value,
                 sentence_length_id=222,
-                length_update_datetime=start_date + datetime.timedelta(days=10),
+                length_update_datetime=self.start_dt + datetime.timedelta(days=10),
                 # These are intended to not be backwards
                 sentence_length_days_max=115,
                 sentence_length_days_min=100,
                 # These are intended to not be backwards
-                projected_completion_date_max_external=start_date
+                projected_completion_date_max_external=self.start_dt
                 + datetime.timedelta(days=115),
-                projected_completion_date_min_external=start_date
+                projected_completion_date_min_external=self.start_dt
                 + datetime.timedelta(days=100),
             ),
         ]
-        normalized_sentence = get_normalized_sentences([sentence])[0]
+        normalized_sentence = get_normalized_sentences([sentence], self.delegate)[0]
         normalized_lengths = sorted(
             normalized_sentence.sentence_lengths, key=lambda s: s.partition_key
         )
@@ -248,23 +264,23 @@ class TestSentenceV2Normalization(unittest.TestCase):
         assert first.sentence_length_days_min == 142
         assert (
             first.projected_completion_date_min_external
-            == start_date + datetime.timedelta(days=142)
+            == self.start_dt + datetime.timedelta(days=142)
         )
         assert first.sentence_length_days_max == 149
         assert (
             first.projected_completion_date_max_external
-            == start_date + datetime.timedelta(days=149)
+            == self.start_dt + datetime.timedelta(days=149)
         )
         assert second.sequence_num == 2
         assert second.sentence_length_days_min == 100
         assert (
             second.projected_completion_date_min_external
-            == start_date + datetime.timedelta(days=100)
+            == self.start_dt + datetime.timedelta(days=100)
         )
         assert second.sentence_length_days_max == 115
         assert (
             second.projected_completion_date_max_external
-            == start_date + datetime.timedelta(days=115)
+            == self.start_dt + datetime.timedelta(days=115)
         )
 
     def test_get_normalized_sentence_groups_no_lengths(self) -> None:
@@ -280,20 +296,19 @@ class TestSentenceV2Normalization(unittest.TestCase):
 
     def test_get_normalized_sentence_groups_length_empty_projected_fields(self) -> None:
         group = self._new_sentence_group(1)
-        start_date = datetime.datetime(2022, 1, 1)
         group.sentence_group_lengths = [
             StateSentenceGroupLength(
                 state_code=self.state_code_value,
                 sentence_group_length_id=111,
-                group_update_datetime=start_date,
-                parole_eligibility_date_external=start_date
+                group_update_datetime=self.start_dt,
+                parole_eligibility_date_external=self.start_dt
                 + datetime.timedelta(days=100),
             ),
             StateSentenceGroupLength(
                 state_code=self.state_code_value,
                 sentence_group_length_id=222,
-                group_update_datetime=start_date + datetime.timedelta(days=10),
-                parole_eligibility_date_external=start_date
+                group_update_datetime=self.start_dt + datetime.timedelta(days=10),
+                parole_eligibility_date_external=self.start_dt
                 + datetime.timedelta(days=90),
             ),
         ]
@@ -307,43 +322,42 @@ class TestSentenceV2Normalization(unittest.TestCase):
         assert first.sentence_group_length_id == 111
         assert (
             first.parole_eligibility_date_external
-            == start_date + datetime.timedelta(100)
+            == self.start_dt + datetime.timedelta(100)
         )
         assert second.sequence_num == 2
         assert second.sentence_group_length_id == 222
         assert (
             second.parole_eligibility_date_external
-            == start_date + datetime.timedelta(90)
+            == self.start_dt + datetime.timedelta(90)
         )
 
     def test_get_normalized_sentence_groups_length_inconsistent_projected_fields(
         self,
     ) -> None:
         group = self._new_sentence_group(1)
-        start_date = datetime.datetime(2022, 1, 1)
         group.sentence_group_lengths = [
             StateSentenceGroupLength(
                 state_code=self.state_code_value,
                 sentence_group_length_id=111,
-                group_update_datetime=start_date,
-                parole_eligibility_date_external=start_date
+                group_update_datetime=self.start_dt,
+                parole_eligibility_date_external=self.start_dt
                 + datetime.timedelta(days=100),
                 # Intended to be more than the max value
-                projected_full_term_release_date_min_external=start_date
+                projected_full_term_release_date_min_external=self.start_dt
                 + datetime.timedelta(days=200),
-                projected_full_term_release_date_max_external=start_date
+                projected_full_term_release_date_max_external=self.start_dt
                 + datetime.timedelta(days=190),
             ),
             StateSentenceGroupLength(
                 state_code=self.state_code_value,
                 sentence_group_length_id=222,
-                group_update_datetime=start_date + datetime.timedelta(days=10),
-                parole_eligibility_date_external=start_date
+                group_update_datetime=self.start_dt + datetime.timedelta(days=10),
+                parole_eligibility_date_external=self.start_dt
                 + datetime.timedelta(days=90),
                 # Intended to be less than the max value
-                projected_full_term_release_date_min_external=start_date
+                projected_full_term_release_date_min_external=self.start_dt
                 + datetime.timedelta(days=180),
-                projected_full_term_release_date_max_external=start_date
+                projected_full_term_release_date_max_external=self.start_dt
                 + datetime.timedelta(days=190),
             ),
         ]
@@ -358,27 +372,280 @@ class TestSentenceV2Normalization(unittest.TestCase):
         assert first.sentence_group_length_id == 111
         assert (
             first.parole_eligibility_date_external
-            == start_date + datetime.timedelta(100)
+            == self.start_dt + datetime.timedelta(100)
         )
         assert (
             first.projected_full_term_release_date_min_external
-            == start_date + datetime.timedelta(190)
+            == self.start_dt + datetime.timedelta(190)
         )
         assert (
             first.projected_full_term_release_date_max_external
-            == start_date + datetime.timedelta(200)
+            == self.start_dt + datetime.timedelta(200)
         )
         assert second.sequence_num == 2
         assert second.sentence_group_length_id == 222
         assert (
             second.parole_eligibility_date_external
-            == start_date + datetime.timedelta(90)
+            == self.start_dt + datetime.timedelta(90)
         )
         assert (
             second.projected_full_term_release_date_min_external
-            == start_date + datetime.timedelta(180)
+            == self.start_dt + datetime.timedelta(180)
         )
         assert (
             second.projected_full_term_release_date_max_external
-            == start_date + datetime.timedelta(190)
+            == self.start_dt + datetime.timedelta(190)
+        )
+
+    def test_normalize_sentences_serving_and_completed_status(self) -> None:
+        sentence = self._new_sentence(1)
+        second_dt = self.start_dt + datetime.timedelta(days=90)
+        sentence.sentence_status_snapshots = [
+            StateSentenceStatusSnapshot(
+                state_code=self.state_code_value,
+                status_update_datetime=self.start_dt,
+                status=StateSentenceStatus.SERVING,
+                sentence_status_snapshot_id=1,
+            ),
+            StateSentenceStatusSnapshot(
+                state_code=self.state_code_value,
+                status_update_datetime=second_dt,
+                status=StateSentenceStatus.COMPLETED,
+                sentence_status_snapshot_id=2,
+            ),
+        ]
+        normalized_sentence = get_normalized_sentences([sentence], self.delegate)[0]
+        expected_normalized_status_snapshots = [
+            NormalizedStateSentenceStatusSnapshot(
+                state_code=self.state_code_value,
+                status_update_datetime=self.start_dt,
+                status_end_datetime=second_dt,
+                status=StateSentenceStatus.SERVING,
+                sentence_status_snapshot_id=1,
+                sequence_num=1,
+            ),
+            NormalizedStateSentenceStatusSnapshot(
+                state_code=self.state_code_value,
+                status_update_datetime=second_dt,
+                status_end_datetime=None,
+                status=StateSentenceStatus.COMPLETED,
+                sentence_status_snapshot_id=2,
+                sequence_num=2,
+            ),
+        ]
+        for snapshot in normalized_sentence.sentence_status_snapshots:
+            snapshot.sentence = None
+        assert (
+            normalized_sentence.sentence_status_snapshots
+            == expected_normalized_status_snapshots
+        )
+
+    def test_normalize_sentences_only_serving_status(self) -> None:
+        sentence = self._new_sentence(1)
+        second_dt = self.start_dt + datetime.timedelta(days=90)
+        sentence.sentence_status_snapshots = [
+            StateSentenceStatusSnapshot(
+                state_code=self.state_code_value,
+                status_update_datetime=self.start_dt,
+                status=StateSentenceStatus.SERVING,
+                sentence_status_snapshot_id=1,
+            ),
+            StateSentenceStatusSnapshot(
+                state_code=self.state_code_value,
+                status_update_datetime=second_dt,
+                status=StateSentenceStatus.SERVING,
+                sentence_status_snapshot_id=2,
+            ),
+        ]
+        normalized_sentence = get_normalized_sentences([sentence], self.delegate)[0]
+        expected_normalized_status_snapshots = [
+            NormalizedStateSentenceStatusSnapshot(
+                state_code=self.state_code_value,
+                status_update_datetime=self.start_dt,
+                status_end_datetime=second_dt,
+                status=StateSentenceStatus.SERVING,
+                sentence_status_snapshot_id=1,
+                sequence_num=1,
+            ),
+            NormalizedStateSentenceStatusSnapshot(
+                state_code=self.state_code_value,
+                status_update_datetime=second_dt,
+                status_end_datetime=None,
+                status=StateSentenceStatus.SERVING,
+                sentence_status_snapshot_id=2,
+                sequence_num=2,
+            ),
+        ]
+        for snapshot in normalized_sentence.sentence_status_snapshots:
+            snapshot.sentence = None
+        assert (
+            normalized_sentence.sentence_status_snapshots
+            == expected_normalized_status_snapshots
+        )
+
+    def test_normalize_sentences_early_terminating_statuses(self) -> None:
+        sentence = self._new_sentence(1)
+        second_dt = self.start_dt + datetime.timedelta(days=90)
+        third_dt = second_dt + datetime.timedelta(days=90)
+        sentence.sentence_status_snapshots = [
+            StateSentenceStatusSnapshot(
+                state_code=self.state_code_value,
+                status_update_datetime=self.start_dt,
+                status=StateSentenceStatus.SERVING,
+                sentence_status_snapshot_id=1,
+            ),
+            StateSentenceStatusSnapshot(
+                state_code=self.state_code_value,
+                status_update_datetime=second_dt,
+                status=StateSentenceStatus.COMPLETED,
+                sentence_status_snapshot_id=2,
+            ),
+            StateSentenceStatusSnapshot(
+                state_code=self.state_code_value,
+                status_update_datetime=third_dt,
+                status=StateSentenceStatus.SERVING,
+                sentence_status_snapshot_id=3,
+            ),
+        ]
+        normalized_sentence = get_normalized_sentences(
+            [sentence], FakeDelegateThatCorrectsCompleted()
+        )[0]
+        expected_normalized_status_snapshots = [
+            NormalizedStateSentenceStatusSnapshot(
+                state_code=self.state_code_value,
+                status_update_datetime=self.start_dt,
+                status_end_datetime=second_dt,
+                status=StateSentenceStatus.SERVING,
+                sentence_status_snapshot_id=1,
+                sequence_num=1,
+            ),
+            NormalizedStateSentenceStatusSnapshot(
+                state_code=self.state_code_value,
+                status_update_datetime=second_dt,
+                status_end_datetime=third_dt,
+                status=StateSentenceStatus.SERVING,
+                sentence_status_snapshot_id=2,
+                sequence_num=2,
+            ),
+            NormalizedStateSentenceStatusSnapshot(
+                state_code=self.state_code_value,
+                status_update_datetime=third_dt,
+                status_end_datetime=None,
+                status=StateSentenceStatus.SERVING,
+                sentence_status_snapshot_id=3,
+                sequence_num=3,
+            ),
+        ]
+        for snapshot in normalized_sentence.sentence_status_snapshots:
+            snapshot.sentence = None
+        assert (
+            normalized_sentence.sentence_status_snapshots
+            == expected_normalized_status_snapshots
+        )
+
+        # Early terminating statuses should raise an Error
+        sentence = self._new_sentence(1)
+        sentence.sentence_status_snapshots = [
+            StateSentenceStatusSnapshot(
+                state_code=self.state_code_value,
+                status_update_datetime=self.start_dt,
+                status=StateSentenceStatus.SERVING,
+                sentence_status_snapshot_id=1,
+            ),
+            StateSentenceStatusSnapshot(
+                state_code=self.state_code_value,
+                status_update_datetime=second_dt,
+                status=StateSentenceStatus.VACATED,
+                sentence_status_snapshot_id=2,
+            ),
+            StateSentenceStatusSnapshot(
+                state_code=self.state_code_value,
+                status_update_datetime=third_dt,
+                status=StateSentenceStatus.SERVING,
+                sentence_status_snapshot_id=3,
+            ),
+        ]
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Found \[VACATED\] status that is not the final status. StateSentenceStatusSnapshot\(sentence_status_snapshot_id=2\)",
+        ):
+            _ = get_normalized_sentences([sentence], self.delegate)
+
+    def test_normalize_sentences_statuses_on_same_day(self) -> None:
+        """
+        Inspired by US_MO, tests having multiple statuses on the same day
+        with increasing but not contiguous sequence_num
+        """
+        sentence = self._new_sentence(1)
+        second_dt = self.start_dt + datetime.timedelta(days=90)
+        sentence.sentence_status_snapshots = [
+            StateSentenceStatusSnapshot(
+                state_code=self.state_code_value,
+                status_update_datetime=self.start_dt,
+                status=StateSentenceStatus.SERVING,
+                sentence_status_snapshot_id=1,
+                sequence_num=4,
+            ),
+            StateSentenceStatusSnapshot(
+                state_code=self.state_code_value,
+                status_update_datetime=datetime.datetime(2022, 1, 1, 14, 30),
+                status=StateSentenceStatus.INTERNAL_UNKNOWN,
+                sentence_status_snapshot_id=7,
+                sequence_num=7,
+            ),
+            StateSentenceStatusSnapshot(
+                state_code=self.state_code_value,
+                status_update_datetime=datetime.datetime(2022, 1, 1, 17, 30),
+                status=StateSentenceStatus.SERVING,
+                sentence_status_snapshot_id=8,
+                sequence_num=8,
+            ),
+            StateSentenceStatusSnapshot(
+                state_code=self.state_code_value,
+                status_update_datetime=second_dt,
+                status=StateSentenceStatus.COMPLETED,
+                sentence_status_snapshot_id=11,
+                sequence_num=11,
+            ),
+        ]
+        normalized_sentence = get_normalized_sentences([sentence], self.delegate)[0]
+        expected_normalized_status_snapshots = [
+            NormalizedStateSentenceStatusSnapshot(
+                state_code=self.state_code_value,
+                status_update_datetime=self.start_dt,
+                status_end_datetime=datetime.datetime(2022, 1, 1, 14, 30),
+                status=StateSentenceStatus.SERVING,
+                sentence_status_snapshot_id=1,
+                sequence_num=1,
+            ),
+            NormalizedStateSentenceStatusSnapshot(
+                state_code=self.state_code_value,
+                status_update_datetime=datetime.datetime(2022, 1, 1, 14, 30),
+                status_end_datetime=datetime.datetime(2022, 1, 1, 17, 30),
+                status=StateSentenceStatus.INTERNAL_UNKNOWN,
+                sentence_status_snapshot_id=7,
+                sequence_num=2,
+            ),
+            NormalizedStateSentenceStatusSnapshot(
+                state_code=self.state_code_value,
+                status_update_datetime=datetime.datetime(2022, 1, 1, 17, 30),
+                status_end_datetime=second_dt,
+                status=StateSentenceStatus.SERVING,
+                sentence_status_snapshot_id=8,
+                sequence_num=3,
+            ),
+            NormalizedStateSentenceStatusSnapshot(
+                state_code=self.state_code_value,
+                status_update_datetime=second_dt,
+                status_end_datetime=None,
+                status=StateSentenceStatus.COMPLETED,
+                sentence_status_snapshot_id=11,
+                sequence_num=4,
+            ),
+        ]
+        for snapshot in normalized_sentence.sentence_status_snapshots:
+            snapshot.sentence = None
+        assert (
+            normalized_sentence.sentence_status_snapshots
+            == expected_normalized_status_snapshots
         )

@@ -26,6 +26,7 @@ from recidiviz.common.constants.state.state_charge import (
     StateChargeV2Status,
 )
 from recidiviz.common.constants.state.state_sentence import (
+    StateSentenceStatus,
     StateSentenceType,
     StateSentencingAuthority,
 )
@@ -40,6 +41,9 @@ from recidiviz.pipelines.ingest.state.generate_primary_keys import (
 from recidiviz.pipelines.ingest.state.normalization.normalize_sentences import (
     get_normalized_sentence_groups,
     get_normalized_sentences,
+)
+from recidiviz.pipelines.utils.state_utils.us_mo.us_mo_sentence_normalization_delegate import (
+    UsMoSentenceNormalizationDelegate,
 )
 from recidiviz.utils.types import assert_type
 
@@ -216,6 +220,79 @@ def test_person_001_sentencing_normalization() -> None:
             sentence=SENTENCE_001_20040224_2,
         ),
     ]
+    SENTENCE_001_19900117_1.sentence_status_snapshots = [
+        entities.StateSentenceStatusSnapshot(
+            sequence_num=1,
+            state_code="US_MO",
+            status_update_datetime=datetime.datetime(1990, 1, 17, 0, 0),
+            status=StateSentenceStatus.SERVING,
+            status_raw_text='15I1000@@"NEW COURT PROBATION "',
+            sentence_status_snapshot_id=None,
+            person=person_001,
+            sentence=SENTENCE_001_19900117_1,
+        ),
+        entities.StateSentenceStatusSnapshot(
+            sequence_num=2,
+            state_code="US_MO",
+            status_update_datetime=datetime.datetime(1992, 2, 20, 0, 0),
+            status=StateSentenceStatus.COMPLETED,
+            status_raw_text='99O2100@@"PROB REV-TECHNICAL-JAIL "',
+            person=person_001,
+            sentence=SENTENCE_001_19900117_1,
+        ),
+    ]
+    SENTENCE_001_20040224_1.sentence_status_snapshots = [
+        entities.StateSentenceStatusSnapshot(
+            sequence_num=1,
+            state_code="US_MO",
+            status_update_datetime=datetime.datetime(2004, 2, 24, 0, 0),
+            status=StateSentenceStatus.SERVING,
+            status_raw_text='15I1000@@"NEW COURT PROBATION "',
+            sentence_status_snapshot_id=None,
+            person=person_001,
+            sentence=SENTENCE_001_20040224_1,
+        ),
+        entities.StateSentenceStatusSnapshot(
+            sequence_num=3,
+            state_code="US_MO",
+            status_update_datetime=datetime.datetime(2009, 1, 26, 0, 0),
+            status=StateSentenceStatus.SUSPENDED,
+            status_raw_text='65O2015@@"COURT PROBATION SUSPENSION "',
+            sentence_status_snapshot_id=None,
+            person=person_001,
+            sentence=SENTENCE_001_20040224_1,
+        ),
+        entities.StateSentenceStatusSnapshot(
+            sequence_num=4,
+            state_code="US_MO",
+            status_update_datetime=datetime.datetime(2009, 2, 27, 0, 0),
+            status=StateSentenceStatus.COMPLETED,
+            status_raw_text='95O7000@@"RELIEVED OF SUPV-COURT "',
+            sentence_status_snapshot_id=None,
+            person=person_001,
+            sentence=SENTENCE_001_20040224_1,
+        ),
+    ]
+    SENTENCE_001_20040224_2.sentence_status_snapshots = [
+        entities.StateSentenceStatusSnapshot(
+            sequence_num=2,
+            state_code="US_MO",
+            status_update_datetime=datetime.datetime(2004, 11, 5, 0, 0),
+            status=StateSentenceStatus.SERVING,
+            status_raw_text='25I1000@@"COURT PROBATION-ADDL CHARGE "',
+            person=person_001,
+            sentence=SENTENCE_001_20040224_2,
+        ),
+        entities.StateSentenceStatusSnapshot(
+            sequence_num=5,
+            state_code="US_MO",
+            status_update_datetime=datetime.datetime(2009, 11, 4, 0, 0),
+            status=StateSentenceStatus.COMPLETED,
+            status_raw_text='99O1010@@"COURT PROB DISC-CONFIDENTIAL "',
+            person=person_001,
+            sentence=SENTENCE_001_20040224_2,
+        ),
+    ]
 
     person_001.sentences.extend(
         [
@@ -317,6 +394,36 @@ def test_person_001_sentencing_normalization() -> None:
                 projected_completion_date_min_external=None,
             )
         ],
+        sentence_status_snapshots=[
+            normalized_entities.NormalizedStateSentenceStatusSnapshot(
+                sequence_num=1,
+                state_code="US_MO",
+                status_update_datetime=datetime.datetime(1990, 1, 17, 0, 0),
+                status_end_datetime=datetime.datetime(1992, 2, 20, 0, 0),
+                status=StateSentenceStatus.SERVING,
+                status_raw_text='15I1000@@"NEW COURT PROBATION "',
+                sentence_status_snapshot_id=assert_type(
+                    SENTENCE_001_19900117_1.sentence_status_snapshots[
+                        0
+                    ].sentence_status_snapshot_id,
+                    int,
+                ),
+            ),
+            normalized_entities.NormalizedStateSentenceStatusSnapshot(
+                sequence_num=2,
+                state_code="US_MO",
+                status_update_datetime=datetime.datetime(1992, 2, 20, 0, 0),
+                status_end_datetime=None,
+                status=StateSentenceStatus.COMPLETED,
+                status_raw_text='99O2100@@"PROB REV-TECHNICAL-JAIL "',
+                sentence_status_snapshot_id=assert_type(
+                    SENTENCE_001_19900117_1.sentence_status_snapshots[
+                        1
+                    ].sentence_status_snapshot_id,
+                    int,
+                ),
+            ),
+        ],
     )
     NORMALIZED_CHARGE_001_19900117_1.sentences.append(
         NORMALIZED_SENTENCE_001_19900117_1
@@ -381,6 +488,50 @@ def test_person_001_sentencing_normalization() -> None:
                 projected_completion_date_max_external=datetime.date(2009, 2, 23),
                 projected_completion_date_min_external=None,
             )
+        ],
+        sentence_status_snapshots=[
+            normalized_entities.NormalizedStateSentenceStatusSnapshot(
+                sequence_num=1,
+                state_code="US_MO",
+                status_update_datetime=datetime.datetime(2004, 2, 24, 0, 0),
+                status_end_datetime=datetime.datetime(2009, 1, 26, 0, 0),
+                status=StateSentenceStatus.SERVING,
+                status_raw_text='15I1000@@"NEW COURT PROBATION "',
+                sentence_status_snapshot_id=assert_type(
+                    SENTENCE_001_20040224_1.sentence_status_snapshots[
+                        0
+                    ].sentence_status_snapshot_id,
+                    int,
+                ),
+            ),
+            normalized_entities.NormalizedStateSentenceStatusSnapshot(
+                sequence_num=2,
+                state_code="US_MO",
+                status_update_datetime=datetime.datetime(2009, 1, 26, 0, 0),
+                status=StateSentenceStatus.SUSPENDED,
+                status_end_datetime=datetime.datetime(2009, 2, 27, 0, 0),
+                status_raw_text='65O2015@@"COURT PROBATION SUSPENSION "',
+                sentence_status_snapshot_id=assert_type(
+                    SENTENCE_001_20040224_1.sentence_status_snapshots[
+                        1
+                    ].sentence_status_snapshot_id,
+                    int,
+                ),
+            ),
+            normalized_entities.NormalizedStateSentenceStatusSnapshot(
+                sequence_num=3,
+                state_code="US_MO",
+                status_update_datetime=datetime.datetime(2009, 2, 27, 0, 0),
+                status_end_datetime=None,
+                status=StateSentenceStatus.COMPLETED,
+                status_raw_text='95O7000@@"RELIEVED OF SUPV-COURT "',
+                sentence_status_snapshot_id=assert_type(
+                    SENTENCE_001_20040224_1.sentence_status_snapshots[
+                        2
+                    ].sentence_status_snapshot_id,
+                    int,
+                ),
+            ),
         ],
     )
     NORMALIZED_CHARGE_001_20040224_1.sentences.append(
@@ -447,6 +598,36 @@ def test_person_001_sentencing_normalization() -> None:
                 projected_completion_date_min_external=None,
             ),
         ],
+        sentence_status_snapshots=[
+            normalized_entities.NormalizedStateSentenceStatusSnapshot(
+                sequence_num=1,
+                state_code="US_MO",
+                status_update_datetime=datetime.datetime(2004, 11, 5, 0, 0),
+                status_end_datetime=datetime.datetime(2009, 11, 4, 0, 0),
+                status=StateSentenceStatus.SERVING,
+                status_raw_text='25I1000@@"COURT PROBATION-ADDL CHARGE "',
+                sentence_status_snapshot_id=assert_type(
+                    SENTENCE_001_20040224_2.sentence_status_snapshots[
+                        0
+                    ].sentence_status_snapshot_id,
+                    int,
+                ),
+            ),
+            normalized_entities.NormalizedStateSentenceStatusSnapshot(
+                sequence_num=2,
+                state_code="US_MO",
+                status_update_datetime=datetime.datetime(2009, 11, 4, 0, 0),
+                status_end_datetime=None,
+                status=StateSentenceStatus.COMPLETED,
+                status_raw_text='99O1010@@"COURT PROB DISC-CONFIDENTIAL "',
+                sentence_status_snapshot_id=assert_type(
+                    SENTENCE_001_20040224_2.sentence_status_snapshots[
+                        1
+                    ].sentence_status_snapshot_id,
+                    int,
+                ),
+            ),
+        ],
     )
     NORMALIZED_CHARGE_001_20040224_2.sentences.append(
         NORMALIZED_SENTENCE_001_20040224_2
@@ -457,7 +638,10 @@ def test_person_001_sentencing_normalization() -> None:
         set_backedges(NORMALIZED_SENTENCE_001_20040224_2),
     ]
     actual_normalized_sentences = sorted(
-        get_normalized_sentences(person_001.sentences), key=lambda s: s.external_id
+        get_normalized_sentences(
+            person_001.sentences, UsMoSentenceNormalizationDelegate()
+        ),
+        key=lambda s: s.external_id,
     )
     assert actual_normalized_sentences == expected_normalized_sentences
 
