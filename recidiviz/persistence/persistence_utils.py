@@ -20,14 +20,23 @@ from typing import TypeVar
 
 from recidiviz.persistence.database.schema.state import schema as state_schema
 from recidiviz.persistence.entity.state import entities as state_entities
+from recidiviz.persistence.entity.state import normalized_entities
 
-# A generic type to define any pure python root entity defined in entities.py.
+# A generic type to define any pure python root entity defined in state/entities.py.
 RootEntityT = TypeVar(
     "RootEntityT", state_entities.StatePerson, state_entities.StateStaff
 )
 
 
-# A generic type to define any SQLAlchemy database entity defined in schema.py.
+# A generic type to define any pure python root entity defined in
+# state/normalized_entities.py.
+NormalizedRootEntityT = TypeVar(
+    "NormalizedRootEntityT",
+    normalized_entities.NormalizedStatePerson,
+    normalized_entities.NormalizedStateStaff,
+)
+
+# A generic type to define any SQLAlchemy database entity defined in state/schema.py.
 SchemaRootEntityT = TypeVar(
     "SchemaRootEntityT", state_schema.StatePerson, state_schema.StateStaff
 )

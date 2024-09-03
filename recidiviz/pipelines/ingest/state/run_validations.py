@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Utility classes for validating state entities and entity trees."""
+from types import ModuleType
 from typing import Any, Dict, Generator, Iterable, List, Tuple, cast
 
 import apache_beam as beam
@@ -32,10 +33,9 @@ from recidiviz.persistence.entity.entity_utils import (
     get_all_entity_classes_in_module,
 )
 from recidiviz.persistence.entity.root_entity_utils import (
-    get_entity_class_name_to_root_entity_class_name,
+    get_entity_class_to_root_entity_class,
     get_root_entity_id,
 )
-from recidiviz.persistence.entity.state import entities
 from recidiviz.pipelines.ingest.state.constants import EntityClassName, EntityKey
 from recidiviz.pipelines.ingest.state.validator import (
     get_entity_key,
@@ -50,10 +50,6 @@ UniqueConstraintKey = Tuple[Any, ...]
 ROOT_ENTITY = "root_entity"
 UNIQUENESS_CONSTRAINT_ERRORS = "uniqueness_constraint_errors"
 CRITICAL_FIELDS_ROOT_ENTITY_ID = "root_entity_id"
-
-ENTITY_CLASS_NAME_TO_ROOT_ENTITY_CLASS_NAME = (
-    get_entity_class_name_to_root_entity_class_name(entities_module=entities)
-)
 
 
 @with_input_types(RootEntity)
@@ -83,6 +79,12 @@ class GetEntityCriticalFields(beam.DoFn):
 
         for e in get_all_entities_from_tree(cast(Entity, element)):
             entity_name = e.get_entity_name()
+
+            if entity_name not in self.constraints_by_entity_type:
+                raise ValueError(
+                    f"Found output entities of type [{type(e).__name__}] that are not "
+                    f"in the expected entities list."
+                )
             yield (
                 entity_name,
                 self._get_critical_fields_dict(
@@ -102,7 +104,7 @@ class GetEntityCriticalFields(beam.DoFn):
 
 @attr.define
 class UniqueConstraintFailure:
-    entity_class_name: EntityClassName
+    entity_cls: type[Entity]
     unique_constraint: UniqueConstraint
     violating_unique_constraint_key: UniqueConstraintKey
     referencing_root_entities: List[RootEntityPrimaryKey]
@@ -115,7 +117,7 @@ class UniqueConstraintFailure:
             ]
         )
         return (
-            f"More than one {self.entity_class_name} entity found with "
+            f"More than one {self.entity_cls.__name__} entity found with "
             f"({violating_values_string}). Referencing root entities: "
             f"{self.referencing_root_entities}"
         )
@@ -129,10 +131,14 @@ class FindUniqueConstraintFailuresByRootEntity(beam.PTransform):
     """
 
     def __init__(
-        self, entity_class_name: EntityClassName, unique_constraint: UniqueConstraint
+        self,
+        entity_cls: type[Entity],
+        root_entity_cls: type[Entity],
+        unique_constraint: UniqueConstraint,
     ) -> None:
         super().__init__()
-        self.entity_class_name = entity_class_name
+        self.entity_cls = entity_cls
+        self.root_entity_cls = root_entity_cls
         self.unique_constraint = unique_constraint
 
     def expand(
@@ -179,7 +185,7 @@ class FindUniqueConstraintFailuresByRootEntity(beam.PTransform):
         """
         return (
             assert_type(entity_fields[CRITICAL_FIELDS_ROOT_ENTITY_ID], int),
-            ENTITY_CLASS_NAME_TO_ROOT_ENTITY_CLASS_NAME[self.entity_class_name],
+            self.root_entity_cls.get_entity_name(),
         )
 
     @staticmethod
@@ -197,7 +203,7 @@ class FindUniqueConstraintFailuresByRootEntity(beam.PTransform):
             (
                 root_entity_key,
                 UniqueConstraintFailure(
-                    entity_class_name=self.entity_class_name,
+                    entity_cls=self.entity_cls,
                     unique_constraint=self.unique_constraint,
                     violating_unique_constraint_key=constraint_key,
                     referencing_root_entities=list(referencing_root_entities),
@@ -216,28 +222,32 @@ class RunValidations(beam.PTransform):
         self,
         expected_output_entity_classes: Iterable[type[Entity]],
         state_code: StateCode,
+        entities_module: ModuleType,
     ) -> None:
         super().__init__()
         self.expected_output_entity_classes = list(expected_output_entity_classes)
-        self.expected_output_entity_names = list(
-            e.get_entity_name() for e in expected_output_entity_classes
-        )
+        self.expected_output_entity_name_to_class = {
+            entity_cls.get_entity_name(): entity_cls
+            for entity_cls in expected_output_entity_classes
+        }
+        self.entities_module = entities_module
         self.constraints_by_entity_type = self._get_constraints_by_entity_type(
-            self.expected_output_entity_classes
+            self.expected_output_entity_classes, entities_module
         )
         self.state_code = state_code
 
     @staticmethod
     def _get_constraints_by_entity_type(
         expected_output_entity_classes: List[type[Entity]],
+        entities_module: ModuleType,
     ) -> Dict[EntityClassName, List[UniqueConstraint]]:
-        """Returns a dictionary mapping entity name (e.g. 'state_assessment') to the
-        list of unique constraints that should be checked for that entity. For all
-        entities, adds a default constraint check on the primary key column for that
-        entity (e.g. person_id for StatePerson).
+        """Returns a dictionary mapping entity name (e.g. 'state_assessment') for all
+        expected output entities to the list of unique constraints that should be
+        checked for that entity. For all entities, adds a default constraint check on
+        the primary key column for that entity (e.g. person_id for StatePerson).
         """
         constraints_by_entity_type = {}
-        for entity_cls in get_all_entity_classes_in_module(entities):
+        for entity_cls in get_all_entity_classes_in_module(entities_module):
             if entity_cls not in expected_output_entity_classes:
                 continue
 
@@ -254,7 +264,7 @@ class RunValidations(beam.PTransform):
     def expand(
         self, input_or_inputs: beam.PCollection[RootEntity]
     ) -> beam.PCollection[RootEntity]:
-        entity_names = sorted(self.expected_output_entity_names)
+        entity_names = sorted(self.expected_output_entity_name_to_class.keys())
 
         @with_input_types(Tuple[EntityClassName, EntityCriticalFieldsDict], int)
         @with_output_types(int)
@@ -292,6 +302,10 @@ class RunValidations(beam.PTransform):
         ] = []
         for i, entity_infos_for_entity_cls in enumerate(entity_type_partitions):
             entity_name = entity_names[i]
+            entity_cls = self.expected_output_entity_name_to_class[entity_name]
+            root_entity_cls = get_entity_class_to_root_entity_class(
+                entities_module=self.entities_module
+            )[entity_cls]
             hydrated_entity_counts_by_entity_name[entity_name] = (
                 entity_infos_for_entity_cls
                 | f"Count {entity_name} objects" >> beam.combiners.Count.Globally()
@@ -303,12 +317,20 @@ class RunValidations(beam.PTransform):
                 entity_infos_for_entity_cls
                 | f"Remove {entity_name} entity names" >> beam.Values()
             )
+
+            if entity_name not in self.constraints_by_entity_type:
+                raise ValueError(
+                    f"{entity_name} not in {sorted(self.constraints_by_entity_type.keys())}"
+                )
+
             for constraint in self.constraints_by_entity_type[entity_name]:
                 root_entity_to_child_constraint_failures = (
                     entity_critical_dicts
                     | f"Find all {constraint.name} failures"
                     >> FindUniqueConstraintFailuresByRootEntity(
-                        entity_class_name=entity_name, unique_constraint=constraint
+                        entity_cls=entity_cls,
+                        root_entity_cls=root_entity_cls,
+                        unique_constraint=constraint,
                     )
                 )
                 unique_constraint_failure_pcollections.append(
@@ -348,8 +370,8 @@ class RunValidations(beam.PTransform):
         self, hydrated_entity_counts_by_entity_name: Dict[str, int]
     ) -> List[str]:
         return [
-            f"Expected non-zero {entity_name} entities to be ingested, but none were ingested."
-            for entity_name in self.expected_output_entity_names
+            f"Expected non-zero {entity_cls.__name__} entities to be produced, but none were produced."
+            for entity_name, entity_cls in self.expected_output_entity_name_to_class.items()
             if assert_type(hydrated_entity_counts_by_entity_name[entity_name], int) == 0
         ]
 

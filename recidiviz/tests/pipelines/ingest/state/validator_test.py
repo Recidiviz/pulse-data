@@ -37,6 +37,7 @@ from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.entity_utils import get_all_entity_classes_in_module
 from recidiviz.persistence.entity.state import entities as entities_schema
 from recidiviz.persistence.entity.state import entities as state_entities
+from recidiviz.persistence.entity.state import normalized_entities
 from recidiviz.persistence.entity.state.entities import (
     StatePersonExternalId,
     StateStaffExternalId,
@@ -306,7 +307,7 @@ class TestEntityValidations(unittest.TestCase):
         self.assertEqual(
             error_messages[0],
             (
-                "Found [2] state_task_deadline entities with (state_code=US_XX, "
+                "Found [2] StateTaskDeadline entities with (state_code=US_XX, "
                 "task_type=StateTaskType.DISCHARGE_FROM_INCARCERATION, "
                 "task_subtype=None, "
                 'task_metadata={"external_id": "00000001-111123-371006", "sentence_type": "INCARCERATION"}, '
@@ -363,7 +364,7 @@ class TestEntityValidations(unittest.TestCase):
 
         error_messages = validate_root_entity(person)
         expected_duplicate_error = (
-            "Found [2] state_task_deadline entities with (state_code=US_XX, "
+            "Found [2] StateTaskDeadline entities with (state_code=US_XX, "
             "task_type=StateTaskType.DISCHARGE_FROM_INCARCERATION, "
             "task_subtype=my_subtype, "
             'task_metadata={"external_id": "00000001-111123-371006", "sentence_type": "INCARCERATION"}, '
@@ -468,7 +469,7 @@ class TestEntityValidations(unittest.TestCase):
             r"^Found \[StatePerson\] with id \[3111\] missing an external_id:",
         )
         expected_duplicate_error = (
-            "Found [2] state_task_deadline entities with (state_code=US_XX, "
+            "Found [2] StateTaskDeadline entities with (state_code=US_XX, "
             "task_type=StateTaskType.DISCHARGE_FROM_INCARCERATION, "
             "task_subtype=None, "
             'task_metadata={"external_id": "00000001-111123-371006", "sentence_type": "INCARCERATION"}, '
@@ -479,6 +480,30 @@ class TestEntityValidations(unittest.TestCase):
         self.assertEqual(expected_duplicate_error, error_messages[1])
         expected_ledger_error = "If sequence_num is None, then the ledger's partition_key must be unique across hydrated entities."
         self.assertIn(expected_ledger_error, error_messages[2])
+
+    def test_normalized_entity_tree_no_backedges(self) -> None:
+        normalized_person = normalized_entities.NormalizedStatePerson(
+            state_code="US_XX",
+            person_id=1,
+            external_ids=[
+                normalized_entities.NormalizedStatePersonExternalId(
+                    state_code="US_XX",
+                    person_external_id_id=1,
+                    external_id="EXTERNAL_ID_1",
+                    id_type="US_XX_ID_TYPE",
+                )
+            ],
+        )
+
+        error_messages = validate_root_entity(normalized_person)
+        self.assertEqual(1, len(error_messages))
+        expected_error = (
+            "Found entity [NormalizedStatePersonExternalId("
+            "external_id='EXTERNAL_ID_1', id_type='US_XX_ID_TYPE', "
+            "person_external_id_id=1)] with null [person]. The [person] field must be "
+            "set by the time we reach the validations step."
+        )
+        self.assertIn(expected_error, error_messages[0])
 
 
 class TestUniqueConstraintValid(unittest.TestCase):
