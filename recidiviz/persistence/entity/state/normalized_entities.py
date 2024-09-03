@@ -646,6 +646,11 @@ class NormalizedStateSentenceStatusSnapshot(
     status_update_datetime: datetime = attr.ib(
         validator=attr_validators.is_not_future_datetime
     )
+    # The end of the period of time over which the sentence status is valid.
+    # This will be None if the status is actively serving or terminated.
+    status_end_datetime: datetime | None = attr.ib(
+        validator=attr_validators.is_opt_not_future_datetime
+    )
     # The status of a sentence
     status: StateSentenceStatus = attr.ib(
         validator=attr.validators.instance_of(StateSentenceStatus)

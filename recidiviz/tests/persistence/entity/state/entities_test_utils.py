@@ -1401,6 +1401,7 @@ def generate_full_graph_normalized_state_person() -> normalized_entities.Normali
             state_code="US_XX",
             status=StateSentenceStatus.SERVING,
             status_update_datetime=datetime.datetime(2023, 1, 1),
+            status_end_datetime=None,
             sequence_num=1,
         )
     )

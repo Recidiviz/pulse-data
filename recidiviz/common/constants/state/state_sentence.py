@@ -32,6 +32,8 @@ class StateSentenceStatus(StateEntityEnum):
     COMPLETED = state_enum_strings.state_sentence_status_completed
     PARDONED = state_enum_strings.state_sentence_status_pardoned
     PENDING = state_enum_strings.state_sentence_status_pending
+    # Only use REVOKED when a person is re-sentenced because of revocation,
+    # otherwise use SERVING.
     REVOKED = state_enum_strings.state_sentence_status_revoked
     SANCTIONED = state_enum_strings.state_sentence_status_sanctioned
     SERVING = state_enum_strings.state_sentence_status_serving
@@ -48,6 +50,10 @@ class StateSentenceStatus(StateEntityEnum):
     @classmethod
     def get_value_descriptions(cls) -> Dict["StateEntityEnum", str]:
         return _STATE_SENTENCE_STATUS_VALUE_DESCRIPTIONS
+
+    @property
+    def is_terminating_status(self) -> bool:
+        return _STATE_SENTENCE_STATUS_VALUE_TERMINATES[self]
 
 
 _STATE_SENTENCE_STATUS_VALUE_DESCRIPTIONS: Dict[StateEntityEnum, str] = {
@@ -88,6 +94,23 @@ _STATE_SENTENCE_STATUS_VALUE_DESCRIPTIONS: Dict[StateEntityEnum, str] = {
     "vacated, there is immediate release from any active form of incarceration or "
     "supervision related to the vacated conviction. This is distinct from `PARDONED`, "
     "because the sentence was cleared as a result of it being deemed legally void.",
+}
+
+# We enumerate every enum option here to ensure all are accounted for and tested.
+_STATE_SENTENCE_STATUS_VALUE_TERMINATES: Dict[StateEntityEnum, bool] = {
+    StateSentenceStatus.AMENDED: False,
+    StateSentenceStatus.COMMUTED: False,
+    StateSentenceStatus.COMPLETED: True,
+    StateSentenceStatus.EXTERNAL_UNKNOWN: False,
+    StateSentenceStatus.INTERNAL_UNKNOWN: False,
+    StateSentenceStatus.PARDONED: True,
+    StateSentenceStatus.PENDING: False,
+    StateSentenceStatus.PRESENT_WITHOUT_INFO: False,
+    StateSentenceStatus.REVOKED: True,
+    StateSentenceStatus.SANCTIONED: False,
+    StateSentenceStatus.SERVING: False,
+    StateSentenceStatus.SUSPENDED: False,
+    StateSentenceStatus.VACATED: True,
 }
 
 

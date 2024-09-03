@@ -547,6 +547,56 @@ class TestSentencingRootEntityChecks(unittest.TestCase):
             ],
         )
 
+    def test_snapshots_and_periods_are_not_both_hydrated(
+        self,
+    ) -> None:
+        """
+        If a sentence has both StateSentenceStatusSnapshot and
+        StateSentenceServingPeriod entities we raise an error.
+        """
+        sentence = state_entities.StateSentence(
+            state_code=self.state_code,
+            external_id="SENT-EXTERNAL-1",
+            person=self.state_person,
+            sentence_type=StateSentenceType.STATE_PRISON,
+            sentencing_authority=StateSentencingAuthority.PRESENT_WITHOUT_INFO,
+            imposed_date=date(2022, 1, 1),
+            parole_possible=None,
+            charges=[
+                state_entities.StateChargeV2(
+                    external_id="CHARGE",
+                    state_code=self.state_code,
+                    status=StateChargeV2Status.PRESENT_WITHOUT_INFO,
+                )
+            ],
+            parent_sentence_external_id_array=None,
+            sentence_status_snapshots=[
+                state_entities.StateSentenceStatusSnapshot(
+                    state_code=self.state_code,
+                    status_update_datetime=datetime(2022, 1, 1),
+                    status=StateSentenceStatus.SERVING,
+                )
+            ],
+            sentence_serving_periods=[
+                state_entities.StateSentenceServingPeriod(
+                    external_id="SERVING-PERIOD-1",
+                    sentence_serving_period_id=1,
+                    state_code=self.state_code,
+                    serving_start_date=date(2022, 1, 1),
+                    serving_end_date=None,
+                )
+            ],
+        )
+        self.state_person.sentences = [sentence]
+        errors = validate_root_entity(self.state_person)
+        self.assertEqual(
+            errors,
+            [
+                f"Found {sentence.limited_pii_repr()} with BOTH StateSentenceStatusSnapshot "
+                "and StateSentenceServingPeriod entities. We currently do not support ingesting both in the same state."
+            ],
+        )
+
     def test_parent_sentences_validation(
         self,
     ) -> None:

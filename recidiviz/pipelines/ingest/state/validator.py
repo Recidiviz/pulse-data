@@ -169,6 +169,63 @@ def _sentence_group_checks(
             yield err
 
 
+def _check_sentence_status_snapshots(
+    state_person: state_entities.StatePerson,
+    sentence: state_entities.StateSentence,
+) -> Iterable[Error]:
+    """
+    Yields errors if StateSentenceStatusSnapshots:
+      - do not conform to the LedgerEntityMixin protocol
+      - are REVOKED on StateSentenceType that can't be revoked.
+    """
+    if err := ledger_entity_checks(
+        state_person,
+        state_entities.StateSentenceStatusSnapshot,
+        sentence.sentence_status_snapshots,
+    ):
+        yield err
+    for snapshot in sentence.sentence_status_snapshots:
+        if (
+            snapshot.status == StateSentenceStatus.REVOKED
+            and sentence.sentence_type
+            not in {
+                StateSentenceType.PAROLE,
+                StateSentenceType.PROBATION,
+                StateSentenceType.TREATMENT,
+            }
+        ):
+            yield (
+                f"Found person {state_person.limited_pii_repr()} with REVOKED status on {sentence.sentence_type} sentence."
+                " REVOKED statuses are only allowed on PROBATION and PAROLE type sentences."
+            )
+
+
+def _check_sentence_lengths(
+    state_person: state_entities.StatePerson,
+    sentence: state_entities.StateSentence,
+) -> Iterable[Error]:
+    """
+    Yields errors if StateSentenceLength entities:
+      - do not conform to the LedgerEntityMixin protocol
+      - have parole projected dates on a sentence without possible parole
+    """
+    if err := ledger_entity_checks(
+        state_person,
+        state_entities.StateSentenceLength,
+        sentence.sentence_lengths,
+    ):
+        yield err
+    if sentence.parole_possible is False and any(
+        length.parole_eligibility_date_external is not None
+        or length.projected_parole_release_date_external is not None
+        for length in sentence.sentence_lengths
+    ):
+        yield (
+            f"Sentence {sentence.limited_pii_repr()} has parole projected dates, "
+            "despite denoting that parole is not possible."
+        )
+
+
 def _sentencing_entities_checks(
     state_person: state_entities.StatePerson,
 ) -> Iterable[Error]:
@@ -185,6 +242,11 @@ def _sentencing_entities_checks(
     external_ids = set(s.external_id for s in state_person.sentences)
 
     for sentence in state_person.sentences:
+        if sentence.sentence_status_snapshots and sentence.sentence_serving_periods:
+            yield (
+                f"Found {sentence.limited_pii_repr()} with BOTH StateSentenceStatusSnapshot "
+                "and StateSentenceServingPeriod entities. We currently do not support ingesting both in the same state."
+            )
         if (
             not sentence.imposed_date
             and sentence.sentencing_authority != StateSentencingAuthority.OTHER_STATE
@@ -200,16 +262,6 @@ def _sentencing_entities_checks(
             and state_person.state_code != StateCode.US_IX.value
         ):
             yield f"Found sentence {sentence.limited_pii_repr()} with no charges."
-        if sentence.parole_possible is False:
-            if any(
-                length.parole_eligibility_date_external is not None
-                or length.projected_parole_release_date_external is not None
-                for length in sentence.sentence_lengths
-            ):
-                yield (
-                    f"Sentence {sentence.limited_pii_repr()} has parole projected dates, "
-                    "despite denoting that parole is not possible."
-                )
 
         # If this sentence has consecutive sentences before it, check
         # that they exist for this person.
@@ -225,36 +277,10 @@ def _sentencing_entities_checks(
                         f"but {state_person.limited_pii_repr()} does not have a sentence "
                         "with that external ID."
                     )
-
-        elif sentence.sentence_type in {
-            StateSentenceType.PAROLE,
-            StateSentenceType.PROBATION,
-            StateSentenceType.TREATMENT,
-        }:
-            continue
-        for status in sentence.sentence_status_snapshots:
-            if status.status == StateSentenceStatus.REVOKED:
-                yield (
-                    f"Found person {state_person.limited_pii_repr()} with REVOKED status on {sentence.sentence_type} sentence."
-                    " REVOKED statuses are only allowed on PROBATION and PAROLE type sentences."
-                )
         if sentence.sentence_lengths:
-            if err := ledger_entity_checks(
-                state_person,
-                state_entities.StateSentenceLength,
-                sentence.sentence_lengths,
-            ):
-                yield err
+            yield from _check_sentence_lengths(state_person, sentence)
         if sentence.sentence_status_snapshots:
-            if err := ledger_entity_checks(
-                state_person,
-                state_entities.StateSentenceStatusSnapshot,
-                sentence.sentence_status_snapshots,
-            ):
-                yield err
-            # TODO(#10389): Add a validation here that throws if a COMPLETED status (or
-            #  status that means completion like COMMUTED) is followed by a
-            #  non-completion status.
+            yield from _check_sentence_status_snapshots(state_person, sentence)
 
 
 def ledger_entity_checks(

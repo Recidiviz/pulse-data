@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2022 Recidiviz, Inc.
+# Copyright (C) 2024 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,19 +14,16 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Contains US_MO implementation of the StateSpecificSentenceNormalizationDelegate."""
-from recidiviz.pipelines.normalization.utils.normalization_managers.sentence_normalization_manager import (
-    StateSpecificSentenceNormalizationDelegate,
+"""Tests for the constants defined in state_sentence"""
+
+from recidiviz.common.constants.state.state_sentence import (
+    _STATE_SENTENCE_STATUS_VALUE_TERMINATES,
+    StateSentenceStatus,
 )
 
 
-class UsMoSentenceNormalizationDelegate(StateSpecificSentenceNormalizationDelegate):
-    """US_MO implementation of the StateSpecificSentenceNormalizationDelegate."""
-
-    @property
-    def correct_early_completed_statuses(self) -> bool:
-        """
-        MO often has StateSentence entities with multiple COMPLETED StateSentenceStatusSnapshot
-        We change any non-final COMPLETED status snapshot to SERVING.
-        """
-        return True
+def test_all_sentence_status_termination() -> None:
+    """Tests that we have defined if a status terminates a sentence."""
+    for status in StateSentenceStatus:
+        assert status in _STATE_SENTENCE_STATUS_VALUE_TERMINATES
+        _ = status.is_terminating_status
