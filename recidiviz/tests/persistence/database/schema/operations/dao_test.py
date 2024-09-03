@@ -36,8 +36,8 @@ from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
 from recidiviz.ingest.direct.metadata.direct_ingest_instance_status_manager import (
     DirectIngestInstanceStatusManager,
 )
-from recidiviz.ingest.direct.metadata.direct_ingest_raw_file_metadata_manager import (
-    DirectIngestRawFileMetadataManager,
+from recidiviz.ingest.direct.metadata.legacy_direct_ingest_raw_file_metadata_manager import (
+    LegacyDirectIngestRawFileMetadataManager,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.persistence.database.schema.operations.dao import (
@@ -98,7 +98,7 @@ class TestDao(TestCase):
                 normalized_path_str
             )
 
-            raw_metadata_manager = DirectIngestRawFileMetadataManager(
+            raw_metadata_manager = LegacyDirectIngestRawFileMetadataManager(
                 region_code="us_xx",
                 raw_data_instance=DirectIngestInstance.PRIMARY,
             )
@@ -125,7 +125,7 @@ class TestDao(TestCase):
                 normalized_path_str
             )
 
-            raw_metadata_manager = DirectIngestRawFileMetadataManager(
+            raw_metadata_manager = LegacyDirectIngestRawFileMetadataManager(
                 region_code="us_xx",
                 raw_data_instance=DirectIngestInstance.PRIMARY,
             )
@@ -138,7 +138,7 @@ class TestDao(TestCase):
                 secondary_normalized_path_str
             )
 
-            secondary_raw_metadata_manager = DirectIngestRawFileMetadataManager(
+            secondary_raw_metadata_manager = LegacyDirectIngestRawFileMetadataManager(
                 region_code="us_xx",
                 raw_data_instance=DirectIngestInstance.SECONDARY,
             )
@@ -173,7 +173,7 @@ class TestDao(TestCase):
                 normalized_path_str
             )
 
-            raw_metadata_manager = DirectIngestRawFileMetadataManager(
+            raw_metadata_manager = LegacyDirectIngestRawFileMetadataManager(
                 region_code="us_xx",
                 raw_data_instance=DirectIngestInstance.PRIMARY,
             )
@@ -186,7 +186,7 @@ class TestDao(TestCase):
                 secondary_normalized_path_str
             )
 
-            secondary_raw_metadata_manager = DirectIngestRawFileMetadataManager(
+            secondary_raw_metadata_manager = LegacyDirectIngestRawFileMetadataManager(
                 region_code="us_xx",
                 raw_data_instance=DirectIngestInstance.SECONDARY,
             )

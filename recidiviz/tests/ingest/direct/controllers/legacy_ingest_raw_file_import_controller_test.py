@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Tests for IngestRawFileImportController."""
+"""Tests for LegacyIngestRawFileImportController."""
 import abc
 import datetime
 import os
@@ -36,8 +36,8 @@ from recidiviz.common.constants.operations.direct_ingest_instance_status import 
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.fakes.fake_gcs_file_system import FakeGCSFileSystem
-from recidiviz.ingest.direct.controllers.ingest_raw_file_import_controller import (
-    IngestRawFileImportController,
+from recidiviz.ingest.direct.controllers.legacy_ingest_raw_file_import_controller import (
+    LegacyIngestRawFileImportController,
 )
 from recidiviz.ingest.direct.direct_ingest_cloud_task_queue_manager import (
     build_scheduler_task_id,
@@ -46,8 +46,8 @@ from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
     to_normalized_unprocessed_raw_file_name,
 )
 from recidiviz.ingest.direct.gcs.filename_parts import filename_parts_from_path
-from recidiviz.ingest.direct.metadata.direct_ingest_raw_file_metadata_manager import (
-    DirectIngestRawFileMetadataManager,
+from recidiviz.ingest.direct.metadata.legacy_direct_ingest_raw_file_metadata_manager import (
+    LegacyDirectIngestRawFileMetadataManager,
 )
 from recidiviz.ingest.direct.types.cloud_task_args import GcsfsRawDataBQImportArgs
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
@@ -88,7 +88,7 @@ DEFAULT_INPUT_RAW_FILE_TAGS = [
 
 def check_all_paths_processed(
     test_case: unittest.TestCase,
-    controller: IngestRawFileImportController,
+    controller: LegacyIngestRawFileImportController,
     file_tags: List[str],
     unexpected_tags: List[str],
 ) -> None:
@@ -131,7 +131,7 @@ def check_all_paths_processed(
 
 def process_task_queues(
     test_case: unittest.TestCase,
-    controller: IngestRawFileImportController,
+    controller: LegacyIngestRawFileImportController,
     file_tags: List[str],
     unexpected_tags: Optional[List[str]] = None,
 ) -> None:
@@ -144,7 +144,7 @@ def process_task_queues(
 
 def add_paths_with_tags_and_process(
     test_case: unittest.TestCase,
-    controller: IngestRawFileImportController,
+    controller: LegacyIngestRawFileImportController,
     file_tags: List[str],
     should_normalize: bool = False,
     unexpected_tags: Optional[List[str]] = None,
@@ -158,7 +158,7 @@ def add_paths_with_tags_and_process(
 
 
 def add_paths_with_tags(
-    controller: IngestRawFileImportController,
+    controller: LegacyIngestRawFileImportController,
     file_tags: List[str],
     should_normalize: bool = False,
     file_extension: str = "csv",
@@ -243,7 +243,7 @@ class IngestRawFileImportControllerTest(unittest.TestCase):
         raise NotImplementedError
 
     def get_fake_task_manager(
-        self, controller: IngestRawFileImportController
+        self, controller: LegacyIngestRawFileImportController
     ) -> FakeSynchronousDirectIngestCloudTaskManager:
         if not isinstance(
             controller.cloud_task_manager, FakeSynchronousDirectIngestCloudTaskManager
@@ -255,7 +255,7 @@ class IngestRawFileImportControllerTest(unittest.TestCase):
 
     def validate_file_metadata(
         self,
-        controller: IngestRawFileImportController,
+        controller: LegacyIngestRawFileImportController,
         expected_raw_metadata_tags_with_is_processed: Optional[
             List[Tuple[str, bool]]
         ] = None,
@@ -270,7 +270,7 @@ class IngestRawFileImportControllerTest(unittest.TestCase):
             ]
         raw_file_metadata_manager = controller.raw_file_metadata_manager
         if not isinstance(
-            raw_file_metadata_manager, DirectIngestRawFileMetadataManager
+            raw_file_metadata_manager, LegacyDirectIngestRawFileMetadataManager
         ):
             self.fail(
                 f"Unexpected raw_file_metadata_manager type {raw_file_metadata_manager}"
@@ -358,7 +358,7 @@ class IngestRawFileImportControllerTest(unittest.TestCase):
         return controller
 
     def check_imported_path_count(
-        self, controller: IngestRawFileImportController, expected_count: int
+        self, controller: LegacyIngestRawFileImportController, expected_count: int
     ) -> None:
         if not isinstance(
             controller.raw_file_import_manager, FakeDirectIngestRawFileImportManager
@@ -371,7 +371,7 @@ class IngestRawFileImportControllerTest(unittest.TestCase):
         )
 
     @patch(
-        "recidiviz.ingest.direct.controllers.ingest_raw_file_import_controller.is_raw_data_import_dag_enabled",
+        "recidiviz.ingest.direct.controllers.legacy_ingest_raw_file_import_controller.is_raw_data_import_dag_enabled",
         Mock(return_value=True),
     )
     def test_raw_data_dag_enabled(self) -> None:
@@ -807,7 +807,7 @@ class IngestRawFileImportControllerTest(unittest.TestCase):
         self.validate_file_metadata(controller)
 
     def _path_in_storage_dir(
-        self, path: GcsfsFilePath, controller: IngestRawFileImportController
+        self, path: GcsfsFilePath, controller: LegacyIngestRawFileImportController
     ) -> bool:
         return path.abs_path().startswith(
             controller.raw_data_storage_directory_path.abs_path()

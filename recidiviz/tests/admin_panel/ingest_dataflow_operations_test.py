@@ -38,8 +38,8 @@ from recidiviz.ingest.direct.metadata.direct_ingest_dataflow_job_manager import 
 from recidiviz.ingest.direct.metadata.direct_ingest_dataflow_watermark_manager import (
     DirectIngestDataflowWatermarkManager,
 )
-from recidiviz.ingest.direct.metadata.direct_ingest_raw_file_metadata_manager import (
-    DirectIngestRawFileMetadataManager,
+from recidiviz.ingest.direct.metadata.legacy_direct_ingest_raw_file_metadata_manager import (
+    LegacyDirectIngestRawFileMetadataManager,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.pipelines.ingest.pipeline_utils import (
@@ -93,7 +93,7 @@ class IngestDataflowOperations(TestCase):
         local_persistence_helpers.use_on_disk_postgresql_database(
             self.watermark_manager.database_key
         )
-        self.raw_file_manager = DirectIngestRawFileMetadataManager(
+        self.raw_file_manager = LegacyDirectIngestRawFileMetadataManager(
             StateCode.US_XX.value,
             DirectIngestInstance.PRIMARY,
         )

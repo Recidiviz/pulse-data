@@ -31,7 +31,7 @@ from more_itertools import one
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.dataset_config import raw_tables_dataset_for_region
-from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager import (
+from recidiviz.ingest.direct.raw_data.legacy_direct_ingest_raw_file_import_manager import (
     DirectIngestRawFileConfig,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance

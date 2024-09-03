@@ -51,7 +51,7 @@ from recidiviz.fakes.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
     DirectIngestGCSFileSystem,
 )
-from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager import (
+from recidiviz.ingest.direct.raw_data.legacy_direct_ingest_raw_file_import_manager import (
     DirectIngestRawDataSplittingGcsfsCsvReaderDelegate,
     DirectIngestRawFileReader,
 )

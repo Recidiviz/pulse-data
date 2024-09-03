@@ -81,7 +81,7 @@ class DirectIngestRawFileMetadataSummary:
 
 
 # TODO(#28239) remove this manager once raw data import dag is fully rolled out
-class DirectIngestRawFileMetadataManager:
+class LegacyDirectIngestRawFileMetadataManager:
     """An implementation for a class that handles writing metadata about each raw data
     direct ingest file to the operations Postgres table.
     """
@@ -387,7 +387,7 @@ class DirectIngestRawFileMetadataManager:
 
     def transfer_metadata_to_new_instance(
         self,
-        new_instance_manager: "DirectIngestRawFileMetadataManager",
+        new_instance_manager: "LegacyDirectIngestRawFileMetadataManager",
     ) -> None:
         """Take all rows where `is_invalidated=False` and transfer to the instance associated with
         the new_instance_manager

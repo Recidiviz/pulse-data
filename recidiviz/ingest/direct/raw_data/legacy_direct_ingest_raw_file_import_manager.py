@@ -231,7 +231,7 @@ class DirectIngestRawFileReader:
         return kwargs
 
 
-class DirectIngestRawFileImportManager:
+class LegacyDirectIngestRawFileImportManager:
     """Class that stores raw data import configs for a region, with functionality for
     executing an import of a specific file.
     """

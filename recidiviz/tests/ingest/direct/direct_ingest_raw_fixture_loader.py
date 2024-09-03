@@ -34,11 +34,11 @@ from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_client import BQ_CLIENT_MAX_POOL_SIZE
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.dataset_config import raw_tables_dataset_for_region
-from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager import (
-    check_found_columns_are_subset_of_config,
-)
 from recidiviz.ingest.direct.raw_data.direct_ingest_raw_table_schema_builder import (
     RawDataTableBigQuerySchemaBuilder,
+)
+from recidiviz.ingest.direct.raw_data.legacy_direct_ingest_raw_file_import_manager import (
+    check_found_columns_are_subset_of_config,
 )
 from recidiviz.ingest.direct.raw_data.raw_file_configs import get_region_raw_file_config
 from recidiviz.ingest.direct.types.direct_ingest_constants import (

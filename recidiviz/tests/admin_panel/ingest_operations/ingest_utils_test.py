@@ -53,7 +53,7 @@ class ImportRawFilesToBQSandboxTest(TestCase):
         )
         self.region_patcher.start()
         self.file_manager_patch = patch(
-            "recidiviz.admin_panel.ingest_operations.ingest_utils.DirectIngestRawFileImportManager"
+            "recidiviz.admin_panel.ingest_operations.ingest_utils.LegacyDirectIngestRawFileImportManager"
         )
         self.file_manager_mock = self.file_manager_patch.start().return_value
         self.file_manager_mock.region_raw_file_config = (

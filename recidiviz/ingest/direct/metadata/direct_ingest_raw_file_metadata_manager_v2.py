@@ -24,7 +24,7 @@ from sqlalchemy import and_, asc, case, func, select
 
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.ingest.direct.gcs.filename_parts import filename_parts_from_path
-from recidiviz.ingest.direct.metadata.direct_ingest_raw_file_metadata_manager import (
+from recidiviz.ingest.direct.metadata.legacy_direct_ingest_raw_file_metadata_manager import (
     DirectIngestRawFileMetadataSummary,
 )
 from recidiviz.ingest.direct.types.direct_ingest_constants import (

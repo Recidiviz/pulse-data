@@ -45,8 +45,8 @@ from recidiviz.ingest.direct.metadata.direct_ingest_dataflow_job_manager import 
 from recidiviz.ingest.direct.metadata.direct_ingest_instance_status_manager import (
     DirectIngestInstanceStatusManager,
 )
-from recidiviz.ingest.direct.metadata.direct_ingest_raw_file_metadata_manager import (
-    DirectIngestRawFileMetadataManager,
+from recidiviz.ingest.direct.metadata.legacy_direct_ingest_raw_file_metadata_manager import (
+    LegacyDirectIngestRawFileMetadataManager,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.flash_database_tools import (
@@ -479,7 +479,8 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
             return "Invalid input data", HTTPStatus.BAD_REQUEST
 
         try:
-            raw_file_metadata_manager = DirectIngestRawFileMetadataManager(
+            # TODO(#29133) update to use DirectIngestRawFileMetadataManagerV2
+            raw_file_metadata_manager = LegacyDirectIngestRawFileMetadataManager(
                 region_code=state_code.value,
                 raw_data_instance=ingest_instance,
             )
@@ -514,12 +515,12 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
             return "Invalid input data", HTTPStatus.BAD_REQUEST
 
         try:
-            raw_data_manager = DirectIngestRawFileMetadataManager(
+            raw_data_manager = LegacyDirectIngestRawFileMetadataManager(
                 region_code=state_code.value,
                 raw_data_instance=src_ingest_instance,
             )
 
-            new_instance_manager = DirectIngestRawFileMetadataManager(
+            new_instance_manager = LegacyDirectIngestRawFileMetadataManager(
                 region_code=state_code.value,
                 raw_data_instance=dest_ingest_instance,
             )

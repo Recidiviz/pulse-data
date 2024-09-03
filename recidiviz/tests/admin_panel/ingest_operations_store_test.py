@@ -49,8 +49,8 @@ from recidiviz.ingest.direct.direct_ingest_cloud_task_queue_manager import (
 from recidiviz.ingest.direct.metadata.direct_ingest_instance_status_manager import (
     DirectIngestInstanceStatusManager,
 )
-from recidiviz.ingest.direct.metadata.direct_ingest_raw_file_metadata_manager import (
-    DirectIngestRawFileMetadataManager,
+from recidiviz.ingest.direct.metadata.legacy_direct_ingest_raw_file_metadata_manager import (
+    LegacyDirectIngestRawFileMetadataManager,
 )
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRawFileConfig,
@@ -245,7 +245,7 @@ class IngestOperationsStoreRawFileProcessingStatusTest(IngestOperationsStoreTest
         super().tearDown()
 
     def test_get_ingest_file_processing_status_returns_expected_list(self) -> None:
-        manager = DirectIngestRawFileMetadataManager(
+        manager = LegacyDirectIngestRawFileMetadataManager(
             StateCode.US_XX.value,
             DirectIngestInstance.PRIMARY,
         )
@@ -277,7 +277,7 @@ class IngestOperationsStoreRawFileProcessingStatusTest(IngestOperationsStoreTest
                 break
 
     def test_get_ingest_file_processing_status_returns_processed_list(self) -> None:
-        manager = DirectIngestRawFileMetadataManager(
+        manager = LegacyDirectIngestRawFileMetadataManager(
             StateCode.US_XX.value,
             DirectIngestInstance.PRIMARY,
         )
@@ -315,7 +315,7 @@ class IngestOperationsStoreRawFileProcessingStatusTest(IngestOperationsStoreTest
     def test_get_ingest_file_processing_status_returns_list_with_files_in_bucket(
         self,
     ) -> None:
-        manager = DirectIngestRawFileMetadataManager(
+        manager = LegacyDirectIngestRawFileMetadataManager(
             StateCode.US_XX.value,
             DirectIngestInstance.PRIMARY,
         )
@@ -355,7 +355,7 @@ class IngestOperationsStoreRawFileProcessingStatusTest(IngestOperationsStoreTest
     def test_get_ingest_file_processing_status_returns_list_multiple_file_tags(
         self,
     ) -> None:
-        manager = DirectIngestRawFileMetadataManager(
+        manager = LegacyDirectIngestRawFileMetadataManager(
             StateCode.US_XX.value,
             DirectIngestInstance.PRIMARY,
         )

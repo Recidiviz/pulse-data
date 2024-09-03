@@ -35,8 +35,8 @@ from tabulate import tabulate
 
 from recidiviz.big_query.big_query_client import BigQueryClient, BigQueryClientImpl
 from recidiviz.common.constants.states import StateCode
-from recidiviz.ingest.direct.metadata.direct_ingest_raw_file_metadata_manager import (
-    DirectIngestRawFileMetadataManager,
+from recidiviz.ingest.direct.metadata.legacy_direct_ingest_raw_file_metadata_manager import (
+    LegacyDirectIngestRawFileMetadataManager,
 )
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRawFileConfig,
@@ -220,7 +220,8 @@ def main(
 
     bq_client: BigQueryClient = BigQueryClientImpl()
     database_key = SQLAlchemyDatabaseKey.for_schema(SchemaType.OPERATIONS)
-    raw_data_metadata_manager = DirectIngestRawFileMetadataManager(
+    # TODO(#29058): update this script to, behind gates, use new bq file metadata table
+    raw_data_metadata_manager = LegacyDirectIngestRawFileMetadataManager(
         state_code.value, DirectIngestInstance.PRIMARY
     )
 

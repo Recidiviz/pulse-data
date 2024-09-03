@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Helpers for building a test-only version of the IngestRawFileImportController."""
+"""Helpers for building a test-only version of the LegacyIngestRawFileImportController."""
 import os
 from types import ModuleType
 from typing import Dict, List, Optional, Set
@@ -34,8 +34,8 @@ from recidiviz.fakes.fake_gcs_file_system import (
     FakeGCSFileSystem,
     FakeGCSFileSystemDelegate,
 )
-from recidiviz.ingest.direct.controllers.ingest_raw_file_import_controller import (
-    IngestRawFileImportController,
+from recidiviz.ingest.direct.controllers.legacy_ingest_raw_file_import_controller import (
+    LegacyIngestRawFileImportController,
 )
 from recidiviz.ingest.direct.direct_ingest_regions import DirectIngestRegion
 from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
@@ -45,8 +45,8 @@ from recidiviz.ingest.direct.metadata.direct_ingest_instance_status_manager impo
     DirectIngestInstanceStatusManager,
 )
 from recidiviz.ingest.direct.raw_data import direct_ingest_raw_table_migration_collector
-from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager import (
-    DirectIngestRawFileImportManager,
+from recidiviz.ingest.direct.raw_data.legacy_direct_ingest_raw_file_import_manager import (
+    LegacyDirectIngestRawFileImportManager,
 )
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRawFileConfig,
@@ -69,7 +69,7 @@ from recidiviz.tests.ingest.direct.fakes.fake_synchronous_direct_ingest_cloud_ta
 
 class DirectIngestFakeGCSFileSystemDelegate(FakeGCSFileSystemDelegate):
     def __init__(
-        self, controller: IngestRawFileImportController, can_start_ingest: bool
+        self, controller: LegacyIngestRawFileImportController, can_start_ingest: bool
     ):
         self.controller = controller
         self.can_start_ingest = can_start_ingest
@@ -233,8 +233,8 @@ class FakeDirectIngestRegionRawFileConfig(DirectIngestRegionRawFileConfig):
         }
 
 
-class FakeDirectIngestRawFileImportManager(DirectIngestRawFileImportManager):
-    """Fake implementation of DirectIngestRawFileImportManager for tests."""
+class FakeDirectIngestRawFileImportManager(LegacyDirectIngestRawFileImportManager):
+    """Fake implementation of LegacyDirectIngestRawFileImportManager for tests."""
 
     def __init__(
         self,
@@ -272,7 +272,7 @@ class _MockBigQueryClientForControllerTests:
         self.fs = fs
 
 
-class FakeIngestRawFileImportController(IngestRawFileImportController):
+class FakeIngestRawFileImportController(LegacyIngestRawFileImportController):
     """Base class for test direct ingest controllers used in this file."""
 
     def __init__(
@@ -322,14 +322,14 @@ def build_fake_ingest_raw_file_import_controller(
         return status_manager
 
     with patch(
-        f"{IngestRawFileImportController.__module__}.DirectIngestCloudTaskQueueManagerImpl"
+        f"{LegacyIngestRawFileImportController.__module__}.DirectIngestCloudTaskQueueManagerImpl"
     ) as mock_task_factory_cls, patch(
-        f"{IngestRawFileImportController.__module__}.BigQueryClientImpl"
+        f"{LegacyIngestRawFileImportController.__module__}.BigQueryClientImpl"
     ) as mock_big_query_client_cls, patch(
-        f"{IngestRawFileImportController.__module__}.DirectIngestRawFileImportManager",
+        f"{LegacyIngestRawFileImportController.__module__}.LegacyDirectIngestRawFileImportManager",
         FakeDirectIngestRawFileImportManager,
     ), patch(
-        f"{IngestRawFileImportController.__module__}.DirectIngestInstanceStatusManager",
+        f"{LegacyIngestRawFileImportController.__module__}.DirectIngestInstanceStatusManager",
         mock_build_status_manager,
     ):
         task_manager = (
@@ -360,7 +360,9 @@ def build_fake_ingest_raw_file_import_controller(
             if not shared_task_manager:
                 for instance in DirectIngestInstance:
                     if instance != ingest_instance:
-                        mock_controller = create_autospec(IngestRawFileImportController)
+                        mock_controller = create_autospec(
+                            LegacyIngestRawFileImportController
+                        )
                         mock_controller.ingest_instance = instance
                         task_manager.set_controller(instance, mock_controller)
 

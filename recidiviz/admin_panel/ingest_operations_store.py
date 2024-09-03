@@ -69,12 +69,12 @@ from recidiviz.ingest.direct.metadata.direct_ingest_raw_file_import_manager impo
     DirectIngestRawFileImportManager,
     LatestDirectIngestRawFileImportRunSummary,
 )
-from recidiviz.ingest.direct.metadata.direct_ingest_raw_file_metadata_manager import (
-    DirectIngestRawFileMetadataManager,
-    DirectIngestRawFileMetadataSummary,
-)
 from recidiviz.ingest.direct.metadata.direct_ingest_raw_file_metadata_manager_v2 import (
     DirectIngestRawFileMetadataManagerV2,
+)
+from recidiviz.ingest.direct.metadata.legacy_direct_ingest_raw_file_metadata_manager import (
+    DirectIngestRawFileMetadataSummary,
+    LegacyDirectIngestRawFileMetadataManager,
 )
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRawFileConfig,
@@ -257,7 +257,7 @@ class IngestOperationsStore(AdminPanelStore):
     def _verify_clean_secondary_raw_data_state(self, state_code: StateCode) -> None:
         """Confirm that all raw file metadata / data has been invalidated and the BQ raw data dataset is clean in
         SECONDARY."""
-        raw_data_manager = DirectIngestRawFileMetadataManager(
+        raw_data_manager = LegacyDirectIngestRawFileMetadataManager(
             region_code=state_code.value,
             raw_data_instance=DirectIngestInstance.SECONDARY,
         )
@@ -510,9 +510,10 @@ class IngestOperationsStore(AdminPanelStore):
         in a given state_code in the operations DB
         """
         raw_file_metadata_manager: Union[
-            DirectIngestRawFileMetadataManager, DirectIngestRawFileMetadataManagerV2
+            LegacyDirectIngestRawFileMetadataManager,
+            DirectIngestRawFileMetadataManagerV2,
         ] = (
-            DirectIngestRawFileMetadataManager(
+            LegacyDirectIngestRawFileMetadataManager(
                 region_code=state_code.value,
                 raw_data_instance=ingest_instance,
             )

@@ -371,6 +371,7 @@ def sftp_dag() -> None:
                     >> gather_discovered_ingest_ready_files
                 )
 
+            # TODO(#29058): add gated check for raw data resource locks here
             scheduler_queue_name = (
                 f"direct-ingest-state-{state_code.lower().replace('_', '-')}-scheduler"
             )
