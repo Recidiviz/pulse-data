@@ -214,19 +214,22 @@ class RunValidations(beam.PTransform):
 
     def __init__(
         self,
-        expected_output_entities: Iterable[str],
+        expected_output_entity_classes: Iterable[type[Entity]],
         state_code: StateCode,
     ) -> None:
         super().__init__()
-        self.expected_output_entities = list(expected_output_entities)
+        self.expected_output_entity_classes = list(expected_output_entity_classes)
+        self.expected_output_entity_names = list(
+            e.get_entity_name() for e in expected_output_entity_classes
+        )
         self.constraints_by_entity_type = self._get_constraints_by_entity_type(
-            self.expected_output_entities
+            self.expected_output_entity_classes
         )
         self.state_code = state_code
 
     @staticmethod
     def _get_constraints_by_entity_type(
-        expected_output_entities: List[str],
+        expected_output_entity_classes: List[type[Entity]],
     ) -> Dict[EntityClassName, List[UniqueConstraint]]:
         """Returns a dictionary mapping entity name (e.g. 'state_assessment') to the
         list of unique constraints that should be checked for that entity. For all
@@ -235,7 +238,7 @@ class RunValidations(beam.PTransform):
         """
         constraints_by_entity_type = {}
         for entity_cls in get_all_entity_classes_in_module(entities):
-            if entity_cls.get_entity_name() not in expected_output_entities:
+            if entity_cls not in expected_output_entity_classes:
                 continue
 
             constraints_by_entity_type[entity_cls.get_entity_name()] = list(
@@ -251,7 +254,7 @@ class RunValidations(beam.PTransform):
     def expand(
         self, input_or_inputs: beam.PCollection[RootEntity]
     ) -> beam.PCollection[RootEntity]:
-        entity_names = sorted(self.expected_output_entities)
+        entity_names = sorted(self.expected_output_entity_names)
 
         @with_input_types(Tuple[EntityClassName, EntityCriticalFieldsDict], int)
         @with_output_types(int)
@@ -346,7 +349,7 @@ class RunValidations(beam.PTransform):
     ) -> List[str]:
         return [
             f"Expected non-zero {entity_name} entities to be ingested, but none were ingested."
-            for entity_name in self.expected_output_entities
+            for entity_name in self.expected_output_entity_names
             if assert_type(hydrated_entity_counts_by_entity_name[entity_name], int) == 0
         ]
 

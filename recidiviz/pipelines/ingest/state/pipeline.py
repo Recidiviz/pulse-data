@@ -16,7 +16,7 @@
 # =============================================================================
 """The ingest pipeline. See recidiviz/tools/calculator/run_sandbox_calculation_pipeline.py for details
 on how to launch a local run."""
-from typing import Any, Dict, Set, Tuple, Type
+from typing import Any, Dict, Tuple, Type
 
 import apache_beam as beam
 from apache_beam import Pipeline
@@ -41,13 +41,6 @@ from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestIns
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder_collector import (
     DirectIngestViewQueryBuilderCollector,
 )
-from recidiviz.persistence.database.schema.state import schema as state_schema
-from recidiviz.persistence.database.schema_type import SchemaType
-from recidiviz.persistence.database.schema_utils import (
-    get_all_table_classes_in_schema,
-    get_database_entities_by_association_table,
-    is_association_table,
-)
 from recidiviz.persistence.entity.base_entity import RootEntity
 from recidiviz.persistence.entity.generate_primary_key import (
     PrimaryKey,
@@ -69,6 +62,10 @@ from recidiviz.pipelines.ingest.state.constants import (
     IngestViewName,
     UpperBoundDate,
 )
+from recidiviz.pipelines.ingest.state.expected_output_helpers import (
+    get_expected_output_pre_normalization_entity_classes,
+    get_pipeline_output_tables,
+)
 from recidiviz.pipelines.ingest.state.generate_entities import GenerateEntities
 from recidiviz.pipelines.ingest.state.generate_ingest_view_results import (
     GenerateIngestViewResults,
@@ -88,25 +85,6 @@ from recidiviz.pipelines.ingest.state.write_root_entities_to_bq import (
     WriteRootEntitiesToBQ,
 )
 from recidiviz.pipelines.utils.beam_utils.bigquery_io_utils import WriteToBigQuery
-
-
-def get_pipeline_output_tables(expected_output_entities: Set[str]) -> Set[str]:
-    """Returns the set of tables that the pipeline will output to."""
-    expected_output_tables: Set[str] = set()
-    for table in get_all_table_classes_in_schema(SchemaType.STATE):
-        if is_association_table(table.name):
-            parent_member, child_member = get_database_entities_by_association_table(
-                state_schema, table.name
-            )
-            if (
-                parent_member.get_entity_name() in expected_output_entities
-                and child_member.get_entity_name() in expected_output_entities
-            ):
-                expected_output_tables.add(table.name)
-        if table.name in expected_output_entities:
-            expected_output_tables.add(table.name)
-
-    return expected_output_tables
 
 
 class StateIngestPipeline(BasePipeline[IngestPipelineParameters]):
@@ -186,17 +164,15 @@ class StateIngestPipeline(BasePipeline[IngestPipelineParameters]):
                     f"data: {dependencies_missing_data}"
                 )
 
-        expected_output_entities = {
-            entity_cls.get_entity_name()
-            for ingest_view in ingest_views_to_run
-            for entity_cls in ingest_manifest_collector.ingest_view_to_manifest[
-                ingest_view
-            ].hydrated_entity_classes()
-        }
+        expected_output_entity_classes = (
+            get_expected_output_pre_normalization_entity_classes(
+                ingest_manifest_collector, ingest_views_to_run
+            )
+        )
 
-        if not expected_output_entities and not ingest_views_to_run:
+        if not expected_output_entity_classes and not ingest_views_to_run:
             return
-        if not expected_output_entities:
+        if not expected_output_entity_classes:
             raise ValueError("Pipeline has no expected output")
 
         merged_root_entities_with_dates_per_ingest_view: Dict[
@@ -283,7 +259,7 @@ class StateIngestPipeline(BasePipeline[IngestPipelineParameters]):
             )
         )
 
-        output_state_tables = get_pipeline_output_tables(expected_output_entities)
+        output_state_tables = get_pipeline_output_tables(expected_output_entity_classes)
         pre_normalization_root_entities: beam.PCollection[RootEntity] = (
             {
                 PRIMARY_KEYS: root_entity_external_ids_to_primary_keys,
@@ -292,7 +268,7 @@ class StateIngestPipeline(BasePipeline[IngestPipelineParameters]):
             | AssociateRootEntitiesWithPrimaryKeys()
             | MergeRootEntitiesAcrossDates(state_code=state_code)
             | RunValidations(
-                expected_output_entities=expected_output_entities,
+                expected_output_entity_classes=expected_output_entity_classes,
                 state_code=state_code,
             )
         )

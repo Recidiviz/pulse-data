@@ -27,6 +27,7 @@ from recidiviz.common.constants.state.state_staff_role_period import StateStaffR
 from recidiviz.common.constants.state.state_task_deadline import StateTaskType
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.entity_utils import set_backedges
+from recidiviz.persistence.entity.state import entities as state_entities
 from recidiviz.persistence.entity.state.entities import (
     StatePerson,
     StatePersonExternalId,
@@ -77,7 +78,10 @@ class TestRunValidations(BigQueryEmulatorTestCase):
             entities
         )
         output = input_entities | RunValidations(
-            expected_output_entities=["state_staff", "state_staff_external_id"],
+            expected_output_entity_classes=[
+                state_entities.StateStaff,
+                state_entities.StateStaffExternalId,
+            ],
             state_code=self.state_code(),
         )
         assert_that(output, matches_all(entities))
@@ -105,7 +109,10 @@ class TestRunValidations(BigQueryEmulatorTestCase):
         )
 
         output = input_entities | RunValidations(
-            expected_output_entities=["state_person", "state_person_external_id"],
+            expected_output_entity_classes=[
+                state_entities.StatePerson,
+                state_entities.StatePersonExternalId,
+            ],
             state_code=self.state_code(),
         )
         assert_that(output, matches_all(entities))
@@ -179,11 +186,11 @@ class TestRunValidations(BigQueryEmulatorTestCase):
             entities
         )
         output = input_entities | RunValidations(
-            expected_output_entities=[
-                "state_person",
-                "state_person_external_id",
-                "state_staff",
-                "state_staff_external_id",
+            expected_output_entity_classes=[
+                state_entities.StatePerson,
+                state_entities.StatePersonExternalId,
+                state_entities.StateStaff,
+                state_entities.StateStaffExternalId,
             ],
             state_code=self.state_code(),
         )
@@ -248,10 +255,10 @@ class TestRunValidations(BigQueryEmulatorTestCase):
         )
 
         output = input_entities | RunValidations(
-            expected_output_entities=[
-                "state_person",
-                "state_person_external_id",
-                "state_task_deadline",
+            expected_output_entity_classes=[
+                state_entities.StatePerson,
+                state_entities.StatePersonExternalId,
+                state_entities.StateTaskDeadline,
             ],
             state_code=self.state_code(),
         )
@@ -269,7 +276,7 @@ class TestRunValidations(BigQueryEmulatorTestCase):
         )
 
         _ = input_entities | RunValidations(
-            expected_output_entities=["state_staff"],
+            expected_output_entity_classes=[state_entities.StateStaff],
             state_code=self.state_code(),
         )
 
@@ -290,7 +297,7 @@ class TestRunValidations(BigQueryEmulatorTestCase):
         )
 
         _ = input_entities | RunValidations(
-            expected_output_entities=["state_person"],
+            expected_output_entity_classes=[state_entities.StatePerson],
             state_code=self.state_code(),
         )
 
@@ -369,11 +376,11 @@ class TestRunValidations(BigQueryEmulatorTestCase):
         )
 
         _ = input_entities | RunValidations(
-            expected_output_entities=[
-                "state_person",
-                "state_person_external_id",
-                "state_staff",
-                "state_staff_external_id",
+            expected_output_entity_classes=[
+                state_entities.StatePerson,
+                state_entities.StatePersonExternalId,
+                state_entities.StateStaff,
+                state_entities.StateStaffExternalId,
             ],
             state_code=self.state_code(),
         )
@@ -458,11 +465,11 @@ class TestRunValidations(BigQueryEmulatorTestCase):
         )
 
         _ = input_entities | RunValidations(
-            expected_output_entities=[
-                "state_person",
-                "state_person_external_id",
-                "state_staff",
-                "state_staff_external_id",
+            expected_output_entity_classes=[
+                state_entities.StatePerson,
+                state_entities.StatePersonExternalId,
+                state_entities.StateStaff,
+                state_entities.StateStaffExternalId,
             ],
             state_code=self.state_code(),
         )
@@ -575,13 +582,13 @@ class TestRunValidations(BigQueryEmulatorTestCase):
             entities
         )
         output = input_entities | RunValidations(
-            expected_output_entities=[
-                "state_person",
-                "state_person_external_id",
-                "state_supervision_period",
-                "state_supervision_contact",
-                "state_staff",
-                "state_staff_external_id",
+            expected_output_entity_classes=[
+                state_entities.StatePerson,
+                state_entities.StatePersonExternalId,
+                state_entities.StateSupervisionPeriod,
+                state_entities.StateSupervisionContact,
+                state_entities.StateStaff,
+                state_entities.StateStaffExternalId,
             ],
             state_code=self.state_code(),
         )
@@ -703,14 +710,14 @@ class TestRunValidations(BigQueryEmulatorTestCase):
         )
 
         _ = input_entities | RunValidations(
-            expected_output_entities=[
-                "state_person",
-                "state_person_external_id",
-                "state_supervision_contact",
-                "state_supervision_period",
-                "state_staff",
-                "state_staff_external_id",
-                "state_staff_role_period",
+            expected_output_entity_classes=[
+                state_entities.StatePerson,
+                state_entities.StatePersonExternalId,
+                state_entities.StateSupervisionContact,
+                state_entities.StateSupervisionPeriod,
+                state_entities.StateStaff,
+                state_entities.StateStaffExternalId,
+                state_entities.StateStaffRolePeriod,
             ],
             state_code=self.state_code(),
         )
@@ -833,13 +840,13 @@ class TestRunValidations(BigQueryEmulatorTestCase):
         )
 
         _ = input_entities | RunValidations(
-            expected_output_entities=[
-                "state_person",
-                "state_person_external_id",
-                "state_supervision_contact",
-                "state_supervision_period",
-                "state_staff",
-                "state_staff_external_id",
+            expected_output_entity_classes=[
+                state_entities.StatePerson,
+                state_entities.StatePersonExternalId,
+                state_entities.StateSupervisionContact,
+                state_entities.StateSupervisionPeriod,
+                state_entities.StateStaff,
+                state_entities.StateStaffExternalId,
             ],
             state_code=self.state_code(),
         )
@@ -987,13 +994,13 @@ class TestRunValidations(BigQueryEmulatorTestCase):
         )
 
         _ = input_entities | RunValidations(
-            expected_output_entities=[
-                "state_person",
-                "state_person_external_id",
-                "state_supervision_contact",
-                "state_supervision_period",
-                "state_staff",
-                "state_staff_external_id",
+            expected_output_entity_classes=[
+                state_entities.StatePerson,
+                state_entities.StatePersonExternalId,
+                state_entities.StateSupervisionContact,
+                state_entities.StateSupervisionPeriod,
+                state_entities.StateStaff,
+                state_entities.StateStaffExternalId,
             ],
             state_code=self.state_code(),
         )
@@ -1046,7 +1053,10 @@ class TestRunValidations(BigQueryEmulatorTestCase):
         )
 
         _ = input_entities | RunValidations(
-            expected_output_entities=["state_person", "state_person_external_id"],
+            expected_output_entity_classes=[
+                state_entities.StatePerson,
+                state_entities.StatePersonExternalId,
+            ],
             state_code=self.state_code(),
         )
 
@@ -1186,13 +1196,13 @@ class TestRunValidations(BigQueryEmulatorTestCase):
         )
 
         _ = input_entities | RunValidations(
-            expected_output_entities=[
-                "state_person",
-                "state_person_external_id",
-                "state_supervision_contact",
-                "state_supervision_period",
-                "state_staff",
-                "state_staff_external_id",
+            expected_output_entity_classes=[
+                state_entities.StatePerson,
+                state_entities.StatePersonExternalId,
+                state_entities.StateSupervisionContact,
+                state_entities.StateSupervisionPeriod,
+                state_entities.StateStaff,
+                state_entities.StateStaffExternalId,
             ],
             state_code=self.state_code(),
         )
@@ -1264,10 +1274,10 @@ class TestRunValidations(BigQueryEmulatorTestCase):
         )
 
         _ = input_entities | RunValidations(
-            expected_output_entities=[
-                "state_person",
-                "state_person_external_id",
-                "state_task_deadline",
+            expected_output_entity_classes=[
+                state_entities.StatePerson,
+                state_entities.StatePersonExternalId,
+                state_entities.StateTaskDeadline,
             ],
             state_code=self.state_code(),
         )
@@ -1306,10 +1316,10 @@ class TestRunValidations(BigQueryEmulatorTestCase):
         )
 
         _ = input_entities | RunValidations(
-            expected_output_entities=[
-                "state_staff",
-                "state_staff_external_id",
-                "state_staff_role_period",
+            expected_output_entity_classes=[
+                state_entities.StateStaff,
+                state_entities.StateStaffExternalId,
+                state_entities.StateStaffRolePeriod,
             ],
             state_code=self.state_code(),
         )
