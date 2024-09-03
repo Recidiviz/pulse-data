@@ -47,6 +47,7 @@ function main(e) {
   const workflowToDistrictOrFacilitiesColumnChart = {};
   const workflowToOpportunityGranted = {};
   const workflowToMaxOpportunityGrantedLocation = {};
+  const workflowToSystem = {}
 
   const stateCodeToRows = getSheetValues();
   const stateRows = stateCodeToRows[stateCode];
@@ -63,6 +64,7 @@ function main(e) {
     Logger.log("completionEventType: %s", completionEventType);
     const system = workflowRow.system;
     Logger.log("system: %s", system);
+    workflowToSystem[workflow] = system;
 
     var opportunityGranted = constructOpportunitiesGrantedText(
       stateCode,
@@ -105,7 +107,8 @@ function main(e) {
     workflowsToInclude,
     workflowToOpportunityGranted,
     startDate,
-    workflowToMaxOpportunityGrantedLocation
+    workflowToMaxOpportunityGrantedLocation,
+    workflowToSystem,
   );
 }
 
@@ -122,6 +125,7 @@ function main(e) {
  * @param {map} workflowToOpportunityGranted An object that maps the workflow name to the number of opportunities granted for that workflow
  * @param {string} startDate The start date (queried from BigQuery) (ex: '2023-02-01')
  * @param {map} workflowToMaxOpportunityGrantedLocation An object that maps the workflow name to the district or facility with the most number of opportunities granted
+ * @param {map} workflowToSystem An object that maps the workflow name to it's system ('SUPERVISION' or 'INCARCERATION')
  */
 function copyAndPopulateTemplateDoc(
   workflowToDistrictOrFacilitiesColumnChart,
@@ -131,7 +135,8 @@ function copyAndPopulateTemplateDoc(
   workflowsToInclude,
   workflowToOpportunityGranted,
   startDate,
-  workflowToMaxOpportunityGrantedLocation
+  workflowToMaxOpportunityGrantedLocation,
+  workflowToSystem
 ) {
   const template = DriveApp.getFileById(
     "1nsc_o2fTlldTQavxJveucWgDKkic_clKZjn0GuyF2N8"
@@ -162,7 +167,7 @@ function copyAndPopulateTemplateDoc(
   const timeRange = `${startDate}-${endDateClean}`;
   body.replaceText("{{time_range}}", timeRange);
 
-  copyAndPopulateOpportunityGrants(body, workflowToOpportunityGranted);
+  copyAndPopulateOpportunityGrants(body, workflowToOpportunityGranted, workflowToSystem);
 
   copyAndPopulateWorkflowSection(
     body,
@@ -179,50 +184,103 @@ function copyAndPopulateTemplateDoc(
  * Identifies, copies, and populates the total number of opportunuties granted (over all workflows) as well as the number of opportunities granted for each workflow.
  * @param {Body} body The template document body
  * @param {map} workflowToOpportunityGranted An object that maps the workflow name to the number of opportunities granted for that workflow
+ * @param {map} workflowToSystem An object that maps the workflow name to it's system ('SUPERVISION' or 'INCARCERATION')
  */
-function copyAndPopulateOpportunityGrants(body, workflowToOpportunityGranted) {
+function copyAndPopulateOpportunityGrants(body, workflowToOpportunityGranted, workflowToSystem) {
   // First, populate the sum of all Opportunities Granted (for all Workflows)
-  var totalOpportunitiesGranted = 0;
-  Object.values(workflowToOpportunityGranted).forEach((opportunityGranted) => {
-    totalOpportunitiesGranted += opportunityGranted;
+  var totalSupervisionOpportunitiesGranted = 0;
+  var totalFacilitiesOpportunitiesGranted = 0;
+  var numSupervisionWorkflows = 0;
+  var numFacilitiesWorkflows = 0;
+
+  Object.entries(workflowToOpportunityGranted).forEach(([workflow, opportunityGranted]) => {
+    if (workflowToSystem[workflow] === "SUPERVISION") {
+      totalSupervisionOpportunitiesGranted += opportunityGranted;
+      numSupervisionWorkflows += 1;
+    } else if (workflowToSystem[workflow] === "INCARCERATION") {
+      totalFacilitiesOpportunitiesGranted += opportunityGranted;
+      numFacilitiesWorkflows += 1;
+    }
   });
-  totalOpportunitiesGranted = totalOpportunitiesGranted.toLocaleString();
-  Logger.log("totalOpportunitiesGranted: %s", totalOpportunitiesGranted);
-  body.replaceText("{{opp_grants}}", totalOpportunitiesGranted);
+  totalSupervisionOpportunitiesGranted = totalSupervisionOpportunitiesGranted.toLocaleString();
+  totalFacilitiesOpportunitiesGranted = totalFacilitiesOpportunitiesGranted.toLocaleString();
+
+  Logger.log("totalSupervisionOpportunitiesGranted: %s", totalSupervisionOpportunitiesGranted);
+  Logger.log("totalFacilitiesOpportunitiesGranted: %s", totalFacilitiesOpportunitiesGranted);
+  Logger.log("numSupervisionWorkflows: %s", numSupervisionWorkflows);
+  Logger.log("numFacilitiesWorkflows: %s", numFacilitiesWorkflows);
 
   // Next, populate the Opportunities Granted for each individual Workflow
   const childIdx = getIndexOfElementToReplace(
     body,
     DocumentApp.ElementType.TABLE,
-    "{{grant_type}}: {{num_grants}} Grants"
+    "{{num_grants_pp}}"
   );
-
   const child = body.getChild(childIdx);
-  const cell = child.getCell(2, 1);
-  const textToReplace = cell.getChild(0);
 
-  // For each Workflow, copy the placeholder text and populate with the number of Opportunities Granted
-  var style = {};
-  style[DocumentApp.Attribute.BOLD] = true;
+  // To start, the table will have 5 rows as a default (rows are zero indexed)
+  var numTableRows = 4;
 
+  if (numSupervisionWorkflows > 0) {
+    body.replaceText("{{num_grants_pp}}", totalSupervisionOpportunitiesGranted);
+  } else {
+    // remove P&P rows from table
+    child.removeRow(3);
+    numTableRows -= 1;
+  }
+
+  if (numFacilitiesWorkflows > 0) {
+    body.replaceText("{{num_grants_facility}}", totalFacilitiesOpportunitiesGranted);
+  } else {
+    // remove Facilities rows from table
+    child.removeRow(numTableRows);
+    numTableRows -= 1;
+  }
+
+  // For each Workflow, copy the placeholder row and populate with the Workflow name and number of Opportunities Granted
   Object.entries(workflowToOpportunityGranted).forEach(
     ([workflow, opportunityGranted]) => {
-      const textCopy = textToReplace.copy();
+      var newRow = null;
+      var newRowIdx = null;
+      const rowToCopy = child.getChild(2).copy();
 
-      textCopy.replaceText(
-        "{{grant_type}}: {{num_grants}} Grants",
-        `${workflow}: ${opportunityGranted.toLocaleString()} Grants`
+      if (workflowToSystem[workflow] === "SUPERVISION") {
+        // Add new row to table in P&P section
+        newRowIdx = 4;        
+      } else if (workflowToSystem[workflow] === "INCARCERATION") {
+        // Add new row to table in Facilities section
+        newRowIdx = numTableRows + 1;
+      }
+      
+      newRow = child.insertTableRow(newRowIdx, rowToCopy);
+      numTableRows += 1
+      const nameCell = newRow.getCell(0);  
+      const valueCell = newRow.getCell(1);
+      const nameTextToReplace = nameCell.getChild(0);
+      const valueTextToReplace = valueCell.getChild(0);
+
+      const nameTextCopy = nameTextToReplace.copy();
+      const valueTextCopy = valueTextToReplace.copy();
+
+      nameTextCopy.replaceText(
+        "{{workflow_name}}",
+        workflow
       );
-      const startBoldIndex =
-        textCopy.findText(": ").getEndOffsetInclusive() + 1;
-      const endBoldIndex = textCopy.findText("Grants").getEndOffsetInclusive();
-      textCopy.editAsText().setAttributes(startBoldIndex, endBoldIndex, style);
-      cell.appendParagraph(textCopy);
+      valueTextCopy.replaceText(
+        "{{num_grants}}",
+        opportunityGranted.toLocaleString()
+      );
+      nameCell.appendParagraph(nameTextCopy);
+      valueCell.appendParagraph(valueTextCopy);
+    
+      // Finally, delete the original element that we copied
+      nameCell.removeChild(nameTextToReplace);
+      valueCell.removeChild(valueTextToReplace);
     }
   );
 
-  // Finally, delete the original element that we copied
-  cell.removeChild(textToReplace);
+  // Once we have copied all Workflows rows, we can delete the placeholder row
+  child.removeRow(2);
 }
 
 /**

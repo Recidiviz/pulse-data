@@ -143,10 +143,10 @@ function getIndexOfElementToReplace(body, elementType, textToMatch) {
 
     if (child.getType() === elementType) {
       if (elementType === DocumentApp.ElementType.TABLE) {
-        // At this point, the template table is 3 rows by 2 columns
-        // We want to get the cell in the third row, second column
+        // At this point, the template table is 5 rows by 4 columns
+        // We want to get the cell in the fourth row, second column
         // Note that cells start at index 0
-        child = child.getCell(2, 1);
+        child = child.getCell(3, 1);
       }
 
       if (child.getText() === textToMatch) {
