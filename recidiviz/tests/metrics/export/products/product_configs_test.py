@@ -103,6 +103,7 @@ class TestProductConfigs(unittest.TestCase):
                 exports=["EXPORT", "OTHER_EXPORT"],
                 states=[
                     ProductStateConfig(state_code="US_XX", environment="production"),
+                    ProductStateConfig(state_code="US_YY", environment="production"),
                     ProductStateConfig(state_code="US_WW", environment="staging"),
                 ],
                 environment=None,
@@ -136,8 +137,10 @@ class TestProductConfigs(unittest.TestCase):
         export_configs = product_configs.get_all_export_configs()
         expected = [
             ProductExportConfig(export_job_name="EXPORT", state_code="US_XX"),
+            ProductExportConfig(export_job_name="EXPORT", state_code="US_YY"),
             ProductExportConfig(export_job_name="EXPORT", state_code="US_WW"),
             ProductExportConfig(export_job_name="OTHER_EXPORT", state_code="US_XX"),
+            ProductExportConfig(export_job_name="OTHER_EXPORT", state_code="US_YY"),
             ProductExportConfig(export_job_name="OTHER_EXPORT", state_code="US_WW"),
             ProductExportConfig(export_job_name="MOCK_EXPORT_NAME", state_code=None),
         ]

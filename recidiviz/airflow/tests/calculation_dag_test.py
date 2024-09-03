@@ -40,11 +40,13 @@ from recidiviz.airflow.tests.utils.dag_helper_functions import (
     fake_operator_with_return_value,
 )
 from recidiviz.common.constants.states import StateCode
+from recidiviz.metrics.export.products.product_configs import ProductConfigs
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.pipelines.ingest.pipeline_utils import (
     DEFAULT_PIPELINE_REGIONS_BY_STATE_CODE,
 )
 from recidiviz.tests import pipelines as recidiviz_pipelines_tests_module
+from recidiviz.tests.metrics.export import fixtures as metric_export_fixtures
 from recidiviz.utils.environment import GCPEnvironment
 from recidiviz.utils.yaml_dict import YAMLDict
 
@@ -679,6 +681,19 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
         )
         self.ingest_regions_patcher.start()
 
+        # Load mock export configs so that US_XX has metric exports configured
+        self.product_configs_patcher = patch.object(
+            ProductConfigs,
+            "from_file",
+            return_value=ProductConfigs.from_file(
+                os.path.join(
+                    os.path.dirname(metric_export_fixtures.__file__),
+                    "fixture_products.yaml",
+                )
+            ),
+        )
+
+        self.product_configs_patcher.start()
         self.project_patcher = patch(
             "recidiviz.airflow.dags.calculation_dag.get_project_id",
             return_value=_PROJECT_ID,
@@ -741,6 +756,7 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
         self.kubernetes_pod_operator_patcher_2.stop()
         self.cloud_sql_query_operator_patcher.stop()
         self.recidiviz_dataflow_operator_patcher.stop()
+        self.product_configs_patcher.stop()
 
     def _mock_fail_dataflow_pipeline(
         self, state_code: StateCode, pipeline_name: str
@@ -782,7 +798,7 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
                     r"^ingest_and_normalization.*",
                     r"^update_state",
                     r"^update_normalized_state",
-                    r"^post_normalization_pipelines\.[a-zA-Z]*",
+                    r"^post_normalization_pipelines",
                     r"^update_managed_views_all",
                     r"^validations.*",
                     r"^metric_exports.*",
@@ -855,6 +871,9 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
                     # No normalization nodes run
                     r"^ingest_and_normalization.us_yy_dataflow.us-yy-normalization.*",
                     r"^ingest_and_normalization.branch_end",
+                    # Metric exports for US_YY should not run
+                    r"^metric_exports\.state_specific_metric_exports\.US_YY_metric_exports",
+                    r"^metric_exports.state_specific_metric_exports.branch_end",
                 ],
                 # No downstream processes are skipped!
                 expected_skipped_task_id_regexes=[],
@@ -871,10 +890,18 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
                     r"^ingest_and_normalization_completed",
                     r"^update_state",
                     r"^update_normalized_state",
-                    r"^post_normalization_pipelines\.[a-zA-Z]*",
+                    r"^post_normalization_pipelines",
                     r"^update_managed_views_all",
                     r"^validations.*",
-                    r"^metric_exports.*",
+                    r"^metric_exports.state_specific_metric_exports.branch_start",
+                    # This is a state-agnostic export so it runs
+                    r"^metric_exports.MOCK_EXPORT_NAME_metric_exports.export_mock_export_name_metric_view_data",
+                    # Metric exports for US_XX (no failures) should run
+                    r"metric_exports.state_specific_metric_exports.US_XX_start",
+                    r"^metric_exports\.state_specific_metric_exports\.US_XX_metric_exports",
+                    # The branch_start node runs, but the actual metric export jobs still fail
+                    r"metric_exports.state_specific_metric_exports.US_YY_start",
+                    # r"^metric_exports.*",
                 ],
             )
 
@@ -902,6 +929,8 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
                 expected_failure_task_id_regexes=[
                     r"^ingest_and_normalization.us_yy_dataflow.us-yy-normalization.run_pipeline",
                     r"^ingest_and_normalization.branch_end",
+                    r"^metric_exports\.state_specific_metric_exports\.US_YY_metric_exports\.",
+                    r"^metric_exports.state_specific_metric_exports.branch_end*",
                 ],
                 # No downstream processes are skipped!
                 expected_skipped_task_id_regexes=[],
@@ -920,10 +949,17 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
                     r"^ingest_and_normalization_completed",
                     r"^update_state",
                     r"^update_normalized_state",
-                    r"^post_normalization_pipelines\.[a-zA-Z]*",
+                    r"^post_normalization_pipelines",
                     r"^update_managed_views_all",
                     r"^validations.*",
-                    r"^metric_exports.*",
+                    # This is a state-agnostic export so it runs
+                    r"^metric_exports.MOCK_EXPORT_NAME_metric_exports.export_mock_export_name_metric_view_data",
+                    r"^metric_exports.state_specific_metric_exports.branch_start",
+                    # Metric exports for US_XX (no failures) should run
+                    r"^metric_exports.state_specific_metric_exports.US_XX_start",
+                    r"^metric_exports\.state_specific_metric_exports\.US_XX_metric_exports\.",
+                    # The branch_start node runs, but the actual metric export jobs still fail
+                    r"metric_exports.state_specific_metric_exports.US_YY_start",
                 ],
             )
             self.assertEqual(
@@ -951,11 +987,8 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
                 expected_failure_task_id_regexes=[
                     r"^post_normalization_pipelines.US_XX_dataflow_pipelines.full-us-xx-pipeline-no-limit.run_pipeline",
                     r"^post_normalization_pipelines.branch_end",
-                    # TODO(#32596): A single state-specific metric pipeline failure
-                    #  should not make the whole rest of the DAG fail.
-                    r"^update_managed_views_all",
-                    r"^metric_exports.*",
-                    r"^validations.*",
+                    r"^metric_exports\.state_specific_metric_exports\.US_XX_metric_exports\.",
+                    r"^metric_exports.state_specific_metric_exports.branch_end",
                 ],
                 expected_success_task_id_regexes=[
                     r"^initialize_dag.*",
@@ -971,6 +1004,19 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
                     # Completely different pipeline for US_XX runs
                     r"^post_normalization_pipelines.US_XX_dataflow_pipelines.us-xx-pipeline-with-limit-36.*",
                     r"^post_normalization_pipelines.US_XX_dataflow_pipelines.full-us-xx-pipeline-no-limit.create_flex_template",
+                    # This step runs with trigger rule ALL_DONE so it runs even though a
+                    # pipeline failed.
+                    r"^post_normalization_pipelines_completed",
+                    r"^update_managed_views_all",
+                    r"^metric_exports.state_specific_metric_exports.branch_start",
+                    # This is a state-agnostic export so it runs
+                    r"^metric_exports.MOCK_EXPORT_NAME_metric_exports.export_mock_export_name_metric_view_data",
+                    # Metric exports for US_YY (no failures) should run
+                    r"^metric_exports\.state_specific_metric_exports\.US_YY_start",
+                    r"^metric_exports\.state_specific_metric_exports\.US_YY_metric_exports\.",
+                    # The branch_start node runs, but the actual metric export jobs still fail
+                    r"metric_exports.state_specific_metric_exports.US_XX_start",
+                    r"^validations.*",
                 ],
             )
 
@@ -1005,15 +1051,15 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
                     "ingest_instance": "PRIMARY",
                 },
                 expected_failure_task_id_regexes=[
-                    r"update_big_query_table_schemata",
-                    r"ingest_and_normalization\.[a-zA-Z]*",
-                    r"bq_refresh.refresh_bq_dataset_",
-                    r"update_state",
-                    r"update_normalized_state",
-                    r"update_managed_views_all",
-                    r"post_normalization_pipelines\.[a-zA-Z]*",
-                    r"validations.*",
-                    r"metric_exports.*",
+                    r"^update_big_query_table_schemata",
+                    r"^ingest_and_normalization\.[a-zA-Z]*",
+                    r"^bq_refresh.refresh_bq_dataset_",
+                    r"^update_state",
+                    r"^update_normalized_state",
+                    r"^update_managed_views_all",
+                    r"^post_normalization_pipelines\.[a-zA-Z]*",
+                    r"^validations.*",
+                    r"^metric_exports.*",
                 ],
                 expected_skipped_task_id_regexes=[],
                 # These indicate their respective groups completed,
@@ -1021,9 +1067,9 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
                 # did not complete successfully!
                 # That is because these tasks simply trigger with ALL_DONE
                 expected_success_task_id_regexes=[
-                    r"bq_refresh.bq_refresh_completed",
-                    r"ingest_and_normalization_completed",
-                    r"normalization_completed",
+                    r"^bq_refresh.bq_refresh_completed",
+                    r"^ingest_and_normalization_completed",
+                    r"^post_normalization_pipelines_completed",
                 ],
             )
 
@@ -1063,7 +1109,7 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
                     r"^ingest_and_normalization.*",
                     r"^update_state",
                     r"^update_normalized_state",
-                    r"^post_normalization_pipelines\.[a-zA-Z]*",
+                    r"^post_normalization_pipelines",
                     r"^update_managed_views_all",
                 ],
             )
