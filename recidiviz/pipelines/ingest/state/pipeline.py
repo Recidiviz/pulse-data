@@ -47,6 +47,7 @@ from recidiviz.persistence.entity.generate_primary_key import (
     generate_primary_key,
 )
 from recidiviz.persistence.entity.state import entities as state_entities
+from recidiviz.persistence.entity.state import normalized_entities
 from recidiviz.pipelines.base_pipeline import BasePipeline
 from recidiviz.pipelines.ingest.pipeline_parameters import IngestPipelineParameters
 from recidiviz.pipelines.ingest.state.associate_with_primary_keys import (
@@ -63,6 +64,7 @@ from recidiviz.pipelines.ingest.state.constants import (
     UpperBoundDate,
 )
 from recidiviz.pipelines.ingest.state.expected_output_helpers import (
+    get_expected_output_normalized_entity_classes,
     get_expected_output_pre_normalization_entity_classes,
     get_pipeline_output_tables,
 )
@@ -79,6 +81,9 @@ from recidiviz.pipelines.ingest.state.merge_ingest_view_root_entity_trees import
 )
 from recidiviz.pipelines.ingest.state.merge_root_entities_across_dates import (
     MergeRootEntitiesAcrossDates,
+)
+from recidiviz.pipelines.ingest.state.normalize_root_entities import (
+    NormalizeRootEntities,
 )
 from recidiviz.pipelines.ingest.state.run_validations import RunValidations
 from recidiviz.pipelines.ingest.state.write_root_entities_to_bq import (
@@ -286,7 +291,29 @@ class StateIngestPipeline(BasePipeline[IngestPipelineParameters]):
         )
 
         if self.pipeline_parameters.run_normalization:
-            # TODO(#29517): Actually add normalization logic here!
-            raise NotImplementedError(
-                "Normalization logic in ingest pipelines not yet implemented"
+            expected_output_normalized_entity_classes = (
+                get_expected_output_normalized_entity_classes(
+                    expected_output_entity_classes
+                )
+            )
+            normalized_root_entities: beam.PCollection[RootEntity] = (
+                pre_normalization_root_entities
+                | "Normalize root entities"
+                >> NormalizeRootEntities(
+                    state_code=state_code,
+                    expected_output_entity_classes=expected_output_normalized_entity_classes,
+                )
+            )
+
+            _ = (
+                normalized_root_entities
+                | f"Write normalized entities to {self.pipeline_parameters.normalized_output}"
+                >> WriteRootEntitiesToBQ(
+                    state_code=state_code,
+                    entities_module=normalized_entities,
+                    output_dataset=self.pipeline_parameters.normalized_output,
+                    output_table_ids=get_pipeline_output_tables(
+                        expected_output_normalized_entity_classes
+                    ),
+                )
             )

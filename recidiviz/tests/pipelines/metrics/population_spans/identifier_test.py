@@ -52,11 +52,11 @@ from recidiviz.pipelines.metrics.population_spans.spans import (
 )
 from recidiviz.pipelines.utils.execution_utils import TableRow
 from recidiviz.pipelines.utils.identifier_models import IdentifierResult, Span
-from recidiviz.pipelines.utils.state_utils.templates.us_xx.us_xx_incarceration_delegate import (
-    UsXxIncarcerationDelegate,
+from recidiviz.pipelines.utils.state_utils.state_specific_incarceration_delegate import (
+    StateSpecificIncarcerationDelegate,
 )
-from recidiviz.pipelines.utils.state_utils.templates.us_xx.us_xx_supervision_delegate import (
-    UsXxSupervisionDelegate,
+from recidiviz.pipelines.utils.state_utils.state_specific_supervision_delegate import (
+    StateSpecificSupervisionDelegate,
 )
 from recidiviz.tests.pipelines.fake_state_calculation_config_manager import (
     start_pipeline_delegate_getter_patchers,
@@ -191,7 +191,7 @@ class TestFindPopulationSpans(unittest.TestCase):
         )
 
         with patch.object(
-            UsXxIncarcerationDelegate,
+            StateSpecificIncarcerationDelegate,
             "is_period_included_in_state_population",
             return_value=False,
         ):
@@ -1013,7 +1013,7 @@ class TestFindPopulationSpans(unittest.TestCase):
         )
 
         with patch.object(
-            UsXxSupervisionDelegate,
+            StateSpecificSupervisionDelegate,
             "supervision_types_mutually_exclusive",
             return_value=True,
         ):

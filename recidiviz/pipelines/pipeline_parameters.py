@@ -475,7 +475,8 @@ class PipelineParameters:
                         "shuffle-mode=service",
                         "use-beam-bq-sink",
                         "use-runner-v2",
-                        # TODO(#27823): add this flag back if it isn't the cause of worker failures or if google resolves the issue
+                        # TODO(#28197): Add this flag back when google resolves
+                        #  https://github.com/GoogleCloudPlatform/cloud-profiler-python/issues/142
                         # "enable_google_cloud_profiler",
                     ],
                     "network": "default",
