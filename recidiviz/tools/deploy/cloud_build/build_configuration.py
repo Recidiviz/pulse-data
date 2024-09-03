@@ -84,7 +84,6 @@ def create_deployment_build_api_obj(
     builder = ProtoPlusBuilder(Build).compose(
         Build(
             {
-                # TODO(#31461): Create the service account + IAM permissions in Terraform
                 "service_account": get_secret("ci_cd_service_account"),
                 "logs_bucket": "gs://${_PROJECT_ID}-ci-cd-logs",
                 "timeout": f"{build_configuration.timeout_seconds}s",
@@ -139,12 +138,14 @@ def build_step_for_shell_command(
     name: str,
     wait_for: list[str] | str | None = None,
     env: list[str] | None = None,
+    dir_: str | None = None,
 ) -> BuildStep:
     """Helper function to create a BuildStep that runs a shell command"""
     return BuildStep(
         entrypoint="sh",
         args=["-c", command],
         id=id_,
+        dir_=dir_,
         name=name,
         wait_for=wait_for,
         env=env,

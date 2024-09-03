@@ -26,7 +26,6 @@ jupyter = "*"
 orjson = "*"
 pytest-alembic = "*"
 pipenv = "*"
-pygit2 = "*"
 parameterized = "*"
 google-api-python-client = "*"
 google-auth-httplib2 = "*"
@@ -251,6 +250,8 @@ quart = "*"
 hypercorn = "*"
 vertexai = "*"
 asyncpg ="*"
+pygit2 = "*"
+
 
 [requires]
 # If you change this, please update https://github.com/Recidiviz/recidiviz-research at the same time!

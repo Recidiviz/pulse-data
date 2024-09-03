@@ -38,16 +38,7 @@ from recidiviz.utils.metadata import local_project_id_override
 class DeploymentStepRunnerTest(unittest.TestCase):
     """Test case for ArtifactRegistryRepository"""
 
-    @with_secrets(
-        {
-            "workflows_cloudsql_instance_id": "123,",
-            "operations_v2_cloudsql_instance_id": "123,",
-            "case_triage_cloudsql_instance_id": "123,",
-            "insights_cloudsql_instance_id": "123,",
-            "pathways_cloudsql_instance_id": "123,",
-            "justice_counts_cloudsql_instance_id": "123,",
-        }
-    )
+    @with_secrets({"operations_v2_cloudsql_instance_id": "123"})
     def test_parse(self) -> None:
         stage_args = {
             BuildImages: argparse.Namespace(images=[ImageKind.APP_ENGINE]),

@@ -143,31 +143,6 @@ function next_alpha_version {
     echo "${NEW_VERSION}"
 }
 
-# If there have been migrations since the last deploy, returns 1.
-# Otherwise, if there have been no migrations, returns 0.
-function migration_changes_since_last_deploy {
-    PROJECT=$1
-
-    if [[ ${PROJECT} == 'recidiviz-staging' ]]; then
-        LAST_VERSION_TAG=$(last_version_tag_on_branch HEAD) || exit_on_fail
-    elif [[ ${PROJECT} == 'recidiviz-123' ]]; then
-        LAST_VERSION_TAG=$(last_deployed_version_tag recidiviz-123) || exit_on_fail
-    else
-        echo_error "Unexpected project for last version ${PROJECT}"
-        exit 1
-    fi
-
-    MIGRATION_CHANGES=$(git diff "tags/${LAST_VERSION_TAG}" -- "${BASH_SOURCE_DIR}/../../../recidiviz/persistence/database/migrations") || exit_on_fail
-
-    if [[ -n $MIGRATION_CHANGES ]]; then
-      MIGRATION_CHANGES_SINCE_LAST_DEPLOY=1
-    else
-      MIGRATION_CHANGES_SINCE_LAST_DEPLOY=0
-    fi
-
-    echo $MIGRATION_CHANGES_SINCE_LAST_DEPLOY
-}
-
 # Helper for deploying any infrastructure changes before we deploy a new version of the application. Requires that we
 # have checked out the commit for the version that will be deployed.
 function pre_deploy_configure_infrastructure {
@@ -183,7 +158,12 @@ function pre_deploy_configure_infrastructure {
     deploy_terraform_infrastructure "${PROJECT}" "${COMMIT_HASH}" "${DOCKER_IMAGE_TAG}" || exit_on_fail
 
     verify_hash "$COMMIT_HASH"
-    deploy_migrations "${PROJECT}"
+    echo "Running migrations using Cloud Build"
+    run_cmd pipenv run python -m recidiviz.tools.deploy.cloud_build.deployment_stage_runner \
+      --project-id "${PROJECT_ID}" \
+      --version-tag "${VERSION_TAG}" \
+      --commit-ref "${COMMIT_HASH}" \
+      --stage "RunMigrations"
 }
 
 function copy_docker_image_to_repository {
@@ -444,35 +424,6 @@ function deployment_bot_message {
     echo "${CURL_OUTPUT}"
     return 1
   fi
-}
-
-function deploy_migrations {
-  local PROJECT=$1
-
-  while true
-  do
-    echo "Running migrations using Cloud SQL Proxy"
-
-    run_cmd_no_exiting pipenv run ./recidiviz/tools/migrations/run_all_migrations.sh "${PROJECT}"
-    RETURN_CODE=$?
-
-    if [[ $RETURN_CODE -eq 0 ]]; then
-      echo "Successfully ran migrations"
-      return 0
-    fi
-
-    # Migrations did not run successfully. Check if there was an error in the Cloud SQL Proxy
-    run_cmd_no_exiting pipenv run ./recidiviz/tools/postgres/cloudsql_proxy_control.sh -v -p "${CLOUDSQL_PROXY_MIGRATION_PORT}"
-    RETURN_CODE=$?
-
-    if [[ $RETURN_CODE -eq $CLOUDSQL_PROXY_NETWORK_ERROR_EXIT_CODE ]]; then
-      script_prompt "There was an intermittent network error while applying migrations. Would you like to retry?"
-    else
-      echo "There was an error running migrations, due to incorrect application logic or an intermittent network error."
-      echo "Please review the source of the error."
-      script_prompt "Would you like to retry applying migrations?"
-    fi
-  done
 }
 
 function post_deploy_triggers {
