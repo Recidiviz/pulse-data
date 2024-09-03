@@ -32,8 +32,8 @@ from recidiviz.ingest.direct.metadata.direct_ingest_dataflow_job_manager import 
 from recidiviz.ingest.direct.metadata.direct_ingest_dataflow_watermark_manager import (
     DirectIngestDataflowWatermarkManager,
 )
-from recidiviz.ingest.direct.metadata.direct_ingest_raw_file_metadata_manager import (
-    DirectIngestRawFileMetadataManager,
+from recidiviz.ingest.direct.metadata.legacy_direct_ingest_raw_file_metadata_manager import (
+    LegacyDirectIngestRawFileMetadataManager,
 )
 from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
     get_direct_ingest_states_launched_in_env,
@@ -175,9 +175,10 @@ def get_raw_data_tags_not_meeting_watermark(
         state_code, ingest_instance
     )
 
+    # TODO(#29058): update this script to, behind gates, use new bq file metadata table
     latest_upper_bound_by_file_tag: Dict[str, datetime.datetime] = {
         info.file_tag: info.latest_update_datetime
-        for info in DirectIngestRawFileMetadataManager(
+        for info in LegacyDirectIngestRawFileMetadataManager(
             str(state_code.value), ingest_instance
         ).get_metadata_for_all_raw_files_in_region()
         if info.latest_update_datetime is not None

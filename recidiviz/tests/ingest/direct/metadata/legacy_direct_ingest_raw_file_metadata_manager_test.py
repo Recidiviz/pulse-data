@@ -31,9 +31,9 @@ from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
     DirectIngestGCSFileSystem,
     to_normalized_unprocessed_raw_file_path,
 )
-from recidiviz.ingest.direct.metadata.direct_ingest_raw_file_metadata_manager import (
-    DirectIngestRawFileMetadataManager,
+from recidiviz.ingest.direct.metadata.legacy_direct_ingest_raw_file_metadata_manager import (
     DirectIngestRawFileMetadataSummary,
+    LegacyDirectIngestRawFileMetadataManager,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.persistence.database.schema.operations import schema
@@ -86,18 +86,20 @@ class DirectIngestRawFileMetadataManagerTest(unittest.TestCase):
         self.database_key = SQLAlchemyDatabaseKey.for_schema(SchemaType.OPERATIONS)
         local_persistence_helpers.use_on_disk_postgresql_database(self.database_key)
 
-        self.raw_metadata_manager = DirectIngestRawFileMetadataManager(
+        self.raw_metadata_manager = LegacyDirectIngestRawFileMetadataManager(
             region_code="us_xx",
             raw_data_instance=DirectIngestInstance.PRIMARY,
         )
-        self.raw_metadata_manager_secondary = DirectIngestRawFileMetadataManager(
+        self.raw_metadata_manager_secondary = LegacyDirectIngestRawFileMetadataManager(
             region_code="us_xx",
             raw_data_instance=DirectIngestInstance.SECONDARY,
         )
 
-        self.raw_metadata_manager_other_region = DirectIngestRawFileMetadataManager(
-            region_code="us_yy",
-            raw_data_instance=DirectIngestInstance.PRIMARY,
+        self.raw_metadata_manager_other_region = (
+            LegacyDirectIngestRawFileMetadataManager(
+                region_code="us_yy",
+                raw_data_instance=DirectIngestInstance.PRIMARY,
+            )
         )
 
         self.entity_eq_patcher = patch(
@@ -696,7 +698,7 @@ class DirectIngestRawFileMetadataManagerTest(unittest.TestCase):
             raw_unprocessed_path_1
         )
 
-        self.raw_metadata_manager_dif_state = DirectIngestRawFileMetadataManager(
+        self.raw_metadata_manager_dif_state = LegacyDirectIngestRawFileMetadataManager(
             region_code="us_yy",
             raw_data_instance=DirectIngestInstance.SECONDARY,
         )
@@ -739,7 +741,7 @@ class DirectIngestRawFileMetadataManagerTest(unittest.TestCase):
     def test_get_unprocessed_raw_files_eligible_for_import_when_secondary_db(
         self,
     ) -> None:
-        enabled_secondary_import_manager = DirectIngestRawFileMetadataManager(
+        enabled_secondary_import_manager = LegacyDirectIngestRawFileMetadataManager(
             region_code="us_va", raw_data_instance=DirectIngestInstance.SECONDARY
         )
         # Arrange

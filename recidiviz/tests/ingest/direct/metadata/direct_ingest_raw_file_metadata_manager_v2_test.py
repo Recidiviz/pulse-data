@@ -30,11 +30,11 @@ from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
     DirectIngestGCSFileSystem,
     to_normalized_unprocessed_raw_file_path,
 )
-from recidiviz.ingest.direct.metadata.direct_ingest_raw_file_metadata_manager import (
-    DirectIngestRawFileMetadataSummary,
-)
 from recidiviz.ingest.direct.metadata.direct_ingest_raw_file_metadata_manager_v2 import (
     DirectIngestRawFileMetadataManagerV2,
+)
+from recidiviz.ingest.direct.metadata.legacy_direct_ingest_raw_file_metadata_manager import (
+    DirectIngestRawFileMetadataSummary,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.persistence.database.schema.operations import schema

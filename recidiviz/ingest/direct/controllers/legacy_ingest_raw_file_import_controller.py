@@ -57,11 +57,11 @@ from recidiviz.ingest.direct.gcs.filename_parts import filename_parts_from_path
 from recidiviz.ingest.direct.metadata.direct_ingest_instance_status_manager import (
     DirectIngestInstanceStatusManager,
 )
-from recidiviz.ingest.direct.metadata.direct_ingest_raw_file_metadata_manager import (
-    DirectIngestRawFileMetadataManager,
+from recidiviz.ingest.direct.metadata.legacy_direct_ingest_raw_file_metadata_manager import (
+    LegacyDirectIngestRawFileMetadataManager,
 )
-from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager import (
-    DirectIngestRawFileImportManager,
+from recidiviz.ingest.direct.raw_data.legacy_direct_ingest_raw_file_import_manager import (
+    LegacyDirectIngestRawFileImportManager,
 )
 from recidiviz.ingest.direct.types.cloud_task_args import GcsfsRawDataBQImportArgs
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
@@ -80,7 +80,7 @@ _RAW_FILE_IMPORT_INGEST_PROCESS_RUNNING_LOCK_PREFIX = "INGEST_PROCESS_RUNNING_RA
 
 
 # TODO(#28239) remove class once raw data import dag is fully rolled out
-class IngestRawFileImportController:
+class LegacyIngestRawFileImportController:
     """Parses and persists individual-level info from direct ingest partners."""
 
     def __init__(
@@ -119,12 +119,12 @@ class IngestRawFileImportController:
 
         self.big_query_client = BigQueryClientImpl()
 
-        self.raw_file_metadata_manager = DirectIngestRawFileMetadataManager(
+        self.raw_file_metadata_manager = LegacyDirectIngestRawFileMetadataManager(
             region_code=self.region.region_code,
             raw_data_instance=self.ingest_instance,
         )
 
-        self.raw_file_import_manager = DirectIngestRawFileImportManager(
+        self.raw_file_import_manager = LegacyDirectIngestRawFileImportManager(
             region=self.region,
             fs=self.fs,
             temp_output_directory_path=self.temp_output_directory_path,

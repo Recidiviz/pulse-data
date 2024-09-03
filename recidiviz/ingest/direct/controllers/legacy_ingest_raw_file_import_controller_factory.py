@@ -20,8 +20,8 @@ from typing import Optional
 
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct import direct_ingest_regions
-from recidiviz.ingest.direct.controllers.ingest_raw_file_import_controller import (
-    IngestRawFileImportController,
+from recidiviz.ingest.direct.controllers.legacy_ingest_raw_file_import_controller import (
+    LegacyIngestRawFileImportController,
     check_is_region_launched_in_env,
 )
 from recidiviz.ingest.direct.gating import is_raw_data_import_dag_enabled
@@ -38,8 +38,8 @@ from recidiviz.utils import metadata
 
 
 # TODO(#28239) remove class once raw data import dag is fully rolled out
-class IngestRawFileImportControllerFactory:
-    """Factory class for building IngestRawFileImportControllers."""
+class LegacyIngestRawFileImportControllerFactory:
+    """Factory class for building LegacyIngestRawFileImportController."""
 
     @classmethod
     def build(
@@ -49,8 +49,8 @@ class IngestRawFileImportControllerFactory:
         ingest_instance: DirectIngestInstance,
         allow_unlaunched: bool,
         region_module_override: Optional[ModuleType] = None,
-    ) -> IngestRawFileImportController:
-        """Retrieve a IngestRawFileImportController associated with a particular region and ingest instance."""
+    ) -> LegacyIngestRawFileImportController:
+        """Retrieve a LegacyIngestRawFileImportController associated with a particular region and ingest instance."""
         if (
             not StateCode.is_state_code(region_code.upper())
             or (state_code := StateCode(region_code.upper()))
@@ -64,7 +64,7 @@ class IngestRawFileImportControllerFactory:
 
         if is_raw_data_import_dag_enabled(state_code, ingest_instance):
             raise DirectIngestGatingError(
-                f"IngestRawFileImportControllerFactory for region [{state_code.value}] and instance [{ingest_instance.value}] should not need to be called once raw data import DAG is active"
+                f"LegacyIngestRawFileImportControllerFactory for region [{state_code.value}] and instance [{ingest_instance.value}] should not need to be called once raw data import DAG is active"
             )
 
         region = direct_ingest_regions.get_direct_ingest_region(
@@ -74,7 +74,7 @@ class IngestRawFileImportControllerFactory:
         if not allow_unlaunched:
             check_is_region_launched_in_env(region)
 
-        return IngestRawFileImportController(
+        return LegacyIngestRawFileImportController(
             state_code=state_code,
             ingest_instance=ingest_instance,
             region_module_override=region_module_override,

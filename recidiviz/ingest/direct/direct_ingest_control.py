@@ -30,8 +30,8 @@ from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath, GcsfsFilePath, G
 from recidiviz.cloud_tasks.utils import get_current_cloud_task_id
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct import direct_ingest_regions
-from recidiviz.ingest.direct.controllers.ingest_raw_file_import_controller_factory import (
-    IngestRawFileImportControllerFactory,
+from recidiviz.ingest.direct.controllers.legacy_ingest_raw_file_import_controller_factory import (
+    LegacyIngestRawFileImportControllerFactory,
 )
 from recidiviz.ingest.direct.direct_ingest_bucket_name_utils import (
     get_region_code_from_direct_ingest_bucket,
@@ -177,7 +177,7 @@ def handle_direct_ingest_file() -> Tuple[str, HTTPStatus]:
 
         logging.info("Handling file %s", path.abs_path())
         try:
-            controller = IngestRawFileImportControllerFactory.build(
+            controller = LegacyIngestRawFileImportControllerFactory.build(
                 region_code=region_code,
                 ingest_instance=ingest_instance,
                 allow_unlaunched=True,
@@ -239,7 +239,7 @@ def handle_new_files() -> Tuple[str, HTTPStatus]:
             )
 
         try:
-            controller = IngestRawFileImportControllerFactory.build(
+            controller = LegacyIngestRawFileImportControllerFactory.build(
                 region_code=region_code,
                 ingest_instance=ingest_instance,
                 allow_unlaunched=True,
@@ -294,7 +294,7 @@ def ensure_all_raw_file_paths_normalized() -> Tuple[str, HTTPStatus]:
                 state_code.value, ingest_instance=ingest_instance.value
             ):
                 try:
-                    controller = IngestRawFileImportControllerFactory.build(
+                    controller = LegacyIngestRawFileImportControllerFactory.build(
                         region_code=state_code.value.lower(),
                         ingest_instance=ingest_instance,
                         allow_unlaunched=True,
@@ -373,7 +373,7 @@ def raw_data_import() -> Tuple[str, HTTPStatus]:
             )
 
         try:
-            controller = IngestRawFileImportControllerFactory.build(
+            controller = LegacyIngestRawFileImportControllerFactory.build(
                 region_code=region_code,
                 ingest_instance=ingest_instance,
                 allow_unlaunched=False,
@@ -430,7 +430,7 @@ def scheduler() -> Tuple[str, HTTPStatus]:
             )
 
         try:
-            controller = IngestRawFileImportControllerFactory.build(
+            controller = LegacyIngestRawFileImportControllerFactory.build(
                 region_code=region_code,
                 ingest_instance=ingest_instance,
                 allow_unlaunched=False,
@@ -470,7 +470,7 @@ def kick_all_schedulers() -> None:
             with context.push_region_context(
                 state_code.value, ingest_instance=ingest_instance.value
             ):
-                controller = IngestRawFileImportControllerFactory.build(
+                controller = LegacyIngestRawFileImportControllerFactory.build(
                     region_code=state_code.value,
                     ingest_instance=ingest_instance,
                     allow_unlaunched=False,

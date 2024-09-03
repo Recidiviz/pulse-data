@@ -175,6 +175,8 @@ def _initialize_ingest_pipeline(
             max_update_datetimes=get_max_update_datetimes.output,  # type: ignore[arg-type]
         )
 
+        # TODO(#29058): add gated check for raw data resource locks
+
         (
             check_ingest_pipeline_should_run_in_dag
             >> [get_max_update_datetimes, get_watermarks]

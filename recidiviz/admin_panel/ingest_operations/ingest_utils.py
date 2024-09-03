@@ -40,8 +40,8 @@ from recidiviz.ingest.direct.gcs.directory_path_utils import (
     gcsfs_direct_ingest_temporary_output_directory_path,
 )
 from recidiviz.ingest.direct.gcs.filename_parts import filename_parts_from_path
-from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager import (
-    DirectIngestRawFileImportManager,
+from recidiviz.ingest.direct.raw_data.legacy_direct_ingest_raw_file_import_manager import (
+    LegacyDirectIngestRawFileImportManager,
 )
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRegionRawFileConfig,
@@ -137,7 +137,7 @@ def import_raw_files_to_bq_sandbox(
         region_code = state_code.value.lower()
         region = get_direct_ingest_region(region_code)
 
-        import_manager = DirectIngestRawFileImportManager(
+        import_manager = LegacyDirectIngestRawFileImportManager(
             region=region,
             fs=fs,
             temp_output_directory_path=gcsfs_direct_ingest_temporary_output_directory_path(

@@ -19,8 +19,8 @@
 import abc
 from typing import Dict, Optional
 
-from recidiviz.ingest.direct.controllers.ingest_raw_file_import_controller import (
-    IngestRawFileImportController,
+from recidiviz.ingest.direct.controllers.legacy_ingest_raw_file_import_controller import (
+    LegacyIngestRawFileImportController,
 )
 from recidiviz.ingest.direct.direct_ingest_cloud_task_queue_manager import (
     DirectIngestCloudTaskQueueManager,
@@ -39,13 +39,13 @@ class FakeDirectIngestCloudTaskQueueManager(DirectIngestCloudTaskQueueManager, a
 
     def __init__(self) -> None:
         self.controllers: Dict[
-            DirectIngestInstance, Optional[IngestRawFileImportController]
+            DirectIngestInstance, Optional[LegacyIngestRawFileImportController]
         ] = {}
 
     def set_controller(
         self,
         ingest_instance: DirectIngestInstance,
-        controller: IngestRawFileImportController,
+        controller: LegacyIngestRawFileImportController,
     ) -> None:
         self.controllers[ingest_instance] = controller
 
