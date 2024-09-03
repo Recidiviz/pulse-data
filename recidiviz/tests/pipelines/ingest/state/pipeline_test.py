@@ -21,7 +21,6 @@ from types import ModuleType
 from typing import Optional
 
 from recidiviz.common.constants.states import StateCode
-from recidiviz.pipelines.ingest.state import pipeline
 from recidiviz.tests.ingest.direct import fake_regions
 from recidiviz.tests.pipelines.ingest.state.pipeline_test_case import (
     StateIngestPipelineTestCase,
@@ -108,16 +107,3 @@ class TestStateIngestPipeline(StateIngestPipelineTestCase):
                     }
                 ),
             )
-
-    def test_expected_pipeline_output(self) -> None:
-        expected_output_entities = {
-            "state_person",
-            "state_person_external_id",
-            "state_incarceration_sentence",
-            "state_charge",
-        }
-        self.assertEqual(
-            pipeline.get_pipeline_output_tables(expected_output_entities),
-            expected_output_entities
-            | {"state_charge_incarceration_sentence_association"},
-        )
