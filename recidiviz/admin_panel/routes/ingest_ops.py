@@ -18,10 +18,9 @@
 import datetime
 import logging
 from http import HTTPStatus
-from typing import List, Optional, Tuple, Union
+from typing import Tuple, Union
 
 from flask import Blueprint, Response, jsonify, request
-from google.cloud import storage
 
 from recidiviz.admin_panel.admin_stores import (
     fetch_state_codes,
@@ -33,24 +32,13 @@ from recidiviz.admin_panel.ingest_dataflow_operations import (
     get_latest_run_state_results,
     get_raw_data_tags_not_meeting_watermark,
 )
-from recidiviz.admin_panel.ingest_operations.ingest_utils import (
-    check_is_valid_sandbox_bucket,
-    get_unprocessed_raw_files_in_bucket,
-    import_raw_files_to_bq_sandbox,
-)
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
-from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
-from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath, GcsfsFilePath
+from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.constants.operations.direct_ingest_instance_status import (
     DirectIngestStatus,
 )
 from recidiviz.common.constants.states import StateCode
-from recidiviz.ingest.direct.direct_ingest_regions import get_direct_ingest_region
 from recidiviz.ingest.direct.gating import is_raw_data_import_dag_enabled
-from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
-    DirectIngestGCSFileSystem,
-)
-from recidiviz.ingest.direct.gcs.filename_parts import filename_parts_from_path
 from recidiviz.ingest.direct.metadata.direct_ingest_dataflow_job_manager import (
     DirectIngestDataflowJobManager,
 )
@@ -59,9 +47,6 @@ from recidiviz.ingest.direct.metadata.direct_ingest_instance_status_manager impo
 )
 from recidiviz.ingest.direct.metadata.direct_ingest_raw_file_metadata_manager import (
     DirectIngestRawFileMetadataManager,
-)
-from recidiviz.ingest.direct.raw_data.raw_file_configs import (
-    DirectIngestRegionRawFileConfig,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.flash_database_tools import (
@@ -198,110 +183,6 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
         )
         return (
             jsonify([status.for_api() for status in ingest_file_processing_statuses]),
-            HTTPStatus.OK,
-        )
-
-    @bp.route("/api/ingest_operations/direct/sandbox_raw_data_import", methods=["POST"])
-    def _sandbox_raw_data_import() -> Tuple[Union[str, Response], HTTPStatus]:
-        try:
-            data = assert_type(request.json, dict)
-            state_code = StateCode(data["stateCode"])
-            sandbox_dataset_prefix = data["sandboxDatasetPrefix"]
-            source_bucket = GcsfsBucketPath(data["sourceBucket"])
-            file_tags: Optional[List[str]] = data.get("fileTagFilters", None)
-        except ValueError:
-            return "invalid parameters provided", HTTPStatus.BAD_REQUEST
-
-        if not file_tags:
-            file_tags = None
-
-        try:
-            import_status = import_raw_files_to_bq_sandbox(
-                state_code=state_code,
-                sandbox_dataset_prefix=sandbox_dataset_prefix,
-                source_bucket=source_bucket,
-                file_tag_filters=file_tags,
-                allow_incomplete_configs=True,
-                big_query_client=BigQueryClientImpl(),
-                gcsfs=GcsfsFactory.build(),
-            )
-        except ValueError as error:
-            return str(error), HTTPStatus.INTERNAL_SERVER_ERROR
-
-        return (
-            jsonify(
-                {
-                    "fileStatusList": import_status.to_serializable()["fileStatuses"],
-                }
-            ),
-            HTTPStatus.OK,
-        )
-
-    @bp.route("/api/ingest_operations/direct/list_sandbox_buckets", methods=["POST"])
-    def _list_sandbox_buckets() -> Tuple[Union[str, Response], HTTPStatus]:
-        try:
-            storage_client = storage.Client()
-            buckets = storage_client.list_buckets()
-
-            bucket_names = [bucket.name for bucket in buckets]
-
-            filtered_buckets = []
-            for bucket in bucket_names:
-                try:
-                    check_is_valid_sandbox_bucket(GcsfsBucketPath(bucket))
-                    filtered_buckets.append(bucket)
-                except ValueError:
-                    continue
-
-        except Exception:
-            return (
-                "something went wrong getting the list of buckets",
-                HTTPStatus.INTERNAL_SERVER_ERROR,
-            )
-
-        return (
-            jsonify({"bucketNames": filtered_buckets}),
-            HTTPStatus.OK,
-        )
-
-    @bp.route("/api/ingest_operations/direct/list_raw_files", methods=["POST"])
-    def _list_raw_files_in_sandbox_bucket() -> Tuple[Union[str, Response], HTTPStatus]:
-        try:
-            data = assert_type(request.json, dict)
-            state_code = StateCode(data["stateCode"])
-            source_bucket = GcsfsBucketPath(data["sourceBucket"])
-        except ValueError:
-            return "invalid source bucket", HTTPStatus.BAD_REQUEST
-
-        try:
-            region_code = state_code.value.lower()
-            region = get_direct_ingest_region(region_code)
-            raw_files_to_import = get_unprocessed_raw_files_in_bucket(
-                fs=DirectIngestGCSFileSystem(GcsfsFactory.build()),
-                bucket_path=source_bucket,
-                region_raw_file_config=DirectIngestRegionRawFileConfig(
-                    region_code=region.region_code,
-                    region_module=region.region_module,
-                ),
-            )
-        except ValueError:
-            return (
-                f"Something went wrong trying to get unprocessed raw files from {source_bucket} bucket",
-                HTTPStatus.INTERNAL_SERVER_ERROR,
-            )
-
-        raw_files_list = []
-        for file_path in raw_files_to_import:
-            parts = filename_parts_from_path(file_path)
-            raw_files_list.append(
-                {
-                    "fileTag": parts.file_tag,
-                    "uploadDate": parts.utc_upload_datetime_str,
-                }
-            )
-
-        return (
-            jsonify({"rawFilesList": raw_files_list}),
             HTTPStatus.OK,
         )
 

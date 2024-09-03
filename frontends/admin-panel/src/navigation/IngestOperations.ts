@@ -17,7 +17,6 @@
 export const ADMIN_BASE = "/admin/";
 export const INGEST_OPERATIONS_BASE = `${ADMIN_BASE}ingest_operations`;
 export const FLASH_DB_CHECKLIST_ROUTE = `${INGEST_OPERATIONS_BASE}/flash_primary_db`;
-export const DIRECT_SANDBOX_RAW_IMPORT = `${INGEST_OPERATIONS_BASE}/direct_import`;
 export const INGEST_DATAFLOW_ROUTE = `${INGEST_OPERATIONS_BASE}/ingest_pipeline_summary`;
 export const INGEST_DATAFLOW_WITH_STATE_CODE_ROUTE = `${INGEST_DATAFLOW_ROUTE}/:stateCode`;
 export const INGEST_DATAFLOW_INGEST_QUEUES_ROUTE = `${INGEST_DATAFLOW_WITH_STATE_CODE_ROUTE}/raw_data_queues`;
