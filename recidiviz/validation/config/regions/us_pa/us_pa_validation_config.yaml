@@ -14,11 +14,13 @@ exclusions:
 
 max_allowed_error_overrides:
   - validation_name: supervision_population_person_level_external_comparison
-    hard_max_allowed_error_override: 0.04
+    hard_max_allowed_error_override: 0.06
     override_reason:
       PA external validation data was generated from snapshots at the time the population for a given
       month was measured. Over time, data gets backfilled as new info about what happened that month comes in, so our
-      numbers will get "worse" as time goes on and we get more accurate data about movements.
+      numbers will get "worse" as time goes on and we get more accurate data about movements.  In addition, with the
+      _v5 version of SP ingest, we made revisions that changed our definition of the supervision population which
+      leads us to diverge more from the external validation data. See #31298
   - validation_name: supervision_population_person_level_external_comparison_matching_people_district
     hard_max_allowed_error_override: 0.05
     override_reason: TODO(#9738) - needs investigation.
@@ -87,9 +89,10 @@ num_allowed_rows_overrides:
       TODO(#9736) - need to investgate CCC ingest overlaps
   - validation_name: overlapping_supervision_periods
     hard_num_allowed_rows_override: 800
-    override_reason:
-      TODO(#6253) - Likely a rare edge case related to ordering movements
-      in the PA supervision_period ingest view. Current failing level as of 2/13/24 is 627 rows.
+    override_reason: TODO(#6253)
+      In the v5 version of SP ingest, overlapping periods are being created when a person has multiple ParoleNumbers.
+      The number of overlapping periods is small (as of 8/29, there are only 327 cases, but keeping threshold at 800 until
+      v5 ingest gets ungated to prod).
   - validation_name: admission_pfi_pop_pfi_mismatch
     hard_num_allowed_rows_override: 5000
     override_reason:

@@ -182,12 +182,23 @@ ENTITIES_WITH_EXPECTED_STABLE_COUNTS_OVER_TIME: Dict[str, StableCountsTableConfi
                         date(2023, 8, 1),
                     ],
                     StateCode.US_PA: [
+                        # Unknown fluctuations around the end of the year/beginning of the next seen here.
+                        # However, the counts have remained stable the past 6 months, so we exclude these dates for now.
                         date(2023, 1, 1),
                         date(2023, 2, 1),
                         date(2023, 3, 1),
                         date(2022, 12, 1),
                         date(2022, 11, 1),
-                    ],  # Unknown fluctuations around the end of the year/beginning of the next seen here. However, the counts have remained stable the past 6 months, so we exclude these dates for now.
+                        # In June 2024, we missed a data transfer that was later re-sent in July.
+                        # It seems like even though we did get the week of missing data, we saw
+                        # a lot fewer "updates" to the data that week (presumably because by the time
+                        # we got the missing data, many of the records had already been overwritten with
+                        # a later date and so we missed some historical records of updates).
+                        # In addition, we see a lot of supervision officer assignment updates in July,
+                        # which makes the difference in period stars between June and July even more pronounced
+                        date(2024, 6, 1),
+                        date(2024, 7, 1),
+                    ],
                     StateCode.US_ND: [
                         date(2023, 2, 1),
                         date(2023, 3, 1),
@@ -248,11 +259,22 @@ ENTITIES_WITH_EXPECTED_STABLE_COUNTS_OVER_TIME: Dict[str, StableCountsTableConfi
                         date(2023, 8, 1),
                     ],
                     StateCode.US_PA: [
+                        # Unknown fluctuations around the end of the year/beginning of the next seen here.
+                        # However, the counts have remained stable the past 6 months, so we exclude these dates for now.
                         date(2023, 1, 1),
                         date(2023, 2, 1),
                         date(2023, 3, 1),
                         date(2022, 12, 1),
-                    ],  # Unknown fluctuations around the end of the year/beginning of the next seen here. However, the counts have remained stable the past 6 months, so we exclude these dates for now.
+                        # In June 2024, we missed a data transfer that was later re-sent in July.
+                        # It seems like even though we did get the week of missing data, we saw
+                        # a lot fewer "updates" to the data that week (presumably because by the time
+                        # we got the missing data, many of the records had already been overwritten with
+                        # a later date and so we missed some historical records of updates).
+                        # In addition, we see a lot of supervision officer assignment updates in July,
+                        # which makes the difference in period stars between June and July even more pronounced
+                        date(2024, 6, 1),
+                        date(2024, 7, 1),
+                    ],
                     StateCode.US_TN: [
                         date(2023, 1, 1),
                         date(2023, 2, 1),
