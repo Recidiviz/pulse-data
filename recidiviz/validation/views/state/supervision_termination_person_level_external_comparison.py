@@ -61,6 +61,7 @@ WITH external_data AS (
   -- TODO(#5422): Remove termination_reason filter once we have removed transfers from events
   -- Transfers terminations and returns from absconsion are not included in the external termination data
   WHERE termination_reason NOT IN ('RETURN_FROM_ABSCONSION', 'TRANSFER_WITHIN_STATE', 'TRANSFER_TO_OTHER_JURISDICTION')
+    AND (state_code <> 'US_PA' OR termination_reason <> 'ABSCONSION')
   AND supervision_type != 'INVESTIGATION'
 ), internal_metrics_for_valid_regions_and_dates AS (
   SELECT * FROM
