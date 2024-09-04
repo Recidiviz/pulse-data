@@ -18,23 +18,8 @@
 from typing import Set
 
 from recidiviz.common.constants.states import StateCode
-from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
-    get_direct_ingest_states_launched_in_env,
-)
 from recidiviz.pipelines.config_paths import PIPELINE_CONFIG_YAML_PATH
 from recidiviz.utils.yaml_dict import YAMLDict
-
-
-def get_ingest_pipeline_enabled_states() -> Set[StateCode]:
-    """Returns all states that have scheduled ingest pipelines that run."""
-    return {
-        s
-        for s in get_direct_ingest_states_launched_in_env()
-        # TODO(#29517): The ingest views for US_NC do not produce valid inputs for
-        #  normalization. We need to either disable or fix these views before running
-        #  ingest for US_NC.
-        if s is not StateCode.US_NC
-    }
 
 
 def get_metric_pipeline_enabled_states() -> Set[StateCode]:

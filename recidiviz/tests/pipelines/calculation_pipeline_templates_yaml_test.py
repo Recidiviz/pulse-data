@@ -17,7 +17,7 @@
 """Tests for the calculation_pipeline_templates.yaml file."""
 import unittest
 from collections import defaultdict
-from typing import Dict, List, Set
+from typing import Dict, List
 from unittest.mock import Mock, patch
 
 from recidiviz.common.constants.states import StateCode
@@ -25,10 +25,6 @@ from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
     get_direct_ingest_states_launched_in_env,
 )
 from recidiviz.pipelines.config_paths import PIPELINE_CONFIG_YAML_PATH
-from recidiviz.pipelines.dataflow_orchestration_utils import (
-    get_ingest_pipeline_enabled_states,
-    get_metric_pipeline_enabled_states,
-)
 from recidiviz.pipelines.metrics.pipeline_parameters import MetricsPipelineParameters
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION
 from recidiviz.utils.yaml_dict import YAMLDict
@@ -36,25 +32,6 @@ from recidiviz.utils.yaml_dict import YAMLDict
 
 class TestConfiguredPipelines(unittest.TestCase):
     """Tests the configuration of pipelines."""
-
-    def test_ingest_pipeline_completeness(self) -> None:
-        with patch(
-            "recidiviz.utils.environment.get_gcp_environment",
-            Mock(return_value="staging"),
-        ):
-            state_codes_with_ingest_pipelines: Set[
-                StateCode
-            ] = get_ingest_pipeline_enabled_states()
-
-            for state_code in get_metric_pipeline_enabled_states():
-                if state_code not in state_codes_with_ingest_pipelines:
-                    raise ValueError(
-                        f"Found state code: [{state_code.value}] with configured "
-                        f"metric pipelines that does not have a scheduled ingest "
-                        f"pipeline enabled to run in staging. Make sure that your "
-                        f"state has not been exempt in "
-                        f"get_ingest_pipeline_enabled_states()."
-                    )
 
     @patch(
         "recidiviz.utils.environment.get_gcp_environment",

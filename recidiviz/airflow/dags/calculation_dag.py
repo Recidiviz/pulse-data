@@ -60,6 +60,9 @@ from recidiviz.airflow.dags.utils.dataflow_pipeline_group import (
 )
 from recidiviz.airflow.dags.utils.default_args import DEFAULT_ARGS
 from recidiviz.airflow.dags.utils.environment import get_project_id
+from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
+    get_direct_ingest_states_launched_in_env,
+)
 from recidiviz.metrics.export.products.product_configs import (
     PRODUCTS_CONFIG_PATH,
     ProductConfigs,
@@ -67,9 +70,6 @@ from recidiviz.metrics.export.products.product_configs import (
 )
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.pipelines.config_paths import PIPELINE_CONFIG_YAML_PATH
-from recidiviz.pipelines.dataflow_orchestration_utils import (
-    get_ingest_pipeline_enabled_states,
-)
 from recidiviz.utils.yaml_dict import YAMLDict
 
 GCP_PROJECT_STAGING = "recidiviz-staging"
@@ -230,7 +230,7 @@ def create_pipeline_configs_by_state(
 
 def ingest_pipeline_branches_by_state_code() -> Dict[str, TaskGroup]:
     branches_by_state_code = {}
-    for state_code in get_ingest_pipeline_enabled_states():
+    for state_code in get_direct_ingest_states_launched_in_env():
         ingest_group = create_single_ingest_pipeline_group(state_code)
         branches_by_state_code[state_code.value] = ingest_group
     return branches_by_state_code

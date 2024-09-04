@@ -1,10 +1,9 @@
 # yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
 manifest_language: 1.0.0
-# TODO(#29517): Set launch_env to `$env: is_local` OR fix US_NC ingest views
-#  to play nicely with normalization, then remove the US_NC exemption
-#  from get_normalization_pipeline_enabled_states(). This must be done before
-#  we merge the ingest and normalization pipelines otherwise the ingest pipeline
-#  for US_NC will start crashing.
+# Output for this view currently crashes with normalization errors - limit to only run in tests.
+# Presumably we will start over with new views if we were to start real product development for NC.
+launch_env:
+  $env: is_local
 input_columns:
   - doc_id
   - start_date
