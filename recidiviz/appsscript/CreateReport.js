@@ -16,7 +16,7 @@
 // =============================================================================
 /* Apps Script for generating Leadership Impact Usage Reports. */
 
-const projectId = "recidiviz-staging";
+const projectId = "recidiviz-123";
 
 /**
  * Main
