@@ -37,7 +37,11 @@ output:
                   - 6b # ARORA Re-Assessment Instrument
                   - 6c # ARORA Pre-Release Risk Assessment
           conducting_staff_external_id: STAFFIDPERFASSESS
-          conducting_staff_external_id_type: $literal("US_AR_PARTYID")
+          conducting_staff_external_id_type:
+            $conditional:
+              - $if:
+                  $not_null: STAFFIDPERFASSESS
+                $then: $literal("US_AR_PARTYID")
           assessment_score: RISK2SCORE
           assessment_level:
             $enum_mapping:
