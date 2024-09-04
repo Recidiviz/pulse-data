@@ -132,7 +132,11 @@ def get_existing_users_missing_from_roster_sync(
                 Roster.state_code == state_code,
                 # Exclude D20 users because we're trying not to make any changes to them
                 # TODO(#25566): Add them back in
-                or_(Roster.state_code != "US_TN", Roster.district != "20"),
+                or_(
+                    Roster.state_code != "US_TN",
+                    Roster.district != "20",
+                    Roster.district.is_(None),
+                ),
             )
         )
         .scalars()
@@ -144,7 +148,11 @@ def get_existing_users_missing_from_roster_sync(
                 UserOverride.state_code == state_code,
                 # Exclude D20 users because we're trying not to make any changes to them
                 # TODO(#25566): Add them back in
-                or_(UserOverride.state_code != "US_TN", UserOverride.district != "20"),
+                or_(
+                    UserOverride.state_code != "US_TN",
+                    UserOverride.district != "20",
+                    UserOverride.district.is_(None),
+                ),
             )
         )
         .scalars()
