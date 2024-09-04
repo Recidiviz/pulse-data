@@ -44,6 +44,9 @@ from recidiviz.persistence.entity.state.normalized_entities import (
     NormalizedStateSupervisionSentence,
     NormalizedStateSupervisionViolationResponse,
 )
+from recidiviz.pipelines.ingest.state.normalization.state_specific_normalization_delegate import (
+    StateSpecificNormalizationDelegate,
+)
 from recidiviz.pipelines.metrics.utils.supervision_case_compliance_manager import (
     StateSupervisionCaseComplianceManager,
 )
@@ -179,6 +182,12 @@ def get_state_specific_supervision_delegate(
     state_code: str,
 ) -> StateSpecificSupervisionDelegate:
     return GenericTestStateSupervisionDelegate()
+
+
+def get_state_specific_normalization_delegate(
+    state_code: str,
+) -> StateSpecificNormalizationDelegate:
+    return StateSpecificNormalizationDelegate()
 
 
 def get_all_delegate_getter_fn_names() -> Set[str]:

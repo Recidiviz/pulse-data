@@ -25,11 +25,18 @@ from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_collector impo
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_compiler_delegate import (
     StateSchemaIngestViewManifestCompilerDelegate,
 )
+from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.state import entities, normalized_entities
+from recidiviz.persistence.entity.state.normalized_state_entity import (
+    NormalizedStateEntity,
+)
 from recidiviz.pipelines.ingest.state.expected_output_helpers import (
     get_expected_output_normalized_entity_classes,
     get_expected_output_pre_normalization_entity_classes,
     get_pipeline_output_tables,
+)
+from recidiviz.pipelines.ingest.state.normalization.state_specific_normalization_delegate import (
+    StateSpecificNormalizationDelegate,
 )
 from recidiviz.tests.ingest.direct import fake_regions
 
@@ -161,7 +168,8 @@ class TestExpectedOutputHelpers(unittest.TestCase):
             expected_output_pre_normalization_entity_classes={
                 entities.StatePerson,
                 entities.StatePersonExternalId,
-            }
+            },
+            delegate=StateSpecificNormalizationDelegate(),
         )
 
         self.assertEqual(
@@ -178,7 +186,8 @@ class TestExpectedOutputHelpers(unittest.TestCase):
                 entities.StatePerson,
                 entities.StatePersonExternalId,
                 entities.StateSentence,
-            }
+            },
+            delegate=StateSpecificNormalizationDelegate(),
         )
 
         self.assertEqual(
@@ -189,6 +198,36 @@ class TestExpectedOutputHelpers(unittest.TestCase):
                 # TODO(#32306): This test should produce
                 #  NormalizedStateSentenceGroupInferred once normalization starts
                 #  producing those objects.
+            },
+            normalization_output_classes,
+        )
+
+    def test_get_expected_output_normalized_entity_classes_state_specific_logic(
+        self,
+    ) -> None:
+        class _CustomNormalizationDelegate(StateSpecificNormalizationDelegate):
+            def extra_entities_generated_via_normalization(
+                self, normalization_input_types: set[type[Entity]]
+            ) -> set[type[NormalizedStateEntity]]:
+                return {
+                    normalized_entities.NormalizedStatePersonAlias,
+                    normalized_entities.NormalizedStatePersonHousingStatusPeriod,
+                }
+
+        normalization_output_classes = get_expected_output_normalized_entity_classes(
+            expected_output_pre_normalization_entity_classes={
+                entities.StatePerson,
+                entities.StatePersonExternalId,
+            },
+            delegate=_CustomNormalizationDelegate(),
+        )
+
+        self.assertEqual(
+            {
+                normalized_entities.NormalizedStatePerson,
+                normalized_entities.NormalizedStatePersonExternalId,
+                normalized_entities.NormalizedStatePersonAlias,
+                normalized_entities.NormalizedStatePersonHousingStatusPeriod,
             },
             normalization_output_classes,
         )

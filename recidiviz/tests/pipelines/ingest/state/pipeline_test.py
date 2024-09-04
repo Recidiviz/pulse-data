@@ -21,6 +21,7 @@ from types import ModuleType
 from typing import Optional
 
 from recidiviz.common.constants.states import StateCode
+from recidiviz.pipelines.ingest.state import pipeline
 from recidiviz.pipelines.ingest.state.normalization import (
     normalize_state_person,
     normalize_state_staff,
@@ -67,12 +68,17 @@ class TestStateIngestPipeline(StateIngestPipelineTestCase):
         self.staff_delegate_patchers = start_pipeline_delegate_getter_patchers(
             normalize_state_staff
         )
+        self.generic_pipeline_delegate_patchers = (
+            start_pipeline_delegate_getter_patchers(pipeline)
+        )
 
     def tearDown(self) -> None:
         super().tearDown()
         for patcher in self.person_delegate_patchers:
             patcher.stop()
         for patcher in self.staff_delegate_patchers:
+            patcher.stop()
+        for patcher in self.generic_pipeline_delegate_patchers:
             patcher.stop()
 
     def test_state_ingest_pipeline(self) -> None:
