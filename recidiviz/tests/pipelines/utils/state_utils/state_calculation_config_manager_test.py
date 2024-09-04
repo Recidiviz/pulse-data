@@ -41,6 +41,7 @@ from recidiviz.pipelines.utils.state_utils.state_calculation_config_manager impo
     get_state_specific_commitment_from_supervision_delegate,
     get_state_specific_incarceration_delegate,
     get_state_specific_incarceration_period_normalization_delegate,
+    get_state_specific_normalization_delegate,
     get_state_specific_sentence_normalization_delegate,
     get_state_specific_staff_role_period_normalization_delegate,
     get_state_specific_supervision_delegate,
@@ -224,3 +225,9 @@ class TestStateCalculationConfigManager(unittest.TestCase):
     ) -> None:
         for state_code in get_existing_direct_ingest_states():
             _ = get_state_specific_supervision_delegate(state_code.value)
+
+    def test_get_state_specific_normalization_delegate(
+        self,
+    ) -> None:
+        for state_code in get_existing_direct_ingest_states():
+            _ = get_state_specific_normalization_delegate(state_code.value)

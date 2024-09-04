@@ -28,6 +28,10 @@ from recidiviz.persistence.entity.entity_utils import (
     is_many_to_many_relationship,
 )
 from recidiviz.persistence.entity.state import normalized_entities
+from recidiviz.pipelines.ingest.state.normalization.state_specific_normalization_delegate import (
+    StateSpecificNormalizationDelegate,
+)
+from recidiviz.utils.types import assert_subclass_list
 
 
 def get_expected_output_pre_normalization_entity_classes(
@@ -54,6 +58,7 @@ def get_expected_output_pre_normalization_entity_classes(
 
 def get_expected_output_normalized_entity_classes(
     expected_output_pre_normalization_entity_classes: set[type[Entity]],
+    delegate: StateSpecificNormalizationDelegate,
 ) -> set[type[Entity]]:
     """Returns the list of entity types from the normalized entities schema that we
     expect to see produced by this ingest pipeline.
@@ -64,6 +69,15 @@ def get_expected_output_normalized_entity_classes(
         )
         for entity in expected_output_pre_normalization_entity_classes
     }
+
+    expected_normalized_entity_classes.update(
+        assert_subclass_list(
+            delegate.extra_entities_generated_via_normalization(
+                expected_output_pre_normalization_entity_classes
+            ),
+            Entity,
+        )
+    )
 
     if (
         normalized_entities.NormalizedStateSentence

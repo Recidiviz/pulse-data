@@ -90,6 +90,9 @@ from recidiviz.pipelines.ingest.state.write_root_entities_to_bq import (
     WriteRootEntitiesToBQ,
 )
 from recidiviz.pipelines.utils.beam_utils.bigquery_io_utils import WriteToBigQuery
+from recidiviz.pipelines.utils.state_utils.state_calculation_config_manager import (
+    get_state_specific_normalization_delegate,
+)
 
 
 class StateIngestPipeline(BasePipeline[IngestPipelineParameters]):
@@ -296,7 +299,10 @@ class StateIngestPipeline(BasePipeline[IngestPipelineParameters]):
         if self.pipeline_parameters.run_normalization:
             expected_output_normalized_entity_classes = (
                 get_expected_output_normalized_entity_classes(
-                    expected_output_entity_classes
+                    expected_output_entity_classes,
+                    delegate=get_state_specific_normalization_delegate(
+                        state_code.value
+                    ),
                 )
             )
             normalized_root_entities: beam.PCollection[RootEntity] = (

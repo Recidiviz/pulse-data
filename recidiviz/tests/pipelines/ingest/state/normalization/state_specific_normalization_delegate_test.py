@@ -1,0 +1,110 @@
+# Recidiviz - a data platform for criminal justice reform
+# Copyright (C) 2024 Recidiviz, Inc.
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+# =============================================================================
+"""Tests for StateSpecificNormalizationDelegate"""
+import unittest
+
+from recidiviz.ingest.direct.direct_ingest_regions import get_direct_ingest_region
+from recidiviz.ingest.direct.ingest_mappings.ingest_view_contents_context import (
+    IngestViewContentsContextImpl,
+)
+from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_collector import (
+    IngestViewManifestCollector,
+)
+from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_compiler_delegate import (
+    StateSchemaIngestViewManifestCompilerDelegate,
+)
+from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
+    get_existing_direct_ingest_states,
+)
+from recidiviz.persistence.entity.base_entity import Entity
+from recidiviz.pipelines.ingest.state.expected_output_helpers import (
+    get_expected_output_normalized_entity_classes,
+    get_expected_output_pre_normalization_entity_classes,
+)
+from recidiviz.pipelines.ingest.state.normalization.state_specific_normalization_delegate import (
+    StateSpecificNormalizationDelegate,
+)
+from recidiviz.pipelines.utils.state_utils.state_calculation_config_manager import (
+    get_state_specific_normalization_delegate,
+)
+from recidiviz.utils.environment import GCP_PROJECTS
+from recidiviz.utils.types import assert_subclass_list
+
+
+class TestStateSpecificNormalizationDelegate(unittest.TestCase):
+    """Tests for StateSpecificNormalizationDelegate"""
+
+    def test_extra_entities_generated_via_normalization(self) -> None:
+        """Checks that the extra_entities_generated_via_normalization() function does
+        not crash for each state and also does not return any extra entities we would
+        have already inferred from the input entities.
+        """
+        for state_code in get_existing_direct_ingest_states():
+            state_specific_delegate = get_state_specific_normalization_delegate(
+                state_code.value
+            )
+
+            region = get_direct_ingest_region(region_code=state_code.value)
+            ingest_manifest_collector = IngestViewManifestCollector(
+                region=region,
+                delegate=StateSchemaIngestViewManifestCompilerDelegate(region=region),
+            )
+            for project_id in GCP_PROJECTS:
+                ingest_view_context = IngestViewContentsContextImpl.build_for_project(
+                    project_id=project_id
+                )
+                # These are the entity types that are output from ingest mappings
+                normalization_input_types = get_expected_output_pre_normalization_entity_classes(
+                    ingest_manifest_collector,
+                    ingest_views_to_run=ingest_manifest_collector.launchable_ingest_views(
+                        ingest_view_context
+                    ),
+                )
+
+                # These are the types that would be output from ingest, given no custom
+                # logic in extra_entities_generated_via_normalization().
+                generic_normalization_output_types = (
+                    get_expected_output_normalized_entity_classes(
+                        normalization_input_types,
+                        delegate=StateSpecificNormalizationDelegate(),
+                    )
+                )
+
+                # These are the extra entities that this state identifies as ones that
+                # are output just by normalization.
+                extra_normalized_types = set(
+                    assert_subclass_list(
+                        state_specific_delegate.extra_entities_generated_via_normalization(
+                            normalization_input_types
+                        ),
+                        Entity,
+                    )
+                )
+
+                if extraneous_types := extra_normalized_types.intersection(
+                    generic_normalization_output_types
+                ):
+                    raise ValueError(
+                        f"Found types returned by "
+                        f"extra_entities_generated_via_normalization() for "
+                        f"{state_code.value} in {project_id} which are already "
+                        f"expected to be generated by normalization logic: "
+                        f"{sorted(t.__name__ for t in extraneous_types)} This function "
+                        f"should only return types that are uniquely generated by "
+                        f"normalization logic for this state given normalization input "
+                        f"types: {sorted(t.__name__ for t in normalization_input_types)}"
+                    )
