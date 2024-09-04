@@ -247,6 +247,7 @@ output:
                         - ZAC # ABSCONDER COMM. CORR.
                         - ZAP # ABSCONDER PAROLE
                         - NIA # WARRANT FILED; NOT SERVED
+                        - 7AB # ABSCONDER
 
                       StateSupervisionLevel.WARRANT:
                         - 9WR # ADM - WARRANT
@@ -295,4 +296,3 @@ output:
                         - ZSS # SUSPENDED SUPV PAROLE
                         - ZTS # TEMPORARY STATUS
                         - ZTV # TECHNICAL VIOLATOR
-                        - 7AB # #TODO(#32942): Update with answer from TN
