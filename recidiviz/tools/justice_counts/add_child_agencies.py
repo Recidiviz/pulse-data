@@ -22,9 +22,9 @@ Example sheet can be found at the link below
 https://docs.google.com/spreadsheets/d/10JtZYCzezFBe7eqpZ0dwnItJp2NCmrwCqYqn2KABSE0/edit#gid=1833236576 
 
 python -m recidiviz.tools.justice_counts.add_child_agencies \
-  --file_path=<path>\
-  --super_agency_id=<int>
-  --system=<SYSTEM>\
+ --file_path=<path> \
+  --super_agency_id=<int> \
+  --system=<SYSTEM> \
   --project-id=PROJECT_ID \
   --dry-run=true
 """
@@ -144,8 +144,10 @@ def add_child_agencies(
                 child_agency_name = row.get("name")
                 county_fips = row.get("county")
                 custom_child_agency_name = row.get("custom_name")
-                child_agency_county_code = sanitize_county_name(
-                    county_fips_to_county_code.get(county_fips, "")
+                child_agency_county_code = (
+                    sanitize_county_name(county_fips_to_county_code[county_fips])
+                    if county_fips in county_fips_to_county_code
+                    else None
                 )
                 if child_agency_name is None:
                     continue
@@ -158,13 +160,14 @@ def add_child_agencies(
                 )
 
                 if existing_agency is not None:
-                    msg += "Agency with name %s already exists "
+                    msg = f"Agency with name {child_agency_name} already exists "
                     if existing_agency.super_agency_id == super_agency_id:
                         msg += "and is already a child agency for the superagency."
-                    else:
-                        existing_agency.super_agency_id = super_agency_id
-                        msg += "but is not a child agency for the superagency. Updating"
-                    logger.info(msg, child_agency_name)
+                        logger.info(msg)
+                        continue
+
+                    existing_agency.super_agency_id = super_agency_id
+                    msg += "but is not a child agency for the superagency. Updating..."
                     child_agency = existing_agency
                 else:
                     child_agency = schema.Agency(
@@ -177,13 +180,8 @@ def add_child_agencies(
                     )
 
                     msg = "" if dry_run is False else "DRY RUN:"
-                    msg += "Adding Child Agency: %s with county %s and custom name %s"
-                    logger.info(
-                        msg,
-                        child_agency_name,
-                        child_agency_county_code,
-                        custom_child_agency_name,
-                    )
+                    msg += f"Adding Child Agency: {child_agency_name} with county {child_agency_county_code} and custom name {custom_child_agency_name}"
+                    logger.info(msg)
 
                 agency_user_account_associations: List[
                     schema.AgencyUserAccountAssociation
