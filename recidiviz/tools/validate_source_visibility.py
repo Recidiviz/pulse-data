@@ -276,7 +276,6 @@ def main() -> int:
         "recidiviz.metrics.export.products",
         "recidiviz.persistence.database.schema_type",
         "recidiviz.pipelines.config_paths",
-        "recidiviz.pipelines.dataflow_orchestration_utils",
         "recidiviz.pipelines.ingest.dataset_config",
         "recidiviz.pipelines.ingest.normalization_in_ingest_gating",
         "recidiviz.pipelines.ingest.pipeline_parameters",

@@ -33,6 +33,7 @@ def should_run_normalization_in_ingest(state_code: StateCode) -> bool:
         *prod_launched_states,
         StateCode.US_IA,
         StateCode.US_ID,
+        StateCode.US_NC,
         StateCode.US_OZ,
         StateCode.US_TX,
         # TODO(#29517): Add states here as we launch combined pipelines to staging

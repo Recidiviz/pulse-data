@@ -671,7 +671,7 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
         self.environment_patcher.start()
 
         self.ingest_states_patcher = patch(
-            "recidiviz.pipelines.dataflow_orchestration_utils.get_direct_ingest_states_launched_in_env",
+            "recidiviz.airflow.dags.calculation_dag.get_direct_ingest_states_launched_in_env",
             MagicMock(return_value=[StateCode.US_XX, StateCode.US_YY]),
         )
         self.ingest_states_patcher.start()
