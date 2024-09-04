@@ -1,0 +1,50 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: STATUSCHANGEHISTOR
+file_description: |-
+  Status change history. Provides a historical record for status fields that are updated 
+  in place in their native tables, and therefore can only be viewed as a snapshot without
+  using this table. 
+
+  The STATUSRECTYPE column indicates the type of status being recorded, and the STATUSRECKEY
+  is a free text column containing the relevant party's ID and some metadata (which appears 
+  to usually be redundant with the status date/status time columns), separated by pipes. The
+  status date and status code columns can be used to identify what the status was on a given date. 
+
+  Note that STATUSRECTYPE is generally formatted differently from the actual name of the status
+  column in the data, so to view the historical record for an update-in-place status column, 
+  you must first determine how that status column's name is represented in this table.
+data_classification: source
+primary_key_cols:
+  - STATUSRECTYPE
+  - STATUSRECKEY
+  - STATUSDATE
+  - STATUSTIME
+columns:
+  - name: STATUSRECTYPE
+    description: |-
+      Status record type
+  - name: STATUSRECKEY
+    description: |-
+      Status record key
+    is_pii: True
+  - name: STATUSDATE
+    description: |-
+      Status date
+    field_type: datetime
+  - name: STATUSTIME
+    description: |-
+      Status time
+  - name: STATUSCODE
+    description: |-
+      Status code
+  - name: DATELASTUPDATE
+    description: |-
+      Date last updated
+    field_type: datetime
+  - name: TIMELASTUPDATE
+    description: |-
+      Time last updated
+  - name: STAFFLASTUPDATE
+    description: |-
+      Staff last updated
+    is_pii: True

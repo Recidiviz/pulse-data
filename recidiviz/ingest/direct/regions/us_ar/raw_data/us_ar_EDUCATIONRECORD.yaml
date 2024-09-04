@@ -1,0 +1,116 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: EDUCATIONRECORD
+file_description: |-
+  Education Record
+data_classification: source
+primary_key_cols:
+  - OFFENDERID
+  - EDUCENROLLBEGINYEAR
+  - SCHOOLNAME
+columns:
+  - name: OFFENDERID
+    description: |-
+      Offender ID
+    field_type: person_external_id
+    external_id_type: US_AR_OFFENDERID
+    is_pii: True
+  - name: EDUCENROLLBEGINYEAR
+    description: |-
+      Enrollment begin year
+  - name: SCHOOLNAME
+    description: |-
+      School name
+    is_pii: True
+  - name: EDUCENROLLENDYEAR
+    description: |-
+      Enrollment end year
+  - name: SCHOOLTYPE
+    description: |-
+      School type
+    known_values:
+      - value: C
+        description: College
+      - value: E
+        description: Elementary School
+      - value: H
+        description: High School
+      - value: M
+        description: Middle School
+      - value: T
+        description: Technical School
+      - value: U
+        description: University
+      - value: X
+        description: Unknown (conversion)
+  - name: CITYWHERESCHLLOCATED
+    description: |-
+      School city
+  - name: STATEWHERESCHLLOCATED
+    description: |-
+      School state
+  - name: HIGHESTGRADELEVEL
+    description: |-
+      Highest grade level
+  - name: TYPEOFDEGREE
+    description: |-
+      Type of degree
+    known_values:
+      - value: A
+        description: Associate
+      - value: B
+        description: Bachelors
+      - value: D
+        description: Doctorate
+      - value: G
+        description: GED
+      - value: H
+        description: High School
+      - value: M
+        description: Masters
+      - value: "N"
+        description: None
+      - value: X
+        description: Unknown (conversion)
+  - name: EDUCDATASOURCE
+    description: |-
+      Data source
+    known_values:
+      - value: CER
+        description: Certificate
+      - value: CRT
+        description: Court (Docket#)
+      - value: DOC
+        description: Documentation
+      - value: NIC
+        description: NCIC
+      - value: OOS
+        description: OOS Records Check
+      - value: OTH
+        description: Other
+      - value: SP
+        description: State Police Rcd. Ck.
+      - value: SR
+        description: Self Report
+  - name: EDUCATIONDATAVERIFDATE
+    description: |-
+      Data verification date
+    field_type: datetime
+  - name: EDUCRECORDCOMMENTS
+    description: |-
+      Comments
+    is_pii: True
+  - name: DATELASTUPDATE
+    description: |-
+      Date last updated
+    field_type: datetime
+  - name: TIMELASTUPDATE
+    description: |-
+      Time last updated
+  - name: STAFFLASTUPDATE
+    description: |-
+      Staff last updated
+    is_pii: True
+table_relationships:
+  - foreign_table: OFFENDERPROFILE
+    join_logic:
+      - EDUCATIONRECORD.OFFENDERID = OFFENDERPROFILE.OFFENDERID
