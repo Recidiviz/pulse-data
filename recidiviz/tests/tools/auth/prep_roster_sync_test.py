@@ -85,8 +85,8 @@ class PrepRosterSyncTest(TestCase):
             email="recently_logged_in_user@testdomain.com",
             region_code="US_XX",
             external_id="123",
-            role="SUPERVISION_LINE_STAFF",
-            roles=["SUPERVISION_LINE_STAFF"],
+            role="supervision_line_staff",
+            roles=["supervision_line_staff"],
             district="D1",
             first_name="Test",
             last_name="User",
@@ -97,7 +97,7 @@ class PrepRosterSyncTest(TestCase):
         self.recently_logged_in_user_uo = generate_fake_user_overrides(
             email="recently_logged_in_user@testdomain.com",
             region_code="US_XX",
-            roles=["SUPERVISION_LINE_STAFF", "custom_role"],
+            roles=["supervision_line_staff", "custom_role"],
             district="D2",
             created_datetime=datetime.fromisoformat("2023-02-01"),
         )
@@ -119,8 +119,8 @@ class PrepRosterSyncTest(TestCase):
             email="recently_created_user@testdomain.com",
             region_code="US_XX",
             external_id="345",
-            role="SUPERVISION_LINE_STAFF",
-            roles=["SUPERVISION_LINE_STAFF"],
+            role="supervision_line_staff",
+            roles=["supervision_line_staff"],
             district="D3",
             first_name="Test",
             last_name="User",
@@ -131,8 +131,8 @@ class PrepRosterSyncTest(TestCase):
             email="user_to_delete_roster_and_uo@testdomain.com",
             region_code="US_XX",
             external_id="456",
-            role="SUPERVISION_LINE_STAFF",
-            roles=["SUPERVISION_LINE_STAFF"],
+            role="supervision_line_staff",
+            roles=["supervision_line_staff"],
             district="D4",
             first_name="Test",
             last_name="User",
@@ -152,8 +152,8 @@ class PrepRosterSyncTest(TestCase):
             email="user_to_delete_uo_only@testdomain.com",
             region_code="US_XX",
             external_id="678",
-            role="SUPERVISION_LINE_STAFF",
-            roles=["SUPERVISION_LINE_STAFF"],
+            role="supervision_line_staff",
+            roles=["supervision_line_staff"],
             district="D6",
             first_name="Test",
             last_name="User",
@@ -230,8 +230,8 @@ class PrepRosterSyncTest(TestCase):
             email="tn_d20_user@testdomain.com",
             region_code="US_TN",
             external_id="020",
-            role="SUPERVISION_LINE_STAFF",
-            roles=["SUPERVISION_LINE_STAFF"],
+            role="supervision_line_staff",
+            roles=["supervision_line_staff"],
             district="20",
             first_name="Test",
             last_name="User",
@@ -370,8 +370,8 @@ class PrepRosterSyncTest(TestCase):
                 "first_name": "Test",
                 "last_name": "User",
                 "pseudonymized_id": "pseudo-123",
-                "role": "SUPERVISION_LINE_STAFF",
-                "roles": ["SUPERVISION_LINE_STAFF", "custom_role"],
+                "role": "supervision_line_staff",
+                "roles": ["supervision_line_staff", "custom_role"],
                 "state_code": "US_XX",
                 "user_hash": "On9z4tx1lZK9NfTUmCrAucJRuDsvNDZvT4JknYfHlUU=",
             }
@@ -490,8 +490,8 @@ class PrepRosterSyncTest(TestCase):
                 "first_name": "Test",
                 "last_name": "User",
                 "pseudonymized_id": "pseudo-123",
-                "role": "SUPERVISION_LINE_STAFF",
-                "roles": ["SUPERVISION_LINE_STAFF", "custom_role"],
+                "role": "supervision_line_staff",
+                "roles": ["supervision_line_staff", "custom_role"],
                 "state_code": "US_XX",
                 "user_hash": "On9z4tx1lZK9NfTUmCrAucJRuDsvNDZvT4JknYfHlUU=",
             },
@@ -625,7 +625,7 @@ class PrepRosterSyncTest(TestCase):
             roles=["supervision_staff"],
         )
 
-        expected_updates = ["SUPERVISION_LINE_STAFF"]
+        expected_updates = ["supervision_line_staff"]
         self.assertEqual(
             get_role_updates(current_user, roster_sync_user), expected_updates
         )
@@ -645,7 +645,7 @@ class PrepRosterSyncTest(TestCase):
             roles=["supervision_leadership"],
         )
 
-        expected_updates = ["SUPERVISION_LINE_STAFF", "supervision_leadership"]
+        expected_updates = ["supervision_leadership", "supervision_line_staff"]
         self.assertEqual(
             get_role_updates(current_user, roster_sync_user), expected_updates
         )
@@ -666,8 +666,8 @@ class PrepRosterSyncTest(TestCase):
         )
 
         expected_updates = [
-            "SUPERVISION_LINE_STAFF",
             "supervision_leadership",
+            "supervision_line_staff",
             "tt group",
         ]
         self.assertEqual(

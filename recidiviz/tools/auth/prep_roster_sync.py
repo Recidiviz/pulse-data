@@ -249,11 +249,15 @@ def get_role_updates(current_user: UserOverride, roster_sync_user: Roster) -> li
     # if not "UNKNOWN". If one of their roles matches a roster sync role, update it to the roster
     # sync version.
     updated_roles = {
-        (roster_sync_role if role_is_equivalent(role, roster_sync_role) else role)
+        (
+            roster_sync_role.lower()
+            if role_is_equivalent(role, roster_sync_role)
+            else role
+        )
         for role in current_user.roles
     }
     if roster_sync_role != "UNKNOWN":
-        updated_roles.add(roster_sync_role)
+        updated_roles.add(roster_sync_role.lower())
 
     # Return the updated roles regardless of whether they match the current roles, because if the
     # current user is only in Roster then their current role will be clobbered when we turn on
