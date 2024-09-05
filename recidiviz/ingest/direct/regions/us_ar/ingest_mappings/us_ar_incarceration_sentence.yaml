@@ -18,6 +18,7 @@ input_columns:
   - TIMETOSERVBFORPAROLE
   - NETGTBEFOREPE
   - MRRULINGINDICATOR
+  - life_flag
   - STATUTE1
   - STATUTE2
   - STATUTE3
@@ -139,9 +140,16 @@ output:
                 $then: PAROLEELIGIBILITYDATE
           max_length_days: MAXSENTDAYSMR
           min_length_days: TIMETOSERVBFORPAROLE
-          parole_possible: $variable(can_parole)
+          parole_possible:
+            $and:
+              - $variable(can_parole)
+              - $not_null: PAROLEELIGIBILITYDATE
           initial_time_served_days: CNTYJAILTIME
           good_time_days: NETGTBEFOREPE
+          is_life:
+            $equal:
+              - life_flag
+              - $literal("True")
           charges:
             - StateCharge:
                 external_id: $variable(sentence_external_id)
