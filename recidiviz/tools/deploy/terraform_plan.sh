@@ -61,11 +61,21 @@ terraform_with_debug -chdir=$TERRAFORM_ROOT_PATH init \
   -backend-config "prefix=${TF_STATE_PREFIX}" \
   -reconfigure || exit_on_fail
 
+echo "Creating Airflow source files manifest (necessary input for plan)..."
+AIRFLOW_SOURCE_FILES_JSON_PATH="./recidiviz/tools/deploy/terraform/airflow_source_files.json"
+run_cmd pipenv run python -m recidiviz.tools.airflow.get_airflow_source_files \
+  --dry-run False \
+  --output-path "${AIRFLOW_SOURCE_FILES_JSON_PATH}"
+
 echo "##### Planning Terraform ########"
 terraform_with_debug -chdir=$TERRAFORM_ROOT_PATH plan \
   -var="project_id=${PROJECT_ID}" \
   -var="git_hash=${GIT_HASH}" \
   -var="pagerduty_token=${PAGERDUTY_TOKEN}" \
-  -var="docker_image_tag=${DOCKER_IMAGE_TAG}" || exit_on_fail
+  -var="docker_image_tag=${DOCKER_IMAGE_TAG}" \
+  -var="airflow_source_files_json_path=$(realpath "${AIRFLOW_SOURCE_FILES_JSON_PATH}")" || exit_on_fail
 
 echo "##### Done with plan ########"
+
+
+rm ./recidiviz/tools/deploy/terraform/airflow_source_files.json

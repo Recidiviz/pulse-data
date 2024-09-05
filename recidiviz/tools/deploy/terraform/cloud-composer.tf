@@ -25,15 +25,11 @@ locals {
       for file in fileset(replace(path_sequence[0], "recidiviz/", "${local.recidiviz_root}/"), path_sequence[1]) : "${path_sequence[0]}/${file}"
     ]
   ]))
+  airflow_source_files_json = jsondecode(file(var.airflow_source_files_json_path))
 }
 
 data "google_secret_manager_secret_version" "airflow_sendgrid_api_key" {
   secret = "airflow_sendgrid_api_key"
-}
-
-data "external" "airflow_source_files" {
-  working_dir = "${dirname(local.recidiviz_root)}/../.."
-  program     = ["pipenv", "run", "python", "-m", "recidiviz.tools.airflow.get_airflow_source_files", "--dry-run", "False"]
 }
 
 resource "google_composer_environment" "default_v2" {
@@ -116,8 +112,8 @@ resource "google_composer_environment" "default_v2" {
 }
 
 resource "google_storage_bucket_object" "recidiviz_source_file" {
-  for_each = toset(keys(data.external.airflow_source_files.result))
-  name     = "dags/${data.external.airflow_source_files.result[each.key]}"
+  for_each = toset(keys(local.airflow_source_files_json))
+  name     = "dags/${local.airflow_source_files_json[each.key]}"
   bucket   = local.composer_dag_bucket
   source   = "${local.recidiviz_root}/${trimprefix(each.key, "recidiviz/")}"
 }

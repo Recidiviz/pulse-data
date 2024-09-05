@@ -365,7 +365,21 @@ function deploy_terraform_infrastructure {
     while true
     do
         reconfigure_terraform_backend "$PROJECT_ID" "$TF_STATE_PREFIX"
-        run_cmd terraform -chdir="${BASH_SOURCE_DIR}/terraform" plan -var="project_id=${PROJECT_ID}" -var="git_hash=${GIT_HASH}" -var="pagerduty_token=${PAGERDUTY_TOKEN}" -var="docker_image_tag=${DOCKER_IMAGE_TAG}" -out=tfplan
+        echo "Creating Airflow source files manifest..."
+        local AIRFLOW_SOURCE_FILES_JSON_PATH
+        AIRFLOW_SOURCE_FILES_JSON_PATH=./recidiviz/tools/deploy/terraform/airflow_source_files.json
+        run_cmd pipenv run python -m recidiviz.tools.airflow.get_airflow_source_files \
+          --dry-run False \
+          --output-path "${AIRFLOW_SOURCE_FILES_JSON_PATH}"
+
+        echo "Creating terraform plan..."
+        run_cmd terraform -chdir="${BASH_SOURCE_DIR}/terraform" plan \
+          -var="project_id=${PROJECT_ID}" \
+          -var="git_hash=${GIT_HASH}" \
+          -var="pagerduty_token=${PAGERDUTY_TOKEN}" \
+          -var="docker_image_tag=${DOCKER_IMAGE_TAG}" \
+          -var="airflow_source_files_json_path=$(realpath "${AIRFLOW_SOURCE_FILES_JSON_PATH}")" \
+          -out=tfplan
         script_prompt "Does the generated terraform plan look correct? [You can inspect it with \`terraform show tfplan\`]"
 
         CURRENT_TIME=$(date +'%s')
@@ -381,6 +395,7 @@ function deploy_terraform_infrastructure {
         return_code=$?
         rm ./recidiviz/tools/deploy/terraform/tfplan
         rm ./recidiviz/tools/deploy/terraform/tfplan.json
+        rm "${AIRFLOW_SOURCE_FILES_JSON_PATH}"
 
         if [[ $return_code -eq 0 ]]; then
             break

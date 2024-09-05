@@ -27,7 +27,7 @@ from recidiviz.tools.airflow.copy_source_files_to_experiment_composer import (
 from recidiviz.utils.params import str_to_bool
 
 
-def main(dry_run: bool) -> None:
+def main(dry_run: bool, output_path: str) -> None:
     """
     Gets the list of Airflow source files and outputs it as json map of source file path to destination file path.
     Outputs to stdout for use in terraform. Dry run mode prints the source files instead of outputting the json.
@@ -42,7 +42,12 @@ def main(dry_run: bool) -> None:
         for file in source_files
     }
     if not dry_run:
-        print(json.dumps(source_files_to_destination))
+        json_str = json.dumps(source_files_to_destination)
+        if output_path:
+            with open(output_path, mode="w", encoding="utf-8") as output_file:
+                output_file.write(json_str)
+        else:
+            print(json_str)
     else:
         logging.info("Dry run mode, listing source files.")
         for source, destination in source_files_to_destination.items():
@@ -62,5 +67,12 @@ if __name__ == "__main__":
         help="Runs in dry-run mode, prints the source files it would list.",
     )
 
+    parser.add_argument(
+        "--output-path",
+        type=str,
+        required=False,
+        help="If specified, outputs the source file json to the provided path",
+    )
+
     args = parser.parse_args()
-    main(args.dry_run)
+    main(args.dry_run, args.output_path)
