@@ -228,6 +228,7 @@ output:
                         - XPA # INTAKE SEX OFFNDR PAROLE
                         - XPR # INTAKE SEX OFFNDR PROB.
                         - Z # NO SUPERVISION LVL (ARCV)
+                        - 7IN # INTAKE REGULAR
 
                       # TODO(#11304): [US_TN] Update ingest mappings for supervision level
                       StateSupervisionLevel.UNSUPERVISED:
