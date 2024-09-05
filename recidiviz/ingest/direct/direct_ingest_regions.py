@@ -33,7 +33,7 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct import regions as direct_ingest_regions_module
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.utils import environment, metadata
-from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
+from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION
 
 # Cache of the `DirectIngestRegion` objects.
 _REGIONS: Dict[str, Dict[str, "DirectIngestRegion"]] = defaultdict(dict)
@@ -150,12 +150,7 @@ def get_direct_ingest_region_manifest(
 
 # TODO(#12390): Delete once raw data pruning is live.
 def raw_data_pruning_enabled_in_state_and_instance(
-    state_code: StateCode,
-    instance: DirectIngestInstance,
+    state_code: StateCode,  # pylint: disable=unused-argument
+    instance: DirectIngestInstance,  # pylint: disable=unused-argument
 ) -> bool:
-    return metadata.project_id() == GCP_PROJECT_STAGING and (
-        state_code == StateCode.US_OZ
-        or (
-            state_code == StateCode.US_CO and instance == DirectIngestInstance.SECONDARY
-        )
-    )
+    return False
