@@ -34,7 +34,6 @@ import ActionRegionConfirmationForm, {
   RegionAction,
   regionActionNames,
 } from "../Utilities/ActionRegionConfirmationForm";
-import DataFreshnessInfo from "../Utilities/DataFreshnessInfo";
 import { layout, POEmailsFormProps, tailLayout } from "./constants";
 
 interface GenerateFormData {
@@ -157,7 +156,6 @@ const GenerateEmails: React.FC<POEmailsFormProps> = ({
                 onFinish(values);
               }}
             >
-              {stateInfo && <DataFreshnessInfo state={stateInfo.code} />}
               <Form.Item
                 label="Test Address"
                 name="testAddress"

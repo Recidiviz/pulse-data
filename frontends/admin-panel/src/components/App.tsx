@@ -35,7 +35,6 @@ import * as DatasetMetadata from "../navigation/DatasetMetadata";
 import * as IngestOperations from "../navigation/IngestOperations";
 import * as LineStaffTools from "../navigation/LineStaffTools";
 import * as OnCall from "../navigation/OnCall";
-import DataFreshnessView from "./DataFreshnessView";
 import DatasetView from "./Datasets/DatasetView";
 import DemoAppManagementView from "./DemoAppManagement/DemoAppManagementView";
 import FlashDatabaseChecklist from "./FlashDatabaseChecklist";
@@ -113,7 +112,6 @@ const items: MenuProps["items"] = [
   getItem("Ingest", "ingest_group", null, [
     getItem("Ingest Status", IngestOperations.INGEST_DATAFLOW_ROUTE),
     getItem("Flash Databases", IngestOperations.FLASH_DB_CHECKLIST_ROUTE),
-    getItem("Data Freshness", DatasetMetadata.DATA_FRESHNESS_ROUTE),
     getItem(
       "State Dataset",
       DatasetMetadata.routeForMetadataDataset(MetadataDataset.INGEST)
@@ -251,10 +249,6 @@ const App = (): JSX.Element => {
             component={DatasetView}
           />
           <Route
-            path={DatasetMetadata.DATA_FRESHNESS_ROUTE}
-            component={DataFreshnessView}
-          />
-          <Route
             path={DatasetMetadata.VALIDATION_STATUS_ROUTE}
             component={ValidationStatusOverview}
           />
@@ -344,9 +338,6 @@ function selectedMenuKeys(pathname: string): string[] {
     return [
       DatasetMetadata.routeForMetadataDataset(MetadataDataset.VALIDATION),
     ];
-  }
-  if (pathname.startsWith(DatasetMetadata.DATA_FRESHNESS_ROUTE)) {
-    return [DatasetMetadata.DATA_FRESHNESS_ROUTE];
   }
   if (pathname.startsWith(DatasetMetadata.VALIDATION_STATUS_ROUTE)) {
     return [DatasetMetadata.VALIDATION_STATUS_ROUTE];

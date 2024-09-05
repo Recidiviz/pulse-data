@@ -19,7 +19,6 @@ from typing import Dict, Iterable, List, Optional
 
 from recidiviz.admin_panel.admin_panel_store import AdminPanelStore
 from recidiviz.admin_panel.dataset_metadata_store import DatasetMetadataCountsStore
-from recidiviz.admin_panel.ingest_metadata_store import IngestDataFreshnessStore
 from recidiviz.admin_panel.ingest_operations_store import IngestOperationsStore
 from recidiviz.admin_panel.validation_metadata_store import ValidationStatusStore
 from recidiviz.common.constants.states import StateCode
@@ -51,9 +50,6 @@ class _AdminStores:
             _VALIDATION_METADATA_PREFIX,
         )
         admin_panel_stores.append(self.validation_metadata_store)
-
-        self.ingest_data_freshness_store = IngestDataFreshnessStore()
-        admin_panel_stores.append(self.ingest_data_freshness_store)
 
         self.ingest_operations_store = IngestOperationsStore()
         admin_panel_stores.append(self.ingest_operations_store)
@@ -87,14 +83,6 @@ def get_ingest_metadata_store() -> DatasetMetadataCountsStore:
             "Admin stores not initialized, must first call initialize_admin_stores()."
         )
     return _admin_stores.ingest_metadata_store
-
-
-def get_ingest_data_freshness_store() -> IngestDataFreshnessStore:
-    if _admin_stores is None:
-        raise ValueError(
-            "Admin stores not initialized, must first call initialize_admin_stores()."
-        )
-    return _admin_stores.ingest_data_freshness_store
 
 
 def get_validation_metadata_store() -> DatasetMetadataCountsStore:
