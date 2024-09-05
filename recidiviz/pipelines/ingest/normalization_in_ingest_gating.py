@@ -26,17 +26,18 @@ def should_run_normalization_in_ingest(state_code: StateCode) -> bool:
     pipeline but does not determine whether we read that data downstream.
     """
     # TODO(#29517): Add states here as we launch combined pipelines to prod
-    prod_launched_states: set[StateCode] = set()
+    prod_launched_states: set[StateCode] = {
+        StateCode.US_IA,
+        StateCode.US_ID,
+        StateCode.US_OZ,
+        StateCode.US_TX,
+    }
     if environment.in_gcp_production():
         return state_code in prod_launched_states
     staging_launched_states: set[StateCode] = {
         *prod_launched_states,
         StateCode.US_AZ,
-        StateCode.US_IA,
-        StateCode.US_ID,
         StateCode.US_NC,
-        StateCode.US_OZ,
-        StateCode.US_TX,
         # TODO(#29517): Add states here as we launch combined pipelines to staging
     }
     return state_code in staging_launched_states
@@ -49,7 +50,12 @@ def is_combined_ingest_and_normalization_launched_in_env(state_code: StateCode) 
     normalization output.
     """
     # TODO(#29517): Add states here as we launch combined pipelines to prod
-    prod_launched_states: set[StateCode] = set()
+    prod_launched_states: set[StateCode] = {
+        StateCode.US_IA,
+        StateCode.US_ID,
+        StateCode.US_OZ,
+        StateCode.US_TX,
+    }
     if environment.in_gcp_production():
         return state_code in prod_launched_states
     staging_launched_states: set[StateCode] = {
