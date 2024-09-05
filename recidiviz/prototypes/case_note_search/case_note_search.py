@@ -27,6 +27,7 @@ import asyncio
 import json
 from typing import Any, Dict, List, Optional
 
+import sentry_sdk
 from google.cloud.discoveryengine_v1.services.search_service.pagers import (
     SearchAsyncPager,
 )
@@ -318,12 +319,12 @@ async def case_note_search(
 
             # Truncate, if the page size is exceeded.
             results = results[:page_size]
-
         return {
             "results": results,
             "error": None,
         }
     except Exception as e:
+        sentry_sdk.capture_exception(e)
         return {
             "results": [],
             "error": str(e),
