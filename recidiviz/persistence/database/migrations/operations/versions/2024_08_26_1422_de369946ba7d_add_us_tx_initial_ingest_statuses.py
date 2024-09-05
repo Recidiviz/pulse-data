@@ -2,16 +2,15 @@
 """add_us_tx_initial_ingest_statuses
 
 Revision ID: de369946ba7d
-Revises: f64925b297f3
+Revises: 39506bc45302
 Create Date: 2024-08-26 14:22:04.545627
 
 """
-import sqlalchemy as sa
 from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "de369946ba7d"
-down_revision = "f64925b297f3"
+down_revision = "39506bc45302"
 branch_labels = None
 depends_on = None
 

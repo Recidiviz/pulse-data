@@ -18,7 +18,7 @@
 import datetime
 import json
 import os
-from typing import Any, Callable, Dict, List, Tuple
+from typing import Any, Callable, Dict, Iterator, List, Tuple
 from unittest.mock import MagicMock, patch
 
 import attr
@@ -27,6 +27,7 @@ from airflow.models.baseoperator import partial
 from airflow.models.mappedoperator import OperatorPartial
 from airflow.providers.postgres.hooks.postgres import PostgresHook
 from airflow.utils.state import DagRunState
+from google.cloud.bigquery import Row
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
@@ -2396,6 +2397,17 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
             "recidiviz.airflow.dags.raw_data.bq_load_tasks.BigQueryClientImpl",
         )
         self.load_bq_mock = self.load_tasks_bq_patcher.start()
+
+        def row_iterator() -> Iterator[Row]:
+            mock_row = MagicMock(spec=Row)
+            mock_row.items.return_value = {"COL1": "value1"}.items()
+            return iter([mock_row])
+
+        single_row_iterator_mock, future_mock = MagicMock(), MagicMock()
+        single_row_iterator_mock.__iter__.side_effect = row_iterator
+        future_mock.result.return_value = single_row_iterator_mock
+        self.load_bq_mock().run_query_async.return_value = future_mock
+
         self.clean_tasks_bq_patcher = patch(
             "recidiviz.airflow.dags.raw_data.clean_up_tasks.BigQueryClientImpl",
         )

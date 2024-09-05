@@ -63,6 +63,8 @@ class DirectIngestRawFileImportStatusBuckets(Enum):
                 return cls.FAILED
             case DirectIngestRawFileImportStatus.FAILED_PRE_IMPORT_NORMALIZATION_STEP:
                 return cls.FAILED
+            case DirectIngestRawFileImportStatus.FAILED_VALIDATION_STEP:
+                return cls.FAILED
             case DirectIngestRawFileImportStatus.FAILED_UNKNOWN:
                 return cls.FAILED
             case _:
@@ -104,9 +106,11 @@ class LatestDirectIngestRawFileImportRunSummary:
         """
         return {
             "isEnabled": self.is_enabled,
-            "importRunStart": self.import_run_start.isoformat()
-            if self.import_run_start
-            else self.import_run_start,
+            "importRunStart": (
+                self.import_run_start.isoformat()
+                if self.import_run_start
+                else self.import_run_start
+            ),
             "countByStatusBucket": [
                 {"importStatus": status.for_api(), "fileCount": count}
                 for status, count in self.count_by_status_bucket.items()

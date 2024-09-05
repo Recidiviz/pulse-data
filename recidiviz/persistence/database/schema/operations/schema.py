@@ -78,6 +78,7 @@ direct_ingest_file_import_status = Enum(
     enum_canonical_strings.direct_ingest_raw_file_import_status_failed_unknown,
     enum_canonical_strings.direct_ingest_raw_file_import_status_failed_load_step,
     enum_canonical_strings.direct_ingest_raw_file_import_status_failed_pre_import_normalization_step,
+    enum_canonical_strings.direct_ingest_raw_file_import_status_failed_validation_step,
     name="direct_ingest_file_import_status",
 )
 

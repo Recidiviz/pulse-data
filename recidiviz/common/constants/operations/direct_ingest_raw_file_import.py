@@ -37,6 +37,9 @@ class DirectIngestRawFileImportStatus(OperationsEnum):
     FAILED_PRE_IMPORT_NORMALIZATION_STEP = (
         operations_enum_strings.direct_ingest_raw_file_import_status_failed_pre_import_normalization_step
     )
+    FAILED_VALIDATION_STEP = (
+        operations_enum_strings.direct_ingest_raw_file_import_status_failed_validation_step
+    )
 
     @classmethod
     def get_enum_description(cls) -> str:
@@ -73,5 +76,10 @@ _DIRECT_INGEST_RAW_FILE_IMPORT_STATUS_VALUE_DESCRIPTIONS: Dict[OperationsEnum, s
         "The FAILED_PRE_IMPORT_NORMALIZATION_STEP status means that the import failed "
         "during the pre-import normalization step, or the step when we prepare the  "
         "raw file for the BigQuery load job by standardizing the CSV Dialect."
+    ),
+    DirectIngestRawFileImportStatus.FAILED_VALIDATION_STEP: (
+        "The FAILED_VALIDATION_STEP status means that the import failed during the "
+        "validation step, or the step when we run validation queries against the temp "
+        "raw table in BigQuery and return any errors."
     ),
 }
