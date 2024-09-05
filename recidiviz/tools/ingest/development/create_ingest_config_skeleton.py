@@ -23,8 +23,8 @@ Usage:
     [--allow-overwrite] [--initialize-state] [--add-description-placeholders] [--encoding]
 
 Example:
-    python -m recidiviz.tools.ingest.development.create_ingest_config_skeleton --state-code US_XX \
-    --delimiter '|' --file Xxandland/db/historical/filename --classification source --encoding utf-16
+    python -m recidiviz.tools.ingest.development.create_ingest_config_skeleton --state-code US_AR \
+    --delimiter '‡' --file /Users/nicolasdamiani/Downloads/STATUSCHANGEHISTOR.txt --classification source --encoding cp1252 -add-description-placeholders True
 
     python -m recidiviz.tools.ingest.development.create_ingest_config_skeleton --state-code US_XX \
     --delimiter ',' --folder Xxandland/db/historical/ --classification source --add-description-placeholders True

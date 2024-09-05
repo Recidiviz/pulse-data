@@ -35,9 +35,9 @@ https://console.developers.google.com/apis/credentials. Pass the path to the dir
 
 Usage:
 python -m recidiviz.tools.ingest.regions.us_ar.process_eomis_txt_files \
-    --credentials-directory /path/to/username/credentials \
-    --source_folder /path/to/input/folder --csv_storage_folder /path/to/csv/storage/folder \
-    --update_configs True --delimiter ‡ --encoding cp1252 --project_id recidiviz-staging --files_update_date 2023-11-06 \
+    --credentials-directory /Users/nicolasdamiani/Documents/credentials \
+    --source_folder /Users/nicolasdamiani/Downloads/new_ar_files --csv_storage_folder /Users/nicolasdamiani/Downloads/new_ar_files_csv \
+    --update_configs True --delimiter ‡ --encoding cp1252 --project_id recidiviz-staging --files_update_date 2024-09-04 \
     [--destination_bucket recidiviz-staging-us-ar-scratch-2]
 """
 
