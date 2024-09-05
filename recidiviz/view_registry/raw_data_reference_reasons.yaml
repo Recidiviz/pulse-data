@@ -1151,6 +1151,11 @@ US_ND:
       Get CM staff assignments to residents.
     sessions.us_nd_work_release_sessions_preprocessing: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
+  elite_offender_chk_list_details:
+    workflows_views.us_nd_transfer_to_atp_form_record: |-
+      List of IDs available for a given person.
+    workflows_views.us_nd_transfer_to_minimum_facility_form_record: |-
+      List of IDs available for a given person.
   elite_offender_medical_screenings_6i:
     task_eligibility_criteria_us_nd.incarceration_within_12_months_of_parole_review_date:
       |-

@@ -37,15 +37,16 @@ from recidiviz.task_eligibility.dataset_config import (
     task_eligibility_spans_state_specific_dataset,
 )
 from recidiviz.task_eligibility.utils.us_nd_query_fragments import (
+    HEALTH_NOTE_TEXT_REGEX,
+    SSI_NOTE_WHERE_CLAUSE,
+    TRAINING_PROGRAMMING_NOTE_TEXT_REGEX,
+    WORK_NOTE_TEXT_REGEX,
+    get_ids_as_case_notes,
     get_infractions_as_case_notes,
+    get_offender_case_notes,
     get_positive_behavior_reports_as_case_notes,
     get_program_assignments_as_case_notes,
     reformat_ids,
-    get_offender_case_notes,
-    SSI_NOTE_WHERE_CLAUSE,
-    HEALTH_NOTE_TEXT_REGEX,
-    TRAINING_PROGRAMMING_NOTE_TEXT_REGEX,
-    WORK_NOTE_TEXT_REGEX,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -104,6 +105,11 @@ case_notes_cte AS (
     -- Social Security Insurance
     {get_offender_case_notes(criteria = 'Social Security Insurance', 
                              additional_where_clause=SSI_NOTE_WHERE_CLAUSE)}
+
+    UNION ALL
+
+    -- IDs
+    {get_ids_as_case_notes()}
 
     UNION ALL
 

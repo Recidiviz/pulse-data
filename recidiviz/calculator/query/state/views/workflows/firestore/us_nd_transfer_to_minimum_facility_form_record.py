@@ -31,22 +31,23 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.dataset_config import raw_latest_views_dataset_for_region
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.task_eligibility.dataset_config import (
-    task_eligibility_spans_state_specific_dataset,
     task_eligibility_criteria_state_specific_dataset,
+    task_eligibility_spans_state_specific_dataset,
 )
 from recidiviz.task_eligibility.utils.almost_eligible_query_fragments import (
     clients_eligible,
     json_to_array_cte,
 )
 from recidiviz.task_eligibility.utils.us_nd_query_fragments import (
-    get_infractions_as_case_notes,
-    get_positive_behavior_reports_as_case_notes,
-    get_program_assignments_as_case_notes,
-    get_offender_case_notes,
-    SSI_NOTE_WHERE_CLAUSE,
     HEALTH_NOTE_TEXT_REGEX,
+    SSI_NOTE_WHERE_CLAUSE,
     TRAINING_PROGRAMMING_NOTE_TEXT_REGEX,
     WORK_NOTE_TEXT_REGEX,
+    get_ids_as_case_notes,
+    get_infractions_as_case_notes,
+    get_offender_case_notes,
+    get_positive_behavior_reports_as_case_notes,
+    get_program_assignments_as_case_notes,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -117,6 +118,11 @@ case_notes_cte AS (
     {get_program_assignments_as_case_notes(
         additional_where_clause=f"REGEXP_CONTAINS(spa.program_id, r'{WORK_NOTE_TEXT_REGEX}')", 
         criteria='Jobs')}
+    
+    UNION ALL
+
+    -- IDs
+    {get_ids_as_case_notes()}
 
     UNION ALL 
     
