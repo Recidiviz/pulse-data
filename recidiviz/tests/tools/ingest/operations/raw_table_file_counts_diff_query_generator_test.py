@@ -19,7 +19,6 @@ import datetime
 from typing import Any, Dict, List
 
 import pandas as pd
-from more_itertools import one
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_utils import schema_field_for_type
@@ -61,12 +60,14 @@ class RawTableFileCountsDiffQueryGeneratorTest(BigQueryEmulatorTestCase):
                 schema_field_for_type("update_datetime", datetime.datetime),
             ],
         )
-        self.query_generator = RawTableFileCountsDiffQueryGenerator(
-            region_code=self.region_code,
-            src_project_id=self.project_id,
-            src_ingest_instance=DirectIngestInstance.PRIMARY,
-            cmp_project_id=self.project_id,
-            cmp_ingest_instance=DirectIngestInstance.SECONDARY,
+        self.query_generator = (
+            RawTableFileCountsDiffQueryGenerator.create_query_generator(
+                region_code=self.region_code,
+                src_project_id=self.project_id,
+                src_ingest_instance=DirectIngestInstance.PRIMARY,
+                cmp_project_id=self.project_id,
+                cmp_ingest_instance=DirectIngestInstance.SECONDARY,
+            )
         )
         self.query_str = self.query_generator.generate_query(self.file_tag)
 
@@ -85,7 +86,7 @@ class RawTableFileCountsDiffQueryGeneratorTest(BigQueryEmulatorTestCase):
             },
             {
                 "file_id": "2",
-                "col1": "dif_val",  # only checking for counts not same data
+                "col1": "dif_val",
                 "update_datetime": datetime.datetime(2024, 1, 26, 0, 0, 0, 0),
             },
         ]
@@ -96,6 +97,9 @@ class RawTableFileCountsDiffQueryGeneratorTest(BigQueryEmulatorTestCase):
         self.assertTrue(result.empty)
 
     def test_diff_file_count_missing_src(self) -> None:
+        expected_msg = """
+The following comparison table update_datetimes have no entries in the source table:
+	2024-02-26T00:00:00"""
         src_data = [
             {
                 "file_id": "1",
@@ -127,18 +131,17 @@ class RawTableFileCountsDiffQueryGeneratorTest(BigQueryEmulatorTestCase):
         ]
         self._load_data(src_data=src_data, cmp_data=cmp_data)
 
-        result = self.query(self.query_str)
-        result_list = result.to_dict("records")
-        result_row = one(result_list)
-
-        # should return row with the problematic update_datetime
-        self.assertEqual(
-            result_row["update_datetime"], datetime.datetime(2024, 2, 26, 0, 0, 0, 0)
+        raw_result = self.query(self.query_str)
+        parsed_result = self.query_generator.parse_query_result(
+            raw_result.applymap(lambda x: None if pd.isna(x) else x).to_dict("records")
         )
-        self.assertTrue(pd.isnull(result_row["src_file_id_count"]))
-        self.assertTrue(pd.isnull(result_row["src_row_count"]))
+
+        self.assertEqual(str(parsed_result), expected_msg)
 
     def test_diff_file_count_missing_cmp(self) -> None:
+        expected_msg = """
+The following source table update_datetimes have no entries in the comparison table:
+	2024-02-26T00:00:00"""
         src_data = [
             {
                 "file_id": "1",
@@ -170,17 +173,19 @@ class RawTableFileCountsDiffQueryGeneratorTest(BigQueryEmulatorTestCase):
         ]
         self._load_data(src_data=src_data, cmp_data=cmp_data)
 
-        result = self.query(self.query_str)
-        result_list = result.to_dict("records")
-        result_row = one(result_list)
-
-        self.assertEqual(
-            result_row["update_datetime"], datetime.datetime(2024, 2, 26, 0, 0, 0, 0)
+        raw_result = self.query(self.query_str)
+        parsed_result = self.query_generator.parse_query_result(
+            raw_result.applymap(lambda x: None if pd.isna(x) else x).to_dict("records")
         )
-        self.assertTrue(pd.isnull(result_row["cmp_file_id_count"]))
-        self.assertTrue(pd.isnull(result_row["cmp_row_count"]))
+
+        self.assertEqual(str(parsed_result), expected_msg)
 
     def test_diff_file_count_different_id_count(self) -> None:
+        expected_msg = """
+The following update_datetimes have differing file_id counts or row counts:
+update_datetime: 2024-01-26T00:00:00
+	src_file_id_count: [2] cmp_file_id_count: [1]
+	src_row_count: [2] cmp_row_count: [2]"""
         src_data = [
             {
                 "file_id": "1",
@@ -217,19 +222,19 @@ class RawTableFileCountsDiffQueryGeneratorTest(BigQueryEmulatorTestCase):
         ]
         self._load_data(src_data=src_data, cmp_data=cmp_data)
 
-        result = self.query(self.query_str)
-        result_list = result.to_dict("records")
-        result_row = one(result_list)
+        raw_result = self.query(self.query_str)
+        parsed_result = self.query_generator.parse_query_result(
+            raw_result.applymap(lambda x: None if pd.isna(x) else x).to_dict("records")
+        )
 
-        self.assertEqual(
-            result_row["update_datetime"], datetime.datetime(2024, 1, 26, 0, 0, 0, 0)
-        )
-        self.assertNotEqual(
-            result_row["src_file_id_count"], result_row["cmp_file_id_count"]
-        )
-        self.assertEqual(result_row["src_row_count"], result_row["cmp_row_count"])
+        self.assertEqual(str(parsed_result), expected_msg)
 
     def test_diff_file_count_different_row_count(self) -> None:
+        expected_msg = """
+The following update_datetimes have differing file_id counts or row counts:
+update_datetime: 2024-01-26T00:00:00
+	src_file_id_count: [1] cmp_file_id_count: [1]
+	src_row_count: [2] cmp_row_count: [1]"""
         src_data = [
             {
                 "file_id": "1",
@@ -261,17 +266,12 @@ class RawTableFileCountsDiffQueryGeneratorTest(BigQueryEmulatorTestCase):
         ]
         self._load_data(src_data=src_data, cmp_data=cmp_data)
 
-        result = self.query(self.query_str)
-        result_list = result.to_dict("records")
-        result_row = one(result_list)
+        raw_result = self.query(self.query_str)
+        parsed_result = self.query_generator.parse_query_result(
+            raw_result.applymap(lambda x: None if pd.isna(x) else x).to_dict("records")
+        )
 
-        self.assertEqual(
-            result_row["update_datetime"], datetime.datetime(2024, 1, 26, 0, 0, 0, 0)
-        )
-        self.assertEqual(
-            result_row["src_file_id_count"], result_row["cmp_file_id_count"]
-        )
-        self.assertNotEqual(result_row["src_row_count"], result_row["cmp_row_count"])
+        self.assertEqual(str(parsed_result), expected_msg)
 
     def test_truncate_datetime(self) -> None:
         data = [
@@ -289,7 +289,7 @@ class RawTableFileCountsDiffQueryGeneratorTest(BigQueryEmulatorTestCase):
 
         self._load_data(src_data=data, cmp_data=data)
 
-        query_generator = RawTableFileCountsDiffQueryGenerator(
+        query_generator = RawTableFileCountsDiffQueryGenerator.create_query_generator(
             region_code=self.region_code,
             src_project_id=self.project_id,
             src_ingest_instance=DirectIngestInstance.PRIMARY,

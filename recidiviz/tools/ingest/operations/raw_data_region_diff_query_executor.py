@@ -16,7 +16,7 @@
 # =============================================================================
 """Executes raw data comparison queries for the given file tags in a region."""
 import logging
-from typing import Any, Dict, List
+from typing import Dict, List
 
 import attr
 from google.cloud import exceptions
@@ -29,6 +29,7 @@ from recidiviz.ingest.direct.raw_data.raw_file_configs import (
 )
 from recidiviz.tools.ingest.operations.raw_table_diff_query_generator import (
     RawTableDiffQueryGenerator,
+    RawTableDiffQueryResult,
 )
 
 
@@ -39,7 +40,7 @@ class RawDataRegionQueryResult:
     failed_table_results: Dict mapping file tags to the results of the diff query."""
 
     succeeded_tables: List[str]
-    failed_table_results: Dict[str, List[Dict[str, Any]]]
+    failed_table_results: Dict[str, RawTableDiffQueryResult]
 
 
 @attr.define
@@ -88,7 +89,7 @@ class RawDataRegionDiffQueryExecutor:
     def _get_queries_results(
         self, query_jobs: Dict[str, QueryJob]
     ) -> RawDataRegionQueryResult:
-        failed_table_results: Dict[str, List[Dict[str, Any]]] = {}
+        failed_table_results: Dict[str, RawTableDiffQueryResult] = {}
         succeeded_tables: List[str] = []
 
         for file_tag in sorted(query_jobs.keys()):
@@ -106,7 +107,9 @@ class RawDataRegionDiffQueryExecutor:
             if not results_list:
                 succeeded_tables.append(file_tag)
             else:
-                failed_table_results[file_tag] = results_list
+                failed_table_results[
+                    file_tag
+                ] = self.query_generator.parse_query_result(results_list)
 
         return RawDataRegionQueryResult(succeeded_tables, failed_table_results)
 
