@@ -58,6 +58,9 @@ from recidiviz.airflow.dags.utils.dataflow_pipeline_group import (
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.database.schema_type import SchemaType
+from recidiviz.pipelines.ingest.normalization_in_ingest_gating import (
+    is_combined_ingest_and_normalization_launched_in_env,
+)
 
 # Need a disable pointless statement because Python views the chaining operator ('>>')
 # as a "pointless" statement
@@ -228,18 +231,21 @@ def create_single_ingest_pipeline_group(state_code: StateCode) -> TaskGroup:
             ),
         )
 
-        normalization_pipeline_group = build_dataflow_pipeline_task_group(
-            delegate=NormalizationDataflowPipelineTaskGroupDelegate(
-                state_code=state_code
-            ),
-        )
-
         (
             initialize_ingest_pipeline
             >> dataflow_pipeline_group
             >> write_ingest_job_completion
             >> write_upper_bounds
-            >> normalization_pipeline_group
         )
+
+        # Only run the normalization pipeline if we are still reading from the
+        # legacy normalization pipeline output
+        if not is_combined_ingest_and_normalization_launched_in_env(state_code):
+            normalization_pipeline_group = build_dataflow_pipeline_task_group(
+                delegate=NormalizationDataflowPipelineTaskGroupDelegate(
+                    state_code=state_code
+                ),
+            )
+            write_upper_bounds >> normalization_pipeline_group
 
     return dataflow
