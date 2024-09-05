@@ -88,11 +88,7 @@ def parse_housing_category(
         return StateIncarcerationPeriodHousingUnitCategory.GENERAL
     if bed_use == "U" and bed_type == "U":  # Unknown (conversion)
         return StateIncarcerationPeriodHousingUnitCategory.EXTERNAL_UNKNOWN
-    return (
-        StateIncarcerationPeriodHousingUnitCategory.INTERNAL_UNKNOWN
-        if raw_text != "NA-NA"
-        else None
-    )
+    return StateIncarcerationPeriodHousingUnitCategory.INTERNAL_UNKNOWN
 
 
 def parse_housing_type(
@@ -128,11 +124,8 @@ def parse_housing_type(
 
     if bed_use == "U" and bed_type == "U":  # Unknown (conversion)
         return StateIncarcerationPeriodHousingUnitType.EXTERNAL_UNKNOWN
-    return (
-        StateIncarcerationPeriodHousingUnitType.INTERNAL_UNKNOWN
-        if raw_text != "NA-NA"
-        else None
-    )
+
+    return StateIncarcerationPeriodHousingUnitType.INTERNAL_UNKNOWN
 
 
 def parse_release_reason(

@@ -19,6 +19,12 @@ input_columns:
   - ORGCOUNTYCODE
   - SEQ
 unused_columns: []
+variables:
+  - has_bed_info:
+      $not_in:
+        $value: bed_type
+        $options:
+          - $literal("NA-NA")
 output:
   StatePerson:
     external_ids:
@@ -42,13 +48,19 @@ output:
           facility: location_id
           housing_unit: HOUSINGAREANAME
           housing_unit_category:
-            $enum_mapping:
-              $raw_text: bed_type
-              $custom_parser: us_ar_custom_enum_parsers.parse_housing_category
+            $conditional:
+              - $if: $variable(has_bed_info)
+                $then:
+                  $enum_mapping:
+                    $raw_text: bed_type
+                    $custom_parser: us_ar_custom_enum_parsers.parse_housing_category
           housing_unit_type:
-            $enum_mapping:
-              $raw_text: bed_type
-              $custom_parser: us_ar_custom_enum_parsers.parse_housing_type
+            $conditional:
+              - $if: $variable(has_bed_info)
+                $then:
+                  $enum_mapping:
+                    $raw_text: bed_type
+                    $custom_parser: us_ar_custom_enum_parsers.parse_housing_type
           custodial_authority:
             $enum_mapping:
               $raw_text: ORGANIZATIONTYPE
