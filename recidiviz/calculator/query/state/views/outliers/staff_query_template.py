@@ -1,5 +1,5 @@
 #  Recidiviz - a data platform for criminal justice reform
-#  Copyright (C) 2023 Recidiviz, Inc.
+#  Copyright (C) 2024 Recidiviz, Inc.
 #
 #  This program is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -73,12 +73,19 @@ def staff_query_template(role: str) -> str:
         attrs.supervisor_staff_external_id_array[SAFE_OFFSET(0)] AS supervisor_external_id,
         attrs.specialized_caseload_type_primary AS specialized_caseload_type,
         attrs.supervisor_staff_external_id_array AS supervisor_external_ids,
-        attrs.supervision_unit_name AS supervision_unit
+        attrs.supervision_unit_name AS supervision_unit,
+        assignment.earliest_person_assignment_date
     FROM ({source_tbl}) supervision_staff
     INNER JOIN attrs
         ON attrs.state_code = supervision_staff.state_code AND attrs.officer_id = supervision_staff.external_id 
     INNER JOIN `{{project_id}}.normalized_state.state_staff` staff 
         ON attrs.staff_id = staff.staff_id AND attrs.state_code = staff.state_code
+    LEFT JOIN (
+        SELECT state_code, officer_id, MIN(assignment_date) AS earliest_person_assignment_date
+        FROM `{{project_id}}.aggregated_metrics.supervision_officer_metrics_person_assignment_sessions_materialized`
+        GROUP BY 1,2
+    ) assignment
+        ON attrs.officer_id = assignment.officer_id AND attrs.state_code = assignment.state_code
     WHERE staff.state_code = '{state}' 
       {f"AND {config.supervision_staff_exclusions}" if config.supervision_staff_exclusions else ""}
 """

@@ -71,6 +71,8 @@ class SupervisionOfficer(PersonBase, InsightsBase):
     supervision_district = Column(String, nullable=True)
     # specialized caseload type, if applicable
     specialized_caseload_type = Column(String, nullable=True)
+    # earliest date that this officer was assigned a caseload
+    earliest_person_assignment_date = Column(Date, nullable=True)
 
 
 class SupervisionOfficerSupervisor(PersonBase, InsightsBase):

@@ -241,7 +241,7 @@ There are relatively few known use cases for the `manual` mode. Consider these a
 * If you just want to load the views changed on your branch, you can use `auto` mode
     with the `--load_changed_views_only` flag. 
 * If `auto` mode is picking up other views on `main` you can use the
-    `--changed_datasets_to_ignore` or `--changed_dataset_to_include` flags to filter 
+    `--changed_datasets_to_ignore` or `--changed_datasets_to_include` flags to filter 
     out changes in datasets unrelated to your changes.
 
 Are you sure you still want to continue with `manual` mode? 

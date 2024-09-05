@@ -59,6 +59,7 @@ SUPERVISION_OFFICERS_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
         "supervisor_external_ids",
         "supervision_district",
         "specialized_caseload_type",
+        "earliest_person_assignment_date",
     ],
 )
 
