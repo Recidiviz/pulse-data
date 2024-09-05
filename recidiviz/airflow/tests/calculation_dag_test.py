@@ -805,6 +805,41 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
                 ],
             )
 
+    # TODO(#31741): Delete this when this gate is fully enabled - at that point it will
+    #  be identical to test_calculation_dag.
+    @patch(
+        "recidiviz.airflow.dags.calculation.dataflow.single_ingest_pipeline_group."
+        "is_combined_ingest_and_normalization_launched_in_env",
+        return_value=True,
+    )
+    def test_calculation_dag_combined_pipelines_enabled(
+        self, mock_gating_fn: MagicMock  # pylint: disable=unused-argument
+    ) -> None:
+        from recidiviz.airflow.dags.calculation_dag import create_calculation_dag
+
+        dag = create_calculation_dag()
+
+        with Session(bind=self.engine) as session:
+            self.run_dag_test(
+                dag,
+                session=session,
+                run_conf={
+                    "ingest_instance": "PRIMARY",
+                },
+                expected_success_task_id_regexes=[
+                    r"^initialize_dag.*",
+                    r"^update_big_query_table_schemata",
+                    r"^bq_refresh.*",
+                    r"^ingest_and_normalization.*",
+                    r"^update_state",
+                    r"^update_normalized_state",
+                    r"^post_normalization_pipelines",
+                    r"^update_managed_views_all",
+                    r"^validations.*",
+                    r"^metric_exports.*",
+                ],
+            )
+
     def test_calculation_dag_with_state(self) -> None:
         from recidiviz.airflow.dags.calculation_dag import create_calculation_dag
 
@@ -870,6 +905,77 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
                     r"^ingest_and_normalization.us_yy_dataflow.write_ingest_job_completion",
                     # No normalization nodes run
                     r"^ingest_and_normalization.us_yy_dataflow.us-yy-normalization.*",
+                    r"^ingest_and_normalization.branch_end",
+                    # Metric exports for US_YY should not run
+                    r"^metric_exports\.state_specific_metric_exports\.US_YY_metric_exports",
+                    r"^metric_exports.state_specific_metric_exports.branch_end",
+                ],
+                # No downstream processes are skipped!
+                expected_skipped_task_id_regexes=[],
+                expected_success_task_id_regexes=[
+                    r"^initialize_dag.*",
+                    r"^update_big_query_table_schemata",
+                    r"^bq_refresh.*",
+                    r"^ingest_and_normalization.branch_start",
+                    r"^ingest_and_normalization.US_XX_start",
+                    r"^ingest_and_normalization.us_xx_dataflow.*",
+                    r"^ingest_and_normalization.US_YY_start",
+                    r"ingest_and_normalization.us_yy_dataflow.initialize_ingest_pipeline.*",
+                    r"ingest_and_normalization.us_yy_dataflow.us-yy-ingest.create_flex_template",
+                    r"^ingest_and_normalization_completed",
+                    r"^update_state",
+                    r"^update_normalized_state",
+                    r"^post_normalization_pipelines",
+                    r"^update_managed_views_all",
+                    r"^validations.*",
+                    r"^metric_exports.state_specific_metric_exports.branch_start",
+                    # This is a state-agnostic export so it runs
+                    r"^metric_exports.MOCK_EXPORT_NAME_metric_exports.export_mock_export_name_metric_view_data",
+                    # Metric exports for US_XX (no failures) should run
+                    r"metric_exports.state_specific_metric_exports.US_XX_start",
+                    r"^metric_exports\.state_specific_metric_exports\.US_XX_metric_exports",
+                    # The branch_start node runs, but the actual metric export jobs still fail
+                    r"metric_exports.state_specific_metric_exports.US_YY_start",
+                    # r"^metric_exports.*",
+                ],
+            )
+
+            self.assertEqual(
+                [(StateCode.US_YY, "ingest")], self.found_pipelines_to_fail
+            )
+
+    # TODO(#31741): Delete this when this gate is fully enabled - at that point it will
+    #  be identical to test_calculation_dag_fail_single_ingest_pipeline.
+    @patch(
+        "recidiviz.airflow.dags.calculation.dataflow.single_ingest_pipeline_group."
+        "is_combined_ingest_and_normalization_launched_in_env",
+        return_value=True,
+    )
+    def test_calculation_dag_fail_single_ingest_pipeline_combined_pipelines_enabled(
+        self, mock_gating_fn: MagicMock  # pylint: disable=unused-argument
+    ) -> None:
+        from recidiviz.airflow.dags.calculation_dag import create_calculation_dag
+
+        self._mock_fail_dataflow_pipeline(
+            state_code=StateCode.US_YY,
+            pipeline_name="ingest",
+        )
+
+        dag = create_calculation_dag()
+
+        with Session(bind=self.engine) as session:
+            self.run_dag_test(
+                dag,
+                session=session,
+                run_conf={
+                    "ingest_instance": "PRIMARY",
+                },
+                expected_failure_task_id_regexes=[
+                    # Pipeline fails
+                    r"^ingest_and_normalization.us_yy_dataflow.us-yy-ingest.run_pipeline",
+                    # We don't save any of the post-successful ingest pipeline state
+                    r"^ingest_and_normalization.us_yy_dataflow.write_upper_bounds",
+                    r"^ingest_and_normalization.us_yy_dataflow.write_ingest_job_completion",
                     r"^ingest_and_normalization.branch_end",
                     # Metric exports for US_YY should not run
                     r"^metric_exports\.state_specific_metric_exports\.US_YY_metric_exports",
