@@ -31,11 +31,14 @@ python -m recidiviz.tools.ingest.operations.compare_raw_data --region us_tn \
 import argparse
 import logging
 import sys
-from typing import Any, Dict, List
+from typing import Dict, List
 
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.tools.ingest.operations.raw_data_region_diff_query_executor import (
     RawDataRegionDiffQueryExecutor,
+)
+from recidiviz.tools.ingest.operations.raw_table_diff_query_generator import (
+    RawTableDiffQueryResult,
 )
 from recidiviz.tools.ingest.operations.raw_table_file_counts_diff_query_generator import (
     RawTableFileCountsDiffQueryGenerator,
@@ -49,23 +52,22 @@ def _log_file_counts_successes(succeeded_tables: List[str]) -> None:
     if not succeeded_tables:
         return
     logging.info("SUCCESSES - Distinct file counts match for tables:")
+    logging.error(LINE_SEPARATOR)
     for file_tag in succeeded_tables:
-        logging.info("- %s", file_tag)
+        logging.info("\t- %s", file_tag)
     logging.info(LINE_SEPARATOR)
 
 
 def _log_file_counts_failures(
-    failed_table_results: Dict[str, List[Dict[str, Any]]]
+    failed_table_results: Dict[str, RawTableDiffQueryResult]
 ) -> None:
     if not failed_table_results:
         return
     logging.error("FAILURES - Distinct file counts do not match for tables:")
     logging.error(LINE_SEPARATOR)
-    for file_tag, result_rows in failed_table_results.items():
-        # TODO(#32737) log in more readable format
+    for file_tag, result in failed_table_results.items():
         logging.error("%s:", file_tag)
-        for row in result_rows:
-            logging.error(row)
+        logging.error(result)
         logging.error(LINE_SEPARATOR)
 
 
@@ -139,7 +141,7 @@ def main() -> None:
     )
     logging.info(LINE_SEPARATOR)
 
-    query_generator = RawTableFileCountsDiffQueryGenerator(
+    query_generator = RawTableFileCountsDiffQueryGenerator.create_query_generator(
         region_code=args.region,
         src_project_id=args.source_project_id,
         src_ingest_instance=args.source_ingest_instance,
