@@ -193,9 +193,12 @@ async def search_case_notes() -> Response:
             results=deepcopy(case_note_response),
         )
     except Exception as e:
+        # If writing to the record table fails, we want to raise an alert to Sentry but
+        # still return the case note response to the user.
         sentry_sdk.capture_exception(e)
-        response = jsonify({"error": str(e)})
-        response.status_code = 500
-        return response
 
-    return jsonify(case_note_response)
+    # If the case note response contains errors, return a 500.
+    response = jsonify(case_note_response)
+    if case_note_response["error"] is not None:
+        response.status_code = 500
+    return response

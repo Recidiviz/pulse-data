@@ -121,9 +121,11 @@ def make_request_to_api(
     except requests.exceptions.RequestException as e:
         print(f"Failed to connect to {url + endpoint}: {e}")
         print("Response content:", response.text)
+        return
     except json.JSONDecodeError:
         print("Failed to decode JSON response.")
         print("Response content:", response.text)
+        return
 
     print(response.status_code)
     print(json.dumps(response.json(), indent=2))
