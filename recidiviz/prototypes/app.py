@@ -20,7 +20,10 @@ from copy import deepcopy
 from http import HTTPStatus
 from typing import Optional, Union
 
+import sentry_sdk
 from quart import Quart, Response, jsonify, make_response, request
+from sentry_sdk.integrations.asyncio import AsyncioIntegration
+from sentry_sdk.integrations.quart import QuartIntegration
 from werkzeug.http import parse_set_header
 from werkzeug.wrappers import Response as WerkzeugResponse
 
@@ -33,6 +36,7 @@ from recidiviz.prototypes.case_note_search.case_note_search_record import (
     record_case_note_search,
 )
 from recidiviz.prototypes.case_note_search.exact_match import STATE_CODE_CONVERTER
+from recidiviz.utils.environment import get_gcp_environment
 
 ALLOWED_ORIGINS = [
     r"http\://localhost:3000",
@@ -43,6 +47,23 @@ ALLOWED_ORIGINS = [
     r"https\://recidiviz-dashboard-stag-e1108--[^.]+?\.web\.app$",
     r"https\://recidiviz-dashboard--[^.]+?\.web\.app$",
 ]
+
+# Case Note Search Sentry Data Source Name. See monitoring page at https://recidiviz-inc.sentry.io/projects/justice-counts/?project=4507895390404608
+CASE_NOTE_SEARCH_SENTRY_DSN = (
+    # not a secret!
+    "https://ccca0e2f57773e9f50c7ac4cff056cc5@o432474.ingest.us.sentry.io/4507895390404608"
+)
+
+
+# pylint: disable=abstract-class-instantiated
+sentry_sdk.init(
+    dsn=CASE_NOTE_SEARCH_SENTRY_DSN,
+    traces_sample_rate=0.25,
+    environment=get_gcp_environment(),
+    # profile 10% of transactions
+    profiles_sample_rate=0.1,
+    integrations=[QuartIntegration(), AsyncioIntegration()],
+)
 
 app = Quart(__name__)
 
@@ -172,6 +193,7 @@ async def search_case_notes() -> Response:
             results=deepcopy(case_note_response),
         )
     except Exception as e:
+        sentry_sdk.capture_exception(e)
         response = jsonify({"error": str(e)})
         response.status_code = 500
         return response
