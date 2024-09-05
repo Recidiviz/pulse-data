@@ -181,7 +181,7 @@ def reformat_ids(column_name: str) -> str:
 
 def get_positive_behavior_reports_as_case_notes() -> str:
     """
-    Returns a SQL query that retrieves positive behavior reports as case notes.
+    Returns a SQL query that retrieves positive behavior reports as side panel notes.
     """
     return """
     SELECT 
@@ -195,7 +195,8 @@ def get_positive_behavior_reports_as_case_notes() -> str:
         USING (person_id)
     WHERE sic.state_code= 'US_ND'
         AND sic.incident_type = 'POSITIVE'
-        AND sic.incident_date > DATE_SUB(CURRENT_DATE, INTERVAL 1 YEAR)"""
+        AND sic.incident_date > DATE_SUB(CURRENT_DATE, INTERVAL 1 YEAR)
+        AND peid.id_type = 'US_ND_ELITE'"""
 
 
 TRAINING_PROGRAMMING_NOTE_TEXT_REGEX = "|".join(
@@ -251,7 +252,7 @@ def get_program_assignments_as_case_notes(
 ) -> str:
     """
     Returns a SQL query that retrieves program assignments from the current
-    incarceration as case notes.
+    incarceration as side panel notes.
     """
 
     base_query = f"""
@@ -304,6 +305,7 @@ def get_program_assignments_as_case_notes(
                                             'DECEASED')
         -- Don't surface case manager assignments
         AND NOT REGEXP_CONTAINS(spa.program_id, r'ASSIGNED CASE MANAGER')
+        AND peid.id_type = 'US_ND_ELITE'
     """
 
     if additional_where_clause:
@@ -343,7 +345,7 @@ def get_infractions_query(additional_columns: str = "") -> str:
 
 def get_infractions_as_case_notes() -> str:
     """
-    Returns a SQL query that retrieves infractions in the past 6 months as case notes.
+    Returns a SQL query that retrieves infractions in the past 6 months as side panel.
     """
 
     return f"""
@@ -474,12 +476,13 @@ def get_offender_case_notes(
     criteria: str, additional_where_clause: Optional[str] = None
 ) -> str:
     """
-    Returns a SQL query that retrieves case notes from OffenderCaseNotes
+    Returns a SQL query that retrieves case notes from OffenderCaseNotes and formats
+    them as side panel notes
     """
 
     return f"""
     SELECT 
-        peid.external_id,
+        peid2.external_id,
         "{criteria}" AS criteria,
         ocn.CASE_NOTE_TYPE AS note_title,
         ocn.CASE_NOTE_TEXT AS note_body,
@@ -489,6 +492,10 @@ def get_offender_case_notes(
         ON SAFE_CAST(REGEXP_REPLACE(ocn.OFFENDER_BOOK_ID, r',|.00', '') AS STRING) = peid.external_id
             AND peid.state_code = 'US_ND'
             AND peid.id_type = 'US_ND_ELITE_BOOKING'
+    INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` peid2
+        ON peid.person_id = peid2.person_id
+            AND peid.state_code = peid2.state_code
+            AND peid2.id_type = 'US_ND_ELITE'
     -- Only include case notes from the current incarceration span
     INNER JOIN `{{project_id}}.{{sessions_dataset}}.incarceration_super_sessions_materialized` iss
         ON iss.state_code='US_ND'
@@ -499,3 +506,47 @@ def get_offender_case_notes(
         )}
     {additional_where_clause}
     """
+
+
+def get_ids_as_case_notes() -> str:
+    """
+    Returns a SQL query that retrieves ID's available as side panel notes.
+    """
+    return f"""
+SELECT 
+    peid2.external_id,
+    "ID's available" AS criteria,
+    CASE 
+        WHEN CHECK_LIST_CODE = 'BC' THEN 'Birth Certificate'
+        WHEN CHECK_LIST_CODE = 'BIA' THEN 'Bureau of Indian Affairs ID'
+        WHEN CHECK_LIST_CODE = 'SG' THEN 'State Government Photo ID'
+        WHEN CHECK_LIST_CODE = 'PASS' THEN 'Passport or VISA'
+        WHEN CHECK_LIST_CODE = 'MIL' THEN 'Military ID'
+        WHEN CHECK_LIST_CODE = 'SSN' THEN 'Social Security Number'
+        WHEN CHECK_LIST_CODE = 'VEH' THEN 'Vehicle Title'
+        WHEN CHECK_LIST_CODE = 'NAT' THEN 'Naturalization Paper'
+        WHEN CHECK_LIST_CODE = 'SS' THEN 'Selective Service Card'
+        WHEN CHECK_LIST_CODE = 'PHOTOC' THEN 'Photocopy of ID'
+        WHEN CHECK_LIST_CODE = 'DEBIT' THEN 'Debit Card'
+        ELSE 'Unknown ID'
+    END AS note_title,
+    'Confirmed' AS note_body,
+    SAFE_CAST(PARSE_DATETIME('%m/%d/%Y %I:%M:%S%p', MODIFY_DATETIME) AS DATE) AS event_date,
+FROM `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.elite_offender_chk_list_details_latest` chk
+INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` peid
+    ON peid.external_id = chk.OFFENDER_BOOK_ID
+        AND peid.id_type ='US_ND_ELITE_BOOKING'
+        AND peid.state_code = 'US_ND'
+INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` peid2
+    USING(person_id, state_code)
+INNER JOIN `{{project_id}}.{{sessions_dataset}}.incarceration_super_sessions_materialized` iss
+    ON iss.state_code='US_ND'
+    AND peid.person_id = iss.person_id
+    AND {today_between_start_date_and_nullable_end_date_exclusive_clause(
+        start_date_column="iss.start_date",
+        end_date_column="iss.end_date"
+    )}
+WHERE chk.CHECK_LIST_CATEGORY IN ("ID'S")
+    AND chk.CONFIRMED_FLAG = 'Y'
+    AND peid2.id_type = 'US_ND_ELITE'
+"""
