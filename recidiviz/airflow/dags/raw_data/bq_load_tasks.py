@@ -35,10 +35,16 @@ from recidiviz.airflow.dags.raw_data.utils import (
 )
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
+from recidiviz.common.constants.operations.direct_ingest_raw_file_import import (
+    DirectIngestRawFileImportStatus,
+)
 from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_load_manager import (
     DirectIngestRawFileLoadManager,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.ingest.direct.types.raw_data_import_blocking_validation import (
+    RawDataImportBlockingValidationError,
+)
 from recidiviz.ingest.direct.types.raw_data_import_types import (
     AppendReadyFile,
     AppendReadyFileBatch,
@@ -104,6 +110,23 @@ def load_and_prep_paths_for_batch(
         for future in concurrent.futures.as_completed(future_to_metadata):
             try:
                 succeeded_loads.append(future.result())
+            except RawDataImportBlockingValidationError as e:
+                failed_loads.append(
+                    RawFileLoadAndPrepError(
+                        file_id=future_to_metadata[future].file_id,
+                        original_file_paths=future_to_metadata[
+                            future
+                        ].original_file_paths,
+                        pre_import_normalized_file_paths=future_to_metadata[
+                            future
+                        ].pre_import_normalized_file_paths,
+                        file_tag=future_to_metadata[future].file_tag,
+                        update_datetime=future_to_metadata[future].update_datetime,
+                        error_msg=str(e),
+                        temp_table=None,
+                        error_type=DirectIngestRawFileImportStatus.FAILED_VALIDATION_STEP,
+                    )
+                )
             except Exception as e:
                 failed_loads.append(
                     RawFileLoadAndPrepError(

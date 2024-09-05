@@ -38,6 +38,9 @@ from recidiviz.ingest.direct.direct_ingest_regions import (
 from recidiviz.ingest.direct.raw_data.direct_ingest_raw_table_migration_collector import (
     DirectIngestRawTableMigrationCollector,
 )
+from recidiviz.ingest.direct.raw_data.direct_ingest_raw_table_pre_import_validator import (
+    DirectIngestRawTablePreImportValidator,
+)
 from recidiviz.ingest.direct.raw_data.direct_ingest_raw_table_schema_builder import (
     RawDataTableBigQuerySchemaBuilder,
 )
@@ -48,6 +51,9 @@ from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRegionRawFileConfig,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.ingest.direct.types.raw_data_import_blocking_validation import (
+    RawDataImportBlockingValidationError,
+)
 from recidiviz.ingest.direct.types.raw_data_import_types import (
     AppendReadyFile,
     AppendSummary,
@@ -80,11 +86,17 @@ class DirectIngestRawFileLoadManager:
                 region_raw_file_config, raw_data_instance
             )
         )
-
         self.raw_table_migrations = DirectIngestRawTableMigrationCollector(
             region_code=self.region_code,
             instance=self.raw_data_instance,
             regions_module_override=self.region_raw_file_config.region_module,
+        )
+        self.validator = DirectIngestRawTablePreImportValidator(
+            region_raw_file_config,
+            raw_data_instance,
+            self.region_code,
+            metadata.project_id(),
+            self.big_query_client,
         )
 
     def _delete_temp_files(self, temp_file_paths: List[GcsfsFilePath]) -> None:
@@ -235,6 +247,8 @@ class DirectIngestRawFileLoadManager:
             (2) apply pre-migration transformations
             (3) apply raw data migrations
 
+        Then runs basic data integrity validations on the transformed temp table.
+
         After this step, we should be ready to perform raw data pruning and append to
         the current raw data table.
         """
@@ -276,6 +290,16 @@ class DirectIngestRawFileLoadManager:
                 file.update_datetime,
                 temp_raw_file_with_transformations_address,
             )
+
+            self.validator.run_raw_data_temp_table_validations(
+                file.file_tag,
+                file.update_datetime,
+                temp_raw_file_with_transformations_address,
+            )
+
+        except RawDataImportBlockingValidationError as e:
+            # if any validations fail don't clean up transformed temp table for easier debugging
+            raise e
 
         except Exception as e:
             # if we fail during the above, we want to make sure that the transformed

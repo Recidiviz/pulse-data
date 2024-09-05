@@ -324,3 +324,13 @@ def is_big_query_valid_delimiter(delimiter: str, encoding: str) -> bool:
         return len(delimiter) == 1
 
     raise ValueError(f"Unrecognized encoding: {big_query_encoding}")
+
+
+def bq_query_job_result_to_list_of_row_dicts(
+    rows: bigquery.table.RowIterator,
+) -> List[Dict[str, Any]]:
+    """Converts a BigQuery query job result to a list of dictionaries, each dictionary
+    representing a row with key=column name, value=value."""
+    row_tuples: List[Dict[str, Any]] = [row.items() for row in rows]
+
+    return [dict(item) for item in row_tuples]

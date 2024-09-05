@@ -39,6 +39,9 @@ from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRegionRawFileConfig,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.ingest.direct.types.raw_data_import_blocking_validation import (
+    RawDataImportBlockingValidationError,
+)
 from recidiviz.ingest.direct.types.raw_data_import_types import (
     AppendReadyFile,
     ImportReadyFile,
@@ -437,7 +440,7 @@ class TestDirectIngestRawFileLoadManager(BigQueryEmulatorTestCase):
         with self.assertRaisesRegex(ValueError, "We hit an error!"):
             _ = self.manager.load_and_prep_paths(
                 ImportReadyFile(
-                    file_id=10,
+                    file_id=1,
                     file_tag=file_tag,
                     update_datetime=datetime.datetime(
                         2023, 4, 8, 0, 0, 1, tzinfo=datetime.UTC
@@ -475,7 +478,7 @@ class TestDirectIngestRawFileLoadManager(BigQueryEmulatorTestCase):
         with self.assertRaisesRegex(ValueError, "We hit an error!"):
             _ = self.manager.load_and_prep_paths(
                 ImportReadyFile(
-                    file_id=10,
+                    file_id=1,
                     file_tag=file_tag,
                     update_datetime=datetime.datetime(
                         2023, 4, 8, 0, 0, 1, tzinfo=datetime.UTC
@@ -513,7 +516,7 @@ class TestDirectIngestRawFileLoadManager(BigQueryEmulatorTestCase):
         with self.assertRaisesRegex(ValueError, "We hit an error!"):
             _ = self.manager.load_and_prep_paths(
                 ImportReadyFile(
-                    file_id=10,
+                    file_id=1,
                     file_tag=file_tag,
                     update_datetime=datetime.datetime(
                         2023, 4, 8, 0, 0, 1, tzinfo=datetime.UTC
@@ -555,7 +558,7 @@ class TestDirectIngestRawFileLoadManager(BigQueryEmulatorTestCase):
             with self.assertRaisesRegex(ValueError, "We hit an error!"):
                 _ = self.manager.load_and_prep_paths(
                     ImportReadyFile(
-                        file_id=10,
+                        file_id=1,
                         file_tag=file_tag,
                         update_datetime=datetime.datetime(
                             2023, 4, 8, 0, 0, 1, tzinfo=datetime.UTC
@@ -596,7 +599,7 @@ class TestDirectIngestRawFileLoadManager(BigQueryEmulatorTestCase):
             with self.assertRaisesRegex(ValueError, "We hit an error!"):
                 _ = self.manager.load_and_prep_paths(
                     ImportReadyFile(
-                        file_id=10,
+                        file_id=1,
                         file_tag=file_tag,
                         update_datetime=datetime.datetime(
                             2023, 4, 8, 0, 0, 1, tzinfo=datetime.UTC
@@ -637,7 +640,7 @@ class TestDirectIngestRawFileLoadManager(BigQueryEmulatorTestCase):
                 _ = self.manager.append_to_raw_data_table(
                     AppendReadyFile(
                         import_ready_file=ImportReadyFile(
-                            file_id=10,
+                            file_id=1,
                             file_tag="tagBasicData",
                             update_datetime=datetime.datetime(
                                 2023, 4, 8, 0, 0, 1, tzinfo=datetime.UTC
@@ -663,6 +666,49 @@ class TestDirectIngestRawFileLoadManager(BigQueryEmulatorTestCase):
         )
 
         self.assertFalse(
+            self.bq_client.table_exists(
+                BigQueryAddress(
+                    dataset_id="us_xx_primary_raw_data_temp_load",
+                    table_id="singlePrimaryKey__1__transformed",
+                )
+            )
+        )
+
+    def test_fail_validations_keeps_transformed_table(self) -> None:
+        self._set_pruning_mocks(True)
+        file_tag, input_paths, *_ = self._prep_test(
+            "no_migrations_no_changes_single_file"
+        )
+
+        with patch(
+            "recidiviz.ingest.direct.raw_data.direct_ingest_raw_table_pre_import_validator.DirectIngestRawTablePreImportValidator.run_raw_data_temp_table_validations",
+            side_effect=RawDataImportBlockingValidationError(file_tag, failures=[]),
+        ):
+            with self.assertRaises(RawDataImportBlockingValidationError):
+                _ = self.manager.load_and_prep_paths(
+                    ImportReadyFile(
+                        file_id=1,
+                        file_tag=file_tag,
+                        update_datetime=datetime.datetime(
+                            2023, 4, 8, 0, 0, 1, tzinfo=datetime.UTC
+                        ),
+                        original_file_paths=input_paths,
+                        pre_import_normalized_file_paths=None,
+                    )
+                )
+
+        self.assertTrue(len(self.fs.all_paths) == 1)
+        self.assertFalse(
+            self.bq_client.table_exists(
+                BigQueryAddress(
+                    dataset_id="us_xx_primary_raw_data_temp_load",
+                    table_id="singlePrimaryKey__1",
+                )
+            )
+        )
+
+        # should not have cleaned up transformed table
+        self.assertTrue(
             self.bq_client.table_exists(
                 BigQueryAddress(
                     dataset_id="us_xx_primary_raw_data_temp_load",

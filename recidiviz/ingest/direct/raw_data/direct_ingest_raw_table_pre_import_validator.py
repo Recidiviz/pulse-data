@@ -23,6 +23,7 @@ from google.api_core import retry
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_client import BigQueryClient
+from recidiviz.big_query.big_query_utils import bq_query_job_result_to_list_of_row_dicts
 from recidiviz.common.retry_predicate import ssl_error_retry_predicate
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRegionRawFileConfig,
@@ -144,7 +145,9 @@ class DirectIngestRawTablePreImportValidator:
             for f in futures.as_completed(job_futures):
                 validation_info: RawDataImportBlockingValidation = job_futures[f]
 
-                error = validation_info.get_error_from_results(list(f.result()))
+                error = validation_info.get_error_from_results(
+                    bq_query_job_result_to_list_of_row_dicts(f.result())
+                )
                 if error:
                     errors.append(error)
         return errors
