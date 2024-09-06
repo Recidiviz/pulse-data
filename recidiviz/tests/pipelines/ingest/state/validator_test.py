@@ -22,7 +22,10 @@ from typing import Dict, List, Type
 import sqlalchemy
 from more_itertools import one
 
-from recidiviz.common.constants.state.state_charge import StateChargeV2Status
+from recidiviz.common.constants.state.state_charge import (
+    StateChargeStatus,
+    StateChargeV2Status,
+)
 from recidiviz.common.constants.state.state_sentence import (
     StateSentenceStatus,
     StateSentenceType,
@@ -504,6 +507,49 @@ class TestEntityValidations(unittest.TestCase):
             "set by the time we reach the validations step."
         )
         self.assertIn(expected_error, error_messages[0])
+
+    def test_normalized_entity_tree_backedges_empty_list(self) -> None:
+        charge = normalized_entities.NormalizedStateCharge(
+            state_code="US_XX",
+            charge_id=1,
+            external_id="C1",
+            status=StateChargeStatus.CONVICTED,
+        )
+
+        incarceration_sentence = (
+            normalized_entities.NormalizedStateIncarcerationSentence(
+                state_code="US_XX",
+                incarceration_sentence_id=1,
+                external_id="S1",
+                status=StateSentenceStatus.SERVING,
+                charges=[charge],
+            )
+        )
+        charge.incarceration_sentences = [incarceration_sentence]
+        # It should be valid to have a back-edge that is an empty list
+        charge.supervision_sentences = []
+
+        normalized_person = normalized_entities.NormalizedStatePerson(
+            state_code="US_XX",
+            person_id=1,
+            external_ids=[
+                normalized_entities.NormalizedStatePersonExternalId(
+                    state_code="US_XX",
+                    person_external_id_id=1,
+                    external_id="EXTERNAL_ID_1",
+                    id_type="US_XX_ID_TYPE",
+                )
+            ],
+            incarceration_sentences=[incarceration_sentence],
+        )
+        incarceration_sentence.person = normalized_person
+        charge.person = normalized_person
+
+        for external_id in normalized_person.external_ids:
+            external_id.person = normalized_person
+
+        error_messages = validate_root_entity(normalized_person)
+        self.assertEqual(0, len(error_messages))
 
 
 class TestUniqueConstraintValid(unittest.TestCase):
