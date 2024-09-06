@@ -14,6 +14,11 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
+import {
+  AlignLeftOutlined,
+  BookOutlined,
+  GoogleOutlined,
+} from "@ant-design/icons";
 import { Card, Divider } from "antd";
 import Descriptions from "antd/lib/descriptions";
 import Spin from "antd/lib/spin";
@@ -53,7 +58,7 @@ const RawFileConfigTable: React.FC<RawFileConfigTableProps> = ({
                 <NewTabLink
                   href={`http://go/raw-data-gitbook/${stateCode.toLowerCase()}/${rawFileConfigSummary.fileTag.toLowerCase()}`}
                 >
-                  {rawFileConfigSummary.fileTag}&apos;s GitBook Page
+                  <BookOutlined /> GitBook Raw Data Page
                 </NewTabLink>
               </Descriptions.Item>
               <Descriptions.Item>
@@ -62,7 +67,16 @@ const RawFileConfigTable: React.FC<RawFileConfigTableProps> = ({
                     rawFileConfigSummary.fileTag
                   }`}
                 >
-                  Big Query Raw Data Table
+                  <GoogleOutlined /> Big Query Raw Data Table
+                </NewTabLink>
+              </Descriptions.Item>
+              <Descriptions.Item>
+                <NewTabLink
+                  href={`http://go/${env}-raw-data-latest/${stateCode.toLowerCase()}/${
+                    rawFileConfigSummary.fileTag
+                  }`}
+                >
+                  <GoogleOutlined /> Big Query Latest Table
                 </NewTabLink>
               </Descriptions.Item>
               <Descriptions.Item>
@@ -71,14 +85,14 @@ const RawFileConfigTable: React.FC<RawFileConfigTableProps> = ({
                     rawFileConfigSummary.fileTag
                   }`}
                 >
-                  Raw File Config Yaml
+                  <AlignLeftOutlined /> Raw File Config Yaml
                 </NewTabLink>
               </Descriptions.Item>
               <Descriptions.Item>
                 <NewTabLink
                   href={`http://go/raw-data-state-gitbook/${stateCode.toLowerCase()}`}
                 >
-                  Gitbook Downstream Usages
+                  <BookOutlined /> Gitbook Downstream Usages
                 </NewTabLink>
               </Descriptions.Item>
             </Descriptions>
@@ -86,7 +100,7 @@ const RawFileConfigTable: React.FC<RawFileConfigTableProps> = ({
           <Divider orientation="left"> Raw File Config Summary </Divider>
           <Card>
             <Descriptions bordered>
-              <Descriptions.Item label="Description" span={3}>
+              <Descriptions.Item label="Description" span={10}>
                 {rawFileConfigSummary.fileDescription}
               </Descriptions.Item>
               <Descriptions.Item label="Update Cadence">
@@ -98,6 +112,9 @@ const RawFileConfigTable: React.FC<RawFileConfigTableProps> = ({
               <Descriptions.Item label="Column Separator">
                 {rawFileConfigSummary.separator}
               </Descriptions.Item>
+              <Descriptions.Item label="Line Terminator">
+                {rawFileConfigSummary.lineTerminator}
+              </Descriptions.Item>
               <Descriptions.Item label="Export Type">
                 {rawFileConfigSummary.alwaysHistoricalExport
                   ? "Always Historical"
@@ -108,6 +125,12 @@ const RawFileConfigTable: React.FC<RawFileConfigTableProps> = ({
               </Descriptions.Item>
               <Descriptions.Item label="Chunked File?">
                 {rawFileConfigSummary.isChunkedFile ? "Yes" : "No"}
+              </Descriptions.Item>
+              <Descriptions.Item label="Pruned?">
+                {rawFileConfigSummary.isPruned ? "Yes" : "No"}
+              </Descriptions.Item>
+              <Descriptions.Item label="Has Headers?">
+                {rawFileConfigSummary.inferColumns ? "Yes" : "No"}
               </Descriptions.Item>
             </Descriptions>
           </Card>
