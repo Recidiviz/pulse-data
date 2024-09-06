@@ -32,7 +32,7 @@ from recidiviz.utils.string import StrictStringFormatter
 QUERY_TEMPLATE = """
 WITH src AS (
     SELECT
-      {datetime_column},
+      {datetime_column} AS update_datetime,
       COUNT(DISTINCT file_id) AS src_file_id_count,
       COUNT(*) AS src_row_count
     FROM
@@ -42,7 +42,7 @@ WITH src AS (
 ),
 cmp AS (
     SELECT
-      {datetime_column},
+      {datetime_column} AS update_datetime,
       COUNT(DISTINCT file_id) AS cmp_file_id_count,
       COUNT(*) AS cmp_row_count
     FROM
@@ -145,6 +145,8 @@ class RawTableFileCountsDiffQueryGenerator(RawTableDiffQueryGenerator):
     def parse_query_result(
         query_result: List[Dict[str, Any]]
     ) -> RawTableDiffQueryResult:
+        """Parse the raw query result into a RawTableDistinctFileCountsQueryResult"""
+
         missing_cmp = []
         missing_src = []
         differing_counts = []

@@ -104,7 +104,7 @@ class RawTableDiffQueryGenerator:
         truncate_update_datetime_part: Optional[str] = None,
     ) -> str:
         return (
-            f"DATETIME_TRUNC({UPDATE_DATETIME_COL_NAME}, {truncate_update_datetime_part}) as {UPDATE_DATETIME_COL_NAME}"
+            f"DATETIME_TRUNC({UPDATE_DATETIME_COL_NAME}, {truncate_update_datetime_part})"
             if truncate_update_datetime_part
             else UPDATE_DATETIME_COL_NAME
         )
