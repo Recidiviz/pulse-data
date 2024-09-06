@@ -78,7 +78,7 @@ from recidiviz.ingest.direct.metadata.legacy_direct_ingest_raw_file_metadata_man
 )
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRawFileConfig,
-    DirectIngestRegionRawFileConfig,
+    get_region_raw_file_config,
 )
 from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
     get_direct_ingest_states_launched_in_env,
@@ -422,18 +422,15 @@ class IngestOperationsStore(AdminPanelStore):
             - file metadata operations db table
             - raw file configs
         """
-        formatted_state_code = state_code.value.lower()
-        region = get_direct_ingest_region(formatted_state_code)
-
         ingest_bucket_file_tag_counts = self._get_ingest_bucket_file_tag_counts(
             state_code, ingest_instance
         )
         operations_db_file_tag_summaries = self._get_raw_file_metadata_summaries(
             state_code, ingest_instance
         )
-        region_config = DirectIngestRegionRawFileConfig(
-            region_code=region.region_code,
-            region_module=region.region_module,
+
+        region_config = get_region_raw_file_config(
+            region_code=state_code.value.lower(),
         )
 
         tags_with_configs = region_config.raw_file_tags

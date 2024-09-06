@@ -63,7 +63,6 @@ from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.persistence.entity.operations.entities import DirectIngestInstanceStatus
 from recidiviz.tests.ingest.direct import fake_regions
-from recidiviz.tests.utils.fake_region import fake_region
 from recidiviz.tools.postgres import local_persistence_helpers, local_postgres_helpers
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -230,18 +229,14 @@ class IngestOperationsStoreRawFileProcessingStatusTest(IngestOperationsStoreTest
             region_module=fake_regions,
         ).raw_file_tags
 
-        self.region_patcher = mock.patch(
-            "recidiviz.admin_panel.ingest_operations_store.get_direct_ingest_region",
-            return_value=fake_region(
-                region_code=StateCode.US_XX.value.lower(),
-                environment="staging",
-                region_module=fake_regions,
-            ),
+        self.region_module_patcher = patch(
+            "recidiviz.ingest.direct.raw_data.raw_file_configs.direct_ingest_regions_module",
+            fake_regions,
         )
-        self.region_patcher.start()
+        self.region_module_patcher.start()
 
     def tearDown(self) -> None:
-        self.region_patcher.stop()
+        self.region_module_patcher.stop()
         super().tearDown()
 
     def test_get_ingest_file_processing_status_returns_expected_list(self) -> None:
