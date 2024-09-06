@@ -1833,7 +1833,7 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
                 dynamic_eligibility_text="dynamic text[|s]",
                 call_to_action="action",
                 subheading="the subheading",
-                snooze={"foo": 12},
+                snooze={"default_snooze_days": 12, "max_snooze_days": 90},
                 is_alert=False,
                 priority="NORMAL",
                 denial_text=None,
@@ -1850,7 +1850,13 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
                 hide_denial_revert=True,
                 tooltip_eligibility_text="eligible",
                 tab_groups=None,
-                compare_by=None,
+                compare_by=[
+                    {
+                        "field": "eligibilityDate",
+                        "sort_direction": "asc",
+                        "undefined_behavior": "undefinedFirst",
+                    }
+                ],
                 notifications=[],
             )
         }
@@ -1861,9 +1867,55 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
                 headers={"Origin": "http://localhost:3000"},
             )
 
+        print(response.get_json())
+        self.maxDiff = None
+
         self.assertEqual(response.status_code, HTTPStatus.OK)
-        self.assertIn("oppType", response.get_json()["enabledConfigs"])  # type: ignore
-        self.assertIn("stateCode", response.get_json()["enabledConfigs"]["oppType"])  # type: ignore
+        self.assertEqual(
+            response.get_json(),
+            {
+                "enabledConfigs": {
+                    "oppType": {
+                        "callToAction": "action",
+                        "compareBy": [
+                            {
+                                "field": "eligibilityDate",
+                                "sortDirection": "asc",
+                                "undefinedBehavior": "undefinedFirst",
+                            }
+                        ],
+                        "denialReasons": {"DENY": "Denied"},
+                        "denialText": None,
+                        "displayName": "Opportunity",
+                        "dynamicEligibilityText": "dynamic text[|s]",
+                        "eligibilityDateText": None,
+                        "eligibleCriteriaCopy": {
+                            "criteria": {
+                                "text": "baz",
+                                "tooltip": "fill this:{{opportunity.client.goop}}",
+                            }
+                        },
+                        "firestoreCollection": "firestoreCollection",
+                        "hideDenialRevert": True,
+                        "homepagePosition": 1,
+                        "ineligibleCriteriaCopy": {},
+                        "initialHeader": "header",
+                        "isAlert": False,
+                        "methodologyUrl": "example.com",
+                        "notifications": [],
+                        "priority": "NORMAL",
+                        "sidebarComponents": ["someComponent", "someOtherComponent"],
+                        "snooze": {"defaultSnoozeDays": 12, "maxSnoozeDays": 90},
+                        "stateCode": "US_ID",
+                        "subheading": "the subheading",
+                        "systemType": "SUPERVISION",
+                        "tabGroups": None,
+                        "tooltipEligibilityText": "eligible",
+                        "urlSection": "urlSection",
+                    }
+                }
+            },
+        )
 
     def test_workflows_config_disabled_state(self) -> None:
         with self.test_app.test_request_context():

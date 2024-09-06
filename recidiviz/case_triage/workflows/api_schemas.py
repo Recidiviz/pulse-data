@@ -187,8 +187,8 @@ class WorkflowsConfigSchema(CamelCaseSchema):
 
     class SortParamSchema(CamelCaseSchema):
         field = fields.Str()
-        sortDirection = fields.Str(required=False)
-        undefinedBehavior = fields.Str(required=False)
+        sort_direction = fields.Str(required=False)
+        undefined_behavior = fields.Str(required=False)
 
     class NotificationSchema(CamelCaseSchema):
         id = fields.Str()
