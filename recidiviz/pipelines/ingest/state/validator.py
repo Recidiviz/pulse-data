@@ -376,7 +376,7 @@ def validate_root_entity(
                 validator, (ParsingOptionalOnlyValidator, EntityBackedgeValidator)
             ):
                 for entity in entities:
-                    if entity.get_field(field_name):
+                    if entity.get_field(field_name) is not None:
                         continue
                     error_messages.append(
                         f"Found entity [{entity.limited_pii_repr()}] with null "
