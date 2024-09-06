@@ -349,16 +349,12 @@ export const triggerCalculationDAGForState = async (
 
 // TODO(#28239) remove call once raw data DAG is enabled for all states
 // Determine if raw data import DAG is enabled
-export const isRawDataDAGIsEnabled = async (
+export const isRawDataImportDagEnabled = async (
   stateCode: string,
-  instance: DirectIngestInstance
+  instance: string
 ): Promise<Response> => {
-  return postWithURLAndBody(
-    "/api/ingest_operations/is_raw_data_import_dag_enabled",
-    {
-      stateCode,
-      instance,
-    }
+  return getResource(
+    `/api/ingest_operations/is_raw_data_import_dag_enabled/${stateCode}/${instance}`
   );
 };
 
@@ -374,3 +370,14 @@ export const getAllLatestRawDataResourceLockInfo =
   async (): Promise<Response> => {
     return getResource("/api/ingest_operations/all_current_lock_summaries");
   };
+
+// Get latest raw data import runs for a specific file tag
+export const getLatestRawDataImportRunsForFileTag = async (
+  stateCode: string,
+  rawDataInstance: string,
+  fileTag: string
+): Promise<Response> => {
+  return getResource(
+    `/api/ingest_operations/get_latest_raw_data_imports/${stateCode}/${rawDataInstance}/${fileTag}`
+  );
+};

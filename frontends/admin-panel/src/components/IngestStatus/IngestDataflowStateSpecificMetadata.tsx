@@ -29,6 +29,7 @@ import {
 } from "react-router-dom";
 
 import {
+  INGEST_DATAFLOW_FILE_TAG_ROUTE,
   INGEST_DATAFLOW_INGEST_QUEUES_ROUTE,
   INGEST_DATAFLOW_INSTANCE_ROUTE,
   INGEST_DATAFLOW_PRIMARY_ROUTE,
@@ -44,6 +45,7 @@ import {
   ANCHOR_INGEST_RESOURCES,
 } from "./constants";
 import IngestDataflowStateSpecificInstanceMetadata from "./IngestDataflowStateSpecificInstanceMetadata";
+import RawDataFileTagDetail from "./RawDataFileTagDetailCard";
 import StateSpecificIngestQueues from "./StateSpecificIngestIngestQueues";
 
 type MenuItem = Required<MenuProps>["items"][number];
@@ -138,6 +140,10 @@ const IngestDataflowStateSpecificMetadata = (): JSX.Element => {
               <Route
                 path={INGEST_DATAFLOW_INGEST_QUEUES_ROUTE}
                 component={StateSpecificIngestQueues}
+              />
+              <Route
+                path={INGEST_DATAFLOW_FILE_TAG_ROUTE}
+                component={RawDataFileTagDetail}
               />
               <Route
                 path={INGEST_DATAFLOW_INSTANCE_ROUTE}

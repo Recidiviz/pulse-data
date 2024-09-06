@@ -94,7 +94,7 @@ export type IngestInstanceStatusResponse = {
   };
 };
 
-// --- raw data import dag related constants -------------------------------------------
+// --- raw data import dag summary related constants -----------------------------------
 
 export enum RawDataImportRunState {
   SUCCEEDED = "SUCCEEDED",
@@ -115,6 +115,30 @@ export type RawDataImportRunStatusInfo = {
 
 export type RawDataImportRunStatusResponse = {
   [stateCode: string]: RawDataImportRunStatusInfo;
+};
+
+// --- raw data file tag detail related constants --------------------------------------
+
+export enum RawDataImportStatus {
+  STARTED = "STARTED",
+  SUCCEEDED = "SUCCEEDED",
+  FAILED_UNKNOWN = "FAILED_UNKNOWN",
+  FAILED_LOAD_STEP = "FAILED_LOAD_STEP",
+  FAILED_PRE_IMPORT_NORMALIZATION_STEP = "FAILED_PRE_IMPORT_NORMALIZATION_STEP",
+  FAILED_VALIDATION_STEP = "FAILED_VALIDATION_STEP",
+}
+
+export type RawDataFileTagImport = {
+  importRunId: number;
+  fileId: number;
+  dagRunId: string;
+  updateDatetime: string;
+  importRunStart: string;
+  importStatus: RawDataImportStatus;
+  historicalDiffsActive: boolean;
+  rawRowCount: number;
+  isInvalidated: boolean;
+  // TODO(#28694) add net new or deleted
 };
 
 // --- raw data resource lock related constants ----------------------------------------
@@ -185,7 +209,7 @@ export const ANCHOR_INGEST_RAW_DATA = "ingest_raw_data";
 export const ANCHOR_INGEST_RESOURCES = "ingest_resources";
 export const ANCHOR_INGEST_LOGS = "ingest_logs";
 
-export const FILE_TAG_UNNORMALIZED = "UNNORMALIZED"; // special tag for files that don't follow normalized format// Recidiviz - a data platform for criminal justice reform
+export const FILE_TAG_UNNORMALIZED = "UNNORMALIZED"; // special tag for files that don't follow normalized format
 export const FILE_TAG_IGNORED_IN_SUBDIRECTORY = "IGNORED_IN_SUBDIRECTORY"; // special tag for files that are not in the base directory
 
 export const SPECIAL_FILE_TAGS = [

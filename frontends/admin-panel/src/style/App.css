@@ -282,9 +282,9 @@ tr.metadata-table-row > td.ant-table-cell > div {
   background-color: #444444;
 }
 
-.raw-data-import-mixed{
-  color: #000000;
-  background-color: #ffff00;
+.raw-data-import-in-progress{
+  color: #ffffff;
+  background-color: #2e2e2e;
 }
 
 .raw-data-import-failure{

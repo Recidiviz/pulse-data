@@ -39,6 +39,7 @@ from recidiviz.common.constants.operations.direct_ingest_raw_data_resource_lock 
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.metadata.direct_ingest_raw_file_import_manager import (
     DirectIngestRawFileImportStatusBuckets,
+    DirectIngestRawFileImportSummary,
     LatestDirectIngestRawFileImportRunSummary,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
@@ -431,4 +432,71 @@ class IngestOpsEndpointTests(TestCase):
                     "BIG_QUERY_RAW_DATA_DATASET": "PROCESS",
                 },
             },
+        )
+
+    @patch("recidiviz.admin_panel.routes.ingest_ops.DirectIngestRawFileImportManager")
+    def test_get_latest_raw_data_import_runs(
+        self, import_manager_mock: mock.MagicMock
+    ) -> None:
+        # Arrange
+        import_manager_mock().get_n_most_recent_imports_for_file_tag.return_value = [
+            DirectIngestRawFileImportSummary(
+                import_run_id=1,
+                file_id=1,
+                dag_run_id="run1",
+                import_status="FAILED_UNKNOWN",
+                update_datetime=datetime(2022, 8, 29, tzinfo=pytz.UTC),
+                import_run_start=datetime(2022, 8, 29, tzinfo=pytz.UTC),
+                historical_diffs_active=False,
+                raw_rows=0,
+                is_invalidated=False,
+            ),
+            DirectIngestRawFileImportSummary(
+                import_run_id=2,
+                file_id=2,
+                dag_run_id="run2",
+                import_status="SUCCEEDED",
+                update_datetime=datetime(2022, 8, 30, tzinfo=pytz.UTC),
+                import_run_start=datetime(2022, 8, 30, tzinfo=pytz.UTC),
+                historical_diffs_active=False,
+                raw_rows=10,
+                is_invalidated=False,
+            ),
+        ]
+
+        # Act
+        response = self.client.get(
+            "/api/ingest_operations/get_latest_raw_data_imports/US_XX/SECONDARY/fake_tag",
+            headers={"X-Appengine-Inbound-Appid": "recidiviz-456"},
+        )
+
+        # Assert
+        self.assertEqual(response.status_code, 200)
+        print(response.json)
+        self.assertEqual(
+            response.json,
+            [
+                {
+                    "importRunId": 1,
+                    "dagRunId": "run1",
+                    "fileId": 1,
+                    "historicalDiffsActive": False,
+                    "importRunStart": "2022-08-29T00:00:00+00:00",
+                    "importStatus": "FAILED_UNKNOWN",
+                    "isInvalidated": False,
+                    "rawRowCount": 0,
+                    "updateDatetime": "2022-08-29T00:00:00+00:00",
+                },
+                {
+                    "importRunId": 2,
+                    "dagRunId": "run2",
+                    "fileId": 2,
+                    "historicalDiffsActive": False,
+                    "importRunStart": "2022-08-30T00:00:00+00:00",
+                    "importStatus": "SUCCEEDED",
+                    "isInvalidated": False,
+                    "rawRowCount": 10,
+                    "updateDatetime": "2022-08-30T00:00:00+00:00",
+                },
+            ],
         )

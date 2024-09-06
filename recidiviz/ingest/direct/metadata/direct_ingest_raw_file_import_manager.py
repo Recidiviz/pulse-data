@@ -43,6 +43,60 @@ from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDat
 from recidiviz.persistence.entity.operations import entities
 
 
+@attr.define
+class DirectIngestRawFileImportSummary:
+    """Summary object that combines some metadata from other tables onto a DirectIngestRawFileImport
+    object.
+
+    Attributes:
+        file_id (int): the BigQuery file_id associated with this import
+        dag_run_id (str): the dag_run_id associated with this import
+        update_datetime (datetime): the update datetime of the BigQuery file associated
+            with this import
+        import_run_start (datetime): the start of the airflow dag associated with this
+            import
+        import_status (DirectIngestRawFileImportStatus): the status of this import
+        historical_diffs_active (bool | None): whether or not historical diffs were
+            active during this import
+        raw_rows (int | None): the number of raw rows associated with this import, if
+            this import was successful
+        is_invalidated (bool) whether or not the BigQuery file associated with this
+            import has been invalidated
+    """
+
+    import_run_id: int = attr.ib(validator=attr_validators.is_int)
+    file_id: int = attr.ib(validator=attr_validators.is_int)
+    dag_run_id: str = attr.ib(validator=attr_validators.is_str)
+    update_datetime: datetime.datetime = attr.ib(
+        validator=attr_validators.is_utc_timezone_aware_datetime
+    )
+    import_run_start: datetime.datetime = attr.ib(
+        validator=attr_validators.is_utc_timezone_aware_datetime
+    )
+    import_status: DirectIngestRawFileImportStatus = attr.ib(
+        converter=DirectIngestRawFileImportStatus,
+        validator=attr.validators.in_(DirectIngestRawFileImportStatus),
+    )
+    historical_diffs_active: Optional[bool] = attr.ib(
+        validator=attr_validators.is_opt_bool
+    )
+    raw_rows: Optional[int] = attr.ib(validator=attr_validators.is_opt_int)
+    is_invalidated: bool = attr.ib(validator=attr_validators.is_bool)
+
+    def for_api(self) -> Dict[str, Any]:
+        return {
+            "importRunId": self.import_run_id,
+            "fileId": self.file_id,
+            "dagRunId": self.dag_run_id,
+            "updateDatetime": self.update_datetime.isoformat(),
+            "importRunStart": self.import_run_start.isoformat(),
+            "importStatus": self.import_status.value,
+            "historicalDiffsActive": self.historical_diffs_active,
+            "rawRowCount": self.raw_rows,
+            "isInvalidated": self.is_invalidated,
+        }
+
+
 class DirectIngestRawFileImportStatusBuckets(Enum):
     """Higher-level status buckets for DirectIngestRawFileImportStatus"""
 
@@ -343,7 +397,7 @@ class DirectIngestRawFileImportManager:
             return convert_schema_object_to_entity(
                 import_run,
                 entities.DirectIngestRawFileImportRun,
-                populate_direct_back_edges=True,
+                populate_direct_back_edges=False,
             )
 
     def get_import_for_file_id(
@@ -369,13 +423,23 @@ class DirectIngestRawFileImportManager:
 
     def get_n_most_recent_imports_for_file_tag(
         self, file_tag: str, n: int = 10
-    ) -> List[entities.DirectIngestRawFileImport]:
+    ) -> List[DirectIngestRawFileImportSummary]:
         """Given a |file_tag| and |n|, returns, at most, |n| of the most recent import
-        runs associated with |file_tag|.
+        associated with |file_tag|.
         """
         with SessionFactory.using_database(self.database_key) as session:
-            import_runs = (
-                session.query(schema.DirectIngestRawFileImport)
+            import_run_summaries = (
+                session.query(
+                    schema.DirectIngestRawBigQueryFileMetadata.file_id,
+                    schema.DirectIngestRawFileImport.import_status,
+                    schema.DirectIngestRawFileImport.historical_diffs_active,
+                    schema.DirectIngestRawFileImport.raw_rows,
+                    schema.DirectIngestRawFileImportRun.import_run_start,
+                    schema.DirectIngestRawFileImportRun.import_run_id,
+                    schema.DirectIngestRawFileImportRun.dag_run_id,
+                    schema.DirectIngestRawBigQueryFileMetadata.update_datetime,
+                    schema.DirectIngestRawBigQueryFileMetadata.is_invalidated,
+                )
                 .join(schema.DirectIngestRawBigQueryFileMetadata)
                 .filter(
                     schema.DirectIngestRawBigQueryFileMetadata.file_tag == file_tag,
@@ -390,12 +454,8 @@ class DirectIngestRawFileImportManager:
             )
 
             return [
-                convert_schema_object_to_entity(
-                    import_run,
-                    entities.DirectIngestRawFileImport,
-                    populate_direct_back_edges=True,
-                )
-                for import_run in import_runs
+                DirectIngestRawFileImportSummary(**import_run_summary)
+                for import_run_summary in import_run_summaries
             ]
 
     def get_most_recent_import_run_summary(
