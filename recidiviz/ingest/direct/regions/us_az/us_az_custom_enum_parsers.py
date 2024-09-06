@@ -30,7 +30,6 @@ from recidiviz.common.constants.state.state_incarceration_incident import (
     StateIncarcerationIncidentType,
 )
 from recidiviz.common.constants.state.state_incarceration_period import (
-    StateIncarcerationPeriodCustodyLevel,
     StateIncarcerationPeriodHousingUnitCategory,
     StateIncarcerationPeriodHousingUnitType,
 )
@@ -155,70 +154,6 @@ def parse_housing_unit_type(
                 StateIncarcerationPeriodHousingUnitType.TEMPORARY_SOLITARY_CONFINEMENT
             )
         return StateIncarcerationPeriodHousingUnitType.INTERNAL_UNKNOWN
-    return None
-
-
-def parse_custody_level(
-    raw_text: str,
-) -> Optional[StateIncarcerationPeriodCustodyLevel]:
-    """Parse custody level based on current use and documented custody level of housing unit."""
-    if raw_text:
-        if raw_text == "Intake-Transitory":
-            return StateIncarcerationPeriodCustodyLevel.INTAKE
-        if raw_text in (
-            "Minimum-Sex Offender",
-            "Minimum-Transitory",
-            "Minimum-DUI",
-            "Minimum-General Population",
-        ):
-            return StateIncarcerationPeriodCustodyLevel.MINIMUM
-
-        if raw_text in (
-            "Medium-Transitory",
-            "Medium-Medical",
-            "Medium-Mental Health",
-            "Medium-General Population",
-            "Medium-Sex Offender",
-        ):
-            return StateIncarcerationPeriodCustodyLevel.MEDIUM
-        if raw_text in (
-            "Maximum-Sex Offender",
-            "Maximum-Medical",
-            "Maximum-Return to Custody",
-            "Maximum-Mental Health",
-            "Maximum-Transitory",
-            "Maximum-General Population",
-        ):
-            return StateIncarcerationPeriodCustodyLevel.MAXIMUM
-        if raw_text in (
-            "Close-Close Management",
-            "Close-Sex Offender",
-            "Close-Transitory",
-            "Close-Mental Health",
-            "Close-Medical",
-            "Close-General Population",
-        ):
-            return StateIncarcerationPeriodCustodyLevel.CLOSE
-
-        if raw_text in (
-            "Detention-Medical",
-            "Detention-Detention",
-            "Close-Detention",
-            "Intake-Detention",
-            "Maximum-Detention",
-            "Detention-Mental Health",
-            "Close-Protective Custody",
-            "Medium-Protective Custody",
-            "Maximum-Protective Custody",
-            "Minimum-Protective Custody",
-            "Detention-Transitory",
-        ):
-            # This relies on the assumption that a documented custody level of "detention"
-            # OR a unit's current use being "Detention" or "Protective Custody"
-            # means a person in that unit is in restrictive housing (solitary).
-            # TODO(#27201): Confirm with AZ.
-            return StateIncarcerationPeriodCustodyLevel.SOLITARY_CONFINEMENT
-        return StateIncarcerationPeriodCustodyLevel.INTERNAL_UNKNOWN
     return None
 
 
