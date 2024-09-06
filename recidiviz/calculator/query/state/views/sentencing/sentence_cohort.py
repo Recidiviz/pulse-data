@@ -177,8 +177,6 @@ SENTENCE_COHORT_QUERY_TEMPLATE = f"""
           ON closest_imposed_group.person_id = imposed_summary.person_id
           AND closest_imposed_group.sentence_imposed_group_id = imposed_summary.sentence_imposed_group_id
         WHERE EXTRACT(YEAR FROM session_start_date) >= {RECENT_DATA_START_YEAR}
-            # Must be at least 3 years in the past to properly calculate 36-month recidivism rates
-            AND cohort_start_date <= DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL 3 YEAR)
             # For now, restricting to exact sentencing-to-session matching. We can probably relax this to <=7 or higher.
             AND DATE_DIFF(imposed_summary.date_imposed, session_start_date, DAY) = 0
         """
