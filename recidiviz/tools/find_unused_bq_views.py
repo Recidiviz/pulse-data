@@ -27,9 +27,6 @@ from recidiviz.aggregated_metrics.dataset_config import AGGREGATED_METRICS_DATAS
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_view import BigQueryView
 from recidiviz.big_query.big_query_view_dag_walker import BigQueryViewDagWalker
-from recidiviz.calculator.query.experiments.views.experiments import (
-    EXPERIMENTS_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.experiments.views.officer_assignments import (
     OFFICER_ASSIGNMENTS_VIEW_BUILDER,
 )
@@ -41,6 +38,7 @@ from recidiviz.calculator.query.externally_shared_views.dataset_config import (
 )
 from recidiviz.calculator.query.state.dataset_config import (
     DATAFLOW_METRICS_MATERIALIZED_DATASET,
+    IMPACT_REPORTS_DATASET_ID,
     POPULATION_PROJECTION_DATASET,
     SPARK_OUTPUT_DATASET_MOST_RECENT,
 )
@@ -160,7 +158,6 @@ from recidiviz.validation.views.dataset_config import (
     VIEWS_DATASET as VALIDATION_VIEWS_DATASET,
 )
 from recidiviz.view_registry.deployed_views import build_all_deployed_views_dag_walker
-from recidiviz.calculator.query.state.dataset_config import IMPACT_REPORTS_DATASET_ID
 
 # List of views that are definitely referenced in Looker (as of 11/29/23). This list is
 # incomplete and you should add to this list / update the date in this comment as you
@@ -207,11 +204,6 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
     ),
     US_MO_SENTENCING_DATES_PREPROCESSED_VIEW_BUILDER.address: (
         "Used for ongoing MOSOP work (Damini Sharma 12/21/23)"
-    ),
-    EXPERIMENTS_VIEW_BUILDER.address: (
-        "These views are still referenced by existing looker infra and will likely become relevant "
-        "to future templatized dashboards tracking pre-post rollout trends, which is one of the "
-        "pieces of tooling requested by DA's (mayukas 12/21/23)"
     ),
     OFFICER_ASSIGNMENTS_VIEW_BUILDER.address: (
         "These views are still referenced by existing looker infra and will likely become relevant "
