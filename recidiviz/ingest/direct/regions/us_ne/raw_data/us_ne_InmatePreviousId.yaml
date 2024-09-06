@@ -5,6 +5,7 @@ file_description: |-
 data_classification: source
 primary_key_cols:
   - internalId
+  - inmateNumber
 columns:
   - name: internalId
     description: |-
