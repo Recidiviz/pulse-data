@@ -24,3 +24,11 @@ export const INGEST_DATAFLOW_PRIMARY_ROUTE = `${INGEST_DATAFLOW_WITH_STATE_CODE_
 export const INGEST_DATAFLOW_SECONDARY_ROUTE = `${INGEST_DATAFLOW_WITH_STATE_CODE_ROUTE}/instance/SECONDARY`;
 export const INGEST_DATAFLOW_INSTANCE_ROUTE = `${INGEST_DATAFLOW_WITH_STATE_CODE_ROUTE}/instance/:instance`;
 export const INGEST_DATAFLOW_FILE_TAG_ROUTE = `${INGEST_DATAFLOW_INSTANCE_ROUTE}/:fileTag`;
+
+export const addStateCodeAndInstanceToLink = (
+  link: string,
+  stateCode: string,
+  instance: string
+): string => {
+  return link.replace(":stateCode", stateCode).replace(":instance", instance);
+};

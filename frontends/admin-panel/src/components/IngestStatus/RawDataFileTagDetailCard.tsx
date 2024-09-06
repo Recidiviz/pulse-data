@@ -15,12 +15,18 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
-import { PageHeader } from "antd";
+import { Breadcrumb, Layout } from "antd";
 import { useCallback, useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 
 import { getLatestRawDataImportRunsForFileTag } from "../../AdminPanelAPI";
-import { RawDataFileTagImport } from "./constants";
+import { getRawFileConfigSummary } from "../../AdminPanelAPI/IngestOperations";
+import {
+  addStateCodeAndInstanceToLink,
+  INGEST_DATAFLOW_INSTANCE_ROUTE,
+} from "../../navigation/IngestOperations";
+import { RawDataFileTagImport, RawFileConfigSummary } from "./constants";
+import RawFileConfigTable from "./RawDataFileTagConfigTable";
 import RawDataFileTagRecentRunsTable from "./RawDataFileTagRecentRunsTable";
 
 interface RawDataFileTagDetailParams {
@@ -34,16 +40,28 @@ const RawDataFileTagDetail = (): JSX.Element => {
     useParams<RawDataFileTagDetailParams>();
   const [importRuns, setImportRuns] = useState<RawDataFileTagImport[]>([]);
   const [importRunsLoading, setImportRunsLoading] = useState<boolean>(true);
+  const [rawFileConfig, setRawFileConfig] = useState<
+    RawFileConfigSummary | undefined
+  >(undefined);
+  const [rawFileConfigLoading, setRawFileConfigLoading] =
+    useState<boolean>(true);
 
-  const getData = useCallback(async () => {
+  const getImportRuns = useCallback(async () => {
     setImportRunsLoading(true);
     await fetchRawDataImportRuns(stateCode, instance, fileTag);
     setImportRunsLoading(false);
   }, [stateCode, instance, fileTag]);
 
+  const getRawFileConfig = useCallback(async () => {
+    setRawFileConfigLoading(true);
+    await fetchRawFileConfig(stateCode, fileTag);
+    setRawFileConfigLoading(false);
+  }, [stateCode, fileTag]);
+
   useEffect(() => {
-    getData();
-  }, [getData, stateCode]);
+    getImportRuns();
+    getRawFileConfig();
+  }, [getImportRuns, getRawFileConfig, stateCode]);
 
   async function fetchRawDataImportRuns(
     fetchableStateCode: string,
@@ -59,19 +77,44 @@ const RawDataFileTagDetail = (): JSX.Element => {
     setImportRuns(result);
   }
 
+  async function fetchRawFileConfig(
+    fetchableStateCode: string,
+    fetchableFileTag: string
+  ) {
+    const response = await getRawFileConfigSummary(
+      fetchableStateCode,
+      fetchableFileTag
+    );
+    const result: RawFileConfigSummary | undefined = await response.json();
+    setRawFileConfig(result);
+  }
+
   return (
-    <>
-      <PageHeader title={fileTag} />
-      <div
-        style={{ height: "90%" }}
-        className="main-content content-side-padding"
-      >
-        <RawDataFileTagRecentRunsTable
-          importRuns={importRuns}
-          loading={importRunsLoading}
-        />
-      </div>
-    </>
+    <Layout className="main-content content-side-padding">
+      <Breadcrumb>
+        <Breadcrumb.Item>
+          <Link
+            to={addStateCodeAndInstanceToLink(
+              INGEST_DATAFLOW_INSTANCE_ROUTE,
+              stateCode,
+              instance
+            )}
+          >
+            {stateCode} Raw Data
+          </Link>
+        </Breadcrumb.Item>
+        <Breadcrumb.Item>{fileTag}</Breadcrumb.Item>
+      </Breadcrumb>
+      <RawFileConfigTable
+        rawFileConfigSummary={rawFileConfig}
+        stateCode={stateCode}
+        loading={rawFileConfigLoading}
+      />
+      <RawDataFileTagRecentRunsTable
+        importRuns={importRuns}
+        loading={importRunsLoading}
+      />
+    </Layout>
   );
 };
 export default RawDataFileTagDetail;
