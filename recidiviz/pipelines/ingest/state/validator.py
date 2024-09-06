@@ -58,7 +58,15 @@ def state_allows_multiple_ids_same_type_for_state_person(state_code: str) -> boo
 
 def state_allows_multiple_ids_same_type_for_state_staff(state_code: str) -> bool:
 
-    if state_code.upper() in ("US_MI", "US_IX", "US_CA", "US_TN", "US_ND", "US_ME"):
+    if state_code.upper() in (
+        "US_MI",
+        "US_IX",
+        "US_CA",
+        "US_TN",
+        "US_ND",
+        "US_ME",
+        "US_AZ",
+    ):
 
         return True
 
