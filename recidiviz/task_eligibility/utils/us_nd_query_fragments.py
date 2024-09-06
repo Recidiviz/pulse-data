@@ -531,7 +531,7 @@ SELECT
         ELSE 'Unknown ID'
     END AS note_title,
     'Confirmed' AS note_body,
-    SAFE_CAST(PARSE_DATETIME('%m/%d/%Y %I:%M:%S%p', MODIFY_DATETIME) AS DATE) AS event_date,
+    SAFE_CAST(LEFT(MODIFY_DATETIME, 10) AS DATE) AS event_date,
 FROM `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.elite_offender_chk_list_details_latest` chk
 INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` peid
     ON peid.external_id = chk.OFFENDER_BOOK_ID
