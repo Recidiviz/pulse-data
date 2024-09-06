@@ -48,27 +48,6 @@ module "static_reference_tables" {
   description = "This dataset contains (static) reference tables."
 }
 
-# Actually create the scheduled queries
-# `experiments` is a log of tracked experiments (e.g. product rollouts) with 
-# details about each. The source data is located in a Google Sheet.
-resource "google_bigquery_data_transfer_config" "experiments" {
-  display_name           = "experiments"
-  location               = "US"
-  data_source_id         = "scheduled_query"
-  schedule               = "every day 08:00" # In UTC
-  service_account_name   = google_service_account.bigquery_scheduled_queries.email
-  destination_dataset_id = module.static_reference_tables.dataset_id
-  params = {
-    destination_table_name_template = "experiments_materialized"
-    write_disposition               = "WRITE_TRUNCATE"
-    query                           = <<-EOT
-SELECT *
-FROM `${var.project_id}.static_reference_tables.experiments`
-WHERE experiment_id IS NOT NULL
-EOT
-  }
-}
-
 # `experiment_assignments` is a log of which units are assigned to which experiments.
 # The source data is located in a Google Sheet.
 resource "google_bigquery_data_transfer_config" "experiment_assignments" {
