@@ -17,21 +17,27 @@
 """Dataset configuration for aggregated metrics views related to impact reports"""
 
 from recidiviz.aggregated_metrics.impact_reports_aggregated_metrics_configurations import (
-    AVG_DAILY_POPULATION_TASK_ALMOST_ELIGIBLE_METRICS_INCARCERATION,
-    AVG_DAILY_POPULATION_TASK_ALMOST_ELIGIBLE_METRICS_SUPERVISION,
+    AVG_DAILY_POPULATION_TASK_INELIGIBLE_METRICS,
+    AVG_DAILY_POPULATION_TASK_ALMOST_ELIGIBLE_METRICS,
     DISTINCT_ACTIVE_USERS,
     DISTINCT_REGISTERED_USERS,
 )
 from recidiviz.aggregated_metrics.impact_reports_aggregated_metrics_view_collector import (
     get_impact_reports_aggregated_metrics_view_builders,
 )
+from recidiviz.aggregated_metrics.models.aggregated_metric_configurations import (
+    AVG_DAILY_POPULATION_TASK_ELIGIBLE_METRICS_INCARCERATION,
+    AVG_DAILY_POPULATION_TASK_ELIGIBLE_METRICS_SUPERVISION,
+)
 from recidiviz.aggregated_metrics.metric_time_periods import MetricTimePeriod
 from recidiviz.aggregated_metrics.models.aggregated_metric import AggregatedMetric
 
 METRICS_BY_TIME_PERIOD: dict[MetricTimePeriod, list[AggregatedMetric]] = {
     MetricTimePeriod.DAY: [
-        *AVG_DAILY_POPULATION_TASK_ALMOST_ELIGIBLE_METRICS_INCARCERATION,
-        *AVG_DAILY_POPULATION_TASK_ALMOST_ELIGIBLE_METRICS_SUPERVISION,
+        *AVG_DAILY_POPULATION_TASK_ALMOST_ELIGIBLE_METRICS,
+        *AVG_DAILY_POPULATION_TASK_ELIGIBLE_METRICS_INCARCERATION,
+        *AVG_DAILY_POPULATION_TASK_ELIGIBLE_METRICS_SUPERVISION,
+        *AVG_DAILY_POPULATION_TASK_INELIGIBLE_METRICS,
     ],
     MetricTimePeriod.WEEK: [
         *DISTINCT_ACTIVE_USERS,

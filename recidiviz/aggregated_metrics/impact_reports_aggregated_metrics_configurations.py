@@ -36,16 +36,35 @@ from recidiviz.calculator.query.state.views.analyst_data.models.span_selector im
 from recidiviz.calculator.query.state.views.analyst_data.models.span_type import (
     SpanType,
 )
-from recidiviz.workflows.types import WorkflowsSystemType
 
-AVG_DAILY_POPULATION_TASK_ALMOST_ELIGIBLE_METRICS_INCARCERATION = [
+
+AVG_DAILY_POPULATION_TASK_INELIGIBLE_METRICS = [
+    DailyAvgSpanCountMetric(
+        name=f"avg_daily_population_task_ineligible_{b.task_type_name.lower()}",
+        display_name=f"Average Population: Task Ineligible, {b.task_title}",
+        description=f"Average daily count of residents ineligible for task of type: {b.task_title.lower()}",
+        span_selectors=[
+            SpanSelector(
+                span_type=SpanType.WORKFLOWS_PERSON_IMPACT_FUNNEL_STATUS_SESSION,
+                span_conditions_dict={
+                    "is_eligible": ["false"],
+                    "task_type": [b.task_type_name],
+                },
+            )
+        ],
+    )
+    for b in DEDUPED_TASK_COMPLETION_EVENT_VB
+]
+
+
+AVG_DAILY_POPULATION_TASK_ALMOST_ELIGIBLE_METRICS = [
     DailyAvgSpanCountMetric(
         name=f"avg_daily_population_task_almost_eligible_{b.task_type_name.lower()}",
         display_name=f"Average Population: Task Almost Eligible, {b.task_title}",
         description=f"Average daily count of residents almost eligible for task of type: {b.task_title.lower()}",
         span_selectors=[
             SpanSelector(
-                span_type=SpanType.TASK_ELIGIBILITY_SESSION,
+                span_type=SpanType.WORKFLOWS_PERSON_IMPACT_FUNNEL_STATUS_SESSION,
                 span_conditions_dict={
                     "is_almost_eligible": ["true"],
                     "task_type": [b.task_type_name],
@@ -54,28 +73,8 @@ AVG_DAILY_POPULATION_TASK_ALMOST_ELIGIBLE_METRICS_INCARCERATION = [
         ],
     )
     for b in DEDUPED_TASK_COMPLETION_EVENT_VB
-    if b.completion_event_type.system_type == WorkflowsSystemType.INCARCERATION
 ]
 
-AVG_DAILY_POPULATION_TASK_ALMOST_ELIGIBLE_METRICS_SUPERVISION = [
-    DailyAvgSpanCountMetric(
-        name=f"avg_daily_population_task_almost_eligible_{b.task_type_name.lower()}",
-        display_name=f"Average Population: Task Almost Eligible, {b.task_title}",
-        description="Average daily count of residents almost eligible for task of "
-        f"type: {b.task_title.lower()}",
-        span_selectors=[
-            SpanSelector(
-                span_type=SpanType.TASK_ELIGIBILITY_SESSION,
-                span_conditions_dict={
-                    "is_almost_eligible": ["true"],
-                    "task_type": [b.task_type_name],
-                },
-            )
-        ],
-    )
-    for b in DEDUPED_TASK_COMPLETION_EVENT_VB
-    if b.completion_event_type.system_type == WorkflowsSystemType.SUPERVISION
-]
 
 DISTINCT_ACTIVE_USERS = [
     EventDistinctUnitCountMetric(
