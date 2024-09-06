@@ -99,7 +99,7 @@ copy_docker_image_to_repository "${APP_ENGINE_STAGING_IMAGE_URL}" "${APP_ENGINE_
 
 run_cmd pipenv run python -m recidiviz.tools.deploy.cloud_build.deployment_stage_runner \
   --project-id "${PROJECT}" \
-  --version-tag "${VERSION_TAG}" \
+  --version-tag "${GIT_VERSION_TAG}" \
   --commit-ref "${COMMIT_HASH}" \
   --stage "DeployAppEngine" \
   --promote

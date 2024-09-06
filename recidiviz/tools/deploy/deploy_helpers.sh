@@ -147,7 +147,7 @@ function next_alpha_version {
 # have checked out the commit for the version that will be deployed.
 function pre_deploy_configure_infrastructure {
     PROJECT=$1
-    DOCKER_IMAGE_TAG=$2
+    GIT_VERSION_TAG=$2
     COMMIT_HASH=$3
 
     echo "Deploying terraform"
@@ -155,13 +155,13 @@ function pre_deploy_configure_infrastructure {
     # Terraform determines certain resources by looking at the directory structure,
     # so give our shell the ability to open plenty of file descriptors.
     ulimit -n 1024 || exit_on_fail
-    deploy_terraform_infrastructure "${PROJECT}" "${COMMIT_HASH}" "${DOCKER_IMAGE_TAG}" || exit_on_fail
+    deploy_terraform_infrastructure "${PROJECT}" "${COMMIT_HASH}" "${GIT_VERSION_TAG}" || exit_on_fail
 
     verify_hash "$COMMIT_HASH"
     echo "Running migrations using Cloud Build"
     run_cmd pipenv run python -m recidiviz.tools.deploy.cloud_build.deployment_stage_runner \
       --project-id "${PROJECT_ID}" \
-      --version-tag "${VERSION_TAG}" \
+      --version-tag "${GIT_VERSION_TAG}" \
       --commit-ref "${COMMIT_HASH}" \
       --stage "RunMigrations"
 }
