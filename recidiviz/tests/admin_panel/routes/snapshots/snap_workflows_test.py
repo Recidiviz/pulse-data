@@ -32,7 +32,13 @@ snapshots[
 ] = [
     {
         "callToAction": "do something",
-        "compareBy": [],
+        "compareBy": [
+            {
+                "field": "eligibilityDate",
+                "sortDirection": "asc",
+                "undefinedBehavior": "undefinedFirst",
+            }
+        ],
         "createdAt": "2024-05-12 00:00:00",
         "createdBy": "Mary",
         "denialReasons": {"DENY": "Denied"},
@@ -62,7 +68,13 @@ snapshots[
     },
     {
         "callToAction": "do something",
-        "compareBy": [],
+        "compareBy": [
+            {
+                "field": "eligibilityDate",
+                "sortDirection": "asc",
+                "undefinedBehavior": "undefinedFirst",
+            }
+        ],
         "createdAt": "2024-05-13 00:00:00",
         "createdBy": "Mary",
         "denialReasons": {"DENY": "Denied"},
@@ -92,7 +104,13 @@ snapshots[
     },
     {
         "callToAction": "do something",
-        "compareBy": [],
+        "compareBy": [
+            {
+                "field": "eligibilityDate",
+                "sortDirection": "asc",
+                "undefinedBehavior": "undefinedFirst",
+            }
+        ],
         "createdAt": "2024-05-15 00:00:00",
         "createdBy": "Mary",
         "denialReasons": {"DENY": "Denied"},

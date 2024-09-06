@@ -71,7 +71,13 @@ def generate_config(
         hide_denial_revert=True,
         tooltip_eligibility_text="Eligible",
         tab_groups={},
-        compare_by=[],
+        compare_by=[
+            {
+                "field": "eligibilityDate",
+                "sort_direction": "asc",
+                "undefined_behavior": "undefinedFirst",
+            }
+        ],
         notifications=[],
     )
 
@@ -325,7 +331,13 @@ class WorkflowsAdminPanelEndpointTests(TestCase):
             "hideDenialRevert": config_fields.hide_denial_revert,
             "tooltipEligibilityText": config_fields.tooltip_eligibility_text,
             "tabGroups": config_fields.tab_groups,
-            "compareBy": config_fields.compare_by,
+            "compareBy": [
+                {
+                    "field": "eligibilityDate",
+                    "sortDirection": "asc",
+                    "undefinedBehavior": "undefinedFirst",
+                }
+            ],
             "notifications": config_fields.notifications,
         }
 
@@ -363,7 +375,13 @@ class WorkflowsAdminPanelEndpointTests(TestCase):
                 snooze={"default_snooze_days": 30, "max_snooze_days": 180},
                 sidebar_components=req_body["sidebarComponents"],
                 tab_groups=req_body["tabGroups"],
-                compare_by=req_body["compareBy"],
+                compare_by=[
+                    {
+                        "field": "eligibilityDate",
+                        "sort_direction": "asc",
+                        "undefined_behavior": "undefinedFirst",
+                    }
+                ],
                 notifications=req_body["notifications"],
                 staging_id=None,
             )
@@ -564,7 +582,13 @@ class WorkflowsAdminPanelEndpointTests(TestCase):
                             "sidebarComponents": ["someComponent"],
                             "denialText": "Deny",
                             "tabGroups": {},
-                            "compareBy": [],
+                            "compareBy": [
+                                {
+                                    "field": "eligibilityDate",
+                                    "sortDirection": "asc",
+                                    "undefinedBehavior": "undefinedFirst",
+                                }
+                            ],
                             "notifications": [],
                             "description": "A config",
                             "featureVariant": "feature_variant",
