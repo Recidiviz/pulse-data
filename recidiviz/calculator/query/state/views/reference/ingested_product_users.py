@@ -57,7 +57,7 @@ INGESTED_PRODUCT_USERS_QUERY_TEMPLATE = f"""
     ),
     state_staff_users AS (
         SELECT
-            IF(state_code="US_IX", "US_ID", state_code) AS state_code,
+            state_code,
             LOWER(email) AS email_address,
             CASE
                 WHEN is_supervision_officer_supervisor THEN "{RosterPredefinedRoles.SUPERVISION_OFFICER_SUPERVISOR.value}"
