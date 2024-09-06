@@ -517,6 +517,16 @@ class TestWriteCaseInsightsDataToBQ(unittest.TestCase):
                 "most_severe_ncic_category_uniform": ["Assault", "Bribery"],
             }
         )
+        index_df = pd.DataFrame(
+            data={
+                "state_code": ["US_IX", "US_IX"],
+                "most_severe_description": [
+                    "ASSAULT OR BATTERY",
+                    "MISUSE OF PUBLIC MONEY",
+                ],
+                "most_severe_ncic_category_uniform": ["Assault", "Fraud"],
+            }
+        )
         returned_recidivism_series_dfs = [
             pd.DataFrame(
                 index=pd.MultiIndex.from_arrays(
@@ -724,7 +734,9 @@ class TestWriteCaseInsightsDataToBQ(unittest.TestCase):
         ):
             all_rollup_levels_df = (
                 write_case_insights_data_to_bq.get_all_rollup_aggregated_df(
-                    recidivism_df, [0, 3]
+                    recidivism_df,
+                    [0, 3],
+                    index_df,
                 )
             )
 
@@ -1131,6 +1143,7 @@ class TestWriteCaseInsightsDataToBQ(unittest.TestCase):
             time_unit="months",
             cohort_attribute_col=["state_code", "cohort_group", "gender"],
             last_day_of_data=datetime.datetime.now(),
+            full_observability=True,
         )
         mock_add_cis.assert_called_with(df=returned_aggregated_df)
         mock_add_recidivism_rate_dicts.assert_called_with(df=returned_aggregated_df)

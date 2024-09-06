@@ -365,6 +365,7 @@ def get_recidivism_series_df_for_rollup_level(
         time_unit="months",
         cohort_attribute_col=cohort_attribute_col,
         last_day_of_data=datetime.datetime.now(),
+        full_observability=True,
     )
 
     aggregated_df = add_cis(df=aggregated_df)
@@ -378,7 +379,7 @@ def get_recidivism_series_df_for_rollup_level(
 
 
 def get_all_rollup_aggregated_df(
-    recidivism_df: pd.DataFrame, time_index: Iterable[int]
+    recidivism_df: pd.DataFrame, time_index: Iterable[int], index_df: pd.DataFrame
 ) -> pd.DataFrame:
     """Create a combined DataFrame that has columns for calculations at each rollup level.
 
@@ -389,8 +390,20 @@ def get_all_rollup_aggregated_df(
     ...
 
     This allows for a subsequent call to extract_rollup_columns, which extracts the columns from the appropriate level.
+
+    The input index_df is used to seed the index of the output dataframe. This is to ensure that during rollup we don't
+    drop any rows that would be dropped because there is no data at a given rollup level.
     """
-    all_rollup_levels_df = pd.DataFrame()
+    index_attributes = set(ROLLUP_ATTRIBUTES[0]).difference({"cohort_group"})
+    index = index_df.set_index(list(index_attributes)).index
+    all_rollup_levels_df = pd.DataFrame(
+        index=index,
+        columns=pd.MultiIndex(
+            levels=[[], [], []],
+            codes=[[], [], []],
+            names=["metric", "cohort_group", "rollup_level"],
+        ),
+    )
     for idx, cohort_attribute_col in enumerate(ROLLUP_ATTRIBUTES):
         recidivism_series_df = get_recidivism_series_df_for_rollup_level(
             recidivism_df, time_index, cohort_attribute_col
@@ -403,13 +416,18 @@ def get_all_rollup_aggregated_df(
         )
 
         if idx == 0:
-            all_rollup_levels_df = recidivism_series_df
+            all_rollup_levels_df = recidivism_series_df.merge(
+                all_rollup_levels_df,
+                left_index=True,
+                right_index=True,
+                how="left",
+            )
             all_rollup_levels_df = add_attributes_to_index(
                 target_df=all_rollup_levels_df, reference_df=recidivism_df
             )
         else:
             all_rollup_levels_df = all_rollup_levels_df.merge(
-                recidivism_series_df, left_index=True, right_index=True
+                recidivism_series_df, left_index=True, right_index=True, how="left"
             )
 
     return all_rollup_levels_df
@@ -446,7 +464,9 @@ def extract_rollup_columns(all_rollup_levels_df: pd.DataFrame) -> pd.DataFrame:
         .max(1)
         > ROLLUP_CI_THRESHOLD
     )
-    roll_up_level = exceeds_ci_threshold.unstack("rollup_level").idxmin(axis=1)
+    roll_up_level = (
+        exceeds_ci_threshold.unstack("rollup_level").fillna(True).idxmin(axis=1)
+    )
 
     # Keep only the appropriate rollup level for each row
     all_rollup_levels_df = all_rollup_levels_df.stack(level="rollup_level")
@@ -513,7 +533,9 @@ def write_case_insights_data_to_bq(project_id: str) -> None:
     )
 
     all_rollup_levels_df = get_all_rollup_aggregated_df(
-        recidivism_df, RECIDIVISM_MONTHS
+        recidivism_df,
+        RECIDIVISM_MONTHS,
+        disposition_df,
     )
     rolled_up_recidivism_df = extract_rollup_columns(all_rollup_levels_df)
 
