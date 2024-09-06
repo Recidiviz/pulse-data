@@ -18,6 +18,7 @@ import { FormInstance } from "antd";
 
 import { Route, StateUserPermissionsResponse } from "../../types";
 import {
+  LANTERN_PERMISSIONS_LABELS,
   OUTLIERS_PERMISSIONS_LABELS,
   PATHWAYS_PERMISSIONS_LABELS,
   PSI_PERMISSIONS_LABELS,
@@ -49,6 +50,35 @@ export const routePlaceholder = (
   return values[0].toString();
 };
 
+const BasicPermissionList = ({
+  labels,
+  hidePermissions,
+  selectedUsers,
+}: {
+  labels: Partial<Record<Route, string>>;
+  hidePermissions: boolean;
+  selectedUsers?: StateUserPermissionsResponse[];
+}): JSX.Element => (
+  <>
+    {(Object.entries(labels) as [keyof typeof labels, string][]).map(
+      ([name, label]) => {
+        return (
+          <PermissionSelect
+            permission={{ name, label }}
+            key={name}
+            disabled={hidePermissions}
+            placeholder={
+              hidePermissions
+                ? undefined
+                : routePlaceholder(name, selectedUsers)
+            }
+          />
+        );
+      }
+    )}
+  </>
+);
+
 export const CustomPermissionsPanel = ({
   hidePermissions,
   form,
@@ -62,23 +92,11 @@ export const CustomPermissionsPanel = ({
     <h3>Custom Permissions</h3>
 
     <h4>Workflows:</h4>
-    {(
-      Object.entries(WORKFLOWS_PERMISSIONS_LABELS) as [
-        keyof typeof WORKFLOWS_PERMISSIONS_LABELS,
-        string
-      ][]
-    ).map(([name, label]) => {
-      return (
-        <PermissionSelect
-          permission={{ name, label }}
-          key={name}
-          disabled={hidePermissions}
-          placeholder={
-            hidePermissions ? undefined : routePlaceholder(name, selectedUsers)
-          }
-        />
-      );
-    })}
+    <BasicPermissionList
+      labels={WORKFLOWS_PERMISSIONS_LABELS}
+      hidePermissions={hidePermissions}
+      selectedUsers={selectedUsers}
+    />
 
     <h4>Outliers:</h4>
     <PermissionSelect
@@ -140,61 +158,32 @@ export const CustomPermissionsPanel = ({
     />
 
     <h4>Vitals (Operations):</h4>
-    {(
-      Object.entries(VITALS_PERMISSIONS_LABELS) as [
-        keyof typeof VITALS_PERMISSIONS_LABELS,
-        string
-      ][]
-    ).map(([name, label]) => {
-      return (
-        <PermissionSelect
-          permission={{ name, label }}
-          key={name}
-          disabled={hidePermissions}
-          placeholder={
-            hidePermissions ? undefined : routePlaceholder(name, selectedUsers)
-          }
-        />
-      );
-    })}
+    <BasicPermissionList
+      labels={VITALS_PERMISSIONS_LABELS}
+      hidePermissions={hidePermissions}
+      selectedUsers={selectedUsers}
+    />
 
     <h4>Pathways Pages:</h4>
-    {(
-      Object.entries(PATHWAYS_PERMISSIONS_LABELS) as [
-        keyof typeof PATHWAYS_PERMISSIONS_LABELS,
-        string
-      ][]
-    ).map(([name, label]) => {
-      return (
-        <PermissionSelect
-          permission={{ name, label }}
-          key={name}
-          disabled={hidePermissions}
-          placeholder={
-            hidePermissions ? undefined : routePlaceholder(name, selectedUsers)
-          }
-        />
-      );
-    })}
+    <BasicPermissionList
+      labels={PATHWAYS_PERMISSIONS_LABELS}
+      hidePermissions={hidePermissions}
+      selectedUsers={selectedUsers}
+    />
 
     <h4>PSI Pages:</h4>
-    {(
-      Object.entries(PSI_PERMISSIONS_LABELS) as [
-        keyof typeof PSI_PERMISSIONS_LABELS,
-        string
-      ][]
-    ).map(([name, label]) => {
-      return (
-        <PermissionSelect
-          permission={{ name, label }}
-          key={name}
-          disabled={hidePermissions}
-          placeholder={
-            hidePermissions ? undefined : routePlaceholder(name, selectedUsers)
-          }
-        />
-      );
-    })}
+    <BasicPermissionList
+      labels={PSI_PERMISSIONS_LABELS}
+      hidePermissions={hidePermissions}
+      selectedUsers={selectedUsers}
+    />
+
+    <h4>Lantern (Legacy) Pages:</h4>
+    <BasicPermissionList
+      labels={LANTERN_PERMISSIONS_LABELS}
+      hidePermissions={hidePermissions}
+      selectedUsers={selectedUsers}
+    />
 
     <h4>Feature Variants:</h4>
     <Note>Notes:</Note>

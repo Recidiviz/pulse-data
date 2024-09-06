@@ -87,4 +87,7 @@ schema:
   - name: routes_psi
     type: BOOLEAN
     mode: NULLABLE
+  - name: routes_lantern
+    type: BOOLEAN
+    mode: NULLABLE
 clustering_fields: null
