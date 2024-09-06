@@ -43,6 +43,8 @@ VIEW_QUERY_TEMPLATE = f"""
             inState
         FROM final_sentences
         WHERE SentenceOrderEventTypeId IN ('1', '2', '3', '5') -- keep "Initial", "Amendment", and "Error Correction" sentences
+        -- Enforces that there is always a start date to a sentence
+        AND (SentenceDate IS NOT NULL OR CorrectionsCompactStartDate IS NOT NULL)
 """
 VIEW_BUILDER = DirectIngestViewQueryBuilder(
     region="us_ix",
