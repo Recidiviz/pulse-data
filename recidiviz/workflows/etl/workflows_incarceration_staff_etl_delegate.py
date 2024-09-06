@@ -44,6 +44,7 @@ class WorkflowsIncarcerationStaffETLDelegate(WorkflowsFirestoreETLDelegate):
             "givenNames": person_name_case(data.get("given_names", "")),
             "surname": person_name_case(data.get("surname", "")),
             "roleSubtype": data.get("role_subtype"),
+            "pseudonymizedId": data.get("pseudonymized_id"),
         }
 
         return data["id"], new_document

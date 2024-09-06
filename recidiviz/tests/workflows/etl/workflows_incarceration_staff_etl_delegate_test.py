@@ -77,6 +77,7 @@ class WorkflowsIncarcerationStaffETLDelegateTest(TestCase):
                     "givenNames": "Joey",
                     "surname": "Joe-Joe Jr. III",
                     "roleSubtype": "SUPERVISION_OFFICER",
+                    "pseudonymizedId": "p100",
                 },
             )
 
@@ -94,6 +95,7 @@ class WorkflowsIncarcerationStaffETLDelegateTest(TestCase):
                     "givenNames": "Sally S.",
                     "surname": "Slithers",
                     "roleSubtype": "SUPERVISION_OFFICER_SUPERVISOR",
+                    "pseudonymizedId": "p101",
                 },
             )
 
@@ -111,6 +113,7 @@ class WorkflowsIncarcerationStaffETLDelegateTest(TestCase):
                     "givenNames": "Foghorn",
                     "surname": "Leghorn",
                     "roleSubtype": None,
+                    "pseudonymizedId": "p102",
                 },
             )
 
@@ -128,6 +131,7 @@ class WorkflowsIncarcerationStaffETLDelegateTest(TestCase):
                     "givenNames": "",
                     "surname": "",
                     "roleSubtype": None,
+                    "pseudonymizedId": "p103",
                 },
             )
 
