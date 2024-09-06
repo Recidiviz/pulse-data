@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
-import { Badge, Card, Divider, Table } from "antd";
+import { Badge, Card, Divider, Table, Tooltip } from "antd";
 import { PresetStatusColorType } from "antd/es/_util/colors";
 import { ColumnsType } from "antd/lib/table";
 import { ColumnFilterItem } from "antd/lib/table/interface";
@@ -39,6 +39,11 @@ interface RawDataImportStartRow {
   importRunStart: string;
   dagRunId: string;
   importRunId: number;
+}
+
+interface RawDataImportStatusRow {
+  importStatus: string;
+  importStatusDescription: string;
 }
 
 const rawDataImportStatusColorDict: {
@@ -76,10 +81,13 @@ const rawDataImportStatusColorDict: {
   },
 };
 
-// TODO(#29133) add hovering over to produce the descriptions from recidiviz/common/constants/operations/direct_ingest_raw_file_import.py
-function renderRawDataImportStatus(importStatus: RawDataImportStatus) {
-  const statusInfo = rawDataImportStatusColorDict[importStatus];
-  return <Badge status={statusInfo.color} text={statusInfo.status} />;
+function renderRawDataImportStatus(importStatusRow: RawDataImportStatusRow) {
+  const statusInfo = rawDataImportStatusColorDict[importStatusRow.importStatus];
+  return (
+    <Tooltip title={importStatusRow.importStatusDescription}>
+      <Badge status={statusInfo.color} text={statusInfo.status} />
+    </Tooltip>
+  );
 }
 
 function rawDataImportStatusSortRank(importStatus: RawDataImportStatus) {
@@ -144,14 +152,14 @@ const RawDataFileTagRecentRunsTable: React.FC<
     },
     {
       title: "Import Status",
-      dataIndex: "importStatus",
+      dataIndex: ["importStatus", "importStatusDescription"],
       filters: filtersForKey("importStatus", importRuns),
-      render: (importStatus: RawDataImportStatus) =>
-        renderRawDataImportStatus(importStatus),
       sorter: (a, b) =>
         rawDataImportStatusSortRank(a.importStatus) -
         rawDataImportStatusSortRank(b.importStatus),
       filterSearch: true,
+      render: (_, record: RawDataImportStatusRow) =>
+        renderRawDataImportStatus(record),
     },
     {
       title: "Raw Row Count",

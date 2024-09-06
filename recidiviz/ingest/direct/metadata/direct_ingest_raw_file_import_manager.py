@@ -91,6 +91,9 @@ class DirectIngestRawFileImportSummary:
             "updateDatetime": self.update_datetime.isoformat(),
             "importRunStart": self.import_run_start.isoformat(),
             "importStatus": self.import_status.value,
+            "importStatusDescription": DirectIngestRawFileImportStatus.get_value_descriptions()[
+                self.import_status
+            ],
             "historicalDiffsActive": self.historical_diffs_active,
             "rawRowCount": self.raw_rows,
             "isInvalidated": self.is_invalidated,
