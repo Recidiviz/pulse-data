@@ -42,8 +42,12 @@ from recidiviz.ingest.direct.metadata.direct_ingest_raw_file_import_manager impo
     DirectIngestRawFileImportSummary,
     LatestDirectIngestRawFileImportRunSummary,
 )
+from recidiviz.ingest.direct.raw_data.raw_file_configs import (
+    DirectIngestRegionRawFileConfig,
+)
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.persistence.entity.operations.entities import DirectIngestInstanceStatus
+from recidiviz.tests.ingest.direct import fake_regions
 
 
 @mock.patch("recidiviz.utils.metadata.project_id", Mock(return_value="recidiviz-456"))
@@ -472,7 +476,6 @@ class IngestOpsEndpointTests(TestCase):
 
         # Assert
         self.assertEqual(response.status_code, 200)
-        print(response.json)
         self.assertEqual(
             response.json,
             [
@@ -499,4 +502,35 @@ class IngestOpsEndpointTests(TestCase):
                     "updateDatetime": "2022-08-30T00:00:00+00:00",
                 },
             ],
+        )
+
+    def test_get_raw_file_config_for_file_tag(self) -> None:
+        # Arrange
+        self.mock_store.get_raw_file_config.return_value = (
+            DirectIngestRegionRawFileConfig(
+                region_code=StateCode.US_XX.value,
+                region_module=fake_regions,
+            ).raw_file_configs["tagBasicData"]
+        )
+        # Act
+        response = self.client.get(
+            "/api/ingest_operations/raw_file_config/US_XX/basic",
+            headers={"X-Appengine-Inbound-Appid": "recidiviz-456"},
+        )
+
+        # Assert
+        self.assertEqual(response.status_code, 200)
+        print(response.json)
+        self.assertEqual(
+            response.json,
+            {
+                "alwaysHistoricalExport": False,
+                "encoding": "UTF-8",
+                "fileDescription": "tagBasicData file description",
+                "fileTag": "tagBasicData",
+                "isChunkedFile": False,
+                "isCodeFile": False,
+                "separator": ",",
+                "updateCadence": "WEEKLY",
+            },
         )

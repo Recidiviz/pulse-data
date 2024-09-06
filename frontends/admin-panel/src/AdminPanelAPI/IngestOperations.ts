@@ -381,3 +381,13 @@ export const getLatestRawDataImportRunsForFileTag = async (
     `/api/ingest_operations/get_latest_raw_data_imports/${stateCode}/${rawDataInstance}/${fileTag}`
   );
 };
+
+// Get raw file config summary
+export const getRawFileConfigSummary = async (
+  stateCode: string,
+  fileTag: string
+): Promise<Response> => {
+  return getResource(
+    `/api/ingest_operations/raw_file_config/${stateCode}/${fileTag}`
+  );
+};

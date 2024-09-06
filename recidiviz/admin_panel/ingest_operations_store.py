@@ -413,6 +413,15 @@ class IngestOperationsStore(AdminPanelStore):
             "ingestBucketPath": ingest_bucket_path.abs_path(),
         }
 
+    def get_raw_file_config(
+        self,
+        state_code: StateCode,
+        file_tag: str,
+    ) -> Optional[DirectIngestRawFileConfig]:
+        return get_region_raw_file_config(
+            region_code=state_code.value.lower(),
+        ).raw_file_configs.get(file_tag)
+
     def get_ingest_raw_file_processing_statuses(
         self, state_code: StateCode, ingest_instance: DirectIngestInstance
     ) -> List[IngestRawFileProcessingStatus]:

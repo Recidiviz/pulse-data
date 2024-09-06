@@ -141,6 +141,17 @@ export type RawDataFileTagImport = {
   // TODO(#28694) add net new or deleted
 };
 
+export type RawFileConfigSummary = {
+  fileTag: string;
+  fileDescription: string;
+  updateCadence: string;
+  encoding: string;
+  separator: string;
+  alwaysHistoricalExport: boolean;
+  isCodeFile: boolean;
+  isChunkedFile: boolean;
+};
+
 // --- raw data resource lock related constants ----------------------------------------
 export enum RawDataResourceLockResource {
   BUCKET = "BUCKET",

@@ -20,7 +20,7 @@ import re
 from collections import defaultdict
 from enum import Enum
 from types import ModuleType
-from typing import Dict, List, Optional, Set, Tuple
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 import attr
 from more_itertools import one
@@ -309,7 +309,7 @@ class DirectIngestRawFileDefaultConfig:
 
     # Import-blocking validation exemptions that are applied to all tables in this region
     # Can include table-level validation exemptions and/or column-level exemptions to apply
-    # to all relevent columns in the region
+    # to all relevant columns in the region
     default_import_blocking_validation_exemptions: Optional[
         List[ImportBlockingValidationExemption]
     ] = attr.ib(default=None, validator=attr_validators.is_opt_list)
@@ -411,7 +411,7 @@ class DirectIngestRawFileConfig:
     # Boolean flag denoting whether the state sends us data for this file tag split into
     # multiple csv files in each transfer. If this is the case, we need to do some
     # extra handling to ensure that all csv file chunks get coalesced into the same
-    # file id in the operations databse.
+    # file id in the operations database.
     is_chunked_file: bool = attr.ib(default=False, validator=attr_validators.is_bool)
 
     # TODO(#30138) make the mechanism of knowing when we have all file chunks less brittle
@@ -422,7 +422,7 @@ class DirectIngestRawFileConfig:
     )
 
     # Can include table-level validation exemptions and/or column-level exemptions to apply
-    # to all relevent columns in this table.
+    # to all relevant columns in this table.
     # Values are applied in addition to any default_import_blocking_validation_exemptions
     import_blocking_validation_exemptions: Optional[
         List[ImportBlockingValidationExemption]
@@ -510,7 +510,7 @@ class DirectIngestRawFileConfig:
 
     def _validate_primary_keys(self) -> None:
         """Confirm that the primary key configuration is valid for this config. If this
-        check passes, it does NOT mean that the table is sufficently documented for use
+        check passes, it does NOT mean that the table is sufficiently documented for use
         in an ingest view. To determine if this is a valid ingest view dependency, see
         is_undocumented().
         """
@@ -632,7 +632,7 @@ class DirectIngestRawFileConfig:
 
     def has_regularly_updated_data(self) -> bool:
         """Returns whether or not we think the data in this file is regularly updated;
-        that is, the file itself is transfered regularly (not IRREGULAR) and it is not
+        that is, the file itself is transferred regularly (not IRREGULAR) and it is not
         a code file (typically few changes day over day).
         """
         return (
@@ -644,10 +644,10 @@ class DirectIngestRawFileConfig:
         return RawDataFileUpdateCadence.interval_from_cadence(self.update_cadence)
 
     def max_hours_before_stale(self) -> int:
-        """Returns the maximum number of hours we will go between recieving exports of
+        """Returns the maximum number of hours we will go between receiving exports of
         this file before calling it "stale".
 
-        In general, we want to allow some leniency between recieving files for the data
+        In general, we want to allow some leniency between receiving files for the data
         to actually enter our system (~ 12 hours).
         """
         return self.get_update_interval_in_days() * 24 + 12
@@ -677,6 +677,22 @@ class DirectIngestRawFileConfig:
         return ImportBlockingValidationExemption.list_includes_exemption_type(
             column_info.import_blocking_column_validation_exemptions, validation_type
         ) or self.file_is_exempt_from_validation(validation_type)
+
+    def for_admin_panel_api(self) -> Dict[str, Any]:
+        """Constructs an abridged set of fields to send to the admin panel front end.
+        If you are updating this object, please make sure to update constants::RawFileConfigSummary
+        as well.
+        """
+        return {
+            "fileTag": self.file_tag,
+            "fileDescription": self.file_description,
+            "updateCadence": self.update_cadence.value,
+            "encoding": self.encoding,
+            "separator": self.separator,
+            "alwaysHistoricalExport": self.always_historical_export,
+            "isCodeFile": self.is_code_file,
+            "isChunkedFile": self.is_chunked_file,
+        }
 
     @classmethod
     def from_yaml_dict(

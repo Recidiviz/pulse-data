@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
-import { Badge, Table } from "antd";
+import { Badge, Card, Divider, Table } from "antd";
 import { PresetStatusColorType } from "antd/es/_util/colors";
 import { ColumnsType } from "antd/lib/table";
 import { ColumnFilterItem } from "antd/lib/table/interface";
@@ -173,26 +173,24 @@ const RawDataFileTagRecentRunsTable: React.FC<
   ];
 
   return (
-    <div
-      style={{
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-      }}
-    >
+    <>
       {importRuns ? (
         // TODO(#29133) add dynamic pagination?
-        <Table
-          columns={columns}
-          dataSource={importRuns}
-          loading={loading}
-          style={{ width: 1000 }}
-          rowKey={(record: RawDataFileTagImport) =>
-            `${record.importRunId}_${record.fileId}`
-          }
-        />
+        <>
+          <Divider orientation="left"> Recent Raw File Imports</Divider>
+          <Card>
+            <Table
+              columns={columns}
+              dataSource={importRuns}
+              loading={loading}
+              rowKey={(record: RawDataFileTagImport) =>
+                `${record.importRunId}_${record.fileId}`
+              }
+            />
+          </Card>
+        </>
       ) : null}
-    </div>
+    </>
   );
 };
 
