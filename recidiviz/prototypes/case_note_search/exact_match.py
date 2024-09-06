@@ -25,9 +25,7 @@ import json
 from typing import Any, Dict, List, Optional
 
 import pandas as pd
-import pandas_gbq
-
-from recidiviz.utils.environment import GCP_PROJECT_STAGING
+from google.cloud import bigquery
 
 CASE_NOTES_BQ_TABLE_NAME = (
     "recidiviz-staging.case_notes_prototype_views.case_notes_materialized"
@@ -88,10 +86,13 @@ def exact_match_search(
     # Base query that filters for a substring match.
     query = f"""
     select *
-    from {CASE_NOTES_BQ_TABLE_NAME}
-    where LOWER(JSON_EXTRACT_SCALAR(JsonData, '$.note_body')) LIKE LOWER('%{query_term}%')
+    from `{CASE_NOTES_BQ_TABLE_NAME}`
+    where lower(json_extract_scalar(JsonData, '$.note_body')) like lower(@query_term)
     """
 
+    # We don't parameterize filter conditions because users are not inputting these
+    # directly. External ids are populated by the frontend, and all excluded filter
+    # conditions are hardcoded from the backend.
     def format_condition(values: List[str]) -> str:
         """Helper function to format filter conditions."""
         return "','".join(values)
@@ -111,15 +112,20 @@ def exact_match_search(
             query
             + f"and not JSON_EXTRACT_SCALAR(JsonData, '$.{field}') in ('{formatted_values}')"
         )
-
     # Optionally limit the number of results returned, since loading a ton of notes from
     # bigquery is slow.
     if limit is not None:
-        query = query + f"limit {limit}"
+        query = query + f" limit {limit}"
 
-    contains_exact_match_df: pd.DataFrame = pandas_gbq.read_gbq(
-        query, project_id=GCP_PROJECT_STAGING
-    )
+    # Execute query using bq client.
+    client = bigquery.Client()
+    query_parameters = [
+        bigquery.ScalarQueryParameter("query_term", "STRING", f"%{query_term}%")
+    ]
+    job_config = bigquery.QueryJobConfig(query_parameters=query_parameters)
+    contains_exact_match_df: pd.DataFrame = client.query(
+        query, job_config=job_config
+    ).to_dataframe()
 
     # Return a dict instead of a dataframe object.
     document_id_to_data: Dict = {}
