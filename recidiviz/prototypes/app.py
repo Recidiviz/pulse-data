@@ -36,7 +36,7 @@ from recidiviz.prototypes.case_note_search.case_note_search_record import (
     record_case_note_search,
 )
 from recidiviz.prototypes.case_note_search.exact_match import STATE_CODE_CONVERTER
-from recidiviz.utils.environment import get_gcp_environment
+from recidiviz.utils.environment import get_gcp_environment, in_development
 
 ALLOWED_ORIGINS = [
     r"http\://localhost:3000",
@@ -59,7 +59,7 @@ CASE_NOTE_SEARCH_SENTRY_DSN = (
 sentry_sdk.init(
     dsn=CASE_NOTE_SEARCH_SENTRY_DSN,
     traces_sample_rate=0.25,
-    environment=get_gcp_environment(),
+    environment="dev" if in_development() else get_gcp_environment(),
     # profile 10% of transactions
     profiles_sample_rate=0.1,
     integrations=[QuartIntegration(), AsyncioIntegration()],
