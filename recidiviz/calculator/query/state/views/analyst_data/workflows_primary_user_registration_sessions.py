@@ -22,7 +22,11 @@ information where available"""
 from typing import Dict, List
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
-from recidiviz.calculator.query.bq_utils import list_to_query_string
+from recidiviz.calculator.query.bq_utils import (
+    MAGIC_START_DATE,
+    list_to_query_string,
+    nonnull_end_date_clause,
+)
 from recidiviz.calculator.query.sessions_query_fragments import aggregate_adjacent_spans
 from recidiviz.calculator.query.state.dataset_config import ANALYST_VIEWS_DATASET
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
@@ -37,51 +41,45 @@ information where available."""
 
 PRIMARY_USER_ROLE_TYPES_BY_SYSTEM_TYPE: Dict[WorkflowsSystemType, List[str]] = {
     WorkflowsSystemType.INCARCERATION: [
-        "facilities_staff",
         "facilities_line_staff",
+        "facilities_staff",
     ],
     WorkflowsSystemType.SUPERVISION: [
+        "supervision_line_staff",
         "supervision_officer",
         "supervision_staff",
-        "supervision_line_staff",
     ],
 }
 PRIMARY_USER_ROLE_TYPES = sorted(
     set().union(*PRIMARY_USER_ROLE_TYPES_BY_SYSTEM_TYPE.values())
 )
 
+# Date after which we consider product roster archive to reflect validated
+# role and location information. We will backfill information starting at a user's
+# first signup date and ending on this date, for users present in the roster on this
+# date.
+PRODUCT_ROSTER_ARCHIVE_FIRST_VALIDATED_DATE = "2024-09-06"
+
 _QUERY_TEMPLATE = f"""
-# Get the first product archive export date for each user
-WITH earliest_product_roster_archive_session AS (
+# Get the first product archive export date for each user after the first validated
+# product roster archive export date, and backfill over all time
+WITH backfilled_product_roster_sessions AS (
     SELECT
-        *
+        state_code,
+        workflows_user_email_address,
+        DATE("{MAGIC_START_DATE}") AS start_date,
+        # Use first validated product roster date as the end date of backfill session
+        # If product roster archive session only starts after 
+        # PRODUCT_ROSTER_ARCHIVE_FIRST_VALIDATED_DATE, use the start date of the archive
+        GREATEST(start_date, "{PRODUCT_ROSTER_ARCHIVE_FIRST_VALIDATED_DATE}") AS end_date_exclusive,
+        role,
+        location_id,
     FROM
         `{{project_id}}.analyst_data.workflows_user_product_roster_archive_sessions_materialized`
+    WHERE
+        "{PRODUCT_ROSTER_ARCHIVE_FIRST_VALIDATED_DATE}" < {nonnull_end_date_clause("end_date_exclusive")}
     QUALIFY
         ROW_NUMBER() OVER (PARTITION BY state_code, workflows_user_email_address ORDER BY start_date) = 1
-)
-,
-# For sign ups occurring before the first product archive export date, 
-# backfill roster information with product roster attributes from the first
-# product roster export date to span the time between signup and product roster exports
-backfilled_product_roster_sessions AS (
-    SELECT
-        b.state_code,
-        b.workflows_user_email_address,
-        # Use initial signup date as the start date of backfill session
-        a.workflows_signup_date AS start_date,
-        # Use first available product roster date as the end date of backfill session
-        b.start_date AS end_date_exclusive,
-        b.role,
-        b.location_id,
-    FROM
-        `{{project_id}}.analyst_data.workflows_user_signups_materialized` a
-    INNER JOIN
-        earliest_product_roster_archive_session b
-    ON
-        a.state_code = b.state_code
-        AND a.workflows_user_email_address = b.workflows_user_email_address
-        AND a.workflows_signup_date < b.start_date
 )
 ,
 # Union together backfilled information with roster information
@@ -96,12 +94,16 @@ unioned_roster_sessions AS (
     SELECT
         state_code,
         workflows_user_email_address,
-        start_date,
+        # If start date is before first validated archive date, truncate
+        # This ensures no overlap between backfilled sessions and roster sessions
+        GREATEST(start_date, "{PRODUCT_ROSTER_ARCHIVE_FIRST_VALIDATED_DATE}") AS start_date,
         end_date_exclusive,
         role,
         location_id,
     FROM
         `{{project_id}}.analyst_data.workflows_user_product_roster_archive_sessions_materialized`
+    WHERE
+        {nonnull_end_date_clause("end_date_exclusive")} > "{PRODUCT_ROSTER_ARCHIVE_FIRST_VALIDATED_DATE}"
 )
 ,
 # Filter to line-staff role types and pull out a system_type flag based on role type
@@ -124,13 +126,35 @@ primary_user_roster_sessions AS (
     WHERE
         role IN ({list_to_query_string(PRIMARY_USER_ROLE_TYPES, quoted = True)})
 )
-{aggregate_adjacent_spans(
-    table_name='primary_user_roster_sessions',
-    index_columns=["state_code", "workflows_user_email_address"],
-    attribute=['system_type', 'location_id'],
-    session_id_output_name='registration_session_id',
-    end_date_field_name='end_date_exclusive'
-)}
+,
+aggregated_roster_sessions AS (
+    {aggregate_adjacent_spans(
+        table_name='primary_user_roster_sessions',
+        index_columns=["state_code", "workflows_user_email_address"],
+        attribute=['system_type', 'location_id'],
+        session_id_output_name='registration_session_id',
+        end_date_field_name='end_date_exclusive'
+    )}
+)
+-- Truncate all registration sessions to start after the first signup/login event
+SELECT
+    a.state_code,
+    a.workflows_user_email_address,
+    GREATEST(a.start_date, b.workflows_signup_date) AS start_date,
+    a.end_date_exclusive,
+    a.registration_session_id,
+    a.system_type,
+    a.location_id,
+FROM
+    aggregated_roster_sessions a
+# Only include roster sessions that overlap with the period following first signup
+INNER JOIN
+    `{{project_id}}.analyst_data.workflows_user_signups_materialized` b
+ON
+    a.state_code = b.state_code
+    AND a.workflows_user_email_address = b.workflows_user_email_address
+    AND b.workflows_signup_date < {nonnull_end_date_clause("a.end_date_exclusive")}
+
 """
 
 WORKFLOWS_PRIMARY_USER_REGISTRATION_SESSIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
