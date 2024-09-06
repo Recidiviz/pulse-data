@@ -158,3 +158,7 @@ US_AZ_ADC_NUMBER = "US_AZ_ADC_NUMBER"
 US_TX_TDCJ = "US_TX_TDCJ"
 # TX person SID number, assigned only once
 US_TX_SID = "US_TX_SID"
+# TX officer email
+US_TX_EMAIL = "US_TX_EMAIL"
+# Identifier for the type of state staff id provided by the TDCJ
+US_TX_STAFF_ID = "US_TX_STAFF_ID"
