@@ -26,7 +26,7 @@ interface RenderHasConfigFileProps {
   ingestBucketPath: string | undefined;
 }
 
-const RawDataFileTagContents: React.FC<RenderHasConfigFileProps> = ({
+const RawDataFileTagCellContents: React.FC<RenderHasConfigFileProps> = ({
   status,
   ingestBucketPath,
 }) => {
@@ -60,4 +60,4 @@ const RawDataFileTagContents: React.FC<RenderHasConfigFileProps> = ({
   );
 };
 
-export default RawDataFileTagContents;
+export default RawDataFileTagCellContents;

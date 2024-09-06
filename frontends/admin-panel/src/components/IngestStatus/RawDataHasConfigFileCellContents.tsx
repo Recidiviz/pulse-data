@@ -19,15 +19,33 @@ import { IngestRawFileProcessingStatus, SPECIAL_FILE_TAGS } from "./constants";
 
 interface RenderRawDataFileTagProps {
   status: IngestRawFileProcessingStatus;
+  stateCode: string;
+  instance: string;
+  rawDataImportDagEnabled: boolean; // TODO(#28239) remove once raw data import dag is rolled out
 }
 
 const RawDataHasConfigFileCellContents: React.FC<RenderRawDataFileTagProps> = ({
   status,
+  stateCode,
+  instance,
+  rawDataImportDagEnabled,
 }) => {
   const { fileTag, hasConfig } = status;
   const isSpecialTag = SPECIAL_FILE_TAGS.includes(fileTag);
   if (isSpecialTag) {
     return <div>{fileTag}</div>;
+  }
+
+  if (rawDataImportDagEnabled && hasConfig) {
+    return (
+      <div>
+        <a
+          href={`/admin/ingest_operations/ingest_pipeline_summary/${stateCode}/instance/${instance}/${fileTag}`}
+        >
+          {fileTag}
+        </a>
+      </div>
+    );
   }
 
   return (

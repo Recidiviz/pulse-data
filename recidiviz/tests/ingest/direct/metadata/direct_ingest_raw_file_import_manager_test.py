@@ -34,6 +34,7 @@ from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
 from recidiviz.ingest.direct.metadata.direct_ingest_raw_file_import_manager import (
     DirectIngestRawFileImportManager,
     DirectIngestRawFileImportStatusBuckets,
+    DirectIngestRawFileImportSummary,
 )
 from recidiviz.ingest.direct.metadata.direct_ingest_raw_file_metadata_manager_v2 import (
     DirectIngestRawFileMetadataManagerV2,
@@ -690,7 +691,7 @@ class DirectIngestRawFileImportManagerTest(TestCase):
             False,
         )
 
-        runs = []
+        summaries = []
         for i in range(0, 11):
             date_i = frozen_time + timedelta(hours=i)
             unprocessed_path = _make_unprocessed_raw_data_path(
@@ -712,15 +713,27 @@ class DirectIngestRawFileImportManagerTest(TestCase):
                 False,
             )
 
-            runs.append(run)
+            summary = DirectIngestRawFileImportSummary(
+                import_run_id=import_run_i.import_run_id,
+                file_id=metadata.file_id or 1,
+                dag_run_id=import_run_i.dag_run_id,
+                update_datetime=metadata.update_datetime,
+                import_run_start=import_run_i.import_run_start,
+                import_status=run.import_status,
+                historical_diffs_active=run.historical_diffs_active,
+                raw_rows=run.raw_rows,
+                is_invalidated=False,
+            )
 
-        runs = list(reversed(runs))
+            summaries.append(summary)
 
-        for i in range(len(runs)):
+        summaries = list(reversed(summaries))
+
+        for i in range(len(summaries)):
             i_runs = self.us_xx_manager.get_n_most_recent_imports_for_file_tag(
                 "file_tag", n=i
             )
-            assert i_runs == runs[:i]
+            assert i_runs == summaries[:i]
 
     def test_transfer_metadata_to_new_instance_empty(self) -> None:
         us_xx_secondary = DirectIngestRawFileImportManager(
@@ -866,8 +879,8 @@ class DirectIngestRawFileImportManagerTest(TestCase):
             "file_tag_1"
         )
 
-        invalidated = [m for m in migrated if m.bq_file and m.bq_file.is_invalidated]
-        valid = [m for m in migrated if m.bq_file and m.bq_file.is_invalidated]
+        invalidated = [m for m in migrated if m.is_invalidated]
+        valid = [m for m in migrated if m.is_invalidated]
 
         assert len(invalidated) == 5
         assert len(valid) == 5

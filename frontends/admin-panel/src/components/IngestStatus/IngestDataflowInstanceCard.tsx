@@ -31,6 +31,7 @@ import {
   getLatestRawDataTagsNotMeetingWatermark,
   getLatestRunIngestViewResults,
   getLatestRunStateDatasetRowCounts,
+  isRawDataImportDagEnabled,
 } from "../../AdminPanelAPI/IngestOperations";
 import { useFetchedDataJSON } from "../../hooks";
 import { GCP_STORAGE_BASE_URL } from "../general/constants";
@@ -513,7 +514,7 @@ const IngestDataflowInstanceCard: React.FC<IngestDataflowInstanceCardProps> = ({
     IngestInstanceResources | undefined
   >(undefined);
 
-  const fetchingestInstanceResources = useCallback(async () => {
+  const fetchIngestInstanceResources = useCallback(async () => {
     if (!instance) {
       return;
     }
@@ -538,8 +539,8 @@ const IngestDataflowInstanceCard: React.FC<IngestDataflowInstanceCardProps> = ({
   }, [instance, stateCode]);
 
   useEffect(() => {
-    fetchingestInstanceResources();
-  }, [fetchingestInstanceResources, instance, stateCode]);
+    fetchIngestInstanceResources();
+  }, [fetchIngestInstanceResources, instance, stateCode]);
 
   const [
     ingestRawFileProcessingStatusLoading,
@@ -547,6 +548,8 @@ const IngestDataflowInstanceCard: React.FC<IngestDataflowInstanceCardProps> = ({
   ] = useState<boolean>(true);
   const [ingestRawFileProcessingStatus, setIngestRawFileProcessingStatus] =
     useState<IngestRawFileProcessingStatus[]>([]);
+  const [rawDataImportDagEnabled, setRawDataImportDagEnabled] =
+    useState<boolean>(false);
 
   const getRawFileProcessingStatusData = useCallback(async () => {
     setIngestRawFileProcessingStatusLoading(true);
@@ -569,6 +572,15 @@ const IngestDataflowInstanceCard: React.FC<IngestDataflowInstanceCardProps> = ({
         throw err;
       }
     }
+
+    // TODO(#28239) remove once raw data import dag is rolled out
+    const isEnabledResponse = await isRawDataImportDagEnabled(
+      stateCode,
+      instance
+    );
+    const isEnabledResult = await isEnabledResponse.json();
+    setRawDataImportDagEnabled(isEnabledResult);
+
     setIngestRawFileProcessingStatusLoading(false);
   }, [instance, stateCode]);
 
@@ -589,6 +601,9 @@ const IngestDataflowInstanceCard: React.FC<IngestDataflowInstanceCardProps> = ({
         ingestInstanceResources={ingestInstanceResources}
         statusLoading={ingestRawFileProcessingStatusLoading}
         ingestRawFileProcessingStatus={ingestRawFileProcessingStatus}
+        stateCode={stateCode}
+        instance={instance}
+        rawDataImportDagEnabled={rawDataImportDagEnabled}
       />
     </>
   );

@@ -17,7 +17,6 @@
 import { Table } from "antd";
 import { ColumnsType } from "antd/lib/table";
 import classNames from "classnames";
-import * as React from "react";
 
 import {
   booleanSort,
@@ -29,7 +28,7 @@ import {
   IngestInstanceResources,
   IngestRawFileProcessingStatus,
 } from "./constants";
-import RawDataFileTagContents from "./RawDataFileTagContents";
+import RawDataFileTagCellContents from "./RawDataFileTagCellContents";
 import RawDataHasConfigFileCellContents from "./RawDataHasConfigFileCellContents";
 import RawDataLatestProcessedDateCellContents from "./RawDataLatestProcessedDateCellContents";
 
@@ -37,6 +36,9 @@ interface IngestRawFileProcessingStatusTableProps {
   ingestInstanceResources: IngestInstanceResources | undefined;
   statusLoading: boolean;
   ingestRawFileProcessingStatus: IngestRawFileProcessingStatus[];
+  stateCode: string;
+  instance: string;
+  rawDataImportDagEnabled: boolean; // TODO(#28239) remove once raw data import dag is rolled out
 }
 
 const IngestRawFileProcessingStatusTable: React.FC<
@@ -45,6 +47,9 @@ const IngestRawFileProcessingStatusTable: React.FC<
   ingestInstanceResources,
   statusLoading,
   ingestRawFileProcessingStatus,
+  stateCode,
+  instance,
+  rawDataImportDagEnabled,
 }) => {
   const columns: ColumnsType<IngestRawFileProcessingStatus> = [
     {
@@ -52,7 +57,12 @@ const IngestRawFileProcessingStatusTable: React.FC<
       dataIndex: "fileTag",
       key: "fileTag",
       render: (_, record) => (
-        <RawDataHasConfigFileCellContents status={record} />
+        <RawDataHasConfigFileCellContents
+          status={record}
+          stateCode={stateCode}
+          instance={instance}
+          rawDataImportDagEnabled={rawDataImportDagEnabled}
+        />
       ),
       sorter: {
         compare: (a, b) => a.fileTag.localeCompare(b.fileTag),
@@ -75,7 +85,6 @@ const IngestRawFileProcessingStatusTable: React.FC<
           optionalBooleanSort(a.isStale, b.isStale) &&
           optionalStringSort(a.latestDiscoveryTime, b.latestDiscoveryTime),
       },
-      sortOrder: "descend",
     },
     {
       title: "Last Processed",
@@ -115,7 +124,7 @@ const IngestRawFileProcessingStatusTable: React.FC<
       dataIndex: "hasConfig",
       key: "hasConfig",
       render: (_, record) => (
-        <RawDataFileTagContents
+        <RawDataFileTagCellContents
           status={record}
           ingestBucketPath={ingestInstanceResources?.ingestBucketPath}
         />

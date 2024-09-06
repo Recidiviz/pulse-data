@@ -45,6 +45,9 @@ from recidiviz.ingest.direct.metadata.direct_ingest_dataflow_job_manager import 
 from recidiviz.ingest.direct.metadata.direct_ingest_instance_status_manager import (
     DirectIngestInstanceStatusManager,
 )
+from recidiviz.ingest.direct.metadata.direct_ingest_raw_file_import_manager import (
+    DirectIngestRawFileImportManager,
+)
 from recidiviz.ingest.direct.metadata.legacy_direct_ingest_raw_file_metadata_manager import (
     LegacyDirectIngestRawFileMetadataManager,
 )
@@ -758,6 +761,28 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
                     }
                     for state_code, lock_summary in all_current_lock_summaries.items()
                 }
+            ),
+            HTTPStatus.OK,
+        )
+
+    @bp.route(
+        "/api/ingest_operations/get_latest_raw_data_imports/<state_code_str>/<instance_str>/<file_tag_str>"
+    )
+    def _get_latest_raw_data_import_runs(
+        state_code_str: str,
+        instance_str: str,
+        file_tag_str: str,
+    ) -> Tuple[Response, HTTPStatus]:
+        state_code = StateCode(state_code_str)
+        raw_data_instance = DirectIngestInstance(instance_str)
+
+        latest_raw_data_import_runs = DirectIngestRawFileImportManager(
+            state_code.value, raw_data_instance
+        ).get_n_most_recent_imports_for_file_tag(file_tag_str, n=100)
+
+        return (
+            jsonify(
+                [run.for_api() for run in latest_raw_data_import_runs],
             ),
             HTTPStatus.OK,
         )

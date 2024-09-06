@@ -106,6 +106,7 @@ export {
   getCurrentIngestInstanceStatusInformation,
   getIngestQueuesState,
   getIngestRawFileProcessingStatus,
+  getLatestRawDataImportRunsForFileTag,
   triggerTaskScheduler,
   updateIngestQueuesState,
 } from "./IngestOperations";
