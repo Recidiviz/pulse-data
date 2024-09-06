@@ -19,11 +19,9 @@ pipline for the given state.
 
 Usage:
     python -m recidiviz.tools.ingest.development.run_sandbox_ingest_pipeline \
-        --project recidiviz-staging \
-        --state_code US_AR \
-        --output_sandbox_prefix ndamiani20240904 \
-        --pre_normalization_only True \
-        --ingest_views_to_run "incarceration_period"
+        --project PROJECT_ID \
+        --state_code US_XX \
+        --output_sandbox_prefix output_sandbox_prefix \
         [--raw_data_source_instance INSTANCE] \
         [--skip_build True/False] 
 
