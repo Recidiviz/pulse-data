@@ -45,6 +45,7 @@ class WorkflowsSupervisionStaffETLDelegate(WorkflowsFirestoreETLDelegate):
             "surname": person_name_case(data.get("surname", "")),
             "roleSubtype": data.get("role_subtype"),
             "supervisorExternalId": data.get("supervisor_external_id"),
+            "pseudonymizedId": data.get("pseudonymized_id"),
         }
 
         return data["id"], new_document

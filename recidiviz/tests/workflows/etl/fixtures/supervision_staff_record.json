@@ -1,4 +1,4 @@
-{"id": "100", "state_code":  "US_XX", "email":  "Jjjj3@xx.gov", "district":  "District 1", "given_names": "JOEY", "surname": "JOE-JOE JR. III", "role_subtype": "SUPERVISION_OFFICER", "supervisor_external_id": "SUPER123"}
-{"id": "101", "state_code":  "US_XX", "email":  "sal.sli@xx.gov", "district":  "District 2", "given_names": "SALLY S.", "surname": "SLITHERS", "role_subtype": "SUPERVISION_OFFICER_SUPERVISOR"}
-{"id": "102", "state_code":  "US_XX", "district":  "District 3", "given_names": "FOGHORN", "surname": "LEGHORN", "supervisor_external_id": "13857943"}
-{"id": "103", "state_code":  "US_XX", "district":  "District 4"}
+{"id": "100", "state_code":  "US_XX", "email":  "Jjjj3@xx.gov", "district":  "District 1", "given_names": "JOEY", "surname": "JOE-JOE JR. III", "role_subtype": "SUPERVISION_OFFICER", "supervisor_external_id": "SUPER123", "pseudonymized_id": "p100"}
+{"id": "101", "state_code":  "US_XX", "email":  "sal.sli@xx.gov", "district":  "District 2", "given_names": "SALLY S.", "surname": "SLITHERS", "role_subtype": "SUPERVISION_OFFICER_SUPERVISOR", "pseudonymized_id": "p101"}
+{"id": "102", "state_code":  "US_XX", "district":  "District 3", "given_names": "FOGHORN", "surname": "LEGHORN", "supervisor_external_id": "13857943", "pseudonymized_id": "p102"}
+{"id": "103", "state_code":  "US_XX", "district":  "District 4", "pseudonymized_id": "p103"}
