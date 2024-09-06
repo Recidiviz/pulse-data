@@ -222,8 +222,6 @@ def county_jail_supervision_level(raw_text: str) -> StateSupervisionLevel:
 
 def parse_sentencing_authority(raw_text: str) -> StateSentencingAuthority:
     """Maps sentencing authroity"""
-    if raw_text is None:
-        raise ValueError("This parser should never be called on missing raw text.")
     if raw_text == "Idaho":
         return StateSentencingAuthority.STATE
     return StateSentencingAuthority.OTHER_STATE

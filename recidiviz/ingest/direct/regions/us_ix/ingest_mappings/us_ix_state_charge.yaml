@@ -1,0 +1,90 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_incarceration_incidents`
+# to the corresponding Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  - OffenderId
+  - OffenseId
+  - Count
+  - OffenseTypeDesc
+  - Offense_statute
+  - VIOLENT_OFFENSE_IND
+  - JudgeLegistId
+  - FirstName
+  - MiddleName
+  - LastName
+  - CountyId
+  - OffenseDate
+  - SentenceId
+  - ChargeOutcomeTypeDesc
+unused_columns: []
+variables:
+  - violent_bool:
+      $equal:
+        - VIOLENT_OFFENSE_IND
+        - $literal("1")
+  - sex_offense_bool:
+      $conditional:
+        - $if:
+            $not_null: Offense_statute
+          $then:
+            $custom:
+              $function: us_ix_custom_parsers.parse_charge_is_sex_offense
+              $args:
+                statute: Offense_statute
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: OffenderId
+          id_type: $literal("US_IX_DOC")
+    sentences:
+      - StateSentence:
+          external_id: SentenceId
+          charges:
+            - StateChargeV2:
+                external_id: OffenseId
+                offense_date: OffenseDate
+                county_code: CountyId
+                statute: Offense_statute
+                description: OffenseTypeDesc
+                is_violent: $variable(violent_bool)
+                is_sex_offense: $variable(sex_offense_bool)
+                counts: Count
+                judge_external_id: JudgeLegistId
+                judge_full_name:
+                  $json_dict:
+                    given_names: FirstName
+                    middle_name: MiddleName
+                    surname: LastName
+                status:
+                  $enum_mapping:
+                    $raw_text: ChargeOutcomeTypeDesc
+                    $mappings:
+                      StateChargeV2Status.CONVICTED:
+                        - Convicted
+                      StateChargeV2Status.PENDING:
+                        - Court Retains Jurisdiction
+                      StateChargeV2Status.ACQUITTED:
+                        - Discharged
+                      StateChargeV2Status.DROPPED:
+                        - Dismissed
+                        - Expired
+                        - Vacated Conviction
+                        - Relinquished
+                        - Revoked
+                        - Suspended Sent
+                        - Vacated Sentence
+                      StateChargeV2Status.INTERNAL_UNKNOWN:
+                        - Amended
+                        - Unsupervised
+                        - Interstate Probation
+                        - Reduced to a Misdemeanor
+                        - WHJ
+                        - Interstate Parole
+                        - Correctional Compact
+                        - Satisfied
+                        - Sealed
+                      StateChargeV2Status.ADJUDICATED:
+                        - Released to Probation
+                        - Commuted Sentence
