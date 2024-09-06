@@ -135,6 +135,7 @@ export type RawDataFileTagImport = {
   updateDatetime: string;
   importRunStart: string;
   importStatus: RawDataImportStatus;
+  importStatusDescription: string;
   historicalDiffsActive: boolean;
   rawRowCount: number;
   isInvalidated: boolean;
