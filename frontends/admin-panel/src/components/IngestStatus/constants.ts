@@ -148,9 +148,12 @@ export type RawFileConfigSummary = {
   updateCadence: string;
   encoding: string;
   separator: string;
+  lineTerminator: string;
   alwaysHistoricalExport: boolean;
   isCodeFile: boolean;
   isChunkedFile: boolean;
+  isPruned: boolean;
+  inferColumns: boolean;
 };
 
 // --- raw data resource lock related constants ----------------------------------------

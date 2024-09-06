@@ -526,6 +526,7 @@ class DirectIngestRawFileConfig:
         """A comma-separated string representation of the primary keys"""
         return ", ".join(self.primary_key_cols)
 
+    # TODO(#28239) remove this once raw data import dag is fully rolled out
     def encodings_to_try(self) -> List[str]:
         """Returns an ordered list of encodings we should try for this file."""
         return [self.encoding] + [
@@ -689,9 +690,12 @@ class DirectIngestRawFileConfig:
             "updateCadence": self.update_cadence.value,
             "encoding": self.encoding,
             "separator": self.separator,
+            "lineTerminator": self.line_terminator,
             "alwaysHistoricalExport": self.always_historical_export,
             "isCodeFile": self.is_code_file,
             "isChunkedFile": self.is_chunked_file,
+            "isPruned": self.is_exempt_from_raw_data_pruning(),
+            "inferColumns": self.infer_columns_from_config,
         }
 
     @classmethod
