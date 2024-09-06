@@ -41,6 +41,13 @@ resource "google_project_iam_member" "bigquery_datatransfer_admin" {
   member = "serviceAccount:${google_service_account.bigquery_scheduled_queries.email}"
 }
 
+# Link experiments_metadata as a module
+module "experiments_metadata" {
+  source      = "./modules/big_query_dataset"
+  dataset_id  = "experiments_metadata"
+  description = "This dataset contains the metadata for our experiments."
+}
+
 # Link static_reference_tables as a module
 module "static_reference_tables" {
   source      = "./modules/big_query_dataset"
