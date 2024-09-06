@@ -24,6 +24,7 @@ from types import ModuleType
 from recidiviz.calculator.query.state.dataset_config import (
     AUTH0_EVENTS,
     AUTH0_PROD_ACTION_LOGS,
+    EXPORT_ARCHIVES_DATASET,
     PULSE_DASHBOARD_SEGMENT_DATASET,
 )
 from recidiviz.common.constants.states import StateCode
@@ -236,6 +237,9 @@ def collect_externally_managed_source_table_collections(
             only_check_required_columns=True,
         ),
         PULSE_DASHBOARD_SEGMENT_DATASET: SourceTableCollectionValidationConfig(
+            only_check_required_columns=True,
+        ),
+        EXPORT_ARCHIVES_DATASET: SourceTableCollectionValidationConfig(
             only_check_required_columns=True,
         ),
     }
