@@ -26,6 +26,10 @@ US_AR:
   RECIDIVIZ_REFERENCE_OFFICE_LOCATIONS:
     reference_views.us_ar_location_metadata: |-
       Used to pull in location reference data.
+  RECIDIVIZ_REFERENCE_TARGET_STATUTES:
+    task_eligibility_criteria_us_ar.sentence_statute_eligible_for_admin_transfer:
+      |-
+      Used to map raw statutes to statutes in the semi-official Target Offenses list.
   RELATEDPARTY:
     reference_views.us_ar_location_metadata: |-
       Used to pull in location reference data.
