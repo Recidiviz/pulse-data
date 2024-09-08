@@ -29,6 +29,8 @@ from recidiviz.task_eligibility.criteria.general import (
     serving_incarceration_sentence_of_less_than_6_years,
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_ar import (
+    in_county_jail_backup,
+    not_on_90_day_revocation,
     sentence_statute_eligible_for_admin_transfer,
 )
 from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
@@ -47,6 +49,8 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     description=_DESCRIPTION,
     candidate_population_view_builder=incarceration_population.VIEW_BUILDER,
     criteria_spans_view_builders=[
+        in_county_jail_backup.VIEW_BUILDER,
+        not_on_90_day_revocation.VIEW_BUILDER,
         sentence_statute_eligible_for_admin_transfer.VIEW_BUILDER,
         serving_incarceration_sentence_of_less_than_6_years.VIEW_BUILDER,
     ],
