@@ -38,6 +38,10 @@ from recidiviz.pipelines.ingest.state.generate_primary_keys import (
     generate_primary_keys_for_root_entity_tree,
     string_representation,
 )
+from recidiviz.pipelines.ingest.state.normalization.infer_sentence_groups import (
+    InferredGroupBuilder,
+    get_normalized_inferred_sentence_groups,
+)
 from recidiviz.pipelines.ingest.state.normalization.normalize_sentences import (
     get_normalized_sentence_groups,
     get_normalized_sentences,
@@ -375,6 +379,7 @@ def test_person_001_sentencing_normalization() -> None:
         imposed_date=datetime.date(1989, 9, 25),
         sentencing_authority=StateSentencingAuthority.COUNTY,
         sentence_group_external_id="TEST_001-19900117",
+        sentence_inferred_group_id=None,
         is_life=False,
         state_code="US_MO",
         county_code="US_MO_ST_LOUIS_COUNTY",
@@ -470,6 +475,7 @@ def test_person_001_sentencing_normalization() -> None:
         imposed_date=datetime.date(2004, 2, 24),
         sentencing_authority=StateSentencingAuthority.COUNTY,
         sentence_group_external_id="TEST_001-20040224",
+        sentence_inferred_group_id=None,
         is_life=False,
         state_code="US_MO",
         county_code="US_MO_ST_LOUIS_COUNTY",
@@ -579,6 +585,7 @@ def test_person_001_sentencing_normalization() -> None:
         imposed_date=datetime.date(2004, 11, 5),
         sentencing_authority=StateSentencingAuthority.COUNTY,
         sentence_group_external_id="TEST_001-20040224",
+        sentence_inferred_group_id=None,
         is_life=False,
         state_code="US_MO",
         county_code="US_MO_ST_LOUIS_COUNTY",
@@ -632,6 +639,29 @@ def test_person_001_sentencing_normalization() -> None:
     NORMALIZED_CHARGE_001_20040224_2.sentences.append(
         NORMALIZED_SENTENCE_001_20040224_2
     )
+
+    INFERRED_GROUP_FROM_19900117 = (
+        InferredGroupBuilder.build_inferred_group_from_sentences(
+            [NORMALIZED_SENTENCE_001_19900117_1]
+        )
+    )
+    # TODO(#33062) Uncomment when we add the ID
+    # NORMALIZED_SENTENCE_001_19900117_1.sentence_inferred_group_id = (
+    #     INFERRED_GROUP_FROM_19900117.sentence_inferred_group_id
+    # )
+    INFERRED_GROUP_FROM_20040224 = (
+        InferredGroupBuilder.build_inferred_group_from_sentences(
+            [NORMALIZED_SENTENCE_001_20040224_1, NORMALIZED_SENTENCE_001_20040224_2]
+        )
+    )
+    # TODO(#33062) Uncomment when we add the ID
+    # NORMALIZED_SENTENCE_001_20040224_1.sentence_inferred_group_id = (
+    #     INFERRED_GROUP_FROM_20040224.sentence_inferred_group_id
+    # )
+    # NORMALIZED_SENTENCE_001_20040224_2.sentence_inferred_group_id = (
+    #     INFERRED_GROUP_FROM_20040224.sentence_inferred_group_id
+    # )
+
     expected_normalized_sentences = [
         set_backedges(NORMALIZED_SENTENCE_001_19900117_1),
         set_backedges(NORMALIZED_SENTENCE_001_20040224_1),
@@ -643,17 +673,17 @@ def test_person_001_sentencing_normalization() -> None:
         ),
         key=lambda s: s.external_id,
     )
-    assert actual_normalized_sentences == expected_normalized_sentences
-
     NORMALIZED_SG_001_19900117 = normalized_entities.NormalizedStateSentenceGroup(
         state_code="US_MO",
         external_id="TEST_001-19900117",
         sentence_group_id=assert_type(SG_001_19900117.sentence_group_id, int),
+        sentence_inferred_group_id=None,  # INFERRED_GROUP_FROM_19900117.sentence_inferred_group_id,
     )
     NORMALIZED_SG_001_20040224 = normalized_entities.NormalizedStateSentenceGroup(
         state_code="US_MO",
         external_id="TEST_001-20040224",
         sentence_group_id=assert_type(SG_001_20040224.sentence_group_id, int),
+        sentence_inferred_group_id=None,  # INFERRED_GROUP_FROM_20040224.sentence_inferred_group_id,
     )
     expected_normalized_sentence_groups = [
         set_backedges(NORMALIZED_SG_001_19900117),
@@ -663,4 +693,19 @@ def test_person_001_sentencing_normalization() -> None:
         get_normalized_sentence_groups(person_001.sentence_groups),
         key=lambda s: s.external_id,
     )
+
+    expected_inferred_groups = sorted(
+        [
+            set_backedges(INFERRED_GROUP_FROM_19900117),
+            set_backedges(INFERRED_GROUP_FROM_20040224),
+        ],
+        key=lambda g: g.external_id,  # type: ignore
+    )
+    actual_inferred_groups = sorted(
+        get_normalized_inferred_sentence_groups(actual_normalized_sentences),
+        key=lambda g: g.external_id,
+    )
+
+    assert actual_normalized_sentences == expected_normalized_sentences
     assert actual_normalized_sentence_groups == expected_normalized_sentence_groups
+    assert actual_inferred_groups == expected_inferred_groups

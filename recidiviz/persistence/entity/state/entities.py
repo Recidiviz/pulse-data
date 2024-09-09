@@ -2722,6 +2722,9 @@ class StateSentenceGroup(BuildableAttr, DefaultableAttr, HasExternalIdEntity):
     It begins with an individual's first sentence imposition and ends at liberty.
     This is a state agnostic term used by Recidiviz for a state
     specific administrative phenomena.
+
+    StateSentenceGroup entities must be associated with a sentence
+    (StateSentence.sentence_external_id) to be hydrated.
     """
 
     state_code: str = attr.ib(validator=attr_validators.is_str)

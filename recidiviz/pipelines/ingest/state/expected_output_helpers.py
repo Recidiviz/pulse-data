@@ -83,10 +83,9 @@ def get_expected_output_normalized_entity_classes(
         normalized_entities.NormalizedStateSentence
         in expected_normalized_entity_classes
     ):
-        # TODO(#32306): Add NormalizedStateSentenceGroupInferred to
-        #  expected_normalized_entity_classes here once that entity exists and we're
-        #  producing these as part of normalization.
-        pass
+        expected_normalized_entity_classes.add(
+            normalized_entities.NormalizedStateSentenceInferredGroup
+        )
 
     return expected_normalized_entity_classes
 

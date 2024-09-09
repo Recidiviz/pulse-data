@@ -211,7 +211,9 @@ class TestWriteRootEntitiesToBQ(BigQueryEmulatorTestCase):
 
     def test_write_entities_to_bq_normalized_state_full_trees(self) -> None:
         output_dataset_id = "my_prefix_us_dd_normalized_state_new"
-        output_table_ids = sorted(get_bq_schema_for_entities_module(state_entities))
+        output_table_ids = sorted(
+            get_bq_schema_for_entities_module(normalized_entities)
+        )
         _ = (
             self.test_pipeline
             | beam.Create(

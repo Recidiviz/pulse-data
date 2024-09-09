@@ -38,21 +38,6 @@ from recidiviz.pipelines.ingest.state.constants import ExternalIdKey
 from recidiviz.utils.types import assert_type, non_optional
 
 
-def string_representation(external_id_keys: Set[ExternalIdKey]) -> str:
-    """Get a string representation of a set of external ids."""
-    return ",".join(
-        sorted(
-            _string_representation_of_key(external_id_key)
-            for external_id_key in external_id_keys
-        )
-    )
-
-
-def _string_representation_of_key(external_id_key: ExternalIdKey) -> str:
-    external_id, external_id_type = external_id_key
-    return f"{external_id_type}|{external_id}"
-
-
 def generate_primary_keys_for_root_entity_tree(
     root_primary_key: PrimaryKey,
     root_entity: RootEntity,
@@ -78,7 +63,7 @@ def generate_primary_keys_for_root_entity_tree(
                         }
                     ),
                     state_code,
-                ),
+                )
             )
         elif isinstance(entity, ExternalIdEntity):
             entity.set_id(
@@ -115,3 +100,19 @@ def generate_primary_keys_for_root_entity_tree(
             )
             queue.extend(entity.get_field_as_list(field))
     return root_entity
+
+
+# TODO(#32690) Consolidate PK generation
+def string_representation(external_id_keys: Set[ExternalIdKey]) -> str:
+    """Get a string representation of a set of external ids."""
+    return ",".join(
+        sorted(
+            _string_representation_of_key(external_id_key)
+            for external_id_key in external_id_keys
+        )
+    )
+
+
+def _string_representation_of_key(external_id_key: ExternalIdKey) -> str:
+    external_id, external_id_type = external_id_key
+    return f"{external_id_type}|{external_id}"

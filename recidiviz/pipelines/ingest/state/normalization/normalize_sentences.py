@@ -230,6 +230,7 @@ def normalize_sentence(
         ),
         sentencing_authority_raw_text=sentence.sentencing_authority_raw_text,
         sentence_group_external_id=sentence.sentence_group_external_id,
+        sentence_inferred_group_id=None,
         imposed_date=sentence.imposed_date,
         initial_time_served_days=sentence.initial_time_served_days,
         is_life=sentence.is_life,
@@ -243,8 +244,6 @@ def normalize_sentence(
         charges=normalized_charges,
         sentence_lengths=normalize_sentence_lengths(sentence.sentence_lengths),
         sentence_status_snapshots=normalized_snapshots,
-        # TODO(#32304): Normalize sentence_serving_periods
-        # TODO(#32306): Create sentence_group_inferred from group and serving periods
     )
 
 
@@ -320,6 +319,7 @@ def get_normalized_sentence_groups(
                     sentence_group_lengths=normalize_group_lengths(
                         group.sentence_group_lengths
                     ),
+                    sentence_inferred_group_id=None,
                 )
             ),
             NormalizedStateSentenceGroup,

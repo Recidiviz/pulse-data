@@ -54,7 +54,6 @@ def get_bq_schema_for_entities_module(
         table_to_schema[entity_cls.get_table_id()] = _get_bq_schema_for_entity_class(
             entities_module, entity_cls
         )
-
     return table_to_schema
 
 

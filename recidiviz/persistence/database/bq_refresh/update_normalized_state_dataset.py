@@ -68,9 +68,10 @@ def _build_single_source_table_select_statement(
     """
     input_table_columns = {f.name for f in input_source_table.schema_fields}
     columns_strs = (
-        column.name
-        if column.name in input_table_columns
-        else f"CAST(NULL AS {column.field_type}) AS {column.name}"
+        column.name if column.name in input_table_columns
+        # TODO(#33060) INTEGER field alias is not supported by the emulator
+        # The underlying type is INT64: https://cloud.google.com/bigquery/docs/reference/standard-sql/data-types
+        else f"CAST(NULL AS {'INT64' if column.field_type == 'INTEGER' else column.field_type}) AS {column.name}"
         for column in output_table_schema
     )
     project_specific_address = input_source_table.address.to_project_specific_address(
@@ -156,10 +157,17 @@ def _normalized_input_source_tables_by_output_table(
     all_candidate_source_tables = _get_all_candidate_source_tables()
     result = {}
     for table in normalized_state_output_source_tables:
+        # TODO(#29519): The only function that uses the output of
+        # this function will be deleted when we move the
+        # `normalized_state` dataset refresh into the view graph.
+        # The updated normalization steps won't need to do this
+        if table.address.table_id == "state_sentence_inferred_group":
+            continue
         output_address = table.address
-
         input_tables_by_state = {}
         for state_code in states:
+            # state_sentence_inferred_group does not have an input dataset,
+            # but input datasets are needed for the big union all view builder at the end.
             input_table_dataset_id = _get_normalized_input_dataset_for_table(
                 state_code, table.address.table_id
             )
@@ -202,6 +210,10 @@ def get_normalized_state_view_builders(
             ],
         )
         for table in normalized_state_output_source_tables
+        # TODO(#29519): The only function that uses the output here will be deleted when
+        # move the `normalized_state` dataset refresh into the view graph.
+        # The updated normalization steps won't need to do this
+        if table.address.table_id != "state_sentence_inferred_group"
     ]
 
 

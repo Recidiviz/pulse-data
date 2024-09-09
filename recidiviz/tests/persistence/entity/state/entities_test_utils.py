@@ -815,7 +815,7 @@ def generate_full_graph_state_person(
 
     sentence_group = entities.StateSentenceGroup(
         state_code="US_XX",
-        external_id="SG",
+        external_id=assert_type(sentence.sentence_group_external_id, str),
     )
     sentence_group_length = entities.StateSentenceGroupLength(
         state_code="US_XX",
@@ -1361,6 +1361,7 @@ def generate_full_graph_normalized_state_person() -> normalized_entities.Normali
         state_code="US_XX",
         external_id="SENTENCE_EXTERNAL_ID_1",
         sentence_group_external_id="SENTENCE_GROUP_EXTERNAL_ID_1",
+        sentence_inferred_group_id=None,
         sentence_metadata='{"BS_CCI": "", "BS_CRQ": "0", "SENTENCE_FLAG": "SENTENCE: 120 DAY"}',
         sentencing_authority=StateSentencingAuthority.STATE,
         sentence_type=StateSentenceType.STATE_PRISON,
@@ -1417,8 +1418,14 @@ def generate_full_graph_normalized_state_person() -> normalized_entities.Normali
 
     sentence_group = normalized_entities.NormalizedStateSentenceGroup(
         sentence_group_id=1,
+        sentence_inferred_group_id=None,
+        external_id=assert_type(sentence.sentence_group_external_id, str),
         state_code="US_XX",
-        external_id="SG",
+    )
+    sentence_inferred_group = normalized_entities.NormalizedStateSentenceInferredGroup(
+        sentence_inferred_group_id=1,
+        external_id=sentence.external_id,
+        state_code="US_XX",
     )
     sentence_group_length = normalized_entities.NormalizedStateSentenceGroupLength(
         sentence_group_length_id=1,
@@ -1536,6 +1543,7 @@ def generate_full_graph_normalized_state_person() -> normalized_entities.Normali
         sentences=[sentence],
         supervision_periods=[supervision_period],
         sentence_groups=[sentence_group],
+        sentence_inferred_groups=[sentence_inferred_group],
         drug_screens=[drug_screen],
         employment_periods=[employment_period],
         address_periods=[address_period],
