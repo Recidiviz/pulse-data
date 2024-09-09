@@ -29,6 +29,7 @@ source that actually creates the id in the real world.
 
 US_AR_OFFENDERID = "US_AR_OFFENDERID"
 US_AR_PARTYID = "US_AR_PARTYID"
+US_AR_ADCNUMBER = "US_AR_ADCNUMBER"
 
 # Anonymized person-ID that maps to the ID from Iowa's public data tables
 US_IA_IGOV_DEIDENTIFIED = "US_IA_IGOV_DEIDENTIFIED"
