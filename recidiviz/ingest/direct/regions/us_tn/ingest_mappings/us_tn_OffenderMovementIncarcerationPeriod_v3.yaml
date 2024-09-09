@@ -419,6 +419,7 @@ output:
                         - FAPA-MANDE # Mandatory detainer
                         - FAPA-MEDFU # Facility to Parole for Medical Furlough
                         - FAPA-MSELG # Released to Parole with MANDATORY SUPERVISION ELIGIBLE (MSELG) code
+                        - FAPA-MSIEL # Released to Parole - ANDATORY SUPERVISION LEVEL INELIGIBLE
 
                       StateIncarcerationPeriodReleaseReason.COMMUTED:
                         - FAPA-COMMT # Facility to parole - Commutation
