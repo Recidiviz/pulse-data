@@ -1,0 +1,16 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: ContactLocationDescription
+file_description: |-
+  A code table that stores information on contact location descriptions.
+data_classification: source
+primary_key_cols:
+  - Contact_Location
+columns:
+  - name: Contact_Location
+    description: |-
+      Contact location code.
+  - name: Location_Description
+    description: |-
+      Contact location description.
+update_cadence: IRREGULAR
+is_code_file: True
