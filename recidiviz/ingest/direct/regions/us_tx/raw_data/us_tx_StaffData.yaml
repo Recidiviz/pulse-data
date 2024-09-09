@@ -17,6 +17,9 @@ columns:
     is_pii: True
     description: |-
       Email assigned to officer.
+    external_id_type: US_TX_EMAIL
+    field_type: staff_external_id
+    is_primary_for_external_id_type: True
   - name: Full_Name
     is_pii: True
     description: |-
