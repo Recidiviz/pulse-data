@@ -47,14 +47,15 @@ REQUIRED_PACKAGES = [
     "google-cloud-logging",
     "google-cloud-bigquery-datatransfer",
     # Must stay up-to-date with latest google-cloud-tasks version in the Pipfile
-    "google-cloud-tasks==2.14.1",
+    "google-cloud-tasks==2.16.5",
     "html5lib",
     "lxml",
     "iteration-utilities",
     "jsonschema",
     "more-itertools",
     "oauth2client",
-    "opentelemetry-api",
+    # TODO(open-telemetry/opentelemetry-python#3959): Unpin opentelemetry when cost increase is fixed.
+    "opentelemetry-api==1.22.0",
     "opentelemetry-sdk",
     "opentelemetry-exporter-gcp-monitoring",
     "opentelemetry-exporter-gcp-trace",
@@ -63,9 +64,8 @@ REQUIRED_PACKAGES = [
     "opentelemetry-instrumentation-grpc",
     "opentelemetry-instrumentation-redis",
     "opentelemetry-instrumentation-requests",
-    # TODO(open-telemetry/opentelemetry-python-contrib#2085): Unpin once 0.43b0 is released
-    "opentelemetry-instrumentation-sqlalchemy==0.41b0",
-    "opentelemetry-semantic-conventions==0.41b0",
+    "opentelemetry-instrumentation-sqlalchemy==0.43b0",
+    "opentelemetry-semantic-conventions==0.43b0",
     # Must stay up-to-date with latest protobuf version in the Pipfile
     "protobuf==5.28.0",
     # Needed for thefuzz to avoid "Using slow pure-python SequenceMatcher" warning

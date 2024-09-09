@@ -39,7 +39,15 @@ class TestSetupFilePinnedDependencies(unittest.TestCase):
     """Tests that dependencies pinned at certain versions are pinned at the version in the Pipfile.lock file."""
 
     def test_setup_file_pinned_dependencies(self) -> None:
-        pinned_dependencies = ["protobuf", "dill", "sqlalchemy"]
+        pinned_dependencies = [
+            "protobuf",
+            "dill",
+            "sqlalchemy",
+            "google-cloud-tasks",
+            "opentelemetry-api",
+            "opentelemetry-instrumentation-sqlalchemy",
+            "opentelemetry-semantic-conventions",
+        ]
 
         for dependency in pinned_dependencies:
             pipfile_dependency = pipfile_version_for_dependency(dependency)
