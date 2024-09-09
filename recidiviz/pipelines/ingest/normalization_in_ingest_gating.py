@@ -36,6 +36,7 @@ def should_run_normalization_in_ingest(state_code: StateCode) -> bool:
         return state_code in prod_launched_states
     staging_launched_states: set[StateCode] = {
         *prod_launched_states,
+        StateCode.US_AR,
         StateCode.US_AZ,
         StateCode.US_CA,
         StateCode.US_CO,
