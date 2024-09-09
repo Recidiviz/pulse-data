@@ -24,3 +24,36 @@ output:
             - StateChargeV2:
                 external_id: CHARGE_ID
                 status: $literal_enum(StateChargeV2Status.INTERNAL_UNKNOWN)
+    supervision_sentences:
+      - $conditional:
+          - $if:
+              $custom:
+                $function: us_dd_custom_parsers.starts_with
+                $args:
+                  string: SENTENCE_ID
+                  prefix: $literal("S")
+            $then:
+              StateSupervisionSentence:
+                external_id: SENTENCE_ID
+                status: $literal_enum(StateSentenceStatus.INTERNAL_UNKNOWN)
+                charges:
+                  - StateCharge:
+                      external_id: CHARGE_ID
+                      status: $literal_enum(StateChargeStatus.INTERNAL_UNKNOWN)
+    incarceration_sentences:
+      - $conditional:
+          - $if:
+              $custom:
+                $function: us_dd_custom_parsers.starts_with
+                $args:
+                  string: SENTENCE_ID
+                  prefix: $literal("I")
+            $then:
+              StateIncarcerationSentence:
+                external_id: SENTENCE_ID
+                status: $literal_enum(StateSentenceStatus.INTERNAL_UNKNOWN)
+                incarceration_type: $literal_enum(StateIncarcerationType.STATE_PRISON)
+                charges:
+                  - StateCharge:
+                      external_id: CHARGE_ID
+                      status: $literal_enum(StateChargeStatus.INTERNAL_UNKNOWN)

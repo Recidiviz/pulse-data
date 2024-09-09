@@ -131,6 +131,9 @@ class TestExpectedOutputHelpers(unittest.TestCase):
             {
                 entities.StatePerson,
                 entities.StatePersonExternalId,
+                entities.StateIncarcerationSentence,
+                entities.StateSupervisionSentence,
+                entities.StateCharge,
                 entities.StateSentence,
                 entities.StateChargeV2,
                 entities.StateIncarcerationPeriod,
