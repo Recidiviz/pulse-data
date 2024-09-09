@@ -22,17 +22,11 @@ from typing import Any, Callable, Dict, Generic, Optional, Type, Union
 
 import attr
 
-from recidiviz.common.attr_utils import (
-    is_attr_decorated,
-    is_bool,
-    is_date,
-    is_datetime,
-    is_enum,
-    is_forward_ref,
-    is_int,
-    is_list,
-    is_str,
+from recidiviz.common.attr_mixins import (
+    BuildableAttrFieldType,
+    attribute_field_type_reference_for_class,
 )
+from recidiviz.common.attr_utils import is_attr_decorated
 from recidiviz.common.str_field_utils import (
     NormalizedJSON,
     normalize,
@@ -97,7 +91,9 @@ def entity_deserialize(
         )
 
     def convert_field_value(
-        field: attr.Attribute, field_value: DeserializableEntityFieldValue
+        field_name: str,
+        field_type: BuildableAttrFieldType,
+        field_value: DeserializableEntityFieldValue,
     ) -> Any:
         if field_value is None:
             return None
@@ -106,75 +102,85 @@ def entity_deserialize(
             if not field_value or not field_value.strip():
                 return None
 
-        if field.name in converter_overrides:
-            converter = converter_overrides[field.name]
+        if field_name in converter_overrides:
+            converter = converter_overrides[field_name]
             if not isinstance(field_value, converter.field_type):
                 raise ValueError(
-                    f"Found converter for field [{field.name}] in the converter_overrides, but expected "
+                    f"Found converter for field [{field_name}] in the converter_overrides, but expected "
                     f"field type [{converter.field_type}] does not match actual field type "
                     f"[{type(field_value)}]"
                 )
             return converter.convert(field_value)
 
         if isinstance(field_value, NormalizedJSON):
-            if is_str(field):
+            if field_type == BuildableAttrFieldType.STRING:
                 return field_value.normalized_value
 
         if isinstance(field_value, str):
-            if is_str(field):
+            if field_type == BuildableAttrFieldType.STRING:
                 return normalize(field_value)
-            if is_datetime(field):
+            if field_type == BuildableAttrFieldType.DATETIME:
                 # Pick an arbitrary from_dt so parsing is deterministic (used for
                 # parsing strings like 10Y 1D into dates).
                 return parse_datetime(
                     field_value, from_dt=datetime.datetime(2020, 1, 1)
                 )
-            if is_date(field):
+            if field_type == BuildableAttrFieldType.DATE:
                 # Pick an arbitrary from_dt so parsing is deterministic (used for
                 # parsing strings like 10Y 1D into dates).
                 return parse_date(field_value, from_dt=datetime.datetime(2020, 1, 1))
-            if is_int(field):
+            if field_type == BuildableAttrFieldType.INTEGER:
                 return parse_int(field_value)
-            if is_bool(field):
+            if field_type == BuildableAttrFieldType.BOOLEAN:
                 return parse_bool(field_value)
 
         if isinstance(field_value, Enum):
-            if is_enum(field):
+            if field_type == BuildableAttrFieldType.ENUM:
                 return field_value
 
         if isinstance(field_value, datetime.datetime):
-            if is_datetime(field):
+            if field_type == BuildableAttrFieldType.DATETIME:
                 return field_value
 
         if isinstance(field_value, datetime.date):
-            if is_date(field):
+            if field_type == BuildableAttrFieldType.DATE:
                 return field_value
 
         if isinstance(field_value, int):
-            if is_int(field):
+            if field_type == BuildableAttrFieldType.INTEGER:
                 return field_value
 
         if isinstance(field_value, bool):
-            if is_bool(field):
+            if field_type == BuildableAttrFieldType.BOOLEAN:
                 return field_value
 
-        if is_forward_ref(field) or is_list(field):
+        if field_type in (
+            BuildableAttrFieldType.FORWARD_REF,
+            BuildableAttrFieldType.LIST,
+        ):
             return field_value
 
         raise ValueError(
-            f"Unsupported field {field.name} with value: "
+            f"Unsupported field {field_name} with value: "
             f"{field_value} ({type(field_value)})."
         )
 
     converted_args = {}
     fields = set()
-    for field_name, field_ in attr.fields_dict(cls).items():
-        if field_name in kwargs:
-            converted_args[field_name] = convert_field_value(field_, kwargs[field_name])
-        if field_name in defaults:
-            if converted_args.get(field_name, None) is None:
-                converted_args[field_name] = defaults[field_name]
-        fields.add(field_name)
+
+    class_reference = attribute_field_type_reference_for_class(cls)
+
+    for field_name_ in class_reference.fields:
+        if field_name_ in kwargs:
+            converted_args[field_name_] = convert_field_value(
+                field_name=field_name_,
+                field_type=class_reference.get_field_info(field_name_).field_type,
+                field_value=kwargs[field_name_],
+            )
+        if field_name_ in defaults:
+            if converted_args.get(field_name_, None) is None:
+                converted_args[field_name_] = defaults[field_name_]
+        fields.add(field_name_)
 
     unexpected_kwargs = set(kwargs.keys()).difference(fields)
     if unexpected_kwargs:
