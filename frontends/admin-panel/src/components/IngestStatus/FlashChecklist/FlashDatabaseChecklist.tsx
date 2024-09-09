@@ -17,6 +17,8 @@
 import {
   Alert,
   Button,
+  Card,
+  Divider,
   message,
   Modal,
   PageHeader,
@@ -25,13 +27,13 @@ import {
   Steps,
 } from "antd";
 import * as React from "react";
-import { useHistory } from "react-router-dom";
+import { useHistory } from "react-router";
 
 import {
   changeIngestInstanceStatus,
   fetchIngestStateCodes,
   updateIngestQueuesState,
-} from "../AdminPanelAPI";
+} from "../../../AdminPanelAPI";
 import {
   copyRawDataBetweenInstances,
   copyRawDataToBackup,
@@ -43,17 +45,20 @@ import {
   purgeIngestQueues,
   transferRawDataMetadataToNewInstance,
   triggerCalculationDAGForState,
-} from "../AdminPanelAPI/IngestOperations";
-import { StateCodeInfo } from "./general/constants";
+} from "../../../AdminPanelAPI/IngestOperations";
+import { StateCodeInfo } from "../../general/constants";
+import { fetchCurrentIngestInstanceStatus } from "../../Utilities/IngestInstanceUtilities";
+import StateSelector from "../../Utilities/StateSelector";
 import {
   DirectIngestInstance,
   IngestRawFileProcessingStatus,
   QueueState,
-} from "./IngestStatus/constants";
-import { fetchCurrentIngestInstanceStatus } from "./Utilities/IngestInstanceUtilities";
-import StateSelector from "./Utilities/StateSelector";
+} from "../constants";
 
-interface StyledStepProps extends StepProps {
+interface StyledStepContent {
+  // Text to be displayed for this step
+  description: JSX.Element;
+
   // Title of button that actually performs an action. If not present,
   // only a 'Mark done' button will be present for a given step.
   actionButtonTitle?: string;
@@ -66,6 +71,10 @@ interface StyledStepProps extends StepProps {
   // Whether the action button on a step should be enabled. The Mark Done button
   // is always enabled.
   actionButtonEnabled?: boolean;
+}
+
+interface ContentStepProps extends StepProps {
+  content: JSX.Element;
 }
 
 interface CodeBlockProps {
@@ -141,7 +150,8 @@ const ChecklistSectionHeader = ({
 );
 
 interface ChecklistSectionProps {
-  children: React.ReactNode;
+  children?: React.ReactNode;
+  items: ContentStepProps[];
   headerContents: React.ReactNode;
   currentStep: number;
   currentStepSection: number;
@@ -150,32 +160,50 @@ interface ChecklistSectionProps {
 
 const ChecklistSection = ({
   children,
+  items,
   headerContents,
   currentStep,
   currentStepSection,
   stepSection,
-}: ChecklistSectionProps): JSX.Element => (
-  <div
-    style={{
-      opacity: currentStepSection === stepSection ? 1 : 0.25,
-      pointerEvents: currentStepSection === stepSection ? "initial" : "none",
-    }}
-  >
-    <ChecklistSectionHeader
-      currentStepSection={currentStepSection}
-      stepSection={stepSection}
+}: ChecklistSectionProps): JSX.Element => {
+  const currentStepsSection =
+    currentStepSection === stepSection ? currentStep : 0;
+
+  return (
+    <div
+      style={{
+        opacity: currentStepSection === stepSection ? 1 : 0.25,
+        pointerEvents: currentStepSection === stepSection ? "initial" : "none",
+      }}
     >
-      {headerContents}
-    </ChecklistSectionHeader>
-    <Steps
-      progressDot
-      current={currentStepSection === stepSection ? currentStep : 0}
-      direction="vertical"
-    >
-      {children}
-    </Steps>
-  </div>
-);
+      <ChecklistSectionHeader
+        currentStepSection={currentStepSection}
+        stepSection={stepSection}
+      >
+        {headerContents}
+      </ChecklistSectionHeader>
+      <div style={{ display: "flex" }}>
+        <Card style={{ float: "left", width: "30%" }}>
+          <Steps
+            progressDot
+            current={currentStepsSection}
+            direction="vertical"
+            size="small"
+            items={items.map((item: ContentStepProps) => ({
+              ...item,
+              title: <div style={{ textWrap: "wrap" }}>{item.title}</div>,
+            }))}
+          >
+            {children}
+          </Steps>
+        </Card>
+        <Card style={{ width: "100%", marginLeft: "1%" }}>
+          {items.length > 0 ? items[currentStepsSection]?.content : undefined}
+        </Card>
+      </div>
+    </div>
+  );
+};
 
 const FlashDatabaseChecklist = (): JSX.Element => {
   const isProduction = window.RUNTIME_GCP_ENVIRONMENT === "production";
@@ -355,17 +383,16 @@ const FlashDatabaseChecklist = (): JSX.Element => {
   };
 
   // eslint-disable-next-line react/no-unstable-nested-components
-  const StyledStep = ({
+  const StyledStepContent = ({
     actionButtonTitle,
     onActionButtonClick,
     nextSection,
     description,
     actionButtonEnabled,
-    ...rest
-  }: StyledStepProps): JSX.Element => {
+  }: StyledStepContent): JSX.Element => {
     const [loading, setLoading] = React.useState(false);
 
-    const jointDescription = (
+    return (
       <>
         {description}
         {onActionButtonClick && (
@@ -385,11 +412,7 @@ const FlashDatabaseChecklist = (): JSX.Element => {
               setLoading(false);
             }}
             loading={loading}
-            style={
-              rest.status === "process"
-                ? { marginRight: 5 }
-                : { display: "none" }
-            }
+            style={{ marginRight: 5 }}
           >
             {actionButtonTitle}
           </Button>
@@ -407,19 +430,10 @@ const FlashDatabaseChecklist = (): JSX.Element => {
             }
           }}
           loading={loading}
-          style={rest.status === "process" ? undefined : { display: "none" }}
         >
           Mark Done
         </Button>
       </>
-    );
-
-    return (
-      <Steps.Step
-        style={{ paddingBottom: 5 }}
-        description={jointDescription}
-        {...rest}
-      />
     );
   };
 
@@ -461,22 +475,13 @@ const FlashDatabaseChecklist = (): JSX.Element => {
   const StateCancelRerunChecklist = ({
     stateCode,
   }: StateFlashingChecklistProps): JSX.Element => {
-    return (
-      <div>
-        <h1>Canceling SECONDARY Raw Data Reimport</h1>
-        <h3 style={{ color: "green" }}>Current Ingest Instance Statuses:</h3>
-        <ul style={{ color: "green" }}>
-          <li>PRIMARY INSTANCE: {currentPrimaryIngestInstanceStatus}</li>
-          <li>SECONDARY INSTANCE: {currentSecondaryIngestInstanceStatus}</li>
-        </ul>
-        <ChecklistSection
-          currentStep={currentStep}
-          currentStepSection={currentStepSection}
-          stepSection={CancelRerunChecklistStepSection.PAUSE_OPERATIONS}
-          headerContents="Pause Operations"
-        >
-          <StyledStep
-            title="Pause Queues"
+    // --- step 1: pause operations ---------------------------------------------------
+
+    const pauseOperationsSteps = [
+      {
+        title: "Pause Queues",
+        content: (
+          <StyledStepContent
             description={
               <p>Pause all of the ingest-related queues for {stateCode}.</p>
             }
@@ -487,15 +492,18 @@ const FlashDatabaseChecklist = (): JSX.Element => {
             }
             nextSection={CancelRerunChecklistStepSection.START_CANCELLATION}
           />
-        </ChecklistSection>
-        <ChecklistSection
-          currentStep={currentStep}
-          currentStepSection={currentStepSection}
-          stepSection={CancelRerunChecklistStepSection.START_CANCELLATION}
-          headerContents={<p>Start Reimport Cancellation</p>}
-        >
-          <StyledStep
-            title="Set status to RAW_DATA_REIMPORT_CANCELLATION_IN_PROGRESS"
+        ),
+        style: { paddingBottom: 5 },
+      },
+    ];
+
+    // --- step 2: start re-import cancelation -----------------------------------------
+
+    const startReimportCancelationSteps = [
+      {
+        title: "Set status to RAW_DATA_REIMPORT_CANCELLATION_IN_PROGRESS",
+        content: (
+          <StyledStepContent
             description={
               <p>
                 Set ingest status to RAW_DATA_REIMPORT_CANCELLATION_IN_PROGRESS
@@ -516,22 +524,17 @@ const FlashDatabaseChecklist = (): JSX.Element => {
               CancelRerunChecklistStepSection.SECONDARY_RAW_DATA_CLEANUP
             }
           />
-        </ChecklistSection>
-        <ChecklistSection
-          currentStep={currentStep}
-          currentStepSection={currentStepSection}
-          stepSection={
-            CancelRerunChecklistStepSection.SECONDARY_RAW_DATA_CLEANUP
-          }
-          headerContents={
-            <p>
-              Clean Up Raw Data and Associated Metadata in{" "}
-              <code>SECONDARY</code>
-            </p>
-          }
-        >
-          <StyledStep
-            title="Clean up SECONDARY raw data on BQ"
+        ),
+      },
+    ];
+
+    // --- step 3: clean up metadata ---------------------------------------------------
+
+    const cleanUpMetadataSteps = [
+      {
+        title: "Clean up SECONDARY raw data on BQ",
+        content: (
+          <StyledStepContent
             description={
               <p>
                 Delete the contents of the tables in{" "}
@@ -548,8 +551,12 @@ const FlashDatabaseChecklist = (): JSX.Element => {
               )
             }
           />
-          <StyledStep
-            title="Clean up PRUNING raw data tables in SECONDARY on BQ"
+        ),
+      },
+      {
+        title: "Clean up PRUNING raw data tables in SECONDARY on BQ",
+        content: (
+          <StyledStepContent
             description={
               <p>
                 Delete any outstanding tables in{" "}
@@ -572,8 +579,12 @@ const FlashDatabaseChecklist = (): JSX.Element => {
               )
             }
           />
-          <StyledStep
-            title="Clear Out SECONDARY Ingest GCS Bucket"
+        ),
+      },
+      {
+        title: "Clear Out SECONDARY Ingest GCS Bucket",
+        content: (
+          <StyledStepContent
             description={
               <p>
                 Move any remaining unprocessed raw files in{" "}
@@ -601,8 +612,12 @@ const FlashDatabaseChecklist = (): JSX.Element => {
               </p>
             }
           />
-          <StyledStep
-            title="Move SECONDARY storage raw files to deprecated"
+        ),
+      },
+      {
+        title: "Move SECONDARY storage raw files to deprecated",
+        content: (
+          <StyledStepContent
             description={
               <p>
                 Use the command below within the <code>pipenv shell</code> to
@@ -622,8 +637,12 @@ const FlashDatabaseChecklist = (): JSX.Element => {
               </p>
             }
           />
-          <StyledStep
-            title="Deprecate SECONDARY raw data rows in operations DB"
+        ),
+      },
+      {
+        title: "Deprecate SECONDARY raw data rows in operations DB",
+        content: (
+          <StyledStepContent
             description={
               <p>
                 Mark all <code>SECONDARY</code> instance rows in the{" "}
@@ -641,15 +660,17 @@ const FlashDatabaseChecklist = (): JSX.Element => {
             }
             nextSection={CancelRerunChecklistStepSection.FINALIZE_CANCELLATION}
           />
-        </ChecklistSection>
-        <ChecklistSection
-          currentStep={currentStep}
-          currentStepSection={currentStepSection}
-          stepSection={CancelRerunChecklistStepSection.FINALIZE_CANCELLATION}
-          headerContents={<p>Finalize Reimport Cancellation</p>}
-        >
-          <StyledStep
-            title="Set SECONDARY status to RAW_DATA_REIMPORT_CANCELED"
+        ),
+      },
+    ];
+
+    // --- step 4: finalize cancelation ------------------------------------------------
+
+    const finalizeCancelationSteps = [
+      {
+        title: "Set SECONDARY status to RAW_DATA_REIMPORT_CANCELED",
+        content: (
+          <StyledStepContent
             description={
               <p>
                 Set ingest status to RAW_DATA_REIMPORT_CANCELED in SECONDARY in
@@ -667,8 +688,12 @@ const FlashDatabaseChecklist = (): JSX.Element => {
               )
             }
           />
-          <StyledStep
-            title="Set status to NO_RAW_DATA_REIMPORT_IN_PROGRESS"
+        ),
+      },
+      {
+        title: "Set status to NO_RAW_DATA_REIMPORT_IN_PROGRESS",
+        content: (
+          <StyledStepContent
             description={
               <p>
                 Set ingest status to NO_RAW_DATA_REIMPORT_IN_PROGRESS in
@@ -687,15 +712,17 @@ const FlashDatabaseChecklist = (): JSX.Element => {
             }
             nextSection={CancelRerunChecklistStepSection.RESUME_OPERATIONS}
           />
-        </ChecklistSection>
-        <ChecklistSection
-          currentStep={currentStep}
-          currentStepSection={currentStepSection}
-          stepSection={CancelRerunChecklistStepSection.RESUME_OPERATIONS}
-          headerContents={<p>Resume Operations</p>}
-        >
-          <StyledStep
-            title="Unpause queues"
+        ),
+      },
+    ];
+
+    // --- step 5: resume operations ---------------------------------------------------
+
+    const resumeOperationsSteps = [
+      {
+        title: "Unpause queues",
+        content: (
+          <StyledStepContent
             description={
               <p>
                 Now that the database cleanup is complete, unpause the queues.
@@ -708,7 +735,60 @@ const FlashDatabaseChecklist = (): JSX.Element => {
             }
             nextSection={CancelRerunChecklistStepSection.DONE}
           />
-        </ChecklistSection>
+        ),
+      },
+    ];
+
+    return (
+      <div>
+        <h1>Canceling SECONDARY Raw Data Reimport</h1>
+        <h3 style={{ color: "green" }}>Current Ingest Instance Statuses:</h3>
+        <ul style={{ color: "green" }}>
+          <li>PRIMARY INSTANCE: {currentPrimaryIngestInstanceStatus}</li>
+          <li>SECONDARY INSTANCE: {currentSecondaryIngestInstanceStatus}</li>
+        </ul>
+        <ChecklistSection
+          currentStep={currentStep}
+          currentStepSection={currentStepSection}
+          stepSection={CancelRerunChecklistStepSection.PAUSE_OPERATIONS}
+          headerContents="Pause Operations"
+          items={pauseOperationsSteps}
+        />
+        <ChecklistSection
+          currentStep={currentStep}
+          currentStepSection={currentStepSection}
+          stepSection={CancelRerunChecklistStepSection.START_CANCELLATION}
+          headerContents={<p>Start Reimport Cancellation</p>}
+          items={startReimportCancelationSteps}
+        />
+        <ChecklistSection
+          currentStep={currentStep}
+          currentStepSection={currentStepSection}
+          stepSection={
+            CancelRerunChecklistStepSection.SECONDARY_RAW_DATA_CLEANUP
+          }
+          headerContents={
+            <p>
+              Clean Up Raw Data and Associated Metadata in{" "}
+              <code>SECONDARY</code>
+            </p>
+          }
+          items={cleanUpMetadataSteps}
+        />
+        <ChecklistSection
+          currentStep={currentStep}
+          currentStepSection={currentStepSection}
+          stepSection={CancelRerunChecklistStepSection.FINALIZE_CANCELLATION}
+          headerContents={<p>Finalize Reimport Cancellation</p>}
+          items={finalizeCancelationSteps}
+        />
+        <ChecklistSection
+          currentStep={currentStep}
+          currentStepSection={currentStepSection}
+          stepSection={CancelRerunChecklistStepSection.RESUME_OPERATIONS}
+          headerContents={<p>Resume Operations</p>}
+          items={resumeOperationsSteps}
+        />
         <ChecklistSection
           currentStep={currentStep}
           currentStepSection={currentStepSection}
@@ -716,6 +796,7 @@ const FlashDatabaseChecklist = (): JSX.Element => {
           headerContents={
             <p style={{ color: "green" }}>Rerun cancellation is complete!</p>
           }
+          items={[]}
         >
           <p>DONE</p>
         </ChecklistSection>
@@ -730,25 +811,12 @@ const FlashDatabaseChecklist = (): JSX.Element => {
     const secondaryRawDataDataset = `${stateCode.toLowerCase()}_raw_data_secondary`;
     const primaryRawDataDataset = `${stateCode.toLowerCase()}_raw_data`;
 
-    return (
-      <div>
-        <h1>
-          Proceeding with Flash of Rerun Results from SECONDARY to PRIMARY
-        </h1>
-        <h3 style={{ color: "green" }}>Current Ingest Instance Statuses:</h3>
-        <ul style={{ color: "green" }}>
-          <li>PRIMARY INSTANCE: {currentPrimaryIngestInstanceStatus}</li>
-          <li>SECONDARY INSTANCE: {currentSecondaryIngestInstanceStatus}</li>
-        </ul>
-        <br />
-        <ChecklistSection
-          currentStep={currentStep}
-          currentStepSection={currentStepSection}
-          stepSection={FlashChecklistStepSection.PAUSE_OPERATIONS}
-          headerContents={<p>Pause Operations</p>}
-        >
-          <StyledStep
-            title="Pause Queues"
+    // --- step 1: pause operations ----------------------------------------------------
+    const pauseOperationsSteps = [
+      {
+        title: "Pause Queues",
+        content: (
+          <StyledStepContent
             description={
               <p>Pause all of the ingest-related queues for {stateCode}.</p>
             }
@@ -758,8 +826,12 @@ const FlashDatabaseChecklist = (): JSX.Element => {
               updateIngestQueuesState(stateCode, QueueState.PAUSED)
             }
           />
-          <StyledStep
-            title="Purge All Ingest Related Queues"
+        ),
+      },
+      {
+        title: "Purge All Ingest Related Queues",
+        content: (
+          <StyledStepContent
             description={
               <p>Clear out all ingest-related queues in both instances.</p>
             }
@@ -768,15 +840,15 @@ const FlashDatabaseChecklist = (): JSX.Element => {
             onActionButtonClick={async () => purgeIngestQueues(stateCode)}
             nextSection={FlashChecklistStepSection.START_FLASH}
           />
-        </ChecklistSection>
-        <ChecklistSection
-          currentStep={currentStep}
-          currentStepSection={currentStepSection}
-          stepSection={FlashChecklistStepSection.START_FLASH}
-          headerContents={<p>Start Flash</p>}
-        >
-          <StyledStep
-            title="Set status to FLASH_IN_PROGRESS"
+        ),
+      },
+    ];
+    // --- step 2: start flash ---------------------------------------------------------
+    const startFlashSteps = [
+      {
+        title: "Set status to FLASH_IN_PROGRESS",
+        content: (
+          <StyledStepContent
             description={
               <p>
                 Set ingest status to FLASH_IN_PROGRESS in PRIMARY and SECONDARY
@@ -791,19 +863,15 @@ const FlashDatabaseChecklist = (): JSX.Element => {
             }
             nextSection={FlashChecklistStepSection.PRIMARY_RAW_DATA_DEPRECATION}
           />
-        </ChecklistSection>
-        <ChecklistSection
-          currentStep={currentStep}
-          currentStepSection={currentStepSection}
-          stepSection={FlashChecklistStepSection.PRIMARY_RAW_DATA_DEPRECATION}
-          headerContents={
-            <p>
-              Deprecate Raw Data and Associated Metadata in <code>PRIMARY</code>
-            </p>
-          }
-        >
-          <StyledStep
-            title="Backup PRIMARY raw data"
+        ),
+      },
+    ];
+    // --- step 3: deprecate data and metadata -----------------------------------------
+    const deprecateDataAndMetadataSteps = [
+      {
+        title: "Backup PRIMARY raw data",
+        content: (
+          <StyledStepContent
             description={
               <p>
                 Move all primary instance raw data to a backup dataset in BQ.
@@ -815,8 +883,12 @@ const FlashDatabaseChecklist = (): JSX.Element => {
               copyRawDataToBackup(stateCode, DirectIngestInstance.PRIMARY)
             }
           />
-          <StyledStep
-            title="Clean up PRUNING raw data tables in PRIMARY on BQ"
+        ),
+      },
+      {
+        title: "Clean up PRUNING raw data tables in PRIMARY on BQ",
+        content: (
+          <StyledStepContent
             description={
               <p>
                 Delete any outstanding tables in{" "}
@@ -836,8 +908,12 @@ const FlashDatabaseChecklist = (): JSX.Element => {
               )
             }
           />
-          <StyledStep
-            title="Deprecate ingest pipeline runs for PRIMARY"
+        ),
+      },
+      {
+        title: "Deprecate ingest pipeline runs for PRIMARY",
+        content: (
+          <StyledStepContent
             description={
               <p>
                 Mark all <code>PRIMARY</code> ingest pipeline rows in the{" "}
@@ -854,8 +930,12 @@ const FlashDatabaseChecklist = (): JSX.Element => {
               )
             }
           />
-          <StyledStep
-            title="Deprecate PRIMARY raw data rows in operations DB"
+        ),
+      },
+      {
+        title: "Deprecate PRIMARY raw data rows in operations DB",
+        content: (
+          <StyledStepContent
             description={
               <p>
                 Mark all <code>PRIMARY</code> instance rows in the{" "}
@@ -873,19 +953,15 @@ const FlashDatabaseChecklist = (): JSX.Element => {
             }
             nextSection={FlashChecklistStepSection.FLASH_RAW_DATA_TO_PRIMARY}
           />
-        </ChecklistSection>
-        <ChecklistSection
-          currentStep={currentStep}
-          currentStepSection={currentStepSection}
-          stepSection={FlashChecklistStepSection.FLASH_RAW_DATA_TO_PRIMARY}
-          headerContents={
-            <p>
-              Flash Raw Data to <code>PRIMARY</code>
-            </p>
-          }
-        >
-          <StyledStep
-            title="Move raw data metadata from SECONDARY instance to PRIMARY"
+        ),
+      },
+    ];
+    // --- step 4: execute flash -------------------------------------------------------
+    const executeFlashSteps = [
+      {
+        title: "Move raw data metadata from SECONDARY instance to PRIMARY",
+        content: (
+          <StyledStepContent
             description={
               <p>
                 Update all rows in the{" "}
@@ -904,8 +980,12 @@ const FlashDatabaseChecklist = (): JSX.Element => {
               )
             }
           />
-          <StyledStep
-            title="Copy SECONDARY raw data to PRIMARY on BQ"
+        ),
+      },
+      {
+        title: "Copy SECONDARY raw data to PRIMARY on BQ",
+        content: (
+          <StyledStepContent
             description={
               <p>
                 Copy all raw data from BQ dataset{" "}
@@ -923,8 +1003,12 @@ const FlashDatabaseChecklist = (): JSX.Element => {
               )
             }
           />
-          <StyledStep
-            title="Move SECONDARY storage raw files to deprecated"
+        ),
+      },
+      {
+        title: "Move SECONDARY storage raw files to deprecated",
+        content: (
+          <StyledStepContent
             description={
               <p>
                 Use the command below within the <code>pipenv shell</code> to
@@ -945,19 +1029,15 @@ const FlashDatabaseChecklist = (): JSX.Element => {
             }
             nextSection={FlashChecklistStepSection.SECONDARY_RAW_DATA_CLEANUP}
           />
-        </ChecklistSection>
-        <ChecklistSection
-          currentStep={currentStep}
-          currentStepSection={currentStepSection}
-          stepSection={FlashChecklistStepSection.SECONDARY_RAW_DATA_CLEANUP}
-          headerContents={
-            <p>
-              Clean Up Raw Data in <code>SECONDARY</code>
-            </p>
-          }
-        >
-          <StyledStep
-            title="Clean up SECONDARY raw data on BQ"
+        ),
+      },
+    ];
+    // --- step 5: clean up raw data ---------------------------------------------------
+    const cleanUpSteps = [
+      {
+        title: "Clean up SECONDARY raw data on BQ",
+        content: (
+          <StyledStepContent
             description={
               <p>
                 Delete the contents of the tables in{" "}
@@ -975,15 +1055,15 @@ const FlashDatabaseChecklist = (): JSX.Element => {
             }
             nextSection={FlashChecklistStepSection.FINALIZE_FLASH}
           />
-        </ChecklistSection>
-        <ChecklistSection
-          currentStep={currentStep}
-          currentStepSection={currentStepSection}
-          stepSection={FlashChecklistStepSection.FINALIZE_FLASH}
-          headerContents={<p>Finalize Flash</p>}
-        >
-          <StyledStep
-            title="Set status to FLASH_COMPLETED"
+        ),
+      },
+    ];
+    // --- step 6: finalize flash ------------------------------------------------------
+    const finalizeFlashSteps = [
+      {
+        title: "Set status to FLASH_COMPLETED",
+        content: (
+          <StyledStepContent
             description={
               <p>
                 Set ingest status to FLASH_COMPLETED in PRIMARY and SECONDARY in
@@ -997,8 +1077,12 @@ const FlashDatabaseChecklist = (): JSX.Element => {
               setStatusInPrimaryAndSecondaryTo(stateCode, "FLASH_COMPLETED")
             }
           />
-          <StyledStep
-            title="Set status to NO_RAW_DATA_REIMPORT_IN_PROGRESS"
+        ),
+      },
+      {
+        title: "Set status to NO_RAW_DATA_REIMPORT_IN_PROGRESS",
+        content: (
+          <StyledStepContent
             description={
               <p>
                 Set ingest status to NO_RAW_DATA_REIMPORT_IN_PROGRESS in
@@ -1017,15 +1101,15 @@ const FlashDatabaseChecklist = (): JSX.Element => {
             }
             nextSection={FlashChecklistStepSection.RESUME_OPERATIONS}
           />
-        </ChecklistSection>
-        <ChecklistSection
-          currentStep={currentStep}
-          currentStepSection={currentStepSection}
-          stepSection={FlashChecklistStepSection.RESUME_OPERATIONS}
-          headerContents={<p>Resume Operations</p>}
-        >
-          <StyledStep
-            title="Unpause queues"
+        ),
+      },
+    ];
+    // --- step 7: resume operations ---------------------------------------------------
+    const resumeOperationsSteps = [
+      {
+        title: "Unpause queues",
+        content: (
+          <StyledStepContent
             description={
               <p>
                 Now that the database flashing is complete, unpause the queues.
@@ -1038,15 +1122,15 @@ const FlashDatabaseChecklist = (): JSX.Element => {
             }
             nextSection={FlashChecklistStepSection.TRIGGER_PIPELINES}
           />
-        </ChecklistSection>
-        <ChecklistSection
-          currentStep={currentStep}
-          currentStepSection={currentStepSection}
-          stepSection={FlashChecklistStepSection.TRIGGER_PIPELINES}
-          headerContents={<p>Trigger Pipelines</p>}
-        >
-          <StyledStep
-            title="Full Historical Refresh"
+        ),
+      },
+    ];
+    // --- step 8: trigger pipelines ---------------------------------------------------
+    const triggerPipelinesSteps = [
+      {
+        title: "Full Historical Refresh",
+        content: (
+          <StyledStepContent
             description={
               <p>
                 Trigger a BigQuery refresh and run the Calculation DAG for{" "}
@@ -1060,12 +1144,96 @@ const FlashDatabaseChecklist = (): JSX.Element => {
             }
             nextSection={FlashChecklistStepSection.DONE}
           />
-        </ChecklistSection>
+        ),
+      },
+    ];
+
+    return (
+      <div>
+        <Divider />
+        <h1>
+          Proceeding with Flash of Rerun Results from SECONDARY to PRIMARY
+        </h1>
+        <h3 style={{ color: "green" }}>Current Ingest Instance Statuses:</h3>
+        <ul style={{ color: "green" }}>
+          <li>PRIMARY INSTANCE: {currentPrimaryIngestInstanceStatus}</li>
+          <li>SECONDARY INSTANCE: {currentSecondaryIngestInstanceStatus}</li>
+        </ul>
+        <Divider />
+        <ChecklistSection
+          currentStep={currentStep}
+          currentStepSection={currentStepSection}
+          stepSection={FlashChecklistStepSection.PAUSE_OPERATIONS}
+          headerContents={<p>Pause Operations</p>}
+          items={pauseOperationsSteps}
+        />
+        <ChecklistSection
+          currentStep={currentStep}
+          currentStepSection={currentStepSection}
+          stepSection={FlashChecklistStepSection.START_FLASH}
+          headerContents={<p>Start Flash</p>}
+          items={startFlashSteps}
+        />
+        <ChecklistSection
+          currentStep={currentStep}
+          currentStepSection={currentStepSection}
+          stepSection={FlashChecklistStepSection.PRIMARY_RAW_DATA_DEPRECATION}
+          headerContents={
+            <p>
+              Deprecate Raw Data and Associated Metadata in <code>PRIMARY</code>
+            </p>
+          }
+          items={deprecateDataAndMetadataSteps}
+        />
+        <ChecklistSection
+          currentStep={currentStep}
+          currentStepSection={currentStepSection}
+          stepSection={FlashChecklistStepSection.FLASH_RAW_DATA_TO_PRIMARY}
+          headerContents={
+            <p>
+              Flash Raw Data to <code>PRIMARY</code>
+            </p>
+          }
+          items={executeFlashSteps}
+        />
+        <ChecklistSection
+          currentStep={currentStep}
+          currentStepSection={currentStepSection}
+          stepSection={FlashChecklistStepSection.SECONDARY_RAW_DATA_CLEANUP}
+          headerContents={
+            <p>
+              Clean Up Raw Data in <code>SECONDARY</code>
+            </p>
+          }
+          items={cleanUpSteps}
+        />
+        <ChecklistSection
+          currentStep={currentStep}
+          currentStepSection={currentStepSection}
+          stepSection={FlashChecklistStepSection.FINALIZE_FLASH}
+          headerContents={<p>Finalize Flash</p>}
+          items={finalizeFlashSteps}
+        />
+        <ChecklistSection
+          currentStep={currentStep}
+          currentStepSection={currentStepSection}
+          stepSection={FlashChecklistStepSection.RESUME_OPERATIONS}
+          headerContents={<p>Resume Operations</p>}
+          items={resumeOperationsSteps}
+        />
+        <ChecklistSection
+          currentStep={currentStep}
+          currentStepSection={currentStepSection}
+          stepSection={FlashChecklistStepSection.TRIGGER_PIPELINES}
+          headerContents={<p>Trigger Pipelines</p>}
+          items={triggerPipelinesSteps}
+        />
         <ChecklistSection
           currentStep={currentStep}
           currentStepSection={currentStepSection}
           stepSection={FlashChecklistStepSection.DONE}
           headerContents={<p style={{ color: "green" }}>Flash is complete!</p>}
+          items={[]}
         >
           <p>DONE</p>
         </ChecklistSection>
