@@ -275,8 +275,8 @@ def create_excel_file(
             # an unexpected system error, add a system column.
             if (
                 system == schema.System.SUPERVISION
-                or unexpected_system_sheet_name == filename
-            ):
+                and metric_key_to_subsystems is not None
+            ) or unexpected_system_sheet_name == filename:
                 if "value" in dataframe_dict:
                     # There will be no value column if the sheet being generated
                     # has a missing_metric error.
@@ -329,7 +329,10 @@ def create_csv_file(
             dataframe_dict.update(new_dataframe_dict)
 
             # If the metric is for the supervision system add a system column
-            if system == schema.System.SUPERVISION:
+            if (
+                system == schema.System.SUPERVISION
+                and metric_key_to_subsystems is not None
+            ):
                 if "value" in dataframe_dict:
                     # There will be no value column if the sheet being generated
                     # has a missing_metric error.

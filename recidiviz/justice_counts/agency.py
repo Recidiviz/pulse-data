@@ -304,10 +304,9 @@ class AgencyInterface:
         report for any subsystems and supervision agencies that report for subsystems.
         """
         systems_enums = {schema.System[s] for s in agency.systems}
-
         return (
             len(schema.System.supervision_subsystems().intersection(systems_enums)) > 0
-            and schema.System.SUPERVISION in agency.systems
+            and schema.System.SUPERVISION.value in agency.systems
         )
 
     @staticmethod

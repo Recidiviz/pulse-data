@@ -2133,6 +2133,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             ]
             self.assertEqual(len(arrests_metric), 1)
             self.assertEqual(len(arrests_metric[0]["metric_errors"]), 0)
+        os.remove("arrests.xlsx")
 
     def test_upload_and_ingest_spreadsheet(self) -> None:
         self.session.add_all(
@@ -2143,13 +2144,14 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         )
         self.session.commit()
         agency = self.session.query(Agency).one_or_none()
+        file_name = "test_upload_and_ingest_spreadsheet.xlsx"
         with self.app.test_request_context():
             g.user_context = UserContext(
                 auth0_user_id=self.test_schema_objects.test_user_A.auth0_user_id,
             )
             file_path = create_excel_file(
                 system=schema.System.LAW_ENFORCEMENT,
-                file_name="test_upload_and_ingest_spreadsheet.xlsx",
+                file_name=file_name,
             )
             with open(Path(file_path), "rb") as file:
                 response = self.client.post(
@@ -2222,6 +2224,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             self.assertIsNotNone(response_dict.get("updated_reports"))
             self.assertIsNotNone(response_dict.get("new_reports"))
             self.assertIsNotNone(response_dict.get("unchanged_reports"))
+            os.remove(file_name)
 
     def test_get_spreadsheets(self) -> None:
         user_agency = self.test_schema_objects.test_agency_E
@@ -3286,10 +3289,10 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             g.user_context = UserContext(
                 auth0_user_id=self.test_schema_objects.test_user_A.auth0_user_id,
             )
-
+            file_name = "test_super_child_upload.xlsx"
             file_path = create_excel_file(
                 system=schema.System.PRISONS,
-                file_name="test_super_child_upload.xlsx",
+                file_name=file_name,
                 child_agencies=[child_agency],
                 custom_frequency_dict={
                     "funding": schema.ReportingFrequency.MONTHLY,
@@ -3336,6 +3339,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             self.assertEqual(len(staff_errors), 0)
             grievances_errors = response_dict["metrics"][8]["metric_errors"]
             self.assertEqual(len(grievances_errors), 0)
+        os.remove(file_name)
 
     def test_get_child_agencies_for_superagency(self) -> None:
         user = self.test_schema_objects.test_user_A
