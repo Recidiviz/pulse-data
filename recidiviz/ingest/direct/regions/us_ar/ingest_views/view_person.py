@@ -137,7 +137,9 @@ SELECT
   ad.POBOX,
   ad.CITY,
   ad.STATE,
-  ad.ZIPCODE
+  ad.ZIPCODE,
+
+  ip.ADCNUMBER
 FROM op_cleaned op
 LEFT JOIN primary_name_type_1 pn1
 USING(OFFENDERID)
@@ -149,6 +151,8 @@ LEFT JOIN ora_deduped ora
 USING(OFFENDERID)
 LEFT JOIN {ADDRESS} ad
 USING(ADDRESSID)
+LEFT JOIN {INMATEPROFILE} ip
+USING(OFFENDERID)
 """
 
 VIEW_BUILDER = DirectIngestViewQueryBuilder(

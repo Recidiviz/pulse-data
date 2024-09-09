@@ -24,6 +24,7 @@ input_columns:
   - CITY
   - STATE
   - ZIPCODE
+  - ADCNUMBER
 unused_columns: []
 output:
   StatePerson:
@@ -31,6 +32,13 @@ output:
       - StatePersonExternalId:
           external_id: OFFENDERID
           id_type: $literal("US_AR_OFFENDERID")
+      - $conditional:
+          - $if:
+              $not_null: ADCNUMBER
+            $then:
+              StatePersonExternalId:
+                external_id: ADCNUMBER
+                id_type: $literal("US_AR_ADCNUMBER")
     full_name:
       $person_name:
         $given_names: OFFNFIRSTNAME
