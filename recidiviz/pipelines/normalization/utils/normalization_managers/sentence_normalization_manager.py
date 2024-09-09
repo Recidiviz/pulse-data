@@ -16,6 +16,7 @@
 # =============================================================================
 """Contains the logic for a SentenceNormalizationManager that manages the normalization
 of StateCharge entities in the calculation pipelines."""
+from collections import defaultdict
 from typing import Any, Dict, List, Optional, Tuple, Type
 
 from recidiviz.common.ncic import get_description
@@ -32,6 +33,7 @@ from recidiviz.persistence.entity.state.entities import (
     StateSupervisionSentence,
 )
 from recidiviz.persistence.entity.state.normalized_entities import (
+    NormalizedStateCharge,
     NormalizedStateIncarcerationSentence,
     NormalizedStateSupervisionSentence,
 )
@@ -114,6 +116,67 @@ class SentenceNormalizationManager(EntityNormalizationManager):
             (StateCharge, StateIncarcerationSentence),
         ]
 
+    def _merge_multi_parent_charges(
+        self,
+        normalized_incarceration_sentences: list[NormalizedStateIncarcerationSentence],
+        normalized_supervision_sentences: list[NormalizedStateSupervisionSentence],
+    ) -> None:
+        """Given a list of normalized legacy incarceration and supervision sentences,
+        merges charges so any duplicates that are linked to both an incarceration and
+        supervision sentence are merged into one.
+        """
+        charge_external_id_to_parents: dict[
+            str,
+            list[
+                NormalizedStateIncarcerationSentence
+                | NormalizedStateSupervisionSentence
+            ],
+        ] = defaultdict(list)
+
+        sentence: NormalizedStateIncarcerationSentence | NormalizedStateSupervisionSentence
+        for sentence in normalized_incarceration_sentences:
+            for charge in sentence.charges:
+                charge_external_id_to_parents[charge.external_id].append(sentence)
+
+        for sentence in normalized_supervision_sentences:
+            for charge in sentence.charges:
+                charge_external_id_to_parents[charge.external_id].append(sentence)
+
+        for (
+            charge_external_id,
+            parent_sentences_list,
+        ) in charge_external_id_to_parents.items():
+            primary_charge: NormalizedStateCharge = next(
+                c
+                for c in parent_sentences_list[0].charges
+                if c.external_id == charge_external_id
+            )
+
+            for sentence in parent_sentences_list[1:]:
+                index_of_charge_on_sentence = next(
+                    i
+                    for i, c in enumerate(sentence.charges)
+                    if c.external_id == charge_external_id
+                )
+                sentence.charges[index_of_charge_on_sentence] = primary_charge
+
+                if isinstance(sentence, NormalizedStateIncarcerationSentence):
+                    if not any(
+                        s
+                        for s in primary_charge.incarceration_sentences
+                        if s.external_id == sentence.external_id
+                    ):
+                        primary_charge.incarceration_sentences.append(sentence)
+                elif isinstance(sentence, NormalizedStateSupervisionSentence):
+                    if not any(
+                        s
+                        for s in primary_charge.supervision_sentences
+                        if s.external_id == sentence.external_id
+                    ):
+                        primary_charge.supervision_sentences.append(sentence)
+                else:
+                    raise ValueError(f"Unexpected sentence type [{type(sentence)}]")
+
     def get_normalized_sentences(
         self,
     ) -> tuple[
@@ -148,22 +211,9 @@ class SentenceNormalizationManager(EntityNormalizationManager):
             additional_supervision_sentence_attributes,
         )
 
-        charge_by_external_id = {}
-        all_sentences: list[
-            NormalizedStateIncarcerationSentence | NormalizedStateSupervisionSentence
-        ] = [*normalized_incarceration_sentences, *normalized_supervision_sentences]
-        for sentence in all_sentences:
-            for charge in sentence.charges:
-                if charge.external_id not in charge_by_external_id:
-                    charge_by_external_id[charge.external_id] = charge
-                    continue
-                raise ValueError(
-                    "No support in the legacy sentence schema for many-to-one "
-                    "relationships between sentences and charges. If you have a state "
-                    "with many to one relationships between sentences and charges, "
-                    "hydrate sentences via the v2 sentencing schema instead (i.e. "
-                    "StateSentence)."
-                )
+        self._merge_multi_parent_charges(
+            normalized_incarceration_sentences, normalized_supervision_sentences
+        )
 
         return normalized_incarceration_sentences, normalized_supervision_sentences
 
