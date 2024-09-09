@@ -133,6 +133,9 @@ def contact_method_from_contact_methods_list(
 
     methods = raw_text.split(",")
 
+    if "IN_PERSON" in methods:
+        return StateSupervisionContactMethod.IN_PERSON
+
     if "TELEPHONE" in methods:
         return StateSupervisionContactMethod.TELEPHONE
 
@@ -141,9 +144,6 @@ def contact_method_from_contact_methods_list(
 
     if "VIRTUAL" in methods:
         return StateSupervisionContactMethod.VIRTUAL
-
-    if "IN_PERSON" in methods:
-        return StateSupervisionContactMethod.IN_PERSON
 
     return StateSupervisionContactMethod.INTERNAL_UNKNOWN
 
