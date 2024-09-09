@@ -244,7 +244,7 @@ WHERE context_page_path LIKE '%workflows%' AND context_page_url LIKE '%://dashbo
 SELECT
     state_code,
     user_external_id AS officer_id,
-    email,
+    LOWER(email) AS email,
     "{config.officer_event_name.value}" AS event,
     DATETIME(timestamp, "US/Eastern") AS event_ts,
     "{config.workflows_event_type}" AS event_type, 
