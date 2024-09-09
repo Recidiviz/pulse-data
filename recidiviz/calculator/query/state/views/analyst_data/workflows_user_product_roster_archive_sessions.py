@@ -39,7 +39,7 @@ WITH product_roster_archive AS (
         LEAD(export_date) OVER (
             PARTITION BY state_code, email_address ORDER BY export_date
         ) AS end_date_exclusive,
-        role,
+        ARRAY_TO_STRING(ARRAY(SELECT role FROM UNNEST(roles) AS role ORDER BY role), ",") AS roles_as_string,
         #TODO(#31965) district field is not guaranteed to be an id until roster sync is complete
         district AS location_id,
     FROM
@@ -52,7 +52,7 @@ WITH product_roster_archive AS (
 {aggregate_adjacent_spans(
     table_name='product_roster_archive',
     index_columns=["state_code", "workflows_user_email_address"],
-    attribute=['role', 'location_id'],
+    attribute=['roles_as_string', 'location_id'],
     session_id_output_name='product_roster_session_id',
     end_date_field_name='end_date_exclusive'
 )}
