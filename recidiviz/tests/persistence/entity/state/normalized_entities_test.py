@@ -58,6 +58,10 @@ EXPECTED_MISSING_NORMALIZED_FIELDS: Dict[Type[Entity], Set[str]] = {
 
 NORMALIZED_PREFIX = "Normalized"
 
+NORMALIZATION_ONLY_ENTITIES = {
+    normalized_entities.NormalizedStateSentenceInferredGroup.__name__,
+}
+
 
 class TestNormalizedEntities(unittest.TestCase):
     """Tests the classes defined in normalized_entities_v2.py"""
@@ -107,7 +111,10 @@ class TestNormalizedEntities(unittest.TestCase):
 
         direction_checker = direction_checker_for_module(normalized_entities)
         is_backedge_field = direction_checker.is_back_edge(entity_class, field_name)
-        if is_backedge_field and field_default is None:
+        # Default fields can be None for backedges or explicit uses of attr.Factory
+        if (is_backedge_field and field_default is None) or isinstance(
+            field_default, attr.Factory  # type: ignore
+        ):
             default_ok = True
         else:
             default_ok = not has_default
@@ -259,6 +266,12 @@ class TestNormalizedEntities(unittest.TestCase):
                 normalized_field_info = (
                     normalized_entity_class_reference.get_field_info(field_name)
                 )
+                # We don't check if the field is for an entity created only in normalization.
+                if (
+                    normalized_field_info.referenced_cls_name
+                    in NORMALIZATION_ONLY_ENTITIES
+                ):
+                    continue
                 if field_name not in entity_fields:
                     # This is a new field only present on the normalized entity
                     attribute = normalized_field_info.attribute

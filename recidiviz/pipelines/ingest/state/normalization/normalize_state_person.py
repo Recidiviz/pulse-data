@@ -38,6 +38,9 @@ from recidiviz.persistence.entity.state.violation_utils import (
 from recidiviz.pipelines.ingest.state.create_person_id_to_staff_id_mapping import (
     StaffExternalIdToIdMap,
 )
+from recidiviz.pipelines.ingest.state.normalization.infer_sentence_groups import (
+    get_normalized_inferred_sentence_groups,
+)
 from recidiviz.pipelines.ingest.state.normalization.normalize_root_entity_helpers import (
     build_normalized_root_entity,
 )
@@ -152,6 +155,9 @@ def build_normalized_state_person(
     normalized_sentence_groups = get_normalized_sentence_groups(
         sentence_groups=person.sentence_groups
     )
+    normalized_sentence_inferred_groups = get_normalized_inferred_sentence_groups(
+        normalized_sentences=normalized_sentences,
+    )
 
     normalized_incarceration_periods = IncarcerationPeriodNormalizationManager(
         person_id=person_id,
@@ -181,8 +187,9 @@ def build_normalized_state_person(
         "incarceration_periods": normalized_incarceration_periods,
         "incarceration_sentences": normalized_incarceration_sentences,
         "program_assignments": normalized_program_assignments,
-        "sentence_groups": normalized_sentence_groups,
         "sentences": normalized_sentences,
+        "sentence_groups": normalized_sentence_groups,
+        "sentence_inferred_groups": normalized_sentence_inferred_groups,
         "supervision_contacts": normalized_supervision_contacts,
         "supervision_periods": normalized_supervision_periods,
         "supervision_sentences": normalized_supervision_sentences,

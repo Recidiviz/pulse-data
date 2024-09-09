@@ -18,6 +18,7 @@
 import datetime
 from datetime import date
 
+from google.api_core.exceptions import InternalServerError
 from google.cloud import bigquery
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
@@ -704,3 +705,13 @@ FROM UNNEST([
             """SELECT CAST(DATETIME(1987, 1, 25, 0, 0, 0) AS STRING FORMAT 'DAY"," MONTH DD YYYY "AT" HH":"MI":"SS')""",
             expected_result=[{"$col1": "1987-01-25 00:00:00"}],
         )
+
+    def test_integer_type_alias(self) -> None:
+        self.run_query_test(
+            "SELECT CAST(null AS INT64)", expected_result=[{"$col1": None}]
+        )
+        # TODO(#33060) This should not raise an error.
+        with self.assertRaises(InternalServerError):
+            self.run_query_test(
+                "SELECT CAST(null AS INTEGER)", expected_result=[{"$col1": None}]
+            )

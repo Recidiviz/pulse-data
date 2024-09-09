@@ -124,6 +124,7 @@ from recidiviz.common.constants.state.state_supervision_violation_response impor
     StateSupervisionViolationResponseType,
 )
 from recidiviz.common.constants.state.state_task_deadline import StateTaskType
+from recidiviz.common.constants.states import StateCode
 from recidiviz.common.date import (
     DateOrDateTime,
     DateRange,
@@ -139,6 +140,7 @@ from recidiviz.persistence.entity.base_entity import (
     RootEntity,
     UniqueConstraint,
 )
+from recidiviz.persistence.entity.generate_primary_key import generate_primary_key
 from recidiviz.persistence.entity.state.entity_field_validators import appears_with
 from recidiviz.persistence.entity.state.normalized_state_entity import (
     NormalizedStateEntity,
@@ -218,6 +220,11 @@ class IsNormalizedSentenceBackedgeValidator(EntityBackedgeValidator):
 class IsNormalizedSentenceGroupBackedgeValidator(EntityBackedgeValidator):
     def get_backedge_type(self) -> Type:
         return NormalizedStateSentenceGroup
+
+
+class IsNormalizedSentenceInferredGroupBackedgeValidator(EntityBackedgeValidator):
+    def get_backedge_type(self) -> Type:
+        return NormalizedStateSentenceInferredGroup
 
 
 class IsNormalizedIncarcerationSentenceBackedgeValidator(EntityBackedgeValidator):
@@ -839,6 +846,57 @@ class NormalizedStateSentenceGroupLength(
 
 
 @attr.s(eq=False, kw_only=True)
+class NormalizedStateSentenceInferredGroup(NormalizedStateEntity, HasExternalIdEntity):
+    """
+    Represents a logical grouping of sentences that encompass an
+    individual's interactions with a department of corrections.
+    It begins with an individual's first sentence imposition and ends at liberty.
+    This is a state agnostic term used by Recidiviz for a state
+    specific administrative phenomena.
+
+    While these groups are not state provided, we hydrate an external_id field
+    that is a sorted concatenation of the external IDs of the sentences in the group.
+
+    Inferred groups have sentences that have any ONE of the following ("or logic"):
+      - sentences are a part of the same NormalizedStateSentenceGroup
+      - sentences share an imposed_date
+      - sentences have an overlapping span of an active SERVING status,
+        meaning one sentence's first SERVING status is between another
+        sentence's first SERVING status and terminating status
+
+    Sentences can only be in a single inferred group.
+
+    For example: if sentences A & B are in the same NormalizedStateSentenceGroup,
+    and sentence C overlaps the SERVING status of sentence B, then A, B, and C
+    are in the same inferred group.
+
+    We build inferred groups from sentences because:
+      - not all states necessarily have a StateSentenceGroup
+      - all hydrated NormalizedStateSentenceGroup entities must have an
+        associated NormalizedStateSentence entity
+    """
+
+    state_code: str = attr.ib(validator=attr_validators.is_str)
+    sentence_inferred_group_id: int = attr.ib(
+        validator=attr_validators.is_int,
+        # TODO(#32690) Update this when PK PK generation is consistent across
+        # HasExternalId entities. This allows us to have a unique mandatory field for now
+        default=attr.Factory(
+            lambda s: generate_primary_key(s.external_id, StateCode(s.state_code)),
+            takes_self=True,
+        ),
+    )
+    person: Optional["NormalizedStatePerson"] = attr.ib(
+        default=None, validator=IsNormalizedPersonBackedgeValidator()
+    )
+    # TODO(#32945): Inferred Group Length Entities
+    # sentence_group_lengths: list["NormalizedStateSentenceGroupLength"] = attr.ib(
+    #     factory=list,
+    #     validator=attr_validators.is_list_of(NormalizedStateSentenceGroupLength),
+    # )
+
+
+@attr.s(eq=False, kw_only=True)
 class NormalizedStateSentenceGroup(NormalizedStateEntity, HasExternalIdEntity):
     """
     Represents a logical grouping of sentences that encompass an
@@ -846,17 +904,23 @@ class NormalizedStateSentenceGroup(NormalizedStateEntity, HasExternalIdEntity):
     It begins with an individual's first sentence imposition and ends at liberty.
     This is a state agnostic term used by Recidiviz for a state
     specific administrative phenomena.
+
+    StateSentenceGroup entities must be associated with a sentence (StateSentence.sentence_external_id)
+    to be hydrated.
     """
 
     state_code: str = attr.ib(validator=attr_validators.is_str)
     # Unique internal identifier for a sentence group
     # Primary key
     sentence_group_id: int = attr.ib(validator=attr_validators.is_int)
+    # A state provided sentence group is included in a single inferred sentence group
+    sentence_inferred_group_id: int | None = attr.ib(
+        validator=attr_validators.is_opt_int
+    )
     # Cross-entity relationships
     person: Optional["NormalizedStatePerson"] = attr.ib(
         default=None, validator=IsNormalizedPersonBackedgeValidator()
     )
-
     sentence_group_lengths: list["NormalizedStateSentenceGroupLength"] = attr.ib(
         factory=list,
         validator=attr_validators.is_list_of(NormalizedStateSentenceGroupLength),
@@ -880,6 +944,10 @@ class NormalizedStateSentence(NormalizedStateEntity, HasExternalIdEntity):
 
     sentence_group_external_id: str | None = attr.ib(
         default=None, validator=attr_validators.is_opt_str
+    )
+    # A sentence is included in a single inferred sentence group
+    sentence_inferred_group_id: int | None = attr.ib(
+        validator=attr_validators.is_opt_int
     )
 
     # The date this sentence was imposed, e.g. the date of actual sentencing,
@@ -2808,6 +2876,10 @@ class NormalizedStatePerson(
     sentence_groups: list["NormalizedStateSentenceGroup"] = attr.ib(
         factory=list,
         validator=attr_validators.is_list_of(NormalizedStateSentenceGroup),
+    )
+    sentence_inferred_groups: list["NormalizedStateSentenceInferredGroup"] = attr.ib(
+        factory=list,
+        validator=attr_validators.is_list_of(NormalizedStateSentenceInferredGroup),
     )
 
     def get_external_ids(self) -> list["NormalizedStatePersonExternalId"]:

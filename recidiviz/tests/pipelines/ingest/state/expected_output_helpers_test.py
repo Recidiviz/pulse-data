@@ -195,9 +195,7 @@ class TestExpectedOutputHelpers(unittest.TestCase):
                 normalized_entities.NormalizedStatePerson,
                 normalized_entities.NormalizedStatePersonExternalId,
                 normalized_entities.NormalizedStateSentence,
-                # TODO(#32306): This test should produce
-                #  NormalizedStateSentenceGroupInferred once normalization starts
-                #  producing those objects.
+                normalized_entities.NormalizedStateSentenceInferredGroup,
             },
             normalization_output_classes,
         )
