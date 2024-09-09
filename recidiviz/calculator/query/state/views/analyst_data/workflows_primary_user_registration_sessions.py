@@ -72,7 +72,7 @@ WITH backfilled_product_roster_sessions AS (
         # If product roster archive session only starts after 
         # PRODUCT_ROSTER_ARCHIVE_FIRST_VALIDATED_DATE, use the start date of the archive
         GREATEST(start_date, "{PRODUCT_ROSTER_ARCHIVE_FIRST_VALIDATED_DATE}") AS end_date_exclusive,
-        role,
+        roles_as_string,
         location_id,
     FROM
         `{{project_id}}.analyst_data.workflows_user_product_roster_archive_sessions_materialized`
@@ -98,7 +98,7 @@ unioned_roster_sessions AS (
         # This ensures no overlap between backfilled sessions and roster sessions
         GREATEST(start_date, "{PRODUCT_ROSTER_ARCHIVE_FIRST_VALIDATED_DATE}") AS start_date,
         end_date_exclusive,
-        role,
+        roles_as_string,
         location_id,
     FROM
         `{{project_id}}.analyst_data.workflows_user_product_roster_archive_sessions_materialized`
@@ -121,7 +121,8 @@ primary_user_roster_sessions AS (
         END AS system_type,
         location_id,
     FROM
-        unioned_roster_sessions
+        unioned_roster_sessions,
+    UNNEST(SPLIT(roles_as_string, ",")) AS role
     # Filter to only primary user types
     WHERE
         role IN ({list_to_query_string(PRIMARY_USER_ROLE_TYPES, quoted = True)})
