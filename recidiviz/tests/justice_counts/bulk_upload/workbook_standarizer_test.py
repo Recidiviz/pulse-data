@@ -44,12 +44,25 @@ class TestJusticeCountsWorkbookStandardizer(JusticeCountsDatabaseTestCase):
         super().setUp()
         self.test_schema_objects = JusticeCountsSchemaTestObjects()
         prison_agency = self.test_schema_objects.test_agency_G
+        prison_super_agency = self.test_schema_objects.test_prison_super_agency
+        prison_child_agency_A = self.test_schema_objects.test_prison_child_agency_A
+        prison_child_agency_B = self.test_schema_objects.test_prison_child_agency_B
 
         with SessionFactory.using_database(self.database_key) as session:
-            session.add(prison_agency)
+            session.add_all(
+                [
+                    prison_agency,
+                    prison_super_agency,
+                    prison_child_agency_A,
+                    prison_child_agency_B,
+                ]
+            )
             session.commit()
             session.flush()
             self.prison_agency_id = prison_agency.id
+            self.prison_super_agency_id = prison_super_agency.id
+            prison_child_agency_A.super_agency_id = self.prison_super_agency_id
+            prison_child_agency_B.super_agency_id = self.prison_super_agency_id
 
     def test_invalid_csv_error(self) -> None:
         """Bulk upload prison metrics into an empty database."""
@@ -114,3 +127,41 @@ class TestJusticeCountsWorkbookStandardizer(JusticeCountsDatabaseTestCase):
                 "Invalid Sheet Name",
             )
             os.remove(file_name)
+
+    def test_should_sheet_have_month_column(self) -> None:
+        """Tests if 'month' column is required when a specific metric key is provided."""
+        with SessionFactory.using_database(self.database_key) as session:
+            prison_super_agency = AgencyInterface.get_agency_by_id(
+                session=session, agency_id=self.prison_super_agency_id
+            )
+            superagency_metadata = BulkUploadMetadata(
+                system=schema.System.SUPERAGENCY,
+                agency=prison_super_agency,
+                session=session,
+            )
+            workbook_standardizer = WorkbookStandardizer(metadata=superagency_metadata)
+
+            result = workbook_standardizer.should_sheet_have_month_column(
+                metric_key="SUPERAGENCY_FUNDING"
+            )
+            self.assertFalse(result)
+
+            prisons_metadata = BulkUploadMetadata(
+                system=schema.System.PRISONS,
+                agency=prison_super_agency,
+                session=session,
+            )
+            workbook_standardizer = WorkbookStandardizer(metadata=prisons_metadata)
+
+            result = workbook_standardizer.should_sheet_have_month_column(
+                metric_key="PRISONS_FUNDING"
+            )
+            self.assertFalse(result)
+
+            result = workbook_standardizer.should_sheet_have_month_column(
+                metric_key="PRISONS_ADMISSIONS"
+            )
+            self.assertTrue(result)
+
+            result = workbook_standardizer.should_sheet_have_month_column()
+            self.assertTrue(result)

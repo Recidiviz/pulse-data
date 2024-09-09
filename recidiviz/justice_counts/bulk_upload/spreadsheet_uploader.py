@@ -25,7 +25,6 @@ from typing import Any, Dict, List, Optional, Set, Tuple
 
 import pandas as pd
 
-from recidiviz.justice_counts.agency import AgencyInterface
 from recidiviz.justice_counts.bulk_upload.bulk_upload_helpers import get_column_value
 from recidiviz.justice_counts.bulk_upload.bulk_upload_metadata import BulkUploadMetadata
 from recidiviz.justice_counts.bulk_upload.time_range_uploader import TimeRangeUploader
@@ -39,7 +38,6 @@ from recidiviz.justice_counts.metricfiles.metricfile_registry import (
     SYSTEM_TO_FILENAME_TO_METRICFILE,
     get_metricfile_by_sheet_name,
 )
-from recidiviz.justice_counts.metrics.metric_definition import MetricDefinition
 from recidiviz.justice_counts.metrics.metric_interface import MetricInterface
 from recidiviz.justice_counts.report import ReportInterface
 from recidiviz.justice_counts.types import DatapointJson
@@ -291,19 +289,7 @@ class SpreadsheetUploader:
             custom_starting_month,
         ) = metric_interface.get_reporting_frequency_to_use()
 
-        # Step 1: Warn if there are unexpected columns in the file
-        # actual_columns is a set of all of the column names that have been uploaded by the user
-        # we are filtering out 'Unnamed: 0' because this is the column name of the index column
-        # the index column is produced when the excel file is converted to a pandas df
-        column_names = pd.DataFrame(rows).dropna(axis=1).columns
-        actual_columns = {col for col in column_names if col != "unnamed: 0"}
-        self._check_expected_columns(
-            metricfile=metricfile,
-            actual_columns=actual_columns,
-            metric_definition=metric_definition,
-            reporting_frequency=reporting_frequency,
-        )
-        # Step 2: Group the rows in this file by time range.
+        # Step 1: Group the rows in this file by time range.
         (rows_by_time_range, time_range_to_year_month,) = self._get_rows_by_time_range(
             rows=rows,
             reporting_frequency=reporting_frequency,
@@ -361,161 +347,6 @@ class SpreadsheetUploader:
 
         return datapoint_jsons_list
 
-    def _check_expected_columns(
-        self,
-        metricfile: MetricFile,
-        actual_columns: Set[str],
-        metric_definition: MetricDefinition,
-        reporting_frequency: ReportingFrequency,
-    ) -> None:
-        """This function throws Missing Column errors if a given sheet is missing required columns.
-        Additionally, this function adds Unexpected Columns warnings to the metric_key_to_errors
-        dictionary if there are unexpected column names for a given metric in a given sheet.
-        """
-
-        # First, handle missing columns
-        if "value" not in actual_columns:
-            description = (
-                f'We expected to see a column named "value". '
-                f"Only the following columns were found in the sheet: "
-                f"{', '.join(actual_columns)}."
-            )
-            raise JusticeCountsBulkUploadException(
-                title="Missing Value Column",
-                description=description,
-                message_type=BulkUploadMessageType.ERROR,
-            )
-        if "year" not in actual_columns:
-            description = (
-                f'We expected to see a column named "year". '
-                f"Only the following columns were found in the sheet: "
-                f"{', '.join(actual_columns)}."
-            )
-            raise JusticeCountsBulkUploadException(
-                title="Missing Year Column",
-                description=description,
-                message_type=BulkUploadMessageType.ERROR,
-            )
-        # The "system" column is expected for supervision agencies that have supervision subsystems,
-        # but not for a supervision agency that does not have supervision subsystems.
-        if (
-            AgencyInterface.does_supervision_agency_report_for_subsystems(
-                agency=self.metadata.agency
-            )
-            and metric_definition.is_metric_for_supervision_or_subsystem
-            and "system" not in actual_columns
-        ):
-
-            description = (
-                f'We expected to see a column named "system". '
-                f"Only the following columns were found in the sheet: "
-                f"{', '.join(actual_columns)}."
-            )
-            raise JusticeCountsBulkUploadException(
-                title="Missing System Column",
-                description=description,
-                message_type=BulkUploadMessageType.ERROR,
-            )
-        if (
-            metricfile.disaggregation_column_name is not None
-            and metricfile.disaggregation_column_name not in actual_columns
-        ):
-            description = (
-                f'We expected to see a column named "{metricfile.disaggregation_column_name}". '
-                f"Only the following columns were found in the sheet: "
-                f"{', '.join(actual_columns)}."
-            )
-            raise JusticeCountsBulkUploadException(
-                title="Missing Breakdown Column",
-                description=description,
-                message_type=BulkUploadMessageType.ERROR,
-            )
-        if reporting_frequency.value == "MONTHLY" and "month" not in actual_columns:
-            warning_title = "Missing Month Column"
-            warning_description = (
-                f"Your uploaded data has been saved. "
-                f"The {metric_definition.display_name} metric is configured to be reported monthly, however the {metricfile.canonical_filename} sheet does not contain a month column. "
-                f"To update the reporting frequency of this metric, please visit the Metric Configuration page."
-            )
-            missing_column_warning = JusticeCountsBulkUploadException(
-                title=warning_title,
-                message_type=BulkUploadMessageType.WARNING,
-                description=warning_description,
-            )
-            self.metadata.metric_key_to_errors[metric_definition.key].append(
-                missing_column_warning
-            )
-
-        # Next, handle unexpected (extra) columns
-        expected_columns = {"value", "year"}
-        if reporting_frequency.value == "MONTHLY":
-            expected_columns.add("month")
-        if metricfile.disaggregation_column_name is not None:
-            expected_columns.add(
-                metricfile.disaggregation_column_name  # type: ignore[arg-type]
-            )
-
-        # Expect a system column if the agency has supervision subsystems AND
-        # we are uploading to a supervision system or subsystem. The "system" column
-        # is not expected for an agency that is ONLY a supervision agency and has no subsystems?
-        if (
-            AgencyInterface.does_supervision_agency_report_for_subsystems(
-                agency=self.metadata.agency
-            )
-            and metric_definition.is_metric_for_supervision_or_subsystem
-        ):
-            expected_columns.add("system")
-        if (
-            len(self.metadata.child_agency_name_to_agency) > 0
-            and self.metadata.system != schema.System.SUPERAGENCY
-        ):
-            expected_columns.add("agency")
-        unexpected_columns = actual_columns.difference(expected_columns)
-        for unexpected_col in unexpected_columns:
-            if unexpected_col == "month":
-                warning_title = "Unexpected Month Column"
-                warning_description = (
-                    f"Your uploaded data has been saved. "
-                    f"The {metric_definition.display_name} metric is configured to be reported annually, however the {metricfile.canonical_filename} sheet contains a month column. "
-                    f"To update the reporting frequency of this metric, please visit the Metric Configuration page."
-                )
-            elif unexpected_col == "system":
-                warning_title = "Unexpected System Column"
-                warning_description = (
-                    f"The {metricfile.canonical_filename} sheet contained the following unexpected column: system. "
-                    f"The {metric_definition.system.value} system does not have subsystems and does not require a system column."
-                )
-            elif (
-                "_type" in unexpected_col
-                and metricfile.disaggregation_column_name is None
-            ):
-                warning_title = "Unexpected Breakdown Column"
-                warning_description = f"Breakdown data ({unexpected_col} column) was provided in the {metricfile.canonical_filename} sheet, but this sheet should only contain aggregate data."
-            elif unexpected_col == "agency":
-                warning_title = "Unexpected Agency Column"
-                warning_description = f"Agency data ({unexpected_col} column) was provided in the {metricfile.canonical_filename} sheet, but your agency does not have the permissions to upload data for any other agency."
-            else:
-                warning_title = "Unexpected Column"
-                warning_description = f"The {metricfile.canonical_filename} sheet contained the following unexpected column: {unexpected_col}. The {unexpected_col} column is not aligned with the Technical Implementation Guides."
-            unexpected_column_warning = JusticeCountsBulkUploadException(
-                title=warning_title,
-                message_type=(
-                    BulkUploadMessageType.WARNING
-                    if unexpected_col != "agency"
-                    else BulkUploadMessageType.ERROR
-                ),
-                description=warning_description,
-            )
-            if unexpected_col == "agency":
-                # Stop ingest if unexpected_col is "agency! If an agency has no child agencies,
-                # it will skip the logic to ingest the rows one agency at a time.
-                # Ingest needs to be stopped on the sheet so that we can avoid rows being
-                # assigned incorrectly.
-                raise unexpected_column_warning
-            self.metadata.metric_key_to_errors[metric_definition.key].append(
-                unexpected_column_warning
-            )
-
     def _get_rows_by_time_range(
         self,
         rows: List[Dict[str, Any]],
@@ -546,7 +377,6 @@ class SpreadsheetUploader:
                 and row.get("month") is None
             ):
                 # We will be in this case if annual data is provided for monthly metrics
-                # warning will be added in _check_expected_columns()
                 month = (
                     custom_starting_month or 1
                 )  # if no custom starting month specified, assume calendar year
@@ -566,7 +396,6 @@ class SpreadsheetUploader:
                 and row.get("month") is not None
             ):
                 # We will be in this case if monthly data is provided for annual metrics
-                # warning will be added in _check_expected_columns()
                 month = get_column_value(
                     analyzer=self.metadata.text_analyzer,
                     row=row,
@@ -611,7 +440,7 @@ class SpreadsheetUploader:
         agency_name_to_rows: Dict[str, List[Dict[str, Any]]] = {}
 
         def get_agency_name(row: Dict[str, Any]) -> str:
-            agency_name = row.get("agency")
+            agency_name = row["agency"]
             system = row.get("system")
             metric_file = get_metricfile_by_sheet_name(
                 sheet_name=self.sheet_name,
@@ -621,18 +450,6 @@ class SpreadsheetUploader:
                     else self.metadata.system
                 ),
             )
-            if agency_name is None:
-                actual_columns = {col for col in row.keys() if col != "unnamed: 0"}
-                description = (
-                    f'We expected to see a column named "agency". '
-                    f"Only the following columns were found in the sheet: "
-                    f"{', '.join(actual_columns)}."
-                )
-                raise JusticeCountsBulkUploadException(
-                    title="Missing Agency Column",
-                    description=description,
-                    message_type=BulkUploadMessageType.ERROR,
-                )
             if isinstance(agency_name, float) and math.isnan(agency_name):
                 # When there is an agency column but there is a missing
                 # agency value for the row, then the agency_name in the row is nan

@@ -169,10 +169,10 @@ def get_month_value_from_string(
     return MONTH_NAMES.index(column_value)
 
 
-def separate_file_name_from_system(file_name: str) -> str:
+def separate_file_name_from_folder(file_name: str) -> str:
     parts = file_name.split("/")
-    if len(parts) == 2 and parts[0] in {system.value for system in schema.System}:
-        return parts[1]
+    if len(parts) > 0:
+        return parts[-1]
     return file_name
 
 

@@ -21,28 +21,30 @@ Bulk Upload into the Justice Counts database.
 
 import math
 from collections import defaultdict
-from functools import cached_property
 from io import StringIO
-from typing import Any, Dict, Optional, Set, Tuple
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 import pandas as pd
 
 from recidiviz.justice_counts.agency import AgencyInterface
 from recidiviz.justice_counts.bulk_upload.bulk_upload_helpers import (
-    separate_file_name_from_system,
+    separate_file_name_from_folder,
 )
 from recidiviz.justice_counts.bulk_upload.bulk_upload_metadata import BulkUploadMetadata
 from recidiviz.justice_counts.exceptions import (
     BulkUploadMessageType,
     JusticeCountsBulkUploadException,
 )
-from recidiviz.justice_counts.metric_setting import MetricSettingInterface
+from recidiviz.justice_counts.metricfile import MetricFile
 from recidiviz.justice_counts.metricfiles.metricfile_registry import (
     get_metricfile_by_sheet_name,
 )
-from recidiviz.justice_counts.metrics.metric_interface import MetricInterface
 from recidiviz.justice_counts.types import BulkUploadFileType
-from recidiviz.justice_counts.utils.constants import BREAKDOWN, BREAKDOWN_CATEGORY
+from recidiviz.justice_counts.utils.constants import (
+    BREAKDOWN,
+    BREAKDOWN_CATEGORY,
+    MAXIMUM_CSV_FILE_NAME_LENGTH,
+)
 from recidiviz.justice_counts.utils.metric_breakdown_to_sheet_name import (
     METRIC_BREAKDOWN_PAIR_TO_SHEET_NAME,
 )
@@ -57,43 +59,6 @@ class WorkbookStandardizer:
         self.invalid_sheet_names: Set[str] = set()
         self.is_csv_upload = False
 
-    @cached_property
-    def child_agency_name_to_agency(self) -> Dict[str, schema.Agency]:
-        """
-        Constructs a dictionary mapping normalized child agency names and
-        custom child agency names to their corresponding agency objects.
-
-        Returns:
-            A dictionary mapping normalized (lowercase, stripped) child agency names to
-            their corresponding `schema.Agency` objects.
-        """
-
-        child_agencies = AgencyInterface.get_child_agencies_for_agency(
-            session=self.metadata.session, agency=self.metadata.agency
-        )
-
-        child_agency_name_to_agency = {}
-        for child_agency in child_agencies:
-            child_agency_name_to_agency[
-                child_agency.name.strip().lower()
-            ] = child_agency
-            if child_agency.custom_child_agency_name is not None:
-                # Add the custom_child_agency_name of the agency as a key in
-                # child_agency_name_to_agency. That way, Bulk Upload will
-                # be successful if the user uploads with EITHER the name
-                # or the original name of the agency
-                child_agency_name_to_agency[
-                    child_agency.custom_child_agency_name.strip().lower()
-                ] = child_agency
-
-        return child_agency_name_to_agency
-
-    @cached_property
-    def metric_key_to_metric_interface(self) -> Dict[str, MetricInterface]:
-        return MetricSettingInterface.get_metric_key_to_metric_interface(
-            session=self.metadata.session, agency=self.metadata.agency
-        )
-
     def get_new_file_name_and_sheet_name(self, file_name: str) -> Tuple[str, str]:
         """
         Generates a new file name and corresponding sheet name for a converted Excel file.
@@ -104,7 +69,7 @@ class WorkbookStandardizer:
         Returns:
             Tuple[str, str]: The new file name and the sheet name.
         """
-        new_file_name = separate_file_name_from_system(file_name=file_name).rsplit(".", 1)[0] + ".xlsx"  # type: ignore[union-attr]
+        new_file_name = separate_file_name_from_folder(file_name=file_name).rsplit(".", 1)[0] + ".xlsx"  # type: ignore[union-attr]
         sheet_name = new_file_name.rsplit(".", 1)[0].split("/")[-1]
         return new_file_name, sheet_name
 
@@ -175,109 +140,143 @@ class WorkbookStandardizer:
 
         # Read CSV file and convert it to Excel
         csv_df = pd.read_csv(file)
+        if len(new_file_name) > MAXIMUM_CSV_FILE_NAME_LENGTH:
+            # csv_df.to_excel will throw an error if the file name is > 31 characters
+            new_file_name = (
+                new_file_name[0 : MAXIMUM_CSV_FILE_NAME_LENGTH - len(".xlsx")] + ".xlsx"
+            )
+            sheet_name = sheet_name[0:MAXIMUM_CSV_FILE_NAME_LENGTH]
+
         csv_df.to_excel(new_file_name, sheet_name=sheet_name, index=False)
         xls = pd.ExcelFile(new_file_name)
         return xls, new_file_name
 
-    def _maybe_add_missing_column_error(
+    def _add_unexpected_column_errors(
         self,
-        df: pd.DataFrame,
-        column: str,
+        expected_columns: List[str],
+        sheet_df: pd.DataFrame,
         metric_key: Optional[str] = None,
-    ) -> bool:
+        sheet_name: Optional[str] = None,
+    ) -> Set[BulkUploadMessageType]:
         """
-        Checks for missing or empty data in a specified column of a DataFrame and reports an error if needed.
+        Identifies unexpected columns in a DataFrame and adds corresponding error or warning messages.
+
+        This method checks each column in the provided `sheet_df` DataFrame to determine if it matches any of the
+        `expected_columns`. If a column is found that is not expected, an error message is created and added to
+        the `metric_key_to_errors` mapping in the metadata. If the column is a 'month' column and contains data,
+        a warning message is generated instead, indicating that the data will be recorded as having a monthly
+        reporting frequency.
 
         Args:
-            df (pd.DataFrame): The DataFrame to check for missing or empty columns.
-
-            column (str): The name of the column to check for presence and data.
-
-            metric_key (Optional[str]): An optional key used to identify the metric in the error reporting.
+            expected_columns : List[str]
+                A list of expected column names for the sheet.
+            sheet_df : pd.DataFrame
+                The DataFrame representing the sheet to be checked for unexpected columns.
+            metric_key : Optional[str], optional
+                The key corresponding to the metric being processed. This is used to categorize errors.
+            sheet_name : Optional[str], optional
+                The name of the sheet being processed. This is included in error messages for context.
 
         Returns:
-            bool: True if the column is missing or contains only NaN values, False otherwise.
+            Set[BulkUploadMessageType]
+                A set of message types (`ERROR` or `WARNING`) generated during the processing of unexpected columns.
         """
-        is_missing_column = False
-        title = ""
-        description = ""
 
-        if column not in df.columns:
-            title = f"Missing '{column}' Column"
-            description = (
-                f"This sheet should contain a column named '{column}' populated with data. "
-                f"Only the following columns were found in the sheet: "
-                f"{', '.join(df.columns)}. "
-            )
-            is_missing_column = True
-        elif df[column].isna().all():
-            title = f"Empty '{column}' Column"
-            description = (
-                f"No data was provided in the '{column}' column in your sheet. "
-            )
-            is_missing_column = True
+        message_types = set()
 
-        if is_missing_column is True:
+        for column in sheet_df.columns:
+            message_type = BulkUploadMessageType.ERROR
+            description = f"A '{column}' column was found in your sheet. Only the following columns were expected in your sheet: {', '.join(expected_columns)}. "
+            standardized_column_header = self._standardize_string(column)
+            if standardized_column_header not in expected_columns:
+                if (
+                    standardized_column_header == "month"
+                    and bool(sheet_df[column].isna().all()) is False
+                ):
+                    # If there is a month column with data in it, update the description to say
+                    # that the data will be recorded as monthly.
+                    description += "Since you provided month data, your data will be saved for a monthly reporting frequency"
+                    message_type = BulkUploadMessageType.WARNING
+
+                message_types.add(message_type)
+                self.metadata.metric_key_to_errors[metric_key].append(
+                    JusticeCountsBulkUploadException(
+                        title=f"Unexpected '{column}' Column",
+                        description=description,
+                        message_type=message_type,
+                        sheet_name=sheet_name,
+                    )
+                )
+        return message_types
+
+    def _add_missing_column_errors(
+        self,
+        expected_columns: List[str],
+        sheet_df: pd.DataFrame,
+        metric_key: Optional[str] = None,
+        sheet_name: Optional[str] = None,
+    ) -> Set[BulkUploadMessageType]:
+        """
+        Checks for missing or empty expected columns in a DataFrame and adds corresponding error or warning messages.
+
+        Args:
+            expected_columns : List[str]
+                A list of expected column names that should be present in the sheet.
+            sheet_df : pd.DataFrame
+                The DataFrame representing the sheet to be checked for missing or empty columns.
+            metric_key : Optional[str], optional
+                The key corresponding to the metric being processed. This is used to categorize errors.
+            sheet_name : Optional[str], optional
+                The name of the sheet being processed. This is included in error messages for context.
+
+        Returns:
+            Set[BulkUploadMessageType]
+                A set of message types (`ERROR` or `WARNING`) generated during the processing of missing or empty columns.
+        """
+
+        message_types = set()
+        standardized_column_actual_column = {
+            self._standardize_string(col): col for col in sheet_df.columns
+        }
+
+        for column in expected_columns:
+            message_type = BulkUploadMessageType.ERROR
+            title = ""
+            description = ""
+            if column not in standardized_column_actual_column.keys():
+                title = f"Missing '{column}' Column"
+                description = (
+                    f"This sheet should contain a column named '{column}' populated with data. "
+                    f"Only the following columns were found in the sheet: "
+                    f"{', '.join(sheet_df.columns)}. "
+                )
+            elif (
+                bool(sheet_df[standardized_column_actual_column[column]].isna().all())
+                is True
+            ):
+                title = f"Empty '{column}' Column"
+                description = (
+                    f"No data was provided in the '{column}' column in your sheet."
+                    if metric_key is None
+                    else f"No data was provided in the '{column}' column for this metric. "
+                )
+            else:
+                continue
+
             if column == "month":
                 description += "Since the 'month' column is missing, your data will be recorded with an annual reporting frequency. The 'month' column should include integers ranging from 1 to 12."
+                message_type = BulkUploadMessageType.WARNING
+
+            message_types.add(message_type)
             self.metadata.metric_key_to_errors[metric_key].append(
                 JusticeCountsBulkUploadException(
                     title=title,
                     description=description,
-                    message_type=BulkUploadMessageType.ERROR,
+                    message_type=message_type,
+                    sheet_name=sheet_name,
                 )
             )
-        return is_missing_column
-
-    def _validate_single_page_upload_column_headers(self, df: pd.DataFrame) -> bool:
-        """
-        Validates the column headers of a DataFrame for a single-page bulk upload.
-        Specifically, it checks for the presence of the 'year' and 'value' columns, and
-        verifies that 'breakdown_category' and 'breakdown' columns are present if their
-        corresponding data columns contain non-null values.
-
-        Args:
-            df (pd.DataFrame): The DataFrame to validate.
-
-        Returns:
-            bool: True if all required columns are present and valid, False otherwise.
-        """
-        is_missing_column = set()
-        is_missing_column.add(
-            self._maybe_add_missing_column_error(df=df, column="year")
-        )
-        is_missing_column.add(
-            self._maybe_add_missing_column_error(df=df, column="value")
-        )
-
-        reporting_frequencies = {
-            metric_interface.get_reporting_frequency_to_use()[0]
-            for metric_interface in self.metric_key_to_metric_interface.values()
-        }
-
-        if schema.ReportingFrequency.MONTHLY in reporting_frequencies:
-            is_missing_column.add(
-                self._maybe_add_missing_column_error(df=df, column="month")
-            )
-
-        if BREAKDOWN_CATEGORY not in df.columns and (
-            BREAKDOWN in df.columns and bool(df[BREAKDOWN].isna().all()) is False
-        ):
-            # If there is a breakdown column with data but no breakdown_category column, throw an error.
-            is_missing_column.add(
-                self._maybe_add_missing_column_error(df=df, column=BREAKDOWN_CATEGORY)
-            )
-
-        if BREAKDOWN not in df.columns and (
-            BREAKDOWN_CATEGORY in df.columns
-            and bool(df[BREAKDOWN_CATEGORY].isna().all()) is False
-        ):
-            # If there is a breakdown_category column with data but no breakdown column, throw an error.
-            is_missing_column.add(
-                self._maybe_add_missing_column_error(df=df, column=BREAKDOWN)
-            )
-
-        return True not in is_missing_column
+        return message_types
 
     def _process_metric_df(
         self,
@@ -356,8 +355,6 @@ class WorkbookStandardizer:
 
         """
         workbook_dfs: Dict[str, pd.DataFrame] = defaultdict(pd.DataFrame)
-        if self._validate_single_page_upload_column_headers(df=df) is False:
-            return {}
 
         for metric in df["metric"].unique():
             metric_df = df[df["metric"] == metric]
@@ -406,6 +403,215 @@ class WorkbookStandardizer:
                         # TODO(#31610)Raise error if breakdown_category value or breakdown value is invalid.
         return workbook_dfs
 
+    def should_sheet_have_month_column(self, metric_key: Optional[str] = None) -> bool:
+        """
+        Determines if a DataFrame sheet should include a 'month' column based on the reporting frequency.
+
+        Args:
+            metric_key : Optional[str], optional
+                The key corresponding to the metric being processed. If provided, the method checks the reporting
+                frequency of this specific metric.
+
+        Returns:
+            bool
+                True if the sheet should include a 'month' column, False otherwise.
+        """
+        reporting_frequencies = set()
+
+        if metric_key is not None:
+            if (
+                len(self.metadata.child_agency_name_to_agency) > 0
+                and self.metadata.system != schema.System.SUPERAGENCY
+            ):
+                # There should be a month column if the agency is a super agency and either
+                # the super agency of the child agencies have the metric configured with a
+                # monthly reporting frequency
+                reporting_frequencies.update(
+                    {
+                        metric_key_to_metric_interface[
+                            metric_key
+                        ].get_reporting_frequency_to_use()[0]
+                        for metric_key_to_metric_interface in self.metadata.child_agency_id_to_metric_key_to_metric_interface.values()
+                        if metric_key in metric_key_to_metric_interface
+                    }
+                )
+            else:
+                # There should be a month column if it a regular agency with standard
+                # upload format and the metric is reported monthly.
+                return (
+                    self.metadata.metric_key_to_metric_interface[
+                        metric_key
+                    ].get_reporting_frequency_to_use()[0]
+                    == schema.ReportingFrequency.MONTHLY
+                )
+
+        else:
+            # In a single-page upload, there should be a month column if the agency or
+            # it's super agencies have any metric with a monthly reporting frequency.
+            reporting_frequencies = {
+                metric_interface.get_reporting_frequency_to_use()[0]
+                for metric_interface in self.metadata.metric_key_to_metric_interface.values()
+            }
+
+            reporting_frequencies.update(
+                {
+                    metric_interface.get_reporting_frequency_to_use()[0]
+                    for metric_key_to_metric_interface in self.metadata.child_agency_id_to_metric_key_to_metric_interface.values()
+                    for metric_interface in metric_key_to_metric_interface.values()
+                }
+            )
+
+        return schema.ReportingFrequency.MONTHLY in reporting_frequencies
+
+    def get_expected_columns(
+        self,
+        sheet_df: pd.DataFrame,
+        metric_file: Optional[MetricFile] = None,
+    ) -> List[str]:
+        """
+        Generates a list of expected column names for a given DataFrame sheet.
+
+        Args:
+            sheet_df : pd.DataFrame
+                The DataFrame representing the sheet to be checked.
+            metric_file : Optional[MetricFile], optional
+                An optional `MetricFile` object that contains the metric definition and disaggregation details.
+
+        Returns:
+            List[str]
+                A list of expected column names for the sheet.
+        """
+
+        metric_key = metric_file.definition.key if metric_file is not None else None
+        expected_columns = ["metric", "year"] if metric_key is None else ["year"]
+
+        if self.should_sheet_have_month_column(metric_key=metric_key) is True:
+            expected_columns.append("month")
+
+        if (
+            len(self.metadata.child_agency_name_to_agency) > 0
+            and self.metadata.system != schema.System.SUPERAGENCY
+        ):
+            expected_columns.append("agency")
+
+        if (
+            self.metadata.system == schema.System.SUPERVISION
+            and AgencyInterface.does_supervision_agency_report_for_subsystems(
+                agency=self.metadata.agency
+            )
+            is True
+        ):
+            disaggregated_metric_by_supervision_subsystem = (
+                self._get_disaggregated_metric_by_supervision_subsystem_set(
+                    metric_key=metric_key
+                )
+            )
+            if True in disaggregated_metric_by_supervision_subsystem:
+                expected_columns.append("system")
+
+        if (
+            metric_file is not None
+            and metric_file.disaggregation_column_name is not None
+        ):
+            expected_columns.append(metric_file.disaggregation_column_name)
+        if metric_file is None and (
+            BREAKDOWN in sheet_df.columns or BREAKDOWN_CATEGORY in sheet_df.columns
+        ):
+            # If there is a 'breakdown column' we expect a 'breakdown_category' column (and vice versa).
+            expected_columns += [BREAKDOWN_CATEGORY, BREAKDOWN]
+
+        expected_columns.append("value")
+        return expected_columns
+
+    def _get_disaggregated_metric_by_supervision_subsystem_set(
+        self, metric_key: Optional[str] = None
+    ) -> Set[Optional[bool]]:
+        """
+        Generates a set of disaggregated_by_supervision_subsystems values for a metric.
+
+        Args:
+            metric_key : Optional[str]
+                The metric key for the metric we are evaluating
+
+        Returns:
+            Set[Optional[bool]]
+                A set of disaggregated_metric_by_supervision_subsystem for the metric.
+                If metric_key is None, we will add the disaggregated_metric_by_supervision_subsystem for
+                all metrics to the set. If metric_key is not None, the set will only contain
+                the disaggregated_by_supervision_subsystems for the specified metric. metric_key will
+                be None for single-page format uploads.
+        """
+        return (
+            {
+                self.metadata.metric_key_to_metric_interface[
+                    metric_key
+                ].disaggregated_by_supervision_subsystems
+            }
+            if metric_key is not None
+            else {
+                metric_interface.disaggregated_by_supervision_subsystems
+                for metric_interface in self.metadata.metric_key_to_metric_interface.values()
+            }
+        )
+
+    def standardize_sheet(
+        self,
+        sheet_df: pd.DataFrame,
+        metric_file: Optional[MetricFile] = None,
+        sheet_name: Optional[str] = None,
+    ) -> Tuple[bool, pd.DataFrame]:
+        """
+        Standardizes a DataFrame sheet by ensuring expected columns are present and
+        unexpected columns are flagged.
+
+        This method removes unnamed columns, checks for missing and unexpected columns,
+        and standardizes the column headers. It generates error or warning messages if
+        any issues are found during the standardization process.
+
+        Args:
+            sheet_df : pd.DataFrame
+                The DataFrame representing the sheet to be standardized.
+            metric_file : Optional[MetricFile], optional
+                An optional `MetricFile` object that contains the metric definition.
+            sheet_name : Optional[str], optional
+                The name of the sheet being standardized. This is included in error messages for context.
+
+        Returns:
+            Tuple[bool, pd.DataFrame]
+                A tuple where the first element is a boolean indicating whether any errors were found
+                (True if no errors, False otherwise), and the second element is the standardized DataFrame.
+        """
+        # Remove unnamed columns
+        sheet_df = sheet_df.loc[:, ~sheet_df.columns.str.contains("^Unnamed")]
+        expected_columns = self.get_expected_columns(
+            sheet_df=sheet_df, metric_file=metric_file
+        )
+
+        metric_key = metric_file.definition.key if metric_file is not None else None
+
+        missing_column_error_messages = self._add_missing_column_errors(
+            expected_columns=expected_columns,
+            metric_key=metric_key,
+            sheet_df=sheet_df,
+            sheet_name=sheet_name,
+        )
+
+        unexpected_column_error_messages = self._add_unexpected_column_errors(
+            expected_columns=expected_columns,
+            metric_key=metric_key,
+            sheet_df=sheet_df,
+            sheet_name=sheet_name,
+        )
+
+        error_messages = missing_column_error_messages.union(
+            unexpected_column_error_messages
+        )
+
+        # Update DF with standardized all column headers
+        sheet_df.columns = sheet_df.columns.map(self._standardize_string)
+
+        return BulkUploadMessageType.ERROR not in error_messages, sheet_df
+
     def standardize_workbook(self, file: Any, file_name: str) -> pd.ExcelFile:
         """
         Standardizes the sheet names, column headers, and cell values in the given Excel workbook.
@@ -427,33 +633,49 @@ class WorkbookStandardizer:
             standardized_file_name
         ) as writer:
             workbook_df = pd.read_excel(excel_file, sheet_name=None)
+            can_workbook_be_ingested = True
             if len(excel_file.sheet_names) == 1:
                 sheet_df = workbook_df[excel_file.sheet_names[0]]
                 if "metric" in sheet_df.columns:
-                    sheet_df.columns = sheet_df.columns.map(
-                        self._standardize_string
-                    )  # standardize all column headers
+                    (
+                        can_workbook_be_ingested,
+                        standardized_sheet_df,
+                    ) = self.standardize_sheet(sheet_df=sheet_df)
+
                     workbook_df = self._transform_combined_metric_file_upload(
-                        df=sheet_df,
+                        df=standardized_sheet_df
                     )
 
-            for sheet_name in workbook_df:
-                sheet_df = workbook_df[sheet_name]
-                standardized_sheet_name = self._standardize_string(sheet_name)
-                if (
-                    get_metricfile_by_sheet_name(
+            if can_workbook_be_ingested is True:
+                for sheet_name in workbook_df:
+                    sheet_df = workbook_df[sheet_name]
+                    standardized_sheet_name = self._standardize_string(sheet_name)
+                    metric_file = get_metricfile_by_sheet_name(
                         sheet_name=standardized_sheet_name, system=self.metadata.system
                     )
-                    is not None
-                ):
-                    # Update sheet name in the excel file copy
-                    sheet_df.to_excel(
-                        writer, sheet_name=standardized_sheet_name, index=False
+                    if metric_file is None:
+                        # 1) Don't write sheet with invalid sheet name to new excel object
+                        # 2) Add sheet name to invalid sheet names
+                        self.invalid_sheet_names.add(sheet_name)
+                        continue
+
+                    (
+                        can_sheet_be_ingested,
+                        standardized_sheet_df,
+                    ) = self.standardize_sheet(
+                        sheet_df=sheet_df,
+                        metric_file=metric_file,
+                        sheet_name=sheet_name,
                     )
-                else:
-                    # 1) Don't write sheet with invalid sheet name to new excel object
-                    # 2) Add sheet name to invalid sheet names
-                    self.invalid_sheet_names.add(sheet_name)
+
+                    if can_sheet_be_ingested is False:
+                        continue
+
+                    standardized_sheet_df.to_excel(
+                        writer,
+                        sheet_name=standardized_sheet_name,
+                        index=False,
+                    )
 
         if len(self.invalid_sheet_names) > 0:
             self._add_invalid_name_error()
