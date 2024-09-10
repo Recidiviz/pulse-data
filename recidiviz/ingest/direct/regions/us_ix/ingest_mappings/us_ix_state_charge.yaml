@@ -58,33 +58,38 @@ output:
                     middle_name: MiddleName
                     surname: LastName
                 status:
-                  $enum_mapping:
-                    $raw_text: ChargeOutcomeTypeDesc
-                    $mappings:
-                      StateChargeV2Status.CONVICTED:
-                        - Convicted
-                      StateChargeV2Status.PENDING:
-                        - Court Retains Jurisdiction
-                      StateChargeV2Status.ACQUITTED:
-                        - Discharged
-                      StateChargeV2Status.DROPPED:
-                        - Dismissed
-                        - Expired
-                        - Vacated Conviction
-                        - Relinquished
-                        - Revoked
-                        - Suspended Sent
-                        - Vacated Sentence
-                      StateChargeV2Status.INTERNAL_UNKNOWN:
-                        - Amended
-                        - Unsupervised
-                        - Interstate Probation
-                        - Reduced to a Misdemeanor
-                        - WHJ
-                        - Interstate Parole
-                        - Correctional Compact
-                        - Satisfied
-                        - Sealed
-                      StateChargeV2Status.ADJUDICATED:
-                        - Released to Probation
-                        - Commuted Sentence
+                  $conditional:
+                    - $if:
+                        $not_null: ChargeOutcomeTypeDesc
+                      $then:
+                        $enum_mapping:
+                          $raw_text: ChargeOutcomeTypeDesc
+                          $mappings:
+                            StateChargeV2Status.CONVICTED:
+                              - Convicted
+                            StateChargeV2Status.PENDING:
+                              - Court Retains Jurisdiction
+                            StateChargeV2Status.ACQUITTED:
+                              - Discharged
+                            StateChargeV2Status.DROPPED:
+                              - Dismissed
+                              - Expired
+                              - Vacated Conviction
+                              - Relinquished
+                              - Revoked
+                              - Suspended Sent
+                              - Vacated Sentence
+                            StateChargeV2Status.INTERNAL_UNKNOWN:
+                              - Amended
+                              - Unsupervised
+                              - Interstate Probation
+                              - Reduced to a Misdemeanor
+                              - WHJ
+                              - Interstate Parole
+                              - Correctional Compact
+                              - Satisfied
+                              - Sealed
+                            StateChargeV2Status.ADJUDICATED:
+                              - Released to Probation
+                              - Commuted Sentence
+                    - $else: $literal_enum(StateChargeV2Status.PRESENT_WITHOUT_INFO)
