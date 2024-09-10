@@ -17,6 +17,8 @@
 """Dataset configuration for aggregated metrics views related to impact reports"""
 
 from recidiviz.aggregated_metrics.impact_reports_aggregated_metrics_configurations import (
+    AVG_DAILY_POPULATION_TASK_ELIGIBLE_AND_VIEWED_METRICS,
+    AVG_DAILY_POPULATION_TASK_ELIGIBLE_AND_NOT_VIEWED_METRICS,
     AVG_DAILY_POPULATION_TASK_INELIGIBLE_METRICS,
     AVG_DAILY_POPULATION_TASK_ALMOST_ELIGIBLE_METRICS,
     DISTINCT_ACTIVE_USERS,
@@ -34,6 +36,8 @@ from recidiviz.aggregated_metrics.models.aggregated_metric import AggregatedMetr
 
 METRICS_BY_TIME_PERIOD: dict[MetricTimePeriod, list[AggregatedMetric]] = {
     MetricTimePeriod.DAY: [
+        *AVG_DAILY_POPULATION_TASK_ELIGIBLE_AND_NOT_VIEWED_METRICS,
+        *AVG_DAILY_POPULATION_TASK_ELIGIBLE_AND_VIEWED_METRICS,
         *AVG_DAILY_POPULATION_TASK_ALMOST_ELIGIBLE_METRICS,
         *AVG_DAILY_POPULATION_TASK_ELIGIBLE_METRICS_INCARCERATION,
         *AVG_DAILY_POPULATION_TASK_ELIGIBLE_METRICS_SUPERVISION,

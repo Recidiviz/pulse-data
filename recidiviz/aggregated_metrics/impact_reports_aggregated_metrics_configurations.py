@@ -75,6 +75,45 @@ AVG_DAILY_POPULATION_TASK_ALMOST_ELIGIBLE_METRICS = [
     for b in DEDUPED_TASK_COMPLETION_EVENT_VB
 ]
 
+AVG_DAILY_POPULATION_TASK_ELIGIBLE_AND_VIEWED_METRICS = [
+    DailyAvgSpanCountMetric(
+        name=f"avg_daily_population_task_eligible_and_viewed_{b.task_type_name.lower()}",
+        display_name=f"Average Population: Task Eligible And Viewed, {b.task_title}",
+        description=f"Average daily count of residents eligible and viewed for task of type: {b.task_title.lower()}",
+        span_selectors=[
+            SpanSelector(
+                span_type=SpanType.WORKFLOWS_PERSON_IMPACT_FUNNEL_STATUS_SESSION,
+                span_conditions_dict={
+                    "is_eligible": ["true"],
+                    "viewed": ["true"],
+                    "task_type": [b.task_type_name],
+                },
+            ),
+        ],
+    )
+    for b in DEDUPED_TASK_COMPLETION_EVENT_VB
+]
+
+
+AVG_DAILY_POPULATION_TASK_ELIGIBLE_AND_NOT_VIEWED_METRICS = [
+    DailyAvgSpanCountMetric(
+        name=f"avg_daily_population_task_eligible_and_not_viewed_{b.task_type_name.lower()}",
+        display_name=f"Average Population: Task Eligible And Not Viewed, {b.task_title}",
+        description=f"Average daily count of residents eligible and not viewed for task of type: {b.task_title.lower()}",
+        span_selectors=[
+            SpanSelector(
+                span_type=SpanType.WORKFLOWS_PERSON_IMPACT_FUNNEL_STATUS_SESSION,
+                span_conditions_dict={
+                    "is_eligible": ["true"],
+                    "viewed": ["false"],
+                    "task_type": [b.task_type_name],
+                },
+            ),
+        ],
+    )
+    for b in DEDUPED_TASK_COMPLETION_EVENT_VB
+]
+
 
 DISTINCT_ACTIVE_USERS = [
     EventDistinctUnitCountMetric(
