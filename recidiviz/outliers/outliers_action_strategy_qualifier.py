@@ -24,6 +24,7 @@ from dateutil.relativedelta import relativedelta
 from recidiviz.outliers.types import (
     ActionStrategySurfacedEvent,
     ActionStrategyType,
+    OutliersBackendConfig,
     SupervisionOfficerEntity,
 )
 
@@ -35,6 +36,8 @@ class OutliersActionStrategyQualifier:
     """
 
     events: List[ActionStrategySurfacedEvent] = attr.ib()
+
+    config: OutliersBackendConfig = attr.ib()
 
     def action_strategy_outlier_eligible(
         self, officer_pseudo_id: str, is_outlier: bool
@@ -76,7 +79,7 @@ class OutliersActionStrategyQualifier:
                         return True
         return False
 
-    def check_date_in_prior_month(self, timestamp: date) -> bool:
+    def date_is_period_prior_than_current(self, timestamp: date) -> bool:
         """
         Checks if the date provided is within the same calendar month as today
         """
@@ -84,6 +87,17 @@ class OutliersActionStrategyQualifier:
         first_of_this_month = current_date.replace(day=1)
 
         return timestamp < first_of_this_month
+
+    def date_is_within_current_or_prior_period(self, timestamp: date) -> bool:
+        """
+        Checks if the date provided is within two periods (calendar months) prior to today
+        """
+        current_date = date.today()
+        start_date_of_last_period = current_date.replace(day=1) - relativedelta(
+            months=1
+        )
+
+        return current_date >= timestamp >= start_date_of_last_period
 
     def action_strategy_outlier_3_months_eligible(
         self,
@@ -118,17 +132,50 @@ class OutliersActionStrategyQualifier:
                 if (
                     e.action_strategy
                     == ActionStrategyType.ACTION_STRATEGY_OUTLIER.value
-                    and self.check_date_in_prior_month(e.timestamp)
+                    and self.date_is_period_prior_than_current(e.timestamp)
                 ):
                     outlier_as_surfaced = True
             if (
                 e.action_strategy
                 == ActionStrategyType.ACTION_STRATEGY_60_PERC_OUTLIERS.value
-                and self.check_date_in_prior_month(e.timestamp)
+                and self.date_is_period_prior_than_current(e.timestamp)
             ):
 
                 sixty_perc_outlier_as_surfaced = True
         return outlier_as_surfaced or sixty_perc_outlier_as_surfaced
+
+    def action_strategy_outlier_absconsion_eligible(
+        self, officer: SupervisionOfficerEntity
+    ) -> bool:
+        """
+        Officer is eligible for ACTION_STRATEGY_OUTLIER_ABSCONSION if
+        (1) They are ONLY an outlier on an absconsion metric
+        (2) There are not any surfaced events with this type in the current or previous calendar months
+        """
+        # Check that there is only one outlier metric
+        if len(officer.outlier_metrics) != 1:
+            return False
+        # Check that the outlier metric is an absconsion metric
+        if not any(
+            metric.name == officer.outlier_metrics[0]["metric_id"]
+            and metric.is_absconsion_metric
+            for metric in self.config.metrics
+        ):
+            return False
+
+        officer_pseudo_id = officer.pseudonymized_id
+        disqualifying_events = [
+            e
+            for e in self.events
+            if e.officer_pseudonymized_id == officer_pseudo_id
+            and e.action_strategy
+            == ActionStrategyType.ACTION_STRATEGY_OUTLIER_ABSCONSION.value
+            and self.date_is_within_current_or_prior_period(e.timestamp)
+        ]
+        if len(disqualifying_events) > 0:
+            return False
+
+        return True
 
     def action_strategy_60_perc_outliers_eligible(
         self, officers: List[SupervisionOfficerEntity]
@@ -172,6 +219,8 @@ class OutliersActionStrategyQualifier:
             return ActionStrategyType.ACTION_STRATEGY_OUTLIER.value
         if self.action_strategy_outlier_3_months_eligible(officer):
             return ActionStrategyType.ACTION_STRATEGY_OUTLIER_3_MONTHS.value
+        if self.action_strategy_outlier_absconsion_eligible(officer):
+            return ActionStrategyType.ACTION_STRATEGY_OUTLIER_ABSCONSION.value
         return None
 
     def get_eligible_action_strategy_for_supervisor(

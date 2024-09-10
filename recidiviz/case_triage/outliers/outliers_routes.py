@@ -769,7 +769,12 @@ def create_outliers_api_blueprint() -> Blueprint:
         supervisor_events = querier.get_action_strategy_surfaced_events_for_supervisor(
             supervisor.pseudonymized_id
         )
-        qualifier = OutliersActionStrategyQualifier(events=supervisor_events)
+
+        product_config = querier.get_outliers_backend_config()
+
+        qualifier = OutliersActionStrategyQualifier(
+            events=supervisor_events, config=product_config
+        )
         for officer in officer_entities:
             action_strategies_json[
                 officer.pseudonymized_id

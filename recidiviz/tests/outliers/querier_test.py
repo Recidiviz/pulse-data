@@ -95,6 +95,7 @@ TEST_METRIC_3 = OutliersMetricConfig.build_from_metric(
     event_name="absconsions",
     event_name_singular="absconsion",
     event_name_past_tense="absconded",
+    is_absconsion_metric=True,
 )
 
 TEST_CLIENT_EVENT_1 = OutliersClientEventConfig.build(
