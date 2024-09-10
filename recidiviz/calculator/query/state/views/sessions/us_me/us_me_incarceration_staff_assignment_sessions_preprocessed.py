@@ -41,8 +41,7 @@ US_ME_INCARCERATION_STAFF_ASSIGNMENT_SESSIONS_PREPROCESSED_QUERY_TEMPLATE = """
         Cis_100_Client_Id as person_external_id,
         DATE(SAFE_CAST(Assignment_Date AS DATETIME)) AS start_date,
         DATE(SAFE_CAST(sp.Supervision_End_Date AS DATETIME)) AS end_date_exclusive,
-        -- US_ME doesn't have staff internal id's yet
-        NULL AS incarceration_staff_assignment_id,
+        sei.staff_id AS incarceration_staff_assignment_id,
         IFNULL(ids.external_id_mapped, Cis_900_Employee_Id) AS incarceration_staff_assignment_external_id,
         -- We are only surfacing folks who have a person assigned, so we can assume they are counselors/CMs
         "INCARCERATION_STAFF" AS incarceration_staff_assignment_role_type,
@@ -65,6 +64,10 @@ US_ME_INCARCERATION_STAFF_ASSIGNMENT_SESSIONS_PREPROCESSED_QUERY_TEMPLATE = """
         ON sp.Cis_900_Employee_Id = ids.external_id_to_map AND ids.state_code = 'US_ME' 
     LEFT JOIN `{project_id}.normalized_state.state_person_external_id` pei
         ON sp.Cis_100_Client_Id = pei.external_id AND pei.state_code = 'US_ME'
+    LEFT JOIN `{project_id}.normalized_state.state_staff_external_id` sei
+    ON sp.Cis_900_Employee_Id = sei.external_id
+        AND sei.state_code = "US_ME"
+        AND sei.id_type = 'US_ME_EMPLOYEE'
     WHERE
         -- Ignore assignments from the future
         SAFE_CAST(Assignment_Date AS DATETIME) <= CURRENT_DATE('US/Eastern')
