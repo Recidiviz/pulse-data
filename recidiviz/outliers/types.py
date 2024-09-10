@@ -168,6 +168,9 @@ class OutliersMetricConfig:
     # i.e. top_x_pct = 10 translates to highlighting officers that are in the top 10%
     top_x_pct: int | None = attr.ib(default=None)
 
+    # Identifies if this is an absconsion related metric
+    is_absconsion_metric: bool = attr.ib(default=False)
+
     @classmethod
     def build_from_metric(
         cls,
@@ -180,6 +183,7 @@ class OutliersMetricConfig:
         # TODO(#27455): Remove the default value when the copy is ready for PA and IX
         description_markdown: str = "",
         top_x_pct: int | None = None,
+        is_absconsion_metric: bool = False,
     ) -> "OutliersMetricConfig":
         return cls(
             metric.name,
@@ -192,6 +196,7 @@ class OutliersMetricConfig:
             description_markdown,
             metric.metric_event_conditions_string,
             top_x_pct,
+            is_absconsion_metric,
         )
 
 

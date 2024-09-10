@@ -74,6 +74,7 @@ The denominator is the average daily caseload for the officer over the given tim
             ),
             OutliersMetricConfig.build_from_metric(
                 metric=VIOLATIONS_ABSCONSION,
+                is_absconsion_metric=True,
                 title_display_name="Absconsion Rate",
                 body_display_name="absconsion rate",
                 event_name="absconsions",
@@ -123,6 +124,7 @@ The denominator is the average daily caseload for the officer over the given tim
             ),
             OutliersMetricConfig.build_from_metric(
                 metric=ABSCONSIONS_BENCH_WARRANTS,
+                is_absconsion_metric=True,
                 title_display_name="Absconsion Rate",
                 body_display_name="absconsion rate",
                 event_name="absconsions",
@@ -152,6 +154,7 @@ Denominator is the average daily caseload for the agent over the given time peri
             ),
             OutliersMetricConfig.build_from_metric(
                 metric=ABSCONSIONS_BENCH_WARRANTS,
+                is_absconsion_metric=True,
                 title_display_name="Absconder Warrant Rate",
                 body_display_name="absconder warrant rate",
                 event_name="absconder warrants",
@@ -212,6 +215,7 @@ Denominator is the average daily caseload for the officer over the given time pe
             ),
             OutliersMetricConfig.build_from_metric(
                 metric=ABSCONSIONS_BENCH_WARRANTS,
+                is_absconsion_metric=True,
                 title_display_name="Absconsion Rate",
                 body_display_name="absconsion rate",
                 event_name="absconsions",
@@ -254,6 +258,7 @@ Denominator is the average daily caseload for the officer over the given time pe
         metrics=[
             OutliersMetricConfig.build_from_metric(
                 metric=ABSCONSIONS_BENCH_WARRANTS,
+                is_absconsion_metric=True,
                 title_display_name="Absconding Rate",
                 body_display_name="absconding rate",
                 event_name="abscondings",
@@ -299,6 +304,7 @@ Denominator is the average daily caseload for the agent over the given time peri
             ),
             OutliersMetricConfig.build_from_metric(
                 metric=ABSCONSIONS_BENCH_WARRANTS,
+                is_absconsion_metric=True,
                 # TODO(#31528): Check wording with TTs
                 title_display_name="Absconder Rate",
                 body_display_name="absconder rate",
