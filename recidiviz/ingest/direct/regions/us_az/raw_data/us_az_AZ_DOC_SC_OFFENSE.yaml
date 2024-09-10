@@ -1123,49 +1123,370 @@ columns:
       - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
       - "SAFE.PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%S', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
   - name: DPR_ABSOLUTE_DISCHARGE_DTM
+    description: |-
+      ACIS-calculated DPR absolute discharge date. Can be overridden by ACIS in the 
+      ARD field or a user in the ML field.
+    field_type: datetime
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y', {col_name})"
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S %p', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
+      - "SAFE.PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%S', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
   - name: DPR_ABSOLUTE_DISCHARGE_DTM_ARD
+    description: |-
+      Dpr absolute discharge date, adjust release date.
+    field_type: datetime
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y', {col_name})"
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S %p', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
+      - "SAFE.PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%S', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
   - name: DPR_ABSOLUTE_DISCHARGE_DTM_ML
+    description: |-
+      Dpr absolute discharge date, manual lock.
+    field_type: datetime
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y', {col_name})"
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S %p', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
+      - "SAFE.PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%S', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
   - name: DPR_COMMUNITY_SUPV_BEGIN_DTM
+    description: |-
+      ACIS-calculated DPR community supervision begin date. Can be overridden by ACIS in the 
+      ARD field or a user in the ML field.
+    field_type: datetime
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y', {col_name})"
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S %p', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
+      - "SAFE.PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%S', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
   - name: DPR_COMMUNITY_SUPV_BEGIN_DTM_ARD
+    description: |-
+      Dpr CommunitySupervision begin date, adjust release date.
+    field_type: datetime
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y', {col_name})"
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S %p', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
+      - "SAFE.PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%S', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
   - name: DPR_COMMUNITY_SUPV_BEGIN_DTM_ML
+    description: |-
+      Dpr CommunitySupervision begin date, manual lock.
+    field_type: datetime
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y', {col_name})"
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S %p', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
+      - "SAFE.PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%S', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
   - name: DPR_COMMUNITY_SUPV_BEGIN_TEXT
+    description: |-
+      Dpr Community Supervision Text to replace date when needed
   - name: DPR_COMMUNITY_SUPV_END_DTM
+    description: |-
+      ACIS-calculated DPR community supervision end date. Can be overridden by ACIS in the 
+      ARD field or a user in the ML field.
+    field_type: datetime
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y', {col_name})"
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S %p', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
+      - "SAFE.PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%S', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
   - name: DPR_COMMUNITY_SUPV_END_DTM_ARD
+    description: |-
+      Dpr CommunitySupervision end date, adjust release date.
+    field_type: datetime
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y', {col_name})"
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S %p', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
+      - "SAFE.PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%S', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
   - name: DPR_COMMUNITY_SUPV_END_DTM_ML
+    description: |-
+      Dpr CommunitySupervision end date, manual lock
+    field_type: datetime
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y', {col_name})"
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S %p', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
+      - "SAFE.PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%S', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
   - name: DPR_DRUG_TRANSITION_PGM_RLS_DTM
+    description: |-
+      ACIS-calculated DPR transition program release date. Can be overridden by ACIS in the 
+      ARD field or a user in the ML field.
+    field_type: datetime
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y', {col_name})"
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S %p', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
+      - "SAFE.PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%S', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
   - name: DPR_DRUG_TRANSITION_PGM_RLS_DTM_ARD
+    description: |-
+      DPR transition program release date, adjust release date
+    field_type: datetime
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y', {col_name})"
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S %p', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
+      - "SAFE.PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%S', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
   - name: DPR_DRUG_TRANSITION_PGM_RLS_DTM_ML
+    description: |-
+      DPR transition program release date, manual lock
+    field_type: datetime
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y', {col_name})"
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S %p', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
+      - "SAFE.PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%S', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
   - name: DPR_EARNED_CREDITS
+    description: |-
+      Dpr earned credits for credit info
   - name: DPR_EARNED_RLS_CREDIT_DTM
+    description: |-
+      Dpr earned release date
+    field_type: datetime
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y', {col_name})"
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S %p', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
+      - "SAFE.PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%S', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
   - name: DPR_EARNED_RLS_CREDIT_DTM_ARD
+    description: |-
+      Dpr earned release date, adjust release date
+    field_type: datetime
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y', {col_name})"
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S %p', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
+      - "SAFE.PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%S', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
   - name: DPR_EARNED_RLS_CREDIT_DTM_ML
+    description: |-
+      Dpr earned release date, manual lock
+    field_type: datetime
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y', {col_name})"
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S %p', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
+      - "SAFE.PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%S', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
   - name: DPR_PROJECTED_RELEASE_CREDITS
+    description: |-
+      DPR PROJECTED RELEASE CREDITS info
   - name: DPR_RLS_CRDTS_TO_BE_EARNED
+    description: |-
+      Dpr earned release credit info
   - name: DPR_TEMP_RLS_DTM
+    description: |-
+      Dpr Temporary Release date
+    field_type: datetime
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y', {col_name})"
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S %p', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
+      - "SAFE.PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%S', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
   - name: DPR_TEMP_RLS_DTM_ARD
+    description: |-
+      Dpr Temporary Release date , adjust release date
+    field_type: datetime
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y', {col_name})"
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S %p', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
+      - "SAFE.PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%S', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
   - name: DPR_TEMP_RLS_DTM_ML
+    description: |-
+      Dpr Temporary Release date , Manual Lock.
+    field_type: datetime
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y', {col_name})"
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S %p', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
+      - "SAFE.PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%S', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
   - name: DPR_TEMP_RLS_TEXT
+    description: |-
+      Dpr Temporary Release Text to replace date when needed
   - name: DPR_TR_TO_ABSOLUTE_DISCHARGE_DTM
+    description: |-
+      ACIS-calculated DPR transition release to absolute discharge date. Can be overridden by ACIS in the 
+      ARD field or a user in the ML field.
+    field_type: datetime
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y', {col_name})"
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S %p', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
+      - "SAFE.PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%S', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
   - name: DPR_TR_TO_ABSOLUTE_DISCHARGE_DTM_ARD
+    description: |-
+      DPR transition release to absolute discharge date, adjust release date.
+    field_type: datetime
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y', {col_name})"
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S %p', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
+      - "SAFE.PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%S', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
   - name: DPR_TR_TO_ABSOLUTE_DISCHARGE_DTM_ML
+    description: |-
+      DPR transition release to absolute discharge date, Manual Lock.
+    field_type: datetime
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y', {col_name})"
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S %p', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
+      - "SAFE.PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%S', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
   - name: DPR_TRANSITION_PGM_RLS_DTM
+    description: |-
+      No description available in AZ data dictionary as of 10/31/23.
+    field_type: datetime
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y', {col_name})"
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S %p', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
+      - "SAFE.PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%S', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
   - name: DPR_TRANSITION_PGM_RLS_DTM_ARD
+    description: |-
+      No description available in AZ data dictionary as of 10/31/23.
+    field_type: datetime
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y', {col_name})"
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S %p', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
+      - "SAFE.PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%S', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
   - name: DPR_TRANSITION_PGM_RLS_DTM_ML
+    description: |-
+      No description available in AZ data dictionary as of 10/31/23.
+    field_type: datetime
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y', {col_name})"
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S %p', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
+      - "SAFE.PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%S', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
   - name: DPR_VCSED_END_DTM
+    description: |-
+      ACIS-calculated DPR violator community supervision end date. Can be overridden by ACIS in the 
+      ARD field or a user in the ML field.
+    field_type: datetime
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y', {col_name})"
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S %p', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
+      - "SAFE.PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%S', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
   - name: DPR_VCSED_END_DTM_ARD
+    description: |-
+      DPR violator community supervision end date, Adjust Release Date
+    field_type: datetime
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y', {col_name})"
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S %p', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
+      - "SAFE.PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%S', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
   - name: DPR_VCSED_END_DTM_ML
+    description: |-
+      DPR violator community supervision end date, manual lock
+    field_type: datetime
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y', {col_name})"
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S %p', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
+      - "SAFE.PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%S', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
   - name: DPR_VSED_END_DTM
+    description: |-
+      ACIS-calculated DPR violator sentence expiration date. Can be overridden by ACIS in the 
+      ARD field or a user in the ML field.
+    field_type: datetime
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y', {col_name})"
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S %p', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
+      - "SAFE.PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%S', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
   - name: DPR_VSED_END_DTM_ARD
+    description: |-
+      DPR violator sentence expiration date, manual lock
+    field_type: datetime
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y', {col_name})"
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S %p', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
+      - "SAFE.PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%S', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
   - name: DPR_VSED_END_DTM_ML
+    description: |-
+      DPR violator sentence expiration date, manual lock
+    field_type: datetime
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y', {col_name})"
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S %p', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
+      - "SAFE.PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%S', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
   - name: DRUG_TRANSITION_PGM_RLS_DTM
+    description: |-
+      No description available in AZ data dictionary as of 10/31/23.
+    field_type: datetime
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y', {col_name})"
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S %p', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
+      - "SAFE.PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%S', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
   - name: DRUG_TRANSITION_PGM_RLS_DTM_ARD
+    description: |-
+      No description available in AZ data dictionary as of 10/31/23.
+    field_type: datetime
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y', {col_name})"
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S %p', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
+      - "SAFE.PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%S', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
   - name: DRUG_TRANSITION_PGM_RLS_DTM_ML
+    description: |-
+      No description available in AZ data dictionary as of 10/31/23.
+    field_type: datetime
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y', {col_name})"
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S %p', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
+      - "SAFE.PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%S', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
   - name: DRUG_TRANSITION_PROGRAM_RELEASE_DTM
+    description: |-
+      No description available in AZ data dictionary as of 10/31/23.
+    field_type: datetime
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y', {col_name})"
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S %p', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
+      - "SAFE.PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%S', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
   - name: DRUG_TRANSITION_PROGRAM_RELEASE_DTM_ARD
+    description: |-
+      No description available in AZ data dictionary as of 10/31/23.
+    field_type: datetime
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y', {col_name})"
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S %p', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
+      - "SAFE.PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%S', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
   - name: DRUG_TRANSITION_PROGRAM_RELEASE_DTM_ML
+    description: |-
+      No description available in AZ data dictionary as of 10/31/23.
+    field_type: datetime
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y', {col_name})"
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S %p', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
+      - "SAFE.PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%S', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
   - name: DRUG_TRANSITION_PROGRAM_STATUS_ID
+    description: |-
+      FK to LOOKUPS.
   - name: IS_ANY_DPR_PROGRAM_COMPLETED
+    description: |-
+      No description available in AZ data dictionary as of 10/31/23.
   - name: IS_DPR_ADMIN_APPROVED
+    description: |-
+      Y/N indicator of whether a person has been administratively approved to participate in
+      the Drug Transition Release Program. Defaults to 'N'.
   - name: IS_DPR_ADMIN_DENIED
+    description: |-
+      Y/N indicator of whether a person has been administratively denied entry into
+      the Drug Transition Release Program. Defaults to 'N'.
   - name: IS_DPR_ELIGIBLE
+    description: |-
+      Y/N indicator of whether a person is eligible for the Drug Transition Release Program.
+      Defaults to 'N'.
   - name: OVERRIDE_REASON
+    description: |-
+      Displayed when Admin give inmate eligibility or ineligibility
+    is_pii: True
