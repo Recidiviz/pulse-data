@@ -45,6 +45,9 @@ from recidiviz.calculator.query.state.views.impact.impact_dashboard_views import
 from recidiviz.calculator.query.state.views.outliers.outliers_views import (
     INSIGHTS_VIEW_BUILDERS_TO_EXPORT,
 )
+from recidiviz.calculator.query.state.views.prototypes.case_note_search.case_notes import (
+    CASE_NOTES_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.public_dashboard.public_dashboard_views import (
     PUBLIC_DASHBOARD_VIEW_BUILDERS,
 )
@@ -188,6 +191,7 @@ PRODUCT_FAILED_LOGINS_MONTHLY_VIEWS_OUTPUT_DIRECTORY_URI = (
     "gs://{project_id}-product-failed-logins-monthly"
 )
 SENTENCING_VIEWS_OUTPUT_DIRECTORY_URI = "gs://{project_id}-sentencing-etl-data"
+CASE_NOTES_VIEWS_OUTPUT_DIRECTORY_URI = "gs://{project_id}-case-notes-data"
 
 
 EXPORT_ATLAS_TO_ID = {StateCode.US_IX.value: StateCode.US_ID.value}
@@ -346,6 +350,14 @@ _VIEW_COLLECTION_EXPORT_CONFIGS: List[ExportViewCollectionConfig] = [
         view_builders_to_export=SENTENCING_VIEW_BUILDERS,
         output_directory_uri_template=SENTENCING_VIEWS_OUTPUT_DIRECTORY_URI,
         export_name="SENTENCING",
+        allow_empty=True,
+        export_override_state_codes=EXPORT_ATLAS_TO_ID,
+    ),
+    # Case notes views
+    ExportViewCollectionConfig(
+        view_builders_to_export=[CASE_NOTES_VIEW_BUILDER],
+        output_directory_uri_template=CASE_NOTES_VIEWS_OUTPUT_DIRECTORY_URI,
+        export_name="CASE_NOTES",
         allow_empty=True,
         export_override_state_codes=EXPORT_ATLAS_TO_ID,
     ),
