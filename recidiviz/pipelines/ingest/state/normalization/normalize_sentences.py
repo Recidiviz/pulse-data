@@ -21,7 +21,6 @@ Houses logic for normalizing sentencing V2 entities:
   - StateSentenceGroup
   - StateSentenceGroupLength
   - StateSentenceStatusSnapshot
-  - StateSentenceServingPeriod
   - StateChargeV2
 
 It also produces ingerred sentence groups that only exist in normalized_state:

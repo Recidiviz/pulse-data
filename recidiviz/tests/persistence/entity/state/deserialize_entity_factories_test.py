@@ -1102,25 +1102,6 @@ class TestDeserializeEntityFactories(unittest.TestCase):
 
         self.assertEqual(expected_result, result)
 
-    def test_deserialize_StateSentenceServingPeriod(self) -> None:
-        result = (
-            deserialize_entity_factories.StateSentenceServingPeriodFactory.deserialize(
-                sentence_serving_period_id=1,
-                state_code="US_XX",
-                external_id="SP-001",
-                serving_start_date="2023-05-04",
-                serving_end_date=None,
-            )
-        )
-        expected_result = entities.StateSentenceServingPeriod(
-            sentence_serving_period_id=1,
-            state_code="US_XX",
-            external_id="SP-001",
-            serving_start_date=datetime.date(2023, 5, 4),
-            serving_end_date=None,
-        )
-        self.assertEqual(expected_result, result)
-
     def test_deserialize_StateChargeV2(self) -> None:
         # TODO(#26240): Replace StateChargeFactory with this one
         result = deserialize_entity_factories.StateChargeV2Factory.deserialize(

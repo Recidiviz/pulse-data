@@ -62,7 +62,6 @@ _STATE_CLASS_HIERARCHY = [
     state_entities.StateDrugScreen.__name__,
     state_entities.StateTaskDeadline.__name__,
     state_entities.StateSentence.__name__,
-    state_entities.StateSentenceServingPeriod.__name__,
     # TODO(#26240): Replace StateCharge with this entity
     state_entities.StateChargeV2.__name__,
     state_entities.StateSentenceStatusSnapshot.__name__,
@@ -109,7 +108,6 @@ _NORMALIZED_STATE_CLASS_HIERARCHY = [
     normalized_entities.NormalizedStateDrugScreen.__name__,
     normalized_entities.NormalizedStateTaskDeadline.__name__,
     normalized_entities.NormalizedStateSentence.__name__,
-    normalized_entities.NormalizedStateSentenceServingPeriod.__name__,
     # TODO(#26240): Replace NormalizedStateCharge with this entity
     normalized_entities.NormalizedStateChargeV2.__name__,
     normalized_entities.NormalizedStateSentenceStatusSnapshot.__name__,

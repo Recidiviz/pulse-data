@@ -502,19 +502,6 @@ class StateSentenceFactory(EntityFactory):
         )
 
 
-class StateSentenceServingPeriodFactory(EntityFactory):
-    @staticmethod
-    def deserialize(
-        **kwargs: DeserializableEntityFieldValue,
-    ) -> entities.StateSentenceServingPeriod:
-        return entity_deserialize(
-            cls=entities.StateSentenceServingPeriod,
-            converter_overrides={},
-            defaults={},
-            **kwargs,
-        )
-
-
 # TODO(#26240): Replace StateChargeFactory with this one
 class StateChargeV2Factory(EntityFactory):
     @staticmethod
