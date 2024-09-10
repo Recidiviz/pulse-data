@@ -779,7 +779,15 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
             fail_us_yy_ingest_operator_constructor
         )
 
-    def test_calculation_dag(self) -> None:
+    @patch(
+        "recidiviz.airflow.dags.calculation.dataflow.single_ingest_pipeline_group."
+        "is_combined_ingest_and_normalization_launched_in_env",
+        return_value=False,
+    )
+    def test_calculation_dag(
+        self,
+        _mock_gating_fn: MagicMock,  # pylint: disable=unused-argument
+    ) -> None:
         from recidiviz.airflow.dags.calculation_dag import create_calculation_dag
 
         dag = create_calculation_dag()
@@ -840,7 +848,15 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
                 ],
             )
 
-    def test_calculation_dag_with_state(self) -> None:
+    @patch(
+        "recidiviz.airflow.dags.calculation.dataflow.single_ingest_pipeline_group."
+        "is_combined_ingest_and_normalization_launched_in_env",
+        return_value=False,
+    )
+    def test_calculation_dag_with_state(
+        self,
+        _mock_gating_fn: MagicMock,  # pylint: disable=unused-argument
+    ) -> None:
         from recidiviz.airflow.dags.calculation_dag import create_calculation_dag
 
         dag = create_calculation_dag()
@@ -880,7 +896,15 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
                 dag.task_ids,
             )
 
-    def test_calculation_dag_fail_single_ingest_pipeline(self) -> None:
+    @patch(
+        "recidiviz.airflow.dags.calculation.dataflow.single_ingest_pipeline_group."
+        "is_combined_ingest_and_normalization_launched_in_env",
+        return_value=False,
+    )
+    def test_calculation_dag_fail_single_ingest_pipeline(
+        self,
+        _mock_gating_fn: MagicMock,  # pylint: disable=unused-argument
+    ) -> None:
         from recidiviz.airflow.dags.calculation_dag import create_calculation_dag
 
         self._mock_fail_dataflow_pipeline(
@@ -1015,7 +1039,15 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
                 [(StateCode.US_YY, "ingest")], self.found_pipelines_to_fail
             )
 
-    def test_calculation_dag_fail_single_normalization_pipeline(self) -> None:
+    @patch(
+        "recidiviz.airflow.dags.calculation.dataflow.single_ingest_pipeline_group."
+        "is_combined_ingest_and_normalization_launched_in_env",
+        return_value=False,
+    )
+    def test_calculation_dag_fail_single_normalization_pipeline(
+        self,
+        _mock_gating_fn: MagicMock,  # pylint: disable=unused-argument
+    ) -> None:
         from recidiviz.airflow.dags.calculation_dag import create_calculation_dag
 
         self._mock_fail_dataflow_pipeline(
@@ -1073,7 +1105,15 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
                 self.found_pipelines_to_fail,
             )
 
-    def test_calculation_dag_fail_single_metric_pipeline(self) -> None:
+    @patch(
+        "recidiviz.airflow.dags.calculation.dataflow.single_ingest_pipeline_group."
+        "is_combined_ingest_and_normalization_launched_in_env",
+        return_value=False,
+    )
+    def test_calculation_dag_fail_single_metric_pipeline(
+        self,
+        _mock_gating_fn: MagicMock,  # pylint: disable=unused-argument
+    ) -> None:
         from recidiviz.airflow.dags.calculation_dag import create_calculation_dag
 
         self._mock_fail_dataflow_pipeline(
@@ -1131,7 +1171,15 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
                 self.found_pipelines_to_fail,
             )
 
-    def test_calculation_dag_fails_downstream_of_schema_update(self) -> None:
+    @patch(
+        "recidiviz.airflow.dags.calculation.dataflow.single_ingest_pipeline_group."
+        "is_combined_ingest_and_normalization_launched_in_env",
+        return_value=False,
+    )
+    def test_calculation_dag_fails_downstream_of_schema_update(
+        self,
+        _mock_gating_fn: MagicMock,  # pylint: disable=unused-argument
+    ) -> None:
         """
         Tests that most tasks do not run if 'update_big_query_table_schemata' fails.
         """
@@ -1179,7 +1227,15 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
                 ],
             )
 
-    def test_bq_refresh_does_not_block_view_update(self) -> None:
+    @patch(
+        "recidiviz.airflow.dags.calculation.dataflow.single_ingest_pipeline_group."
+        "is_combined_ingest_and_normalization_launched_in_env",
+        return_value=False,
+    )
+    def test_bq_refresh_does_not_block_view_update(
+        self,
+        _mock_gating_fn: MagicMock,  # pylint: disable=unused-argument
+    ) -> None:
         """Tests that OPERATIONS and CASE TRIAGE failure doesn't block the view update
         or other downstream processes.
         """
@@ -1220,7 +1276,15 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
                 ],
             )
 
-    def test_calculation_dag_with_state_and_sandbox(self) -> None:
+    @patch(
+        "recidiviz.airflow.dags.calculation.dataflow.single_ingest_pipeline_group."
+        "is_combined_ingest_and_normalization_launched_in_env",
+        return_value=False,
+    )
+    def test_calculation_dag_with_state_and_sandbox(
+        self,
+        _mock_gating_fn: MagicMock,  # pylint: disable=unused-argument
+    ) -> None:
         from recidiviz.airflow.dags.calculation_dag import create_calculation_dag
 
         dag = create_calculation_dag()
@@ -1243,7 +1307,15 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
                 dag.task_ids,
             )
 
-    def test_calculation_dag_secondary(self) -> None:
+    @patch(
+        "recidiviz.airflow.dags.calculation.dataflow.single_ingest_pipeline_group."
+        "is_combined_ingest_and_normalization_launched_in_env",
+        return_value=False,
+    )
+    def test_calculation_dag_secondary(
+        self,
+        _mock_gating_fn: MagicMock,  # pylint: disable=unused-argument
+    ) -> None:
         from recidiviz.airflow.dags.calculation_dag import create_calculation_dag
 
         dag = create_calculation_dag()

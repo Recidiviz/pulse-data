@@ -35,6 +35,7 @@ from recidiviz.pipelines.normalization.dataset_config import (
     normalized_state_dataset_for_state_code_ingest_pipeline_output,
 )
 from recidiviz.pipelines.pipeline_parameters import PipelineParameters
+from recidiviz.utils.params import opt_str_to_bool
 
 
 @attr.define(kw_only=True)
@@ -45,7 +46,11 @@ class IngestPipelineParameters(PipelineParameters):
         default=DirectIngestInstance.PRIMARY.value, validator=attr_validators.is_str
     )
 
-    run_normalization_override: bool = attr.ib(default=None)
+    run_normalization_override: bool | None = attr.ib(
+        default=None,
+        validator=attr_validators.is_opt_bool,
+        converter=opt_str_to_bool,
+    )
 
     # TODO(#31741): Remove this flag once merged normalization pipelines are launched
     #  to all states.

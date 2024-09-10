@@ -261,9 +261,11 @@ def default_arg_list_for_pipeline(
                     str(pre_normalization_only),
                 ]
             )
-        if run_normalization_override := additional_pipeline_args.get(
-            "run_normalization_override"
-        ):
+        if (
+            run_normalization_override := additional_pipeline_args.get(
+                "run_normalization_override"
+            )
+        ) is not None:
             pipeline_args.extend(
                 [
                     "--run_normalization_override",

@@ -18,9 +18,11 @@
 """Tests for utils/params.py."""
 import unittest
 
+import attr
 from werkzeug.datastructures import MultiDict
 
 from recidiviz.utils import params
+from recidiviz.utils.params import opt_str_to_bool, str_to_bool
 
 PARAMS: MultiDict = MultiDict(
     [
@@ -86,3 +88,68 @@ class TestParams(unittest.TestCase):
 
         with self.assertRaises(ValueError):
             params.get_bool_param_value("empty_bool_param", PARAMS, default=False)
+
+    def test_str_to_bool(self) -> None:
+        @attr.define
+        class MyClass:
+            my_field: str = attr.ib(converter=str_to_bool)
+
+        self.assertEqual(True, MyClass(my_field="True").my_field)
+        self.assertEqual(True, MyClass(my_field="TRUE").my_field)
+        self.assertEqual(True, MyClass(my_field="true").my_field)
+
+        self.assertEqual(False, MyClass(my_field="False").my_field)
+        self.assertEqual(False, MyClass(my_field="FALSE").my_field)
+        self.assertEqual(False, MyClass(my_field="false").my_field)
+
+        with self.assertRaisesRegex(
+            ValueError, r"Unexpected value \[asdf\] for bool param"
+        ):
+            _ = MyClass(my_field="asdf")
+
+        with self.assertRaisesRegex(
+            ValueError, r"Unexpected value \[asdf\] for bool param my_arg"
+        ):
+            _ = str_to_bool("asdf", arg_key="my_arg")
+
+        with self.assertRaisesRegex(
+            ValueError, r"Unexpected null value for bool param"
+        ):
+            _ = MyClass(
+                my_field=None,  # type: ignore[arg-type]
+            )
+
+        with self.assertRaisesRegex(
+            ValueError, r"Unexpected empty-string value for bool param"
+        ):
+            _ = MyClass(my_field="")
+
+    def test_opt_str_to_bool(self) -> None:
+        @attr.define
+        class MyClass:
+            my_field: str | None = attr.ib(converter=opt_str_to_bool)
+
+        self.assertEqual(True, MyClass(my_field="True").my_field)
+        self.assertEqual(True, MyClass(my_field="TRUE").my_field)
+        self.assertEqual(True, MyClass(my_field="true").my_field)
+
+        self.assertEqual(False, MyClass(my_field="False").my_field)
+        self.assertEqual(False, MyClass(my_field="FALSE").my_field)
+        self.assertEqual(False, MyClass(my_field="false").my_field)
+
+        self.assertEqual(None, MyClass(my_field=None).my_field)
+
+        with self.assertRaisesRegex(
+            ValueError, r"Unexpected value \[asdf\] for bool param"
+        ):
+            _ = MyClass(my_field="asdf")
+
+        with self.assertRaisesRegex(
+            ValueError, r"Unexpected value \[asdf\] for bool param my_arg"
+        ):
+            _ = opt_str_to_bool("asdf", arg_key="my_arg")
+
+        with self.assertRaisesRegex(
+            ValueError, r"Unexpected empty-string value for bool param"
+        ):
+            _ = MyClass(my_field="")

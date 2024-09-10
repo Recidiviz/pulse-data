@@ -83,13 +83,42 @@ def get_bool_param_value(arg_key: str, args: MultiDict, default: bool) -> bool:
 
 
 def str_to_bool(bool_str: str, arg_key: Optional[str] = None) -> bool:
+    """Converts a string with values "True" or "False" (case-insensitive) to the boolean
+    value described by the string.
+
+    Throws on null values and empty strings.
+    """
+
+    if arg_key:
+        error_suffix = f"for bool param {arg_key}"
+    else:
+        error_suffix = "for bool param"
+
+    if bool_str is None:
+        raise ValueError(f"Unexpected null value {error_suffix}")
+
+    if bool_str == "":
+        raise ValueError(f"Unexpected empty-string value {error_suffix}")
+
     bool_str_lower = bool_str.lower()
     if bool_str_lower == "true":
         return True
     if bool_str_lower == "false":
         return False
 
-    raise ValueError(f"Unexpected value {bool_str} for bool param {arg_key}")
+    raise ValueError(f"Unexpected value [{bool_str}] {error_suffix}")
+
+
+def opt_str_to_bool(bool_str: str | None, arg_key: Optional[str] = None) -> bool | None:
+    """Converts a string with values "True" or "False" (case-insensitive) to the boolean
+    value described by the string.
+
+    Returns None if |bool_str| is None. Throws on empty strings.
+    """
+    if bool_str is None:
+        return None
+
+    return str_to_bool(bool_str, arg_key)
 
 
 def str_to_list(list_str: str) -> List[str]:
