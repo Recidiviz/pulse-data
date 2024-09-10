@@ -93,15 +93,6 @@ from recidiviz.calculator.query.state.views.outliers.supervision_officers_archiv
 from recidiviz.calculator.query.state.views.outliers.supervision_usage_metrics import (
     SUPERVISION_USAGE_METRICS_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.prototypes.case_note_search.case_notes import (
-    CASE_NOTES_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.prototypes.case_note_search.us_ix.us_ix_case_notes import (
-    US_IX_CASE_NOTES_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.prototypes.case_note_search.us_me.us_me_case_notes import (
-    US_ME_CASE_NOTES_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.sentencing.recidivism_event import (
     RECIDIVISM_EVENT_VIEW_BUILDER,
 )
@@ -320,15 +311,6 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
     ),
     NON_TEMPORARY_CUSTODY_INCARCERATION_POPULATION_VIEW_BUILDER.address: (
         "Will be used for MO RH eligibility spans (see #31337) (Daniel Allen 7/24/24)"
-    ),
-    US_IX_CASE_NOTES_VIEW_BUILDER.address: (
-        "For use in Case Notes prototypes (see #32391) (Ben Packer 8/19/24)"
-    ),
-    US_ME_CASE_NOTES_VIEW_BUILDER.address: (
-        "For use in Case Notes prototypes (see #32391) (Ben Packer 8/19/24)"
-    ),
-    CASE_NOTES_VIEW_BUILDER.address: (
-        "For use in Case Notes prototypes (see #32391) (Ben Packer 8/19/24)"
     ),
 }
 
