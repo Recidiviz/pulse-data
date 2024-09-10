@@ -20,10 +20,10 @@
 from typing import List, Optional, Union
 
 import matplotlib
-from matplotlib import axes
 import matplotlib.pyplot as plt
 import pandas as pd
 import statsmodels.formula.api as smf
+from matplotlib import axes
 
 from recidiviz.tools.analyst.estimate_effects import partial_regression
 
@@ -307,3 +307,38 @@ def binned_scatterplot(
         plt.savefig(save_fig)
 
     return plot_df
+
+
+def group_into_other(
+    df: pd.DataFrame,
+    col_name: str,
+    vals_to_keep: Union[int, list[str]] = 3,
+    other_group_name: str = "OTHER",
+) -> None:
+    """
+    Adds a column in the specified dataframe called col_name + _other, which renames everything except the specified values as 'OTHER' for plotting purposes
+    Params:
+    -------
+    df : pd.DataFrame()
+        existing dataframe
+
+    col_name : str
+        name of column to group
+
+    vals_to_keep : int | list
+        if int, this means you want to keep the top n values (by frequency) and group the rest into 'OTHER'
+            by default, keep the top 3 values
+        if list, this means you want to keep the specified list of values and group the rest into 'OTHER'
+
+    other_group_name : str
+        string that any value in the "other" group will be replaced with, 'OTHER' by default
+    """
+
+    if isinstance(vals_to_keep, list):
+        vals_to_keep_list = vals_to_keep
+    else:
+        vals_to_keep_list = df[col_name].value_counts()[0:vals_to_keep].index.to_list()
+
+    df[col_name + "_other"] = df[col_name].apply(
+        lambda x: x if x in vals_to_keep_list else other_group_name
+    )
