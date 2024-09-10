@@ -91,6 +91,7 @@ officer_assignments_with_staff_and_person_ids AS (
         oa.* EXCEPT(external_id),
         oa.start_date AS original_start_date,
         si.*,
+        sei.staff_id AS incarceration_staff_assignment_id,
     FROM officer_assignments oa
     LEFT JOIN staff_ids si
     # TODO(#31389) Find another way to join other than string matching, 
@@ -103,6 +104,10 @@ officer_assignments_with_staff_and_person_ids AS (
     ON peid.person_id = peid2.person_id
         AND peid2.state_code = 'US_ND'
         AND peid2.id_type = 'US_ND_ELITE'
+    INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_staff_external_id` sei
+    ON si.staff_id = sei.external_id
+        AND sei.state_code = "US_ND"
+        AND sei.id_type = 'US_ND_ELITE_OFFICER'
     WHERE si.staff_id IS NOT NULL
 ),
 {create_sub_sessions_with_attributes('officer_assignments_with_staff_and_person_ids')}
@@ -113,8 +118,7 @@ SELECT
     external_id AS person_external_id,
     start_date,
     end_date AS end_date_exclusive,
-    -- US_ND doesn't have staff internal id's yet
-    NULL AS incarceration_staff_assignment_id,
+    incarceration_staff_assignment_id,
     staff_id AS incarceration_staff_assignment_external_id,
     "INCARCERATION_STAFF" AS incarceration_staff_assignment_role_type,
     -- We are only surfacing folks who have a person assigned, so we can assume they are counselors/CMs
