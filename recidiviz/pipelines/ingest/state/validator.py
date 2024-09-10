@@ -262,11 +262,6 @@ def _sentencing_entities_checks(
     external_ids = set(s.external_id for s in state_person.sentences)
 
     for sentence in state_person.sentences:
-        if sentence.sentence_status_snapshots and sentence.sentence_serving_periods:
-            yield (
-                f"Found {sentence.limited_pii_repr()} with BOTH StateSentenceStatusSnapshot "
-                "and StateSentenceServingPeriod entities. We currently do not support ingesting both in the same state."
-            )
         if (
             not sentence.imposed_date
             and sentence.sentencing_authority != StateSentencingAuthority.OTHER_STATE

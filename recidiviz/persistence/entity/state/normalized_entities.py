@@ -476,47 +476,6 @@ class NormalizedStateAssessment(
 
 
 @attr.s(eq=False, kw_only=True)
-class NormalizedStateSentenceServingPeriod(NormalizedStateEntity, HasExternalIdEntity):
-    """Represents the periods of time over which someone was actively serving a given sentence."""
-
-    # Primary key
-    sentence_serving_period_id: int = attr.ib(validator=attr_validators.is_int)
-    state_code: str = attr.ib(validator=attr_validators.is_str)
-
-    # The date on which a person effectively begins serving a sentence,
-    # including any pre-trial jail detention time if applicable.
-    serving_start_date: date = attr.ib(validator=attr_validators.is_date)
-
-    # The date on which a person finishes serving a given sentence.
-    # This field can be null if the date has not been observed yet.
-    # This should only be hydrated once we have actually observed the completion date of the sentence.
-    # E.g., if a sentence record has a completion date on 2024-01-01, this sentence would have a NULL
-    # completion_date until 2024-01-01, after which the completion date would reflect that date.
-    # We expect that this date will not change after it has been hydrated,
-    # except in cases where the data override is fixing an error.
-    serving_end_date: date | None = attr.ib(validator=attr_validators.is_opt_date)
-
-    # Cross-entity relationships
-    person: Optional["NormalizedStatePerson"] = attr.ib(
-        default=None, validator=IsNormalizedPersonBackedgeValidator()
-    )
-
-    sentence: Optional["NormalizedStateSentence"] = attr.ib(
-        default=None, validator=IsNormalizedSentenceBackedgeValidator()
-    )
-
-    @classmethod
-    def global_unique_constraints(cls) -> list[UniqueConstraint]:
-        # TODO(#26249) investigate more constraints
-        return [
-            UniqueConstraint(
-                name="state_sentence_serving_period_external_id_unique_within_state",
-                fields=["state_code", "external_id"],
-            ),
-        ]
-
-
-@attr.s(eq=False, kw_only=True)
 class NormalizedStateChargeV2(NormalizedStateEntity, HasExternalIdEntity):
     """A formal allegation of an offense with information about the context for how that allegation was brought forth.
     `date_charged` can be null for charges that have statuses like “DROPPED”
@@ -1068,10 +1027,6 @@ class NormalizedStateSentence(NormalizedStateEntity, HasExternalIdEntity):
     sentence_lengths: list["NormalizedStateSentenceLength"] = attr.ib(
         factory=list,
         validator=attr_validators.is_list_of(NormalizedStateSentenceLength),
-    )
-    sentence_serving_periods: list["NormalizedStateSentenceServingPeriod"] = attr.ib(
-        factory=list,
-        validator=attr_validators.is_list_of(NormalizedStateSentenceServingPeriod),
     )
 
     @classmethod

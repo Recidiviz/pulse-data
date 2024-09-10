@@ -2423,55 +2423,12 @@ class StateSentence(HasExternalIdEntity, BuildableAttr, DefaultableAttr):
     sentence_lengths: List["StateSentenceLength"] = attr.ib(
         factory=list, validator=attr_validators.is_list
     )
-    sentence_serving_periods: List["StateSentenceServingPeriod"] = attr.ib(
-        factory=list, validator=attr_validators.is_list
-    )
 
     @classmethod
     def global_unique_constraints(cls) -> List[UniqueConstraint]:
         return [
             UniqueConstraint(
                 name="sentence_external_ids_unique_within_state",
-                fields=["state_code", "external_id"],
-            ),
-        ]
-
-
-@attr.s(eq=False, kw_only=True)
-class StateSentenceServingPeriod(HasExternalIdEntity, BuildableAttr, DefaultableAttr):
-    """Represents the periods of time over which someone was actively serving a given sentence."""
-
-    # Primary key that is optional before hydration
-    sentence_serving_period_id: Optional[int] = attr.ib(
-        validator=attr_validators.is_opt_int
-    )
-    state_code: str = attr.ib(validator=attr_validators.is_str)
-
-    # The date on which a person effectively begins serving a sentence,
-    # including any pre-trial jail detention time if applicable.
-    serving_start_date: datetime.date = attr.ib(validator=attr_validators.is_date)
-
-    # The date on which a person finishes serving a given sentence.
-    # This field can be null if the date has not been observed yet.
-    # This should only be hydrated once we have actually observed the completion date of the sentence.
-    # E.g., if a sentence record has a completion date on 2024-01-01, this sentence would have a NULL
-    # completion_date until 2024-01-01, after which the completion date would reflect that date.
-    # We expect that this date will not change after it has been hydrated,
-    # except in cases where the data override is fixing an error.
-    serving_end_date: Optional[datetime.date] = attr.ib(
-        validator=attr_validators.is_opt_date
-    )
-
-    # Cross-entity relationships
-    person: Optional["StatePerson"] = attr.ib(default=None)
-    sentence: Optional["StateSentence"] = attr.ib(default=None)
-
-    @classmethod
-    def global_unique_constraints(cls) -> List[UniqueConstraint]:
-        # TODO(#26249) investigate more constraints
-        return [
-            UniqueConstraint(
-                name="state_sentence_serving_period_external_id_unique_within_state",
                 fields=["state_code", "external_id"],
             ),
         ]

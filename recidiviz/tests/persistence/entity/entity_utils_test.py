@@ -360,7 +360,6 @@ REFERENCE_ENTITY_EXAMPLES: Dict[Type[Entity], List[Entity]] = {
             status=StateChargeV2Status.PRESENT_WITHOUT_INFO,
         )
     ],
-    state_entities.StateSentenceServingPeriod: [],
     state_entities.StateSentence: [
         state_entities.StateSentence(
             state_code=StateCode.US_XX.value,
@@ -547,15 +546,6 @@ HAS_MEANINGFUL_DATA_ENTITIES: Dict[Type[Entity], List[Entity]] = {
             status=StateChargeV2Status.PRESENT_WITHOUT_INFO,
             date_charged=datetime.datetime(2022, 1, 1),
         )
-    ],
-    state_entities.StateSentenceServingPeriod: [
-        state_entities.StateSentenceServingPeriod(
-            sentence_serving_period_id=None,
-            state_code=StateCode.US_XX.value,
-            external_id=_EXTERNAL_ID,
-            serving_start_date=datetime.date(2021, 1, 1),
-            serving_end_date=None,
-        ),
     ],
     state_entities.StateSentence: [
         state_entities.StateSentence(

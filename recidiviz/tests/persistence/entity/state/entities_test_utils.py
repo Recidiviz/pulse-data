@@ -789,15 +789,6 @@ def generate_full_graph_state_person(
     )
     sentence.charges = [charge_v2]
 
-    sentence_serving_period = entities.StateSentenceServingPeriod(
-        sentence_serving_period_id=None,
-        state_code="US_XX",
-        external_id="SP-001",
-        serving_start_date=datetime.date(2023, 5, 4),
-        serving_end_date=None,
-    )
-    sentence.sentence_serving_periods = [sentence_serving_period]
-
     sentence_status_snapshot = entities.StateSentenceStatusSnapshot(
         state_code="US_XX",
         status=StateSentenceStatus.SERVING,
@@ -1386,15 +1377,6 @@ def generate_full_graph_normalized_state_person() -> normalized_entities.Normali
         judicial_district_code="22",
     )
     sentence.charges = [charge_v2]
-
-    sentence_serving_period = normalized_entities.NormalizedStateSentenceServingPeriod(
-        sentence_serving_period_id=1,
-        state_code="US_XX",
-        external_id="SP-001",
-        serving_start_date=datetime.date(2023, 5, 4),
-        serving_end_date=None,
-    )
-    sentence.sentence_serving_periods = [sentence_serving_period]
 
     sentence_status_snapshot = (
         normalized_entities.NormalizedStateSentenceStatusSnapshot(
