@@ -47,3 +47,17 @@ STATES_WITH_NO_INFERRED_OPEN_SPANS = [
     StateCode.US_ME.name,
     StateCode.US_MI.name,
 ]
+
+# Handle the processing of these states separately until all states have migrated to the sentence v2 schema
+STATES_NOT_MIGRATED_TO_SENTENCE_V2_SCHEMA = [
+    StateCode.US_AR.name,
+    StateCode.US_CO.name,
+    StateCode.US_IX.name,
+    StateCode.US_ME.name,
+    StateCode.US_MI.name,
+    StateCode.US_MO.name,
+    StateCode.US_ND.name,
+    StateCode.US_OR.name,
+    StateCode.US_PA.name,
+    StateCode.US_TN.name,
+]

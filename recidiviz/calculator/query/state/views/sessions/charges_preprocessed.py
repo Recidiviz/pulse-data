@@ -17,10 +17,14 @@
 """Processed Sentencing Data"""
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+from recidiviz.calculator.query.bq_utils import list_to_query_string
 from recidiviz.calculator.query.state.dataset_config import (
     NORMALIZED_STATE_DATASET,
     SESSIONS_DATASET,
     STATIC_REFERENCE_TABLES_DATASET,
+)
+from recidiviz.calculator.query.state.views.sessions.state_sentence_configurations import (
+    STATES_NOT_MIGRATED_TO_SENTENCE_V2_SCHEMA,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -33,6 +37,24 @@ CHARGES_PREPROCESSED_VIEW_DESCRIPTION = """Processed Charge Data"""
 CHARGES_PREPROCESSED_SPECIAL_STATES = ["US_MO"]
 
 CHARGES_PREPROCESSED_QUERY_TEMPLATE = """
+    WITH charge AS (
+        SELECT
+            charge_id,
+            NULL AS charge_v2_id,
+            * EXCEPT (charge_id),
+        FROM `{project_id}.{normalized_state_dataset}.state_charge`
+        WHERE state_code IN ({v2_non_migrated_states})
+            AND state_code NOT IN ({special_states})
+
+        UNION ALL
+
+        SELECT
+            NULL AS charge_id,
+            charge_v2_id,
+            * EXCEPT (charge_v2_id),
+        FROM `{project_id}.{normalized_state_dataset}.state_charge_v2`
+        WHERE state_code NOT IN ({v2_non_migrated_states})
+    )
     SELECT
         charge.*,
         charge_labels.* EXCEPT(offense_description, probability),
@@ -41,17 +63,18 @@ CHARGES_PREPROCESSED_QUERY_TEMPLATE = """
             TRIM(scc.judicial_district_code),
             'EXTERNAL_UNKNOWN'
         ) AS judicial_district,
-    FROM `{project_id}.{normalized_state_dataset}.state_charge` charge
+    FROM charge
     LEFT JOIN `{project_id}.{static_reference_dataset}.state_county_codes` scc
     USING (state_code, county_code)
     LEFT JOIN `{project_id}.reference_views.cleaned_offense_description_to_labels` charge_labels
     ON charge.description = charge_labels.offense_description
-    WHERE charge.state_code NOT IN ('{special_states}')
 
     UNION ALL
 
     SELECT
-        *
+        charge_id,
+        NULL AS charge_v2_id,
+        * EXCEPT (charge_id),
     FROM `{project_id}.{sessions_dataset}.us_mo_charges_preprocessed`
 """
 
@@ -63,7 +86,14 @@ CHARGES_PREPROCESSED_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     normalized_state_dataset=NORMALIZED_STATE_DATASET,
     sessions_dataset=SESSIONS_DATASET,
     static_reference_dataset=STATIC_REFERENCE_TABLES_DATASET,
-    special_states="', '".join(CHARGES_PREPROCESSED_SPECIAL_STATES),
+    special_states=list_to_query_string(
+        string_list=CHARGES_PREPROCESSED_SPECIAL_STATES,
+        quoted=True,
+    ),
+    v2_non_migrated_states=list_to_query_string(
+        string_list=STATES_NOT_MIGRATED_TO_SENTENCE_V2_SCHEMA,
+        quoted=True,
+    ),
     should_materialize=False,
 )
 
