@@ -117,6 +117,7 @@ columns:
     description: |-
       External ID of a booking for a particular person, i.e. a new series of interactions 
       with the justice system due to a new offense.
+    is_pii: True
   - name: OVERRIDE_COMMENT_TEXT
     description: |-
       TODO(#18645): Fill in with answer from ND
