@@ -144,7 +144,9 @@ output:
                           # Closes the case and reopens it as a county probation case
                       StateSupervisionPeriodTerminationReason.INTERNAL_UNKNOWN:
                         - "50" # Case Opened in Error
-                        - "51" # ?? Not in data dictionary
+                      StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE:
+                        # In these cases, PA opens a new term count (ParoleCountId)
+                        - "51" # Case Cosed in Error
                       StateSupervisionPeriodTerminationReason.ADMITTED_TO_INCARCERATION:
                         - "44" # Conviction and return to prison to serve detainer sentence
                       StateSupervisionPeriodTerminationReason.REVOCATION:

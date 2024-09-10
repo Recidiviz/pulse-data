@@ -65,7 +65,7 @@ all_parole_start_info AS (
 ),
 
 -- This CTE grabs the start and end dates for all parole terms we want to keep in our final 
--- set of supervision periods.  We exclude parole terms that have deletion codes 50 and 51 since
+-- set of supervision periods.  We exclude parole terms that have deletion codes 50 since
 -- those are parole terms that were recorded in error.  We also exclude parole terms that start
 -- and end on the same day as those are likely also data entry errors.  We only observe information
 -- about deletion codes and end dates from the dbo_Hist_Release table which is why we have to join
@@ -80,7 +80,7 @@ parole_counts_to_keep AS (
   FROM all_parole_start_info
   LEFT JOIN {{dbo_Hist_Release}} USING(ParoleNumber, ParoleCountId)
   WHERE ParoleCountId NOT IN ('0', '-1')
-       AND (HReDelCode IS NULL OR HReDelCode NOT IN ('50', '51'))
+       AND (HReDelCode IS NULL OR HReDelCode NOT IN ('50'))
        AND (HReDelDate IS NULL OR HReReldate < HReDelDate)
 ),
 
