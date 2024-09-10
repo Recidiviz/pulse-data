@@ -413,7 +413,7 @@ class TestIngestPipelineParameters(unittest.TestCase):
             output_sandbox_prefix="my_prefix",
             sandbox_username="annag",
             raw_data_upper_bound_dates_json='{"TEST_RAW_DATA":"2020-01-01T00:00:00.000000"}',
-            run_normalization_override=True,
+            run_normalization_override="True",
         )
 
         expected_parameters = {

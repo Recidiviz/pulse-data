@@ -18,7 +18,9 @@
 import unittest
 from unittest.mock import patch
 
-from recidiviz.common.constants.states import StateCode
+from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
+    get_direct_ingest_states_existing_in_env,
+)
 from recidiviz.pipelines.ingest.normalization_in_ingest_gating import (
     is_combined_ingest_and_normalization_launched_in_env,
     should_run_normalization_in_ingest,
@@ -34,7 +36,7 @@ class TestNormalizationInIngestGating(unittest.TestCase):
             "recidiviz.utils.environment.get_gcp_environment",
             return_value=GCPEnvironment.STAGING.value,
         ):
-            for state_code in StateCode:
+            for state_code in get_direct_ingest_states_existing_in_env():
                 writes_enabled = should_run_normalization_in_ingest(state_code)
                 reads_enabled = is_combined_ingest_and_normalization_launched_in_env(
                     state_code
@@ -54,7 +56,7 @@ class TestNormalizationInIngestGating(unittest.TestCase):
             "recidiviz.utils.environment.get_gcp_environment",
             return_value=GCPEnvironment.PRODUCTION.value,
         ):
-            for state_code in StateCode:
+            for state_code in get_direct_ingest_states_existing_in_env():
                 writes_enabled = should_run_normalization_in_ingest(state_code)
                 reads_enabled = is_combined_ingest_and_normalization_launched_in_env(
                     state_code
