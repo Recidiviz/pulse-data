@@ -65,7 +65,12 @@ recidiviz_data_path = os.path.abspath(os.path.join(current_file_path, "../../../
 sys.path.append(recidiviz_data_path)
 
 # imports from pulse-data
-from recidiviz.tools.analyst.plots import RECIDIVIZ_COLORS, add_legend  # isort:skip
+from recidiviz.tools.analyst.plots import (  # isort:skip
+    RECIDIVIZ_COLORS,
+    add_legend,
+    line_labels,
+    group_into_other,
+)
 
 
 # IPython magics - only run if in notebook environment

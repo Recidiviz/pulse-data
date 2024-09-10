@@ -14,16 +14,22 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"Tools for plotting"
+"""Tools for plotting"""
+
+from __future__ import annotations
+
+import math
 
 # imports for notebooks
-from typing import List, Optional, Union
+from typing import Any, List, Optional, Union
 
 import matplotlib
 import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
 import statsmodels.formula.api as smf
 from matplotlib import axes
+from matplotx._labels import _move_min_distance
 
 from recidiviz.tools.analyst.estimate_effects import partial_regression
 
@@ -342,3 +348,118 @@ def group_into_other(
     df[col_name + "_other"] = df[col_name].apply(
         lambda x: x if x in vals_to_keep_list else other_group_name
     )
+
+
+# create labels next to lines in a line plot, rather than creating a legend
+# modified version of line_labels fxn in matplotx library: https://github.com/nschloe/matplotx/tree/main
+def line_labels(
+    ax: Optional[plt.Axes] = None,
+    vertical_distance: float = float("nan"),
+    horizontal_distance: float = 0.98,
+    color: str = "auto",
+    weight: int = 551,
+    **text_kwargs: Optional[Any],
+) -> None:
+    """
+    Adds labels next to lines rather than in a traditional legend
+    Params:
+    -------
+    ax : plt.Axes
+        axes of existing plot. if no axes is passed in, this fxn creates one using plt.gca()
+    vertical_distance : float
+        min distance that labels should be separated from one another, larger values means more vertical separation
+        default is set to nan, which automatically calculates an ideal vertical separation
+    horizontal_distance: float
+        distance that labels should be separated from their line, larger values means more space between the line and the label
+    color: str
+        specifies label color. defaults to 'auto', which sets the labels to be the same color as the lines
+    weight: int
+        specifies label weight. 400 is normal font, 700 is bold
+        default is 551, which is an arbitrary number chosen to look a little bit heavier due to the use of light colors
+    **text_kwargs
+        the user can specify any other matplotlib text arguments (font, size, etc.)
+        see https://matplotlib.org/stable/api/text_api.html for all options
+    Example usage:
+    ----------
+    # make sure to run recidiviz/tools/analyst/notebook_utils.py in your notebook first
+     df = pd.DataFrame({
+        "Reading": [73, 74, 83, 90, 76, 25, 67, 81, 75, 82],
+        "Math": [88, 91, 92, 85, 85, 89, 90, 87, 87, 93]
+    })
+    ax = df.plot()
+    line_labels()
+    """
+    if ax is None:
+        ax = plt.gca()
+
+    ax.get_legend().remove()
+
+    logy = ax.get_yscale() == "log"
+
+    if math.isnan(vertical_distance):
+        fig_height_inches = plt.gcf().get_size_inches()[1]
+        ax_pos = ax.get_position()
+        ax_height = ax_pos.y1 - ax_pos.y0
+        ax_height_inches = ax_height * fig_height_inches
+        ylim = ax.get_ylim()
+        if logy:
+            ax_height_ylim = math.log10(ylim[1]) - math.log10(ylim[0])
+        else:
+            ax_height_ylim = ylim[1] - ylim[0]
+        # 1 pt = 1/72 in
+        fontsize = matplotlib.rcParams["font.size"]
+        assert fontsize is not None
+        vertical_distance_inches = fontsize / 72
+        vertical_distance = vertical_distance_inches / ax_height_inches * ax_height_ylim
+
+    # find all Line2D objects with a valid label and valid data
+    lines = [
+        child
+        for child in ax.get_children()
+        if (
+            isinstance(child, matplotlib.lines.Line2D)
+            and str(child.get_label())[0] != "_"
+            and not np.all(np.isnan(child.get_ydata()))
+        )
+    ]
+
+    if len(lines) == 0:
+        return
+
+    targets = []
+    for line in lines:
+        ydata = np.array(line.get_ydata())
+        targets.append(ydata[~np.isnan(ydata)][-1])
+
+    if logy:
+        targets = [math.log10(float(t)) for t in targets]
+
+    ymax = ax.get_ylim()[1]
+    targets = [min(target, ymax) for target in targets]
+
+    moved_targets = _move_min_distance(targets, vertical_distance)
+    if logy:
+        moved_targets_t = [10**t for t in moved_targets]
+    else:
+        moved_targets_t = list(moved_targets)
+
+    labels = [line.get_label() for line in lines]
+
+    if color == "auto":
+        colors = [line.get_color() for line in lines]
+    else:
+        colors = [color for line in lines]
+
+    axis_to_data = ax.transAxes + ax.transData.inverted()
+    xpos = axis_to_data.transform([horizontal_distance, 1.0])[0]
+
+    for label, ypos, col in zip(labels, moved_targets_t, colors):
+        ax.text(
+            xpos,
+            ypos,
+            str(label).title(),
+            verticalalignment="center",
+            color=col,
+            weight=weight,
+            **text_kwargs,
+        )
