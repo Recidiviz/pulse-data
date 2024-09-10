@@ -23,6 +23,7 @@ from recidiviz.calculator.query.bq_utils import (
 )
 from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
 from recidiviz.calculator.query.state.views.sessions.state_sentence_configurations import (
+    STATES_NOT_MIGRATED_TO_SENTENCE_V2_SCHEMA,
     STATES_WITH_SEPARATE_INCARCERATION_SENTENCES_PREPROCESSED,
     STATES_WITH_SEPARATE_SENTENCES_PREPROCESSED,
     STATES_WITHOUT_INFERRED_SENTENCE_COMPLETION_DATE,
@@ -78,6 +79,7 @@ SENTENCES_PREPROCESSED_QUERY_TEMPLATE = f"""
         ON charge.state_code = assoc.state_code
         AND charge.charge_id = assoc.charge_id
     WHERE sis.external_id IS NOT NULL
+        AND sis.state_code IN ({{v2_non_migrated_states}})
         AND sis.state_code NOT IN ({{special_states}}, {{incarceration_special_states}})
 
     UNION ALL
@@ -125,7 +127,50 @@ SENTENCES_PREPROCESSED_QUERY_TEMPLATE = f"""
         ON charge.state_code = assoc.state_code
         AND charge.charge_id = assoc.charge_id
     WHERE sss.external_id IS NOT NULL
+        AND sss.state_code IN ({{v2_non_migrated_states}})
         AND sss.state_code NOT IN ({{special_states}})
+
+    UNION ALL
+
+    SELECT
+        sent.person_id,
+        sent.state_code,
+        sent.sentence_id,
+        sent.external_id,
+        sentence_type,
+        CASE
+          WHEN sent.county_code = 'OUT_OF_STATE'
+            THEN 'OUT_OF_STATE'
+          -- TODO(#16113): Add in TREATMENT subtype when methodology for this is resolved
+          ELSE sentence_type END AS sentence_sub_type,
+        -- Use sentence status tables for completion_date and effective_date
+        CAST(NULL AS DATE) AS effective_date,
+        sent.imposed_date AS date_imposed,
+        CAST(NULL AS DATE) AS completion_date,
+        -- Use sentence status tables for the status data
+        CAST(NULL AS STRING) AS status,
+        CAST(NULL AS STRING) AS status_raw_text,
+        -- Use the sentence length or sentence group length tables for sentence dates
+        CAST(NULL AS DATE) AS parole_eligibility_date,
+        CAST(NULL AS DATE) AS projected_completion_date_min,
+        CAST(NULL AS DATE) AS projected_completion_date_max,
+        sent.initial_time_served_days,
+        COALESCE(sent.is_life, FALSE) AS life_sentence,
+        -- Use the sentence length or sentence group length tables for sentence dates
+        CAST(NULL AS INT64) AS min_length_days,
+        CAST(NULL AS INT64) AS max_length_days,
+        sent.county_code,
+        sent.sentence_metadata,
+        charge.* EXCEPT(person_id, state_code, external_id, status, status_raw_text, county_code)
+    FROM `{{project_id}}.normalized_state.state_sentence` AS sent
+    LEFT JOIN `{{project_id}}.normalized_state.state_charge_v2_state_sentence_association` assoc
+        ON assoc.state_code = sent.state_code
+        AND assoc.sentence_id = sent.sentence_id
+    LEFT JOIN `{{project_id}}.sessions.charges_preprocessed` charge
+        ON charge.state_code = assoc.state_code
+        AND charge.charge_v2_id = assoc.charge_v2_id
+    WHERE sent.external_id IS NOT NULL
+        AND sent.state_code NOT IN ({{v2_non_migrated_states}})
     ),
     /*
     Joins back to sessions to create a "session_id_imposed" field as well as to the consecutive id preprocessed file
@@ -284,6 +329,10 @@ SENTENCES_PREPROCESSED_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     ),
     states_without_inferred_completion_date=list_to_query_string(
         string_list=STATES_WITHOUT_INFERRED_SENTENCE_COMPLETION_DATE,
+        quoted=True,
+    ),
+    v2_non_migrated_states=list_to_query_string(
+        string_list=STATES_NOT_MIGRATED_TO_SENTENCE_V2_SCHEMA,
         quoted=True,
     ),
     should_materialize=True,
