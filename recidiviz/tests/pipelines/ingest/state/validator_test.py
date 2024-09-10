@@ -1319,3 +1319,84 @@ class TestSupervisionPeriodRootEntityChecks(unittest.TestCase):
         self.state_person.supervision_periods = [valid_period]
         errors = validate_root_entity(self.state_person)
         self.assertEqual(errors, [])
+
+
+class TestNormalizedEarlyDischargeChecks(unittest.TestCase):
+    """Test that root entity checks specific to normalized early discharge are valid."""
+
+    def setUp(self) -> None:
+        self.state_code = "US_XX"
+        self.state_person = normalized_entities.NormalizedStatePerson(
+            state_code=self.state_code,
+            person_id=1,
+            external_ids=[
+                normalized_entities.NormalizedStatePersonExternalId(
+                    person_external_id_id=1,
+                    external_id="1",
+                    state_code="US_XX",
+                    id_type="US_XX_TEST_PERSON",
+                ),
+            ],
+        )
+        for eid in self.state_person.external_ids:
+            eid.person = self.state_person
+
+    def test_valid_early_discharge(self) -> None:
+        incarceration_sentence = (
+            normalized_entities.NormalizedStateIncarcerationSentence(
+                state_code=self.state_code,
+                incarceration_sentence_id=123,
+                external_id="is1",
+                effective_date=date(2017, 1, 1),
+                status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+            )
+        )
+        incarceration_sentence.person = self.state_person
+
+        early_discharge = normalized_entities.NormalizedStateEarlyDischarge(
+            early_discharge_id=1,
+            state_code=self.state_code,
+            external_id="ED-EXTERNAL-1",
+            person=self.state_person,
+            request_date=date(2020, 1, 1),
+        )
+        early_discharge.person = self.state_person
+        incarceration_sentence.early_discharges.append(early_discharge)
+        early_discharge.incarceration_sentence = incarceration_sentence
+        self.state_person.incarceration_sentences = [incarceration_sentence]
+        errors = validate_root_entity(self.state_person)
+        self.assertEqual(errors, [])
+
+    def test_early_discharge_missing_sentence_backedge(self) -> None:
+        incarceration_sentence = (
+            normalized_entities.NormalizedStateIncarcerationSentence(
+                state_code=self.state_code,
+                incarceration_sentence_id=123,
+                external_id="is1",
+                effective_date=date(2017, 1, 1),
+                status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+            )
+        )
+        incarceration_sentence.person = self.state_person
+
+        early_discharge = normalized_entities.NormalizedStateEarlyDischarge(
+            early_discharge_id=1,
+            state_code=self.state_code,
+            external_id="ED-EXTERNAL-1",
+            person=self.state_person,
+            request_date=date(2020, 1, 1),
+        )
+        early_discharge.person = self.state_person
+        incarceration_sentence.early_discharges.append(early_discharge)
+        # Do not set a backedge between early_discharge and incarceration_sentence
+        # early_discharge.incarceration_sentence = incarceration_sentence
+        self.state_person.incarceration_sentences = [incarceration_sentence]
+        errors = validate_root_entity(self.state_person)
+        self.assertEqual(
+            errors,
+            [
+                "Found entity NormalizedStateEarlyDischarge(early_discharge_id=1, "
+                "external_id='ED-EXTERNAL-1') with neither one of "
+                "incarceration_sentence or supervision_sentence backedges set."
+            ],
+        )

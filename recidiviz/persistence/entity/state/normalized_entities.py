@@ -161,6 +161,13 @@ class EntityBackedgeValidator:
     the entity definitions, it is not yet available.
     """
 
+    def allow_nulls(self) -> bool:
+        """If True, allow null values in this field even after the entity graph is
+        fully-formed. This should likely only be True for backedges on entities with
+        multiple different possible parent types.
+        """
+        return False
+
     @abc.abstractmethod
     def get_backedge_type(self) -> Type:
         pass
@@ -233,6 +240,24 @@ class IsNormalizedIncarcerationSentenceBackedgeValidator(EntityBackedgeValidator
 
 
 class IsNormalizedSupervisionSentenceBackedgeValidator(EntityBackedgeValidator):
+    def get_backedge_type(self) -> Type:
+        return NormalizedStateSupervisionSentence
+
+
+class IsOptionalNormalizedIncarcerationSentenceBackedgeValidator(
+    EntityBackedgeValidator
+):
+    def allow_nulls(self) -> bool:
+        return True
+
+    def get_backedge_type(self) -> Type:
+        return NormalizedStateIncarcerationSentence
+
+
+class IsOptionalNormalizedSupervisionSentenceBackedgeValidator(EntityBackedgeValidator):
+    def allow_nulls(self) -> bool:
+        return True
+
     def get_backedge_type(self) -> Type:
         return NormalizedStateSupervisionSentence
 
@@ -1120,11 +1145,13 @@ class NormalizedStateEarlyDischarge(NormalizedStateEntity, HasExternalIdEntity):
 
     # Should only be one of incarceration or supervision sentences on this.
     incarceration_sentence: Optional["NormalizedStateIncarcerationSentence"] = attr.ib(
-        default=None, validator=IsNormalizedIncarcerationSentenceBackedgeValidator()
+        default=None,
+        validator=IsOptionalNormalizedIncarcerationSentenceBackedgeValidator(),
     )
 
     supervision_sentence: Optional["NormalizedStateSupervisionSentence"] = attr.ib(
-        default=None, validator=IsNormalizedSupervisionSentenceBackedgeValidator()
+        default=None,
+        validator=IsOptionalNormalizedSupervisionSentenceBackedgeValidator(),
     )
 
     @classmethod
