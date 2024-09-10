@@ -251,7 +251,7 @@ hypercorn = "*"
 vertexai = "*"
 asyncpg ="*"
 pygit2 = "*"
-
+matplotx = "*"
 
 [requires]
 # If you change this, please update https://github.com/Recidiviz/recidiviz-research at the same time!
