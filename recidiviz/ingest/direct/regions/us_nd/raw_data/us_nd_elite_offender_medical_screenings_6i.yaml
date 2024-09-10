@@ -6,7 +6,10 @@ file_description: |-
   only include parole board appearance information. It is unclear why this is stored in
   a table with medical information on the ND side.
 data_classification: source
-primary_key_cols: []
+primary_key_cols:
+  - OFFENDER_BOOK_ID
+  - SCREEN_SEQ
+  - MEDICAL_DATE
 columns:
   - name: BLOOD_PRESSURE
     description: Blood pressure. Always null.
