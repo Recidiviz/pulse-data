@@ -35,6 +35,7 @@ WITH requests_by_status_code AS (
     ARRAY_AGG(
       STRUCT (timestamp, trace)
       ORDER BY timestamp DESC
+      LIMIT 25
     ) AS traces
   FROM `{project_id}.{on_call_logs_dataset}.{requests_table}`
   WHERE timestamp >= DATE_SUB(CURRENT_TIMESTAMP(), INTERVAL 7 DAY)
