@@ -278,12 +278,7 @@ WITH
             * 
         FROM clean_up_movements
         WHERE 
-            -- If the locations don't match and facility type in the end of StartMovementType matches the facility type 
-            -- of the start of NextMovementType (ex: PAFA -> FADI), then that likely means there was an error in the 
-            -- system. To facilitate things, filter out this row.
-            (NextMovementType IS NULL OR RIGHT(StartMovementType, 2) != LEFT(NextMovementType, 2) OR StartToLocationID = NextFromLocationID OR StartMovementType = 'UNITMOVEMENTFH' OR StartMovementType = 'CUSTCHANGEFH')
-            -- Filter out all periods that start with a TERMINATION. 
-            AND 
+           -- Filter out all periods that start with a TERMINATION. 
             StartPeriodEvent != 'TERMINATION'  
     ),
     -- We then hydrate all values of the housing unit, custody level, and faciltiy information as well as clean up any rough end date edges
