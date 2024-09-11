@@ -55,19 +55,17 @@ class ValidateRawFileColumnHeadersTest(unittest.TestCase):
         updated_file_config = attr.evolve(
             self.default_file_config, encoding="utf-32-le"
         )
-        header_reader = DirectIngestRawFileHeaderReader(
-            self.fs, self.file_path, updated_file_config
-        )
+        header_reader = DirectIngestRawFileHeaderReader(self.fs, updated_file_config)
 
         with self.assertRaisesRegex(ValueError, r"Unable to read path"):
-            header_reader.read_and_validate_column_headers()
+            header_reader.read_and_validate_column_headers(self.file_path)
 
     def test_custom_line_terminator(self) -> None:
         header_reader = DirectIngestRawFileHeaderReader(
-            self.fs, self.file_path, self.default_file_config
+            self.fs, self.default_file_config
         )
 
-        result = header_reader.read_and_validate_column_headers()
+        result = header_reader.read_and_validate_column_headers(self.file_path)
 
         self.assertEqual(result, ["PRIMARY_COL1", "COL2", "COL3", "COL4"])
 
@@ -76,48 +74,44 @@ class ValidateRawFileColumnHeadersTest(unittest.TestCase):
             self.default_file_config, custom_line_terminator="^"
         )
 
-        header_reader = DirectIngestRawFileHeaderReader(
-            self.fs, self.file_path, updated_file_config
-        )
+        header_reader = DirectIngestRawFileHeaderReader(self.fs, updated_file_config)
 
         with self.assertRaisesRegex(
             ValueError, r"^Column name \[COL4_1000\] not found in config"
         ):
-            header_reader.read_and_validate_column_headers()
+            header_reader.read_and_validate_column_headers(self.file_path)
 
     def test_wrong_column_separator(self) -> None:
         updated_file_config = attr.evolve(self.default_file_config, separator="#")
 
-        header_reader = DirectIngestRawFileHeaderReader(
-            self.fs, self.file_path, updated_file_config
-        )
+        header_reader = DirectIngestRawFileHeaderReader(self.fs, updated_file_config)
 
         with self.assertRaisesRegex(
             ValueError,
             r"^Column name \[PRIMARY_COL1_COL2_COL3_COL4\] not found in config",
         ):
-            header_reader.read_and_validate_column_headers()
+            header_reader.read_and_validate_column_headers(self.file_path)
 
     def test_empty_file(self) -> None:
         file_tag = "tagFullyEmptyFile"
         file_path = self._get_and_register_csv_gcs_path(file_tag)
 
         header_reader = DirectIngestRawFileHeaderReader(
-            self.fs, file_path, self.default_file_config
+            self.fs, self.default_file_config
         )
 
         with self.assertRaisesRegex(
             ValueError, r"empty or does not contain valid rows"
         ):
-            header_reader.read_and_validate_column_headers()
+            header_reader.read_and_validate_column_headers(file_path)
 
     def test_multibyte_raw_file_alternate_separator_and_encoding(self) -> None:
         file_tag = "tagDoubleDaggerWINDOWS1252"
         file_config = self.region_raw_file_config.raw_file_configs[file_tag]
         file_path = self._get_and_register_csv_gcs_path(file_tag)
 
-        header_reader = DirectIngestRawFileHeaderReader(self.fs, file_path, file_config)
-        result = header_reader.read_and_validate_column_headers()
+        header_reader = DirectIngestRawFileHeaderReader(self.fs, file_config)
+        result = header_reader.read_and_validate_column_headers(file_path)
 
         self.assertEqual(result, ["PRIMARY_COL1", "COL2", "COL3", "COL4"])
 
@@ -126,8 +120,8 @@ class ValidateRawFileColumnHeadersTest(unittest.TestCase):
         file_config = self.region_raw_file_config.raw_file_configs[file_tag]
         file_path = self._get_and_register_csv_gcs_path(file_tag)
 
-        header_reader = DirectIngestRawFileHeaderReader(self.fs, file_path, file_config)
-        result = header_reader.read_and_validate_column_headers()
+        header_reader = DirectIngestRawFileHeaderReader(self.fs, file_config)
+        result = header_reader.read_and_validate_column_headers(file_path)
 
         self.assertEqual(result, ["COL1", "COL_2", "Col3"])
 
@@ -136,21 +130,21 @@ class ValidateRawFileColumnHeadersTest(unittest.TestCase):
         file_config = self.region_raw_file_config.raw_file_configs[file_tag]
         file_path = self._get_and_register_csv_gcs_path(file_tag)
 
-        header_reader = DirectIngestRawFileHeaderReader(self.fs, file_path, file_config)
+        header_reader = DirectIngestRawFileHeaderReader(self.fs, file_config)
 
         with self.assertRaisesRegex(
             ValueError,
             "Found unexpected header in the CSV. Please remove the header row from the CSV",
         ):
-            header_reader.read_and_validate_column_headers()
+            header_reader.read_and_validate_column_headers(file_path)
 
     def test_headers_normalized_for_bq(self) -> None:
         file_tag = "tagInvalidCharacters"
         file_config = self.region_raw_file_config.raw_file_configs[file_tag]
         file_path = self._get_and_register_csv_gcs_path(file_tag)
 
-        header_reader = DirectIngestRawFileHeaderReader(self.fs, file_path, file_config)
-        result = header_reader.read_and_validate_column_headers()
+        header_reader = DirectIngestRawFileHeaderReader(self.fs, file_config)
+        result = header_reader.read_and_validate_column_headers(file_path)
 
         self.assertEqual(result, ["COL_1", "_COL2", "_3COL", "_4_COL"])
 
@@ -159,12 +153,12 @@ class ValidateRawFileColumnHeadersTest(unittest.TestCase):
         file_config = self.region_raw_file_config.raw_file_configs[file_tag]
         file_path = self._get_and_register_csv_gcs_path(file_tag)
 
-        header_reader = DirectIngestRawFileHeaderReader(self.fs, file_path, file_config)
+        header_reader = DirectIngestRawFileHeaderReader(self.fs, file_config)
 
         with self.assertRaisesRegex(
             ValueError, r"^Column name \[_COL2\] not found in config"
         ):
-            header_reader.read_and_validate_column_headers()
+            header_reader.read_and_validate_column_headers(file_path)
 
     def test_headers_not_found_allow_incomplete_config(self) -> None:
         file_tag = "tagBasicData"
@@ -184,10 +178,10 @@ class ValidateRawFileColumnHeadersTest(unittest.TestCase):
         )
 
         header_reader = DirectIngestRawFileHeaderReader(
-            self.fs, file_path, updated_file_config, allow_incomplete_configs=True
+            self.fs, updated_file_config, allow_incomplete_configs=True
         )
 
-        result = header_reader.read_and_validate_column_headers()
+        result = header_reader.read_and_validate_column_headers(file_path)
         self.assertEqual(result, ["COL1", "COL2", "COL3"])
 
     def test_infer_headers_mismatched_column_count(self) -> None:
@@ -195,22 +189,22 @@ class ValidateRawFileColumnHeadersTest(unittest.TestCase):
         file_config = self.region_raw_file_config.raw_file_configs[file_tag]
         file_path = self._get_and_register_csv_gcs_path(file_tag)
 
-        header_reader = DirectIngestRawFileHeaderReader(self.fs, file_path, file_config)
+        header_reader = DirectIngestRawFileHeaderReader(self.fs, file_config)
 
         with self.assertRaisesRegex(
             ValueError,
             r".*Make sure all expected columns are defined in the raw data configuration.$",
         ):
-            header_reader.read_and_validate_column_headers()
+            header_reader.read_and_validate_column_headers(file_path)
 
     def test_custom_separator(self) -> None:
         file_tag = "tagPipeSeparatedNonUTF8"
         file_config = self.region_raw_file_config.raw_file_configs[file_tag]
         file_path = self._get_and_register_csv_gcs_path(file_tag, suffix=".txt")
 
-        header_reader = DirectIngestRawFileHeaderReader(self.fs, file_path, file_config)
+        header_reader = DirectIngestRawFileHeaderReader(self.fs, file_config)
 
-        result = header_reader.read_and_validate_column_headers()
+        result = header_reader.read_and_validate_column_headers(file_path)
         self.assertEqual(result, ["PRIMARY_COL1", "COL2", "COL3", "COL4"])
 
     def test_infer_columns_from_config(self) -> None:
@@ -218,9 +212,9 @@ class ValidateRawFileColumnHeadersTest(unittest.TestCase):
         file_config = self.region_raw_file_config.raw_file_configs[file_tag]
         file_path = self._get_and_register_csv_gcs_path(file_tag)
 
-        header_reader = DirectIngestRawFileHeaderReader(self.fs, file_path, file_config)
+        header_reader = DirectIngestRawFileHeaderReader(self.fs, file_config)
 
-        result = header_reader.read_and_validate_column_headers()
+        result = header_reader.read_and_validate_column_headers(file_path)
         self.assertEqual(result, ["COL1", "COL2", "COL3"])
 
     def _get_and_register_csv_gcs_path(

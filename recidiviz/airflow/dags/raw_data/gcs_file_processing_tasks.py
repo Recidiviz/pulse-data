@@ -18,8 +18,9 @@
 import base64
 import concurrent.futures
 import logging
+import traceback
 from collections import defaultdict
-from typing import Dict, List, Tuple
+from typing import Any, Dict, List, Tuple
 
 from airflow.decorators import task
 from airflow.exceptions import AirflowException
@@ -28,10 +29,22 @@ from more_itertools import distribute
 from recidiviz.airflow.dags.operators.recidiviz_kubernetes_pod_operator import (
     ENTRYPOINT_ARGUMENTS,
 )
+from recidiviz.airflow.dags.raw_data.metadata import (
+    FILE_PATHS_TO_HEADERS,
+    HEADER_VERIFICATION_ERRORS,
+)
 from recidiviz.airflow.dags.raw_data.utils import n_evenly_weighted_buckets
 from recidiviz.cloud_storage.gcs_file_system import GCSFileSystem
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
+from recidiviz.ingest.direct.raw_data.raw_file_configs import (
+    DirectIngestRawFileConfig,
+    DirectIngestRegionRawFileConfig,
+    get_region_raw_file_config,
+)
+from recidiviz.ingest.direct.raw_data.read_raw_file_column_headers import (
+    DirectIngestRawFileHeaderReader,
+)
 from recidiviz.ingest.direct.types.raw_data_import_types import (
     ImportReadyFile,
     PreImportNormalizedCsvChunkResult,
@@ -409,6 +422,101 @@ def build_import_ready_files(
         )
 
     return conceptual_file_incomplete_errors, new_import_ready_files
+
+
+def _read_and_validate_headers(
+    fs: GCSFileSystem,
+    gcs_file_path: GcsfsFilePath,
+    raw_file_config: DirectIngestRawFileConfig,
+) -> List[str]:
+    """For the given |gcs_file_path|,
+    If the raw file config has infer_columns_from_config=False, read the first row of the file
+    and verify that the headers match the expected headers from the raw file config.
+    If the raw file config has infer_columns_from_config=True, return the column headers found
+    in the raw file config and verify that there is no unexpected header row in the file.
+    """
+    file_reader = DirectIngestRawFileHeaderReader(fs, raw_file_config)
+
+    return file_reader.read_and_validate_column_headers(gcs_file_path)
+
+
+def read_and_verify_column_headers_concurrently(
+    fs: GCSFileSystem,
+    region_raw_file_config: DirectIngestRegionRawFileConfig,
+    bq_metadata: List[RawBigQueryFileMetadata],
+) -> Tuple[Dict[str, List[str]], List[RawFileProcessingError]]:
+    """Reads and validates the headers of the files in the provided bq metadata concurrently."""
+
+    results: Dict[str, List[str]] = {}
+    errors: List[RawFileProcessingError] = []
+    with concurrent.futures.ThreadPoolExecutor(max_workers=MAX_THREADS) as executor:
+        futures = {
+            executor.submit(
+                _read_and_validate_headers,
+                fs,
+                gcs_file.path,
+                region_raw_file_config.raw_file_configs[gcs_file.parts.file_tag],
+            ): gcs_file.path
+            for metadata in bq_metadata
+            for gcs_file in metadata.gcs_files
+        }
+        for future in concurrent.futures.as_completed(futures):
+            file_path = futures[future]
+            try:
+                results[file_path.abs_path()] = future.result()
+            except Exception as e:
+                errors.append(
+                    RawFileProcessingError(
+                        original_file_path=file_path,
+                        temporary_file_paths=None,
+                        error_msg=f"{file_path.abs_path()}: {str(e)}\n{traceback.format_exc()}",
+                    )
+                )
+
+    return results, errors
+
+
+@task
+def read_and_verify_column_headers(
+    region_code: str, serialized_bq_metadata: List[str]
+) -> Dict[str, Any]:
+    """For each file path in the provided bq metadata:
+    If the raw file config has infer_columns_from_config=False, read the first row of the file
+    and verify that the headers match the expected headers from the raw file config.
+    If the raw file config has infer_columns_from_config=True, return the column headers found
+    in the raw file config and verify that there is no unexpected header row in the file.
+
+    Returns a dictionary with the following:
+    - FILE_PATHS_TO_HEADERS: a mapping of file paths to a str list of column headers in the order they were found
+    in the raw file or in the raw file config if the raw file did not have a header row
+    - HEADER_VERIFICATION_ERRORS: a list of serialized RawFileProcessingError objects containing any errors that occurred
+    during header verification"""
+    bq_metadata = [
+        RawBigQueryFileMetadata.deserialize(serialized_metadata)
+        for serialized_metadata in serialized_bq_metadata
+    ]
+
+    fs = GcsfsFactory.build()
+    region_raw_file_config = get_region_raw_file_config(region_code)
+
+    results, errors = read_and_verify_column_headers_concurrently(
+        fs, region_raw_file_config, bq_metadata
+    )
+
+    return {
+        FILE_PATHS_TO_HEADERS: results,
+        HEADER_VERIFICATION_ERRORS: [error.serialize() for error in errors],
+    }
+
+
+@task
+def raise_header_verification_errors(header_verification_errors: List[str]) -> None:
+    errors = [
+        RawFileProcessingError.deserialize(error)
+        for error in header_verification_errors
+    ]
+
+    _raise_task_errors(errors)
 
 
 @task

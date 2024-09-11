@@ -346,6 +346,7 @@ def main() -> int:
         "recidiviz.ingest.direct.raw_data.validations",
         "recidiviz.ingest.direct.raw_data.raw_file_configs",
         "recidiviz.ingest.direct.raw_data.raw_table_relationship_info",
+        "recidiviz.ingest.direct.raw_data.read_raw_file_column_headers",
         "recidiviz.ingest.direct.regions.direct_ingest_region_utils",
         "recidiviz.ingest.direct.types.direct_ingest_constants",
         "recidiviz.ingest.direct.types.direct_ingest_instance",
