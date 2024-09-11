@@ -41,7 +41,7 @@ import argparse
 import logging
 import sys
 
-from sqlalchemy import and_, delete, or_, select, update
+from sqlalchemy import and_, delete, or_, select, text, update
 from sqlalchemy.orm import Session
 from sqlalchemy.sql.elements import BinaryExpression
 
@@ -63,20 +63,34 @@ from recidiviz.utils.environment import (
 )
 from recidiviz.utils.metadata import local_project_id_override
 
+equivalent_sorted_roles_columns = """
+    array(
+        SELECT unnest(roster.roles) ORDER BY 1
+    ) = array(
+        SELECT unnest(user_override.roles) ORDER BY 1
+    )
+"""
+
 _COLUMN_TO_COMPARISON_CLAUSE: dict[str, BinaryExpression] = {
     "external_id": Roster.external_id == UserOverride.external_id,
     "district": Roster.district == UserOverride.district,
     "first_name": Roster.first_name.ilike(UserOverride.first_name),
     "last_name": Roster.last_name.ilike(UserOverride.last_name),
-    "role": or_(
-        Roster.role == UserOverride.role,
+    "roles": or_(
+        text(equivalent_sorted_roles_columns),
         and_(
-            Roster.role.in_(["supervision_officer", "supervision_officer_supervisor"]),
-            UserOverride.role == "supervision_staff",
+            or_(
+                Roster.roles.any("supervision_officer"),
+                Roster.roles.any("supervision_officer_supervisor"),
+            ),
+            UserOverride.roles == {"supervision_staff"},
         ),
         and_(
-            Roster.role.in_(["supervision_leadership", "state_leadership"]),
-            UserOverride.role == "leadership_role",
+            or_(
+                Roster.roles.any("supervision_leadership"),
+                Roster.roles.any("state_leadership"),
+            ),
+            UserOverride.roles == {"leadership_role"},
         ),
     ),
 }

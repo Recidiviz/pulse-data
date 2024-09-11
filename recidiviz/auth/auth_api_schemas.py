@@ -36,7 +36,6 @@ class UserSchema(CamelCaseSchema):
     # Set allow_none on all non-required fields to allow returning instances of UserOverride where
     # column values may be None
     external_id = fields.Str(allow_none=True)
-    role = fields.Str(allow_none=True)
     roles = fields.List(fields.Str, allow_none=True)
     district = fields.Str(allow_none=True)
     first_name = fields.Str(allow_none=True)

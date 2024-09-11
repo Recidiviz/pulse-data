@@ -147,7 +147,6 @@ def get_users_blueprint(authentication_middleware: Callable | None) -> Blueprint
                 func.coalesce(UserOverride.external_id, Roster.external_id).label(
                     "external_id"
                 ),
-                func.coalesce(UserOverride.role, Roster.role).label("role"),
                 func.coalesce(UserOverride.roles, Roster.roles).label("roles"),
                 func.coalesce(UserOverride.district, Roster.district).label("district"),
                 func.coalesce(UserOverride.first_name, Roster.first_name).label(

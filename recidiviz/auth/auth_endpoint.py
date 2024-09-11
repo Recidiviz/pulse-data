@@ -148,9 +148,6 @@ def _upsert_user_rows(
                     row["state_code"], row["external_id"]
                 )
         row["roles"] = [value.strip().lower() for value in row["roles"].split(",")]
-        row["role"] = row["roles"][
-            0
-        ]  # leaving this here until we remove 'role' from the schemas
         row["user_hash"] = generate_user_hash(row["email_address"])
 
         # update existing row or add new row

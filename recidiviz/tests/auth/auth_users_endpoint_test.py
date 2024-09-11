@@ -180,7 +180,6 @@ class AuthUsersEndpointTestCase(TestCase):
         user_1 = generate_fake_rosters(
             email="leadership@domain.org",
             region_code="US_ND",
-            role="leadership_role",
             roles=["leadership_role"],
             district="D1",
             first_name="Fake",
@@ -190,7 +189,6 @@ class AuthUsersEndpointTestCase(TestCase):
             email="supervision_staff@domain.org",
             region_code="US_ID",
             external_id="abc",
-            role="supervision_staff",
             roles=["supervision_staff"],
             district="D3",
             first_name="John",
@@ -201,7 +199,6 @@ class AuthUsersEndpointTestCase(TestCase):
             email="leadership@domain.org",
             region_code="US_ND",
             external_id="user_1_override.external_id",
-            role="user_1_override.role",
             roles=["user_1_override.role"],
             blocked=True,
             pseudonymized_id="hashed-user_1_override",
@@ -250,7 +247,6 @@ class AuthUsersEndpointTestCase(TestCase):
             email="leadership@domain.org",
             region_code="US_MO",
             external_id="12345",
-            role="leadership_role",
             roles=["leadership_role"],
             district="4, 10A",
             first_name="Test A.",
@@ -273,7 +269,6 @@ class AuthUsersEndpointTestCase(TestCase):
         user_1 = generate_fake_rosters(
             email="leadership@domain.org",
             region_code="US_ME",
-            role="leadership_role",
             roles=["leadership_role"],
         )
         applicable_override = generate_fake_user_overrides(
@@ -316,7 +311,6 @@ class AuthUsersEndpointTestCase(TestCase):
             email="leadership@domain.org",
             region_code="US_CO",
             external_id="12345",
-            role="leadership_role",
             roles=["leadership_role"],
             district="District 4",
             first_name="Test A.",
@@ -334,7 +328,6 @@ class AuthUsersEndpointTestCase(TestCase):
         user_1 = generate_fake_rosters(
             email="leadership@domain.org",
             region_code="US_CO",
-            role="leadership_role",
             roles=["leadership_role", "supervision_staff"],
         )
         leadership_permissions = generate_fake_default_permissions(
@@ -363,7 +356,6 @@ class AuthUsersEndpointTestCase(TestCase):
         user_1 = generate_fake_rosters(
             email="leadership@domain.org",
             region_code="US_CO",
-            role="leadership_role",
             roles=["leadership_role", "supervision_staff"],
         )
         leadership_permissions = generate_fake_default_permissions(
@@ -404,7 +396,6 @@ class AuthUsersEndpointTestCase(TestCase):
             email="parameter@domain.org",
             region_code="US_CO",
             external_id="ABC",
-            role="leadership_role",
             roles=["leadership_role"],
             district="District",
             pseudonymized_id="pseudo-ABC",
@@ -413,7 +404,6 @@ class AuthUsersEndpointTestCase(TestCase):
             email="user@domain.org",
             region_code="US_CO",
             external_id="XXXX",
-            role="supervision_staff",
             roles=["supervision_staff"],
             district="District",
         )
@@ -436,7 +426,6 @@ class AuthUsersEndpointTestCase(TestCase):
             email="user@domain.org",
             region_code="US_CO",
             external_id="XXXX",
-            role="supervision_staff",
             roles=["supervision_staff"],
             district="District",
         )
@@ -460,7 +449,6 @@ class AuthUsersEndpointTestCase(TestCase):
             email="parameter@domain.org",
             region_code="US_CO",
             external_id="123",
-            role="supervision_staff",
             roles=["supervision_staff"],
             district="D1",
             first_name="Test",
@@ -475,7 +463,6 @@ class AuthUsersEndpointTestCase(TestCase):
                 json={
                     "stateCode": "US_CO",
                     "emailAddress": "parameter@domain.org",
-                    "role": "leadership_role",
                     "roles": ["leadership_role"],
                     "reason": "test",
                 },
@@ -495,7 +482,6 @@ class AuthUsersEndpointTestCase(TestCase):
             email="parameter@domain.org",
             region_code="US_TN",
             external_id="Original",
-            role="leadership_role",
             roles=["leadership_role"],
             first_name="Original",
             last_name="Name",
@@ -529,7 +515,6 @@ class AuthUsersEndpointTestCase(TestCase):
             email="parameter@domain.org",
             region_code="US_TN",
             external_id="Original",
-            role="leadership_role",
             roles=["leadership_role"],
             first_name="Original",
             last_name="Name",
@@ -557,7 +542,6 @@ class AuthUsersEndpointTestCase(TestCase):
         user_1 = generate_fake_rosters(
             email="parameter@domain.org",
             region_code="US_CO",
-            role="supervision_staff",
             roles=["supervision_staff"],
         )
         leadership_permissions = generate_fake_default_permissions(
@@ -600,7 +584,6 @@ class AuthUsersEndpointTestCase(TestCase):
             email="add_user@domain.org",
             region_code="US_CO",
             external_id="ABC",
-            role="leadership_role",
             roles=["leadership_role"],
             district="District",
         )
@@ -619,7 +602,6 @@ class AuthUsersEndpointTestCase(TestCase):
                     "stateCode": "US_MO",
                     "emailAddress": "parameter@domain.org",
                     "externalId": None,
-                    "role": "leadership_role",
                     "roles": ["leadership_role"],
                     "district": "1, 2",
                     "firstName": None,
@@ -646,7 +628,7 @@ class AuthUsersEndpointTestCase(TestCase):
                     "stateCode": None,
                     "emailAddress": "parameter@domain.org",
                     "externalId": "XYZ",
-                    "role": "leadership_role",
+                    "roles": ["leadership_role"],
                     "district": "D1",
                     "firstName": "Test",
                     "lastName": "User",
@@ -661,7 +643,7 @@ class AuthUsersEndpointTestCase(TestCase):
                     "stateCode": "US_ID",
                     "emailAddress": "parameter@domain.org",
                     "externalId": "XYZ",
-                    "role": {"A": "B"},
+                    "roles": [{"A": "B"}],
                     "district": "D1",
                     "firstName": "Test",
                     "lastName": "User",
@@ -679,7 +661,6 @@ class AuthUsersEndpointTestCase(TestCase):
                     "stateCode": "US_ID",
                     "emailAddress": "parameter@domain.org",
                     "externalId": "XYZ",
-                    "role": "leadership_role",
                     "roles": ["leadership_role"],
                     "district": "D1",
                     "firstName": "Test",
@@ -701,7 +682,6 @@ class AuthUsersEndpointTestCase(TestCase):
                     "stateCode": "US_ND",
                     "emailAddress": "parameter@domain.org",
                     "externalId": None,
-                    "role": "leadership_role",
                     "roles": ["leadership_role"],
                     "district": None,
                     "firstName": None,
@@ -719,7 +699,6 @@ class AuthUsersEndpointTestCase(TestCase):
         roster_user = generate_fake_rosters(
             email="parameter@domain.org",
             region_code="US_TN",
-            role="leadership_role",
             roles=["leadership_role"],
             district="40",
         )
@@ -732,7 +711,6 @@ class AuthUsersEndpointTestCase(TestCase):
                     "stateCode": "US_TN",
                     "emailAddress": "parameter@domain.org",
                     "externalId": None,
-                    "role": "leadership_role",
                     "roles": ["leadership_role"],
                     "district": "40",
                     "firstName": None,
@@ -750,7 +728,6 @@ class AuthUsersEndpointTestCase(TestCase):
             email="add_user@domain.org",
             region_code="US_CO",
             external_id="ABC",
-            role="leadership_role",
             roles=["leadership_role"],
             district="District",
         )
@@ -776,7 +753,6 @@ class AuthUsersEndpointTestCase(TestCase):
                     "stateCode": "US_MO",
                     "emailAddress": "parameter@domain.org",
                     "externalId": None,
-                    "role": "leadership_role",
                     "roles": ["leadership_role", "supervision_staff"],
                     "district": "1, 2",
                     "firstName": None,
@@ -854,7 +830,6 @@ class AuthUsersEndpointTestCase(TestCase):
         roster_leadership_user = generate_fake_rosters(
             email="leadership@domain.org",
             region_code="US_XX",
-            role="leadership_role",
             roles=["leadership_role"],
             external_id="0000",
             district="",
@@ -890,7 +865,6 @@ class AuthUsersEndpointTestCase(TestCase):
         roster_leadership_user = generate_fake_rosters(
             email="leadership@domain.org",
             region_code="US_XX",
-            role="leadership_role",
             roles=["leadership_role"],
             external_id="0000",
             district="",
@@ -924,7 +898,6 @@ class AuthUsersEndpointTestCase(TestCase):
         roster_leadership_user = generate_fake_rosters(
             email="leadership@domain.org",
             region_code="US_XX",
-            role="leadership_role",
             roles=["leadership_role"],
             external_id="0000",  # This should not change because user is not updated
             district="",
@@ -959,7 +932,6 @@ class AuthUsersEndpointTestCase(TestCase):
         roster_leadership_user = generate_fake_rosters(
             email="leadership@domain.org",
             region_code="US_XX",
-            role="leadership_role",
             roles=["leadership_role"],  # This should change with the new upload
             external_id="0000",  # This should change with the new upload
             district="",
@@ -968,7 +940,6 @@ class AuthUsersEndpointTestCase(TestCase):
         roster_supervision_staff = generate_fake_rosters(
             email="supervision_staff@domain.org",
             region_code="US_XX",
-            role="supervision_staff",
             roles=["supervision_staff"],
             district="",
         )
@@ -1094,7 +1065,6 @@ class AuthUsersEndpointTestCase(TestCase):
         roster_leadership_user = generate_fake_rosters(
             email="leadership@domain.org",
             region_code="US_XX",
-            role="leadership_role",
             roles=["leadership_role"],
             external_id="1234",  # This should NOT change with the new upload
             district="OLD DISTRICT",  # This should change with the new upload
@@ -1193,7 +1163,6 @@ class AuthUsersEndpointTestCase(TestCase):
             email="parameter@domain.org",
             region_code="US_CO",
             external_id="123",
-            role="line_staff_user",
             roles=["line_staff_user"],
             district="D1",
             first_name="Test",
@@ -1204,7 +1173,6 @@ class AuthUsersEndpointTestCase(TestCase):
             email="user@domain.org",
             region_code="US_TN",
             external_id="456",
-            role="leadership_role",
             roles=["leadership_role"],
             first_name="Original",
             last_name="Name",
@@ -1219,14 +1187,12 @@ class AuthUsersEndpointTestCase(TestCase):
                     {
                         "stateCode": "US_CO",
                         "userHash": _PARAMETER_USER_HASH,
-                        "role": "supervision_staff",
                         "roles": ["supervision_staff"],
                         "reason": "test",
                     },
                     {
                         "stateCode": "US_TN",
                         "userHash": _USER_HASH,
-                        "role": "supervision_staff",
                         "roles": ["supervision_staff"],
                         "reason": "test",
                     },

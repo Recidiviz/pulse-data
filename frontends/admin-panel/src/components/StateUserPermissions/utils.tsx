@@ -161,9 +161,9 @@ const getColumnSearchProps = (dataIndex: string) => ({
   ),
   onFilter: (
     value: string | number | boolean,
-    record: StateUserPermissionsResponse
+    record: StateUserOrRolePermissionsResponse
   ) => {
-    const item = record[dataIndex as keyof StateUserPermissionsResponse];
+    const item = record[dataIndex as keyof StateUserOrRolePermissionsResponse];
     return typeof item !== "object"
       ? item.toString().toLowerCase().includes(value.toString().toLowerCase())
       : JSON.stringify(item)
@@ -172,12 +172,14 @@ const getColumnSearchProps = (dataIndex: string) => ({
   },
 });
 
+type StateUserOrRolePermissionsResponse =
+  | StateUserPermissionsResponse
+  | StateRolePermissionsResponse;
+
 type ColumnData = { text: string; value: string | boolean };
 export const filterData =
-  (colData: StateUserPermissionsResponse[]) =>
-  (
-    formatter: (item: StateUserPermissionsResponse) => string | string[]
-  ): ColumnData[] =>
+  <T extends StateUserOrRolePermissionsResponse>(colData: T[]) =>
+  (formatter: (item: T) => string | string[]): ColumnData[] =>
     colData
       .map((item) => {
         const formattedItem = formatter(item);
@@ -191,7 +193,7 @@ export const filterData =
         value: item,
       }));
 
-export const getPermissionsTableColumns = (
+export const getUserPermissionsTableColumns = (
   data: StateUserPermissionsResponse[],
   stateRoleData: StateRolePermissionsResponse[],
   setUserToEnable?: (user: StateUserPermissionsResponse) => void
@@ -286,29 +288,6 @@ export const getPermissionsTableColumns = (
       },
     },
     {
-      title: "Role",
-      dataIndex: "role",
-      key: "role",
-      width: 150,
-      filters: [...filterData(data)((d) => d.role)],
-      onFilter: (
-        value: string | number | boolean,
-        record: StateUserPermissionsResponse
-      ) => {
-        return (
-          record.role?.indexOf(value as keyof StateUserPermissionsResponse) ===
-          0
-        );
-      },
-      sorter: (
-        a: StateUserPermissionsResponse,
-        b: StateUserPermissionsResponse
-      ) => a.role?.localeCompare(b.role),
-      render: (text, record) => {
-        return formatText(text, record);
-      },
-    },
-    {
       title: "District",
       dataIndex: "district",
       width: 250,
@@ -329,7 +308,8 @@ export const getPermissionsTableColumns = (
         record: StateUserPermissionsResponse
       ) => {
         const role = stateRoleData.find(
-          (d) => d.stateCode === record.stateCode && d.role === record.role
+          (d) =>
+            d.stateCode === record.stateCode && record.roles?.includes(d.role)
         );
         return {
           props: {
@@ -362,7 +342,8 @@ export const getPermissionsTableColumns = (
         record: StateUserPermissionsResponse
       ) => {
         const role = stateRoleData.find(
-          (d) => d.stateCode === record.stateCode && d.role === record.role
+          (d) =>
+            d.stateCode === record.stateCode && record.roles?.includes(d.role)
         );
         return {
           props: {
@@ -472,6 +453,84 @@ export const getPermissionsTableColumns = (
             </Button>
           )
         );
+      },
+    },
+  ];
+};
+
+export const getRolePermissionsTableColumns = (
+  stateRoleData: StateRolePermissionsResponse[]
+): ColumnType<StateRolePermissionsResponse>[] => {
+  return [
+    {
+      title: "State",
+      dataIndex: "stateCode",
+      key: "stateCode",
+      width: 100,
+      filters: [...filterData(stateRoleData)((d) => d.stateCode)],
+      onFilter: (
+        value: string | number | boolean,
+        record: StateRolePermissionsResponse
+      ) => {
+        return (
+          record.stateCode?.indexOf(
+            value as keyof StateRolePermissionsResponse
+          ) === 0
+        );
+      },
+    },
+    {
+      title: "Role",
+      dataIndex: "role",
+      key: "role",
+      width: 150,
+      filters: [...filterData(stateRoleData)((d) => d.role)],
+      onFilter: (
+        value: string | number | boolean,
+        record: StateRolePermissionsResponse
+      ) => {
+        return (
+          record.role?.indexOf(value as keyof StateRolePermissionsResponse) ===
+          0
+        );
+      },
+      sorter: (
+        a: StateRolePermissionsResponse,
+        b: StateRolePermissionsResponse
+      ) => {
+        return a.role.localeCompare(b.role);
+      },
+    },
+    {
+      title: "Routes",
+      dataIndex: "routes",
+      key: "routes",
+      width: 300,
+      ...getColumnSearchProps("routes"),
+      render: (text: Record<string, string>) => {
+        return {
+          props: {
+            style: {
+              whiteSpace: "pre",
+            },
+          },
+          children: JSON.stringify(text, null, "\t").slice(2, -2),
+        };
+      },
+    },
+    {
+      title: titleWithInfoTooltip(
+        "Feature variants",
+        "Note: active times are in *your* time zone"
+      ),
+      dataIndex: "featureVariants",
+      key: "featureVariants",
+      width: 350,
+      ...getColumnSearchProps("featureVariants"),
+      render: (text: Record<string, string>) => {
+        return {
+          children: formatFeatureVariants(text),
+        };
       },
     },
   ];
