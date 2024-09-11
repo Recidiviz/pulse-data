@@ -16,7 +16,6 @@
 // =============================================================================
 
 import { Button, message, PageHeader, Space, Spin, Table } from "antd";
-import { ColumnType } from "antd/lib/table";
 import React, { useState } from "react";
 
 import {
@@ -26,18 +25,14 @@ import {
   updateStateRolePermissions,
 } from "../../AdminPanelAPI/LineStaffTools";
 import { useFetchedDataJSON } from "../../hooks";
-import {
-  StateRoleForm,
-  StateRolePermissionsResponse,
-  StateUserPermissionsResponse,
-} from "../../types";
+import { StateRoleForm, StateRolePermissionsResponse } from "../../types";
 import { CreateAddStateRoleForm } from "./AddStateRoleForm";
 import { CreateEditStateRoleForm } from "./EditStateRoleForm";
 import { ReasonsLogButton } from "./ReasonsLogButton";
 import {
   aggregateFormPermissionResults,
   checkResponse,
-  getPermissionsTableColumns,
+  getRolePermissionsTableColumns,
   updatePermissionsObject,
 } from "./utils";
 
@@ -180,14 +175,7 @@ const StateRoleDefaultPermissionsView = (): JSX.Element => {
     setTableKey(() => tableKey + 1);
   };
 
-  const enabledColumns = ["stateCode", "role", "routes", "featureVariants"];
-
-  const columns = getPermissionsTableColumns(
-    data as StateRolePermissionsResponse[] & StateUserPermissionsResponse[],
-    data
-  ).filter((column) => {
-    return enabledColumns.includes(column.dataIndex as string);
-  }) as unknown as ColumnType<StateRolePermissionsResponse>[];
+  const columns = getRolePermissionsTableColumns(data);
 
   return (
     <>

@@ -56,7 +56,7 @@ export type User = {
   email: string;
   stateCode: string;
   externalId?: string;
-  role: string;
+  roles: string[];
   district?: string;
   firstName?: string;
   lastName?: string;
@@ -84,7 +84,6 @@ export interface StateUserPermissionsResponse {
   firstName: string;
   lastName: string;
   externalId: string;
-  role: string;
   roles: string[];
   district: string;
   featureVariants: Partial<FeatureVariants> | null;

@@ -193,7 +193,6 @@ class AuthEndpointTests(TestCase):
         user = generate_fake_rosters(
             email="user@domain.org",
             region_code="US_CO",
-            role="supervision_staff",
             roles=["supervision_staff"],
         )
         default_co = generate_fake_default_permissions(
@@ -241,7 +240,6 @@ class AuthEndpointTests(TestCase):
                     "externalId": None,
                     "firstName": None,
                     "lastName": None,
-                    "role": "supervision_staff",
                     "roles": ["supervision_staff"],
                     "stateCode": "US_CO",
                     "routes": {
@@ -266,7 +264,6 @@ class AuthEndpointTests(TestCase):
         added_user = generate_fake_rosters(
             email="user@domain.org",
             region_code="US_TN",
-            role="leadership_role",
             roles=["leadership_role"],
         )
         default_tn = generate_fake_default_permissions(
@@ -313,7 +310,6 @@ class AuthEndpointTests(TestCase):
                     "externalId": None,
                     "firstName": None,
                     "lastName": None,
-                    "role": "leadership_role",
                     "roles": ["leadership_role"],
                     "routes": {"A": True, "C": False},
                     "featureVariants": {"C": "D"},
@@ -332,7 +328,6 @@ class AuthEndpointTests(TestCase):
         added_user = generate_fake_rosters(
             email="user@domain.org",
             region_code="US_CO",
-            role="leadership_role",
             roles=["leadership_role"],
         )
         override_permissions = generate_fake_permissions_overrides(
@@ -368,7 +363,6 @@ class AuthEndpointTests(TestCase):
         roster_user = generate_fake_rosters(
             email="user@domain.org",
             region_code="US_MO",
-            role="leadership_role",
             roles=["leadership_role"],
             district="D1",
         )
@@ -409,7 +403,6 @@ class AuthEndpointTests(TestCase):
                     "externalId": None,
                     "firstName": None,
                     "lastName": None,
-                    "role": "leadership_role",
                     "roles": ["leadership_role"],
                     "routes": {"A": True, "C": False},
                     "featureVariants": {"E": "F"},
@@ -428,7 +421,6 @@ class AuthEndpointTests(TestCase):
         user = generate_fake_user_overrides(
             email="user@domain.org",
             region_code="US_CO",
-            role="leadership_role",
             roles=["leadership_role"],
         )
         default = generate_fake_default_permissions(
@@ -470,7 +462,6 @@ class AuthEndpointTests(TestCase):
                     "externalId": None,
                     "firstName": None,
                     "lastName": None,
-                    "role": "leadership_role",
                     "roles": ["leadership_role"],
                     "routes": {"A": True, "C": False},
                     "featureVariants": {"E": "F", "G": "H"},
@@ -489,7 +480,7 @@ class AuthEndpointTests(TestCase):
         user = generate_fake_user_overrides(
             email="user@domain.org",
             region_code="US_CO",
-            role="leadership_role",
+            roles=["leadership_role"],
         )
         add_entity_to_database_session(self.database_key, [user])
         with self.app.test_request_context():
@@ -503,7 +494,6 @@ class AuthEndpointTests(TestCase):
         user = generate_fake_rosters(
             email="parameter@domain.org",
             region_code="US_ID",
-            role="leadership_role",
             roles=["leadership_role"],
         )
         add_entity_to_database_session(self.database_key, [user])
@@ -533,7 +523,6 @@ class AuthEndpointTests(TestCase):
                     "externalId": None,
                     "firstName": None,
                     "lastName": None,
-                    "role": "leadership_role",
                     "roles": ["leadership_role"],
                     "routes": {},
                     "featureVariants": {},
@@ -552,7 +541,6 @@ class AuthEndpointTests(TestCase):
                 json={
                     "stateCode": "US_TN",
                     "emailAddress": "parameter@domain.org",
-                    "role": "supervision_staff",
                     "roles": ["supervision_staff"],
                     "reason": "test",
                 },
@@ -582,7 +570,6 @@ class AuthEndpointTests(TestCase):
                     "externalId": None,
                     "firstName": None,
                     "lastName": None,
-                    "role": "supervision_staff",
                     "roles": ["supervision_staff"],
                     "routes": {},
                     "featureVariants": {},
@@ -861,7 +848,6 @@ class AuthEndpointTests(TestCase):
         user = generate_fake_rosters(
             email="parameter@domain.org",
             region_code="US_MO",
-            role="leadership_role",
             roles=["leadership_role", "supervision_staff_role"],
         )
         add_entity_to_database_session(
@@ -883,7 +869,6 @@ class AuthEndpointTests(TestCase):
         user = generate_fake_user_overrides(
             email="parameter@domain.org",
             region_code="US_MO",
-            role="leadership_role",
             roles=["leadership_role"],
         )
         add_entity_to_database_session(self.database_key, [state_role, user])
@@ -909,13 +894,11 @@ class AuthEndpointTests(TestCase):
         user_delete = generate_fake_rosters(
             email="parameter@domain.org",
             region_code="US_MO",
-            role="leadership_role",
             roles=["leadership_role"],
         )
         user_keep = generate_fake_rosters(
             email="supervision_staff@domain.org",
             region_code="US_MO",
-            role="supervision_staff_role",
             roles=["supervision_staff_role"],
         )
         override_user_delete = generate_fake_user_overrides(
@@ -926,14 +909,12 @@ class AuthEndpointTests(TestCase):
         override_only_delete = generate_fake_user_overrides(
             email="user@domain.org",
             region_code="US_MO",
-            role="leadership_role",
             roles=["leadership_role"],
             blocked=True,
         )
         override_keep = generate_fake_user_overrides(
             email="supervision_staff_2@domain.org",
             region_code="US_MO",
-            role="supervision_staff_role",
             roles=["supervision_staff_role"],
         )
         add_entity_to_database_session(
@@ -1100,7 +1081,6 @@ class AuthEndpointTests(TestCase):
         roster_leadership_user = generate_fake_rosters(
             email="leadership@domain.org",
             region_code="US_XX",
-            role="leadership_role",
             roles=["leadership_role"],
             external_id="0000",  # This should change with the new upload
             district="",
@@ -1114,7 +1094,6 @@ class AuthEndpointTests(TestCase):
         roster_supervision_staff = generate_fake_rosters(
             email="parameter@domain.org",
             region_code="US_XX",
-            role="supervision_staff",
             roles=["supervision_staff"],
             district="",
         )
@@ -1162,7 +1141,6 @@ class AuthEndpointTests(TestCase):
                     "externalId": None,
                     "firstName": "override",
                     "lastName": "user",
-                    "role": "leadership_role",
                     "roles": ["leadership_role"],
                     "stateCode": "US_XX",
                     "routes": {},
@@ -1179,7 +1157,6 @@ class AuthEndpointTests(TestCase):
                     "externalId": "3706",
                     "firstName": "supervision",
                     "lastName": "user",
-                    "role": "supervision_staff",
                     "roles": ["supervision_staff"],
                     "stateCode": "US_XX",
                     "routes": {},
@@ -1196,7 +1173,6 @@ class AuthEndpointTests(TestCase):
                     "externalId": "98725",
                     "firstName": "supervision2",
                     "lastName": "user2",
-                    "role": "supervision_staff",
                     "roles": ["supervision_staff"],
                     "stateCode": "US_XX",
                     "routes": {},

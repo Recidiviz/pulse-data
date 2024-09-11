@@ -68,13 +68,18 @@ class CleanupUserOverridesTest(TestCase):
             email="parameter@domain.org",
             region_code="US_XX",
             external_id="123",
-            role="supervision_officer",
-            roles=["supervision_officer"],
+            roles=["supervision_officer", "leadership_role"],
             district="D1",
             first_name="Test",
             last_name="User",
             pseudonymized_id="pseudo-123",
         )
+        self.switched_roles = self.roster_user.roles.copy()
+        self.switched_roles[0], self.switched_roles[1] = (
+            self.switched_roles[1],
+            self.switched_roles[0],
+        )
+
         self.session = SessionFactory.using_database(self.database_key).__enter__()
         self.session.add(self.roster_user)
 
@@ -198,7 +203,6 @@ class CleanupUserOverridesTest(TestCase):
             generate_fake_user_overrides(
                 email=self.roster_user.email_address,
                 region_code=self.roster_user.state_code,
-                role=self.roster_user.role,
                 roles=self.roster_user.roles,
                 # add one different attribute so it doesn't get deleted
                 district="different",
@@ -210,14 +214,31 @@ class CleanupUserOverridesTest(TestCase):
                 UserOverride.email_address == self.roster_user.email_address
             )
         ).scalar()
-        self.assertIsNone(modified_user.role)
+        self.assertIsNone(modified_user.roles)
+
+    def test_same_roles_different_order_set_to_null(self) -> None:
+        self.session.add(
+            generate_fake_user_overrides(
+                email=self.roster_user.email_address,
+                region_code=self.roster_user.state_code,
+                roles=self.switched_roles,
+                # add one different attribute so it doesn't get deleted
+                district="different",
+            )
+        )
+        cleanup_user_overrides(self.session, dry_run=False)
+        modified_user = self.session.execute(
+            select(UserOverride).where(
+                UserOverride.email_address == self.roster_user.email_address
+            )
+        ).scalar()
+        self.assertIsNone(modified_user.roles)
 
     def test_equivalent_supervision_staff_role_set_to_null(self) -> None:
         self.session.add(
             generate_fake_user_overrides(
                 email=self.roster_user.email_address,
                 region_code=self.roster_user.state_code,
-                role="supervision_staff",
                 roles=["supervision_staff"],
                 # add one different attribute so it doesn't get deleted
                 district="different",
@@ -229,15 +250,14 @@ class CleanupUserOverridesTest(TestCase):
                 UserOverride.email_address == self.roster_user.email_address
             )
         ).scalar()
-        self.assertIsNone(modified_user.role)
+        self.assertIsNone(modified_user.roles)
 
     def test_equivalent_leadership_role_set_to_null(self) -> None:
-        self.roster_user.role = "supervision_leadership"
+        self.roster_user.roles = ["supervision_leadership"]
         self.session.add(
             generate_fake_user_overrides(
                 email=self.roster_user.email_address,
                 region_code=self.roster_user.state_code,
-                role="leadership_role",
                 roles=["leadership_role"],
                 # add one different attribute so it doesn't get deleted
                 district="different",
@@ -249,14 +269,13 @@ class CleanupUserOverridesTest(TestCase):
                 UserOverride.email_address == self.roster_user.email_address
             )
         ).scalar()
-        self.assertIsNone(modified_user.role)
+        self.assertIsNone(modified_user.roles)
 
     def test_non_equivalent_role_does_not_change(self) -> None:
         self.session.add(
             generate_fake_user_overrides(
                 email=self.roster_user.email_address,
                 region_code=self.roster_user.state_code,
-                role="leadership_role",
                 roles=["leadership_role"],
                 # add one different attribute so it doesn't get deleted
                 district="different",
@@ -268,7 +287,7 @@ class CleanupUserOverridesTest(TestCase):
                 UserOverride.email_address == self.roster_user.email_address
             )
         ).scalar()
-        self.assertEqual(modified_user.role, "leadership_role")
+        self.assertEqual(modified_user.roles, ["leadership_role"])
 
     def test_delete_user_all_null_attributes(self) -> None:
         self.session.add(
@@ -291,7 +310,6 @@ class CleanupUserOverridesTest(TestCase):
                 email=self.roster_user.email_address,
                 region_code=self.roster_user.state_code,
                 district=self.roster_user.district,
-                role="supervision_staff",
                 roles=["supervision_staff"],
             )
         )

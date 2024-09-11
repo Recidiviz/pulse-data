@@ -85,7 +85,6 @@ class PrepRosterSyncTest(TestCase):
             email="recently_logged_in_user@testdomain.com",
             region_code="US_XX",
             external_id="123",
-            role="supervision_line_staff",
             roles=["supervision_line_staff"],
             district="D1",
             first_name="Test",
@@ -106,7 +105,6 @@ class PrepRosterSyncTest(TestCase):
             email="user_in_sync_query@testdomain.com",
             region_code="US_XX",
             external_id="234",
-            role="supervision_staff",
             roles=["supervision_staff"],
             district="D2",
             first_name="Test",
@@ -119,7 +117,6 @@ class PrepRosterSyncTest(TestCase):
             email="recently_created_user@testdomain.com",
             region_code="US_XX",
             external_id="345",
-            role="supervision_line_staff",
             roles=["supervision_line_staff"],
             district="D3",
             first_name="Test",
@@ -131,7 +128,6 @@ class PrepRosterSyncTest(TestCase):
             email="user_to_delete_roster_and_uo@testdomain.com",
             region_code="US_XX",
             external_id="456",
-            role="supervision_line_staff",
             roles=["supervision_line_staff"],
             district="D4",
             first_name="Test",
@@ -152,7 +148,6 @@ class PrepRosterSyncTest(TestCase):
             email="user_to_delete_uo_only@testdomain.com",
             region_code="US_XX",
             external_id="678",
-            role="supervision_line_staff",
             roles=["supervision_line_staff"],
             district="D6",
             first_name="Test",
@@ -165,7 +160,6 @@ class PrepRosterSyncTest(TestCase):
             email="user_with_equivalent_role@testdomain.com",
             region_code="US_XX",
             external_id="789",
-            role="supervision_staff",
             roles=["supervision_staff", "tt group"],
             district="D7",
             first_name="Test",
@@ -178,7 +172,6 @@ class PrepRosterSyncTest(TestCase):
             email="user_with_different_role@testdomain.com",
             region_code="US_XX",
             external_id="890",
-            role="leadership_role",
             roles=["leadership_role", "tt group"],
             district="D8",
             first_name="Test",
@@ -191,7 +184,6 @@ class PrepRosterSyncTest(TestCase):
             email="user_with_different_district@testdomain.com",
             region_code="US_XX",
             external_id="901",
-            role="supervision_staff",
             roles=["supervision_staff"],
             district="D9",
             first_name="Test",
@@ -204,7 +196,6 @@ class PrepRosterSyncTest(TestCase):
             email="user_with_multiple_diffs@testdomain.com",
             region_code="US_XX",
             external_id="012",
-            role="supervision_staff",
             roles=["supervision_staff"],
             district="D0",
             first_name="Test",
@@ -217,7 +208,6 @@ class PrepRosterSyncTest(TestCase):
             email="user_to_keep_unchanged@testdomain.com",
             region_code="US_XX",
             external_id="1234",
-            role="supervision_staff",
             roles=["supervision_staff"],
             district="D12",
             first_name="Test",
@@ -230,7 +220,6 @@ class PrepRosterSyncTest(TestCase):
             email="tn_d20_user@testdomain.com",
             region_code="US_TN",
             external_id="020",
-            role="supervision_line_staff",
             roles=["supervision_line_staff"],
             district="20",
             first_name="Test",
@@ -304,7 +293,6 @@ class PrepRosterSyncTest(TestCase):
             generate_fake_rosters(
                 email="user_in_sync_query@testdomain.com",
                 region_code="US_XX",
-                role="leadership_role",
                 roles=["leadership_role"],
             )
         ]
@@ -352,7 +340,6 @@ class PrepRosterSyncTest(TestCase):
             generate_fake_rosters(
                 email="user_in_sync_query@testdomain.com",
                 region_code="US_XX",
-                role="leadership_role",
                 roles=["leadership_role"],
             )
         ]
@@ -370,7 +357,6 @@ class PrepRosterSyncTest(TestCase):
                 "first_name": "Test",
                 "last_name": "User",
                 "pseudonymized_id": "pseudo-123",
-                "role": "supervision_line_staff",
                 "roles": ["supervision_line_staff", "custom_role"],
                 "state_code": "US_XX",
                 "user_hash": "On9z4tx1lZK9NfTUmCrAucJRuDsvNDZvT4JknYfHlUU=",
@@ -423,7 +409,6 @@ class PrepRosterSyncTest(TestCase):
                 "first_name": "Test",
                 "last_name": "User",
                 "pseudonymized_id": "pseudo-1234",
-                "role": "supervision_staff",
                 "roles": ["supervision_staff"],
                 "state_code": "US_XX",
                 "user_hash": "HDT8/pUJRRPlwYzN8Ds5PsZAV5//h1UzKb+lzBA9qVY=",
@@ -471,7 +456,6 @@ class PrepRosterSyncTest(TestCase):
             generate_fake_rosters(
                 email="user_in_sync_query@testdomain.com",
                 region_code="US_XX",
-                role="leadership_role",
                 roles=["leadership_role"],
             )
         ]
@@ -490,7 +474,6 @@ class PrepRosterSyncTest(TestCase):
                 "first_name": "Test",
                 "last_name": "User",
                 "pseudonymized_id": "pseudo-123",
-                "role": "supervision_line_staff",
                 "roles": ["supervision_line_staff", "custom_role"],
                 "state_code": "US_XX",
                 "user_hash": "On9z4tx1lZK9NfTUmCrAucJRuDsvNDZvT4JknYfHlUU=",
@@ -503,7 +486,6 @@ class PrepRosterSyncTest(TestCase):
                 "first_name": "Test",
                 "last_name": "User",
                 "pseudonymized_id": "pseudo-1234",
-                "role": "supervision_staff",
                 "roles": ["supervision_staff"],
                 "state_code": "US_XX",
                 "user_hash": "HDT8/pUJRRPlwYzN8Ds5PsZAV5//h1UzKb+lzBA9qVY=",
@@ -615,13 +597,11 @@ class PrepRosterSyncTest(TestCase):
         roster_sync_user = Roster(
             email_address="user_in_sync_query@testdomain.com",
             state_code="US_XX",
-            role="SUPERVISION_LINE_STAFF",
             roles="SUPERVISION_LINE_STAFF",
         )
         current_user = generate_fake_user_overrides(
             email="user_in_sync_query@testdomain.com",
             region_code="US_XX",
-            role="supervision_staff",
             roles=["supervision_staff"],
         )
 
@@ -635,13 +615,11 @@ class PrepRosterSyncTest(TestCase):
         roster_sync_user = Roster(
             email_address="user_in_sync_query@testdomain.com",
             state_code="US_XX",
-            role="SUPERVISION_LINE_STAFF",
             roles="SUPERVISION_LINE_STAFF",
         )
         current_user = generate_fake_user_overrides(
             email="user_in_sync_query@testdomain.com",
             region_code="US_XX",
-            role="supervision_leadership",
             roles=["supervision_leadership"],
         )
 
@@ -655,13 +633,11 @@ class PrepRosterSyncTest(TestCase):
         roster_sync_user = Roster(
             email_address="user_in_sync_query@testdomain.com",
             state_code="US_XX",
-            role="SUPERVISION_LINE_STAFF",
             roles="SUPERVISION_LINE_STAFF",
         )
         current_user = generate_fake_user_overrides(
             email="user_in_sync_query@testdomain.com",
             region_code="US_XX",
-            role="supervision_leadership",
             roles=["supervision_leadership", "supervision_staff", "tt group"],
         )
 
@@ -679,13 +655,11 @@ class PrepRosterSyncTest(TestCase):
         roster_sync_user = Roster(
             email_address="user_in_sync_query@testdomain.com",
             state_code="US_XX",
-            role="UNKNOWN",
             roles="UNKNOWN",
         )
         current_user = generate_fake_user_overrides(
             email="user_in_sync_query@testdomain.com",
             region_code="US_XX",
-            role="supervision_staff",
             roles=["supervision_leadership", "supervision_staff"],
         )
 
@@ -714,32 +688,27 @@ class PrepRosterSyncTest(TestCase):
             Roster(
                 email_address="user_in_sync_query@testdomain.com",
                 state_code="US_XX",
-                role="UNKNOWN",
                 roles="UNKNOWN",
             ),
             Roster(
                 email_address="user_with_equivalent_role@testdomain.com",
                 state_code="US_XX",
-                role="SUPERVISION_LINE_STAFF",
                 roles="SUPERVISION_LINE_STAFF",
             ),
             Roster(
                 email_address="user_with_different_role@testdomain.com",
                 state_code="US_XX",
-                role="SUPERVISION_LINE_STAFF",
                 roles="SUPERVISION_LINE_STAFF",
             ),
             Roster(
                 email_address="user_with_different_district@testdomain.com",
                 state_code="US_XX",
-                role="UNKNOWN",
                 roles="UNKNOWN",
                 district="changed district",
             ),
             Roster(
                 email_address="user_with_multiple_diffs@testdomain.com",
                 state_code="US_XX",
-                role="SUPERVISION_LINE_STAFF",
                 roles="SUPERVISION_LINE_STAFF",
                 district="changed district",
                 first_name="changed name",
@@ -747,7 +716,6 @@ class PrepRosterSyncTest(TestCase):
             Roster(
                 email_address="user_to_keep_unchanged@testdomain.com",
                 state_code="US_XX",
-                role="UNKNOWN",
                 roles="UNKNOWN",
             ),
         ]
@@ -797,32 +765,27 @@ class PrepRosterSyncTest(TestCase):
             Roster(
                 email_address="user_in_sync_query@testdomain.com",
                 state_code="US_XX",
-                role="leadership_role",
                 roles="leadership_role",
             ),
             Roster(
                 email_address="user_with_equivalent_role@testdomain.com",
                 state_code="US_XX",
-                role="SUPERVISION_LINE_STAFF",
                 roles="SUPERVISION_LINE_STAFF",
             ),
             Roster(
                 email_address="user_with_different_role@testdomain.com",
                 state_code="US_XX",
-                role="SUPERVISION_LINE_STAFF",
                 roles="SUPERVISION_LINE_STAFF",
             ),
             Roster(
                 email_address="user_with_different_district@testdomain.com",
                 state_code="US_XX",
-                role="UNKNOWN",
                 roles="UNKNOWN",
                 district="changed district",
             ),
             Roster(
                 email_address="user_with_multiple_diffs@testdomain.com",
                 state_code="US_XX",
-                role="SUPERVISION_LINE_STAFF",
                 roles="SUPERVISION_LINE_STAFF",
                 district="changed district",
                 first_name="changed name",
@@ -830,7 +793,6 @@ class PrepRosterSyncTest(TestCase):
             Roster(
                 email_address="user_to_keep_unchanged@testdomain.com",
                 state_code="US_XX",
-                role="UNKNOWN",
                 roles="UNKNOWN",
                 district="changed district",
             ),
@@ -951,19 +913,16 @@ class PrepRosterSyncTest(TestCase):
             Roster(
                 email_address="user_in_sync_query@testdomain.com",
                 state_code="US_XX",
-                role="leadership_role",
                 roles="leadership_role",
             ),
             Roster(
                 email_address="user_with_equivalent_role@testdomain.com",
                 state_code="US_XX",
-                role="SUPERVISION_LINE_STAFF",
                 roles="SUPERVISION_LINE_STAFF",
             ),
             Roster(
                 email_address="user_with_different_role@testdomain.com",
                 state_code="US_XX",
-                role="SUPERVISION_LINE_STAFF",
                 roles="SUPERVISION_LINE_STAFF",
             ),
         ]
@@ -1027,19 +986,16 @@ class PrepRosterSyncTest(TestCase):
             Roster(
                 email_address="user_in_sync_query@testdomain.com",
                 state_code="US_XX",
-                role="leadership_role",
                 roles="leadership_role",
             ),
             Roster(
                 email_address="user_with_equivalent_role@testdomain.com",
                 state_code="US_XX",
-                role="SUPERVISION_LINE_STAFF",
                 roles="SUPERVISION_LINE_STAFF",
             ),
             Roster(
                 email_address="user_with_different_role@testdomain.com",
                 state_code="US_XX",
-                role="SUPERVISION_LINE_STAFF",
                 roles="SUPERVISION_LINE_STAFF",
             ),
         ]

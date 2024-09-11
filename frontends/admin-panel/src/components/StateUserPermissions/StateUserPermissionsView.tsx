@@ -45,7 +45,7 @@ import { UploadStateUserRosterModal } from "./UploadStateUserRosterModal";
 import {
   aggregateFormPermissionResults,
   checkResponse,
-  getPermissionsTableColumns,
+  getUserPermissionsTableColumns,
   updatePermissionsObject,
 } from "./utils";
 
@@ -321,13 +321,11 @@ const StateUserPermissionsView = (): JSX.Element => {
         rowKey="emailAddress"
         rowSelection={rowSelection}
         dataSource={data}
-        columns={getPermissionsTableColumns(
+        columns={getUserPermissionsTableColumns(
           data,
           stateRoleData,
           setUserToEnable
-        ).filter((column) => {
-          return column.dataIndex !== "role";
-        })}
+        )}
         scroll={canScroll ? { x: 2000 } : undefined}
         key={tableKey}
         pagination={{ showSizeChanger: true }}

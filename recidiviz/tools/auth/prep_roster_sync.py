@@ -65,7 +65,6 @@ _EXISTING_USER_QUERY = select(
         "email_address"
     ),
     func.coalesce(UserOverride.external_id, Roster.external_id).label("external_id"),
-    func.coalesce(UserOverride.role, Roster.role).label("role"),
     func.coalesce(UserOverride.roles, Roster.roles).label("roles"),
     func.coalesce(UserOverride.district, Roster.district).label("district"),
     func.coalesce(UserOverride.first_name, Roster.first_name).label("first_name"),

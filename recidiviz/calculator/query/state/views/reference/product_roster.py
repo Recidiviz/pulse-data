@@ -101,7 +101,6 @@ ROSTER_COLUMNS = [
     "state_code",
     "external_id",
     "email_address",
-    "role",
     "roles",
     "district",
     "user_hash",
