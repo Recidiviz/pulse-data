@@ -44,6 +44,7 @@ def should_run_normalization_in_ingest(state_code: StateCode) -> bool:
         StateCode.US_IX,
         StateCode.US_ND,
         StateCode.US_NE,
+        StateCode.US_OR,
         StateCode.US_TN,
     }
 
@@ -56,8 +57,6 @@ def should_run_normalization_in_ingest(state_code: StateCode) -> bool:
         StateCode.US_MI,
         # TODO(#29517): Ungate in staging once test staff_external_ids are fixed
         StateCode.US_ME,
-        # TODO(#29517): Ungate in staging once test staff_external_ids are fixed
-        StateCode.US_OR,
         # TODO(#29517): Ungate in staging once test staff_external_ids are fixed
         StateCode.US_PA,
     }
