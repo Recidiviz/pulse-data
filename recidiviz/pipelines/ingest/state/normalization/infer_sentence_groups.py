@@ -23,16 +23,17 @@ and NormalizedStateSentenceGroup entities.
 
 import datetime
 
-import attrs
+import attr
 
 from recidiviz.common.constants.states import StateCode
+from recidiviz.common.date import PotentiallyOpenDateTimeRange
 from recidiviz.persistence.entity.state.normalized_entities import (
     NormalizedStateSentence,
     NormalizedStateSentenceInferredGroup,
 )
 
 
-@attrs.define
+@attr.define
 class InferredGroupBuilder:
     """
     This helper class encapsulates the required data to group sentences into
@@ -48,19 +49,18 @@ class InferredGroupBuilder:
     """
 
     state_code: StateCode
-    sentences: list[NormalizedStateSentence]
+    sentences: list[NormalizedStateSentence] = attr.ib(factory=list)
 
     # Sentences sharing a NormalizedSentenceGroup external_id are in the same inferred group.
-    sg_external_ids: set[str]
+    sg_external_ids: set[str] = attr.ib(factory=set)
 
     # The imposed_date values of all the |sentences| stored above.
     # Sentences sharing an imposed_date are in the same inferred group.
-    imposed_dates: set[datetime.date]
+    imposed_dates: set[datetime.date] = attr.ib(factory=set)
 
-    # TODO(#32988) Group sentences by active SERVING status
     # Sentences that have an overlapping span of time from the first SERVING status
     # to the terminating status are in the same inferred group.
-    # dt_spans: set[PotentiallyOpenDateTimeRange]
+    dt_spans: set[PotentiallyOpenDateTimeRange] = attr.ib(factory=set)
 
     def should_add_sentence(self, sentence: NormalizedStateSentence) -> bool:
         """Returns True if the given sentence should be added to this group."""
@@ -68,6 +68,21 @@ class InferredGroupBuilder:
             return True
         if sentence.imposed_date in self.imposed_dates:
             return True
+        # status_span is None if a state hasn't hydrated status snapshots
+        # This sentence should be in the group if its first status is
+        # within the span of other sentences in the group
+        if status_span := sentence.first_serving_status_to_terminating_status_dt_range:
+            for span in self.dt_spans:
+                if status_span.lower_bound_inclusive in span:
+                    return True
+                # Statuses that get entered together often end up starting/ending at the
+                # same time. Our span class is exclusive, so we check if the start/end lines up.
+                if (
+                    span.upper_bound_exclusive is not None
+                    and status_span.lower_bound_inclusive == span.upper_bound_exclusive
+                ):
+                    return True
+
         return False
 
     def add_sentence_to_group(self, sentence: NormalizedStateSentence) -> None:
@@ -76,23 +91,19 @@ class InferredGroupBuilder:
             self.sg_external_ids.add(sentence.sentence_group_external_id)
         if sentence.imposed_date:
             self.imposed_dates.add(sentence.imposed_date)
-        # TODO(#32988) Add the approprate PotentiallyOpenDateTimeRange to dt_spans
+        # status_span is None if a state hasn't hydrated status snapshots
+        # or there is no SERVING status
+        if status_span := sentence.first_serving_status_to_terminating_status_dt_range:
+            self.dt_spans.add(status_span)
         self.sentences.append(sentence)
 
     @classmethod
     def new_group_builder_from_sentence(
         cls, sentence: NormalizedStateSentence
     ) -> "InferredGroupBuilder":
-        return InferredGroupBuilder(
-            state_code=StateCode(sentence.state_code),
-            sg_external_ids={sentence.sentence_group_external_id}
-            if sentence.sentence_group_external_id
-            else set(),
-            imposed_dates={sentence.imposed_date} if sentence.imposed_date else set(),
-            # TODO(#32988) Add the approprate PotentiallyOpenDateTimeRange to dt_spans
-            # dt_spans=None,
-            sentences=[sentence],
-        )
+        builder = InferredGroupBuilder(state_code=StateCode(sentence.state_code))
+        builder.add_sentence_to_group(sentence)
+        return builder
 
     def build(self) -> NormalizedStateSentenceInferredGroup:
         """
@@ -112,9 +123,8 @@ class InferredGroupBuilder:
         cls, sentences: list[NormalizedStateSentence]
     ) -> NormalizedStateSentenceInferredGroup:
         """Builds a NormalizedStateSentenceInferredGroup from the given sentences (helpful for tests)"""
-        first, *rest = sentences
-        builder = InferredGroupBuilder.new_group_builder_from_sentence(first)
-        for sentence in rest:
+        builder = InferredGroupBuilder(StateCode(sentences[0].state_code))
+        for sentence in sentences:
             builder.add_sentence_to_group(sentence)
         return builder.build()
 

@@ -24,6 +24,7 @@ from typing import Dict, Iterable, Iterator, List, Optional, Tuple, Type, TypeVa
 import attr
 import pandas as pd
 
+from recidiviz.common import attr_validators
 from recidiviz.utils.types import assert_type
 
 DateOrDateTime = Union[datetime.date, datetime.datetime]
@@ -205,6 +206,60 @@ def calendar_unit_date_diff(
             diff_result -= 1
 
     return diff_result
+
+
+@attr.s(frozen=True)
+class PotentiallyOpenDateTimeRange:
+    """Object representing a range of time where the end datetime could be null (open)."""
+
+    lower_bound_inclusive: datetime.datetime = attr.ib(
+        validator=attr_validators.is_datetime
+    )
+    upper_bound_exclusive: Optional[datetime.datetime] = attr.ib(
+        validator=attr_validators.is_opt_datetime
+    )
+
+    @property
+    def is_open(self) -> bool:
+        return self.upper_bound_exclusive is None
+
+    @property
+    def non_optional_upperbound_exclusive(self) -> datetime.datetime:
+        return assert_type(self.upper_bound_exclusive, datetime.datetime)
+
+    def __contains__(
+        self,
+        value: Union[datetime.date, datetime.datetime, "PotentiallyOpenDateTimeRange"],
+    ) -> bool:
+        if isinstance(value, PotentiallyOpenDateTimeRange):
+            return self._contains_other_range(value)
+        dt_value = as_datetime(value)
+        if dt_value < self.lower_bound_inclusive:
+            return False
+        if self.is_open:
+            return True
+        return dt_value < self.non_optional_upperbound_exclusive
+
+    def _contains_other_range(self, other: "PotentiallyOpenDateTimeRange") -> bool:
+        if self.is_open:
+            return self.lower_bound_inclusive <= other.lower_bound_inclusive
+        if other.is_open:
+            return False
+        return (
+            self.lower_bound_inclusive <= other.lower_bound_inclusive
+            and self.non_optional_upperbound_exclusive
+            > other.non_optional_upperbound_exclusive
+        )
+
+    def __attrs_post_init__(self) -> None:
+        if (
+            not self.is_open
+            and self.lower_bound_inclusive > self.non_optional_upperbound_exclusive
+        ):
+            raise ValueError(
+                f"Parsed datetimes must be in chronological order. "
+                f"Current order: {self.lower_bound_inclusive}, {self.non_optional_upperbound_exclusive}"
+            )
 
 
 @attr.s(frozen=True)

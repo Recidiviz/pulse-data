@@ -31,6 +31,7 @@ from recidiviz.common.date import (
     DurationMixin,
     NonNegativeDateRange,
     PotentiallyOpenDateRange,
+    PotentiallyOpenDateTimeRange,
     calendar_unit_date_diff,
     convert_critical_dates_to_time_spans,
     is_date_str,
@@ -1118,3 +1119,67 @@ class TestCriticalRangesBuilder(unittest.TestCase):
                 expected_ranges[2], _SimpleDurationObjectAnother
             ),
         )
+
+
+class TestPotentiallyOpenDateTimeRange(unittest.TestCase):
+    """Tests PotentiallyOpenDateTimeRange."""
+
+    TIME_1 = datetime.datetime(2022, 1, 1, 6, 30, 15, 1)
+    TIME_2 = datetime.datetime(2022, 2, 1)
+    TIME_3 = datetime.datetime(2022, 3, 1, 14, 30)
+    TIME_4 = datetime.datetime(2022, 4, 1, 17, 55, 2)
+
+    def test_negative_range_raises_value_error(self) -> None:
+        # Nothing throws on an open range
+        _ = PotentiallyOpenDateTimeRange(
+            lower_bound_inclusive=self.TIME_4,
+            upper_bound_exclusive=None,
+        )
+        with self.assertRaisesRegex(
+            ValueError, "Parsed datetimes must be in chronological order"
+        ):
+            PotentiallyOpenDateTimeRange(
+                lower_bound_inclusive=self.TIME_4,
+                upper_bound_exclusive=self.TIME_1,
+            )
+
+    def test_range_in_other_range(self) -> None:
+        span_1 = PotentiallyOpenDateTimeRange(self.TIME_1, self.TIME_3)
+        span_2 = PotentiallyOpenDateTimeRange(self.TIME_2, self.TIME_4)
+        assert span_1 not in span_2
+        assert span_2 not in span_1
+
+        span_1 = PotentiallyOpenDateTimeRange(self.TIME_1, self.TIME_4)
+        span_2 = PotentiallyOpenDateTimeRange(self.TIME_1, self.TIME_3)
+        assert span_1 not in span_2
+        assert span_2 in span_1
+
+        span_1 = PotentiallyOpenDateTimeRange(self.TIME_1, None)
+        span_2 = PotentiallyOpenDateTimeRange(self.TIME_1, self.TIME_3)
+        assert span_1 not in span_2
+        assert span_2 in span_1
+
+        span_1 = PotentiallyOpenDateTimeRange(self.TIME_1, self.TIME_4)
+        span_2 = PotentiallyOpenDateTimeRange(self.TIME_1, None)
+        assert span_1 in span_2
+        assert span_2 not in span_1
+
+    def test_datetime_in_range(self) -> None:
+        span = PotentiallyOpenDateTimeRange(self.TIME_2, self.TIME_3)
+        assert self.TIME_1 not in span
+        assert self.TIME_4 not in span
+        # test exclusive upper bound
+        assert self.TIME_3 not in span
+
+        span = PotentiallyOpenDateTimeRange(self.TIME_2, None)
+        assert self.TIME_1 not in span
+        assert self.TIME_4 in span
+
+    def test_date_in_range(self) -> None:
+        span = PotentiallyOpenDateTimeRange(self.TIME_2, self.TIME_3)
+        assert self.TIME_1.date() not in span
+        assert self.TIME_4.date() not in span
+
+        span = PotentiallyOpenDateTimeRange(self.TIME_2, None)
+        assert self.TIME_1.date() not in span
+        assert self.TIME_4.date() in span

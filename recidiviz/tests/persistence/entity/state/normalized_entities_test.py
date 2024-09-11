@@ -16,6 +16,7 @@
 # =============================================================================
 """Tests the classes defined in normalized_entities_v2.py"""
 
+import datetime
 import unittest
 from typing import Dict, ForwardRef, List, Set, Type
 
@@ -33,6 +34,12 @@ from recidiviz.common.attr_utils import (
     is_optional_type,
 )
 from recidiviz.common.attr_validators import IsListOfValidator, IsOptionalValidator
+from recidiviz.common.constants.state.state_sentence import (
+    StateSentenceStatus,
+    StateSentenceType,
+    StateSentencingAuthority,
+)
+from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.entity_utils import get_all_entity_classes_in_module
 from recidiviz.persistence.entity.schema_edge_direction_checker import (
@@ -461,3 +468,167 @@ class TestNormalizedEntities(unittest.TestCase):
             f"[{normalized_entity_field_type}] on {normalized_entity_class_name}. Type "
             f"on {entity_class_name}: {entity_field_type}",
         )
+
+
+class TestSentencingEntities(unittest.TestCase):
+    """This class is for testing specfic functionality and methods on normalized sentencing v2 entities."""
+
+    def test_first_serving_status_to_terminating_status_dt_range(self) -> None:
+        first_dt = datetime.datetime(2022, 1, 1, 12)
+        final_dt = datetime.datetime(2022, 4, 15, 6)
+        sentence = normalized_entities.NormalizedStateSentence(
+            external_id="test",
+            sentence_id=1,
+            sentence_inferred_group_id=None,
+            state_code=StateCode.US_XX.value,
+            imposed_date=first_dt.date(),
+            sentencing_authority=StateSentencingAuthority.STATE,
+            sentence_type=StateSentenceType.STATE_PRISON,
+            sentence_status_snapshots=[
+                normalized_entities.NormalizedStateSentenceStatusSnapshot(
+                    state_code=StateCode.US_XX.value,
+                    status_update_datetime=first_dt,
+                    status_end_datetime=final_dt,
+                    status=StateSentenceStatus.SERVING,
+                    sentence_status_snapshot_id=11,
+                ),
+                normalized_entities.NormalizedStateSentenceStatusSnapshot(
+                    state_code=StateCode.US_XX.value,
+                    status_update_datetime=final_dt,
+                    status_end_datetime=None,
+                    status=StateSentenceStatus.COMPLETED,
+                    sentence_status_snapshot_id=12,
+                ),
+            ],
+        )
+        dt_range = sentence.first_serving_status_to_terminating_status_dt_range
+        assert dt_range is not None
+        assert dt_range.lower_bound_inclusive == first_dt
+        assert dt_range.upper_bound_exclusive == final_dt
+
+    def test_first_serving_status_to_terminating_status_dt_range__no_serving(
+        self,
+    ) -> None:
+        first_dt = datetime.datetime(2022, 1, 1, 12)
+        final_dt = datetime.datetime(2022, 4, 15, 6)
+        sentence = normalized_entities.NormalizedStateSentence(
+            external_id="test",
+            sentence_id=1,
+            sentence_inferred_group_id=None,
+            state_code=StateCode.US_XX.value,
+            imposed_date=first_dt.date(),
+            sentencing_authority=StateSentencingAuthority.STATE,
+            sentence_type=StateSentenceType.STATE_PRISON,
+            sentence_status_snapshots=[
+                normalized_entities.NormalizedStateSentenceStatusSnapshot(
+                    state_code=StateCode.US_XX.value,
+                    status_update_datetime=first_dt,
+                    status_end_datetime=final_dt,
+                    status=StateSentenceStatus.SUSPENDED,
+                    sentence_status_snapshot_id=11,
+                ),
+                normalized_entities.NormalizedStateSentenceStatusSnapshot(
+                    state_code=StateCode.US_XX.value,
+                    status_update_datetime=final_dt,
+                    status_end_datetime=None,
+                    status=StateSentenceStatus.COMPLETED,
+                    sentence_status_snapshot_id=12,
+                ),
+            ],
+        )
+        dt_range = sentence.first_serving_status_to_terminating_status_dt_range
+        assert dt_range is None
+
+    def test_first_serving_status_to_terminating_status_dt_range__serving_suspended(
+        self,
+    ) -> None:
+        first_dt = datetime.datetime(2022, 1, 1, 12)
+        final_dt = datetime.datetime(2022, 4, 15, 6)
+        sentence = normalized_entities.NormalizedStateSentence(
+            external_id="test",
+            sentence_id=1,
+            sentence_inferred_group_id=None,
+            state_code=StateCode.US_XX.value,
+            imposed_date=first_dt.date(),
+            sentencing_authority=StateSentencingAuthority.STATE,
+            sentence_type=StateSentenceType.STATE_PRISON,
+            sentence_status_snapshots=[
+                normalized_entities.NormalizedStateSentenceStatusSnapshot(
+                    state_code=StateCode.US_XX.value,
+                    status_update_datetime=first_dt,
+                    status_end_datetime=final_dt,
+                    status=StateSentenceStatus.SERVING,
+                    sentence_status_snapshot_id=11,
+                ),
+                normalized_entities.NormalizedStateSentenceStatusSnapshot(
+                    state_code=StateCode.US_XX.value,
+                    status_update_datetime=final_dt,
+                    status_end_datetime=None,
+                    status=StateSentenceStatus.SUSPENDED,
+                    sentence_status_snapshot_id=12,
+                ),
+            ],
+        )
+        dt_range = sentence.first_serving_status_to_terminating_status_dt_range
+        assert dt_range is not None
+        assert dt_range.lower_bound_inclusive == first_dt
+        assert dt_range.upper_bound_exclusive is None
+
+    def test_first_serving_status_to_terminating_status_dt_range__all_serving(
+        self,
+    ) -> None:
+        first_dt = datetime.datetime(2022, 1, 1, 12)
+        middle_dt = datetime.datetime(2022, 3, 2, 5, 30)
+        final_dt = datetime.datetime(2022, 4, 15, 6)
+        sentence = normalized_entities.NormalizedStateSentence(
+            external_id="test",
+            sentence_id=1,
+            sentence_inferred_group_id=None,
+            state_code=StateCode.US_XX.value,
+            imposed_date=first_dt.date(),
+            sentencing_authority=StateSentencingAuthority.STATE,
+            sentence_type=StateSentenceType.STATE_PRISON,
+            sentence_status_snapshots=[
+                normalized_entities.NormalizedStateSentenceStatusSnapshot(
+                    state_code=StateCode.US_XX.value,
+                    status_update_datetime=first_dt,
+                    status_end_datetime=middle_dt,
+                    status=StateSentenceStatus.SERVING,
+                    sentence_status_snapshot_id=11,
+                ),
+                normalized_entities.NormalizedStateSentenceStatusSnapshot(
+                    state_code=StateCode.US_XX.value,
+                    status_update_datetime=middle_dt,
+                    status_end_datetime=final_dt,
+                    status=StateSentenceStatus.SERVING,
+                    sentence_status_snapshot_id=12,
+                ),
+                normalized_entities.NormalizedStateSentenceStatusSnapshot(
+                    state_code=StateCode.US_XX.value,
+                    status_update_datetime=final_dt,
+                    status_end_datetime=None,
+                    status=StateSentenceStatus.SERVING,
+                    sentence_status_snapshot_id=13,
+                ),
+            ],
+        )
+        dt_range = sentence.first_serving_status_to_terminating_status_dt_range
+        assert dt_range is not None
+        assert dt_range.lower_bound_inclusive == first_dt
+        assert dt_range.upper_bound_exclusive is None
+
+    def test_first_serving_status_to_terminating_status_dt_range__no_snapshots(
+        self,
+    ) -> None:
+        sentence = normalized_entities.NormalizedStateSentence(
+            external_id="test",
+            sentence_id=1,
+            sentence_inferred_group_id=None,
+            state_code=StateCode.US_XX.value,
+            imposed_date=datetime.date(2022, 1, 1),
+            sentencing_authority=StateSentencingAuthority.STATE,
+            sentence_type=StateSentenceType.STATE_PRISON,
+            sentence_status_snapshots=[],
+        )
+        dt_range = sentence.first_serving_status_to_terminating_status_dt_range
+        assert dt_range is None
