@@ -61,9 +61,9 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     almost_eligible_condition=TimeDependentCriteriaCondition(
         criteria=on_parole_at_least_one_year.VIEW_BUILDER,
         reasons_date_field="minimum_time_served_date",
-        interval_length=3,
+        interval_length=6,
         interval_date_part=BigQueryDateInterval.MONTH,
-        description="Within 3 months of serving 1 year on parole",
+        description="Within 6 months of serving 1 year on parole",
     ),
 )
 
