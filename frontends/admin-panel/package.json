@@ -15,7 +15,7 @@
     "classnames": "^2.3.1",
     "d3-scale": "^4.0.2",
     "date-fns": "^3.6.0",
-    "google-protobuf": "^3.18.0",
+    "google-protobuf": "^3.21.4",
     "history": "^5.0.1",
     "http-status": "^1.6.2",
     "moment": "^2.29.4",
