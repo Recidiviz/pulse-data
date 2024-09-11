@@ -1362,11 +1362,13 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         mock_enabled_states.return_value = ["US_PA"]
 
         with SessionFactory.using_database(self.insights_database_key) as session:
-            mock_get_supervisor.return_value = (
+            supervisor = (
                 session.query(SupervisionOfficerSupervisor)
                 .filter(SupervisionOfficerSupervisor.external_id == "102")
                 .first()
             )
+            supervisor.pseudonymized_id = pseudo_id
+            mock_get_supervisor.return_value = supervisor
 
             mock_get_outliers.return_value = [
                 SupervisionOfficerEntity(
@@ -1493,6 +1495,291 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
 
             self.assertEqual(HTTPStatus.OK, response.status_code)
             self.snapshot.assert_match(response.json, name="test_get_action_strategy_60_perc_outliers_eligible_eligible")  # type: ignore[attr-defined]
+
+    @freezegun.freeze_time(datetime(2023, 8, 24, 0, 0, 0, 0))
+    @patch(
+        "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_action_strategy_surfaced_events_for_supervisor",
+    )
+    @patch(
+        "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_supervisor_entity_from_pseudonymized_id",
+    )
+    @patch(
+        "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_officers_for_supervisor",
+    )
+    @patch(
+        "recidiviz.case_triage.outliers.outliers_authorization.get_outliers_enabled_states",
+    )
+    def test_get_action_strategies_as_outlier_comprehensive(
+        self,
+        mock_enabled_states: MagicMock,
+        mock_get_outliers: MagicMock,
+        mock_get_supervisor: MagicMock,
+        mock_get_events: MagicMock,
+    ) -> None:
+        pseudo_id = "supervisorHash"
+        self.mock_authorization_handler.side_effect = self.auth_side_effect(
+            state_code="us_pa",
+            external_id="102",
+            pseudonymized_id=pseudo_id,
+        )
+        mock_enabled_states.return_value = ["US_PA"]
+
+        with SessionFactory.using_database(self.insights_database_key) as session:
+            supervisor = (
+                session.query(SupervisionOfficerSupervisor)
+                .filter(SupervisionOfficerSupervisor.external_id == "102")
+                .first()
+            )
+            supervisor.pseudonymized_id = pseudo_id
+            mock_get_supervisor.return_value = supervisor
+
+            mock_get_outliers.return_value = [
+                # Has no events so should return ACTION_STRATEGY_OUTLIER
+                SupervisionOfficerEntity(
+                    full_name=PersonName(
+                        **{"given_names": "DRACO", "surname": "MALFOY"}
+                    ),
+                    external_id="1",
+                    pseudonymized_id="hash1",
+                    supervisor_external_id="102",
+                    supervisor_external_ids=["102"],
+                    district="Hogwarts",
+                    caseload_type=None,
+                    caseload_category="ALL",
+                    outlier_metrics=[
+                        {
+                            "metric_id": "metric_one",
+                            "statuses_over_time": [
+                                {
+                                    "end_date": "2023-05-01",
+                                    "metric_rate": 0.1,
+                                    "status": "FAR",
+                                },
+                            ],
+                        }
+                    ],
+                    top_x_pct_metrics=[],
+                    avg_daily_population=10.0,
+                ),
+                # Has an ACTION_STRATEGY_OUTLIER event + outlier 3 months
+                # Should return ACTION_STRATEGY_OUTLIER_3_MONTHS
+                SupervisionOfficerEntity(
+                    full_name=PersonName(
+                        **{"given_names": "HARRY", "surname": "POTTER"}
+                    ),
+                    external_id="2",
+                    pseudonymized_id="hash2",
+                    supervisor_external_id="102",
+                    supervisor_external_ids=["102"],
+                    district="Hogwarts",
+                    caseload_type=None,
+                    caseload_category="ALL",
+                    outlier_metrics=[
+                        {
+                            "metric_id": "metric_one",
+                            "statuses_over_time": [
+                                {
+                                    "end_date": "2023-08-01",
+                                    "metric_rate": 0.1,
+                                    "status": "FAR",
+                                },
+                                {
+                                    "end_date": "2023-07-01",
+                                    "metric_rate": 0.1,
+                                    "status": "FAR",
+                                },
+                                {
+                                    "end_date": "2023-06-01",
+                                    "metric_rate": 0.1,
+                                    "status": "FAR",
+                                },
+                            ],
+                        }
+                    ],
+                    top_x_pct_metrics=[],
+                    avg_daily_population=10.0,
+                ),
+                # Has an ACTION_STRATEGY_OUTLIER event + is absconsion metric
+                # Should return ACTION_STRATEGY_OUTLIER_ABSCONSION
+                SupervisionOfficerEntity(
+                    full_name=PersonName(
+                        **{"given_names": "HERMOINE", "surname": "GRANGER"}
+                    ),
+                    external_id="3",
+                    pseudonymized_id="hash3",
+                    supervisor_external_id="102",
+                    supervisor_external_ids=["102"],
+                    district="Hogwarts",
+                    caseload_type=None,
+                    caseload_category="ALL",
+                    outlier_metrics=[
+                        {
+                            "metric_id": "absconsions_bench_warrants",
+                            "statuses_over_time": [
+                                {
+                                    "end_date": "2023-05-01",
+                                    "metric_rate": 0.1,
+                                    "status": "FAR",
+                                },
+                            ],
+                        }
+                    ],
+                    top_x_pct_metrics=[],
+                    avg_daily_population=10.0,
+                ),
+                # Not an outlier, should return None
+                SupervisionOfficerEntity(
+                    full_name=PersonName(
+                        **{"given_names": "RON", "surname": "WHATSHISNAME"}
+                    ),
+                    external_id="4",
+                    pseudonymized_id="hash4",
+                    supervisor_external_id="102",
+                    supervisor_external_ids=["102"],
+                    district="Hogwarts",
+                    caseload_type=None,
+                    caseload_category="ALL",
+                    outlier_metrics=[],
+                    top_x_pct_metrics=[
+                        {
+                            "metric_id": "incarceration_starts_and_inferred",
+                            "top_x_pct": 10,
+                        }
+                    ],
+                    avg_daily_population=10.0,
+                ),
+                # Has an ACTION_STRATEGY_OUTLIER event, ACTION_STRATEGY_OUTLIER_ABSCONSION, and ACTION_STRATEGY_OUTLIER_3_MONTHS events
+                # Should return ACTION_STRATEGY_OUTLIER_NEW_OFFICER
+                SupervisionOfficerEntity(
+                    full_name=PersonName(
+                        **{"given_names": "RON", "surname": "WHATSHISNAME"}
+                    ),
+                    external_id="5",
+                    pseudonymized_id="hash5",
+                    supervisor_external_id="102",
+                    supervisor_external_ids=["102"],
+                    district="Hogwarts",
+                    caseload_type=None,
+                    caseload_category="ALL",
+                    outlier_metrics=[
+                        {
+                            "metric_id": "absconsions_bench_warrants",
+                            "statuses_over_time": [
+                                {
+                                    "end_date": "2023-05-01",
+                                    "metric_rate": 0.1,
+                                    "status": "FAR",
+                                },
+                            ],
+                        }
+                    ],
+                    top_x_pct_metrics=[],
+                    avg_daily_population=10.0,
+                    earliest_person_assignment_date=date(2022, 7, 30),
+                ),
+                # Has seen all of the action strategies, should return None
+                SupervisionOfficerEntity(
+                    full_name=PersonName(
+                        **{"given_names": "SEVERUS", "surname": "SNAPE"}
+                    ),
+                    external_id="6",
+                    pseudonymized_id="hash6",
+                    supervisor_external_id="102",
+                    supervisor_external_ids=["102"],
+                    district="Hogwarts",
+                    caseload_type=None,
+                    caseload_category="ALL",
+                    outlier_metrics=[
+                        {
+                            "metric_id": "absconsions_bench_warrants",
+                            "statuses_over_time": [
+                                {
+                                    "end_date": "2023-05-01",
+                                    "metric_rate": 0.1,
+                                    "status": "FAR",
+                                },
+                            ],
+                        }
+                    ],
+                    top_x_pct_metrics=[],
+                    avg_daily_population=10.0,
+                    earliest_person_assignment_date=date(2022, 7, 30),
+                ),
+            ]
+
+            mock_get_events.return_value = [
+                ActionStrategySurfacedEvent(
+                    state_code="us_pa",
+                    user_pseudonymized_id=pseudo_id,
+                    officer_pseudonymized_id="hash2",
+                    action_strategy=ActionStrategyType.ACTION_STRATEGY_OUTLIER.value,
+                    timestamp=date(2023, 7, 20),
+                ),
+                ActionStrategySurfacedEvent(
+                    state_code="us_pa",
+                    user_pseudonymized_id=pseudo_id,
+                    officer_pseudonymized_id="hash3",
+                    action_strategy=ActionStrategyType.ACTION_STRATEGY_OUTLIER.value,
+                    timestamp=date(2023, 8, 20),
+                ),
+                ActionStrategySurfacedEvent(
+                    state_code="us_pa",
+                    user_pseudonymized_id=pseudo_id,
+                    officer_pseudonymized_id="hash5",
+                    action_strategy=ActionStrategyType.ACTION_STRATEGY_OUTLIER.value,
+                    timestamp=date(2023, 8, 20),
+                ),
+                ActionStrategySurfacedEvent(
+                    state_code="us_pa",
+                    user_pseudonymized_id=pseudo_id,
+                    officer_pseudonymized_id="hash5",
+                    action_strategy=ActionStrategyType.ACTION_STRATEGY_OUTLIER_3_MONTHS.value,
+                    timestamp=date(2023, 8, 20),
+                ),
+                ActionStrategySurfacedEvent(
+                    state_code="us_pa",
+                    user_pseudonymized_id=pseudo_id,
+                    officer_pseudonymized_id="hash5",
+                    action_strategy=ActionStrategyType.ACTION_STRATEGY_OUTLIER_ABSCONSION.value,
+                    timestamp=date(2023, 8, 20),
+                ),
+                ActionStrategySurfacedEvent(
+                    state_code="us_pa",
+                    user_pseudonymized_id=pseudo_id,
+                    officer_pseudonymized_id="hash6",
+                    action_strategy=ActionStrategyType.ACTION_STRATEGY_OUTLIER.value,
+                    timestamp=date(2023, 8, 20),
+                ),
+                ActionStrategySurfacedEvent(
+                    state_code="us_pa",
+                    user_pseudonymized_id=pseudo_id,
+                    officer_pseudonymized_id="hash6",
+                    action_strategy=ActionStrategyType.ACTION_STRATEGY_OUTLIER_3_MONTHS.value,
+                    timestamp=date(2023, 8, 20),
+                ),
+                ActionStrategySurfacedEvent(
+                    state_code="us_pa",
+                    user_pseudonymized_id=pseudo_id,
+                    officer_pseudonymized_id="hash6",
+                    action_strategy=ActionStrategyType.ACTION_STRATEGY_OUTLIER_ABSCONSION.value,
+                    timestamp=date(2023, 8, 20),
+                ),
+                ActionStrategySurfacedEvent(
+                    state_code="us_pa",
+                    user_pseudonymized_id=pseudo_id,
+                    officer_pseudonymized_id="hash6",
+                    action_strategy=ActionStrategyType.ACTION_STRATEGY_OUTLIER_NEW_OFFICER.value,
+                    timestamp=date(2023, 8, 21),
+                ),
+            ]
+
+            response = self.test_client.get(
+                "/outliers/us_pa/action_strategies/supervisorHash",
+                headers={"Origin": "http://localhost:3000"},
+            )
+
+            self.assertEqual(HTTPStatus.OK, response.status_code)
+            self.snapshot.assert_match(response.json, name="test_get_action_strategies_as_outlier_comprehensive")  # type: ignore[attr-defined]
 
     @patch(
         "recidiviz.case_triage.outliers.outliers_authorization.get_outliers_enabled_states",

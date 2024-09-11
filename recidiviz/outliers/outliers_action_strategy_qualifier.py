@@ -177,6 +177,34 @@ class OutliersActionStrategyQualifier:
 
         return True
 
+    def action_strategy_outlier_new_officer_eligible(
+        self, officer: SupervisionOfficerEntity
+    ) -> bool:
+        """
+        Officer is eligible for ACTION_STRATEGY_OUTLIER_NEW_OFFICER if
+        (1) They are an outlier on any metric
+        (2) The officer had a caseload for the first time within the past 15 months
+        (3) There are not any surfaced events with this type
+        """
+        if not officer.earliest_person_assignment_date or (
+            len(officer.outlier_metrics) == 0
+            or officer.earliest_person_assignment_date
+            < (date.today() - relativedelta(months=15))
+        ):
+            return False
+
+        disqualifying_events = [
+            e
+            for e in self.events
+            if e.officer_pseudonymized_id == officer.pseudonymized_id
+            and e.action_strategy
+            == ActionStrategyType.ACTION_STRATEGY_OUTLIER_NEW_OFFICER.value
+        ]
+        if len(disqualifying_events) > 0:
+            return False
+
+        return True
+
     def action_strategy_60_perc_outliers_eligible(
         self, officers: List[SupervisionOfficerEntity]
     ) -> bool:
@@ -215,12 +243,16 @@ class OutliersActionStrategyQualifier:
         """
         is_outlier = len(officer.outlier_metrics) > 0
         officer_pseudo_id = officer.pseudonymized_id
+        # This is an ordered (prioritized) list. Do not change the order of these
+        # unless the priority requirement has changed
         if self.action_strategy_outlier_eligible(officer_pseudo_id, is_outlier):
             return ActionStrategyType.ACTION_STRATEGY_OUTLIER.value
         if self.action_strategy_outlier_3_months_eligible(officer):
             return ActionStrategyType.ACTION_STRATEGY_OUTLIER_3_MONTHS.value
         if self.action_strategy_outlier_absconsion_eligible(officer):
             return ActionStrategyType.ACTION_STRATEGY_OUTLIER_ABSCONSION.value
+        if self.action_strategy_outlier_new_officer_eligible(officer):
+            return ActionStrategyType.ACTION_STRATEGY_OUTLIER_NEW_OFFICER.value
         return None
 
     def get_eligible_action_strategy_for_supervisor(

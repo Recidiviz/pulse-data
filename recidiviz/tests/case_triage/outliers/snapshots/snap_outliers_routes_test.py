@@ -33,6 +33,18 @@ snapshots[
 ] = {"hash2": None, "hashhash": None, "hashhashhash": None}
 
 snapshots[
+    "TestOutliersRoutes.TestOutliersRoutes test_get_action_strategies_as_outlier_comprehensive"
+] = {
+    "hash1": "ACTION_STRATEGY_OUTLIER",
+    "hash2": "ACTION_STRATEGY_OUTLIER_3_MONTHS",
+    "hash3": "ACTION_STRATEGY_OUTLIER_ABSCONSION",
+    "hash4": None,
+    "hash5": "ACTION_STRATEGY_OUTLIER_NEW_OFFICER",
+    "hash6": None,
+    "supervisorHash": "ACTION_STRATEGY_60_PERC_OUTLIERS",
+}
+
+snapshots[
     "TestOutliersRoutes.TestOutliersRoutes test_get_action_strategies_as_outlier_eligible"
 ] = {"hash2": None, "hashhash": "ACTION_STRATEGY_OUTLIER", "hashhashhash": None}
 
@@ -40,9 +52,10 @@ snapshots[
     "TestOutliersRoutes.TestOutliersRoutes test_get_action_strategy_60_perc_outliers_eligible_eligible"
 ] = {
     "hash1": "ACTION_STRATEGY_OUTLIER",
-    "hash2": "ACTION_STRATEGY_60_PERC_OUTLIERS",
+    "hash2": "ACTION_STRATEGY_OUTLIER",
     "hash3": "ACTION_STRATEGY_OUTLIER",
     "hash4": None,
+    "supervisorHash": "ACTION_STRATEGY_60_PERC_OUTLIERS",
 }
 
 snapshots["TestOutliersRoutes.TestOutliersRoutes test_get_benchmarks"] = {
@@ -260,6 +273,7 @@ snapshots["TestOutliersRoutes.TestOutliersRoutes test_get_officer_not_outlier"] 
         "avgDailyPopulation": 10.0,
         "caseloadType": "ALL",
         "district": "Guts",
+        "earliestPersonAssignmentDate": None,
         "externalId": "123",
         "fullName": {
             "givenNames": "Olivia",
@@ -280,6 +294,7 @@ snapshots["TestOutliersRoutes.TestOutliersRoutes test_get_officer_success"] = {
         "avgDailyPopulation": 10.0,
         "caseloadType": "ALL",
         "district": "Guts",
+        "earliestPersonAssignmentDate": None,
         "externalId": "123",
         "fullName": {
             "givenNames": "Olivia",
@@ -308,6 +323,7 @@ snapshots["TestOutliersRoutes.TestOutliersRoutes test_get_officers_for_superviso
             "avgDailyPopulation": 10.0,
             "caseloadType": "ALL",
             "district": "Hogwarts",
+            "earliestPersonAssignmentDate": None,
             "externalId": "123",
             "fullName": {
                 "givenNames": "Harry",
@@ -335,6 +351,7 @@ snapshots["TestOutliersRoutes.TestOutliersRoutes test_get_officers_for_superviso
             "avgDailyPopulation": 10.0,
             "caseloadType": "ALL",
             "district": "Hogwarts",
+            "earliestPersonAssignmentDate": None,
             "externalId": "456",
             "fullName": {
                 "givenNames": "Ron",
@@ -359,6 +376,7 @@ snapshots[
             "avgDailyPopulation": 10.0,
             "caseloadType": "ALL",
             "district": "Hogwarts",
+            "earliestPersonAssignmentDate": None,
             "externalId": "123",
             "fullName": {
                 "givenNames": "Harry",
@@ -384,6 +402,7 @@ snapshots[
             "avgDailyPopulation": 10.0,
             "caseloadType": "ALL",
             "district": "Hogwarts",
+            "earliestPersonAssignmentDate": None,
             "externalId": "456",
             "fullName": {
                 "givenNames": "Ron",
