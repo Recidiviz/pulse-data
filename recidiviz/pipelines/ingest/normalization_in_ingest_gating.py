@@ -41,15 +41,13 @@ def should_run_normalization_in_ingest(state_code: StateCode) -> bool:
         StateCode.US_AZ,
         StateCode.US_CA,
         StateCode.US_CO,
+        StateCode.US_IX,
         StateCode.US_ND,
         StateCode.US_NE,
         StateCode.US_TN,
     }
 
     unlaunched_states: set[StateCode] = {
-        # TODO(#29517): Ungate in staging once pipeline crash related to normalizing
-        #  StateEarlyDischarge is resolved.
-        StateCode.US_IX,
         # TODO(#32760): Ungate in staging once null start_date values have been removed
         #  from NormalizedStateStaffRolePeriod
         # TODO(#29517): Ungate in staging once test staff_external_ids are fixed
