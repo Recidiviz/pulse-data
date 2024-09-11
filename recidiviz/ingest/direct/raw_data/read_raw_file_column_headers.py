@@ -18,6 +18,8 @@
 import csv
 from typing import IO, Any, Dict, List
 
+import attr
+
 from recidiviz.big_query.big_query_utils import normalize_column_name_for_bq
 from recidiviz.cloud_storage.gcs_file_system import GCSFileSystem
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
@@ -28,33 +30,28 @@ DEFAULT_READ_CHUNK_SIZE = (
 )  # 10 KiB should be more than enough to read the first row
 
 
+@attr.define
 class DirectIngestRawFileHeaderReader:
     """Class for reading, normalizing, and validating column headers for a raw ingest file"""
 
-    def __init__(
-        self,
-        fs: GCSFileSystem,
-        file_path: GcsfsFilePath,
-        file_config: DirectIngestRawFileConfig,
-        allow_incomplete_configs: bool = False,
-    ):
-        self.fs = fs
-        self.file_path = file_path
-        self.file_config = file_config
-        # Allow for headers that are not found in the file config
-        self.allow_incomplete_configs = allow_incomplete_configs
+    fs: GCSFileSystem
+    file_config: DirectIngestRawFileConfig
+    # Allow for headers that are not found in the file config
+    allow_incomplete_configs: bool = False
 
-    def read_and_validate_column_headers(self) -> List[str]:
+    def read_and_validate_column_headers(
+        self, gcs_file_path: GcsfsFilePath
+    ) -> List[str]:
         """Reads the first row of a CSV file.
         If file_config.infer_columns_from_config is true,
         then return the headers in the order they're found in the file's config.
         Otherwise we can infer the first row of the csv contains the column headers
         and normalize and validate the column headers based on the provided configuration.
         """
-        csv_first_row = self._read_csv_first_row()
+        csv_first_row = self._read_csv_first_row(gcs_file_path)
         return self._normalize_and_validate_column_headers(csv_first_row)
 
-    def _read_csv_first_row(self) -> List[str]:
+    def _read_csv_first_row(self, gcs_file_path: GcsfsFilePath) -> List[str]:
         """Read csv until \r \n or custom_line_terminator
         then parse values according to file_config
         and return cell values as a list"""
@@ -62,7 +59,7 @@ class DirectIngestRawFileHeaderReader:
 
         try:
             with self.fs.open(
-                self.file_path,
+                gcs_file_path,
                 mode="r",
                 encoding=self.file_config.encoding,
                 chunk_size=DEFAULT_READ_CHUNK_SIZE,
@@ -80,12 +77,12 @@ class DirectIngestRawFileHeaderReader:
             csv_first_row = []
         except UnicodeDecodeError as e:
             raise ValueError(
-                f"Unable to read path [{self.file_path.abs_path()}] for encoding {self.file_config.encoding}."
+                f"Unable to read path [{gcs_file_path.abs_path()}] for encoding {self.file_config.encoding}."
             ) from e
 
         if not csv_first_row:
             raise ValueError(
-                f"File [{self.file_path.abs_path()}] is empty or does not contain valid rows."
+                f"File [{gcs_file_path.abs_path()}] is empty or does not contain valid rows."
             )
 
         return csv_first_row

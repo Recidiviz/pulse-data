@@ -43,6 +43,8 @@ FILE_IMPORTS: str = "file_imports"
 PROCESSED_PATHS_TO_RENAME: str = "processed_paths_to_rename"
 TEMPORARY_PATHS_TO_CLEAN: str = "temporary_paths_to_clean"
 TEMPORARY_TABLES_TO_CLEAN: str = "temporary_tables_to_clean"
+FILE_PATHS_TO_HEADERS: str = "file_paths_to_headers"
+HEADER_VERIFICATION_ERRORS: str = "header_verification_errors"
 
 
 def get_resource_lock_ttl(raw_data_instance: DirectIngestInstance) -> int:

@@ -118,6 +118,10 @@ def _extract_file_chunks(
     raw_file_config = _get_raw_file_config(
         region_raw_file_config, requires_pre_import_normalization_file_path
     )
+
+    # TODO(#33195) remove this and read headers for all files earlier in the import process
+    # and consider not prepending the headers onto chunks at all
+    # since they will be ignored when loaded to bq
     headers = _get_file_headers(
         fs, requires_pre_import_normalization_file_path, raw_file_config
     )
@@ -145,8 +149,8 @@ def _get_file_headers(
     input_gcs_path: GcsfsFilePath,
     raw_file_config: DirectIngestRawFileConfig,
 ) -> List[str]:
-    file_reader = DirectIngestRawFileHeaderReader(fs, input_gcs_path, raw_file_config)
-    return file_reader.read_and_validate_column_headers()
+    file_reader = DirectIngestRawFileHeaderReader(fs, raw_file_config)
+    return file_reader.read_and_validate_column_headers(input_gcs_path)
 
 
 def _get_raw_file_config(

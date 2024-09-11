@@ -27,6 +27,7 @@ from recidiviz.airflow.dags.raw_data.gcs_file_processing_tasks import (
     build_import_ready_files,
     create_chunk_batches,
     create_file_batches,
+    read_and_verify_column_headers_concurrently,
     regroup_normalized_file_chunks,
     verify_file_checksums,
 )
@@ -659,3 +660,106 @@ class TestRegroupAndVerifyFileChunks(unittest.TestCase):
             GcsfsFilePath.from_absolute_path("outpath/a1.csv"),
             GcsfsFilePath.from_absolute_path("outpath/a2.csv"),
         ]
+
+
+class TestReadAndVerifyColumnHeaders(unittest.TestCase):
+    """Tests for read_and_verify_column_headers_concurrently"""
+
+    def setUp(self) -> None:
+        self.file_paths = [
+            GcsfsFilePath.from_absolute_path(
+                "test_bucket/unprocessed_2021-01-01T00:00:00:000000_raw_tagBasicData_1.csv"
+            ),
+            GcsfsFilePath.from_absolute_path(
+                "test_bucket/unprocessed_2021-02-01T00:00:00:000000_raw_tagBasicData_2.csv"
+            ),
+            GcsfsFilePath.from_absolute_path(
+                "test_bucket/unprocessed_2021-03-01T00:00:00:000000_raw_tagBasicData_3.csv"
+            ),
+        ]
+        self.headers = ["ID", "Name", "Age"]
+        self.bq_metadata = [
+            RawBigQueryFileMetadata(
+                file_id=1,
+                file_tag="tagBasicData",
+                gcs_files=[
+                    RawGCSFileMetadata(
+                        gcs_file_id=1, file_id=1, path=self.file_paths[0]
+                    )
+                ],
+                update_datetime=datetime.datetime(
+                    2024, 1, 1, 1, 1, 1, tzinfo=datetime.UTC
+                ),
+            ),
+            RawBigQueryFileMetadata(
+                file_id=2,
+                file_tag="tagBasicData",
+                gcs_files=[
+                    RawGCSFileMetadata(
+                        gcs_file_id=2, file_id=2, path=self.file_paths[1]
+                    )
+                ],
+                update_datetime=datetime.datetime(
+                    2024, 1, 2, 1, 1, 1, tzinfo=datetime.UTC
+                ),
+            ),
+            RawBigQueryFileMetadata(
+                file_id=3,
+                file_tag="tagBasicData",
+                gcs_files=[
+                    RawGCSFileMetadata(
+                        gcs_file_id=3, file_id=3, path=self.file_paths[2]
+                    )
+                ],
+                update_datetime=datetime.datetime(
+                    2024, 1, 3, 1, 1, 1, tzinfo=datetime.UTC
+                ),
+            ),
+        ]
+
+        self.fs = MagicMock()
+        self.region_raw_file_config = MagicMock()
+
+        self.file_reader = MagicMock()
+        self.file_reader_patcher = patch(
+            "recidiviz.airflow.dags.raw_data.gcs_file_processing_tasks.DirectIngestRawFileHeaderReader",
+            return_value=self.file_reader,
+        ).start()
+        self.addCleanup(self.file_reader_patcher.stop)
+
+    def test_read_and_verify_column_headers_concurrently(self) -> None:
+        self.file_reader.read_and_validate_column_headers.return_value = self.headers
+
+        result, errors = read_and_verify_column_headers_concurrently(
+            self.fs, self.region_raw_file_config, self.bq_metadata
+        )
+        self.assertEqual(
+            result,
+            {file_path.abs_path(): self.headers for file_path in self.file_paths},
+        )
+        self.assertEqual(errors, [])
+
+    def test_read_and_verify_column_headers_concurrently_error(self) -> None:
+        def side_effect(gcs_file_path: GcsfsFilePath) -> List[str]:
+            if (
+                gcs_file_path.abs_path()
+                == "test_bucket/unprocessed_2021-02-01T00:00:00:000000_raw_tagBasicData_2.csv"
+            ):
+                raise RuntimeError("Error reading file")
+
+            return self.headers
+
+        self.file_reader.read_and_validate_column_headers.side_effect = side_effect
+
+        result, errors = read_and_verify_column_headers_concurrently(
+            self.fs, self.region_raw_file_config, self.bq_metadata
+        )
+        self.assertEqual(
+            result,
+            {
+                self.file_paths[0].abs_path(): self.headers,
+                self.file_paths[2].abs_path(): self.headers,
+            },
+        )
+        self.assertEqual(len(errors), 1)
+        self.assertEqual(errors[0].original_file_path, self.file_paths[1])

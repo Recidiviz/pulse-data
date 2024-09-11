@@ -202,6 +202,15 @@ def create_single_state_code_ingest_instance_raw_data_import_branch(
             ),
         )
 
+        # TODO(#33195) read and verify headers for all files
+        # file_headers = read_and_verify_column_headers(
+        #    region_code=state_code.value,
+        #    serialized_bq_metadata=list_normalized_unprocessed_gcs_file_paths.output,
+        # )
+        # raise_header_verification_errors(
+        #    header_verification_errors=file_headers[HEADER_VERIFICATION_ERRORS]
+        # )
+
         files_to_process = split_by_pre_import_normalization_type(
             region_code=state_code.value,
             serialized_bq_metadata=get_all_unprocessed_bq_file_metadata.output,
@@ -269,7 +278,8 @@ def create_single_state_code_ingest_instance_raw_data_import_branch(
 
         # trigger rule is ALL_DONE
         serialized_import_ready_files = coalesce_import_ready_files(
-            files_to_process[IMPORT_READY_FILES], pre_import_normalization_result
+            files_to_process[IMPORT_READY_FILES],
+            pre_import_normalization_result,
         )
 
         with TaskGroup("biq_query_load") as big_query_load:
