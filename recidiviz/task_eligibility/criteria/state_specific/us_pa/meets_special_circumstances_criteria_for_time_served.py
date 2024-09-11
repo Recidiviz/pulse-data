@@ -169,10 +169,10 @@ critical_date_spans AS (
         ELSE NULL
     END AS critical_date,
     CASE
-        WHEN case_type = 'special probation or parole case' THEN '1'
-        WHEN case_type = 'life sentence' THEN '7'
-        WHEN case_type = 'non-life sentence (violent case)' THEN '5'
-        WHEN case_type = 'non-life sentence (non-violent case)' THEN '3'
+        WHEN case_type = 'special probation or parole case' THEN 1
+        WHEN case_type = 'life sentence' THEN 7
+        WHEN case_type = 'non-life sentence (violent case)' THEN 5
+        WHEN case_type = 'non-life sentence (non-violent case)' THEN 3
         ELSE NULL
     END AS years_required_to_serve,
   FROM supervision_starts_with_priority 
@@ -210,7 +210,7 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = StateSpecificTaskCr
         ),
         ReasonsField(
             name="years_required_to_serve",
-            type=bigquery.enums.StandardSqlTypeNames.STRING,
+            type=bigquery.enums.StandardSqlTypeNames.INT64,
             description="Years required to serve on supervision before being eligible for special circumstances supervision. Depends on case type.",
         ),
         ReasonsField(
