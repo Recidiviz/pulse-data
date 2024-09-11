@@ -1,0 +1,75 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: IA_DOC_Offender_Details
+file_description: |-
+  This table contains person details for incarceration individuals.
+data_classification: source
+primary_key_cols:
+  - OffenderCd
+columns:
+  - name: OffenderCd
+    description: |-
+      Offender code
+    is_pii: True
+  - name: CommitmentIndicator
+    description: |-
+      TODO(#33241): Fill in with information from IA
+  - name: OffenderFirstNm
+    description: |-
+      First name
+    is_pii: True
+  - name: OffenderMiddleNm
+    description: |-
+      Middle name
+    is_pii: True
+  - name: OffenderLastNm
+    description: |-
+      Last Name
+    is_pii: True
+  - name: OffenderSuffix
+    description: |-
+      Name suffix
+  - name: BirthDt
+    field_type: datetime
+    description: |-
+      Birthday
+    is_pii: True
+  - name: BirthCity
+    description: |-
+      Birth City
+  - name: BirthState
+    description: |-
+      Birth State
+  - name: BirthCountry
+    description: |-
+      Birth country
+  - name: DeceasedDt
+    field_type: datetime
+    description: |-
+      Date deceased, if applicable
+  - name: DriversLicenseNo
+    is_pii: True
+  - name: MaritalStatus
+  - name: PrimaryLanguage
+  - name: EnglishSpeaking
+  - name: DCINo
+    description: |-
+      DCI no
+    is_pii: True
+  - name: Sex
+    description: |-
+      Sex
+  - name: Race
+    description: |-
+      Race
+  - name: EthnicOrigin
+    description: |-
+      Ethnic Origin
+  - name: CurrentEducationLevel
+    description: |-
+      Current Education Level
+  - name: HighestEducationLevel
+    description: |-
+      Highest education level
+  - name: TABETotalReadingScore
+    description: |-
+      TABE total reading score
