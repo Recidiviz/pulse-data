@@ -405,6 +405,8 @@ class SupervisionOfficerEntity(SupervisionOfficerEntityBase):
     caseload_category: str = attr.ib()
     # The officer's caseload type in the latest period
     caseload_type: Optional[str] = attr.ib()
+    # earliest date that this officer was assigned a caseload
+    earliest_person_assignment_date: Optional[date] = attr.ib(default=None)
 
     def to_json(self) -> Dict[str, Any]:
         c = cattrs.Converter()
