@@ -36,16 +36,11 @@ class UsMoStaffRolePeriodNormalizationDelegate(
         return [
             deep_entity_update(
                 rp,
-                start_date=rp.start_date
-                if self._is_date_valid(rp.start_date)
-                and self._period_bounds_valid(rp.start_date, rp.end_date)
-                else None,
-                end_date=rp.end_date
-                if self._is_date_valid(rp.end_date)
-                and self._period_bounds_valid(rp.start_date, rp.end_date)
-                else None,
+                start_date=self._snap_start_date(rp.start_date),
+                end_date=rp.end_date if self._is_date_valid(rp.end_date) else None,
             )
             for rp in role_periods
+            if self._period_bounds_valid(rp.start_date, rp.end_date)
         ]
 
     @staticmethod
@@ -54,7 +49,7 @@ class UsMoStaffRolePeriodNormalizationDelegate(
     ) -> bool:
         """For MO, there are numerous cases where a role period is recorded with an
         end date earlier than the start date. Since at least one of the dates must be
-        erroneous, we invalidate them both."""
+        erroneous, we remove these periods entirely."""
         if start_date and end_date:
             return end_date >= start_date
         return True
@@ -68,3 +63,14 @@ class UsMoStaffRolePeriodNormalizationDelegate(
         return not date_bound or (
             date_bound.year >= 1900 and date_bound <= datetime.date.today()
         )
+
+    @staticmethod
+    def _snap_start_date(start_date: datetime.date) -> datetime.date:
+        """Start dates need to be cleaned without setting them to None, so we use this
+        method to snap invalid dates to valid dates, in either direction. Dates prior to
+        1900 are set to 1900-01-01, and dates in the future are set to the current date."""
+        if start_date.year <= 1900:
+            return datetime.date(1900, 1, 1)
+        if start_date > datetime.date.today():
+            return datetime.date.today()
+        return start_date

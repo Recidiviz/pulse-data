@@ -21,6 +21,7 @@ from datetime import date, timedelta
 
 from recidiviz.common.constants.state.state_staff_role_period import StateStaffRoleType
 from recidiviz.common.constants.states import StateCode
+from recidiviz.persistence.entity.entity_utils import deep_entity_update
 from recidiviz.persistence.entity.state.entities import StateStaffRolePeriod
 from recidiviz.pipelines.utils.state_utils.us_mo.us_mo_staff_role_period_normalization_delegate import (
     UsMoStaffRolePeriodNormalizationDelegate,
@@ -83,17 +84,6 @@ class TestUsMoStaffRolePeriodDelegate(unittest.TestCase):
             external_id="4",
         )
 
-        rp_dates_out_of_order_and_start_in_future = StateStaffRolePeriod.new_with_defaults(
-            state_code=StateCode.US_MO.value,
-            role_type=StateStaffRoleType.INTERNAL_UNKNOWN,
-            role_type_raw_text="OTHER",
-            start_date=date.today() + timedelta(days=5),
-            end_date=date(2011, 1, 1),
-            # The start date is in the future and the end date looks valid, but BOTH dates
-            # should still be invalidated because the dates are out of order.
-            external_id="5",
-        )
-
         rp_valid_start_date_only = StateStaffRolePeriod.new_with_defaults(
             state_code=StateCode.US_MO.value,
             role_type=StateStaffRoleType.INTERNAL_UNKNOWN,
@@ -118,44 +108,36 @@ class TestUsMoStaffRolePeriodDelegate(unittest.TestCase):
             rp_end_date_in_future,
             rp_both_dates_in_future,
             rp_dates_out_of_order,
-            rp_dates_out_of_order_and_start_in_future,
             rp_valid_start_date_only,
             rp_both_valid_dates,
         ]
 
+        expected_rp_start_date_too_far_in_past = deep_entity_update(
+            copy.deepcopy(rp_start_date_too_far_in_past), start_date=date(1900, 1, 1)
+        )
+        expected_rp_end_date_in_future = deep_entity_update(
+            copy.deepcopy(rp_end_date_in_future), end_date=None
+        )
+        expected_rp_both_dates_in_future = deep_entity_update(
+            copy.deepcopy(rp_both_dates_in_future),
+            start_date=date.today(),
+            end_date=None,
+        )
+        # The expected versions of these 2 periods post-normalization are just copies of
+        # the original periods, as they shouldn't be touched in normalization.
+        expected_rp_valid_start_date_only = copy.deepcopy(rp_valid_start_date_only)
+        expected_rp_both_valid_dates = copy.deepcopy(rp_both_valid_dates)
+
+        expected_normalized_rps = [
+            expected_rp_start_date_too_far_in_past,
+            expected_rp_end_date_in_future,
+            expected_rp_both_dates_in_future,
+            # Note that a normalized version of rp_dates_out_of_order is not included in
+            # this list, since the period gets removed in normalization.
+            expected_rp_valid_start_date_only,
+            expected_rp_both_valid_dates,
+        ]
+
         normalized_rps = self.delegate.normalize_role_periods(copy.deepcopy(rps))
 
-        normalized_rp_start_date_too_far_in_past = normalized_rps[0]
-        normalized_rp_end_date_in_future = normalized_rps[1]
-        normalized_rp_both_dates_in_future = normalized_rps[2]
-        normalized_rp_dates_out_of_order = normalized_rps[3]
-        normalized_rp_dates_out_of_order_and_start_in_future = normalized_rps[4]
-        normalized_rp_valid_start_date_only = normalized_rps[5]
-        normalized_rp_both_valid_dates = normalized_rps[6]
-
-        self.assertIsNone(normalized_rp_start_date_too_far_in_past.start_date)
-        self.assertEqual(
-            normalized_rp_start_date_too_far_in_past.end_date,
-            rp_start_date_too_far_in_past.end_date,
-        )
-
-        self.assertIsNone(normalized_rp_end_date_in_future.end_date)
-        self.assertEqual(
-            normalized_rp_end_date_in_future.start_date,
-            rp_end_date_in_future.start_date,
-        )
-
-        self.assertIsNone(normalized_rp_both_dates_in_future.start_date)
-        self.assertIsNone(normalized_rp_both_dates_in_future.end_date)
-
-        self.assertIsNone(normalized_rp_dates_out_of_order.start_date)
-        self.assertIsNone(normalized_rp_dates_out_of_order.end_date)
-
-        self.assertIsNone(
-            normalized_rp_dates_out_of_order_and_start_in_future.start_date
-        )
-        self.assertIsNone(normalized_rp_dates_out_of_order_and_start_in_future.end_date)
-
-        self.assertEqual(normalized_rp_valid_start_date_only, rp_valid_start_date_only)
-
-        self.assertEqual(normalized_rp_both_valid_dates, rp_both_valid_dates)
+        self.assertEqual(normalized_rps, expected_normalized_rps)
