@@ -1,0 +1,183 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: ORASClientRiskLevelAndNeeds
+file_description: |-
+  This contains ORAS client risk level and need information
+data_classification: source
+primary_key_cols:
+  - pkORASClientRiskLevelAndNeedsId
+columns:
+  - name: pkORASClientRiskLevelAndNeedsId
+    description: |-
+      Unique Id
+  - name: inmateNumber
+    description: |-
+      person id
+    is_pii: True
+  - name: orasRiskLevelId
+    description: |-
+      Risk level ID
+  - name: overrideRiskLevelId
+    description: |-
+      Override risk level id
+  - name: overrideReasonCode
+    description: |-
+      Override reason code
+  - name: assessmentDate
+    field_type: datetime
+    description: |-
+      Date of assessment
+  - name: assessmentDueDate
+    field_type: datetime
+    description: |-
+      Date assessment due
+  - name: criminalHistory
+    description: |-
+      Look up in ORASCriminalHistory
+  - name: educationAndEmploymentAndFinancial
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: familyAndSocialSupport
+    description: |-
+      Look up in ORASFamilySocialSupport table
+  - name: neighborhoodProblems
+    description: |-
+      Look up table ORASNeighborhoodProblems
+  - name: substanceAbuse
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: peerAssociations
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: criminalAttitudesAndBehavioralPatterns
+    description: |-
+      Use table ORASCriminalAttitudesBehavioralPattern to decode
+  - name: supervisionLevelOverrideCode
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: createdBy
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+    is_pii: True
+  - name: createdDate
+    field_type: datetime
+    description: |-
+      Date row created
+  - name: modifiedBy
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+    is_pii: True
+  - name: modifiedDate
+    field_type: datetime
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: version
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: isDeleted
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: comments
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: assessmentTypeCode
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: gender
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: overallScore
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: riskLevel
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: overrideRiskLevelCode
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: overrideComments
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+    is_pii: True
+  - name: lowIntelligence
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: physicalHandicap
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: readingAndWritingLimitations
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: mentalHealthIssues
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: NoDesireToChangePP
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: transportation
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: childCare
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: language
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: ethnicity
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: culturalBarriers
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: historyofAbuseNeglect
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: interpersonalAnxiety
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: other
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: otherText
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+    is_pii: True
+  - name: overallComments
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+    is_pii: True
+  - name: fkORASCriminalHistoryId
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: fkORASEducationEmploymentFinancialSituationId
+    description: |-
+      Look up in RASEducationEmploymentFinancialSituation table
+  - name: fkORASFamilySocialSupportId
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: fkORASNeighborhoodProblemsId
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: fkORASPeerAssociationsId
+    description: |-
+      Look up in ORASPeerAssociations
+  - name: fkORASSubstanceUseId
+    description: |-
+      Look up in ORASSubstanceUse
+  - name: fkORASCriminalAttitudesBehavioralPatternId
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: openForEdit
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: newRecord
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: ableToCompleteCode
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: newRecord2
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: assessmentComplete
+    description: |-
+      TODO(#31972): Fill in with answers from NE

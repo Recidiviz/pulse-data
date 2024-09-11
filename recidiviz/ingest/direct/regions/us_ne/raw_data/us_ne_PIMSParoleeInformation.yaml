@@ -1,0 +1,96 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: PIMSParoleeInformation
+file_description: |-
+  This file contains parolee information
+data_classification: source
+primary_key_cols:
+  - paroleeInformationId
+columns:
+  - name: paroleeInformationId
+    description: |-
+      table id
+  - name: inmateNumber
+    description: |-
+      inmate number
+    is_pii: True
+  - name: fk_reviewHearingIdAdd
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: fk_reviewHearingIdUpdate
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: fk_initailHearingId
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: effectivetDateFromMVS
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: creationTsFromMVS
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: fk_paroleOfficerId
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: dateOfParole
+    field_type: datetime
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: paroleType
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: currentStatusCode
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: countyParoledToCode
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: inOutStateIndicator1Code
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: inOutStateIndicator2Code
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: inOutStateIndicator3Code
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: dischargeDate
+    field_type: datetime
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: dischargeType
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: revocationDate
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: pickedUpByProbation
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: pickedUpByProbationOn
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: createdBy
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+    is_pii: True
+  - name: createdDateTime
+    field_type: datetime
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: modifiedBy
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+    is_pii: True
+  - name: modifiedDateTime
+    field_type: datetime
+    description: |-
+      Date modified
+  - name: fkInitailHearingIdUpdate
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: version
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: custodialSanctionDaysAssessedToDate
+    description: |-
+      TODO(#31972): Fill in with answers from NE
