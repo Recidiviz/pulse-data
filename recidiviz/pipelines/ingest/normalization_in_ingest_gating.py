@@ -42,6 +42,7 @@ def should_run_normalization_in_ingest(state_code: StateCode) -> bool:
         StateCode.US_CA,
         StateCode.US_CO,
         StateCode.US_IX,
+        StateCode.US_ME,
         StateCode.US_MI,
         StateCode.US_ND,
         StateCode.US_NE,
@@ -55,8 +56,6 @@ def should_run_normalization_in_ingest(state_code: StateCode) -> bool:
         #  from NormalizedStateStaffRolePeriod
         # TODO(#29517): Ungate in staging once test staff_external_ids are fixed
         StateCode.US_MO,
-        # TODO(#29517): Ungate in staging once test staff_external_ids are fixed
-        StateCode.US_ME,
     }
 
     if intersection := staging_only_launched_states.intersection(prod_launched_states):
