@@ -6,8 +6,12 @@
 # https://github.com/Recidiviz/pulse-data/settings/security_analysis
 version: 2
 updates:
-  - package-ecosystem: "npm" # See documentation for possible values
+  - package-ecosystem: "npm"
     directories:
       - "**/*"
     schedule:
       interval: "weekly"
+    open-pull-requests-limit: 10
+    allow:
+      - dependency-type: "production" # Only updates production dependencies
+
