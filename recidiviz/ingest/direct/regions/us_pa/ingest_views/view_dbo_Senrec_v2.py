@@ -32,7 +32,6 @@ VIEW_QUERY_TEMPLATE = """
         sentences.sent_start_date,
         sentences.sent_stop_date,
         sentences.sentcing_cnty,
-        sentences.offense_track_num,
         -- Historical offense codes come from offense_code, codes after 9/22/23 come
         -- are joined to dbo_Senrec from dbo_Senrec_Extended.Crime_Code
         COALESCE(sentences.offense_code, sentences.Crime_Code) AS offense_code,

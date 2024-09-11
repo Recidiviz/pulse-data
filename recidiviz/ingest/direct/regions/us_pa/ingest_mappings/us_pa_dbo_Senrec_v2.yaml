@@ -9,7 +9,6 @@ input_columns:
   - sent_start_date
   - sent_stop_date
   - sentcing_cnty
-  - offense_track_num
   - offense_code
   - class_of_sent
   - max_cort_sent_yrs
@@ -206,15 +205,10 @@ output:
             # which led to sentences to probation.
             - StateCharge:
                 external_id:
-                  $conditional:
-                    - $if:
-                        $not_null: offense_track_num
-                      $then: offense_track_num
-                    - $else:
-                        $concat:
-                          $values:
-                            - curr_inmate_num
-                            - type_number
+                  $concat:
+                    $values:
+                      - curr_inmate_num
+                      - type_number
                 statute: offense_code
                 description: Offense
                 classification_type:
