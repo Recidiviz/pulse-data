@@ -22,6 +22,7 @@ from google.cloud import bigquery
 
 from recidiviz.big_query.big_query_utils import BigQueryDateInterval
 from recidiviz.task_eligibility.criteria_condition import (
+    EligibleCriteriaCondition,
     LessThanCriteriaCondition,
     NotEligibleCriteriaCondition,
     PickNCompositeCriteriaCondition,
@@ -41,6 +42,10 @@ from recidiviz.tests.task_eligibility.task_criteria_group_big_query_view_builder
 NOT_ELIGIBLE_CRITERIA_CONDITION = NotEligibleCriteriaCondition(
     criteria=CRITERIA_1_STATE_AGNOSTIC,
     description="Not eligible criteria condition",
+)
+ELIGIBLE_CRITERIA_CONDITION = EligibleCriteriaCondition(
+    criteria=CRITERIA_4_STATE_SPECIFIC,
+    description="Eligible criteria condition",
 )
 LESS_THAN_CRITERIA_CONDITION = LessThanCriteriaCondition(
     criteria=CRITERIA_2_STATE_AGNOSTIC,
@@ -75,19 +80,16 @@ class TestCriteriaCondition(unittest.TestCase):
             "Not eligible criteria condition",
             NOT_ELIGIBLE_CRITERIA_CONDITION.description,
         )
-        self.assertIsNone(
-            NOT_ELIGIBLE_CRITERIA_CONDITION.get_critical_date_parsing_fragments_by_criteria()
-        )
-        expected_query_template = """
-    SELECT
-        *,
-        TRUE AS is_almost_eligible,
-    FROM potential_almost_eligible
-    WHERE "MY_STATE_AGNOSTIC_CRITERIA" IN UNNEST(ineligible_criteria)
-"""
+
+    def test_single_eligible_criteria_condition(self) -> None:
+        """Checks a single EligibleCriteriaCondition"""
         self.assertEqual(
-            expected_query_template,
-            NOT_ELIGIBLE_CRITERIA_CONDITION.get_criteria_query_fragment(),
+            [CRITERIA_4_STATE_SPECIFIC],
+            ELIGIBLE_CRITERIA_CONDITION.get_criteria_builders(),
+        )
+        self.assertEqual(
+            "Eligible criteria condition",
+            ELIGIBLE_CRITERIA_CONDITION.description,
         )
 
     def test_less_than_criteria_condition(self) -> None:
@@ -100,22 +102,6 @@ class TestCriteriaCondition(unittest.TestCase):
             "Less than value criteria condition",
             LESS_THAN_CRITERIA_CONDITION.description,
         )
-        self.assertIsNone(
-            LESS_THAN_CRITERIA_CONDITION.get_critical_date_parsing_fragments_by_criteria()
-        )
-        expected_query_template = """
-    SELECT
-        * EXCEPT(criteria_reason),
-        SAFE_CAST(JSON_VALUE(criteria_reason, '$.reason.fees_owed') AS FLOAT64) < 1000 AS is_almost_eligible,
-    FROM potential_almost_eligible,
-    UNNEST(JSON_QUERY_ARRAY(reasons_v2)) AS criteria_reason
-    WHERE "ANOTHER_STATE_AGNOSTIC_CRITERIA" IN UNNEST(ineligible_criteria)
-        AND SAFE_CAST(JSON_VALUE(criteria_reason, '$.criteria_name') AS STRING) = "ANOTHER_STATE_AGNOSTIC_CRITERIA"
-"""
-        self.assertEqual(
-            expected_query_template,
-            LESS_THAN_CRITERIA_CONDITION.get_criteria_query_fragment(),
-        )
 
     def test_less_than_criteria_condition_wrong_reason_name(self) -> None:
         """Check the LessThanCriteriaCondition raises an error if the reason field is not found within the criteria"""
@@ -126,7 +112,7 @@ class TestCriteriaCondition(unittest.TestCase):
                 value=1000,
                 description="Less than value criteria condition",
             )
-            test_condition.get_criteria_query_fragment()
+            test_condition.get_criteria_builders()
 
     def test_less_than_criteria_condition_non_numeric_reason_type(self) -> None:
         """Check the LessThanCriteriaCondition raises an error if the supplied reason field type is non-numeric"""
@@ -137,7 +123,7 @@ class TestCriteriaCondition(unittest.TestCase):
                 value=1000,
                 description="Less than value criteria condition",
             )
-            test_condition.get_criteria_query_fragment()
+            test_condition.get_criteria_builders()
 
 
 class TestTimeDependentCriteriaCondition(unittest.TestCase):
@@ -152,31 +138,6 @@ class TestTimeDependentCriteriaCondition(unittest.TestCase):
         self.assertEqual(
             "Time dependent criteria condition",
             TIME_DEPENDENT_CRITERIA_CONDITION.description,
-        )
-        self.assertEqual(
-            {
-                "US_KY_CRITERIA_4": [
-                    "DATE_SUB(SAFE_CAST(JSON_VALUE(reason_v2, '$.latest_violation_date') AS DATE), INTERVAL 1 MONTH)"
-                ],
-            },
-            TIME_DEPENDENT_CRITERIA_CONDITION.get_critical_date_parsing_fragments_by_criteria(),
-        )
-        expected_query_template = """
-    SELECT
-        * EXCEPT(criteria_reason),
-        -- Parse out the date relevant for the almost eligibility
-        IFNULL(
-            DATE_SUB(SAFE_CAST(JSON_VALUE(criteria_reason, '$.reason.latest_violation_date') AS DATE), INTERVAL 1 MONTH) <= start_date,
-            FALSE
-        ) AS is_almost_eligible,
-    FROM potential_almost_eligible,
-    UNNEST(JSON_QUERY_ARRAY(reasons_v2)) AS criteria_reason
-    WHERE "US_KY_CRITERIA_4" IN UNNEST(ineligible_criteria)
-        AND SAFE_CAST(JSON_VALUE(criteria_reason, '$.criteria_name') AS STRING) = "US_KY_CRITERIA_4"
-"""
-        self.assertEqual(
-            expected_query_template,
-            TIME_DEPENDENT_CRITERIA_CONDITION.get_criteria_query_fragment(),
         )
 
     def test_time_dependent_criteria_condition_reason_date_field_wrong_name(
@@ -232,31 +193,6 @@ class TestReasonDateInCalendarWeekCriteriaCondition(unittest.TestCase):
             "Reason date in calendar week criteria condition",
             REASON_DATE_IN_CALENDAR_WEEK_CONDITION.description,
         )
-        self.assertEqual(
-            {
-                "US_KY_CRITERIA_4": [
-                    "DATE_TRUNC(SAFE_CAST(JSON_VALUE(reason_v2, '$.latest_violation_date') AS DATE), WEEK(SUNDAY))"
-                ],
-            },
-            REASON_DATE_IN_CALENDAR_WEEK_CONDITION.get_critical_date_parsing_fragments_by_criteria(),
-        )
-        expected_query_template = """
-    SELECT
-        * EXCEPT(criteria_reason),
-        -- Parse out the date relevant for the almost eligibility
-        IFNULL(
-            DATE_TRUNC(SAFE_CAST(JSON_VALUE(criteria_reason, '$.reason.latest_violation_date') AS DATE), WEEK(SUNDAY)) <= start_date,
-            FALSE
-        ) AS is_almost_eligible,
-    FROM potential_almost_eligible,
-    UNNEST(JSON_QUERY_ARRAY(reasons_v2)) AS criteria_reason
-    WHERE "US_KY_CRITERIA_4" IN UNNEST(ineligible_criteria)
-        AND SAFE_CAST(JSON_VALUE(criteria_reason, '$.criteria_name') AS STRING) = "US_KY_CRITERIA_4"
-"""
-        self.assertEqual(
-            expected_query_template,
-            REASON_DATE_IN_CALENDAR_WEEK_CONDITION.get_criteria_query_fragment(),
-        )
 
 
 class TestPickNCompositeCriteriaCondition(unittest.TestCase):
@@ -287,67 +223,6 @@ class TestPickNCompositeCriteriaCondition(unittest.TestCase):
     Less than value criteria condition
     Time dependent criteria condition""",
             composite_criteria.description,
-        )
-        expected_critical_dates = {
-            "US_KY_CRITERIA_4": [
-                "DATE_SUB(SAFE_CAST(JSON_VALUE(reason_v2, '$.latest_violation_date') AS DATE), INTERVAL 1 MONTH)"
-            ],
-        }
-        self.assertEqual(
-            expected_critical_dates,
-            composite_criteria.get_critical_date_parsing_fragments_by_criteria(),
-        )
-
-        expected_query_fragment = """
-    WITH composite_criteria_condition AS (
-        (
-            SELECT
-                *,
-                TRUE AS is_almost_eligible,
-            FROM potential_almost_eligible
-            WHERE "MY_STATE_AGNOSTIC_CRITERIA" IN UNNEST(ineligible_criteria)
-        )
-        UNION ALL
-        (
-            SELECT
-                * EXCEPT(criteria_reason),
-                SAFE_CAST(JSON_VALUE(criteria_reason, '$.reason.fees_owed') AS FLOAT64) < 1000 AS is_almost_eligible,
-            FROM potential_almost_eligible,
-            UNNEST(JSON_QUERY_ARRAY(reasons_v2)) AS criteria_reason
-            WHERE "ANOTHER_STATE_AGNOSTIC_CRITERIA" IN UNNEST(ineligible_criteria)
-                AND SAFE_CAST(JSON_VALUE(criteria_reason, '$.criteria_name') AS STRING) = "ANOTHER_STATE_AGNOSTIC_CRITERIA"
-        )
-        UNION ALL
-        (
-            SELECT
-                * EXCEPT(criteria_reason),
-                -- Parse out the date relevant for the almost eligibility
-                IFNULL(
-                    DATE_SUB(SAFE_CAST(JSON_VALUE(criteria_reason, '$.reason.latest_violation_date') AS DATE), INTERVAL 1 MONTH) <= start_date,
-                    FALSE
-                ) AS is_almost_eligible,
-            FROM potential_almost_eligible,
-            UNNEST(JSON_QUERY_ARRAY(reasons_v2)) AS criteria_reason
-            WHERE "US_KY_CRITERIA_4" IN UNNEST(ineligible_criteria)
-                AND SAFE_CAST(JSON_VALUE(criteria_reason, '$.criteria_name') AS STRING) = "US_KY_CRITERIA_4"
-        )
-    )
-    SELECT
-        state_code, person_id, start_date, end_date,
-        -- Use ANY_VALUE for these span attributes since they are the same across every span with the same start/end date
-        ANY_VALUE(is_eligible) AS is_eligible,
-        ANY_VALUE(reasons) AS reasons,
-        ANY_VALUE(reasons_v2) AS reasons_v2,
-        ANY_VALUE(ineligible_criteria) AS ineligible_criteria,
-        -- Almost eligible if number of almost eligible criteria count is in the set range
-        -- and the almost eligible criteria not-met does not exceed the number allowed
-        COUNTIF(is_almost_eligible) BETWEEN 2 AND 2
-            AND COUNTIF(NOT is_almost_eligible) <= 0 AS is_almost_eligible,
-    FROM composite_criteria_condition
-    GROUP BY 1, 2, 3, 4
-"""
-        self.assertEqual(
-            expected_query_fragment, composite_criteria.get_criteria_query_fragment()
         )
 
     def test_composite_criteria_two_critical_dates_two_criteria(self) -> None:
@@ -387,66 +262,6 @@ class TestPickNCompositeCriteriaCondition(unittest.TestCase):
     Time dependent criteria condition
     Another time dependent criteria condition""",
             composite_criteria.description,
-        )
-        expected_critical_dates = {
-            "US_KY_CRITERIA_4": [
-                "DATE_SUB(SAFE_CAST(JSON_VALUE(reason_v2, '$.latest_violation_date') AS DATE), INTERVAL 1 MONTH)"
-            ],
-            "ANOTHER_STATE_AGNOSTIC_CRITERIA": [
-                "DATE_SUB(SAFE_CAST(JSON_VALUE(reason_v2, '$.eligible_date') AS DATE), INTERVAL 2 DAY)"
-            ],
-        }
-        self.assertEqual(
-            expected_critical_dates,
-            composite_criteria.get_critical_date_parsing_fragments_by_criteria(),
-        )
-
-        expected_query_fragment = """
-    WITH composite_criteria_condition AS (
-        (
-            SELECT
-                * EXCEPT(criteria_reason),
-                -- Parse out the date relevant for the almost eligibility
-                IFNULL(
-                    DATE_SUB(SAFE_CAST(JSON_VALUE(criteria_reason, '$.reason.latest_violation_date') AS DATE), INTERVAL 1 MONTH) <= start_date,
-                    FALSE
-                ) AS is_almost_eligible,
-            FROM potential_almost_eligible,
-            UNNEST(JSON_QUERY_ARRAY(reasons_v2)) AS criteria_reason
-            WHERE "US_KY_CRITERIA_4" IN UNNEST(ineligible_criteria)
-                AND SAFE_CAST(JSON_VALUE(criteria_reason, '$.criteria_name') AS STRING) = "US_KY_CRITERIA_4"
-        )
-        UNION ALL
-        (
-            SELECT
-                * EXCEPT(criteria_reason),
-                -- Parse out the date relevant for the almost eligibility
-                IFNULL(
-                    DATE_SUB(SAFE_CAST(JSON_VALUE(criteria_reason, '$.reason.eligible_date') AS DATE), INTERVAL 2 DAY) <= start_date,
-                    FALSE
-                ) AS is_almost_eligible,
-            FROM potential_almost_eligible,
-            UNNEST(JSON_QUERY_ARRAY(reasons_v2)) AS criteria_reason
-            WHERE "ANOTHER_STATE_AGNOSTIC_CRITERIA" IN UNNEST(ineligible_criteria)
-                AND SAFE_CAST(JSON_VALUE(criteria_reason, '$.criteria_name') AS STRING) = "ANOTHER_STATE_AGNOSTIC_CRITERIA"
-        )
-    )
-    SELECT
-        state_code, person_id, start_date, end_date,
-        -- Use ANY_VALUE for these span attributes since they are the same across every span with the same start/end date
-        ANY_VALUE(is_eligible) AS is_eligible,
-        ANY_VALUE(reasons) AS reasons,
-        ANY_VALUE(reasons_v2) AS reasons_v2,
-        ANY_VALUE(ineligible_criteria) AS ineligible_criteria,
-        -- Almost eligible if number of almost eligible criteria count is in the set range
-        -- and the almost eligible criteria not-met does not exceed the number allowed
-        COUNTIF(is_almost_eligible) BETWEEN 1 AND 2
-            AND COUNTIF(NOT is_almost_eligible) <= 1 AS is_almost_eligible,
-    FROM composite_criteria_condition
-    GROUP BY 1, 2, 3, 4
-"""
-        self.assertEqual(
-            expected_query_fragment, composite_criteria.get_criteria_query_fragment()
         )
 
     def test_composite_criteria_two_critical_dates_one_criteria(self) -> None:
@@ -490,15 +305,15 @@ class TestPickNCompositeCriteriaCondition(unittest.TestCase):
             ],
             at_least_n_conditions_true=1,
         )
-        expected_critical_dates = {
-            "US_KY_CRITERIA_4": [
-                "DATE_SUB(SAFE_CAST(JSON_VALUE(reason_v2, '$.criteria_date_1') AS DATE), INTERVAL 1 MONTH)",
-                "DATE_SUB(SAFE_CAST(JSON_VALUE(reason_v2, '$.criteria_date_2') AS DATE), INTERVAL 2 DAY)",
-            ],
-        }
         self.assertEqual(
-            expected_critical_dates,
-            composite_criteria.get_critical_date_parsing_fragments_by_criteria(),
+            [two_date_criteria, two_date_criteria],
+            composite_criteria.get_criteria_builders(),
+        )
+        self.assertEqual(
+            """At least 1 and at most 2 of the following conditions met to qualify as almost eligible:
+    Within 1 month of criteria date 1
+    Within 2 days of criteria date 2""",
+            composite_criteria.description,
         )
 
     def test_composite_criteria_not_enough_sub_conditions(self) -> None:
@@ -511,6 +326,23 @@ class TestPickNCompositeCriteriaCondition(unittest.TestCase):
         with self.assertRaises(ValueError):
             PickNCompositeCriteriaCondition(
                 sub_conditions_list=[],
+                at_least_n_conditions_true=1,
+            )
+
+    def test_composite_criteria_opposing_sub_criteria(self) -> None:
+        """
+        Checks an error is raised when PickNCompositeCriteriaCondition is initialized with
+        EligibleCriteriaCondition and NotEligibleCriteriaCondition applied to the same criteria
+        """
+        with self.assertRaises(ValueError):
+            PickNCompositeCriteriaCondition(
+                sub_conditions_list=[
+                    NOT_ELIGIBLE_CRITERIA_CONDITION,
+                    EligibleCriteriaCondition(
+                        criteria=CRITERIA_1_STATE_AGNOSTIC,
+                        description="Criteria 1 is met",
+                    ),
+                ],
                 at_least_n_conditions_true=1,
             )
 

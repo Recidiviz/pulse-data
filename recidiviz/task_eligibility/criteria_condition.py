@@ -19,9 +19,7 @@ task eligibility spans.
 """
 import abc
 import itertools
-from collections import defaultdict
-from textwrap import indent
-from typing import Dict, List, Optional, Tuple
+from typing import List, Optional, Tuple
 
 import attr
 from google.cloud import bigquery
@@ -35,10 +33,6 @@ from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder impor
     InvertedTaskCriteriaBigQueryViewBuilder,
     TaskCriteriaGroupBigQueryViewBuilder,
 )
-from recidiviz.task_eligibility.utils.state_dataset_query_fragments import (
-    extract_object_from_json,
-)
-from recidiviz.utils.string import StrictStringFormatter
 
 AnyTaskCriteriaViewBuilder = (
     TaskCriteriaBigQueryViewBuilder
@@ -73,24 +67,10 @@ class CriteriaCondition:
     description: str
 
     @abc.abstractmethod
-    def get_criteria_query_fragment(self) -> str:
-        """
-        Returns a query fragment that applies the criteria condition logic.
-        """
-
-    @abc.abstractmethod
     def get_criteria_builders(
         self,
     ) -> List[AnyTaskCriteriaViewBuilder]:
         """Return the list of criteria view builders that the CriteriaCondition covers"""
-
-    def get_critical_date_parsing_fragments_by_criteria(
-        self,
-    ) -> Optional[Dict[str, List[str]]]:
-        """
-        Return a dictionary with the criteria name mapped to a list of critical date parsing query fragments used
-        """
-        return None
 
 
 @attr.define
@@ -99,112 +79,109 @@ class NotEligibleCriteriaCondition(CriteriaCondition):
 
     criteria: AnyTaskCriteriaViewBuilder
 
-    def get_criteria_builders(
-        self,
-    ) -> List[AnyTaskCriteriaViewBuilder]:
-        """Return the single criteria view builder"""
+    def get_criteria_builders(self) -> List[AnyTaskCriteriaViewBuilder]:
         return [self.criteria]
-
-    def get_criteria_query_fragment(self) -> str:
-        """
-        Returns a query fragment that applies the criteria condition logic for NotEligibleCriteriaCondition.
-        """
-        return f"""
-    SELECT
-        *,
-        TRUE AS is_almost_eligible,
-    FROM potential_almost_eligible
-    WHERE "{self.criteria.criteria_name}" IN UNNEST(ineligible_criteria)
-"""
 
 
 @attr.define
-class _ComparatorCriteriaCondition(CriteriaCondition):
+class EligibleCriteriaCondition(CriteriaCondition):
+    """
+    Condition relating to a single criteria being eligible. This condition can be used in a
+    PickNCompositeCriteriaCondition to increase the counts for the at_least_n_conditions_true
+    and at_most_n_conditions_true parameters during spans when the criterion is met.
+    """
+
+    criteria: AnyTaskCriteriaViewBuilder
+
+    def get_criteria_builders(self) -> List[AnyTaskCriteriaViewBuilder]:
+        return [self.criteria]
+
+
+class ComparatorCriteriaCondition(CriteriaCondition):
     """Condition relating to a static value within the criteria reasons fields"""
 
     criteria: AnyTaskCriteriaViewBuilder
-    reasons_numerical_field: str
+    reasons_field: ReasonsField
     value: float
+    comparison_operator: str
 
-    @staticmethod
-    @abc.abstractmethod
-    def _comparison_operator() -> str:
-        """
-        Return the logical operator used to compare the reasons numerical field to the value
-        """
-
-    def get_criteria_builders(
+    def __init__(
         self,
-    ) -> List[AnyTaskCriteriaViewBuilder]:
-        """Return the single criteria view builder"""
-        return [self.criteria]
-
-    def get_criteria_query_fragment(self) -> str:
-        """
-        Returns a query fragment that applies the comparator logic to the numeric reason field and the comparison value.
-        """
-
-        reasons_field = get_criteria_reason_field(
-            self.criteria, self.reasons_numerical_field
+        criteria: AnyTaskCriteriaViewBuilder,
+        reasons_numerical_field: str,
+        value: float,
+        comparison_operator: str,
+        description: str,
+    ):
+        self.criteria = criteria
+        self.reasons_field = get_criteria_reason_field(
+            criteria, reasons_numerical_field
         )
-
+        # Check the reason field is a supported type
         supported_types = (
             bigquery.enums.StandardSqlTypeNames.INT64,
             bigquery.enums.StandardSqlTypeNames.FLOAT64,
         )
-        if reasons_field.type not in supported_types:
+        if self.reasons_field.type not in supported_types:
             raise ValueError(
-                f"Reason Field {reasons_field.name} has unsupported type {reasons_field.type.value} for "
-                f"Criteria Condition, supported types are [{', '.join(supported_types)}]"
+                f"Reason Field {self.reasons_field.name} has unsupported type "
+                + self.reasons_field.type.value
+                + f" for Criteria Condition, supported types are [{', '.join(supported_types)}]"
             )
+        self.comparison_operator = comparison_operator
+        self.value = value
+        super().__init__(description)
 
-        parse_reasons_value = extract_object_from_json(
-            json_column="criteria_reason",
-            object_column=f"reason.{reasons_field.name}",
-            object_type=str(reasons_field.type.value),
+    def get_criteria_builders(
+        self,
+    ) -> List[AnyTaskCriteriaViewBuilder]:
+        """Return the single criteria view builder"""
+        return [self.criteria]
+
+
+class LessThanCriteriaCondition(ComparatorCriteriaCondition):
+    def __init__(
+        self,
+        criteria: AnyTaskCriteriaViewBuilder,
+        reasons_numerical_field: str,
+        value: float,
+        description: str,
+    ):
+        super().__init__(
+            criteria=criteria,
+            reasons_numerical_field=reasons_numerical_field,
+            value=value,
+            comparison_operator="<",
+            description=description,
         )
 
-        return indent(
-            f"""
-SELECT
-    * EXCEPT(criteria_reason),
-    {parse_reasons_value} {self._comparison_operator()} {self.value} AS is_almost_eligible,
-FROM potential_almost_eligible,
-UNNEST(JSON_QUERY_ARRAY(reasons_v2)) AS criteria_reason
-WHERE "{self.criteria.criteria_name}" IN UNNEST(ineligible_criteria)
-    AND {extract_object_from_json(
-            json_column="criteria_reason",
-            object_column="criteria_name",
-            object_type="STRING",
-        )} = "{self.criteria.criteria_name}"
-""",
-            " " * 4,
+
+class LessThanOrEqualCriteriaCondition(ComparatorCriteriaCondition):
+    def __init__(
+        self,
+        criteria: AnyTaskCriteriaViewBuilder,
+        reasons_numerical_field: str,
+        value: float,
+        description: str,
+    ):
+        super().__init__(
+            criteria=criteria,
+            reasons_numerical_field=reasons_numerical_field,
+            value=value,
+            comparison_operator="<=",
+            description=description,
         )
 
 
-@attr.define
-class LessThanCriteriaCondition(_ComparatorCriteriaCondition):
-    @staticmethod
-    def _comparison_operator() -> str:
-        return "<"
-
-
-@attr.define
-class LessThanOrEqualCriteriaCondition(_ComparatorCriteriaCondition):
-    @staticmethod
-    def _comparison_operator() -> str:
-        return "<="
-
-
-class _DateComparatorCriteriaCondition(CriteriaCondition):
+class DateComparatorCriteriaCondition(CriteriaCondition):
     """
-    Condition relating to a date value within the criteria reasons fields. The condition will be true for the portion
-    of the original criteria span beginning on the critical date as defined in the
-    |critical_date_condition_query_template|
+    Condition relating to a date value within the criteria reasons fields. The condition
+    will be true for the portion of the original criteria span when
+    |critical_date_condition_query_template| returns a True value.
     """
 
     criteria: AnyTaskCriteriaViewBuilder
-    reasons_date_field: ReasonsField
+    reasons_field: ReasonsField
     critical_date_condition_query_template: str
 
     def __init__(
@@ -216,13 +193,11 @@ class _DateComparatorCriteriaCondition(CriteriaCondition):
     ):
         """Initialize the _DateComparatorCriteriaCondition object and validate the inputs"""
         self.criteria = criteria
-        self.reasons_date_field = get_criteria_reason_field(
-            criteria, reasons_date_field
-        )
+        self.reasons_field = get_criteria_reason_field(criteria, reasons_date_field)
         # Check the reasons field is a DATE type
-        if self.reasons_date_field.type != bigquery.enums.SqlTypeNames.DATE:
+        if self.reasons_field.type != bigquery.enums.SqlTypeNames.DATE:
             raise ValueError(
-                f"Reason date field {self.reasons_date_field} is of type {self.reasons_date_field.type.value}, "
+                f"Reason date field {self.reasons_field} is of type {self.reasons_field.type.value}, "
                 f"expected type {bigquery.enums.SqlTypeNames.DATE.value}"
             )
         # Check the {reason_field} formatting variable is in the date query template string
@@ -243,68 +218,8 @@ class _DateComparatorCriteriaCondition(CriteriaCondition):
         """Return the single criteria view builder"""
         return [self.criteria]
 
-    def get_criteria_query_fragment(self) -> str:
-        """
-        Returns a query fragment that applies the critical date condition logic.
-        """
-        return indent(
-            f"""
-SELECT
-    * EXCEPT(criteria_reason),
-    -- Parse out the date relevant for the almost eligibility
-    IFNULL(
-        {self._get_criteria_condition_date_fragment(
-            json_reasons_column="criteria_reason",
-            nested_reason=True
-        )} <= start_date,
-        FALSE
-    ) AS is_almost_eligible,
-FROM potential_almost_eligible,
-UNNEST(JSON_QUERY_ARRAY(reasons_v2)) AS criteria_reason
-WHERE "{self.criteria.criteria_name}" IN UNNEST(ineligible_criteria)
-    AND {extract_object_from_json(
-            json_column="criteria_reason",
-            object_column="criteria_name",
-            object_type="STRING",
-        )} = "{self.criteria.criteria_name}"
-""",
-            " " * 4,
-        )
 
-    def get_critical_date_parsing_fragments_by_criteria(
-        self,
-    ) -> Optional[Dict[str, List[str]]]:
-        """Return the critical date parsing query for the reason field in the criteria"""
-        return {
-            self.criteria.criteria_name: [
-                self._get_criteria_condition_date_fragment(
-                    json_reasons_column="reason_v2"
-                )
-            ]
-        }
-
-    def _get_criteria_condition_date_fragment(
-        self, json_reasons_column: str, nested_reason: bool = False
-    ) -> str:
-        """Return the query fragment that parses and computes the criteria condition date"""
-        # Prepend "reason." to the field name string if the reasons blob is nested -
-        # The reasons blob in eligibility spans is nested, the reason blob in criteria spans is not nested
-        object_column = (
-            f"reason.{self.reasons_date_field.name}"
-            if nested_reason
-            else self.reasons_date_field.name
-        )
-        return StrictStringFormatter().format(
-            self.critical_date_condition_query_template,
-            reasons_date=extract_object_from_json(
-                json_column=json_reasons_column,
-                object_column=object_column,
-                object_type=str(self.reasons_date_field.type.value),
-            ),
-        )
-
-
-class TimeDependentCriteriaCondition(_DateComparatorCriteriaCondition):
+class TimeDependentCriteriaCondition(DateComparatorCriteriaCondition):
     """
     Condition relating to a date within the criteria reasons fields. The condition will be true for the portion of the
     original eligibility criteria span that has passed the reasons date MINUS the interval window.
@@ -342,7 +257,7 @@ class TimeDependentCriteriaCondition(_DateComparatorCriteriaCondition):
         )
 
 
-class ReasonDateInCalendarWeekCriteriaCondition(_DateComparatorCriteriaCondition):
+class ReasonDateInCalendarWeekCriteriaCondition(DateComparatorCriteriaCondition):
     """
     Condition relating to a date within the criteria reasons fields. The condition will be true for the portion of the
     original eligibility criteria span starting the Sunday before the reasons date and ending on the reasons date
@@ -382,8 +297,6 @@ class PickNCompositeCriteriaCondition(CriteriaCondition):
 
     The `at_least_n_conditions_true` and `at_most_n_conditions_true` arguments can be used to configure AND/OR/XOR
     logic between conditions.
-
-    At most 1 time dependent condition can be included for a single eligibility criteria.
     """
 
     # List of all criteria conditions that make up the group
@@ -402,10 +315,7 @@ class PickNCompositeCriteriaCondition(CriteriaCondition):
         Initialized the PickNCompositeCriteriaCondition object and validate that the least/most n conditions true are
         set properly.
         """
-        if len(sub_conditions_list) <= 1:
-            raise ValueError(
-                "PickNCompositeCriteriaCondition requires 2 or more sub conditions"
-            )
+        self._validate_sub_conditions(sub_conditions_list)
         self.sub_conditions_list = sub_conditions_list
 
         (
@@ -433,58 +343,36 @@ class PickNCompositeCriteriaCondition(CriteriaCondition):
             )
         )
 
-    def get_criteria_query_fragment(self) -> str:
-        """
-        Returns a query fragment that applies the composite criteria almost eligible logic.
-        """
-        composite_criteria_query = "\n    UNION ALL\n".join(
-            [
-                indent(f"""({condition.get_criteria_query_fragment()})""", " " * 4)
-                for condition in self.sub_conditions_list
-            ]
-        )
-        return indent(
-            f"""
-WITH composite_criteria_condition AS (
-{composite_criteria_query}
-)
-SELECT
-    state_code, person_id, start_date, end_date,
-    -- Use ANY_VALUE for these span attributes since they are the same across every span with the same start/end date
-    ANY_VALUE(is_eligible) AS is_eligible,
-    ANY_VALUE(reasons) AS reasons,
-    ANY_VALUE(reasons_v2) AS reasons_v2,
-    ANY_VALUE(ineligible_criteria) AS ineligible_criteria,
-    -- Almost eligible if number of almost eligible criteria count is in the set range
-    -- and the almost eligible criteria not-met does not exceed the number allowed
-    COUNTIF(is_almost_eligible) BETWEEN {self.at_least_n_conditions_true} AND {self.at_most_n_conditions_true}
-        AND COUNTIF(NOT is_almost_eligible) <= {self.at_most_n_conditions_true - self.at_least_n_conditions_true} AS is_almost_eligible,
-FROM composite_criteria_condition
-GROUP BY 1, 2, 3, 4
-""",
-            " " * 4,
-        )
-
-    def get_critical_date_parsing_fragments_by_criteria(
-        self,
-    ) -> Optional[Dict[str, List[str]]]:
-        """Return all critical date parsing queries for the sub conditions"""
-
-        # Iteratively collect the critical dates from the sub conditions
-        critical_date_fragments_map: Dict[str, List[str]] = defaultdict(list)
-        for condition in self.sub_conditions_list:
-            sub_condition_fragments_map = (
-                condition.get_critical_date_parsing_fragments_by_criteria()
+    @staticmethod
+    def _validate_sub_conditions(
+        sub_conditions_list: List[CriteriaCondition],
+    ) -> None:
+        """Validate the sub conditions list can be initialized properly"""
+        # Require at least 2 sub conditions
+        if len(sub_conditions_list) <= 1:
+            raise ValueError(
+                "PickNCompositeCriteriaCondition requires 2 or more sub conditions"
             )
-            if not sub_condition_fragments_map:
-                continue
-            for criteria_name, fragments in sub_condition_fragments_map.items():
-                critical_date_fragments_map[criteria_name].extend(fragments)
-
-        if not critical_date_fragments_map:
-            return None
-
-        return critical_date_fragments_map
+        # Require a single eligibility criteria cannot be used for EligibleCriteriaCondition
+        # and NotEligibleCriteriaCondition within the same group and level
+        eligible_condition_criteria = {
+            condition.criteria.criteria_name
+            for condition in sub_conditions_list
+            if isinstance(condition, EligibleCriteriaCondition)
+        }
+        not_eligible_condition_criteria = {
+            condition.criteria.criteria_name
+            for condition in sub_conditions_list
+            if isinstance(condition, NotEligibleCriteriaCondition)
+        }
+        overlapping_criteria = eligible_condition_criteria.intersection(
+            not_eligible_condition_criteria
+        )
+        if overlapping_criteria:
+            raise ValueError(
+                "Cannot initialize PickNCompositeCriteriaCondition with EligibleCriteriaCondition"
+                f" and NotEligibleCriteriaCondition applied to the criteria: {', '.join(overlapping_criteria)}"
+            )
 
     @staticmethod
     def _validate_condition_count(

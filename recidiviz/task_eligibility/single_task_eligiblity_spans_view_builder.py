@@ -17,8 +17,9 @@
 """View builder that auto-generates task eligibility spans view from component criteria
 and candidate population views.
 """
+from collections import defaultdict
 from textwrap import indent
-from typing import List, Optional, Sequence, Union
+from typing import Dict, List, Optional, Sequence, Union
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.bq_utils import (
@@ -31,7 +32,14 @@ from recidiviz.calculator.query.sessions_query_fragments import (
     create_sub_sessions_with_attributes,
 )
 from recidiviz.common.constants.states import StateCode
-from recidiviz.task_eligibility.criteria_condition import CriteriaCondition
+from recidiviz.task_eligibility.criteria_condition import (
+    ComparatorCriteriaCondition,
+    CriteriaCondition,
+    DateComparatorCriteriaCondition,
+    EligibleCriteriaCondition,
+    NotEligibleCriteriaCondition,
+    PickNCompositeCriteriaCondition,
+)
 from recidiviz.task_eligibility.dataset_config import (
     task_eligibility_spans_state_specific_dataset,
 )
@@ -50,6 +58,9 @@ from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder impor
     InvertedTaskCriteriaBigQueryViewBuilder,
     TaskCriteriaGroupBigQueryViewBuilder,
 )
+from recidiviz.task_eligibility.utils.state_dataset_query_fragments import (
+    extract_object_from_json,
+)
 from recidiviz.utils.string import StrictStringFormatter
 
 # Query fragment that can be formatted with criteria-specific naming. Once formatted,
@@ -61,7 +72,8 @@ from recidiviz.utils.string import StrictStringFormatter
 #         WHERE state_code = "US_XX"
 #     )
 # Use this query fragment for criteria that do not have an almost eligible
-# criteria condition. Otherwise, use `CriteriaCondition.get_criteria_query_fragment()`.
+# criteria condition.
+# Otherwise, use `get_almost_eligible_condition_query_fragment(CriteriaCondition)`.
 STATE_SPECIFIC_CRITERIA_FRAGMENT = """
     SELECT
         *,
@@ -137,6 +149,199 @@ def get_all_descendant_criteria_builders(
         elif isinstance(builder, InvertedTaskCriteriaBigQueryViewBuilder):
             view_builders.append(builder.sub_criteria)
     return view_builders
+
+
+def get_critical_date_parsing_fragments_by_criteria(
+    condition: CriteriaCondition,
+) -> Optional[Dict[str, List[str]]]:
+    """Return any critical date parsing queries that need to be applied to the criteria spans"""
+    if isinstance(condition, DateComparatorCriteriaCondition):
+        reason_column = _parse_reason_field_query_fragment(
+            condition=condition, json_reasons_column="reason_v2"
+        )
+        return {
+            condition.criteria.criteria_name: [
+                _get_date_comparator_critical_date_query_fragment(
+                    condition, reason_column
+                )
+            ]
+        }
+    if isinstance(condition, PickNCompositeCriteriaCondition):
+        # Collect all the criteria critical dates across the sub conditions
+        critical_date_fragments_map: Dict[str, List[str]] = defaultdict(list)
+        for sub_condition in condition.sub_conditions_list:
+            sub_condition_fragments_map = (
+                get_critical_date_parsing_fragments_by_criteria(sub_condition)
+            )
+            if not sub_condition_fragments_map:
+                continue
+            for criteria_name, fragments in sub_condition_fragments_map.items():
+                critical_date_fragments_map[criteria_name].extend(fragments)
+
+        if critical_date_fragments_map:
+            return critical_date_fragments_map
+
+    return None
+
+
+def _parse_reason_field_query_fragment(
+    condition: Union[ComparatorCriteriaCondition, DateComparatorCriteriaCondition],
+    json_reasons_column: str,
+) -> str:
+    """Return the query fragment that parses and casts the criteria condition reason field"""
+    if json_reasons_column not in ["reason_v2", "criteria_reason"]:
+        raise NotImplementedError(f"Unsupported reason column: {json_reasons_column}")
+    # Prepend "reason." to the json field name string if the reasons blob is nested -
+    # - criteria_reason: from the nested eligibility spans, unnested from reasons_v2
+    # - reason_v2: from the non-nested criteria spans
+    object_column = (
+        f"reason.{condition.reasons_field.name}"
+        if json_reasons_column == "criteria_reason"
+        else condition.reasons_field.name
+    )
+    return extract_object_from_json(
+        json_column=json_reasons_column,
+        object_column=object_column,
+        object_type=condition.reasons_field.type.name,
+    )
+
+
+def _get_date_comparator_critical_date_query_fragment(
+    condition: DateComparatorCriteriaCondition, reason_column: str
+) -> str:
+    """Return a query fragment with the critical date computed from the criteria reason column"""
+    return StrictStringFormatter().format(
+        condition.critical_date_condition_query_template,
+        reasons_date=reason_column,
+    )
+
+
+def _get_comparator_criteria_almost_eligible_query(
+    condition: Union[ComparatorCriteriaCondition, DateComparatorCriteriaCondition],
+) -> str:
+    """Return the query fragment used within the task eligibility spans view to
+    label the spans that are considered to be almost eligible for comparator style
+    conditions (ComparatorCriteriaCondition, DateComparatorCriteriaCondition).
+    The fragment should select from the potential_almost_eligible CTE, which contains
+    eligibility spans that might be almost eligible (no unsupported ineligible
+    criteria) and adds the boolean column is_almost_eligible which is TRUE if the
+    span is considered to be almost eligible according to the comparator logic
+    and FALSE otherwise.
+    """
+    reason_field_column = _parse_reason_field_query_fragment(
+        condition=condition,
+        json_reasons_column="criteria_reason",
+    )
+    if isinstance(condition, DateComparatorCriteriaCondition):
+        # Spans that have passed the condition critical date are considered almost eligible,
+        # spans with no critical date are considered not almost eligible
+        almost_eligible_criteria = f"""IFNULL(
+            {_get_date_comparator_critical_date_query_fragment(condition, reason_field_column)} <= start_date,
+            FALSE
+        )"""
+    elif isinstance(condition, ComparatorCriteriaCondition):
+        # Compare the criteria reason field to the condition value
+        almost_eligible_criteria = (
+            f"{reason_field_column} {condition.comparison_operator} {condition.value}"
+        )
+    else:
+        raise NotImplementedError(f"Unexpected condition type: {type(condition)}")
+
+    return f"""
+    SELECT
+        * EXCEPT(criteria_reason),
+        -- Apply the almost eligible criteria to the criteria reason field
+        {almost_eligible_criteria} AS is_almost_eligible,
+    FROM potential_almost_eligible,
+    UNNEST(JSON_QUERY_ARRAY(reasons_v2)) AS criteria_reason
+    WHERE "{condition.criteria.criteria_name}" IN UNNEST(ineligible_criteria)
+        AND {extract_object_from_json(
+    json_column="criteria_reason",
+    object_column="criteria_name",
+    object_type="STRING",
+)} = "{condition.criteria.criteria_name}"
+"""
+
+
+def _get_pick_n_composite_criteria_almost_eligible_query(
+    condition: PickNCompositeCriteriaCondition,
+) -> str:
+    """Return the query fragment used within the task eligibility spans view to
+    label the spans that are considered to be almost eligible for the combined
+    PickNCompositeCriteriaCondition conditions.
+    The fragment should select from the potential_almost_eligible CTE, which contains
+    eligibility spans that might be almost eligible (no unsupported ineligible
+    criteria) and add the boolean column is_almost_eligible which is TRUE for spans where:
+    - total sub conditions met is between at_least_n_conditions_true and at_most_n_conditions_true
+    - total sub conditions not met is less than (at_most_n_conditions_true - at_least_n_conditions_true)
+    """
+    composite_criteria_query = "\n    UNION ALL\n".join(
+        [
+            indent(
+                f"""({get_almost_eligible_criteria_query(condition)})""",
+                " " * 4,
+            )
+            for condition in condition.sub_conditions_list
+        ]
+    )
+    return indent(
+        f"""
+WITH composite_criteria_condition AS (
+{composite_criteria_query}
+)
+SELECT
+    state_code, person_id, start_date, end_date,
+    -- Use ANY_VALUE for these span attributes since they are the same across every span with the same start/end date
+    ANY_VALUE(is_eligible) AS is_eligible,
+    ANY_VALUE(reasons) AS reasons,
+    ANY_VALUE(reasons_v2) AS reasons_v2,
+    ANY_VALUE(ineligible_criteria) AS ineligible_criteria,
+    -- Almost eligible if number of almost eligible criteria count is in the set range
+    -- and the almost eligible criteria not-met does not exceed the number allowed
+    COUNTIF(is_almost_eligible) BETWEEN {condition.at_least_n_conditions_true} AND {condition.at_most_n_conditions_true}
+        AND COUNTIF(NOT is_almost_eligible) <= {condition.at_most_n_conditions_true - condition.at_least_n_conditions_true} AS is_almost_eligible,
+FROM composite_criteria_condition
+GROUP BY 1, 2, 3, 4
+""",
+        " " * 4,
+    )
+
+
+def get_almost_eligible_criteria_query(condition: CriteriaCondition) -> str:
+    """Return the query fragment used within the task eligibility spans view to
+    label the spans that are considered to be almost eligible.
+    The fragment should select from the potential_almost_eligible CTE, which contains
+    eligibility spans that might be almost eligible (no unsupported ineligible
+    criteria) and adds the boolean column is_almost_eligible which is TRUE if the
+    span is considered to be almost eligible and FALSE otherwise.
+    """
+    if isinstance(condition, PickNCompositeCriteriaCondition):
+        return _get_pick_n_composite_criteria_almost_eligible_query(condition)
+
+    if isinstance(
+        condition, (DateComparatorCriteriaCondition, ComparatorCriteriaCondition)
+    ):
+        return _get_comparator_criteria_almost_eligible_query(condition)
+
+    if isinstance(
+        condition,
+        (NotEligibleCriteriaCondition, EligibleCriteriaCondition),
+    ):
+        if isinstance(condition, NotEligibleCriteriaCondition):
+            filter_fragment = f""""{condition.criteria.criteria_name}" IN UNNEST(ineligible_criteria)"""
+        elif isinstance(condition, EligibleCriteriaCondition):
+            filter_fragment = f""""{condition.criteria.criteria_name}" NOT IN UNNEST(ineligible_criteria)"""
+        else:
+            raise ValueError(f"Unexpected condition type: {type(condition)}")
+
+        return f"""
+    SELECT
+        *,
+        TRUE AS is_almost_eligible,
+    FROM potential_almost_eligible
+    WHERE {filter_fragment}
+"""
+    raise NotImplementedError(f"Unexpected condition type: {type(condition)}")
 
 
 # TODO(#16091): Write tests for this class
@@ -223,19 +428,14 @@ class SingleTaskEligibilitySpansBigQueryViewBuilder(SimpleBigQueryViewBuilder):
         )
         criteria_info_structs = []
         criteria_span_ctes = []
-        # Track all the criteria that are not included in the almost eligible condition since any spans with
-        # unsupported criteria are automatically not almost eligible
         # TODO(#31443): split almost eligible spans into a separate view
-        unsupported_almost_eligible_criteria: List[
-            Union[
-                TaskCriteriaBigQueryViewBuilder,
-                TaskCriteriaGroupBigQueryViewBuilder,
-                InvertedTaskCriteriaBigQueryViewBuilder,
-            ]
-        ] = []
+        # Pull out any query fragments for parsing critical dates required to split
+        # criteria spans for the almost eligible criteria conditions
         if almost_eligible_criteria_condition:
             criteria_to_critical_date_query_fragment_map = (
-                almost_eligible_criteria_condition.get_critical_date_parsing_fragments_by_criteria()
+                get_critical_date_parsing_fragments_by_criteria(
+                    almost_eligible_criteria_condition
+                )
             )
         else:
             criteria_to_critical_date_query_fragment_map = None
@@ -266,9 +466,6 @@ class SingleTaskEligibilitySpansBigQueryViewBuilder(SimpleBigQueryViewBuilder):
                                 criteria_view_builder.criteria_name
                             ]
                         )
-                else:
-                    # Collect all criteria that are not covered by an almost eligible criteria condition
-                    unsupported_almost_eligible_criteria.append(criteria_view_builder)
 
             criteria_span_ctes.append(
                 StrictStringFormatter().format(
@@ -315,20 +512,20 @@ class SingleTaskEligibilitySpansBigQueryViewBuilder(SimpleBigQueryViewBuilder):
     FROM eligibility_sub_spans
 """
         if almost_eligible_criteria_condition:
-            ae_query_fragment = (
-                almost_eligible_criteria_condition.get_criteria_query_fragment()
+            ae_query_fragment = get_almost_eligible_criteria_query(
+                almost_eligible_criteria_condition
             )
-            if len(unsupported_almost_eligible_criteria) > 0:
-                potential_ae_condition = (
-                    "-- Include all criteria that are not part of an almost eligible criteria condition\n"
-                    + ",\n".join(
-                        indent(f'"{criteria.criteria_name}"', " " * 16)
-                        for criteria in unsupported_almost_eligible_criteria
-                    )
+            supported_almost_eligible_criteria_names = {
+                criteria.criteria_name
+                for criteria in almost_eligible_criteria_condition.get_criteria_builders()
+            }
+            ae_supported_criteria_name_string = (
+                "-- Include all criteria that are part of an almost eligible criteria condition\n"
+                + ",\n".join(
+                    indent(f'"{criteria_name}"', " " * 24)
+                    for criteria_name in supported_almost_eligible_criteria_names
                 )
-            else:
-                # Insert an empty string if all criteria are supported by almost eligible criteria conditions
-                potential_ae_condition = '""'
+            )
 
             total_almost_eligible_query_fragment = f"""
     WITH potential_almost_eligible AS (
@@ -338,14 +535,15 @@ class SingleTaskEligibilitySpansBigQueryViewBuilder(SimpleBigQueryViewBuilder):
         INNER JOIN (
             SELECT
                 state_code, person_id, start_date,
-                -- If any ineligible criteria are in the unsupported criteria list then the span is not
-                -- potentially almost eligible
-                LOGICAL_AND(criteria_name != unsupported_criteria) AS no_unsupported_criteria,
+                -- Spans are potentially almost eligible if all the ineligible criteria
+                -- are supported by criteria conditions
+                LOGICAL_AND(
+                    criteria_name IN UNNEST([
+                        {ae_supported_criteria_name_string}
+                    ])
+                ) AS no_unsupported_criteria,
             FROM eligibility_sub_spans,
-            UNNEST(ineligible_criteria) AS criteria_name,
-            UNNEST([
-                {potential_ae_condition}
-            ]) AS unsupported_criteria
+            UNNEST(ineligible_criteria) AS criteria_name
             GROUP BY 1, 2, 3
         )
         USING (state_code, person_id, start_date)

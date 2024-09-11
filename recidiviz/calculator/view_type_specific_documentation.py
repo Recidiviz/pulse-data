@@ -26,6 +26,7 @@ from pytablewriter import MarkdownTableWriter
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_view import BigQueryViewBuilder
 from recidiviz.task_eligibility.criteria_condition import (
+    EligibleCriteriaCondition,
     LessThanCriteriaCondition,
     LessThanOrEqualCriteriaCondition,
     NotEligibleCriteriaCondition,
@@ -164,6 +165,7 @@ def _almost_eligibile_conditions_docs_for_tes_view(
         (
             TimeDependentCriteriaCondition,
             ReasonDateInCalendarWeekCriteriaCondition,
+            EligibleCriteriaCondition,
             NotEligibleCriteriaCondition,
             LessThanCriteriaCondition,
             LessThanOrEqualCriteriaCondition,
@@ -194,6 +196,7 @@ def _almost_eligibile_conditions_docs_for_tes_view(
                 (
                     TimeDependentCriteriaCondition,
                     ReasonDateInCalendarWeekCriteriaCondition,
+                    EligibleCriteriaCondition,
                     NotEligibleCriteriaCondition,
                     LessThanCriteriaCondition,
                     LessThanOrEqualCriteriaCondition,
@@ -222,6 +225,7 @@ def _create_table_matrix_for_almost_eligible_conditions(
     almost_eligible_condition: Union[
         TimeDependentCriteriaCondition,
         ReasonDateInCalendarWeekCriteriaCondition,
+        EligibleCriteriaCondition,
         NotEligibleCriteriaCondition,
         LessThanCriteriaCondition,
         LessThanOrEqualCriteriaCondition,
