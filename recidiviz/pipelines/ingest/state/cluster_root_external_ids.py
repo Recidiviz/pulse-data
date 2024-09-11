@@ -128,12 +128,17 @@ class CombineExternalIdClusters(beam.CombineFn):
         external_id, external_ids_in_element_cluster = element
         if external_id not in external_ids_in_element_cluster:
             raise ValueError("Require that the external_id itself be in the cluster.")
-        external_ids_already_in_cluster: Set[ExternalIdKey] = mutable_accumulator[
-            external_id
-        ]
-        final_cluster = (
-            external_ids_already_in_cluster | external_ids_in_element_cluster
-        )
+
+        final_cluster = set(external_ids_in_element_cluster)
+
+        # For each external_id already associated with the current external_id, merge
+        # those clusters into one.
+        for element_cluster_external_id in external_ids_in_element_cluster:
+            external_ids_already_in_cluster: Set[ExternalIdKey] = mutable_accumulator[
+                element_cluster_external_id
+            ]
+            final_cluster |= external_ids_already_in_cluster
+
         for cluster_member_external_id in final_cluster:
             mutable_accumulator[cluster_member_external_id] = final_cluster
         return mutable_accumulator

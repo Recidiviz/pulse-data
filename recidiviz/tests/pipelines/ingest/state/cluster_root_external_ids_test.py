@@ -15,6 +15,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Testing the ClusterRootExternalIds PTransform."""
+from itertools import permutations
+
 import apache_beam as beam
 from apache_beam.options.pipeline_options import PipelineOptions, SetupOptions
 from apache_beam.pipeline_test import TestPipeline, assert_that, equal_to
@@ -43,6 +45,8 @@ class TestClusterExternalIds(BigQueryEmulatorTestCase):
         self.external_id_7 = ("ID7", "TYPE_4")
         self.external_id_8 = ("ID8", "TYPE_2")
         self.external_id_9 = ("ID9", "TYPE_4")
+        self.external_id_10 = ("ID10", "TYPE_4")
+        self.external_id_11 = ("ID11", "TYPE_4")
 
     def test_cluster_external_ids(self) -> None:
         expected_output = [
@@ -116,5 +120,98 @@ class TestClusterExternalIds(BigQueryEmulatorTestCase):
             )
             | pipeline.ClusterRootExternalIds()
         )
+        assert_that(output, equal_to(expected_output))
+        self.test_pipeline.run()
+
+    def test_chain_of_ids(self) -> None:
+        """Tests that, given edges 1 -> 2 -> 3, we properly merge no matter what order
+        they are presented in.
+        """
+        input_ids = [
+            (self.external_id_1, None),
+            (self.external_id_1, self.external_id_2),
+            (self.external_id_2, self.external_id_3),
+        ]
+
+        all_ids_set = {
+            self.external_id_1,
+            self.external_id_2,
+            self.external_id_3,
+        }
+
+        # Every id should be associated with every other id
+        expected_output = [
+            (self.external_id_1, all_ids_set),
+            (self.external_id_2, all_ids_set),
+            (self.external_id_3, all_ids_set),
+        ]
+
+        for i, ordered_input_ids in enumerate(permutations(input_ids)):
+            output = (
+                self.test_pipeline
+                | f"Create with permutation {i}" >> beam.Create(ordered_input_ids)
+                | f"Cluster with permutation {i}" >> pipeline.ClusterRootExternalIds()
+            )
+
+            assert_that(
+                output, equal_to(expected_output), label=f"Assert for permutation {i}"
+            )
+            self.test_pipeline.run()
+
+    def test_long_chain_of_ids(self) -> None:
+        """Tests that, given a long chain of edges, we merge properly, even if the order
+        is scrambled
+        """
+
+        # This represents a chain of ids 1 -> 2 -> 3 -> ... -> 11
+        input_ids = [
+            (self.external_id_7, self.external_id_8),
+            (self.external_id_8, self.external_id_9),
+            (self.external_id_3, self.external_id_4),
+            (self.external_id_4, self.external_id_5),
+            (self.external_id_5, self.external_id_6),
+            (self.external_id_1, None),
+            (self.external_id_1, self.external_id_2),
+            (self.external_id_2, self.external_id_3),
+            (self.external_id_6, self.external_id_7),
+            (self.external_id_9, self.external_id_10),
+            (self.external_id_10, self.external_id_11),
+        ]
+
+        all_ids_set = {
+            self.external_id_1,
+            self.external_id_2,
+            self.external_id_3,
+            self.external_id_4,
+            self.external_id_5,
+            self.external_id_6,
+            self.external_id_7,
+            self.external_id_8,
+            self.external_id_9,
+            self.external_id_10,
+            self.external_id_11,
+        }
+
+        # Every id should be associated with every other id
+        expected_output = [
+            (self.external_id_1, all_ids_set),
+            (self.external_id_2, all_ids_set),
+            (self.external_id_3, all_ids_set),
+            (self.external_id_4, all_ids_set),
+            (self.external_id_5, all_ids_set),
+            (self.external_id_6, all_ids_set),
+            (self.external_id_7, all_ids_set),
+            (self.external_id_8, all_ids_set),
+            (self.external_id_9, all_ids_set),
+            (self.external_id_10, all_ids_set),
+            (self.external_id_11, all_ids_set),
+        ]
+
+        output = (
+            self.test_pipeline
+            | beam.Create(input_ids)
+            | pipeline.ClusterRootExternalIds()
+        )
+
         assert_that(output, equal_to(expected_output))
         self.test_pipeline.run()
