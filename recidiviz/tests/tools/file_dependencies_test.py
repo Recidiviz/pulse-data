@@ -71,9 +71,10 @@ class FileDependenciesTest(unittest.TestCase):
         }
 
     def test_add_dependencies_for_entrypoint(self) -> None:
-        assert EntrypointDependencies().add_dependencies_for_entrypoint(
+        actual_dependencies = EntrypointDependencies().add_dependencies_for_entrypoint(
             "recidiviz.tests.tools.fixtures.example_dependency_entrypoint"
-        ) == EntrypointDependencies(
+        )
+        expected_dependencies = EntrypointDependencies(
             modules={
                 "recidiviz": {
                     "recidiviz.common": [
@@ -93,10 +94,22 @@ class FileDependenciesTest(unittest.TestCase):
                         )
                     ],
                 },
+                "recidiviz.common.attr_validators": {
+                    "recidiviz.common.date": [
+                        Callsite(filepath="r/common/date.py", lineno=27, col_offset=0)
+                    ]
+                },
                 "recidiviz.common": {
                     "recidiviz.common.date": [
                         Callsite(filepath="r/common/date.py", lineno=0, col_offset=0)
-                    ]
+                    ],
+                    "recidiviz.common.attr_validators": [
+                        Callsite(
+                            filepath="r/common/attr_validators.py",
+                            lineno=0,
+                            col_offset=0,
+                        )
+                    ],
                 },
                 "recidiviz.common.date": {
                     "recidiviz.tests.tools.fixtures.example_dependency_entrypoint": [
@@ -183,7 +196,7 @@ class FileDependenciesTest(unittest.TestCase):
                 },
                 "recidiviz.utils.types": {
                     "recidiviz.common.date": [
-                        Callsite(filepath="r/common/date.py", lineno=27, col_offset=0)
+                        Callsite(filepath="r/common/date.py", lineno=28, col_offset=0)
                     ]
                 },
             },
@@ -202,6 +215,13 @@ class FileDependenciesTest(unittest.TestCase):
                             filepath="r/utils/metadata.py", lineno=24, col_offset=0
                         )
                     ],
+                    "recidiviz.common.attr_validators": [
+                        Callsite(
+                            filepath="r/common/attr_validators.py",
+                            lineno=30,
+                            col_offset=0,
+                        )
+                    ],
                 },
                 "calendar": {
                     "recidiviz.common.date": [
@@ -211,7 +231,14 @@ class FileDependenciesTest(unittest.TestCase):
                 "datetime": {
                     "recidiviz.common.date": [
                         Callsite(filepath="r/common/date.py", lineno=18, col_offset=0)
-                    ]
+                    ],
+                    "recidiviz.common.attr_validators": [
+                        Callsite(
+                            filepath="r/common/attr_validators.py",
+                            lineno=26,
+                            col_offset=0,
+                        )
+                    ],
                 },
                 "enum": {
                     "recidiviz.utils.environment": [
@@ -294,7 +321,14 @@ class FileDependenciesTest(unittest.TestCase):
                 "re": {
                     "recidiviz.common.date": [
                         Callsite(filepath="r/common/date.py", lineno=19, col_offset=0)
-                    ]
+                    ],
+                    "recidiviz.common.attr_validators": [
+                        Callsite(
+                            filepath="r/common/attr_validators.py",
+                            lineno=27,
+                            col_offset=0,
+                        )
+                    ],
                 },
                 "requests": {
                     "recidiviz.tests.tools.fixtures.example_dependency_entrypoint": [
@@ -327,6 +361,13 @@ class FileDependenciesTest(unittest.TestCase):
                     ]
                 },
                 "typing": {
+                    "recidiviz.common.attr_validators": [
+                        Callsite(
+                            filepath="r/common/attr_validators.py",
+                            lineno=28,
+                            col_offset=0,
+                        )
+                    ],
                     "recidiviz.common.date": [
                         Callsite(filepath="r/common/date.py", lineno=22, col_offset=0)
                     ],
@@ -347,8 +388,39 @@ class FileDependenciesTest(unittest.TestCase):
                         Callsite(filepath="r/utils/types.py", lineno=19, col_offset=0)
                     ],
                 },
+                "pytz": {
+                    "recidiviz.common.attr_validators": [
+                        Callsite(
+                            filepath="r/common/attr_validators.py",
+                            lineno=31,
+                            col_offset=0,
+                        )
+                    ]
+                },
             },
         )
+        # Asserting the name of the key and the match
+        # makes this a bit easier to debug/see diffs
+        for module in actual_dependencies.modules:
+            assert module and (
+                actual_dependencies.modules[module]
+                == expected_dependencies.modules[module]
+            )
+        for package in actual_dependencies.packages:
+            assert package and (
+                actual_dependencies.packages[package]
+                == expected_dependencies.packages[package]
+            )
+        for module in expected_dependencies.modules:
+            assert module and (
+                expected_dependencies.modules[module]
+                == actual_dependencies.modules[module]
+            )
+        for package in expected_dependencies.packages:
+            assert package and (
+                expected_dependencies.packages[package]
+                == actual_dependencies.packages[package]
+            )
 
     def test_add_dependencies_missing_init(self) -> None:
         with self.assertRaisesRegex(

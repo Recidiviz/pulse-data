@@ -19,6 +19,7 @@ has been run through the normalization portions of our pipelines.
 """
 import abc
 from datetime import date, datetime
+from functools import cached_property
 from typing import Any, Optional, Type
 
 import attr
@@ -130,6 +131,7 @@ from recidiviz.common.date import (
     DateRange,
     DurationMixin,
     NonNegativeDateRange,
+    PotentiallyOpenDateTimeRange,
 )
 from recidiviz.persistence.entity.base_entity import (
     Entity,
@@ -1028,6 +1030,34 @@ class NormalizedStateSentence(NormalizedStateEntity, HasExternalIdEntity):
         factory=list,
         validator=attr_validators.is_list_of(NormalizedStateSentenceLength),
     )
+
+    @cached_property
+    def first_serving_status_to_terminating_status_dt_range(
+        self,
+    ) -> PotentiallyOpenDateTimeRange | None:
+        if not self.sentence_status_snapshots:
+            return None
+        snapshots = sorted(
+            self.sentence_status_snapshots, key=lambda s: s.partition_key
+        )
+        # Give no range if there is not a SERVING status
+        try:
+            first_serving_snapshot = [
+                s for s in snapshots if s.status == StateSentenceStatus.SERVING
+            ][0]
+        except IndexError:
+            return None
+
+        final_snapshot = snapshots[-1]
+        end_dt = (
+            final_snapshot.status_update_datetime
+            if final_snapshot.status.is_terminating_status
+            else None
+        )
+        return PotentiallyOpenDateTimeRange(
+            lower_bound_inclusive=first_serving_snapshot.status_update_datetime,
+            upper_bound_exclusive=end_dt,
+        )
 
     @classmethod
     def global_unique_constraints(cls) -> list[UniqueConstraint]:

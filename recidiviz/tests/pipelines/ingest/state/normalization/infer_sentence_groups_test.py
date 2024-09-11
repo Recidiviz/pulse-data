@@ -290,4 +290,102 @@ class TestInferredSentenceGroups(unittest.TestCase):
         have an active SERVING status at the same time,
         then they are in the same inferred group.
         """
-        # TODO(#32988) Add test when status span logic is added
+        group_a = NormalizedStateSentenceGroup(
+            state_code=self.STATE_CODE_VALUE,
+            external_id=self.GROUP_A_EXTERNAL_ID,
+            sentence_group_id=hash(self.GROUP_A_EXTERNAL_ID),
+            sentence_inferred_group_id=None,
+        )
+        group_b = NormalizedStateSentenceGroup(
+            state_code=self.STATE_CODE_VALUE,
+            external_id=self.GROUP_B_EXTERNAL_ID,
+            sentence_group_id=hash(self.GROUP_A_EXTERNAL_ID),
+            sentence_inferred_group_id=None,
+        )
+        # Sentences 1 and 2 are in group A, sentence 3 is in group B
+        # However, 3 begins serving before sentence 1 is terminated
+        sentence_1 = NormalizedStateSentence(
+            state_code=self.STATE_CODE_VALUE,
+            external_id=self.SENTENCE_1_EXTERNAL_ID,
+            sentence_id=hash(self.SENTENCE_1_EXTERNAL_ID),
+            sentence_group_external_id=group_a.external_id,
+            sentence_inferred_group_id=None,
+            imposed_date=self.JAN_01,
+            sentencing_authority=StateSentencingAuthority.STATE,
+            sentence_type=StateSentenceType.PROBATION,
+            sentence_status_snapshots=[
+                NormalizedStateSentenceStatusSnapshot(
+                    state_code=self.STATE_CODE_VALUE,
+                    status_update_datetime=as_datetime(self.JAN_01),
+                    status_end_datetime=as_datetime(self.MAR_01),
+                    sequence_num=1,
+                    status=StateSentenceStatus.SERVING,
+                    sentence_status_snapshot_id=1,
+                ),
+                NormalizedStateSentenceStatusSnapshot(
+                    state_code=self.STATE_CODE_VALUE,
+                    status_update_datetime=as_datetime(self.MAR_01),
+                    status_end_datetime=None,
+                    sequence_num=2,
+                    status=StateSentenceStatus.COMPLETED,
+                    sentence_status_snapshot_id=2,
+                ),
+            ],
+        )
+        sentence_2 = NormalizedStateSentence(
+            state_code=self.STATE_CODE_VALUE,
+            external_id=self.SENTENCE_2_EXTERNAL_ID,
+            sentence_id=hash(self.SENTENCE_2_EXTERNAL_ID),
+            sentence_group_external_id=group_a.external_id,
+            sentence_inferred_group_id=None,
+            imposed_date=self.JAN_01,
+            sentencing_authority=StateSentencingAuthority.STATE,
+            sentence_type=StateSentenceType.PROBATION,
+            sentence_status_snapshots=[
+                NormalizedStateSentenceStatusSnapshot(
+                    state_code=self.STATE_CODE_VALUE,
+                    status_update_datetime=as_datetime(self.JAN_01),
+                    status_end_datetime=as_datetime(self.MAR_01),
+                    sequence_num=1,
+                    status=StateSentenceStatus.SERVING,
+                    sentence_status_snapshot_id=11,
+                ),
+                NormalizedStateSentenceStatusSnapshot(
+                    state_code=self.STATE_CODE_VALUE,
+                    status_update_datetime=as_datetime(self.MAR_01),
+                    status_end_datetime=None,
+                    sequence_num=2,
+                    status=StateSentenceStatus.COMPLETED,
+                    sentence_status_snapshot_id=22,
+                ),
+            ],
+        )
+        sentence_3 = NormalizedStateSentence(
+            state_code=self.STATE_CODE_VALUE,
+            external_id=self.SENTENCE_3_EXTERNAL_ID,
+            sentence_id=hash(self.SENTENCE_3_EXTERNAL_ID),
+            sentence_group_external_id=group_b.external_id,
+            sentence_inferred_group_id=None,
+            imposed_date=self.FEB_01,
+            sentencing_authority=StateSentencingAuthority.STATE,
+            sentence_type=StateSentenceType.PROBATION,
+            sentence_status_snapshots=[
+                NormalizedStateSentenceStatusSnapshot(
+                    state_code=self.STATE_CODE_VALUE,
+                    status_update_datetime=as_datetime(self.FEB_01),
+                    status_end_datetime=None,
+                    sequence_num=1,
+                    status=StateSentenceStatus.SERVING,
+                    sentence_status_snapshot_id=111,
+                ),
+            ],
+        )
+        actual_inferred_groups = get_normalized_inferred_sentence_groups(
+            normalized_sentences=[sentence_1, sentence_2, sentence_3],
+        )
+        sentences = [sentence_1, sentence_2, sentence_3]
+        inferred_group = InferredGroupBuilder.build_inferred_group_from_sentences(
+            sentences
+        )
+        assert actual_inferred_groups == [inferred_group]
+        assert inferred_group.external_id == "sentence-001#sentence-002#sentence-003"
