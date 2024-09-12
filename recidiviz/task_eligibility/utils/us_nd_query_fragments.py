@@ -199,25 +199,35 @@ def get_positive_behavior_reports_as_case_notes() -> str:
         AND peid.id_type = 'US_ND_ELITE'"""
 
 
+TRAINING_PROGRAMMING_NOTE_TEXT_REGEX_FOR_CRITERIA = "|".join(
+    [
+        "CONFLICT RESOLUTION",
+        "NPHR",
+        "SEX OFFENDER TREATMENT PROGRAM",
+        "CBISA",
+    ]
+)
+
 TRAINING_PROGRAMMING_NOTE_TEXT_REGEX = "|".join(
     [
         "THINKING FOR CHANGE",
         "THINKING FOR A CHANGE",
-        "FREE THROUGH RECOVERY",
         "RESTORING PROMISE",
         "PEER SUPPORT",
         "BEYOND TRAUMA",
         "ADDICTION AFTERCARE",
         "TED TALKS",
-        "CBISA",
         "TRAINING",
         "PROGRAM",
         "CLASS",
         "COURSE",
-        "CAREER",
         "EDUCATION",
         "SKILLS",
         "CAREER",
+        "CONFLICT RESOLUTION",
+        "NPHR",
+        "SEX OFFENDER TREATMENT PROGRAM",
+        "CBISA",
     ]
 )
 
@@ -313,8 +323,7 @@ def get_program_assignments_as_case_notes(
 
     base_query += """
     GROUP BY 1,2,3,4,5
-    HAVING note_body IS NOT NULL
-    """
+    HAVING note_body IS NOT NULL"""
 
     return base_query
 
@@ -454,8 +463,7 @@ min_referrals_with_external_id_and_ce AS (
             AND mr.evaluation_result = 'Approved'
             AND mr.state_code = ce.state_code
     GROUP BY 1,2,3,4,5,6,7,8,9
-)
-    """
+)"""
 
 
 _SSI_NOTE_TEXT_REGEX = "|".join(

@@ -28,13 +28,14 @@ from recidiviz.task_eligibility.criteria.general import (
     custody_level_is_minimum,
     incarcerated_at_least_30_days_in_same_facility,
     incarcerated_at_least_90_days,
-    not_in_work_release,
     no_escape_in_current_incarceration,
+    not_in_work_release,
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_nd import (
     incarceration_within_1_year_of_ftcd_or_prd_or_cpp_release,
     no_detainers_or_warrants,
     no_recent_referrals_to_minimum_housing,
+    not_enrolled_in_relevant_program,
     not_serving_ineligible_offense_for_atp_work_release,
     work_release_committee_requirements,
 )
@@ -73,6 +74,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         INCARCERATION_NOT_WITHIN_3_MONTHS_OF_FTCD,
         no_recent_referrals_to_minimum_housing.VIEW_BUILDER,
         no_escape_in_current_incarceration.VIEW_BUILDER,
+        not_enrolled_in_relevant_program.VIEW_BUILDER,
     ],
     completion_event_builder=granted_work_release.VIEW_BUILDER,
     almost_eligible_condition=PickNCompositeCriteriaCondition(
@@ -81,6 +83,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
             # (3 months within FTCD OR 3 months within PRD)
             #   XOR missing 30 days in same facility
             #   XOR missing 90 days incarcerated
+            #   XOR missing not enrolled in relevant program
             PickNCompositeCriteriaCondition(
                 sub_conditions_list=[
                     TimeDependentCriteriaCondition(
@@ -107,6 +110,10 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
             NotEligibleCriteriaCondition(
                 criteria=incarcerated_at_least_90_days.VIEW_BUILDER,
                 description="Only missing the 90 days in the NDDCR criteria",
+            ),
+            NotEligibleCriteriaCondition(
+                criteria=not_enrolled_in_relevant_program.VIEW_BUILDER,
+                description="Only missing the not enrolled in relevant program criteria",
             ),
         ],
         at_most_n_conditions_true=1,

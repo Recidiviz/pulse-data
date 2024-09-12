@@ -76,23 +76,9 @@ case_notes_cte AS (
 
     UNION ALL
 
-    -- Mental Health Assignments
-    {get_program_assignments_as_case_notes(
-        additional_where_clause="REGEXP_CONTAINS(spa.program_id, r'MENTAL HEALTH')", 
-        criteria='Mental Health')}
-    QUALIFY ROW_NUMBER() OVER(PARTITION BY peid.external_id, note_title, note_body ORDER BY event_date DESC) = 1
-
-    UNION ALL
-
     -- Social Security Insurance due to disabilities
     {get_offender_case_notes(criteria = 'Social Security Insurance', 
                              additional_where_clause=SSI_NOTE_WHERE_CLAUSE)}
-
-    UNION ALL
-
-    -- Assignments (this includes programming, career readiness and jobs)
-    {get_program_assignments_as_case_notes(
-        additional_where_clause="NOT REGEXP_CONTAINS(spa.program_id, r'MENTAL HEALTH')")}
 
     UNION ALL
 
@@ -102,8 +88,9 @@ case_notes_cte AS (
 
     -- Health Assignments
     {get_program_assignments_as_case_notes(
-        additional_where_clause=f"REGEXP_CONTAINS(spa.program_id, r'{HEALTH_NOTE_TEXT_REGEX}')", 
+        additional_where_clause=f"REGEXP_CONTAINS(spa.program_id, r'{HEALTH_NOTE_TEXT_REGEX}') AND spa.participation_status='IN_PROGRESS'", 
         criteria='Health')}
+    QUALIFY ROW_NUMBER() OVER(PARTITION BY peid.external_id, note_title, note_body ORDER BY event_date DESC) = 1
 
     UNION ALL
 
