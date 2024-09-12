@@ -7,6 +7,7 @@ primary_key_cols:
   - OFFENDERID
   - CONTACTDATE
   - CONTACTTIME
+always_historical_export: False
 columns:
   - name: OFFENDERID
     description: |-
