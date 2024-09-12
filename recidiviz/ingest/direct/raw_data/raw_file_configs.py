@@ -618,7 +618,11 @@ class DirectIngestRawFileConfig:
             StateCode.US_TN: {
                 # TODO(#19528): remove gating once raw data pruning can be done on ContactNoteComment.
                 "ContactNoteComment": "THis file is split up into chunks and we do not know how to prune chunked files yet"
-            }
+            },
+            StateCode.US_OR: {
+                "RCDVZ_PRDDTA_OP013P": "We use this in views with @ALL",
+                "RCDVZ_CISPRDDTA_CMCMST": "We use this in views with @ALL",
+            },
         }
 
         if self.file_tag in exempt_files.get(self.state_code, {}):
