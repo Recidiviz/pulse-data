@@ -529,7 +529,6 @@ class TestInsightsMigrations(MigrationsTestBase):
             "supervision_client_events_pkey",
             "metric_benchmarks_pkey",
             "supervision_officer_outlier_status_pkey",
-            "supervision_state_metrics_pkey",
             "supervision_officers_pkey",
         }
 
