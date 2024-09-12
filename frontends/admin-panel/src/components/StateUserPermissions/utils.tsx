@@ -321,10 +321,7 @@ export const getUserPermissionsTableColumns = (
               whiteSpace: "pre",
             },
           },
-          children: formatText(
-            JSON.stringify(text, null, "\t").slice(2, -2),
-            record
-          ),
+          children: formatRoutes(text),
         };
       },
     },
@@ -514,7 +511,7 @@ export const getRolePermissionsTableColumns = (
               whiteSpace: "pre",
             },
           },
-          children: JSON.stringify(text, null, "\t").slice(2, -2),
+          children: formatRoutes(text),
         };
       },
     },
@@ -529,6 +526,11 @@ export const getRolePermissionsTableColumns = (
       ...getColumnSearchProps("featureVariants"),
       render: (text: Record<string, string>) => {
         return {
+          props: {
+            style: {
+              whiteSpace: "pre",
+            },
+          },
           children: formatFeatureVariants(text),
         };
       },
@@ -565,21 +567,33 @@ export const aggregateFormPermissionResults = (
   return { routes, featureVariantsToAdd, featureVariantsToRemove };
 };
 
+export const formatRoutes = (
+  text: Record<string, unknown | boolean>
+): string => {
+  if (!text) return "";
+  return Object.keys(text)
+    .sort()
+    .filter((route) => !!text[route])
+    .join("\n");
+};
+
 export const formatFeatureVariants = (
   text: Record<string, string | boolean>
 ): string => {
   if (!text) return "";
   return Object.keys(text)
     .sort()
+    .filter((fvName) => !!text[fvName])
     .map((fvName) => {
       const rawVariant = text[fvName];
       const variant =
         typeof rawVariant === "string" ? JSON.parse(rawVariant) : rawVariant;
-      const value =
-        !variant || variant.activeDate === undefined
-          ? !!variant
-          : moment(variant.activeDate).format("lll");
-      return `${fvName}: ${value}`;
+      const activeDate = variant?.activeDate && new Date(variant.activeDate);
+      const now = new Date();
+
+      return !activeDate || activeDate < now
+        ? fvName
+        : `${fvName}: ${moment(activeDate).format("lll")}`;
     })
     .join("\n");
 };
