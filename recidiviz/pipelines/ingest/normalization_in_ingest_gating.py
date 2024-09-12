@@ -44,6 +44,7 @@ def should_run_normalization_in_ingest(state_code: StateCode) -> bool:
         StateCode.US_IX,
         StateCode.US_ME,
         StateCode.US_MI,
+        StateCode.US_MO,
         StateCode.US_ND,
         StateCode.US_NE,
         StateCode.US_OR,
@@ -51,13 +52,7 @@ def should_run_normalization_in_ingest(state_code: StateCode) -> bool:
         StateCode.US_TN,
     }
 
-    unlaunched_states: set[StateCode] = {
-        # TODO(#29517): Ungate in staging once issue with no
-        #  NormalizedStateSupervisionCaseTypeEntry being produced is resolved (the
-        #  sentence statuses do not overlap with the same time periods as the SPs for
-        #  any person).
-        StateCode.US_MO,
-    }
+    unlaunched_states: set[StateCode] = set()
 
     if intersection := staging_only_launched_states.intersection(prod_launched_states):
         raise ValueError(
