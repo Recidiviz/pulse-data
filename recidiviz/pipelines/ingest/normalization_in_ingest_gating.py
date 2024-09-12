@@ -31,6 +31,7 @@ def should_run_normalization_in_ingest(state_code: StateCode) -> bool:
         StateCode.US_ID,
         StateCode.US_MA,
         StateCode.US_NC,
+        StateCode.US_NE,
         StateCode.US_OZ,
         StateCode.US_TX,
         StateCode.US_UT,
@@ -46,7 +47,6 @@ def should_run_normalization_in_ingest(state_code: StateCode) -> bool:
         StateCode.US_MI,
         StateCode.US_MO,
         StateCode.US_ND,
-        StateCode.US_NE,
         StateCode.US_OR,
         StateCode.US_PA,
         StateCode.US_TN,
@@ -99,30 +99,30 @@ def is_combined_ingest_and_normalization_launched_in_env(state_code: StateCode) 
         StateCode.US_ID,
         StateCode.US_MA,
         StateCode.US_NC,
+        StateCode.US_NE,
         StateCode.US_OZ,
         StateCode.US_TX,
         StateCode.US_UT,
     }
 
     staging_only_launched_states: set[StateCode] = {
+        StateCode.US_AR,
         StateCode.US_AZ,
         StateCode.US_CA,
+        StateCode.US_CO,
+        StateCode.US_OR,
+        StateCode.US_PA,
         # TODO(#29517): Add states here as we launch combined pipelines to staging
     }
 
     # There are no downstream processes reading normalized entities produced by the
     # ingest pipeline for these states.
     unlaunched_states: set[StateCode] = {
-        StateCode.US_AR,
-        StateCode.US_CO,
         StateCode.US_IX,
         StateCode.US_MO,
         StateCode.US_MI,
         StateCode.US_ME,
         StateCode.US_ND,
-        StateCode.US_NE,
-        StateCode.US_OR,
-        StateCode.US_PA,
         StateCode.US_TN,
     }
 
