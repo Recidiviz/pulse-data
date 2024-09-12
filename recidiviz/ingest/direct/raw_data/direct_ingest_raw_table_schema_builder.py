@@ -64,7 +64,7 @@ class RawDataTableBigQuerySchemaBuilder:
     }
 
     @staticmethod
-    def _raw_file_column_as_bq_field(
+    def raw_file_column_as_bq_field(
         column: str, description: str
     ) -> bigquery.SchemaField:
         return bigquery.SchemaField(
@@ -107,7 +107,7 @@ class RawDataTableBigQuerySchemaBuilder:
                 schema_fields.append(cls.RECIDIVIZ_MANAGED_FIELDS[column])
             else:
                 schema_fields.append(
-                    cls._raw_file_column_as_bq_field(column, description)
+                    cls.raw_file_column_as_bq_field(column, description)
                 )
 
         return schema_fields
@@ -117,7 +117,7 @@ class RawDataTableBigQuerySchemaBuilder:
         cls, raw_file_config: DirectIngestRawFileConfig, columns: List[str]
     ) -> List[bigquery.SchemaField]:
         return [
-            cls._raw_file_column_as_bq_field(column, description)
+            cls.raw_file_column_as_bq_field(column, description)
             for column, description in cls._columns_to_descriptions_for_config(
                 raw_file_config, columns
             ).items()
