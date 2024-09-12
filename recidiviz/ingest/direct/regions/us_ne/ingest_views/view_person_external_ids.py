@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2024 Recidiviz, Inc.
+# Copyright (C) 2020 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,16 +14,28 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Contains US_NE implementation of the StateSpecificSupervisionMetricsProducerDelegate."""
-from recidiviz.pipelines.utils.state_utils.state_specific_supervision_metrics_producer_delegate import (
-    StateSpecificSupervisionMetricsProducerDelegate,
+"""Query for all external ids ever associated with any person in the NDCS systems."""
+
+from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
+    DirectIngestViewQueryBuilder,
+)
+from recidiviz.utils.environment import GCP_PROJECT_STAGING
+from recidiviz.utils.metadata import local_project_id_override
+
+VIEW_QUERY_TEMPLATE = """
+SELECT 
+    inmateNumber, 
+    prevInmateNumber, 
+FROM 
+    {InmatePreviousId}
+"""
+
+VIEW_BUILDER = DirectIngestViewQueryBuilder(
+    region="us_ne",
+    ingest_view_name="person_external_ids",
+    view_query_template=VIEW_QUERY_TEMPLATE,
 )
 
-
-class UsNeSupervisionMetricsProducerDelegate(
-    StateSpecificSupervisionMetricsProducerDelegate
-):
-    """US_NE implementation of the StateSpecificSupervisionMetricsProducerDelegate."""
-
-    def primary_person_external_id_to_include(self) -> str:
-        return "US_NE_ID_NBR"
+if __name__ == "__main__":
+    with local_project_id_override(GCP_PROJECT_STAGING):
+        VIEW_BUILDER.build_and_print()

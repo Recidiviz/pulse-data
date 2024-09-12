@@ -24,7 +24,7 @@ from recidiviz.utils.metadata import local_project_id_override
 
 VIEW_QUERY_TEMPLATE = """
 SELECT 
-    internalId,
+    inmateNumber,
     lastName,
     firstName,
     DATE(NULLIF(dob, 'NULL')) AS dob,
@@ -36,7 +36,7 @@ LEFT JOIN
     {CTS_Inmate} c
 ON 
     i.inmateNumber = c.ID_NBR
-QUALIFY ROW_NUMBER() OVER(PARTITION BY internalId ORDER BY receivedDate DESC) = 1
+QUALIFY ROW_NUMBER() OVER(PARTITION BY internalId ORDER BY i.receivedDate DESC) = 1
 """
 
 VIEW_BUILDER = DirectIngestViewQueryBuilder(

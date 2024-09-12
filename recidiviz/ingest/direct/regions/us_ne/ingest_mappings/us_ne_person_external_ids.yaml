@@ -1,0 +1,19 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+manifest_language: 1.0.0
+input_columns:
+  - inmateNumber
+  - prevInmateNumber
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: inmateNumber
+          id_type: $literal("US_NE_ID_NBR")
+      - $conditional:
+          - $if:
+              $not_null: prevInmateNumber
+            $then:
+              StatePersonExternalId:
+                external_id: prevInmateNumber
+                id_type: $literal("US_NE_ID_NBR")
