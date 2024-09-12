@@ -38,6 +38,10 @@ import pandas as pd
 
 from recidiviz.common.fips import sanitize_county_name
 from recidiviz.justice_counts.agency import AgencyInterface
+from recidiviz.justice_counts.agency_user_account_association import (
+    AgencyUserAccountAssociationInterface,
+)
+from recidiviz.justice_counts.user_account import UserAccountInterface
 from recidiviz.persistence.database.constants import JUSTICE_COUNTS_DB_SECRET_PREFIX
 from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.persistence.database.schema_type import SchemaType
@@ -144,11 +148,17 @@ def add_child_agencies(
                 child_agency_name = row.get("name")
                 county_fips = row.get("county")
                 custom_child_agency_name = row.get("custom_name")
-                child_agency_county_code = (
-                    sanitize_county_name(county_fips_to_county_code[county_fips])
-                    if county_fips in county_fips_to_county_code
-                    else None
-                )
+                county_codes = set(county_fips_to_county_code.values())
+                child_agency_county_code = None
+
+                if county_fips is not None and county_fips in county_codes:
+                    child_agency_county_code = sanitize_county_name(county_fips)
+
+                elif county_fips in county_fips_to_county_code:
+                    child_agency_county_code = sanitize_county_name(
+                        county_fips_to_county_code[county_fips]
+                    )
+
                 if child_agency_name is None:
                     continue
 
@@ -158,17 +168,18 @@ def add_child_agencies(
                     name=child_agency_name,
                     state_code=super_agency.state_code,
                 )
-
+                msg = "" if dry_run is False else "DRY RUN: "
                 if existing_agency is not None:
-                    msg = f"Agency with name {child_agency_name} already exists "
+                    msg += f"Agency with name {child_agency_name} already exists "
                     if existing_agency.super_agency_id == super_agency_id:
-                        msg += "and is already a child agency for the superagency."
-                        logger.info(msg)
-                        continue
-
-                    existing_agency.super_agency_id = super_agency_id
-                    msg += "but is not a child agency for the superagency. Updating..."
+                        msg += "and is already a child agency for the superagency. "
+                    else:
+                        existing_agency.super_agency_id = super_agency_id
+                        msg += "but is not a child agency for the superagency. "
+                    existing_agency.custom_child_agency_name = custom_child_agency_name
+                    existing_agency.fips_county_code = child_agency_county_code
                     child_agency = existing_agency
+                    msg += f"Updating Existing Child Agency with county {child_agency_county_code} and custom name {custom_child_agency_name}\n\n"
                 else:
                     child_agency = schema.Agency(
                         name=child_agency_name,
@@ -178,22 +189,22 @@ def add_child_agencies(
                         fips_county_code=child_agency_county_code,
                         custom_child_agency_name=custom_child_agency_name,
                     )
-
-                    msg = "" if dry_run is False else "DRY RUN:"
                     msg += f"Adding Child Agency: {child_agency_name} with county {child_agency_county_code} and custom name {custom_child_agency_name}"
-                    logger.info(msg)
 
+                logger.info(msg)
                 agency_user_account_associations: List[
                     schema.AgencyUserAccountAssociation
                 ] = []
-
-                for user_id, role in user_id_to_role.items():
-                    assoc = schema.AgencyUserAccountAssociation(
+                users = UserAccountInterface.get_users_by_id(
+                    session=session, user_account_ids=set(user_id_to_role.keys())
+                )
+                for user in users:
+                    AgencyUserAccountAssociationInterface.update_user_role(
+                        session=session,
                         agency=child_agency,
-                        user_account_id=user_id,
-                        role=schema.UserAccountRole[role],
+                        user=user,
+                        role=user_id_to_role[user.id],
                     )
-                    agency_user_account_associations.append(assoc)
                 if dry_run is False:
                     session.add_all([child_agency] + agency_user_account_associations)
             if dry_run is False:
