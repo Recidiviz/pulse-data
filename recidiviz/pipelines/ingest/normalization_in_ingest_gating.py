@@ -52,9 +52,10 @@ def should_run_normalization_in_ingest(state_code: StateCode) -> bool:
     }
 
     unlaunched_states: set[StateCode] = {
-        # TODO(#32760): Ungate in staging once null start_date values have been removed
-        #  from NormalizedStateStaffRolePeriod
-        # TODO(#29517): Ungate in staging once test staff_external_ids are fixed
+        # TODO(#29517): Ungate in staging once issue with no
+        #  NormalizedStateSupervisionCaseTypeEntry being produced is resolved (the
+        #  sentence statuses do not overlap with the same time periods as the SPs for
+        #  any person).
         StateCode.US_MO,
     }
 
