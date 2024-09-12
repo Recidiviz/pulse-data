@@ -71,10 +71,8 @@ CURRENT_STAFF_QUERY_TEMPLATE = f"""
             WHEN attrs.state_code="US_MI" THEN SPLIT(LOWER(attrs.supervision_district_id), " ")[SAFE_OFFSET(0)]
             WHEN attrs.state_code IN ("US_CA", "US_ND") THEN
                 COALESCE(attrs.supervision_office_name, attrs.supervision_office_name_inferred)
-            -- Set ME districts to null so they match the districts in the admin panel
-            -- Set OR districts to null because "staff" in this case are actually caseloads,
-            -- and districts are not relevant.
-            WHEN attrs.state_code IN ("US_ME", "US_OR") THEN NULL
+            -- ME users don't have ingested location periods yet, so use inferred districts for them
+            WHEN attrs.state_code="US_ME" THEN attrs.supervision_district_id_inferred
             ELSE attrs.supervision_district_id
         END AS district,
         UPPER(attrs.officer_id) AS external_id,
