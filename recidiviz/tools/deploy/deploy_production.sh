@@ -81,10 +81,6 @@ update_deployment_status "${DEPLOYMENT_STATUS_STARTED}" "${PROJECT}" "${COMMIT_H
 # returns the hash of the tag itself.
 TAG_COMMIT_HASH=$(git rev-list -n 1 "${GIT_VERSION_TAG}") || exit_on_fail
 
-echo "Updating configuration / infrastructure in preparation for deploy"
-verify_hash "$TAG_COMMIT_HASH"
-pre_deploy_configure_infrastructure 'recidiviz-123' "${GIT_VERSION_TAG}" "$TAG_COMMIT_HASH"
-
 DATAFLOW_BUILD_URL="us-docker.pkg.dev/recidiviz-123/dataflow/build:${TAG_COMMIT_HASH}" || exit_on_fail
 DATAFLOW_PROD_IMAGE_URL="us-docker.pkg.dev/recidiviz-123/dataflow/default:${GIT_VERSION_TAG}" || exit_on_fail
 
@@ -94,9 +90,14 @@ copy_docker_image_to_repository "${DATAFLOW_BUILD_URL}" "${DATAFLOW_PROD_IMAGE_U
 APP_ENGINE_STAGING_IMAGE_URL="us-docker.pkg.dev/recidiviz-staging/appengine/default:${GIT_VERSION_TAG}" || exit_on_fail
 APP_ENGINE_PROD_IMAGE_URL="us-docker.pkg.dev/recidiviz-123/appengine/default:${GIT_VERSION_TAG}" || exit_on_fail
 
-echo "Starting deploy of main app - default"
+echo "Tagging appengine image for deploy"
 copy_docker_image_to_repository "${APP_ENGINE_STAGING_IMAGE_URL}" "${APP_ENGINE_PROD_IMAGE_URL}"
 
+echo "Updating configuration / infrastructure in preparation for deploy"
+verify_hash "$TAG_COMMIT_HASH"
+pre_deploy_configure_infrastructure 'recidiviz-123' "${GIT_VERSION_TAG}" "$TAG_COMMIT_HASH"
+
+echo "Starting deploy of main app - default"
 run_cmd pipenv run python -m recidiviz.tools.deploy.cloud_build.deployment_stage_runner \
   --project-id "${PROJECT}" \
   --version-tag "${GIT_VERSION_TAG}" \
