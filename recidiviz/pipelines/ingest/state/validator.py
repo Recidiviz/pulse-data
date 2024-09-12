@@ -49,6 +49,7 @@ def state_allows_multiple_ids_same_type_for_state_person(state_code: str) -> boo
         "US_PA",
         "US_MI",
         "US_OR",
+        "US_NE",
     ):  # TODO(#18005): Edit to allow multiple id for OR id_number but not Record_key
         return True
 
