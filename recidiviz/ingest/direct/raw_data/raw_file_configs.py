@@ -622,6 +622,7 @@ class DirectIngestRawFileConfig:
             StateCode.US_OR: {
                 "RCDVZ_PRDDTA_OP013P": "We use this in views with @ALL",
                 "RCDVZ_CISPRDDTA_CMCMST": "We use this in views with @ALL",
+                "RCDVZ_PRDDTA_OP054P": "Will be used in new sentencing schema with @ALL",
             },
         }
 
