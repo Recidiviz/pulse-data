@@ -76,13 +76,14 @@ case_notes_cte AS (
 
     UNION ALL
 
+    -- Infractions
     ({get_infractions_as_case_notes()})
 
     UNION ALL
 
     -- Health Assignments
     {get_program_assignments_as_case_notes(
-        additional_where_clause=f"REGEXP_CONTAINS(spa.program_id, r'{HEALTH_NOTE_TEXT_REGEX}')", 
+        additional_where_clause=f"REGEXP_CONTAINS(spa.program_id, r'{HEALTH_NOTE_TEXT_REGEX}') AND spa.participation_status='IN_PROGRESS'", 
         criteria='Health')}
     QUALIFY ROW_NUMBER() OVER(PARTITION BY peid.external_id, note_title, note_body ORDER BY event_date DESC) = 1
 
