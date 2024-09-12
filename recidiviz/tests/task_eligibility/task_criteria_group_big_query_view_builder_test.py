@@ -431,6 +431,23 @@ GROUP BY 1, 2, 3, 4
             )
             print(criteria_query.state_code)
 
+    def test_criteria_group_invalid_reason_aggregate_override(self) -> None:
+        """Checks that an error is raised when an aggregate function override is set for a reason outside the group"""
+        with self.assertRaises(ValueError):
+            criteria_group = AndTaskCriteriaGroup(
+                criteria_name="US_KY_CRITERIA_2_AND_CRITERIA_5",
+                sub_criteria_list=[
+                    CRITERIA_2_STATE_AGNOSTIC,
+                    CRITERIA_5_STATE_SPECIFIC,
+                ],
+                allowed_duplicate_reasons_keys=["fees_owed"],
+                reasons_aggregate_function_override={
+                    "fees_owed": "MIN",
+                    "other_reason": "ANY_VALUE",
+                },
+            )
+            print(criteria_group.flatten_reasons_blob_clause())
+
     def test_inverted_criteria_state_specific_criteria_name(self) -> None:
         """Checks inverted state-specific criteria"""
         criteria = InvertedTaskCriteriaBigQueryViewBuilder(
@@ -561,6 +578,7 @@ FROM
                 InvertedTaskCriteriaBigQueryViewBuilder(CRITERIA_5_STATE_SPECIFIC),
             ],
             allowed_duplicate_reasons_keys=["fees_owed"],
+            reasons_aggregate_function_override={"fees_owed": "MIN"},
         )
         # Check that a group with one state-specific and two state-agnostic criteria returns a state_code
         self.assertEqual(criteria_group.state_code, StateCode.US_KY)
@@ -611,8 +629,8 @@ SELECT
     LOGICAL_OR(
         COALESCE(meets_criteria, meets_criteria_default)
     ) AS meets_criteria,
-    TO_JSON(STRUCT(MAX(SAFE_CAST(JSON_VALUE(reason_v2, '$.fees_owed') AS FLOAT64)) AS fees_owed, ANY_VALUE(JSON_VALUE_ARRAY(reason_v2, '$.offense_types')) AS offense_types)) AS reason,
-    MAX(SAFE_CAST(JSON_VALUE(reason_v2, '$.fees_owed') AS FLOAT64)) AS fees_owed, ANY_VALUE(JSON_VALUE_ARRAY(reason_v2, '$.offense_types')) AS offense_types,
+    TO_JSON(STRUCT(MIN(SAFE_CAST(JSON_VALUE(reason_v2, '$.fees_owed') AS FLOAT64)) AS fees_owed, ANY_VALUE(JSON_VALUE_ARRAY(reason_v2, '$.offense_types')) AS offense_types)) AS reason,
+    MIN(SAFE_CAST(JSON_VALUE(reason_v2, '$.fees_owed') AS FLOAT64)) AS fees_owed, ANY_VALUE(JSON_VALUE_ARRAY(reason_v2, '$.offense_types')) AS offense_types,
 FROM
     sub_sessions_with_attributes
 GROUP BY 1, 2, 3, 4

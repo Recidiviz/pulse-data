@@ -344,9 +344,8 @@ def get_almost_eligible_criteria_query(condition: CriteriaCondition) -> str:
     raise NotImplementedError(f"Unexpected condition type: {type(condition)}")
 
 
-# TODO(#16091): Write tests for this class
 class SingleTaskEligibilitySpansBigQueryViewBuilder(SimpleBigQueryViewBuilder):
-    """View builder that auto-generates task eligiblity spans view from component
+    """View builder that auto-generates task eligibility spans view from component
     criteria and candidate population views.
     """
 
