@@ -20,6 +20,7 @@ import unittest
 from typing import Any, Type
 
 import attr
+from google.cloud import bigquery
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.cloud_storage.gcsfs_csv_chunk_boundary_finder import CsvChunkBoundary
@@ -44,10 +45,10 @@ from recidiviz.ingest.direct.types.raw_data_import_types import (
     ImportReadyFile,
     PreImportNormalizationType,
     PreImportNormalizedCsvChunkResult,
-    PreImportNormalizedFileResult,
     RawBigQueryFileMetadata,
     RawBigQueryFileProcessedTime,
     RawDataAppendImportError,
+    RawFileBigQueryLoadConfig,
     RawFileImport,
     RawFileLoadAndPrepError,
     RawFileProcessingError,
@@ -210,6 +211,21 @@ class TestSerialization(unittest.TestCase):
 
         self._validate_serialization(error, RawDataAppendImportError)
 
+    def test_bq_table_schema(self) -> None:
+        original = RawFileBigQueryLoadConfig(
+            schema_fields=[
+                bigquery.SchemaField(
+                    name="column",
+                    field_type=bigquery.enums.SqlTypeNames.STRING.value,
+                    mode="NULLABLE",
+                    description="description",
+                )
+            ],
+            skip_leading_rows=1,
+        )
+
+        self._validate_serialization(original, RawFileBigQueryLoadConfig)
+
     def test_requires_pre_import_normalization_file_chunk(self) -> None:
         chunk_boundary = CsvChunkBoundary(
             start_inclusive=0, end_exclusive=100, chunk_num=0
@@ -249,14 +265,6 @@ class TestSerialization(unittest.TestCase):
         )
 
         self._validate_serialization(original, PreImportNormalizedCsvChunkResult)
-
-    def test_import_ready_normalized_file(self) -> None:
-        original = PreImportNormalizedFileResult(
-            input_file_path=GcsfsFilePath.from_absolute_path("test_bucket/file"),
-            output_file_paths=[GcsfsFilePath.from_absolute_path("temp_bucket/file_0")],
-        )
-
-        self._validate_serialization(original, PreImportNormalizedFileResult)
 
     def test_import_ready_file(self) -> None:
         original = ImportReadyFile(
@@ -429,18 +437,25 @@ class TestSerialization(unittest.TestCase):
         self._validate_serialization(original, RawBigQueryFileProcessedTime)
 
     def test_task_result(self) -> None:
-        result = PreImportNormalizedFileResult(
-            input_file_path=GcsfsFilePath.from_absolute_path("test_bucket/file"),
-            output_file_paths=[GcsfsFilePath.from_absolute_path("temp_bucket/file_0")],
+        result = ImportReadyFile(
+            file_id=1,
+            file_tag="fake_tag",
+            update_datetime=datetime.datetime(2024, 1, 1, 1, 1, 1, tzinfo=datetime.UTC),
+            pre_import_normalized_file_paths=[
+                GcsfsFilePath(bucket_name="bucket_temp", blob_name="blob.csv")
+            ],
+            original_file_paths=[
+                GcsfsFilePath(bucket_name="bucket", blob_name="blob.csv")
+            ],
         )
-        original = BatchedTaskInstanceOutput[
-            PreImportNormalizedFileResult, RawFileProcessingError
-        ](results=[result], errors=[])
+        original = BatchedTaskInstanceOutput[ImportReadyFile, RawFileProcessingError](
+            results=[result], errors=[]
+        )
 
         serialized = original.serialize()
         deserialized = BatchedTaskInstanceOutput.deserialize(
             json_str=serialized,
-            result_cls=PreImportNormalizedFileResult,
+            result_cls=ImportReadyFile,
             error_cls=RawFileProcessingError,
         )
 

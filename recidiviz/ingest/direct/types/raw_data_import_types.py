@@ -23,6 +23,7 @@ from functools import cached_property
 from typing import Dict, List, Optional, Tuple
 
 import attr
+from google.cloud import bigquery
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_utils import (
@@ -40,6 +41,9 @@ from recidiviz.common.constants.operations.direct_ingest_raw_file_import import 
 from recidiviz.ingest.direct.gcs.filename_parts import (
     DirectIngestRawFilenameParts,
     filename_parts_from_path,
+)
+from recidiviz.ingest.direct.raw_data.direct_ingest_raw_table_schema_builder import (
+    RawDataTableBigQuerySchemaBuilder,
 )
 from recidiviz.ingest.direct.raw_data.raw_file_configs import DirectIngestRawFileConfig
 from recidiviz.utils.airflow_types import BaseError, BaseResult
@@ -408,6 +412,86 @@ class RawBigQueryFileMetadata(BaseResult):
         )
 
 
+@attr.define
+class RawFileBigQueryLoadConfig(BaseResult):
+    """Represents the configuration that will be used to create the temporary table
+    in Big Query for the initial raw data load.
+
+    Attributes:
+        schema_fields: List[bigquery.SchemaField]: represents the column names and
+            their descriptions in the order that they appear in the raw file, or as they
+            appear in the raw file config if the headers are not present in the raw file.
+            All fields are nullable and are of type STRING.
+        skip_leading_rows: int: the number of rows to skip when loading the raw file to BQ.
+            If the raw file contains headers, all chunks will be prepended with the header
+            row, and this value should be 1 so the header row is skipped for all chunks.
+            If the raw file does not contain headers, this should be 0."""
+
+    schema_fields: List[bigquery.SchemaField] = attr.ib(
+        validator=attr_validators.is_list_of(bigquery.SchemaField)
+    )
+    skip_leading_rows: int = attr.ib(validator=attr_validators.is_int)
+
+    def serialize(self) -> str:
+        return json.dumps(
+            {
+                "schema_fields": [
+                    {
+                        "column": schema.name,
+                        "description": schema.description,
+                    }
+                    for schema in self.schema_fields
+                ],
+                "skip_leading_rows": self.skip_leading_rows,
+            }
+        )
+
+    @staticmethod
+    def deserialize(json_str: str) -> "RawFileBigQueryLoadConfig":
+        data = json.loads(json_str)
+        return RawFileBigQueryLoadConfig(
+            schema_fields=[
+                RawDataTableBigQuerySchemaBuilder.raw_file_column_as_bq_field(
+                    schema["column"], schema["description"]
+                )
+                for schema in data["schema_fields"]
+            ],
+            skip_leading_rows=data["skip_leading_rows"],
+        )
+
+    @classmethod
+    def from_raw_file_config(
+        cls,
+        raw_file_config: DirectIngestRawFileConfig,
+    ) -> "RawFileBigQueryLoadConfig":
+        raw_file_contains_headers = not raw_file_config.infer_columns_from_config
+
+        return cls(
+            schema_fields=RawDataTableBigQuerySchemaBuilder.build_bq_schmea_for_config(
+                raw_file_config=raw_file_config,
+                include_recidiviz_managed_fields=False,
+            ),
+            skip_leading_rows=(1 if raw_file_contains_headers else 0),
+        )
+
+    @classmethod
+    def from_headers_and_raw_file_config(
+        cls,
+        file_headers: List[str],
+        raw_file_config: DirectIngestRawFileConfig,
+    ) -> "RawFileBigQueryLoadConfig":
+        raw_file_contains_headers = not raw_file_config.infer_columns_from_config
+
+        return cls(
+            schema_fields=RawDataTableBigQuerySchemaBuilder.build_bq_schema_for_config_from_columns(
+                raw_file_config=raw_file_config,
+                include_recidiviz_managed_fields=False,
+                columns=file_headers,
+            ),
+            skip_leading_rows=(1 if raw_file_contains_headers else 0),
+        )
+
+
 # --------------------------------------------------------------------------------------
 # ^                        step 2: processing logic types                              ^
 # --------------------------------------------------------------------------------------
@@ -625,46 +709,6 @@ class PreImportNormalizedCsvChunkResult(BaseResult):
             output_file_path=GcsfsFilePath.from_absolute_path(data["output_file_path"]),
             chunk_boundary=CsvChunkBoundary.deserialize(data["chunk_boundary"]),
             crc32c=data["crc32c"],
-        )
-
-
-@attr.define
-class PreImportNormalizedFileResult(BaseResult):
-    """The end result of the pre-import normalization process, containing both the
-    original input file path, as well as a list of all normalized file chunk output
-    paths
-
-    Attributes:
-        input_file_path (GcsfsFilePath): file path for the raw data file sent by the
-            state that required pre-import normalization
-        output_file_paths (List[GcsfsFilePath]): list of file paths for the chunks of
-            normalized data from input_file_path that were normalized to be readable by
-            the big query load job
-    """
-
-    input_file_path: GcsfsFilePath = attr.ib(
-        validator=attr.validators.instance_of(GcsfsFilePath)
-    )
-    output_file_paths: List[GcsfsFilePath] = attr.ib(
-        validator=attr_validators.is_list_of(GcsfsFilePath)
-    )
-
-    def serialize(self) -> str:
-        result_dict = {
-            "input_file_path": self.input_file_path.abs_path(),
-            "output_file_paths": [path.abs_path() for path in self.output_file_paths],
-        }
-        return json.dumps(result_dict)
-
-    @staticmethod
-    def deserialize(json_str: str) -> "PreImportNormalizedFileResult":
-        data = json.loads(json_str)
-        return PreImportNormalizedFileResult(
-            input_file_path=GcsfsFilePath.from_absolute_path(data["input_file_path"]),
-            output_file_paths=[
-                GcsfsFilePath.from_absolute_path(path)
-                for path in data["output_file_paths"]
-            ],
         )
 
 
