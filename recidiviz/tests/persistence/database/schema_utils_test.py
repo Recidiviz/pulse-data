@@ -238,7 +238,6 @@ class TestSchemaUtils(unittest.TestCase):
             "supervision_district_managers",
             "supervision_officer_metrics",
             "supervision_officer_outlier_status",
-            "supervision_state_metrics",
             "configurations",
             "user_metadata",
             "action_strategy_surfaced_events",

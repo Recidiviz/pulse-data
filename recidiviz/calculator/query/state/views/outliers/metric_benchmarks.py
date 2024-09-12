@@ -71,8 +71,9 @@ statewide_iqrs AS (
         metric_id,
         metric_value,
         value_type
-        -- TODO(#31711): Bring the `supervision_state_metrics` query inline
-        FROM `{{project_id}}.{{outliers_views_dataset}}.supervision_state_metrics_materialized`
+        FROM (
+            {supervision_metric_query_template(unit_of_analysis=METRIC_UNITS_OF_ANALYSIS_BY_TYPE[MetricUnitOfAnalysisType.STATE_CODE])}
+        )
     
     UNION ALL
     

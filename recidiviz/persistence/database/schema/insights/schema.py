@@ -145,12 +145,6 @@ class SupervisionOfficerMetric(MetricBase, InsightsBase):
     )
 
 
-class SupervisionStateMetric(MetricBase, InsightsBase):
-    """ETL data imported from `recidiviz.calculator.query.state.views.outliers.supervision_state_metrics`"""
-
-    __tablename__ = "supervision_state_metrics"
-
-
 class MetricBenchmark(InsightsBase):
     """ETL data imported from `recidiviz.calculator.query.state.views.outliers.metric_benchmarks`"""
 
