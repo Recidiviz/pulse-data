@@ -17,6 +17,7 @@
 """Builder for a task eligibility spans view that shows the spans of time during which
 someone in MI is eligible for a security committee classification review
 """
+from recidiviz.big_query.big_query_utils import BigQueryDateInterval
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.candidate_populations.general import (
     general_incarceration_population,
@@ -29,10 +30,15 @@ from recidiviz.task_eligibility.criteria.general import (
     housing_unit_type_is_solitary_confinement,
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_mi import (
-    past_security_classification_committee_review_date,
+    expected_number_of_security_classification_committee_reviews_greater_than_observed,
+    one_month_past_last_security_classification_committee_review_date,
 )
+from recidiviz.task_eligibility.criteria_condition import TimeDependentCriteriaCondition
 from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
+)
+from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder import (
+    OrTaskCriteriaGroup,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -40,18 +46,34 @@ from recidiviz.utils.metadata import local_project_id_override
 _DESCRIPTION = """Shows the spans of time during which someone in MI is eligible for
                     a security classification committee review"""
 
-# TODO(#31413): use a 7 day time dependent criteria condition here once the `next_scc_date` reason is properly hydrated
+_PAST_REVIEW_DATE_CRITERIA_VIEW_BUILDER = OrTaskCriteriaGroup(
+    criteria_name="US_MI_PAST_SECURITY_CLASSIFICATION_COMMITTEE_REVIEW_DATE",
+    sub_criteria_list=[
+        one_month_past_last_security_classification_committee_review_date.VIEW_BUILDER,
+        expected_number_of_security_classification_committee_reviews_greater_than_observed.VIEW_BUILDER,
+    ],
+    allowed_duplicate_reasons_keys=["next_scc_date"],
+    reasons_aggregate_function_override={"next_scc_date": "MIN"},
+)
+
 VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     state_code=StateCode.US_MI,
     task_name="COMPLETE_SECURITY_CLASSIFICATION_COMMITTEE_REVIEW_FORM",
     description=_DESCRIPTION,
     candidate_population_view_builder=general_incarceration_population.VIEW_BUILDER,
     criteria_spans_view_builders=[
-        past_security_classification_committee_review_date.VIEW_BUILDER,
+        _PAST_REVIEW_DATE_CRITERIA_VIEW_BUILDER,
         housing_unit_type_is_solitary_confinement.VIEW_BUILDER,
         housing_unit_type_is_not_other_solitary_confinement.VIEW_BUILDER,
     ],
     completion_event_builder=security_classification_committee_review.VIEW_BUILDER,
+    almost_eligible_condition=TimeDependentCriteriaCondition(
+        criteria=_PAST_REVIEW_DATE_CRITERIA_VIEW_BUILDER,
+        reasons_date_field="next_scc_date",
+        interval_length=7,
+        interval_date_part=BigQueryDateInterval.DAY,
+        description="Within 7 days of the next security classification committee review due date",
+    ),
 )
 
 if __name__ == "__main__":

@@ -24,7 +24,6 @@ from recidiviz.calculator.query.bq_utils import (
 )
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.calculator.query.state.dataset_config import (
-    ANALYST_VIEWS_DATASET,
     NORMALIZED_STATE_DATASET,
     SESSIONS_DATASET,
 )
@@ -38,9 +37,8 @@ from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestIns
 from recidiviz.task_eligibility.dataset_config import (
     task_eligibility_spans_state_specific_dataset,
 )
-from recidiviz.task_eligibility.utils.almost_eligible_query_fragments import (
-    clients_eligible,
-    json_to_array_cte,
+from recidiviz.task_eligibility.utils.state_dataset_query_fragments import (
+    extract_object_from_json,
 )
 
 
@@ -48,7 +46,6 @@ def scc_form(
     description: str,
     view_id: str,
     task_name: str,
-    almost_eligible_days: int = 7,
 ) -> SimpleBigQueryViewBuilder:
     """
     Creates a big query view builder that generates the opportunity record query needed for all
@@ -69,34 +66,30 @@ def scc_form(
     ):
         reasons_blob = "latest_scc_review_date"
         criteria_name = "US_MI_PAST_SECURITY_CLASSIFICATION_COMMITTEE_REVIEW_DATE"
-        task_name_upper = "COMPLETE_SECURITY_CLASSIFICATION_COMMITTEE_REVIEW_FORM"
     elif (
         task_name
         == "complete_warden_in_person_security_classification_committee_review_form_materialized"
     ):
         reasons_blob = "latest_warden_in_person_scc_review_date"
         criteria_name = "US_MI_PAST_WARDEN_IN_PERSON_REVIEW_FOR_SCC_DATE"
-        task_name_upper = (
-            "COMPLETE_WARDEN_IN_PERSON_SECURITY_CLASSIFICATION_COMMITTEE_REVIEW_FORM"
-        )
     elif (
         task_name
         == "complete_add_in_person_security_classification_committee_review_form_materialized"
     ):
         reasons_blob = "latest_add_in_person_scc_review_date"
         criteria_name = "US_MI_PAST_ADD_IN_PERSON_REVIEW_FOR_SCC_DATE"
-        task_name_upper = (
-            "COMPLETE_ADD_IN_PERSON_SECURITY_CLASSIFICATION_COMMITTEE_REVIEW_FORM"
-        )
     else:
         raise ValueError("Incorrect input for task_name")
 
     query_template = f"""
-    WITH current_population AS (
-{join_current_task_eligibility_spans_with_external_id(state_code="'US_MI'",
-													  tes_task_query_view=task_name,
-													  id_type="'US_MI_DOC'", 
-                                                      additional_columns='tes.start_date')}
+    WITH eligible_and_almost_eligible AS (
+{join_current_task_eligibility_spans_with_external_id(
+    state_code="'US_MI'",
+    tes_task_query_view=task_name,
+    id_type="'US_MI_DOC'",
+    additional_columns='tes.start_date',
+    eligible_and_almost_eligible_only=True,
+)}
 ),
 release_dates AS (
 /* Queries raw data for the min and max release dates */ 
@@ -231,71 +224,38 @@ FROM (
 )
 GROUP BY person_id
 ),
- eligible_and_almost_eligible AS (
-    -- ELIGIBLE
-    {clients_eligible(from_cte='current_population')}
-
-    UNION ALL
-
-    -- ALMOST ELIGIBLE (x days from upcoming scc review regardless of the criteria)
-        SELECT
-            pei.external_id,
-            c.person_id,
-            c.state_code,
-            --pull reasons blob from the upcoming eligible span 
-            t.reasons AS reasons,
-            --pull ineligible criteria from current span
-            cp.ineligible_criteria,
-            c.is_eligible,
-            c.start_date,
-        FROM 
-            `{{project_id}}.{{analyst_dataset}}.all_task_eligibility_spans_materialized` c
-        INNER JOIN  `{{project_id}}.{{task_eligibility_dataset}}.{task_name}` t
-          ON t.person_id = c.person_id
-          --since all_task_eligibility_spans is sessionized over eligibility, if NOT c.is_eligible then t.is_eligible
-          AND c.end_date = t.start_date
-          AND c.task_name = '{task_name_upper}'
-          --find spans where the resident is not currently eligible but their next span is
-          AND t.is_eligible
-          AND NOT c.is_eligible
-          AND CURRENT_DATE('US/Eastern') BETWEEN c.start_date AND {nonnull_end_date_exclusive_clause('c.end_date')}
-        INNER JOIN current_population cp
-            ON cp.person_id = c.person_id 
-        LEFT JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
-            ON pei.person_id = c.person_id 
-            AND pei.id_type = 'US_MI_DOC' 
-        WHERE 
-            c.state_code = 'US_MI'
-            --select spans of time where someone is currently not eligible, but will be within the next x days
-            AND DATE_DIFF(t.start_date, CURRENT_DATE("US/Eastern"), DAY) BETWEEN 0 AND {almost_eligible_days}
-),
 reasons_for_eligibility AS (
 /* Queries the reasons for eligibility from the currently eligible or upcoming eligible span */
     SELECT 
-        * EXCEPT(array_reasons),
-        CAST(
-                ARRAY(
-                SELECT JSON_VALUE(x.reason.{reasons_blob})
-                FROM UNNEST(array_reasons) AS x
-                WHERE STRING(x.criteria_name) = '{criteria_name}'
-                )[OFFSET(0)]
-        AS DATE)  AS latest_scc_review_date,
-        CAST(
-                ARRAY(
-                SELECT JSON_VALUE(x.reason.number_of_expected_reviews)
-                FROM UNNEST(array_reasons) AS x
-                WHERE STRING(x.criteria_name) = '{criteria_name}'
-                )[OFFSET(0)]
-        AS INT64)  AS number_of_expected_reviews,
-        CAST(
-                ARRAY(
-                SELECT JSON_VALUE(x.reason.number_of_reviews)
-                FROM UNNEST(array_reasons) AS x
-                WHERE STRING(x.criteria_name) = '{criteria_name}'
-                )[OFFSET(0)]
-        AS INT64)  AS number_of_reviews
-    FROM 
-    ({json_to_array_cte('eligible_and_almost_eligible')})
+        person_id,
+        {extract_object_from_json(
+            json_column="criteria_reason",
+            object_column=f"reason.{reasons_blob}",
+            object_type="DATE",
+        )} AS latest_scc_review_date,
+        {extract_object_from_json(
+            json_column="criteria_reason",
+            object_column="reason.number_of_expected_reviews",
+            object_type="INT64",
+        )} AS number_of_expected_reviews,
+        {extract_object_from_json(
+            json_column="criteria_reason",
+            object_column="reason.number_of_reviews",
+            object_type="INT64",
+        )} AS number_of_reviews,
+        {extract_object_from_json(
+            json_column="criteria_reason",
+            object_column="reason.next_scc_date",
+            object_type="DATE",
+        )} AS next_scc_date,
+    FROM eligible_and_almost_eligible,
+    UNNEST(JSON_QUERY_ARRAY(reasons)) AS criteria_reason
+    -- Pull out the reasons blob from the one criteria with review date metadata
+    WHERE {extract_object_from_json(
+            json_column="criteria_reason",
+            object_column="criteria_name",
+            object_type="STRING",
+        )} = "{criteria_name}"
 ),
 -- TODO(#28298) replace with source tables when we receive data
 -- Since we don't have the raw source tables yet, let's pull from our external validation datasets for this information for now
@@ -343,7 +303,7 @@ SELECT
     tes.reasons,
     tes.is_eligible,
     tes.ineligible_criteria,
-    IF(tes.is_eligible,DATE_DIFF(CURRENT_DATE("US/Eastern"), tes.start_date, DAY)>=7, False) AS is_overdue,
+    IF(tes.is_eligible,DATE_DIFF(CURRENT_DATE("US/Eastern"), e.next_scc_date, DAY)>=7, False) AS is_overdue,
     --form information
     tes.external_id AS form_information_prisoner_number,
     INITCAP(JSON_VALUE(PARSE_JSON(sp.full_name), '$.given_names'))
@@ -363,8 +323,10 @@ SELECT
     p.ad_seg_stays_and_reasons_within_3_yrs AS form_information_ad_seg_stays_and_reasons_within_3_yrs,
     --metadata 
     e.latest_scc_review_date AS metadata_latest_scc_review_date,
-    e.number_of_expected_reviews AS metadata_number_of_expected_reviews,
-    e.number_of_reviews AS metadata_number_of_reviews,
+    -- coalesce number of expected reviews and number of reviews to 0 if NULL
+    -- to account for residents who are almost eligible for their first review
+    IFNULL(e.number_of_expected_reviews, 0) AS metadata_number_of_expected_reviews,
+    IFNULL(e.number_of_reviews, 0) AS metadata_number_of_reviews,
     DATE(pmx_sgt_max_date) AS metadata_max_release_date,
     DATE(pmi_sgt_min_date) AS metadata_min_release_date,
     DATE_DIFF(DATE(pmi_sgt_min_date), CURRENT_DATE('US/Eastern'), MONTH) <24 AS metadata_less_than_24_months_from_erd,
@@ -418,7 +380,6 @@ LEFT JOIN array_case_notes_cte a
         description=description,
         normalized_state_dataset=NORMALIZED_STATE_DATASET,
         sessions_dataset=SESSIONS_DATASET,
-        analyst_dataset=ANALYST_VIEWS_DATASET,
         task_eligibility_dataset=task_eligibility_spans_state_specific_dataset(
             StateCode.US_MI
         ),

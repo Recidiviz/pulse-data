@@ -125,18 +125,20 @@ _QUERY_TEMPLATE = f"""
        
         UNION ALL
         
-        -- add a change date for when the solitary session ends
+        -- add a change dates for when the solitary session starts and ends
         SELECT 
             state_code,
             person_id,
-            h.end_date_exclusive AS change_date,
+            change_date,
             0 AS expected_review,
             0 AS activity_type,
         FROM
-            `{{project_id}}.{{sessions_dataset}}.us_mi_facility_housing_unit_type_collapsed_solitary_sessions` h
+            `{{project_id}}.{{sessions_dataset}}.us_mi_facility_housing_unit_type_collapsed_solitary_sessions` h,
+        UNNEST([h.start_date, h.end_date_exclusive]) AS change_date
         WHERE
             state_code = 'US_MI'
             AND housing_unit_type_collapsed_solitary = 'SOLITARY_CONFINEMENT'
+            AND change_date IS NOT NULL
         
         UNION ALL
         
@@ -221,6 +223,20 @@ _QUERY_TEMPLATE = f"""
         t.expected_reviews AS number_of_expected_reviews,
         t.expected_reviews-t.reviews_due AS number_of_reviews,
         p.change_date AS latest_scc_review_date,
+        -- Determine the next scc review date
+        CASE
+            -- If this span does not have a review due then pull the next span with a review due as the next review date
+            WHEN IFNULL(t.reviews_due, 0) <= 0
+                THEN
+                    FIRST_VALUE(IF(t.reviews_due > 0, t.start_date, NULL) IGNORE NULLS)
+                    OVER (
+                        PARTITION BY t.state_code, t.person_id, housing_start_date ORDER BY t.start_date
+                        ROWS BETWEEN CURRENT ROW AND UNBOUNDED FOLLOWING
+                    )
+            -- If this span does have a review due then use the span start as the scc review due date
+            WHEN t.reviews_due > 0
+                THEN t.start_date
+        END AS next_scc_date,
     FROM time_spans_agg t
     LEFT JOIN population_change_dates  p
         ON p.state_code = t.state_code
@@ -260,6 +276,11 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = StateSpecificTaskCr
             name="latest_scc_review_date",
             type=bigquery.enums.StandardSqlTypeNames.DATE,
             description="Latest observed SCC review",
+        ),
+        ReasonsField(
+            name="next_scc_date",
+            type=bigquery.enums.StandardSqlTypeNames.DATE,
+            description="Next security classification committee review due date as required every 30 days",
         ),
     ],
 )

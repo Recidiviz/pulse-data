@@ -70,7 +70,7 @@ SELECT
     TO_JSON(STRUCT(
         cd.critical_date AS eligible_date
     )) AS reason,
-    cd.critical_date AS six_months_past_in_person_review_date,
+    cd.critical_date AS next_scc_date,
 FROM critical_date_has_passed_spans cd
 """
 
@@ -83,7 +83,7 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = StateSpecificTaskCr
     sessions_dataset=SESSIONS_DATASET,
     reasons_fields=[
         ReasonsField(
-            name="six_months_past_in_person_review_date",
+            name="next_scc_date",
             type=bigquery.enums.StandardSqlTypeNames.DATE,
             description="Date that is six months after the last observed Warden in person review date",
         ),

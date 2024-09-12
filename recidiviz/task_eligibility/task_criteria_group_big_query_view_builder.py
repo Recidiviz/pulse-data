@@ -22,7 +22,7 @@ import abc
 from collections import defaultdict
 from functools import cached_property
 from textwrap import indent
-from typing import List, Optional, Union
+from typing import Dict, List, Optional, Union
 
 import attr
 from google.cloud import bigquery
@@ -72,6 +72,11 @@ class TaskCriteriaGroupBigQueryViewBuilder:
     # reasons blobs. If duplicate is allowed for a given key, we assume that
     # values agree and select one of the values deterministically
     allowed_duplicate_reasons_keys: List[str]
+
+    # Map of reasons field name to aggregate function string for de-duplicating the reasons field
+    # across multiple criteria. Used to override the default aggregation function:
+    # `ANY_VALUE` for arrays, `MAX` for all other types
+    reasons_aggregate_function_override: Dict[str, str] = attr.ib(factory=dict)
 
     @property
     @abc.abstractmethod
@@ -145,13 +150,24 @@ class TaskCriteriaGroupBigQueryViewBuilder:
     def flatten_reasons_blob_clause(self) -> str:
         """Returns query fragment that combines all fields across sub-criteria
         reason blobs into a single flat json, with an aggregation function that
-        deterministically dedupes across any duplicate reasons keys:
-            - ANY_VALUE() is used for ARRAY reason types since ARRAY duplicates are not allowed across sub-criteria
-            - MAX() is used for all other reason types
+        deterministically de-dupes across any duplicate reasons keys
         """
+        if not self.reasons_aggregate_function_override:
+            self.reasons_aggregate_function_override = {}
+
+        criteria_group_reasons_field_names = [
+            reason.name for reason in self.reasons_fields
+        ]
+        for reason_field_name in self.reasons_aggregate_function_override.keys():
+            if reason_field_name not in criteria_group_reasons_field_names:
+                raise ValueError(
+                    f"Cannot override aggregate function for reason '{reason_field_name}' since it is not in the "
+                    f"{self.criteria_name} reasons fields list: "
+                    ", ".join(criteria_group_reasons_field_names)
+                )
         reasons_query_fragment = ", ".join(
             [
-                f"{'ANY_VALUE' if reason.type == bigquery.enums.StandardSqlTypeNames.ARRAY else 'MAX'}("
+                f"{self._get_reason_aggregate_function(reason)}("
                 + extract_object_from_json(
                     reason.name, str(reason.type.value), "reason_v2"
                 )
@@ -160,6 +176,18 @@ class TaskCriteriaGroupBigQueryViewBuilder:
             ]
         )
         return reasons_query_fragment
+
+    def _get_reason_aggregate_function(self, reason: ReasonsField) -> str:
+        """Return the aggregate function to use for de-duping the provided reasons field:
+        - Use the function in `reasons_aggregate_function_override` if set
+        - Use ANY_VALUE for ARRAY reason types since ARRAY duplicates are not allowed across sub-criteria
+        - Use MAX is used for all other reason types
+        """
+        if reason.name in self.reasons_aggregate_function_override:
+            return self.reasons_aggregate_function_override[reason.name]
+        if reason.type == bigquery.enums.StandardSqlTypeNames.ARRAY:
+            return "ANY_VALUE"
+        return "MAX"
 
     def general_criteria_state_code_filter(
         self,
