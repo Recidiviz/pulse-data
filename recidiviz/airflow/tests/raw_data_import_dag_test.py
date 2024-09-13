@@ -63,6 +63,9 @@ from recidiviz.ingest.direct.gcs.directory_path_utils import (
     gcsfs_direct_ingest_bucket_for_state,
     gcsfs_direct_ingest_storage_directory_path_for_state,
 )
+from recidiviz.ingest.direct.raw_data.raw_file_configs import (
+    DirectIngestRegionRawFileConfig,
+)
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.direct.types.raw_data_import_types import (
     AppendReadyFile,
@@ -72,6 +75,7 @@ from recidiviz.ingest.direct.types.raw_data_import_types import (
     PreImportNormalizedCsvChunkResult,
     RawBigQueryFileMetadata,
     RawDataAppendImportError,
+    RawFileBigQueryLoadConfig,
     RawFileLoadAndPrepError,
     RawFileProcessingError,
     RawGCSFileMetadata,
@@ -167,6 +171,7 @@ class RawDataImportDagSequencingTest(AirflowIntegrationTest):
             [
                 "write_import_start",
                 "coalesce_results_and_errors",
+                "read_and_verify_column_headers",
                 "split_by_pre_import_normalization_type",
             ],
         ]
@@ -379,6 +384,24 @@ class RawDataImportOperationsRegistrationIntegrationTest(AirflowIntegrationTest)
         )
         self.list_normalized_unprocessed_files_mock = self.gcs_operator_patcher.start()
 
+        self.fs = FakeGCSFileSystem()
+        self.gcsfs_patcher = patch(
+            "recidiviz.airflow.dags.raw_data.gcs_file_processing_tasks.GcsfsFactory.build",
+            return_value=self.fs,
+        )
+        self.gcsfs_patcher.start()
+
+        self.region_module_patch = patch(
+            "recidiviz.ingest.direct.raw_data.raw_file_configs.direct_ingest_regions_module",
+            fake_regions,
+        )
+        self.region_module_patch.start()
+
+        self.header_reader_patcher = patch(
+            "recidiviz.airflow.dags.raw_data.gcs_file_processing_tasks.DirectIngestRawFileHeaderReader.read_and_validate_column_headers",
+        )
+        self.header_reader_mock = self.header_reader_patcher.start()
+
     def tearDown(self) -> None:
         self.raw_data_enabled_pairs.stop()
         self.raw_data_enabled_pairs_two.stop()
@@ -386,6 +409,9 @@ class RawDataImportOperationsRegistrationIntegrationTest(AirflowIntegrationTest)
         self.cloud_sql_db_hook_patcher.stop()
         self.gcs_operator_patcher.stop()
         self.region_module_patch.stop()
+        self.gcsfs_patcher.stop()
+        self.region_module_patch.stop()
+        self.header_reader_patcher.stop()
         super().tearDown()
 
     def _create_dag(self) -> DAG:
@@ -404,12 +430,17 @@ class RawDataImportOperationsRegistrationIntegrationTest(AirflowIntegrationTest)
                 "testing/unprocessed_2024-01-27T16:35:33:617135_raw_tagCustomLineTerminatorNonUTF8.csv",
             ]
         )
+        self.header_reader_mock.return_value = ["col1", "col2", "col3"]
+        region_raw_file_config = DirectIngestRegionRawFileConfig(
+            region_code="us_xx", region_module=fake_regions
+        )
 
         step_2_only_dag = self._create_dag().partial_subset(
             task_ids_or_regex=[
                 "raw_data_branching.us_xx_primary_import_branch.list_normalized_unprocessed_gcs_file_paths",
                 "raw_data_branching.us_xx_primary_import_branch.get_all_unprocessed_gcs_file_metadata",
                 "raw_data_branching.us_xx_primary_import_branch.get_all_unprocessed_bq_file_metadata",
+                "raw_data_branching.us_xx_primary_import_branch.read_and_verify_column_headers",
                 "raw_data_branching.us_xx_primary_import_branch.split_by_pre_import_normalization_type",
                 "raw_data_branching.us_xx_primary_import_branch.write_import_start",
             ],
@@ -501,6 +532,12 @@ class RawDataImportOperationsRegistrationIntegrationTest(AirflowIntegrationTest)
                             "testing/unprocessed_2024-01-25T16:35:33:617135_raw_tagBasicData.csv",
                         )
                     ],
+                    bq_table_schema=RawFileBigQueryLoadConfig.from_headers_and_raw_file_config(
+                        file_headers=["col1", "col2", "col3"],
+                        raw_file_config=region_raw_file_config.raw_file_configs[
+                            "tagBasicData"
+                        ],
+                    ),
                 ),
                 ImportReadyFile(
                     file_id=2,
@@ -514,6 +551,12 @@ class RawDataImportOperationsRegistrationIntegrationTest(AirflowIntegrationTest)
                             "testing/unprocessed_2024-01-26T16:35:33:617135_raw_tagFileConfigHeaders.csv",
                         )
                     ],
+                    bq_table_schema=RawFileBigQueryLoadConfig.from_headers_and_raw_file_config(
+                        file_headers=["col1", "col2", "col3"],
+                        raw_file_config=region_raw_file_config.raw_file_configs[
+                            "tagFileConfigHeaders"
+                        ],
+                    ),
                 ),
             ]
 
@@ -591,6 +634,7 @@ class RawDataImportOperationsRegistrationIntegrationTest(AirflowIntegrationTest)
                 "testing/unprocessed_2024-01-27T19:35:33:617135_raw_tagChunkedFile-3.csv",
             ]
         )
+        self.header_reader_mock.return_value = ["col1", "col2", "col3"]
 
         step_2_only_dag = self._create_dag().partial_subset(
             task_ids_or_regex=[
@@ -599,6 +643,7 @@ class RawDataImportOperationsRegistrationIntegrationTest(AirflowIntegrationTest)
                 "raw_data_branching.us_xx_primary_import_branch.get_all_unprocessed_bq_file_metadata",
                 "raw_data_branching.us_xx_primary_import_branch.split_by_pre_import_normalization_type",
                 "raw_data_branching.us_xx_primary_import_branch.write_import_start",
+                "raw_data_branching.us_xx_primary_import_branch.read_and_verify_column_headers",
             ],
             include_upstream=False,
             include_downstream=False,
@@ -2506,6 +2551,7 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
                     r".*_primary_import_branch\.get_all_unprocessed_gcs_file_metadata",
                     r".*_primary_import_branch\.get_all_unprocessed_bq_file_metadata",
                     r".*_primary_import_branch\.write_import_start",
+                    r".*_primary_import_branch\.read_and_verify_column_headers",
                     r".*_primary_import_branch\.split_by_pre_import_normalization_type",
                     r".*_primary_import_branch\.pre_import_normalization\.*",
                     r"raw_data_branching\.branch_end",
@@ -2550,6 +2596,7 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
                     r".*_primary_import_branch\.get_all_unprocessed_gcs_file_metadata",
                     r".*_primary_import_branch\.get_all_unprocessed_bq_file_metadata",
                     r".*_primary_import_branch\.write_import_start",
+                    r".*_primary_import_branch\.read_and_verify_column_headers",
                     r".*_primary_import_branch\.split_by_pre_import_normalization_type",
                     r".*_primary_import_branch\.pre_import_normalization\.*",
                 ],

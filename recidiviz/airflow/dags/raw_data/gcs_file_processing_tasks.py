@@ -30,7 +30,7 @@ from recidiviz.airflow.dags.operators.recidiviz_kubernetes_pod_operator import (
     ENTRYPOINT_ARGUMENTS,
 )
 from recidiviz.airflow.dags.raw_data.metadata import (
-    FILE_PATHS_TO_HEADERS,
+    FILE_IDS_TO_HEADERS,
     HEADER_VERIFICATION_ERRORS,
 )
 from recidiviz.airflow.dags.raw_data.utils import n_evenly_weighted_buckets
@@ -426,8 +426,8 @@ def build_import_ready_files(
 
 def _read_and_validate_headers(
     fs: GCSFileSystem,
-    gcs_file_path: GcsfsFilePath,
     raw_file_config: DirectIngestRawFileConfig,
+    gcs_file: GcsfsFilePath,
 ) -> List[str]:
     """For the given |gcs_file_path|,
     If the raw file config has infer_columns_from_config=False, read the first row of the file
@@ -437,25 +437,25 @@ def _read_and_validate_headers(
     """
     file_reader = DirectIngestRawFileHeaderReader(fs, raw_file_config)
 
-    return file_reader.read_and_validate_column_headers(gcs_file_path)
+    return file_reader.read_and_validate_column_headers(gcs_file)
 
 
 def read_and_verify_column_headers_concurrently(
     fs: GCSFileSystem,
     region_raw_file_config: DirectIngestRegionRawFileConfig,
     bq_metadata: List[RawBigQueryFileMetadata],
-) -> Tuple[Dict[str, List[str]], List[RawFileProcessingError]]:
+) -> Tuple[Dict[int, List[str]], List[RawFileProcessingError]]:
     """Reads and validates the headers of the files in the provided bq metadata concurrently."""
 
     results: Dict[str, List[str]] = {}
-    errors: List[RawFileProcessingError] = []
+    errors: Dict[str, RawFileProcessingError] = {}
     with concurrent.futures.ThreadPoolExecutor(max_workers=MAX_THREADS) as executor:
         futures = {
             executor.submit(
                 _read_and_validate_headers,
                 fs,
-                gcs_file.path,
                 region_raw_file_config.raw_file_configs[gcs_file.parts.file_tag],
+                gcs_file.path,
             ): gcs_file.path
             for metadata in bq_metadata
             for gcs_file in metadata.gcs_files
@@ -465,15 +465,38 @@ def read_and_verify_column_headers_concurrently(
             try:
                 results[file_path.abs_path()] = future.result()
             except Exception as e:
-                errors.append(
-                    RawFileProcessingError(
-                        original_file_path=file_path,
-                        temporary_file_paths=None,
-                        error_msg=f"{file_path.abs_path()}: {str(e)}\n{traceback.format_exc()}",
-                    )
+                errors[file_path.abs_path()] = RawFileProcessingError(
+                    original_file_path=file_path,
+                    temporary_file_paths=None,
+                    error_msg=f"{file_path.abs_path()}: {str(e)}\n{traceback.format_exc()}",
                 )
 
-    return results, errors
+    file_id_to_headers: Dict[int, List[str]] = {}
+    for metadata in bq_metadata:
+        if any(errors.get(gcs_file.abs_path) for gcs_file in metadata.gcs_files):
+            continue
+
+        base_file = metadata.gcs_files[0]
+        base_headers = results[base_file.abs_path]
+
+        if all(
+            base_headers == results[gcs_file.abs_path]
+            for gcs_file in metadata.gcs_files[1:]
+        ):
+            file_id_to_headers[assert_type(metadata.file_id, int)] = base_headers
+        else:
+            for gcs_file in metadata.gcs_files:
+                current_headers = results[gcs_file.abs_path]
+                if base_headers != current_headers:
+                    errors[gcs_file.abs_path] = RawFileProcessingError(
+                        original_file_path=gcs_file.path,
+                        temporary_file_paths=None,
+                        error_msg=(
+                            f"Raw file headers found in [{base_file.abs_path}]: [{base_headers}] "
+                            f"do not match headers found in [{gcs_file.abs_path}]: [{current_headers}]"
+                        ),
+                    )
+    return file_id_to_headers, list(errors.values())
 
 
 @task
@@ -504,7 +527,7 @@ def read_and_verify_column_headers(
     )
 
     return {
-        FILE_PATHS_TO_HEADERS: results,
+        FILE_IDS_TO_HEADERS: results,
         HEADER_VERIFICATION_ERRORS: [error.serialize() for error in errors],
     }
 

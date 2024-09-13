@@ -678,6 +678,7 @@ class TestReadAndVerifyColumnHeaders(unittest.TestCase):
             ),
         ]
         self.headers = ["ID", "Name", "Age"]
+        self.file_ids = [1, 2, 3]
         self.bq_metadata = [
             RawBigQueryFileMetadata(
                 file_id=1,
@@ -735,16 +736,13 @@ class TestReadAndVerifyColumnHeaders(unittest.TestCase):
         )
         self.assertEqual(
             result,
-            {file_path.abs_path(): self.headers for file_path in self.file_paths},
+            {i: self.headers for i in self.file_ids},
         )
         self.assertEqual(errors, [])
 
     def test_read_and_verify_column_headers_concurrently_error(self) -> None:
         def side_effect(gcs_file_path: GcsfsFilePath) -> List[str]:
-            if (
-                gcs_file_path.abs_path()
-                == "test_bucket/unprocessed_2021-02-01T00:00:00:000000_raw_tagBasicData_2.csv"
-            ):
+            if gcs_file_path == self.file_paths[1]:
                 raise RuntimeError("Error reading file")
 
             return self.headers
@@ -757,8 +755,59 @@ class TestReadAndVerifyColumnHeaders(unittest.TestCase):
         self.assertEqual(
             result,
             {
-                self.file_paths[0].abs_path(): self.headers,
-                self.file_paths[2].abs_path(): self.headers,
+                1: self.headers,
+                3: self.headers,
+            },
+        )
+        self.assertEqual(len(errors), 1)
+        self.assertEqual(errors[0].original_file_path, self.file_paths[1])
+
+    def test_conceptual_file_header_mismatch(self) -> None:
+        def side_effect(gcs_file_path: GcsfsFilePath) -> List[str]:
+            if gcs_file_path == self.file_paths[1]:
+                return ["ID", "Name", "Age", "ExtraColumn"]
+
+            return self.headers
+
+        self.file_reader.read_and_validate_column_headers.side_effect = side_effect
+        bq_metadata = [
+            RawBigQueryFileMetadata(
+                file_id=1,
+                file_tag="tagBasicData",
+                gcs_files=[
+                    RawGCSFileMetadata(
+                        gcs_file_id=1, file_id=1, path=self.file_paths[0]
+                    ),
+                    RawGCSFileMetadata(
+                        gcs_file_id=2, file_id=1, path=self.file_paths[1]
+                    ),
+                ],
+                update_datetime=datetime.datetime(
+                    2024, 1, 1, 1, 1, 1, tzinfo=datetime.UTC
+                ),
+            ),
+            RawBigQueryFileMetadata(
+                file_id=2,
+                file_tag="tagBasicData",
+                gcs_files=[
+                    RawGCSFileMetadata(
+                        gcs_file_id=3, file_id=2, path=self.file_paths[2]
+                    )
+                ],
+                update_datetime=datetime.datetime(
+                    2024, 1, 2, 1, 1, 1, tzinfo=datetime.UTC
+                ),
+            ),
+        ]
+
+        result, errors = read_and_verify_column_headers_concurrently(
+            self.fs, self.region_raw_file_config, bq_metadata
+        )
+
+        self.assertEqual(
+            result,
+            {
+                2: self.headers,
             },
         )
         self.assertEqual(len(errors), 1)

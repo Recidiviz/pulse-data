@@ -59,6 +59,7 @@ from recidiviz.airflow.dags.raw_data.gcs_file_processing_tasks import (
     generate_file_chunking_pod_arguments,
     raise_chunk_normalization_errors,
     raise_file_chunking_errors,
+    read_and_verify_column_headers,
     regroup_and_verify_file_chunks,
 )
 from recidiviz.airflow.dags.raw_data.get_all_unprocessed_bq_file_metadata_sql_query_generator import (
@@ -71,6 +72,7 @@ from recidiviz.airflow.dags.raw_data.initialize_raw_data_dag_group import (
     initialize_raw_data_dag_group,
 )
 from recidiviz.airflow.dags.raw_data.metadata import (
+    FILE_IDS_TO_HEADERS,
     IMPORT_READY_FILES,
     PROCESSED_PATHS_TO_RENAME,
     REQUIRES_PRE_IMPORT_NORMALIZATION_FILES,
@@ -202,11 +204,11 @@ def create_single_state_code_ingest_instance_raw_data_import_branch(
             ),
         )
 
-        # TODO(#33195) read and verify headers for all files
-        # file_headers = read_and_verify_column_headers(
-        #    region_code=state_code.value,
-        #    serialized_bq_metadata=list_normalized_unprocessed_gcs_file_paths.output,
-        # )
+        file_headers = read_and_verify_column_headers(
+            region_code=state_code.value,
+            serialized_bq_metadata=get_all_unprocessed_bq_file_metadata.output,
+        )
+        # TODO(#33195) raise header verification errors
         # raise_header_verification_errors(
         #    header_verification_errors=file_headers[HEADER_VERIFICATION_ERRORS]
         # )
@@ -214,6 +216,7 @@ def create_single_state_code_ingest_instance_raw_data_import_branch(
         files_to_process = split_by_pre_import_normalization_type(
             region_code=state_code.value,
             serialized_bq_metadata=get_all_unprocessed_bq_file_metadata.output,
+            file_ids_to_headers=file_headers[FILE_IDS_TO_HEADERS],
         )
 
         (
@@ -221,6 +224,7 @@ def create_single_state_code_ingest_instance_raw_data_import_branch(
             >> get_all_unprocessed_gcs_file_metadata
             >> get_all_unprocessed_bq_file_metadata
             >> write_import_start
+            >> file_headers
             >> files_to_process
         )
 
