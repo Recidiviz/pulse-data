@@ -28,15 +28,24 @@ from recidiviz.common.constants.state.state_supervision_violation import (
     StateSupervisionViolationType,
 )
 from recidiviz.common.constants.state.state_supervision_violation_response import (
+    StateSupervisionViolationResponseDecision,
     StateSupervisionViolationResponseType,
 )
 from recidiviz.persistence.entity.state.entities import (
     StateSupervisionViolatedConditionEntry,
     StateSupervisionViolation,
     StateSupervisionViolationResponse,
+    StateSupervisionViolationResponseDecisionEntry,
     StateSupervisionViolationTypeEntry,
 )
+from recidiviz.persistence.entity.state.normalized_entities import (
+    NormalizedStateSupervisionViolation,
+    NormalizedStateSupervisionViolationResponse,
+    NormalizedStateSupervisionViolationResponseDecisionEntry,
+    NormalizedStateSupervisionViolationTypeEntry,
+)
 from recidiviz.pipelines.normalization.utils.normalization_managers.supervision_violation_responses_normalization_manager import (
+    StateSpecificViolationResponseNormalizationDelegate,
     ViolationResponseNormalizationManager,
     normalized_violation_responses_from_processed_versions,
 )
@@ -188,6 +197,144 @@ class TestNormalizedViolationResponsesFromProcessedVersions(unittest.TestCase):
 
         self.assertTrue(
             "Found empty supervision_violation on response" in e.exception.args[0]
+        )
+
+    def test_normalized_violations_de_duplicate_responses_by_date(self) -> None:
+        class _DelegateWithDeduplication(
+            StateSpecificViolationResponseNormalizationDelegate
+        ):
+            def should_de_duplicate_responses_by_date(self) -> bool:
+                return True
+
+        supervision_violation = StateSupervisionViolation(
+            external_id="sv1",
+            supervision_violation_id=1,
+            state_code="US_XX",
+            supervision_violation_types=[
+                StateSupervisionViolationTypeEntry(
+                    supervision_violation_type_entry_id=2,
+                    state_code="US_XX",
+                    violation_type=StateSupervisionViolationType.TECHNICAL,
+                    violation_type_raw_text="TECHNICAL",
+                ),
+            ],
+        )
+
+        supervision_violation_response = StateSupervisionViolationResponse(
+            external_id="svr1",
+            state_code="US_XX",
+            supervision_violation_response_id=4,
+            response_type=StateSupervisionViolationResponseType.CITATION,
+            response_date=datetime.date(year=2004, month=9, day=2),
+            supervision_violation=supervision_violation,
+            supervision_violation_response_decisions=[
+                StateSupervisionViolationResponseDecisionEntry(
+                    state_code="US_XX",
+                    supervision_violation_response_decision_entry_id=5,
+                    decision=StateSupervisionViolationResponseDecision.EXTERNAL_UNKNOWN,
+                    decision_raw_text="X",
+                )
+            ],
+        )
+        supervision_violation.supervision_violation_responses.append(
+            supervision_violation_response
+        )
+
+        supervision_violation_dup = StateSupervisionViolation(
+            external_id="sv1_dup",
+            supervision_violation_id=6,
+            state_code="US_XX",
+            supervision_violation_types=[
+                StateSupervisionViolationTypeEntry(
+                    supervision_violation_type_entry_id=7,
+                    state_code="US_XX",
+                    violation_type=StateSupervisionViolationType.TECHNICAL,
+                    violation_type_raw_text="TECHNICAL",
+                ),
+            ],
+        )
+
+        supervision_violation_response_dup = StateSupervisionViolationResponse(
+            external_id="svr1_dup",
+            state_code="US_XX",
+            supervision_violation_response_id=9,
+            response_type=StateSupervisionViolationResponseType.CITATION,
+            response_date=datetime.date(year=2004, month=9, day=2),
+            supervision_violation=supervision_violation_dup,
+            supervision_violation_response_decisions=[
+                StateSupervisionViolationResponseDecisionEntry(
+                    state_code="US_XX",
+                    supervision_violation_response_decision_entry_id=10,
+                    decision=StateSupervisionViolationResponseDecision.EXTERNAL_UNKNOWN,
+                    decision_raw_text="X",
+                )
+            ],
+        )
+        supervision_violation_dup.supervision_violation_responses.append(
+            supervision_violation_response_dup
+        )
+
+        violation_responses = [
+            supervision_violation_response,
+            supervision_violation_response_dup,
+        ]
+
+        normalization_manager = ViolationResponseNormalizationManager(
+            person_id=123,
+            violation_responses=violation_responses,
+            delegate=_DelegateWithDeduplication(),
+            staff_external_id_to_staff_id=build_staff_external_id_to_staff_id_map(
+                STATE_PERSON_TO_STATE_STAFF_LIST
+            ),
+        )
+
+        expected_normalized_supervision_violation = NormalizedStateSupervisionViolation(
+            external_id="sv1",
+            supervision_violation_id=9065654955711543502,
+            state_code="US_XX",
+            supervision_violation_types=[
+                NormalizedStateSupervisionViolationTypeEntry(
+                    supervision_violation_type_entry_id=9033946637077724355,
+                    state_code="US_XX",
+                    violation_type=StateSupervisionViolationType.TECHNICAL,
+                    violation_type_raw_text="TECHNICAL",
+                ),
+            ],
+        )
+
+        expected_normalized_supervision_violation_response = NormalizedStateSupervisionViolationResponse(
+            external_id="svr1",
+            state_code="US_XX",
+            supervision_violation_response_id=4,
+            sequence_num=0,
+            response_type=StateSupervisionViolationResponseType.CITATION,
+            response_date=datetime.date(year=2004, month=9, day=2),
+            supervision_violation=expected_normalized_supervision_violation,
+            supervision_violation_response_decisions=[
+                NormalizedStateSupervisionViolationResponseDecisionEntry(
+                    state_code="US_XX",
+                    supervision_violation_response_decision_entry_id=5,
+                    decision=StateSupervisionViolationResponseDecision.EXTERNAL_UNKNOWN,
+                    decision_raw_text="X",
+                )
+            ],
+        )
+        expected_normalized_supervision_violation.supervision_violation_responses.append(
+            expected_normalized_supervision_violation_response
+        )
+        expected_normalized_supervision_violation.supervision_violation_types[
+            0
+        ].supervision_violation = expected_normalized_supervision_violation
+        expected_normalized_supervision_violation_response.supervision_violation_response_decisions[
+            0
+        ].supervision_violation_response = (
+            expected_normalized_supervision_violation_response
+        )
+
+        normalized_violations = normalization_manager.get_normalized_violations()
+
+        self.assertEqual(
+            [expected_normalized_supervision_violation], normalized_violations
         )
 
 

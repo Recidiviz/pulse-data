@@ -237,12 +237,13 @@ class ViolationResponseNormalizationManager(EntityNormalizationManager):
             datetime.date, StateSupervisionViolationResponse
         ] = {}
         for response_date, responses in bucketed_responses_by_date.items():
-            base_response_to_update = responses[0]
+            sorted_responses = sorted(responses, key=lambda vr: vr.external_id)
+            base_response_to_update = sorted_responses[0]
             seen_violation_types: Set[StateSupervisionViolationType] = set()
             deduped_violation_type_entries: List[
                 StateSupervisionViolationTypeEntry
             ] = []
-            for response in responses:
+            for response in sorted_responses:
                 if response.supervision_violation is None:
                     # If this response has no violation then there is no information
                     # we need from it
