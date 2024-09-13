@@ -15,6 +15,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
+import { Spin } from "antd";
 import { observer } from "mobx-react-lite";
 
 import {
@@ -27,17 +28,13 @@ import {
   markInstanceRawDataInvalidated,
 } from "../../../AdminPanelAPI/IngestOperations";
 import { DirectIngestInstance, QueueState } from "../constants";
-import { useFlashChecklistStore } from "./FlashChecklistStore";
+import { useLegacyFlashChecklistStore } from "./FlashChecklistStore";
 import StyledStepContent, {
   ChecklistSection,
   CodeBlock,
-} from "./FlashComponents";
+} from "./LegacyFlashComponents";
 
-interface StateCancelReimportChecklistProps {
-  stateCode: string;
-}
-
-export const CancelReimportChecklistStepSection = {
+export const LegacyCancelReimportChecklistStepSection = {
   /* Ordered list of sections in the rerun cancellation checklist.
   NOTE: The relative order of these steps is important.
   IF YOU ADD A NEW STEP SECTION,
@@ -51,16 +48,21 @@ export const CancelReimportChecklistStepSection = {
   DONE: 5,
 };
 
-const StateCancelReimportChecklist = ({
-  stateCode,
-}: StateCancelReimportChecklistProps): JSX.Element => {
+const LegacyStateCancelReimportChecklist = (): JSX.Element => {
   const {
+    stateInfo,
     currentStep,
     proceedWithFlash,
-    currentRawDataInstanceStatus: currentIngestStatus,
+    legacyCurrentRawDataInstanceStatus,
     currentStepSection,
     projectId,
-  } = useFlashChecklistStore();
+  } = useLegacyFlashChecklistStore();
+
+  if (!stateInfo) {
+    return <Spin />;
+  }
+
+  const stateCode = stateInfo.code;
 
   // --- step 1: pause operations ---------------------------------------------------
 
@@ -77,7 +79,9 @@ const StateCancelReimportChecklist = ({
           onActionButtonClick={async () =>
             updateIngestQueuesState(stateCode, QueueState.PAUSED)
           }
-          nextSection={CancelReimportChecklistStepSection.START_CANCELLATION}
+          nextSection={
+            LegacyCancelReimportChecklistStepSection.START_CANCELLATION
+          }
         />
       ),
       style: { paddingBottom: 5 },
@@ -108,7 +112,7 @@ const StateCancelReimportChecklist = ({
             )
           }
           nextSection={
-            CancelReimportChecklistStepSection.SECONDARY_RAW_DATA_CLEANUP
+            LegacyCancelReimportChecklistStepSection.SECONDARY_RAW_DATA_CLEANUP
           }
         />
       ),
@@ -129,7 +133,7 @@ const StateCancelReimportChecklist = ({
               deleting the tables themselves)
             </p>
           }
-          actionButtonEnabled={currentIngestStatus.isReimportCancellationInProgress()}
+          actionButtonEnabled={legacyCurrentRawDataInstanceStatus.isReimportCancellationInProgress()}
           actionButtonTitle="Clean up SECONDARY raw data"
           onActionButtonClick={async () =>
             deleteContentsOfRawDataTables(
@@ -157,7 +161,7 @@ const StateCancelReimportChecklist = ({
               </code>
             </p>
           }
-          actionButtonEnabled={currentIngestStatus.isReimportCancellationInProgress()}
+          actionButtonEnabled={legacyCurrentRawDataInstanceStatus.isReimportCancellationInProgress()}
           actionButtonTitle="Clean up SECONDARY raw data"
           onActionButtonClick={async () =>
             deleteTablesInPruningDatasets(
@@ -184,7 +188,7 @@ const StateCancelReimportChecklist = ({
                 // TODO(#17068): Update to python script, once it exists.
                 enabled={
                   currentStepSection ===
-                  CancelReimportChecklistStepSection.SECONDARY_RAW_DATA_CLEANUP
+                  LegacyCancelReimportChecklistStepSection.SECONDARY_RAW_DATA_CLEANUP
                 }
               >
                 gsutil -m mv &#39;gs://{projectId}
@@ -212,7 +216,7 @@ const StateCancelReimportChecklist = ({
               <CodeBlock
                 enabled={
                   currentStepSection ===
-                  CancelReimportChecklistStepSection.SECONDARY_RAW_DATA_CLEANUP
+                  LegacyCancelReimportChecklistStepSection.SECONDARY_RAW_DATA_CLEANUP
                 }
               >
                 python -m
@@ -236,7 +240,7 @@ const StateCancelReimportChecklist = ({
               table as invalidated.
             </p>
           }
-          actionButtonEnabled={currentIngestStatus.isReimportCancellationInProgress()}
+          actionButtonEnabled={legacyCurrentRawDataInstanceStatus.isReimportCancellationInProgress()}
           actionButtonTitle="Invalidate secondary rows"
           onActionButtonClick={async () =>
             markInstanceRawDataInvalidated(
@@ -244,7 +248,9 @@ const StateCancelReimportChecklist = ({
               DirectIngestInstance.SECONDARY
             )
           }
-          nextSection={CancelReimportChecklistStepSection.FINALIZE_CANCELLATION}
+          nextSection={
+            LegacyCancelReimportChecklistStepSection.FINALIZE_CANCELLATION
+          }
         />
       ),
     },
@@ -264,7 +270,7 @@ const StateCancelReimportChecklist = ({
               {stateCode}.
             </p>
           }
-          actionButtonEnabled={currentIngestStatus.isReimportCancellationInProgress()}
+          actionButtonEnabled={legacyCurrentRawDataInstanceStatus.isReimportCancellationInProgress()}
           actionButtonTitle="Update Ingest Instance Status"
           onActionButtonClick={async () =>
             changeIngestInstanceStatus(
@@ -287,7 +293,7 @@ const StateCancelReimportChecklist = ({
               {stateCode}.
             </p>
           }
-          actionButtonEnabled={currentIngestStatus.isReimportCanceled()}
+          actionButtonEnabled={legacyCurrentRawDataInstanceStatus.isReimportCanceled()}
           actionButtonTitle="Update Ingest Instance Status"
           onActionButtonClick={async () =>
             changeIngestInstanceStatus(
@@ -296,7 +302,9 @@ const StateCancelReimportChecklist = ({
               "NO_RAW_DATA_REIMPORT_IN_PROGRESS"
             )
           }
-          nextSection={CancelReimportChecklistStepSection.RESUME_OPERATIONS}
+          nextSection={
+            LegacyCancelReimportChecklistStepSection.RESUME_OPERATIONS
+          }
         />
       ),
     },
@@ -315,11 +323,11 @@ const StateCancelReimportChecklist = ({
             </p>
           }
           actionButtonTitle="Unpause Queues"
-          actionButtonEnabled={currentIngestStatus.isNoReimportInProgress()}
+          actionButtonEnabled={legacyCurrentRawDataInstanceStatus.isNoReimportInProgress()}
           onActionButtonClick={async () =>
             updateIngestQueuesState(stateCode, QueueState.RUNNING)
           }
-          nextSection={CancelReimportChecklistStepSection.DONE}
+          nextSection={LegacyCancelReimportChecklistStepSection.DONE}
         />
       ),
     },
@@ -330,20 +338,24 @@ const StateCancelReimportChecklist = ({
       <h1>Canceling SECONDARY Raw Data Reimport</h1>
       <h3 style={{ color: "green" }}>Current Ingest Instance Statuses:</h3>
       <ul style={{ color: "green" }}>
-        <li>PRIMARY INSTANCE: {currentIngestStatus.primary}</li>
-        <li>SECONDARY INSTANCE: {currentIngestStatus.secondary}</li>
+        <li>PRIMARY INSTANCE: {legacyCurrentRawDataInstanceStatus.primary}</li>
+        <li>
+          SECONDARY INSTANCE: {legacyCurrentRawDataInstanceStatus.secondary}
+        </li>
       </ul>
       <ChecklistSection
         currentStep={currentStep}
         currentStepSection={currentStepSection}
-        stepSection={CancelReimportChecklistStepSection.PAUSE_OPERATIONS}
+        stepSection={LegacyCancelReimportChecklistStepSection.PAUSE_OPERATIONS}
         headerContents="Pause Operations"
         items={pauseOperationsSteps}
       />
       <ChecklistSection
         currentStep={currentStep}
         currentStepSection={currentStepSection}
-        stepSection={CancelReimportChecklistStepSection.START_CANCELLATION}
+        stepSection={
+          LegacyCancelReimportChecklistStepSection.START_CANCELLATION
+        }
         headerContents={<p>Start Reimport Cancellation</p>}
         items={startReimportCancelationSteps}
       />
@@ -351,7 +363,7 @@ const StateCancelReimportChecklist = ({
         currentStep={currentStep}
         currentStepSection={currentStepSection}
         stepSection={
-          CancelReimportChecklistStepSection.SECONDARY_RAW_DATA_CLEANUP
+          LegacyCancelReimportChecklistStepSection.SECONDARY_RAW_DATA_CLEANUP
         }
         headerContents={
           <p>
@@ -363,21 +375,23 @@ const StateCancelReimportChecklist = ({
       <ChecklistSection
         currentStep={currentStep}
         currentStepSection={currentStepSection}
-        stepSection={CancelReimportChecklistStepSection.FINALIZE_CANCELLATION}
+        stepSection={
+          LegacyCancelReimportChecklistStepSection.FINALIZE_CANCELLATION
+        }
         headerContents={<p>Finalize Reimport Cancellation</p>}
         items={finalizeCancelationSteps}
       />
       <ChecklistSection
         currentStep={currentStep}
         currentStepSection={currentStepSection}
-        stepSection={CancelReimportChecklistStepSection.RESUME_OPERATIONS}
+        stepSection={LegacyCancelReimportChecklistStepSection.RESUME_OPERATIONS}
         headerContents={<p>Resume Operations</p>}
         items={resumeOperationsSteps}
       />
       <ChecklistSection
         currentStep={currentStep}
         currentStepSection={currentStepSection}
-        stepSection={CancelReimportChecklistStepSection.DONE}
+        stepSection={LegacyCancelReimportChecklistStepSection.DONE}
         headerContents={
           <p style={{ color: "green" }}>Rerun cancellation is complete!</p>
         }
@@ -389,4 +403,4 @@ const StateCancelReimportChecklist = ({
   );
 };
 
-export default observer(StateCancelReimportChecklist);
+export default observer(LegacyStateCancelReimportChecklist);

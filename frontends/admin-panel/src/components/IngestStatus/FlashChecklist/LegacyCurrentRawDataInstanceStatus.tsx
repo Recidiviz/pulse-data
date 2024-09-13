@@ -17,7 +17,7 @@
 
 import { IngestStatus } from "../constants";
 
-export class CurrentRawDataInstanceStatus {
+export class LegacyCurrentRawDataInstanceStatus {
   primary: IngestStatus | undefined;
 
   secondary: IngestStatus | undefined;

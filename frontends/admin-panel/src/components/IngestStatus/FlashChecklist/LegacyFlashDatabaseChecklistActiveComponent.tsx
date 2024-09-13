@@ -14,33 +14,26 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
-import { Alert, Spin } from "antd";
+import { Spin } from "antd";
 import { observer } from "mobx-react-lite";
 import * as React from "react";
 
-import { StateCodeInfo } from "../../general/constants";
-import StateCancelReimportChecklist, {
-  CancelReimportChecklistStepSection,
-} from "./CancelReimportChecklist";
-import { FlashChecklistContext } from "./FlashChecklistStore";
+import { useLegacyFlashChecklistStore } from "./FlashChecklistStore";
+import LegacyStateCancelReimportChecklist, {
+  LegacyCancelReimportChecklistStepSection,
+} from "./LegacyCancelReimportChecklist";
 import {
   CannotFlashDecisionNonEmptyBucketComponent,
   CannotFlashDecisionWrongStatusComponent,
   FlashReadyDecisionComponent,
-} from "./FlashComponents";
-import StateProceedWithFlashChecklist, {
-  FlashChecklistStepSection,
-} from "./ProceedWithFlashChecklist";
+} from "./LegacyFlashComponents";
+import LegacyStateProceedWithFlashChecklist, {
+  LegacyFlashChecklistStepSection,
+} from "./LegacyProceedWithFlashChecklist";
 
-interface FlashDatabaseChecklistActiveComponentProps {
-  stateInfo: StateCodeInfo | undefined;
-}
-
-const FlashDatabaseChecklistActiveComponent = ({
-  stateInfo,
-}: FlashDatabaseChecklistActiveComponentProps): JSX.Element => {
+const LegacyFlashDatabaseChecklistActiveComponent = (): JSX.Element => {
   // store for data that is used by child components
-  const flashStore = React.useContext(FlashChecklistContext);
+  const flashStore = useLegacyFlashChecklistStore();
 
   const [dataLoading, setDataLoading] = React.useState<boolean>(true);
 
@@ -55,7 +48,7 @@ const FlashDatabaseChecklistActiveComponent = ({
       // Ingest instance status information is fetched upon
       // initial page load after a state is set, and each
       // after each step is completed.
-      await flashStore.fetchInstanceStatusData();
+      await flashStore.fetchLegacyInstanceStatusData();
 
       setDataLoading(false);
     }
@@ -65,20 +58,11 @@ const FlashDatabaseChecklistActiveComponent = ({
     getData();
   }, [getData]);
 
-  if (stateInfo === undefined) {
-    return (
-      <Alert
-        message="Select a state"
-        description="Once you pick a state, this form will display the set of instructions required to flash a secondary database to primary."
-        type="info"
-        showIcon
-      />
-    );
-  }
   if (
     dataLoading ||
     !flashStore ||
-    flashStore.currentRawDataInstanceStatus.primary === undefined
+    !flashStore.stateInfo ||
+    flashStore.legacyCurrentRawDataInstanceStatus.primary === undefined
   ) {
     return <Spin />;
   }
@@ -93,16 +77,16 @@ const FlashDatabaseChecklistActiveComponent = ({
         onSelectProceed={async () => {
           flashStore.setProceedWithFlash(false);
           await flashStore.moveToNextChecklistSection(
-            CancelReimportChecklistStepSection.PAUSE_OPERATIONS
+            LegacyCancelReimportChecklistStepSection.PAUSE_OPERATIONS
           );
         }}
       />
     );
   }
   if (
-    !flashStore.currentRawDataInstanceStatus.isReadyToFlash() &&
-    !flashStore.currentRawDataInstanceStatus.isFlashInProgress() &&
-    !flashStore.currentRawDataInstanceStatus.isReimportCancellationInProgress() &&
+    !flashStore.legacyCurrentRawDataInstanceStatus.isReadyToFlash() &&
+    !flashStore.legacyCurrentRawDataInstanceStatus.isFlashInProgress() &&
+    !flashStore.legacyCurrentRawDataInstanceStatus.isReimportCancellationInProgress() &&
     flashStore.proceedWithFlash === undefined &&
     // This check makes it so we don't show the "can't flash" component
     // when you set the status to FLASH_COMPLETE in the middle of the checklist.
@@ -112,11 +96,11 @@ const FlashDatabaseChecklistActiveComponent = ({
     /* Regardless of status, we can cancel a secondary rerun any time */
     return (
       <CannotFlashDecisionWrongStatusComponent
-        currentIngestStatus={flashStore.currentRawDataInstanceStatus}
+        currentIngestStatus={flashStore.legacyCurrentRawDataInstanceStatus}
         onSelectProceed={async () => {
           flashStore.setProceedWithFlash(false);
           await flashStore.moveToNextChecklistSection(
-            CancelReimportChecklistStepSection.PAUSE_OPERATIONS
+            LegacyCancelReimportChecklistStepSection.PAUSE_OPERATIONS
           );
         }}
       />
@@ -124,7 +108,7 @@ const FlashDatabaseChecklistActiveComponent = ({
   }
   if (
     flashStore.proceedWithFlash === undefined &&
-    flashStore.currentRawDataInstanceStatus.isReadyToFlash()
+    flashStore.legacyCurrentRawDataInstanceStatus.isReadyToFlash()
   ) {
     return (
       /* This is the only time that someone can choose whether to cancel a rerun or
@@ -133,13 +117,13 @@ const FlashDatabaseChecklistActiveComponent = ({
         onSelectProceed={async () => {
           flashStore.setProceedWithFlash(true);
           await flashStore.moveToNextChecklistSection(
-            FlashChecklistStepSection.PAUSE_OPERATIONS
+            LegacyFlashChecklistStepSection.PAUSE_OPERATIONS
           );
         }}
         onSelectCancel={async () => {
           flashStore.setProceedWithFlash(false);
           await flashStore.moveToNextChecklistSection(
-            CancelReimportChecklistStepSection.PAUSE_OPERATIONS
+            LegacyCancelReimportChecklistStepSection.PAUSE_OPERATIONS
           );
         }}
       />
@@ -147,7 +131,7 @@ const FlashDatabaseChecklistActiveComponent = ({
   }
   if (
     flashStore.proceedWithFlash ||
-    flashStore.currentRawDataInstanceStatus.isFlashInProgress()
+    flashStore.legacyCurrentRawDataInstanceStatus.isFlashInProgress()
   ) {
     /* In the case of a refresh in the middle of a flash, proceedWithFlash
     will get reset. Set the value back to true, since a flash is already in
@@ -158,19 +142,19 @@ const FlashDatabaseChecklistActiveComponent = ({
     return (
       /* This covers when a decision has been made to
       proceed with a flash from SECONDARY to PRIMARY */
-      <StateProceedWithFlashChecklist stateCode={stateInfo.code} />
+      <LegacyStateProceedWithFlashChecklist />
     );
   }
   if (
     !flashStore.proceedWithFlash ||
-    flashStore.currentRawDataInstanceStatus.isReimportCancellationInProgress()
+    flashStore.legacyCurrentRawDataInstanceStatus.isReimportCancellationInProgress()
   ) {
     return (
       /* If decision has been made to cancel a rerun in SECONDARY */
-      <StateCancelReimportChecklist stateCode={stateInfo.code} />
+      <LegacyStateCancelReimportChecklist />
     );
   }
   return <div>Error!</div>;
 };
 
-export default observer(FlashDatabaseChecklistActiveComponent);
+export default observer(LegacyFlashDatabaseChecklistActiveComponent);

@@ -15,7 +15,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
-import { Divider } from "antd";
+import { Divider, Spin } from "antd";
 import { observer } from "mobx-react-lite";
 
 import {
@@ -32,17 +32,13 @@ import {
   updateIngestQueuesState,
 } from "../../../AdminPanelAPI/IngestOperations";
 import { DirectIngestInstance, QueueState } from "../constants";
-import { useFlashChecklistStore } from "./FlashChecklistStore";
+import { useLegacyFlashChecklistStore } from "./FlashChecklistStore";
 import StyledStepContent, {
   ChecklistSection,
   CodeBlock,
-} from "./FlashComponents";
+} from "./LegacyFlashComponents";
 
-interface StateFlashingChecklistProps {
-  stateCode: string;
-}
-
-export const FlashChecklistStepSection = {
+export const LegacyFlashChecklistStepSection = {
   /* Ordered list of sections in the flash checklist.
   NOTE: The relative order of these steps is important.
   IF YOU ADD A NEW STEP SECTION,
@@ -61,15 +57,19 @@ export const FlashChecklistStepSection = {
   DONE: 8,
 };
 
-const StateProceedWithFlashChecklist = ({
-  stateCode,
-}: StateFlashingChecklistProps): JSX.Element => {
+const LegacyStateProceedWithFlashChecklist = (): JSX.Element => {
   const {
+    stateInfo,
     currentStep,
-    currentRawDataInstanceStatus: currentIngestStatus,
+    legacyCurrentRawDataInstanceStatus,
     currentStepSection,
     projectId,
-  } = useFlashChecklistStore();
+  } = useLegacyFlashChecklistStore();
+  if (!stateInfo) {
+    return <Spin />;
+  }
+
+  const stateCode = stateInfo.code;
 
   const secondaryRawDataDataset = `${stateCode.toLowerCase()}_raw_data_secondary`;
   const primaryRawDataDataset = `${stateCode.toLowerCase()}_raw_data`;
@@ -84,7 +84,7 @@ const StateProceedWithFlashChecklist = ({
             <p>Pause all of the ingest-related queues for {stateCode}.</p>
           }
           actionButtonTitle="Pause Queues"
-          actionButtonEnabled={currentIngestStatus.isReadyToFlash()}
+          actionButtonEnabled={legacyCurrentRawDataInstanceStatus.isReadyToFlash()}
           onActionButtonClick={async () =>
             updateIngestQueuesState(stateCode, QueueState.PAUSED)
           }
@@ -99,9 +99,9 @@ const StateProceedWithFlashChecklist = ({
             <p>Clear out all ingest-related queues in both instances.</p>
           }
           actionButtonTitle="Clear Queue"
-          actionButtonEnabled={currentIngestStatus.isReadyToFlash()}
+          actionButtonEnabled={legacyCurrentRawDataInstanceStatus.isReadyToFlash()}
           onActionButtonClick={async () => purgeIngestQueues(stateCode)}
-          nextSection={FlashChecklistStepSection.START_FLASH}
+          nextSection={LegacyFlashChecklistStepSection.START_FLASH}
         />
       ),
     },
@@ -120,11 +120,13 @@ const StateProceedWithFlashChecklist = ({
             </p>
           }
           actionButtonTitle="Update Ingest Instance Status"
-          actionButtonEnabled={currentIngestStatus.isReadyToFlash()}
+          actionButtonEnabled={legacyCurrentRawDataInstanceStatus.isReadyToFlash()}
           onActionButtonClick={async () =>
             setStatusInPrimaryAndSecondaryTo(stateCode, "FLASH_IN_PROGRESS")
           }
-          nextSection={FlashChecklistStepSection.PRIMARY_RAW_DATA_DEPRECATION}
+          nextSection={
+            LegacyFlashChecklistStepSection.PRIMARY_RAW_DATA_DEPRECATION
+          }
         />
       ),
     },
@@ -138,7 +140,7 @@ const StateProceedWithFlashChecklist = ({
           description={
             <p>Move all primary instance raw data to a backup dataset in BQ.</p>
           }
-          actionButtonEnabled={currentIngestStatus.isFlashInProgress()}
+          actionButtonEnabled={legacyCurrentRawDataInstanceStatus.isFlashInProgress()}
           actionButtonTitle="Move PRIMARY Raw Data to Backup"
           onActionButtonClick={async () =>
             copyRawDataToBackup(stateCode, DirectIngestInstance.PRIMARY)
@@ -160,7 +162,7 @@ const StateProceedWithFlashChecklist = ({
               </code>
             </p>
           }
-          actionButtonEnabled={currentIngestStatus.isReimportCancellationInProgress()}
+          actionButtonEnabled={legacyCurrentRawDataInstanceStatus.isReimportCancellationInProgress()}
           actionButtonTitle="Clean up PRIMARY raw data"
           onActionButtonClick={async () =>
             deleteTablesInPruningDatasets(
@@ -182,7 +184,7 @@ const StateProceedWithFlashChecklist = ({
               as invalidated.
             </p>
           }
-          actionButtonEnabled={currentIngestStatus.isFlashInProgress()}
+          actionButtonEnabled={legacyCurrentRawDataInstanceStatus.isFlashInProgress()}
           actionButtonTitle="Invalidate primary rows"
           onActionButtonClick={async () =>
             invalidateIngestPipelineRuns(
@@ -204,7 +206,7 @@ const StateProceedWithFlashChecklist = ({
               table as invalidated.
             </p>
           }
-          actionButtonEnabled={currentIngestStatus.isFlashInProgress()}
+          actionButtonEnabled={legacyCurrentRawDataInstanceStatus.isFlashInProgress()}
           actionButtonTitle="Deprecate primary rows"
           onActionButtonClick={async () =>
             markInstanceRawDataInvalidated(
@@ -212,7 +214,9 @@ const StateProceedWithFlashChecklist = ({
               DirectIngestInstance.PRIMARY
             )
           }
-          nextSection={FlashChecklistStepSection.FLASH_RAW_DATA_TO_PRIMARY}
+          nextSection={
+            LegacyFlashChecklistStepSection.FLASH_RAW_DATA_TO_PRIMARY
+          }
         />
       ),
     },
@@ -231,7 +235,7 @@ const StateProceedWithFlashChecklist = ({
               <code>PRIMARY</code>.
             </p>
           }
-          actionButtonEnabled={currentIngestStatus.isFlashInProgress()}
+          actionButtonEnabled={legacyCurrentRawDataInstanceStatus.isFlashInProgress()}
           actionButtonTitle="Move Secondary Raw Data Metadata"
           onActionButtonClick={async () =>
             transferRawDataMetadataToNewInstance(
@@ -254,7 +258,7 @@ const StateProceedWithFlashChecklist = ({
               <code>{primaryRawDataDataset}</code>
             </p>
           }
-          actionButtonEnabled={currentIngestStatus.isFlashInProgress()}
+          actionButtonEnabled={legacyCurrentRawDataInstanceStatus.isFlashInProgress()}
           actionButtonTitle="Copy Secondary Raw Data"
           onActionButtonClick={async () =>
             copyRawDataBetweenInstances(
@@ -277,7 +281,7 @@ const StateProceedWithFlashChecklist = ({
               <CodeBlock
                 enabled={
                   currentStepSection ===
-                  FlashChecklistStepSection.FLASH_RAW_DATA_TO_PRIMARY
+                  LegacyFlashChecklistStepSection.FLASH_RAW_DATA_TO_PRIMARY
                 }
               >
                 python -m
@@ -287,7 +291,9 @@ const StateProceedWithFlashChecklist = ({
               </CodeBlock>
             </p>
           }
-          nextSection={FlashChecklistStepSection.SECONDARY_RAW_DATA_CLEANUP}
+          nextSection={
+            LegacyFlashChecklistStepSection.SECONDARY_RAW_DATA_CLEANUP
+          }
         />
       ),
     },
@@ -305,7 +311,7 @@ const StateProceedWithFlashChecklist = ({
               deleting the tables themselves)
             </p>
           }
-          actionButtonEnabled={currentIngestStatus.isFlashInProgress()}
+          actionButtonEnabled={legacyCurrentRawDataInstanceStatus.isFlashInProgress()}
           actionButtonTitle="Clean up SECONDARY raw data"
           onActionButtonClick={async () =>
             deleteContentsOfRawDataTables(
@@ -313,7 +319,7 @@ const StateProceedWithFlashChecklist = ({
               DirectIngestInstance.SECONDARY
             )
           }
-          nextSection={FlashChecklistStepSection.FINALIZE_FLASH}
+          nextSection={LegacyFlashChecklistStepSection.FINALIZE_FLASH}
         />
       ),
     },
@@ -331,7 +337,7 @@ const StateProceedWithFlashChecklist = ({
               {stateCode}.
             </p>
           }
-          actionButtonEnabled={currentIngestStatus.isFlashInProgress()}
+          actionButtonEnabled={legacyCurrentRawDataInstanceStatus.isFlashInProgress()}
           actionButtonTitle="Update Ingest Instance Status"
           onActionButtonClick={async () =>
             setStatusInPrimaryAndSecondaryTo(stateCode, "FLASH_COMPLETED")
@@ -350,7 +356,7 @@ const StateProceedWithFlashChecklist = ({
               {stateCode}.
             </p>
           }
-          actionButtonEnabled={currentIngestStatus.isFlashCompleted()}
+          actionButtonEnabled={legacyCurrentRawDataInstanceStatus.isFlashCompleted()}
           actionButtonTitle="Update Ingest Instance Status"
           onActionButtonClick={async () =>
             changeIngestInstanceStatus(
@@ -359,7 +365,7 @@ const StateProceedWithFlashChecklist = ({
               "NO_RAW_DATA_REIMPORT_IN_PROGRESS"
             )
           }
-          nextSection={FlashChecklistStepSection.RESUME_OPERATIONS}
+          nextSection={LegacyFlashChecklistStepSection.RESUME_OPERATIONS}
         />
       ),
     },
@@ -376,11 +382,11 @@ const StateProceedWithFlashChecklist = ({
             </p>
           }
           actionButtonTitle="Unpause Queues"
-          actionButtonEnabled={currentIngestStatus.isNoReimportInProgress()}
+          actionButtonEnabled={legacyCurrentRawDataInstanceStatus.isNoReimportInProgress()}
           onActionButtonClick={async () =>
             updateIngestQueuesState(stateCode, QueueState.RUNNING)
           }
-          nextSection={FlashChecklistStepSection.TRIGGER_PIPELINES}
+          nextSection={LegacyFlashChecklistStepSection.TRIGGER_PIPELINES}
         />
       ),
     },
@@ -402,7 +408,7 @@ const StateProceedWithFlashChecklist = ({
           onActionButtonClick={async () =>
             triggerCalculationDAGForState(stateCode)
           }
-          nextSection={FlashChecklistStepSection.DONE}
+          nextSection={LegacyFlashChecklistStepSection.DONE}
         />
       ),
     },
@@ -414,28 +420,32 @@ const StateProceedWithFlashChecklist = ({
       <h1>Proceeding with Flash of Rerun Results from SECONDARY to PRIMARY</h1>
       <h3 style={{ color: "green" }}>Current Ingest Instance Statuses:</h3>
       <ul style={{ color: "green" }}>
-        <li>PRIMARY INSTANCE: {currentIngestStatus.primary}</li>
-        <li>SECONDARY INSTANCE: {currentIngestStatus.secondary}</li>
+        <li>PRIMARY INSTANCE: {legacyCurrentRawDataInstanceStatus.primary}</li>
+        <li>
+          SECONDARY INSTANCE: {legacyCurrentRawDataInstanceStatus.secondary}
+        </li>
       </ul>
       <Divider />
       <ChecklistSection
         currentStep={currentStep}
         currentStepSection={currentStepSection}
-        stepSection={FlashChecklistStepSection.PAUSE_OPERATIONS}
+        stepSection={LegacyFlashChecklistStepSection.PAUSE_OPERATIONS}
         headerContents={<p>Pause Operations</p>}
         items={pauseOperationsSteps}
       />
       <ChecklistSection
         currentStep={currentStep}
         currentStepSection={currentStepSection}
-        stepSection={FlashChecklistStepSection.START_FLASH}
+        stepSection={LegacyFlashChecklistStepSection.START_FLASH}
         headerContents={<p>Start Flash</p>}
         items={startFlashSteps}
       />
       <ChecklistSection
         currentStep={currentStep}
         currentStepSection={currentStepSection}
-        stepSection={FlashChecklistStepSection.PRIMARY_RAW_DATA_DEPRECATION}
+        stepSection={
+          LegacyFlashChecklistStepSection.PRIMARY_RAW_DATA_DEPRECATION
+        }
         headerContents={
           <p>
             Deprecate Raw Data and Associated Metadata in <code>PRIMARY</code>
@@ -446,7 +456,7 @@ const StateProceedWithFlashChecklist = ({
       <ChecklistSection
         currentStep={currentStep}
         currentStepSection={currentStepSection}
-        stepSection={FlashChecklistStepSection.FLASH_RAW_DATA_TO_PRIMARY}
+        stepSection={LegacyFlashChecklistStepSection.FLASH_RAW_DATA_TO_PRIMARY}
         headerContents={
           <p>
             Flash Raw Data to <code>PRIMARY</code>
@@ -457,7 +467,7 @@ const StateProceedWithFlashChecklist = ({
       <ChecklistSection
         currentStep={currentStep}
         currentStepSection={currentStepSection}
-        stepSection={FlashChecklistStepSection.SECONDARY_RAW_DATA_CLEANUP}
+        stepSection={LegacyFlashChecklistStepSection.SECONDARY_RAW_DATA_CLEANUP}
         headerContents={
           <p>
             Clean Up Raw Data in <code>SECONDARY</code>
@@ -468,28 +478,28 @@ const StateProceedWithFlashChecklist = ({
       <ChecklistSection
         currentStep={currentStep}
         currentStepSection={currentStepSection}
-        stepSection={FlashChecklistStepSection.FINALIZE_FLASH}
+        stepSection={LegacyFlashChecklistStepSection.FINALIZE_FLASH}
         headerContents={<p>Finalize Flash</p>}
         items={finalizeFlashSteps}
       />
       <ChecklistSection
         currentStep={currentStep}
         currentStepSection={currentStepSection}
-        stepSection={FlashChecklistStepSection.RESUME_OPERATIONS}
+        stepSection={LegacyFlashChecklistStepSection.RESUME_OPERATIONS}
         headerContents={<p>Resume Operations</p>}
         items={resumeOperationsSteps}
       />
       <ChecklistSection
         currentStep={currentStep}
         currentStepSection={currentStepSection}
-        stepSection={FlashChecklistStepSection.TRIGGER_PIPELINES}
+        stepSection={LegacyFlashChecklistStepSection.TRIGGER_PIPELINES}
         headerContents={<p>Trigger Pipelines</p>}
         items={triggerPipelinesSteps}
       />
       <ChecklistSection
         currentStep={currentStep}
         currentStepSection={currentStepSection}
-        stepSection={FlashChecklistStepSection.DONE}
+        stepSection={LegacyFlashChecklistStepSection.DONE}
         headerContents={<p style={{ color: "green" }}>Flash is complete!</p>}
         items={[]}
       >
@@ -514,4 +524,4 @@ const setStatusInPrimaryAndSecondaryTo = async (
   return primaryResponse.status !== 200 ? primaryResponse : secondaryResponse;
 };
 
-export default observer(StateProceedWithFlashChecklist);
+export default observer(LegacyStateProceedWithFlashChecklist);
