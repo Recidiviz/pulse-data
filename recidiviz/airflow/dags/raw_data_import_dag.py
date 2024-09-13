@@ -77,6 +77,7 @@ from recidiviz.airflow.dags.raw_data.metadata import (
     PROCESSED_PATHS_TO_RENAME,
     REQUIRES_PRE_IMPORT_NORMALIZATION_FILES,
     REQUIRES_PRE_IMPORT_NORMALIZATION_FILES_BQ_METADATA,
+    REQUIRES_PRE_IMPORT_NORMALIZATION_FILES_BQ_SCHEMA,
     RESOURCE_LOCK_ACQUISITION_DESCRIPTION,
     RESOURCE_LOCKS_NEEDED,
     SKIPPED_FILE_ERRORS,
@@ -268,6 +269,7 @@ def create_single_state_code_ingest_instance_raw_data_import_branch(
             pre_import_normalization_result = regroup_and_verify_file_chunks(
                 normalized_chunks.output,
                 files_to_process[REQUIRES_PRE_IMPORT_NORMALIZATION_FILES_BQ_METADATA],
+                files_to_process[REQUIRES_PRE_IMPORT_NORMALIZATION_FILES_BQ_SCHEMA],
             )
             raise_chunk_normalization_errors(pre_import_normalization_result)
 

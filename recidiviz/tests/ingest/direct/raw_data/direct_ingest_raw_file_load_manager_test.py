@@ -45,6 +45,7 @@ from recidiviz.ingest.direct.types.raw_data_import_blocking_validation import (
 from recidiviz.ingest.direct.types.raw_data_import_types import (
     AppendReadyFile,
     ImportReadyFile,
+    RawFileBigQueryLoadConfig,
 )
 from recidiviz.tests.big_query.big_query_emulator_test_case import (
     BigQueryEmulatorTestCase,
@@ -243,6 +244,9 @@ class TestDirectIngestRawFileLoadManager(BigQueryEmulatorTestCase):
             update_datetime=datetime.datetime(2024, 1, 1, 1, 1, 1, tzinfo=datetime.UTC),
             original_file_paths=input_paths,
             pre_import_normalized_file_paths=None,
+            bq_load_config=RawFileBigQueryLoadConfig.from_raw_file_config(
+                raw_file_config=self.region_raw_file_config.raw_file_configs[file_tag],
+            ),
         )
         append_ready_file = self.manager.load_and_prep_paths(irf)
 
@@ -308,6 +312,9 @@ class TestDirectIngestRawFileLoadManager(BigQueryEmulatorTestCase):
             update_datetime=datetime.datetime(2024, 1, 1, 1, 1, 1, tzinfo=datetime.UTC),
             original_file_paths=input_paths,
             pre_import_normalized_file_paths=None,
+            bq_load_config=RawFileBigQueryLoadConfig.from_raw_file_config(
+                raw_file_config=self.region_raw_file_config.raw_file_configs[file_tag],
+            ),
         )
         append_ready_file = self.manager.load_and_prep_paths(irf)
 
@@ -394,6 +401,9 @@ class TestDirectIngestRawFileLoadManager(BigQueryEmulatorTestCase):
             ),
             original_file_paths=input_paths,
             pre_import_normalized_file_paths=None,
+            bq_load_config=RawFileBigQueryLoadConfig.from_raw_file_config(
+                raw_file_config=self.region_raw_file_config.raw_file_configs[file_tag],
+            ),
         )
         append_ready_file = self.manager.load_and_prep_paths(irf)
 
@@ -418,6 +428,9 @@ class TestDirectIngestRawFileLoadManager(BigQueryEmulatorTestCase):
             update_datetime=datetime.datetime(2023, 4, 8, 0, 0, 1, tzinfo=datetime.UTC),
             original_file_paths=input_paths,
             pre_import_normalized_file_paths=None,
+            bq_load_config=RawFileBigQueryLoadConfig.from_raw_file_config(
+                raw_file_config=self.region_raw_file_config.raw_file_configs[file_tag],
+            ),
         )
         append_ready_file = self.manager.load_and_prep_paths(irf)
 
@@ -447,6 +460,11 @@ class TestDirectIngestRawFileLoadManager(BigQueryEmulatorTestCase):
                     ),
                     original_file_paths=input_paths,
                     pre_import_normalized_file_paths=None,
+                    bq_load_config=RawFileBigQueryLoadConfig.from_raw_file_config(
+                        raw_file_config=self.region_raw_file_config.raw_file_configs[
+                            file_tag
+                        ],
+                    ),
                 )
             )
 
@@ -485,6 +503,11 @@ class TestDirectIngestRawFileLoadManager(BigQueryEmulatorTestCase):
                     ),
                     original_file_paths=input_paths,
                     pre_import_normalized_file_paths=input_paths,
+                    bq_load_config=RawFileBigQueryLoadConfig.from_raw_file_config(
+                        raw_file_config=self.region_raw_file_config.raw_file_configs[
+                            file_tag
+                        ],
+                    ),
                 )
             )
 
@@ -523,6 +546,11 @@ class TestDirectIngestRawFileLoadManager(BigQueryEmulatorTestCase):
                     ),
                     original_file_paths=input_paths,
                     pre_import_normalized_file_paths=input_paths,
+                    bq_load_config=RawFileBigQueryLoadConfig.from_raw_file_config(
+                        raw_file_config=self.region_raw_file_config.raw_file_configs[
+                            file_tag
+                        ],
+                    ),
                 )
             )
 
@@ -565,6 +593,11 @@ class TestDirectIngestRawFileLoadManager(BigQueryEmulatorTestCase):
                         ),
                         original_file_paths=input_paths,
                         pre_import_normalized_file_paths=input_paths,
+                        bq_load_config=RawFileBigQueryLoadConfig.from_raw_file_config(
+                            raw_file_config=self.region_raw_file_config.raw_file_configs[
+                                file_tag
+                            ],
+                        ),
                     )
                 )
 
@@ -606,6 +639,11 @@ class TestDirectIngestRawFileLoadManager(BigQueryEmulatorTestCase):
                         ),
                         original_file_paths=input_paths,
                         pre_import_normalized_file_paths=None,
+                        bq_load_config=RawFileBigQueryLoadConfig.from_raw_file_config(
+                            raw_file_config=self.region_raw_file_config.raw_file_configs[
+                                file_tag
+                            ],
+                        ),
                     )
                 )
 
@@ -647,6 +685,9 @@ class TestDirectIngestRawFileLoadManager(BigQueryEmulatorTestCase):
                             ),
                             original_file_paths=[],
                             pre_import_normalized_file_paths=None,
+                            bq_load_config=RawFileBigQueryLoadConfig(
+                                schema_fields=[], skip_leading_rows=0
+                            ),
                         ),
                         append_ready_table_address=BigQueryAddress.from_str(
                             '"us_xx_primary_raw_data_temp_load.singlePrimaryKey__1__transformed"'
@@ -694,6 +735,11 @@ class TestDirectIngestRawFileLoadManager(BigQueryEmulatorTestCase):
                         ),
                         original_file_paths=input_paths,
                         pre_import_normalized_file_paths=None,
+                        bq_load_config=RawFileBigQueryLoadConfig.from_raw_file_config(
+                            raw_file_config=self.region_raw_file_config.raw_file_configs[
+                                file_tag
+                            ],
+                        ),
                     )
                 )
 

@@ -142,7 +142,7 @@ def split_by_pre_import_normalization_type(
                 pre_import_normalization_required_files.append(gcs_file.path)
         else:
             import_ready_files.append(
-                ImportReadyFile.from_bq_metadata_and_schema(metadata, bq_schema)
+                ImportReadyFile.from_bq_metadata_and_load_config(metadata, bq_schema)
             )
 
     return {

@@ -532,7 +532,7 @@ class RawDataImportOperationsRegistrationIntegrationTest(AirflowIntegrationTest)
                             "testing/unprocessed_2024-01-25T16:35:33:617135_raw_tagBasicData.csv",
                         )
                     ],
-                    bq_table_schema=RawFileBigQueryLoadConfig.from_headers_and_raw_file_config(
+                    bq_load_config=RawFileBigQueryLoadConfig.from_headers_and_raw_file_config(
                         file_headers=["col1", "col2", "col3"],
                         raw_file_config=region_raw_file_config.raw_file_configs[
                             "tagBasicData"
@@ -551,7 +551,7 @@ class RawDataImportOperationsRegistrationIntegrationTest(AirflowIntegrationTest)
                             "testing/unprocessed_2024-01-26T16:35:33:617135_raw_tagFileConfigHeaders.csv",
                         )
                     ],
-                    bq_table_schema=RawFileBigQueryLoadConfig.from_headers_and_raw_file_config(
+                    bq_load_config=RawFileBigQueryLoadConfig.from_headers_and_raw_file_config(
                         file_headers=["col1", "col2", "col3"],
                         raw_file_config=region_raw_file_config.raw_file_configs[
                             "tagFileConfigHeaders"
@@ -886,6 +886,7 @@ class RawDataImportDagPreImportNormalizationIntegrationTest(AirflowIntegrationTe
         self.input_bq_metadata: List[str] = []
         self.chunking_return_value: List[str] = []
         self.normalization_return_value: List[str] = []
+        self.input_bq_load_config: Dict[str, str] = {}
 
     def tearDown(self) -> None:
         self.environment_patcher.stop()
@@ -931,13 +932,21 @@ class RawDataImportDagPreImportNormalizationIntegrationTest(AirflowIntegrationTe
         return _inner
 
     def _regroup(self, func: Callable) -> Callable:
-        # small wrapper to pass self.input_bq_metadata to as the
-        # serialized_requires_pre_import_normalization_files_bq_metadata parameter of
-        # regroup_and_verify_file_chunks
+        # small wrapper to pass self.input_bq_metadata as the
+        # serialized_requires_pre_import_normalization_files_bq_metadata parameter
+        # and self.input_bq_load_config as the serialized_bq_table_schema parameter
+        # of regroup_and_verify_file_chunks
         def _inner(
-            normalized_chunks_result: List[str], _irrelevant: Any, **_kwargs: Any
+            normalized_chunks_result: List[str],
+            _irrelevant_metadata: Any,
+            _irrelevant_load_config: Any,
+            **_kwargs: Any,
         ) -> Any:
-            return func(normalized_chunks_result, self.input_bq_metadata)
+            return func(
+                normalized_chunks_result,
+                self.input_bq_metadata,
+                self.input_bq_load_config,
+            )
 
         return _inner
 
@@ -1238,6 +1247,17 @@ class RawDataImportDagPreImportNormalizationIntegrationTest(AirflowIntegrationTe
                 file_id=3,
             ).serialize(),
         ]
+        self.input_bq_load_config = {
+            "1": RawFileBigQueryLoadConfig(
+                schema_fields=[], skip_leading_rows=0
+            ).serialize(),
+            "2": RawFileBigQueryLoadConfig(
+                schema_fields=[], skip_leading_rows=0
+            ).serialize(),
+            "3": RawFileBigQueryLoadConfig(
+                schema_fields=[], skip_leading_rows=0
+            ).serialize(),
+        }
 
         step_3_only_dag = self._create_dag().partial_subset(
             task_ids_or_regex=[
@@ -1299,6 +1319,9 @@ class RawDataImportDagPreImportNormalizationIntegrationTest(AirflowIntegrationTe
                             "testing/unprocessed_2024-01-25T16:35:33:617135_raw_singlePrimaryKey.csv",
                         )
                     ],
+                    bq_load_config=RawFileBigQueryLoadConfig(
+                        schema_fields=[], skip_leading_rows=0
+                    ),
                 ),
                 ImportReadyFile(
                     file_id=2,
@@ -1322,6 +1345,9 @@ class RawDataImportDagPreImportNormalizationIntegrationTest(AirflowIntegrationTe
                             "testing/unprocessed_2024-01-26T16:35:33:617135_raw_singlePrimaryKey.csv",
                         )
                     ],
+                    bq_load_config=RawFileBigQueryLoadConfig(
+                        schema_fields=[], skip_leading_rows=0
+                    ),
                 ),
                 ImportReadyFile(
                     file_id=3,
@@ -1345,6 +1371,9 @@ class RawDataImportDagPreImportNormalizationIntegrationTest(AirflowIntegrationTe
                             "testing/unprocessed_2024-01-27T16:35:33:617135_raw_singlePrimaryKey.csv",
                         )
                     ],
+                    bq_load_config=RawFileBigQueryLoadConfig(
+                        schema_fields=[], skip_leading_rows=0
+                    ),
                 ),
             ]
         assert _comparable(regrouped_and_verified.results) == _comparable(
@@ -1616,6 +1645,17 @@ class RawDataImportDagPreImportNormalizationIntegrationTest(AirflowIntegrationTe
                 file_id=3,
             ).serialize(),
         ]
+        self.input_bq_load_config = {
+            "1": RawFileBigQueryLoadConfig(
+                schema_fields=[], skip_leading_rows=0
+            ).serialize(),
+            "2": RawFileBigQueryLoadConfig(
+                schema_fields=[], skip_leading_rows=0
+            ).serialize(),
+            "3": RawFileBigQueryLoadConfig(
+                schema_fields=[], skip_leading_rows=0
+            ).serialize(),
+        }
 
         step_3_only_dag = self._create_dag().partial_subset(
             task_ids_or_regex=[
@@ -1718,6 +1758,9 @@ class RawDataImportDagPreImportNormalizationIntegrationTest(AirflowIntegrationTe
                             "testing/unprocessed_2024-01-26T16:35:33:617135_raw_singlePrimaryKey.csv",
                         )
                     ],
+                    bq_load_config=RawFileBigQueryLoadConfig(
+                        schema_fields=[], skip_leading_rows=0
+                    ),
                 ),
                 ImportReadyFile(
                     file_id=3,
@@ -1741,6 +1784,9 @@ class RawDataImportDagPreImportNormalizationIntegrationTest(AirflowIntegrationTe
                             "testing/unprocessed_2024-01-27T16:35:33:617135_raw_singlePrimaryKey.csv",
                         )
                     ],
+                    bq_load_config=RawFileBigQueryLoadConfig(
+                        schema_fields=[], skip_leading_rows=0
+                    ),
                 ),
             ]
         assert _comparable(regrouped_and_verified.results) == _comparable(
@@ -1965,6 +2011,17 @@ class RawDataImportDagPreImportNormalizationIntegrationTest(AirflowIntegrationTe
                 file_id=3,
             ).serialize(),
         ]
+        self.input_bq_load_config = {
+            "1": RawFileBigQueryLoadConfig(
+                schema_fields=[], skip_leading_rows=0
+            ).serialize(),
+            "2": RawFileBigQueryLoadConfig(
+                schema_fields=[], skip_leading_rows=0
+            ).serialize(),
+            "3": RawFileBigQueryLoadConfig(
+                schema_fields=[], skip_leading_rows=0
+            ).serialize(),
+        }
 
         step_3_only_dag = self._create_dag().partial_subset(
             task_ids_or_regex=[
@@ -2059,6 +2116,9 @@ class RawDataImportDagPreImportNormalizationIntegrationTest(AirflowIntegrationTe
                             "testing/unprocessed_2024-01-26T16:35:33:617135_raw_singlePrimaryKey.csv",
                         )
                     ],
+                    bq_load_config=RawFileBigQueryLoadConfig(
+                        schema_fields=[], skip_leading_rows=0
+                    ),
                 ),
                 ImportReadyFile(
                     file_id=3,
@@ -2082,6 +2142,9 @@ class RawDataImportDagPreImportNormalizationIntegrationTest(AirflowIntegrationTe
                             "testing/unprocessed_2024-01-27T16:35:33:617135_raw_singlePrimaryKey.csv",
                         )
                     ],
+                    bq_load_config=RawFileBigQueryLoadConfig(
+                        schema_fields=[], skip_leading_rows=0
+                    ),
                 ),
             ]
         assert _comparable(regrouped_and_verified.results) == _comparable(
@@ -2238,6 +2301,9 @@ class RawDataImportDagBigQueryLoadIntegrationTest(AirflowIntegrationTest):
                         "testing/unprocessed_2024-01-26T16:35:33:617135_raw_singlePrimaryKey.csv",
                     )
                 ],
+                bq_load_config=RawFileBigQueryLoadConfig(
+                    schema_fields=[], skip_leading_rows=0
+                ),
             ),
             ImportReadyFile(
                 file_id=3,
@@ -2261,6 +2327,9 @@ class RawDataImportDagBigQueryLoadIntegrationTest(AirflowIntegrationTest):
                         "testing/unprocessed_2024-01-27T16:35:33:617135_raw_singlePrimaryKey.csv",
                     )
                 ],
+                bq_load_config=RawFileBigQueryLoadConfig(
+                    schema_fields=[], skip_leading_rows=0
+                ),
             ),
         ]
 

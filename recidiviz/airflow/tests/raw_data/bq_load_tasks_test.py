@@ -40,6 +40,7 @@ from recidiviz.ingest.direct.types.raw_data_import_types import (
     AppendSummary,
     ImportReadyFile,
     RawDataAppendImportError,
+    RawFileBigQueryLoadConfig,
     RawFileLoadAndPrepError,
 )
 from recidiviz.tests.ingest.direct import fake_regions
@@ -50,6 +51,10 @@ class LoadAndPrepForRegionTest(TestCase):
     """Unit tests for load_and_prep_paths_for_region airflow task"""
 
     def setUp(self) -> None:
+        self.project_id_patcher = patch("recidiviz.utils.metadata.project_id")
+        self.mock_project_id_fn = self.project_id_patcher.start()
+        self.mock_project_id_fn.return_value = "recidiviz-456"
+
         self.load_manager_patch = patch(
             "recidiviz.airflow.dags.raw_data.bq_load_tasks.DirectIngestRawFileLoadManager.load_and_prep_paths"
         )
@@ -77,6 +82,9 @@ class LoadAndPrepForRegionTest(TestCase):
                     2024, 1, 1, 1, 1, 1, tzinfo=datetime.UTC
                 ),
                 pre_import_normalized_file_paths=None,
+                bq_load_config=RawFileBigQueryLoadConfig(
+                    schema_fields=[], skip_leading_rows=1
+                ),
             ),
             ImportReadyFile(
                 file_id=2,
@@ -86,6 +94,9 @@ class LoadAndPrepForRegionTest(TestCase):
                     2024, 1, 2, 1, 1, 1, tzinfo=datetime.UTC
                 ),
                 pre_import_normalized_file_paths=None,
+                bq_load_config=RawFileBigQueryLoadConfig(
+                    schema_fields=[], skip_leading_rows=1
+                ),
             ),
             ImportReadyFile(
                 file_id=3,
@@ -95,10 +106,14 @@ class LoadAndPrepForRegionTest(TestCase):
                     2024, 1, 3, 1, 1, 1, tzinfo=datetime.UTC
                 ),
                 pre_import_normalized_file_paths=None,
+                bq_load_config=RawFileBigQueryLoadConfig(
+                    schema_fields=[], skip_leading_rows=1
+                ),
             ),
         ]
 
     def tearDown(self) -> None:
+        self.project_id_patcher.stop()
         self.load_manager_patch.stop()
         self.bq_patch.stop()
         self.fs_patch.stop()
@@ -206,6 +221,9 @@ class GenerateAppendBatchesTest(TestCase):
             original_file_paths=[],
             update_datetime=datetime.datetime(2024, 1, 1, 1, 1, 1, tzinfo=datetime.UTC),
             pre_import_normalized_file_paths=None,
+            bq_load_config=RawFileBigQueryLoadConfig(
+                schema_fields=[], skip_leading_rows=1
+            ),
         )
         return [
             AppendReadyFile(
@@ -387,6 +405,10 @@ class AppendToRawDataTableForRegionTest(TestCase):
     """Unit tests for append_to_raw_data_table_for_region airflow task"""
 
     def setUp(self) -> None:
+        self.project_id_patcher = patch("recidiviz.utils.metadata.project_id")
+        self.mock_project_id_fn = self.project_id_patcher.start()
+        self.mock_project_id_fn.return_value = "recidiviz-456"
+
         self.load_manager_patch = patch(
             "recidiviz.airflow.dags.raw_data.bq_load_tasks.DirectIngestRawFileLoadManager.append_to_raw_data_table"
         )
@@ -406,6 +428,7 @@ class AppendToRawDataTableForRegionTest(TestCase):
         self.region_module_patch.start()
 
     def tearDown(self) -> None:
+        self.project_id_patcher.stop()
         self.load_manager_patch.stop()
         self.bq_patch.stop()
         self.fs_patch.stop()
@@ -419,6 +442,9 @@ class AppendToRawDataTableForRegionTest(TestCase):
             original_file_paths=[],
             update_datetime=datetime.datetime(2024, 1, 1, 1, 1, 1, tzinfo=datetime.UTC),
             pre_import_normalized_file_paths=None,
+            bq_load_config=RawFileBigQueryLoadConfig(
+                schema_fields=[], skip_leading_rows=1
+            ),
         )
         return [
             AppendReadyFile(

@@ -41,9 +41,6 @@ from recidiviz.ingest.direct.raw_data.direct_ingest_raw_table_migration_collecto
 from recidiviz.ingest.direct.raw_data.direct_ingest_raw_table_pre_import_validator import (
     DirectIngestRawTablePreImportValidator,
 )
-from recidiviz.ingest.direct.raw_data.direct_ingest_raw_table_schema_builder import (
-    RawDataTableBigQuerySchemaBuilder,
-)
 from recidiviz.ingest.direct.raw_data.direct_ingest_raw_table_transformation_query_builder import (
     DirectIngestTempRawTablePreMigrationTransformationQueryBuilder,
 )
@@ -107,25 +104,24 @@ class DirectIngestRawFileLoadManager:
 
     def _load_paths_to_temp_table(
         self,
-        file_tag: str,
         paths: List[GcsfsFilePath],
         destination_address: BigQueryAddress,
         should_delete_temp_files: bool,
+        table_schema: List[bigquery.SchemaField],
+        skip_leading_rows: int,
     ) -> int:
         """Loads the raw data in the list of files at the provided |paths| into into
         |destination_address|, not including recidivz-managed fields
         """
         try:
-            load_job: LoadJob = self.big_query_client.load_table_from_cloud_storage_async(
-                source_uris=[p.uri() for p in paths],
-                destination_address=destination_address,
-                destination_table_schema=RawDataTableBigQuerySchemaBuilder.build_bq_schmea_for_config(
-                    raw_file_config=self.region_raw_file_config.raw_file_configs[
-                        file_tag
-                    ],
-                    include_recidiviz_managed_fields=False,
-                ),
-                write_disposition=bigquery.WriteDisposition.WRITE_TRUNCATE,
+            load_job: LoadJob = (
+                self.big_query_client.load_table_from_cloud_storage_async(
+                    source_uris=[p.uri() for p in paths],
+                    destination_address=destination_address,
+                    destination_table_schema=table_schema,
+                    write_disposition=bigquery.WriteDisposition.WRITE_TRUNCATE,
+                    skip_leading_rows=skip_leading_rows,
+                )
             )
         except Exception as e:
             logging.error(
@@ -269,12 +265,12 @@ class DirectIngestRawFileLoadManager:
         )
 
         try:
-
             raw_rows_count = self._load_paths_to_temp_table(
-                file.file_tag,
                 file.paths_to_load,
                 temp_raw_file_address,
                 bool(file.pre_import_normalized_file_paths),
+                file.bq_load_config.schema_fields,
+                file.bq_load_config.skip_leading_rows,
             )
 
             self._apply_pre_migration_transformations(
