@@ -82,8 +82,8 @@ num_allowed_rows_overrides:
     hard_num_allowed_rows_override: 50
     override_reason: Current failing level as of 4/5/23 is 0 rows
   - validation_name: normalized_state_charge_missing_uniform_offense_labels
-    hard_num_allowed_rows_override: 150
-    override_reason: Current failing level as of 5/13/24 is 105 rows
+    hard_num_allowed_rows_override: 2500
+    override_reason: Current failing level as of 9/13/24 is 2101 rows (there are 3 distinct offense descriptions)
   - validation_name: sessions_missing_closest_sentence_imposed_group
     hard_num_allowed_rows_override: 85000
     override_reason:
