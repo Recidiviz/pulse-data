@@ -212,7 +212,14 @@ class ViolationResponseNormalizationManager(EntityNormalizationManager):
         """Sorts the list of |violation_responses|."""
         # All responses will have a response_date at this point, but date.min helps
         # to satisfy mypy
-        violation_responses.sort(key=lambda b: b.response_date or datetime.date.min)
+        violation_responses.sort(
+            key=lambda b: (
+                b.response_date or datetime.date.min,
+                # For cases where there are multiple responses on the same day, sort by
+                # external id for determinism
+                b.external_id,
+            )
+        )
 
         return violation_responses
 
