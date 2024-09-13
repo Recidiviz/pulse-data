@@ -215,14 +215,26 @@ else
     echo "Skipping configuration and pipeline deploy steps for debug or no promote release build."
 fi
 
-echo "Deploying application - default"
-run_cmd pipenv run python -m recidiviz.tools.deploy.cloud_build.deployment_stage_runner \
-  --project-id "${PROJECT_ID}" \
-  --version-tag "${VERSION_TAG}" \
-  --commit-ref "${COMMIT_HASH}" \
-  --stage "DeployAppEngine" \
-  "${PROMOTE_FLAGS}"
-
+if [[ -n ${PROMOTE} ]]; then
+  echo "Deploying application - default"
+  run_cmd pipenv run python -m recidiviz.tools.deploy.cloud_build.deployment_stage_runner \
+    --project-id "${PROJECT_ID}" \
+    --version-tag "${VERSION_TAG}" \
+    --commit-ref "${COMMIT_HASH}" \
+    --stage "DeployAppEngine" \
+    "${PROMOTE_FLAGS}"
+else
+  echo "Skipping deployment of App Engine for no promote build"
+  if [[ -n ${DEBUG_BUILD_NAME} ]]; then
+    echo "If you wish to test the debug version on App Engine, run the following:"
+    echo "pipenv run python -m recidiviz.tools.deploy.cloud_build.deployment_stage_runner \\"
+    echo "  --project-id ${PROJECT_ID} \\"
+    echo "  --version-tag ${VERSION_TAG} \\"
+    echo "  --commit-ref ${COMMIT_HASH} \\"
+    echo "  --stage DeployAppEngine \\"
+    echo "  --no-promote"
+  fi
+fi
 
 if [[ -n ${PROMOTE} ]]; then
     echo "Deploy succeeded - triggering post-deploy jobs."
