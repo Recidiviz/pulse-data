@@ -27,9 +27,6 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.dataset_config import (
     task_eligibility_spans_state_specific_dataset,
 )
-from recidiviz.task_eligibility.utils.almost_eligible_query_fragments import (
-    clients_eligible,
-)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -42,17 +39,11 @@ US_AZ_RELEASE_TO_TPR_REQUEST_DESCRIPTION = """
 
 US_AZ_RELEASE_TO_TPR_REQUEST_QUERY_TEMPLATE = f"""
 
-WITH current_incarceration_pop_cte AS (
+WITH eligible_and_almost_eligible AS (
 {join_current_task_eligibility_spans_with_external_id(state_code="'US_AZ'",
                                                       tes_task_query_view='release_to_tpr_request_materialized',
-                                                      id_type="'US_AZ_ADC_NUMBER'")}
-),
-
-eligible_and_almost_eligible AS (
-
-    -- ELIGIBLE
-    {clients_eligible(from_cte='current_incarceration_pop_cte')}
-
+                                                      id_type="'US_AZ_ADC_NUMBER'",
+                                                      eligible_only=True)}
 )
 
 SELECT 

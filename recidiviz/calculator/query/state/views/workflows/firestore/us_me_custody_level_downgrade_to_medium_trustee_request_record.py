@@ -30,9 +30,6 @@ from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestIns
 from recidiviz.task_eligibility.dataset_config import (
     task_eligibility_spans_state_specific_dataset,
 )
-from recidiviz.task_eligibility.utils.almost_eligible_query_fragments import (
-    clients_eligible,
-)
 from recidiviz.task_eligibility.utils.us_me_query_fragments import (
     PROGRAM_ENROLLMENT_NOTE_TX_REGEX,
     cis_201_case_plan_case_notes,
@@ -60,10 +57,11 @@ _DROP_REPEATED_MEDIUM_TRUSTEE_NOTES = """(SELECT *
 
 US_ME_CUSTODY_LEVEL_DOWNGRADE_TO_MEDIUM_TRUSTEE_RECORD_QUERY_TEMPLATE = f"""
 
-WITH current_incarceration_pop_cte AS (
+WITH eligible_and_almost_eligible AS (
 {join_current_task_eligibility_spans_with_external_id(state_code="'US_ME'",
                                                       tes_task_query_view='custody_level_downgrade_to_medium_trustee_request_materialized',
-                                                      id_type="'US_ME_DOC'")}
+                                                      id_type="'US_ME_DOC'",
+                                                      eligible_only=True)}
 ),
 
 case_notes_cte AS (
@@ -98,13 +96,6 @@ case_notes_cte AS (
     -- Case Plan Goals
     {cis_201_case_plan_case_notes()}
 ), 
-
-eligible_and_almost_eligible AS (
-
-    -- ELIGIBLE
-    {clients_eligible(from_cte='current_incarceration_pop_cte')}
-    
-),
 
 array_case_notes_cte AS (
 {array_agg_case_notes_by_external_id(left_join_cte=_DROP_REPEATED_MEDIUM_TRUSTEE_NOTES)}

@@ -41,11 +41,10 @@ from recidiviz.calculator.query.state.views.analyst_data.workflows_person_events
 )
 from recidiviz.common.str_field_utils import snake_to_title
 
-# TODO(#21350): Remove [WIP] label once almost_eligible flag is properly hydrated in TES
 AVG_DAILY_POPULATION_TASK_ALMOST_ELIGIBLE_LOOKER = DailyAvgSpanCountMetric(
     name="avg_population_task_almost_eligible",
-    display_name="[WIP] Average Population: Task Almost Eligible",
-    description="[WIP] Average daily count of clients almost eligible for selected task type",
+    display_name="Average Population: Task Almost Eligible",
+    description="Average daily count of clients almost eligible for selected task type",
     span_selectors=[
         SpanSelector(
             span_type=SpanType.WORKFLOWS_PERSON_IMPACT_FUNNEL_STATUS_SESSION,
@@ -58,8 +57,8 @@ AVG_DAILY_POPULATION_TASK_ALMOST_ELIGIBLE_LOOKER = DailyAvgSpanCountMetric(
 AVG_DAILY_POPULATION_TASK_ALMOST_ELIGIBLE_LOOKER_FUNNEL_METRICS = [
     DailyAvgSpanCountMetric(
         name=f"avg_population_task_almost_eligible_{k.lower()}",
-        display_name=f"[WIP] Average Population: Task Almost Eligible And {snake_to_title(k)}",
-        description=f"[WIP] Average daily count of clients almost eligible for selected task type with funnel status "
+        display_name=f"Average Population: Task Almost Eligible And {snake_to_title(k)}",
+        description=f"Average daily count of clients almost eligible for selected task type with funnel status "
         f"{snake_to_title(k).lower()}",
         span_selectors=[
             SpanSelector(
