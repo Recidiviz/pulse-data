@@ -88,8 +88,8 @@ def get_all_outliers_validations(
         SamenessDataValidationCheck(
             view_builder=STATEWIDE_TARGET_PERCENT_CHANGE_EXCEEDED_VIEW_BUILDER,
             comparison_columns=[
-                "last_export_target",
-                "current_target",
+                "prev_target",
+                "target",
             ],
             soft_max_allowed_error=0.10,
             hard_max_allowed_error=0.20,
@@ -99,8 +99,8 @@ def get_all_outliers_validations(
         SamenessDataValidationCheck(
             view_builder=OUTLIER_STATUS_PERCENT_CHANGE_EXCEEDED_VIEW_BUILDER,
             comparison_columns=[
-                "last_export_count",
-                "current_count",
+                "prev_outliers_count",
+                "outliers_count",
             ],
             soft_max_allowed_error=0.10,
             hard_max_allowed_error=0.30,

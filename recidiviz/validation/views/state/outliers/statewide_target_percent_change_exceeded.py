@@ -29,50 +29,85 @@ STATEWIDE_TARGET_PERCENT_CHANGE_EXCEEDED_VIEW_NAME = (
 )
 
 STATEWIDE_TARGET_PERCENT_CHANGE_EXCEEDED_DESCRIPTION = """
-Identifies when a considerable change in the statewide target has occurred for a given metric. 
-NOTE: This validation may pass on subsequent runs after failing even if the underlying issue is not resolved.
+Identifies when a considerable change in the statewide target has occurred for a given metric within a specific period within the last 7 exports.
+
+NOTES: 
+If the change is expected, you can wait for this validation to self-resolve because the failure will cycle out after 7 new exports.  
+However, this also means that the validation may pass on subsequent runs after failing even if the underlying issue is not resolved if there has been 7 new exports since.
+
+This validation only checks target rates for metrics, category_types, and caseload_types within periods that have previously been exported.  Also note that this validation does not identify changes in the statewide target between adjacent periods.
 """
 
 STATEWIDE_TARGET_PERCENT_CHANGE_EXCEEDED_QUERY_TEMPLATE = """
-WITH archived_targets AS (
-  -- Query the latest exported targets
-    SELECT
-        DISTINCT
-        state_code, 
-        metric_id, 
-        category_type,
-        caseload_type,
-        target, 
-        end_date,
-        export_date AS last_export_date
-    FROM `{project_id}.{outliers_views_dataset}.supervision_officer_outlier_status_archive_materialized`
-    QUALIFY ROW_NUMBER() OVER (PARTITION BY state_code, metric_id, category_type, caseload_type, end_date ORDER BY export_date DESC) = 1
-),
+WITH 
 current_targets AS (
   -- Query the current statewide targets
-    SELECT
-        DISTINCT
-        state_code, 
-        metric_id, 
-        category_type,
-        caseload_type,
-        target, 
-        end_date 
-    FROM `{project_id}.{outliers_views_dataset}.supervision_officer_outlier_status_materialized`
+  SELECT
+      DISTINCT
+      state_code, 
+      metric_id, 
+      category_type,
+      caseload_type,
+      target, 
+      end_date,
+      CURRENT_DATE('US/Eastern') AS date_of_data
+  FROM `{project_id}.{outliers_views_dataset}.supervision_officer_outlier_status_materialized`
+),
+current_metrics_types AS (
+  SELECT DISTINCT
+    state_code, 
+    metric_id,
+    category_type,
+    caseload_type,
+    end_date
+  FROM current_targets
+),
+archived_targets AS (
+  SELECT
+      DISTINCT
+      state_code, 
+      metric_id, 
+      category_type,
+      caseload_type,
+      target, 
+      end_date,
+      export_date
+  FROM `{project_id}.{outliers_views_dataset}.supervision_officer_outlier_status_archive_materialized`
+),
+archived_metrics_types AS (
+  SELECT DISTINCT
+    state_code, 
+    metric_id,
+    category_type,
+    caseload_type,
+    end_date,
+    MIN(export_date) OVER(PARTITION BY state_code, metric_id, category_type, caseload_type, end_date) AS earliest_export_date
+  FROM archived_targets
 )
-SELECT
-  state_code AS region_code,
-  metric_id,
-  category_type,
-  caseload_type,
-  end_date,
-  a.last_export_date,
-  COALESCE(a.target, 0) AS last_export_target,
-  c.target AS current_target
-FROM current_targets c
-LEFT JOIN archived_targets a
-  USING (state_code, metric_id, category_type, caseload_type, end_date)
-ORDER BY 1,2,3,4,5
+SELECT * EXCEPT(earliest_export_date)
+FROM (
+  SELECT
+    state_code AS region_code,
+    metric_id,
+    category_type,
+    caseload_type,
+    end_date,
+    date_of_data,
+    target,
+    LAG(target) OVER (PARTITION BY state_code, metric_id, category_type, caseload_type, end_date ORDER BY date_of_data) as prev_target,
+    LAG(date_of_data) OVER (PARTITION BY state_code, metric_id, category_type, caseload_type, end_date ORDER BY date_of_data) as prev_export_date,
+    earliest_export_date
+  FROM (
+    SELECT * FROM current_targets
+    UNION ALL
+    SELECT * FROM archived_targets
+  )
+  INNER JOIN current_metrics_types USING(state_code, metric_id, category_type, caseload_type, end_date)
+  INNER JOIN archived_metrics_types USING(state_code, metric_id, category_type, caseload_type, end_date)
+)
+WHERE date_of_data > earliest_export_date
+QUALIFY RANK() OVER(PARTITION BY region_code, metric_id, category_type, caseload_type, end_date ORDER BY date_of_data DESC) <= 7
+ORDER BY 1,2,3,4,5,6
 """
 
 STATEWIDE_TARGET_PERCENT_CHANGE_EXCEEDED_VIEW_BUILDER = SimpleBigQueryViewBuilder(
