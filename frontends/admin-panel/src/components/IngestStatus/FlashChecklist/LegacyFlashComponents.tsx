@@ -18,8 +18,8 @@ import { Alert, Button, Card, message, StepProps, Steps } from "antd";
 import { observer } from "mobx-react-lite";
 import * as React from "react";
 
-import { CurrentRawDataInstanceStatus } from "./CurrentRawDataInstanceStatus";
-import { useFlashChecklistStore } from "./FlashChecklistStore";
+import { useLegacyFlashChecklistStore } from "./FlashChecklistStore";
+import { LegacyCurrentRawDataInstanceStatus } from "./LegacyCurrentRawDataInstanceStatus";
 
 export interface StyledStepContentProps {
   // Text to be displayed for this step
@@ -174,7 +174,7 @@ export const CannotFlashDecisionWrongStatusComponent = ({
   currentIngestStatus,
   onSelectProceed,
 }: {
-  currentIngestStatus: CurrentRawDataInstanceStatus;
+  currentIngestStatus: LegacyCurrentRawDataInstanceStatus;
   onSelectProceed: () => void;
 }): JSX.Element => {
   const cannotFlashDescription = `Primary: ${currentIngestStatus.primary}. Secondary: ${currentIngestStatus.secondary}.`;
@@ -204,7 +204,7 @@ export const CannotFlashDecisionNonEmptyBucketComponent = ({
   onSelectProceed: () => void;
 }): JSX.Element => {
   const { projectId, stateInfo, currentRawFileProcessingStatus } =
-    useFlashChecklistStore();
+    useLegacyFlashChecklistStore();
 
   const formattedStateCode = stateInfo?.code.toLowerCase().replaceAll("_", "-");
   const primaryBucketURL = `https://console.cloud.google.com/storage/browser/${projectId}-direct-ingest-state-${formattedStateCode}`;
@@ -276,10 +276,10 @@ const StyledStepContent = ({
 }: StyledStepContentProps): JSX.Element => {
   const [loading, setLoading] = React.useState(false);
   const {
-    fetchInstanceStatusData: setStatusData,
+    fetchLegacyInstanceStatusData: setStatusData,
     incrementCurrentStep,
     moveToNextChecklistSection,
-  } = useFlashChecklistStore();
+  } = useLegacyFlashChecklistStore();
 
   return (
     <>

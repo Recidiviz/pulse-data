@@ -94,6 +94,14 @@ export type IngestInstanceStatusResponse = {
   };
 };
 
+// TODO(#28239): remove once the raw data import dag is fully rolled out
+// --- raw data import dag enabled constants -------------------------------------------
+
+export type RawDataDagEnabled = {
+  primary: boolean | undefined;
+  secondary: boolean | undefined;
+};
+
 // --- raw data import dag summary related constants -----------------------------------
 
 export enum RawDataImportRunState {
@@ -178,7 +186,7 @@ export type RawDataResourceLockStatusesResponse = {
   [stateCode: string]: RawDataResourceLockStatuses;
 };
 
-// TODO(#28239): remove once the raw data import dag is fully rolled ou
+// TODO(#28239): remove once the raw data import dag is fully rolled out
 // --- queue-related constants ---------------------------------------------------------
 
 export enum QueueState {
