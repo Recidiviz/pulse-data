@@ -111,6 +111,9 @@ from recidiviz.calculator.query.state.views.sessions.compartment_level_2_super_s
 from recidiviz.calculator.query.state.views.sessions.parole_board_hearing_decisions import (
     PAROLE_BOARD_HEARING_DECISIONS_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.sessions.sentence_to_consecutive_parent_sentence import (
+    CONSECUTIVE_SENTENCES_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.sessions.us_nd.us_nd_raw_lsir_assessments import (
     US_ND_RAW_LSIR_ASSESSMENTS_VIEW_BUILDER,
 )
@@ -167,6 +170,10 @@ LOOKER_REFERENCED_ADDRESSES: Set[BigQueryAddress] = {
 # as possible when updating this list, including a point of contact and date we were
 # still using this view where possible.
 UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
+    CONSECUTIVE_SENTENCES_VIEW_BUILDER.address: (
+        "This is going to be used in revamped sessions views that referenced the sentencing v2 schema "
+        "(Nick Tallant, 2024-09-11)"
+    ),
     ASSESSMENT_LSIR_SCORING_KEY_VIEW_BUILDER.address: (
         "This is a generic view that helps understand LSI-R scoring which may be "
         "useful for future analysis. (Anna 5/16/24"

@@ -71,6 +71,9 @@ ANALYST_VIEWS_DATASET: str = "analyst_data"
 # Where sessions datasets live
 SESSIONS_DATASET: str = "sessions"
 
+# Where sentence sessions data lives
+SENTENCE_SESSIONS_DATASET: str = "sentence_sessions"
+
 # Where the population projection simulation views live
 POPULATION_PROJECTION_DATASET: str = "population_projection_data"
 
