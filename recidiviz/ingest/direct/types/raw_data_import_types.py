@@ -322,6 +322,10 @@ class RawGCSFileMetadata(BaseResult):
     def parts(self) -> DirectIngestRawFilenameParts:
         return filename_parts_from_path(self.path)
 
+    @property
+    def abs_path(self) -> str:
+        return self.path.abs_path()
+
     def serialize(self) -> str:
         return json.dumps([self.gcs_file_id, self.file_id, self.path.abs_path()])
 
@@ -752,6 +756,13 @@ class ImportReadyFile(BaseResult):
     original_file_paths: List[GcsfsFilePath] = attr.ib(
         validator=attr_validators.is_list_of(GcsfsFilePath)
     )
+    # TODO(#33195) make non-optional
+    bq_table_schema: Optional[RawFileBigQueryLoadConfig] = attr.ib(
+        default=None,
+        validator=attr.validators.optional(
+            attr.validators.instance_of(RawFileBigQueryLoadConfig)
+        ),
+    )
 
     @property
     def paths_to_load(self) -> List[GcsfsFilePath]:
@@ -777,6 +788,11 @@ class ImportReadyFile(BaseResult):
                     if self.pre_import_normalized_file_paths is None
                     else [path.uri() for path in self.pre_import_normalized_file_paths]
                 ),
+                "bq_table_schema": (
+                    None
+                    if self.bq_table_schema is None
+                    else self.bq_table_schema.serialize()
+                ),
             }
         )
 
@@ -798,6 +814,11 @@ class ImportReadyFile(BaseResult):
                     GcsfsFilePath.from_absolute_path(path)
                     for path in data["normalized_paths"]
                 ]
+            ),
+            bq_table_schema=(
+                None
+                if data["bq_table_schema"] is None
+                else RawFileBigQueryLoadConfig.deserialize(data["bq_table_schema"])
             ),
         )
 
@@ -831,6 +852,21 @@ class ImportReadyFile(BaseResult):
             ],
             update_datetime=bq_metadata.update_datetime,
             original_file_paths=list(input_path_to_normalized_chunk_results),
+        )
+
+    @classmethod
+    def from_bq_metadata_and_schema(
+        cls,
+        bq_metadata: "RawBigQueryFileMetadata",
+        bq_schema: "RawFileBigQueryLoadConfig",
+    ) -> "ImportReadyFile":
+        return ImportReadyFile(
+            file_id=assert_type(bq_metadata.file_id, int),
+            file_tag=bq_metadata.file_tag,
+            original_file_paths=[gcs_file.path for gcs_file in bq_metadata.gcs_files],
+            update_datetime=bq_metadata.update_datetime,
+            pre_import_normalized_file_paths=None,
+            bq_table_schema=bq_schema,
         )
 
 

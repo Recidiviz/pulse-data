@@ -16,7 +16,7 @@
 # =============================================================================
 """Python logic for managing and handling raw file metadata"""
 import logging
-from typing import Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 from airflow.decorators import task
 from airflow.exceptions import AirflowSkipException
@@ -30,6 +30,7 @@ from recidiviz.airflow.dags.raw_data.metadata import (
     PROCESSED_PATHS_TO_RENAME,
     REQUIRES_PRE_IMPORT_NORMALIZATION_FILES,
     REQUIRES_PRE_IMPORT_NORMALIZATION_FILES_BQ_METADATA,
+    REQUIRES_PRE_IMPORT_NORMALIZATION_FILES_BQ_SCHEMA,
     SKIPPED_FILE_ERRORS,
     TEMPORARY_PATHS_TO_CLEAN,
     TEMPORARY_TABLES_TO_CLEAN,
@@ -56,6 +57,7 @@ from recidiviz.ingest.direct.types.raw_data_import_types import (
     PreImportNormalizationType,
     RawBigQueryFileMetadata,
     RawDataAppendImportError,
+    RawFileBigQueryLoadConfig,
     RawFileImport,
     RawFileLoadAndPrepError,
     RawFileProcessingError,
@@ -74,7 +76,8 @@ MAX_BQ_LOAD_JOBS = 8  # TODO(#29946) determine reasonable default
 def split_by_pre_import_normalization_type(
     region_code: str,
     serialized_bq_metadata: List[str],
-) -> Dict[str, List[str]]:
+    file_ids_to_headers: Dict[str, List[str]],
+) -> Dict[str, Any]:
     """Determines the pre-import normalization needs of each element of
     |serialized_bq_metadata|, returning a dictionary with three keys:
         - import_ready_files: list of serialized ImportReadyFile that will skip the
@@ -85,6 +88,10 @@ def split_by_pre_import_normalization_type(
             RawBigQueryFileMetadata that will be combined downstream with the
             resultant ImportReadyNormalizedFile objects to to build ImportReadyFile
             objects
+        - requires_normalization_files_big_query_schema: dictionary mapping file_id
+            to serialized RawFileBigQueryLoadConfig objects that will be combined
+            downstream with the resultant ImportReadyNormalizedFile objects to build
+            ImportReadyFile objects
     """
 
     bq_metadata = [
@@ -98,6 +105,9 @@ def split_by_pre_import_normalization_type(
     pre_import_normalization_required_big_query_metadata: List[
         RawBigQueryFileMetadata
     ] = []
+    pre_import_normalization_required_big_query_schema: Dict[
+        int, RawFileBigQueryLoadConfig
+    ] = {}
     pre_import_normalization_required_files: List[GcsfsFilePath] = []
 
     for metadata in bq_metadata:
@@ -107,12 +117,33 @@ def split_by_pre_import_normalization_type(
             )
         )
 
+        if (
+            file_headers := file_ids_to_headers.get(
+                str(assert_type(metadata.file_id, int))
+            )
+        ) is None:
+            logging.info(
+                "Skipping import for file_id [%s] as raw file header verification was not successful",
+                metadata.file_id,
+            )
+            continue
+
+        bq_schema = RawFileBigQueryLoadConfig.from_headers_and_raw_file_config(
+            file_headers=file_headers,
+            raw_file_config=region_config.raw_file_configs[metadata.file_tag],
+        )
+
         if pre_import_normalization_type:
             pre_import_normalization_required_big_query_metadata.append(metadata)
+            pre_import_normalization_required_big_query_schema[
+                assert_type(metadata.file_id, int)
+            ] = bq_schema
             for gcs_file in metadata.gcs_files:
                 pre_import_normalization_required_files.append(gcs_file.path)
         else:
-            import_ready_files.append(ImportReadyFile.from_bq_metadata(metadata))
+            import_ready_files.append(
+                ImportReadyFile.from_bq_metadata_and_schema(metadata, bq_schema)
+            )
 
     return {
         IMPORT_READY_FILES: [file.serialize() for file in import_ready_files],
@@ -123,6 +154,10 @@ def split_by_pre_import_normalization_type(
         REQUIRES_PRE_IMPORT_NORMALIZATION_FILES: [
             file.abs_path() for file in pre_import_normalization_required_files
         ],
+        REQUIRES_PRE_IMPORT_NORMALIZATION_FILES_BQ_SCHEMA: {
+            file_id: schema.serialize()
+            for file_id, schema in pre_import_normalization_required_big_query_schema.items()
+        },
     }
 
 

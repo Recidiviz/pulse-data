@@ -17,6 +17,7 @@
 """Tests for python logic for managing and handling raw file metadata"""
 import datetime
 import re
+from typing import Dict, List
 from unittest import TestCase
 from unittest.mock import patch
 
@@ -39,6 +40,7 @@ from recidiviz.airflow.dags.raw_data.metadata import (
     PROCESSED_PATHS_TO_RENAME,
     REQUIRES_PRE_IMPORT_NORMALIZATION_FILES,
     REQUIRES_PRE_IMPORT_NORMALIZATION_FILES_BQ_METADATA,
+    REQUIRES_PRE_IMPORT_NORMALIZATION_FILES_BQ_SCHEMA,
     SKIPPED_FILE_ERRORS,
     TEMPORARY_PATHS_TO_CLEAN,
     TEMPORARY_TABLES_TO_CLEAN,
@@ -49,6 +51,9 @@ from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.constants.operations.direct_ingest_raw_file_import import (
     DirectIngestRawFileImportStatus,
 )
+from recidiviz.ingest.direct.raw_data.direct_ingest_raw_table_schema_builder import (
+    RawDataTableBigQuerySchemaBuilder,
+)
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.direct.types.raw_data_import_types import (
     AppendReadyFile,
@@ -57,6 +62,7 @@ from recidiviz.ingest.direct.types.raw_data_import_types import (
     ImportReadyFile,
     RawBigQueryFileMetadata,
     RawDataAppendImportError,
+    RawFileBigQueryLoadConfig,
     RawFileImport,
     RawFileLoadAndPrepError,
     RawFileProcessingError,
@@ -82,7 +88,7 @@ class SplitByPreImportNormalizationTest(TestCase):
         super().tearDown()
 
     def test_no_files(self) -> None:
-        results = split_by_pre_import_normalization_type.function("US_XX", [])
+        results = split_by_pre_import_normalization_type.function("US_XX", [], {})
         assert results[IMPORT_READY_FILES] == []
         assert results[REQUIRES_PRE_IMPORT_NORMALIZATION_FILES_BQ_METADATA] == []
         assert results[REQUIRES_PRE_IMPORT_NORMALIZATION_FILES] == []
@@ -127,8 +133,12 @@ class SplitByPreImportNormalizationTest(TestCase):
                 ),
             ),
         ]
+        file_ids_to_headers: Dict[str, List[str]] = {
+            "1": ["col1"],
+            "2": ["col1a"],
+        }
         results = split_by_pre_import_normalization_type.function(
-            "US_XX", [i.serialize() for i in inputs]
+            "US_XX", [i.serialize() for i in inputs], file_ids_to_headers
         )
 
         assert [
@@ -141,7 +151,130 @@ class SplitByPreImportNormalizationTest(TestCase):
         } == {gcs_file.path for gcs_file in inputs[1].gcs_files}
         assert [
             ImportReadyFile.deserialize(r) for r in results[IMPORT_READY_FILES]
-        ] == [ImportReadyFile.from_bq_metadata(inputs[0])]
+        ] == [
+            ImportReadyFile.from_bq_metadata_and_schema(
+                inputs[0],
+                RawFileBigQueryLoadConfig(
+                    schema_fields=[
+                        RawDataTableBigQuerySchemaBuilder.raw_file_column_as_bq_field(
+                            column="col1", description=""
+                        )
+                    ],
+                    skip_leading_rows=1,
+                ),
+            ),
+        ]
+        assert {
+            file_id: RawFileBigQueryLoadConfig.deserialize(schema)
+            for file_id, schema in results[
+                REQUIRES_PRE_IMPORT_NORMALIZATION_FILES_BQ_SCHEMA
+            ].items()
+        } == {
+            2: RawFileBigQueryLoadConfig(
+                schema_fields=[
+                    RawDataTableBigQuerySchemaBuilder.raw_file_column_as_bq_field(
+                        column="col1a", description=""
+                    )
+                ],
+                skip_leading_rows=1,
+            )
+        }
+
+    def test_skips_files_missing_headers(self) -> None:
+        inputs = [
+            RawBigQueryFileMetadata(
+                file_id=1,
+                file_tag="tagBasicData",
+                gcs_files=[
+                    RawGCSFileMetadata(
+                        gcs_file_id=1,
+                        file_id=1,
+                        path=GcsfsFilePath(bucket_name="bucket", blob_name="blob.csv"),
+                    )
+                ],
+                update_datetime=datetime.datetime(
+                    2024, 1, 1, 1, 1, 1, tzinfo=datetime.UTC
+                ),
+            ),
+            RawBigQueryFileMetadata(
+                file_id=2,
+                file_tag="tagCustomLineTerminatorNonUTF8",
+                gcs_files=[
+                    RawGCSFileMetadata(
+                        gcs_file_id=2,
+                        file_id=2,
+                        path=GcsfsFilePath(
+                            bucket_name="bucket", blob_name="blob1_1.csv"
+                        ),
+                    ),
+                ],
+                update_datetime=datetime.datetime(
+                    2024, 1, 1, 1, 1, 1, tzinfo=datetime.UTC
+                ),
+            ),
+            RawBigQueryFileMetadata(
+                file_id=3,
+                file_tag="tagCustomLineTerminatorNonUTF8",
+                gcs_files=[
+                    RawGCSFileMetadata(
+                        gcs_file_id=2,
+                        file_id=2,
+                        path=GcsfsFilePath(
+                            bucket_name="bucket", blob_name="blob1_2.csv"
+                        ),
+                    ),
+                ],
+                update_datetime=datetime.datetime(
+                    2024, 1, 1, 1, 1, 1, tzinfo=datetime.UTC
+                ),
+            ),
+        ]
+        file_paths_to_headers: Dict[str, List[str]] = {
+            "1": ["col1"],
+            "2": ["col1a"],
+        }
+        results = split_by_pre_import_normalization_type.function(
+            "US_XX", [i.serialize() for i in inputs], file_paths_to_headers
+        )
+
+        assert [
+            RawBigQueryFileMetadata.deserialize(r)
+            for r in results[REQUIRES_PRE_IMPORT_NORMALIZATION_FILES_BQ_METADATA]
+        ] == inputs[1:2]
+        assert {
+            GcsfsFilePath.from_absolute_path(path)
+            for path in results[REQUIRES_PRE_IMPORT_NORMALIZATION_FILES]
+        } == {gcs_file.path for gcs_file in inputs[1].gcs_files}
+        assert [
+            ImportReadyFile.deserialize(r) for r in results[IMPORT_READY_FILES]
+        ] == [
+            ImportReadyFile.from_bq_metadata_and_schema(
+                inputs[0],
+                RawFileBigQueryLoadConfig(
+                    schema_fields=[
+                        RawDataTableBigQuerySchemaBuilder.raw_file_column_as_bq_field(
+                            column="col1", description=""
+                        )
+                    ],
+                    skip_leading_rows=1,
+                ),
+            ),
+        ]
+        assert {
+            file_id: RawFileBigQueryLoadConfig.deserialize(schema)
+            for file_id, schema in results[
+                REQUIRES_PRE_IMPORT_NORMALIZATION_FILES_BQ_SCHEMA
+            ].items()
+        } == {
+            2: RawFileBigQueryLoadConfig(
+                schema_fields=[
+                    RawDataTableBigQuerySchemaBuilder.raw_file_column_as_bq_field(
+                        column="col1a", description=""
+                    )
+                ],
+                skip_leading_rows=1,
+            )
+        }
 
 
 class CoalesceImportReadyFiles(TestCase):
