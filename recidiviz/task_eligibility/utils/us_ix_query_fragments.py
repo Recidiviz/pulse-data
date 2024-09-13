@@ -24,6 +24,7 @@ from recidiviz.calculator.query.bq_utils import (
     nonnull_start_date_clause,
 )
 from recidiviz.calculator.query.sessions_query_fragments import (
+    aggregate_adjacent_spans,
     create_sub_sessions_with_attributes,
 )
 from recidiviz.task_eligibility.utils.critical_date_query_fragments import (
@@ -604,3 +605,32 @@ def victim_alert_notes() -> str:
     FROM `{project_id}.{us_ix_raw_data_up_to_date_dataset}.ind_Offender_Alert_latest`
     -- Victim alerts
     WHERE AlertId = '133'"""
+
+
+def supervision_level_criteria_query(
+    excluded_levels: List[str],
+) -> str:
+    return f"""
+#TODO(#22511) refactor to build off of a general criteria view builder
+WITH so_spans AS (
+SELECT
+        state_code,
+        person_id,
+        start_date,
+        end_date_exclusive AS end_date,
+    #TODO(#20035) replace with supervision level raw text sessions once views agree
+    FROM `{{project_id}}.{{sessions_dataset}}.compartment_sub_sessions_materialized`
+    WHERE compartment_level_1 = 'SUPERVISION'
+    AND correctional_level_raw_text IN {tuple(excluded_levels)}
+    AND state_code = 'US_IX'
+)
+    SELECT 
+        state_code,
+        person_id,
+        start_date,
+        end_date,
+        FALSE AS meets_criteria,
+    TO_JSON(STRUCT(TRUE AS supervision_level_is_so)) AS reason,
+    TRUE AS supervision_level_is_so,
+    FROM ({aggregate_adjacent_spans(table_name='so_spans')})
+"""

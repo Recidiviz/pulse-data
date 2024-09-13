@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ============================================================================
 """This criteria view builder defines spans of time where clients do not have a supervision level
-raw text value involving a sex offense (SO) as tracked by our `sessions` dataset.
+raw text value involving a sex offense (SO or SO TO '') as tracked by our `sessions` dataset.
 """
 from google.cloud import bigquery
 
@@ -31,15 +31,18 @@ from recidiviz.task_eligibility.utils.us_ix_query_fragments import (
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_CRITERIA_NAME = "US_IX_SUPERVISION_LEVEL_RAW_TEXT_IS_NOT_SO"
+_CRITERIA_NAME = "US_IX_SUPERVISION_LEVEL_RAW_TEXT_IS_NOT_SO_OR_SOTO"
 
 _DESCRIPTION = """This criteria view builder defines spans of time where clients do not have a supervision level
-raw text value involving a sex offense (SO) as tracked by our `sessions` dataset."""
+raw text value involving a sex offense (SO or SO TO '') as tracked by our `sessions` dataset."""
 
 _CORRECTIONAL_LEVELS_TO_EXCLUDE = [
     "SO HIGH",
     "SO MODERATE",
     "SO LOW",
+    "SO TO GENERAL LOW",
+    "SO TO GENERAL MOD",
+    "SO TO GENERAL HIGH",
 ]
 _QUERY_TEMPLATE = supervision_level_criteria_query(_CORRECTIONAL_LEVELS_TO_EXCLUDE)
 

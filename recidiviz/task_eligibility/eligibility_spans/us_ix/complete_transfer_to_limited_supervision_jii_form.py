@@ -18,9 +18,19 @@
 someone in ID is eligible or almost eligible to complete the form for transfer to limited unit supervision.
 """
 from recidiviz.common.constants.states import StateCode
-from recidiviz.task_eligibility.criteria.general import negative_da_within_90_days
+from recidiviz.task_eligibility.criteria.general import (
+    negative_da_within_90_days,
+    no_felony_within_24_months,
+    not_serving_for_sexual_offense,
+    on_supervision_at_least_one_year,
+    supervision_level_is_not_limited,
+    supervision_not_past_full_term_completion_date,
+)
 from recidiviz.task_eligibility.criteria.state_specific.us_ix import (
     income_verified_within_3_months,
+    lsir_level_low_for_90_days,
+    no_active_nco,
+    supervision_level_raw_text_is_not_so_or_soto,
 )
 from recidiviz.task_eligibility.criteria_condition import (
     NotEligibleCriteriaCondition,
@@ -49,7 +59,18 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     task_name="COMPLETE_TRANSFER_TO_LIMITED_SUPERVISION_JII_FORM",
     description=_DESCRIPTION,
     candidate_population_view_builder=COMPLETE_TRANSFER_TO_LSU_LINE_STAFF_VERSION.candidate_population_view_builder,
-    criteria_spans_view_builders=COMPLETE_TRANSFER_TO_LSU_LINE_STAFF_VERSION.criteria_spans_view_builders,
+    criteria_spans_view_builders=[
+        negative_da_within_90_days.VIEW_BUILDER,
+        lsir_level_low_for_90_days.VIEW_BUILDER,
+        no_felony_within_24_months.VIEW_BUILDER,
+        supervision_not_past_full_term_completion_date.VIEW_BUILDER,
+        income_verified_within_3_months.VIEW_BUILDER,
+        on_supervision_at_least_one_year.VIEW_BUILDER,
+        no_active_nco.VIEW_BUILDER,
+        supervision_level_is_not_limited.VIEW_BUILDER,
+        supervision_level_raw_text_is_not_so_or_soto.VIEW_BUILDER,
+        not_serving_for_sexual_offense.VIEW_BUILDER,
+    ],
     completion_event_builder=COMPLETE_TRANSFER_TO_LSU_LINE_STAFF_VERSION.completion_event_builder,
     almost_eligible_condition=PickNCompositeCriteriaCondition(
         sub_conditions_list=[
