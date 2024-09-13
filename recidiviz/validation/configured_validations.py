@@ -911,7 +911,7 @@ def get_all_validations() -> List[DataValidationCheck]:
         SamenessDataValidationCheck(
             view_builder=CLIENT_AND_RESIDENT_RECORD_PERCENT_CHANGE_IN_ELIGIBILITY_EXCEEDED_VIEW_BUILDER,
             comparison_columns=[
-                "last_export_eligibility_count",
+                "prev_eligibility_count",
                 "current_eligibility_count",
             ],
             soft_max_allowed_error=0.10,

@@ -33,7 +33,14 @@ CLIENT_AND_RESIDENT_RECORD_PERCENT_CHANGE_IN_ELIGIBILITY_EXCEEDED_VIEW_NAME = (
 )
 
 CLIENT_AND_RESIDENT_RECORD_PERCENT_CHANGE_IN_ELIGIBILITY_EXCEEDED_DESCRIPTION = """
-Identifies when a considerable change in exports to client/resident records has occurred for a given task type. NOTE: This validation may pass on subsequent runs after failing even if the underlying issue is not resolved.
+Identifies when a considerable change in exports to client/resident records has occurred for a given task type within the past 5 exports. 
+
+NOTES: 
+
+If the change is expected, you can wait for this validation to self-resolve because the failure will cycle out after 5 new exports.  
+However, this also means that the validation may pass on subsequent runs after failing even if the underlying issue is not resolved if there has been 5 new exports since.
+
+This validation only checks opportunity types that have previously been exported. 
 """
 
 CLIENT_AND_RESIDENT_RECORD_PERCENT_CHANGE_IN_ELIGIBILITY_EXCEEDED_QUERY_TEMPLATE = """
@@ -53,58 +60,86 @@ WITH archived_eligibility_records AS (
     person_external_id,
   FROM `{project_id}.{workflows_views_dataset}.resident_record_archive_materialized`
 ),
-current_eligibility_records AS (
-  -- Combine all current eligibility rows together
+current_count AS (
   SELECT
     state_code,
-    all_eligible_opportunities,
-    person_external_id,
-  FROM `{project_id}.{workflows_views_dataset}.client_record_materialized`
-  UNION ALL
-  SELECT
-    state_code,
-    all_eligible_opportunities,
-    person_external_id,
-  FROM `{project_id}.{workflows_views_dataset}.resident_record_materialized`
+    opportunity_type,
+    date_of_data,
+    count(distinct person_external_id) as eligibility_count
+  FROM (
+    -- Combine all current eligibility rows together
+    SELECT
+      state_code,
+      all_eligible_opportunities,
+      person_external_id,
+      CURRENT_DATE('US/Eastern') AS date_of_data
+    FROM `{project_id}.{workflows_views_dataset}.client_record_materialized`
+    UNION ALL
+    SELECT
+      state_code,
+      all_eligible_opportunities,
+      person_external_id,
+      CURRENT_DATE('US/Eastern') AS date_of_data
+    FROM `{project_id}.{workflows_views_dataset}.resident_record_materialized`
+  )
+  CROSS JOIN UNNEST(all_eligible_opportunities) AS opportunity_type
+  GROUP BY 1,2,3
 ),
 previous_export_count AS (
   SELECT
     state_code,
     opportunity_type,
-    export_date AS last_export_date,
-    COUNT(DISTINCT person_external_id) AS total_clients
+    export_date as date_of_data,
+    COUNT(DISTINCT person_external_id) AS eligibility_count
   FROM archived_eligibility_records,
   UNNEST(SPLIT(all_eligible_opportunities, ",")) AS opportunity_type
   WHERE opportunity_type != ""
     -- Drop records for legacy opportunities
     AND state_code != "US_ID"
     AND opportunity_type != "sccp"
-    AND export_date < CURRENT_DATE('US/Pacific')
+    AND export_date < CURRENT_DATE('US/Eastern')
   GROUP BY 1, 2, 3
-  -- Pick the latest export date per state/opportunity
-  QUALIFY ROW_NUMBER() OVER (
-    PARTITION BY state_code, opportunity_type
-    ORDER BY export_date DESC
-  ) = 1
+),
+earliest_export_date_by_opp AS (
+  SELECT
+    state_code,
+    opportunity_type,
+    MIN(date_of_data) AS earliest_export_date
+  FROM previous_export_count
+  GROUP BY 1,2
 ),
 current_live_opportunities AS (
   SELECT DISTINCT state_code, opportunity_type
   FROM `{project_id}.{reference_views_dataset}.workflows_opportunity_configs_materialized`
 )
-SELECT
-  state_code AS region_code,
-  opportunity_type,
-  previous_export_count.last_export_date,
-  COALESCE(previous_export_count.total_clients, 0) AS last_export_eligibility_count,
-  COUNT(DISTINCT current_eligibility_records.person_external_id) AS current_eligibility_count
-FROM current_eligibility_records
-CROSS JOIN UNNEST(current_eligibility_records.all_eligible_opportunities) AS opportunity_type
-FULL OUTER JOIN previous_export_count
-  USING (state_code, opportunity_type)
-INNER JOIN current_live_opportunities
-  USING (state_code, opportunity_type)
-GROUP BY 1, 2, 3, 4
-ORDER BY 1, 2, 3
+SELECT * EXCEPT(earliest_export_date)
+FROM (
+  SELECT
+    state_code AS region_code,
+    opportunity_type,
+    date_of_data,
+    eligibility_count AS current_eligibility_count,
+    LAG(eligibility_count) OVER (PARTITION BY state_code, opportunity_type ORDER BY date_of_data) as prev_eligibility_count,
+    LAG(date_of_data) OVER (PARTITION BY state_code, opportunity_type ORDER BY date_of_data) as prev_export_date,
+    earliest_export_date
+  FROM (
+    SELECT *
+    FROM current_count
+
+    UNION ALL 
+
+    SELECT *
+    FROM previous_export_count
+  )
+  INNER JOIN current_live_opportunities
+    USING(state_code, opportunity_type)
+  INNER JOIN earliest_export_date_by_opp
+    USING(state_code, opportunity_type)
+)
+WHERE date_of_data > earliest_export_date
+QUALIFY RANK() OVER(PARTITION BY region_code, opportunity_type ORDER BY date_of_data DESC) <= 5
+ORDER BY 1,2,3,4,5,6 
+
 """
 
 CLIENT_AND_RESIDENT_RECORD_PERCENT_CHANGE_IN_ELIGIBILITY_EXCEEDED_VIEW_BUILDER = SimpleBigQueryViewBuilder(

@@ -29,13 +29,42 @@ OUTLIER_STATUS_PERCENT_CHANGE_EXCEEDED_VIEW_NAME = (
 )
 
 OUTLIER_STATUS_PERCENT_CHANGE_EXCEEDED_DESCRIPTION = """
-Identifies when a considerable change in the number of outliers has occurred for a given metric. 
-NOTE: This validation may pass on subsequent runs after failing even if the underlying issue is not resolved.
+Identifies when a considerable change in the number of outliers has occurred for a given metric within a specific period within the last 7 exports.
+
+NOTES: 
+
+If the change is expected, you can wait for this validation to self-resolve because the failure will cycle out after 7 new exports.  
+However, this also means that the validation may pass on subsequent runs after failing even if the underlying issue is not resolved if there has been 7 new exports since. 
+
+This validation only checks outlier counts for metrics, category_types, and caseload_types within periods that have previously been exported.  Also note that this validation does not identify changes in the number of outliers between adjacent periods.
 """
 
 OUTLIER_STATUS_PERCENT_CHANGE_EXCEEDED_QUERY_TEMPLATE = """
-WITH archived_outliers AS (
-  -- Query the latest status per metric per end date per officer per category and caseload_type
+WITH 
+count_of_current_outliers AS (
+  -- Query the current count of outliers
+    SELECT
+        state_code, 
+        metric_id, 
+        end_date,
+        CURRENT_DATE('US/Eastern') AS date_of_data,
+        category_type,
+        caseload_type,
+        COUNTIF(status = 'FAR') AS outliers_count
+    FROM `{project_id}.{outliers_views_dataset}.supervision_officer_outlier_status_materialized`
+    GROUP BY 1,2,3,4,5,6
+),
+current_metrics_types AS (
+  SELECT DISTINCT
+    state_code, 
+    metric_id,
+    category_type,
+    caseload_type,
+    end_date
+  FROM count_of_current_outliers
+),
+archived_outliers AS (
+  -- Query the latest status per metric per end date per officer per category and caseload_type per export_date
     SELECT
         state_code, 
         metric_id, 
@@ -44,50 +73,56 @@ WITH archived_outliers AS (
         end_date,
         category_type,
         caseload_type,
-        export_date AS last_export_date,
-        MAX(export_date) OVER (PARTITION BY state_code, metric_id, end_date) AS max_export_date
+        export_date
     FROM `{project_id}.{outliers_views_dataset}.supervision_officer_outlier_status_archive_materialized`
-    QUALIFY ROW_NUMBER() OVER (PARTITION BY state_code, metric_id, end_date, officer_id, category_type, caseload_type ORDER BY export_date DESC) = 1
 ),
 count_of_archived_outliers AS (
     SELECT
         state_code,
         metric_id,
         end_date,
-        last_export_date,
+        export_date,
         category_type,
         caseload_type,
-        COUNTIF(status = 'FAR') AS archived_number_of_outliers
+        COUNTIF(status = 'FAR') AS outliers_count
     FROM archived_outliers
-    --only count outliers exported on the last export day for that metric/end_date
-    WHERE last_export_date = max_export_date
     GROUP BY 1,2,3,4,5,6
 ),
-count_of_current_outliers AS (
-  -- Query the current count of outliers
-    SELECT
-        state_code, 
-        metric_id, 
-        end_date,
-        category_type,
-        caseload_type,
-        COUNTIF(status = 'FAR') AS current_number_of_outliers
-    FROM `{project_id}.{outliers_views_dataset}.supervision_officer_outlier_status_materialized`
-    GROUP BY 1,2,3,4,5
+archived_metrics_types AS (
+  SELECT DISTINCT
+    state_code, 
+    metric_id,
+    category_type,
+    caseload_type,
+    end_date,
+    MIN(export_date) OVER(PARTITION BY state_code, metric_id, category_type, caseload_type, end_date) AS earliest_export_date
+  FROM count_of_archived_outliers
 )
-SELECT
-  state_code AS region_code,
-  metric_id,
-  category_type,
-  caseload_type,
-  end_date,
-  a.last_export_date,
-  COALESCE(a.archived_number_of_outliers, 0) AS last_export_count,
-  c.current_number_of_outliers AS current_count
-FROM count_of_current_outliers c
-LEFT JOIN count_of_archived_outliers a
-  USING (state_code, metric_id, category_type, caseload_type, end_date)
-ORDER BY 1,2,3,4,5
+
+SELECT * EXCEPT(earliest_export_date)
+FROM (
+  SELECT
+    state_code AS region_code,
+    metric_id,
+    category_type,
+    caseload_type,
+    end_date,
+    date_of_data,
+    outliers_count,
+    LAG(outliers_count) OVER (PARTITION BY state_code, metric_id, category_type, caseload_type, end_date ORDER BY date_of_data) as prev_outliers_count,
+    LAG(date_of_data) OVER (PARTITION BY state_code, metric_id, category_type, caseload_type, end_date ORDER BY date_of_data) as prev_export_date,
+    earliest_export_date
+  FROM (
+    SELECT * FROM count_of_current_outliers
+    UNION ALL
+    SELECT * FROM count_of_archived_outliers
+  )
+  INNER JOIN current_metrics_types USING(state_code, metric_id, category_type, caseload_type, end_date)
+  INNER JOIN archived_metrics_types USING(state_code, metric_id, category_type, caseload_type, end_date)
+)
+WHERE date_of_data > earliest_export_date
+QUALIFY RANK() OVER(PARTITION BY region_code, metric_id, category_type, caseload_type, end_date ORDER BY date_of_data DESC) <= 7
+ORDER BY 1,2,3,4,5,6 
 """
 
 OUTLIER_STATUS_PERCENT_CHANGE_EXCEEDED_VIEW_BUILDER = SimpleBigQueryViewBuilder(
