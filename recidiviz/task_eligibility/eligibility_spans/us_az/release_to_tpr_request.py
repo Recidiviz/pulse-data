@@ -58,7 +58,6 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         time_90_days_before_release.VIEW_BUILDER,
         not_serving_for_sexual_offense.VIEW_BUILDER,
         not_serving_for_arson_offense.VIEW_BUILDER,
-        # TODO(#31768): we have to fix this bug
         OrTaskCriteriaGroup(
             criteria_name="US_AZ_SERVING_NONVIOLENT_OFFENSE_WITH_B1B_EXCEPTIONS",
             sub_criteria_list=[

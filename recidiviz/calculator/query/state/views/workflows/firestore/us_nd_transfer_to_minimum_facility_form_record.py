@@ -34,10 +34,6 @@ from recidiviz.task_eligibility.dataset_config import (
     task_eligibility_criteria_state_specific_dataset,
     task_eligibility_spans_state_specific_dataset,
 )
-from recidiviz.task_eligibility.utils.almost_eligible_query_fragments import (
-    clients_eligible,
-    json_to_array_cte,
-)
 from recidiviz.task_eligibility.utils.us_nd_query_fragments import (
     HEALTH_NOTE_TEXT_REGEX,
     SSI_NOTE_WHERE_CLAUSE,
@@ -62,10 +58,11 @@ US_ND_TRANSFER_TO_MINIMUM_FACILITY_DESCRIPTION = """
 
 US_ND_TRANSFER_TO_MINIMUM_FACILITY_QUERY_TEMPLATE = f"""
 
-WITH current_incarceration_pop_cte AS (
+WITH eligible_and_almost_eligible AS (
     {join_current_task_eligibility_spans_with_external_id(state_code= "'US_ND'", 
     tes_task_query_view = 'transfer_to_minimum_facility_form_materialized',
-    id_type = "'US_ND_ELITE'")}
+    id_type = "'US_ND_ELITE'",
+    eligible_only=True)}
 ),
 
 case_notes_cte AS (
@@ -143,14 +140,6 @@ case_notes_cte AS (
         AND peid.id_type = 'US_ND_ELITE'
         AND sp.gender = 'MALE'
 ), 
-json_to_array_cte AS (
-    {json_to_array_cte('current_incarceration_pop_cte')}
-),
-
-eligible_and_almost_eligible AS (
-    -- ELIGIBLE
-    {clients_eligible(from_cte = 'current_incarceration_pop_cte')}
-),
 
 array_case_notes_cte AS (
 {array_agg_case_notes_by_external_id()}

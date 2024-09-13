@@ -27,9 +27,6 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.dataset_config import (
     task_eligibility_spans_state_specific_dataset,
 )
-from recidiviz.task_eligibility.utils.almost_eligible_query_fragments import (
-    json_to_array_cte,
-)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -44,19 +41,15 @@ WITH current_incarcerated_population AS (
     {join_current_task_eligibility_spans_with_external_id(state_code= "'US_ME'", 
     tes_task_query_view = 'transfer_to_sccp_form_materialized',
     id_type = "'US_ME_DOC'")}
-    ),
-
-json_to_array_cte AS (
-    {json_to_array_cte('current_incarcerated_population')}
-)
+    )
 
 SELECT 
     external_id,
     state_code,
     ineligible_criteria,
     is_eligible,
-    array_reasons
-FROM json_to_array_cte """
+    JSON_QUERY_ARRAY(reasons) AS array_reasons
+FROM current_incarcerated_population """
 
 US_ME_TRANSFER_TO_SCCP_JII_RECORD_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=dataset_config.WORKFLOWS_VIEWS_DATASET,
