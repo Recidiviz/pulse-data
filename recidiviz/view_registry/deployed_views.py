@@ -144,6 +144,7 @@ DEPLOYED_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED: Set[str] = {
     "public_dashboard_views",
     "reference_views",
     "sessions",
+    "sentence_sessions",
     "sentencing_views",
     "spark_public_output_data_most_recent",
     "shared_metric_views",

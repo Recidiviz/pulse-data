@@ -18,6 +18,7 @@
 import itertools
 from typing import Sequence
 
+from recidiviz.aggregated_metrics.impact_reports_views import IMPACT_REPORTS_VIEWS
 from recidiviz.big_query.big_query_view import BigQueryViewBuilder
 from recidiviz.calculator.query.state.views.analyst_data.analyst_data_views import (
     ANALYST_DATA_VIEW_BUILDERS,
@@ -56,6 +57,9 @@ from recidiviz.calculator.query.state.views.sentencing.sentencing_views import (
     CASE_INSIGHTS_VIEW_BUILDERS,
     SENTENCING_VIEW_BUILDERS,
 )
+from recidiviz.calculator.query.state.views.sessions.sentence_sessions_views import (
+    SENTENCE_SESSIONS_VIEW_BUILDERS,
+)
 from recidiviz.calculator.query.state.views.sessions.sessions_views import (
     SESSIONS_VIEW_BUILDERS,
 )
@@ -68,7 +72,6 @@ from recidiviz.calculator.query.state.views.vitals_report.vitals_report_views im
 from recidiviz.calculator.query.state.views.workflows.workflows_views import (
     WORKFLOWS_VIEW_BUILDERS,
 )
-from recidiviz.aggregated_metrics.impact_reports_views import IMPACT_REPORTS_VIEWS
 
 VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE: Sequence[BigQueryViewBuilder] = list(
     itertools.chain.from_iterable(
@@ -91,6 +94,7 @@ VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE: Sequence[BigQueryViewBuilder] = list(
             SENTENCING_VIEW_BUILDERS,
             CASE_NOTE_SEARCH_VIEW_BUILDERS,
             IMPACT_REPORTS_VIEWS,
+            SENTENCE_SESSIONS_VIEW_BUILDERS,
         )
     )
 )
