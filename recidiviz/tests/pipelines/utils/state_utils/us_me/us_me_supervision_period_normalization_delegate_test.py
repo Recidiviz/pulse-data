@@ -156,6 +156,49 @@ class TestUsMeSupervisionNormalizationDelegate(unittest.TestCase):
             ).supervision_level_override(0, [supervision_period]),
         )
 
+    def test_supervision_level_override_lsir_most_recent_multiple_same_day(
+        self,
+    ) -> None:
+        """Assert that LSIR Adult, Female, Community is used if it is the most recent,
+        and if there are multiple on the same day we choose the assessment with the
+        lowest external_id.
+        """
+        supervision_period = StateSupervisionPeriod.new_with_defaults(
+            state_code=StateCode.US_ME.value,
+            external_id="sp1",
+            start_date=date(2010, 1, 1),
+            termination_date=date(2010, 3, 30),
+        )
+        assessments = [
+            StateAssessment.new_with_defaults(
+                state_code=StateCode.US_ME.value,
+                external_id="a1",
+                assessment_date=date(2010, 3, 1),
+                assessment_type_raw_text="SPIN-W",
+                assessment_level=StateAssessmentLevel.VERY_HIGH,
+            ),
+            StateAssessment.new_with_defaults(
+                state_code=StateCode.US_ME.value,
+                external_id="a2",
+                assessment_date=date(2010, 3, 1),
+                assessment_type_raw_text="ADULT, FEMALE, COMMUNITY",
+                assessment_level=StateAssessmentLevel.MODERATE,
+            ),
+            StateAssessment.new_with_defaults(
+                state_code=StateCode.US_ME.value,
+                external_id="a3",
+                assessment_date=date(2010, 3, 1),
+                assessment_type_raw_text="ADULT, FEMALE, COMMUNITY",
+                assessment_level=StateAssessmentLevel.MAXIMUM,
+            ),
+        ]
+        self.assertEqual(
+            StateSupervisionLevel.HIGH,
+            UsMeSupervisionNormalizationDelegate(
+                assessments=assessments, supervision_sentences=[]
+            ).supervision_level_override(0, [supervision_period]),
+        )
+
     def test_supervision_level_override_most_recent_static_99(self) -> None:
         """Assert that the most recent Static 99 assessment level is used."""
         supervision_period = StateSupervisionPeriod.new_with_defaults(
