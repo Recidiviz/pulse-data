@@ -63,6 +63,7 @@ _DOWNLOAD_DOCKER_CREDENTIAL_BUILD_STEP = build_step_for_shell_command(
 def _generate_build_image_build_step(
     deployment_context: DeploymentContext,
     repository: ArtifactRegistryDockerImageRepository,
+    promote: bool,
 ) -> list[BuildStep]:
     """Generates a build step that builds and pushes docker images to Artifact Registry"""
     dockerfile, build_stage = IMAGE_DOCKERFILES[repository.image_kind]
@@ -78,7 +79,7 @@ def _generate_build_image_build_step(
         f"&& docker buildx build . -f {dockerfile} "
         f"--builder {builder_name} "
         # Tag to store the image to
-        f"--tag={tag} "
+        f"--tag {tag} "
         # Push cache layers
         f"--cache-to type=registry,ref={cache_repo},mode=max "
         # Fetch cache layers
@@ -89,6 +90,9 @@ def _generate_build_image_build_step(
     if build_stage:
         # Target the specified mult-stage build stage when applicable
         build_and_push_image_command += f"--target={build_stage} "
+
+    if promote:
+        build_and_push_image_command += f"--tag {repository.latest_url()}"
 
     # Create a new build context that can build images in parallel with other build contexts
     create_build_context = BuildStep(
@@ -123,6 +127,13 @@ class BuildImages(DeploymentStageInterface):
             help=f"Comma delimited string of ImageKind values. Choices: {image_kinds}",
         )
 
+        parser.add_argument(
+            "--promote",
+            action=argparse.BooleanOptionalAction,
+            default=False,
+            help="If specified, tags the images as :latest. --no-promote also accepted for the inverse",
+        )
+
         return parser
 
     def configure_build(
@@ -148,6 +159,7 @@ class BuildImages(DeploymentStageInterface):
                 _generate_build_image_build_step(
                     deployment_context=deployment_context,
                     repository=repository,
+                    promote=args.promote,
                 )
             )
 
