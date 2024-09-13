@@ -50,7 +50,17 @@ from recidiviz.persistence.database.schema_utils import (
 
 dimension_possible_values: Dict[str, Sequence] = {
     "admission_reason": ["NEW_ADMISSION", "REVOCATION", "TRANSFER"],
-    "age_group": ["<25", "25-29", "30-34", "60+"],
+    "age_group": [
+        "<25",
+        "25-29",
+        "30-34",
+        "35-39",
+        "40-44",
+        "45-49",
+        "50-54",
+        "55-59",
+        "60+",
+    ],
     "facility": ["FACILITY_1", "FACILITY_2", "FACILITY_3", "FACILITY_4", "FACILITY_5"],
     "gender": ["MALE", "FEMALE"],
     "judicial_district": [
@@ -114,6 +124,11 @@ ages_for_age_groups = {
     "<25": range(18, 25),
     "25-29": range(25, 30),
     "30-34": range(30, 35),
+    "35-39": range(35, 40),
+    "40-44": range(40, 45),
+    "45-49": range(45, 50),
+    "50-54": range(50, 55),
+    "55-59": range(55, 60),
     "60+": range(60, 100),
 }
 
