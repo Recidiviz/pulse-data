@@ -18,10 +18,7 @@
 from collections import OrderedDict
 from typing import List, Optional
 
-from recidiviz.common.constants.state.state_assessment import (
-    StateAssessmentLevel,
-    StateAssessmentType,
-)
+from recidiviz.common.constants.state.state_assessment import StateAssessmentLevel
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionLevel,
@@ -122,20 +119,16 @@ class UsMeSupervisionNormalizationDelegate(
             ) and assessment.assessment_type_raw_text in assessment_type_raw_texts:
                 assessments_before_period_ends.append(assessment)
 
-        all_assessment_types = map(
-            lambda a: a.assessment_type_raw_text, assessments_before_period_ends
-        )
-
         if not assessments_before_period_ends:
             return StateSupervisionLevel.INTERNAL_UNKNOWN
 
         # Always take the level of most recent Static 99 first
-        if "STATIC 99" in all_assessment_types or "STATIC 99 R" in all_assessment_types:
-            static_99_assessments: List[StateAssessment] = []
-            for assessment in assessments_before_period_ends:
-                if assessment.assessment_type == StateAssessmentType.STATIC_99:
-                    static_99_assessments.append(assessment)
-
+        static_99_assessments = [
+            a
+            for a in assessments_before_period_ends
+            if a.assessment_type_raw_text in ("STATIC 99", "STATIC 99 R")
+        ]
+        if static_99_assessments:
             most_recent_assessment_level = self._find_the_most_recent_assessment_level(
                 static_99_assessments
             )
@@ -145,13 +138,14 @@ class UsMeSupervisionNormalizationDelegate(
                 ]
 
         # Next check for a SPIN-W or Adult,Female,Community LSIR assessment
-        if (
-            "SPIN-W" in all_assessment_types
-            or "ADULT, FEMALE, COMMUNITY" in all_assessment_types
-        ):
-            # For these assessment types, take the most recent assessment level
+        spin_w_or_adult_female_assessments = [
+            a
+            for a in assessments_before_period_ends
+            if a.assessment_type_raw_text in ("SPIN-W", "ADULT, FEMALE, COMMUNITY")
+        ]
+        if spin_w_or_adult_female_assessments:
             most_recent_assessment_level = self._find_the_most_recent_assessment_level(
-                assessments_before_period_ends
+                spin_w_or_adult_female_assessments
             )
             if most_recent_assessment_level:
                 return assessment_level_to_supervision_level[
@@ -170,15 +164,22 @@ class UsMeSupervisionNormalizationDelegate(
     @staticmethod
     def _find_the_most_recent_assessment_level(
         assessments: List[StateAssessment],
-    ) -> Optional[StateAssessmentLevel]:
+    ) -> StateAssessmentLevel | None:
         most_recent_date = max(
             assessment.assessment_date
             for assessment in assessments
             if assessment.assessment_date
         )
-        assessment = [
-            assessment
-            for assessment in assessments
-            if assessment.assessment_date == most_recent_date
-        ][0]
+        # Sort to deterministically pick an assessment when there are multiple
+        # on a given day.
+        assessments_on_date = sorted(
+            [
+                assessment
+                for assessment in assessments
+                if assessment.assessment_date == most_recent_date
+            ],
+            key=lambda a: a.external_id,
+        )
+
+        assessment = assessments_on_date[0]
         return assessment.assessment_level
