@@ -6,6 +6,7 @@ input_columns:
   - PERSON_ID
   - STAFF_REVIEW_ID
   - incident_type
+  - offense_class
   - incident_date
   - facility
   - location_within_facility
@@ -33,6 +34,16 @@ output:
             $enum_mapping:
               $raw_text: incident_type
               $custom_parser: us_az_custom_enum_parsers.parse_incident_type
+          incident_severity:
+            $enum_mapping:
+              $raw_text: offense_class
+              $mappings:
+                StateIncarcerationIncidentSeverity.HIGHEST:
+                  - A
+                StateIncarcerationIncidentSeverity.SECOND_HIGHEST:
+                  - B
+                StateIncarcerationIncidentSeverity.THIRD_HIGHEST:
+                  - C
           facility: facility
           location_within_facility: location_within_facility
           incident_details: VIOLATION_STATEMENT

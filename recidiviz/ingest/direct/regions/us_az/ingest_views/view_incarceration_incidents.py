@@ -88,6 +88,7 @@ SELECT
     PERSON_ID,
     STAFF_REVIEW_ID,
     UPPER(rule_violation.DESCRIPTION) AS incident_type,
+    UPPER(offense_class_lookup.DESCRIPTION) AS offense_class,
     incident_date,
     prison_lookup.DESCRIPTION AS facility,
     loc_lookup.DESCRIPTION AS location_within_facility,
@@ -107,6 +108,8 @@ LEFT JOIN {LOOKUPS} penalty_type_lookup
 ON(PENALTY_TYPE_ID = penalty_type_lookup.LOOKUP_ID)
 LEFT JOIN {AZ_DOC_DSC_RULE_VIOLATION} rule_violation
 ON(STATE_VIOLATION_ID = RULE_VIOLATION_ID)
+LEFT JOIN {LOOKUPS} offense_class_lookup
+ON(OFFENSE_CLASS_ID = offense_class_lookup.LOOKUP_ID)
 LEFT JOIN {LOOKUPS} prison_lookup
 ON(PRISON_ID = prison_lookup.LOOKUP_ID)
 )
