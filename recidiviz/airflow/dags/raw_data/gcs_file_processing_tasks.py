@@ -49,6 +49,7 @@ from recidiviz.ingest.direct.types.raw_data_import_types import (
     ImportReadyFile,
     PreImportNormalizedCsvChunkResult,
     RawBigQueryFileMetadata,
+    RawFileBigQueryLoadConfig,
     RawFileProcessingError,
     RequiresPreImportNormalizationFile,
     RequiresPreImportNormalizationFileChunk,
@@ -210,6 +211,7 @@ def _create_individual_chunk_objects_list(
 def regroup_and_verify_file_chunks(
     normalized_chunks_result: List[str],
     serialized_requires_pre_import_normalization_files_bq_metadata: List[str],
+    serialized_requires_pre_import_normalization_files_bq_schema: Dict[str, str],
 ) -> str:
     """Task organizes normalized chunks by file and compares their collective checksum
     against the full file checksum to ensure all file bytes were read correctly.
@@ -235,6 +237,10 @@ def regroup_and_verify_file_chunks(
         )
         for serialized_requires_normalization_file_bq_metadata in serialized_requires_pre_import_normalization_files_bq_metadata
     ]
+    requires_pre_import_normalization_files_bq_schema = {
+        int(file_id): RawFileBigQueryLoadConfig.deserialize(schema)
+        for file_id, schema in serialized_requires_pre_import_normalization_files_bq_schema.items()
+    }
 
     checksum_errors, filtered_file_path_to_normalized_chunks = verify_file_checksums(
         file_path_to_normalized_chunks
@@ -243,6 +249,7 @@ def regroup_and_verify_file_chunks(
     conceptual_file_incomplete_errors, import_ready_files = build_import_ready_files(
         filtered_file_path_to_normalized_chunks,
         requires_pre_import_normalization_files_bq_metadata,
+        requires_pre_import_normalization_files_bq_schema,
     )
 
     return BatchedTaskInstanceOutput[ImportReadyFile, RawFileProcessingError](
@@ -350,6 +357,9 @@ def build_import_ready_files(
         GcsfsFilePath, List[PreImportNormalizedCsvChunkResult]
     ],
     requires_pre_import_normalization_files_bq_metadata: List[RawBigQueryFileMetadata],
+    requires_pre_import_normalization_files_bq_schema: Dict[
+        int, RawFileBigQueryLoadConfig
+    ],
 ) -> Tuple[List[RawFileProcessingError], List[ImportReadyFile]]:
     """Uses |filtered_file_path_to_normalized_chunks| to determine which candidates from
     |requires_pre_import_normalization_files_bq_metadata| will be used to create import
@@ -412,8 +422,11 @@ def build_import_ready_files(
             continue
 
         new_import_ready_files.append(
-            ImportReadyFile.from_bq_metadata_and_normalized_chunk_result(
+            ImportReadyFile.from_bq_metadata_load_config_and_normalized_chunk_result(
                 bq_metadata,
+                requires_pre_import_normalization_files_bq_schema[
+                    assert_type(bq_metadata.file_id, int)
+                ],
                 {
                     input_path: filtered_file_path_to_normalized_chunks[input_path]
                     for input_path in all_input_paths

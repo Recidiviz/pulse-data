@@ -277,6 +277,9 @@ class TestSerialization(unittest.TestCase):
             original_file_paths=[
                 GcsfsFilePath(bucket_name="bucket", blob_name="blob.csv")
             ],
+            bq_load_config=RawFileBigQueryLoadConfig(
+                schema_fields=[], skip_leading_rows=1
+            ),
         )
         self._validate_serialization(original, ImportReadyFile)
 
@@ -294,6 +297,9 @@ class TestSerialization(unittest.TestCase):
                 original_file_paths=[
                     GcsfsFilePath(bucket_name="bucket", blob_name="blob.csv")
                 ],
+                bq_load_config=RawFileBigQueryLoadConfig(
+                    schema_fields=[], skip_leading_rows=1
+                ),
             ),
             append_ready_table_address=BigQueryAddress(
                 dataset_id="dataset", table_id="table"
@@ -332,6 +338,9 @@ class TestSerialization(unittest.TestCase):
                                     bucket_name="bucket", blob_name="blob.csv"
                                 )
                             ],
+                            bq_load_config=RawFileBigQueryLoadConfig(
+                                schema_fields=[], skip_leading_rows=1
+                            ),
                         ),
                         append_ready_table_address=BigQueryAddress(
                             dataset_id="dataset", table_id="table1"
@@ -355,6 +364,9 @@ class TestSerialization(unittest.TestCase):
                                     bucket_name="bucket", blob_name="blob2.csv"
                                 )
                             ],
+                            bq_load_config=RawFileBigQueryLoadConfig(
+                                schema_fields=[], skip_leading_rows=1
+                            ),
                         ),
                         append_ready_table_address=BigQueryAddress(
                             dataset_id="dataset", table_id="table2"
@@ -376,6 +388,9 @@ class TestSerialization(unittest.TestCase):
                                 )
                             ],
                             pre_import_normalized_file_paths=None,
+                            bq_load_config=RawFileBigQueryLoadConfig(
+                                schema_fields=[], skip_leading_rows=1
+                            ),
                         ),
                         append_ready_table_address=BigQueryAddress(
                             dataset_id="dataset", table_id="table3"
@@ -447,6 +462,9 @@ class TestSerialization(unittest.TestCase):
             original_file_paths=[
                 GcsfsFilePath(bucket_name="bucket", blob_name="blob.csv")
             ],
+            bq_load_config=RawFileBigQueryLoadConfig(
+                schema_fields=[], skip_leading_rows=1
+            ),
         )
         original = BatchedTaskInstanceOutput[ImportReadyFile, RawFileProcessingError](
             results=[result], errors=[]

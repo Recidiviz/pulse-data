@@ -152,7 +152,7 @@ class SplitByPreImportNormalizationTest(TestCase):
         assert [
             ImportReadyFile.deserialize(r) for r in results[IMPORT_READY_FILES]
         ] == [
-            ImportReadyFile.from_bq_metadata_and_schema(
+            ImportReadyFile.from_bq_metadata_and_load_config(
                 inputs[0],
                 RawFileBigQueryLoadConfig(
                     schema_fields=[
@@ -248,7 +248,7 @@ class SplitByPreImportNormalizationTest(TestCase):
         assert [
             ImportReadyFile.deserialize(r) for r in results[IMPORT_READY_FILES]
         ] == [
-            ImportReadyFile.from_bq_metadata_and_schema(
+            ImportReadyFile.from_bq_metadata_and_load_config(
                 inputs[0],
                 RawFileBigQueryLoadConfig(
                     schema_fields=[
@@ -307,6 +307,9 @@ class CoalesceImportReadyFiles(TestCase):
                 ),
                 original_file_paths=[GcsfsFilePath.from_absolute_path("test/123.csv")],
                 pre_import_normalized_file_paths=None,
+                bq_load_config=RawFileBigQueryLoadConfig(
+                    schema_fields=[], skip_leading_rows=1
+                ),
             ),
             ImportReadyFile(
                 file_id=1,
@@ -318,6 +321,9 @@ class CoalesceImportReadyFiles(TestCase):
                 pre_import_normalized_file_paths=[
                     GcsfsFilePath.from_absolute_path("test/456.csv")
                 ],
+                bq_load_config=RawFileBigQueryLoadConfig(
+                    schema_fields=[], skip_leading_rows=1
+                ),
             ),
         ]
 
@@ -338,6 +344,9 @@ class CoalesceImportReadyFiles(TestCase):
             update_datetime=datetime.datetime(2024, 1, 1, 1, 1, 1, tzinfo=datetime.UTC),
             original_file_paths=[GcsfsFilePath.from_absolute_path("test/123.csv")],
             pre_import_normalized_file_paths=None,
+            bq_load_config=RawFileBigQueryLoadConfig(
+                schema_fields=[], skip_leading_rows=1
+            ),
         ).serialize()
 
         output = BatchedTaskInstanceOutput[ImportReadyFile, RawFileProcessingError](
@@ -437,6 +446,9 @@ class CoalesceResultsAndErrorsTest(TestCase):
                                         bucket_name="original", blob_name="a.csv"
                                     )
                                 ],
+                                bq_load_config=RawFileBigQueryLoadConfig(
+                                    schema_fields=[], skip_leading_rows=1
+                                ),
                             ),
                             append_ready_table_address=BigQueryAddress(
                                 dataset_id="temp", table_id="tag_a__1"
@@ -458,6 +470,9 @@ class CoalesceResultsAndErrorsTest(TestCase):
                                         bucket_name="original", blob_name="a.csv"
                                     )
                                 ],
+                                bq_load_config=RawFileBigQueryLoadConfig(
+                                    schema_fields=[], skip_leading_rows=1
+                                ),
                             ),
                             append_ready_table_address=BigQueryAddress(
                                 dataset_id="temp", table_id="tag_a__2"
@@ -481,6 +496,9 @@ class CoalesceResultsAndErrorsTest(TestCase):
                                         bucket_name="original", blob_name="b.csv"
                                     )
                                 ],
+                                bq_load_config=RawFileBigQueryLoadConfig(
+                                    schema_fields=[], skip_leading_rows=1
+                                ),
                             ),
                             append_ready_table_address=BigQueryAddress(
                                 dataset_id="temp", table_id="tag_b__3"
@@ -543,6 +561,9 @@ class CoalesceResultsAndErrorsTest(TestCase):
                                         bucket_name="original", blob_name="a.csv"
                                     )
                                 ],
+                                bq_load_config=RawFileBigQueryLoadConfig(
+                                    schema_fields=[], skip_leading_rows=1
+                                ),
                             ),
                             append_ready_table_address=BigQueryAddress(
                                 dataset_id="temp", table_id="tag_a__1"
@@ -564,6 +585,9 @@ class CoalesceResultsAndErrorsTest(TestCase):
                                         bucket_name="original", blob_name="a.csv"
                                     )
                                 ],
+                                bq_load_config=RawFileBigQueryLoadConfig(
+                                    schema_fields=[], skip_leading_rows=1
+                                ),
                             ),
                             append_ready_table_address=BigQueryAddress(
                                 dataset_id="temp", table_id="tag_a__2"
@@ -587,6 +611,9 @@ class CoalesceResultsAndErrorsTest(TestCase):
                                         bucket_name="original", blob_name="b.csv"
                                     )
                                 ],
+                                bq_load_config=RawFileBigQueryLoadConfig(
+                                    schema_fields=[], skip_leading_rows=1
+                                ),
                             ),
                             append_ready_table_address=BigQueryAddress(
                                 dataset_id="temp", table_id="tag_b__3"

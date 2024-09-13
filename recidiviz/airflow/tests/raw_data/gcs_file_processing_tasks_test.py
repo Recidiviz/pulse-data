@@ -38,10 +38,12 @@ from recidiviz.ingest.direct.types.raw_data_import_types import (
     PreImportNormalizationType,
     PreImportNormalizedCsvChunkResult,
     RawBigQueryFileMetadata,
+    RawFileBigQueryLoadConfig,
     RawFileProcessingError,
     RawGCSFileMetadata,
     RequiresPreImportNormalizationFile,
 )
+from recidiviz.utils.types import assert_type
 
 
 class TestCreateFileBatches(unittest.TestCase):
@@ -408,7 +410,7 @@ class TestRegroupAndVerifyFileChunks(unittest.TestCase):
         return int.from_bytes(checksum.digest(), byteorder="big")
 
     def test_build_import_ready_files_none(self) -> None:
-        assert build_import_ready_files({}, []) == ([], [])
+        assert build_import_ready_files({}, [], {}) == ([], [])
 
     def test_build_import_ready_files_failures_no_skips(self) -> None:
         results = {
@@ -506,15 +508,23 @@ class TestRegroupAndVerifyFileChunks(unittest.TestCase):
                 ),
             ),
         ]
+        bq_schemas = {
+            1: RawFileBigQueryLoadConfig(schema_fields=[], skip_leading_rows=0),
+            2: RawFileBigQueryLoadConfig(schema_fields=[], skip_leading_rows=0),
+            3: RawFileBigQueryLoadConfig(schema_fields=[], skip_leading_rows=0),
+        }
         conceptual_file_incomplete_errors, output = build_import_ready_files(
-            results, bq_metadata
+            results,
+            bq_metadata,
+            bq_schemas,
         )
 
         assert not conceptual_file_incomplete_errors
 
         created_files = [
-            ImportReadyFile.from_bq_metadata_and_normalized_chunk_result(
+            ImportReadyFile.from_bq_metadata_load_config_and_normalized_chunk_result(
                 metadata,
+                bq_schemas[assert_type(metadata.file_id, int)],
                 {file.path: results[file.path] for file in metadata.gcs_files},
             )
             for metadata in bq_metadata
@@ -628,12 +638,20 @@ class TestRegroupAndVerifyFileChunks(unittest.TestCase):
                 ),
             ),
         ]
+        bq_schemas = {
+            1: RawFileBigQueryLoadConfig(schema_fields=[], skip_leading_rows=0),
+            2: RawFileBigQueryLoadConfig(schema_fields=[], skip_leading_rows=0),
+            3: RawFileBigQueryLoadConfig(schema_fields=[], skip_leading_rows=0),
+        }
         conceptual_file_incomplete_errors, output = build_import_ready_files(
-            results, bq_metadata
+            results,
+            bq_metadata,
+            bq_schemas,
         )
         created_files = [
-            ImportReadyFile.from_bq_metadata_and_normalized_chunk_result(
+            ImportReadyFile.from_bq_metadata_load_config_and_normalized_chunk_result(
                 metadata,
+                bq_schemas[assert_type(metadata.file_id, int)],
                 {file.path: results[file.path] for file in metadata.gcs_files},
             )
             for i, metadata in enumerate(bq_metadata)
