@@ -41,7 +41,9 @@ class DeploymentStepRunnerTest(unittest.TestCase):
     @with_secrets({"operations_v2_cloudsql_instance_id": "123"})
     def test_parse(self) -> None:
         stage_args = {
-            BuildImages: argparse.Namespace(images=[ImageKind.APP_ENGINE]),
+            BuildImages: argparse.Namespace(
+                images=[ImageKind.APP_ENGINE], promote=False
+            ),
             DeployAppEngine: argparse.Namespace(promote=False),
             TagImages: argparse.Namespace(images=[ImageKind.APP_ENGINE]),
             RunMigrations: argparse.Namespace(schema_types=[SchemaType.OPERATIONS]),
