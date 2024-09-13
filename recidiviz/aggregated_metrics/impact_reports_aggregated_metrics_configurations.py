@@ -38,16 +38,16 @@ from recidiviz.calculator.query.state.views.analyst_data.models.span_type import
 )
 
 
-AVG_DAILY_POPULATION_TASK_INELIGIBLE_METRICS = [
+AVG_DAILY_POPULATION_TASK_MARKED_INELIGIBLE_METRICS = [
     DailyAvgSpanCountMetric(
-        name=f"avg_daily_population_task_ineligible_{b.task_type_name.lower()}",
-        display_name=f"Average Population: Task Ineligible, {b.task_title}",
-        description=f"Average daily count of residents ineligible for task of type: {b.task_title.lower()}",
+        name=f"avg_daily_population_task_marked_ineligible_{b.task_type_name.lower()}",
+        display_name=f"Average Population: Task Marked Ineligible, {b.task_title}",
+        description=f"Average daily count of residents marked ineligible for task of type: {b.task_title.lower()}",
         span_selectors=[
             SpanSelector(
                 span_type=SpanType.WORKFLOWS_PERSON_IMPACT_FUNNEL_STATUS_SESSION,
                 span_conditions_dict={
-                    "is_eligible": ["false"],
+                    "marked_ineligible": ["true"],
                     "task_type": [b.task_type_name],
                 },
             )
