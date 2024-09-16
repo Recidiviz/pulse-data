@@ -624,6 +624,10 @@ class DirectIngestRawFileConfig:
                 "RCDVZ_CISPRDDTA_CMCMST": "We use this in views with @ALL",
                 "RCDVZ_PRDDTA_OP054P": "Will be used in new sentencing schema with @ALL",
             },
+            StateCode.US_ND: {
+                # TODO(#33357): Account for these incrementals before rolling out automatic raw data pruning.
+                "docstars_offenders": "There are some incremental files included in the history of transfers of this table."
+            },
         }
 
         if self.file_tag in exempt_files.get(self.state_code, {}):
