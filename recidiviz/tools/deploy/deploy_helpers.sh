@@ -150,12 +150,14 @@ function pre_deploy_configure_infrastructure {
     GIT_VERSION_TAG=$2
     COMMIT_HASH=$3
 
-    echo "Deploying terraform"
+    echo "Deploying terraform inside Cloud Build"
     verify_hash "$COMMIT_HASH"
-    # Terraform determines certain resources by looking at the directory structure,
-    # so give our shell the ability to open plenty of file descriptors.
-    ulimit -n 1024 || exit_on_fail
-    deploy_terraform_infrastructure "${PROJECT}" "${COMMIT_HASH}" "${GIT_VERSION_TAG}" || exit_on_fail
+    run_cmd pipenv run python -m recidiviz.tools.deploy.cloud_build.deployment_stage_runner \
+      --project-id "${PROJECT_ID}" \
+      --version-tag "${GIT_VERSION_TAG}" \
+      --commit-ref "${COMMIT_HASH}" \
+      --stage "CreateTerraformPlan" \
+      --apply
 
     verify_hash "$COMMIT_HASH"
     echo "Running migrations using Cloud Build"
@@ -353,58 +355,6 @@ function reconfigure_terraform_backend {
 }
 
 
-function deploy_terraform_infrastructure {
-    PROJECT_ID=$1
-    GIT_HASH=$2
-    DOCKER_IMAGE_TAG=$3
-    TF_STATE_PREFIX=""
-    PAGERDUTY_TOKEN=$(get_secret "$PROJECT_ID" pagerduty_terraform_key) || exit_on_fail
-
-    echo "Starting terraform deployment..."
-
-    while true
-    do
-        reconfigure_terraform_backend "$PROJECT_ID" "$TF_STATE_PREFIX"
-        echo "Creating Airflow source files manifest..."
-        local AIRFLOW_SOURCE_FILES_JSON_PATH
-        AIRFLOW_SOURCE_FILES_JSON_PATH=./recidiviz/tools/deploy/terraform/airflow_source_files.json
-        run_cmd pipenv run python -m recidiviz.tools.airflow.get_airflow_source_files \
-          --dry-run False \
-          --output-path "${AIRFLOW_SOURCE_FILES_JSON_PATH}"
-
-        echo "Creating terraform plan..."
-        run_cmd terraform -chdir="${BASH_SOURCE_DIR}/terraform" plan \
-          -var="project_id=${PROJECT_ID}" \
-          -var="git_hash=${GIT_HASH}" \
-          -var="pagerduty_token=${PAGERDUTY_TOKEN}" \
-          -var="docker_image_tag=${DOCKER_IMAGE_TAG}" \
-          -var="airflow_source_files_json_path=$(realpath "${AIRFLOW_SOURCE_FILES_JSON_PATH}")" \
-          -out=tfplan
-        script_prompt "Does the generated terraform plan look correct? [You can inspect it with \`terraform show tfplan\`]"
-
-        CURRENT_TIME=$(date +'%s')
-        PLAN_FILE_NAME=${DOCKER_IMAGE_TAG}-${GIT_HASH}-${CURRENT_TIME}.tfplan
-        PLAN_FILE_PATH=gs://${PROJECT_ID}-tf-state/tf-plans/${PLAN_FILE_NAME}
-        echo "Storing plan to ${PLAN_FILE_PATH} for posterity..."
-        run_cmd terraform -chdir="${BASH_SOURCE_DIR}/terraform" show tfplan > "${BASH_SOURCE_DIR}/terraform/tfplan.json"
-        run_cmd gsutil cp "${BASH_SOURCE_DIR}/terraform/tfplan.json" "$PLAN_FILE_PATH"
-
-        echo "Applying the terraform plan..."
-        # not using run_cmd because we don't want to exit_on_fail
-        terraform -chdir=./recidiviz/tools/deploy/terraform apply tfplan | indent_output
-        return_code=$?
-        rm ./recidiviz/tools/deploy/terraform/tfplan
-        rm ./recidiviz/tools/deploy/terraform/tfplan.json
-        rm "${AIRFLOW_SOURCE_FILES_JSON_PATH}"
-
-        if [[ $return_code -eq 0 ]]; then
-            break
-        fi
-        script_prompt "There was an error applying the terraform plan. Would you like to re-plan and retry? [no exits the script]"
-    done
-
-    echo "Terraform deployment complete."
-}
 
 # Posts a message to the #deployment-bot slack channel
 function deployment_bot_message {
