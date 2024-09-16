@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Shows the spans of time during which someone in AR is eligible
-for administrative transfer.
+for work release.
 """
 
 from recidiviz.common.constants.states import StateCode
@@ -23,15 +23,21 @@ from recidiviz.task_eligibility.candidate_populations.general import (
     incarceration_population,
 )
 from recidiviz.task_eligibility.completion_events.state_specific.us_ar import (
-    administrative_transfer,
+    granted_work_release,
 )
 from recidiviz.task_eligibility.criteria.general import (
-    serving_incarceration_sentence_of_less_than_6_years,
+    age_21_years_or_older,
+    incarceration_within_42_months_of_parole_eligibility_date,
+    no_felony_escapes,
+    no_felony_fleeing_in_last_10_years,
+    not_serving_a_life_sentence,
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_ar import (
-    in_county_jail_backup,
-    not_on_90_day_revocation,
-    sentence_statute_eligible_for_admin_transfer,
+    can_complete_one_semester_before_sentence_ends,
+    eligible_for_minimum_custody_status,
+    incarcerated_at_least_60_days_in_adc,
+    medical_classification_aligns_with_work,
+    no_filed_but_undisposed_detainers,
 )
 from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
@@ -40,21 +46,27 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 _DESCRIPTION = """Shows the spans of time during which someone in AR is eligible
-for administrative transfer.
+for work release.
 """
 
 VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     state_code=StateCode.US_AR,
-    task_name="ADMINISTRATIVE_TRANSFER",
+    task_name="WORK_RELEASE",
     description=_DESCRIPTION,
     candidate_population_view_builder=incarceration_population.VIEW_BUILDER,
     criteria_spans_view_builders=[
-        in_county_jail_backup.VIEW_BUILDER,
-        not_on_90_day_revocation.VIEW_BUILDER,
-        sentence_statute_eligible_for_admin_transfer.VIEW_BUILDER,
-        serving_incarceration_sentence_of_less_than_6_years.VIEW_BUILDER,
+        age_21_years_or_older.VIEW_BUILDER,
+        incarcerated_at_least_60_days_in_adc.VIEW_BUILDER,
+        incarceration_within_42_months_of_parole_eligibility_date.VIEW_BUILDER,
+        not_serving_a_life_sentence.VIEW_BUILDER,
+        no_felony_escapes.VIEW_BUILDER,
+        no_felony_fleeing_in_last_10_years.VIEW_BUILDER,
+        eligible_for_minimum_custody_status.VIEW_BUILDER,
+        medical_classification_aligns_with_work.VIEW_BUILDER,
+        can_complete_one_semester_before_sentence_ends.VIEW_BUILDER,
+        no_filed_but_undisposed_detainers.VIEW_BUILDER,
     ],
-    completion_event_builder=administrative_transfer.VIEW_BUILDER,
+    completion_event_builder=granted_work_release.VIEW_BUILDER,
 )
 
 if __name__ == "__main__":
