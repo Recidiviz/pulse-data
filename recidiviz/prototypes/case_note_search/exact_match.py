@@ -83,11 +83,17 @@ def exact_match_search(
     validate_includes_excludes(include_filter_conditions)
     validate_includes_excludes(exclude_filter_conditions)
 
+    # Adjust matching behavior based on query term length. Short terms should be treated
+    # as full-word matches. e.g. "UA" should not match "graduation" or "February".
+    if len(query_term) <= 3:
+        # Perform a full-word match for short query terms.
+        query_term = f"\\b{query_term}\\b"
+
     # Base query that filters for a substring match.
     query = f"""
     select *
     from `{CASE_NOTES_BQ_TABLE_NAME}`
-    where lower(json_extract_scalar(JsonData, '$.note_body')) like lower(@query_term)
+    where regexp_contains(lower(json_extract_scalar(JsonData, '$.note_body')), lower(@query_term))
     """
 
     # We don't parameterize filter conditions because users are not inputting these
@@ -120,7 +126,7 @@ def exact_match_search(
     # Execute query using bq client.
     client = bigquery.Client()
     query_parameters = [
-        bigquery.ScalarQueryParameter("query_term", "STRING", f"%{query_term}%")
+        bigquery.ScalarQueryParameter("query_term", "STRING", query_term)
     ]
     job_config = bigquery.QueryJobConfig(query_parameters=query_parameters)
     contains_exact_match_df: pd.DataFrame = client.query(
