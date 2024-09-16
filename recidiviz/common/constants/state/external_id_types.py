@@ -33,6 +33,8 @@ US_AR_ADCNUMBER = "US_AR_ADCNUMBER"
 
 # Anonymized person-ID that maps to the ID from Iowa's public data tables
 US_IA_IGOV_DEIDENTIFIED = "US_IA_IGOV_DEIDENTIFIED"
+# Unique person identifier
+US_IA_OFFENDERCD = "US_IA_OFFENDERCD"
 
 US_ID_DOC = "US_ID_DOC"
 # TODO(#10703): Remove US_IX once Atlas is merged into US_ID
