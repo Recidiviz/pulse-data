@@ -118,6 +118,7 @@ def exact_match_search(
             query
             + f"and not JSON_EXTRACT_SCALAR(JsonData, '$.{field}') in ('{formatted_values}')"
         )
+
     # Optionally limit the number of results returned, since loading a ton of notes from
     # bigquery is slow.
     if limit is not None:
