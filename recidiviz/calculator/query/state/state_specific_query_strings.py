@@ -791,6 +791,13 @@ def workflows_state_specific_supervision_level() -> str:
                     THEN session_attributes.correctional_level_raw_text
                     ELSE sl.most_recent_active_supervision_level 
                 END)
+            WHEN sl.state_code = 'US_PA' THEN 
+                (CASE 
+                    -- US_PA does not use the term limited supervision, specify admin/special circumstances instead
+                    WHEN sl.most_recent_active_supervision_level = 'LIMITED'
+                    THEN session_attributes.correctional_level_raw_text
+                    ELSE sl.most_recent_active_supervision_level 
+                END)
             ELSE most_recent_active_supervision_level
         END
     """
