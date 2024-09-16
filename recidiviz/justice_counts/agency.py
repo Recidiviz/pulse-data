@@ -18,7 +18,7 @@
 
 import logging
 from datetime import datetime, timezone
-from typing import List, Optional
+from typing import Dict, List, Optional
 
 from sqlalchemy import func
 from sqlalchemy.orm import Session, joinedload, selectinload
@@ -121,6 +121,31 @@ class AgencyInterface:
             )  # eagerly load the users in this agency
 
         return q.one()
+
+    @staticmethod
+    def get_agency_dropdown_names(
+        session: Session, agency_ids: List[int]
+    ) -> Dict[int, str]:
+        """Returns all of a user's agencies by agency id and dropdown name - the minimal
+        information needed to render the agency dropdown menu."""
+        # Speed up the query by only fetching the necessary columns.
+        agencies = (
+            session.query(
+                schema.Agency.id, schema.Agency.name, schema.Agency.state_code
+            )
+            .filter(schema.Agency.id.in_(agency_ids))
+            .all()
+        )
+        # Convert agency names to dropdown names. An agency dropdown name contains the
+        # two-letter state code if the state code does not appear in the agency name.
+        agency_id_to_dropdown_name = {
+            agency.id: f"{agency.name} ({agency.state_code.split('_')[1].upper()})"
+            if agency.state_code
+            and agency.state_code.split("_")[1].upper() not in agency.name
+            else agency.name
+            for agency in agencies
+        }
+        return agency_id_to_dropdown_name
 
     @staticmethod
     def get_agencies_by_id(

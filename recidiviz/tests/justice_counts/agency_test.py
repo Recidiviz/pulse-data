@@ -286,3 +286,30 @@ class TestAgencyInterface(JusticeCountsDatabaseTestCase):
             session=session, agency=child_agency
         )
         self.assertEqual(child_agencies, [])
+
+    def test_get_agency_dropdown_names(self) -> None:
+        with SessionFactory.using_database(self.database_key) as session:
+            # Adding an agency with the state code in the name. The dropdown display
+            # name should NOT append the state code if the state code is already in the
+            # name.
+            AgencyInterface.create_or_update_agency(
+                session=session,
+                name="GA County Court",
+                systems=[schema.System.COURTS_AND_PRETRIAL],
+                state_code="us_ga",
+                fips_county_code="us_ga_fulton",
+                agency_id=None,
+                is_superagency=False,
+                super_agency_id=None,
+                is_dashboard_enabled=False,
+            )
+            agency_ids = [
+                agency.id for agency in AgencyInterface.get_agencies(session=session)
+            ]
+            ids_to_dropdown_names = AgencyInterface.get_agency_dropdown_names(
+                session=session, agency_ids=agency_ids
+            )
+            self.assertEqual(
+                list(ids_to_dropdown_names.values()),
+                ["Agency Alpha (CA)", "Beta Initiative (AK)", "GA County Court"],
+            )
