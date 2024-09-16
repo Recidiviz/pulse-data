@@ -116,7 +116,7 @@ else
       --version-tag "${VERSION_TAG}" \
       --commit-ref "${COMMIT_HASH}" \
       --stage "BuildImages" \
-      --images appengine,asset_generation,dataflow \
+      --images appengine,asset-generation,dataflow \
       "${PROMOTE_FLAGS}"
 fi
 
