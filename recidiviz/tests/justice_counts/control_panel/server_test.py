@@ -1246,6 +1246,52 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             ],
         )
 
+    def test_get_user_dropdown(self) -> None:
+        name = self.test_schema_objects.test_user_A.name
+        email = "newuser@fake.com"
+        auth0_user_id = self.test_schema_objects.test_user_A.auth0_user_id
+        agency = self.test_schema_objects.test_agency_A
+        self.session.add_all(
+            [
+                self.test_schema_objects.test_user_A,
+                agency,
+                schema.AgencyUserAccountAssociation(
+                    user_account=self.test_schema_objects.test_user_A,
+                    agency=self.test_schema_objects.test_agency_A,
+                ),
+            ]
+        )
+        self.session.commit()
+        self.session.refresh(agency)
+
+        with self.app.test_request_context():
+            g.user_context = UserContext(
+                auth0_user_id=auth0_user_id,
+            )
+            user_response = self.client.put(
+                "/api/user_dropdown",
+                json={
+                    "name": name,
+                    "email": email,
+                },
+            )
+
+            self.assertEqual(user_response.status_code, 200)
+            response_json = assert_type(user_response.json, dict)
+            user_A = UserAccountInterface.get_user_by_auth0_user_id(
+                session=self.session, auth0_user_id=auth0_user_id
+            )
+
+            self.assertEqual(
+                response_json,
+                {
+                    "agency_id_to_dropdown_names": [
+                        {"agency_id": agency.id, "dropdown_name": "Agency Alpha (XX)"}
+                    ],
+                    "user_id": user_A.id,
+                },
+            )
+
     def test_update_user_name_and_email(self) -> None:
         new_email_address = "newuser@fake.com"
         new_name = "NEW NAME"

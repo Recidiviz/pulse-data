@@ -461,6 +461,94 @@ def get_api_blueprint(
         except Exception as e:
             raise _get_error(error=e) from e
 
+    @api_blueprint.route("/user_dropdown", methods=["PUT"])
+    @auth_decorator
+    def get_user_dropdown() -> Response:
+        """Returns all of a user's agencies by agency id and dropdown name - the minimal
+        information needed to render the agency dropdown menu.
+        If email_verified is passed in, we will update the user's invitation_status.
+
+        Response format looks like
+        {
+            "agency_id_to_dropdown_names": [
+                {"agency_id": <agency_id>, "dropdown_name": "<agency display name>"},
+                {"agency_id": <agency_id>, "dropdown_name": "<agency display name>"}
+            ],
+            "user_id": <user_id>,
+        }
+        """
+        try:
+            if auth0_client is None:
+                return make_response(
+                    "auth0_client could not be initialized. Environment is not development or gcp.",
+                    500,
+                )
+
+            request_dict = assert_type(request.json, dict)
+            auth0_user_id = get_auth0_user_id(request_dict)
+            email = request_dict.get("email")
+            is_email_verified = request_dict.get("email_verified", False)
+
+            user = UserAccountInterface.create_or_update_user(
+                session=current_session,
+                name=request_dict.get("name"),
+                auth0_user_id=auth0_user_id,
+                email=email,
+                auth0_client=auth0_client,
+                is_email_verified=is_email_verified,
+            )
+            user_id = user.id
+
+            if in_development():
+                # When running locally, our AgencyUserAccountAssociation table
+                # won't be up-to-date (it's hard to do this via fixtures),
+                # so just give access to all agencies.
+                agency_ids = AgencyInterface.get_agency_ids(session=current_session)
+                role = schema.UserAccountRole.JUSTICE_COUNTS_ADMIN
+
+                # Fill the AgencyUserAccountAssociation to give user access to all agencies
+                agencies = AgencyInterface.get_agencies_by_id(
+                    session=current_session, agency_ids=agency_ids
+                )
+                UserAccountInterface.add_or_update_user_agency_association(
+                    session=current_session,
+                    user=user,
+                    agencies=agencies,
+                    invitation_status=schema.UserAccountInvitationStatus.ACCEPTED,
+                    role=role,
+                )
+            else:
+                agency_ids = [assoc.agency_id for assoc in user.agency_assocs]
+
+            agency_id_to_dropdown_names = AgencyInterface.get_agency_dropdown_names(
+                session=current_session, agency_ids=agency_ids
+            )
+
+            agency_id_to_dropdown_names_json = [
+                {"agency_id": id, "dropdown_name": dropdown_name}
+                for id, dropdown_name in agency_id_to_dropdown_names.items()
+            ]
+
+            if is_email_verified is True:
+                for assoc in user.agency_assocs:
+                    if (
+                        assoc.invitation_status
+                        == schema.UserAccountInvitationStatus.PENDING
+                    ):
+                        assoc.invitation_status = (
+                            schema.UserAccountInvitationStatus.ACCEPTED
+                        )
+
+            current_session.commit()
+            return jsonify(
+                {
+                    "user_id": user_id,
+                    "agency_id_to_dropdown_names": agency_id_to_dropdown_names_json,
+                }
+            )
+        except Exception as e:
+            raise _get_error(error=e) from e
+
     @api_blueprint.route("/users", methods=["PUT"])
     @auth_decorator
     def create_user_if_necessary() -> Response:
