@@ -881,6 +881,16 @@ class NormalizedStateSentenceInferredGroup(NormalizedStateEntity, HasExternalIdE
     #     validator=attr_validators.is_list_of(NormalizedStateSentenceGroupLength),
     # )
 
+    @property
+    def sentence_external_ids(self) -> list[str]:
+        """Returns the external ID for each sentence in this inferred group."""
+        return self.external_id.split(self.external_id_delimiter())
+
+    @classmethod
+    def external_id_delimiter(cls) -> str:
+        """This value separates sentence external IDs in this entity's external ID"""
+        return "@#@"
+
 
 @attr.s(eq=False, kw_only=True)
 class NormalizedStateSentenceGroup(NormalizedStateEntity, HasExternalIdEntity):

@@ -159,15 +159,18 @@ def _sentence_group_checks(
     """
     sentences_by_group = defaultdict(list)
     for sentence in state_person.sentences:
-        sentences_by_group[sentence.sentence_group_external_id].append(sentence)
+        if sentence.sentence_group_external_id:
+            sentences_by_group[sentence.sentence_group_external_id].append(sentence)
 
-    # If we've hydrated any StateSentenceGroup entities, we check that
-    # every StateSentence.sentence_group_external_id exists as an external_id
-    # of a StateSentenceGroup
-    if ids_from_groups := {sg.external_id for sg in state_person.sentence_groups}:
-        for sgid in set(sentences_by_group.keys()).difference(ids_from_groups):
-            sentence_ext_ids = [s.external_id for s in sentences_by_group[sgid]]
-            yield f"Found {sentence_ext_ids=} referencing non-existent StateSentenceGroup {sgid}."
+    # All StateSentenceGroup.external_id values should match against
+    # a StateSentence.sentence_group_external_id value
+    # If you get this error and StateSentenceGroup is not hydrated,
+    # sentence_group_external_id can be null until
+    # StateSentenceGroup is hydrated.
+    ids_from_groups = {sg.external_id for sg in state_person.sentence_groups}
+    for sgid in set(sentences_by_group.keys()).difference(ids_from_groups):
+        sentence_ext_ids = [s.external_id for s in sentences_by_group[sgid]]
+        yield f"Found {sentence_ext_ids=} referencing non-existent StateSentenceGroup {sgid}."
 
     # Every StateSentenceGroup should have at least one associated StateSentence
     # If all sentences do not have parole possible, then all group level projected parole dates should be None

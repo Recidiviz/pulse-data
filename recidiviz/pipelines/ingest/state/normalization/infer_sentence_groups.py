@@ -113,9 +113,10 @@ class InferredGroupBuilder:
           - all hydrated NormalizedStateSentenceGroup entities must have an
             associated NormalizedStateSentence entity
         """
+        delimiter = NormalizedStateSentenceInferredGroup.external_id_delimiter()
         return NormalizedStateSentenceInferredGroup(
             state_code=self.state_code.value,
-            external_id="#".join(sorted(s.external_id for s in self.sentences)),
+            external_id=delimiter.join(sorted(s.external_id for s in self.sentences)),
         )
 
     @classmethod
@@ -129,7 +130,6 @@ class InferredGroupBuilder:
         return builder.build()
 
 
-# TODO(#33062) Make a function to update groups/sentences with the IDs
 def get_normalized_inferred_sentence_groups(
     normalized_sentences: list[NormalizedStateSentence],
 ) -> list[NormalizedStateSentenceInferredGroup]:

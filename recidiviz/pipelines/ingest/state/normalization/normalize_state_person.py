@@ -38,15 +38,11 @@ from recidiviz.persistence.entity.state.violation_utils import (
 from recidiviz.pipelines.ingest.state.create_person_id_to_staff_id_mapping import (
     StaffExternalIdToIdMap,
 )
-from recidiviz.pipelines.ingest.state.normalization.infer_sentence_groups import (
-    get_normalized_inferred_sentence_groups,
-)
 from recidiviz.pipelines.ingest.state.normalization.normalize_root_entity_helpers import (
     build_normalized_root_entity,
 )
 from recidiviz.pipelines.ingest.state.normalization.normalize_sentences import (
-    get_normalized_sentence_groups,
-    get_normalized_sentences,
+    get_normalized_sentencing_entities,
 )
 from recidiviz.pipelines.normalization.utils.normalization_managers.assessment_normalization_manager import (
     AssessmentNormalizationManager,
@@ -149,14 +145,14 @@ def build_normalized_state_person(
         staff_external_id_to_staff_id=staff_external_id_to_staff_id,
     ).get_normalized_supervision_periods()
 
-    normalized_sentences = get_normalized_sentences(
-        sentences=person.sentences, delegate=sentencing_delegate
-    )
-    normalized_sentence_groups = get_normalized_sentence_groups(
-        sentence_groups=person.sentence_groups
-    )
-    normalized_sentence_inferred_groups = get_normalized_inferred_sentence_groups(
-        normalized_sentences=normalized_sentences,
+    (
+        normalized_sentences,
+        normalized_sentence_groups,
+        normalized_sentence_inferred_groups,
+    ) = get_normalized_sentencing_entities(
+        sentences=person.sentences,
+        sentence_groups=person.sentence_groups,
+        delegate=sentencing_delegate,
     )
 
     normalized_incarceration_periods = IncarcerationPeriodNormalizationManager(
