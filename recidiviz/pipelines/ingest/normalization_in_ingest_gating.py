@@ -109,20 +109,18 @@ def is_combined_ingest_and_normalization_launched_in_env(state_code: StateCode) 
         StateCode.US_CA,
         StateCode.US_CO,
         StateCode.US_IX,
+        StateCode.US_ME,
+        StateCode.US_MI,
         StateCode.US_MO,
+        StateCode.US_ND,
         StateCode.US_OR,
         StateCode.US_PA,
-        # TODO(#29517): Add states here as we launch combined pipelines to staging
+        StateCode.US_TN,
     }
 
     # There are no downstream processes reading normalized entities produced by the
     # ingest pipeline for these states.
-    unlaunched_states: set[StateCode] = {
-        StateCode.US_MI,
-        StateCode.US_ME,
-        StateCode.US_ND,
-        StateCode.US_TN,
-    }
+    unlaunched_states: set[StateCode] = set()
 
     if intersection := staging_only_launched_states.intersection(prod_launched_states):
         raise ValueError(
