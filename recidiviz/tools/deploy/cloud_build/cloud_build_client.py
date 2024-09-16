@@ -61,6 +61,14 @@ class CloudBuildClient:
             client_options=client_options,
         )
 
+    def get_build(self, build_id: str) -> Build:
+        return self.client.get_build(
+            request=GetBuildRequest(
+                project_id=self.project_id,
+                id=build_id,
+            )
+        )
+
     def run_build(self, build: Build) -> Build:
         """Runs a build and waits for it to finish
         Raises:
@@ -78,12 +86,7 @@ class CloudBuildClient:
         start_time = datetime.datetime.now()
         timeout_timedelta = assert_type(build.timeout, datetime.timedelta)
         while datetime.datetime.now() - start_time < timeout_timedelta:
-            build = self.client.get_build(
-                request=GetBuildRequest(
-                    project_id=self.project_id,
-                    id=create_build_operation.metadata.build.id,
-                )
-            )
+            build = self.get_build(build_id=create_build_operation.metadata.build.id)
             if not log_output_printed:
                 log_output_printed = True
                 logging.info("Logs can be found at %s", build.log_url)
@@ -96,7 +99,7 @@ class CloudBuildClient:
             if build.status not in UNFINISHED_BUILD_STATES:
                 if build.status != Build.Status.SUCCESS:
                     raise RuntimeError(
-                        f"Build was not successful got [{build.status}], check Cloud Build logs at {build.log_url}"
+                        f"Build was not successful got [{build.status.name}], check Cloud Build logs at {build.log_url}"
                     )
 
                 return build

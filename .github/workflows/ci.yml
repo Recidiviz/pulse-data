@@ -72,7 +72,7 @@ jobs:
       - uses: actions/checkout@ee0669bd1cc54295c223e0bb666b733df41de1c5 # v2
       - uses: hashicorp/setup-terraform@bfaf33cd488dd9a148df9ea8868ffec802fc4a04 # v1
         with:
-          # Note: this verison number should be kept in sync with the ones in Dockerfile,
+          # Note: this version number should be kept in sync with the ones in Dockerfile,
           # .devcontainer/devcontainer.json, recidiviz/tools/deploy/terraform/terraform.tf, and
           # recidiviz/tools/deploy/deploy_helpers.sh
           terraform_version: ~1.7.0

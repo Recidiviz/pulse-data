@@ -39,6 +39,8 @@ def github_helperbot_client() -> Github:
 
 
 def upsert_helperbot_comment(pull_request_number: int, body: str, prefix: str) -> None:
+    """Adds a comment with the given |body| to the specified pull request, or overwrites an existing comment
+    with the |body| if a Helperbot-issued comment starting with |existing_comment_prefix| is found."""
     github_client = github_helperbot_client()
     pull_request = github_client.get_repo(RECIDIVIZ_DATA_REPO).get_pull(
         pull_request_number

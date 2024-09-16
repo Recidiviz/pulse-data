@@ -60,7 +60,7 @@ def main(args: argparse.Namespace) -> None:
     body = template.render(
         {
             "terraform_plan_output": plan_output,
-            "commit_ref": args.commit_ref,
+            "commit_ref": args.commit_ref[:8],
             "generated_on": datetime.now().isoformat(),
         }
     )
@@ -71,7 +71,7 @@ def main(args: argparse.Namespace) -> None:
         prefix="# Terraform plan",
     )
 
-    logging.info(body)
+    logging.info("Updated comment with body: %s", body)
 
 
 if __name__ == "__main__":

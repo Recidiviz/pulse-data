@@ -29,7 +29,11 @@ python -m recidiviz.tools.deploy.cloud_build.deployment_stage_runner \
 """
 import argparse
 import logging
+import re
 import sys
+
+import proto
+import yaml
 
 from recidiviz.tools.deploy.cloud_build.build_configuration import (
     DeploymentContext,
@@ -40,6 +44,9 @@ from recidiviz.tools.deploy.cloud_build.deployment_stage_interface import (
     DeploymentStageInterface,
 )
 from recidiviz.tools.deploy.cloud_build.stages.build_images import BuildImages
+from recidiviz.tools.deploy.cloud_build.stages.create_terraform_plan import (
+    CreateTerraformPlan,
+)
 from recidiviz.tools.deploy.cloud_build.stages.deploy_app_engine import DeployAppEngine
 from recidiviz.tools.deploy.cloud_build.stages.run_migrations_from_cloud_build import (
     RunMigrations,
@@ -54,6 +61,7 @@ AVAILABLE_DEPLOYMENT_STAGES: set[type[DeploymentStageInterface]] = {
     TagImages,
     BuildImages,
     DeployAppEngine,
+    CreateTerraformPlan,
 }
 
 
@@ -91,7 +99,12 @@ def parse_arguments(argv: list[str]) -> tuple[argparse.Namespace, list[str]]:
         type=str,
         choices=list(DEPLOYMENT_STAGES_BY_NAME.keys()),
     )
-
+    parser.add_argument(
+        "--dry-run",
+        required=False,
+        action="store_true",
+        default=False,
+    )
     return parser.parse_known_args(argv)
 
 
@@ -105,13 +118,38 @@ if __name__ == "__main__":
         cloud_build_client = CloudBuildClient.build(
             location=CloudBuildClient.DEFAULT_LOCATION
         )
-        deployment_stage = DEPLOYMENT_STAGES_BY_NAME[parsed_args.stage]
-        deployment_stage_args = deployment_stage.get_parser().parse_args(unknown_args)
 
-        interactive_prompt_retry_on_exception(
+        deployment_stage_cls = DEPLOYMENT_STAGES_BY_NAME[parsed_args.stage]
+        deployment_stage = deployment_stage_cls()
+        deployment_stage_args = deployment_stage_cls.get_parser().parse_args(
+            unknown_args
+        )
+
+        if parsed_args.dry_run:
+            yaml_output = yaml.dump(
+                proto.Message.to_dict(  # type: ignore[attr-defined]
+                    create_deployment_build_api_obj(
+                        build_configuration=deployment_stage_cls().configure_build(
+                            deployment_context=deployment_context,
+                            args=deployment_stage_args,
+                        ),
+                        deployment_context=deployment_context,
+                    )
+                )
+            )
+            # Some protobuf fields are suffixed with `_` to avoid collision with Python global names ie `dir_` vs `dir`
+            # Replace the field name with the non-suffixed key
+            yaml_output = re.sub(r"(\s+.+)_(:.+)", r"\g<1>\g<2>", yaml_output)
+            logging.info(
+                "Command generated the following build configuration: %s", yaml_output
+            )
+
+            sys.exit()
+
+        deployment_build = interactive_prompt_retry_on_exception(
             fn=lambda: cloud_build_client.run_build(
                 create_deployment_build_api_obj(
-                    build_configuration=deployment_stage().configure_build(
+                    build_configuration=deployment_stage_cls().configure_build(
                         deployment_context=deployment_context,
                         args=deployment_stage_args,
                     ),
