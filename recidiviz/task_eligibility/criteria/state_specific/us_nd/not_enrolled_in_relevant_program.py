@@ -83,6 +83,7 @@ SELECT
     STRING_AGG(program, ', ' ORDER BY program) AS program_descriptions,
     STRING_AGG(participation_status, ', ' ORDER BY program) AS program_statuses,
 FROM sub_sessions_with_attributes
+WHERE start_date != end_date
 GROUP BY 1,2,3,4,5
 """
 
