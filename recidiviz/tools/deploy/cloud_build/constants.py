@@ -18,10 +18,15 @@
 
 from recidiviz.tools.deploy.cloud_build.artifact_registry_repository import ImageKind
 
+TERRAFORM_VERSION = "1.7.0"
+TERRAFORM_WORKDIR = "/workspace/recidiviz/tools/deploy/terraform/"
+
 # Builder images
 BUILDER_GCLOUD = "gcr.io/google.com/cloudsdktool/cloud-sdk:slim"
 BUILDER_DOCKER = "gcr.io/cloud-builders/docker"
 BUILDER_ALPINE = "alpine"
+BUILDER_TERRAFORM = f"hashicorp/terraform:{TERRAFORM_VERSION}"
+BUILDER_GIT = "gcr.io/cloud-builders/git"
 
 # Binaries
 CLOUD_SQL_PROXY_URI = "https://storage.googleapis.com/cloud-sql-connectors/cloud-sql-proxy/v2.11.4/cloud-sql-proxy.linux.amd64"

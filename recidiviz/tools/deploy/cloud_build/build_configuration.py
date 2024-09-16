@@ -19,6 +19,7 @@ from argparse import Namespace
 
 import attr
 from google.cloud.devtools.cloudbuild_v1 import (
+    Artifacts,
     Build,
     BuildOptions,
     BuildStep,
@@ -26,6 +27,7 @@ from google.cloud.devtools.cloudbuild_v1 import (
     SecretManagerSecret,
     Secrets,
     Source,
+    Volume,
 )
 
 from recidiviz.common.google_cloud.protobuf_builder import ProtoPlusBuilder
@@ -48,6 +50,11 @@ class DeploymentContext:
             version_tag=args.version_tag,
         )
 
+    @property
+    def app_engine_tag(self) -> str:
+        # Replace characters that are not allowed in app engine version names with hyphens
+        return self.version_tag.replace(".", "-")
+
 
 @attr.define
 class BuildConfiguration:
@@ -55,12 +62,14 @@ class BuildConfiguration:
 
     steps: list[BuildStep]
     # It is possible to use Secret Manager secret values in the build by using substitutions
-    # Map of substitution names -> secrets
     # example: BuildConfiguration(
-    #   secrets={"_SLACK_BOT_TOKEN": "deploy_slack_bot_authorization_token"},
-    #   steps=[BuildStep(command="echo ${_SLACK_BOT_TOKEN}")]
+    #   secrets=["deploy_slack_bot_authorization_token"],
+    #   steps=[BuildStep(
+    #       command=f"echo {secret_substitution('deploy_slack_bot_authorization_token')}",
+    #       secret_env=[secret_substitution_name("deploy_slack_bot_authorization_token")],
+    #   )]
     # )
-    secrets: dict[str, str] = attr.ib(factory=dict)
+    secrets: list[str] = attr.ib(factory=dict)
     # If set to true, Cloud Build will do a shallow checkout of the specified commit ref prior to running the build
     # The repository is cloned into the /workspace/ directory
     uses_source: bool = attr.ib(default=False)
@@ -76,6 +85,8 @@ class BuildConfiguration:
         ),
     )
 
+    object_artifacts: Artifacts.ArtifactObjects | None = attr.ib(default=None)
+
 
 def create_deployment_build_api_obj(
     build_configuration: BuildConfiguration, deployment_context: DeploymentContext
@@ -83,32 +94,31 @@ def create_deployment_build_api_obj(
     """Creates a Cloud Build gRPC API object given a deployment context and build configuration"""
     builder = ProtoPlusBuilder(Build).compose(
         Build(
-            {
-                "service_account": get_secret("ci_cd_service_account"),
-                "logs_bucket": "gs://${_PROJECT_ID}-ci-cd-logs",
-                "timeout": f"{build_configuration.timeout_seconds}s",
-                # The default list of substitutions includes PROJECT_ID, BUILD_ID, LOCATION
-                # https://cloud.google.com/build/docs/configuring-builds/substitute-variable-values
-                "substitutions": {
-                    "_PROJECT_ID": deployment_context.project_id,
-                    "_COMMIT_REF": deployment_context.commit_ref,
-                    "_VERSION_TAG": deployment_context.version_tag,
-                },
-                "source": Source(
-                    repo_source=RepoSource(
-                        project_id=deployment_context.project_id,
-                        repo_name="github_Recidiviz_pulse-data",
-                        commit_sha=deployment_context.commit_ref,
-                    )
+            service_account=get_secret("ci_cd_service_account"),
+            logs_bucket="gs://${_PROJECT_ID}-ci-cd-logs",
+            timeout=f"{build_configuration.timeout_seconds}s",
+            # The default list of substitutions includes PROJECT_ID, BUILD_ID, LOCATION
+            # https://cloud.google.com/build/docs/configuring-builds/substitute-variable-values
+            substitutions={
+                "_PROJECT_ID": deployment_context.project_id,
+                "_COMMIT_REF": deployment_context.commit_ref,
+                "_VERSION_TAG": deployment_context.version_tag,
+            },
+            source=Source(
+                repo_source=RepoSource(
+                    project_id=deployment_context.project_id,
+                    repo_name="github_Recidiviz_pulse-data",
+                    commit_sha=deployment_context.commit_ref,
                 )
-                if build_configuration.uses_source
-                else None,
-                # We want to expose substitutions that are consistently available across all build steps, even if they
-                # are unused. Enable ALLOW_LOOSE
-                # > If the ALLOW_LOOSE option is not specified, unmatched keys in the substitutions mapping or build
-                # > request will result in error.
-                "options": {"substitution_option": "ALLOW_LOOSE"},
-            }
+            )
+            if build_configuration.uses_source
+            else None,
+            # We want to expose substitutions that are consistently available across all build steps, even if they
+            # are unused. Enable ALLOW_LOOSE
+            # > If the ALLOW_LOOSE option is not specified, unmatched keys in the substitutions mapping or build
+            # > request will result in error.
+            options={"substitution_option": "ALLOW_LOOSE"},
+            artifacts=Artifacts(objects=build_configuration.object_artifacts),
         )
     )
     builder.update_args(
@@ -117,18 +127,23 @@ def create_deployment_build_api_obj(
     )
 
     available_secrets = Secrets()
-    for (
-        secret_substitution_name,
-        secret_name,
-    ) in build_configuration.secrets.items():
+    for secret_name in build_configuration.secrets:
         available_secrets.secret_manager.append(
             SecretManagerSecret(
                 version_name=f"projects/$_PROJECT_ID/secrets/{secret_name}/versions/latest",
-                env=secret_substitution_name,
+                env=secret_substitution_name(secret_name),
             )
         )
     builder.update_args(available_secrets=available_secrets)
     return builder.build()
+
+
+def secret_substitution_name(secret_name: str) -> str:
+    return f"_{secret_name.upper()}"
+
+
+def secret_substitution(secret_name: str) -> str:
+    return f"$${secret_substitution_name(secret_name)}"
 
 
 def build_step_for_shell_command(
@@ -139,6 +154,8 @@ def build_step_for_shell_command(
     wait_for: list[str] | str | None = None,
     env: list[str] | None = None,
     dir_: str | None = None,
+    secret_env: list[str] | None = None,
+    volumes: list[Volume] | None = None,
 ) -> BuildStep:
     """Helper function to create a BuildStep that runs a shell command"""
     return BuildStep(
@@ -149,6 +166,8 @@ def build_step_for_shell_command(
         name=name,
         wait_for=wait_for,
         env=env,
+        secret_env=secret_env,
+        volumes=volumes,
     )
 
 

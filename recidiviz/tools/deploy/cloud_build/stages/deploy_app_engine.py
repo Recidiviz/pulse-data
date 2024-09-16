@@ -91,8 +91,7 @@ class DeployAppEngine(DeploymentStageInterface):
                     "--image-url",
                     app_engine_image,
                     "--version",
-                    # Replace characters that are not allowed in app engine version names with hyphens
-                    deployment_context.version_tag.replace(".", "-"),
+                    deployment_context.app_engine_tag,
                 ],
             ),
         ]

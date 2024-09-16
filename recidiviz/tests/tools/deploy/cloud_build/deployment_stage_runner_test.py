@@ -26,6 +26,9 @@ from recidiviz.tools.deploy.cloud_build.deployment_stage_runner import (
     AVAILABLE_DEPLOYMENT_STAGES,
 )
 from recidiviz.tools.deploy.cloud_build.stages.build_images import BuildImages
+from recidiviz.tools.deploy.cloud_build.stages.create_terraform_plan import (
+    CreateTerraformPlan,
+)
 from recidiviz.tools.deploy.cloud_build.stages.deploy_app_engine import DeployAppEngine
 from recidiviz.tools.deploy.cloud_build.stages.run_migrations_from_cloud_build import (
     RunMigrations,
@@ -41,6 +44,10 @@ class DeploymentStepRunnerTest(unittest.TestCase):
     @with_secrets({"operations_v2_cloudsql_instance_id": "123"})
     def test_parse(self) -> None:
         stage_args = {
+            CreateTerraformPlan: argparse.Namespace(
+                apply=False,
+                for_pull_requests=False,
+            ),
             BuildImages: argparse.Namespace(
                 images=[ImageKind.APP_ENGINE], promote=False
             ),
