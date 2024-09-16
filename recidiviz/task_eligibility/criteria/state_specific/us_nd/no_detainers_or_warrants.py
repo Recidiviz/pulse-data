@@ -57,7 +57,7 @@ WITH warrants_and_detainers AS (
         e.ORDER_TYPE,
         e.OFFENSE_STATUS,
         e.OFFENSE_DESC,
-    FROM `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.elite_offender_offences_latest` e
+    FROM `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.recidiviz_elite_offences_latest` e
     INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` peid
     ON peid.external_id = {reformat_ids('e.OFFENDER_BOOK_ID')}
         AND peid.state_code = 'US_ND'
