@@ -52,7 +52,6 @@ class DeployAppEngine(DeploymentStageInterface):
         parser.add_argument(
             "--promote",
             action=argparse.BooleanOptionalAction,
-            default=False,
         )
         return parser
 
