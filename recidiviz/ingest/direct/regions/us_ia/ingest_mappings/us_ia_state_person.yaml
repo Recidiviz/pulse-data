@@ -1,0 +1,53 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_state_person` to corresponding
+# Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  - OffenderCd
+  - OffenderFirstNm
+  - OffenderMiddleNm
+  - OffenderLastNm
+  - Sex
+  - Race
+  - EthnicOrigin
+  - BirthDt
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: OffenderCd
+          id_type: $literal("US_IA_OFFENDERCD")
+    birthdate: BirthDt
+    full_name:
+      $person_name:
+        $given_names: OffenderFirstNm
+        $middle_names: OffenderMiddleNm
+        $surname: OffenderLastNm
+    gender:
+      $enum_mapping:
+        $raw_text: Sex
+        $mappings:
+          StateGender.MALE: M
+          StateGender.FEMALE: F
+    races:
+      - StatePersonRace:
+          race:
+            $enum_mapping:
+              $raw_text: Race
+              $mappings:
+                StateRace.ASIAN: Asian or Pacific Islander
+                StateRace.BLACK: Black
+                StateRace.AMERICAN_INDIAN_ALASKAN_NATIVE: American Indian or Alaska Native
+                #StateRace.NATIVE_HAWAIIAN_PACIFIC_ISLANDER: Asian or Pacific Islander
+                StateRace.WHITE: White
+                StateRace.EXTERNAL_UNKNOWN: Unknown
+    ethnicities:
+      - StatePersonEthnicity:
+          ethnicity:
+            $enum_mapping:
+              $raw_text: EthnicOrigin
+              $mappings:
+                StateEthnicity.HISPANIC: Hispanic
+                StateEthnicity.EXTERNAL_UNKNOWN: Unknown
+                StateEthnicity.NOT_HISPANIC: Non-Hispanic
