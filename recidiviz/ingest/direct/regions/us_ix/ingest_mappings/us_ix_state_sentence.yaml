@@ -12,7 +12,9 @@ input_columns:
   - SentenceId
   - inState
   - SentenceOrderCategoryId
-unused_columns: []
+unused_columns:
+  # TODO(#30593) hydrate sentence_group_external_id when groups are hydrated
+  - SentenceGroupId
 output:
   StatePerson:
     external_ids:
@@ -59,7 +61,8 @@ output:
                     - $literal("2")
                 $then: $literal_enum(StateSentenceType.STATE_PRISON)
               - $else: $literal_enum(StateSentenceType.PROBATION)
-          sentence_group_external_id: SentenceGroupId
+          # TODO(#30593) hydrate sentence_group_external_id when groups are hydrated
+          # sentence_group_external_id: SentenceGroupId
           is_capital_punishment:
             $conditional:
               - $if:

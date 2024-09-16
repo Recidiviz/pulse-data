@@ -473,6 +473,16 @@ class TestNormalizedEntities(unittest.TestCase):
 class TestSentencingEntities(unittest.TestCase):
     """This class is for testing specfic functionality and methods on normalized sentencing v2 entities."""
 
+    def test_sentence_inferred_group_external_id(self) -> None:
+        delim = (
+            normalized_entities.NormalizedStateSentenceInferredGroup.external_id_delimiter()
+        )
+        inferred_group = normalized_entities.NormalizedStateSentenceInferredGroup(
+            state_code=StateCode.US_XX.value,
+            external_id=f"sentence-01{delim}sentence-02",
+        )
+        assert inferred_group.sentence_external_ids == ["sentence-01", "sentence-02"]
+
     def test_first_serving_status_to_terminating_status_dt_range(self) -> None:
         first_dt = datetime.datetime(2022, 1, 1, 12)
         final_dt = datetime.datetime(2022, 4, 15, 6)

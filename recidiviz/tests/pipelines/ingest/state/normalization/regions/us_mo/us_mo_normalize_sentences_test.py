@@ -40,11 +40,9 @@ from recidiviz.pipelines.ingest.state.generate_primary_keys import (
 )
 from recidiviz.pipelines.ingest.state.normalization.infer_sentence_groups import (
     InferredGroupBuilder,
-    get_normalized_inferred_sentence_groups,
 )
 from recidiviz.pipelines.ingest.state.normalization.normalize_sentences import (
-    get_normalized_sentence_groups,
-    get_normalized_sentences,
+    get_normalized_sentencing_entities,
 )
 from recidiviz.pipelines.utils.state_utils.us_mo.us_mo_sentence_normalization_delegate import (
     UsMoSentenceNormalizationDelegate,
@@ -645,54 +643,43 @@ def test_person_001_sentencing_normalization() -> None:
             [NORMALIZED_SENTENCE_001_19900117_1]
         )
     )
-    # TODO(#33062) Uncomment when we add the ID
-    # NORMALIZED_SENTENCE_001_19900117_1.sentence_inferred_group_id = (
-    #     INFERRED_GROUP_FROM_19900117.sentence_inferred_group_id
-    # )
+    NORMALIZED_SENTENCE_001_19900117_1.sentence_inferred_group_id = (
+        INFERRED_GROUP_FROM_19900117.sentence_inferred_group_id
+    )
     INFERRED_GROUP_FROM_20040224 = (
         InferredGroupBuilder.build_inferred_group_from_sentences(
             [NORMALIZED_SENTENCE_001_20040224_1, NORMALIZED_SENTENCE_001_20040224_2]
         )
     )
-    # TODO(#33062) Uncomment when we add the ID
-    # NORMALIZED_SENTENCE_001_20040224_1.sentence_inferred_group_id = (
-    #     INFERRED_GROUP_FROM_20040224.sentence_inferred_group_id
-    # )
-    # NORMALIZED_SENTENCE_001_20040224_2.sentence_inferred_group_id = (
-    #     INFERRED_GROUP_FROM_20040224.sentence_inferred_group_id
-    # )
+    NORMALIZED_SENTENCE_001_20040224_1.sentence_inferred_group_id = (
+        INFERRED_GROUP_FROM_20040224.sentence_inferred_group_id
+    )
+    NORMALIZED_SENTENCE_001_20040224_2.sentence_inferred_group_id = (
+        INFERRED_GROUP_FROM_20040224.sentence_inferred_group_id
+    )
 
     expected_normalized_sentences = [
         set_backedges(NORMALIZED_SENTENCE_001_19900117_1),
         set_backedges(NORMALIZED_SENTENCE_001_20040224_1),
         set_backedges(NORMALIZED_SENTENCE_001_20040224_2),
     ]
-    actual_normalized_sentences = sorted(
-        get_normalized_sentences(
-            person_001.sentences, UsMoSentenceNormalizationDelegate()
-        ),
-        key=lambda s: s.external_id,
-    )
+
     NORMALIZED_SG_001_19900117 = normalized_entities.NormalizedStateSentenceGroup(
         state_code="US_MO",
         external_id="TEST_001-19900117",
         sentence_group_id=assert_type(SG_001_19900117.sentence_group_id, int),
-        sentence_inferred_group_id=None,  # INFERRED_GROUP_FROM_19900117.sentence_inferred_group_id,
+        sentence_inferred_group_id=INFERRED_GROUP_FROM_19900117.sentence_inferred_group_id,
     )
     NORMALIZED_SG_001_20040224 = normalized_entities.NormalizedStateSentenceGroup(
         state_code="US_MO",
         external_id="TEST_001-20040224",
         sentence_group_id=assert_type(SG_001_20040224.sentence_group_id, int),
-        sentence_inferred_group_id=None,  # INFERRED_GROUP_FROM_20040224.sentence_inferred_group_id,
+        sentence_inferred_group_id=INFERRED_GROUP_FROM_20040224.sentence_inferred_group_id,
     )
     expected_normalized_sentence_groups = [
         set_backedges(NORMALIZED_SG_001_19900117),
         set_backedges(NORMALIZED_SG_001_20040224),
     ]
-    actual_normalized_sentence_groups = sorted(
-        get_normalized_sentence_groups(person_001.sentence_groups),
-        key=lambda s: s.external_id,
-    )
 
     expected_inferred_groups = sorted(
         [
@@ -701,9 +688,15 @@ def test_person_001_sentencing_normalization() -> None:
         ],
         key=lambda g: g.external_id,  # type: ignore
     )
-    actual_inferred_groups = sorted(
-        get_normalized_inferred_sentence_groups(actual_normalized_sentences),
-        key=lambda g: g.external_id,
+
+    (
+        actual_normalized_sentences,
+        actual_normalized_sentence_groups,
+        actual_inferred_groups,
+    ) = get_normalized_sentencing_entities(
+        person_001.sentences,
+        person_001.sentence_groups,
+        UsMoSentenceNormalizationDelegate(),
     )
 
     assert actual_normalized_sentences == expected_normalized_sentences

@@ -282,7 +282,9 @@ class TestInferredSentenceGroups(unittest.TestCase):
             sentences
         )
         assert actual_inferred_groups == [inferred_group]
-        assert inferred_group.external_id == "sentence-001#sentence-002#sentence-003"
+        assert (
+            inferred_group.external_id == "sentence-001@#@sentence-002@#@sentence-003"
+        )
 
     def test_groups_merge_by_active_serving_status(self) -> None:
         """
@@ -388,4 +390,6 @@ class TestInferredSentenceGroups(unittest.TestCase):
             sentences
         )
         assert actual_inferred_groups == [inferred_group]
-        assert inferred_group.external_id == "sentence-001#sentence-002#sentence-003"
+        assert (
+            inferred_group.external_id == "sentence-001@#@sentence-002@#@sentence-003"
+        )

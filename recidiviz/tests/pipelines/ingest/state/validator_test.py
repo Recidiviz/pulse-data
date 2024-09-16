@@ -1031,6 +1031,17 @@ class TestSentencingRootEntityChecks(unittest.TestCase):
             "Found StateSentenceGroup TEST-SG without an associated sentence.",
         )
 
+        # Error when there is a sentence_group_external_id but no sentence group
+        self.state_person.sentence_groups = []
+        sentence.sentence_group_external_id = "SG-NOT-HYDRATED"
+        self.state_person.sentences = [sentence]
+        errors = validate_root_entity(self.state_person)
+        self.assertEqual(len(errors), 1)
+        self.assertEqual(
+            errors[0],
+            "Found sentence_ext_ids=['SENT-EXTERNAL-1'] referencing non-existent StateSentenceGroup SG-NOT-HYDRATED.",
+        )
+
     def test_no_parole_possible_means_no_parole_projected_dates_group_level(
         self,
     ) -> None:
