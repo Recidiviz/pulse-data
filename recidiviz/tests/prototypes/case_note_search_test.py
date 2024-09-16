@@ -159,3 +159,281 @@ class TestCaseNoteFunctions(IsolatedAsyncioTestCase):
             exclude_filter_conditions=exclude_filter_conditions,
             limit=page_size,
         )
+
+    @patch(
+        "recidiviz.prototypes.case_note_search.case_note_search.extract_case_notes_results_structured_data"
+    )
+    @patch(
+        "recidiviz.prototypes.case_note_search.case_note_search.DiscoveryEngineInterface"
+    )
+    @patch("recidiviz.prototypes.case_note_search.case_note_search.exact_match_search")
+    async def test_exact_search_result_order(
+        self,
+        mock_exact_match_search: MagicMock,
+        mock_discovery_engine_interface: AsyncMock,
+        mock_extract_case_notes_results: MagicMock,
+    ) -> None:
+        query = "content"
+        page_size = 10
+        filter_conditions = {"external_id": ["1234", "6789"], "state_code": ["US_ME"]}
+
+        # Set up the mock for the DiscoveryEngineInterface instance
+        mock_search_pager = MagicMock(spec=SearchPager)
+        mock_discovery_interface_instance = mock_discovery_engine_interface.return_value
+        mock_discovery_interface_instance.search = AsyncMock(
+            return_value=mock_search_pager
+        )
+
+        case_note_data1 = {
+            "state_code": "US_ME",
+            "external_id": "1234",
+            "note_id": "129",
+            "note_date": "2024-03-29 11:27:00",
+            "note_mode": "Phone",
+            "note_type": "Supervision",
+            "note_title": None,
+            "note_body": "Full case note content.",
+        }
+        case_note_data_extracted1 = {
+            "document_id": "129",
+            "date": "2024-03-29 11:27:00",
+            "contact_mode": "Phone",
+            "note_type": "Supervision",
+            "note_title": None,
+            "extractive_answer": None,
+            "snippet": None,
+            "preview": "Full case note content.",
+            "case_note": "Full case note content.",
+        }
+        case_note_data2 = {
+            "state_code": "US_ME",
+            "external_id": "1234",
+            "note_id": "130",
+            "note_date": "2024-03-30 11:27:00",
+            "note_mode": "Phone",
+            "note_type": "Supervision",
+            "note_title": None,
+            "note_body": "Full case note content.",
+        }
+        case_note_data_extracted2 = {
+            "document_id": "130",
+            "date": "2024-03-30 11:27:00",
+            "contact_mode": "Phone",
+            "note_type": "Supervision",
+            "note_title": None,
+            "extractive_answer": None,
+            "snippet": None,
+            "preview": "Full case note content.",
+            "case_note": "Full case note content.",
+        }
+        case_note_data3 = {
+            "state_code": "US_ME",
+            "external_id": "1234",
+            "note_id": "131",
+            "note_date": "2024-03-31 11:27:00",
+            "note_mode": "Phone",
+            "note_type": "Supervision",
+            "note_title": None,
+            "note_body": "Full case note content.",
+        }
+        case_note_data_extracted3 = {
+            "document_id": "131",
+            "date": "2024-03-31 11:27:00",
+            "contact_mode": "Phone",
+            "note_type": "Supervision",
+            "note_title": None,
+            "extractive_answer": None,
+            "snippet": None,
+            "preview": "Full case note content.",
+            "case_note": "Full case note content.",
+        }
+
+        # Regular search returns no notes, and exact search returns 3 notes
+        mock_extract_case_notes_results.return_value = []
+        mock_exact_match_search.return_value = {
+            "US_ME_1234_129": case_note_data1,
+            "US_ME_1234_130": case_note_data2,
+            "US_ME_1234_131": case_note_data3,
+        }
+
+        results = await case_note_search(query, page_size, filter_conditions)
+        # Returned results should be in reverse chronological order
+        self.assertEqual(
+            results,
+            {
+                "results": [
+                    case_note_data_extracted3,
+                    case_note_data_extracted2,
+                    case_note_data_extracted1,
+                ],
+                "error": None,
+            },
+        )
+
+    @patch(
+        "recidiviz.prototypes.case_note_search.case_note_search.extract_case_notes_results_structured_data"
+    )
+    @patch(
+        "recidiviz.prototypes.case_note_search.case_note_search.DiscoveryEngineInterface"
+    )
+    @patch("recidiviz.prototypes.case_note_search.case_note_search.exact_match_search")
+    async def test_case_note_search_result_order(
+        self,
+        mock_exact_match_search: MagicMock,
+        mock_discovery_engine_interface: AsyncMock,
+        mock_extract_case_notes_results: MagicMock,
+    ) -> None:
+        query = "test query"
+        page_size = 10
+        filter_conditions = {"external_id": ["1234", "6789"], "state_code": ["US_ME"]}
+
+        # Set up the mock for the DiscoveryEngineInterface instance
+        mock_search_pager = MagicMock(spec=SearchPager)
+        mock_discovery_interface_instance = mock_discovery_engine_interface.return_value
+        mock_discovery_interface_instance.search = AsyncMock(
+            return_value=mock_search_pager
+        )
+
+        exact_match1 = {
+            "state_code": "US_ME",
+            "external_id": "1234",
+            "note_id": "126",
+            "note_date": "2024-03-26 11:27:00",
+            "note_body": "Full case note content.",
+            "note_mode": "Phone",
+            "note_type": "Supervision",
+            "note_title": None,
+        }
+        exact_match_extracted1 = {
+            "document_id": "126",
+            "date": "2024-03-26 11:27:00",
+            "contact_mode": "Phone",
+            "note_type": "Supervision",
+            "note_title": None,
+            "extractive_answer": None,
+            "snippet": None,
+            "preview": "Full case note content.",
+            "case_note": "Full case note content.",
+        }
+        exact_match2 = {
+            "state_code": "US_ME",
+            "external_id": "1234",
+            "note_id": "127",
+            "note_date": "2024-03-27 11:27:00",
+            "note_body": "Full case note content.",
+            "note_mode": "Phone",
+            "note_type": "Supervision",
+            "note_title": None,
+        }
+        exact_match_extracted2 = {
+            "document_id": "127",
+            "date": "2024-03-27 11:27:00",
+            "contact_mode": "Phone",
+            "note_type": "Supervision",
+            "note_title": None,
+            "extractive_answer": None,
+            "snippet": None,
+            "preview": "Full case note content.",
+            "case_note": "Full case note content.",
+        }
+        exact_match3 = {
+            "state_code": "US_ME",
+            "external_id": "1234",
+            "note_id": "128",
+            "note_date": "2024-03-28 11:27:00",
+            "note_body": "Full case note content.",
+            "note_mode": "Phone",
+            "note_type": "Supervision",
+            "note_title": None,
+        }
+        exact_match_extracted3 = {
+            "document_id": "128",
+            "date": "2024-03-28 11:27:00",
+            "contact_mode": "Phone",
+            "note_type": "Supervision",
+            "note_title": None,
+            "extractive_answer": None,
+            "snippet": None,
+            "preview": "Full case note content.",
+            "case_note": "Full case note content.",
+        }
+        exact_match4 = {
+            "state_code": "US_ME",
+            "external_id": "1234",
+            "note_id": "129",
+            "note_date": "2024-03-29 11:27:00",
+            "note_body": "Full case note content.",
+            "note_mode": "Phone",
+            "note_type": "Supervision",
+            "note_title": None,
+        }
+        exact_match_extracted4 = {
+            "document_id": "129",
+            "date": "2024-03-29 11:27:00",
+            "contact_mode": "Phone",
+            "note_type": "Supervision",
+            "note_title": None,
+            "extractive_answer": None,
+            "snippet": None,
+            "preview": "Full case note content.",
+            "case_note": "Full case note content.",
+        }
+        non_exact_match1 = {
+            "document_id": "130",
+            "date": "2024-03-30 11:27:00",
+            "contact_mode": "Phone",
+            "note_type": "Supervision",
+            "note_title": None,
+            "extractive_answer": None,
+            "snippet": None,
+            "preview": "Full case note content.",
+            "case_note": "Full case note content.",
+        }
+        non_exact_match2 = {
+            "document_id": "131",
+            "date": "2024-03-31 11:27:00",
+            "contact_mode": "Phone",
+            "note_type": "Supervision",
+            "note_title": None,
+            "extractive_answer": None,
+            "snippet": None,
+            "preview": "Full case note content.",
+            "case_note": "Full case note content.",
+        }
+
+        # Regular search includes two exact match results and two non-exact match results
+        mock_extract_case_notes_results.return_value = [
+            exact_match_extracted2,
+            non_exact_match1,
+            exact_match_extracted3,
+            non_exact_match2,
+        ]
+        mock_exact_match_search.return_value = {
+            "US_ME_1234_126": exact_match1,
+            "US_ME_1234_127": exact_match2,
+            "US_ME_1234_128": exact_match3,
+            "US_ME_1234_129": exact_match4,
+        }
+
+        results = await case_note_search(query, page_size, filter_conditions)
+        # Result order should be:
+        # * exact matches returned by regular search, in relevance order
+        # * exact matches returned only by exact search, in reverse chronological order
+        # * non-exact matches returned by regular search, in relevance order
+        self.assertEqual(
+            results,
+            {
+                "results": [
+                    # exact matches returned by regular search, in relevance order
+                    exact_match_extracted2,
+                    exact_match_extracted3,
+                    # exact matches returned only by exact search, in reverse chronological order
+                    exact_match_extracted4,
+                    exact_match_extracted1,
+                    # non-exact matches returned by regular search, in relevance order
+                    non_exact_match1,
+                    non_exact_match2,
+                ],
+                "error": None,
+            },
+        )

@@ -27,6 +27,7 @@ import asyncio
 import json
 from typing import Any, Dict, List, Optional
 
+import dateutil.parser
 import sentry_sdk
 from google.cloud.discoveryengine_v1.services.search_service.pagers import (
     SearchAsyncPager,
@@ -240,6 +241,11 @@ async def case_note_search(
     """
     Perform a case note search using the Discovery Engine interface.
 
+    Results are returned in the following order:
+    * Discovery Engine results that are exact matches (in Discovery Engine order)
+    * Exact match results missed by Discovery Engine (in exact match order, which is reverse-chronological)
+    * All other Discovery Engine results (in Discovery Engine order)
+
     Args:
         query: The search query string.
         page_size: The number of search results to return per page. Defaults to 10.
@@ -268,7 +274,7 @@ async def case_note_search(
     engine_id = CASE_NOTE_SEARCH_ENGINE_ID
 
     # Explicitly disable snippets if running the engine on structured data, since
-    # snippets, extractive answers, and summaries are disabled for structed data stores.
+    # snippets, extractive answers, and summaries are disabled for structured data stores.
     # See https://github.com/googleapis/google-cloud-ruby/issues/26036.
     if engine_id in STRUCTURED_DATASETS:
         with_snippet = False
@@ -300,22 +306,44 @@ async def case_note_search(
                 exclude_filter_conditions=set_hardcoded_excludes(),
                 limit=page_size,
             )
-            # Exact matches are formated as jsonData currently, and need to be
+            # Exact matches are formatted as jsonData currently, and need to be
             # reformatted as Results.
-            id_to_exact_match_result = {
-                id: exact_match_json_data_to_results(json_data)
-                for id, json_data in exact_match_json_data.items()
-            }
-            # Filter out results that are present in id_to_exact_match_result.
-            results = [
-                result
-                for result in results
-                if result["document_id"] not in id_to_exact_match_result
+            exact_match_results = [
+                exact_match_json_data_to_results(json_data)
+                for json_data in exact_match_json_data.values()
             ]
 
-            # Combine exact match results and search engine results. Exact match results
-            # go in the front of the list.
-            results = list(id_to_exact_match_result.values()) + results
+            # Sort the exact matches in reverse chronological order
+            exact_match_results.sort(
+                key=lambda result: dateutil.parser.parse(result["date"]), reverse=True
+            )
+
+            # Results are combined in the following order:
+            # * Discovery Engine results that are exact matches (in Discovery Engine order)
+            # * Exact match results missed by Discovery Engine (in exact match order, which is reverse-chronological)
+            # * All other Discovery Engine results (in Discovery Engine order)
+            discovery_engine_ids = [result["document_id"] for result in results]
+            exact_match_ids = [result["document_id"] for result in exact_match_results]
+
+            consolidated_results = [
+                result for result in results if result["document_id"] in exact_match_ids
+            ]
+            consolidated_results.extend(
+                [
+                    result
+                    for result in exact_match_results
+                    if result["document_id"] not in discovery_engine_ids
+                ]
+            )
+            consolidated_results.extend(
+                [
+                    result
+                    for result in results
+                    if result["document_id"] not in exact_match_ids
+                ]
+            )
+
+            results = consolidated_results
 
             # Truncate, if the page size is exceeded.
             results = results[:page_size]
