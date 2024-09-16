@@ -1,0 +1,34 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: CUSTODY_HIST
+file_description: |-
+  This file contains custody history
+data_classification: source
+primary_key_cols:
+  - CustodyHistId
+columns:
+  - name: CustodyHistId
+    description: |-
+      ID for table
+  - name: ID_NBR
+    description: |-
+      Person id number
+    is_pii: True
+  - name: EFFECTIVE_DT
+    field_type: datetime
+    description: |-
+      Effective date
+  - name: CREATION_TS
+    field_type: datetime
+    description: |-
+      Creation timestamp
+  - name: CUSTODY_CD
+    description: |-
+      Custody code
+  - name: LAST_ACTIVITY_TS
+    field_type: datetime
+    description: |-
+      Last activity timestamp
+  - name: LAST_ACTIVITY_ID
+    description: |-
+      Last activity id
+    is_pii: True
