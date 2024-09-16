@@ -87,11 +87,28 @@ DOCKER_IMAGE_TAG=${VERSION_TAG}
 
 update_deployment_status "${DEPLOYMENT_STATUS_STARTED}" "${PROJECT_ID}" "${COMMIT_HASH:0:7}" "${VERSION_TAG}"
 
-if [[ -n ${DEBUG_BUILD_NAME} ]]; then
-    # app engine deploy paths
-    APP_ENGINE_IMAGE_BASE=us-docker.pkg.dev/$PROJECT_ID/appengine/default
-    APP_ENGINE_IMAGE_URL=$APP_ENGINE_IMAGE_BASE:${DOCKER_IMAGE_TAG} || exit_on_fail
+# app engine deploy paths
+APP_ENGINE_IMAGE_BASE=us-docker.pkg.dev/$PROJECT_ID/appengine/default
+APP_ENGINE_IMAGE_URL=$APP_ENGINE_IMAGE_BASE:${DOCKER_IMAGE_TAG} || exit_on_fail
 
+APP_ENGINE_REMOTE_BUILD_BASE=us-docker.pkg.dev/$PROJECT_ID/appengine/build
+APP_ENGINE_REMOTE_BUILD_URL=$APP_ENGINE_REMOTE_BUILD_BASE:${COMMIT_HASH}
+
+# dataflow deploy paths
+DATAFLOW_IMAGE_BASE=us-docker.pkg.dev/$PROJECT_ID/dataflow/default
+DATAFLOW_IMAGE_URL=$DATAFLOW_IMAGE_BASE:${DOCKER_IMAGE_TAG} || exit_on_fail
+
+DATAFLOW_BUILD_BASE=us-docker.pkg.dev/$PROJECT_ID/dataflow/build
+DATAFLOW_BUILD_URL=$DATAFLOW_BUILD_BASE:${COMMIT_HASH}
+
+# asset generation service deploy paths
+ASSET_GENERATION_IMAGE_BASE=us-docker.pkg.dev/$PROJECT_ID/asset-generation/default
+ASSET_GENERATION_IMAGE_URL=$ASSET_GENERATION_IMAGE_BASE:${DOCKER_IMAGE_TAG} || exit_on_fail
+
+ASSET_GENERATION_BUILD_BASE=us-docker.pkg.dev/$PROJECT_ID/asset-generation/build
+ASSET_GENERATION_BUILD_URL=$ASSET_GENERATION_BUILD_BASE:${COMMIT_HASH}
+
+if [[ -n ${DEBUG_BUILD_NAME} ]]; then
     # Local debug build, we'll use docker on our local machine
     echo "Building docker image"
     verify_hash "$COMMIT_HASH"
@@ -111,13 +128,84 @@ if [[ -n ${DEBUG_BUILD_NAME} ]]; then
     verify_hash "$COMMIT_HASH"
     run_cmd docker push "${APP_ENGINE_IMAGE_URL}"
 else
-    run_cmd pipenv run python -m recidiviz.tools.deploy.cloud_build.deployment_stage_runner \
-      --project-id "${PROJECT_ID}" \
-      --version-tag "${VERSION_TAG}" \
-      --commit-ref "${COMMIT_HASH}" \
-      --stage "BuildImages" \
-      --images appengine,asset-generation,dataflow \
-      "${PROMOTE_FLAGS}"
+    echo "Looking for remote App Engine, Dataflow, and Asset Generation service builds for commit ${COMMIT_HASH} on branch ${BRANCH_NAME}"
+    verify_hash "$COMMIT_HASH"
+    FOUND_APP_ENGINE_BUILD=false
+    FOUND_DATAFLOW_BUILD=false
+    FOUND_ASSET_GENERATION_BUILD=false
+    ((timeout=300)) # 5 minute timeout
+
+    while { [[ "${FOUND_APP_ENGINE_BUILD}" == "false" ]] || [[ "${FOUND_DATAFLOW_BUILD}" == "false" ]] || [[ "${FOUND_ASSET_GENERATION_BUILD}" == "false" ]]; } && ((timeout > 0));
+    do
+        ae_existing_tags=$(gcloud container images list-tags --filter="tags:${COMMIT_HASH}" --format=json "${APP_ENGINE_REMOTE_BUILD_BASE}")
+        if [[ "$ae_existing_tags" != "[]" ]]; then
+            FOUND_APP_ENGINE_BUILD=true
+        else
+            FOUND_APP_ENGINE_BUILD=false
+        fi
+
+        df_existing_tags=$(gcloud container images list-tags --filter="tags:${COMMIT_HASH}" --format=json "${DATAFLOW_BUILD_BASE}")
+        if [[ "$df_existing_tags" != "[]" ]]; then
+            FOUND_DATAFLOW_BUILD=true
+        else
+            FOUND_DATAFLOW_BUILD=false
+        fi
+
+        ag_existing_tags=$(gcloud container images list-tags --filter="tags:${COMMIT_HASH}" --format=json "${ASSET_GENERATION_BUILD_BASE}")
+        if [[ "$ag_existing_tags" != "[]" ]]; then
+            FOUND_ASSET_GENERATION_BUILD=true
+        else
+            FOUND_ASSET_GENERATION_BUILD=false
+        fi
+
+        if [[ "${FOUND_APP_ENGINE_BUILD}" == "true" ]] && [[ "${FOUND_DATAFLOW_BUILD}" == "true" ]] && [[ "${FOUND_ASSET_GENERATION_BUILD}" == "true" ]]; then
+            break
+        fi
+
+        echo "Remote App Engine, Dataflow, and/or Asset Generation service builds for commit ${COMMIT_HASH} not found, retrying in 30s"
+        sleep 30
+        ((timeout -= 30))
+    done
+
+    if [[ "${FOUND_APP_ENGINE_BUILD}" == "false" ]]; then
+      echo "Unable to find remote App Engine build for ${COMMIT_HASH} within the timeout - you might need to manually trigger it in Cloud Build (https://console.cloud.google.com/cloud-build/triggers?project=$PROJECT_ID). Exiting..."
+    fi
+    if [[ "${FOUND_DATAFLOW_BUILD}" == "false" ]]; then
+      echo "Unable to find remote Dataflow build for ${COMMIT_HASH} within the timeout - you might need to manually trigger it in Cloud Build (https://console.cloud.google.com/cloud-build/triggers?project=$PROJECT_ID). Exiting..."
+    fi
+    if [[ "${FOUND_ASSET_GENERATION_BUILD}" == "false" ]]; then
+      echo "Unable to find remote Asset Generation service build for ${COMMIT_HASH} within the timeout - you might need to manually trigger it in Cloud Build (https://console.cloud.google.com/cloud-build/triggers?project=$PROJECT_ID). Exiting..."
+    fi
+
+    if [[ "${FOUND_APP_ENGINE_BUILD}" == "false" ]] || [[ "${FOUND_DATAFLOW_BUILD}" == "false" ]] || [[ "${FOUND_ASSET_GENERATION_BUILD}" == "false" ]]; then
+      run_cmd exit 1
+    fi
+
+    echo "Found remote App Engine build, proceeding to use image ${APP_ENGINE_REMOTE_BUILD_URL} for the release, tagging to ${APP_ENGINE_IMAGE_URL}"
+    copy_docker_image_to_repository "${APP_ENGINE_REMOTE_BUILD_URL}" "${APP_ENGINE_IMAGE_URL}"
+
+    echo "Found Dataflow build, proceeding to use image ${DATAFLOW_BUILD_URL} for the release, tagging to ${DATAFLOW_IMAGE_URL}"
+    copy_docker_image_to_repository "${DATAFLOW_BUILD_URL}" "${DATAFLOW_IMAGE_URL}"
+
+    echo "Found Asset Generation service build, proceeding to use image ${ASSET_GENERATION_BUILD_URL} for the release, tagging to ${ASSET_GENERATION_IMAGE_URL}"
+    copy_docker_image_to_repository "${ASSET_GENERATION_BUILD_URL}" "${ASSET_GENERATION_IMAGE_URL}"
+fi
+
+if [[ -n ${PROMOTE} ]]; then
+    # Update latest tag to reflect staging as well
+    echo "Updating :latest tag on remote app engine docker image."
+    verify_hash "$COMMIT_HASH"
+    copy_docker_image_to_repository "${APP_ENGINE_IMAGE_URL}" "${APP_ENGINE_IMAGE_BASE}:latest"
+
+    # Update latest tag to reflect staging as well
+    echo "Updating :latest tag on remote dataflow docker image."
+    verify_hash "$COMMIT_HASH"
+    copy_docker_image_to_repository "${DATAFLOW_IMAGE_URL}" "${DATAFLOW_IMAGE_BASE}:latest"
+
+    # Update latest tag to reflect staging as well
+    echo "Updating :latest tag on remote asset generation service docker image."
+    verify_hash "$COMMIT_HASH"
+    copy_docker_image_to_repository "${ASSET_GENERATION_IMAGE_URL}" "${ASSET_GENERATION_IMAGE_BASE}:latest"
 fi
 
 if [[ -n ${PROMOTE} ]]; then
