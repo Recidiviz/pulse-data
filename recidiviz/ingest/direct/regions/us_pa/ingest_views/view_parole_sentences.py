@@ -15,9 +15,43 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """
-Query containing parole term information from the dbo_ReleaseInfo and dbo_Hist_Release tables.
-The data in these tables represent parole term information, which we will use as a proxy for
-parole sentences.
+Query containing parole sentence and charge information from the dbo_Release, dbo_ReleaseInfo, dbo_Hist_Release, 
+and dbo_Sentence table.  There may be overlapping offense information across these source tables,
+but we are ok ingesting duplicate charges in order to ingest all available offense information.  In 
+addition, there may be overlapping sentence information between the dbo_ReleaseInfo table and the
+dbo_Hist_Release table, and in those cases, we'll prioritize the information from the history table.
+
+We'll be getting each of the following information from each source table:
+- dbo_Release (on the sentence group level)
+  - sentence effective date
+- dbo_ReleaseInfo (on the sentence group level)
+  - offense information
+  - sentence max date
+- dbo_Hist_Release (on the sentence group level)
+  - offense information
+  - sentence status
+  - sentence effective date
+  - sentence max date
+  - setence completion date
+- dbo_Sentence (on the sentence level)
+  - sentence imposed date
+  - sentence county
+  - offense information
+
+Note: 
+The dbo_Sentence table is on the sentence level (identified by ParoleNumber, ParoleCountId, 
+Sent16DGroupNumber, and SentenceId) while the other three tables are on the sentence group level 
+(identified by ParoleNumber and ParoleCountId). Therefore, we identify each sentence using ParoleNumber, 
+ParoleCountId, Sent16DGroupNumber, and SentenceId and then associate every charge we see in the dbo_Sentence
+table 1-1 with each sentence. For every charge we see in the dbo_ReleaseInfo table, we associate it with 
+every sentence in the same sentence group (identified by ParoleNumber and ParoleCountId).
+
+In addition, we use the sentence date from dbo_Sentence as the date_imposed for each sentence, 
+though technically sentence date corresponds with the date the original incarceration sentence 
+was imposed, not the specific parole sentence. It's still a todo to figure out the right date imposed to use TODO(#30223).
+
+
+In the future, we'll want to revise this to ingest sentence and charge information from Captor directly.  Currently blocked on data request TODO(#33154)
 """
 
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
@@ -27,106 +61,256 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 VIEW_QUERY_TEMPLATE = """
-WITH
--- This CTE pivots the dbo_ReleaseInfo table so that the three different OffenseCode fields all appear in the same column
---   For context:
---     - RelPBPPOffenseCode = offense code of longest sentence for this parole term
---     - RelPBPPOffenseCode2 = offense code of second longest sentence for this parole term
---     - RelPBPPOffenseCode3 = offense code of third longest sentence for this parole term
-dbo_ReleaseInfo_pivoted AS (
-  SELECT 
-    * EXCEPT(offense),
-    -- Convert offense column to just be a number id that we can use in the charges external id
-    CASE WHEN offense = 'RelPBPPOffenseCode' THEN '1'
-    ELSE REPLACE(offense, 'RelPBPPOffenseCode', '')
-    END AS offense_code_num
-  FROM {dbo_ReleaseInfo} rel
-  UNPIVOT(offense_code FOR offense IN (RelPBPPOffenseCode, RelPBPPOffenseCode2, RelPBPPOffenseCode3))
-),
--- Take the previous CTE and then joins on dbo_Release, dbo_Hist_Release, and the offense codes mapping to get info for completed parole sentences and 
--- to convert the offense codes to descriptions.  
--- This CTE also identifies the max_HReleaseID for each set of ParoleNumber-ParoleCountID for deduping later 
--- (because in a few cases, there are multiple rows for a single ParoleNumber-ParoleCountID that appear in the history table)
-current_and_historical_info_parsed AS (
+  WITH 
+
+    -- This CTE parses the relevant sentence dates from the dbo_ReleaseInfo table and then 
+    -- pivots the table so that the three different OffenseCode fields all appear in the same column.
+    -- Since there could be up to 3 offenses for each record in dbo_ReleaseInfo, for each offense code, 
+    -- we assign an offense_id_num or 1, 2, or 3 to use in the external_id for the charge we'll ingest.
+    -- In dbo_ReleaseInfo, the three offense columns are as follows:
+    --     - RelPBPPOffenseCode = offense code of longest sentence for this parole term
+    --     - RelPBPPOffenseCode2 = offense code of second longest sentence for this parole term
+    --     - RelPBPPOffenseCode3 = offense code of third longest sentence for this parole term
+    dbo_Release_Info_cleaned AS (
+        SELECT 
+            ParoleNumber,
+            ParoleCountId,
+            -- Since there are four different RelMaxDates for each record, we'll take the greatest date
+            -- Note: sometimes RelMaxDateN is null, which is why we always coalesce with RelMaxDate
+            NULLIF(
+                GREATEST(
+                    COALESCE(SAFE.PARSE_DATE('%Y%m%d', RelMaxDate), DATE(1111,1,1)),
+                    COALESCE(SAFE.PARSE_DATE('%Y%m%d', RelMaxDate1), DATE(1111,1,1)),
+                    COALESCE(SAFE.PARSE_DATE('%Y%m%d', RelMaxDate2), DATE(1111,1,1)),
+                    COALESCE(SAFE.PARSE_DATE('%Y%m%d', RelMaxDate3), DATE(1111,1,1))
+                ),
+                DATE(1111,1,1)
+            ) AS RelMaxDate,
+            -- Convert offense column to just be a number id that we can use in the charges external id
+            CASE WHEN offense = 'RelPBPPOffenseCode' THEN '1'
+                ELSE REPLACE(offense, 'RelPBPPOffenseCode', '')
+                END AS offense_id_num,
+            offense_code
+        FROM {dbo_ReleaseInfo} rel
+        UNPIVOT(offense_code FOR offense IN (RelPBPPOffenseCode, RelPBPPOffenseCode2, RelPBPPOffenseCode3))
+    ),
+
+    -- This CTE takes the dbo_Hist_Release table and parses all relevant sentence date values.
+    -- Then, it dedupes it so that for each ParoleNumber - ParoleCountId, we keep only the 
+    -- most recent archived release record (based on HReleaseId, which is a PK for the dbo_Hist_Release table).
+    -- Again, we assign each offense found in the dbo_Hist_Release an offense_id_num to use in the external_id
+    -- for the charge we'll ingest.
+    -- For each offense we see in the dbo_Hist_Release table, we'll assign an offense_id_num or 0.  Unlike,
+    -- dbo_ReleaseInfo, dbo_Hist_Release only has one offense associated with each record.
+    -- Exclude history records with delete code 51 since those are records that were closed in error.
+    dbo_Hist_Release_deduped AS (
+        SELECT 
+            ParoleNumber,
+            ParoleCountId,
+            SAFE.PARSE_DATE('%Y%m%d', HReReldate) AS HReReldate,
+            CASE 
+                WHEN HReMaxDate = 'LIFE' OR HReMaxDate LIKE '%INDE%'
+                    THEN DATE(2999, 12, 31)
+                ELSE
+                NULLIF(
+                    GREATEST(
+                        COALESCE(SAFE.PARSE_DATE('%Y%m%d', HReMaxDate), DATE(1111,1,1)),
+                        COALESCE(SAFE.PARSE_DATE('%Y%m%d', HReMaxa), DATE(1111,1,1)), 
+                        COALESCE(SAFE.PARSE_DATE('%Y%m%d', HReMaxb), DATE(1111,1,1)), 
+                        COALESCE(SAFE.PARSE_DATE('%Y%m%d', HReMaxc), DATE(1111,1,1))
+                    ),
+                    DATE(1111,1,1)
+                ) 
+                END AS HReMaxDate,
+            SAFE.PARSE_DATE('%Y%m%d', HReDelDate) as HReDelDate,
+            HReDelCode,
+            "0" as offense_id_num,
+            HReOffense as offense_code
+        FROM {dbo_Hist_Release}
+        WHERE HReDelCode <> '51'
+        QUALIFY ROW_NUMBER() OVER(PARTITION BY ParoleNumber, ParoleCountId ORDER BY CAST(HReleaseId AS INT64) DESC) = 1
+    ),
+  
+  -- This CTE dedups the dbo_Sentence table (which seems to hold duplicated sentence records in cases 
+  -- where a single sentence is part of multiple sentence groups) to be one row per set of distinct
+  -- sentence/charge information.  For sentence external id purposes, we'll keep the highest value Sent16DGroupNumber 
+  -- and SentenceId combination for each sentence. For charge external id purposes, we'll assign offense_id_num
+  -- for each charge to be CONCAT(Sent16DGroupNumber, "_", SentenceId) since each Sent16DGroupNumber/SentenceId combination
+  -- would only be associated with one offense.
+  dbo_Sentence_deduped AS (
     SELECT
         ParoleNumber,
-        ParoleCountID,
-        
-        -- there are only 12 non-parseable HReReldates as of 5/1/2024, so just going to use safe parse here
-        SAFE.PARSE_DATE('%Y%m%d', hist.HReReldate) AS HReReldate,
-        DATE(CAST(r.RelReleaseDateYear as INT64), CAST(r.RelReleaseDateMonth as INT64), CAST(r.RelReleaseDateDay as INT64)) AS RelReleaseDate,
-        
-        -- there are many rows set to LIFE, 144 rows set to some other non-parseable string as of 5/1/2024
-        -- set LIFE/INDE to the magic end date RelMaxDate uses, otherwise keep RelMaxDate as is
-        CASE 
-            WHEN HReMaxDate = 'LIFE' OR HReMaxDate LIKE '%INDE%'
-                THEN DATE(2999, 12, 31)
-            ELSE SAFE.PARSE_DATE('%Y%m%d', HReMaxDate)
-            END AS HReMaxDate,
-        SAFE.PARSE_DATE('%Y%m%d', RelMaxDate) AS RelMaxDate,
-        
-        -- there are only 5 non-parseable HReDelDates as of 5/1/2024, so just going to use safe parse here
-        SAFE.PARSE_DATE('%Y%m%d', HReDelDate) as HReDelDate,
-        
-        HReDelCode,
-        off.PBPPOffenseDescription as curr_PBPPOffenseDescription,
-        off_hist.PBPPOffenseDescription as hist_PBPPOffenseDescription,
-        CAST(HReleaseID AS INT64) AS HReleaseID,
-        
-        -- sometimes there are duplicate dbo_Hist_Release records per ParoleNumber-ParoleCountId and it's presumed to be a data entry error
-        -- let's use the most recently entered dbo_Hist_Release record for our purposes
-        -- (though largely irrelevant because nearly all the duplicates are way in the past and happen around the year 2000)
-        MAX(CAST(HReleaseID AS INT64)) OVER(PARTITION By ParoleNumber, ParoleCountID) as max_HReleaseID,
-        
-        -- If offense_code_num is null and the offense description from dbo_Hist_Release is not null, that means that we only have information from dbo_Hist_Release
-        -- In those cases, let's set offense_code_num to '0'
-        -- Otherwise, if offense_code_num is not null or the offense description from dbo_Hist_Release is null, we can use the offense_code_num created from that first CTE if it exists
-        CASE 
-            WHEN offense_code_num IS NULL and off_hist.PBPPOffenseDescription IS NOT NULL
-                THEN '0'
-            ELSE offense_code_num
-            END AS offense_code_num
-    FROM dbo_ReleaseInfo_pivoted rinfo
-        LEFT JOIN {dbo_Release} r USING(ParoleNumber, ParoleCountId)
-        -- full outer join on the history table because there may be rows in the history table that don't appear in ReleaseInfo and Release
-        FULL OUTER JOIN {dbo_Hist_Release} hist USING(ParoleNumber, ParoleCountID)
-        LEFT JOIN {RECIDIVIZ_REFERENCE_pbpp_offense_code_descriptions} off
-            ON off.PBPPOffenseCode = offense_code
-        LEFT JOIN {RECIDIVIZ_REFERENCE_pbpp_offense_code_descriptions} off_hist
-            ON off_hist.PBPPOffenseCode = HReOffense
-),
--- Dedups based on max_HReleaseID and for dates where there are two different sources, systematically prioritize a single source
---   NOTE: Once a parole stint is completed, it will no longer show up in dbo_Release  and dbo_ReleaseInfo, and the row will appear in dbo_Hist_Release.
---         Since we're using the _latest view, we'll still see any rows we've received before in dbo_Release and dbo_ReleaseInfo even if they've now been deleted from the table.
---         In that case, we  prioritize the dates that currently appear in the history table over the dates that appeared once in the dbo_Release and dbo_ReleaseInfo tables
---         EXCEPT in the case of offense code, because the dbo_Release and dbo_ReleaseInfo tables have more detailed info for that field
-current_and_historical_info_deduped AS (
-SELECT 
-    ParoleNumber,
-    ParoleCountID,
-    COALESCE(HReReldate, RelReleaseDate) AS RelReleaseDate,
-    COALESCE(HReMaxDate, RelMaxDate) AS RelMaxDate,
-    HReDelDate,
-    HReDelCode,
-    COALESCE(curr_PBPPOffenseDescription, hist_PBPPOffenseDescription) AS PBPPOffenseDescription,
-    offense_code_num
-FROM current_and_historical_info_parsed
-WHERE (HReleaseID = max_HReleaseID OR max_HReleaseID IS NULL)
-    -- excluding ParoleCountID = -1 because -1 is used for parole numbers that are invalid (there is no information, errors in general with generation, parole numbers that should be voided because its duplicated)
-    AND ParoleCountID <> '-1'
-)
+        ParoleCountId,
+        Sent16DGroupNumber,
+        SentenceId,
+        SentTerm,
+        -- only 3 unparseable dates as of Aug 2024
+        SAFE.PARSE_DATE('%Y%m%d', CONCAT(SentYear, SentMonth, SentDay)) as SentDate,
+        SentCounty,
+        CONCAT(Sent16DGroupNumber, "_", SentenceId) as offense_id_num,
+        sentCodeSentOffense as offense_code,
+        sentCodeSentOffense as statute,
+        # TODO(#33152) aggregate offense descriptions across multiple rows.  See ticket description
+        TRIM(CONCAT(COALESCE(SentOffense, ""), " ", COALESCE(SentOffense2, ""), " ", COALESCE(SentOffense3, ""))) as offense_description_orig,
+    FROM {dbo_Sentence} 
+    QUALIFY 
+        ROW_NUMBER() 
+        OVER(
+             PARTITION BY 
+                ParoleNumber, ParoleCountId, SentTerm, SentYear, SentMonth, SentDay, SentOffense, SentOffense2, SentOffense3, SentCounty, sentCodeSentOffense
+             ORDER BY 
+                CAST(Sent16DGroupNumber AS INT64) DESC, CAST(SentenceId AS INT64) DESC
+            ) = 1
+  ),
 
--- Finally, collapse it so that it is one row per parole sentence instead of one row per parole sentence - offense code
-SELECT 
-    ParoleNumber,
-    ParoleCountID,
-    RelReleaseDate,
-    RelMaxDate,
-    HReDelDate,
-    HReDelCode,
-    TO_JSON_STRING(ARRAY_AGG(STRUCT<offense_code_num string,PBPPOffenseDescription string>(offense_code_num,PBPPOffenseDescription) ORDER BY offense_code_num)) AS list_of_offense_descriptions
-FROM current_and_historical_info_deduped
-GROUP BY 1,2,3,4,5,6
+  -- This CTE combines the two different reference tables that crosswalk between offense code and offense description.
+  -- Between these two reference files, there is only one offense_code value that appears in both, and in that 
+  -- case, we'll prioritize the description from offense_codes.  In addition, offense_codes has additional fields that
+  -- RECIDIVIZ_REFERENCE_pbpp_offense_code_descriptions does not, so for the offense codes that only appear in
+  -- RECIDIVIZ_REFERENCE_pbpp_offense_code_descriptions, the additional fields will be NULL.
+  offense_codes_ref_combined AS (
+    SELECT * EXCEPT(offense),
+        COALESCE(oc.offense, pbpp.offense) as offense
+    FROM {offense_codes} oc
+    FULL OUTER JOIN (
+        SELECT
+            PBPPOffenseCode AS code,
+            PBPPOffenseDescription AS offense
+        FROM {RECIDIVIZ_REFERENCE_pbpp_offense_code_descriptions}
+    ) pbpp 
+    USING(code)
+  ),
+
+  -- This CTE combines all distinct offense information from all three sources
+  -- and then merges on the description and additional offense information found in
+  -- the reference files.  For offenses that come from the dbo_Hist_Release table,
+  -- only join it on if the offense code doesn't already appear in the dbo_Release_Info
+  -- table for that parole count id (in order to prevent dupicate offense info).
+  -- At the end, only include rows that contains enough usable information about the
+  -- charge (so at least the statute info or description).
+  offenses_combined AS (
+    SELECT 
+        o.*,
+        oc.Offense as offense_description_ref, 
+        oc.Category, 
+        oc.ASCA_Category___Ranked, 
+        oc.SubCategory, 
+        oc.Grade_Category,
+        oc.Grade
+    FROM (
+        SELECT
+            ParoleNumber,
+            ParoleCountId,
+            offense_id_num,
+            offense_code,
+            CAST(NULL AS STRING) AS statute,
+            CAST(NULL AS STRING) AS offense_description_orig
+        FROM dbo_Release_Info_cleaned
+
+        UNION DISTINCT
+
+        SELECT 
+            ParoleNumber,
+            ParoleCountId,
+            dbo_Hist_Release_deduped.offense_id_num,
+            dbo_Hist_Release_deduped.offense_code,
+            CAST(NULL AS STRING) AS statute,
+            CAST(NULL AS STRING) AS offense_description_orig
+        FROM dbo_Hist_Release_deduped
+        LEFT JOIN dbo_Release_Info_cleaned USING(ParoleNumber, ParoleCountId, offense_code)
+        WHERE dbo_Release_Info_cleaned.offense_id_num is null
+
+        UNION DISTINCT
+
+        SELECT
+            ParoleNumber,
+            ParoleCountId,
+            offense_id_num,
+            offense_code,
+            statute,
+            offense_description_orig
+        FROM dbo_Sentence_deduped
+    ) o 
+    LEFT JOIN offense_codes_ref_combined oc
+        ON o.offense_code = oc.Code
+    WHERE (statute IS NOT NULL or COALESCE(offense_description_orig, oc.Offense) IS NOT NULL)
+  ),
+
+  -- This CTE pulls together all distinct sentence information, prioritizing information
+  -- from the history table if it's information that appears in both the history and the
+  -- current release table.  In addition, we exclude ParoleCountIds 0 and -1 (which are 
+  -- incarceration related and invalid respectively), as well as parole counts that were 
+  -- deleted because they were opened in error (HReDelCode = 50).
+  all_sentence_info AS (
+    SELECT DISTINCT
+        ParoleNumber,
+        ParoleCountId,
+        Sent16DGroupNumber,
+        SentenceId,
+        SentTerm,
+        SentDate,
+        SentCounty,
+        COALESCE(
+            HReReldate,            
+            DATE(CAST(r.RelReleaseDateYear as INT64), CAST(r.RelReleaseDateMonth as INT64), CAST(r.RelReleaseDateDay as INT64))
+            ) AS release_date,
+        COALESCE(HReMaxDate, RelMaxDate) as max_date,
+        HReDelDate,
+        HReDelCode,
+    FROM {dbo_Release} r
+    FULL OUTER JOIN dbo_Release_Info_cleaned ri
+      USING(ParoleNumber, ParoleCountId)
+    FULL OUTER JOIN dbo_Hist_Release_deduped h
+      USING(ParoleNumber, ParoleCountId)
+    FULL OUTER JOIN dbo_Sentence_deduped s
+      USING(ParoleNumber, ParoleCountId)
+    WHERE 
+        ParoleCountId not in ('0', '-1')
+        AND (HReDelCode is NULL OR HReDelCode <> '50')
+  ),
+
+  -- This CTE joins together the sentence and offense information, and then creates
+  -- an array of offenses for each distinct set of sentence information.  For offenses
+  -- from the dbo_Sentence table (whose offense_id_num is a concatenation of Sent16DGroupNumber
+  -- and SentenceId), only join on the offense to the sentence with the same Sent16DGroupNumber
+  -- and SentenceId.  For offenses from the dbo_Hist_Release and dbo_ReleaseInfo tables (whose
+  -- offense_id_num are 1, 2, or 3 and therefore don't have an underscore), join the offense onto
+  -- every sentence with the same ParoleNumber and ParoleCountId since we are unable to link
+  -- those offenses to a specific Sent16DGroupNumber/SentenceId.
+
+  all_info AS (
+    SELECT s.*,
+        TO_JSON_STRING(ARRAY_AGG(STRUCT<offense_id_num string,
+                                        offense_description string,
+                                        statute string,
+                                        category string,
+                                        asca_category string,
+                                        subcategory string,
+                                        grade_category string,
+                                        grade string>
+                                 ( o.offense_id_num,
+                                   COALESCE(offense_description_ref, o.offense_description_orig),
+                                   o.statute,
+                                   Category,
+                                   ASCA_Category___Ranked,
+                                   SubCategory,
+                                   Grade_Category,
+                                   Grade ) ORDER BY o.offense_id_num)) AS list_of_offense_descriptions
+    FROM all_sentence_info s
+    LEFT JOIN offenses_combined o
+      USING(ParoleNumber, ParoleCountId)
+    WHERE 
+        -- either the sentence doesn't have matching offense information
+        o.ParoleNumber is NULL
+        -- or the matching offense information is at the Sent16DGroupNumber and SentenceId level
+        OR (CONTAINS_SUBSTR(offense_id_num, "_") AND CONCAT(Sent16DGroupNumber, "_", SentenceId) = offense_id_num)
+        -- or the matching offense information is at the ParoleNumber and ParoleCountId level
+        OR CONTAINS_SUBSTR(offense_id_num, "_") IS FALSE
+    GROUP BY 1,2,3,4,5,6,7,8,9,10,11
+  )
+
+  SELECT * FROM all_info
+
 """
 
 VIEW_BUILDER = DirectIngestViewQueryBuilder(

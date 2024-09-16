@@ -3,6 +3,8 @@ manifest_language: 1.0.0
 input_columns:
   - ParoleNumber
   - ParoleCountId
+  - Sent16DGroupNumber
+  - SentenceId
   - RelMaxDate
   - update_datetime
 unused_columns: []
@@ -22,7 +24,8 @@ output:
               external_id:
                 $concat:
                   $values:
-                    - $literal("PAROLE")
                     - ParoleNumber
                     - ParoleCountId
+                    - Sent16DGroupNumber
+                    - SentenceId
               sentence_type: $literal("SUPERVISION")

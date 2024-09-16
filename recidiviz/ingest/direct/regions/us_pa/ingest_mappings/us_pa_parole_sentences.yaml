@@ -2,33 +2,45 @@
 manifest_language: 1.0.0
 input_columns:
   - ParoleNumber
-  - ParoleCountID
-  - RelReleaseDate
-  - RelMaxDate
+  - ParoleCountId
+  - Sent16DGroupNumber
+  - SentenceId
+  - SentTerm
+  - SentDate
+  - SentCounty
+  - release_date
+  - max_date
   - HReDelDate
   - HReDelCode
   - list_of_offense_descriptions
-unused_columns: []
+unused_columns:
+  - SentTerm # TODO(#32874) waiting on PA's response to deduping sentences
 output:
   StatePerson:
     external_ids:
       - StatePersonExternalId:
           external_id: ParoleNumber
           id_type: $literal("US_PA_PBPP")
-    # TODO(#29719): add separate view to ingest task deadlines over time
     supervision_sentences:
       - StateSupervisionSentence:
           external_id:
             $concat:
               $values:
-                - $literal("PAROLE")
                 - ParoleNumber
-                - ParoleCountID
-          projected_completion_date: RelMaxDate
+                - ParoleCountId
+                - Sent16DGroupNumber
+                - SentenceId
+          projected_completion_date: max_date
           completion_date: HReDelDate
-          # TODO(#30223): identify which date field to actually use for date_imposed
-          date_imposed: RelReleaseDate
-          effective_date: RelReleaseDate
+          # When SentDate is available, use SentDate, otherwise use release date
+          # Not perfect solution, see TODO(#30223)
+          date_imposed:
+            $conditional:
+              - $if:
+                  $not_null: SentDate
+                $then: SentDate
+              - $else: release_date
+          effective_date: release_date
           status:
             $conditional:
               - $if:
@@ -51,15 +63,12 @@ output:
                         - "44" # Conviction and return to prison to serve detainer sentence.
                       StateSentenceStatus.PARDONED:
                         - "46" # The Board of Pardons grants a pardon or commutation which terminates supervision, or early discharge is granted by a judge.
-                      StateSentenceStatus.VACATED:
-                        - "50" # Case Opened in Error
-                      StateSentenceStatus.INTERNAL_UNKNOWN:
-                        - "51" # Not sure what this code means TODO(#29816)
           supervision_type: $literal_enum(StateSupervisionSentenceSupervisionType.PAROLE)
           is_life:
             $equal:
-              - RelMaxDate
+              - max_date
               - $literal("2999-01-01")
+          county_code: SentCounty
           charges:
             - $foreach:
                 $iterable:
@@ -69,21 +78,62 @@ output:
                     - $if:
                         $not_null:
                           $json_extract:
-                            $key: offense_code_num
+                            $key: offense_id_num
                             $json: $iter_item
                       $then:
                         StateCharge:
                           external_id:
                             $concat:
                               $values:
-                                - $literal("PAROLE")
                                 - ParoleNumber
-                                - ParoleCountID
+                                - ParoleCountId
                                 - $json_extract:
-                                    $key: offense_code_num
+                                    $key: offense_id_num
                                     $json: $iter_item
-                          description:
+                          statute:
                             $json_extract:
-                              $key: PBPPOffenseDescription
+                              $key: statute
                               $json: $iter_item
                           status: $literal_enum(StateChargeStatus.CONVICTED)
+                          description:
+                            $json_extract:
+                              $key: offense_description
+                              $json: $iter_item
+                          classification_type:
+                            $enum_mapping:
+                              $raw_text:
+                                $json_extract:
+                                  $key: grade_category
+                                  $json: $iter_item
+                              $mappings:
+                                StateChargeClassificationType.FELONY:
+                                  - Felony
+                                StateChargeClassificationType.MISDEMEANOR:
+                                  - Misdemeanor
+                          classification_subtype:
+                            $json_extract:
+                              $key: grade
+                              $json: $iter_item
+                          is_violent:
+                            $conditional:
+                              - $if:
+                                  $not_null:
+                                    $json_extract:
+                                      $key: asca_category
+                                      $json: $iter_item
+                                $then:
+                                  $equal:
+                                    - $json_extract:
+                                        $key: asca_category
+                                        $json: $iter_item
+                                    - $literal("1-Violent")
+                          offense_type:
+                            $concat:
+                              $values:
+                                - $json_extract:
+                                    $key: category
+                                    $json: $iter_item
+                                - $json_extract:
+                                    $key: subcategory
+                                    $json: $iter_item
+                              $include_nulls: False
