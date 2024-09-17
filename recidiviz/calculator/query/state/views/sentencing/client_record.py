@@ -81,6 +81,7 @@ SENTENCING_CLIENT_RECORD_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
         "birth_date",
         "pseudonymized_id",
         "case_ids",
+        "district",
     ],
 )
 
