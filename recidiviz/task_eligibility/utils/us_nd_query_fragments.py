@@ -452,9 +452,9 @@ min_referrals_with_external_id_and_ce AS (
                 -- If not, in cases where the evaluation was approved, we either use the 
                 -- completion event or the evaluation date + 6 months
                 WHEN mr.evaluation_result = 'Approved' THEN IFNULL(MIN(ce.completion_event_date), DATE_ADD(mr.start_date, INTERVAL 6 MONTH))
-                -- For people who's evaluation was not approved, end_date = 3 months 
+                -- For people who's evaluation was not approved, end_date = start_date + 6 months 
                 -- after the evaluation/start date
-                ELSE DATE_ADD(mr.start_date, INTERVAL 3 MONTH)
+                ELSE DATE_ADD(mr.start_date, INTERVAL 6 MONTH)
             END) AS end_date
     FROM min_referrals_with_external_id mr
     LEFT JOIN completion_events ce
