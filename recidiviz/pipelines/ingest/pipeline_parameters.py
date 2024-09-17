@@ -28,14 +28,10 @@ from recidiviz.pipelines.ingest.dataset_config import (
     ingest_view_materialization_results_dataset,
     state_dataset_for_state_code,
 )
-from recidiviz.pipelines.ingest.normalization_in_ingest_gating import (
-    should_run_normalization_in_ingest,
-)
 from recidiviz.pipelines.normalization.dataset_config import (
     normalized_state_dataset_for_state_code_ingest_pipeline_output,
 )
 from recidiviz.pipelines.pipeline_parameters import PipelineParameters
-from recidiviz.utils.params import opt_str_to_bool
 
 
 @attr.define(kw_only=True)
@@ -45,20 +41,6 @@ class IngestPipelineParameters(PipelineParameters):
     raw_data_source_instance: str = attr.ib(
         default=DirectIngestInstance.PRIMARY.value, validator=attr_validators.is_str
     )
-
-    run_normalization_override: bool | None = attr.ib(
-        default=None,
-        validator=attr_validators.is_opt_bool,
-        converter=opt_str_to_bool,
-    )
-
-    # TODO(#31741): Remove this flag once merged normalization pipelines are launched
-    #  to all states.
-    @property
-    def run_normalization(self) -> bool:
-        if self.run_normalization_override is not None:
-            return self.run_normalization_override
-        return should_run_normalization_in_ingest(StateCode(self.state_code))
 
     @property
     def raw_data_table_input(self) -> str:
@@ -148,7 +130,6 @@ class IngestPipelineParameters(PipelineParameters):
             "ingest_views_to_run",
             "ingest_view_results_only",
             "pre_normalization_only",
-            "run_normalization_override",
         }
 
     @classmethod

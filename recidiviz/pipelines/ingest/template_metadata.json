@@ -62,13 +62,6 @@
         "isOptional": true
       },
       {
-        "name": "run_normalization_override",
-        "label": "Run normalization override",
-        "helpText": "If set to true, will run normalization logic and write output to the {output_sandbox_prefix}_us_xx_normalized_state dataset even if combined ingest and normalization pipelines aren't launched in this state.",
-        "regexes": ["True|False"],
-        "isOptional": true
-      },
-      {
         "name": "ingest_views_to_run",
         "label": "If set as a space-separated string, only run the pipeline for a subset of ingest views.",
         "helpText": "If set as a space-separated string, only run the pipeline for a subset of ingest views.",
