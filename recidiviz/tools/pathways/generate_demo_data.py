@@ -292,6 +292,7 @@ def main(
             table
             for table in get_pathways_database_entities()
             if not table.get_entity_name().endswith("projection")
+            and not table.get_entity_name().endswith("impact")
         ]
     )
     metric_metadata = generate_demo_metric_metadata(tables)
@@ -379,6 +380,7 @@ def parse_arguments(argv: List[str]) -> argparse.Namespace:
             table.name
             for table in get_all_table_classes_in_schema(SchemaType.PATHWAYS)
             if not table.name.endswith("projection")
+            and not table.name.endswith("impact")
         ],
         nargs="*",
         required=False,
