@@ -91,32 +91,30 @@ def is_combined_ingest_and_normalization_launched_in_env(state_code: StateCode) 
     """This gate determines whether downstream processes read from the ingest pipeline
     normalization output.
     """
-    # TODO(#29517): Add states here as we launch combined pipelines to prod
     prod_launched_states: set[StateCode] = {
-        StateCode.US_IA,
-        StateCode.US_ID,
-        StateCode.US_MA,
-        StateCode.US_NC,
-        StateCode.US_NE,
-        StateCode.US_OZ,
-        StateCode.US_TX,
-        StateCode.US_UT,
-    }
-
-    staging_only_launched_states: set[StateCode] = {
         StateCode.US_AR,
         StateCode.US_AZ,
         StateCode.US_CA,
         StateCode.US_CO,
+        StateCode.US_IA,
+        StateCode.US_ID,
         StateCode.US_IX,
+        StateCode.US_MA,
         StateCode.US_ME,
         StateCode.US_MI,
         StateCode.US_MO,
+        StateCode.US_NC,
         StateCode.US_ND,
+        StateCode.US_NE,
         StateCode.US_OR,
+        StateCode.US_OZ,
         StateCode.US_PA,
         StateCode.US_TN,
+        StateCode.US_TX,
+        StateCode.US_UT,
     }
+
+    staging_only_launched_states: set[StateCode] = set()
 
     # There are no downstream processes reading normalized entities produced by the
     # ingest pipeline for these states.
