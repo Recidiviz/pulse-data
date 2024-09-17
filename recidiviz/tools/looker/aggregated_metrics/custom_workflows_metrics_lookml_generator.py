@@ -115,6 +115,7 @@ def main(
                 "system_type": ["Incarceration", "Supervision"],
                 "task_type_is_live": ["True", "False"],
                 "task_type_is_fully_launched": ["True", "False"],
+                "denial_reasons": [],
             },
         ).write(output_directory, source_script_path=__file__)
 
@@ -164,6 +165,7 @@ def main(
                     "system_type",
                     "task_type_is_live",
                     "task_type_is_fully_launched",
+                    "denial_reasons",
                 ],
             ).write(output_subdirectory, source_script_path=__file__)
 
@@ -181,6 +183,7 @@ def main(
                     "system_type",
                     "task_type_is_live",
                     "task_type_is_fully_launched",
+                    "denial_reasons",
                 ],
             ).write(output_subdirectory, source_script_path=__file__)
 
@@ -198,6 +201,7 @@ def main(
                     "system_type",
                     "task_type_is_live",
                     "task_type_is_fully_launched",
+                    "denial_reasons",
                 ],
             ).write(output_subdirectory, source_script_path=__file__)
 
@@ -215,6 +219,7 @@ def main(
                     "system_type",
                     "task_type_is_live",
                     "task_type_is_fully_launched",
+                    "denial_reasons",
                 ],
             ).write(output_subdirectory, source_script_path=__file__)
 
