@@ -403,25 +403,11 @@ class SupervisionOfficerEntity(SupervisionOfficerEntityBase):
     avg_daily_population: float = attr.ib()
     # The caseload category this officer is part of
     caseload_category: str = attr.ib()
-    # The officer's caseload type in the latest period
-    caseload_type: Optional[str] = attr.ib()
     # earliest date that this officer was assigned a caseload
     earliest_person_assignment_date: Optional[date] = attr.ib(default=None)
 
     def to_json(self) -> Dict[str, Any]:
-        c = cattrs.Converter()
-
-        # Transform "caseload_category" to "caseload_type" since that's what the frontend expects
-        # TODO(#31634) Remove this
-        officer_unst_hook = make_dict_unstructure_fn(
-            SupervisionOfficerEntity,
-            c,
-            caseload_type=override(omit=True),
-            caseload_category=override(rename="caseload_type"),
-        )
-        c.register_unstructure_hook(SupervisionOfficerEntity, officer_unst_hook)
-
-        return c.unstructure(self)
+        return cattrs.unstructure(self)
 
 
 @attr.s

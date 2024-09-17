@@ -69,7 +69,7 @@ snapshots["TestOutliersRoutes.TestOutliersRoutes test_get_benchmarks"] = {
                 {"endDate": "2023-01-01", "target": 0.14, "threshold": 0.21},
                 {"endDate": "2022-12-01", "target": 0.14, "threshold": 0.21},
             ],
-            "caseloadType": "ALL",
+            "caseloadCategory": "ALL",
             "latestPeriodValues": {"far": [0.8], "met": [0.1], "near": [0.32]},
             "metricId": "absconsions_bench_warrants",
         }
@@ -271,7 +271,7 @@ snapshots[
 snapshots["TestOutliersRoutes.TestOutliersRoutes test_get_officer_not_outlier"] = {
     "officer": {
         "avgDailyPopulation": 10.0,
-        "caseloadType": "ALL",
+        "caseloadCategory": "ALL",
         "district": "Guts",
         "earliestPersonAssignmentDate": None,
         "externalId": "123",
@@ -292,7 +292,7 @@ snapshots["TestOutliersRoutes.TestOutliersRoutes test_get_officer_not_outlier"] 
 snapshots["TestOutliersRoutes.TestOutliersRoutes test_get_officer_success"] = {
     "officer": {
         "avgDailyPopulation": 10.0,
-        "caseloadType": "ALL",
+        "caseloadCategory": "ALL",
         "district": "Guts",
         "earliestPersonAssignmentDate": None,
         "externalId": "123",
@@ -321,7 +321,7 @@ snapshots["TestOutliersRoutes.TestOutliersRoutes test_get_officers_for_superviso
     "officers": [
         {
             "avgDailyPopulation": 10.0,
-            "caseloadType": "ALL",
+            "caseloadCategory": "ALL",
             "district": "Hogwarts",
             "earliestPersonAssignmentDate": None,
             "externalId": "123",
@@ -349,7 +349,7 @@ snapshots["TestOutliersRoutes.TestOutliersRoutes test_get_officers_for_superviso
         },
         {
             "avgDailyPopulation": 10.0,
-            "caseloadType": "ALL",
+            "caseloadCategory": "ALL",
             "district": "Hogwarts",
             "earliestPersonAssignmentDate": None,
             "externalId": "456",
@@ -374,7 +374,7 @@ snapshots[
     "officers": [
         {
             "avgDailyPopulation": 10.0,
-            "caseloadType": "ALL",
+            "caseloadCategory": "ALL",
             "district": "Hogwarts",
             "earliestPersonAssignmentDate": None,
             "externalId": "123",
@@ -400,7 +400,7 @@ snapshots[
         },
         {
             "avgDailyPopulation": 10.0,
-            "caseloadType": "ALL",
+            "caseloadCategory": "ALL",
             "district": "Hogwarts",
             "earliestPersonAssignmentDate": None,
             "externalId": "456",
