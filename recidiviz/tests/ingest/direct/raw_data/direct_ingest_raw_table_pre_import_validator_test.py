@@ -148,7 +148,7 @@ class TestDirectIngestRawTablePreImportValidator(unittest.TestCase):
             f"\nError: Found column [{self.column_name}] on raw file [{self.file_tag}] with only null values."
             f"\nValidation type: {RawDataImportBlockingValidationType.NONNULL_VALUES.value}"
             "\nValidation query: "
-            "\nSELECT *"
+            f"\nSELECT {self.column_name}"
             f"\nFROM {self.project_id}.{self.temp_table_address.to_str()}"
             f"\nWHERE {self.column_name} IS NOT NULL"
             "\nLIMIT 1\n"

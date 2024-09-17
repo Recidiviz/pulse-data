@@ -29,7 +29,7 @@ from recidiviz.ingest.direct.types.raw_data_import_blocking_validation import (
 from recidiviz.utils.string import StrictStringFormatter
 
 KNOWN_VALUES_CHECK_TEMPLATE = """
-SELECT *
+SELECT {column_name}
 FROM {project_id}.{dataset_id}.{table_id}
 WHERE {column_name} IS NOT NULL AND {column_name} NOT IN ({known_values})
 LIMIT 1

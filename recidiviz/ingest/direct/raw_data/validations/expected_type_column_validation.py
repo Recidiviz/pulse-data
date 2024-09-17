@@ -33,7 +33,7 @@ from recidiviz.ingest.direct.types.raw_data_import_blocking_validation import (
 from recidiviz.utils.string import StrictStringFormatter
 
 EXPECTED_TYPE_CHECK_TEMPLATE = """
-SELECT *
+SELECT {column_name}
 FROM {project_id}.{dataset_id}.{table_id}
 WHERE {column_name} IS NOT NULL AND SAFE_CAST({column_name} AS {type}) IS NULL
 LIMIT 1
@@ -41,7 +41,7 @@ LIMIT 1
 
 COLUMN_TYPE_TO_BIG_QUERY_TYPE = {
     RawTableColumnFieldType.INTEGER: BigQueryFieldType.INT64,
-    RawTableColumnFieldType.DATETIME: BigQueryFieldType.DATETIME,
+    RawTableColumnFieldType.DATETIME: BigQueryFieldType.STRING,
     RawTableColumnFieldType.STRING: BigQueryFieldType.STRING,
     RawTableColumnFieldType.PERSON_EXTERNAL_ID: BigQueryFieldType.STRING,
     RawTableColumnFieldType.STAFF_EXTERNAL_ID: BigQueryFieldType.STRING,

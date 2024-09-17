@@ -9,12 +9,16 @@ columns:
   - name: ID
     description: A number used to uniquely identify this person in the system.
     is_pii: True
+    field_type: integer
   - name: Name
     description: The person's first and last name.
     is_pii: True
   - name: DOB
     description: The person's date of birth in MM/DD/YYYY format.
     is_pii: True
+    field_type: datetime
+    datetime_sql_parsers:
+      - "SAFE.PARSE_DATE('%m/%d/%Y', {col_name})"
   - name: Address
     description: The person's residential address.
     is_pii: True
