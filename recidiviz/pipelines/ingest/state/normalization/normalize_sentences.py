@@ -56,10 +56,10 @@ from recidiviz.persistence.entity.state.normalized_entities import (
 from recidiviz.pipelines.ingest.state.normalization.infer_sentence_groups import (
     get_normalized_inferred_sentence_groups,
 )
-from recidiviz.pipelines.ingest.state.normalization.utils import get_min_max_fields
-from recidiviz.pipelines.normalization.utils.normalization_managers.sentence_normalization_manager import (
+from recidiviz.pipelines.ingest.state.normalization.normalization_managers.sentence_normalization_manager import (
     StateSpecificSentenceNormalizationDelegate,
 )
+from recidiviz.pipelines.ingest.state.normalization.utils import get_min_max_fields
 from recidiviz.utils.types import assert_type
 
 

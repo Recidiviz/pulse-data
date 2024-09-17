@@ -30,7 +30,7 @@ from recidiviz.persistence.entity.state.entities import (
     StateSupervisionViolationResponse,
     StateSupervisionViolationTypeEntry,
 )
-from recidiviz.pipelines.normalization.utils.normalization_managers.supervision_violation_responses_normalization_manager import (
+from recidiviz.pipelines.ingest.state.normalization.normalization_managers.supervision_violation_responses_normalization_manager import (
     StateSpecificViolationResponseNormalizationDelegate,
 )
 from recidiviz.pipelines.utils.incarceration_period_utils import (

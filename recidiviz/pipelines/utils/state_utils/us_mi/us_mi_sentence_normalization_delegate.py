@@ -19,7 +19,7 @@
 from datetime import timedelta
 
 from recidiviz.persistence.entity.state.entities import StateIncarcerationSentence
-from recidiviz.pipelines.normalization.utils.normalization_managers.sentence_normalization_manager import (
+from recidiviz.pipelines.ingest.state.normalization.normalization_managers.sentence_normalization_manager import (
     StateSpecificSentenceNormalizationDelegate,
 )
 

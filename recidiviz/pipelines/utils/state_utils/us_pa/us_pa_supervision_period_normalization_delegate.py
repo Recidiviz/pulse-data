@@ -30,7 +30,7 @@ from recidiviz.persistence.entity.state.entities import (
     StateIncarcerationPeriod,
     StateSupervisionPeriod,
 )
-from recidiviz.pipelines.normalization.utils.normalization_managers.supervision_period_normalization_manager import (
+from recidiviz.pipelines.ingest.state.normalization.normalization_managers.supervision_period_normalization_manager import (
     StateSpecificSupervisionNormalizationDelegate,
 )
 from recidiviz.utils import environment

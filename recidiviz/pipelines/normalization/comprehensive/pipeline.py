@@ -53,6 +53,33 @@ from recidiviz.persistence.entity.normalized_entities_utils import (
 from recidiviz.persistence.entity.serialization import json_serializable_dict
 from recidiviz.persistence.entity.state import entities
 from recidiviz.pipelines.base_pipeline import BasePipeline
+from recidiviz.pipelines.ingest.state.normalization.normalization_managers.assessment_normalization_manager import (
+    AssessmentNormalizationManager,
+)
+from recidiviz.pipelines.ingest.state.normalization.normalization_managers.entity_normalization_manager import (
+    EntityNormalizationManager,
+)
+from recidiviz.pipelines.ingest.state.normalization.normalization_managers.incarceration_period_normalization_manager import (
+    IncarcerationPeriodNormalizationManager,
+)
+from recidiviz.pipelines.ingest.state.normalization.normalization_managers.program_assignment_normalization_manager import (
+    ProgramAssignmentNormalizationManager,
+)
+from recidiviz.pipelines.ingest.state.normalization.normalization_managers.sentence_normalization_manager import (
+    SentenceNormalizationManager,
+)
+from recidiviz.pipelines.ingest.state.normalization.normalization_managers.staff_role_period_normalization_manager import (
+    StaffRolePeriodNormalizationManager,
+)
+from recidiviz.pipelines.ingest.state.normalization.normalization_managers.supervision_contact_normalization_manager import (
+    SupervisionContactNormalizationManager,
+)
+from recidiviz.pipelines.ingest.state.normalization.normalization_managers.supervision_period_normalization_manager import (
+    SupervisionPeriodNormalizationManager,
+)
+from recidiviz.pipelines.ingest.state.normalization.normalization_managers.supervision_violation_responses_normalization_manager import (
+    ViolationResponseNormalizationManager,
+)
 from recidiviz.pipelines.normalization.comprehensive.entity_normalizer import (
     ComprehensiveEntityNormalizer,
 )
@@ -62,33 +89,6 @@ from recidiviz.pipelines.normalization.comprehensive.state_person_to_state_staff
 )
 from recidiviz.pipelines.normalization.pipeline_parameters import (
     NormalizationPipelineParameters,
-)
-from recidiviz.pipelines.normalization.utils.normalization_managers.assessment_normalization_manager import (
-    AssessmentNormalizationManager,
-)
-from recidiviz.pipelines.normalization.utils.normalization_managers.entity_normalization_manager import (
-    EntityNormalizationManager,
-)
-from recidiviz.pipelines.normalization.utils.normalization_managers.incarceration_period_normalization_manager import (
-    IncarcerationPeriodNormalizationManager,
-)
-from recidiviz.pipelines.normalization.utils.normalization_managers.program_assignment_normalization_manager import (
-    ProgramAssignmentNormalizationManager,
-)
-from recidiviz.pipelines.normalization.utils.normalization_managers.sentence_normalization_manager import (
-    SentenceNormalizationManager,
-)
-from recidiviz.pipelines.normalization.utils.normalization_managers.staff_role_period_normalization_manager import (
-    StaffRolePeriodNormalizationManager,
-)
-from recidiviz.pipelines.normalization.utils.normalization_managers.supervision_contact_normalization_manager import (
-    SupervisionContactNormalizationManager,
-)
-from recidiviz.pipelines.normalization.utils.normalization_managers.supervision_period_normalization_manager import (
-    SupervisionPeriodNormalizationManager,
-)
-from recidiviz.pipelines.normalization.utils.normalization_managers.supervision_violation_responses_normalization_manager import (
-    ViolationResponseNormalizationManager,
 )
 from recidiviz.pipelines.normalization.utils.normalized_entity_conversion_utils import (
     bq_schema_for_normalized_state_entity,

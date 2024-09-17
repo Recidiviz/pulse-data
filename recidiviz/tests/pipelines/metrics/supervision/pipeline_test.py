@@ -74,6 +74,9 @@ from recidiviz.persistence.entity.state.normalized_entities import (
     NormalizedStateSupervisionSentence,
     NormalizedStateSupervisionViolationResponse,
 )
+from recidiviz.pipelines.ingest.state.normalization.normalization_managers.assessment_normalization_manager import (
+    DEFAULT_ASSESSMENT_SCORE_BUCKET,
+)
 from recidiviz.pipelines.metrics.base_metric_pipeline import (
     ClassifyResults,
     ProduceMetrics,
@@ -97,9 +100,6 @@ from recidiviz.pipelines.metrics.supervision.supervision_case_compliance import 
     SupervisionCaseCompliance,
 )
 from recidiviz.pipelines.metrics.utils.metric_utils import RecidivizMetric
-from recidiviz.pipelines.normalization.utils.normalization_managers.assessment_normalization_manager import (
-    DEFAULT_ASSESSMENT_SCORE_BUCKET,
-)
 from recidiviz.pipelines.utils.execution_utils import RootEntityId
 from recidiviz.pipelines.utils.state_utils.state_specific_supervision_metrics_producer_delegate import (
     StateSpecificSupervisionMetricsProducerDelegate,

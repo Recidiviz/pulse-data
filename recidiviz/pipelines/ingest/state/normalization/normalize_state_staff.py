@@ -24,11 +24,11 @@ from recidiviz.persistence.entity.state.normalized_entities import NormalizedSta
 from recidiviz.persistence.entity.state.normalized_state_entity import (
     NormalizedStateEntity,
 )
+from recidiviz.pipelines.ingest.state.normalization.normalization_managers.staff_role_period_normalization_manager import (
+    StaffRolePeriodNormalizationManager,
+)
 from recidiviz.pipelines.ingest.state.normalization.normalize_root_entity_helpers import (
     build_normalized_root_entity,
-)
-from recidiviz.pipelines.normalization.utils.normalization_managers.staff_role_period_normalization_manager import (
-    StaffRolePeriodNormalizationManager,
 )
 from recidiviz.pipelines.utils.state_utils.state_calculation_config_manager import (
     get_state_specific_staff_role_period_normalization_delegate,

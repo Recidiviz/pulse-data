@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Contains US_AZ implementation of the StateSpecificIncarcerationNormalizationDelegate."""
-from recidiviz.pipelines.normalization.utils.normalization_managers.incarceration_period_normalization_manager import (
+from recidiviz.pipelines.ingest.state.normalization.normalization_managers.incarceration_period_normalization_manager import (
     StateSpecificIncarcerationNormalizationDelegate,
 )
 

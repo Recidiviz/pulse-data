@@ -47,7 +47,7 @@ from recidiviz.persistence.entity.state.normalized_entities import (
     NormalizedStateSupervisionViolationResponse,
 )
 from recidiviz.persistence.entity.state.violation_utils import collect_unique_violations
-from recidiviz.pipelines.normalization.utils.normalization_managers.entity_normalization_manager import (
+from recidiviz.pipelines.ingest.state.normalization.normalization_managers.entity_normalization_manager import (
     EntityNormalizationManager,
 )
 from recidiviz.pipelines.normalization.utils.normalized_entity_conversion_utils import (

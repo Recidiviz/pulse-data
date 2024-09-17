@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Contains US_OR implementation of the StateSpecificStaffRolePeriodNormalizationDelegate."""
-from recidiviz.pipelines.normalization.utils.normalization_managers.staff_role_period_normalization_manager import (
+from recidiviz.pipelines.ingest.state.normalization.normalization_managers.staff_role_period_normalization_manager import (
     StateSpecificStaffRolePeriodNormalizationDelegate,
 )
 
