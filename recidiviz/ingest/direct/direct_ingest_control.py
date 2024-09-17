@@ -71,6 +71,7 @@ from recidiviz.utils.pubsub_helper import (
 
 direct_ingest_control = Blueprint("direct_ingest_control", __name__)
 
+
 # TODO(#28239) remove all endpoints once raw data import dag is fully rolled out
 @direct_ingest_control.route("/normalize_raw_file_path", methods=["POST"])
 @requires_gae_auth
@@ -97,9 +98,27 @@ def normalize_raw_file_path() -> Tuple[str, HTTPStatus]:
     if not bucket or not relative_file_path:
         return f"Bad parameters [{request.args}]", HTTPStatus.BAD_REQUEST
 
+    region_code = get_region_code_from_direct_ingest_bucket(bucket)
+    if not region_code:
+        response = f"Cannot parse region code from bucket {bucket}, returning."
+        logging.error(response)
+        return response, HTTPStatus.BAD_REQUEST
+
+    bucket_path = GcsfsBucketPath(bucket_name=bucket)
+    ingest_instance = DirectIngestInstanceFactory.for_ingest_bucket(bucket_path)
+
     path = GcsfsPath.from_bucket_and_blob_name(
         bucket_name=bucket, blob_name=relative_file_path
     )
+
+    if is_raw_data_import_dag_enabled(StateCode(region_code.upper()), ingest_instance):
+        logging.info(
+            "Skipping file [%s] as raw data import DAG is enabled for [%s] and instance [%s]",
+            path.abs_path(),
+            region_code,
+            ingest_instance.value,
+        )
+        return "", HTTPStatus.OK
 
     logging.info("Handling file %s", path.abs_path())
     if not isinstance(path, GcsfsFilePath):
@@ -169,11 +188,13 @@ def handle_direct_ingest_file() -> Tuple[str, HTTPStatus]:
         if is_raw_data_import_dag_enabled(
             StateCode(region_code.upper()), ingest_instance
         ):
-            raise DirectIngestGatingError(
-                f"App Engine endpoint /handle_direct_ingest_file for region "
-                f"[{region_code}] and instance [{ingest_instance.value}] should not be "
-                f"called when raw data import DAG is enabled"
+            logging.info(
+                "Skipping file [%s] as raw data import DAG is enabled for [%s] and instance [%s]",
+                path.abs_path(),
+                region_code,
+                ingest_instance.value,
             )
+            return "", HTTPStatus.OK
 
         logging.info("Handling file %s", path.abs_path())
         try:
