@@ -43,3 +43,7 @@ columns:
   - name: BUILDING_CODE
     description: |-
       Code associated with a building
+  - name: COMMENTS
+    description: |-
+      Free text comment field
+    is_pii: True

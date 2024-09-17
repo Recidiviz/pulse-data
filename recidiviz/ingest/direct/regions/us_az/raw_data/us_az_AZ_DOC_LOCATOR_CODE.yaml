@@ -74,3 +74,7 @@ columns:
   - name: APPLIANCE_CHARGE_EXEMPT
     description: |-
       Are applicance charges applicable Y/N
+  - name: COMMENTS
+    description: |-
+      Free text comment field
+    is_pii: True
