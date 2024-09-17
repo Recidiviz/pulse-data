@@ -30,6 +30,7 @@ SELECT
     UPPER(CUSTODY_LEVEL) AS custody_level,
     CAST(population_count AS INT64) AS population_count,
 FROM `{project_id}.{us_az_raw_data_up_to_date_dataset}.validation_daily_count_sheet_by_custody_level_latest`
+WHERE UPPER(CUSTODY_LEVEL) NOT IN ('MH WATCH','RECEPTION','INPATIENT CARE UNIT')
 """
 
 US_AZ_INCARCERATION_POPULATION_BY_CUSTODY_LEVEL_VIEW_BUILDER = SimpleBigQueryViewBuilder(
