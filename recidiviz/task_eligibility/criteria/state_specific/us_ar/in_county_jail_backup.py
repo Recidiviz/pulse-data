@@ -42,12 +42,12 @@ _QUERY_TEMPLATE = f"""
             ls.start_date,
             ls.end_date_exclusive AS end_date,
             -- TODO(#32293): Update once we have a better way to handle location subtypes
-            COALESCE(JSON_EXTRACT_SCALAR(location_metadata, '$.location_subtype') = "BACKUP", FALSE) AS is_county_jail_backup,
+            COALESCE(JSON_EXTRACT_SCALAR(location_metadata, '$.location_subtype') IN ("B8", "BC"), FALSE) AS is_county_jail_backup,
         FROM `{{project_id}}.sessions.location_sessions_materialized` ls
         LEFT JOIN `{{project_id}}.reference_views.location_metadata_materialized` lm
         ON
             ls.state_code = lm.state_code
-            AND ls.location = lm.location_name
+            AND ls.location = lm.location_external_id
         WHERE ls.state_code = 'US_AR'
     )
     ,
