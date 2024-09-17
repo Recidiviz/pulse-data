@@ -49,18 +49,9 @@ US_TN_ANNUAL_RECLASSIFICATION_REVIEW_RECORD_QUERY_TEMPLATE = f"""
     FROM ({us_tn_classification_forms(tes_view="annual_reclassification_review",
                                       where_clause="WHERE "
                                                     "tes.state_code = 'US_TN' "
-                                                    "AND tes.is_eligible "
-                                                    f"AND {nonnull_end_date_exclusive_clause('tes.end_date')} > CURRENT_DATE('US/Pacific')"
-                                                    "AND ("
-                                                    "( DATE_TRUNC(latest_classification.form_reclassification_due_date,MONTH)"
-                                                    "= DATE_TRUNC(CURRENT_DATE('US/Pacific'),MONTH) "
-                                                    "AND DATE_TRUNC(CURRENT_DATE('US/Pacific'), MONTH) "
-                                                    "BETWEEN DATE_TRUNC(tes.start_date, MONTH) "
-                                                    f"AND DATE_TRUNC({nonnull_end_date_exclusive_clause('tes.end_date')}, MONTH))"
-                                                    "OR (CURRENT_DATE('US/Pacific') BETWEEN tes.start_date AND "
-                                                    f"{nonnull_end_date_exclusive_clause('tes.end_date')}))"
-                                                    
-                                      
+                                                    "AND CURRENT_DATE('US/Pacific') BETWEEN tes.start_date "
+                                                    f"AND {nonnull_end_date_exclusive_clause('tes.end_date')} "
+                                                    "AND tes.is_eligible"
                                       )
         })
     
