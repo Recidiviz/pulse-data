@@ -105,8 +105,8 @@ AVG_DAILY_POPULATION_TASK_ELIGIBLE_LOOKER_FUNNEL_METRICS = [
 ]
 DISTINCT_ACTIVE_USERS_LOOKER = EventDistinctUnitCountMetric(
     name="distinct_active_users",
-    display_name="Distinct Active Users",
-    description="Number of distinct Workflows users having at least one usage event for the "
+    display_name="Distinct Active Primary Users",
+    description="Number of distinct primary (line staff) Workflows users having at least one usage event for the "
     "task type during the time period",
     event_selectors=[
         EventSelector(
@@ -125,8 +125,8 @@ DISTINCT_ACTIVE_USERS_LOOKER = EventDistinctUnitCountMetric(
 )
 DISTINCT_REGISTERED_USERS = SpanDistinctUnitCountMetric(
     name="distinct_registered_users",
-    display_name="Distinct Total Registered Users",
-    description="Number of distinct Workflows users who have signed up/logged into Workflows at least once",
+    display_name="Distinct Total Registered Primary Users",
+    description="Number of distinct primary (line staff) Workflows users who have signed up/logged into Workflows at least once",
     span_selectors=[
         SpanSelector(
             span_type=SpanType.WORKFLOWS_USER_REGISTRATION_SESSION,
