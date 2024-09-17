@@ -108,7 +108,7 @@ class RawFileProcessingError(RawDataImportError):
     )
 
     def __str__(self) -> str:
-        return f"{self.error_type.value} with {self.original_file_path} failed with:\n\n{self.error_msg}"
+        return f"{self.error_type.value} with {self.original_file_path.abs_path()} failed with:\n\n{self.error_msg}"
 
     @property
     def file_tag(self) -> str:
@@ -187,7 +187,10 @@ class RawFileLoadAndPrepError(RawDataImportError):
     )
 
     def __str__(self) -> str:
-        return f"{self.error_type.value} for [{self.file_tag}] for [{self.original_file_paths}] failed with:\n\n{self.error_msg}"
+        file_paths_str = "\n* ".join(
+            [path.abs_path() for path in self.original_file_paths]
+        )
+        return f"{self.error_type.value} for [{self.file_tag}] for [{file_paths_str}] failed with:\n\n{self.error_msg}"
 
     def serialize(self) -> str:
         result_dict = {
