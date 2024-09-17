@@ -44,7 +44,7 @@ snapshots["TestOutliersQuerier.TestOutliersQuerier test_get_benchmarks"] = [
             {"end_date": "2023-02-01", "target": 0.14, "threshold": 0.21},
             {"end_date": "2023-01-01", "target": 0.14, "threshold": 0.21},
         ],
-        "caseload_type": "ALL",
+        "caseload_category": "ALL",
         "latest_period_values": {"far": [0.8], "met": [0.1, 0.1], "near": [0.32]},
         "metric_id": "absconsions_bench_warrants",
     },
@@ -53,7 +53,7 @@ snapshots["TestOutliersQuerier.TestOutliersQuerier test_get_benchmarks"] = [
             {"end_date": "2023-05-01", "target": 0.13, "threshold": 0.2},
             {"end_date": "2023-04-01", "target": 0.14, "threshold": 0.21},
         ],
-        "caseload_type": "ALL",
+        "caseload_category": "ALL",
         "latest_period_values": {
             "far": [0.26, 0.333],
             "met": [0.0, 0.04, 0.11, 0.12],
@@ -66,7 +66,7 @@ snapshots["TestOutliersQuerier.TestOutliersQuerier test_get_benchmarks"] = [
             {"end_date": "2023-05-01", "target": 0.008, "threshold": 0.1},
             {"end_date": "2023-04-01", "target": 0.008, "threshold": 0.1},
         ],
-        "caseload_type": "ALL",
+        "caseload_category": "ALL",
         "latest_period_values": {
             "far": [0.0],
             "met": [0.039, 0.11, 0.126, 0.171, 0.184, 0.27, 0.333],
@@ -87,7 +87,7 @@ snapshots[
             {"end_date": "2023-02-01", "target": 0.15, "threshold": 0.18},
             {"end_date": "2023-01-01", "target": 0.13, "threshold": 0.18},
         ],
-        "caseload_type": "NOT_SEX_OFFENSE",
+        "caseload_category": "NOT_SEX_OFFENSE",
         "latest_period_values": {"far": [0.8], "met": [0.1, 0.1], "near": [0.32]},
         "metric_id": "absconsions_bench_warrants",
     },
@@ -99,7 +99,7 @@ snapshots[
             {"end_date": "2023-02-01", "target": 0.12, "threshold": 0.18},
             {"end_date": "2023-01-01", "target": 0.1, "threshold": 0.18},
         ],
-        "caseload_type": "SEX_OFFENSE",
+        "caseload_category": "SEX_OFFENSE",
         "latest_period_values": {"far": [], "met": [], "near": []},
         "metric_id": "absconsions_bench_warrants",
     },
@@ -108,7 +108,7 @@ snapshots[
             {"end_date": "2023-05-01", "target": 0.09, "threshold": 0.18},
             {"end_date": "2023-04-01", "target": 0.12, "threshold": 0.18},
         ],
-        "caseload_type": "NOT_SEX_OFFENSE",
+        "caseload_category": "NOT_SEX_OFFENSE",
         "latest_period_values": {
             "far": [0.26],
             "met": [0.0, 0.04, 0.11],
@@ -121,7 +121,7 @@ snapshots[
             {"end_date": "2023-05-01", "target": 0.08, "threshold": 0.18},
             {"end_date": "2023-04-01", "target": 0.1, "threshold": 0.18},
         ],
-        "caseload_type": "SEX_OFFENSE",
+        "caseload_category": "SEX_OFFENSE",
         "latest_period_values": {"far": [0.333], "met": [0.12], "near": [0.17]},
         "metric_id": "incarceration_starts_and_inferred",
     },
@@ -130,7 +130,7 @@ snapshots[
             {"end_date": "2023-05-01", "target": 0.011, "threshold": 0.05},
             {"end_date": "2023-04-01", "target": 0.011, "threshold": 0.05},
         ],
-        "caseload_type": "NOT_SEX_OFFENSE",
+        "caseload_category": "NOT_SEX_OFFENSE",
         "latest_period_values": {
             "far": [0.0],
             "met": [0.039, 0.11, 0.184, 0.27],
@@ -143,7 +143,7 @@ snapshots[
             {"end_date": "2023-05-01", "target": 0.016, "threshold": 0.05},
             {"end_date": "2023-04-01", "target": 0.016, "threshold": 0.05},
         ],
-        "caseload_type": "SEX_OFFENSE",
+        "caseload_category": "SEX_OFFENSE",
         "latest_period_values": {"far": [], "met": [0.126, 0.171, 0.333], "near": []},
         "metric_id": "task_completions_transfer_to_limited_supervision",
     },
@@ -434,13 +434,13 @@ snapshots[
     "TestOutliersQuerier.TestOutliersQuerier test_get_officers_for_supervisor"
 ] = [
     GenericRepr(
-        "SupervisionOfficerEntity(full_name=PersonName(given_names='Officer', surname='3', middle_names='', name_suffix=''), external_id='03', pseudonymized_id='officerhash3', supervisor_external_id='102', supervisor_external_ids=['102'], district='2', outlier_metrics=[{'metric_id': 'absconsions_bench_warrants', 'statuses_over_time': [{'status': 'FAR', 'end_date': '2023-05-01', 'metric_rate': 0.8, 'caseload_category': 'ALL'}, {'status': 'FAR', 'end_date': '2023-04-01', 'metric_rate': 0.8, 'caseload_category': 'ALL'}, {'status': 'FAR', 'end_date': '2023-03-01', 'metric_rate': 0.8, 'caseload_category': 'ALL'}, {'status': 'FAR', 'end_date': '2023-02-01', 'metric_rate': 0.8, 'caseload_category': 'ALL'}, {'status': 'FAR', 'end_date': '2023-01-01', 'metric_rate': 0.8, 'caseload_category': 'ALL'}, {'status': 'FAR', 'end_date': '2022-12-01', 'metric_rate': 0.8, 'caseload_category': 'ALL'}]}], top_x_pct_metrics=[{'metric_id': 'incarceration_starts_and_inferred', 'top_x_pct': 10}], avg_daily_population=54.321, caseload_category='ALL', caseload_type=None, earliest_person_assignment_date=None)"
+        "SupervisionOfficerEntity(full_name=PersonName(given_names='Officer', surname='3', middle_names='', name_suffix=''), external_id='03', pseudonymized_id='officerhash3', supervisor_external_id='102', supervisor_external_ids=['102'], district='2', outlier_metrics=[{'metric_id': 'absconsions_bench_warrants', 'statuses_over_time': [{'status': 'FAR', 'end_date': '2023-05-01', 'metric_rate': 0.8, 'caseload_category': 'ALL'}, {'status': 'FAR', 'end_date': '2023-04-01', 'metric_rate': 0.8, 'caseload_category': 'ALL'}, {'status': 'FAR', 'end_date': '2023-03-01', 'metric_rate': 0.8, 'caseload_category': 'ALL'}, {'status': 'FAR', 'end_date': '2023-02-01', 'metric_rate': 0.8, 'caseload_category': 'ALL'}, {'status': 'FAR', 'end_date': '2023-01-01', 'metric_rate': 0.8, 'caseload_category': 'ALL'}, {'status': 'FAR', 'end_date': '2022-12-01', 'metric_rate': 0.8, 'caseload_category': 'ALL'}]}], top_x_pct_metrics=[{'metric_id': 'incarceration_starts_and_inferred', 'top_x_pct': 10}], avg_daily_population=54.321, caseload_category='ALL', earliest_person_assignment_date=None)"
     ),
     GenericRepr(
-        "SupervisionOfficerEntity(full_name=PersonName(given_names='Officer', surname='4', middle_names='', name_suffix=''), external_id='04', pseudonymized_id='officerhash4', supervisor_external_id='102', supervisor_external_ids=['102'], district='2', outlier_metrics=[{'metric_id': 'task_completions_transfer_to_limited_supervision', 'statuses_over_time': [{'status': 'FAR', 'end_date': '2023-05-01', 'metric_rate': 0, 'caseload_category': 'ALL'}, {'status': 'FAR', 'end_date': '2023-04-01', 'metric_rate': 0, 'caseload_category': 'ALL'}]}], top_x_pct_metrics=[], avg_daily_population=3.45, caseload_category='ALL', caseload_type=None, earliest_person_assignment_date=None)"
+        "SupervisionOfficerEntity(full_name=PersonName(given_names='Officer', surname='4', middle_names='', name_suffix=''), external_id='04', pseudonymized_id='officerhash4', supervisor_external_id='102', supervisor_external_ids=['102'], district='2', outlier_metrics=[{'metric_id': 'task_completions_transfer_to_limited_supervision', 'statuses_over_time': [{'status': 'FAR', 'end_date': '2023-05-01', 'metric_rate': 0, 'caseload_category': 'ALL'}, {'status': 'FAR', 'end_date': '2023-04-01', 'metric_rate': 0, 'caseload_category': 'ALL'}]}], top_x_pct_metrics=[], avg_daily_population=3.45, caseload_category='ALL', earliest_person_assignment_date=None)"
     ),
     GenericRepr(
-        "SupervisionOfficerEntity(full_name=PersonName(given_names='Officer', surname='6', middle_names='', name_suffix=''), external_id='06', pseudonymized_id='officerhash6', supervisor_external_id='102', supervisor_external_ids=['102'], district='2', outlier_metrics=[], top_x_pct_metrics=[], avg_daily_population=90.09, caseload_category='ALL', caseload_type=None, earliest_person_assignment_date=None)"
+        "SupervisionOfficerEntity(full_name=PersonName(given_names='Officer', surname='6', middle_names='', name_suffix=''), external_id='06', pseudonymized_id='officerhash6', supervisor_external_id='102', supervisor_external_ids=['102'], district='2', outlier_metrics=[], top_x_pct_metrics=[], avg_daily_population=90.09, caseload_category='ALL', earliest_person_assignment_date=None)"
     ),
 ]
 
@@ -448,13 +448,13 @@ snapshots[
     "TestOutliersQuerier.TestOutliersQuerier test_get_officers_for_supervisor_non_all_category"
 ] = [
     GenericRepr(
-        "SupervisionOfficerEntity(full_name=PersonName(given_names='Officer', surname='3', middle_names='', name_suffix=''), external_id='03', pseudonymized_id='officerhash3', supervisor_external_id='102', supervisor_external_ids=['102'], district='2', outlier_metrics=[{'metric_id': 'absconsions_bench_warrants', 'statuses_over_time': [{'status': 'FAR', 'end_date': '2023-05-01', 'metric_rate': 0.8, 'caseload_category': 'NOT_SEX_OFFENSE'}, {'status': 'FAR', 'end_date': '2023-04-01', 'metric_rate': 0.8, 'caseload_category': 'NOT_SEX_OFFENSE'}, {'status': 'FAR', 'end_date': '2023-03-01', 'metric_rate': 0.8, 'caseload_category': 'NOT_SEX_OFFENSE'}, {'status': 'FAR', 'end_date': '2023-02-01', 'metric_rate': 0.8, 'caseload_category': 'NOT_SEX_OFFENSE'}, {'status': 'FAR', 'end_date': '2023-01-01', 'metric_rate': 0.8, 'caseload_category': 'NOT_SEX_OFFENSE'}, {'status': 'FAR', 'end_date': '2022-12-01', 'metric_rate': 0.8, 'caseload_category': 'NOT_SEX_OFFENSE'}]}], top_x_pct_metrics=[{'metric_id': 'incarceration_starts_and_inferred', 'top_x_pct': 10}], avg_daily_population=54.321, caseload_category='NOT_SEX_OFFENSE', caseload_type=None, earliest_person_assignment_date=None)"
+        "SupervisionOfficerEntity(full_name=PersonName(given_names='Officer', surname='3', middle_names='', name_suffix=''), external_id='03', pseudonymized_id='officerhash3', supervisor_external_id='102', supervisor_external_ids=['102'], district='2', outlier_metrics=[{'metric_id': 'absconsions_bench_warrants', 'statuses_over_time': [{'status': 'FAR', 'end_date': '2023-05-01', 'metric_rate': 0.8, 'caseload_category': 'NOT_SEX_OFFENSE'}, {'status': 'FAR', 'end_date': '2023-04-01', 'metric_rate': 0.8, 'caseload_category': 'NOT_SEX_OFFENSE'}, {'status': 'FAR', 'end_date': '2023-03-01', 'metric_rate': 0.8, 'caseload_category': 'NOT_SEX_OFFENSE'}, {'status': 'FAR', 'end_date': '2023-02-01', 'metric_rate': 0.8, 'caseload_category': 'NOT_SEX_OFFENSE'}, {'status': 'FAR', 'end_date': '2023-01-01', 'metric_rate': 0.8, 'caseload_category': 'NOT_SEX_OFFENSE'}, {'status': 'FAR', 'end_date': '2022-12-01', 'metric_rate': 0.8, 'caseload_category': 'NOT_SEX_OFFENSE'}]}], top_x_pct_metrics=[{'metric_id': 'incarceration_starts_and_inferred', 'top_x_pct': 10}], avg_daily_population=54.321, caseload_category='NOT_SEX_OFFENSE', earliest_person_assignment_date=None)"
     ),
     GenericRepr(
-        "SupervisionOfficerEntity(full_name=PersonName(given_names='Officer', surname='4', middle_names='', name_suffix=''), external_id='04', pseudonymized_id='officerhash4', supervisor_external_id='102', supervisor_external_ids=['102'], district='2', outlier_metrics=[{'metric_id': 'task_completions_transfer_to_limited_supervision', 'statuses_over_time': [{'status': 'FAR', 'end_date': '2023-05-01', 'metric_rate': 0, 'caseload_category': 'NOT_SEX_OFFENSE'}, {'status': 'FAR', 'end_date': '2023-04-01', 'metric_rate': 0, 'caseload_category': 'NOT_SEX_OFFENSE'}]}], top_x_pct_metrics=[], avg_daily_population=3.45, caseload_category='NOT_SEX_OFFENSE', caseload_type=None, earliest_person_assignment_date=None)"
+        "SupervisionOfficerEntity(full_name=PersonName(given_names='Officer', surname='4', middle_names='', name_suffix=''), external_id='04', pseudonymized_id='officerhash4', supervisor_external_id='102', supervisor_external_ids=['102'], district='2', outlier_metrics=[{'metric_id': 'task_completions_transfer_to_limited_supervision', 'statuses_over_time': [{'status': 'FAR', 'end_date': '2023-05-01', 'metric_rate': 0, 'caseload_category': 'NOT_SEX_OFFENSE'}, {'status': 'FAR', 'end_date': '2023-04-01', 'metric_rate': 0, 'caseload_category': 'NOT_SEX_OFFENSE'}]}], top_x_pct_metrics=[], avg_daily_population=3.45, caseload_category='NOT_SEX_OFFENSE', earliest_person_assignment_date=None)"
     ),
     GenericRepr(
-        "SupervisionOfficerEntity(full_name=PersonName(given_names='Officer', surname='6', middle_names='', name_suffix=''), external_id='06', pseudonymized_id='officerhash6', supervisor_external_id='102', supervisor_external_ids=['102'], district='2', outlier_metrics=[], top_x_pct_metrics=[], avg_daily_population=90.09, caseload_category='SEX_OFFENSE', caseload_type=None, earliest_person_assignment_date=None)"
+        "SupervisionOfficerEntity(full_name=PersonName(given_names='Officer', surname='6', middle_names='', name_suffix=''), external_id='06', pseudonymized_id='officerhash6', supervisor_external_id='102', supervisor_external_ids=['102'], district='2', outlier_metrics=[], top_x_pct_metrics=[], avg_daily_population=90.09, caseload_category='SEX_OFFENSE', earliest_person_assignment_date=None)"
     ),
 ]
 
@@ -473,31 +473,31 @@ snapshots[
 snapshots[
     "TestOutliersQuerier.TestOutliersQuerier test_get_supervision_officer_entity_changing_caseload_categories"
 ] = GenericRepr(
-    "SupervisionOfficerEntity(full_name=PersonName(given_names='Officer', surname='1', middle_names='', name_suffix=''), external_id='01', pseudonymized_id='officerhash1', supervisor_external_id='101', supervisor_external_ids=['101', '104'], district='1', outlier_metrics=[{'metric_id': 'incarceration_starts_and_inferred', 'statuses_over_time': [{'status': 'FAR', 'end_date': '2023-05-01', 'metric_rate': 0.26, 'caseload_category': 'NOT_SEX_OFFENSE'}, {'status': 'NEAR', 'end_date': '2023-04-01', 'metric_rate': 0.32, 'caseload_category': 'SEX_OFFENSE'}]}], top_x_pct_metrics=[], avg_daily_population=59.95, caseload_category='NOT_SEX_OFFENSE', caseload_type=None, earliest_person_assignment_date=None)"
+    "SupervisionOfficerEntity(full_name=PersonName(given_names='Officer', surname='1', middle_names='', name_suffix=''), external_id='01', pseudonymized_id='officerhash1', supervisor_external_id='101', supervisor_external_ids=['101', '104'], district='1', outlier_metrics=[{'metric_id': 'incarceration_starts_and_inferred', 'statuses_over_time': [{'status': 'FAR', 'end_date': '2023-05-01', 'metric_rate': 0.26, 'caseload_category': 'NOT_SEX_OFFENSE'}, {'status': 'NEAR', 'end_date': '2023-04-01', 'metric_rate': 0.32, 'caseload_category': 'SEX_OFFENSE'}]}], top_x_pct_metrics=[], avg_daily_population=59.95, caseload_category='NOT_SEX_OFFENSE', earliest_person_assignment_date=None)"
 )
 
 snapshots[
     "TestOutliersQuerier.TestOutliersQuerier test_get_supervision_officer_entity_found_match"
 ] = GenericRepr(
-    "SupervisionOfficerEntity(full_name=PersonName(given_names='Officer', surname='3', middle_names='', name_suffix=''), external_id='03', pseudonymized_id='officerhash3', supervisor_external_id='102', supervisor_external_ids=['102'], district='2', outlier_metrics=[{'metric_id': 'absconsions_bench_warrants', 'statuses_over_time': [{'status': 'FAR', 'end_date': '2023-05-01', 'metric_rate': 0.8, 'caseload_category': 'ALL'}]}], top_x_pct_metrics=[{'metric_id': 'incarceration_starts_and_inferred', 'top_x_pct': 10}], avg_daily_population=54.321, caseload_category='ALL', caseload_type=None, earliest_person_assignment_date=None)"
+    "SupervisionOfficerEntity(full_name=PersonName(given_names='Officer', surname='3', middle_names='', name_suffix=''), external_id='03', pseudonymized_id='officerhash3', supervisor_external_id='102', supervisor_external_ids=['102'], district='2', outlier_metrics=[{'metric_id': 'absconsions_bench_warrants', 'statuses_over_time': [{'status': 'FAR', 'end_date': '2023-05-01', 'metric_rate': 0.8, 'caseload_category': 'ALL'}]}], top_x_pct_metrics=[{'metric_id': 'incarceration_starts_and_inferred', 'top_x_pct': 10}], avg_daily_population=54.321, caseload_category='ALL', earliest_person_assignment_date=None)"
 )
 
 snapshots[
     "TestOutliersQuerier.TestOutliersQuerier test_get_supervision_officer_entity_found_match_not_top_x_pct"
 ] = GenericRepr(
-    "SupervisionOfficerEntity(full_name=PersonName(given_names='Officer', surname='9', middle_names='', name_suffix=''), external_id='09', pseudonymized_id='officerhash9', supervisor_external_id='103', supervisor_external_ids=['103'], district=None, outlier_metrics=[], top_x_pct_metrics=[], avg_daily_population=99.9, caseload_category='ALL', caseload_type=None, earliest_person_assignment_date=None)"
+    "SupervisionOfficerEntity(full_name=PersonName(given_names='Officer', surname='9', middle_names='', name_suffix=''), external_id='09', pseudonymized_id='officerhash9', supervisor_external_id='103', supervisor_external_ids=['103'], district=None, outlier_metrics=[], top_x_pct_metrics=[], avg_daily_population=99.9, caseload_category='ALL', earliest_person_assignment_date=None)"
 )
 
 snapshots[
     "TestOutliersQuerier.TestOutliersQuerier test_get_supervision_officer_entity_found_match_with_highlights"
 ] = GenericRepr(
-    "SupervisionOfficerEntity(full_name=PersonName(given_names='Officer', surname='3', middle_names='', name_suffix=''), external_id='03', pseudonymized_id='officerhash3', supervisor_external_id='102', supervisor_external_ids=['102'], district='2', outlier_metrics=[{'metric_id': 'absconsions_bench_warrants', 'statuses_over_time': [{'status': 'FAR', 'end_date': '2023-05-01', 'metric_rate': 0.8, 'caseload_category': 'ALL'}]}], top_x_pct_metrics=[{'metric_id': 'incarceration_starts_and_inferred', 'top_x_pct': 10}], avg_daily_population=54.321, caseload_category='ALL', caseload_type=None, earliest_person_assignment_date=None)"
+    "SupervisionOfficerEntity(full_name=PersonName(given_names='Officer', surname='3', middle_names='', name_suffix=''), external_id='03', pseudonymized_id='officerhash3', supervisor_external_id='102', supervisor_external_ids=['102'], district='2', outlier_metrics=[{'metric_id': 'absconsions_bench_warrants', 'statuses_over_time': [{'status': 'FAR', 'end_date': '2023-05-01', 'metric_rate': 0.8, 'caseload_category': 'ALL'}]}], top_x_pct_metrics=[{'metric_id': 'incarceration_starts_and_inferred', 'top_x_pct': 10}], avg_daily_population=54.321, caseload_category='ALL', earliest_person_assignment_date=None)"
 )
 
 snapshots[
     "TestOutliersQuerier.TestOutliersQuerier test_get_supervision_officer_entity_highlight_in_prev_period_only"
 ] = GenericRepr(
-    "SupervisionOfficerEntity(full_name=PersonName(given_names='Officer', surname='7', middle_names='', name_suffix=''), external_id='07', pseudonymized_id='officerhash7', supervisor_external_id='101', supervisor_external_ids=['101'], district='1', outlier_metrics=[], top_x_pct_metrics=[], avg_daily_population=23.456, caseload_category='ALL', caseload_type=None, earliest_person_assignment_date=None)"
+    "SupervisionOfficerEntity(full_name=PersonName(given_names='Officer', surname='7', middle_names='', name_suffix=''), external_id='07', pseudonymized_id='officerhash7', supervisor_external_id='101', supervisor_external_ids=['101'], district='1', outlier_metrics=[], top_x_pct_metrics=[], avg_daily_population=23.456, caseload_category='ALL', earliest_person_assignment_date=None)"
 )
 
 snapshots[

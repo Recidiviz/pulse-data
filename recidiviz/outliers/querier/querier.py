@@ -758,7 +758,7 @@ class OutliersQuerier:
             return [
                 {
                     "metric_id": record.metric_id,
-                    "caseload_type": record.caseload_type,
+                    "caseload_category": record.caseload_type,
                     "benchmarks": record.benchmarks_over_time,
                     "latest_period_values": {
                         "far": record.far,
@@ -1043,7 +1043,6 @@ class OutliersQuerier:
                     SupervisionOfficer.supervisor_external_id,
                     SupervisionOfficer.supervisor_external_ids,
                     SupervisionOfficer.supervision_district,
-                    SupervisionOfficer.specialized_caseload_type,
                     SupervisionOfficerOutlierStatus.metric_id,
                     avgs_subquery.c.avg_daily_population,
                 )
@@ -1054,7 +1053,6 @@ class OutliersQuerier:
                     SupervisionOfficer.supervisor_external_id,
                     SupervisionOfficer.supervisor_external_ids,
                     SupervisionOfficer.supervision_district,
-                    SupervisionOfficer.specialized_caseload_type,
                     SupervisionOfficerOutlierStatus.metric_id,
                     # Get an array of JSON objects for the officer's rates and statuses in the selected periods
                     func.array_agg(
@@ -1181,9 +1179,6 @@ class OutliersQuerier:
                         supervisor_external_id=record.supervisor_external_id,
                         supervisor_external_ids=record.supervisor_external_ids,
                         district=record.supervision_district,
-                        # Deprecated specialized caseload type of the officer, do not use
-                        # TODO(#31634): Remove this
-                        caseload_type=record.specialized_caseload_type,
                         caseload_category=latest_period_caseload_category,
                         avg_daily_population=record.avg_daily_population,
                         outlier_metrics=(

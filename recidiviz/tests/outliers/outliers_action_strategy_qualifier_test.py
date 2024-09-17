@@ -219,7 +219,6 @@ class TestOutliersActionStrategyQualifier(TestCase):
             supervisor_external_id="102",
             supervisor_external_ids=["102"],
             district="Hogwarts",
-            caseload_type=None,
             caseload_category="ALL",
             outlier_metrics=[
                 {
@@ -275,7 +274,6 @@ class TestOutliersActionStrategyQualifier(TestCase):
             supervisor_external_id="102",
             supervisor_external_ids=["102"],
             district="Hogwarts",
-            caseload_type=None,
             caseload_category="ALL",
             outlier_metrics=[
                 {
@@ -332,7 +330,6 @@ class TestOutliersActionStrategyQualifier(TestCase):
             supervisor_external_id="102",
             supervisor_external_ids=["102"],
             district="Hogwarts",
-            caseload_type=None,
             caseload_category="ALL",
             outlier_metrics=[
                 {
@@ -389,7 +386,6 @@ class TestOutliersActionStrategyQualifier(TestCase):
             supervisor_external_id="102",
             supervisor_external_ids=["102"],
             district="Hogwarts",
-            caseload_type=None,
             caseload_category="ALL",
             outlier_metrics=[
                 {
@@ -447,7 +443,6 @@ class TestOutliersActionStrategyQualifier(TestCase):
                 supervisor_external_id="102",
                 supervisor_external_ids=["102"],
                 district="Hogwarts",
-                caseload_type=None,
                 caseload_category="ALL",
                 outlier_metrics=[
                     {
@@ -476,7 +471,6 @@ class TestOutliersActionStrategyQualifier(TestCase):
                 supervisor_external_id="102",
                 supervisor_external_ids=["102"],
                 district="Hogwarts",
-                caseload_type=None,
                 caseload_category="ALL",
                 outlier_metrics=[
                     {
@@ -507,7 +501,6 @@ class TestOutliersActionStrategyQualifier(TestCase):
                 supervisor_external_id="102",
                 supervisor_external_ids=["102"],
                 district="Hogwarts",
-                caseload_type=None,
                 caseload_category="ALL",
                 outlier_metrics=[
                     {
@@ -538,7 +531,6 @@ class TestOutliersActionStrategyQualifier(TestCase):
                 supervisor_external_id="102",
                 supervisor_external_ids=["102"],
                 district="Hogwarts",
-                caseload_type=None,
                 caseload_category="ALL",
                 outlier_metrics=[],
                 top_x_pct_metrics=[
@@ -569,7 +561,6 @@ class TestOutliersActionStrategyQualifier(TestCase):
                 supervisor_external_id="102",
                 supervisor_external_ids=["102"],
                 district="Hogwarts",
-                caseload_type=None,
                 caseload_category="ALL",
                 outlier_metrics=[
                     {
@@ -598,7 +589,6 @@ class TestOutliersActionStrategyQualifier(TestCase):
                 supervisor_external_id="102",
                 supervisor_external_ids=["102"],
                 district="Hogwarts",
-                caseload_type=None,
                 caseload_category="ALL",
                 outlier_metrics=[],
                 top_x_pct_metrics=[
@@ -628,7 +618,6 @@ class TestOutliersActionStrategyQualifier(TestCase):
                 supervisor_external_id="102",
                 supervisor_external_ids=["102"],
                 district="Hogwarts",
-                caseload_type=None,
                 caseload_category="ALL",
                 outlier_metrics=[
                     {
@@ -657,7 +646,6 @@ class TestOutliersActionStrategyQualifier(TestCase):
                 supervisor_external_id="102",
                 supervisor_external_ids=["102"],
                 district="Hogwarts",
-                caseload_type=None,
                 caseload_category="ALL",
                 outlier_metrics=[],
                 top_x_pct_metrics=[
@@ -677,7 +665,6 @@ class TestOutliersActionStrategyQualifier(TestCase):
                 supervisor_external_id="102",
                 supervisor_external_ids=["102"],
                 district="Hogwarts",
-                caseload_type=None,
                 caseload_category="ALL",
                 outlier_metrics=[],
                 top_x_pct_metrics=[
@@ -697,7 +684,6 @@ class TestOutliersActionStrategyQualifier(TestCase):
                 supervisor_external_id="102",
                 supervisor_external_ids=["102"],
                 district="Hogwarts",
-                caseload_type=None,
                 caseload_category="ALL",
                 outlier_metrics=[],
                 top_x_pct_metrics=[
@@ -727,7 +713,6 @@ class TestOutliersActionStrategyQualifier(TestCase):
                 supervisor_external_id="102",
                 supervisor_external_ids=["102"],
                 district="Hogwarts",
-                caseload_type=None,
                 caseload_category="ALL",
                 outlier_metrics=[
                     {
@@ -756,7 +741,6 @@ class TestOutliersActionStrategyQualifier(TestCase):
                 supervisor_external_id="102",
                 supervisor_external_ids=["102"],
                 district="Hogwarts",
-                caseload_type=None,
                 caseload_category="ALL",
                 outlier_metrics=[
                     {
@@ -787,7 +771,6 @@ class TestOutliersActionStrategyQualifier(TestCase):
                 supervisor_external_id="102",
                 supervisor_external_ids=["102"],
                 district="Hogwarts",
-                caseload_type=None,
                 caseload_category="ALL",
                 outlier_metrics=[
                     {
@@ -818,7 +801,6 @@ class TestOutliersActionStrategyQualifier(TestCase):
                 supervisor_external_id="102",
                 supervisor_external_ids=["102"],
                 district="Hogwarts",
-                caseload_type=None,
                 caseload_category="ALL",
                 outlier_metrics=[],
                 top_x_pct_metrics=[
@@ -856,7 +838,6 @@ class TestOutliersActionStrategyQualifier(TestCase):
             supervisor_external_id="102",
             supervisor_external_ids=["102"],
             district="Hogwarts",
-            caseload_type=None,
             caseload_category="ALL",
             outlier_metrics=[
                 {
@@ -902,7 +883,6 @@ class TestOutliersActionStrategyQualifier(TestCase):
             supervisor_external_id="102",
             supervisor_external_ids=["102"],
             district="Hogwarts",
-            caseload_type=None,
             caseload_category="ALL",
             outlier_metrics=[
                 {
@@ -948,7 +928,6 @@ class TestOutliersActionStrategyQualifier(TestCase):
             supervisor_external_id="102",
             supervisor_external_ids=["102"],
             district="Hogwarts",
-            caseload_type=None,
             caseload_category="ALL",
             outlier_metrics=[
                 {
@@ -1000,7 +979,6 @@ class TestOutliersActionStrategyQualifier(TestCase):
             supervisor_external_id="102",
             supervisor_external_ids=["102"],
             district="Hogwarts",
-            caseload_type=None,
             caseload_category="ALL",
             outlier_metrics=[
                 {
@@ -1035,7 +1013,6 @@ class TestOutliersActionStrategyQualifier(TestCase):
             supervisor_external_id="102",
             supervisor_external_ids=["102"],
             district="Hogwarts",
-            caseload_type=None,
             caseload_category="ALL",
             outlier_metrics=[
                 {
@@ -1099,7 +1076,6 @@ class TestOutliersActionStrategyQualifier(TestCase):
             supervisor_external_id="102",
             supervisor_external_ids=["102"],
             district="Hogwarts",
-            caseload_type=None,
             caseload_category="ALL",
             outlier_metrics=[
                 {
@@ -1134,7 +1110,6 @@ class TestOutliersActionStrategyQualifier(TestCase):
             supervisor_external_id="102",
             supervisor_external_ids=["102"],
             district="Hogwarts",
-            caseload_type=None,
             caseload_category="ALL",
             outlier_metrics=[
                 {
@@ -1171,7 +1146,6 @@ class TestOutliersActionStrategyQualifier(TestCase):
             supervisor_external_id="102",
             supervisor_external_ids=["102"],
             district="Hogwarts",
-            caseload_type=None,
             caseload_category="ALL",
             outlier_metrics=[
                 {
@@ -1206,7 +1180,6 @@ class TestOutliersActionStrategyQualifier(TestCase):
             supervisor_external_id="102",
             supervisor_external_ids=["102"],
             district="Hogwarts",
-            caseload_type=None,
             caseload_category="ALL",
             outlier_metrics=[
                 {
@@ -1248,7 +1221,6 @@ class TestOutliersActionStrategyQualifier(TestCase):
             supervisor_external_id="102",
             supervisor_external_ids=["102"],
             district="Hogwarts",
-            caseload_type=None,
             caseload_category="ALL",
             outlier_metrics=[
                 {
