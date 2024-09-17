@@ -242,7 +242,6 @@ class StateIngestPipelineTestCase(BigQueryEmulatorTestCase, IngestRegionTestMixi
         pre_normalization_only: bool = False,
         ingest_views_to_run: Optional[str] = None,
         raw_data_upper_bound_dates_json_override: Optional[str] = None,
-        run_normalization_override: bool | None = None,
     ) -> None:
         """Runs an ingest pipeline, writing output the the BQ emulator and comparing
         that output against a set of expected fixture files.
@@ -266,7 +265,6 @@ class StateIngestPipelineTestCase(BigQueryEmulatorTestCase, IngestRegionTestMixi
                 if raw_data_upper_bound_dates_json_override
                 else self.raw_fixture_loader.default_upper_bound_dates_json
             ),
-            run_normalization_override=run_normalization_override,
         )
 
         for collection in self.expected_output_collections():

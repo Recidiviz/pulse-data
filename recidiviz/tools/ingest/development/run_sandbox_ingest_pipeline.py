@@ -38,7 +38,6 @@ Examples:
         --raw_data_source_instance SECONDARY \
         --ingest_view_results_only True \
         --pre_normalization_only True \
-        --run_normalization_override True \
         --skip_build True \
         --ingest_views_to_run "person staff" \
         --service_account_email something@recidiviz-staging.iam.gserviceaccount.com 
@@ -236,20 +235,13 @@ def run_sandbox_ingest_pipeline(
             f"sure you want to proceed?"
         )
 
-    if params.run_normalization:
-        prompt_for_confirmation(
-            f"Starting ingest pipeline [{params.job_name}] for [{params.state_code}] in "
-            f"[{params.project}] which will output to datasets "
-            f"[{params.ingest_view_results_output}], "
-            f"[{params.pre_normalization_output}] and [{params.normalized_output}] - "
-            f"continue?"
-        )
-    else:
-        prompt_for_confirmation(
-            f"Starting ingest pipeline [{params.job_name}] for [{params.state_code}] in "
-            f"[{params.project}] which will output to datasets "
-            f"[{params.ingest_view_results_output}] and [{params.pre_normalization_output}] - continue?"
-        )
+    prompt_for_confirmation(
+        f"Starting ingest pipeline [{params.job_name}] for [{params.state_code}] in "
+        f"[{params.project}] which will output to datasets "
+        f"[{params.ingest_view_results_output}], "
+        f"[{params.pre_normalization_output}] and [{params.normalized_output}] - "
+        f"continue?"
+    )
 
     create_or_update_dataflow_sandbox(
         sandbox_dataset_prefix=output_sandbox_prefix,

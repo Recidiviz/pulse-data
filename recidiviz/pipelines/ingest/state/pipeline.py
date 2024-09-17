@@ -296,33 +296,30 @@ class StateIngestPipeline(BasePipeline[IngestPipelineParameters]):
         if self.pipeline_parameters.pre_normalization_only:
             return
 
-        if self.pipeline_parameters.run_normalization:
-            expected_output_normalized_entity_classes = (
-                get_expected_output_normalized_entity_classes(
-                    expected_output_entity_classes,
-                    delegate=get_state_specific_normalization_delegate(
-                        state_code.value
-                    ),
-                )
+        expected_output_normalized_entity_classes = (
+            get_expected_output_normalized_entity_classes(
+                expected_output_entity_classes,
+                delegate=get_state_specific_normalization_delegate(state_code.value),
             )
-            normalized_root_entities: beam.PCollection[RootEntity] = (
-                pre_normalization_root_entities
-                | "Normalize root entities"
-                >> NormalizeRootEntities(
-                    state_code=state_code,
-                    expected_output_entity_classes=expected_output_normalized_entity_classes,
-                )
+        )
+        normalized_root_entities: beam.PCollection[RootEntity] = (
+            pre_normalization_root_entities
+            | "Normalize root entities"
+            >> NormalizeRootEntities(
+                state_code=state_code,
+                expected_output_entity_classes=expected_output_normalized_entity_classes,
             )
+        )
 
-            _ = (
-                normalized_root_entities
-                | f"Write normalized entities to {self.pipeline_parameters.normalized_output}"
-                >> WriteRootEntitiesToBQ(
-                    state_code=state_code,
-                    entities_module=normalized_entities,
-                    output_dataset=self.pipeline_parameters.normalized_output,
-                    output_table_ids=get_pipeline_output_tables(
-                        expected_output_normalized_entity_classes
-                    ),
-                )
+        _ = (
+            normalized_root_entities
+            | f"Write normalized entities to {self.pipeline_parameters.normalized_output}"
+            >> WriteRootEntitiesToBQ(
+                state_code=state_code,
+                entities_module=normalized_entities,
+                output_dataset=self.pipeline_parameters.normalized_output,
+                output_table_ids=get_pipeline_output_tables(
+                    expected_output_normalized_entity_classes
+                ),
             )
+        )

@@ -88,19 +88,6 @@ class TestStateIngestPipeline(StateIngestPipelineTestCase):
         self.run_test_ingest_pipeline(
             test_name="integration_simple",
             raw_data_upper_bound_dates_json_override=self.us_dd_upper_date_bound_overrides,
-            run_normalization_override=True,
-        )
-
-    # TODO(#31741): We should be able to delete this test once we've enabled
-    #  normalization in ingest for all states.
-    def test_state_ingest_pipeline_no_normalization(self) -> None:
-        self.setup_region_raw_data_bq_tables(
-            test_name=INTEGRATION_RAW_DATA_INPUTS_FIXTURES_NAME
-        )
-        self.run_test_ingest_pipeline(
-            test_name="integration_simple_no_normalization",
-            raw_data_upper_bound_dates_json_override=self.us_dd_upper_date_bound_overrides,
-            run_normalization_override=False,
         )
 
     def test_state_ingest_pipeline_ingest_view_results_only(self) -> None:
@@ -111,9 +98,6 @@ class TestStateIngestPipeline(StateIngestPipelineTestCase):
             test_name="integration_ingest_view_results_only",
             ingest_view_results_only=True,
             raw_data_upper_bound_dates_json_override=self.us_dd_upper_date_bound_overrides,
-            # Even if the run_normalization flag is True, we still should only produce
-            # ingest view results!
-            run_normalization_override=True,
         )
 
     def test_state_ingest_pipeline_pre_normalization_only(self) -> None:
@@ -124,9 +108,6 @@ class TestStateIngestPipeline(StateIngestPipelineTestCase):
             test_name="integration_pre_normalization_only",
             pre_normalization_only=True,
             raw_data_upper_bound_dates_json_override=self.us_dd_upper_date_bound_overrides,
-            # Even if the run_normalization flag is True, we still should only produce
-            # ingest view results and state dataset results!
-            run_normalization_override=True,
         )
 
     def test_state_ingest_pipeline_ingest_views_to_run_subset(self) -> None:
@@ -138,7 +119,6 @@ class TestStateIngestPipeline(StateIngestPipelineTestCase):
             test_name="integration_ingest_views_to_run_subset",
             ingest_views_to_run=" ".join(subset_of_ingest_views),
             raw_data_upper_bound_dates_json_override=self.us_dd_upper_date_bound_overrides,
-            run_normalization_override=True,
         )
 
     def test_missing_raw_data_upper_bound_dates(self) -> None:
@@ -162,5 +142,4 @@ class TestStateIngestPipeline(StateIngestPipelineTestCase):
                         "table7": "2023-07-04T00:00:00.000000",
                     }
                 ),
-                run_normalization_override=True,
             )

@@ -23,7 +23,6 @@ from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
 )
 from recidiviz.pipelines.ingest.normalization_in_ingest_gating import (
     is_combined_ingest_and_normalization_launched_in_env,
-    should_run_normalization_in_ingest,
 )
 from recidiviz.utils.environment import GCPEnvironment
 
@@ -37,19 +36,8 @@ class TestNormalizationInIngestGating(unittest.TestCase):
             return_value=GCPEnvironment.STAGING.value,
         ):
             for state_code in get_direct_ingest_states_existing_in_env():
-                writes_enabled = should_run_normalization_in_ingest(state_code)
-                reads_enabled = is_combined_ingest_and_normalization_launched_in_env(
-                    state_code
-                )
-
-                if writes_enabled or not reads_enabled:
-                    continue
-
-                raise ValueError(
-                    f"Cannot set is_combined_ingest_and_normalization_launched_in_env() "
-                    f"in staging for state without also enabling "
-                    f"should_run_normalization_in_ingest(): {state_code.value}"
-                )
+                # Just shouldn't crash
+                _ = is_combined_ingest_and_normalization_launched_in_env(state_code)
 
     def test_prod_gating(self) -> None:
         with patch(
@@ -57,16 +45,5 @@ class TestNormalizationInIngestGating(unittest.TestCase):
             return_value=GCPEnvironment.PRODUCTION.value,
         ):
             for state_code in get_direct_ingest_states_existing_in_env():
-                writes_enabled = should_run_normalization_in_ingest(state_code)
-                reads_enabled = is_combined_ingest_and_normalization_launched_in_env(
-                    state_code
-                )
-
-                if writes_enabled or not reads_enabled:
-                    continue
-
-                raise ValueError(
-                    f"Cannot set is_combined_ingest_and_normalization_launched_in_env() "
-                    f"in staging for state without also enabling "
-                    f"should_run_normalization_in_ingest(): {state_code.value}"
-                )
+                # Just shouldn't crash
+                _ = is_combined_ingest_and_normalization_launched_in_env(state_code)
