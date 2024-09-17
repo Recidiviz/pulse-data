@@ -340,13 +340,15 @@ class TestDirectIngestControl(unittest.TestCase):
         }
         headers = APP_ENGINE_HEADERS
 
-        with self.assertRaises(DirectIngestGatingError):
-            _ = self.client.post(
-                "/handle_direct_ingest_file",
-                query_string=request_args,
-                headers=headers,
-                json=pubsub_message,
-            )
+        response = self.client.post(
+            "/handle_direct_ingest_file",
+            query_string=request_args,
+            headers=headers,
+            json=pubsub_message,
+        )
+
+        self.assertEqual(200, response.status_code)
+        mock_controller.handle_file.assert_not_called()
 
     @patch("recidiviz.utils.environment.get_gcp_environment")
     @patch("recidiviz.ingest.direct.direct_ingest_regions.get_direct_ingest_region")
@@ -471,7 +473,9 @@ class TestDirectIngestControl(unittest.TestCase):
         mock_fs = FakeGCSFileSystem()
         mock_fs_factory.return_value = mock_fs
 
-        path = GcsfsFilePath.from_absolute_path("bucket-us-xx/file-tag.csv")
+        path = GcsfsFilePath.from_directory_and_file_name(
+            self.primary_bucket, "file-tag.csv"
+        )
 
         mock_fs.test_add_path(path, local_path=None)
 
@@ -507,7 +511,9 @@ class TestDirectIngestControl(unittest.TestCase):
         mock_fs = FakeGCSFileSystem()
         mock_fs_factory.return_value = mock_fs
 
-        path = GcsfsFilePath.from_absolute_path("bucket-us-xx/file-tag.csv")
+        path = GcsfsFilePath.from_directory_and_file_name(
+            self.primary_bucket, "file-tag.csv"
+        )
         fs = DirectIngestGCSFileSystem(mock_fs)
 
         mock_fs.test_add_path(path, local_path=None)
@@ -538,6 +544,34 @@ class TestDirectIngestControl(unittest.TestCase):
         )
         # No change!
         self.assertEqual(registered_path, normalized_path)
+
+    @patch("recidiviz.utils.environment.get_gcp_environment")
+    def test_normalize_file_path_import_dag_enabled(
+        self, mock_environment: mock.MagicMock
+    ) -> None:
+        mock_environment.return_value = "production"
+        for mocked in self.raw_data_dag_enabled_mock:
+            mocked.return_value = True
+
+        path = GcsfsFilePath.from_directory_and_file_name(
+            self.primary_bucket, "file-tag.csv"
+        )
+
+        pubsub_message = {
+            "message": {
+                "attributes": {
+                    "bucketId": path.bucket_name,
+                    "objectId": path.blob_name,
+                },
+            }
+        }
+
+        headers = APP_ENGINE_HEADERS
+        response = self.client.post(
+            "/normalize_raw_file_path", headers=headers, json=pubsub_message
+        )
+
+        self.assertEqual(200, response.status_code)
 
     @patch("recidiviz.utils.environment.get_gcp_environment")
     @patch("recidiviz.ingest.direct.direct_ingest_regions.get_direct_ingest_region")
