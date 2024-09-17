@@ -43,7 +43,8 @@ US_IX_SENTENCING_CLIENT_TEMPLATE = """
         person.gender,
         UPPER(loc.LocationName) AS county,
         "US_IX" AS state_code,
-        CONCAT('[', case_ids,']') AS case_ids
+        CONCAT('[', case_ids,']') AS case_ids,
+        JSON_VALUE(lmm.location_metadata, '$.supervision_district_id') AS district
     FROM `{project_id}.{us_ix_raw_data_up_to_date_dataset}.com_PSIReport_latest` psi
     LEFT JOIN `{project_id}.{normalized_state_dataset}.state_person_external_id`  id 
         ON psi.OffenderId = id.external_id and id_type = 'US_IX_DOC'
@@ -54,9 +55,11 @@ US_IX_SENTENCING_CLIENT_TEMPLATE = """
     LEFT JOIN `{project_id}.{us_ix_raw_data_up_to_date_dataset}.ref_Address_latest` ref 
         ON address.AddressId = ref.AddressId
     LEFT JOIN `{project_id}.{us_ix_raw_data_up_to_date_dataset}.ref_Location_latest` loc 
-        ON loc.LocationId = ref.CountyId
+        ON loc.LocationId = ref.JurisdictionId 
     LEFT JOIN caseIds c 
         ON psi.OffenderId = c.OffenderId
+    LEFT JOIN `{project_id}.reference_views.location_metadata_materialized` lmm
+        ON lmm.state_code = "US_IX" AND lmm.location_external_id =  CONCAT("ATLAS-",loc.LocationId)
     -- Gets most recent county of client, doesn't exclude if no county on record
     WHERE recency_rank = 1 or recency_rank IS NULL
 
