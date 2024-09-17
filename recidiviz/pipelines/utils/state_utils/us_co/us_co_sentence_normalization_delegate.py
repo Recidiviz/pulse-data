@@ -20,7 +20,7 @@ from typing import Optional
 
 from recidiviz.persistence.entity.entity_utils import deep_entity_update
 from recidiviz.persistence.entity.state.entities import StateIncarcerationSentence
-from recidiviz.pipelines.normalization.utils.normalization_managers.sentence_normalization_manager import (
+from recidiviz.pipelines.ingest.state.normalization.normalization_managers.sentence_normalization_manager import (
     StateSpecificSentenceNormalizationDelegate,
 )
 

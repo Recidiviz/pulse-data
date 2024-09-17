@@ -28,7 +28,7 @@ from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
 from recidiviz.persistence.entity.state.normalized_entities import (
     NormalizedStateIncarcerationSentence,
 )
-from recidiviz.pipelines.normalization.utils.normalization_managers.incarceration_period_normalization_manager import (
+from recidiviz.pipelines.ingest.state.normalization.normalization_managers.incarceration_period_normalization_manager import (
     StateSpecificIncarcerationNormalizationDelegate,
 )
 

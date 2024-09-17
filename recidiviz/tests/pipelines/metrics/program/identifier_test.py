@@ -38,13 +38,13 @@ from recidiviz.persistence.entity.state.normalized_entities import (
     NormalizedStateProgramAssignment,
     NormalizedStateSupervisionPeriod,
 )
+from recidiviz.pipelines.ingest.state.normalization.normalization_managers.assessment_normalization_manager import (
+    DEFAULT_ASSESSMENT_SCORE_BUCKET,
+)
 from recidiviz.pipelines.metrics.program import identifier
 from recidiviz.pipelines.metrics.program.events import (
     ProgramEvent,
     ProgramParticipationEvent,
-)
-from recidiviz.pipelines.normalization.utils.normalization_managers.assessment_normalization_manager import (
-    DEFAULT_ASSESSMENT_SCORE_BUCKET,
 )
 from recidiviz.pipelines.utils.execution_utils import TableRow
 

@@ -49,6 +49,9 @@ from recidiviz.persistence.entity.state.normalized_entities import (
     NormalizedStateSupervisionViolationResponseDecisionEntry,
     NormalizedStateSupervisionViolationTypeEntry,
 )
+from recidiviz.pipelines.ingest.state.normalization.normalization_managers.assessment_normalization_manager import (
+    DEFAULT_ASSESSMENT_SCORE_BUCKET,
+)
 from recidiviz.pipelines.metrics.incarceration import (
     identifier as incarceration_identifier,
 )
@@ -60,9 +63,6 @@ from recidiviz.pipelines.metrics.incarceration.events import (
     IncarcerationStandardAdmissionEvent,
 )
 from recidiviz.pipelines.metrics.incarceration.identifier import IncarcerationIdentifier
-from recidiviz.pipelines.normalization.utils.normalization_managers.assessment_normalization_manager import (
-    DEFAULT_ASSESSMENT_SCORE_BUCKET,
-)
 from recidiviz.pipelines.utils.entity_normalization.normalized_incarceration_period_index import (
     NormalizedIncarcerationPeriodIndex,
 )

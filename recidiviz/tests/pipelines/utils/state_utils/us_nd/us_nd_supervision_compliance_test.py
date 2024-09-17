@@ -44,7 +44,7 @@ from recidiviz.persistence.entity.state.normalized_entities import (
     NormalizedStateSupervisionContact,
     NormalizedStateSupervisionPeriod,
 )
-from recidiviz.pipelines.normalization.utils.normalization_managers.assessment_normalization_manager import (
+from recidiviz.pipelines.ingest.state.normalization.normalization_managers.assessment_normalization_manager import (
     DEFAULT_ASSESSMENT_SCORE_BUCKET,
 )
 from recidiviz.pipelines.utils.state_utils.us_nd.us_nd_incarceration_delegate import (

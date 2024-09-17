@@ -36,29 +36,29 @@ from recidiviz.persistence.entity.state.normalized_entities import (
     NormalizedStateSupervisionSentence,
     NormalizedStateSupervisionViolationResponse,
 )
+from recidiviz.pipelines.ingest.state.normalization.normalization_managers.assessment_normalization_manager import (
+    StateSpecificAssessmentNormalizationDelegate,
+)
+from recidiviz.pipelines.ingest.state.normalization.normalization_managers.incarceration_period_normalization_manager import (
+    StateSpecificIncarcerationNormalizationDelegate,
+)
+from recidiviz.pipelines.ingest.state.normalization.normalization_managers.sentence_normalization_manager import (
+    StateSpecificSentenceNormalizationDelegate,
+)
+from recidiviz.pipelines.ingest.state.normalization.normalization_managers.staff_role_period_normalization_manager import (
+    StateSpecificStaffRolePeriodNormalizationDelegate,
+)
+from recidiviz.pipelines.ingest.state.normalization.normalization_managers.supervision_period_normalization_manager import (
+    StateSpecificSupervisionNormalizationDelegate,
+)
+from recidiviz.pipelines.ingest.state.normalization.normalization_managers.supervision_violation_responses_normalization_manager import (
+    StateSpecificViolationResponseNormalizationDelegate,
+)
 from recidiviz.pipelines.ingest.state.normalization.state_specific_normalization_delegate import (
     StateSpecificNormalizationDelegate,
 )
 from recidiviz.pipelines.metrics.utils.supervision_case_compliance_manager import (
     StateSupervisionCaseComplianceManager,
-)
-from recidiviz.pipelines.normalization.utils.normalization_managers.assessment_normalization_manager import (
-    StateSpecificAssessmentNormalizationDelegate,
-)
-from recidiviz.pipelines.normalization.utils.normalization_managers.incarceration_period_normalization_manager import (
-    StateSpecificIncarcerationNormalizationDelegate,
-)
-from recidiviz.pipelines.normalization.utils.normalization_managers.sentence_normalization_manager import (
-    StateSpecificSentenceNormalizationDelegate,
-)
-from recidiviz.pipelines.normalization.utils.normalization_managers.staff_role_period_normalization_manager import (
-    StateSpecificStaffRolePeriodNormalizationDelegate,
-)
-from recidiviz.pipelines.normalization.utils.normalization_managers.supervision_period_normalization_manager import (
-    StateSpecificSupervisionNormalizationDelegate,
-)
-from recidiviz.pipelines.normalization.utils.normalization_managers.supervision_violation_responses_normalization_manager import (
-    StateSpecificViolationResponseNormalizationDelegate,
 )
 from recidiviz.pipelines.utils.entity_normalization.normalized_incarceration_period_index import (
     NormalizedIncarcerationPeriodIndex,

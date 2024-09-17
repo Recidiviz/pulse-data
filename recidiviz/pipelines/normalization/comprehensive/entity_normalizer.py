@@ -46,30 +46,30 @@ from recidiviz.persistence.entity.state.normalized_entities import (
     NormalizedStateIncarcerationSentence,
     NormalizedStateSupervisionSentence,
 )
+from recidiviz.pipelines.ingest.state.normalization.normalization_managers.assessment_normalization_manager import (
+    AssessmentNormalizationManager,
+)
+from recidiviz.pipelines.ingest.state.normalization.normalization_managers.program_assignment_normalization_manager import (
+    ProgramAssignmentNormalizationManager,
+)
+from recidiviz.pipelines.ingest.state.normalization.normalization_managers.sentence_normalization_manager import (
+    SentenceNormalizationManager,
+)
+from recidiviz.pipelines.ingest.state.normalization.normalization_managers.staff_role_period_normalization_manager import (
+    StaffRolePeriodNormalizationManager,
+)
+from recidiviz.pipelines.ingest.state.normalization.normalization_managers.supervision_contact_normalization_manager import (
+    SupervisionContactNormalizationManager,
+)
+from recidiviz.pipelines.ingest.state.normalization.normalization_managers.supervision_violation_responses_normalization_manager import (
+    ViolationResponseNormalizationManager,
+    normalized_violation_responses_from_processed_versions,
+)
 from recidiviz.pipelines.normalization.comprehensive.state_person_to_state_staff_query_provider import (
     STATE_PERSON_TO_STATE_STAFF_QUERY_NAME,
 )
 from recidiviz.pipelines.normalization.utils.entity_normalization_manager_utils import (
     normalized_periods_for_calculations,
-)
-from recidiviz.pipelines.normalization.utils.normalization_managers.assessment_normalization_manager import (
-    AssessmentNormalizationManager,
-)
-from recidiviz.pipelines.normalization.utils.normalization_managers.program_assignment_normalization_manager import (
-    ProgramAssignmentNormalizationManager,
-)
-from recidiviz.pipelines.normalization.utils.normalization_managers.sentence_normalization_manager import (
-    SentenceNormalizationManager,
-)
-from recidiviz.pipelines.normalization.utils.normalization_managers.staff_role_period_normalization_manager import (
-    StaffRolePeriodNormalizationManager,
-)
-from recidiviz.pipelines.normalization.utils.normalization_managers.supervision_contact_normalization_manager import (
-    SupervisionContactNormalizationManager,
-)
-from recidiviz.pipelines.normalization.utils.normalization_managers.supervision_violation_responses_normalization_manager import (
-    ViolationResponseNormalizationManager,
-    normalized_violation_responses_from_processed_versions,
 )
 from recidiviz.pipelines.normalization.utils.normalized_entity_conversion_utils import (
     convert_entity_trees_to_normalized_versions,

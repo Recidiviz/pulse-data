@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Contains US_TX implementation of the StateSpecificSentenceNormalizationDelegate."""
-from recidiviz.pipelines.normalization.utils.normalization_managers.sentence_normalization_manager import (
+from recidiviz.pipelines.ingest.state.normalization.normalization_managers.sentence_normalization_manager import (
     StateSpecificSentenceNormalizationDelegate,
 )
 

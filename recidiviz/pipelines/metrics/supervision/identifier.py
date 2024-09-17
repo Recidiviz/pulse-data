@@ -50,6 +50,9 @@ from recidiviz.persistence.entity.state.normalized_entities import (
     NormalizedStateSupervisionSentence,
     NormalizedStateSupervisionViolationResponse,
 )
+from recidiviz.pipelines.ingest.state.normalization.normalization_managers.assessment_normalization_manager import (
+    DEFAULT_ASSESSMENT_SCORE_BUCKET,
+)
 from recidiviz.pipelines.metrics.base_identifier import (
     BaseIdentifier,
     IdentifierContext,
@@ -72,9 +75,6 @@ from recidiviz.pipelines.metrics.utils.violation_utils import (
     VIOLATION_HISTORY_WINDOW_MONTHS,
     filter_violation_responses_for_violation_history,
     get_violation_and_response_history,
-)
-from recidiviz.pipelines.normalization.utils.normalization_managers.assessment_normalization_manager import (
-    DEFAULT_ASSESSMENT_SCORE_BUCKET,
 )
 from recidiviz.pipelines.utils import assessment_utils
 from recidiviz.pipelines.utils.entity_normalization.normalized_incarceration_period_index import (

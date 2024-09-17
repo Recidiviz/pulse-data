@@ -24,7 +24,7 @@ from recidiviz.common.constants.state.state_program_assignment import (
     StateProgramAssignmentParticipationStatus,
 )
 from recidiviz.persistence.entity.state.entities import StateProgramAssignment
-from recidiviz.pipelines.normalization.utils.normalization_managers.program_assignment_normalization_manager import (
+from recidiviz.pipelines.ingest.state.normalization.normalization_managers.program_assignment_normalization_manager import (
     ProgramAssignmentNormalizationManager,
 )
 from recidiviz.pipelines.utils.execution_utils import (

@@ -44,12 +44,12 @@ from recidiviz.persistence.entity.state.entities import (
     StateIncarcerationPeriod,
     StateSupervisionPeriod,
 )
+from recidiviz.pipelines.ingest.state.normalization.normalization_managers.entity_normalization_manager import (
+    EntityNormalizationManager,
+)
 from recidiviz.pipelines.normalization.utils import entity_normalization_manager_utils
 from recidiviz.pipelines.normalization.utils.entity_normalization_manager_utils import (
     normalized_periods_for_calculations,
-)
-from recidiviz.pipelines.normalization.utils.normalization_managers.entity_normalization_manager import (
-    EntityNormalizationManager,
 )
 from recidiviz.pipelines.utils.execution_utils import (
     build_staff_external_id_to_staff_id_map,

@@ -41,13 +41,13 @@ from recidiviz.persistence.entity.state.normalized_entities import (
     NormalizedStateChargeV2,
     NormalizedStateSentenceStatusSnapshot,
 )
+from recidiviz.pipelines.ingest.state.normalization.normalization_managers.sentence_normalization_manager import (
+    StateSpecificSentenceNormalizationDelegate,
+)
 from recidiviz.pipelines.ingest.state.normalization.normalize_sentences import (
     get_normalized_sentence_groups,
     get_normalized_sentences,
     normalize_charge_v2,
-)
-from recidiviz.pipelines.normalization.utils.normalization_managers.sentence_normalization_manager import (
-    StateSpecificSentenceNormalizationDelegate,
 )
 from recidiviz.utils.types import assert_type
 

@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Contains US_AR implementation of the StateSpecificAssessmentNormalizationDelegate."""
-from recidiviz.pipelines.normalization.utils.normalization_managers.assessment_normalization_manager import (
+from recidiviz.pipelines.ingest.state.normalization.normalization_managers.assessment_normalization_manager import (
     StateSpecificAssessmentNormalizationDelegate,
 )
 

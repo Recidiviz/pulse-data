@@ -20,7 +20,7 @@ from typing import Optional
 
 from recidiviz.common.constants.state.state_person import StateGender
 from recidiviz.persistence.entity.state.entities import StateAssessment, StatePerson
-from recidiviz.pipelines.normalization.utils.normalization_managers.assessment_normalization_manager import (
+from recidiviz.pipelines.ingest.state.normalization.normalization_managers.assessment_normalization_manager import (
     StateSpecificAssessmentNormalizationDelegate,
 )
 

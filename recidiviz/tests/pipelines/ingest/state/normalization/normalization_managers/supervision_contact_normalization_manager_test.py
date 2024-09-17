@@ -29,7 +29,7 @@ from recidiviz.persistence.entity.normalized_entities_utils import (
     AdditionalAttributesMap,
 )
 from recidiviz.persistence.entity.state.entities import StateSupervisionContact
-from recidiviz.pipelines.normalization.utils.normalization_managers.supervision_contact_normalization_manager import (
+from recidiviz.pipelines.ingest.state.normalization.normalization_managers.supervision_contact_normalization_manager import (
     SupervisionContactNormalizationManager,
 )
 from recidiviz.pipelines.utils.execution_utils import (

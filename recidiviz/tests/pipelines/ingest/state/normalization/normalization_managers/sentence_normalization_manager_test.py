@@ -23,7 +23,7 @@ from recidiviz.persistence.entity.state.entities import (
     StateCharge,
     StateIncarcerationSentence,
 )
-from recidiviz.pipelines.normalization.utils.normalization_managers.sentence_normalization_manager import (
+from recidiviz.pipelines.ingest.state.normalization.normalization_managers.sentence_normalization_manager import (
     SentenceNormalizationManager,
 )
 from recidiviz.pipelines.utils.state_utils.templates.us_xx.us_xx_sentence_normalization_delegate import (

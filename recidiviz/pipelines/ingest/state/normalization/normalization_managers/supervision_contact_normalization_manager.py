@@ -30,7 +30,7 @@ from recidiviz.persistence.entity.state.entities import StateSupervisionContact
 from recidiviz.persistence.entity.state.normalized_entities import (
     NormalizedStateSupervisionContact,
 )
-from recidiviz.pipelines.normalization.utils.normalization_managers.entity_normalization_manager import (
+from recidiviz.pipelines.ingest.state.normalization.normalization_managers.entity_normalization_manager import (
     EntityNormalizationManager,
 )
 from recidiviz.pipelines.normalization.utils.normalized_entity_conversion_utils import (
