@@ -7,6 +7,7 @@ COPY ./nodejs/asset-generation/src/fonts/* /usr/share/fonts/
 RUN fc-cache -fv
 
 WORKDIR /app
+RUN chown node:node /app
 
 # set up dependencies
 COPY --chown=node:node ./nodejs/asset-generation/package.json .
