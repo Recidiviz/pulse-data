@@ -19,14 +19,14 @@ import { observer } from "mobx-react-lite";
 import * as React from "react";
 
 import { useLegacyFlashChecklistStore } from "./FlashChecklistStore";
+import {
+  CannotFlashDecisionNonEmptyBucketComponent,
+  FlashReadyDecisionComponent,
+} from "./FlashComponents";
 import LegacyStateCancelReimportChecklist, {
   LegacyCancelReimportChecklistStepSection,
 } from "./LegacyCancelReimportChecklist";
-import {
-  CannotFlashDecisionNonEmptyBucketComponent,
-  CannotFlashDecisionWrongStatusComponent,
-  FlashReadyDecisionComponent,
-} from "./LegacyFlashComponents";
+import { LegacyCannotFlashDecisionWrongStatusComponent } from "./LegacyFlashComponents";
 import LegacyStateProceedWithFlashChecklist, {
   LegacyFlashChecklistStepSection,
 } from "./LegacyProceedWithFlashChecklist";
@@ -95,7 +95,7 @@ const LegacyFlashDatabaseChecklistActiveComponent = (): JSX.Element => {
     /* If we have loaded a status but it does not indicate that we can proceed with flashing, show an alert on top of the checklist */
     /* Regardless of status, we can cancel a secondary rerun any time */
     return (
-      <CannotFlashDecisionWrongStatusComponent
+      <LegacyCannotFlashDecisionWrongStatusComponent
         currentIngestStatus={flashStore.legacyCurrentRawDataInstanceStatus}
         onSelectProceed={async () => {
           flashStore.setProceedWithFlash(false);

@@ -27,9 +27,9 @@ import {
   IngestRawFileProcessingStatus,
   IngestStatus,
 } from "../constants";
-import { CurrentRawFileProcessingStatus } from "./CurrentRawFileProcessingStatus";
 import { getValueIfResolved } from "./FlashUtils";
 import { LegacyCurrentRawDataInstanceStatus } from "./LegacyCurrentRawDataInstanceStatus";
+import { LegacyCurrentRawFileProcessingStatus } from "./LegacyFlashCurrentRawFileProcessingStatus";
 
 // TODO(#28239) remove once raw data DAG is enabled for all states
 export class LegacyFlashChecklistStore {
@@ -46,7 +46,7 @@ export class LegacyFlashChecklistStore {
 
   legacyCurrentRawDataInstanceStatus: LegacyCurrentRawDataInstanceStatus;
 
-  currentRawFileProcessingStatus: CurrentRawFileProcessingStatus;
+  currentRawFileProcessingStatus: LegacyCurrentRawFileProcessingStatus;
 
   proceedWithFlash?: boolean;
 
@@ -61,10 +61,11 @@ export class LegacyFlashChecklistStore {
         secondary: undefined,
       });
 
-    this.currentRawFileProcessingStatus = new CurrentRawFileProcessingStatus({
-      primary: undefined,
-      secondary: undefined,
-    });
+    this.currentRawFileProcessingStatus =
+      new LegacyCurrentRawFileProcessingStatus({
+        primary: undefined,
+        secondary: undefined,
+      });
 
     this.currentStep = 0;
     this.currentStepSection = 0;
@@ -94,10 +95,11 @@ export class LegacyFlashChecklistStore {
       | IngestRawFileProcessingStatus[]
       | undefined
   ) {
-    this.currentRawFileProcessingStatus = new CurrentRawFileProcessingStatus({
-      primary: currentPrimaryIngestInstanceStatus,
-      secondary: currentSecondaryIngestInstanceStatus,
-    });
+    this.currentRawFileProcessingStatus =
+      new LegacyCurrentRawFileProcessingStatus({
+        primary: currentPrimaryIngestInstanceStatus,
+        secondary: currentSecondaryIngestInstanceStatus,
+      });
   }
 
   setCurrentIngestInstanceStatus(
