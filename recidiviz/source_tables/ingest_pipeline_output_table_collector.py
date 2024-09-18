@@ -49,13 +49,11 @@ from recidiviz.persistence.entity.entities_bq_schema import (
 from recidiviz.persistence.entity.state import entities, normalized_entities
 from recidiviz.pipelines.ingest.dataset_config import (
     ingest_view_materialization_results_dataset,
+    normalized_state_dataset_for_state_code,
     state_dataset_for_state_code,
 )
 from recidiviz.pipelines.ingest.state.constants import (
     INGEST_VIEW_RESULTS_SCHEMA_COLUMNS,
-)
-from recidiviz.pipelines.normalization.dataset_config import (
-    normalized_state_dataset_for_state_code_ingest_pipeline_output,
 )
 from recidiviz.pipelines.pipeline_names import INGEST_PIPELINE_NAME
 from recidiviz.source_tables.source_table_config import (
@@ -96,9 +94,7 @@ def build_normalized_state_output_source_table_collection(
     pipeline output dataset for a given state.
     """
     collection = SourceTableCollection(
-        dataset_id=normalized_state_dataset_for_state_code_ingest_pipeline_output(
-            state_code
-        ),
+        dataset_id=normalized_state_dataset_for_state_code(state_code),
         labels=[
             DataflowPipelineSourceTableLabel(INGEST_PIPELINE_NAME),
             StateSpecificSourceTableLabel(state_code=state_code),

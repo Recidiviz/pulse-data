@@ -30,7 +30,7 @@ from recidiviz.persistence.entity.state import normalized_entities
 from recidiviz.persistence.entity.state.normalized_state_entity import (
     NormalizedStateEntity,
 )
-from recidiviz.pipelines.normalization.utils.normalized_entity_conversion_utils import (
+from recidiviz.pipelines.ingest.state.normalization.normalized_entity_conversion_utils import (
     convert_entity_trees_to_normalized_versions,
 )
 from recidiviz.utils.types import assert_subclass, assert_type

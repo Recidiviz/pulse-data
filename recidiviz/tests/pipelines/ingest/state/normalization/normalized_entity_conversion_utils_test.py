@@ -19,8 +19,6 @@
 import unittest
 from typing import Set
 
-import mock
-
 from recidiviz.common.constants.state.state_charge import StateChargeStatus
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.state.state_supervision_violation import (
@@ -47,7 +45,7 @@ from recidiviz.persistence.entity.state.normalized_entities import (
     NormalizedStateSupervisionViolation,
     NormalizedStateSupervisionViolationResponse,
 )
-from recidiviz.pipelines.normalization.utils.normalized_entity_conversion_utils import (
+from recidiviz.pipelines.ingest.state.normalization.normalized_entity_conversion_utils import (
     convert_entity_trees_to_normalized_versions,
     fields_unique_to_normalized_class,
 )
@@ -186,15 +184,6 @@ class TestConvertEntityTreesToNormalizedVersions(unittest.TestCase):
             svr.supervision_violation = None
         self.assertEqual(expected_normalized_svrs, normalized_trees)
 
-    @mock.patch(
-        "recidiviz.persistence.entity."
-        "normalized_entities_utils.LEGACY_NORMALIZATION_ENTITY_CLASSES",
-        [
-            NormalizedStateSupervisionSentence,
-            NormalizedStateCharge,
-            NormalizedStateEarlyDischarge,
-        ],
-    )
     def test_convert_entity_trees_to_normalized_versions_many_to_many_entities(
         self,
     ) -> None:

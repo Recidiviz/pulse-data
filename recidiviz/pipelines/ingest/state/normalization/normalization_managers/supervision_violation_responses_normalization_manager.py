@@ -50,7 +50,7 @@ from recidiviz.persistence.entity.state.violation_utils import collect_unique_vi
 from recidiviz.pipelines.ingest.state.normalization.normalization_managers.entity_normalization_manager import (
     EntityNormalizationManager,
 )
-from recidiviz.pipelines.normalization.utils.normalized_entity_conversion_utils import (
+from recidiviz.pipelines.ingest.state.normalization.normalized_entity_conversion_utils import (
     convert_entity_trees_to_normalized_versions,
 )
 from recidiviz.pipelines.utils.state_utils.state_specific_delegate import (

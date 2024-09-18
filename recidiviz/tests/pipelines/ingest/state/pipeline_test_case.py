@@ -29,12 +29,10 @@ from recidiviz.ingest.direct.types.direct_ingest_constants import (
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.pipelines.ingest.dataset_config import (
     ingest_view_materialization_results_dataset,
+    normalized_state_dataset_for_state_code,
     state_dataset_for_state_code,
 )
 from recidiviz.pipelines.ingest.state.pipeline import StateIngestPipeline
-from recidiviz.pipelines.normalization.dataset_config import (
-    normalized_state_dataset_for_state_code_ingest_pipeline_output,
-)
 from recidiviz.source_tables.collect_all_source_table_configs import (
     build_raw_data_source_table_collections_for_state_and_instance,
 )
@@ -163,7 +161,7 @@ class StateIngestPipelineTestCase(BigQueryEmulatorTestCase, IngestRegionTestMixi
 
     @classmethod
     def expected_normalized_state_dataset(cls) -> str:
-        return normalized_state_dataset_for_state_code_ingest_pipeline_output(
+        return normalized_state_dataset_for_state_code(
             cls.state_code(), DEFAULT_TEST_PIPELINE_OUTPUT_SANDBOX_PREFIX
         )
 
