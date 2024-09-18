@@ -29,8 +29,10 @@ import {
 } from "../../../AdminPanelAPI/IngestOperations";
 import { DirectIngestInstance, QueueState } from "../constants";
 import { useLegacyFlashChecklistStore } from "./FlashChecklistStore";
-import { ChecklistSection, CodeBlock } from "./FlashComponents";
-import LegacyStyledStepContent from "./LegacyFlashComponents";
+import { CodeBlock } from "./FlashComponents";
+import LegacyStyledStepContent, {
+  LegacyChecklistSection,
+} from "./LegacyFlashComponents";
 
 export const LegacyCancelReimportChecklistStepSection = {
   /* Ordered list of sections in the rerun cancellation checklist.
@@ -341,14 +343,14 @@ const LegacyStateCancelReimportChecklist = (): JSX.Element => {
           SECONDARY INSTANCE: {legacyCurrentRawDataInstanceStatus.secondary}
         </li>
       </ul>
-      <ChecklistSection
+      <LegacyChecklistSection
         currentStep={currentStep}
         currentStepSection={currentStepSection}
         stepSection={LegacyCancelReimportChecklistStepSection.PAUSE_OPERATIONS}
         headerContents="Pause Operations"
         items={pauseOperationsSteps}
       />
-      <ChecklistSection
+      <LegacyChecklistSection
         currentStep={currentStep}
         currentStepSection={currentStepSection}
         stepSection={
@@ -357,7 +359,7 @@ const LegacyStateCancelReimportChecklist = (): JSX.Element => {
         headerContents={<p>Start Reimport Cancellation</p>}
         items={startReimportCancelationSteps}
       />
-      <ChecklistSection
+      <LegacyChecklistSection
         currentStep={currentStep}
         currentStepSection={currentStepSection}
         stepSection={
@@ -370,7 +372,7 @@ const LegacyStateCancelReimportChecklist = (): JSX.Element => {
         }
         items={cleanUpMetadataSteps}
       />
-      <ChecklistSection
+      <LegacyChecklistSection
         currentStep={currentStep}
         currentStepSection={currentStepSection}
         stepSection={
@@ -379,14 +381,14 @@ const LegacyStateCancelReimportChecklist = (): JSX.Element => {
         headerContents={<p>Finalize Reimport Cancellation</p>}
         items={finalizeCancelationSteps}
       />
-      <ChecklistSection
+      <LegacyChecklistSection
         currentStep={currentStep}
         currentStepSection={currentStepSection}
         stepSection={LegacyCancelReimportChecklistStepSection.RESUME_OPERATIONS}
         headerContents={<p>Resume Operations</p>}
         items={resumeOperationsSteps}
       />
-      <ChecklistSection
+      <LegacyChecklistSection
         currentStep={currentStep}
         currentStepSection={currentStepSection}
         stepSection={LegacyCancelReimportChecklistStepSection.DONE}
@@ -396,7 +398,7 @@ const LegacyStateCancelReimportChecklist = (): JSX.Element => {
         items={[]}
       >
         <p>DONE</p>
-      </ChecklistSection>
+      </LegacyChecklistSection>
     </div>
   );
 };

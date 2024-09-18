@@ -34,3 +34,7 @@ export const runAndCheckStatus = async (
   }
   return true;
 };
+
+export const cancelReimportLockDescription =
+  "Acquiring locks for canceling a secondary reimport from the admin panel";
+export const flashingLockSecondsTtl = 60 * 60 * 24; // 24 hours

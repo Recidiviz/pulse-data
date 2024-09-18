@@ -37,6 +37,9 @@ from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.constants.operations.direct_ingest_instance_status import (
     DirectIngestStatus,
 )
+from recidiviz.common.constants.operations.direct_ingest_raw_data_resource_lock import (
+    DirectIngestRawDataLockActor,
+)
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.gating import is_raw_data_import_dag_enabled
 from recidiviz.ingest.direct.metadata.direct_ingest_dataflow_job_manager import (
@@ -47,6 +50,9 @@ from recidiviz.ingest.direct.metadata.direct_ingest_instance_status_manager impo
 )
 from recidiviz.ingest.direct.metadata.direct_ingest_raw_data_flash_status_manager import (
     DirectIngestRawDataFlashStatusManager,
+)
+from recidiviz.ingest.direct.metadata.direct_ingest_raw_data_resource_lock_manager import (
+    DirectIngestRawDataResourceLockManager,
 )
 from recidiviz.ingest.direct.metadata.direct_ingest_raw_file_import_manager import (
     DirectIngestRawFileImportManager,
@@ -63,6 +69,10 @@ from recidiviz.ingest.flash_database_tools import (
     copy_raw_data_to_backup,
     delete_contents_of_raw_data_tables,
     delete_tables_in_pruning_datasets,
+)
+from recidiviz.persistence.errors import (
+    DirectIngestRawDataResourceLockAlreadyReleasedError,
+    DirectIngestRawDataResourceLockHeldError,
 )
 from recidiviz.pipelines.ingest.dataset_config import (
     ingest_view_materialization_results_dataset,
@@ -488,7 +498,6 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
             return "Invalid input data", HTTPStatus.BAD_REQUEST
 
         try:
-            # TODO(#29133) update to use DirectIngestRawFileMetadataManagerV2
             raw_file_metadata_manager = LegacyDirectIngestRawFileMetadataManager(
                 region_code=state_code.value,
                 raw_data_instance=ingest_instance,
@@ -838,3 +847,124 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
             jsonify(stale_secondary),
             HTTPStatus.OK,
         )
+
+    @bp.route(
+        "/api/ingest_operations/resource_locks/list_all/<state_code_str>/<instance_str>"
+    )
+    def _list_all_resource_locks(
+        state_code_str: str,
+        instance_str: str,
+    ) -> Tuple[Response, HTTPStatus]:
+        state_code = StateCode(state_code_str)
+        raw_data_instance = DirectIngestInstance(instance_str)
+
+        locks = DirectIngestRawDataResourceLockManager(
+            state_code.value, raw_data_instance
+        ).get_most_recent_locks_for_all_resources()
+
+        return (
+            jsonify(
+                [
+                    {
+                        "lockId": lock.lock_id,
+                        "description": lock.lock_description,
+                        "resource": lock.lock_resource.value,
+                        "released": lock.released,
+                        "actor": lock.lock_actor.value,
+                    }
+                    for lock in locks
+                ]
+            ),
+            HTTPStatus.OK,
+        )
+
+    @bp.route("/api/ingest_operations/resource_locks/acquire_all", methods=["POST"])
+    def _acquire_all_locks_for_state_and_instance() -> (
+        Tuple[Union[str, Response], HTTPStatus]
+    ):
+        try:
+            request_json = assert_type(request.json, dict)
+            state_code = StateCode(request_json["stateCode"])
+            raw_data_instance = DirectIngestInstance(request_json["rawDataInstance"])
+            description = assert_type(request_json["description"], str)
+            ttl_seconds = assert_type(request_json["ttlSeconds"], int)
+        except ValueError:
+            return "Invalid input data", HTTPStatus.BAD_REQUEST
+
+        try:
+            _locks = DirectIngestRawDataResourceLockManager(
+                state_code.value, raw_data_instance
+            ).acquire_all_locks(
+                actor=DirectIngestRawDataLockActor.ADHOC,
+                description=description,
+                ttl_seconds=ttl_seconds,
+            )
+        except DirectIngestRawDataResourceLockHeldError as e:
+            logging.exception(e)
+            return f"{e}", HTTPStatus.CONFLICT
+        except Exception as e:
+            logging.exception(e)
+            return f"{e}", HTTPStatus.INTERNAL_SERVER_ERROR
+
+        return (
+            "",
+            HTTPStatus.OK,
+        )
+
+    @bp.route("/api/ingest_operations/resource_locks/release_all", methods=["POST"])
+    def _release_locks_by_id() -> Tuple[str, HTTPStatus]:
+        try:
+            request_json = assert_type(request.json, dict)
+            state_code = StateCode(request_json["stateCode"])
+            raw_data_instance = DirectIngestInstance(request_json["rawDataInstance"])
+            lock_ids = assert_type(request_json["lockIds"], list)
+        except ValueError:
+            return "Invalid input data", HTTPStatus.BAD_REQUEST
+
+        try:
+            manager = DirectIngestRawDataResourceLockManager(
+                state_code.value, raw_data_instance
+            )
+            for lock_id in lock_ids:
+                manager.release_lock_by_id(lock_id)
+        except DirectIngestRawDataResourceLockAlreadyReleasedError as e:
+            logging.exception(e)
+            return f"{e}", HTTPStatus.CONFLICT
+        except Exception as e:
+            logging.exception(e)
+            return f"{e}", HTTPStatus.INTERNAL_SERVER_ERROR
+
+        return (
+            "",
+            HTTPStatus.OK,
+        )
+
+    @bp.route(
+        "/api/ingest_operations/flash_primary_db/mark_instance_raw_data_v2_invalidated",
+        methods=["POST"],
+    )
+    def _mark_instance_raw_data_v2_invalidated() -> Tuple[str, HTTPStatus]:
+        try:
+            request_json = assert_type(request.json, dict)
+            state_code = StateCode(request_json["stateCode"])
+            raw_data_instance = DirectIngestInstance(
+                request_json["rawDataInstance"].upper()
+            )
+        except ValueError:
+            return "Invalid input data", HTTPStatus.BAD_REQUEST
+
+        try:
+            raw_file_metadata_manager = DirectIngestRawFileMetadataManagerV2(
+                region_code=state_code.value,
+                raw_data_instance=raw_data_instance,
+            )
+            raw_file_metadata_manager.mark_instance_data_invalidated()
+
+            return (
+                "",
+                HTTPStatus.OK,
+            )
+
+        except ValueError as error:
+            logging.exception(error)
+            return f"{error}", HTTPStatus.INTERNAL_SERVER_ERROR

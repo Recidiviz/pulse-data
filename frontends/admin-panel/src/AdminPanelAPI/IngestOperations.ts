@@ -351,10 +351,10 @@ export const triggerCalculationDAGForState = async (
 // Determine if raw data import DAG is enabled
 export const isRawDataImportDagEnabled = async (
   stateCode: string,
-  instance: string
+  rawDataInstance: string
 ): Promise<Response> => {
   return getResource(
-    `/api/ingest_operations/is_raw_data_import_dag_enabled/${stateCode}/${instance}`
+    `/api/ingest_operations/is_raw_data_import_dag_enabled/${stateCode}/${rawDataInstance}`
   );
 };
 
@@ -406,4 +406,62 @@ export const getStaleSecondaryRawData = async (
   stateCode: string
 ): Promise<Response> => {
   return getResource(`/api/ingest_operations/stale_secondary/${stateCode}`);
+};
+
+// Acquire all resource locks for state + instance pair
+export const acquireResourceLocksForStateAndInstance = async (
+  stateCode: string,
+  rawDataInstance: DirectIngestInstance,
+  description: string,
+  ttlSeconds: number
+): Promise<Response> => {
+  return postWithURLAndBody(
+    `/api/ingest_operations/resource_locks/acquire_all`,
+    {
+      stateCode,
+      rawDataInstance,
+      description,
+      ttlSeconds,
+    }
+  );
+};
+
+// Release provided resource locks by id
+export const releaseResourceLocksForStateById = async (
+  stateCode: string,
+  rawDataInstance: DirectIngestInstance,
+  lockIds: number[]
+): Promise<Response> => {
+  return postWithURLAndBody(
+    `/api/ingest_operations/resource_locks/release_all`,
+    {
+      stateCode,
+      rawDataInstance,
+      lockIds,
+    }
+  );
+};
+
+// Get latest raw data lock statuses
+export const getRawDataInstanceLockStatuses = async (
+  stateCode: string,
+  rawDataInstance: string
+): Promise<Response> => {
+  return getResource(
+    `/api/ingest_operations/resource_locks/list_all/${stateCode}/${rawDataInstance}`
+  );
+};
+
+// Mark instance raw data as invalidated
+export const markInstanceRawDataV2Invalidated = async (
+  stateCode: string,
+  rawDataInstance: DirectIngestInstance
+): Promise<Response> => {
+  return postWithURLAndBody(
+    "/api/ingest_operations/flash_primary_db/mark_instance_raw_data_v2_invalidated",
+    {
+      stateCode,
+      rawDataInstance,
+    }
+  );
 };

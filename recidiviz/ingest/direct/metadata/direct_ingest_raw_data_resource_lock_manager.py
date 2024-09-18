@@ -166,6 +166,15 @@ class DirectIngestRawDataResourceLockManager:
             resource: lock_resource_to_holder.get(resource) for resource in resources
         }
 
+    def get_most_recent_locks_for_all_resources(
+        self,
+    ) -> List[entities.DirectIngestRawDataResourceLock]:
+        """Returns the most recent locks (as dictated by lock lock_acquisition_time), if
+        they exist, for all resources."""
+        return self.get_most_recent_locks_for_resources(
+            list(DirectIngestRawDataResourceLockResource)
+        )
+
     def get_most_recent_locks_for_resources(
         self, resources: List[DirectIngestRawDataResourceLockResource]
     ) -> List[entities.DirectIngestRawDataResourceLock]:
@@ -252,6 +261,22 @@ class DirectIngestRawDataResourceLockManager:
                 entities.DirectIngestRawDataResourceLock,
                 populate_direct_back_edges=False,
             )
+
+    def acquire_all_locks(
+        self,
+        actor: DirectIngestRawDataLockActor,
+        description: str,
+        ttl_seconds: Optional[int] = None,
+    ) -> List[entities.DirectIngestRawDataResourceLock]:
+        """Attempts to acquire all resource locks. If successful, returns the newly
+        created locks; otherwise raises DirectIngestRawDataResourceLockHeldError.
+        """
+        return self.acquire_lock_for_resources(
+            list(DirectIngestRawDataResourceLockResource),
+            actor=actor,
+            description=description,
+            ttl_seconds=ttl_seconds,
+        )
 
     def acquire_lock_for_resources(
         self,

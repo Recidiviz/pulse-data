@@ -141,6 +141,7 @@ const FlashDatabaseChecklist = (): JSX.Element => {
           />
         }
       />
+      <br />
       <Modal
         title="Confirm Role"
         open={modalOpen}
