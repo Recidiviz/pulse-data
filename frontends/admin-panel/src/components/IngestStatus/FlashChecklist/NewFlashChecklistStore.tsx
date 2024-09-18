@@ -31,6 +31,7 @@ import {
 } from "../constants";
 import { getValueIfResolved } from "./FlashUtils";
 import { NewCurrentRawFileProcessingStatus } from "./NewCurrentRawFileProcessingStatus";
+import { StaleSecondaryStatus } from "./StaleSecondaryStatus";
 
 export enum NewFlashingChecklistType {
   FLASH_SECONDARY_TO_PRIMARY = "Flash SECONDARY to PRIMARY",
@@ -65,7 +66,7 @@ export class NewFlashChecklistStore implements Hydratable {
   currentRawFileProcessingStatus: NewCurrentRawFileProcessingStatus;
 
   // metadata about whether or not secondary is stale
-  currentStaleSecondaryStatus: string[];
+  currentStaleSecondaryStatus: StaleSecondaryStatus;
 
   // --- misc properties ---------------------------------------------------------------
 
@@ -88,7 +89,7 @@ export class NewFlashChecklistStore implements Hydratable {
     this.isFlashInProgress = false;
     this.currentStep = 0;
     this.currentStepSection = 0;
-    this.currentStaleSecondaryStatus = [];
+    this.currentStaleSecondaryStatus = new StaleSecondaryStatus([]);
 
     this.projectId = gcpEnvironment.isProduction
       ? "recidiviz-123"
@@ -149,7 +150,9 @@ export class NewFlashChecklistStore implements Hydratable {
   }
 
   setCurrentStaleSecondaryStatus(currentStaleSecondaryStatus: string[]) {
-    this.currentStaleSecondaryStatus = currentStaleSecondaryStatus;
+    this.currentStaleSecondaryStatus = new StaleSecondaryStatus(
+      currentStaleSecondaryStatus
+    );
   }
 
   async fetchIsFlashInProgress() {
@@ -202,10 +205,10 @@ export class NewFlashChecklistStore implements Hydratable {
       return false;
 
     return (
-      !this.isFlashInProgress &&
+      this.currentRawFileProcessingStatus.areIngestBucketsEmpty() &&
       this.currentRawFileProcessingStatus.hasProcessedFilesInSecondary() &&
       !this.currentRawFileProcessingStatus.hasUnprocessedFilesInSecondary() &&
-      this.currentStaleSecondaryStatus.length === 0
+      !this.currentStaleSecondaryStatus.isStale()
     );
   }
 
