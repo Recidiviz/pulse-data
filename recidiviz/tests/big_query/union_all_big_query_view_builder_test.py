@@ -60,7 +60,7 @@ class TestUnionAllBigQueryViewBuilder(unittest.TestCase):
             dataset_id="my_union_dataset",
             view_id="my_union_all_view",
             description="All data together",
-            parent_view_builders=self.view_builders[0:1],
+            parents=self.view_builders[0:1],
         )
 
         with local_project_id_override("recidiviz-456"):
@@ -76,7 +76,7 @@ class TestUnionAllBigQueryViewBuilder(unittest.TestCase):
             dataset_id="my_union_dataset",
             view_id="my_union_all_view",
             description="All data together",
-            parent_view_builders=self.view_builders[0:2],
+            parents=self.view_builders[0:2],
         )
 
         with local_project_id_override("recidiviz-456"):
@@ -90,12 +90,97 @@ SELECT * FROM `recidiviz-456.parent_dataset_2.parent_table_2_materialized`"""
             view.view_query,
         )
 
+    def test_source_table_parents(self) -> None:
+        builder = UnionAllBigQueryViewBuilder(
+            dataset_id="my_union_dataset",
+            view_id="my_union_all_view",
+            description="All data together",
+            parents=[
+                BigQueryAddress.from_str("source_table_dataset1.table_1"),
+                BigQueryAddress.from_str("source_table_dataset2.table_2"),
+            ],
+        )
+
+        with local_project_id_override("recidiviz-456"):
+            view = builder.build()
+
+        expected_view_query = """SELECT * FROM `recidiviz-456.source_table_dataset1.table_1`
+UNION ALL
+SELECT * FROM `recidiviz-456.source_table_dataset2.table_2`"""
+        self.assertEqual(
+            expected_view_query,
+            view.view_query,
+        )
+
+    def test_custom_select_statement(self) -> None:
+        builder = UnionAllBigQueryViewBuilder(
+            dataset_id="my_union_dataset",
+            view_id="my_union_all_view",
+            description="All data together",
+            parents=[
+                BigQueryAddress.from_str("source_table_dataset1.table_1"),
+                BigQueryAddress.from_str("source_table_dataset2.table_2"),
+            ],
+            custom_select_statement="SELECT a, b",
+        )
+
+        with local_project_id_override("recidiviz-456"):
+            view = builder.build()
+
+        expected_view_query = """SELECT a, b FROM `recidiviz-456.source_table_dataset1.table_1`
+UNION ALL
+SELECT a, b FROM `recidiviz-456.source_table_dataset2.table_2`"""
+        self.assertEqual(
+            expected_view_query,
+            view.view_query,
+        )
+
+    def test_materialized_address_override(self) -> None:
+        builder = UnionAllBigQueryViewBuilder(
+            dataset_id="my_union_dataset",
+            view_id="my_union_all_view",
+            description="All data together",
+            parents=[
+                BigQueryAddress.from_str("source_table_dataset1.table_1"),
+                BigQueryAddress.from_str("source_table_dataset2.table_2"),
+            ],
+            materialized_address_override=BigQueryAddress.from_str(
+                "another_dataset.another_table"
+            ),
+        )
+        self.assertEqual(
+            builder.table_for_query,
+            BigQueryAddress.from_str("another_dataset.another_table"),
+        )
+
+        with local_project_id_override("recidiviz-456"):
+            view = builder.build()
+
+        self.assertEqual(
+            view.table_for_query,
+            BigQueryAddress.from_str("another_dataset.another_table"),
+        )
+
+        builder_no_override = UnionAllBigQueryViewBuilder(
+            dataset_id="my_union_dataset",
+            view_id="my_union_all_view",
+            description="All data together",
+            parents=[
+                BigQueryAddress.from_str("source_table_dataset1.table_1"),
+                BigQueryAddress.from_str("source_table_dataset2.table_2"),
+            ],
+        )
+        self.assertEqual(
+            builder_no_override.table_for_query,
+            BigQueryAddress.from_str("my_union_dataset.my_union_all_view_materialized"),
+        )
+
     def test_multiple_views_one_should_not_deploy(self) -> None:
         builder = UnionAllBigQueryViewBuilder(
             dataset_id="my_union_dataset",
             view_id="my_union_all_view",
             description="All data together",
-            parent_view_builders=self.view_builders[0:3],
+            parents=self.view_builders[0:3],
         )
 
         with local_project_id_override("recidiviz-456"):
@@ -131,7 +216,7 @@ SELECT * FROM `recidiviz-789.parent_dataset_3.parent_table_3_materialized`"""
             dataset_id="my_union_dataset",
             view_id="my_union_all_view",
             description="All data together",
-            parent_view_builders=self.view_builders[0:2],
+            parents=self.view_builders[0:2],
         )
 
         address_overrides = (
@@ -161,7 +246,7 @@ SELECT * FROM `recidiviz-456.parent_dataset_2.parent_table_2_materialized`"""
             dataset_id="my_union_dataset",
             view_id="my_union_all_view",
             description="All data together",
-            parent_view_builders=self.view_builders[0:2],
+            parents=self.view_builders[0:2],
         )
 
         address_overrides = (
@@ -194,7 +279,7 @@ SELECT * FROM `recidiviz-456.parent_dataset_2.parent_table_2_materialized`"""
             dataset_id="my_union_dataset",
             view_id="my_union_all_view",
             description="All data together",
-            parent_view_builders=self.view_builders[0:2],
+            parents=self.view_builders[0:2],
         )
 
         builder.set_parent_address_filter(
@@ -220,7 +305,7 @@ SELECT * FROM `recidiviz-456.parent_dataset_2.parent_table_2_materialized`"""
             dataset_id="my_union_dataset",
             view_id="my_union_all_view",
             description="All data together",
-            parent_view_builders=self.view_builders[0:2],
+            parents=self.view_builders[0:2],
         )
 
         builder.set_parent_address_filter(
@@ -252,7 +337,7 @@ SELECT * FROM `recidiviz-456.parent_dataset_2.parent_table_2_materialized`"""
             dataset_id="my_union_dataset",
             view_id="my_union_all_view",
             description="All data together",
-            parent_view_builders=self.view_builders[0:2],
+            parents=self.view_builders[0:2],
         )
 
         builder.set_parent_address_filter(

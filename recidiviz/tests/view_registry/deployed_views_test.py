@@ -19,7 +19,7 @@ import datetime
 import re
 import unittest
 from collections import defaultdict
-from typing import Dict, List, Set, Tuple
+from typing import Dict, List, Set
 from unittest.mock import MagicMock, patch
 
 import sqlglot
@@ -300,7 +300,7 @@ class ViewDagInvariantTests(unittest.TestCase):
     """Tests that certain views have the correct descendants."""
 
     dag_walker: BigQueryViewDagWalker
-    all_deployed_view_builders: List[BigQueryViewBuilder]
+    all_deployed_view_builders_by_address: Dict[BigQueryAddress, BigQueryViewBuilder]
 
     @classmethod
     def setUpClass(cls) -> None:
@@ -314,15 +314,18 @@ class ViewDagInvariantTests(unittest.TestCase):
             cls.dag_walker = BigQueryViewDagWalker(views)
 
             # All view builders deployed to any project.
-            cls.all_deployed_view_builders = all_deployed_view_builders()
+            all_deployed_builders = all_deployed_view_builders()
+            cls.all_deployed_view_builders_by_address = {
+                b.address: b for b in all_deployed_builders
+            }
 
     def test_no_expensive_union_all_view_queries(self) -> None:
         """Test that fails when a view is doing an overly expensive query of a UNION ALL
         view when it could instead be querying one of the component parent views.
         """
         union_all_view_addresses = {
-            vb.address
-            for vb in self.all_deployed_view_builders
+            address
+            for address, vb in self.all_deployed_view_builders_by_address.items()
             if isinstance(vb, UnionAllBigQueryViewBuilder)
         }
 
@@ -480,18 +483,12 @@ class ViewDagInvariantTests(unittest.TestCase):
         """Checks that if any parents have the projects_to_deploy field set, all
         children have equal or more restrictive projects.
         """
-        builders_by_address: Dict[Tuple[str, str], BigQueryViewBuilder] = {
-            (b.dataset_id, b.view_id): b for b in self.all_deployed_view_builders
-        }
-
         failing_views: Dict[BigQueryViewBuilder, Set[str]] = {}
 
         def process_check_using_materialized(
             view: BigQueryView, parent_results: Dict[BigQueryView, Set[str]]
         ) -> Set[str]:
-            view_builder = builders_by_address[
-                (view.address.dataset_id, view.address.table_id)
-            ]
+            view_builder = self.all_deployed_view_builders_by_address[view.address]
 
             parent_constraints: List[Set[str]] = [
                 parent_projects_to_deploy
@@ -578,7 +575,7 @@ The following views have less restrictive projects_to_deploy than their parents:
             )
 
     def test_no_conflicts_between_source_tables_and_views(self) -> None:
-        view_builder_addresses = {vb.address for vb in self.all_deployed_view_builders}
+        view_builder_addresses = set(self.all_deployed_view_builders_by_address)
         source_table_addresses = set(
             build_source_table_repository_for_collected_schemata(
                 project_id=None
@@ -607,7 +604,9 @@ The following views have less restrictive projects_to_deploy than their parents:
         (sqlglot).
         """
         with local_project_id_override("recidiviz-456"):
-            views = [vb.build() for vb in self.all_deployed_view_builders]
+            views = [
+                vb.build() for vb in self.all_deployed_view_builders_by_address.values()
+            ]
         for view in views:
             tree = sqlglot.parse_one(view.view_query, dialect="bigquery")
             sqlglot_addresses = {
@@ -639,3 +638,62 @@ The following views have less restrictive projects_to_deploy than their parents:
                     f"is not picked up by our regex matcher. Addresses not parsed by "
                     f"sqlglot: {sorted(a.to_str() for a in missing_from_sqlglot)}"
                 )
+
+    def test_union_all_big_query_view_parents_valid(self) -> None:
+        for view_address, node in self.dag_walker.nodes_by_address.items():
+            builder = self.all_deployed_view_builders_by_address[view_address]
+            if not isinstance(builder, UnionAllBigQueryViewBuilder):
+                continue
+
+            for parent in builder.parents:
+                if isinstance(parent, BigQueryAddress):
+                    # If the parent is a raw BigQueryAddress, it must be a source table,
+                    # not another view!
+                    self.assertIn(
+                        parent,
+                        node.source_addresses,
+                        f"Found parent BigQueryAddress [{parent.to_str()}] for "
+                        f"UnionAllBigQueryViewBuilder [{view_address.to_str()}] which "
+                        f"is not a source table. If the parent is a view address, the "
+                        f"BigQueryViewBuilder for that view must be referenced as a "
+                        f"parent instead.",
+                    )
+                    continue
+
+                if isinstance(parent, BigQueryViewBuilder):
+                    # All listed parents should end up as actual parent nodes in the DAG
+                    # unless they can't be deployed inthat project.
+                    if parent.should_deploy_in_project("recidiviz-456"):
+                        self.assertIn(
+                            parent.address,
+                            node.parent_node_addresses,
+                            f"Found view [{parent.address.to_str()}] which was listed "
+                            f"as a parent of UnionAllBigQueryViewBuilder view "
+                            f"[{view_address}], but which did not end up being a "
+                            f"parent in the actual built view graph.",
+                        )
+                    else:
+                        self.assertNotIn(
+                            parent.address,
+                            node.parent_node_addresses,
+                            f"View [{parent.address.to_str()}] which was listed as a "
+                            f"parent of UnionAllBigQueryViewBuilder view "
+                            f"[{view_address}] cannot be deployed in the test project "
+                            f"recidiviz-456, so should not be included as a parent in "
+                            f"the actual view graph.",
+                        )
+
+                    parent_view_builder = self.all_deployed_view_builders_by_address[
+                        parent.address
+                    ]
+                    self.assertIsNotNone(
+                        parent_view_builder.materialized_address,
+                        f"Found view {parent.address.to_str()} which is a parent of "
+                        f"UnionAllBigQueryViewBuilder view [{view_address.to_str()}] "
+                        f"but which is not materialized. All "
+                        f"UnionAllBigQueryViewBuilder parent views must be "
+                        f"materialized.",
+                    )
+                    continue
+
+                raise ValueError(f"Unexpected parent type [{type(parent)}]")
