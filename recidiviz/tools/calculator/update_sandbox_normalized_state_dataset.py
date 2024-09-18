@@ -54,13 +54,8 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.database.bq_refresh.update_normalized_state_dataset import (
     combine_sources_into_single_normalized_state_dataset,
 )
-from recidiviz.pipelines.ingest.dataset_config import state_dataset_for_state_code
-from recidiviz.pipelines.ingest.normalization_in_ingest_gating import (
-    is_combined_ingest_and_normalization_launched_in_env,
-)
 from recidiviz.pipelines.normalization.dataset_config import (
     normalized_state_dataset_for_state_code_ingest_pipeline_output,
-    normalized_state_dataset_for_state_code_legacy_normalization_output,
 )
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -126,27 +121,12 @@ if __name__ == "__main__":
             sandbox_prefix=args.output_sandbox_prefix,
         )
 
-        if is_combined_ingest_and_normalization_launched_in_env(state_code):
-            builder.register_custom_dataset_override(
-                normalized_state_dataset_for_state_code_ingest_pipeline_output(
-                    state_code
-                ),
-                args.input_normalized_state_dataset,
-                force_allow_custom=True,
-            )
-        else:
-            builder.register_custom_dataset_override(
-                normalized_state_dataset_for_state_code_legacy_normalization_output(
-                    state_code
-                ),
-                args.input_normalized_state_dataset,
-                force_allow_custom=True,
-            )
-            builder.register_custom_dataset_override(
-                state_dataset_for_state_code(state_code),
-                args.input_state_dataset,
-                force_allow_custom=True,
-            )
+        builder.register_custom_dataset_override(
+            normalized_state_dataset_for_state_code_ingest_pipeline_output(state_code),
+            args.input_normalized_state_dataset,
+            force_allow_custom=True,
+        )
+
         input_dataset_overrides = builder.build()
 
         combine_sources_into_single_normalized_state_dataset(

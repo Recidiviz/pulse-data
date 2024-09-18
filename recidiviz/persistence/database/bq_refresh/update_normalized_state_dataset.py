@@ -36,20 +36,14 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
     get_direct_ingest_states_existing_in_env,
 )
-from recidiviz.pipelines.ingest.dataset_config import state_dataset_for_state_code
-from recidiviz.pipelines.ingest.normalization_in_ingest_gating import (
-    is_combined_ingest_and_normalization_launched_in_env,
-)
 from recidiviz.pipelines.normalization.dataset_config import (
     normalized_state_dataset_for_state_code_ingest_pipeline_output,
-    normalized_state_dataset_for_state_code_legacy_normalization_output,
 )
 from recidiviz.source_tables.ingest_pipeline_output_table_collector import (
     build_ingest_pipeline_output_source_table_collections,
 )
 from recidiviz.source_tables.normalization_pipeline_output_table_collector import (
     build_normalization_pipeline_output_source_table_collections,
-    build_normalization_pipeline_output_table_id_to_schemas,
 )
 from recidiviz.source_tables.source_table_config import SourceTableConfig
 from recidiviz.source_tables.source_table_update_manager import SourceTableUpdateManager
@@ -112,29 +106,6 @@ def _build_normalized_state_unioned_view_builder(
     )
 
 
-def _get_normalized_input_dataset_for_table(
-    state_code: StateCode, table_id: str
-) -> str:
-    """For a given table, returns the dataset we should read from for this state_code
-    to get data that will be loaded into the normalized_state dataset for that state.
-    """
-    if is_combined_ingest_and_normalization_launched_in_env(state_code):
-        return normalized_state_dataset_for_state_code_ingest_pipeline_output(
-            state_code
-        )
-
-    # TODO(#31741): Delete all logic below here once normalization in ingest is rolled
-    #  out to all states.
-    if table_id in build_normalization_pipeline_output_table_id_to_schemas():
-        return normalized_state_dataset_for_state_code_legacy_normalization_output(
-            state_code
-        )
-
-    # If this table is not part of the legacy normalization pipeline output, read from
-    # the non-normalized ingest pipeline output instead.
-    return state_dataset_for_state_code(state_code)
-
-
 def _get_all_candidate_source_tables() -> list[SourceTableConfig]:
     collections = (
         *build_ingest_pipeline_output_source_table_collections(),
@@ -168,8 +139,10 @@ def _normalized_input_source_tables_by_output_table(
         for state_code in states:
             # state_sentence_inferred_group does not have an input dataset,
             # but input datasets are needed for the big union all view builder at the end.
-            input_table_dataset_id = _get_normalized_input_dataset_for_table(
-                state_code, table.address.table_id
+            input_table_dataset_id = (
+                normalized_state_dataset_for_state_code_ingest_pipeline_output(
+                    state_code
+                )
             )
             input_source_table = one(
                 t
