@@ -32,55 +32,164 @@ from recidiviz.calculator.query.state.views.analyst_data.models.metric_unit_of_a
 from recidiviz.tools.analyst.aggregated_metrics_utils import (
     get_custom_aggregated_metrics_query_template,
 )
+from recidiviz.aggregated_metrics.models.aggregated_metric_configurations import (
+    AVG_DAILY_POPULATION_TASK_ELIGIBLE_METRICS_INCARCERATION,
+    AVG_DAILY_POPULATION_TASK_ELIGIBLE_METRICS_SUPERVISION,
+)
+
+from recidiviz.aggregated_metrics.impact_reports_aggregated_metrics_configurations import (
+    AVG_DAILY_POPULATION_TASK_MARKED_INELIGIBLE_METRICS_INCARCERATION,
+    AVG_DAILY_POPULATION_TASK_MARKED_INELIGIBLE_METRICS_SUPERVISION,
+    AVG_DAILY_POPULATION_TASK_ALMOST_ELIGIBLE_METRICS_INCARCERATION,
+    AVG_DAILY_POPULATION_TASK_ALMOST_ELIGIBLE_METRICS_SUPERVISION,
+    AVG_DAILY_POPULATION_TASK_ELIGIBLE_AND_VIEWED_METRICS_INCARCERATION,
+    AVG_DAILY_POPULATION_TASK_ELIGIBLE_AND_VIEWED_METRICS_SUPERVISION,
+    AVG_DAILY_POPULATION_TASK_ELIGIBLE_AND_NOT_VIEWED_METRICS_INCARCERATION,
+    AVG_DAILY_POPULATION_TASK_ELIGIBLE_AND_NOT_VIEWED_METRICS_SUPERVISION,
+    DISTINCT_ACTIVE_USERS_INCARCERATION,
+    DISTINCT_ACTIVE_USERS_SUPERVISION,
+    DISTINCT_REGISTERED_USERS_INCARCERATION,
+    DISTINCT_REGISTERED_USERS_SUPERVISION,
+)
+
+METRICS_BY_TIME_PERIOD: dict[MetricTimePeriod, list[AggregatedMetric]] = {
+    MetricTimePeriod.DAY: [
+        *AVG_DAILY_POPULATION_TASK_ALMOST_ELIGIBLE_METRICS_INCARCERATION,
+        *AVG_DAILY_POPULATION_TASK_ALMOST_ELIGIBLE_METRICS_SUPERVISION,
+        *AVG_DAILY_POPULATION_TASK_ELIGIBLE_METRICS_INCARCERATION,
+        *AVG_DAILY_POPULATION_TASK_ELIGIBLE_METRICS_SUPERVISION,
+        *AVG_DAILY_POPULATION_TASK_MARKED_INELIGIBLE_METRICS_INCARCERATION,
+        *AVG_DAILY_POPULATION_TASK_MARKED_INELIGIBLE_METRICS_SUPERVISION,
+        *AVG_DAILY_POPULATION_TASK_ELIGIBLE_AND_VIEWED_METRICS_INCARCERATION,
+        *AVG_DAILY_POPULATION_TASK_ELIGIBLE_AND_VIEWED_METRICS_SUPERVISION,
+        *AVG_DAILY_POPULATION_TASK_ELIGIBLE_AND_NOT_VIEWED_METRICS_INCARCERATION,
+        *AVG_DAILY_POPULATION_TASK_ELIGIBLE_AND_NOT_VIEWED_METRICS_SUPERVISION,
+    ],
+    MetricTimePeriod.WEEK: [
+        *DISTINCT_ACTIVE_USERS_INCARCERATION,
+        *DISTINCT_ACTIVE_USERS_SUPERVISION,
+        DISTINCT_REGISTERED_USERS_INCARCERATION,
+        DISTINCT_REGISTERED_USERS_SUPERVISION,
+    ],
+    MetricTimePeriod.MONTH: [
+        *DISTINCT_ACTIVE_USERS_INCARCERATION,
+        *DISTINCT_ACTIVE_USERS_SUPERVISION,
+        DISTINCT_REGISTERED_USERS_INCARCERATION,
+        DISTINCT_REGISTERED_USERS_SUPERVISION,
+    ],
+    MetricTimePeriod.YEAR: [
+        *DISTINCT_ACTIVE_USERS_INCARCERATION,
+        *DISTINCT_ACTIVE_USERS_SUPERVISION,
+        DISTINCT_REGISTERED_USERS_INCARCERATION,
+        DISTINCT_REGISTERED_USERS_SUPERVISION,
+    ],
+}
+
+METRICS_BY_UNIT_OF_ANALYSIS_TYPE: dict[
+    MetricUnitOfAnalysisType, list[AggregatedMetric]
+] = {
+    MetricUnitOfAnalysisType.SUPERVISION_DISTRICT: [
+        *AVG_DAILY_POPULATION_TASK_ALMOST_ELIGIBLE_METRICS_SUPERVISION,
+        *AVG_DAILY_POPULATION_TASK_ELIGIBLE_METRICS_SUPERVISION,
+        *AVG_DAILY_POPULATION_TASK_MARKED_INELIGIBLE_METRICS_SUPERVISION,
+        *AVG_DAILY_POPULATION_TASK_ELIGIBLE_AND_VIEWED_METRICS_SUPERVISION,
+        *AVG_DAILY_POPULATION_TASK_ELIGIBLE_AND_NOT_VIEWED_METRICS_SUPERVISION,
+        *DISTINCT_ACTIVE_USERS_SUPERVISION,
+        DISTINCT_REGISTERED_USERS_SUPERVISION,
+    ],
+    MetricUnitOfAnalysisType.FACILITY: [
+        *AVG_DAILY_POPULATION_TASK_ALMOST_ELIGIBLE_METRICS_INCARCERATION,
+        *AVG_DAILY_POPULATION_TASK_ELIGIBLE_METRICS_INCARCERATION,
+        *AVG_DAILY_POPULATION_TASK_MARKED_INELIGIBLE_METRICS_INCARCERATION,
+        *AVG_DAILY_POPULATION_TASK_ELIGIBLE_AND_VIEWED_METRICS_INCARCERATION,
+        *AVG_DAILY_POPULATION_TASK_ELIGIBLE_AND_NOT_VIEWED_METRICS_INCARCERATION,
+        *DISTINCT_ACTIVE_USERS_INCARCERATION,
+        DISTINCT_REGISTERED_USERS_INCARCERATION,
+    ],
+    MetricUnitOfAnalysisType.STATE_CODE: [
+        *AVG_DAILY_POPULATION_TASK_ALMOST_ELIGIBLE_METRICS_INCARCERATION,
+        *AVG_DAILY_POPULATION_TASK_ALMOST_ELIGIBLE_METRICS_SUPERVISION,
+        *AVG_DAILY_POPULATION_TASK_ELIGIBLE_METRICS_INCARCERATION,
+        *AVG_DAILY_POPULATION_TASK_ELIGIBLE_METRICS_SUPERVISION,
+        *AVG_DAILY_POPULATION_TASK_MARKED_INELIGIBLE_METRICS_INCARCERATION,
+        *AVG_DAILY_POPULATION_TASK_MARKED_INELIGIBLE_METRICS_SUPERVISION,
+        *AVG_DAILY_POPULATION_TASK_ELIGIBLE_AND_VIEWED_METRICS_INCARCERATION,
+        *AVG_DAILY_POPULATION_TASK_ELIGIBLE_AND_VIEWED_METRICS_SUPERVISION,
+        *AVG_DAILY_POPULATION_TASK_ELIGIBLE_AND_NOT_VIEWED_METRICS_INCARCERATION,
+        *AVG_DAILY_POPULATION_TASK_ELIGIBLE_AND_NOT_VIEWED_METRICS_SUPERVISION,
+        *DISTINCT_ACTIVE_USERS_INCARCERATION,
+        *DISTINCT_ACTIVE_USERS_SUPERVISION,
+        DISTINCT_REGISTERED_USERS_INCARCERATION,
+        DISTINCT_REGISTERED_USERS_SUPERVISION,
+    ],
+}
 
 MIN_DATE = datetime.datetime(2023, 1, 1)
 MAX_DATE = datetime.datetime.today()
 
 
-def get_impact_reports_aggregated_metrics_view_builders(
-    metrics_by_time_period: dict[MetricTimePeriod, list[AggregatedMetric]]
-) -> List[SimpleBigQueryViewBuilder]:
+def get_metrics_subset(
+    time_period: MetricTimePeriod,
+    unit_of_analysis_type: MetricUnitOfAnalysisType,
+) -> List[AggregatedMetric]:
+    intersection_metrics = []
+    for metric in METRICS_BY_TIME_PERIOD[time_period]:
+        if metric in METRICS_BY_UNIT_OF_ANALYSIS_TYPE[unit_of_analysis_type]:
+            intersection_metrics.append(metric)
+
+    return intersection_metrics
+
+
+def get_impact_reports_aggregated_metrics_view_builders() -> List[
+    SimpleBigQueryViewBuilder
+]:
     """
     Collects all aggregated metrics view builders for impact reports at the state and day level
     """
 
     view_builders = []
-    for time_period, metrics in metrics_by_time_period.items():
-        query_template = get_custom_aggregated_metrics_query_template(
-            metrics=metrics,
-            unit_of_analysis_type=MetricUnitOfAnalysisType.STATE_CODE,
-            population_type=MetricPopulationType.JUSTICE_INVOLVED,
-            time_interval_unit=time_period,
-            time_interval_length=1,
-            min_date=MIN_DATE,
-            max_date=MAX_DATE,
-            # The rolling_period parameters let us get metrics for any time interval, each day. For
-            # example, if time_period is MONTH, then we can get month-long metrics for each day of
-            # the month instead of the default, which would be to do month-long metrics on just the
-            # first of the month. This allows us to generate reports for periods that don't fall
-            # neatly along month boundaries.
-            rolling_period_unit=MetricTimePeriod.DAY,
-            rolling_period_length=1,
-        )
-
-        view_id = f"{MetricPopulationType.JUSTICE_INVOLVED.population_name_short}_{MetricUnitOfAnalysisType.STATE_CODE.short_name}_{time_period.value.lower()}_aggregated_metrics"
-
-        view_description = f"""
-        Metrics for the {MetricPopulationType.JUSTICE_INVOLVED.population_name_short} population calculated using 
-        ad-hoc logic, disaggregated by {MetricUnitOfAnalysisType.STATE_CODE.short_name} and calculated for
-        each day for the {time_period.value} period.
-
-        All end_dates are exclusive, i.e. the metric is for the range [start_date, end_date).
-        """
-
-        view_builders.append(
-            SimpleBigQueryViewBuilder(
-                dataset_id=IMPACT_REPORTS_DATASET_ID,
-                view_query_template=query_template,
-                view_id=view_id,
-                description=view_description,
-                should_materialize=True,
+    for unit_of_analysis_type, _ in METRICS_BY_UNIT_OF_ANALYSIS_TYPE.items():
+        for time_period, _ in METRICS_BY_TIME_PERIOD.items():
+            metrics = get_metrics_subset(
+                time_period=time_period,
+                unit_of_analysis_type=unit_of_analysis_type,
             )
-        )
+            query_template = get_custom_aggregated_metrics_query_template(
+                metrics=metrics,
+                unit_of_analysis_type=unit_of_analysis_type,
+                population_type=MetricPopulationType.JUSTICE_INVOLVED,
+                time_interval_unit=time_period,
+                time_interval_length=1,
+                min_date=MIN_DATE,
+                max_date=MAX_DATE,
+                # The rolling_period parameters let us get metrics for any time interval, each day. For
+                # example, if time_period is MONTH, then we can get month-long metrics for each day of
+                # the month instead of the default, which would be to do month-long metrics on just the
+                # first of the month. This allows us to generate reports for periods that don't fall
+                # neatly along month boundaries.
+                rolling_period_unit=MetricTimePeriod.DAY,
+                rolling_period_length=1,
+            )
+
+            view_id = f"{MetricPopulationType.JUSTICE_INVOLVED.population_name_short}_{unit_of_analysis_type.short_name}_{time_period.value.lower()}_aggregated_metrics"
+
+            view_description = f"""
+            Metrics for the {MetricPopulationType.JUSTICE_INVOLVED.population_name_short} population calculated using 
+            ad-hoc logic, disaggregated by {unit_of_analysis_type.short_name} and calculated for
+            each day for the {time_period.value} period.
+
+            All end_dates are exclusive, i.e. the metric is for the range [start_date, end_date).
+            """
+
+            view_builders.append(
+                SimpleBigQueryViewBuilder(
+                    dataset_id=IMPACT_REPORTS_DATASET_ID,
+                    view_query_template=query_template,
+                    view_id=view_id,
+                    description=view_description,
+                    should_materialize=True,
+                    clustering_fields=["state_code"],
+                )
+            )
 
     return view_builders
