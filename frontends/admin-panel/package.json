@@ -31,7 +31,7 @@
     "react-router": "^5.2.1",
     "react-router-dom": "^5.2.0",
     "react-scripts": "^5.0.0",
-    "semiotic": "^1.20.6",
+    "semiotic": "^2.0.3",
     "styled-components": "^5.2.1",
     "ts-protoc-gen": "^0.15.0",
     "zod": "^3.23.8"
