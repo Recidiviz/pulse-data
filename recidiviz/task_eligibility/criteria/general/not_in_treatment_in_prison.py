@@ -19,6 +19,7 @@ in prison for treatment purposes (e.g. RIDER program in ID)."""
 
 from google.cloud import bigquery
 
+from recidiviz.calculator.query.bq_utils import nonnull_end_date_clause
 from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
 from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
@@ -32,7 +33,7 @@ _CRITERIA_NAME = "NOT_IN_TREATMENT_IN_PRISON"
 _DESCRIPTION = """Defines a criteria span view that shows spans of time during which clients are not
 in prison for treatment purposes (e.g. RIDER program in ID)."""
 
-_QUERY = """
+_QUERY = f"""
 SELECT 
     state_code,
     person_id,
@@ -41,10 +42,10 @@ SELECT
     False AS meets_criteria,
     TO_JSON(STRUCT(start_date AS most_recent_treatment_start_date)) AS reason,
     start_date AS most_recent_treatment_start_date,
-FROM `{project_id}.{sessions_dataset}.compartment_sessions_materialized`
+FROM `{{project_id}}.{{sessions_dataset}}.compartment_sessions_materialized`
 WHERE compartment_level_1 = 'INCARCERATION'
   AND compartment_level_2 = 'TREATMENT_IN_PRISON'
-  AND start_date != end_date
+  AND start_date != {nonnull_end_date_clause('end_date')}
 GROUP BY 1,2,3,4
 """
 

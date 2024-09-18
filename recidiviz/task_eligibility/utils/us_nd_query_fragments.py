@@ -22,6 +22,7 @@ from typing import Optional
 from google.cloud import bigquery
 
 from recidiviz.calculator.query.bq_utils import (
+    nonnull_end_date_clause,
     nonnull_end_date_exclusive_clause,
     today_between_start_date_and_nullable_end_date_exclusive_clause,
 )
@@ -76,7 +77,10 @@ def parole_review_dates_query() -> str:
         SELECT 
             peid.state_code,
             peid.person_id,
-            SAFE_CAST(SAFE.PARSE_DATETIME('%m/%d/%Y  %H:%M:%S%p', ms.MEDICAL_DATE) AS DATE) AS parole_review_date,
+            IFNULL(
+                SAFE_CAST(LEFT(ms.MEDICAL_DATE, 10) AS DATE),
+                SAFE_CAST(SAFE.PARSE_DATETIME('%m/%d/%Y  %H:%M:%S%p', ms.MEDICAL_DATE) AS DATE)
+            ) AS parole_review_date,
         FROM `{project_id}.{raw_data_dataset}.elite_offender_medical_screenings_6i` ms
         LEFT JOIN `{project_id}.{normalized_state_dataset}.state_person_external_id` peid
             ON peid.external_id = REPLACE(REPLACE(ms.OFFENDER_BOOK_ID,',',''), '.00', '')
@@ -138,7 +142,7 @@ def parole_review_date_criteria_builder(
             TO_JSON(STRUCT(parole_review_date AS parole_review_date)) AS reason,
             parole_review_date,
         FROM critical_date_has_passed_spans
-        WHERE start_date != end_date
+        WHERE start_date != {nonnull_end_date_clause('end_date')}
     """
     return StateSpecificTaskCriteriaBigQueryViewBuilder(
         criteria_name=criteria_name,

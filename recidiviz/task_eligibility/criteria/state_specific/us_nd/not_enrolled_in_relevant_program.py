@@ -21,6 +21,7 @@ According to CMs, people enrolled in a relevant program are not eligible for fac
 """
 from google.cloud import bigquery
 
+from recidiviz.calculator.query.bq_utils import nonnull_end_date_clause
 from recidiviz.calculator.query.sessions_query_fragments import (
     create_sub_sessions_with_attributes,
 )
@@ -83,7 +84,7 @@ SELECT
     STRING_AGG(program, ', ' ORDER BY program) AS program_descriptions,
     STRING_AGG(participation_status, ', ' ORDER BY program) AS program_statuses,
 FROM sub_sessions_with_attributes
-WHERE start_date != end_date
+WHERE start_date != {nonnull_end_date_clause('end_date')}
 GROUP BY 1,2,3,4,5
 """
 
