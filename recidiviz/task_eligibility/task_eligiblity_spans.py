@@ -185,7 +185,7 @@ def _get_eligiblity_spans_unioned_view_builders() -> Sequence[BigQueryViewBuilde
                     state_code=state_code.value,
                     state_specific_spans_dataset_id=dataset_id,
                 ),
-                parent_view_builders=task_view_builders,
+                parents=task_view_builders,
             )
         )
 
@@ -199,7 +199,7 @@ def _get_eligiblity_spans_unioned_view_builders() -> Sequence[BigQueryViewBuilde
             dataset_id=TASK_ELIGIBILITY_DATASET_ID,
             view_id=TASK_ELIGIBILITY_SPANS_ALL_TASKS_VIEW_ID,
             description=ALL_TASKS_ALL_STATES_DESCRIPTION,
-            parent_view_builders=state_specific_unioned_view_builders,
+            parents=state_specific_unioned_view_builders,
         )
     ]
 
@@ -248,8 +248,8 @@ def _get_criteria_unioned_view_builders() -> Sequence[BigQueryViewBuilder]:
                     state_code=state_code.value,
                     state_specific_criteria_dataset_id=dataset_id,
                 ),
-                parent_view_builders=criteria_view_builders,
-                builder_to_select_statement=get_criteria_select_statement,
+                parents=criteria_view_builders,
+                parent_to_select_statement=get_criteria_select_statement,
             )
         )
 
@@ -262,8 +262,8 @@ def _get_criteria_unioned_view_builders() -> Sequence[BigQueryViewBuilder]:
                 ALL_CRITERIA_GENERAL_DESCRIPTION_TEMPLATE,
                 general_criteria_dataset_id=dataset_id,
             ),
-            parent_view_builders=general_builders,
-            builder_to_select_statement=get_criteria_select_statement,
+            parents=general_builders,
+            parent_to_select_statement=get_criteria_select_statement,
         )
     )
 
@@ -272,7 +272,7 @@ def _get_criteria_unioned_view_builders() -> Sequence[BigQueryViewBuilder]:
             dataset_id=TASK_ELIGIBILITY_DATASET_ID,
             view_id=ALL_CRITERIA_VIEW_ID,
             description=ALL_CRITERIA_DESCRIPTION,
-            parent_view_builders=subpart_unioned_view_builders,
+            parents=subpart_unioned_view_builders,
         )
     ]
 
@@ -328,8 +328,8 @@ def _get_candidate_population_unioned_view_builders() -> Sequence[BigQueryViewBu
                     state_code=state_code.value,
                     state_specific_populations_dataset_id=dataset_id,
                 ),
-                parent_view_builders=population_view_builders,
-                builder_to_select_statement=get_population_select_statement,
+                parents=population_view_builders,
+                parent_to_select_statement=get_population_select_statement,
             )
         )
 
@@ -342,8 +342,8 @@ def _get_candidate_population_unioned_view_builders() -> Sequence[BigQueryViewBu
                 ALL_POPULATIONS_GENERAL_DESCRIPTION_TEMPLATE,
                 general_population_dataset_id=dataset_id,
             ),
-            parent_view_builders=general_builders,
-            builder_to_select_statement=get_population_select_statement,
+            parents=general_builders,
+            parent_to_select_statement=get_population_select_statement,
         )
     )
 
@@ -352,7 +352,7 @@ def _get_candidate_population_unioned_view_builders() -> Sequence[BigQueryViewBu
             dataset_id=TASK_ELIGIBILITY_DATASET_ID,
             view_id=ALL_POPULATIONS_VIEW_ID,
             description=ALL_POPULATIONS_DESCRIPTION,
-            parent_view_builders=subpart_unioned_view_builders,
+            parents=subpart_unioned_view_builders,
         )
     ]
 
@@ -409,8 +409,8 @@ def _get_completion_events_unioned_view_builders() -> Sequence[BigQueryViewBuild
                     state_code=state_code.value,
                     state_specific_completion_event_dataset_id=dataset_id,
                 ),
-                parent_view_builders=completion_event_view_builders,
-                builder_to_select_statement=get_completion_event_select_statement,
+                parents=completion_event_view_builders,
+                parent_to_select_statement=get_completion_event_select_statement,
             )
         )
 
@@ -423,8 +423,8 @@ def _get_completion_events_unioned_view_builders() -> Sequence[BigQueryViewBuild
                 ALL_COMPLETION_EVENTS_GENERAL_DESCRIPTION_TEMPLATE,
                 general_completion_event_dataset_id=dataset_id,
             ),
-            parent_view_builders=general_builders,
-            builder_to_select_statement=get_completion_event_select_statement,
+            parents=general_builders,
+            parent_to_select_statement=get_completion_event_select_statement,
         )
     )
 
@@ -435,8 +435,8 @@ def _get_completion_events_unioned_view_builders() -> Sequence[BigQueryViewBuild
             description=StrictStringFormatter().format(
                 ALL_COMPLETION_EVENTS_DESCRIPTION_TEMPLATE,
             ),
-            parent_view_builders=view_collector.collect_view_builders(),
-            builder_to_select_statement=get_completion_event_select_statement,
+            parents=view_collector.collect_view_builders(),
+            parent_to_select_statement=get_completion_event_select_statement,
         )
     ]
 

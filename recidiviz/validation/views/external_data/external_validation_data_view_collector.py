@@ -77,17 +77,17 @@ class StateAgnosticExternalValidationDataViewConfig:
         )
 
     def to_union_all_view_builder(
-        self, parent_view_builders: List[SimpleBigQueryViewBuilder]
+        self, parents: List[SimpleBigQueryViewBuilder]
     ) -> UnionAllBigQueryViewBuilder:
-        """Uses |parent_view_builders| to build a UnionAllBigQueryViewBuilder for the
+        """Uses |parents| to build a UnionAllBigQueryViewBuilder for the
         config.
         """
         return UnionAllBigQueryViewBuilder(
             dataset_id=dataset_config.EXTERNAL_ACCURACY_DATASET,
             view_id=self.view_id,
             description=self.view_id_description,
-            parent_view_builders=parent_view_builders,
-            builder_to_select_statement=lambda _: self.select_statement,
+            parents=parents,
+            parent_to_select_statement=lambda _: self.select_statement,
         )
 
 
