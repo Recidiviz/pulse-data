@@ -26,10 +26,8 @@ from recidiviz.ingest.direct.dataset_config import raw_tables_dataset_for_region
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.pipelines.ingest.dataset_config import (
     ingest_view_materialization_results_dataset,
+    normalized_state_dataset_for_state_code,
     state_dataset_for_state_code,
-)
-from recidiviz.pipelines.normalization.dataset_config import (
-    normalized_state_dataset_for_state_code_ingest_pipeline_output,
 )
 from recidiviz.pipelines.pipeline_parameters import PipelineParameters
 
@@ -68,7 +66,7 @@ class IngestPipelineParameters(PipelineParameters):
     @property
     def normalized_output(self) -> str:
         return self.get_output_dataset(
-            default_dataset_id=normalized_state_dataset_for_state_code_ingest_pipeline_output(
+            default_dataset_id=normalized_state_dataset_for_state_code(
                 StateCode(self.state_code)
             )
         )

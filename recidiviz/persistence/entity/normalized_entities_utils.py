@@ -38,24 +38,6 @@ from recidiviz.persistence.entity.generate_primary_key import generate_primary_k
 from recidiviz.persistence.entity.serialization import serialize_entity_into_json
 from recidiviz.persistence.entity.state import entities as state_entities
 from recidiviz.persistence.entity.state import normalized_entities
-from recidiviz.persistence.entity.state.normalized_entities import (
-    NormalizedStateAssessment,
-    NormalizedStateCharge,
-    NormalizedStateEarlyDischarge,
-    NormalizedStateIncarcerationPeriod,
-    NormalizedStateIncarcerationSentence,
-    NormalizedStateProgramAssignment,
-    NormalizedStateStaffRolePeriod,
-    NormalizedStateSupervisionCaseTypeEntry,
-    NormalizedStateSupervisionContact,
-    NormalizedStateSupervisionPeriod,
-    NormalizedStateSupervisionSentence,
-    NormalizedStateSupervisionViolatedConditionEntry,
-    NormalizedStateSupervisionViolation,
-    NormalizedStateSupervisionViolationResponse,
-    NormalizedStateSupervisionViolationResponseDecisionEntry,
-    NormalizedStateSupervisionViolationTypeEntry,
-)
 from recidiviz.persistence.entity.state.normalized_state_entity import (
     NormalizedStateEntity,
 )
@@ -63,30 +45,6 @@ from recidiviz.persistence.entity.state.state_entity_mixins import (
     SequencedEntityMixin,
     SequencedEntityMixinT,
 )
-
-# These entities have base classes managed by NormalizationManagers in
-# our previous (and still existing) implementation of normalization.
-# Our new implementation will produced normalized versions of all entities.
-# TODO(#31741) Delete this when normalization and ingest are fully merged,
-# and the old implementation of normalization is deleted.
-LEGACY_NORMALIZATION_ENTITY_CLASSES: List[Type[NormalizedStateEntity]] = [
-    NormalizedStateIncarcerationPeriod,
-    NormalizedStateProgramAssignment,
-    NormalizedStateSupervisionPeriod,
-    NormalizedStateSupervisionCaseTypeEntry,
-    NormalizedStateSupervisionViolationResponse,
-    NormalizedStateSupervisionViolationResponseDecisionEntry,
-    NormalizedStateSupervisionViolation,
-    NormalizedStateSupervisionViolationTypeEntry,
-    NormalizedStateSupervisionViolatedConditionEntry,
-    NormalizedStateAssessment,
-    NormalizedStateIncarcerationSentence,
-    NormalizedStateSupervisionSentence,
-    NormalizedStateCharge,
-    NormalizedStateEarlyDischarge,
-    NormalizedStateSupervisionContact,
-    NormalizedStateStaffRolePeriod,
-]
 
 NormalizedStateEntityT = TypeVar("NormalizedStateEntityT", bound=NormalizedStateEntity)
 AdditionalAttributesMap = Dict[

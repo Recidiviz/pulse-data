@@ -17,6 +17,7 @@
 """Helpers for getting ingest pipeline output datasets."""
 from typing import Optional
 
+from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
 from recidiviz.common.constants.states import StateCode
 
 
@@ -36,3 +37,20 @@ def state_dataset_for_state_code(
     """Where the output of the state-specific ingest pipelines is stored."""
     dataset_prefix = f"{sandbox_dataset_prefix}_" if sandbox_dataset_prefix else ""
     return f"{dataset_prefix}{state_code.value.lower()}_state"
+
+
+def normalized_state_dataset_for_state_code(
+    state_code: StateCode, sandbox_dataset_prefix: str | None = None
+) -> str:
+    """Where the output of state-specific ingest pipeline normalized entities output is
+    stored.
+    """
+    # TODO(#31741): Rename this back to `us_xx_normalized_state` once we're only reading
+    #  from this dataset for all states and have deleted the legacy
+    #  `us_xx_normalized_state` source table collections.
+    base_dataset = f"{state_code.value.lower()}_normalized_state_new"
+    if not sandbox_dataset_prefix:
+        return base_dataset
+    return BigQueryAddressOverrides.format_sandbox_dataset(
+        sandbox_dataset_prefix, base_dataset
+    )

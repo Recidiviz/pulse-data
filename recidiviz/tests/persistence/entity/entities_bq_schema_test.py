@@ -29,9 +29,9 @@ from recidiviz.persistence.entity.state import entities as state_entities
 from recidiviz.persistence.entity.state import (
     normalized_entities as normalized_state_entities,
 )
-from recidiviz.pipelines.ingest.dataset_config import state_dataset_for_state_code
-from recidiviz.pipelines.normalization.dataset_config import (
-    normalized_state_dataset_for_state_code_ingest_pipeline_output,
+from recidiviz.pipelines.ingest.dataset_config import (
+    normalized_state_dataset_for_state_code,
+    state_dataset_for_state_code,
 )
 from recidiviz.source_tables.ingest_pipeline_output_table_collector import (
     build_ingest_pipeline_output_source_table_collections,
@@ -190,10 +190,7 @@ class TestGetBqSchemaForEntitiesModule(unittest.TestCase):
             for c in build_ingest_pipeline_output_source_table_collections()
             # Pick an arbitrary state's ingest pipeline output schema to test
             if (
-                c.dataset_id
-                == normalized_state_dataset_for_state_code_ingest_pipeline_output(
-                    StateCode.US_OZ
-                )
+                c.dataset_id == normalized_state_dataset_for_state_code(StateCode.US_OZ)
             )
         )
         expected_table_to_schema = {

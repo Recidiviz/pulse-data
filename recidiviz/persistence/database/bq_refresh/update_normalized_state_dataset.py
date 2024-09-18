@@ -36,8 +36,8 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
     get_direct_ingest_states_existing_in_env,
 )
-from recidiviz.pipelines.normalization.dataset_config import (
-    normalized_state_dataset_for_state_code_ingest_pipeline_output,
+from recidiviz.pipelines.ingest.dataset_config import (
+    normalized_state_dataset_for_state_code,
 )
 from recidiviz.source_tables.ingest_pipeline_output_table_collector import (
     build_ingest_pipeline_output_source_table_collections,
@@ -132,11 +132,7 @@ def _normalized_input_source_tables_by_output_table(
         for state_code in states:
             # state_sentence_inferred_group does not have an input dataset,
             # but input datasets are needed for the big union all view builder at the end.
-            input_table_dataset_id = (
-                normalized_state_dataset_for_state_code_ingest_pipeline_output(
-                    state_code
-                )
-            )
+            input_table_dataset_id = normalized_state_dataset_for_state_code(state_code)
             input_source_table = one(
                 t
                 for t in all_candidate_source_tables

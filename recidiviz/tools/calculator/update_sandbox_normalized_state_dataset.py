@@ -54,8 +54,8 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.database.bq_refresh.update_normalized_state_dataset import (
     combine_sources_into_single_normalized_state_dataset,
 )
-from recidiviz.pipelines.normalization.dataset_config import (
-    normalized_state_dataset_for_state_code_ingest_pipeline_output,
+from recidiviz.pipelines.ingest.dataset_config import (
+    normalized_state_dataset_for_state_code,
 )
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -122,7 +122,7 @@ if __name__ == "__main__":
         )
 
         builder.register_custom_dataset_override(
-            normalized_state_dataset_for_state_code_ingest_pipeline_output(state_code),
+            normalized_state_dataset_for_state_code(state_code),
             args.input_normalized_state_dataset,
             force_allow_custom=True,
         )
