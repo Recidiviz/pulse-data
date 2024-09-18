@@ -19,7 +19,10 @@ import { observer } from "mobx-react-lite";
 import * as React from "react";
 
 import { useNewFlashChecklistStore } from "./FlashChecklistStore";
-import { FlashReadyDecisionComponent } from "./FlashComponents";
+import {
+  CannotFlashDecisionComponent,
+  FlashReadyDecisionComponent,
+} from "./FlashComponents";
 import { NewFlashingChecklistType } from "./NewFlashChecklistStore";
 
 const NewFlashDatabaseChecklistActiveComponent = (): JSX.Element => {
@@ -79,9 +82,16 @@ const NewFlashDatabaseChecklistActiveComponent = (): JSX.Element => {
   }
 
   if (!flashStore.isReadyToFlash()) {
-    // TODO(#33150) build decision component here
     return (
-      <div> Flash is not ready, but we can still cancel secondary rerun!</div>
+      <CannotFlashDecisionComponent
+        onSelectProceed={async () => {
+          flashStore.setActiveChecklist(
+            NewFlashingChecklistType.CANCEL_REIMPORT
+          );
+          // TODO(#33150) add cancel reimport step section here
+          await flashStore.moveToNextChecklistSection(0);
+        }}
+      />
     );
   }
 

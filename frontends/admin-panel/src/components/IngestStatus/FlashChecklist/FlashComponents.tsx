@@ -14,7 +14,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
-import { Button, Card, StepProps, Steps } from "antd";
+import { CheckSquareTwoTone, CloseSquareTwoTone } from "@ant-design/icons";
+import { Alert, Button, Card, List, StepProps, Steps } from "antd";
 import * as React from "react";
 
 import { useNewFlashChecklistStore } from "./FlashChecklistStore";
@@ -121,6 +122,96 @@ export const ChecklistSection = ({
   );
 };
 
+export const FlashDecisionCriteria = (): JSX.Element => {
+  const flashStore = useNewFlashChecklistStore();
+  if (!flashStore.stateInfo) throw new Error("Should have state code set");
+  const formattedStateCode = flashStore.stateInfo.code
+    .toLowerCase()
+    .replaceAll("_", "-");
+
+  const flashCriteria = [
+    {
+      criteria: "All ingest buckets must be empty",
+      status: flashStore.currentRawFileProcessingStatus.areIngestBucketsEmpty(),
+      description:
+        flashStore.currentRawFileProcessingStatus.ingestBucketSummary(
+          flashStore.projectId,
+          formattedStateCode
+        ),
+    },
+    {
+      criteria: "There are processed files in secondary",
+      status:
+        flashStore.currentRawFileProcessingStatus.hasProcessedFilesInSecondary(),
+      description:
+        "We only want to flash to primary if we have valid data in secondary",
+    },
+    {
+      criteria: "There are NOT unprocessed files in secondary",
+      status:
+        !flashStore.currentRawFileProcessingStatus.hasUnprocessedFilesInSecondary(),
+      description:
+        flashStore.currentRawFileProcessingStatus.unprocessedSecondaryDescription(),
+    },
+    {
+      criteria: " Secondary is not stale",
+      status: !flashStore.currentStaleSecondaryStatus.isStale(),
+      description: flashStore.currentStaleSecondaryStatus.statusDescription(),
+    },
+  ];
+
+  return (
+    <List
+      itemLayout="vertical"
+      dataSource={flashCriteria}
+      renderItem={(item) => (
+        <List.Item.Meta
+          title={item.criteria}
+          description={item.description}
+          avatar={<ConditionalColoredSquare boolVal={item.status} />}
+        />
+      )}
+    />
+  );
+};
+
+export const ConditionalColoredSquare = ({
+  boolVal,
+}: {
+  boolVal: boolean;
+}): JSX.Element => {
+  return boolVal ? (
+    <CheckSquareTwoTone twoToneColor="green" />
+  ) : (
+    <CloseSquareTwoTone twoToneColor="red" />
+  );
+};
+
+export const CannotFlashDecisionComponent = ({
+  onSelectProceed,
+}: {
+  onSelectProceed: () => void;
+}): JSX.Element => {
+  return (
+    <div>
+      <Alert
+        message="Cannot proceed with flash to primary. All of the following conditions must be met:"
+        description={<FlashDecisionCriteria />}
+        type="error"
+        showIcon
+      />
+      <br />
+      <h3 style={{ color: "green" }}>
+        Regardless of ingest instance status, you may proceed with cleaning up
+        the secondary instance and canceling the rerun:{" "}
+        <Button type="primary" onClick={onSelectProceed}>
+          CLEAN UP SECONDARY + CANCEL RAW DATA REIMPORT
+        </Button>
+      </h3>
+    </div>
+  );
+};
+
 export const FlashReadyDecisionComponent = ({
   onSelectProceed,
   onSelectCancel,
@@ -130,8 +221,17 @@ export const FlashReadyDecisionComponent = ({
 }): JSX.Element => {
   return (
     <div>
-      The SECONDARY results are ready to be flashed to PRIMARY. Would you like
-      to:
+      <Alert
+        message="The SECONDARY results are ready to be flashed to PRIMARY"
+        description={<FlashDecisionCriteria />}
+        type="success"
+        showIcon
+      />
+      <br />
+      <h3>
+        Now that SECONDARY results are ready to be flashed to PRIMARY, would you
+        like to:
+      </h3>
       <ul>
         <li>
           <b>Proceed with flash to PRIMARY.</b> Results in SECONDARY have been
@@ -145,64 +245,7 @@ export const FlashReadyDecisionComponent = ({
       <Button type="primary" onClick={onSelectProceed}>
         Proceed with Flash
       </Button>
-      <Button onClick={onSelectCancel}>Cancel Rerun</Button>
-    </div>
-  );
-};
-
-export const CannotFlashDecisionNonEmptyBucketComponent = ({
-  onSelectProceed,
-}: {
-  onSelectProceed: () => void;
-}): JSX.Element => {
-  const { projectId, stateInfo, currentRawFileProcessingStatus } =
-    useNewFlashChecklistStore();
-
-  const formattedStateCode = stateInfo?.code.toLowerCase().replaceAll("_", "-");
-  const primaryBucketURL = `https://console.cloud.google.com/storage/browser/${projectId}-direct-ingest-state-${formattedStateCode}`;
-  const secondaryBucketURL = `https://console.cloud.google.com/storage/browser/${projectId}-direct-ingest-state-${formattedStateCode}-secondary`;
-  return (
-    <div>
-      Cannot proceed with flash of SECONDARY raw data to PRIMARY, because the
-      PRIMARY and/or SECONDARY ingest buckets are not empty. Below are the file
-      tags present in the ingest buckets.
-      <br />
-      <h3>
-        PRIMARY INGEST BUCKET: (<a href={primaryBucketURL}>link</a>)
-      </h3>
-      {currentRawFileProcessingStatus.unprocessedFilesInPrimary.length === 0 ? (
-        <p>EMPTY</p>
-      ) : (
-        <ul>
-          {currentRawFileProcessingStatus.unprocessedFilesInPrimary.map((o) => (
-            <li>
-              {o.fileTag}: {o.numberFilesInBucket}
-            </li>
-          ))}
-        </ul>
-      )}
-      <h3>
-        SECONDARY INGEST BUCKET (<a href={secondaryBucketURL}>link</a>)
-      </h3>
-      {currentRawFileProcessingStatus.unprocessedFilesInSecondary.length ===
-      0 ? (
-        <p>EMPTY</p>
-      ) : (
-        <ul>
-          {currentRawFileProcessingStatus.unprocessedFilesInSecondary.map(
-            (o) => (
-              <li>{o.fileTag}</li>
-            )
-          )}
-        </ul>
-      )}
-      <h3 style={{ color: "green" }}>
-        Regardless of ingest bucket status, you may proceed with cleaning up the
-        secondary instance and canceling the rerun in SECONDARY:{" "}
-        <Button type="primary" onClick={onSelectProceed}>
-          CLEAN UP SECONDARY + CANCEL RAW DATA REIMPORT
-        </Button>
-      </h3>
+      <Button onClick={onSelectCancel}>Cancel Reimport</Button>
     </div>
   );
 };

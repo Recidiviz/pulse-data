@@ -19,14 +19,14 @@ import { observer } from "mobx-react-lite";
 import * as React from "react";
 
 import { useLegacyFlashChecklistStore } from "./FlashChecklistStore";
-import {
-  CannotFlashDecisionNonEmptyBucketComponent,
-  FlashReadyDecisionComponent,
-} from "./FlashComponents";
+import { FlashReadyDecisionComponent } from "./FlashComponents";
 import LegacyStateCancelReimportChecklist, {
   LegacyCancelReimportChecklistStepSection,
 } from "./LegacyCancelReimportChecklist";
-import { LegacyCannotFlashDecisionWrongStatusComponent } from "./LegacyFlashComponents";
+import {
+  LegacyCannotFlashDecisionNonEmptyBucketComponent,
+  LegacyCannotFlashDecisionWrongStatusComponent,
+} from "./LegacyFlashComponents";
 import LegacyStateProceedWithFlashChecklist, {
   LegacyFlashChecklistStepSection,
 } from "./LegacyProceedWithFlashChecklist";
@@ -73,7 +73,7 @@ const LegacyFlashDatabaseChecklistActiveComponent = (): JSX.Element => {
     /* this state means that we the ingest buckets are not yet cleaned so we cannot */
     /* yet proceed with flash! */
     return (
-      <CannotFlashDecisionNonEmptyBucketComponent
+      <LegacyCannotFlashDecisionNonEmptyBucketComponent
         onSelectProceed={async () => {
           flashStore.setProceedWithFlash(false);
           await flashStore.moveToNextChecklistSection(
