@@ -83,7 +83,7 @@ class TestKnownValuesColumnValidation(ColumnValidationTestCase):
             validation_type=RawDataImportBlockingValidationType.KNOWN_VALUES,
             validation_query=self.create_validation(self.sad_col).query,
             error_msg=f"Found column [{self.sad_col_name}] on raw file [{self.file_tag}] "
-            f"not matching any of the known_values defined in its configuration YAML.."
+            f"not matching any of the known_values defined in its configuration YAML."
             f"\nDefined known values: [{', '.join(self.known_values)}]."
             f"\nFirst value that does not parse: [z].",
         )

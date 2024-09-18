@@ -119,8 +119,8 @@ update_datetime: 2024-01-26T00:00:00
 COL1: val4, COL3: val6, is_deleted: False
 COLUMNS WITH DIFFERENCES:
 	COL2:
-		val5
-		val55555
+		src: val5
+		cmp: val55555
 
 """
         src_data = [

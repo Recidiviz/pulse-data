@@ -90,7 +90,11 @@ class RawTableDataDiffQueryResultRow(RawTableDiffQueryResultRow):
         if self.columns_with_differences:
             s += "\nCOLUMNS WITH DIFFERENCES:"
             for column_name, value in self.columns_with_differences.items():
-                s += f"\n\t{column_name}:" f"\n\t\t{value[0]}" f"\n\t\t{value[1]}"
+                s += (
+                    f"\n\t{column_name}:"
+                    f"\n\t\tsrc: {value[0]}"
+                    f"\n\t\tcmp: {value[1]}"
+                )
         return s
 
 
