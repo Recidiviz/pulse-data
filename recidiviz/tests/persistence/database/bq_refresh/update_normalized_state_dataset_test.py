@@ -20,7 +20,6 @@ from typing import Any
 from unittest.mock import MagicMock, patch
 
 import pytest
-from google.cloud.bigquery import SchemaField
 from more_itertools import one
 
 from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
@@ -174,28 +173,6 @@ class GetNormalizedStateViewBuildersTest(unittest.TestCase):
             StateCode.US_YY,
         ]
 
-        # Mock that this set of tables was normalized in legacy pipelines.
-        # The fake_person table is omitted.
-        legacy_normalization_output_schema = {
-            "fake_another_entity": [
-                SchemaField("state_code", "STRING", "NULLABLE"),
-                SchemaField("another_entity_id", "INTEGER", "NULLABLE"),
-                SchemaField("another_name", "STRING", "NULLABLE"),
-                SchemaField("fake_person_id", "INTEGER", "NULLABLE"),
-            ],
-            "fake_another_entity_fake_entity_association": [
-                SchemaField("state_code", "STRING", "NULLABLE"),
-                SchemaField("fake_another_entity_id", "INTEGER", "NULLABLE"),
-                SchemaField("fake_entity_id", "INTEGER", "NULLABLE"),
-            ],
-            "fake_entity": [
-                SchemaField("state_code", "STRING", "NULLABLE"),
-                SchemaField("entity_id", "INTEGER", "NULLABLE"),
-                SchemaField("name", "STRING", "NULLABLE"),
-                SchemaField("fake_person_id", "INTEGER", "NULLABLE"),
-            ],
-        }
-
         self.patchers: list[Any] = [
             patch(
                 "recidiviz.utils.metadata.project_id",
@@ -204,10 +181,6 @@ class GetNormalizedStateViewBuildersTest(unittest.TestCase):
             patch(
                 f"{UPDATE_NORMALIZED_STATE_PACKAGE_NAME}.get_direct_ingest_states_existing_in_env",
                 MagicMock(return_value=states),
-            ),
-            patch(
-                f"{UPDATE_NORMALIZED_STATE_PACKAGE_NAME}.build_normalization_pipeline_output_table_id_to_schemas",
-                MagicMock(return_value=legacy_normalization_output_schema),
             ),
             patch(
                 f"{INGEST_PIPELINE_OUTPUT_TABLE_COLLECTOR_PACKAGE_NAME}.get_direct_ingest_states_existing_in_env",
@@ -220,10 +193,6 @@ class GetNormalizedStateViewBuildersTest(unittest.TestCase):
             patch(
                 f"{INGEST_PIPELINE_OUTPUT_TABLE_COLLECTOR_PACKAGE_NAME}.normalized_entities",
                 fake_normalized_entities,
-            ),
-            patch(
-                f"{NORMALIZATION_PIPELINE_OUTPUT_TABLE_COLLECTOR_PACKAGE_NAME}.build_normalization_pipeline_output_table_id_to_schemas",
-                MagicMock(return_value=legacy_normalization_output_schema),
             ),
             patch(
                 f"{NORMALIZATION_PIPELINE_OUTPUT_TABLE_COLLECTOR_PACKAGE_NAME}.get_direct_ingest_states_existing_in_env",
@@ -241,10 +210,6 @@ class GetNormalizedStateViewBuildersTest(unittest.TestCase):
         for patcher in self.patchers:
             patcher.stop()
 
-    @patch(
-        f"{UPDATE_NORMALIZED_STATE_PACKAGE_NAME}.is_combined_ingest_and_normalization_launched_in_env",
-        MagicMock(return_value=True),
-    )
     def test_get_normalized_state_view_builders_combined_pipelines_launched(
         self,
     ) -> None:
@@ -291,71 +256,6 @@ FROM `recidiviz-456.us_yy_normalized_state_new.fake_entity`
             {b.address: b.build().view_query for b in builders},
         )
 
-    @patch(
-        f"{UPDATE_NORMALIZED_STATE_PACKAGE_NAME}.is_combined_ingest_and_normalization_launched_in_env",
-    )
-    def test_get_normalized_state_view_builders_combined_pipelines_partial_launched(
-        self, gating_mock: MagicMock
-    ) -> None:
-        def mock_is_combined_ingest_and_normalization_launched_in_env(
-            state_code: StateCode,
-        ) -> bool:
-            if state_code is StateCode.US_XX:
-                return True
-            if state_code is StateCode.US_YY:
-                return False
-            raise ValueError(f"Unexpected state code: {state_code}")
-
-        gating_mock.side_effect = (
-            mock_is_combined_ingest_and_normalization_launched_in_env
-        )
-        expected_address_to_query = {
-            BigQueryAddress(
-                dataset_id="normalized_state_views",
-                table_id="fake_another_entity_fake_entity_association_view",
-            ): """SELECT state_code, fake_another_entity_id, fake_entity_id
-FROM `recidiviz-456.us_xx_normalized_state_new.fake_another_entity_fake_entity_association`
-UNION ALL
-SELECT state_code, fake_another_entity_id, fake_entity_id
-FROM `recidiviz-456.us_yy_normalized_state.fake_another_entity_fake_entity_association`
-""",
-            BigQueryAddress(
-                dataset_id="normalized_state_views", table_id="fake_person_view"
-            ): """SELECT state_code, fake_person_id, full_name
-FROM `recidiviz-456.us_xx_normalized_state_new.fake_person`
-UNION ALL
-SELECT state_code, fake_person_id, full_name
-FROM `recidiviz-456.us_yy_state.fake_person`
-""",
-            BigQueryAddress(
-                dataset_id="normalized_state_views", table_id="fake_another_entity_view"
-            ): """SELECT state_code, another_entity_id, another_name, extra_normalization_only_field, fake_person_id
-FROM `recidiviz-456.us_xx_normalized_state_new.fake_another_entity`
-UNION ALL
-SELECT state_code, another_entity_id, another_name, CAST(NULL AS STRING) AS extra_normalization_only_field, fake_person_id
-FROM `recidiviz-456.us_yy_normalized_state.fake_another_entity`
-""",
-            BigQueryAddress(
-                dataset_id="normalized_state_views", table_id="fake_entity_view"
-            ): """SELECT state_code, entity_id, name, fake_person_id
-FROM `recidiviz-456.us_xx_normalized_state_new.fake_entity`
-UNION ALL
-SELECT state_code, entity_id, name, fake_person_id
-FROM `recidiviz-456.us_yy_normalized_state.fake_entity`
-""",
-        }
-
-        builders = get_normalized_state_view_builders(state_codes_filter=None)
-
-        self.assertEqual(
-            expected_address_to_query,
-            {b.address: b.build().view_query for b in builders},
-        )
-
-    @patch(
-        f"{UPDATE_NORMALIZED_STATE_PACKAGE_NAME}.is_combined_ingest_and_normalization_launched_in_env",
-        MagicMock(return_value=True),
-    )
     def test_get_normalized_state_view_builders_state_code_filter(
         self,
     ) -> None:

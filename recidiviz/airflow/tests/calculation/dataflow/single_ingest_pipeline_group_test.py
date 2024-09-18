@@ -108,17 +108,9 @@ class TestSingleIngestPipelineGroup(unittest.TestCase):
         )
         self.project_environment_patcher.start()
 
-        self.gating_patcher = patch(
-            "recidiviz.airflow.dags.calculation.dataflow.single_ingest_pipeline_group."
-            "is_combined_ingest_and_normalization_launched_in_env",
-            return_value=False,
-        )
-        self.gating_patcher.start()
-
     def tearDown(self) -> None:
         self.environment_patcher.stop()
         self.project_environment_patcher.stop()
-        self.gating_patcher.stop()
 
     def test_dataflow_pipeline_task_exists(self) -> None:
         """Tests that dataflow_pipeline triggers the proper script."""
@@ -205,19 +197,11 @@ class TestSingleIngestPipelineGroupIntegration(AirflowIntegrationTest):
         )
         self.mock_dataflow_operator = self.recidiviz_dataflow_operator_patcher.start()
 
-        self.gating_patcher = patch(
-            "recidiviz.airflow.dags.calculation.dataflow.single_ingest_pipeline_group."
-            "is_combined_ingest_and_normalization_launched_in_env",
-            return_value=False,
-        )
-        self.gating_patcher.start()
-
     def tearDown(self) -> None:
         self.environment_patcher.stop()
         self.kubernetes_pod_operator_patcher.stop()
         self.cloud_sql_query_operator_patcher.stop()
         self.recidiviz_dataflow_operator_patcher.stop()
-        self.gating_patcher.stop()
         super().tearDown()
 
     def test_single_ingest_pipeline_group(self) -> None:
@@ -244,7 +228,6 @@ class TestSingleIngestPipelineGroupIntegration(AirflowIntegrationTest):
                     r"us_xx_dataflow\.us-xx-ingest.*",
                     r".*write_ingest_job_completion",
                     r".*write_upper_bounds",
-                    r"\.us-xx-normalization\.",
                     _DOWNSTREAM_TASK_ID,
                 ],
             )
@@ -276,7 +259,6 @@ class TestSingleIngestPipelineGroupIntegration(AirflowIntegrationTest):
                     r"us_xx_dataflow\.us-xx-ingest.*",
                     r".*write_ingest_job_completion",
                     r".*write_upper_bounds",
-                    r"\.us-xx-normalization\.",
                     _DOWNSTREAM_TASK_ID,
                 ],
             )
@@ -305,7 +287,6 @@ class TestSingleIngestPipelineGroupIntegration(AirflowIntegrationTest):
                     r"us_xx_dataflow\.us-xx-ingest.*",
                     r".*write_ingest_job_completion",
                     r".*write_upper_bounds",
-                    r"\.us-xx-normalization\.",
                     _DOWNSTREAM_TASK_ID,
                 ],
             )
@@ -347,7 +328,6 @@ class TestSingleIngestPipelineGroupIntegration(AirflowIntegrationTest):
                     r"us_xx_dataflow\.us-xx-ingest\.run_pipeline",
                     r".*write_ingest_job_completion",
                     r".*write_upper_bounds",
-                    r"\.us-xx-normalization\.",
                     _DOWNSTREAM_TASK_ID,
                 ],
             )
