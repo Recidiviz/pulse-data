@@ -20,8 +20,10 @@ from typing import Any, Dict, Iterable, Optional, Set
 from unittest.mock import patch
 
 from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
-from recidiviz.calculator.query.state.dataset_config import NORMALIZED_STATE_DATASET
 from recidiviz.common.constants.states import StateCode
+from recidiviz.pipelines.ingest.dataset_config import (
+    normalized_state_dataset_for_state_code,
+)
 from recidiviz.pipelines.supplemental.dataset_config import SUPPLEMENTAL_DATA_DATASET
 from recidiviz.pipelines.supplemental.us_ix_case_note_extracted_entities import pipeline
 from recidiviz.pipelines.supplemental.us_ix_case_note_extracted_entities.us_ix_case_update_info_query_provider import (
@@ -134,7 +136,9 @@ class TestUsIxCaseNoteExtractedEntitiesPipeline(unittest.TestCase):
         """Runs a test version of the pipeline."""
         read_from_bq_constructor = (
             self.fake_bq_source_factory.create_fake_bq_source_constructor(
-                expected_entities_dataset=NORMALIZED_STATE_DATASET,
+                expected_entities_dataset=normalized_state_dataset_for_state_code(
+                    StateCode.US_XX
+                ),
                 data_dict=data_dict,
                 state_code=StateCode.US_IX,
             )

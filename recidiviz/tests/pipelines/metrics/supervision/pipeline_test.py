@@ -28,10 +28,7 @@ from freezegun import freeze_time
 from more_itertools import one
 
 from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
-from recidiviz.calculator.query.state.dataset_config import (
-    DATAFLOW_METRICS_DATASET,
-    NORMALIZED_STATE_DATASET,
-)
+from recidiviz.calculator.query.state.dataset_config import DATAFLOW_METRICS_DATASET
 from recidiviz.common.constants.state.state_assessment import StateAssessmentType
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_period import (
@@ -73,6 +70,9 @@ from recidiviz.persistence.entity.state.normalized_entities import (
     NormalizedStateSupervisionPeriod,
     NormalizedStateSupervisionSentence,
     NormalizedStateSupervisionViolationResponse,
+)
+from recidiviz.pipelines.ingest.dataset_config import (
+    normalized_state_dataset_for_state_code,
 )
 from recidiviz.pipelines.ingest.state.normalization.normalization_managers.assessment_normalization_manager import (
     DEFAULT_ASSESSMENT_SCORE_BUCKET,
@@ -444,7 +444,9 @@ class TestSupervisionPipeline(unittest.TestCase):
         """Runs a test version of the supervision pipeline."""
         read_from_bq_constructor = (
             self.fake_bq_source_factory.create_fake_bq_source_constructor(
-                expected_entities_dataset=NORMALIZED_STATE_DATASET,
+                expected_entities_dataset=normalized_state_dataset_for_state_code(
+                    StateCode(state_code.upper())
+                ),
                 data_dict=data_dict,
             )
         )

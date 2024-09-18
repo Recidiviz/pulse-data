@@ -23,10 +23,12 @@ from recidiviz.big_query.big_query_query_provider import (
     BigQueryQueryProvider,
     SimpleBigQueryQueryProvider,
 )
-from recidiviz.calculator.query.state import dataset_config
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.dataset_config import raw_latest_views_dataset_for_region
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.pipelines.ingest.dataset_config import (
+    normalized_state_dataset_for_state_code,
+)
 
 # TODO(#16661) Rename US_IX -> US_ID in this file/code when we are ready to migrate the
 # new ATLAS pipeline to run for US_ID
@@ -76,10 +78,9 @@ def get_us_ix_case_update_info_query_provider(
         project_id=project_id,
         query_template=US_IX_CASE_UPDATE_INFO_QUERY_TEMPLATE,
         query_format_kwargs={
-            # TODO(#29518): Update to normalized_state_dataset_for_state_code() once
-            #  the ingest/normalization pipeline outputs all entities to the
-            #  us_xx_normalized_state dataset, whether or not they are normalized.
-            "normalized_state_dataset": dataset_config.NORMALIZED_STATE_DATASET,
+            "normalized_state_dataset": normalized_state_dataset_for_state_code(
+                StateCode.US_IX
+            ),
             "us_ix_raw_data_up_to_date_dataset": raw_latest_views_dataset_for_region(
                 state_code=StateCode.US_IX, instance=DirectIngestInstance.PRIMARY
             ),

@@ -104,7 +104,7 @@ class TestSupplementalPipelineParameters(unittest.TestCase):
             ValueError,
             r"Found original dataset \[us_yy_raw_data\] in overrides which is not a "
             r"dataset this pipeline reads from. Datasets you can override: "
-            r"\['normalized_state', 'us_ix_raw_data_up_to_date_views'\].",
+            r"\['us_ix_normalized_state_new', 'us_ix_raw_data_up_to_date_views'\].",
         ):
             pipeline_parameters.check_for_valid_input_dataset_overrides(
                 get_all_reference_query_input_datasets_for_pipeline(
