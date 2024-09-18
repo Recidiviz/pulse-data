@@ -19,15 +19,6 @@ from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
 from recidiviz.common.constants.states import StateCode
 
 
-# TODO(#31741): All usages of this should be eliminated once combined ingest and
-#  normalization pipelines are launched in all states.
-def normalized_state_dataset_for_state_code_legacy_normalization_output(
-    state_code: StateCode,
-) -> str:
-    """Where the output of state-specific entity normalization pipelines is stored."""
-    return f"{state_code.value.lower()}_normalized_state"
-
-
 # TODO(#31741): Move this function to recidiviz/pipelines/ingest once we've shipped
 #  combined ingest and normalization.
 def normalized_state_dataset_for_state_code_ingest_pipeline_output(

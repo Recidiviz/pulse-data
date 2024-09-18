@@ -30,15 +30,9 @@ from recidiviz.persistence.database.bq_refresh.update_normalized_state_dataset i
     combine_sources_into_single_normalized_state_dataset,
     get_normalized_state_view_builders,
 )
-from recidiviz.source_tables import (
-    ingest_pipeline_output_table_collector,
-    normalization_pipeline_output_table_collector,
-)
+from recidiviz.source_tables import ingest_pipeline_output_table_collector
 from recidiviz.source_tables.ingest_pipeline_output_table_collector import (
     build_ingest_pipeline_output_source_table_collections,
-)
-from recidiviz.source_tables.normalization_pipeline_output_table_collector import (
-    build_normalization_pipeline_output_source_table_collections,
 )
 from recidiviz.source_tables.source_table_config import SourceTableCollection
 from recidiviz.source_tables.union_tables_output_table_collector import (
@@ -53,9 +47,6 @@ UPDATE_NORMALIZED_STATE_PACKAGE_NAME = update_normalized_state_dataset.__name__
 INGEST_PIPELINE_OUTPUT_TABLE_COLLECTOR_PACKAGE_NAME = (
     ingest_pipeline_output_table_collector.__name__
 )
-NORMALIZATION_PIPELINE_OUTPUT_TABLE_COLLECTOR_PACKAGE_NAME = (
-    normalization_pipeline_output_table_collector.__name__
-)
 
 
 @pytest.mark.uses_bq_emulator
@@ -69,7 +60,6 @@ class UpdateNormalizedStateDatasetIntegrationTest(BigQueryEmulatorTestCase):
     def get_source_tables(cls) -> list[SourceTableCollection]:
         return [
             # Input collections
-            *build_normalization_pipeline_output_source_table_collections(),
             *build_ingest_pipeline_output_source_table_collections(),
             # Output collections
             build_unioned_normalized_state_source_table_collection(),
@@ -122,7 +112,7 @@ class UpdateNormalizedStateDatasetIntegrationTest(BigQueryEmulatorTestCase):
 
         # Mimic loading data into sandbox input datasets
         overrides_builder = BigQueryAddressOverrides.Builder(sandbox_prefix=None)
-        for dataset_id in ["us_ca_normalized_state", "us_ca_normalized_state_new"]:
+        for dataset_id in ["us_ca_normalized_state_new"]:
             sandbox_dataset_id = self._copy_source_tables_to_sandbox(
                 original_dataset_id=dataset_id, sandbox_prefix=input_sandbox_prefix
             )
@@ -193,10 +183,6 @@ class GetNormalizedStateViewBuildersTest(unittest.TestCase):
             patch(
                 f"{INGEST_PIPELINE_OUTPUT_TABLE_COLLECTOR_PACKAGE_NAME}.normalized_entities",
                 fake_normalized_entities,
-            ),
-            patch(
-                f"{NORMALIZATION_PIPELINE_OUTPUT_TABLE_COLLECTOR_PACKAGE_NAME}.get_direct_ingest_states_existing_in_env",
-                MagicMock(return_value=states),
             ),
             patch(
                 "recidiviz.source_tables.union_tables_output_table_collector.normalized_entities",

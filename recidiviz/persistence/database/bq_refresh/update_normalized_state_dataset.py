@@ -42,9 +42,6 @@ from recidiviz.pipelines.normalization.dataset_config import (
 from recidiviz.source_tables.ingest_pipeline_output_table_collector import (
     build_ingest_pipeline_output_source_table_collections,
 )
-from recidiviz.source_tables.normalization_pipeline_output_table_collector import (
-    build_normalization_pipeline_output_source_table_collections,
-)
 from recidiviz.source_tables.source_table_config import SourceTableConfig
 from recidiviz.source_tables.source_table_update_manager import SourceTableUpdateManager
 from recidiviz.source_tables.union_tables_output_table_collector import (
@@ -107,13 +104,9 @@ def _build_normalized_state_unioned_view_builder(
 
 
 def _get_all_candidate_source_tables() -> list[SourceTableConfig]:
-    collections = (
-        *build_ingest_pipeline_output_source_table_collections(),
-        *build_normalization_pipeline_output_source_table_collections(),
-    )
     return [
         source_table
-        for collection in collections
+        for collection in build_ingest_pipeline_output_source_table_collections()
         for source_table in collection.source_tables
     ]
 
