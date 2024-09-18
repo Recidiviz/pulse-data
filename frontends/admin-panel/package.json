@@ -7,7 +7,7 @@
   "license": "GNU General Public License v3",
   "dependencies": {
     "@ant-design/icons": "^4.4.0",
-    "@recidiviz/design-system": "^2.6.1",
+    "@recidiviz/design-system": "^5.7.0",
     "@types/d3-scale": "^4.0.1",
     "@types/querystringify": "^2.0.0",
     "@types/styled-components": "^5.1.5",
