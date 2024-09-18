@@ -14,8 +14,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Creates new dataflow pipeline datasets (normalized state sandboxes, dataflow metrics,
-supplemental datasets) prefixed with the provided sandbox_dataset_prefix, where the schemas
+"""Creates new dataflow pipeline datasets (e.g. dataflow metrics, supplemental datasets)
+prefixed with the provided sandbox_dataset_prefix, where the schemas
 of the output tables will match the attributes on the classes locally. This script is used
 to create a test output location when testing Dataflow calculation changes. The
 sandbox_dataset_prefix provided should be your github username or some personal unique
@@ -28,7 +28,7 @@ python -m recidiviz.tools.calculator.create_or_update_dataflow_sandbox \
         --sandbox_dataset_prefix [SANDBOX_DATASET_PREFIX] \
         [--state_code STATE_CODE] \
         [--allow_overwrite] \
-        --datasets_to_create metrics normalization supplemental ingest (must be last due to list)
+        --datasets_to_create metrics supplemental (must be last due to list)
 """
 import argparse
 import logging
@@ -43,7 +43,6 @@ from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
 from recidiviz.pipelines.pipeline_names import (
     INGEST_PIPELINE_NAME,
     METRICS_PIPELINE_NAME,
-    NORMALIZATION_PIPELINE_NAME,
     SUPPLEMENTAL_PIPELINE_NAME,
 )
 from recidiviz.source_tables.dataflow_output_table_collector import (
@@ -68,9 +67,6 @@ TEMP_DATAFLOW_DATASET_DEFAULT_TABLE_EXPIRATION_MS = 72 * 60 * 60 * 1000
 
 SANDBOX_TYPES = [
     METRICS_PIPELINE_NAME,
-    # TODO(#31741): Remove this and update docstring once combined ingest and
-    #  normalization pipelines are launched in all states.
-    NORMALIZATION_PIPELINE_NAME,
     SUPPLEMENTAL_PIPELINE_NAME,
     INGEST_PIPELINE_NAME,
 ]
@@ -143,13 +139,7 @@ def create_or_update_dataflow_sandbox(
                 )
             )
 
-        # Filter down to relevant collections based on filters
-        if pipeline in (
-            INGEST_PIPELINE_NAME,
-            # TODO(#31741): Remove this and update docstring once combined ingest and
-            #  normalization pipelines are launched in all states.
-            NORMALIZATION_PIPELINE_NAME,
-        ):
+            # Filter down to relevant collections based on filters
             pipeline_collections = [
                 c
                 for c in pipeline_collections
@@ -188,15 +178,14 @@ def parse_arguments() -> argparse.Namespace:
     parser.add_argument(
         "--state_code",
         type=StateCode,
-        help="If set, sandbox datasets will only be created for this state. Relevant "
-        "when creating the normalization dataset.",
+        help="If set, sandbox datasets will only be created for this state.",
     )
     parser.add_argument(
         "--sandbox_dataset_prefix",
         dest="sandbox_dataset_prefix",
         type=str,
         required=True,
-        help="A prefix to append to the normalized_state datasets. Should be your "
+        help="A prefix to append to the sandbox datasets. Should be your "
         "github username or some personal unique identifier so it's easy for "
         "others to tell who created the dataset.",
     )

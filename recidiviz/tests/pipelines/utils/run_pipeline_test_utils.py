@@ -35,9 +35,6 @@ from recidiviz.pipelines.base_pipeline import BasePipeline
 from recidiviz.pipelines.ingest.state import write_root_entities_to_bq
 from recidiviz.pipelines.ingest.state.pipeline import StateIngestPipeline
 from recidiviz.pipelines.metrics.base_metric_pipeline import MetricPipeline
-from recidiviz.pipelines.normalization.comprehensive.pipeline import (
-    ComprehensiveNormalizationPipeline,
-)
 from recidiviz.pipelines.supplemental.base_supplemental_dataset_pipeline import (
     SupplementalDatasetPipeline,
 )
@@ -100,10 +97,6 @@ def run_test_pipeline(
     if issubclass(pipeline_cls, MetricPipeline):
         write_to_bq_class = (
             "recidiviz.pipelines.metrics.base_metric_pipeline.WriteToBigQuery"
-        )
-    elif issubclass(pipeline_cls, ComprehensiveNormalizationPipeline):
-        write_to_bq_class = (
-            "recidiviz.pipelines.normalization.comprehensive.pipeline.WriteToBigQuery"
         )
     elif issubclass(pipeline_cls, SupplementalDatasetPipeline):
         class_name = pipeline_cls.pipeline_name().lower().replace("_supplemental", "")
@@ -238,8 +231,6 @@ def default_arg_list_for_pipeline(
                 metric_types_filter=additional_pipeline_args.get("metric_types_filter"),
             )
         )
-    elif issubclass(pipeline, ComprehensiveNormalizationPipeline):
-        pass
     elif issubclass(pipeline, SupplementalDatasetPipeline):
         pass
     elif issubclass(pipeline, StateIngestPipeline):

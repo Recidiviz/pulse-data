@@ -29,7 +29,7 @@ class FlexPipelineSandboxPathsTest(unittest.TestCase):
     """Tests to verify paths used in the sandbox script exist."""
 
     def test_template_paths_exist_for_all_pipelines(self) -> None:
-        for pipeline_type in ["metrics", "supplemental", "normalization"]:
+        for pipeline_type in ["metrics", "supplemental"]:
             template_path = get_template_path(pipeline_type)
             self.assertEqual(os.path.isfile(template_path), True)
 

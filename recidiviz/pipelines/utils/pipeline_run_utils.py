@@ -24,7 +24,6 @@ from typing import List, Type
 from recidiviz.common.module_collector_mixin import ModuleCollectorMixin
 from recidiviz.pipelines import ingest as ingest_pipeline_top_level
 from recidiviz.pipelines import metrics as metrics_pipeline_top_level
-from recidiviz.pipelines import normalization as normalization_pipeline_top_level
 from recidiviz.pipelines import supplemental as supplemental_pipeline_top_level
 from recidiviz.pipelines.base_pipeline import BasePipeline
 
@@ -84,7 +83,6 @@ def collect_all_pipeline_modules() -> List[ModuleType]:
 
 
 _TOP_LEVEL_PIPELINE_MODULES: List[ModuleType] = [
-    normalization_pipeline_top_level,
     supplemental_pipeline_top_level,
     metrics_pipeline_top_level,
     ingest_pipeline_top_level,

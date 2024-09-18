@@ -49,14 +49,8 @@ from recidiviz.big_query.big_query_results_contents_handle import (
     BigQueryResultsContentsHandle,
 )
 from recidiviz.common.constants.states import StateCode
-from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.database.schema_type import SchemaType
-from recidiviz.persistence.database.schema_utils import (
-    get_all_table_classes_in_schema,
-    get_database_entities_by_association_table,
-    get_database_entity_by_table_name,
-    is_association_table,
-)
+from recidiviz.persistence.database.schema_utils import get_all_table_classes_in_schema
 from recidiviz.persistence.entity.normalized_entities_utils import (
     normalized_entity_class_with_base_class_name,
 )
@@ -723,52 +717,6 @@ class FakeWriteMetricsToBigQuery(FakeWriteToBigQuery):
         return []
 
 
-class FakeWriteNormalizedEntitiesToBigQuery(FakeWriteToBigQuery):
-    """Fake PTransform for normalization pipelines that no-ops instead of writing
-    normalized entities to BQ."""
-
-    def __init__(
-        self,
-        output_table: str,
-        expected_output_tags: Collection[str],
-    ):
-        super().__init__(output_table)
-        self._expected_output_tags = expected_output_tags
-
-    def expand(self, input_or_inputs: PCollection) -> Any:
-        if is_association_table(self._output_table):
-            child_entity, parent_entity = get_database_entities_by_association_table(
-                schema, self._output_table
-            )
-
-            if (
-                f"{child_entity.__name__}_{parent_entity.__name__}"
-                in self._expected_output_tags
-            ):
-                assert_that(
-                    input_or_inputs,
-                    FakeBigQueryAssertMatchers.validate_normalized_association_entity_output(
-                        child_entity.__name__, parent_entity.__name__
-                    ),
-                )
-            else:
-                assert_that(input_or_inputs, equal_to([]))
-        else:
-            db_entity = get_database_entity_by_table_name(schema, self._output_table)
-
-            if db_entity.__name__ in self._expected_output_tags:
-                assert_that(
-                    input_or_inputs,
-                    FakeBigQueryAssertMatchers.validate_normalized_entity_output(
-                        db_entity.__name__
-                    ),
-                )
-            else:
-                assert_that(input_or_inputs, equal_to([]))
-
-        return []
-
-
 class FakeWriteExactOutputToBigQuery(FakeWriteToBigQuery):
     """Fake PTransform for pipelines that no-ops instead of writing given rows to BQ."""
 
@@ -782,34 +730,6 @@ class FakeWriteExactOutputToBigQuery(FakeWriteToBigQuery):
 
     def expand(self, input_or_inputs: PCollection) -> Any:
         assert_that(input_or_inputs, equal_to(self._expected_output))
-
-
-ExpectedOutput = Iterable[Dict[str, Any]]
-ActualOutput = List[Dict[str, Any]]
-
-
-class FakeWriteOutputToBigQueryWithValidator(FakeWriteToBigQuery):
-    """Allows for the write results of BigQuery to be validated in a custom way."""
-
-    def __init__(
-        self,
-        output_address: BigQueryAddress,
-        expected_output: ExpectedOutput,
-        validator_fn_generator: Callable[
-            [ExpectedOutput, str], Callable[[ActualOutput], None]
-        ],
-    ) -> None:
-        super().__init__(output_table=output_address.table_id)
-        self._expected_output = expected_output
-        # This function takes in a list of expected results and returns a function that will verify
-        # that the pipeline output matches the expected results.
-        self._validator_fn_generator = validator_fn_generator
-
-    def expand(self, input_or_inputs: PCollection) -> Any:
-        assert_that(
-            input_or_inputs,
-            self._validator_fn_generator(self._expected_output, self._output_table),
-        )
 
 
 FakeWriteToBigQueryType = TypeVar("FakeWriteToBigQueryType", bound=FakeWriteToBigQuery)

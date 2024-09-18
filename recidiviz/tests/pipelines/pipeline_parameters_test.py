@@ -24,9 +24,6 @@ import attr
 import recidiviz
 from recidiviz.pipelines.ingest.pipeline_parameters import IngestPipelineParameters
 from recidiviz.pipelines.metrics.pipeline_parameters import MetricsPipelineParameters
-from recidiviz.pipelines.normalization.pipeline_parameters import (
-    NormalizationPipelineParameters,
-)
 from recidiviz.pipelines.pipeline_parameters import PipelineParameters
 from recidiviz.pipelines.supplemental.pipeline_parameters import (
     SupplementalPipelineParameters,
@@ -36,7 +33,6 @@ from recidiviz.utils.yaml_dict import YAMLDict
 ALL_PARAMETERS_SUBCLASSES: List[Type[PipelineParameters]] = [
     IngestPipelineParameters,
     MetricsPipelineParameters,
-    NormalizationPipelineParameters,
     SupplementalPipelineParameters,
 ]
 
