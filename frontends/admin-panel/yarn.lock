@@ -6251,10 +6251,10 @@ http-proxy@^1.18.1:
     follow-redirects "^1.0.0"
     requires-port "^1.0.0"
 
-http-status@^1.6.2:
-  version "1.7.3"
-  resolved "https://registry.yarnpkg.com/http-status/-/http-status-1.7.3.tgz#d6dcc3a5a3fb5b1bfcc6ad2b38af0b7258bc1459"
-  integrity sha512-GS8tL1qHT2nBCMJDYMHGkkkKQLNkIAHz37vgO68XKvzv+XyqB4oh/DfmMHdtRzfqSJPj1xKG2TaELZtlCz6BEQ==
+http-status@^1.7.4:
+  version "1.7.4"
+  resolved "https://registry.yarnpkg.com/http-status/-/http-status-1.7.4.tgz#7bb7f6b511e0bf5e9e20fb5aa00666f09d1f2615"
+  integrity sha512-c2qSwNtTlHVYAhMj9JpGdyo0No/+DiKXCJ9pHtZ2Yf3QmPnBIytKSRT7BuyIiQ7icXLynavGmxUqkOjSrAuMuA==
 
 https-proxy-agent@^5.0.0:
   version "5.0.1"

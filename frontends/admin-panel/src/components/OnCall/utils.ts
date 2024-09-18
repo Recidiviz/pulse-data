@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
-import status from "http-status";
+import status, { HttpStatus } from "http-status";
 import moment from "moment-timezone";
 
 import { gcpEnvironment } from "../Utilities/EnvironmentUtilities";
@@ -38,7 +38,7 @@ export const getStatusCodeTitle = (code: number): string => {
   if (Object.keys(specialStatusCodes).includes(String(code))) {
     name = specialStatusCodes[code as keyof typeof specialStatusCodes];
   } else {
-    name = status[`${code}_NAME`] as string;
+    name = status[`${code}_NAME` as keyof HttpStatus] as string;
   }
 
   if (!name) {
