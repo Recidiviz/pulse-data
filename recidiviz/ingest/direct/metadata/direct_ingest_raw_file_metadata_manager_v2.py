@@ -20,7 +20,7 @@ from collections import defaultdict
 from typing import Dict, List, Optional
 
 from more_itertools import one
-from sqlalchemy import and_, asc, case, func, select
+from sqlalchemy import and_, asc, case, func, select, text
 
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.ingest.direct.gcs.filename_parts import filename_parts_from_path
@@ -40,6 +40,7 @@ from recidiviz.persistence.database.session import Session
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.persistence.entity.operations import entities
+from recidiviz.utils.types import assert_type
 
 
 # TODO(#28239) migrate this manager back to DirectIngestRawFileMetadataManager
@@ -334,10 +335,20 @@ class DirectIngestRawFileMetadataManagerV2:
 
     # --- file invalidation logic -----------------------------------------------------
 
-    def mark_raw_big_query_file_as_invalidated_by_file_id(
+    def mark_raw_big_query_file_as_invalidated_by_file_id(self, file_id: int) -> None:
+        """Marks the row associated with the |file_id| as invalidated=True."""
+        with SessionFactory.using_database(self.database_key) as session:
+            metadata = self._get_raw_big_query_file_metadata_for_file_id(
+                session, file_id
+            )
+            metadata.is_invalidated = True
+
+    def mark_raw_big_query_file_as_invalidated_by_file_id_with_session(
         self, session: Session, file_id: int
     ) -> None:
-        """Marks the row associated with the |file_id| as invalidated=True."""
+        """Marks the row associated with the |file_id| as invalidated=True using the
+        provided |session|.
+        """
         metadata = self._get_raw_big_query_file_metadata_for_file_id(session, file_id)
         metadata.is_invalidated = True
 
@@ -643,3 +654,74 @@ class DirectIngestRawFileMetadataManagerV2:
                 .values(is_invalidated=True)
             )
             session.execute(update_query)
+
+    def _earliest_file_discovery_time(
+        self, session: Session
+    ) -> Optional[datetime.datetime]:
+        result = (
+            session.query(
+                func.min(
+                    schema.DirectIngestRawGCSFileMetadata.file_discovery_time
+                ).label("earliest_discovery_time")
+            )
+            .select_from(schema.DirectIngestRawGCSFileMetadata)
+            .join(schema.DirectIngestRawBigQueryFileMetadata)
+            .filter(
+                schema.DirectIngestRawGCSFileMetadata.region_code == self.region_code,
+                schema.DirectIngestRawGCSFileMetadata.raw_data_instance
+                == self.raw_data_instance.value,
+                schema.DirectIngestRawBigQueryFileMetadata.is_invalidated.isnot(True),
+            )
+            .all()
+        )
+        return one(result).earliest_discovery_time
+
+    def stale_secondary_raw_data(self) -> List[str]:
+        """Returns whether there is stale raw data in SECONDARY, as defined by:
+        a) there exist non-invalidated files that have been added to PRIMARY after
+        the timestamp of the the earliest non-invalidated discovery time in SECONDARY
+        b) One or more of those files does not exist in SECONDARY.
+        """
+        if self.raw_data_instance != DirectIngestInstance.SECONDARY:
+            raise ValueError(
+                f"Cannot determine if secondary is stale from {self.raw_data_instance.value}"
+            )
+
+        with SessionFactory.using_database(
+            self.database_key,
+        ) as session:
+
+            secondary_earliest_timestamp = self._earliest_file_discovery_time(session)
+
+            if not secondary_earliest_timestamp:
+                return []
+
+            query = f"""
+            WITH primary_raw_data AS (
+                SELECT *
+                FROM direct_ingest_raw_gcs_file_metadata AS gcs
+                JOIN direct_ingest_raw_big_query_file_metadata as bq
+                    ON gcs.file_id = bq.file_id
+                WHERE gcs.raw_data_instance = 'PRIMARY'
+                AND gcs.region_code = '{self.region_code}'
+                AND bq.is_invalidated IS False
+            ), secondary_raw_data AS (
+                SELECT *
+                FROM direct_ingest_raw_gcs_file_metadata AS gcs
+                JOIN direct_ingest_raw_big_query_file_metadata as bq
+                    ON gcs.file_id = bq.file_id
+                WHERE gcs.raw_data_instance = 'SECONDARY'
+                AND gcs.region_code = '{self.region_code}'
+                AND bq.is_invalidated IS False
+            )
+            SELECT primary_raw_data.normalized_file_name
+            FROM primary_raw_data
+            LEFT OUTER JOIN secondary_raw_data
+                ON primary_raw_data.normalized_file_name=secondary_raw_data.normalized_file_name
+            WHERE secondary_raw_data.normalized_file_name IS NULL
+            AND primary_raw_data.file_discovery_time > '{secondary_earliest_timestamp}'
+            """
+
+            return [
+                assert_type(one(result), str) for result in session.execute(text(query))
+            ]

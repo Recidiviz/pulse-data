@@ -522,7 +522,6 @@ class IngestOpsEndpointTests(TestCase):
 
         # Assert
         self.assertEqual(response.status_code, 200)
-        print(response.json)
         self.assertEqual(
             response.json,
             {
@@ -539,3 +538,34 @@ class IngestOpsEndpointTests(TestCase):
                 "updateCadence": "WEEKLY",
             },
         )
+
+    @patch(
+        "recidiviz.admin_panel.routes.ingest_ops.DirectIngestRawDataFlashStatusManager"
+    )
+    def test_get_flash_status(self, manager_mock: mock.MagicMock) -> None:
+        # Arrange
+        manager_mock().is_flashing_in_progress.return_value = False
+        # Act
+        response = self.client.get(
+            "/api/ingest_operations/is_flashing_in_progress/US_XX",
+            headers={"X-Appengine-Inbound-Appid": "recidiviz-456"},
+        )
+
+        # Assert
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json, False)
+
+    @patch(
+        "recidiviz.admin_panel.routes.ingest_ops.DirectIngestRawFileMetadataManagerV2"
+    )
+    def test_get_stale_secondary(self, manager_mock: mock.MagicMock) -> None:
+        # Arrange
+        manager_mock().stale_secondary_raw_data.return_value = ["path_a", "path_b"]
+        response = self.client.get(
+            "/api/ingest_operations/stale_secondary/US_XX",
+            headers={"X-Appengine-Inbound-Appid": "recidiviz-456"},
+        )
+
+        # Assert
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json, ["path_a", "path_b"])

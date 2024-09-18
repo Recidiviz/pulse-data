@@ -13,9 +13,24 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+import { message } from "antd";
+
 // =============================================================================
 export function getValueIfResolved<Value>(
   result: PromiseSettledResult<Value>
 ): Value | undefined {
   return result.status === "fulfilled" ? result.value : undefined;
 }
+
+export const runAndCheckStatus = async (
+  fn: () => Promise<Response>
+): Promise<boolean> => {
+  const r = await fn();
+  if (r.status >= 400) {
+    const text = await r.text();
+    message.error(`Error: ${text}`);
+    return false;
+  }
+  return true;
+};

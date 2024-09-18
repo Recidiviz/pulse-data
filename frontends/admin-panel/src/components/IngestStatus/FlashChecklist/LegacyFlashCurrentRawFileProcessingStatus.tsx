@@ -16,7 +16,7 @@
 // =============================================================================
 import { IngestRawFileProcessingStatus } from "../constants";
 
-export class CurrentRawFileProcessingStatus {
+export class LegacyCurrentRawFileProcessingStatus {
   primary: IngestRawFileProcessingStatus[] | undefined;
 
   secondary: IngestRawFileProcessingStatus[] | undefined;

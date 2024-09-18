@@ -28,6 +28,7 @@ import { getValueIfResolved } from "./FlashUtils";
 import { LegacyFlashChecklistStore } from "./LegacyFlashChecklistStore";
 import LegacyFlashDatabaseChecklistActiveComponent from "./LegacyFlashDatabaseChecklistActiveComponent";
 import { NewFlashChecklistStore } from "./NewFlashChecklistStore";
+import NewFlashDatabaseChecklistActiveComponent from "./NewFlashDatabaseChecklistActiveComponent";
 
 const FlashDatabaseChecklist = (): JSX.Element => {
   const [stateInfo, setStateInfo] = React.useState<StateCodeInfo | undefined>(
@@ -101,8 +102,7 @@ const FlashDatabaseChecklist = (): JSX.Element => {
     rawDataImportDagEnabled.primary &&
     rawDataImportDagEnabled.secondary
   ) {
-    // TODO(#33150) build the new flashing checklist here, behind gates
-    activeComponent = <div> enabled! </div>;
+    activeComponent = <NewFlashDatabaseChecklistActiveComponent />;
   } else if (
     rawDataImportDagEnabled &&
     rawDataImportDagEnabled.primary !== rawDataImportDagEnabled.secondary
@@ -160,5 +160,4 @@ const FlashDatabaseChecklist = (): JSX.Element => {
     </>
   );
 };
-
 export default FlashDatabaseChecklist;

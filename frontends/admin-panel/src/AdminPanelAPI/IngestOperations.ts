@@ -391,3 +391,19 @@ export const getRawFileConfigSummary = async (
     `/api/ingest_operations/raw_file_config/${stateCode}/${fileTag}`
   );
 };
+
+// Get current flash status row
+export const getIsFlashingInProgress = async (
+  stateCode: string
+): Promise<Response> => {
+  return getResource(
+    `/api/ingest_operations/is_flashing_in_progress/${stateCode}`
+  );
+};
+
+// Get info about whether secondary is stale
+export const getStaleSecondaryRawData = async (
+  stateCode: string
+): Promise<Response> => {
+  return getResource(`/api/ingest_operations/stale_secondary/${stateCode}`);
+};

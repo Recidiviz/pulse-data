@@ -45,8 +45,14 @@ from recidiviz.ingest.direct.metadata.direct_ingest_dataflow_job_manager import 
 from recidiviz.ingest.direct.metadata.direct_ingest_instance_status_manager import (
     DirectIngestInstanceStatusManager,
 )
+from recidiviz.ingest.direct.metadata.direct_ingest_raw_data_flash_status_manager import (
+    DirectIngestRawDataFlashStatusManager,
+)
 from recidiviz.ingest.direct.metadata.direct_ingest_raw_file_import_manager import (
     DirectIngestRawFileImportManager,
+)
+from recidiviz.ingest.direct.metadata.direct_ingest_raw_file_metadata_manager_v2 import (
+    DirectIngestRawFileMetadataManagerV2,
 )
 from recidiviz.ingest.direct.metadata.legacy_direct_ingest_raw_file_metadata_manager import (
     LegacyDirectIngestRawFileMetadataManager,
@@ -800,5 +806,35 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
 
         return (
             jsonify(raw_config.for_admin_panel_api() if raw_config else None),
+            HTTPStatus.OK,
+        )
+
+    @bp.route("/api/ingest_operations/is_flashing_in_progress/<state_code_str>")
+    def _get_flash_status(
+        state_code_str: str,
+    ) -> Tuple[Response, HTTPStatus]:
+        state_code = StateCode(state_code_str)
+
+        is_flashing = DirectIngestRawDataFlashStatusManager(
+            state_code.value
+        ).is_flashing_in_progress()
+
+        return (
+            jsonify(is_flashing),
+            HTTPStatus.OK,
+        )
+
+    @bp.route("/api/ingest_operations/stale_secondary/<state_code_str>")
+    def _get_stale_secondary(
+        state_code_str: str,
+    ) -> Tuple[Response, HTTPStatus]:
+        state_code = StateCode(state_code_str)
+
+        stale_secondary = DirectIngestRawFileMetadataManagerV2(
+            state_code.value, DirectIngestInstance.SECONDARY
+        ).stale_secondary_raw_data()
+
+        return (
+            jsonify(stale_secondary),
             HTTPStatus.OK,
         )

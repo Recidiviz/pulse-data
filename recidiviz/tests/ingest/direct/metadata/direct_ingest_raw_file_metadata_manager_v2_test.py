@@ -500,7 +500,7 @@ class DirectIngestRawFileMetadataV2ManagerTest(unittest.TestCase):
         )
         assert metadata.file_id is not None
         with SessionFactory.using_database(self.database_key) as session:
-            self.raw_metadata_manager.mark_raw_big_query_file_as_invalidated_by_file_id(
+            self.raw_metadata_manager.mark_raw_big_query_file_as_invalidated_by_file_id_with_session(
                 session=session,
                 file_id=metadata.file_id,
             )
@@ -540,7 +540,7 @@ class DirectIngestRawFileMetadataV2ManagerTest(unittest.TestCase):
         assert old_metadata.file_id is not None
 
         with SessionFactory.using_database(self.database_key) as session:
-            self.raw_metadata_manager.mark_raw_big_query_file_as_invalidated_by_file_id(
+            self.raw_metadata_manager.mark_raw_big_query_file_as_invalidated_by_file_id_with_session(
                 session=session,
                 file_id=old_metadata.file_id,
             )
@@ -582,7 +582,7 @@ class DirectIngestRawFileMetadataV2ManagerTest(unittest.TestCase):
         )
 
         with SessionFactory.using_database(self.database_key) as session:
-            self.raw_metadata_manager.mark_raw_big_query_file_as_invalidated_by_file_id(
+            self.raw_metadata_manager.mark_raw_big_query_file_as_invalidated_by_file_id_with_session(
                 session, metadata.file_id
             )
 
@@ -1164,7 +1164,7 @@ class DirectIngestRawFileMetadataV2ManagerTest(unittest.TestCase):
                 )
             if day == 2:
                 with SessionFactory.using_database(self.database_key) as session:
-                    self.raw_metadata_manager.mark_raw_big_query_file_as_invalidated_by_file_id(
+                    self.raw_metadata_manager.mark_raw_big_query_file_as_invalidated_by_file_id_with_session(
                         session, assert_type(gcs_file.file_id, int)
                     )
 
@@ -1365,7 +1365,7 @@ class DirectIngestRawFileMetadataV2ManagerTest(unittest.TestCase):
 
             if day == 2:
                 with SessionFactory.using_database(self.database_key) as session:
-                    self.raw_metadata_manager.mark_raw_big_query_file_as_invalidated_by_file_id(
+                    self.raw_metadata_manager.mark_raw_big_query_file_as_invalidated_by_file_id_with_session(
                         session, bq_file.file_id
                     )
 
@@ -1593,3 +1593,78 @@ class DirectIngestRawFileMetadataV2ManagerTest(unittest.TestCase):
             yesterday_processed = latest_processed
             yesterday_update = curr_dt
             curr_dt = curr_dt + timedelta(days=1)
+
+    def test_stale_secondary_raw_data(self) -> None:
+        dt = datetime.datetime(2022, 10, 1, 0, 0, 0, tzinfo=datetime.UTC)
+
+        self.raw_metadata_manager_secondary.stale_secondary_raw_data()
+
+        file = _make_unprocessed_raw_data_path(
+            path_str="bucket/file_tag_0.csv",
+            dt=dt,
+        )
+        with freeze_time(dt):
+            gcs_file = (
+                self.raw_metadata_manager_secondary.mark_raw_gcs_file_as_discovered(
+                    file
+                )
+            )
+
+            self.raw_metadata_manager_secondary.mark_raw_big_query_file_as_invalidated_by_file_id(
+                assert_type(gcs_file.file_id, int)
+            )
+
+        file_ii = _make_unprocessed_raw_data_path(
+            path_str="bucket/file_tag_0.csv",
+            dt=dt + timedelta(hours=1),
+        )
+
+        with freeze_time(dt + timedelta(hours=1)):
+            _ = self.raw_metadata_manager_secondary.mark_raw_gcs_file_as_discovered(
+                file_ii
+            )
+
+        missing_files_i = self.raw_metadata_manager_secondary.stale_secondary_raw_data()
+
+        self.assertEqual(missing_files_i, [])
+
+        # is invalidated in secondary but is before timestamp
+        file_iii = _make_unprocessed_raw_data_path(
+            path_str="bucket/file_tag_0.csv", dt=dt
+        )
+
+        with freeze_time(dt):
+            gcs_file = self.raw_metadata_manager.mark_raw_gcs_file_as_discovered(
+                file_iii
+            )
+
+        missing_files_ii = (
+            self.raw_metadata_manager_secondary.stale_secondary_raw_data()
+        )
+
+        self.assertEqual(missing_files_ii, [])
+
+        file_iv = _make_unprocessed_raw_data_path(
+            path_str="bucket/file_tag_0.csv", dt=dt + timedelta(hours=4)
+        )
+
+        with freeze_time(dt + timedelta(hours=4)):
+            gcs_file = self.raw_metadata_manager.mark_raw_gcs_file_as_discovered(
+                file_iv
+            )
+
+        missing_files_iii = (
+            self.raw_metadata_manager_secondary.stale_secondary_raw_data()
+        )
+
+        self.assertEqual(missing_files_iii, [file_iv.blob_name])
+
+        self.raw_metadata_manager.mark_raw_big_query_file_as_invalidated_by_file_id(
+            assert_type(gcs_file.file_id, int)
+        )
+
+        missing_files_iv = (
+            self.raw_metadata_manager_secondary.stale_secondary_raw_data()
+        )
+
+        self.assertEqual(missing_files_iv, [])

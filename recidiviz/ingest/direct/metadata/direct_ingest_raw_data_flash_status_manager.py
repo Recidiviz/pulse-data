@@ -44,6 +44,7 @@ class DirectIngestRawDataFlashStatusManager:
     ) -> schema.DirectIngestRawDataFlashStatus:
         return (
             session.query(schema.DirectIngestRawDataFlashStatus)
+            .filter_by(region_code=self.region_code)
             .order_by(schema.DirectIngestRawDataFlashStatus.status_timestamp.desc())
             .limit(1)
             .one()

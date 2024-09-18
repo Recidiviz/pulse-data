@@ -29,10 +29,8 @@ import {
 } from "../../../AdminPanelAPI/IngestOperations";
 import { DirectIngestInstance, QueueState } from "../constants";
 import { useLegacyFlashChecklistStore } from "./FlashChecklistStore";
-import StyledStepContent, {
-  ChecklistSection,
-  CodeBlock,
-} from "./LegacyFlashComponents";
+import { ChecklistSection, CodeBlock } from "./FlashComponents";
+import LegacyStyledStepContent from "./LegacyFlashComponents";
 
 export const LegacyCancelReimportChecklistStepSection = {
   /* Ordered list of sections in the rerun cancellation checklist.
@@ -70,7 +68,7 @@ const LegacyStateCancelReimportChecklist = (): JSX.Element => {
     {
       title: "Pause Queues",
       content: (
-        <StyledStepContent
+        <LegacyStyledStepContent
           description={
             <p>Pause all of the ingest-related queues for {stateCode}.</p>
           }
@@ -94,7 +92,7 @@ const LegacyStateCancelReimportChecklist = (): JSX.Element => {
     {
       title: "Set status to RAW_DATA_REIMPORT_CANCELLATION_IN_PROGRESS",
       content: (
-        <StyledStepContent
+        <LegacyStyledStepContent
           description={
             <p>
               Set ingest status to RAW_DATA_REIMPORT_CANCELLATION_IN_PROGRESS in
@@ -125,7 +123,7 @@ const LegacyStateCancelReimportChecklist = (): JSX.Element => {
     {
       title: "Clean up SECONDARY raw data on BQ",
       content: (
-        <StyledStepContent
+        <LegacyStyledStepContent
           description={
             <p>
               Delete the contents of the tables in{" "}
@@ -147,7 +145,7 @@ const LegacyStateCancelReimportChecklist = (): JSX.Element => {
     {
       title: "Clean up PRUNING raw data tables in SECONDARY on BQ",
       content: (
-        <StyledStepContent
+        <LegacyStyledStepContent
           description={
             <p>
               Delete any outstanding tables in{" "}
@@ -175,7 +173,7 @@ const LegacyStateCancelReimportChecklist = (): JSX.Element => {
     {
       title: "Clear Out SECONDARY Ingest GCS Bucket",
       content: (
-        <StyledStepContent
+        <LegacyStyledStepContent
           description={
             <p>
               Move any remaining unprocessed raw files in{" "}
@@ -208,7 +206,7 @@ const LegacyStateCancelReimportChecklist = (): JSX.Element => {
     {
       title: "Move SECONDARY storage raw files to deprecated",
       content: (
-        <StyledStepContent
+        <LegacyStyledStepContent
           description={
             <p>
               Use the command below within the <code>pipenv shell</code> to move
@@ -232,7 +230,7 @@ const LegacyStateCancelReimportChecklist = (): JSX.Element => {
     {
       title: "Deprecate SECONDARY raw data rows in operations DB",
       content: (
-        <StyledStepContent
+        <LegacyStyledStepContent
           description={
             <p>
               Mark all <code>SECONDARY</code> instance rows in the{" "}
@@ -262,7 +260,7 @@ const LegacyStateCancelReimportChecklist = (): JSX.Element => {
     {
       title: "Set SECONDARY status to RAW_DATA_REIMPORT_CANCELED",
       content: (
-        <StyledStepContent
+        <LegacyStyledStepContent
           description={
             <p>
               Set ingest status to RAW_DATA_REIMPORT_CANCELED in SECONDARY in
@@ -285,7 +283,7 @@ const LegacyStateCancelReimportChecklist = (): JSX.Element => {
     {
       title: "Set status to NO_RAW_DATA_REIMPORT_IN_PROGRESS",
       content: (
-        <StyledStepContent
+        <LegacyStyledStepContent
           description={
             <p>
               Set ingest status to NO_RAW_DATA_REIMPORT_IN_PROGRESS in SECONDARY
@@ -316,7 +314,7 @@ const LegacyStateCancelReimportChecklist = (): JSX.Element => {
     {
       title: "Unpause queues",
       content: (
-        <StyledStepContent
+        <LegacyStyledStepContent
           description={
             <p>
               Now that the database cleanup is complete, unpause the queues.
