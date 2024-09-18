@@ -166,7 +166,7 @@ SELECT
     MIN(tentative_parole_date) AS tentative_parole_date, 
     MIN(parole_hearing_date) AS parole_hearing_date,
 FROM sub_sessions_with_attributes
-WHERE start_date != end_date
+WHERE start_date != {nonnull_end_date_clause('end_date')}
 GROUP BY 1,2,3,4
 """
 

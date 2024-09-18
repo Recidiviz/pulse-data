@@ -24,6 +24,7 @@ if the evaluation result is 'Approved'.
 """
 from google.cloud import bigquery
 
+from recidiviz.calculator.query.bq_utils import nonnull_end_date_clause
 from recidiviz.calculator.query.sessions_query_fragments import (
     create_sub_sessions_with_attributes,
 )
@@ -77,7 +78,7 @@ SELECT
     STRING_AGG(committee_comment_text, ' - ') AS committee_comment_text,
     MAX(next_review_date) AS next_review_date,
 FROM sub_sessions_with_attributes
-WHERE start_date != end_date
+WHERE start_date != {nonnull_end_date_clause('end_date')}
 GROUP BY 1,2,3,4,5
 """
 

@@ -20,6 +20,7 @@ have a pending violation.
 """
 from google.cloud import bigquery
 
+from recidiviz.calculator.query.bq_utils import nonnull_end_date_clause
 from recidiviz.calculator.query.sessions_query_fragments import (
     create_sub_sessions_with_attributes,
 )
@@ -77,7 +78,7 @@ SELECT
   'Pending Violation' AS current_status,
   violation_date,
 FROM sub_sessions_with_attributes
-WHERE start_date != end_date
+WHERE start_date != {nonnull_end_date_clause('end_date')}
 -- If two subsessions, we take the latest violation date
 QUALIFY ROW_NUMBER() OVER(PARTITION BY state_code, person_id, start_date, end_date
                           ORDER BY violation_date DESC) = 1
