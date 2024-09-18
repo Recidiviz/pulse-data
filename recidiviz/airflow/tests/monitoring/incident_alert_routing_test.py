@@ -137,7 +137,7 @@ class TestGetAlertingServiceFromTask(unittest.TestCase):
                 self._make_incident(
                     dag_id=get_calculation_dag_id(_PROJECT_ID),
                     task_id=(
-                        "post_normalization_pipelines.US_ND_dataflow_pipelines."
+                        "post_ingest_pipelines.US_ND_dataflow_pipelines."
                         "full-us-nd-supervision-metrics.run_pipeline"
                     ),
                 )
@@ -171,7 +171,7 @@ class TestGetAlertingServiceFromTask(unittest.TestCase):
                 self._make_incident(
                     dag_id=get_calculation_dag_id(_PROJECT_ID),
                     task_id=(
-                        "post_normalization_pipelines.US_ND_dataflow_pipelines."
+                        "post_ingest_pipelines.US_ND_dataflow_pipelines."
                         "full-us-nd-supervision-metrics.create_flex_template"
                     ),
                 )
@@ -228,7 +228,7 @@ class TestGetAlertingServiceFromTask(unittest.TestCase):
                 self._make_incident(
                     dag_id=get_calculation_dag_id(_PROJECT_ID),
                     task_id=(
-                        "post_normalization_pipelines.US_CA_dataflow_pipelines."
+                        "post_ingest_pipelines.US_CA_dataflow_pipelines."
                         "full-us-nd-supervision-metrics.run_pipeline"
                     ),
                 )
@@ -238,10 +238,10 @@ class TestGetAlertingServiceFromTask(unittest.TestCase):
         self,
     ) -> None:
         bad_task_ids = [
-            "post_normalization_pipelines.US_CA_US_ND_dataflow_pipelines.run_pipeline",
-            "post_normalization_pipelines.US_CA_US_ND.run_pipeline",
-            "post_normalization_pipelines.US_CA-us-nd_asdf.run_pipeline",
-            "post_normalization_pipelines.full-US_CA-asdf_us-nd.run_pipeline",
+            "post_ingest_pipelines.US_CA_US_ND_dataflow_pipelines.run_pipeline",
+            "post_ingest_pipelines.US_CA_US_ND.run_pipeline",
+            "post_ingest_pipelines.US_CA-us-nd_asdf.run_pipeline",
+            "post_ingest_pipelines.full-US_CA-asdf_us-nd.run_pipeline",
         ]
         for bad_task_id in bad_task_ids:
             with self.assertRaisesRegex(

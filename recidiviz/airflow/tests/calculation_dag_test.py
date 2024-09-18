@@ -183,35 +183,35 @@ class TestCalculationPipelineDag(AirflowIntegrationTest):
             normalized_state_downstream_dag.task_ids,
         )
 
-    def test_update_normalized_state_downstream_of_normalization_pipelines(
+    def test_update_normalized_state_downstream_of_ingest_pipelines(
         self,
     ) -> None:
         """Tests that the `normalized_state` dataset update happens after all
-        normalization pipelines are run.
+        ingest pipelines are run.
         """
         dag_bag = DagBag(dag_folder=DAG_FOLDER, include_examples=False)
         dag = dag_bag.dags[self.CALCULATION_DAG_ID]
         self.assertNotEqual(0, len(dag.task_ids))
 
-        normalization_group: TaskGroup = dag.task_group_dict["ingest_and_normalization"]
+        ingest_group: TaskGroup = dag.task_group_dict["ingest"]
 
-        normalization_completed = dag.get_task("ingest_and_normalization_completed")
+        ingest_completed = dag.get_task("ingest_completed")
         update_normalized_state_dataset = dag.get_task("update_normalized_state")
 
         self.assertIn(
-            normalization_completed.task_id,
-            normalization_group.downstream_task_ids,
+            ingest_completed.task_id,
+            ingest_group.downstream_task_ids,
         )
         self.assertIn(
             update_normalized_state_dataset.task_id,
-            normalization_completed.downstream_task_ids,
+            ingest_completed.downstream_task_ids,
         )
 
-    def test_update_normalized_state_upstream_of_non_normalization_pipelines(
+    def test_update_normalized_state_upstream_of_non_ingest_pipelines(
         self,
     ) -> None:
         """Tests that the `normalized_state` dataset update happens after all
-        normalization pipelines are run.
+        ingest pipelines are run.
         """
         dag_bag = DagBag(dag_folder=DAG_FOLDER, include_examples=False)
         dag = dag_bag.dags[self.CALCULATION_DAG_ID]
@@ -238,11 +238,11 @@ class TestCalculationPipelineDag(AirflowIntegrationTest):
         pipeline_tasks_not_upstream = metric_pipeline_task_ids - upstream_tasks
         self.assertEqual(set(), pipeline_tasks_not_upstream)
 
-    def test_update_normalized_state_upstream_of_non_normalization_flex_pipelines(
+    def test_update_normalized_state_upstream_of_non_ingest_flex_pipelines(
         self,
     ) -> None:
         """Tests that the `normalized_state` dataset update happens after all
-        non ingest/normalization flex pipelines are run.
+        non-ingest flex pipelines are run.
         """
         dag_bag = DagBag(dag_folder=DAG_FOLDER, include_examples=False)
         dag = dag_bag.dags[self.CALCULATION_DAG_ID]
@@ -793,10 +793,10 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
                     r"^initialize_dag.*",
                     r"^update_big_query_table_schemata",
                     r"^bq_refresh.*",
-                    r"^ingest_and_normalization.*",
+                    r"^ingest.*",
                     r"^update_state",
                     r"^update_normalized_state",
-                    r"^post_normalization_pipelines",
+                    r"^post_ingest_pipelines",
                     r"^update_managed_views_all",
                     r"^validations.*",
                     r"^metric_exports.*",
@@ -828,18 +828,18 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
                     r"^initialize_dag.wait_to_continue_or_cancel",
                     r"^initialize_dag.handle_queueing_result",
                     r"^update_big_query_table_schemata",
-                    r"^ingest_and_normalization.*",
+                    r"^ingest.*",
                     r"^update_state",
                     r"^bq_refresh.*",
                     r"^update_managed_views",
                     r"^update_normalized_state",
-                    r"^post_normalization_pipelines.*",
+                    r"^post_ingest_pipelines.*",
                     r"^validations.*",
                     r"^metric_exports.*",
                 ],
             )
             self.assertIn(
-                "ingest_and_normalization.US_XX_start",
+                "ingest.US_XX_start",
                 dag.task_ids,
             )
 
@@ -862,11 +862,11 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
                 },
                 expected_failure_task_id_regexes=[
                     # Pipeline fails
-                    r"^ingest_and_normalization.us_yy_dataflow.us-yy-ingest.run_pipeline",
+                    r"^ingest.us_yy_dataflow.us-yy-ingest.run_pipeline",
                     # We don't save any of the post-successful ingest pipeline state
-                    r"^ingest_and_normalization.us_yy_dataflow.write_upper_bounds",
-                    r"^ingest_and_normalization.us_yy_dataflow.write_ingest_job_completion",
-                    r"^ingest_and_normalization.branch_end",
+                    r"^ingest.us_yy_dataflow.write_upper_bounds",
+                    r"^ingest.us_yy_dataflow.write_ingest_job_completion",
+                    r"^ingest.branch_end",
                     # Metric exports for US_YY should not run
                     r"^metric_exports\.state_specific_metric_exports\.US_YY_metric_exports",
                     r"^metric_exports.state_specific_metric_exports.branch_end",
@@ -877,16 +877,16 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
                     r"^initialize_dag.*",
                     r"^update_big_query_table_schemata",
                     r"^bq_refresh.*",
-                    r"^ingest_and_normalization.branch_start",
-                    r"^ingest_and_normalization.US_XX_start",
-                    r"^ingest_and_normalization.us_xx_dataflow.*",
-                    r"^ingest_and_normalization.US_YY_start",
-                    r"ingest_and_normalization.us_yy_dataflow.initialize_ingest_pipeline.*",
-                    r"ingest_and_normalization.us_yy_dataflow.us-yy-ingest.create_flex_template",
-                    r"^ingest_and_normalization_completed",
+                    r"^ingest.branch_start",
+                    r"^ingest.US_XX_start",
+                    r"^ingest.us_xx_dataflow.*",
+                    r"^ingest.US_YY_start",
+                    r"ingest.us_yy_dataflow.initialize_ingest_pipeline.*",
+                    r"ingest.us_yy_dataflow.us-yy-ingest.create_flex_template",
+                    r"^ingest_completed",
                     r"^update_state",
                     r"^update_normalized_state",
-                    r"^post_normalization_pipelines",
+                    r"^post_ingest_pipelines",
                     r"^update_managed_views_all",
                     r"^validations.*",
                     r"^metric_exports.state_specific_metric_exports.branch_start",
@@ -923,8 +923,8 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
                     "ingest_instance": "PRIMARY",
                 },
                 expected_failure_task_id_regexes=[
-                    r"^post_normalization_pipelines.US_XX_dataflow_pipelines.full-us-xx-pipeline-no-limit.run_pipeline",
-                    r"^post_normalization_pipelines.branch_end",
+                    r"^post_ingest_pipelines.US_XX_dataflow_pipelines.full-us-xx-pipeline-no-limit.run_pipeline",
+                    r"^post_ingest_pipelines.branch_end",
                     r"^metric_exports\.state_specific_metric_exports\.US_XX_metric_exports\.",
                     r"^metric_exports.state_specific_metric_exports.branch_end",
                 ],
@@ -932,19 +932,19 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
                     r"^initialize_dag.*",
                     r"^update_big_query_table_schemata",
                     r"^bq_refresh.*",
-                    r"^ingest_and_normalization.*",
+                    r"^ingest.*",
                     r"^update_state",
                     r"^update_normalized_state",
-                    r"^post_normalization_pipelines.branch_start",
+                    r"^post_ingest_pipelines.branch_start",
                     # All metric pipelines for other states run
-                    r"^post_normalization_pipelines.US_YY.*",
-                    r"^post_normalization_pipelines.US_XX_start",
+                    r"^post_ingest_pipelines.US_YY.*",
+                    r"^post_ingest_pipelines.US_XX_start",
                     # Completely different pipeline for US_XX runs
-                    r"^post_normalization_pipelines.US_XX_dataflow_pipelines.us-xx-pipeline-with-limit-36.*",
-                    r"^post_normalization_pipelines.US_XX_dataflow_pipelines.full-us-xx-pipeline-no-limit.create_flex_template",
+                    r"^post_ingest_pipelines.US_XX_dataflow_pipelines.us-xx-pipeline-with-limit-36.*",
+                    r"^post_ingest_pipelines.US_XX_dataflow_pipelines.full-us-xx-pipeline-no-limit.create_flex_template",
                     # This step runs with trigger rule ALL_DONE so it runs even though a
                     # pipeline failed.
-                    r"^post_normalization_pipelines_completed",
+                    r"^post_ingest_pipelines_completed",
                     r"^update_managed_views_all",
                     r"^metric_exports.state_specific_metric_exports.branch_start",
                     # This is a state-agnostic export so it runs
@@ -990,12 +990,12 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
                 },
                 expected_failure_task_id_regexes=[
                     r"^update_big_query_table_schemata",
-                    r"^ingest_and_normalization\.[a-zA-Z]*",
+                    r"^ingest\.[a-zA-Z]*",
                     r"^bq_refresh.refresh_bq_dataset_",
                     r"^update_state",
                     r"^update_normalized_state",
                     r"^update_managed_views_all",
-                    r"^post_normalization_pipelines\.[a-zA-Z]*",
+                    r"^post_ingest_pipelines\.[a-zA-Z]*",
                     r"^validations.*",
                     r"^metric_exports.*",
                 ],
@@ -1006,8 +1006,8 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
                 # That is because these tasks simply trigger with ALL_DONE
                 expected_success_task_id_regexes=[
                     r"^bq_refresh.bq_refresh_completed",
-                    r"^ingest_and_normalization_completed",
-                    r"^post_normalization_pipelines_completed",
+                    r"^ingest_completed",
+                    r"^post_ingest_pipelines_completed",
                 ],
             )
 
@@ -1044,10 +1044,10 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
                     r"^initialize_dag.*",
                     r"^update_big_query_table_schemata",
                     r"bq_refresh.bq_refresh_completed",
-                    r"^ingest_and_normalization.*",
+                    r"^ingest.*",
                     r"^update_state",
                     r"^update_normalized_state",
-                    r"^post_normalization_pipelines",
+                    r"^post_ingest_pipelines",
                     r"^update_managed_views_all",
                 ],
             )
@@ -1071,7 +1071,7 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
                 ],
             )
             self.assertIn(
-                "ingest_and_normalization.US_XX_start",
+                "ingest.US_XX_start",
                 dag.task_ids,
             )
 
@@ -1094,6 +1094,6 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
                 ],
             )
             self.assertIn(
-                "ingest_and_normalization.US_XX_start",
+                "ingest.US_XX_start",
                 dag.task_ids,
             )

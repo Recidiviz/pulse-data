@@ -74,7 +74,7 @@ class TestPredicates(unittest.TestCase):
         incident = AirflowAlertingIncident(
             dag_id="test_project_calculation_dag",
             conf="{}",
-            task_id=f"post_normalization_pipelines.{BRANCH_END_TASK_NAME}",
+            task_id=f"post_ingest_pipelines.{BRANCH_END_TASK_NAME}",
             failed_execution_dates=[datetime.now(tz=timezone.utc)],
         )
 
@@ -85,7 +85,7 @@ class TestPredicates(unittest.TestCase):
         incident = AirflowAlertingIncident(
             dag_id="test_project_another_dag",
             conf="{}",
-            task_id=f"post_normalization_pipelines.{BRANCH_END_TASK_NAME}",
+            task_id=f"post_ingest_pipelines.{BRANCH_END_TASK_NAME}",
             failed_execution_dates=[datetime.now(tz=timezone.utc)],
         )
 

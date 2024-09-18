@@ -236,12 +236,8 @@ def ingest_pipeline_branches_by_state_code() -> Dict[str, TaskGroup]:
     return branches_by_state_code
 
 
-# TODO(#31741): Once combined ingest and normalization pipelines are launched in all
-#  states, remove all references of "normalization" from the calc DAG. This would become
-#  "post_ingest_pipeline_branches". The "ingest_and_normalization" tasks will just
-#  become "ingest".
-def post_normalization_pipeline_branches_by_state_code() -> Dict[str, TaskGroup]:
-    """Creates a TaskGroup for each state that contains all the post-normalization pipelines for that state."""
+def post_ingest_pipeline_branches_by_state_code() -> Dict[str, TaskGroup]:
+    """Creates a TaskGroup for each state that contains all the post-ingest pipelines for that state."""
     metric_pipelines = _get_pipeline_config().pop_dicts("metric_pipelines")
     supplemental_dataset_pipelines = _get_pipeline_config().pop_dicts(
         "supplemental_dataset_pipelines"
@@ -290,13 +286,13 @@ def validation_branches_by_state_code(
 
 
 def metric_export_branches_by_state_code(
-    post_normalization_pipelines_by_state: Dict[str, TaskGroup],
+    post_ingest_pipelines_by_state: Dict[str, TaskGroup],
 ) -> Dict[str, TaskGroup]:
     branches_by_state_code: Dict[str, TaskGroup] = {}
 
-    # For every state with post-normalization pipelines enabled, we can create metric
+    # For every state with post-ingest pipelines enabled, we can create metric
     # exports, if any are configured for that state.
-    for state_code in post_normalization_pipelines_by_state:
+    for state_code in post_ingest_pipelines_by_state:
         relevant_product_exports = ProductConfigs.from_file(
             path=PRODUCTS_CONFIG_PATH
         ).get_export_configs_for_job_filter(state_code)
@@ -357,31 +353,22 @@ def create_calculation_dag() -> None:
     initialize_dag = initialize_calculation_dag_group()
     initialize_dag >> update_big_query_table_schemata >> bq_refresh
 
-    # --- step 2: ingest and normalization -----------------------------------
-    with TaskGroup(
-        group_id="ingest_and_normalization"
-    ) as ingest_and_normalization_task_group:
-        ingest_and_normalization_pipelines_by_state = (
-            ingest_pipeline_branches_by_state_code()
-        )
+    # --- step 2: ingest -----------------------------------
+    with TaskGroup(group_id="ingest") as ingest_task_group:
+        ingest_pipelines_by_state = ingest_pipeline_branches_by_state_code()
         create_branching_by_key(
-            ingest_and_normalization_pipelines_by_state,
+            ingest_pipelines_by_state,
             select_state_code_parameter_branch,
         )
 
-    ingest_and_normalization_completed = EmptyOperator(
-        task_id="ingest_and_normalization_completed", trigger_rule=TriggerRule.ALL_DONE
+    ingest_completed = EmptyOperator(
+        task_id="ingest_completed", trigger_rule=TriggerRule.ALL_DONE
     )
-    # If the schema updates successfully, run ingest pipelines, followed by
-    # normalization pipelines for all states.
-    (
-        update_big_query_table_schemata
-        >> ingest_and_normalization_task_group
-        >> ingest_and_normalization_completed
-    )
+    # If the schema updates successfully, run ingest pipelines for all states.
+    (update_big_query_table_schemata >> ingest_task_group >> ingest_completed)
 
-    # If the schema updates successfully, update the state and normalized_state atasets
-    # after ingest and normalization pipelines complete.
+    # If the schema updates successfully, update the state and normalized_state datasets
+    # after ingest pipelines complete.
     # We keep the schema update as a dependency. If a single state ingest fails, we do not
     # want to block the rest of the DAG. However, if the schema update fails, the ingest
     # tasks go into 'upstream failed'. We do not want to continue in that case.
@@ -390,40 +377,36 @@ def create_calculation_dag() -> None:
 
     [
         update_big_query_table_schemata,
-        ingest_and_normalization_completed,
+        ingest_completed,
     ] >> update_state_dataset
     [
         update_big_query_table_schemata,
-        ingest_and_normalization_completed,
+        ingest_completed,
     ] >> update_normalized_state_dataset
 
     # --- step 3: metrics pipelines -----------------------------------
-    with TaskGroup(
-        group_id="post_normalization_pipelines"
-    ) as post_normalization_pipelines:
-        post_normalization_pipelines_by_state = (
-            post_normalization_pipeline_branches_by_state_code()
-        )
+    with TaskGroup(group_id="post_ingest_pipelines") as post_ingest_pipelines:
+        post_ingest_pipelines_by_state = post_ingest_pipeline_branches_by_state_code()
         create_branching_by_key(
-            post_normalization_pipelines_by_state, select_state_code_parameter_branch
+            post_ingest_pipelines_by_state, select_state_code_parameter_branch
         )
 
-    post_normalization_pipelines_completed = EmptyOperator(
-        task_id="post_normalization_pipelines_completed",
+    post_ingest_pipelines_completed = EmptyOperator(
+        task_id="post_ingest_pipelines_completed",
         trigger_rule=TriggerRule.ALL_DONE,
     )
 
-    # This ensures that all of the normalization pipelines for a state will
+    # This ensures that all of the ingest pipelines for a state will
     # run and the normalized_state dataset will be updated before the
     # metric pipelines for the state are triggered.
     (
         update_normalized_state_dataset
-        >> post_normalization_pipelines
-        >> post_normalization_pipelines_completed
+        >> post_ingest_pipelines
+        >> post_ingest_pipelines_completed
     )
 
     # --- step 4: managed views -----------------------------------
-    # When ingest, normalization, and metrics pipelines are finished,
+    # When ingest, supplemental and metrics pipelines are finished,
     # we want to update all managed views with the updated data.
     # We also wait until the BigQuery refresh to ops and case triage is complete
     update_all_views = update_managed_views_operator()
@@ -432,7 +415,7 @@ def create_calculation_dag() -> None:
         update_state_dataset,
         update_normalized_state_dataset,
         bq_refresh_completed,
-        post_normalization_pipelines_completed,
+        post_ingest_pipelines_completed,
     ] >> update_all_views
 
     # --- step 5: validations and metric exports -----------------------------------
@@ -442,7 +425,7 @@ def create_calculation_dag() -> None:
             # We turn on validations (may still be in dev mode) as soon as there is
             # any ingest output that may feed into our BQ views.
             validation_branches_by_state_code(
-                states_to_validate=ingest_and_normalization_pipelines_by_state.keys()
+                states_to_validate=ingest_pipelines_by_state.keys()
             ),
             select_state_code_parameter_branch,
         )
@@ -450,7 +433,7 @@ def create_calculation_dag() -> None:
     with TaskGroup(group_id="metric_exports") as metric_exports:
         with TaskGroup(group_id=STATE_SPECIFIC_METRIC_EXPORTS_GROUP_ID):
             metric_export_branches_by_state = metric_export_branches_by_state_code(
-                post_normalization_pipelines_by_state
+                post_ingest_pipelines_by_state
             )
             create_branching_by_key(
                 metric_export_branches_by_state, select_state_code_parameter_branch
@@ -462,14 +445,8 @@ def create_calculation_dag() -> None:
                 state_code,
                 metric_export_branch,
             ) in metric_export_branches_by_state.items():
-                (
-                    ingest_and_normalization_pipelines_by_state[state_code]
-                    >> metric_export_branch
-                )
-                (
-                    post_normalization_pipelines_by_state[state_code]
-                    >> metric_export_branch
-                )
+                ingest_pipelines_by_state[state_code] >> metric_export_branch
+                post_ingest_pipelines_by_state[state_code] >> metric_export_branch
 
         product_configs = ProductConfigs.from_file(path=PRODUCTS_CONFIG_PATH)
         for export_config in product_configs.get_product_agnostic_export_configs():
