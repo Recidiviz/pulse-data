@@ -1148,13 +1148,9 @@ US_ND:
   elite_OffenderProgramProfiles:
     sessions.us_nd_incarceration_staff_assignment_sessions_preprocessed: |-
       Get CM staff assignments to residents.
-    sessions.us_nd_work_release_sessions_preprocessing: |-
-      Usage reason unknown. Grandfathered in 04/18/2024.
   elite_ProgramServices:
     sessions.us_nd_incarceration_staff_assignment_sessions_preprocessed: |-
       Get CM staff assignments to residents.
-    sessions.us_nd_work_release_sessions_preprocessing: |-
-      Usage reason unknown. Grandfathered in 04/18/2024.
   elite_offender_chk_list_details:
     workflows_views.us_nd_transfer_to_atp_form_record: |-
       List of IDs available for a given person.
