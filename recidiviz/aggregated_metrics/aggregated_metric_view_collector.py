@@ -426,6 +426,8 @@ UNIT_OF_ANALYSIS_TYPES_BY_POPULATION_TYPE: Dict[
         MetricUnitOfAnalysisType.WORKFLOWS_CASELOAD,
         MetricUnitOfAnalysisType.WORKFLOWS_LOCATION,
         MetricUnitOfAnalysisType.STATE_CODE,
+        MetricUnitOfAnalysisType.FACILITY,
+        MetricUnitOfAnalysisType.SUPERVISION_DISTRICT,
     ],
 }
 
