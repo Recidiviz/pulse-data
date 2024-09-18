@@ -85,7 +85,11 @@ resource "google_cloud_run_service" "admin_panel" {
         "autoscaling.knative.dev/maxScale" : 4
       }
     }
+  }
 
+  traffic {
+    percent         = 100
+    latest_revision = true
   }
 }
 
