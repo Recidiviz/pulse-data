@@ -19,13 +19,13 @@ import { observer } from "mobx-react-lite";
 import * as React from "react";
 
 import { useLegacyFlashChecklistStore } from "./FlashChecklistStore";
-import { FlashReadyDecisionComponent } from "./FlashComponents";
 import LegacyStateCancelReimportChecklist, {
   LegacyCancelReimportChecklistStepSection,
 } from "./LegacyCancelReimportChecklist";
 import {
   LegacyCannotFlashDecisionNonEmptyBucketComponent,
   LegacyCannotFlashDecisionWrongStatusComponent,
+  LegacyFlashReadyDecisionComponent,
 } from "./LegacyFlashComponents";
 import LegacyStateProceedWithFlashChecklist, {
   LegacyFlashChecklistStepSection,
@@ -113,7 +113,7 @@ const LegacyFlashDatabaseChecklistActiveComponent = (): JSX.Element => {
     return (
       /* This is the only time that someone can choose whether to cancel a rerun or
       move forward with a flash. */
-      <FlashReadyDecisionComponent
+      <LegacyFlashReadyDecisionComponent
         onSelectProceed={async () => {
           flashStore.setProceedWithFlash(true);
           await flashStore.moveToNextChecklistSection(
