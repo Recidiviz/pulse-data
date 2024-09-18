@@ -115,7 +115,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             # in the month column of the cases_disposed metric and a
             # sheet with an invalid sheet name.
             file_name = "test_validation.xlsx"
-            file_path = create_excel_file(
+            file_path, _ = create_excel_file(
                 system=schema.System.PROSECUTION,
                 invalid_month_sheet_name="cases_disposed_by_type",
                 add_invalid_sheet_name=True,
@@ -148,14 +148,12 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             cases_disposed_by_type_sum_error = cases_disposed_errors[1]
 
             self.assertTrue(
-                (
-                    "The valid values for this column are January, February, March, April, May, June, July, August, September, October, November, December."
-                )
+                ("Row 2: The 'month' column has an invalid value: Marchuary.")
                 in cases_disposed_by_type_month_error.description,
             )
             self.assertEqual(
                 (
-                    "The sum of all values (0.0) in the cases_disposed_by_type sheet for 01/01/2021-02/01/2021 does not equal the total value provided in the aggregate sheet (10.0)."
+                    "The sum of all values (0) in the cases_disposed_by_type sheet for 01/01/2021-02/01/2021 does not equal the total value provided in the aggregate sheet (10)."
                 ),
                 cases_disposed_by_type_sum_error.description,
             )
@@ -171,7 +169,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                 session=session, agency_id=self.prison_agency_id
             )
             file_name = "test_prison.xlsx"
-            file_path = create_excel_file(
+            file_path, _ = create_excel_file(
                 system=schema.System.PRISONS, file_name=file_name
             )
 
@@ -259,17 +257,17 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
 
             self.assertEqual(len(reports), 6)
             self.assertEqual(reports[0].instance, "02 2023 Metrics")
-            self.assertEqual(reports[0].datapoints[0].value, "30.0")
+            self.assertEqual(reports[0].datapoints[0].value, "30")
             self.assertEqual(reports[1].instance, "01 2023 Metrics")
-            self.assertEqual(reports[1].datapoints[0].value, "30.0")
+            self.assertEqual(reports[1].datapoints[0].value, "30")
             self.assertEqual(reports[2].instance, "02 2022 Metrics")
-            self.assertEqual(reports[2].datapoints[0].value, "20.0")
+            self.assertEqual(reports[2].datapoints[0].value, "20")
             self.assertEqual(reports[3].instance, "01 2022 Metrics")
-            self.assertEqual(reports[3].datapoints[0].value, "20.0")
+            self.assertEqual(reports[3].datapoints[0].value, "20")
             self.assertEqual(reports[4].instance, "02 2021 Metrics")
-            self.assertEqual(reports[4].datapoints[0].value, "10.0")
+            self.assertEqual(reports[4].datapoints[0].value, "10")
             self.assertEqual(reports[5].instance, "01 2021 Metrics")
-            self.assertEqual(reports[5].datapoints[0].value, "10.0")
+            self.assertEqual(reports[5].datapoints[0].value, "10")
             os.remove(excel_file_name)
 
     def test_prosecution(self) -> None:
@@ -282,7 +280,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                 session=session, agency_id=self.prosecution_agency_id
             )
             file_name = "test_prosecution.xlsx"
-            file_path = create_excel_file(
+            file_path, _ = create_excel_file(
                 system=schema.System.PROSECUTION, file_name=file_name
             )
             metadata = BulkUploadMetadata(
@@ -319,7 +317,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                 session=session, agency_id=self.law_enforcement_agency_id
             )
             file_name = "test_law_enforcement.xlsx"
-            file_path = create_excel_file(
+            file_path, _ = create_excel_file(
                 system=schema.System.LAW_ENFORCEMENT, file_name=file_name
             )
             metadata = BulkUploadMetadata(
@@ -354,7 +352,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                 session=session, agency_id=self.supervision_agency_id
             )
             file_name = "test_supervision.xlsx"
-            file_path = create_excel_file(
+            file_path, _ = create_excel_file(
                 system=schema.System.SUPERVISION, file_name=file_name
             )
             metadata = BulkUploadMetadata(
@@ -606,7 +604,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                 session=session, agency_id=self.law_enforcement_agency_id
             )
             file_name = "test_infer_aggregate_value_with_total.xlsx"
-            file_path = create_excel_file(
+            file_path, _ = create_excel_file(
                 system=schema.System.LAW_ENFORCEMENT,
                 sheet_names_to_skip={"reported_crime"},
                 sheet_names_to_vary_values={"arrests"},
@@ -798,7 +796,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                 user_account=user,
             )
             file_name = "test_missing_metrics_disabled_metrics.xlsx"
-            file_path = create_excel_file(
+            file_path, _ = create_excel_file(
                 system=schema.System.LAW_ENFORCEMENT,
                 sheet_names_to_skip={
                     "calls_for_service",
@@ -846,7 +844,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             )
             session.commit()
             file_name = "test_metrics_disaggregated_by_supervision.xlsx"
-            file_path = create_excel_file(
+            file_path, _ = create_excel_file(
                 system=schema.System.SUPERVISION,
                 metric_key_to_subsystems={
                     supervision.funding.key: [
@@ -921,7 +919,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             # 'system' when not a Supervision system
             # disaggregation with disaggregation_column_name is None
             file_name = "test_unexpected_column_name.xlsx"
-            file_path = create_excel_file(
+            file_path, _ = create_excel_file(
                 system=schema.System.PRISONS,
                 unexpected_month_sheet_name="staff",
                 unexpected_system_sheet_name="admissions",
@@ -969,7 +967,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                 session=session, agency_id=self.prison_agency_id
             )
             file_name = "test_breakdown_sum_warning.xlsx"
-            file_path = create_excel_file(
+            file_path, _ = create_excel_file(
                 system=schema.System.PRISONS,
                 sheet_names_to_vary_values={
                     "funding_by_type",
@@ -1043,7 +1041,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                 session=session, agency_id=self.prison_agency_id
             )
             file_name = "test_update_report_status.xlsx"
-            file_path = create_excel_file(
+            file_path, _ = create_excel_file(
                 system=schema.System.PRISONS,
                 sheet_names_to_skip={"funding", "funding_by_type"},
                 sheetnames_with_null_data={"use_of_force"},
@@ -1101,7 +1099,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                 self.assertEqual(report.status.value, "PUBLISHED")
 
             # Case 2: Upload workbook with changes to the datapoints (admissions sheet)
-            file_path = create_excel_file(
+            file_path, _ = create_excel_file(
                 system=schema.System.PRISONS,
                 sheet_names_to_vary_values={"admissions"},
                 sheet_names_to_skip={"funding", "funding_by_type"},
@@ -1143,7 +1141,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
 
             # Case 3: Upload workbook with new/additional datapoints (funding and funding_by_type sheets)
             # In this case, the sheets did not exist at all previously
-            file_path = create_excel_file(
+            file_path, _ = create_excel_file(
                 system=schema.System.PRISONS,
                 sheet_names_to_vary_values={"admissions"},
                 sheetnames_with_null_data={"use_of_force"},
@@ -1183,7 +1181,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
 
             # Case 4: Upload workbook with new/additional datapoints (use_of_force sheet)
             # In this case, the sheet previously existed but no data was provided
-            file_path = create_excel_file(
+            file_path, _ = create_excel_file(
                 system=schema.System.PRISONS,
                 sheet_names_to_vary_values={"admissions"},
                 file_name=file_name,
@@ -1227,7 +1225,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                 session=session, agency_id=self.prison_agency_id
             )
             file_name = "test_update_report_status.xlsx"
-            file_path = create_excel_file(
+            file_path, _ = create_excel_file(
                 system=schema.System.PRISONS,
                 sheet_names_to_skip={"funding"},
                 sheetnames_with_null_data={"use_of_force"},
@@ -1286,7 +1284,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             self.assertEqual(len(workbook_uploader.updated_reports), 0)
 
             # Upload workbook with changes to the datapoints that affect Report IDs 7 & 8
-            file_path = create_excel_file(
+            file_path, _ = create_excel_file(
                 system=schema.System.PRISONS,
                 sheet_names_to_vary_values={"funding"},
                 sheetnames_with_null_data={"use_of_force"},
@@ -1345,7 +1343,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                 user_account=user_account,
             )
             file_name = "test_update_report_status.xlsx"
-            file_path = create_excel_file(
+            file_path, _ = create_excel_file(
                 system=schema.System.PRISONS,
                 child_agencies=child_agencies,
                 file_name=file_name,
@@ -1383,7 +1381,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                 session=session, agency_id=self.prosecution_agency_id
             )
             file_name = "test_single_page_combined.xlsx"
-            file_path = create_combined_excel_file(
+            file_path, _ = create_combined_excel_file(
                 system=schema.System.PROSECUTION,
                 file_name=file_name,
             )

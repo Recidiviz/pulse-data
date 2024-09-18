@@ -38,8 +38,3 @@ def convert_date_range_to_year_month(
     if end_date.year == start_date.year + 1 and end_date.month == start_date.month:
         return (start_date.year, None)
     raise ValueError(f"Invalid report start and end: {start_date}, {end_date}")
-
-
-def get_annual_year_from_fiscal_year(fiscal_year: str) -> Optional[str]:
-    """Takes as input a string and attempts to find the corresponding year"""
-    return fiscal_year[0 : fiscal_year.index("-")]
