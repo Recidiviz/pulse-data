@@ -23,7 +23,7 @@ from unittest import TestCase, mock
 import pytz
 from flask import Blueprint, Flask
 from freezegun import freeze_time
-from mock import Mock, patch
+from mock import Mock, call, patch
 
 from recidiviz.admin_panel.ingest_dataflow_operations import (
     DataflowPipelineMetadataResponse,
@@ -46,7 +46,10 @@ from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRegionRawFileConfig,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
-from recidiviz.persistence.entity.operations.entities import DirectIngestInstanceStatus
+from recidiviz.persistence.entity.operations.entities import (
+    DirectIngestInstanceStatus,
+    DirectIngestRawDataResourceLock,
+)
 from recidiviz.tests.ingest.direct import fake_regions
 
 
@@ -569,3 +572,103 @@ class IngestOpsEndpointTests(TestCase):
         # Assert
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json, ["path_a", "path_b"])
+
+    @patch(
+        "recidiviz.admin_panel.routes.ingest_ops.DirectIngestRawDataResourceLockManager"
+    )
+    def test_acquire_resource_locks(self, manager_mock: mock.MagicMock) -> None:
+        # Arrange
+        manager_mock().acquire_all_locks.return_value = []
+        response = self.client.post(
+            "/api/ingest_operations/resource_locks/acquire_all",
+            json={
+                "stateCode": "US_XX",
+                "rawDataInstance": "PRIMARY",
+                "description": "test",
+                "ttlSeconds": 123,
+            },
+            headers={"X-Appengine-Inbound-Appid": "recidiviz-456"},
+        )
+
+        # Assert
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json, None)
+
+    @patch(
+        "recidiviz.admin_panel.routes.ingest_ops.DirectIngestRawDataResourceLockManager"
+    )
+    def test_release_all_locks_for_state(self, manager_mock: mock.MagicMock) -> None:
+        # Arrange
+        response = self.client.post(
+            "/api/ingest_operations/resource_locks/release_all",
+            json={
+                "stateCode": "US_XX",
+                "rawDataInstance": "PRIMARY",
+                "lockIds": [1, 2, 3],
+            },
+            headers={"X-Appengine-Inbound-Appid": "recidiviz-456"},
+        )
+
+        # Assert
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json, None)
+        manager_mock().release_lock_by_id.assert_has_calls([call(1), call(2), call(3)])
+
+    @patch(
+        "recidiviz.admin_panel.routes.ingest_ops.DirectIngestRawDataResourceLockManager"
+    )
+    def test_list_all_resource_locks(self, manager_mock: mock.MagicMock) -> None:
+        # Arrange
+        manager_mock().get_most_recent_locks_for_all_resources.return_value = [
+            DirectIngestRawDataResourceLock.new_with_defaults(
+                lock_id=1,
+                lock_actor=DirectIngestRawDataLockActor.ADHOC,
+                lock_resource=DirectIngestRawDataResourceLockResource.BUCKET,
+                region_code="US_XX",
+                raw_data_source_instance=DirectIngestInstance.PRIMARY,
+                lock_acquisition_time=datetime.now(),
+                released=False,
+                lock_description="testing!",
+                lock_ttl_seconds=123,
+            )
+        ]
+        response = self.client.get(
+            "/api/ingest_operations/resource_locks/list_all/US_XX/PRIMARY",
+            headers={"X-Appengine-Inbound-Appid": "recidiviz-456"},
+        )
+
+        # Assert
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response.json,
+            [
+                {
+                    "lockId": 1,
+                    "description": "testing!",
+                    "actor": "ADHOC",
+                    "resource": "BUCKET",
+                    "released": False,
+                }
+            ],
+        )
+
+    @patch(
+        "recidiviz.admin_panel.routes.ingest_ops.DirectIngestRawFileMetadataManagerV2"
+    )
+    def test_mark_instance_raw_data_v2_invalidated(
+        self, manager_mock: mock.MagicMock
+    ) -> None:
+        # Arrange
+        response = self.client.post(
+            "/api/ingest_operations/flash_primary_db/mark_instance_raw_data_v2_invalidated",
+            json={
+                "stateCode": "US_XX",
+                "rawDataInstance": "PRIMARY",
+            },
+            headers={"X-Appengine-Inbound-Appid": "recidiviz-456"},
+        )
+
+        # Assert
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json, None)
+        manager_mock().mark_instance_data_invalidated.assert_has_calls([call()])

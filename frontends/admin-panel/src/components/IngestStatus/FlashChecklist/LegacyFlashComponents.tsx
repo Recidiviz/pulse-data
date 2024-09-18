@@ -14,11 +14,12 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
-import { Alert, Button } from "antd";
+import { Alert, Button, Card, Steps } from "antd";
 import { observer } from "mobx-react-lite";
 import React from "react";
 
 import { useLegacyFlashChecklistStore } from "./FlashChecklistStore";
+import { ChecklistSectionHeader, ContentStepProps } from "./FlashComponents";
 import { runAndCheckStatus } from "./FlashUtils";
 import { LegacyCurrentRawDataInstanceStatus } from "./LegacyCurrentRawDataInstanceStatus";
 
@@ -185,3 +186,62 @@ const LegacyStyledStepContent = ({
 };
 
 export default observer(LegacyStyledStepContent);
+
+export interface LegacyChecklistSectionProps {
+  children?: React.ReactNode;
+  items: ContentStepProps[];
+  headerContents: React.ReactNode;
+  currentStep: number;
+  currentStepSection: number;
+  stepSection: number;
+}
+
+export const LegacyChecklistSection = ({
+  children,
+  items,
+  headerContents,
+  currentStep,
+  currentStepSection,
+  stepSection,
+}: LegacyChecklistSectionProps): JSX.Element => {
+  const currentStepsSection =
+    currentStepSection === stepSection ? currentStep : 0;
+  const actionItemsContent = (
+    <div style={{ display: "flex" }}>
+      <Card style={{ float: "left", width: "30%" }}>
+        <Steps
+          progressDot
+          current={currentStepsSection}
+          direction="vertical"
+          size="small"
+          items={items.map((item: ContentStepProps) => ({
+            ...item,
+            title: <div style={{ textWrap: "wrap" }}>{item.title}</div>,
+          }))}
+        >
+          {children}
+        </Steps>
+      </Card>
+      <Card style={{ width: "100%", marginLeft: "1%" }}>
+        {items.length > 0 ? items[currentStepsSection]?.content : undefined}
+      </Card>
+    </div>
+  );
+
+  return (
+    <div
+      style={{
+        opacity: currentStepSection === stepSection ? 1 : 0.25,
+        pointerEvents: currentStepSection === stepSection ? "initial" : "none",
+      }}
+    >
+      <ChecklistSectionHeader
+        currentStepSection={currentStepSection}
+        stepSection={stepSection}
+      >
+        {headerContents}
+      </ChecklistSectionHeader>
+      {items.length !== 0 ? actionItemsContent : undefined}
+    </div>
+  );
+};

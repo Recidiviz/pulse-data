@@ -15,10 +15,12 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 import { CheckSquareTwoTone, CloseSquareTwoTone } from "@ant-design/icons";
-import { Alert, Button, Card, List, StepProps, Steps } from "antd";
+import { Alert, Button, Card, Divider, List, StepProps, Steps } from "antd";
+import { observer } from "mobx-react-lite";
 import * as React from "react";
 
 import { useNewFlashChecklistStore } from "./FlashChecklistStore";
+import { runAndCheckStatus } from "./FlashUtils";
 
 export interface ContentStepProps extends StepProps {
   content: JSX.Element;
@@ -67,16 +69,14 @@ export const ChecklistSectionHeader = ({
 );
 
 export interface ChecklistSectionProps {
-  children?: React.ReactNode;
   items: ContentStepProps[];
-  headerContents: React.ReactNode;
+  headerContents: string;
   currentStep: number;
   currentStepSection: number;
   stepSection: number;
 }
 
 export const ChecklistSection = ({
-  children,
   items,
   headerContents,
   currentStep,
@@ -85,6 +85,30 @@ export const ChecklistSection = ({
 }: ChecklistSectionProps): JSX.Element => {
   const currentStepsSection =
     currentStepSection === stepSection ? currentStep : 0;
+  const actionItemsContent = (
+    <div style={{ display: "flex" }}>
+      <Card style={{ float: "left", width: "30%" }}>
+        <Steps
+          progressDot
+          current={currentStepsSection}
+          direction="vertical"
+          size="small"
+          items={items.map((item: ContentStepProps) => ({
+            ...item,
+            title: <div style={{ textWrap: "wrap" }}>{item.title}</div>,
+          }))}
+        />
+      </Card>
+      <Card style={{ width: "100%", marginLeft: "1%" }}>
+        {items.length > 0 ? items[currentStepsSection]?.content : undefined}
+      </Card>
+    </div>
+  );
+
+  const checklistHeaderContents =
+    currentStepSection > stepSection
+      ? `COMPLETED -${headerContents}`
+      : headerContents;
 
   return (
     <div
@@ -93,31 +117,8 @@ export const ChecklistSection = ({
         pointerEvents: currentStepSection === stepSection ? "initial" : "none",
       }}
     >
-      <ChecklistSectionHeader
-        currentStepSection={currentStepSection}
-        stepSection={stepSection}
-      >
-        {headerContents}
-      </ChecklistSectionHeader>
-      <div style={{ display: "flex" }}>
-        <Card style={{ float: "left", width: "30%" }}>
-          <Steps
-            progressDot
-            current={currentStepsSection}
-            direction="vertical"
-            size="small"
-            items={items.map((item: ContentStepProps) => ({
-              ...item,
-              title: <div style={{ textWrap: "wrap" }}>{item.title}</div>,
-            }))}
-          >
-            {children}
-          </Steps>
-        </Card>
-        <Card style={{ width: "100%", marginLeft: "1%" }}>
-          {items.length > 0 ? items[currentStepsSection]?.content : undefined}
-        </Card>
-      </div>
+      <Divider orientation="left">{checklistHeaderContents}</Divider>
+      {items.length !== 0 ? actionItemsContent : undefined}
     </div>
   );
 };
@@ -249,3 +250,105 @@ export const FlashReadyDecisionComponent = ({
     </div>
   );
 };
+
+export interface NewStyledStepContentProps {
+  // Text to be displayed for this step
+  description: JSX.Element;
+
+  // Title of button that actually performs an action. If not present,
+  // only a 'Mark done' button will be present for a given step.
+  actionButtonTitle?: string;
+  // Action that will be performed when the action button is clicked.
+  onActionButtonClick?: () => Promise<Response>;
+
+  // Section to move to if this step succeeds.
+  nextSection?: number;
+
+  // Whether the action button on a step should be enabled. The Mark Done button
+  // is always enabled.
+  actionButtonEnabled?: boolean;
+
+  // If this is true, we are on the last section and step so we should display a return
+  // to decision page button
+  returnButton?: boolean;
+}
+
+const NewStyledStepContent = ({
+  actionButtonTitle,
+  onActionButtonClick,
+  nextSection,
+  description,
+  actionButtonEnabled,
+  returnButton,
+}: NewStyledStepContentProps): JSX.Element => {
+  const [loading, setLoading] = React.useState(false);
+  const {
+    fetchIsFlashInProgress,
+    fetchResourceLockStatus,
+    incrementCurrentStep,
+    moveToNextChecklistSection,
+    resetChecklist,
+  } = useNewFlashChecklistStore();
+
+  return (
+    <>
+      {description}
+      {!returnButton && onActionButtonClick && (
+        <Button
+          type="primary"
+          disabled={!actionButtonEnabled}
+          onClick={async () => {
+            setLoading(true);
+            const succeeded = await runAndCheckStatus(onActionButtonClick);
+            if (succeeded) {
+              await fetchIsFlashInProgress();
+              await fetchResourceLockStatus();
+              await incrementCurrentStep();
+              if (nextSection !== undefined) {
+                await moveToNextChecklistSection(nextSection);
+              }
+            }
+            setLoading(false);
+          }}
+          loading={loading}
+          style={{ marginRight: 5 }}
+        >
+          {actionButtonTitle}
+        </Button>
+      )}
+      {!returnButton && (
+        <Button
+          type={onActionButtonClick ? undefined : "primary"}
+          disabled={false}
+          onClick={async () => {
+            setLoading(true);
+            await fetchIsFlashInProgress();
+            await fetchResourceLockStatus();
+            await incrementCurrentStep();
+            setLoading(false);
+            if (nextSection !== undefined) {
+              await moveToNextChecklistSection(nextSection);
+            }
+          }}
+          loading={loading}
+        >
+          Mark Done
+        </Button>
+      )}
+      {returnButton && (
+        <Button
+          type="primary"
+          onClick={async () => {
+            setLoading(true);
+            await resetChecklist();
+            setLoading(false);
+          }}
+        >
+          Return to decision page
+        </Button>
+      )}
+    </>
+  );
+};
+
+export default observer(NewStyledStepContent);

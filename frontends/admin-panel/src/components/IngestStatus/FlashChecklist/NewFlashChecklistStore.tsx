@@ -20,6 +20,7 @@ import { makeAutoObservable } from "mobx";
 import { getIngestRawFileProcessingStatus } from "../../../AdminPanelAPI";
 import {
   getIsFlashingInProgress,
+  getRawDataInstanceLockStatuses,
   getStaleSecondaryRawData,
 } from "../../../AdminPanelAPI/IngestOperations";
 import { Hydratable, HydrationState } from "../../../InsightsStore/types";
@@ -31,6 +32,7 @@ import {
 } from "../constants";
 import { getValueIfResolved } from "./FlashUtils";
 import { NewCurrentRawFileProcessingStatus } from "./NewCurrentRawFileProcessingStatus";
+import { RegionResourceLockStatus } from "./ResourceLockStatus";
 import { StaleSecondaryStatus } from "./StaleSecondaryStatus";
 
 export enum NewFlashingChecklistType {
@@ -68,6 +70,9 @@ export class NewFlashChecklistStore implements Hydratable {
   // metadata about whether or not secondary is stale
   currentStaleSecondaryStatus: StaleSecondaryStatus;
 
+  // metadata about raw data resource locks
+  currentLockStatus: RegionResourceLockStatus;
+
   // --- misc properties ---------------------------------------------------------------
 
   abortController?: AbortController;
@@ -90,6 +95,10 @@ export class NewFlashChecklistStore implements Hydratable {
     this.currentStep = 0;
     this.currentStepSection = 0;
     this.currentStaleSecondaryStatus = new StaleSecondaryStatus([]);
+    this.currentLockStatus = new RegionResourceLockStatus({
+      primaryLocks: [],
+      secondaryLocks: [],
+    });
 
     this.projectId = gcpEnvironment.isProduction
       ? "recidiviz-123"
@@ -118,6 +127,15 @@ export class NewFlashChecklistStore implements Hydratable {
 
   async incrementCurrentStep() {
     this.currentStep += 1;
+  }
+
+  async resetChecklist() {
+    this.setActiveChecklist(undefined);
+    this.setCurrentStep(0);
+    this.setCurrentStepSection(0);
+    // when we set hydration state status here, useEffect in the active component
+    // will pick up the change and trigger re-fetching the data
+    this.setHydrationState({ status: "needs hydration" });
   }
 
   async setCurrentStepSection(currentStepSection: number) {
@@ -149,6 +167,13 @@ export class NewFlashChecklistStore implements Hydratable {
     this.isFlashInProgress = isFlashInProgress;
   }
 
+  setRegionResourceLockStatus(primaryLocks: [], secondaryLocks: []) {
+    this.currentLockStatus = new RegionResourceLockStatus({
+      primaryLocks,
+      secondaryLocks,
+    });
+  }
+
   setCurrentStaleSecondaryStatus(currentStaleSecondaryStatus: string[]) {
     this.currentStaleSecondaryStatus = new StaleSecondaryStatus(
       currentStaleSecondaryStatus
@@ -159,6 +184,25 @@ export class NewFlashChecklistStore implements Hydratable {
     if (this.stateInfo) {
       const flashStatus = await getIsFlashingInProgress(this.stateInfo.code);
       this.setIsFlashInProgress(await flashStatus.json());
+    }
+  }
+
+  async fetchResourceLockStatus() {
+    if (this.stateInfo) {
+      const statusResults = await Promise.allSettled([
+        getRawDataInstanceLockStatuses(
+          this.stateInfo.code,
+          DirectIngestInstance.PRIMARY
+        ),
+        getRawDataInstanceLockStatuses(
+          this.stateInfo.code,
+          DirectIngestInstance.SECONDARY
+        ),
+      ]);
+      this.setRegionResourceLockStatus(
+        await getValueIfResolved(statusResults[0])?.json(),
+        await getValueIfResolved(statusResults[1])?.json()
+      );
     }
   }
 
@@ -220,19 +264,16 @@ export class NewFlashChecklistStore implements Hydratable {
       return;
     try {
       this.setHydrationState({ status: "loading" });
-      // Raw data source instance and ingest bucket processing statuses,
-      // are only fetched upon initial page load after a state is set.
-      await this.fetchRawFileProcessingStatus();
 
-      // Fetch stale secondary status, or all non-invalidated files in primary that
-      // have a discovery date after the earliest non-invalidated secondary discovery
-      // date that are not present in secondary
+      // only fetched on initial hydration
+      await this.fetchRawFileProcessingStatus();
       await this.fetchStaleSecondaryStatus();
 
-      // Ingest instance status information is fetched upon
-      // initial page load after a state is set, and each
-      // after each step is completed.
+      // expected to change throughout the course of the checklist, so we will fetch
+      // both on initial hydration as well after each step
       await this.fetchIsFlashInProgress();
+      await this.fetchResourceLockStatus();
+
       if (this.isFlashInProgress) {
         this.setActiveChecklist(
           NewFlashingChecklistType.FLASH_SECONDARY_TO_PRIMARY

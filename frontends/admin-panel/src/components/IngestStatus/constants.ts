@@ -176,6 +176,14 @@ export enum RawDataResourceLockActor {
   PROCESS = "PROCESS",
 }
 
+export type ResourceLockStatus = {
+  lockId: number;
+  description: string;
+  resource: string;
+  released: boolean;
+  actor: string;
+};
+
 export type RawDataResourceLockStatuses = {
   [lockStatus in keyof RawDataResourceLockResource]:
     | RawDataResourceLockActor

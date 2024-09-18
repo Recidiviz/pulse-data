@@ -23,6 +23,9 @@ import {
   CannotFlashDecisionComponent,
   FlashReadyDecisionComponent,
 } from "./FlashComponents";
+import NewStateCancelReimportChecklist, {
+  NewCancelReimportChecklistStepSection,
+} from "./NewCancelReimportChecklist";
 import { NewFlashingChecklistType } from "./NewFlashChecklistStore";
 
 const NewFlashDatabaseChecklistActiveComponent = (): JSX.Element => {
@@ -30,14 +33,18 @@ const NewFlashDatabaseChecklistActiveComponent = (): JSX.Element => {
   const flashStore = useNewFlashChecklistStore();
 
   const getData = React.useCallback(async () => {
-    if (flashStore && flashStore.stateInfo) {
+    if (
+      flashStore &&
+      flashStore.stateInfo &&
+      flashStore.hydrationState.status === "needs hydration"
+    ) {
       await flashStore.hydrate();
     }
   }, [flashStore]);
 
   React.useEffect(() => {
     getData();
-  }, [getData]);
+  }, [getData, flashStore.hydrationState.status]);
 
   if (
     flashStore.hydrationState.status === "needs hydration" ||
@@ -65,8 +72,7 @@ const NewFlashDatabaseChecklistActiveComponent = (): JSX.Element => {
   }
 
   if (flashStore.activeChecklist === NewFlashingChecklistType.CANCEL_REIMPORT) {
-    // TODO(#33150) build the new cancel rerun checklist here
-    return <div> cancel rerun checklist!! </div>;
+    return <NewStateCancelReimportChecklist />;
   }
 
   if (
@@ -88,8 +94,9 @@ const NewFlashDatabaseChecklistActiveComponent = (): JSX.Element => {
           flashStore.setActiveChecklist(
             NewFlashingChecklistType.CANCEL_REIMPORT
           );
-          // TODO(#33150) add cancel reimport step section here
-          await flashStore.moveToNextChecklistSection(0);
+          await flashStore.moveToNextChecklistSection(
+            NewCancelReimportChecklistStepSection.ACQUIRE_RESOURCE_LOCKS
+          );
         }}
       />
     );
@@ -101,13 +108,13 @@ const NewFlashDatabaseChecklistActiveComponent = (): JSX.Element => {
         flashStore.setActiveChecklist(
           NewFlashingChecklistType.FLASH_SECONDARY_TO_PRIMARY
         );
-        // TODO(#33150) add flashing checklist step section here
         await flashStore.moveToNextChecklistSection(0);
       }}
       onSelectCancel={async () => {
         flashStore.setActiveChecklist(NewFlashingChecklistType.CANCEL_REIMPORT);
-        // TODO(#33150) add cancel reimport step section here
-        await flashStore.moveToNextChecklistSection(0);
+        await flashStore.moveToNextChecklistSection(
+          NewCancelReimportChecklistStepSection.ACQUIRE_RESOURCE_LOCKS
+        );
       }}
     />
   );

@@ -33,8 +33,10 @@ import {
 } from "../../../AdminPanelAPI/IngestOperations";
 import { DirectIngestInstance, QueueState } from "../constants";
 import { useLegacyFlashChecklistStore } from "./FlashChecklistStore";
-import { ChecklistSection, CodeBlock } from "./FlashComponents";
-import LegacyStyledStepContent from "./LegacyFlashComponents";
+import { CodeBlock } from "./FlashComponents";
+import LegacyStyledStepContent, {
+  LegacyChecklistSection,
+} from "./LegacyFlashComponents";
 
 export const LegacyFlashChecklistStepSection = {
   /* Ordered list of sections in the flash checklist.
@@ -414,7 +416,6 @@ const LegacyStateProceedWithFlashChecklist = (): JSX.Element => {
 
   return (
     <div>
-      <Divider />
       <h1>Proceeding with Flash of Rerun Results from SECONDARY to PRIMARY</h1>
       <h3 style={{ color: "green" }}>Current Ingest Instance Statuses:</h3>
       <ul style={{ color: "green" }}>
@@ -424,21 +425,21 @@ const LegacyStateProceedWithFlashChecklist = (): JSX.Element => {
         </li>
       </ul>
       <Divider />
-      <ChecklistSection
+      <LegacyChecklistSection
         currentStep={currentStep}
         currentStepSection={currentStepSection}
         stepSection={LegacyFlashChecklistStepSection.PAUSE_OPERATIONS}
         headerContents={<p>Pause Operations</p>}
         items={pauseOperationsSteps}
       />
-      <ChecklistSection
+      <LegacyChecklistSection
         currentStep={currentStep}
         currentStepSection={currentStepSection}
         stepSection={LegacyFlashChecklistStepSection.START_FLASH}
         headerContents={<p>Start Flash</p>}
         items={startFlashSteps}
       />
-      <ChecklistSection
+      <LegacyChecklistSection
         currentStep={currentStep}
         currentStepSection={currentStepSection}
         stepSection={
@@ -451,7 +452,7 @@ const LegacyStateProceedWithFlashChecklist = (): JSX.Element => {
         }
         items={deprecateDataAndMetadataSteps}
       />
-      <ChecklistSection
+      <LegacyChecklistSection
         currentStep={currentStep}
         currentStepSection={currentStepSection}
         stepSection={LegacyFlashChecklistStepSection.FLASH_RAW_DATA_TO_PRIMARY}
@@ -462,7 +463,7 @@ const LegacyStateProceedWithFlashChecklist = (): JSX.Element => {
         }
         items={executeFlashSteps}
       />
-      <ChecklistSection
+      <LegacyChecklistSection
         currentStep={currentStep}
         currentStepSection={currentStepSection}
         stepSection={LegacyFlashChecklistStepSection.SECONDARY_RAW_DATA_CLEANUP}
@@ -473,28 +474,28 @@ const LegacyStateProceedWithFlashChecklist = (): JSX.Element => {
         }
         items={cleanUpSteps}
       />
-      <ChecklistSection
+      <LegacyChecklistSection
         currentStep={currentStep}
         currentStepSection={currentStepSection}
         stepSection={LegacyFlashChecklistStepSection.FINALIZE_FLASH}
         headerContents={<p>Finalize Flash</p>}
         items={finalizeFlashSteps}
       />
-      <ChecklistSection
+      <LegacyChecklistSection
         currentStep={currentStep}
         currentStepSection={currentStepSection}
         stepSection={LegacyFlashChecklistStepSection.RESUME_OPERATIONS}
         headerContents={<p>Resume Operations</p>}
         items={resumeOperationsSteps}
       />
-      <ChecklistSection
+      <LegacyChecklistSection
         currentStep={currentStep}
         currentStepSection={currentStepSection}
         stepSection={LegacyFlashChecklistStepSection.TRIGGER_PIPELINES}
         headerContents={<p>Trigger Pipelines</p>}
         items={triggerPipelinesSteps}
       />
-      <ChecklistSection
+      <LegacyChecklistSection
         currentStep={currentStep}
         currentStepSection={currentStepSection}
         stepSection={LegacyFlashChecklistStepSection.DONE}
@@ -502,7 +503,7 @@ const LegacyStateProceedWithFlashChecklist = (): JSX.Element => {
         items={[]}
       >
         <p>DONE</p>
-      </ChecklistSection>
+      </LegacyChecklistSection>
     </div>
   );
 };
