@@ -19,11 +19,12 @@ from typing import List, Optional, Set
 
 import attr
 
-from recidiviz.calculator.query.state.dataset_config import (
-    DATAFLOW_METRICS_DATASET,
-    NORMALIZED_STATE_DATASET,
-)
+from recidiviz.calculator.query.state.dataset_config import DATAFLOW_METRICS_DATASET
 from recidiviz.common import attr_validators
+from recidiviz.common.constants.states import StateCode
+from recidiviz.pipelines.ingest.dataset_config import (
+    normalized_state_dataset_for_state_code,
+)
 from recidiviz.pipelines.pipeline_names import METRICS_PIPELINE_NAME
 from recidiviz.pipelines.pipeline_parameters import PipelineParameters
 
@@ -32,12 +33,13 @@ from recidiviz.pipelines.pipeline_parameters import PipelineParameters
 class MetricsPipelineParameters(PipelineParameters):
     """Class for metrics pipeline parameters"""
 
-    # TODO(#29518): Update to default to normalized_state_dataset_for_state_code() once
-    #  the ingest/normalization pipeline outputs all entities to the
-    #  us_xx_normalized_state dataset, whether or not they are normalized.
     @property
     def normalized_input(self) -> str:
-        return self.get_input_dataset(NORMALIZED_STATE_DATASET)
+        return self.get_input_dataset(
+            default_dataset_id=normalized_state_dataset_for_state_code(
+                StateCode(self.state_code)
+            )
+        )
 
     person_filter_ids: Optional[str] = attr.ib(
         default=None, validator=attr_validators.is_opt_str

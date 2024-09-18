@@ -29,10 +29,7 @@ from apache_beam.testing.util import BeamAssertException, assert_that, equal_to
 from freezegun import freeze_time
 
 from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
-from recidiviz.calculator.query.state.dataset_config import (
-    DATAFLOW_METRICS_DATASET,
-    NORMALIZED_STATE_DATASET,
-)
+from recidiviz.calculator.query.state.dataset_config import DATAFLOW_METRICS_DATASET
 from recidiviz.common.constants.state.state_assessment import StateAssessmentType
 from recidiviz.common.constants.state.state_person import (
     StateEthnicity,
@@ -47,6 +44,7 @@ from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodSupervisionType,
     StateSupervisionPeriodTerminationReason,
 )
+from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.entity.state import normalized_entities
 from recidiviz.persistence.entity.state.normalized_entities import (
@@ -54,6 +52,9 @@ from recidiviz.persistence.entity.state.normalized_entities import (
     NormalizedStatePerson,
     NormalizedStateProgramAssignment,
     NormalizedStateSupervisionPeriod,
+)
+from recidiviz.pipelines.ingest.dataset_config import (
+    normalized_state_dataset_for_state_code,
 )
 from recidiviz.pipelines.ingest.state.normalization.normalization_managers.assessment_normalization_manager import (
     DEFAULT_ASSESSMENT_SCORE_BUCKET,
@@ -258,7 +259,9 @@ class TestProgramPipeline(unittest.TestCase):
         """Runs a test version of the program pipeline."""
         read_from_bq_constructor = (
             self.fake_bq_source_factory.create_fake_bq_source_constructor(
-                expected_entities_dataset=NORMALIZED_STATE_DATASET,
+                expected_entities_dataset=normalized_state_dataset_for_state_code(
+                    StateCode.US_XX
+                ),
                 data_dict=data_dict,
             )
         )

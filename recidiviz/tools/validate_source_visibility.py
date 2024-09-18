@@ -243,7 +243,6 @@ def main() -> int:
         if "us_ix_case_note" in pipeline.__name__:
             valid_prefixes = valid_prefixes.union(
                 {
-                    "recidiviz.calculator.query.state.dataset_config",
                     "recidiviz.ingest.direct.types.direct_ingest_instance",
                     "recidiviz.ingest.direct.dataset_config",
                     "recidiviz.persistence",

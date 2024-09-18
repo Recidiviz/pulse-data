@@ -20,9 +20,9 @@ from typing import Set, Type
 from unittest.mock import MagicMock, patch
 
 from recidiviz.calculator.query.state.dataset_config import (
-    NORMALIZED_STATE_DATASET,
     STATIC_REFERENCE_TABLES_DATASET,
 )
+from recidiviz.common.constants.states import StateCode
 from recidiviz.datasets.static_data.config import EXTERNAL_REFERENCE_DATASET
 from recidiviz.ingest.direct.dataset_config import (
     raw_latest_views_dataset_for_region,
@@ -38,10 +38,16 @@ from recidiviz.persistence.entity.state.normalized_entities import (
     NormalizedStatePersonEthnicity,
     NormalizedStatePersonRace,
 )
+from recidiviz.pipelines.ingest.dataset_config import (
+    normalized_state_dataset_for_state_code,
+)
 from recidiviz.pipelines.ingest.state.pipeline import StateIngestPipeline
 from recidiviz.pipelines.metrics.base_metric_pipeline import MetricPipeline
 from recidiviz.pipelines.supplemental.base_supplemental_dataset_pipeline import (
     SupplementalDatasetPipeline,
+)
+from recidiviz.pipelines.supplemental.us_ix_case_note_extracted_entities.pipeline import (
+    UsIxCaseNoteExtractedEntitiesPipeline,
 )
 from recidiviz.pipelines.utils.pipeline_run_utils import (
     collect_all_pipeline_classes,
@@ -90,13 +96,20 @@ class TestReferenceViews(unittest.TestCase):
 
         for pipeline in collect_all_pipeline_classes():
             for state_code in get_existing_direct_ingest_states():
+                if (
+                    issubclass(pipeline, UsIxCaseNoteExtractedEntitiesPipeline)
+                    and state_code != StateCode.US_IX
+                ):
+                    continue
+
+                allowed_parent_datasets = all_pipelines_allowed_datasets
                 if issubclass(pipeline, (MetricPipeline, SupplementalDatasetPipeline)):
-                    allowed_parent_datasets = {
-                        *all_pipelines_allowed_datasets,
-                        NORMALIZED_STATE_DATASET,
-                    }
+                    allowed_parent_datasets.add(
+                        normalized_state_dataset_for_state_code(state_code)
+                    )
                 elif issubclass(pipeline, StateIngestPipeline):
-                    allowed_parent_datasets = all_pipelines_allowed_datasets
+                    # No extra allowed datasets
+                    pass
                 else:
                     raise ValueError(f"Unexpected pipeline type [{type(pipeline)}]")
 
