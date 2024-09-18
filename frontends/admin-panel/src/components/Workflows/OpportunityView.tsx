@@ -17,7 +17,7 @@
 
 import { Button, Form } from "antd";
 import { observer } from "mobx-react-lite";
-import { useHistory } from "react-router";
+import { useHistory } from "react-router-dom";
 
 import { Opportunity } from "../../WorkflowsStore/models/Opportunity";
 import OpportunityPresenter from "../../WorkflowsStore/presenters/OpportunityPresenter";
