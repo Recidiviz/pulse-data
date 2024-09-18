@@ -335,12 +335,6 @@ THESE_INGEST_VIEWS_HAVE_UNDOCUMENTED_CTES: Dict[StateCode, Dict[str, List[str]]]
             "ungrouped_supervision_level_sessions",
         ],
         "CAFScoreAssessment": ["CAF_base", "latest_Classification"],
-        "DisciplinaryIncarcerationIncident": [
-            "disc_outcome",
-            "disciplinary_base",
-            "full_inc_and_out",
-            "inc_base",
-        ],
         "InferredViolations": [
             "abs_contact_notes",
             "all_inferred_violations",
