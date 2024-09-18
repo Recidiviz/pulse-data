@@ -30,7 +30,7 @@ from recidiviz.pipelines.ingest.state.normalization.normalization_managers.progr
 from recidiviz.pipelines.utils.execution_utils import (
     build_staff_external_id_to_staff_id_map,
 )
-from recidiviz.tests.pipelines.normalization.utils.entity_normalization_manager_utils_test import (
+from recidiviz.tests.pipelines.ingest.state.normalization.normalization_managers.assessment_normalization_manager_test import (
     STATE_PERSON_TO_STATE_STAFF_LIST,
 )
 

@@ -57,6 +57,15 @@ def get_bq_schema_for_entities_module(
     return table_to_schema
 
 
+def get_bq_schema_for_entity_table(
+    entities_module: ModuleType, table_id: str
+) -> list[SchemaField]:
+    """Returns the schema for a table in a schema derived from a module containing a
+    collection of related Entity classes.
+    """
+    return get_bq_schema_for_entities_module(entities_module)[table_id]
+
+
 def _get_bq_schema_for_entity_class(
     entities_module: ModuleType, entity_cls: Type[Entity]
 ) -> list[SchemaField]:

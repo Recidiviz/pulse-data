@@ -60,27 +60,9 @@ from recidiviz.tests.persistence.entity.state.entities_test_utils import (
     get_violation_tree,
     hydrate_bidirectional_relationships_on_expected_response,
 )
-
-STATE_PERSON_TO_STATE_STAFF_LIST = [
-    {
-        "person_id": 123,
-        "staff_id": 10000,
-        "staff_external_id": "EMP1",
-        "staff_external_id_type": "US_XX_STAFF_ID",
-    },
-    {
-        "person_id": 123,
-        "staff_id": 20000,
-        "staff_external_id": "EMP2",
-        "staff_external_id_type": "US_XX_STAFF_ID",
-    },
-    {
-        "person_id": 123,
-        "staff_id": 30000,
-        "staff_external_id": "EMP3",
-        "staff_external_id_type": "US_XX_STAFF_ID",
-    },
-]
+from recidiviz.tests.pipelines.ingest.state.normalization.normalization_managers.assessment_normalization_manager_test import (
+    STATE_PERSON_TO_STATE_STAFF_LIST,
+)
 
 
 class TestNormalizedViolationResponsesFromProcessedVersions(unittest.TestCase):

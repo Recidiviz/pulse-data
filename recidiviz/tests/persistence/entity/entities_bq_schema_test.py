@@ -23,6 +23,7 @@ from more_itertools import one
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.entities_bq_schema import (
     get_bq_schema_for_entities_module,
+    get_bq_schema_for_entity_table,
 )
 from recidiviz.persistence.entity.state import entities as state_entities
 from recidiviz.persistence.entity.state import (
@@ -119,6 +120,25 @@ class TestGetBqSchemaForEntitiesModule(unittest.TestCase):
         }
         schema = get_bq_schema_for_entities_module(fake_entities)
         self.assertEqual(expected_schema, schema)
+
+    def test_get_bq_schema_for_entity_table(self) -> None:
+        self.assertEqual(
+            [
+                SchemaField("state_code", "STRING", "NULLABLE"),
+                SchemaField("another_entity_id", "INTEGER", "NULLABLE"),
+                SchemaField("another_name", "STRING", "NULLABLE"),
+                SchemaField("fake_person_id", "INTEGER", "NULLABLE"),
+            ],
+            get_bq_schema_for_entity_table(fake_entities, "fake_another_entity"),
+        )
+        self.assertEqual(
+            [
+                SchemaField("state_code", "STRING", "NULLABLE"),
+                SchemaField("fake_person_id", "INTEGER", "NULLABLE"),
+                SchemaField("full_name", "STRING", "NULLABLE"),
+            ],
+            get_bq_schema_for_entity_table(fake_entities, "fake_person"),
+        )
 
     def test_bq_schema_for_entities_module_state(self) -> None:
         # Does not crash

@@ -22,12 +22,10 @@ from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state.views.sessions.sentence_to_consecutive_parent_sentence import (
     CONSECUTIVE_SENTENCES_VIEW_BUILDER,
 )
-from recidiviz.persistence.entity.state.normalized_entities import (
-    NormalizedStateSentence,
+from recidiviz.persistence.entity.entities_bq_schema import (
+    get_bq_schema_for_entity_table,
 )
-from recidiviz.pipelines.normalization.utils.normalized_entity_conversion_utils import (
-    bq_schema_for_normalized_state_entity,
-)
+from recidiviz.persistence.entity.state import normalized_entities
 from recidiviz.tests.big_query.simple_big_query_view_builder_test_case import (
     SimpleBigQueryViewBuilderTestCase,
 )
@@ -45,8 +43,8 @@ class SentenceToParentConsecutiveViewTest(SimpleBigQueryViewBuilderTestCase):
     @property
     def parent_schemas(self) -> dict[BigQueryAddress, list[bigquery.SchemaField]]:
         return {
-            self.sentence_address: bq_schema_for_normalized_state_entity(
-                NormalizedStateSentence
+            self.sentence_address: get_bq_schema_for_entity_table(
+                normalized_entities, "state_sentence"
             )
         }
 

@@ -23,14 +23,17 @@ from recidiviz.calculator.query.state.dataset_config import (
 )
 from recidiviz.persistence.database import schema_utils
 from recidiviz.persistence.entity import entity_utils
+from recidiviz.persistence.entity.base_entity import Entity
+from recidiviz.persistence.entity.entities_bq_schema import (
+    get_bq_schema_for_entity_table,
+)
 from recidiviz.persistence.entity.state import entities as state_entities
+from recidiviz.persistence.entity.state import normalized_entities
 from recidiviz.persistence.entity.state.normalized_state_entity import (
     NormalizedStateEntity,
 )
-from recidiviz.pipelines.normalization.utils.normalized_entity_conversion_utils import (
-    bq_schema_for_normalized_state_entity,
-)
 from recidiviz.utils.string import StrictStringFormatter
+from recidiviz.utils.types import assert_subclass
 
 SELECT_FROM_NORMALIZED_ENTITY_TABLE_TEMPLATE = (
     "(SELECT state_code AS region_code, {id_column}, {columns} "
@@ -109,7 +112,11 @@ def _validate_normalized_entity_has_all_fields(
     Raises an error if the class does not contain all of the fields.
     """
     schema_field_names = [
-        field.name for field in bq_schema_for_normalized_state_entity(normalized_entity)
+        field.name
+        for field in get_bq_schema_for_entity_table(
+            normalized_entities,
+            assert_subclass(normalized_entity, Entity).get_table_id(),
+        )
     ]
 
     for field in fields_to_validate:
