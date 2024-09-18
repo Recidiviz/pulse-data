@@ -94,7 +94,7 @@ class KnownValuesColumnValidation(RawDataColumnImportBlockingValidation):
                 validation_query=self.query,
                 error_msg=(
                     f"Found column [{self.column_name}] on raw file [{self.file_tag}] "
-                    f"not matching any of the known_values defined in its configuration YAML.."
+                    f"not matching any of the known_values defined in its configuration YAML."
                     f"\nDefined known values: [{', '.join(self.known_values)}]."
                     f"\nFirst value that does not parse: [{results[0][self.column_name]}]."
                 ),
