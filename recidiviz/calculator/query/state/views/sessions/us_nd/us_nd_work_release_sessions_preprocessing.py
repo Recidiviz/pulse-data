@@ -27,13 +27,9 @@ from recidiviz.calculator.query.state.dataset_config import (
     SESSIONS_DATASET,
 )
 from recidiviz.task_eligibility.utils.us_nd_query_fragments import (
-    MINIMUM_SECURITY_FACILITIES,
-    reformat_ids,
     ATP_FACILITIES,
+    MINIMUM_SECURITY_FACILITIES,
 )
-from recidiviz.common.constants.states import StateCode
-from recidiviz.ingest.direct.dataset_config import raw_latest_views_dataset_for_region
-from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -63,26 +59,19 @@ WITH wr_facilities AS (
 
 wr_as_program AS (
     -- All work release programs registered in the program profiles table
-    SELECT 
-      peid.state_code,
-      peid.person_id,
-      IFNULL(
-        SAFE.PARSE_DATE('%m/%d/%Y', SPLIT(pp.OFFENDER_START_DATE, ' ')[OFFSET(0)]),
-        SAFE_CAST(SPLIT(pp.OFFENDER_START_DATE, ' ')[OFFSET(0)] AS DATE)
-        ) AS start_date,
-      IFNULL(
-        SAFE.PARSE_DATE('%m/%d/%Y', SPLIT(pp.OFFENDER_END_DATE, ' ')[OFFSET(0)]),
-        SAFE_CAST(SPLIT(pp.OFFENDER_END_DATE, ' ')[OFFSET(0)] AS DATE)
-        ) AS end_date_exclusive,
-      ps.DESCRIPTION,
-    FROM `{{project_id}}.{{us_nd_raw_data_up_to_date_dataset}}.elite_OffenderProgramProfiles_latest` pp
-    LEFT JOIN `{{project_id}}.{{us_nd_raw_data_up_to_date_dataset}}.elite_ProgramServices_latest` ps
-      USING(PROGRAM_ID)
-    LEFT JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` peid
-      ON peid.external_id = {reformat_ids('OFFENDER_BOOK_ID')}
-        AND peid.state_code = 'US_ND'
-        AND peid.id_type = 'US_ND_ELITE_BOOKING'
-    WHERE ps.DESCRIPTION IN ('YCC INSTITUTIONAL WORK RELEASE', 'WORK RELEASE', 'JRMU WORK RELEASE')
+    SELECT
+      state_code,
+      person_id,
+      start_date,
+      discharge_date AS end_date_exclusive,
+      SPLIT(program_id, "@@")[SAFE_OFFSET(1)] AS DESCRIPTION,
+    FROM `{{project_id}}.{{normalized_state_dataset}}.state_program_assignment`
+    WHERE state_code = 'US_ND'
+        AND SPLIT(program_id, "@@")[SAFE_OFFSET(1)] IN (
+            'YCC INSTITUTIONAL WORK RELEASE',
+            'WORK RELEASE',
+            'JRMU WORK RELEASE'
+        )
 ),
 
 wr_sessions AS (
@@ -157,9 +146,6 @@ US_ND_WORK_RELEASE_SESSIONS_PREPROCESSING_VIEW_BUILDER = SimpleBigQueryViewBuild
     view_id=US_ND_WORK_RELEASE_SESSIONS_PREPROCESSING_VIEW_NAME,
     description=US_ND_WORK_RELEASE_SESSIONS_PREPROCESSING_VIEW_DESCRIPTION,
     view_query_template=US_ND_WORK_RELEASE_SESSIONS_PREPROCESSING_QUERY_TEMPLATE,
-    us_nd_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
-        state_code=StateCode.US_ND, instance=DirectIngestInstance.PRIMARY
-    ),
     sessions_dataset=SESSIONS_DATASET,
     normalized_state_dataset=NORMALIZED_STATE_DATASET,
     should_materialize=False,
