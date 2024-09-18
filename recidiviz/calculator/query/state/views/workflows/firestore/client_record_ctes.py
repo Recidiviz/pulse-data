@@ -357,7 +357,7 @@ _CLIENT_RECORD_EMPLOYMENT_INFO_CTE = f"""
         SELECT
             state_code,
             person_id,
-            ARRAY_AGG(STRUCT(employer_name AS name, employer_address AS address, start_date as start_date) IGNORE NULLS ORDER BY start_date ASC) AS current_employers
+            ARRAY_AGG(STRUCT(employer_name AS name, employer_address AS address, start_date as start_date, employment_status as employment_status) IGNORE NULLS ORDER BY start_date ASC) AS current_employers
         FROM (
             SELECT DISTINCT
                 state_code,
@@ -365,6 +365,7 @@ _CLIENT_RECORD_EMPLOYMENT_INFO_CTE = f"""
                 sep.employer_name,
                 sep.start_date,
                 NULL AS end_date,
+                sep.employment_status,
             UPPER(a.StreetNumber || ' ' || a.StreetName || ', ' || jurisdiction.LocationName || ', ' || state_ids.state_abbreviation || ' ' || a.ZipCode) AS employer_address,
             FROM `{{project_id}}.{{normalized_state_dataset}}.state_employment_period` sep
             LEFT JOIN `{{project_id}}.{{us_ix_raw_data_up_to_date_dataset}}.ind_EmploymentHistory_latest` emp_hist
