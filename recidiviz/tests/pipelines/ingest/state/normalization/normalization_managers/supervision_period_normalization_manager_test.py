@@ -38,7 +38,7 @@ from recidiviz.pipelines.utils.execution_utils import (
 from recidiviz.pipelines.utils.state_utils.templates.us_xx.us_xx_supervision_period_normalization_delegate import (
     UsXxSupervisionNormalizationDelegate,
 )
-from recidiviz.tests.pipelines.normalization.utils.entity_normalization_manager_utils_test import (
+from recidiviz.tests.pipelines.ingest.state.normalization.normalization_managers.assessment_normalization_manager_test import (
     STATE_PERSON_TO_STATE_STAFF_LIST,
 )
 

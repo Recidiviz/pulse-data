@@ -51,15 +51,8 @@ from recidiviz.big_query.big_query_results_contents_handle import (
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.schema_utils import get_all_table_classes_in_schema
-from recidiviz.persistence.entity.normalized_entities_utils import (
-    normalized_entity_class_with_base_class_name,
-)
 from recidiviz.pipelines.dataflow_config import DATAFLOW_METRICS_TO_TABLES
 from recidiviz.pipelines.metrics.utils.metric_utils import RecidivizMetricType
-from recidiviz.pipelines.normalization.utils.normalized_entity_conversion_utils import (
-    bq_schema_for_normalized_state_association_table,
-    column_names_on_bq_schema_for_normalized_state_entity,
-)
 from recidiviz.pipelines.utils.beam_utils.extractor_utils import ROOT_ENTITY_ID_KEY
 from recidiviz.pipelines.utils.execution_utils import TableRow
 from recidiviz.pipelines.utils.pipeline_run_utils import collect_all_pipeline_classes
@@ -137,71 +130,6 @@ class FakeBigQueryAssertMatchers:
                     )
 
         return _validate_metric_output
-
-    @staticmethod
-    def validate_normalized_entity_output(
-        base_class_name: str,
-    ) -> Callable[[Iterable[Dict[str, Any]]], None]:
-        """Asserts that the pipeline produces dictionaries with the expected keys
-        corresponding to the column names in the table into which the output will be
-        written."""
-
-        def _validate_normalized_entity_output(
-            output: Iterable[Dict[str, Any]]
-        ) -> None:
-            normalized_entity_class = normalized_entity_class_with_base_class_name(
-                base_class_name=base_class_name
-            )
-            expected_column_names = set(
-                column_names_on_bq_schema_for_normalized_state_entity(
-                    normalized_entity_class
-                )
-            )
-
-            if not output:
-                raise BeamAssertException(
-                    f"Failed assert. Output is empty for entity {base_class_name}."
-                )
-            for output_dict in output:
-                if set(output_dict.keys()) != expected_column_names:
-                    raise BeamAssertException(
-                        "Output dictionary does not have "
-                        f"the expected keys. Expected: [{expected_column_names}], "
-                        f"found: [{list(output_dict.keys())}]."
-                    )
-
-        return _validate_normalized_entity_output
-
-    @staticmethod
-    def validate_normalized_association_entity_output(
-        child_class_name: str, parent_class_name: str
-    ) -> Callable[[Iterable[Dict[str, Any]]], None]:
-        """Asserts that the pipeline produces dictionaries with the expected keys
-        corresponding to the column names in the association table which the output
-        will be written."""
-
-        def _validate_normalized_association_entity_output(
-            output: Iterable[Dict[str, Any]]
-        ) -> None:
-            schema_for_association = bq_schema_for_normalized_state_association_table(
-                child_class_name, parent_class_name
-            )
-
-            expected_column_names = {field.name for field in schema_for_association}
-
-            if not output:
-                raise BeamAssertException(
-                    f"Failed assert. Output is empty for entity association {child_class_name}, {parent_class_name}"
-                )
-            for output_dict in output:
-                if set(output_dict.keys()) != expected_column_names:
-                    raise BeamAssertException(
-                        "Output dictionary does not have "
-                        f"the expected keys. Expected: [{expected_column_names}],"
-                        f"found: [{list(output_dict.keys())}]"
-                    )
-
-        return _validate_normalized_association_entity_output
 
 
 class FakeReadFromBigQuery(apache_beam.PTransform):

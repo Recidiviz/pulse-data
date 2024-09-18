@@ -39,9 +39,27 @@ from recidiviz.pipelines.utils.execution_utils import (
 from recidiviz.pipelines.utils.state_utils.templates.us_xx.us_xx_assessment_normalization_delegate import (
     UsXxAssessmentNormalizationDelegate,
 )
-from recidiviz.tests.pipelines.normalization.utils.entity_normalization_manager_utils_test import (
-    STATE_PERSON_TO_STATE_STAFF_LIST,
-)
+
+STATE_PERSON_TO_STATE_STAFF_LIST = [
+    {
+        "person_id": 123,
+        "staff_id": 10000,
+        "staff_external_id": "EMP1",
+        "staff_external_id_type": "US_XX_STAFF_ID",
+    },
+    {
+        "person_id": 123,
+        "staff_id": 20000,
+        "staff_external_id": "EMP2",
+        "staff_external_id_type": "US_XX_STAFF_ID",
+    },
+    {
+        "person_id": 123,
+        "staff_id": 30000,
+        "staff_external_id": "EMP3",
+        "staff_external_id_type": "US_XX_STAFF_ID",
+    },
+]
 
 
 class TestPrepareAssessmentsForCalculations(unittest.TestCase):
