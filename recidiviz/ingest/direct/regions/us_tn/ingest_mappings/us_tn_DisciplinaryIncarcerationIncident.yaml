@@ -21,6 +21,7 @@ input_columns:
   - SentenceDate
   - InjuryLevel
   - SentId
+  - InfractionType
 unused_columns: []
 output:
   StatePerson:
@@ -318,6 +319,7 @@ output:
               Class: DisciplinaryClass
               Disposition: Disposition
               InjuryLevel: InjuryLevel
+              InfractionType: InfractionType
           incarceration_incident_outcomes:
             - StateIncarcerationIncidentOutcome:
                 external_id:

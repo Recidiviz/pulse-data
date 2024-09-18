@@ -25,7 +25,9 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 VIEW_QUERY_TEMPLATE = """
-WITH  disciplinary_base AS (
+WITH  
+-- Disciplinaryclass, disposition, and dispition date from Disciplinary table
+disciplinary_base AS (
   SELECT DISTINCT
     OffenderID,
     IncidentID,
@@ -34,7 +36,9 @@ WITH  disciplinary_base AS (
     Disposition,
     DispositionDate, 
   FROM {Disciplinary}
-), inc_base AS (
+), 
+-- base incident information like the extent of the incident and location
+inc_base AS (
   SELECT DISTINCT
     IncidentId,
     SiteId,
@@ -44,6 +48,20 @@ WITH  disciplinary_base AS (
     (DATE(IncidentDateTime)) AS IncidentDate,
   FROM {Incident}
 ),
+-- infraction type is relevant for downstream tools because when it doesn't match with 
+-- incident type then infraction type is used to score the incident for reclassifications
+infractions AS (
+  SELECT 
+    OffenderID, 
+    IncidentID, 
+    InfractionType 
+  FROM  {Infraction} inf
+  WHERE Disposition = 'G'
+  -- there should only be one guilty infractiontype per incident id but there are 2 with multiple 
+  -- Guilty dispositions post 2000 (and more before) so this is to make sure we only get the latest
+  QUALIFY ROW_NUMBER() OVER(PARTITION BY Offenderid, IncidentID ORDER BY LastUpdateDate DESC ) = 1
+),
+-- information about the disciplinary outcome of the incident 
 disc_outcome AS (
   SELECT DISTINCT
     OffenderID,
@@ -55,7 +73,9 @@ disc_outcome AS (
     SentenceHours,
     SentenceDate,
   FROM {DisciplinarySentence}
-), full_inc_and_out AS (
+), 
+-- joining all incident, infraction, disciplinary, and disciplinaryoutcome information
+full_inc_and_out AS (
   SELECT DISTINCT
     db.OffenderID,
     db.IncidentId,
@@ -74,13 +94,17 @@ disc_outcome AS (
     SentenceHours,
     SentenceDate,
     InjuryLevel,
-    ROW_NUMBER() OVER (PARTITION BY db.OffenderID, db.IncidentId ORDER BY IncidentDate, DispositionDate, SentenceDate, IncidentType, DisciplinaryClass, SentenceType, SentenceDays, OffenderAccount, Location) AS SentId
+    ROW_NUMBER() OVER (PARTITION BY db.OffenderID, db.IncidentId ORDER BY IncidentDate, DispositionDate, SentenceDate, IncidentType, DisciplinaryClass, SentenceType, SentenceDays, OffenderAccount, Location) AS SentId,
+    InfractionType
   FROM disciplinary_base db
   LEFT JOIN inc_base
   USING (IncidentID)
   LEFT JOIN disc_outcome dis
   ON db.OffenderID = dis.OffenderID
   AND db.IncidentID = dis.IncidentID
+  LEFT JOIN infractions inf
+  ON db.OffenderID = inf.OffenderID
+  AND db.IncidentID = inf.IncidentID
   WHERE DisciplinaryClass IS NOT NULL OR DispositionDate IS NULL
 )
 SELECT * FROM full_inc_and_out
