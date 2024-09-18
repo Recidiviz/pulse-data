@@ -13,9 +13,6 @@ from recidiviz.pipelines.supplemental.dataset_config import SUPPLEMENTAL_DATA_DA
 from recidiviz.source_tables.ingest_pipeline_output_table_collector import (
     build_ingest_pipeline_output_source_table_collections,
 )
-from recidiviz.source_tables.normalization_pipeline_output_table_collector import (
-    build_normalization_pipeline_output_source_table_collections,
-)
 from recidiviz.source_tables.source_table_config import (
     DataflowPipelineSourceTableLabel,
     SourceTableCollection,
@@ -74,6 +71,5 @@ def get_dataflow_output_source_table_collections() -> list[SourceTableCollection
     return [
         dataflow_metrics,
         supplemental_data,
-        *build_normalization_pipeline_output_source_table_collections(),
         *build_ingest_pipeline_output_source_table_collections(),
     ]

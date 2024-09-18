@@ -31,13 +31,9 @@ from recidiviz.persistence.entity.state import (
 from recidiviz.pipelines.ingest.dataset_config import state_dataset_for_state_code
 from recidiviz.pipelines.normalization.dataset_config import (
     normalized_state_dataset_for_state_code_ingest_pipeline_output,
-    normalized_state_dataset_for_state_code_legacy_normalization_output,
 )
 from recidiviz.source_tables.ingest_pipeline_output_table_collector import (
     build_ingest_pipeline_output_source_table_collections,
-)
-from recidiviz.source_tables.normalization_pipeline_output_table_collector import (
-    build_normalization_pipeline_output_source_table_collections,
 )
 from recidiviz.source_tables.union_tables_output_table_collector import (
     build_unioned_normalized_state_source_table_collection,
@@ -161,41 +157,6 @@ class TestGetBqSchemaForEntitiesModule(unittest.TestCase):
         table_to_schema = get_bq_schema_for_entities_module(state_entities)
 
         self._compare_schemas(expected_table_to_schema, table_to_schema)
-
-    def test_parity_with_source_table_collection_us_xx_normalized_state_legacy(
-        self,
-    ) -> None:
-        """Tests that get_bq_schema_for_entities_module() creates a schema that
-        matches the current schema defined for the `us_xx_normalized_state` legacy
-        normalization pipeline outputs.
-
-        Note: When the ingest pipeline outputs normalized entities it will write ALL
-        tables to `us_xx_normalized_state`.
-        """
-
-        state_collection = one(
-            c
-            for c in build_normalization_pipeline_output_source_table_collections()
-            # Pick an arbitrary state's ingest pipeline output schema to test
-            if (
-                c.dataset_id
-                == normalized_state_dataset_for_state_code_legacy_normalization_output(
-                    StateCode.US_OZ
-                )
-            )
-        )
-
-        expected_table_to_schema = {
-            t.address.table_id: t.schema_fields for t in state_collection.source_tables
-        }
-        table_to_schema = get_bq_schema_for_entities_module(normalized_state_entities)
-
-        # The legacy normalization pipelines only output to a subset of tables. We check
-        # that for those tables the schemas are identical.
-        for table, expected_schema in expected_table_to_schema.items():
-            self._compare_schemas(
-                {table: expected_schema}, {table: table_to_schema[table]}
-            )
 
     def test_parity_with_source_table_collection_us_xx_normalized_state_new(
         self,

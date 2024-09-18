@@ -24,7 +24,6 @@ from recidiviz.pipelines.pipeline_names import (
     METRICS_PIPELINE_NAME,
     SUPPLEMENTAL_PIPELINE_NAME,
 )
-from recidiviz.source_tables import normalization_pipeline_output_table_collector
 from recidiviz.tests.big_query.big_query_emulator_test_case import (
     BigQueryEmulatorTestCase,
 )
@@ -44,10 +43,6 @@ class CreateOrUpdateDataflowSandboxTest(BigQueryEmulatorTestCase):
         super().setUp()
         self.existing_states = [StateCode.US_XX, StateCode.US_YY]
         self.existing_states_patchers = [
-            patch(
-                f"{normalization_pipeline_output_table_collector.__name__}.get_direct_ingest_states_existing_in_env",
-                return_value=self.existing_states,
-            ),
             patch(
                 f"{create_or_update_dataflow_sandbox_module.__name__}.get_direct_ingest_states_existing_in_env",
                 return_value=self.existing_states,

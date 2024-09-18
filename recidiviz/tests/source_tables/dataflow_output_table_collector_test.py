@@ -17,12 +17,8 @@
 """Tests for Dataflow BigQuery source tables"""
 import unittest
 
-import mock
-
-from recidiviz.common.constants.states import StateCode
 from recidiviz.pipelines.pipeline_names import (
     METRICS_PIPELINE_NAME,
-    NORMALIZATION_PIPELINE_NAME,
     SUPPLEMENTAL_PIPELINE_NAME,
 )
 from recidiviz.source_tables.dataflow_output_table_collector import (
@@ -31,7 +27,6 @@ from recidiviz.source_tables.dataflow_output_table_collector import (
 from recidiviz.source_tables.source_table_config import (
     DataflowPipelineSourceTableLabel,
     SourceTableCollection,
-    StateSpecificSourceTableLabel,
 )
 from recidiviz.source_tables.source_table_repository import SourceTableRepository
 
@@ -41,103 +36,8 @@ class TestDataflowOutputTableCollector(unittest.TestCase):
 
     def setUp(self) -> None:
         super().setUp()
-        self.direct_ingest_patcher = mock.patch(
-            "recidiviz.source_tables.normalization_pipeline_output_table_collector."
-            "get_direct_ingest_states_existing_in_env",
-            return_value=[StateCode.US_XX, StateCode.US_YY],
-        )
-        self.direct_ingest_patcher.start()
-
         self.source_table_repository = SourceTableRepository(
             source_table_collections=get_dataflow_output_source_table_collections()
-        )
-
-    def tearDown(self) -> None:
-        self.direct_ingest_patcher.stop()
-
-    def test_normalization_tables(self) -> None:
-        """Tests the expected output schema of normalization pipelines."""
-        pipeline_output_label = DataflowPipelineSourceTableLabel(
-            NORMALIZATION_PIPELINE_NAME
-        )
-        us_xx_label = StateSpecificSourceTableLabel(state_code=StateCode.US_XX)
-        us_yy_label = StateSpecificSourceTableLabel(state_code=StateCode.US_YY)
-
-        normalization_collections = (
-            self.source_table_repository.get_collections_with_labels(
-                labels=[pipeline_output_label]
-            )
-        )
-        self.assertEqual(len(normalization_collections), 2)
-
-        collected_labels = [
-            source_table_collection.labels
-            for source_table_collection in normalization_collections
-        ]
-
-        # Only the state-specific datasets are actual dataflow pipeline outputs
-        expected_labels = [
-            [pipeline_output_label, us_xx_label],
-            [pipeline_output_label, us_yy_label],
-        ]
-        self.assertListEqual(collected_labels, expected_labels)
-
-        us_xx_normalized_collection = (
-            self.source_table_repository.get_collection_with_labels(
-                labels=[pipeline_output_label, us_xx_label]
-            )
-        )
-        us_yy_normalized_collection = (
-            self.source_table_repository.get_collection_with_labels(
-                labels=[pipeline_output_label, us_yy_label]
-            )
-        )
-
-        self.assert_source_tables_match(
-            us_xx_normalized_collection,
-            expected_addresses=[
-                "us_xx_normalized_state.state_assessment",
-                "us_xx_normalized_state.state_charge",
-                "us_xx_normalized_state.state_charge_incarceration_sentence_association",
-                "us_xx_normalized_state.state_charge_supervision_sentence_association",
-                "us_xx_normalized_state.state_early_discharge",
-                "us_xx_normalized_state.state_incarceration_period",
-                "us_xx_normalized_state.state_incarceration_sentence",
-                "us_xx_normalized_state.state_program_assignment",
-                "us_xx_normalized_state.state_staff_role_period",
-                "us_xx_normalized_state.state_supervision_case_type_entry",
-                "us_xx_normalized_state.state_supervision_contact",
-                "us_xx_normalized_state.state_supervision_period",
-                "us_xx_normalized_state.state_supervision_sentence",
-                "us_xx_normalized_state.state_supervision_violated_condition_entry",
-                "us_xx_normalized_state.state_supervision_violation",
-                "us_xx_normalized_state.state_supervision_violation_response",
-                "us_xx_normalized_state.state_supervision_violation_response_decision_entry",
-                "us_xx_normalized_state.state_supervision_violation_type_entry",
-            ],
-        )
-        self.assert_source_tables_match(
-            us_yy_normalized_collection,
-            expected_addresses=[
-                "us_yy_normalized_state.state_assessment",
-                "us_yy_normalized_state.state_charge",
-                "us_yy_normalized_state.state_charge_incarceration_sentence_association",
-                "us_yy_normalized_state.state_charge_supervision_sentence_association",
-                "us_yy_normalized_state.state_early_discharge",
-                "us_yy_normalized_state.state_incarceration_period",
-                "us_yy_normalized_state.state_incarceration_sentence",
-                "us_yy_normalized_state.state_program_assignment",
-                "us_yy_normalized_state.state_staff_role_period",
-                "us_yy_normalized_state.state_supervision_case_type_entry",
-                "us_yy_normalized_state.state_supervision_contact",
-                "us_yy_normalized_state.state_supervision_period",
-                "us_yy_normalized_state.state_supervision_sentence",
-                "us_yy_normalized_state.state_supervision_violated_condition_entry",
-                "us_yy_normalized_state.state_supervision_violation",
-                "us_yy_normalized_state.state_supervision_violation_response",
-                "us_yy_normalized_state.state_supervision_violation_response_decision_entry",
-                "us_yy_normalized_state.state_supervision_violation_type_entry",
-            ],
         )
 
     def test_supplemental(self) -> None:
