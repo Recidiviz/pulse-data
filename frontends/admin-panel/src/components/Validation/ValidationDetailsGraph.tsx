@@ -29,7 +29,7 @@ import {
 } from "antd";
 import { scaleTime } from "d3-scale";
 import * as React from "react";
-import XYFrame from "semiotic/lib/XYFrame";
+import { XYFrame } from "semiotic";
 
 import {
   IngestInstanceStatusInfo,
