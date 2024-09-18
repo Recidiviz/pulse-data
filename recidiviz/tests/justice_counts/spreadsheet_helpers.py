@@ -221,7 +221,7 @@ def create_excel_file(
     unexpected_system_sheet_name: Optional[str] = None,
     unexpected_disaggregation_sheet_name: Optional[str] = None,
     sheetnames_with_null_data: Optional[Set[str]] = None,
-) -> str:
+) -> Tuple[str, pd.DataFrame]:
     """Populates bulk_upload_test.xlsx with fake data to test functions that ingest spreadsheets"""
     temp_dir = tempfile.mkdtemp()
     file_path = os.path.join(temp_dir, file_name)
@@ -303,7 +303,8 @@ def create_excel_file(
         if add_invalid_sheet_name:
             df = pd.DataFrame({})
             df.to_excel(writer, sheet_name="gender")
-        return file_path
+
+        return (file_path, df)
 
 
 def create_csv_file(
@@ -362,7 +363,7 @@ def create_csv_file(
 def create_combined_excel_file(
     system: schema.System,
     file_name: str,
-) -> str:
+) -> Tuple[str, pd.DataFrame]:
     """Populates test_single_page_combined.xlsx with fake data to test bulk upload
     functions work for a single file that contains multiple metrics
     """
@@ -431,4 +432,4 @@ def create_combined_excel_file(
                 df.loc[len(df.index)] = row
 
     df.to_excel(file_path, index=False)
-    return file_path
+    return (file_path, df)

@@ -92,7 +92,15 @@ from recidiviz.tools.postgres import local_postgres_helpers
 from recidiviz.utils.auth.auth0 import passthrough_authorization_decorator
 from recidiviz.utils.types import assert_type
 
-NOW_TIME = datetime.datetime(2022, 2, 15, 0, 0, 0, 0, datetime.timezone.utc)
+NOW_TIME = datetime.datetime.today().replace(
+    month=1,
+    day=1,
+    hour=0,
+    minute=0,
+    second=0,
+    microsecond=0,
+    tzinfo=datetime.timezone.utc,
+)
 
 
 @pytest.mark.uses_db
@@ -138,10 +146,11 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         self.session = self.app.scoped_session  # type: ignore[attr-defined]
         self.test_schema_objects = JusticeCountsSchemaTestObjects()
         self.law_enforcement_excel_file_name = "law_enforcement_metrics.xlsx"
-        self.law_enforcement_excel_path = create_excel_file(
+        file_path, _ = create_excel_file(
             system=schema.System.LAW_ENFORCEMENT,
             file_name=self.law_enforcement_excel_file_name,
         )
+        self.law_enforcement_excel_path = file_path
         super().setUp()
 
     def tearDown(self) -> None:
@@ -2195,7 +2204,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             g.user_context = UserContext(
                 auth0_user_id=self.test_schema_objects.test_user_A.auth0_user_id,
             )
-            file_path = create_excel_file(
+            file_path, _ = create_excel_file(
                 system=schema.System.LAW_ENFORCEMENT,
                 file_name=file_name,
             )
@@ -3336,7 +3345,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                 auth0_user_id=self.test_schema_objects.test_user_A.auth0_user_id,
             )
             file_name = "test_super_child_upload.xlsx"
-            file_path = create_excel_file(
+            file_path, _ = create_excel_file(
                 system=schema.System.PRISONS,
                 file_name=file_name,
                 child_agencies=[child_agency],

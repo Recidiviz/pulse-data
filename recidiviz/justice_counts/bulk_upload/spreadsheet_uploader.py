@@ -25,7 +25,6 @@ from typing import Any, Dict, List, Optional, Set, Tuple
 
 import pandas as pd
 
-from recidiviz.justice_counts.bulk_upload.bulk_upload_helpers import get_column_value
 from recidiviz.justice_counts.bulk_upload.bulk_upload_metadata import BulkUploadMetadata
 from recidiviz.justice_counts.bulk_upload.time_range_uploader import TimeRangeUploader
 from recidiviz.justice_counts.datapoint import DatapointUniqueKey
@@ -41,10 +40,7 @@ from recidiviz.justice_counts.metricfiles.metricfile_registry import (
 from recidiviz.justice_counts.metrics.metric_interface import MetricInterface
 from recidiviz.justice_counts.report import ReportInterface
 from recidiviz.justice_counts.types import DatapointJson
-from recidiviz.justice_counts.utils.constants import (
-    INVALID_CHILD_AGENCY,
-    UNEXPECTED_ERROR,
-)
+from recidiviz.justice_counts.utils.constants import UNEXPECTED_ERROR
 from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.persistence.database.schema.justice_counts.schema import (
     ReportingFrequency,
@@ -81,10 +77,18 @@ class SpreadsheetUploader:
             len(self.metadata.child_agency_name_to_agency) > 0
             and self.metadata.system != schema.System.SUPERAGENCY
         ):
-            agency_name_to_rows = self._get_agency_name_to_rows(
-                rows=rows,
-                metric_key_to_errors=self.metadata.metric_key_to_errors,
-            )
+            agency_name_to_rows = {
+                k: list(v)
+                for k, v in groupby(
+                    sorted(
+                        rows,
+                        key=lambda row: row[
+                            "agency"
+                        ],  # Use lambda to extract "agency" from each row
+                    ),
+                    key=lambda row: row["agency"],  # Group by "agency" after sorting
+                )
+            }
             self._upload_super_agency_sheet(
                 inserts=inserts,
                 updates=updates,
@@ -132,12 +136,7 @@ class SpreadsheetUploader:
             # annually. So the same sheet may have a 'month' column filled out for some
             # child agencies, and not for others.
 
-            if curr_agency_name == INVALID_CHILD_AGENCY:
-                continue
-
-            current_rows = (
-                pd.DataFrame(current_rows).dropna(axis=1).to_dict(orient="records")
-            )
+            current_rows = pd.DataFrame(current_rows).to_dict(orient="records")
             if self.metadata.system == schema.System.SUPERVISION:
                 system_to_rows = self._get_system_to_rows(
                     rows=current_rows,
@@ -294,7 +293,6 @@ class SpreadsheetUploader:
             rows=rows,
             reporting_frequency=reporting_frequency,
             custom_starting_month=custom_starting_month,
-            metric_key=metricfile.definition.key,
         )
         # Step 2: For each time range represented in the file, convert the
         # reported data into a MetricInterface object. If a report already
@@ -352,7 +350,6 @@ class SpreadsheetUploader:
         rows: List[Dict[str, Any]],
         reporting_frequency: ReportingFrequency,
         custom_starting_month: Optional[int],
-        metric_key: str,
     ) -> Tuple[
         Dict[Tuple[datetime.date, datetime.date], List[Dict[str, Any]]],
         Dict[Tuple[datetime.date, datetime.date], Tuple[int, int]],
@@ -364,17 +361,10 @@ class SpreadsheetUploader:
         for row in rows:
             # remove whitespace from column headers
             row = {k.strip(): v for k, v in row.items() if k is not None}
-            year = get_column_value(
-                row=row,
-                column_name="year",
-                column_type=int,
-                analyzer=self.metadata.text_analyzer,
-                metric_key_to_errors=self.metadata.metric_key_to_errors,
-                metric_key=metric_key,
-            )
-            if (
-                reporting_frequency == ReportingFrequency.MONTHLY
-                and row.get("month") is None
+            year = row["year"]
+            if reporting_frequency == ReportingFrequency.MONTHLY and (
+                row.get("month") is None
+                or (isinstance(row["month"], float) and math.isnan(row["month"]))
             ):
                 # We will be in this case if annual data is provided for monthly metrics
                 month = (
@@ -382,146 +372,26 @@ class SpreadsheetUploader:
                 )  # if no custom starting month specified, assume calendar year
                 assumed_frequency = ReportingFrequency.ANNUAL
             elif reporting_frequency == ReportingFrequency.MONTHLY:
-                month = get_column_value(
-                    row=row,
-                    column_name="month",
-                    column_type=int,
-                    analyzer=self.metadata.text_analyzer,
-                    metric_key_to_errors=self.metadata.metric_key_to_errors,
-                    metric_key=metric_key,
-                )
+                month = row["month"]
                 assumed_frequency = ReportingFrequency.MONTHLY
             elif (
                 reporting_frequency == ReportingFrequency.ANNUAL
                 and row.get("month") is not None
             ):
                 # We will be in this case if monthly data is provided for annual metrics
-                month = get_column_value(
-                    analyzer=self.metadata.text_analyzer,
-                    row=row,
-                    column_name="month",
-                    column_type=int,
-                    metric_key_to_errors=self.metadata.metric_key_to_errors,
-                    metric_key=metric_key,
-                )
+                month = row["month"]
                 assumed_frequency = ReportingFrequency.MONTHLY
-            elif reporting_frequency == ReportingFrequency.ANNUAL:
+            else:
                 month = (
                     custom_starting_month or 1
                 )  # if no custom starting month specified, assume calendar year
                 assumed_frequency = ReportingFrequency.ANNUAL
-            else:
-                raise JusticeCountsBulkUploadException(
-                    title="Reporting Frequency Not Recognized",
-                    description=(
-                        f"Unexpected reporting frequency: {reporting_frequency} and "
-                        f'month {row.get("month")}'
-                    ),
-                    message_type=BulkUploadMessageType.ERROR,
-                    time_range=None,
-                )
-
             date_range_start, date_range_end = ReportInterface.get_date_range(
-                year=year, month=month, frequency=assumed_frequency.value
+                year=year, month=int(month), frequency=assumed_frequency.value
             )
             time_range_to_year_month[(date_range_start, date_range_end)] = (year, month)
             rows_by_time_range[(date_range_start, date_range_end)].append(row)
         return rows_by_time_range, time_range_to_year_month
-
-    def _get_agency_name_to_rows(
-        self,
-        rows: List[Dict[str, Any]],
-        metric_key_to_errors: Dict[
-            Optional[str], List[JusticeCountsBulkUploadException]
-        ],
-    ) -> Dict[str, List[Dict[str, Any]]]:
-        """Groups the rows in the file by the value of the `agency` column.
-        Returns a dictionary mapping each agency to its list of rows."""
-        agency_name_to_rows: Dict[str, List[Dict[str, Any]]] = {}
-
-        def get_agency_name(row: Dict[str, Any]) -> str:
-            agency_name = row["agency"]
-            system = row.get("system")
-            metric_file = get_metricfile_by_sheet_name(
-                sheet_name=self.sheet_name,
-                system=(
-                    schema.System[system]
-                    if system is not None
-                    else self.metadata.system
-                ),
-            )
-            if isinstance(agency_name, float) and math.isnan(agency_name):
-                # When there is an agency column but there is a missing
-                # agency value for the row, then the agency_name in the row is nan
-                if metric_file is not None and "Missing Agency Data" not in {
-                    e.title for e in metric_key_to_errors[metric_file.definition.key]
-                }:
-                    # Don't stop ingest if only a row is missing an agency name
-                    metric_key_to_errors[metric_file.definition.key].append(
-                        JusticeCountsBulkUploadException(
-                            title="Missing Agency Data",
-                            description="We expected to see an agency name provided in the agency column for all rows.",
-                            message_type=BulkUploadMessageType.ERROR,
-                        )
-                    )
-                return INVALID_CHILD_AGENCY
-            normalized_agency_name = agency_name.strip().lower()
-            if (
-                normalized_agency_name not in self.metadata.child_agency_name_to_agency
-                and normalized_agency_name != self.metadata.agency.name.lower()
-            ):
-                description = f"Failed to upload data for {agency_name}. Either this agency does not exist in our database, or your agency does not have permission to upload for this agency."
-                if metric_file is not None and description not in {
-                    e.description
-                    for e in self.metadata.metric_key_to_errors[
-                        metric_file.definition.key
-                    ]
-                }:
-                    # Don't stop ingest if the agency name is not recognized
-                    metric_key_to_errors[metric_file.definition.key].append(
-                        JusticeCountsBulkUploadException(
-                            title="Agency Not Recognized",
-                            description=description,
-                            message_type=BulkUploadMessageType.ERROR,
-                        )
-                    )
-                return INVALID_CHILD_AGENCY
-            return normalized_agency_name
-
-        agency_name_to_rows = {}
-        try:
-            # This try/except block is meant to catch errors thrown in the get_agency_name method.
-
-            agency_name_to_rows = {
-                k: list(v)
-                for k, v in groupby(
-                    sorted(
-                        rows,
-                        key=get_agency_name,
-                    ),
-                    get_agency_name,
-                )
-            }
-        except Exception as e:
-            metric_file = get_metricfile_by_sheet_name(
-                sheet_name=self.sheet_name,
-                system=self.metadata.system,
-            )
-            if metric_file:
-                metric_key_to_errors[metric_file.definition.key].append(
-                    self._handle_error(
-                        e=e,
-                        sheet_name=self.sheet_name,
-                    )
-                )
-
-        for agency_name, agency_rows in agency_name_to_rows.items():
-            if len(agency_name) > 0:
-                # Agency Name will be "" if the row is missing an agency.
-                # The rows associated with no agency name will not be ingested.
-                agency_name_to_rows[agency_name] = agency_rows
-
-        return agency_name_to_rows
 
     def _get_system_to_rows(
         self,

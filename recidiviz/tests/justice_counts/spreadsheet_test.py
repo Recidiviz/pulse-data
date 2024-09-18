@@ -71,12 +71,10 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
                 agency_id=agency.id,
             )
             session.add(spreadsheet)
-            update_datetime = datetime.datetime(
-                2022, 2, 1, 1, 0, 0, 0, datetime.timezone.utc
-            )
+            update_datetime = datetime.datetime.today()
             file_name = "test_ingest_spreadsheet.xlsx"
             with freeze_time(update_datetime):
-                file_path = create_excel_file(
+                file_path, _ = create_excel_file(
                     system=schema.System.LAW_ENFORCEMENT,
                     file_name=file_name,
                 )
@@ -96,7 +94,10 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
                 spreadsheet = session.query(schema.Spreadsheet).one()
                 self.assertEqual(spreadsheet.status, schema.SpreadsheetStatus.INGESTED)
                 self.assertEqual(spreadsheet.ingested_by, user.auth0_user_id)
-                self.assertEqual(spreadsheet.ingested_at, update_datetime)
+                self.assertEqual(
+                    spreadsheet.ingested_at.replace(tzinfo=None),
+                    update_datetime.replace(tzinfo=None),
+                )
             os.remove(file_name)
 
     def test_ingest_spreadsheet_failure(self) -> None:
@@ -115,7 +116,7 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
             file_name = "test_ingest_spreadsheet_failure.xlsx"
             session.add(spreadsheet)
             # Excel workbook will have an invalid sheet.
-            file_path = create_excel_file(
+            file_path, _ = create_excel_file(
                 system=schema.System.LAW_ENFORCEMENT,
                 file_name=file_name,
                 add_invalid_sheet_name=True,
@@ -195,7 +196,7 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
             session.add(spreadsheet)
             file_name = "test_get_ingest_spreadsheet_json.xlsx"
             # Excel workbook will have an invalid sheet.
-            file_path = create_excel_file(
+            file_path, _ = create_excel_file(
                 system=schema.System.SUPERVISION,
                 metric_key_to_subsystems={
                     supervision.funding.key: [
@@ -377,7 +378,7 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
             # Excel workbook will not have any warnings or errors.
             # create_excel_file is populating the agency name with the custom_child_agency_name.
             file_name = "test_custom_child_agency_name.xlsx"
-            file_path = create_excel_file(
+            file_path, _ = create_excel_file(
                 system=schema.System.PRISONS,
                 file_name=file_name,
                 child_agencies=[child_agency],

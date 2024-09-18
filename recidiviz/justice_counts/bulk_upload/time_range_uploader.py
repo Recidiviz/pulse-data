@@ -21,10 +21,6 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from sqlalchemy.orm import Session
 
-from recidiviz.justice_counts.bulk_upload.bulk_upload_helpers import (
-    fuzzy_match_against_options,
-    get_column_value,
-)
 from recidiviz.justice_counts.bulk_upload.bulk_upload_metadata import BulkUploadMetadata
 from recidiviz.justice_counts.datapoint import DatapointUniqueKey
 from recidiviz.justice_counts.dimensions.base import DimensionBase
@@ -156,13 +152,10 @@ class TimeRangeUploader:
                     message_type=BulkUploadMessageType.ERROR,
                 )
             row = self.rows_for_this_time_range[0]
-            aggregate_value = get_column_value(
-                row=row,
-                column_name="value",
-                column_type=float,
-                analyzer=self.metadata.text_analyzer,
-                metric_key=metric_key,
-                metric_key_to_errors=self.metadata.metric_key_to_errors,
+            aggregate_value = (
+                round(row["value"], 2)
+                if isinstance(row["value"], float)
+                else row["value"]
             )
             self.metadata.agency_name_to_metric_key_to_timerange_to_total_value[
                 self.agency.name
@@ -178,48 +171,18 @@ class TimeRangeUploader:
                 # there will be one row for each dimension value. Each will have
                 # a value (i.e. the number or count) and a disaggregation value
                 # (i.e. the category the count refers to, e.g. Male or Female).
-                value = get_column_value(
-                    row=row,
-                    column_name="value",
-                    column_type=float,
-                    analyzer=self.metadata.text_analyzer,
-                    metric_key_to_errors=self.metadata.metric_key_to_errors,
-                    metric_key=metric_key,
+
+                value = (
+                    round(row["value"], 2)
+                    if isinstance(row["value"], float)
+                    else row["value"]
                 )
 
                 # disaggregation_value is either "All" or an enum member,
                 # e.g. "Male" for Gender, "Asian" for Race, "Felony" for OffenseType, etc
-                disaggregation_value = get_column_value(
-                    row=row,
-                    column_name=self.metricfile.disaggregation_column_name,
-                    column_type=str,
-                    analyzer=self.metadata.text_analyzer,
-                    metric_key_to_errors=self.metadata.metric_key_to_errors,
-                    metric_key=metric_key,
-                )
+                disaggregation_value = row[self.metricfile.disaggregation_column_name]
 
-                try:
-                    matching_disaggregation_member = self.metricfile.disaggregation(disaggregation_value)  # type: ignore
-                except ValueError:
-                    # A ValueError will be thrown by the line above if the user-entered disaggregation
-                    # value is not actually a member of the disaggreation enum. In that case, we fuzzy
-                    # match against the enum members and try again.
-                    disaggregation_options = [
-                        member.value for member in self.metricfile.disaggregation  # type: ignore[attr-defined]
-                    ]
-                    disaggregation_value = fuzzy_match_against_options(
-                        analyzer=self.metadata.text_analyzer,
-                        metric_key_to_errors=self.metadata.metric_key_to_errors,
-                        text=disaggregation_value,
-                        options=disaggregation_options,
-                        category_name=self.metricfile.disaggregation_column_name.replace(
-                            "_", " "
-                        ).title(),
-                        metric_key=metric_key,
-                    )
-                    matching_disaggregation_member = self.metricfile.disaggregation(
-                        disaggregation_value
-                    )  # type: ignore[call-arg]
+                matching_disaggregation_member = self.metricfile.disaggregation(disaggregation_value)  # type: ignore
                 dimension_to_value[matching_disaggregation_member] = value  # type: ignore[index]
 
             aggregate_value = round(

@@ -21,7 +21,7 @@ for BulkUpload.
 import datetime
 from collections import defaultdict
 from functools import cached_property
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 from sqlalchemy.orm import Session
 
@@ -64,7 +64,10 @@ class BulkUploadMetadata:
         ] = defaultdict(dict)
         self.agency_name_to_metric_key_to_timerange_to_total_value: Dict[
             str,
-            Dict[str, Dict[Tuple[datetime.date, datetime.date], Optional[int]]],
+            Dict[
+                str,
+                Dict[Tuple[datetime.date, datetime.date], Optional[Union[int, float]]],
+            ],
         ] = defaultdict(lambda: defaultdict(dict))
         # A list of existing report IDs
 
