@@ -108,6 +108,38 @@ export const LegacyCannotFlashDecisionNonEmptyBucketComponent = ({
   );
 };
 
+export const LegacyFlashReadyDecisionComponent = ({
+  onSelectProceed,
+  onSelectCancel,
+}: {
+  onSelectProceed: () => void;
+  onSelectCancel: () => void;
+}): JSX.Element => {
+  return (
+    <div>
+      <br />
+      <h3>
+        Now that SECONDARY results are ready to be flashed to PRIMARY, would you
+        like to:
+      </h3>
+      <ul>
+        <li>
+          <b>Proceed with flash to PRIMARY.</b> Results in SECONDARY have been
+          validated and can be copied to PRIMARY.
+        </li>
+        <li>
+          <b>Cancel secondary rerun.</b> Delete and clean up results in
+          SECONDARY and do not copy over to PRIMARY.
+        </li>
+      </ul>
+      <Button type="primary" onClick={onSelectProceed}>
+        Proceed with Flash
+      </Button>
+      <Button onClick={onSelectCancel}>Cancel Reimport</Button>
+    </div>
+  );
+};
+
 export interface LegacyStyledStepContentProps {
   // Text to be displayed for this step
   description: JSX.Element;
