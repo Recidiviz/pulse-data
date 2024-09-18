@@ -18,7 +18,7 @@
 import { Breadcrumb, PageHeader } from "antd";
 import { observer } from "mobx-react-lite";
 import { useCallback, useEffect } from "react";
-import { useHistory, useParams } from "react-router";
+import { useHistory, useParams } from "react-router-dom";
 
 import { useWorkflowsStore } from "../StoreProvider";
 import StateSelect from "../Utilities/StateSelect";

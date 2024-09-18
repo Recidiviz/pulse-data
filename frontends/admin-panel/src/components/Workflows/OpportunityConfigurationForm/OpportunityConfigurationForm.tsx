@@ -17,7 +17,7 @@
 
 import { Button, Checkbox, Form, Input, Select } from "antd";
 import { observer } from "mobx-react-lite";
-import { useHistory } from "react-router";
+import { useHistory } from "react-router-dom";
 import { z } from "zod";
 
 import {

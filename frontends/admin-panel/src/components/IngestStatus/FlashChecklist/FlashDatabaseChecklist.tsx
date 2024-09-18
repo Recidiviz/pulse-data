@@ -16,7 +16,7 @@
 // =============================================================================
 import { Alert, message, Modal, PageHeader, Spin } from "antd";
 import * as React from "react";
-import { useHistory } from "react-router";
+import { useHistory } from "react-router-dom";
 
 import { fetchIngestStateCodes } from "../../../AdminPanelAPI";
 import { isRawDataImportDagEnabled } from "../../../AdminPanelAPI/IngestOperations";
