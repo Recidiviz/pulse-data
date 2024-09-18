@@ -2087,10 +2087,10 @@
     mobx-react-lite "^3.4.0"
     qs "^6.11.0"
 
-"@recidiviz/design-system@^4.2.0":
-  version "4.2.0"
-  resolved "https://registry.yarnpkg.com/@recidiviz/design-system/-/design-system-4.2.0.tgz#60bdab6ec7728bde8ef9b18eb124e4e3e5ca2d4d"
-  integrity sha512-s2MK6FA4xPL7+wbAfTh8Eseyisang0OABYcfO1OJMIWHMvCFIk0Cu2t9GFQPL9UPD3Hyx0vEFVzS7+27js/wGw==
+"@recidiviz/design-system@^5.7.0":
+  version "5.7.0"
+  resolved "https://registry.yarnpkg.com/@recidiviz/design-system/-/design-system-5.7.0.tgz#e3d3f90bed91729fa233a78b6be50c407e111f03"
+  integrity sha512-cWpmNIospWyppl6B+cQ9UqkDOoXXS3vogV2B58gN9NLBvLdExMMbbq4kxXa325PHiKk7wYCA4tUCrC9y/KI0Tg==
   dependencies:
     "@fontsource/libre-baskerville" "^4.1.0"
     "@fontsource/public-sans" "^4.5.3"
@@ -4605,20 +4605,10 @@ react-lifecycles-compat@^3.0.0:
   resolved "https://registry.yarnpkg.com/react-lifecycles-compat/-/react-lifecycles-compat-3.0.4.tgz#4f1a273afdfc8f3488a8c516bfda78f872352362"
   integrity sha512-fBASbA6LnOU9dOU2eW7aQ8xmYBSXUIWr+UmF9b1efZBazGNO+rcXT/icdKnYm2pTwcRylVUYwW7H1PHfLekVzA==
 
-react-modal@^3.12.1:
+react-modal@^3.12.1, react-modal@^3.14.4:
   version "3.16.1"
   resolved "https://registry.yarnpkg.com/react-modal/-/react-modal-3.16.1.tgz#34018528fc206561b1a5467fc3beeaddafb39b2b"
   integrity sha512-VStHgI3BVcGo7OXczvnJN7yT2TWHJPDXZWyI/a0ssFNhGZWsPmB8cF0z33ewDXq4VfYMO1vXgiv/g8Nj9NDyWg==
-  dependencies:
-    exenv "^1.2.0"
-    prop-types "^15.7.2"
-    react-lifecycles-compat "^3.0.0"
-    warning "^4.0.3"
-
-react-modal@^3.14.4:
-  version "3.14.4"
-  resolved "https://registry.yarnpkg.com/react-modal/-/react-modal-3.14.4.tgz#2ca7e8e9a180955e5c9508c228b73167c1e6f6a3"
-  integrity sha512-8surmulejafYCH9wfUmFyj4UfbSJwjcgbS9gf3oOItu4Hwd6ivJyVBETI0yHRhpJKCLZMUtnhzk76wXTsNL6Qg==
   dependencies:
     exenv "^1.2.0"
     prop-types "^15.7.2"
