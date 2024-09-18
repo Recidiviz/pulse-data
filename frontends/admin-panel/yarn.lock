@@ -1440,10 +1440,10 @@
   resolved "https://registry.yarnpkg.com/@fontsource/libre-baskerville/-/libre-baskerville-4.5.10.tgz#31a22c5dd38bb70d024ce8c10ab236d68f16a42e"
   integrity sha512-7dp2TxBSVlINiYe7LEuV/VojQij5oBSRIeS+/mOlCRXRyEKiEvK1y7sH8GlORqGxXYDKCDWtQaiCu1XPNchIKg==
 
-"@fontsource/libre-franklin@^4.1.0":
-  version "4.5.11"
-  resolved "https://registry.yarnpkg.com/@fontsource/libre-franklin/-/libre-franklin-4.5.11.tgz#fef319bde3e2d10dc610f0c3f6bd98b01e5dccfe"
-  integrity sha512-aKdMQYJ7tJsrNAkix6Lf5SRv58cIZi1xIlFBJw1XPgGAlqcVM0DOHQk3Z94aZXJrmrqGvf7JtkTTaTm53xvMSw==
+"@fontsource/public-sans@^4.5.3":
+  version "4.5.12"
+  resolved "https://registry.yarnpkg.com/@fontsource/public-sans/-/public-sans-4.5.12.tgz#bfb08b2e1424fa7a82a31e23b561846d5936b56e"
+  integrity sha512-sa6lr+lQQB1Iif2xyWZmcCbReV3dj6m0CNXw5xbDwKO4BPeZxz+G+Vy9zWdzhaKpjmK6Ap2wIn1x79XVcvMRtQ==
 
 "@humanwhocodes/config-array@^0.11.13":
   version "0.11.14"
@@ -1916,13 +1916,13 @@
     "@react-spring/shared" "~9.7.3"
     "@react-spring/types" "~9.7.3"
 
-"@recidiviz/design-system@^2.6.1":
-  version "2.7.0"
-  resolved "https://registry.yarnpkg.com/@recidiviz/design-system/-/design-system-2.7.0.tgz#25b67d141d88ab20548a08bf98284201b1ad1d34"
-  integrity sha512-Bnl/xGmY9k1QpHptKZa/QPIY99Cbmw1rxam70GRiZiKHY7ePdvHn8XucaFE1dJUyq/gDWC/KJSatJxZQpy1pgQ==
+"@recidiviz/design-system@^5.7.0":
+  version "5.7.0"
+  resolved "https://registry.yarnpkg.com/@recidiviz/design-system/-/design-system-5.7.0.tgz#e3d3f90bed91729fa233a78b6be50c407e111f03"
+  integrity sha512-cWpmNIospWyppl6B+cQ9UqkDOoXXS3vogV2B58gN9NLBvLdExMMbbq4kxXa325PHiKk7wYCA4tUCrC9y/KI0Tg==
   dependencies:
     "@fontsource/libre-baskerville" "^4.1.0"
-    "@fontsource/libre-franklin" "^4.1.0"
+    "@fontsource/public-sans" "^4.5.3"
     "@types/react-tabs" "^2.3.2"
     body-scroll-lock "^3.1.5"
     polished "^4.1.0"
