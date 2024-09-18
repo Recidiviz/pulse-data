@@ -186,7 +186,7 @@ def _initialize_ingest_pipeline(
 
 def create_single_ingest_pipeline_group(state_code: StateCode) -> TaskGroup:
     """
-    Creates a group that runs ingest and normalization logic for the given state.
+    Creates a group that runs ingest logic for the given state.
     """
 
     operations_cloud_sql_conn_id = cloud_sql_conn_id_for_schema_type(
