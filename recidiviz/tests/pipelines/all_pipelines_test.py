@@ -38,12 +38,8 @@ from recidiviz.persistence.entity.state.normalized_entities import (
     NormalizedStatePersonEthnicity,
     NormalizedStatePersonRace,
 )
-from recidiviz.pipelines.ingest.dataset_config import state_dataset_for_state_code
 from recidiviz.pipelines.ingest.state.pipeline import StateIngestPipeline
 from recidiviz.pipelines.metrics.base_metric_pipeline import MetricPipeline
-from recidiviz.pipelines.normalization.comprehensive.pipeline import (
-    ComprehensiveNormalizationPipeline,
-)
 from recidiviz.pipelines.supplemental.base_supplemental_dataset_pipeline import (
     SupplementalDatasetPipeline,
 )
@@ -94,16 +90,7 @@ class TestReferenceViews(unittest.TestCase):
 
         for pipeline in collect_all_pipeline_classes():
             for state_code in get_existing_direct_ingest_states():
-                if issubclass(pipeline, ComprehensiveNormalizationPipeline):
-                    allowed_parent_datasets = {
-                        *all_pipelines_allowed_datasets,
-                        state_dataset_for_state_code(
-                            state_code=state_code,
-                        ),
-                    }
-                elif issubclass(
-                    pipeline, (MetricPipeline, SupplementalDatasetPipeline)
-                ):
+                if issubclass(pipeline, (MetricPipeline, SupplementalDatasetPipeline)):
                     allowed_parent_datasets = {
                         *all_pipelines_allowed_datasets,
                         NORMALIZED_STATE_DATASET,
@@ -140,8 +127,6 @@ class TestPipelineValidations(unittest.TestCase):
         for pipeline_class in pipeline_classes:
             if issubclass(pipeline_class, SupplementalDatasetPipeline):
                 self.assertTrue("SUPPLEMENTAL" in pipeline_class.pipeline_name())
-            elif issubclass(pipeline_class, ComprehensiveNormalizationPipeline):
-                self.assertTrue("NORMALIZATION" in pipeline_class.pipeline_name())
             elif issubclass(pipeline_class, MetricPipeline):
                 default_entities: Set[Type[Entity]] = {
                     NormalizedStatePerson,

@@ -43,14 +43,6 @@ Examples:
         --metric_types "REINCARCERATION_COUNT REINCARCERATION_RATE"
 
     python -m recidiviz.tools.calculator.run_sandbox_calculation_pipeline \
-        --pipeline comprehensive_normalization \
-        --type normalization \
-        --project recidiviz-staging \
-        --output_sandbox_prefix username \
-        --input_dataset_overrides_json '{"us_xx_state": "my_sandbox_us_xx_state"}' \
-        --state_code US_XX
-
-    python -m recidiviz.tools.calculator.run_sandbox_calculation_pipeline \
         --pipeline us_ix_case_note_extracted_entities_supplemental \
         --type supplemental \
         --project recidiviz-staging \
@@ -69,9 +61,6 @@ import logging
 from typing import Dict, List, Tuple, Type
 
 from recidiviz.pipelines.metrics.pipeline_parameters import MetricsPipelineParameters
-from recidiviz.pipelines.normalization.pipeline_parameters import (
-    NormalizationPipelineParameters,
-)
 from recidiviz.pipelines.pipeline_parameters import PipelineParameters
 from recidiviz.pipelines.supplemental.pipeline_parameters import (
     SupplementalPipelineParameters,
@@ -86,9 +75,6 @@ from recidiviz.utils.metadata import local_project_id_override
 
 PIPELINE_PARAMETER_TYPES: Dict[str, Type[PipelineParameters]] = {
     "metrics": MetricsPipelineParameters,
-    # TODO(#31741): Remove support for normalization and update docstring once
-    #  combined ingest and normalization pipelines are launched in all states.
-    "normalization": NormalizationPipelineParameters,
     "supplemental": SupplementalPipelineParameters,
 }
 
@@ -102,7 +88,7 @@ def parse_run_arguments() -> Tuple[argparse.Namespace, List[str]]:
         type=str,
         dest="pipeline_type",
         help="type of the pipeline",
-        choices=["metrics", "normalization", "supplemental"],
+        choices=["metrics", "supplemental"],
         required=True,
     )
 

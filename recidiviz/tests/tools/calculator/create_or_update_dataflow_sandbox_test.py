@@ -22,7 +22,6 @@ import pytest
 from recidiviz.common.constants.states import StateCode
 from recidiviz.pipelines.pipeline_names import (
     METRICS_PIPELINE_NAME,
-    NORMALIZATION_PIPELINE_NAME,
     SUPPLEMENTAL_PIPELINE_NAME,
 )
 from recidiviz.source_tables import normalization_pipeline_output_table_collector
@@ -102,51 +101,6 @@ class CreateOrUpdateDataflowSandboxTest(BigQueryEmulatorTestCase):
                 sandbox_dataset_prefix="sandboxed",
                 pipelines=[METRICS_PIPELINE_NAME],
                 allow_overwrite=False,
-            )
-
-    def test_create_normalization_with_filter(self) -> None:
-        create_or_update_dataflow_sandbox(
-            sandbox_dataset_prefix="sandboxed",
-            pipelines=[NORMALIZATION_PIPELINE_NAME],
-            allow_overwrite=False,
-            state_code_filter=StateCode.US_XX,
-        )
-
-        self.assertListEqual(
-            [dataset.dataset_id for dataset in self.bq_client.list_datasets()],
-            ["sandboxed_us_xx_normalized_state"],
-        )
-
-        with self.assertRaisesRegex(
-            ValueError, r"^Dataset sandboxed_us_xx_normalized_state already exists.*"
-        ):
-            create_or_update_dataflow_sandbox(
-                sandbox_dataset_prefix="sandboxed",
-                pipelines=[NORMALIZATION_PIPELINE_NAME],
-                allow_overwrite=False,
-                state_code_filter=StateCode.US_XX,
-            )
-
-    def test_create_normalization_without_filter(self) -> None:
-        create_or_update_dataflow_sandbox(
-            sandbox_dataset_prefix="sandboxed",
-            pipelines=[NORMALIZATION_PIPELINE_NAME],
-            allow_overwrite=False,
-        )
-
-        self.assertListEqual(
-            [dataset.dataset_id for dataset in self.bq_client.list_datasets()],
-            ["sandboxed_us_xx_normalized_state", "sandboxed_us_yy_normalized_state"],
-        )
-
-        with self.assertRaisesRegex(
-            ValueError, r"^Dataset sandboxed_us_xx_normalized_state already exists.*"
-        ):
-            create_or_update_dataflow_sandbox(
-                sandbox_dataset_prefix="sandboxed",
-                pipelines=[NORMALIZATION_PIPELINE_NAME],
-                allow_overwrite=False,
-                state_code_filter=StateCode.US_XX,
             )
 
     # TODO(#30495): Write a test for creating an ingest sandbox once we don't have to

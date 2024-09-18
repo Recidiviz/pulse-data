@@ -203,23 +203,10 @@ function confirm_cmd {
 # Some more variables
 STATE_CODE_LOWERCASE=${STATE_CODE,,} # convert to lowercase
 
-STANDARD_STATE_SPECIFIC_STATE_DATASET="${STATE_CODE_LOWERCASE}_state"
-SANDBOX_STATE_DATASET="${SANDBOX_PREFIX}_${STANDARD_STATE_SPECIFIC_STATE_DATASET}"
-SANDBOX_STATE_SPECIFIC_NORMALIZED_DATASET="${SANDBOX_PREFIX}_${STATE_CODE_LOWERCASE}_normalized_state"
+SANDBOX_STATE_SPECIFIC_NORMALIZED_DATASET="${SANDBOX_PREFIX}_${STATE_CODE_LOWERCASE}_normalized_state_new"
 STANDARD_NORMALIZED_STATE_DATASET="normalized_state"
-SANDBOX_NORMALIZED_DATASET="${SANDBOX_PREFIX}_${STANDARD_NORMALIZED_STATE_DATASET}"
 
 # Create datasets
-echo "Ready to create sandbox normalization dataset for ${STATE_CODE}."
-confirm_cmd python -m recidiviz.tools.calculator.create_or_update_dataflow_sandbox \
-	--project_id "${PROJECT_ID}" \
-	--sandbox_dataset_prefix "${SANDBOX_PREFIX}" \
-	--state_code "${STATE_CODE}" \
-	--allow_overwrite \
-	--datasets_to_create "normalization"
-
-echo "If applicable, you should confirm that the dataset was created before proceeding."
-
 echo "Ready to create sandbox metrics dataset for ${STATE_CODE}."
 confirm_cmd python -m recidiviz.tools.calculator.create_or_update_dataflow_sandbox \
 	--project_id "${PROJECT_ID}" \
@@ -239,26 +226,6 @@ confirm_cmd python -m recidiviz.tools.ingest.development.run_sandbox_ingest_pipe
 
 echo "If applicable, you should confirm that the ingest pipeline is complete before proceeding."
 
-# Normalization pipeline
-echo "Ready to run sandbox normalization pipeline for ${STATE_CODE}."
-confirm_cmd python -m recidiviz.tools.calculator.run_sandbox_calculation_pipeline \
-	--pipeline comprehensive_normalization \
-	--type normalization \
-	--project "${PROJECT_ID}" \
-	--output_sandbox_prefix "${SANDBOX_PREFIX}" \
-	--state_code "${STATE_CODE}" \
-	--input_dataset_overrides_json "{\"${STANDARD_STATE_SPECIFIC_STATE_DATASET}\": \"${SANDBOX_STATE_DATASET}\"}"
-
-echo "If applicable, you should confirm that the normalization pipeline is complete before proceeding."
-
-echo "Ready to load data from ${SANDBOX_STATE_DATASET} and ${SANDBOX_STATE_SPECIFIC_NORMALIZED_DATASET} into the unified ${SANDBOX_NORMALIZED_DATASET} dataset."
-confirm_cmd python -m recidiviz.tools.calculator.update_sandbox_normalized_state_dataset \
-	--project_id "${PROJECT_ID}" \
-	--state_code "${STATE_CODE}" \
-	--input_state_dataset "${SANDBOX_STATE_DATASET}" \
-	--input_normalized_state_dataset "${SANDBOX_STATE_SPECIFIC_NORMALIZED_DATASET}" \
-	--output_sandbox_prefix "${SANDBOX_PREFIX}"
-
 # Metric pipelines
 for pipeline in "${!PIPELINES[@]}"; do
 	pipeline_lowercase=${pipeline,,}
@@ -270,7 +237,7 @@ for pipeline in "${!PIPELINES[@]}"; do
 		--project "${PROJECT_ID}" \
 		--output_sandbox_prefix "${SANDBOX_PREFIX}" \
 		--state_code "${STATE_CODE}" \
-		--input_dataset_overrides_json "{\"${STANDARD_NORMALIZED_STATE_DATASET}\": \"${SANDBOX_NORMALIZED_DATASET}\"}" \
+		--input_dataset_overrides_json "{\"${STANDARD_NORMALIZED_STATE_DATASET}\": \"${SANDBOX_STATE_SPECIFIC_NORMALIZED_DATASET}\"}" \
 		--metric_types "${metric_types[*]}"
 done
 

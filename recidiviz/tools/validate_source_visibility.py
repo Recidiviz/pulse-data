@@ -225,7 +225,7 @@ def main() -> int:
                     "recidiviz.calculator.query.state.dataset_config",
                 }
             )
-        if "metrics" in pipeline.__name__ or "normalization" in pipeline.__name__:
+        if "metrics" in pipeline.__name__:
             valid_prefixes = valid_prefixes.union(
                 {
                     "recidiviz.big_query.big_query_address",

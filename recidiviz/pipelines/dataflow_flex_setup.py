@@ -100,7 +100,6 @@ setuptools.setup(
         "recidiviz.pipelines": [
             "supplemental/template_metadata.json",
             "metrics/template_metadata.json",
-            "normalization/template_metadata.json",
         ],
         "recidiviz.tools": ["deploy/terraform/config/*.yaml"],
         "recidiviz.validation.views.metadata.config": ["*.yaml"],
