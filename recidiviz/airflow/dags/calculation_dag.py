@@ -144,18 +144,6 @@ def execute_update_normalized_state() -> RecidivizKubernetesPodOperator:
     )
 
 
-def execute_update_state() -> RecidivizKubernetesPodOperator:
-    return build_kubernetes_pod_task(
-        task_id="update_state",
-        container_name="update_state",
-        arguments=[
-            "--entrypoint=UpdateStateEntrypoint",
-            SANDBOX_PREFIX_JINJA_ARG,
-        ],
-        trigger_rule=TriggerRule.ALL_SUCCESS,
-    )
-
-
 def execute_validations_operator(state_code: str) -> RecidivizKubernetesPodOperator:
     return build_kubernetes_pod_task(
         task_id=f"execute_validations_{state_code}",
@@ -367,18 +355,13 @@ def create_calculation_dag() -> None:
     # If the schema updates successfully, run ingest pipelines for all states.
     (update_big_query_table_schemata >> ingest_task_group >> ingest_completed)
 
-    # If the schema updates successfully, update the state and normalized_state datasets
+    # If the schema updates successfully, update the normalized_state dataset
     # after ingest pipelines complete.
     # We keep the schema update as a dependency. If a single state ingest fails, we do not
     # want to block the rest of the DAG. However, if the schema update fails, the ingest
     # tasks go into 'upstream failed'. We do not want to continue in that case.
-    update_state_dataset = execute_update_state()
     update_normalized_state_dataset = execute_update_normalized_state()
 
-    [
-        update_big_query_table_schemata,
-        ingest_completed,
-    ] >> update_state_dataset
     [
         update_big_query_table_schemata,
         ingest_completed,
@@ -414,7 +397,6 @@ def create_calculation_dag() -> None:
     update_all_views = update_managed_views_operator()
     [
         update_big_query_table_schemata,
-        update_state_dataset,
         update_normalized_state_dataset,
         bq_refresh_completed,
         post_ingest_pipelines_completed,

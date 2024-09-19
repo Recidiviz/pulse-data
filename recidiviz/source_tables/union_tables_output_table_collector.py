@@ -17,44 +17,16 @@
 """Helpers for building source table collections for the outputs of processes that union
 together a set of state-specific datasets.
 """
-from recidiviz.calculator.query.state.dataset_config import (
-    NORMALIZED_STATE_DATASET,
-    STATE_BASE_DATASET,
-)
+from recidiviz.calculator.query.state.dataset_config import NORMALIZED_STATE_DATASET
 from recidiviz.persistence.entity.entities_bq_schema import (
     get_bq_schema_for_entities_module,
 )
-from recidiviz.persistence.entity.state import entities as state_entities
 from recidiviz.persistence.entity.state import normalized_entities
 from recidiviz.source_tables.source_table_config import (
     NormalizedStateAgnosticEntitySourceTableLabel,
     SourceTableCollection,
     UnionedStateAgnosticSourceTableLabel,
 )
-
-
-def build_unioned_state_source_table_collection() -> SourceTableCollection:
-    """Builds the source table collections for the outputs of the update_state Airflow
-    step.
-    """
-    state_agnostic_collection = SourceTableCollection(
-        dataset_id=STATE_BASE_DATASET,
-        labels=[
-            UnionedStateAgnosticSourceTableLabel(STATE_BASE_DATASET),
-        ],
-        description=(
-            "Ingested state data. For each state it pulls data from the "
-            "most recent ingest pipeline output."
-        ),
-    )
-    for table_id, schema_fields in get_bq_schema_for_entities_module(
-        state_entities
-    ).items():
-        state_agnostic_collection.add_source_table(
-            table_id=table_id, schema_fields=schema_fields
-        )
-
-    return state_agnostic_collection
 
 
 def build_unioned_normalized_state_source_table_collection() -> SourceTableCollection:
@@ -68,9 +40,8 @@ def build_unioned_normalized_state_source_table_collection() -> SourceTableColle
             NormalizedStateAgnosticEntitySourceTableLabel(),
         ],
         description=(
-            "Contains normalized versions of the entities in the "
-            "state dataset produced by the normalization pipeline, and copies of "
-            "non-normalized entities from the state dataset."
+            "Contains normalized versions of the entities in the state dataset "
+            "produced by the ingest pipeline."
         ),
     )
     for table_id, schema_fields in get_bq_schema_for_entities_module(

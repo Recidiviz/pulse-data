@@ -26,17 +26,25 @@ from recidiviz.ingest.views.non_enum_counter import (
     StateTableNonEnumCounterBigQueryViewCollector,
 )
 from recidiviz.ingest.views.state_person_counter import StatePersonBigQueryViewCollector
-
-INGEST_METADATA_BUILDERS: Sequence[BigQueryViewBuilder] = list(
-    itertools.chain.from_iterable(
-        (
-            StateTableEnumCounterBigQueryViewCollector().collect_view_builders(),
-            StateTableNonEnumCounterBigQueryViewCollector().collect_view_builders(),
-            StatePersonBigQueryViewCollector().collect_view_builders(),
-        )
-    )
+from recidiviz.ingest.views.unioned_state_views import (
+    create_unioned_state_dataset_view_builders,
 )
 
-VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE: Sequence[
-    BigQueryViewBuilder
-] = INGEST_METADATA_BUILDERS
+
+def collect_ingest_metadata_view_builders() -> list[BigQueryViewBuilder]:
+    return list(
+        itertools.chain.from_iterable(
+            (
+                StateTableEnumCounterBigQueryViewCollector().collect_view_builders(),
+                StateTableNonEnumCounterBigQueryViewCollector().collect_view_builders(),
+                StatePersonBigQueryViewCollector().collect_view_builders(),
+            )
+        )
+    )
+
+
+def get_view_builders_for_views_to_update() -> Sequence[BigQueryViewBuilder]:
+    return [
+        *collect_ingest_metadata_view_builders(),
+        *create_unioned_state_dataset_view_builders(),
+    ]
