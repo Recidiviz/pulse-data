@@ -47,6 +47,69 @@ function getStartDate(stateCode, timePeriod, endDateString) {
 }
 
 /**
+ * Construct usage and impact text
+ * Given parameters provided by the user, constructs a query string and call RunQuery
+ * to query the BiqQuery database. After fetching the total number of individuals surfaced, eligible, reviewed, and ineligible, adds them and returns the integer as a formatted
+ * string.
+ * @param {string} stateCode The state code passed in from the Google Form (ex: 'US_MI')
+ * @param {string} endDateString The end date passed from the connected Google Form on form submit (ex: '2023-03-01')
+ * @param {string} completionEventType The completion event type of the workflow (what we call it in the database)
+ * @returns {map} An object that contains the number of jii almostEligible, eligible, markedIneligible, eligibleAndViewed and eligibleAndNotViewed
+ **/
+function constructUsageAndImpactText(
+  stateCode,
+  endDateString,
+  completionEventType
+) {
+  const almostEligibleColumn = `avg_daily_population_task_almost_eligible_${completionEventType.toLowerCase()}`;
+  const eligibleColumn = `avg_population_task_eligible_${completionEventType.toLowerCase()}`;
+  const markedIneligibleColumn = `avg_daily_population_task_marked_ineligible_${completionEventType.toLowerCase()}`;
+  const eligibleAndViewedColumn = `avg_daily_population_task_eligible_and_viewed_${completionEventType.toLowerCase()}`;
+  const eligibleAndNotViewedColumn = `avg_daily_population_task_eligible_and_not_viewed_${completionEventType.toLowerCase()}`;
+
+  const usageTable = `justice_involved_state_day_aggregated_metrics_materialized`;
+
+  const queryString = `
+    SELECT
+    ${almostEligibleColumn},
+    ${eligibleColumn},
+    ${markedIneligibleColumn},
+    ${eligibleAndViewedColumn},
+    ${eligibleAndNotViewedColumn}
+    FROM \`impact_reports.${usageTable}\`
+    WHERE state_code = '${stateCode}'
+    AND end_date = '${endDateString}'`;
+
+  const queryOutput = runQuery(queryString)[0];
+  const queryOutputLength = queryOutput.length;
+  if (queryOutputLength !== 5) {
+    throw new Error(
+      `Expected 5 columns in query output, but got length: ${queryOutputLength}. Query output: ${queryOutput}.`
+    );
+  }
+
+  const almostEligible = parseInt(queryOutput[0]);
+  const eligible = parseInt(queryOutput[1]);
+  const markedIneligible = parseInt(queryOutput[2]);
+  const eligibleAndViewed = parseInt(queryOutput[3]);
+  const eligibleAndNotViewed = parseInt(queryOutput[4]);
+
+  Logger.log("Almost Eligible: %s", almostEligible);
+  Logger.log("Eligible: %s", eligible);
+  Logger.log("Marked Ineligible: %s", markedIneligible);
+  Logger.log("Eligible and Viewed: %s", eligibleAndViewed);
+  Logger.log("Eligible and Not Viewed: %s", eligibleAndNotViewed);
+
+  return {
+    almostEligible: almostEligible,
+    eligible: eligible,
+    markedIneligible: markedIneligible,
+    eligibleAndViewed: eligibleAndViewed,
+    eligibleAndNotViewed: eligibleAndNotViewed,
+  };
+}
+
+/**
  * Construct opportunities granted text
  * Given parameters provided by the user, constructs a query string and call RunQuery
  * to query the BiqQuery database. After fetching the total number of supervision and

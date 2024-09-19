@@ -48,6 +48,7 @@ function main(e) {
   const workflowToOpportunityGranted = {};
   const workflowToMaxOpportunityGrantedLocation = {};
   const workflowToSystem = {}
+  const workflowToUsageAndImpactText = {}
 
   const stateCodeToRows = getSheetValues();
   const stateRows = stateCodeToRows[stateCode];
@@ -65,6 +66,12 @@ function main(e) {
     const system = workflowRow.system;
     Logger.log("system: %s", system);
     workflowToSystem[workflow] = system;
+
+    const { almostEligible, eligible, markedIneligible, eligibleAndViewed, eligibleAndNotViewed } = constructUsageAndImpactText(
+      stateCode,
+      endDateString,
+      completionEventType,
+    )
 
     var opportunityGranted = constructOpportunitiesGrantedText(
       stateCode,
@@ -97,6 +104,13 @@ function main(e) {
       districtOrFacilitiesColumnChart;
     workflowToOpportunityGranted[workflow] = opportunityGranted;
     workflowToMaxOpportunityGrantedLocation[workflow] = maxRegion;
+    workflowToUsageAndImpactText[workflow] = {
+      "almostEligible": almostEligible,
+      "eligible": eligible,
+      "markedIneligible": markedIneligible,
+      "eligibleAndViewed": eligibleAndViewed,
+      "eligibleAndNotViewed": eligibleAndNotViewed,
+    };
   });
 
   copyAndPopulateTemplateDoc(
@@ -109,6 +123,7 @@ function main(e) {
     startDate,
     workflowToMaxOpportunityGrantedLocation,
     workflowToSystem,
+    workflowToUsageAndImpactText,
   );
 }
 
@@ -126,6 +141,7 @@ function main(e) {
  * @param {string} startDate The start date (queried from BigQuery) (ex: '2023-02-01')
  * @param {map} workflowToMaxOpportunityGrantedLocation An object that maps the workflow name to the district or facility with the most number of opportunities granted
  * @param {map} workflowToSystem An object that maps the workflow name to it's system ('SUPERVISION' or 'INCARCERATION')
+ * @param {map} workflowToUsageAndImpactText An object that maps the workflow name to its number of people almost eligible, eligible, marked ineligible, eligible and viewed, and eligible and not viewed
  */
 function copyAndPopulateTemplateDoc(
   workflowToDistrictOrFacilitiesColumnChart,
@@ -136,7 +152,8 @@ function copyAndPopulateTemplateDoc(
   workflowToOpportunityGranted,
   startDate,
   workflowToMaxOpportunityGrantedLocation,
-  workflowToSystem
+  workflowToSystem,
+  workflowToUsageAndImpactText
 ) {
   const template = DriveApp.getFileById(
     "1nsc_o2fTlldTQavxJveucWgDKkic_clKZjn0GuyF2N8"
@@ -175,7 +192,9 @@ function copyAndPopulateTemplateDoc(
     workflowToDistrictOrFacilitiesColumnChart,
     workflowToOpportunityGranted,
     startDate,
-    workflowToMaxOpportunityGrantedLocation
+    workflowToMaxOpportunityGrantedLocation,
+    workflowToUsageAndImpactText,
+    endDateClean
   );
 }
 
@@ -293,6 +312,8 @@ function copyAndPopulateOpportunityGrants(body, workflowToOpportunityGranted, wo
  * @param {map} workflowToOpportunityGranted An object that maps the workflow name to the number of opportunities granted for that workflow
  * @param {string} startDate The start date (queried from BigQuery) (ex: '2023-02-01')
  * @param {map} workflowToMaxOpportunityGrantedLocation An object that maps the workflow name to the district or facility with the most number of opportunities granted
+ * @param {map} workflowToUsageAndImpactText An object that maps the workflow name to it's number of people almost eligible, eligible, marked ineligible, eligible and viewed, and eligible and not viewed
+ * @param {string} endDateClean The end date (provided by the user via Google Form) (ex: '2023-03-01')
  */
 function copyAndPopulateWorkflowSection(
   body,
@@ -300,7 +321,9 @@ function copyAndPopulateWorkflowSection(
   workflowToDistrictOrFacilitiesColumnChart,
   workflowToOpportunityGranted,
   startDate,
-  workflowToMaxOpportunityGrantedLocation
+  workflowToMaxOpportunityGrantedLocation,
+  workflowToUsageAndImpactText,
+  endDateClean
 ) {
   const childIdx = getIndexOfElementToReplace(
     body,
@@ -343,6 +366,10 @@ function copyAndPopulateWorkflowSection(
         // Replace text
         elementCopy.replaceText("{{workflow_name}}", workflow);
         elementCopy.replaceText("{{start_date}}", startDate);
+        elementCopy.replaceText("{{end_date}}", endDateClean);
+        elementCopy.replaceText("{{num_ineligible}}", workflowToUsageAndImpactText[workflow]["markedIneligible"].toLocaleString());
+        elementCopy.replaceText("{{num_eligible}}", workflowToUsageAndImpactText[workflow]["eligible"].toLocaleString());
+        elementCopy.replaceText("{{num_reviewed}}", workflowToUsageAndImpactText[workflow]["eligibleAndViewed"].toLocaleString());
 
         const maxOpportunityGrantedLocation =
           workflowToMaxOpportunityGrantedLocation[workflow];
