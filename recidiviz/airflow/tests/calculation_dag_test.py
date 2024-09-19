@@ -193,81 +193,26 @@ class TestCalculationPipelineDag(AirflowIntegrationTest):
         dag = dag_bag.dags[self.CALCULATION_DAG_ID]
         self.assertNotEqual(0, len(dag.task_ids))
 
-        ingest_group: TaskGroup = dag.task_group_dict["ingest"]
-
-        ingest_completed = dag.get_task("ingest_completed")
-        update_normalized_state_dataset = dag.get_task("update_normalized_state")
-
-        self.assertIn(
-            ingest_completed.task_id,
-            ingest_group.downstream_task_ids,
-        )
-        self.assertIn(
-            update_normalized_state_dataset.task_id,
-            ingest_completed.downstream_task_ids,
-        )
-
-    def test_update_normalized_state_upstream_of_non_ingest_pipelines(
-        self,
-    ) -> None:
-        """Tests that the `normalized_state` dataset update happens after all
-        ingest pipelines are run.
-        """
-        dag_bag = DagBag(dag_folder=DAG_FOLDER, include_examples=False)
-        dag = dag_bag.dags[self.CALCULATION_DAG_ID]
-        self.assertNotEqual(0, len(dag.task_ids))
-
-        metric_pipeline_task_ids: Set[str] = {
+        ingest_pipeline_task_ids: Set[str] = {
             task.task_id
             for task in dag.tasks
             if isinstance(task, RecidivizDataflowFlexTemplateOperator)
-            and "ingest" not in task.task_id
+            and "ingest" in task.task_id
         }
 
         normalized_state_upstream_dag = dag.partial_subset(
             task_ids_or_regex=["update_normalized_state"],
-            include_downstream=True,
-            include_upstream=False,
+            include_downstream=False,
+            include_upstream=True,
         )
         self.assertNotEqual(0, len(normalized_state_upstream_dag.task_ids))
 
-        upstream_tasks = set()
-        for task in normalized_state_upstream_dag.tasks:
-            upstream_tasks.update(task.upstream_task_ids)
+        downstream_tasks = set()
+        for upstream_task in normalized_state_upstream_dag.tasks:
+            downstream_tasks.update(upstream_task.downstream_task_ids)
 
-        pipeline_tasks_not_upstream = metric_pipeline_task_ids - upstream_tasks
-        self.assertEqual(set(), pipeline_tasks_not_upstream)
-
-    def test_update_normalized_state_upstream_of_non_ingest_flex_pipelines(
-        self,
-    ) -> None:
-        """Tests that the `normalized_state` dataset update happens after all
-        non-ingest flex pipelines are run.
-        """
-        dag_bag = DagBag(dag_folder=DAG_FOLDER, include_examples=False)
-        dag = dag_bag.dags[self.CALCULATION_DAG_ID]
-        self.assertNotEqual(0, len(dag.task_ids))
-
-        metric_pipeline_task_ids: Set[str] = {
-            task.task_id
-            for task in dag.tasks
-            if isinstance(task, RecidivizDataflowFlexTemplateOperator)
-            and "ingest" not in task.task_id
-        }
-
-        normalized_state_upstream_dag = dag.partial_subset(
-            task_ids_or_regex=["update_normalized_state"],
-            include_downstream=True,
-            include_upstream=False,
-        )
-        self.assertNotEqual(0, len(normalized_state_upstream_dag.task_ids))
-
-        upstream_tasks = set()
-        for task in normalized_state_upstream_dag.tasks:
-            upstream_tasks.update(task.upstream_task_ids)
-
-        pipeline_tasks_not_upstream = metric_pipeline_task_ids - upstream_tasks
-        self.assertEqual(set(), pipeline_tasks_not_upstream)
+        pipeline_tasks_not_downstream = ingest_pipeline_task_ids - downstream_tasks
+        self.assertEqual(set(), pipeline_tasks_not_downstream)
 
     def test_update_all_views_branch_upstream_of_all_exports(
         self,
@@ -765,9 +710,8 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
                     r"^initialize_dag.*",
                     r"^update_big_query_table_schemata",
                     r"^bq_refresh.*",
-                    r"^ingest.*",
+                    r"^dataflow_pipelines.*",
                     r"^update_normalized_state",
-                    r"^post_ingest_pipelines",
                     r"^update_managed_views_all",
                     r"^validations.*",
                     r"^metric_exports.*",
@@ -799,17 +743,16 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
                     r"^initialize_dag.wait_to_continue_or_cancel",
                     r"^initialize_dag.handle_queueing_result",
                     r"^update_big_query_table_schemata",
-                    r"^ingest.*",
+                    r"^dataflow_pipelines.*",
                     r"^bq_refresh.*",
                     r"^update_managed_views",
                     r"^update_normalized_state",
-                    r"^post_ingest_pipelines.*",
                     r"^validations.*",
                     r"^metric_exports.*",
                 ],
             )
             self.assertIn(
-                "ingest.US_XX_start",
+                "dataflow_pipelines.US_XX_start",
                 dag.task_ids,
             )
 
@@ -832,11 +775,14 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
                 },
                 expected_failure_task_id_regexes=[
                     # Pipeline fails
-                    r"^ingest.us_yy_dataflow.us-yy-ingest.run_pipeline",
+                    r"^dataflow_pipelines.US_YY_dataflow_pipelines.ingest.us-yy-ingest-pipeline.run_pipeline",
                     # We don't save any of the post-successful ingest pipeline state
-                    r"^ingest.us_yy_dataflow.write_upper_bounds",
-                    r"^ingest.us_yy_dataflow.write_ingest_job_completion",
-                    r"^ingest.branch_end",
+                    r"^dataflow_pipelines.US_YY_dataflow_pipelines.ingest.write_upper_bounds",
+                    r"^dataflow_pipelines.US_YY_dataflow_pipelines.ingest.write_ingest_job_completion",
+                    r"^dataflow_pipelines.branch_end",
+                    # Metric and supplemental pipelines for US_YY should not run
+                    r"^dataflow_pipelines.US_YY_dataflow_pipelines.pipeline-to-run-pipeline.*",
+                    r"^dataflow_pipelines.US_YY_dataflow_pipelines.us-yy-pipeline-with-limit-24-pipeline.*",
                     # Metric exports for US_YY should not run
                     r"^metric_exports\.state_specific_metric_exports\.US_YY_metric_exports",
                     r"^metric_exports.state_specific_metric_exports.branch_end",
@@ -847,15 +793,14 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
                     r"^initialize_dag.*",
                     r"^update_big_query_table_schemata",
                     r"^bq_refresh.*",
-                    r"^ingest.branch_start",
-                    r"^ingest.US_XX_start",
-                    r"^ingest.us_xx_dataflow.*",
-                    r"^ingest.US_YY_start",
-                    r"ingest.us_yy_dataflow.initialize_ingest_pipeline.*",
-                    r"ingest.us_yy_dataflow.us-yy-ingest.create_flex_template",
-                    r"^ingest_completed",
+                    r"^dataflow_pipelines.branch_start",
+                    r"^dataflow_pipelines.US_XX_start",
+                    r"^dataflow_pipelines.US_XX_dataflow_pipelines.*",
+                    r"^dataflow_pipelines.US_YY_start",
+                    r"^dataflow_pipelines.US_YY_dataflow_pipelines.ingest.initialize_ingest_pipeline.*",
+                    r"^dataflow_pipelines.US_YY_dataflow_pipelines.ingest.us-yy-ingest-pipeline.create_flex_template",
+                    r"^dataflow_pipelines_completed",
                     r"^update_normalized_state",
-                    r"^post_ingest_pipelines",
                     r"^update_managed_views_all",
                     r"^validations.*",
                     r"^metric_exports.state_specific_metric_exports.branch_start",
@@ -892,8 +837,8 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
                     "ingest_instance": "PRIMARY",
                 },
                 expected_failure_task_id_regexes=[
-                    r"^post_ingest_pipelines.US_XX_dataflow_pipelines.full-us-xx-pipeline-no-limit.run_pipeline",
-                    r"^post_ingest_pipelines.branch_end",
+                    r"^dataflow_pipelines.US_XX_dataflow_pipelines.full-us-xx-pipeline-no-limit-pipeline.run_pipeline",
+                    r"^dataflow_pipelines.branch_end",
                     r"^metric_exports\.state_specific_metric_exports\.US_XX_metric_exports\.",
                     r"^metric_exports.state_specific_metric_exports.branch_end",
                 ],
@@ -901,18 +846,18 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
                     r"^initialize_dag.*",
                     r"^update_big_query_table_schemata",
                     r"^bq_refresh.*",
-                    r"^ingest.*",
+                    r"^dataflow_pipelines.branch_start",
+                    r"^dataflow_pipelines.US_XX_dataflow_pipelines.ingest.*",
                     r"^update_normalized_state",
-                    r"^post_ingest_pipelines.branch_start",
-                    # All metric pipelines for other states run
-                    r"^post_ingest_pipelines.US_YY.*",
-                    r"^post_ingest_pipelines.US_XX_start",
+                    # All dataflow pipelines for other states run
+                    r"^dataflow_pipelines.US_YY.*",
+                    r"^dataflow_pipelines.US_XX_start",
                     # Completely different pipeline for US_XX runs
-                    r"^post_ingest_pipelines.US_XX_dataflow_pipelines.us-xx-pipeline-with-limit-36.*",
-                    r"^post_ingest_pipelines.US_XX_dataflow_pipelines.full-us-xx-pipeline-no-limit.create_flex_template",
+                    r"^dataflow_pipelines.US_XX_dataflow_pipelines.us-xx-pipeline-with-limit-36-pipeline.*",
+                    r"^dataflow_pipelines.US_XX_dataflow_pipelines.full-us-xx-pipeline-no-limit-pipeline.create_flex_template",
                     # This step runs with trigger rule ALL_DONE so it runs even though a
                     # pipeline failed.
-                    r"^post_ingest_pipelines_completed",
+                    r"^dataflow_pipelines_completed",
                     r"^update_managed_views_all",
                     r"^metric_exports.state_specific_metric_exports.branch_start",
                     # This is a state-agnostic export so it runs
@@ -958,11 +903,10 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
                 },
                 expected_failure_task_id_regexes=[
                     r"^update_big_query_table_schemata",
-                    r"^ingest\.[a-zA-Z]*",
+                    r"^dataflow_pipelines\.[a-zA-Z]*",
                     r"^bq_refresh.refresh_bq_dataset_",
                     r"^update_normalized_state",
                     r"^update_managed_views_all",
-                    r"^post_ingest_pipelines\.[a-zA-Z]*",
                     r"^validations.*",
                     r"^metric_exports.*",
                 ],
@@ -973,8 +917,7 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
                 # That is because these tasks simply trigger with ALL_DONE
                 expected_success_task_id_regexes=[
                     r"^bq_refresh.bq_refresh_completed",
-                    r"^ingest_completed",
-                    r"^post_ingest_pipelines_completed",
+                    r"^dataflow_pipelines_completed",
                 ],
             )
 
@@ -1011,9 +954,8 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
                     r"^initialize_dag.*",
                     r"^update_big_query_table_schemata",
                     r"bq_refresh.bq_refresh_completed",
-                    r"^ingest.*",
+                    r"^dataflow_pipelines.*",
                     r"^update_normalized_state",
-                    r"^post_ingest_pipelines",
                     r"^update_managed_views_all",
                 ],
             )
@@ -1037,7 +979,7 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
                 ],
             )
             self.assertIn(
-                "ingest.US_XX_start",
+                "dataflow_pipelines.US_XX_start",
                 dag.task_ids,
             )
 
@@ -1060,6 +1002,6 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
                 ],
             )
             self.assertIn(
-                "ingest.US_XX_start",
+                "dataflow_pipelines.US_XX_start",
                 dag.task_ids,
             )

@@ -16,21 +16,29 @@
 # =============================================================================
 """Tests the classes in the metric_export_config file."""
 import unittest
-
-# TODO(#11034): Add a test to make sure products launched in production have the required calc metrics enabled
-# in production.
+from collections import defaultdict
 from unittest import mock
 from unittest.mock import Mock
 
+from recidiviz.common.constants.states import StateCode
 from recidiviz.metrics.export.products.product_configs import (
+    PRODUCTS_CONFIG_PATH,
     BadProductExportSpecificationError,
     ProductConfig,
     ProductConfigs,
     ProductExportConfig,
     ProductStateConfig,
 )
+from recidiviz.pipelines.config_paths import PIPELINE_CONFIG_YAML_PATH
 from recidiviz.tests.ingest import fixtures
-from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION
+from recidiviz.utils import metadata
+from recidiviz.utils.environment import (
+    GCP_PROJECT_PRODUCTION,
+    GCP_PROJECT_STAGING,
+    GCP_PROJECTS,
+)
+from recidiviz.utils.metadata import local_project_id_override
+from recidiviz.utils.yaml_dict import YAMLDict
 
 
 class TestProductConfig(unittest.TestCase):
@@ -216,3 +224,66 @@ class TestProductConfigs(unittest.TestCase):
             state_code="US_WW",
         )
         self.assertFalse(export_config)
+
+
+class TestRealProductConfigs(unittest.TestCase):
+    """Tests for the products.yaml configuration."""
+
+    def _get_enabled_metric_pipelines_by_state(self) -> dict[str, set[str]]:
+        pipeline_configs = YAMLDict.from_path(PIPELINE_CONFIG_YAML_PATH).pop_dicts(
+            "metric_pipelines"
+        )
+
+        pipeline_params_by_state: dict[str, set[str]] = defaultdict(set)
+        for pipeline_config in pipeline_configs:
+            if (
+                metadata.project_id() == GCP_PROJECT_STAGING
+                or not pipeline_config.peek_optional("staging_only", bool)
+            ):
+                state_code = pipeline_config.peek("state_code", str)
+                pipeline_params_by_state[state_code].add(
+                    pipeline_config.peek("pipeline", str)
+                )
+        return pipeline_params_by_state
+
+    def test_exports_enabled_only_for_states_with_metric_pipelines_enabled(
+        self,
+    ) -> None:
+        """Ensures that all minimum required metric pipelines are running before any
+        product metric export is enabled for a given state.
+        """
+        for project_id in GCP_PROJECTS:
+            with local_project_id_override(project_id):
+                product_configs = ProductConfigs.from_file(path=PRODUCTS_CONFIG_PATH)
+                enabled_metric_pipelines_by_state = (
+                    self._get_enabled_metric_pipelines_by_state()
+                )
+
+                for state_code in StateCode:
+                    state_code_export_configs = [
+                        c
+                        for c in product_configs.get_export_configs_for_job_filter(
+                            state_code.value
+                        )
+                        if product_configs.is_export_launched_in_env(**c)
+                    ]
+
+                    if not state_code_export_configs:
+                        continue
+
+                    enabled_metric_pipelines = enabled_metric_pipelines_by_state[
+                        state_code.value
+                    ]
+
+                    required_metric_pipelines = {"population_span_metrics"}
+
+                    if missing := (
+                        required_metric_pipelines - enabled_metric_pipelines
+                    ):
+                        raise ValueError(
+                            f"Cannot enable product exports for state "
+                            f"[{state_code.value}] until all required metric pipelines "
+                            f"have been enabled for this state in "
+                            f"calculation_pipeline_templates.yaml. Missing required "
+                            f"pipelines: {missing}"
+                        )

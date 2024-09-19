@@ -193,7 +193,7 @@ def create_single_ingest_pipeline_group(state_code: StateCode) -> TaskGroup:
         SchemaType.OPERATIONS
     )
 
-    with TaskGroup(f"{state_code.value.lower()}_dataflow") as dataflow:
+    with TaskGroup("ingest") as dataflow:
         (
             initialize_ingest_pipeline,
             get_max_update_datetimes,

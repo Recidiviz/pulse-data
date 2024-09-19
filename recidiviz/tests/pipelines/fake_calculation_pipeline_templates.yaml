@@ -40,6 +40,6 @@ metric_pipelines:
     staging_only: True
 
 supplemental_dataset_pipelines:
-  - pipeline: pipeline_to_run
+  - pipeline: pipeline_to_run_supplemental
     state_code: US_YY
     region: us-east1

@@ -117,7 +117,7 @@ class TestSingleIngestPipelineGroup(unittest.TestCase):
 
         test_dag = _create_test_single_ingest_pipeline_group_dag(StateCode.US_XX)
 
-        task_group_id = "us_xx_dataflow.us-xx-ingest"
+        task_group_id = "ingest.us-xx-ingest-pipeline"
         dataflow_pipeline_task = test_dag.get_task(f"{task_group_id}.run_pipeline")
 
         if not isinstance(
@@ -132,7 +132,7 @@ class TestSingleIngestPipelineGroup(unittest.TestCase):
         """Tests that dataflow_pipeline get the expected arguments."""
 
         test_dag = _create_test_single_ingest_pipeline_group_dag(StateCode.US_XX)
-        task_group_id = "us_xx_dataflow.us-xx-ingest"
+        task_group_id = "ingest.us-xx-ingest-pipeline"
         task: RecidivizDataflowFlexTemplateOperator = test_dag.get_task(  # type: ignore
             f"{task_group_id}.run_pipeline"
         )
@@ -225,7 +225,7 @@ class TestSingleIngestPipelineGroupIntegration(AirflowIntegrationTest):
                     r".*get_watermarks",
                     r".*check_for_valid_watermarks",
                     r".*verify_raw_data_flashing_not_in_progress",
-                    r"us_xx_dataflow\.us-xx-ingest.*",
+                    r"^ingest\.us-xx-ingest-pipeline\.",
                     r".*write_ingest_job_completion",
                     r".*write_upper_bounds",
                     _DOWNSTREAM_TASK_ID,
@@ -256,7 +256,7 @@ class TestSingleIngestPipelineGroupIntegration(AirflowIntegrationTest):
                 expected_failure_task_id_regexes=[
                     r".*check_for_valid_watermarks",
                     r".*verify_raw_data_flashing_not_in_progress",
-                    r"us_xx_dataflow\.us-xx-ingest.*",
+                    r"^ingest\.us-xx-ingest-pipeline\.",
                     r".*write_ingest_job_completion",
                     r".*write_upper_bounds",
                     _DOWNSTREAM_TASK_ID,
@@ -284,7 +284,7 @@ class TestSingleIngestPipelineGroupIntegration(AirflowIntegrationTest):
                 session,
                 expected_failure_task_id_regexes=[
                     r".*verify_raw_data_flashing_not_in_progress",
-                    r"us_xx_dataflow\.us-xx-ingest.*",
+                    r"^ingest\.us-xx-ingest-pipeline\.",
                     r".*write_ingest_job_completion",
                     r".*write_upper_bounds",
                     _DOWNSTREAM_TASK_ID,
@@ -325,7 +325,7 @@ class TestSingleIngestPipelineGroupIntegration(AirflowIntegrationTest):
                 test_dag,
                 session,
                 expected_failure_task_id_regexes=[
-                    r"us_xx_dataflow\.us-xx-ingest\.run_pipeline",
+                    r"^ingest\.us-xx-ingest-pipeline\.run_pipeline",
                     r".*write_ingest_job_completion",
                     r".*write_upper_bounds",
                     _DOWNSTREAM_TASK_ID,
@@ -339,12 +339,7 @@ class TestSingleIngestPipelineGroupIntegration(AirflowIntegrationTest):
         """
         test_dag = _create_test_single_ingest_pipeline_group_dag(StateCode.US_XX)
 
-        task_ids_to_fail = [
-            task.task_id
-            for task in test_dag.task_group_dict[
-                f"{StateCode.US_XX.value.lower()}_dataflow"
-            ]
-        ]
+        task_ids_to_fail = [task.task_id for task in test_dag.task_group_dict["ingest"]]
 
         with Session(bind=self.engine) as session:
             for task_id in task_ids_to_fail:

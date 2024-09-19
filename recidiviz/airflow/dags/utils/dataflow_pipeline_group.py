@@ -94,7 +94,7 @@ def build_dataflow_pipeline_task_group(
     Returns both the overall task group and the actual dataflow pipeline task.
     """
     with TaskGroup(
-        group_id=delegate.get_default_parameters().job_name,
+        group_id=f"{delegate.get_default_parameters().job_name}-pipeline",
     ) as dataflow_pipeline_group:
 
         @task(task_id=CREATE_FLEX_TEMPLATE_TASK_ID)

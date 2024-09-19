@@ -37,6 +37,11 @@ class SupplementalPipelineParameters(PipelineParameters):
         return SUPPLEMENTAL_PIPELINE_NAME
 
     def _get_base_job_name(self) -> str:
+        if not self.pipeline.endswith("_supplemental"):
+            raise ValueError(
+                f"Unexpected supplemental pipeline name [{self.pipeline}]. Must end "
+                f"with '_supplemental'. "
+            )
         return self._to_job_name_friendly(self.pipeline[: -len("_supplemental")])
 
     @classmethod

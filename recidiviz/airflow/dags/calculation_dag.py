@@ -216,16 +216,12 @@ def create_pipeline_configs_by_state(
     return pipeline_params_by_state
 
 
-def ingest_pipeline_branches_by_state_code() -> Dict[str, TaskGroup]:
-    branches_by_state_code = {}
-    for state_code in get_direct_ingest_states_launched_in_env():
-        ingest_group = create_single_ingest_pipeline_group(state_code)
-        branches_by_state_code[state_code.value] = ingest_group
-    return branches_by_state_code
+def dataflow_pipeline_branches_by_state() -> Dict[str, TaskGroup]:
+    """For each state with ingest enabled in the current environment, creates a
+    TaskGroup that will run all Dataflow pipelines for this state. Metric / supplemental
+    pipelines run after ingest pipelines are completed.
+    """
 
-
-def post_ingest_pipeline_branches_by_state_code() -> Dict[str, TaskGroup]:
-    """Creates a TaskGroup for each state that contains all the post-ingest pipelines for that state."""
     metric_pipelines = _get_pipeline_config().pop_dicts("metric_pipelines")
     supplemental_dataset_pipelines = _get_pipeline_config().pop_dicts(
         "supplemental_dataset_pipelines"
@@ -235,32 +231,32 @@ def post_ingest_pipeline_branches_by_state_code() -> Dict[str, TaskGroup]:
         supplemental_dataset_pipelines
     )
 
-    all_branched_states = set(
-        list(metric_pipeline_params_by_state.keys())
-        + list(supplemental_pipeline_parameters_by_state.keys())
-    )
-
     branches_by_state_code = {}
-    for state_code in all_branched_states:
+    for state_code in get_direct_ingest_states_launched_in_env():
         with TaskGroup(
-            group_id=f"{state_code}_dataflow_pipelines"
-        ) as state_code_dataflow_pipelines:
-            for pipeline_config in metric_pipeline_params_by_state[state_code]:
-                build_dataflow_pipeline_task_group(
+            f"{state_code.value}_dataflow_pipelines"
+        ) as state_pipelines_group:
+            ingest_group = create_single_ingest_pipeline_group(state_code)
+
+            for pipeline_config in metric_pipeline_params_by_state.get(
+                state_code.value, {}
+            ):
+                metric_pipeline_group = build_dataflow_pipeline_task_group(
                     delegate=MetricsDataflowPipelineTaskGroupDelegate(pipeline_config),
                 )
+                ingest_group >> metric_pipeline_group
 
-            for pipeline_config in supplemental_pipeline_parameters_by_state[
-                state_code
-            ]:
-                build_dataflow_pipeline_task_group(
+            for pipeline_config in supplemental_pipeline_parameters_by_state.get(
+                state_code.value, {}
+            ):
+                supplemental_pipeline_group = build_dataflow_pipeline_task_group(
                     delegate=SupplementalDataflowPipelineTaskGroupDelegate(
                         pipeline_config
                     ),
                 )
+                ingest_group >> supplemental_pipeline_group
 
-        branches_by_state_code[state_code] = state_code_dataflow_pipelines
-
+        branches_by_state_code[state_code.value] = state_pipelines_group
     return branches_by_state_code
 
 
@@ -274,13 +270,11 @@ def validation_branches_by_state_code(
 
 
 def metric_export_branches_by_state_code(
-    post_ingest_pipelines_by_state: Dict[str, TaskGroup],
+    allowed_metric_export_state_codes: List[str],
 ) -> Dict[str, TaskGroup]:
     branches_by_state_code: Dict[str, TaskGroup] = {}
 
-    # For every state with post-ingest pipelines enabled, we can create metric
-    # exports, if any are configured for that state.
-    for state_code in post_ingest_pipelines_by_state:
+    for state_code in allowed_metric_export_state_codes:
         relevant_product_exports = ProductConfigs.from_file(
             path=PRODUCTS_CONFIG_PATH
         ).get_export_configs_for_job_filter(state_code)
@@ -341,19 +335,23 @@ def create_calculation_dag() -> None:
     initialize_dag = initialize_calculation_dag_group()
     initialize_dag >> update_big_query_table_schemata >> bq_refresh
 
-    # --- step 2: ingest -----------------------------------
-    with TaskGroup(group_id="ingest") as ingest_task_group:
-        ingest_pipelines_by_state = ingest_pipeline_branches_by_state_code()
+    # --- step 2: dataflow_pipelines -----------------------------------
+    with TaskGroup(group_id="dataflow_pipelines") as dataflow_pipelines_task_group:
+        pipeline_branches_by_state = dataflow_pipeline_branches_by_state()
         create_branching_by_key(
-            ingest_pipelines_by_state,
+            pipeline_branches_by_state,
             select_state_code_parameter_branch,
         )
 
-    ingest_completed = EmptyOperator(
-        task_id="ingest_completed", trigger_rule=TriggerRule.ALL_DONE
+    dataflow_pipelines_completed = EmptyOperator(
+        task_id="dataflow_pipelines_completed", trigger_rule=TriggerRule.ALL_DONE
     )
     # If the schema updates successfully, run ingest pipelines for all states.
-    (update_big_query_table_schemata >> ingest_task_group >> ingest_completed)
+    (
+        update_big_query_table_schemata
+        >> dataflow_pipelines_task_group
+        >> dataflow_pipelines_completed
+    )
 
     # If the schema updates successfully, update the normalized_state dataset
     # after ingest pipelines complete.
@@ -364,33 +362,10 @@ def create_calculation_dag() -> None:
 
     [
         update_big_query_table_schemata,
-        ingest_completed,
+        dataflow_pipelines_completed,
     ] >> update_normalized_state_dataset
 
-    # --- step 3: metrics pipelines -----------------------------------
-    with TaskGroup(group_id="post_ingest_pipelines") as post_ingest_pipelines:
-        post_ingest_pipelines_by_state = post_ingest_pipeline_branches_by_state_code()
-        create_branching_by_key(
-            post_ingest_pipelines_by_state, select_state_code_parameter_branch
-        )
-
-    post_ingest_pipelines_completed = EmptyOperator(
-        task_id="post_ingest_pipelines_completed",
-        trigger_rule=TriggerRule.ALL_DONE,
-    )
-
-    # This ensures that all of the ingest pipelines for a state will
-    # run before the metric pipelines for the state are triggered.
-    (
-        [
-            update_big_query_table_schemata,
-            ingest_completed,
-        ]
-        >> post_ingest_pipelines
-        >> post_ingest_pipelines_completed
-    )
-
-    # --- step 4: managed views -----------------------------------
+    # --- step 3: managed views -----------------------------------
     # When ingest, supplemental and metrics pipelines are finished,
     # we want to update all managed views with the updated data.
     # We also wait until the BigQuery refresh to ops and case triage is complete
@@ -399,17 +374,17 @@ def create_calculation_dag() -> None:
         update_big_query_table_schemata,
         update_normalized_state_dataset,
         bq_refresh_completed,
-        post_ingest_pipelines_completed,
+        dataflow_pipelines_completed,
     ] >> update_all_views
 
-    # --- step 5: validations and metric exports -----------------------------------
+    # --- step 4: validations and metric exports -----------------------------------
     # When all manged views are updated, we can run validations and metric exports.
     with TaskGroup(group_id="validations") as validations:
         create_branching_by_key(
             # We turn on validations (may still be in dev mode) as soon as there is
             # any ingest output that may feed into our BQ views.
             validation_branches_by_state_code(
-                states_to_validate=ingest_pipelines_by_state.keys()
+                states_to_validate=pipeline_branches_by_state.keys()
             ),
             select_state_code_parameter_branch,
         )
@@ -417,20 +392,25 @@ def create_calculation_dag() -> None:
     with TaskGroup(group_id="metric_exports") as metric_exports:
         with TaskGroup(group_id=STATE_SPECIFIC_METRIC_EXPORTS_GROUP_ID):
             metric_export_branches_by_state = metric_export_branches_by_state_code(
-                post_ingest_pipelines_by_state
+                allowed_metric_export_state_codes=sorted(
+                    # For every state with any dataflow pipelines enabled, we can create
+                    # metric exports, if any are configured for that state. There is a
+                    # unittest in product_configs_test.py that enforces that metric
+                    # pipelines are enabled before we enable any metric export.
+                    pipeline_branches_by_state.keys()
+                )
             )
             create_branching_by_key(
                 metric_export_branches_by_state, select_state_code_parameter_branch
             )
 
-            # If any ingest or metric pipeline fails, do not run the export for that
-            # state.
+            # If any dataflow pipeline for a given state fails, do not run the export
+            # for that state.
             for (
                 state_code,
                 metric_export_branch,
             ) in metric_export_branches_by_state.items():
-                ingest_pipelines_by_state[state_code] >> metric_export_branch
-                post_ingest_pipelines_by_state[state_code] >> metric_export_branch
+                pipeline_branches_by_state[state_code] >> metric_export_branch
 
         product_configs = ProductConfigs.from_file(path=PRODUCTS_CONFIG_PATH)
         for export_config in product_configs.get_product_agnostic_export_configs():
