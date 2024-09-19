@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """This class implements tests for the case note search module."""
-from typing import Any
+from typing import Any, Dict
 from unittest import IsolatedAsyncioTestCase
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -184,7 +184,7 @@ class TestCaseNoteFunctions(IsolatedAsyncioTestCase):
             return_value=mock_search_pager
         )
 
-        case_note_data1 = {
+        case_note_data1: Dict[str, Any] = {
             "state_code": "US_ME",
             "external_id": "1234",
             "note_id": "129",
@@ -194,7 +194,7 @@ class TestCaseNoteFunctions(IsolatedAsyncioTestCase):
             "note_title": None,
             "note_body": "Full case note content.",
         }
-        case_note_data_extracted1 = {
+        case_note_data_extracted1: Dict[str, Any] = {
             "document_id": "129",
             "date": "2024-03-29 11:27:00",
             "contact_mode": "Phone",
@@ -205,7 +205,7 @@ class TestCaseNoteFunctions(IsolatedAsyncioTestCase):
             "preview": "Full case note content.",
             "case_note": "Full case note content.",
         }
-        case_note_data2 = {
+        case_note_data2: Dict[str, Any] = {
             "state_code": "US_ME",
             "external_id": "1234",
             "note_id": "130",
@@ -215,7 +215,7 @@ class TestCaseNoteFunctions(IsolatedAsyncioTestCase):
             "note_title": None,
             "note_body": "Full case note content.",
         }
-        case_note_data_extracted2 = {
+        case_note_data_extracted2: Dict[str, Any] = {
             "document_id": "130",
             "date": "2024-03-30 11:27:00",
             "contact_mode": "Phone",
@@ -226,7 +226,7 @@ class TestCaseNoteFunctions(IsolatedAsyncioTestCase):
             "preview": "Full case note content.",
             "case_note": "Full case note content.",
         }
-        case_note_data3 = {
+        case_note_data3: Dict[str, Any] = {
             "state_code": "US_ME",
             "external_id": "1234",
             "note_id": "131",
@@ -236,7 +236,7 @@ class TestCaseNoteFunctions(IsolatedAsyncioTestCase):
             "note_title": None,
             "note_body": "Full case note content.",
         }
-        case_note_data_extracted3 = {
+        case_note_data_extracted3: Dict[str, Any] = {
             "document_id": "131",
             "date": "2024-03-31 11:27:00",
             "contact_mode": "Phone",
@@ -255,6 +255,11 @@ class TestCaseNoteFunctions(IsolatedAsyncioTestCase):
             "US_ME_1234_130": case_note_data2,
             "US_ME_1234_131": case_note_data3,
         }
+
+        # Attach relevance ordering to the returned case notes.
+        case_note_data_extracted3["relevance_ordering"] = 0
+        case_note_data_extracted2["relevance_ordering"] = 1
+        case_note_data_extracted1["relevance_ordering"] = 2
 
         results = await case_note_search(query, page_size, filter_conditions)
         # Returned results should be in reverse chronological order
@@ -294,7 +299,7 @@ class TestCaseNoteFunctions(IsolatedAsyncioTestCase):
             return_value=mock_search_pager
         )
 
-        exact_match1 = {
+        exact_match1: Dict[str, Any] = {
             "state_code": "US_ME",
             "external_id": "1234",
             "note_id": "126",
@@ -304,7 +309,7 @@ class TestCaseNoteFunctions(IsolatedAsyncioTestCase):
             "note_type": "Supervision",
             "note_title": None,
         }
-        exact_match_extracted1 = {
+        exact_match_extracted1: Dict[str, Any] = {
             "document_id": "126",
             "date": "2024-03-26 11:27:00",
             "contact_mode": "Phone",
@@ -315,7 +320,7 @@ class TestCaseNoteFunctions(IsolatedAsyncioTestCase):
             "preview": "Full case note content.",
             "case_note": "Full case note content.",
         }
-        exact_match2 = {
+        exact_match2: Dict[str, Any] = {
             "state_code": "US_ME",
             "external_id": "1234",
             "note_id": "127",
@@ -325,7 +330,7 @@ class TestCaseNoteFunctions(IsolatedAsyncioTestCase):
             "note_type": "Supervision",
             "note_title": None,
         }
-        exact_match_extracted2 = {
+        exact_match_extracted2: Dict[str, Any] = {
             "document_id": "127",
             "date": "2024-03-27 11:27:00",
             "contact_mode": "Phone",
@@ -336,7 +341,7 @@ class TestCaseNoteFunctions(IsolatedAsyncioTestCase):
             "preview": "Full case note content.",
             "case_note": "Full case note content.",
         }
-        exact_match3 = {
+        exact_match3: Dict[str, Any] = {
             "state_code": "US_ME",
             "external_id": "1234",
             "note_id": "128",
@@ -346,7 +351,7 @@ class TestCaseNoteFunctions(IsolatedAsyncioTestCase):
             "note_type": "Supervision",
             "note_title": None,
         }
-        exact_match_extracted3 = {
+        exact_match_extracted3: Dict[str, Any] = {
             "document_id": "128",
             "date": "2024-03-28 11:27:00",
             "contact_mode": "Phone",
@@ -357,7 +362,7 @@ class TestCaseNoteFunctions(IsolatedAsyncioTestCase):
             "preview": "Full case note content.",
             "case_note": "Full case note content.",
         }
-        exact_match4 = {
+        exact_match4: Dict[str, Any] = {
             "state_code": "US_ME",
             "external_id": "1234",
             "note_id": "129",
@@ -367,7 +372,7 @@ class TestCaseNoteFunctions(IsolatedAsyncioTestCase):
             "note_type": "Supervision",
             "note_title": None,
         }
-        exact_match_extracted4 = {
+        exact_match_extracted4: Dict[str, Any] = {
             "document_id": "129",
             "date": "2024-03-29 11:27:00",
             "contact_mode": "Phone",
@@ -378,7 +383,7 @@ class TestCaseNoteFunctions(IsolatedAsyncioTestCase):
             "preview": "Full case note content.",
             "case_note": "Full case note content.",
         }
-        non_exact_match1 = {
+        non_exact_match1: Dict[str, Any] = {
             "document_id": "130",
             "date": "2024-03-30 11:27:00",
             "contact_mode": "Phone",
@@ -389,7 +394,7 @@ class TestCaseNoteFunctions(IsolatedAsyncioTestCase):
             "preview": "Full case note content.",
             "case_note": "Full case note content.",
         }
-        non_exact_match2 = {
+        non_exact_match2: Dict[str, Any] = {
             "document_id": "131",
             "date": "2024-03-31 11:27:00",
             "contact_mode": "Phone",
@@ -420,17 +425,26 @@ class TestCaseNoteFunctions(IsolatedAsyncioTestCase):
         # * exact matches returned by regular search, in relevance order
         # * exact matches returned only by exact search, in reverse chronological order
         # * non-exact matches returned by regular search, in relevance order
+
+        # Attach relevance ordering to the returned case notes.
+        # exact matches returned by regular search, in relevance order
+        exact_match_extracted2["relevance_ordering"] = 0
+        exact_match_extracted3["relevance_ordering"] = 1
+        # exact matches returned only by exact search, in reverse chronological order
+        exact_match_extracted4["relevance_ordering"] = 2
+        exact_match_extracted1["relevance_ordering"] = 3
+        # non-exact matches returned by regular search, in relevance order
+        non_exact_match1["relevance_ordering"] = 4
+        non_exact_match2["relevance_ordering"] = 5
+
         self.assertEqual(
             results,
             {
                 "results": [
-                    # exact matches returned by regular search, in relevance order
                     exact_match_extracted2,
                     exact_match_extracted3,
-                    # exact matches returned only by exact search, in reverse chronological order
                     exact_match_extracted4,
                     exact_match_extracted1,
-                    # non-exact matches returned by regular search, in relevance order
                     non_exact_match1,
                     non_exact_match2,
                 ],
