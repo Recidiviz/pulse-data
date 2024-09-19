@@ -1,0 +1,47 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: IA_DOC_CaseManagers
+file_description: |-
+  This table contains status of supervision information
+data_classification: source
+primary_key_cols:
+  - SupervisionStatusInformationId
+columns:
+  - name: SupervisionStatusInformationId
+    description: |-
+      PK for the table
+  - name: OffenderCd
+    description: |-
+      Offender code
+    is_pii: True
+  - name: CaseManagerStaffId
+    description: |-
+      Case manager staff id
+    is_pii: True
+  - name: CaseManagerFirstNm
+    description: |-
+      Case manager first name
+    is_pii: True
+  - name: CaseManagerLastNm
+    description: |-
+      Case manager last name
+    is_pii: True
+  - name: CaseManagerStartDt
+    field_type: datetime
+    description: |-
+      Case manager start date
+  - name: InitialCaseManager
+    description: |-
+      Initial case manager
+    is_pii: True
+  - name: CaseManagerAssignedDt
+    field_type: datetime
+    description: |-
+      Date case manager assigned
+  - name: CaseManagerEndDt
+    field_type: datetime
+    description: |-
+      Case manager end date
+  - name: EnteredDt
+    field_type: datetime
+    description: |-
+      Date entered
