@@ -45,7 +45,12 @@ external_data_with_ids AS (
       region_code,
       date_of_supervision,
       district,
-      supervising_officer,
+      -- We have to compare Recidiviz-generated staff_id values in AZ because external IDs are not stable
+      CASE 
+        WHEN region_code = 'US_AZ' 
+        THEN CAST(all_staff_ids.staff_id AS STRING)
+        ELSE supervising_officer
+      END AS supervising_officer,
       supervision_level,
       external_data.person_external_id,
       COALESCE(CAST(person_id AS STRING), 'UNKNOWN_PERSON') as person_id
@@ -54,6 +59,11 @@ external_data_with_ids AS (
     ON region_code = all_state_person_ids.state_code AND external_data.person_external_id = all_state_person_ids.external_id
     -- Limit to the correct ID type in states that have multiple
     AND external_data.external_id_type = all_state_person_ids.id_type
+    -- We have to compare Recidiviz-generated staff_id values in AZ because external IDs are not stable
+    LEFT JOIN `{{project_id}}.{{normalized_state_dataset}}.state_staff_external_id` all_staff_ids
+    ON region_code = all_staff_ids.state_code 
+      AND external_data.supervising_officer = all_staff_ids.external_id
+      AND all_staff_ids.id_type = 'US_AZ_PERSON_ID'
 ),
 dates_per_region AS (
     -- Only compare regions and months for which we have external validation data
@@ -83,6 +93,9 @@ sanitized_internal_metrics AS (
             '92a7194ae5db4ecb83f724e83d0d50b3c216561849b48f4d60946b3b0a301a3a', 
             '620e9c1f98e4730c1968dd7e14627cdff6689e377fa8ff7d5be4fd3540b57543') 
             AND date_of_supervision < '2020-07-01' THEN 'LSU'
+        -- We have to compare Recidiviz-generated staff_id values in AZ because external IDs are not stable
+        -- This will be labeled as "supervising_officer_external_id" but is actually the officer's internal ID
+        WHEN state_code IN ('US_AZ') THEN CAST(staff.staff_id AS STRING)
         ELSE staff.external_id
       END AS supervising_officer_external_id,
       CASE
