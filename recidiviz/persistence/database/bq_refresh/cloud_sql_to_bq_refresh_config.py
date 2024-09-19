@@ -20,10 +20,6 @@ from typing import List, Optional
 from sqlalchemy import Table
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
-from recidiviz.calculator.query.justice_counts.dataset_config import (
-    JUSTICE_COUNTS_BASE_DATASET,
-    JUSTICE_COUNTS_BASE_REGIONAL_DATASET,
-)
 from recidiviz.calculator.query.operations.dataset_config import (
     OPERATIONS_BASE_DATASET,
     OPERATIONS_BASE_REGIONAL_DATASET,
@@ -70,8 +66,6 @@ class CloudSqlToBQConfig:
         """
         if self.schema_type == SchemaType.OPERATIONS:
             dest_dataset = OPERATIONS_BASE_REGIONAL_DATASET
-        elif self.schema_type == SchemaType.JUSTICE_COUNTS:
-            dest_dataset = JUSTICE_COUNTS_BASE_REGIONAL_DATASET
         elif self.schema_type == SchemaType.CASE_TRIAGE:
             dest_dataset = CASE_TRIAGE_FEDERATED_REGIONAL_DATASET
         else:
@@ -88,8 +82,6 @@ class CloudSqlToBQConfig:
         """
         if self.schema_type == SchemaType.OPERATIONS:
             dest_dataset = OPERATIONS_BASE_DATASET
-        elif self.schema_type == SchemaType.JUSTICE_COUNTS:
-            dest_dataset = JUSTICE_COUNTS_BASE_DATASET
         elif self.schema_type == SchemaType.CASE_TRIAGE:
             dest_dataset = CASE_TRIAGE_FEDERATED_DATASET
         else:
@@ -105,10 +97,6 @@ class CloudSqlToBQConfig:
                 "Internal Recidiviz operations data loaded from the operations "
                 "CloudSQL instance."
             )
-        if self.schema_type == SchemaType.JUSTICE_COUNTS:
-            return (
-                "Justice Counts data loaded from the justice-counts CloudSQL instance."
-            )
         if self.schema_type == SchemaType.CASE_TRIAGE:
             return "Case Triage data loaded from the case-triage CloudSQL instance."
         raise ValueError(f"Unexpected schema_type [{self.schema_type}].")
@@ -123,15 +111,6 @@ class CloudSqlToBQConfig:
         into.
         """
         dataset = self.regional_dataset(dataset_override_prefix=None)
-        if self.schema_type == SchemaType.JUSTICE_COUNTS:
-            # TODO(#7285): JUSTICE_COUNTS has a custom materialized location for
-            #  backwards compatibility. Once we delete the legacy views at
-            #  `justice_counts.{table_name}` etc, we will be able to write materialized
-            #  tables to that location.
-            return BigQueryAddress(
-                dataset_id=dataset,
-                table_id=f"{table.name}_materialized",
-            )
         return BigQueryAddress(dataset_id=dataset, table_id=table.name)
 
     @property
@@ -175,8 +154,6 @@ class CloudSqlToBQConfig:
         ):
             return True
         if schema_type in (
-            # TODO(#7285): Enable for justice counts once standardized federated export
-            #  has shipped to prod and support for Justice Counts schema is in place.
             SchemaType.JUSTICE_COUNTS,
             SchemaType.PATHWAYS,
             SchemaType.STATE,
