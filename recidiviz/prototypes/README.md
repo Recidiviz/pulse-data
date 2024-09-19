@@ -60,9 +60,13 @@ To interact with the prototypes endpoints, use the script located at `recidiviz/
    ./recidiviz/tools/prototypes/initialize_development_environment.sh
    ```
 
-### Example Usage
+# Case Note Search
 
-Once your environment is set up, you can compose and send queries to different environments:
+This section details the functionality of the **Case Note Search** project hosted on the Prototypes server.
+
+## Querying the Endpoint
+
+To query the Case Note Search endpoint in any of the environments, you can use
 
 ```bash
 # Query the dev environment
@@ -75,11 +79,18 @@ python -m recidiviz.tools.prototypes.request_api search '{"query":"housing updat
 python -m recidiviz.tools.prototypes.request_api search '{"query":"housing updates", "user_id":"fake_id", "state_code":"US_ID"}' get --target_env prod --token {token}
 ```
 
-To get a staging/production token, you can log into the dashboard page, inspect the HTTP request packets, and copy-and-paste your temporary token.
+The full list of required and optional parameters for the endpoint can be found in `recidiviz/prototypes/app.py` under search_case_notes().
 
-# Case Note Search
+### Temporary Token
 
-This section details the functionality of the **Case Note Search** project hosted on the Prototypes server.
+The local API request uses an M2M auth token, so no token is required.
+
+For staging and prod, we need to provide an acceptable token according to the
+environment. To get a temporary staging/production token, you can log into the recidiviz
+dashboard page, inspect the HTTP request packets, and copy-and-paste the token from the
+Networks tab. See the screenshot below for the exact location.
+
+![get-token-from-recidiviz-dashboard](https://github.com/user-attachments/assets/aab0e82b-7205-4345-acac-4d0db97dd9dc)
 
 ## Databases
 
