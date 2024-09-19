@@ -103,14 +103,8 @@ ENTITIES_WITH_EXPECTED_STABLE_COUNTS_OVER_TIME: Dict[str, StableCountsTableConfi
                     ],
                     StateCode.US_AZ: [
                         date(
-                            2024, 1, 1
+                            2023, 12, 1
                         ),  # December was the first month we received data from AZ.
-                        date(
-                            2024, 3, 1
-                        ),  # We received another large dump of data in Feb, and nightly transfers after that.
-                        date(
-                            2024, 4, 1
-                        ),  # The refactor in PR #28313 caused a significant but expected change.
                     ],
                 },
             ),
@@ -146,14 +140,8 @@ ENTITIES_WITH_EXPECTED_STABLE_COUNTS_OVER_TIME: Dict[str, StableCountsTableConfi
                     ],
                     StateCode.US_AZ: [
                         date(
-                            2024, 1, 1
+                            2023, 12, 1
                         ),  # December was the first month we received data from AZ.
-                        date(
-                            2024, 3, 1
-                        ),  # We received another large dump of data in Feb, and nightly transfers after that.
-                        date(
-                            2024, 4, 1
-                        ),  # The refactor in PR #28313 caused a significant but expected change.
                     ],
                 },
             ),
@@ -230,14 +218,6 @@ ENTITIES_WITH_EXPECTED_STABLE_COUNTS_OVER_TIME: Dict[str, StableCountsTableConfi
                         # And so the number of supervision starts in 10/2023 is actually closer to the usual, and it's only failing cause 9/2023 had crept up so high
                         date(2023, 10, 1),
                     ],
-                    StateCode.US_AZ: [
-                        date(
-                            2024, 1, 1
-                        ),  # December was the first month we received data from AZ.
-                        date(
-                            2024, 3, 1
-                        ),  # We received another large dump of data in Feb, and nightly transfers after that.
-                    ],
                 },
             ),
             DateCol(
@@ -305,14 +285,6 @@ ENTITIES_WITH_EXPECTED_STABLE_COUNTS_OVER_TIME: Dict[str, StableCountsTableConfi
                     StateCode.US_ND: [
                         date(2023, 11, 1),  # Stale data in staging, no issue in prod
                         date(2023, 12, 1),  # Stale data in staging, no issue in prod
-                    ],
-                    StateCode.US_AZ: [
-                        date(
-                            2024, 1, 1
-                        ),  # December was the first month we received data from AZ.
-                        date(
-                            2024, 3, 1
-                        ),  # We received another large dump of data in Feb, and nightly transfers after that.
                     ],
                 },
             ),
