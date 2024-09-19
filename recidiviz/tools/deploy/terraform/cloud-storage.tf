@@ -501,13 +501,6 @@ module "insights-etl-data-archive" {
   ]
 }
 
-module "case-notes-data" {
-  source = "./modules/cloud-storage-bucket"
-
-  project_id  = var.project_id
-  name_suffix = "case-notes-data"
-}
-
 module "generated-assets" {
   source = "./modules/cloud-storage-bucket"
 
