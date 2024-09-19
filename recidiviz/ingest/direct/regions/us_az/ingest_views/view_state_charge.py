@@ -40,6 +40,7 @@ commitments AS (
     NULLIF(offense.SUBSECTION_CODE,'NULL') AS SUBSECTION_CODE,
     offense.OFFENSE_NUMBER,
     offense.OFFENSE_ID,
+    CONCAT(offense.OFFENSE_ID,'-',offense.COMMITMENT_ID,'-',episode.DOC_ID) AS sentence_external_id,
     (offense.OFFENSE_ID = sc_episode.FINAL_OFFENSE_ID) AS CONTROLLING_OFFENSE_FLAG
   FROM {AZ_DOC_SC_COMMITMENT} commitment
   JOIN {AZ_DOC_SC_OFFENSE} offense

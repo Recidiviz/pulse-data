@@ -11,6 +11,7 @@ input_columns:
   - COURT_MIDDLE_NAME
   - COURT_LAST_NAME
   - ARS_ID
+  - sentence_external_id
   - OFFENSE_ID
   - OFFENSE_DTM
   - NCIC_CODE
@@ -45,7 +46,7 @@ output:
           id_type: $literal("US_AZ_PERSON_ID")
     sentences:
       - StateSentence:
-          external_id: OFFENSE_ID
+          external_id: sentence_external_id
           charges:
             - StateChargeV2:
                 external_id: OFFENSE_ID
