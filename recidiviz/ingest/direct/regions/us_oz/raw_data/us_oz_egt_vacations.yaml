@@ -17,3 +17,6 @@ columns:
     description: The day the vacation started in MM/DD/YYYY format.
   - name: EndDate
     description: The day the vacation ended in MM/DD/YYYY format.
+is_chunked_file: True
+expected_number_of_chunks: 3
+encoding: us-ascii
