@@ -22,3 +22,5 @@ columns:
   - name: Address
     description: The person's residential address.
     is_pii: True
+separator: "†"
+custom_line_terminator: "‡"
