@@ -266,6 +266,8 @@ async def case_note_search(
             - 'extractive_answer' (Optional[str]): An extractive answer. Is null if snippet is populated.
             - 'snippet' (Optional[str]): A snippet extracted from the document, if requested.
             - 'case_note' (Optional[str]): The full case note content downloaded from GCS.
+            - 'relevance_ordering' (Optional[int]): Used for sorting the notes by
+                relevance to the query term. '0' being the most relevant case note.
 
         In the error case, the response is {"results": [], "error": <error_description>}.
     """
@@ -347,6 +349,11 @@ async def case_note_search(
 
             # Truncate, if the page size is exceeded.
             results = results[:page_size]
+
+        # Attach 'relevance_ordering' to each result.
+        for index, result in enumerate(results):
+            result["relevance_ordering"] = index
+
         return {
             "results": results,
             "error": None,
