@@ -1,0 +1,227 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: IA_DOC_Penalities
+file_description: |-
+  This table contains penalty information
+data_classification: source
+primary_key_cols:
+  - PenaltyId
+columns:
+  - name: PenaltyId
+    description: |-
+      Penalty id
+  - name: SentenceId
+    description: |-
+      Sentence id
+  - name: OffenderCd
+    description: |-
+      Offender code
+    is_pii: True
+  - name: CommitmentIndicator
+    description: |-
+      Commitment indicator
+  - name: SequenceNo
+    description: |-
+      Sequence number
+  - name: TimeCompMethodId
+    description: |-
+      Time comp method id
+  - name: PenaltyEffectiveDt
+    field_type: datetime
+    description: |-
+      Penalty effective date
+  - name: SentencePenaltyTypeId
+    description: |-
+      Sentence penalty type id
+  - name: SentencePenaltyType
+    description: |-
+      Sentence penalty type
+  - name: PenaltyStorageType
+    description: |-
+      Penalty storage
+  - name: PenaltyDays
+    description: |-
+      Penalty Days
+  - name: PenaltyMonths
+    description: |-
+      Penalty months
+  - name: PenaltyYears
+    description: |-
+      Penalty years
+  - name: PenaltyLife
+    description: |-
+      Penalty life
+  - name: PenaltyValue
+    description: |-
+      Penalty value
+  - name: ProbationCredit
+    description: |-
+      Probation credit
+  - name: PreJailCredit
+    description: |-
+      Pre jail credit
+  - name: PreResidentialCredit
+    description: |-
+      TODO(#33241): Fill in with information from IA
+  - name: PreOAKPatientCredit
+    description: |-
+      TODO(#33241): Fill in with information from IA
+  - name: PreViolatorProgramCredit
+    description: |-
+      TODO(#33241): Fill in with information from IA
+  - name: PreOutOfStateCredit
+    description: |-
+      TODO(#33241): Fill in with information from IA
+  - name: PreTotalCredit
+    description: |-
+      TODO(#33241): Fill in with information from IA
+  - name: PostJailCredit
+    description: |-
+      TODO(#33241): Fill in with information from IA
+  - name: PostResidentialCredit
+    description: |-
+      TODO(#33241): Fill in with information from IA
+  - name: PostOAKPatientCredit
+    description: |-
+      TODO(#33241): Fill in with information from IA
+  - name: PostViolatorProgramCredit
+    description: |-
+      TODO(#33241): Fill in with information from IA
+  - name: PostOutOfStateCredit
+    description: |-
+      TODO(#33241): Fill in with information from IA
+  - name: PostTotalCredit
+    description: |-
+      TODO(#33241): Fill in with information from IA
+  - name: JailCredit
+    description: |-
+      TODO(#33241): Fill in with information from IA
+  - name: ResidentialCredit
+    description: |-
+      TODO(#33241): Fill in with information from IA
+  - name: OAKPatientCredit
+    description: |-
+      TODO(#33241): Fill in with information from IA
+  - name: ViolatorProgramCredit
+    description: |-
+      TODO(#33241): Fill in with information from IA
+  - name: OutOfStateCredit
+    description: |-
+      TODO(#33241): Fill in with information from IA
+  - name: TotalCredit
+    description: |-
+      TODO(#33241): Fill in with information from IA
+  - name: PenaltyMinimumDays
+    description: |-
+      Penalty minimum days
+  - name: PenaltyMinimumMonths
+    description: |-
+      Penalty minimum months
+  - name: PenaltyMinimumYears
+    description: |-
+      Penalty minimum years
+  - name: PenaltyMinimumLife
+    description: |-
+      Penaly minimum life
+  - name: PenaltyMinimumValue
+    description: |-
+      Penalty minim value
+  - name: MinimumProbationCredit
+    description: |-
+      TODO(#33241): Fill in with information from IA
+  - name: MinimumPreJailCredit
+    description: |-
+      TODO(#33241): Fill in with information from IA
+  - name: MinimumPreResidentialCredit
+    description: |-
+      TODO(#33241): Fill in with information from IA
+  - name: MinimumPreOAKPatientCredit
+    description: |-
+      TODO(#33241): Fill in with information from IA
+  - name: MinimumPreViolatorProgramCredit
+    description: |-
+      TODO(#33241): Fill in with information from IA
+  - name: MinimumPreOutOfStateCredit
+    description: |-
+      TODO(#33241): Fill in with information from IA
+  - name: MinimumPreTotalCredit
+    description: |-
+      TODO(#33241): Fill in with information from IA
+  - name: MinimumPostJailCredit
+    description: |-
+      TODO(#33241): Fill in with information from IA
+  - name: MinimumPostResidentialCredit
+    description: |-
+      TODO(#33241): Fill in with information from IA
+  - name: MinimumPostOAKPatientCredit
+    description: |-
+      TODO(#33241): Fill in with information from IA
+  - name: MinimumPostViolatorProgramCredit
+    description: |-
+      TODO(#33241): Fill in with information from IA
+  - name: MinimumPostOutOfStateCredit
+    description: |-
+      TODO(#33241): Fill in with information from IA
+  - name: MinimumPostTotalCredit
+    description: |-
+      TODO(#33241): Fill in with information from IA
+  - name: MinimumJailCredit
+    description: |-
+      TODO(#33241): Fill in with information from IA
+  - name: MinimumResidentialCredit
+    description: |-
+      TODO(#33241): Fill in with information from IA
+  - name: MinimumOAKPatientCredit
+    description: |-
+      TODO(#33241): Fill in with information from IA
+  - name: MinimumViolatorProgramCredit
+    description: |-
+      TODO(#33241): Fill in with information from IA
+  - name: MinimumOutOfStateCredit
+    description: |-
+      TODO(#33241): Fill in with information from IA
+  - name: MinimumTotalCredit
+    description: |-
+      TODO(#33241): Fill in with information from IA
+  - name: SentencePenaltyModifierId
+    description: |-
+      TODO(#33241): Fill in with information from IA
+  - name: SentencePenaltyModifier
+    description: |-
+      TODO(#33241): Fill in with information from IA
+  - name: ModifierStorageType
+    description: |-
+      TODO(#33241): Fill in with information from IA
+  - name: ModifierMinimumDays
+    description: |-
+      TODO(#33241): Fill in with information from IA
+  - name: ModifierMinimumMonths
+    description: |-
+      TODO(#33241): Fill in with information from IA
+  - name: ModifierMinimumYears
+    description: |-
+      TODO(#33241): Fill in with information from IA
+  - name: ModifierMinimumLife
+    description: |-
+      TODO(#33241): Fill in with information from IA
+  - name: ModifierMinimumValue
+    description: |-
+      TODO(#33241): Fill in with information from IA
+  - name: ModifierMaximumDays
+    description: |-
+      TODO(#33241): Fill in with information from IA
+  - name: ModifierMaximumMonths
+    description: |-
+      TODO(#33241): Fill in with information from IA
+  - name: ModifierMaximumYears
+    description: |-
+      TODO(#33241): Fill in with information from IA
+  - name: ModifierMaximumLife
+    description: |-
+      TODO(#33241): Fill in with information from IA
+  - name: ModifierMaximumValue
+    description: |-
+      TODO(#33241): Fill in with information from IA
+  - name: EnteredDt
+    field_type: datetime
+    description: |-
+      Date entered
