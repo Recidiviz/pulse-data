@@ -387,18 +387,6 @@ class TestCalculationPipelineDag(AirflowIntegrationTest):
                 f"[{type(bq_refresh_task)}]."
             )
 
-    def test_update_state_dataset_task_exists(self) -> None:
-        """Tests that refresh_bq_dataset_task triggers the proper script."""
-        dag_bag = DagBag(dag_folder=DAG_FOLDER, include_examples=False)
-        dag = dag_bag.dags[self.CALCULATION_DAG_ID]
-        bq_refresh_task = dag.get_task(_UPDATE_STATE_DATASET_TASK_ID)
-
-        if not isinstance(bq_refresh_task, KubernetesPodOperator):
-            raise ValueError(
-                f"Expected type KubernetesPodOperator, found "
-                f"[{type(bq_refresh_task)}]."
-            )
-
     def test_refresh_bq_dataset_task(
         self,
     ) -> None:
@@ -555,22 +543,6 @@ class TestCalculationPipelineDag(AirflowIntegrationTest):
                 "--entrypoint=BigQueryRefreshEntrypoint",
                 "--schema_type=OPERATIONS",
                 "--ingest_instance=PRIMARY",
-            ],
-        )
-
-    def test_update_state_dataset(self) -> None:
-        """Tests that the `update_state` task is downstream of initialize_dag."""
-        dag_bag = DagBag(dag_folder=DAG_FOLDER, include_examples=False)
-        dag = dag_bag.dags[self.CALCULATION_DAG_ID]
-        self.assertNotEqual(0, len(dag.task_ids))
-
-        task = dag.get_task(_UPDATE_STATE_DATASET_TASK_ID)
-        task.render_template_fields({"dag_run": PRIMARY_DAG_RUN})
-
-        self.assertEqual(
-            task.arguments[4:],
-            [
-                "--entrypoint=UpdateStateEntrypoint",
             ],
         )
 
@@ -794,7 +766,6 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
                     r"^update_big_query_table_schemata",
                     r"^bq_refresh.*",
                     r"^ingest.*",
-                    r"^update_state",
                     r"^update_normalized_state",
                     r"^post_ingest_pipelines",
                     r"^update_managed_views_all",
@@ -829,7 +800,6 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
                     r"^initialize_dag.handle_queueing_result",
                     r"^update_big_query_table_schemata",
                     r"^ingest.*",
-                    r"^update_state",
                     r"^bq_refresh.*",
                     r"^update_managed_views",
                     r"^update_normalized_state",
@@ -884,7 +854,6 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
                     r"ingest.us_yy_dataflow.initialize_ingest_pipeline.*",
                     r"ingest.us_yy_dataflow.us-yy-ingest.create_flex_template",
                     r"^ingest_completed",
-                    r"^update_state",
                     r"^update_normalized_state",
                     r"^post_ingest_pipelines",
                     r"^update_managed_views_all",
@@ -933,7 +902,6 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
                     r"^update_big_query_table_schemata",
                     r"^bq_refresh.*",
                     r"^ingest.*",
-                    r"^update_state",
                     r"^update_normalized_state",
                     r"^post_ingest_pipelines.branch_start",
                     # All metric pipelines for other states run
@@ -992,7 +960,6 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
                     r"^update_big_query_table_schemata",
                     r"^ingest\.[a-zA-Z]*",
                     r"^bq_refresh.refresh_bq_dataset_",
-                    r"^update_state",
                     r"^update_normalized_state",
                     r"^update_managed_views_all",
                     r"^post_ingest_pipelines\.[a-zA-Z]*",
@@ -1001,7 +968,7 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
                 ],
                 expected_skipped_task_id_regexes=[],
                 # These indicate their respective groups completed,
-                # but notice that update_state, update_normalized_state, etc.
+                # but notice that update_normalized_state, etc.
                 # did not complete successfully!
                 # That is because these tasks simply trigger with ALL_DONE
                 expected_success_task_id_regexes=[
@@ -1045,7 +1012,6 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
                     r"^update_big_query_table_schemata",
                     r"bq_refresh.bq_refresh_completed",
                     r"^ingest.*",
-                    r"^update_state",
                     r"^update_normalized_state",
                     r"^post_ingest_pipelines",
                     r"^update_managed_views_all",

@@ -40,7 +40,7 @@ from recidiviz.ingest.direct.views.view_config import (
     get_view_builders_for_views_to_update as get_direct_ingest_view_builders,
 )
 from recidiviz.ingest.views.view_config import (
-    VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE as INGEST_METADATA_VIEW_BUILDERS,
+    get_view_builders_for_views_to_update as get_ingest_infra_view_builders,
 )
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.source_tables.collect_all_source_table_configs import (
@@ -66,7 +66,7 @@ def _all_deployed_view_builders() -> List[BigQueryViewBuilder]:
             get_direct_ingest_view_builders(),
             EXPERIMENTS_VIEW_BUILDERS,
             EXTERNALLY_SHARED_VIEW_BUILDERS,
-            INGEST_METADATA_VIEW_BUILDERS,
+            get_ingest_infra_view_builders(),
             STATE_VIEW_BUILDERS,
             get_task_eligibility_view_builders(),
             get_validation_view_builders(),
@@ -147,6 +147,8 @@ DEPLOYED_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED: Set[str] = {
     "sentence_sessions",
     "sentencing_views",
     "spark_public_output_data_most_recent",
+    "state",
+    "state_views",
     "shared_metric_views",
     "task_eligibility",
     "task_eligibility_candidates_general",

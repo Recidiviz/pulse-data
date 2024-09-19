@@ -44,7 +44,7 @@ from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.validation.views.view_config import (
     CROSS_PROJECT_VALIDATION_VIEW_BUILDERS,
 )
-from recidiviz.view_registry.deployed_views import all_deployed_view_builders
+from recidiviz.view_registry.deployed_views import deployed_view_builders
 
 DEFAULT_TEMPORARY_TABLE_EXPIRATION = 60 * 60 * 1000  # 1 hour
 
@@ -138,13 +138,8 @@ class BaseViewGraphTest(BigQueryEmulatorTestCase):
                 "Must specify project id when running the view graph validation test"
             )
 
-        view_builders_to_update = [
-            view_builder
-            for view_builder in all_deployed_view_builders()
-            if view_builder.should_deploy_in_project(project_id=cls.project_id)
-        ]
-
         with local_project_id_override(cls.project_id):
+            view_builders_to_update = deployed_view_builders()
             dag_walker = BigQueryViewDagWalker(
                 [view_builder.build() for view_builder in view_builders_to_update]
             )

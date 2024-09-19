@@ -451,22 +451,30 @@ class ViewDagInvariantTests(unittest.TestCase):
         """Checks that each view is using the materialized version of a parent view, if
         one exists."""
         views_with_issues = {}
+
+        table_for_query_to_view = {
+            view.table_for_query: view for view in self.dag_walker.views
+        }
+
         for view in self.dag_walker.views:
             node = self.dag_walker.node_for_view(view)
             should_be_materialized_addresses = set()
             for parent_table_address in node.parent_tables:
-                if parent_table_address.table_id.endswith("_materialized"):
-                    # This address is already materialized
+                if parent_table_address in table_for_query_to_view:
+                    # This is an address of a table materialized from a view or a view
+                    # that is not materialized
                     continue
                 if parent_table_address in node.source_addresses:
                     continue
                 parent_view: BigQueryView = self.dag_walker.view_for_address(
                     parent_table_address
                 )
-                if parent_view.materialized_address is not None:
-                    should_be_materialized_addresses.add(
-                        parent_view.materialized_address
+                if parent_view.materialized_address is None:
+                    raise ValueError(
+                        f"Expected view [{view.address.to_str()}] to have a "
+                        f"materialized address if we have made it to this point"
                     )
+                should_be_materialized_addresses.add(parent_view.materialized_address)
             if should_be_materialized_addresses:
                 views_with_issues[view.address] = should_be_materialized_addresses
 

@@ -41,6 +41,7 @@ from recidiviz.calculator.query.state.dataset_config import (
     IMPACT_REPORTS_DATASET_ID,
     POPULATION_PROJECTION_DATASET,
     SPARK_OUTPUT_DATASET_MOST_RECENT,
+    STATE_BASE_VIEWS_DATASET,
 )
 from recidiviz.calculator.query.state.views.analyst_data.early_discharge_reports_per_officer import (
     EARLY_DISCHARGE_REPORTS_PER_OFFICER_VIEW_BUILDER,
@@ -151,6 +152,10 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.dataset_config import raw_latest_views_dataset_for_region
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.metrics.export.export_config import VIEW_COLLECTION_EXPORT_INDEX
+from recidiviz.persistence.entity.entities_bq_schema import (
+    get_bq_schema_for_entities_module,
+)
+from recidiviz.persistence.entity.state import entities as state_entities
 from recidiviz.task_eligibility.candidate_populations.general.non_temporary_custody_incarceration_population import (
     VIEW_BUILDER as NON_TEMPORARY_CUSTODY_INCARCERATION_POPULATION_VIEW_BUILDER,
 )
@@ -179,13 +184,23 @@ LOOKER_REFERENCED_ADDRESSES: Set[BigQueryAddress] = {
 # as possible when updating this list, including a point of contact and date we were
 # still using this view where possible.
 UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
+    **{
+        BigQueryAddress(
+            dataset_id=STATE_BASE_VIEWS_DATASET,
+            table_id=f"{table_id}_view",
+        ): (
+            "These views materialize to form the `state` dataset which should not be "
+            "referenced by any downstream view (Anna Geiduschek, 2024-09-18)"
+        )
+        for table_id in get_bq_schema_for_entities_module(state_entities)
+    },
     CONSECUTIVE_SENTENCES_VIEW_BUILDER.address: (
         "This is going to be used in revamped sessions views that referenced the sentencing v2 schema "
         "(Nick Tallant, 2024-09-11)"
     ),
     ASSESSMENT_LSIR_SCORING_KEY_VIEW_BUILDER.address: (
         "This is a generic view that helps understand LSI-R scoring which may be "
-        "useful for future analysis. (Anna 5/16/24"
+        "useful for future analysis. (Anna 5/16/24)"
     ),
     EARLY_DISCHARGE_REPORTS_PER_OFFICER_VIEW_BUILDER.address: (
         "This view aggregates early discharge stats at the officer-level. It is used "

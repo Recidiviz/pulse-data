@@ -62,7 +62,7 @@ from recidiviz.calculator.query.state.views.workflows.firestore.firestore_views 
 )
 from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath
 from recidiviz.common.constants.states import StateCode
-from recidiviz.ingest.views.view_config import INGEST_METADATA_BUILDERS
+from recidiviz.ingest.views.view_config import collect_ingest_metadata_view_builders
 from recidiviz.utils import metadata
 from recidiviz.utils.string import StrictStringFormatter
 from recidiviz.validation.views.view_config import VALIDATION_METADATA_BUILDERS
@@ -195,7 +195,7 @@ EXPORT_ATLAS_TO_ID = {StateCode.US_IX.value: StateCode.US_ID.value}
 _VIEW_COLLECTION_EXPORT_CONFIGS: List[ExportViewCollectionConfig] = [
     # Ingest metadata views for admin panel
     ExportViewCollectionConfig(
-        view_builders_to_export=INGEST_METADATA_BUILDERS,
+        view_builders_to_export=collect_ingest_metadata_view_builders(),
         output_directory_uri_template=INGEST_METADATA_OUTPUT_DIRECTORY_URI,
         export_name="INGEST_METADATA",
         # This collection has empty files for state employment period views in staging (as of 2022-11-09)
