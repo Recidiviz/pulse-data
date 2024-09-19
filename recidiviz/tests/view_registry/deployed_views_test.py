@@ -74,9 +74,6 @@ from recidiviz.validation.views.dataset_config import (
 from recidiviz.validation.views.dataset_config import (
     VIEWS_DATASET as VALIDATION_VIEWS_DATASET,
 )
-from recidiviz.validation.views.state.primary_keys_unique_across_all_states import (
-    PRIMARY_KEYS_UNIQUE_ACROSS_ALL_STATES_VIEW_BUILDER,
-)
 from recidiviz.view_registry.deployed_views import (
     all_deployed_view_builders,
     deployed_view_builders,
@@ -536,32 +533,21 @@ The following views have less restrictive projects_to_deploy than their parents:
 
     def test_views_only_query_from_allowed_datasets(self) -> None:
         """Test that ensures that views in our view graph only reference valid datasets."""
-        disallowed_view_parent_datasets_with_exemptions = {
+        disallowed_view_parent_datasets = {
             # The `state` dataset is a data pipeline intermediate output and should only
-            # be used for debugging purposes with the following exemptions. Views should
-            # use the `normalized_state` dataset instead.
-            STATE_BASE_DATASET: {
-                # This validation checks both state and normalized_state
-                PRIMARY_KEYS_UNIQUE_ACROSS_ALL_STATES_VIEW_BUILDER.address,
-            },
+            # be used for debugging purposes. Views should use the `normalized_state`
+            # dataset instead.
+            STATE_BASE_DATASET,
             # The `operations` dataset shows a potentially stale view of data platform
             # operations data and should only be used for debugging / one-off analysis
             # purposes.
-            OPERATIONS_BASE_DATASET: {},
+            OPERATIONS_BASE_DATASET,
         }
         views_with_issues = defaultdict(set)
         for view in self.dag_walker.views:
             for parent_address in view.parent_tables:
                 parent_dataset = parent_address.dataset_id
-                if (
-                    parent_dataset
-                    not in disallowed_view_parent_datasets_with_exemptions
-                ):
-                    continue
-                exemptions = disallowed_view_parent_datasets_with_exemptions[
-                    parent_dataset
-                ]
-                if view.address in exemptions:
+                if parent_dataset not in disallowed_view_parent_datasets:
                     continue
                 views_with_issues[parent_dataset].add(view.address)
 
