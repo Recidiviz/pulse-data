@@ -17,6 +17,46 @@
 /* File containing functions that construct SQL Queries used in CreateReport.gs. */
 
 /**
+ * Construct MAU Text
+ * Given parameters provided by the user, constructs a query string and call RunQuery
+ * to query the BiqQuery database. Fetches and returns the total number of distinct active users and distinct registered users for the given workflow
+ * @param {string} stateCode The state code passed in from the Google Form (ex: 'US_MI')
+ * @param {string} endDateString The end date passed from the connected Google Form on form submit (ex: '2023-03-01')
+ * @param {string} completionEventType The completion event type of the workflow (what we call it in the database)
+ * @returns {map} an object that contains the number of distinctActiveUsers and distinctRegisteredUsers
+ **/
+function constructMauText(stateCode, endDateString, completionEventType) {
+  const mauColumn = `distinct_active_users_${completionEventType.toLowerCase()}`;
+  const mauTable = `justice_involved_state_month_aggregated_metrics_materialized`;
+
+  const queryString = `
+    SELECT
+      ${mauColumn},
+      distinct_registered_users
+    FROM \`impact_reports.${mauTable}\`
+    WHERE state_code = '${stateCode}'
+    AND end_date = '${endDateString}'`;
+
+  const queryOutput = runQuery(queryString)[0];
+  const queryOutputLength = queryOutput.length;
+  if (queryOutputLength !== 2) {
+    throw new Error(
+      `Expected 2 columns in query output, but got length: ${queryOutputLength}. Query output: ${queryOutput}.`
+    );
+  }
+
+  const distinctActiveUsers = parseInt(queryOutput[0]);
+  const distinctRegisteredUsers = parseInt(queryOutput[1]);
+  Logger.log("Distinct Active Users: %s", distinctActiveUsers);
+  Logger.log("Distinct Registered Users: %s", distinctRegisteredUsers);
+
+  return {
+    distinctActiveUsers: distinctActiveUsers,
+    distinctRegisteredUsers: distinctRegisteredUsers,
+  };
+}
+
+/**
  * Get start date
  * Query the Big Query database for the start_date.
  * @param {string} stateCode The state code passed in from the Google Form (ex: 'US_MI')
