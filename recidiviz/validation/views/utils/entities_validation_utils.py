@@ -15,19 +15,13 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Utils for writing validations for the normalization pipelines."""
-from typing import List, Tuple, Type
+from typing import List, Type
 
-from recidiviz.calculator.query.state.dataset_config import (
-    NORMALIZED_STATE_DATASET,
-    STATE_BASE_DATASET,
-)
-from recidiviz.persistence.database import schema_utils
 from recidiviz.persistence.entity import entity_utils
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.entities_bq_schema import (
     get_bq_schema_for_entity_table,
 )
-from recidiviz.persistence.entity.state import entities as state_entities
 from recidiviz.persistence.entity.state import normalized_entities
 from recidiviz.persistence.entity.state.normalized_state_entity import (
     NormalizedStateEntity,
@@ -44,10 +38,10 @@ SELECT_FROM_NORMALIZED_ENTITY_TABLE_TEMPLATE = (
 PRIMARY_KEYS_UNIQUE_ACROSS_ALL_STATES_QUERY_TEMPLATE = """
 SELECT
     'ALL' AS region_code,
-    '{normalized_suffix}{table_id}' AS entity_name,
+    '{table_id}' AS entity_name,
     COUNT(*) as total_count,
     COUNT(DISTINCT({id_column})) as distinct_id_count
-FROM `{{project_id}}.{state_dataset}.{table_id}`
+FROM `{{project_id}}.normalized_state.{table_id}`
 GROUP BY 1, 2
 """
 
@@ -59,12 +53,10 @@ def unique_primary_keys_values_across_all_states_query() -> str:
 
     # Sort classes by name to produce a deterministic query string
     for entity_cls in sorted(
-        entity_utils.get_all_entity_classes_in_module(state_entities),
+        entity_utils.get_all_entity_classes_in_module(normalized_entities),
         key=lambda cls: cls.__name__,
     ):
-        table_id = schema_utils.get_state_database_entity_with_name(
-            entity_cls.__name__
-        ).__tablename__
+        table_id = entity_cls.get_table_id()
         id_column = entity_cls.get_class_id_name()
 
         entity_sub_queries.append(
@@ -72,35 +64,10 @@ def unique_primary_keys_values_across_all_states_query() -> str:
                 PRIMARY_KEYS_UNIQUE_ACROSS_ALL_STATES_QUERY_TEMPLATE,
                 table_id=table_id,
                 id_column=id_column,
-                state_dataset=STATE_BASE_DATASET,
-                normalized_suffix="",
-            )
-        )
-
-        entity_sub_queries.append(
-            StrictStringFormatter().format(
-                PRIMARY_KEYS_UNIQUE_ACROSS_ALL_STATES_QUERY_TEMPLATE,
-                table_id=table_id,
-                id_column=id_column,
-                state_dataset=NORMALIZED_STATE_DATASET,
-                normalized_suffix="normalized_",
             )
         )
 
     return "\nUNION ALL\n".join(entity_sub_queries)
-
-
-def _table_id_and_id_column_for_normalized_state_entity(
-    normalized_entity_class: Type[NormalizedStateEntity],
-) -> Tuple[str, str]:
-    base_class_name = normalized_entity_class.base_class_name()
-    base_schema_class = schema_utils.get_state_database_entity_with_name(
-        base_class_name
-    )
-    base_entity_class = entity_utils.get_entity_class_in_module_with_name(
-        entities_module=state_entities, class_name=base_class_name
-    )
-    return base_schema_class.__tablename__, base_entity_class.get_class_id_name()
 
 
 def _validate_normalized_entity_has_all_fields(
@@ -144,9 +111,8 @@ def validation_query_for_normalized_entity(
         normalized_entity_class, additional_columns_to_select
     )
 
-    table_id, id_column = _table_id_and_id_column_for_normalized_state_entity(
-        normalized_entity_class
-    )
+    table_id = assert_subclass(normalized_entity_class, Entity).get_table_id()
+    id_column = assert_subclass(normalized_entity_class, Entity).get_class_id_name()
 
     query = StrictStringFormatter().format(
         SELECT_FROM_NORMALIZED_ENTITY_TABLE_TEMPLATE,

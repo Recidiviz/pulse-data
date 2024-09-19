@@ -30,7 +30,7 @@ PRIMARY_KEYS_UNIQUE_ACROSS_ALL_STATES_VIEW_NAME = (
 )
 
 PRIMARY_KEYS_UNIQUE_ACROSS_ALL_STATES_DESCRIPTION = """Checks whether across all states,
-entities in both the state and normalized_state datasets have unique primary keys."""
+entities in the normalized_state datasets have unique primary keys."""
 
 PRIMARY_KEYS_UNIQUE_ACROSS_ALL_STATES_QUERY_TEMPLATE = f"""
 {unique_primary_keys_values_across_all_states_query()}
