@@ -159,3 +159,15 @@ function getIndexOfElementToReplace(body, elementType, textToMatch) {
 
   return childIdx;
 }
+
+
+/**
+ * Calculate active users percent
+ * Helper function to calculate the percent of active users based on the number of active users and the number of registered users for a given workflow
+ * @param {Number} activeUsers The number of active users for the given workflow
+ * @param {Number} registeredUsers The number of registered users for the given workflow
+ * @returns {string} The percent of active users rounded to two decimal places
+ */
+function calculateActiveUsersPercent(activeUsers, registeredUsers) {
+  return ((activeUsers / registeredUsers) * 100).toFixed(2);
+}
