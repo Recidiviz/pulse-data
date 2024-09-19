@@ -397,10 +397,12 @@ def create_calculation_dag() -> None:
     )
 
     # This ensures that all of the ingest pipelines for a state will
-    # run and the normalized_state dataset will be updated before the
-    # metric pipelines for the state are triggered.
+    # run before the metric pipelines for the state are triggered.
     (
-        update_normalized_state_dataset
+        [
+            update_big_query_table_schemata,
+            ingest_completed,
+        ]
         >> post_ingest_pipelines
         >> post_ingest_pipelines_completed
     )
