@@ -23,9 +23,11 @@ data "google_secret_manager_secret_version" "po_report_cdn_static_ip" {
   secret = "po_report_cdn_static_IP"
 }
 
+# TODO(#33506): Upgrade this function to a 2nd gen function. Docs:
+#  https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/cloudfunctions2_function
 resource "google_cloudfunctions_function" "trigger_calculation_dag" {
   name          = "trigger_calculation_dag"
-  runtime       = "python38"
+  runtime       = "python311"
   max_instances = 3000
 
   labels = {
@@ -50,11 +52,11 @@ resource "google_cloudfunctions_function" "trigger_calculation_dag" {
   }
 }
 
-
-
+# TODO(#33506): Upgrade this function to a 2nd gen function. Docs:
+#  https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/cloudfunctions2_function
 resource "google_cloudfunctions_function" "trigger_hourly_monitoring_dag" {
   name          = "trigger_hourly_monitoring_dag"
-  runtime       = "python38"
+  runtime       = "python311"
   max_instances = 3000
 
   labels = {
@@ -79,9 +81,11 @@ resource "google_cloudfunctions_function" "trigger_hourly_monitoring_dag" {
   }
 }
 
+# TODO(#33506): Upgrade this function to a 2nd gen function. Docs:
+#  https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/cloudfunctions2_function
 resource "google_cloudfunctions_function" "trigger_sftp_dag" {
   name          = "trigger_sftp_dag"
-  runtime       = "python38"
+  runtime       = "python311"
   max_instances = 3000
 
   labels = {
@@ -106,9 +110,11 @@ resource "google_cloudfunctions_function" "trigger_sftp_dag" {
   }
 }
 
+# TODO(#33506): Upgrade this function to a 2nd gen function. Docs:
+#  https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/cloudfunctions2_function
 resource "google_cloudfunctions_function" "trigger_raw_data_import_dag" {
   name          = "trigger_raw_data_import_dag"
-  runtime       = "python38"
+  runtime       = "python311"
   max_instances = 3000
 
   labels = {
