@@ -126,7 +126,9 @@ def get_preview(
     raise ValueError("No case note generated.")
 
 
-def exact_match_json_data_to_results(json_data: Dict[str, Any]) -> Dict[str, Any]:
+def exact_match_json_data_to_results(
+    document_id: str, json_data: Dict[str, Any]
+) -> Dict[str, Any]:
     """Converts a jsonData dict (the format stored in BigQuery) into a Results dict (the
     format this endpoint returns).
 
@@ -141,7 +143,7 @@ def exact_match_json_data_to_results(json_data: Dict[str, Any]) -> Dict[str, Any
         * note_mode
     """
     return {
-        "document_id": json_data.get("note_id", None),
+        "document_id": document_id,
         "date": json_data.get("note_date", None),
         "contact_mode": json_data.get("note_mode", None),
         "note_type": json_data.get("note_type", None),
@@ -311,8 +313,8 @@ async def case_note_search(
             # Exact matches are formatted as jsonData currently, and need to be
             # reformatted as Results.
             exact_match_results = [
-                exact_match_json_data_to_results(json_data)
-                for json_data in exact_match_json_data.values()
+                exact_match_json_data_to_results(document_id, json_data)
+                for document_id, json_data in exact_match_json_data.items()
             ]
 
             # Sort the exact matches in reverse chronological order
