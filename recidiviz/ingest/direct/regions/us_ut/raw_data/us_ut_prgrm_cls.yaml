@@ -1,0 +1,21 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: prgrm_cls
+file_description: |-
+  Program Cls
+data_classification: source
+primary_key_cols:
+  - cls_id
+  - prgrm_id
+columns:
+  - name: cls_id
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: prgrm_id
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: prgrm_lvl_desc
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: vld_flg
+    description: |-
+      TODO(#33372): Fill in column description

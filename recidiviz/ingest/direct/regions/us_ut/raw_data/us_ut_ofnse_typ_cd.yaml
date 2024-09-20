@@ -1,0 +1,21 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: ofnse_typ_cd
+file_description: |-
+  Offense Type Code. Small table that links into ofnse_cd, allows for categorization of
+  offenses by type (Person, Sex, Driving, etc.).
+data_classification: source
+primary_key_cols:
+  - ofnse_typ_cd
+columns:
+  - name: ofnse_typ_cd
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: sbstnc_clfn_cd
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: ofnse_typ_desc
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: vld_flg
+    description: |-
+      TODO(#33372): Fill in column description

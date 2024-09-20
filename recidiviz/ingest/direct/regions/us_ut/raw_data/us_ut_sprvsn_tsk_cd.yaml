@@ -1,0 +1,20 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: sprvsn_tsk_cd
+file_description: |-
+  Supervision Task Code
+data_classification: source
+primary_key_cols:
+  - sprvsn_tsk_cd
+columns:
+  - name: sprvsn_tsk_cd
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: sprvsn_tsk_grp_cd
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: sprvsn_tsk_desc
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: vld_flg
+    description: |-
+      TODO(#33372): Fill in column description

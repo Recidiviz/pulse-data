@@ -1,0 +1,20 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: assess_tst_apprvl
+file_description: |-
+  Assessment Test Approval
+data_classification: source
+primary_key_cols:
+  - id
+columns:
+  - name: id
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: assess_tst_id
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: _order
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: assess_apprvl_options_id
+    description: |-
+      TODO(#33372): Fill in column description

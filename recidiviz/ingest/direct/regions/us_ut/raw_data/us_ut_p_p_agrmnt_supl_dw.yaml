@@ -1,0 +1,16 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: p_p_agrmnt_supl_dw
+file_description: |-
+  P P Agrmnt Supl Dw
+data_classification: source
+primary_key_cols:
+  - p_p_agrmnt_cat_cd
+  - p_p_supl_dw_name
+columns:
+  - name: p_p_agrmnt_cat_cd
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: p_p_supl_dw_name
+    description: |-
+      TODO(#33372): Fill in column description
+    is_pii: True

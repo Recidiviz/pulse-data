@@ -1,0 +1,91 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: ofndr
+file_description: |-
+  Offender
+data_classification: source
+primary_key_cols:
+  - ofndr_num
+is_primary_person_table: True
+columns:
+  - name: ofndr_num
+    description: |-
+      TODO(#33372): Fill in column description
+    field_type: person_external_id
+    external_id_type: US_UT_DOC
+    is_primary_for_external_id_type: True
+    is_pii: True
+  - name: eye_color_cd
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: hair_color_cd
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: mrtl_stat_cd
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: race_cd
+    description: |-
+      TODO(#33372): Fill in column description
+    is_pii: True
+  - name: rlgn_cd
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: sex
+    description: |-
+      TODO(#33372): Fill in column description
+    is_pii: True
+  - name: ht_ft
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: ht_in
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: wt_lb
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: ethnic_cd_ncic
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: immgrtn_stat
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: cmt_rec_flg
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: lgl_juris_typ
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: czn_ctry_cd
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: ofndr_photo
+    description: |-
+      TODO(#33372): Fill in column description
+    is_pii: True
+  - name: escape_flg
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: abscond_flg
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: juv_inst_flg
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: juris_st_cd
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: mntl_inst_flg
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: utah_sid
+    description: |-
+      TODO(#33372): Fill in column description
+    is_pii: True
+  - name: updt_usr_id
+    description: |-
+      ID of user who most recently updated this record
+    is_pii: True
+  - name: updt_dt
+    description: |-
+      Timestamp of when this record was most recently updated
+    field_type: datetime

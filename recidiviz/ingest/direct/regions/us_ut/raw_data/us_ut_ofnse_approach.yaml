@@ -1,0 +1,27 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: ofnse_approach
+file_description: |-
+  Offense Approach
+data_classification: source
+primary_key_cols:
+  - sex_ofndr_reg_id
+  - sex_ofnse_id
+  - approach_cd
+columns:
+  - name: sex_ofndr_reg_id
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: sex_ofnse_id
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: approach_cd
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: updt_usr_id
+    description: |-
+      ID of user who most recently updated this record
+    is_pii: True
+  - name: updt_dt
+    description: |-
+      Timestamp of when this record was most recently updated
+    field_type: datetime

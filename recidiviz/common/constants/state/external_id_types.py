@@ -165,3 +165,6 @@ US_TX_SID = "US_TX_SID"
 US_TX_EMAIL = "US_TX_EMAIL"
 # Identifier for the type of state staff id provided by the TDCJ
 US_TX_STAFF_ID = "US_TX_STAFF_ID"
+
+# UT DOC ID
+US_UT_DOC = "US_UT_DOC"

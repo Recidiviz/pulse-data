@@ -1,0 +1,28 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: crime_degree_cd
+file_description: |-
+  Crime Degree Code. This table controls essentially all of the "Crime Degree" dropdowns
+  throughtout their many locations in the application, tying a crime_degree_cd (such as
+  F1, MA, or MB) to a description and severity level.
+data_classification: source
+primary_key_cols:
+  - crime_degree_cd
+columns:
+  - name: crime_degree_cd
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: crime_degree_desc
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: severity_lvl
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: no_30yr_lmt_flg
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: juv_flg
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: vld_flg
+    description: |-
+      TODO(#33372): Fill in column description

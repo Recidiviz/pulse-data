@@ -893,6 +893,48 @@ from recidiviz.pipelines.utils.state_utils.us_tx.us_tx_violation_response_normal
 from recidiviz.pipelines.utils.state_utils.us_tx.us_tx_violations_delegate import (
     UsTxViolationDelegate,
 )
+from recidiviz.pipelines.utils.state_utils.us_ut.us_ut_assessment_normalization_delegate import (
+    UsUtAssessmentNormalizationDelegate,
+)
+from recidiviz.pipelines.utils.state_utils.us_ut.us_ut_commitment_from_supervision_utils import (
+    UsUtCommitmentFromSupervisionDelegate,
+)
+from recidiviz.pipelines.utils.state_utils.us_ut.us_ut_incarceration_delegate import (
+    UsUtIncarcerationDelegate,
+)
+from recidiviz.pipelines.utils.state_utils.us_ut.us_ut_incarceration_metrics_producer_delegate import (
+    UsUtIncarcerationMetricsProducerDelegate,
+)
+from recidiviz.pipelines.utils.state_utils.us_ut.us_ut_incarceration_period_normalization_delegate import (
+    UsUtIncarcerationNormalizationDelegate,
+)
+from recidiviz.pipelines.utils.state_utils.us_ut.us_ut_normalization_delegate import (
+    UsUtNormalizationDelegate,
+)
+from recidiviz.pipelines.utils.state_utils.us_ut.us_ut_recidivism_metrics_producer_delegate import (
+    UsUtRecidivismMetricsProducerDelegate,
+)
+from recidiviz.pipelines.utils.state_utils.us_ut.us_ut_sentence_normalization_delegate import (
+    UsUtSentenceNormalizationDelegate,
+)
+from recidiviz.pipelines.utils.state_utils.us_ut.us_ut_staff_role_period_normalization_delegate import (
+    UsUtStaffRolePeriodNormalizationDelegate,
+)
+from recidiviz.pipelines.utils.state_utils.us_ut.us_ut_supervision_delegate import (
+    UsUtSupervisionDelegate,
+)
+from recidiviz.pipelines.utils.state_utils.us_ut.us_ut_supervision_metrics_producer_delegate import (
+    UsUtSupervisionMetricsProducerDelegate,
+)
+from recidiviz.pipelines.utils.state_utils.us_ut.us_ut_supervision_period_normalization_delegate import (
+    UsUtSupervisionNormalizationDelegate,
+)
+from recidiviz.pipelines.utils.state_utils.us_ut.us_ut_violation_response_normalization_delegate import (
+    UsUtViolationResponseNormalizationDelegate,
+)
+from recidiviz.pipelines.utils.state_utils.us_ut.us_ut_violations_delegate import (
+    UsUtViolationDelegate,
+)
 from recidiviz.utils.range_querier import RangeQuerier
 
 
@@ -1012,6 +1054,8 @@ def get_state_specific_assessment_normalization_delegate(
         return UsAzAssessmentNormalizationDelegate()
     if state_code == StateCode.US_TX.value:
         return UsTxAssessmentNormalizationDelegate()
+    if state_code == StateCode.US_UT.value:
+        return UsUtAssessmentNormalizationDelegate()
     raise ValueError(f"Unexpected state code [{state_code}]")
 
 
@@ -1059,6 +1103,8 @@ def get_state_specific_incarceration_period_normalization_delegate(
         return UsIdIncarcerationNormalizationDelegate()
     if state_code == StateCode.US_AZ.value:
         return UsAzIncarcerationNormalizationDelegate()
+    if state_code == StateCode.US_UT.value:
+        return UsUtIncarcerationNormalizationDelegate()
     raise ValueError(f"Unexpected state code [{state_code}]")
 
 
@@ -1122,7 +1168,8 @@ def get_state_specific_supervision_period_normalization_delegate(
         return UsAzSupervisionNormalizationDelegate()
     if state_code == StateCode.US_TX.value:
         return UsTxSupervisionNormalizationDelegate()
-
+    if state_code == StateCode.US_UT.value:
+        return UsUtSupervisionNormalizationDelegate()
     raise ValueError(f"Unexpected state code [{state_code}]")
 
 
@@ -1171,6 +1218,8 @@ def get_state_specific_sentence_normalization_delegate(
         return UsAzSentenceNormalizationDelegate()
     if state_code == StateCode.US_TX.value:
         return UsTxSentenceNormalizationDelegate()
+    if state_code == StateCode.US_UT.value:
+        return UsUtSentenceNormalizationDelegate()
     raise ValueError(f"Unexpected state code [{state_code}]")
 
 
@@ -1223,6 +1272,8 @@ def get_state_specific_staff_role_period_normalization_delegate(
         return UsAzStaffRolePeriodNormalizationDelegate()
     if state_code == StateCode.US_TX.value:
         return UsTxStaffRolePeriodNormalizationDelegate()
+    if state_code == StateCode.US_UT.value:
+        return UsUtStaffRolePeriodNormalizationDelegate()
     raise ValueError(f"Unexpected state code [{state_code}]")
 
 
@@ -1270,6 +1321,8 @@ def get_state_specific_commitment_from_supervision_delegate(
         return UsAzCommitmentFromSupervisionDelegate()
     if state_code == StateCode.US_TX.value:
         return UsTxCommitmentFromSupervisionDelegate()
+    if state_code == StateCode.US_UT.value:
+        return UsUtCommitmentFromSupervisionDelegate()
     raise ValueError(f"Unexpected state code [{state_code}]")
 
 
@@ -1317,6 +1370,8 @@ def get_state_specific_violation_delegate(
         return UsAzViolationDelegate()
     if state_code == StateCode.US_TX.value:
         return UsTxViolationDelegate()
+    if state_code == StateCode.US_UT.value:
+        return UsUtViolationDelegate()
     raise ValueError(f"Unexpected state code [{state_code}]")
 
 
@@ -1377,7 +1432,8 @@ def get_state_specific_violation_response_normalization_delegate(
         return UsAzViolationResponseNormalizationDelegate()
     if state_code == StateCode.US_TX.value:
         return UsTxViolationResponseNormalizationDelegate()
-
+    if state_code == StateCode.US_UT.value:
+        return UsUtViolationResponseNormalizationDelegate()
     raise ValueError(f"Unexpected state code [{state_code}]")
 
 
@@ -1425,7 +1481,8 @@ def get_state_specific_incarceration_delegate(
         return UsAzIncarcerationDelegate()
     if state_code == StateCode.US_TX.value:
         return UsTxIncarcerationDelegate()
-
+    if state_code == StateCode.US_UT.value:
+        return UsUtIncarcerationDelegate()
     raise ValueError(f"Unexpected state code [{state_code}]")
 
 
@@ -1473,7 +1530,8 @@ def get_state_specific_supervision_delegate(
         return UsAzSupervisionDelegate()
     if state_code == StateCode.US_TX.value:
         return UsTxSupervisionDelegate()
-
+    if state_code == StateCode.US_UT.value:
+        return UsUtSupervisionDelegate()
     raise ValueError(f"Unexpected state code [{state_code}]")
 
 
@@ -1521,7 +1579,8 @@ def get_state_specific_normalization_delegate(
         return UsOzNormalizationDelegate()
     if state_code == StateCode.US_TX.value:
         return UsTxNormalizationDelegate()
-
+    if state_code == StateCode.US_UT.value:
+        return UsUtNormalizationDelegate()
     raise ValueError(f"Unexpected state code [{state_code}]")
 
 
@@ -1569,7 +1628,8 @@ def _get_state_specific_incarceration_metrics_producer_delegate(
         return UsAzIncarcerationMetricsProducerDelegate()
     if state_code == StateCode.US_TX.value:
         return UsTxIncarcerationMetricsProducerDelegate()
-
+    if state_code == StateCode.US_UT.value:
+        return UsUtIncarcerationMetricsProducerDelegate()
     raise ValueError(f"Unexpected state code [{state_code}]")
 
 
@@ -1617,7 +1677,8 @@ def _get_state_specific_supervision_metrics_producer_delegate(
         return UsAzSupervisionMetricsProducerDelegate()
     if state_code == StateCode.US_TX.value:
         return UsTxSupervisionMetricsProducerDelegate()
-
+    if state_code == StateCode.US_UT.value:
+        return UsUtSupervisionMetricsProducerDelegate()
     raise ValueError(f"Unexpected state code [{state_code}]")
 
 
@@ -1669,5 +1730,6 @@ def _get_state_specific_recidivism_metrics_producer_delegate(
         return UsAzRecidivismMetricsProducerDelegate()
     if state_code == StateCode.US_TX.value:
         return UsTxRecidivismMetricsProducerDelegate()
-
+    if state_code == StateCode.US_UT.value:
+        return UsUtRecidivismMetricsProducerDelegate()
     raise ValueError(f"Unexpected state code [{state_code}]")

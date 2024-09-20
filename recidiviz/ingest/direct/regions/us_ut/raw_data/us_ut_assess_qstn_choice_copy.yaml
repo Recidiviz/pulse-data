@@ -1,0 +1,53 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: assess_qstn_choice_copy
+file_description: |-
+  Assessment Questions Copy Choice
+data_classification: source
+primary_key_cols:
+  - qstn_choice_num
+  - assess_qstn_num
+  - tst_sctn_num
+  - assess_tst_id
+columns:
+  - name: qstn_choice_num
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: assess_qstn_num
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: tst_sctn_num
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: assess_tst_id
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: qstn_choice_desc
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: qstn_choice_extnd_desc
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: qstn_choice_val
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: qstn_tst_val
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: cmt_rqd_flg
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: vld_flg
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: display_typ
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: sprvsr_cntct_flg
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: real_qstn_num
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: real_qstn_score
+    description: |-
+      TODO(#33372): Fill in column description

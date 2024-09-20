@@ -1,0 +1,79 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: ofndr_addr_wrk
+file_description: |-
+  Offender Addr Work
+data_classification: source
+primary_key_cols:
+  - ofndr_addr_id
+columns:
+  - name: ofndr_addr_id
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: input_addr
+    description: |-
+      TODO(#33372): Fill in column description
+    is_pii: True
+  - name: cmt
+    description: |-
+      TODO(#33372): Fill in column description
+    is_pii: True
+  - name: agrc_addr
+    description: |-
+      TODO(#33372): Fill in column description
+    is_pii: True
+  - name: unit
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: city
+    description: |-
+      TODO(#33372): Fill in column description
+    is_pii: True
+  - name: county
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: st_cd
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: zip5
+    description: |-
+      TODO(#33372): Fill in column description
+    is_pii: True
+  - name: lng
+    description: |-
+      TODO(#33372): Fill in column description
+    is_pii: True
+  - name: lat
+    description: |-
+      TODO(#33372): Fill in column description
+    is_pii: True
+  - name: x_coord
+    description: |-
+      TODO(#33372): Fill in column description
+    is_pii: True
+  - name: y_coord
+    description: |-
+      TODO(#33372): Fill in column description
+    is_pii: True
+  - name: score
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: src
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: geocode_dt
+    description: |-
+      TODO(#33372): Fill in column description
+    field_type: datetime
+  - name: stat
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: msg
+    description: |-
+      TODO(#33372): Fill in column description
+    is_pii: True
+  - name: addr_id
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: cnvrt_flg
+    description: |-
+      TODO(#33372): Fill in column description

@@ -1,0 +1,65 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: prgrm_elgblty
+file_description: |-
+  Program Elgblty
+data_classification: source
+primary_key_cols:
+  - prgrm_elgblty_id
+columns:
+  - name: prgrm_elgblty_id
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: ofndr_cap_goal_actn_stp_id
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: sotp_stat_id
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: sotp_prgrm_typ_id
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: ofndr_num
+    description: |-
+      TODO(#33372): Fill in column description
+    field_type: person_external_id
+    external_id_type: US_UT_DOC
+    is_pii: True
+  - name: override_dt
+    description: |-
+      TODO(#33372): Fill in column description
+    field_type: datetime
+  - name: follow_up_dt
+    description: |-
+      TODO(#33372): Fill in column description
+    field_type: datetime
+  - name: priority_move_dt
+    description: |-
+      TODO(#33372): Fill in column description
+    field_type: datetime
+  - name: sotp_pre_trtmnt_flg
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: sotp_spcl_crcmstnc_flg
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: sotp_prgrs_rpt_rcvd_flg
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: elgblty_flg
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: elgblty_note
+    description: |-
+      TODO(#33372): Fill in column description
+    is_pii: True
+  - name: lgl_stat_cd
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: updt_usr_id
+    description: |-
+      ID of user who most recently updated this record
+    is_pii: True
+  - name: updt_dt
+    description: |-
+      Timestamp of when this record was most recently updated
+    field_type: datetime

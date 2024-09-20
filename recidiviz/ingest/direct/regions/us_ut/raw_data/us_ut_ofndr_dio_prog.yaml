@@ -1,0 +1,47 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: ofndr_dio_prog
+file_description: |-
+  Offender Division Of Institutional Operations Program
+data_classification: source
+primary_key_cols:
+  - ofndr_num
+  - prvdr_id
+  - dio_prog_id
+  - prog_rfrl_dt
+  - prog_strt_dt
+columns:
+  - name: ofndr_num
+    description: |-
+      TODO(#33372): Fill in column description
+    field_type: person_external_id
+    external_id_type: US_UT_DOC
+    is_pii: True
+  - name: prvdr_id
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: dio_prog_id
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: prog_rfrl_dt
+    description: |-
+      TODO(#33372): Fill in column description
+    field_type: datetime
+  - name: prog_strt_dt
+    description: |-
+      TODO(#33372): Fill in column description
+    field_type: datetime
+  - name: exit_typ_cd
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: exit_dt
+    description: |-
+      TODO(#33372): Fill in column description
+    field_type: datetime
+  - name: updt_usr_id
+    description: |-
+      ID of user who most recently updated this record
+    is_pii: True
+  - name: updt_dt
+    description: |-
+      Timestamp of when this record was most recently updated
+    field_type: datetime

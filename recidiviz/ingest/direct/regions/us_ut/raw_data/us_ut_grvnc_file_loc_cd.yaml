@@ -1,0 +1,18 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: grvnc_file_loc_cd
+file_description: |-
+  Grievance File Location Code
+data_classification: source
+primary_key_cols:
+  - grvnc_file_loc_cd
+columns:
+  - name: grvnc_file_loc_cd
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: file_loc_desc
+    description: |-
+      TODO(#33372): Fill in column description
+    is_pii: True
+  - name: vld_flg
+    description: |-
+      TODO(#33372): Fill in column description

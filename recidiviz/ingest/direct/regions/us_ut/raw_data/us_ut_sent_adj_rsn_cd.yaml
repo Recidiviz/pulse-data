@@ -1,0 +1,17 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: sent_adj_rsn_cd
+file_description: |-
+  Sent Adj Reason Code
+data_classification: source
+primary_key_cols:
+  - sent_adj_rsn_cd
+columns:
+  - name: sent_adj_rsn_cd
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: sent_adj_desc
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: vld_flg
+    description: |-
+      TODO(#33372): Fill in column description

@@ -1,0 +1,43 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: case_stat
+file_description: |-
+  Case Stat
+data_classification: source
+primary_key_cols:
+  - intr_case_num
+  - stat_beg_dt
+  - stat_beg_tm
+  - end_dt
+columns:
+  - name: intr_case_num
+    description: |-
+      TODO(#33372): Fill in column description
+    is_pii: True
+  - name: stat_beg_dt
+    description: |-
+      TODO(#33372): Fill in column description
+    field_type: datetime
+  - name: stat_beg_tm
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: end_dt
+    description: |-
+      TODO(#33372): Fill in column description
+    field_type: datetime
+  - name: lgl_stat_cd
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: lgl_stat_chg_cd
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: prev_lgl_stat_cd
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: updt_usr_id
+    description: |-
+      ID of user who most recently updated this record
+    is_pii: True
+  - name: updt_dt
+    description: |-
+      Timestamp of when this record was most recently updated
+    field_type: datetime

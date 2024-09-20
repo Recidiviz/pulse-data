@@ -1,0 +1,122 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: ofndr_addr_arch
+file_description: |-
+  Offender Addr Arch
+data_classification: source
+primary_key_cols:
+  - ofndr_addr_id
+columns:
+  - name: ofndr_addr_id
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: ofndr_num
+    description: |-
+      TODO(#33372): Fill in column description
+    field_type: person_external_id
+    external_id_type: US_UT_DOC
+    is_pii: True
+  - name: addr_typ_cd
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: orig_addr_typ_cd
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: addr_strt_dt
+    description: |-
+      TODO(#33372): Fill in column description
+    field_type: datetime
+  - name: addr_end_dt
+    description: |-
+      TODO(#33372): Fill in column description
+    field_type: datetime
+  - name: pssa_unit_cd
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: pssa_range
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: psda_num
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: psda_pre_dir
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: psda_street
+    description: |-
+      TODO(#33372): Fill in column description
+    is_pii: True
+  - name: psda_sfx_cd
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: psda_post_dir
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: city
+    description: |-
+      TODO(#33372): Fill in column description
+    is_pii: True
+  - name: st
+    description: |-
+      TODO(#33372): Fill in column description
+    is_pii: True
+  - name: zip
+    description: |-
+      TODO(#33372): Fill in column description
+    is_pii: True
+  - name: ctry_cd
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: area_cd
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: ph_num
+    description: |-
+      TODO(#33372): Fill in column description
+    is_pii: True
+  - name: vld_addr_flg
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: apt_complex_id
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: mail_addr_flg
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: assgn_zone
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: updt_usr_id
+    description: |-
+      ID of user who most recently updated this record
+    is_pii: True
+  - name: updt_dt
+    description: |-
+      Timestamp of when this record was most recently updated
+    field_type: datetime
+  - name: vrfy_dt
+    description: |-
+      TODO(#33372): Fill in column description
+    field_type: datetime
+  - name: vrfy_usr_id
+    description: |-
+      TODO(#33372): Fill in column description
+    is_pii: True
+  - name: vrfy_rslt_flg
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: vrfy_mthd_cd
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: new_addr_id
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: new_ofndr_addr_hist_id
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: cnvrt_dt
+    description: |-
+      TODO(#33372): Fill in column description
+    field_type: datetime
+  - name: naive_convert_flg
+    description: |-
+      TODO(#33372): Fill in column description

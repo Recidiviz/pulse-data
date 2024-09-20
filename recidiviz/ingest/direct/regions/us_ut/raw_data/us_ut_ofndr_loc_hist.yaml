@@ -1,0 +1,42 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: ofndr_loc_hist
+file_description: |-
+  Offender Location History
+data_classification: source
+primary_key_cols:
+  - ofndr_num
+  - body_loc_cd
+  - assgn_dt
+  - assgn_tm
+columns:
+  - name: ofndr_num
+    description: |-
+      TODO(#33372): Fill in column description
+    field_type: person_external_id
+    external_id_type: US_UT_DOC
+    is_pii: True
+  - name: body_loc_cd
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: assgn_dt
+    description: |-
+      TODO(#33372): Fill in column description
+    field_type: datetime
+  - name: assgn_tm
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: assgn_rsn_cd
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: end_dt
+    description: |-
+      TODO(#33372): Fill in column description
+    field_type: datetime
+  - name: updt_usr_id
+    description: |-
+      ID of user who most recently updated this record
+    is_pii: True
+  - name: updt_dt
+    description: |-
+      Timestamp of when this record was most recently updated
+    field_type: datetime

@@ -1,0 +1,70 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: prsn_sent_len
+file_description: |-
+  Prison Sent Len
+data_classification: source
+primary_key_cols:
+  - ofnse_id
+columns:
+  - name: ofnse_id
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: sent_len_cd
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: ofnse_disp_cd
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: max_yrs
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: max_mos
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: max_days
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: min_yrs
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: min_mos
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: min_days
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: reqd_min_yrs
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: reqd_min_days
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: law_cd
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: life_cat_cd
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: consec_to_ofnse
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: cncrnt_yrs
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: cncrnt_mo
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: cncrnt_day
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: sent_grp_num
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: updt_usr_id
+    description: |-
+      ID of user who most recently updated this record
+    is_pii: True
+  - name: updt_dt
+    description: |-
+      Timestamp of when this record was most recently updated
+    field_type: datetime

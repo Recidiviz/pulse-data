@@ -1,0 +1,42 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: crt_loc
+file_description: |-
+  Court Location. Important table utilized for "Court" dropdown lists throughout the
+  application, including the "Warrant Detail" and "Court Case Detail" screens. One
+  important note on this table is that it has a composite primary key, as there can be
+  multiple types of courts at one location (juvenile, district, justice, etc.)
+data_classification: source
+primary_key_cols:
+  - crt_loc_cd
+  - crt_typ_cd
+columns:
+  - name: crt_loc_cd
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: crt_typ_cd
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: crt_loc_desc
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: crt_frml_name
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: city_cd
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: county_cd
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: crt_loc
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: region_id
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: office
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: vld_flg
+    description: |-
+      TODO(#33372): Fill in column description

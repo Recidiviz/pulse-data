@@ -1,0 +1,52 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: grvnc_infrml_actn
+file_description: |-
+  Grievance Infrml Action
+data_classification: source
+primary_key_cols:
+  - grvnc_id
+columns:
+  - name: grvnc_id
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: grvnc_disp_cd
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: grvnc_file_loc_cd
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: rcvd_file_loc_cd
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: grvnc_rcvd_dt
+    description: |-
+      TODO(#33372): Fill in column description
+    field_type: datetime
+  - name: actn_due_dt
+    description: |-
+      TODO(#33372): Fill in column description
+    field_type: datetime
+  - name: grvnc_fwd_dt
+    description: |-
+      TODO(#33372): Fill in column description
+    field_type: datetime
+  - name: rspns_to_inmate_dt
+    description: |-
+      TODO(#33372): Fill in column description
+    field_type: datetime
+  - name: doc_fwd_to_usr_id
+    description: |-
+      TODO(#33372): Fill in column description
+    is_pii: True
+  - name: grvnc_rtrn_dt
+    description: |-
+      TODO(#33372): Fill in column description
+    field_type: datetime
+  - name: updt_usr_id
+    description: |-
+      ID of user who most recently updated this record
+    is_pii: True
+  - name: updt_dt
+    description: |-
+      Timestamp of when this record was most recently updated
+    field_type: datetime

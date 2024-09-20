@@ -1,0 +1,34 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: grvnc_prblm
+file_description: |-
+  Grievance Prblm
+data_classification: source
+primary_key_cols:
+  - grvnc_prblm_id
+columns:
+  - name: grvnc_prblm_id
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: grvnc_id
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: grvnc_rcvd_dt
+    description: |-
+      TODO(#33372): Fill in column description
+    field_type: datetime
+  - name: sent_to_ofndr_dt
+    description: |-
+      TODO(#33372): Fill in column description
+    field_type: datetime
+  - name: cmt
+    description: |-
+      TODO(#33372): Fill in column description
+    is_pii: True
+  - name: updt_usr_id
+    description: |-
+      ID of user who most recently updated this record
+    is_pii: True
+  - name: updt_dt
+    description: |-
+      Timestamp of when this record was most recently updated
+    field_type: datetime

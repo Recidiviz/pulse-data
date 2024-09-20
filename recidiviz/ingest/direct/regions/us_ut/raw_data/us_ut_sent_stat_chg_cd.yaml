@@ -1,0 +1,14 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: sent_stat_chg_cd
+file_description: |-
+  Sent Stat Chg Code
+data_classification: source
+primary_key_cols:
+  - sent_chg_cd
+columns:
+  - name: sent_chg_cd
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: sent_chg_desc
+    description: |-
+      TODO(#33372): Fill in column description

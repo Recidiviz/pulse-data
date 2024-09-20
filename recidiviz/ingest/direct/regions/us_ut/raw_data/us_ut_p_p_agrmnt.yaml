@@ -1,0 +1,50 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: p_p_agrmnt
+file_description: |-
+  Parole/Probation Agreement
+data_classification: source
+primary_key_cols:
+  - p_p_agrmnt_id
+columns:
+  - name: p_p_agrmnt_id
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: ofndr_num
+    description: |-
+      TODO(#33372): Fill in column description
+    field_type: person_external_id
+    external_id_type: US_UT_DOC
+    is_pii: True
+  - name: prle_sent_id
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: agrmnt_sign_dt
+    description: |-
+      TODO(#33372): Fill in column description
+    field_type: datetime
+  - name: agrmnt_typ_cd
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: agrmnt_end_dt
+    description: |-
+      TODO(#33372): Fill in column description
+    field_type: datetime
+  - name: orig_eff_strt_dt
+    description: |-
+      TODO(#33372): Fill in column description
+    field_type: datetime
+  - name: orig_entry_dt
+    description: |-
+      TODO(#33372): Fill in column description
+    field_type: datetime
+  - name: compact_flg
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: updt_usr_id
+    description: |-
+      ID of user who most recently updated this record
+    is_pii: True
+  - name: updt_dt
+    description: |-
+      Timestamp of when this record was most recently updated
+    field_type: datetime
