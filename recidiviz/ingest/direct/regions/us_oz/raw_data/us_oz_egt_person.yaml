@@ -24,3 +24,4 @@ columns:
     is_pii: True
 separator: "†"
 custom_line_terminator: "‡"
+ignore_quotes: True
