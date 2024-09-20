@@ -39,6 +39,7 @@ from recidiviz.common.constants.operations.direct_ingest_instance_status import 
 )
 from recidiviz.common.constants.operations.direct_ingest_raw_data_resource_lock import (
     DirectIngestRawDataLockActor,
+    DirectIngestRawDataResourceLockResource,
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.gating import is_raw_data_import_dag_enabled
@@ -887,6 +888,9 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
                 [
                     {
                         "lockId": lock.lock_id,
+                        "rawDataInstance": lock.raw_data_source_instance.value,
+                        "lockAcquisitionTime": lock.lock_acquisition_time.isoformat(),
+                        "ttlSeconds": lock.lock_ttl_seconds,
                         "description": lock.lock_description,
                         "resource": lock.lock_resource.value,
                         "released": lock.released,
@@ -897,6 +901,20 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
             ),
             HTTPStatus.OK,
         )
+
+    @bp.route("/api/ingest_operations/resource_locks/metadata")
+    def _get_resource_lock_metadata() -> Tuple[Response, HTTPStatus]:
+        metadata = {
+            "resources": {
+                val.value: description
+                for val, description in DirectIngestRawDataResourceLockResource.get_value_descriptions().items()
+            },
+            "actors": {
+                val.value: description
+                for val, description in DirectIngestRawDataLockActor.get_value_descriptions().items()
+            },
+        }
+        return jsonify(metadata), HTTPStatus.OK
 
     @bp.route(
         "/api/ingest_operations/resource_locks/acquire_all",

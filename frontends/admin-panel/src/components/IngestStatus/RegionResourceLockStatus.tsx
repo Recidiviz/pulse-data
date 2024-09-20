@@ -17,7 +17,11 @@
 
 import { Tooltip } from "antd";
 
-import { RawDataResourceLockActor, ResourceLockStatus } from "../constants";
+import {
+  DirectIngestInstance,
+  RawDataResourceLockActor,
+  ResourceLockStatus,
+} from "./constants";
 
 const ResourceLockStatusComponent = ({
   lock,
@@ -66,6 +70,16 @@ export class RegionResourceLockStatus {
   }) {
     this.primaryLocks = primaryLocks;
     this.secondaryLocks = secondaryLocks;
+  }
+
+  locksForInstance(rawDataInstance: DirectIngestInstance) {
+    if (rawDataInstance === DirectIngestInstance.PRIMARY) {
+      return this.primaryLocks;
+    }
+    if (rawDataInstance === DirectIngestInstance.SECONDARY) {
+      return this.secondaryLocks;
+    }
+    throw new Error(`Unrecognized raw data instance: ${rawDataInstance}`);
   }
 
   private static allLocksFree(locks: ResourceLockStatus[]) {

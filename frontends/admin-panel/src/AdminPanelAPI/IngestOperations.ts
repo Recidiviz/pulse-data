@@ -466,6 +466,10 @@ export const getRawDataInstanceLockStatuses = async (
   );
 };
 
+export const getRawDataResourceLockMetadata = async (): Promise<Response> => {
+  return getResource(`/api/ingest_operations/resource_locks/metadata`);
+};
+
 // Mark instance raw data as invalidated
 export const markInstanceRawDataV2Invalidated = async (
   stateCode: string,
