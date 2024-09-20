@@ -19,7 +19,7 @@ from google.cloud import bigquery
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
-from recidiviz.calculator.query.state.views.sessions.sentence_to_consecutive_parent_sentence import (
+from recidiviz.calculator.query.state.views.sentence_sessions.sentence_to_consecutive_parent_sentence import (
     CONSECUTIVE_SENTENCES_VIEW_BUILDER,
 )
 from recidiviz.persistence.entity.entities_bq_schema import (

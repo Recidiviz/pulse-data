@@ -53,12 +53,12 @@ from recidiviz.calculator.query.state.views.public_dashboard.public_dashboard_vi
 from recidiviz.calculator.query.state.views.reference.reference_views import (
     REFERENCE_VIEW_BUILDERS,
 )
+from recidiviz.calculator.query.state.views.sentence_sessions.sentence_sessions_views import (
+    SENTENCE_SESSIONS_VIEW_BUILDERS,
+)
 from recidiviz.calculator.query.state.views.sentencing.sentencing_views import (
     CASE_INSIGHTS_VIEW_BUILDERS,
     SENTENCING_VIEW_BUILDERS,
-)
-from recidiviz.calculator.query.state.views.sessions.sentence_sessions_views import (
-    SENTENCE_SESSIONS_VIEW_BUILDERS,
 )
 from recidiviz.calculator.query.state.views.sessions.sessions_views import (
     SESSIONS_VIEW_BUILDERS,

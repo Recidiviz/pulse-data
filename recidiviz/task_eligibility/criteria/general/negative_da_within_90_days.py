@@ -23,10 +23,7 @@ from google.cloud import bigquery
 from recidiviz.calculator.query.sessions_query_fragments import (
     create_sub_sessions_with_attributes,
 )
-from recidiviz.calculator.query.state.dataset_config import (
-    NORMALIZED_STATE_DATASET,
-    SESSIONS_DATASET,
-)
+from recidiviz.calculator.query.state.dataset_config import NORMALIZED_STATE_DATASET
 from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateAgnosticTaskCriteriaBigQueryViewBuilder,
@@ -48,10 +45,10 @@ _QUERY_TEMPLATE = f"""
         state_code,
         person_id,
     --find the earliest ALCOHOL_DRUG sentence date for each person 
-        MIN(date_imposed) AS start_date,
-    FROM `{{project_id}}.{{sessions_dataset}}.sentences_preprocessed_materialized` 
+        MIN(imposed_date) AS start_date,
+    FROM `{{project_id}}.sentence_sessions.sentences_and_charges_materialized`
     --exclude very old sentences that have improper parsing of date_imposed from 19XX to 20XX
-    WHERE date_imposed <= CURRENT_DATE('US/Pacific')
+    WHERE imposed_date <= CURRENT_DATE('US/Pacific')
         AND (ncic_category_uniform IN ('Liquor', 'Dangerous Drugs')
         OR ncic_description_uniform IN ('Driving Under Influence Drugs', 'Driving Under Influence Liquor', 'Drugs - Adulterated'))
     GROUP BY state_code, person_id
@@ -111,7 +108,6 @@ VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = StateAgnosticTaskCr
     criteria_name=_CRITERIA_NAME,
     criteria_spans_query_template=_QUERY_TEMPLATE,
     description=_DESCRIPTION,
-    sessions_dataset=SESSIONS_DATASET,
     normalized_state_dataset=NORMALIZED_STATE_DATASET,
     meets_criteria_default=True,
     reasons_fields=[
