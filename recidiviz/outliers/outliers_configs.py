@@ -166,24 +166,6 @@ Denominator is the average daily caseload for the agent over the given time peri
 Denominator is the average daily caseload for the agent over the given time period, including people on both active and admin supervision levels.""",
             ),
         ],
-        deprecated_metrics=[
-            OutliersMetricConfig.build_from_metric(
-                metric=INCARCERATION_STARTS_AND_INFERRED_TECHNICAL_VIOLATION,
-                title_display_name="Technical Incarceration Rate (TPVs)",
-                body_display_name="technical incarceration rate",
-                event_name="technical incarcerations",
-                event_name_singular="technical incarceration",
-                event_name_past_tense="had a technical incarceration",
-                description_markdown="""We consider the movement reason from OMNI to identify whether a Technical or New Crime violation was the reason for returning to prison of all transitions to incarceration from supervision, regardless of whether the final decision was a revocation or sanction admission.
-
-<br />
-There are instances where we observe New Crime violation movement reasons entered after the Technical violation. This appears to be rare and in these cases, the incarceration start would be classified as a Technical violation. 
-For incarceration transitions where we don’t find this information in the movement reasons, we determine whether the most serious violation type among all violations occurring between 14 days after and 24 months before was a technical violation. 
-
-<br />
-Denominator is the average daily caseload for the agent over the given time period, including people on both active and admin supervision levels.""",
-            ),
-        ],
         client_events=[
             OutliersClientEventConfig.build(
                 event=VIOLATIONS, display_name="Violations"
@@ -315,20 +297,6 @@ Denominator is the average daily caseload for the agent over the given time peri
 
 <br />
 Denominator is the average daily caseload for the agent over the given time period.""",
-            ),
-        ],
-        deprecated_metrics=[
-            OutliersMetricConfig.build_from_metric(
-                metric=INCARCERATION_STARTS_AND_INFERRED_TECHNICAL_VIOLATION,
-                # TODO(#31528): Check wording with TTs
-                title_display_name="Technical Incarceration Rate",
-                body_display_name="technical incarceration rate",
-                event_name="technical incarcerations",
-                event_name_singular="technical incarceration",
-                event_name_past_tense="had a technical incarceration",
-                description_markdown="""Transitions to incarceration from supervision due to technical violations, regardless of whether the final decision was a revocation or sanction admission. It is considered a technical incarceration only if the most serious violation type across all violations in the prior 90 days was a technical violation.
-<br />
-Denominator is the average daily caseload for the agent over the given time period""",
             ),
         ],
         client_events=[
