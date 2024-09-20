@@ -419,6 +419,7 @@ class DatapointInterface:
 
     @staticmethod
     def add_report_datapoint(
+        *,
         session: Session,
         inserts: List[schema.Datapoint],
         updates: List[schema.Datapoint],

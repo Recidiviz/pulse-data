@@ -180,16 +180,16 @@ def update_parsers_in_region(
         if original_config.columns != new_columns:
             updated_config = attr.evolve(original_config, columns=new_columns)
             raw_data_config_writer.output_to_file(
-                updated_config,
-                original_config.file_path,
-                default_config.default_encoding,
-                default_config.default_separator,
-                default_config.default_ignore_quotes,
-                default_config.default_always_historical_export,
-                default_config.default_no_valid_primary_keys,
-                default_config.default_line_terminator,
-                default_config.default_update_cadence,
-                default_config.default_import_blocking_validation_exemptions,
+                raw_file_config=updated_config,
+                output_path=original_config.file_path,
+                default_encoding=default_config.default_encoding,
+                default_separator=default_config.default_separator,
+                default_ignore_quotes=default_config.default_ignore_quotes,
+                default_always_historical_export=default_config.default_always_historical_export,
+                default_no_valid_primary_keys=default_config.default_no_valid_primary_keys,
+                default_line_terminator=default_config.default_line_terminator,
+                default_update_cadence=default_config.default_update_cadence,
+                default_import_blocking_validation_exemptions=default_config.default_import_blocking_validation_exemptions,
             )
             print(f"File {original_config.file_tag}: Updates persisted")
 

@@ -71,6 +71,7 @@ class SendGridClientWrapper:
 
     def _create_message(
         self,
+        *,
         to_email: str,
         from_email: str,
         from_email_name: str,
@@ -139,6 +140,7 @@ class SendGridClientWrapper:
 
     def send_message(
         self,
+        *,
         to_email: str,
         from_email: str,
         from_email_name: str,

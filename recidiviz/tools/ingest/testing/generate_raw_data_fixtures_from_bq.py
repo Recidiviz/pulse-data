@@ -62,6 +62,7 @@ from recidiviz.utils.metadata import local_project_id_override
 
 
 def main(
+    *,
     project_id: str,
     region_code: str,
     ingest_view_tag: str,

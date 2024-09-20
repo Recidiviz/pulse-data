@@ -33,6 +33,7 @@ class AgencyInterface:
 
     @staticmethod
     def create_or_update_agency(
+        *,
         session: Session,
         name: str,
         systems: List[schema.System],

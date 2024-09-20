@@ -32,6 +32,9 @@ load-plugins=recidiviz.tools.lint.pylint_checkers
 # Whitelists trusted C, Python extensions outside of the standard library.
 extension-pkg-whitelist=lxml,mypy,numpy
 
+# TODO(#33545) remove this once we have no functions w/ more than 5 non-keyword-required args
+max-positional-arguments=9
+
 [MESSAGES CONTROL]
 
 # Enable the message, report, category or checker with the given id(s). You can

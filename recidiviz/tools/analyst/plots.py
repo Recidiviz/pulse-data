@@ -98,6 +98,7 @@ def add_legend(title: Optional[str] = None) -> None:
 # binned scatterplot function
 def binned_scatterplot(
     df: pd.DataFrame,
+    *,
     x_column: str,
     y_column: str,
     num_bins: Optional[int] = None,

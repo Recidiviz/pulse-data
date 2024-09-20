@@ -129,6 +129,7 @@ def get_coefficient_and_ci(
 
 
 def simulate_and_estimate(
+    *,
     df: pd.DataFrame,
     outcome_column: str,
     unit_of_analysis_column: str,
@@ -193,6 +194,7 @@ def simulate_and_estimate(
 
 
 def simulate_rollout(
+    *,
     df: pd.DataFrame,
     outcome_column: str,
     unit_of_analysis_column: str,
@@ -469,6 +471,7 @@ def simulate_rollout(
 
 
 def get_simulated_power_curve(
+    *,
     iters: int,
     df: pd.DataFrame,
     outcome_column: str,

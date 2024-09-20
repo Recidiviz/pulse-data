@@ -710,6 +710,7 @@ class DirectIngestRawFileConfig:
     @classmethod
     def from_yaml_dict(
         cls,
+        *,
         state_code: StateCode,
         file_tag: str,
         file_path: str,
@@ -1137,19 +1138,19 @@ class DirectIngestRegionRawFileConfig:
                 )
 
             raw_data_configs[file_tag] = DirectIngestRawFileConfig.from_yaml_dict(
-                StateCode(self.region_code.upper()),
-                file_tag,
-                yaml_file_path,
-                default_config.default_encoding,
-                default_config.default_separator,
-                default_config.default_line_terminator,
-                default_config.default_update_cadence,
-                default_config.default_ignore_quotes,
-                default_config.default_always_historical_export,
-                default_config.default_no_valid_primary_keys,
-                default_config.default_infer_columns_from_config,
-                default_config.default_import_blocking_validation_exemptions,
-                yaml_contents,
+                state_code=StateCode(self.region_code.upper()),
+                file_tag=file_tag,
+                file_path=yaml_file_path,
+                default_encoding=default_config.default_encoding,
+                default_separator=default_config.default_separator,
+                default_line_terminator=default_config.default_line_terminator,
+                default_update_cadence=default_config.default_update_cadence,
+                default_ignore_quotes=default_config.default_ignore_quotes,
+                default_always_historical_export=default_config.default_always_historical_export,
+                default_no_valid_primary_keys=default_config.default_no_valid_primary_keys,
+                default_infer_columns_from_config=default_config.default_infer_columns_from_config,
+                default_import_blocking_validation_exemptions=default_config.default_import_blocking_validation_exemptions,
+                file_config_dict=yaml_contents,
             )
         return raw_data_configs
 

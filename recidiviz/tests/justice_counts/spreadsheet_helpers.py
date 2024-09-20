@@ -114,6 +114,7 @@ def _get_dimension_columns(
 
 
 def _create_dataframe_dict(
+    *,
     metricfile: MetricFile,
     reporting_frequency: schema.ReportingFrequency,
     custom_frequency_dict: Optional[Dict[str, schema.ReportingFrequency]] = None,
@@ -204,6 +205,7 @@ def _create_dataframe_dict(
 
 
 def create_excel_file(
+    *,
     system: schema.System,
     file_name: str,
     custom_frequency_dict: Optional[Dict[str, schema.ReportingFrequency]] = None,

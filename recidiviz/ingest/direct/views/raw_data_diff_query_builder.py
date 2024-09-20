@@ -95,6 +95,7 @@ class RawDataDiffQueryBuilder:
 
     def __init__(
         self,
+        *,
         project_id: str,
         state_code: StateCode,
         file_id: int,

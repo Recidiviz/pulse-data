@@ -38,6 +38,7 @@ class CaseNoteSearchRecordInterface:
 
     @staticmethod
     async def write_record(
+        *,
         session: AsyncSession,
         user_external_id: Optional[str] = None,
         client_external_id: Optional[str] = None,

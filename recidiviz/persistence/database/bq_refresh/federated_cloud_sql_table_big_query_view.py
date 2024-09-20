@@ -54,6 +54,7 @@ class FederatedCloudSQLTableBigQueryView(BigQueryView):
 
     def __init__(
         self,
+        *,
         dataset_id: str,
         connection_region: str,
         connection_name: str,

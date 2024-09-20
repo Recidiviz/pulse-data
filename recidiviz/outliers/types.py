@@ -174,6 +174,7 @@ class OutliersMetricConfig:
     @classmethod
     def build_from_metric(
         cls,
+        *,
         metric: OutliersMetric,
         title_display_name: str,
         body_display_name: str,

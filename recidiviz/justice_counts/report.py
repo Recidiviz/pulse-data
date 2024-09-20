@@ -478,6 +478,7 @@ class ReportInterface:
 
     @staticmethod
     def add_or_update_metric(
+        *,
         session: Session,
         inserts: List[schema.Datapoint],
         updates: List[schema.Datapoint],

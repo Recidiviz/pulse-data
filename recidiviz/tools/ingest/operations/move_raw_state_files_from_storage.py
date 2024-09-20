@@ -92,6 +92,7 @@ class MoveFilesFromStorageController:
 
     def __init__(
         self,
+        *,
         source_project_id: str,
         destination_project_id: str,
         source_raw_data_instance: DirectIngestInstance,

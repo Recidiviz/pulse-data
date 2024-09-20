@@ -148,6 +148,7 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
 
     def _find_supervision_events(
         self,
+        *,
         included_result_classes: Set[Type[IdentifierResult]],
         person: NormalizedStatePerson,
         supervision_sentences: List[NormalizedStateSupervisionSentence],
