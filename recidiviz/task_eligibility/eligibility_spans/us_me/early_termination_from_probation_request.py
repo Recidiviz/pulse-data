@@ -25,7 +25,7 @@ from recidiviz.task_eligibility.candidate_populations.general import (
 )
 from recidiviz.task_eligibility.completion_events.general import early_discharge
 from recidiviz.task_eligibility.criteria.general import (
-    no_conviction_within_6_months,
+    no_supervision_violation_within_6_months,
     supervision_level_is_medium_or_lower,
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_me import (
@@ -56,7 +56,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     candidate_population_view_builder=probation_active_supervision_and_supervision_out_of_state_population.VIEW_BUILDER,
     criteria_spans_view_builders=[
         supervision_past_half_full_term_release_date_from_probation_start.VIEW_BUILDER,
-        no_conviction_within_6_months.VIEW_BUILDER,
+        no_supervision_violation_within_6_months.VIEW_BUILDER,
         supervision_level_is_medium_or_lower.VIEW_BUILDER,
         paid_all_owed_restitution.VIEW_BUILDER,
         supervision_is_not_ic_in.VIEW_BUILDER,
