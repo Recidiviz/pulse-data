@@ -107,6 +107,7 @@ legal_status_periods_cte AS (
         USING (ChargeId)
     LEFT JOIN {ind_LegalStatus} ls
         USING (LegalStatusId)
+    WHERE c.OffenderId IS NOT NULL
 )"""
 
 LEGAL_STATUS_PERIODS_INCARCERATION_CTE = """
