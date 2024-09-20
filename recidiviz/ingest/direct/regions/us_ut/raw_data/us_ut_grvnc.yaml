@@ -1,0 +1,45 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: grvnc
+file_description: |-
+  Grievance
+data_classification: source
+primary_key_cols:
+  - grvnc_id
+columns:
+  - name: grvnc_id
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: grvnc_sbjct_cd
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: grvnc_loc_cd
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: grvnc_file_loc_cd
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: ofndr_num
+    description: |-
+      TODO(#33372): Fill in column description
+    field_type: person_external_id
+    external_id_type: US_UT_DOC
+    is_pii: True
+  - name: grvnc_desc
+    description: |-
+      TODO(#33372): Fill in column description
+    is_pii: True
+  - name: grvnc_close_dt
+    description: |-
+      TODO(#33372): Fill in column description
+    field_type: datetime
+  - name: lvl
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: updt_usr_id
+    description: |-
+      ID of user who most recently updated this record
+    is_pii: True
+  - name: updt_dt
+    description: |-
+      Timestamp of when this record was most recently updated
+    field_type: datetime

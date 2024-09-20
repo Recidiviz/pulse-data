@@ -1,0 +1,20 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: prsn_sent_len_typ_cd
+file_description: |-
+  Prison Sent Len Type Code
+data_classification: source
+primary_key_cols:
+  - sent_len_typ_id
+columns:
+  - name: sent_len_typ_id
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: sent_len_typ_desc
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: sort
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: vld_flg
+    description: |-
+      TODO(#33372): Fill in column description

@@ -1,0 +1,37 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: p_p_agrmnt_cond_cd
+file_description: |-
+  Parole/Probation Agreement - Condition Code
+data_classification: source
+primary_key_cols:
+  - p_p_agrmnt_cond_cd
+columns:
+  - name: p_p_agrmnt_cond_cd
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: p_p_agrmnt_cat_cd
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: cond_title
+    description: |-
+      TODO(#33372): Fill in column description
+    is_pii: True
+  - name: cond_desc
+    description: |-
+      TODO(#33372): Fill in column description
+    is_pii: True
+  - name: allegate_desc
+    description: |-
+      TODO(#33372): Fill in column description
+    is_pii: True
+  - name: sort_seq
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: begin_dt
+    description: |-
+      TODO(#33372): Fill in column description
+    field_type: datetime
+  - name: end_dt
+    description: |-
+      TODO(#33372): Fill in column description
+    field_type: datetime

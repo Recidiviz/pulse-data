@@ -1,0 +1,45 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: ofndr_lgl_stat
+file_description: |-
+  Offender Legal Stat
+data_classification: source
+primary_key_cols:
+  - ofndr_num
+  - lgl_stat_cd
+  - stat_beg_dt
+  - stat_beg_tm
+columns:
+  - name: ofndr_num
+    description: |-
+      TODO(#33372): Fill in column description
+    field_type: person_external_id
+    external_id_type: US_UT_DOC
+    is_pii: True
+  - name: lgl_stat_cd
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: stat_beg_dt
+    description: |-
+      TODO(#33372): Fill in column description
+    field_type: datetime
+  - name: stat_beg_tm
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: stat_end_dt
+    description: |-
+      TODO(#33372): Fill in column description
+    field_type: datetime
+  - name: lgl_stat_chg_cd
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: prev_lgl_stat_cd
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: updt_usr_id
+    description: |-
+      ID of user who most recently updated this record
+    is_pii: True
+  - name: updt_dt
+    description: |-
+      Timestamp of when this record was most recently updated
+    field_type: datetime

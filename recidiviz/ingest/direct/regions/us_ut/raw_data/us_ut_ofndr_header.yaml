@@ -1,0 +1,362 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: ofndr_header
+file_description: |-
+  Offender Header. This is a BI type of database table and should be used for reporting
+  only and not software development.  It can also contain incorrect data.
+data_classification: source
+primary_key_cols:
+  - id
+columns:
+  - name: id
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: last_updated
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: ofndr_num
+    description: |-
+      TODO(#33372): Fill in column description
+    field_type: person_external_id
+    external_id_type: US_UT_DOC
+    is_pii: True
+  - name: dflt_full_name
+    description: |-
+      TODO(#33372): Fill in column description
+    is_pii: True
+  - name: prsn_full_name
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: dob
+    description: |-
+      TODO(#33372): Fill in column description
+    is_pii: True
+  - name: birth_city
+    description: |-
+      TODO(#33372): Fill in column description
+    is_pii: True
+  - name: birth_st_cd
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: birth_state
+    description: |-
+      TODO(#33372): Fill in column description
+    is_pii: True
+  - name: birth_ctry_cd
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: birth_country
+    description: |-
+      TODO(#33372): Fill in column description
+    is_pii: True
+  - name: ofndr_ssn
+    description: |-
+      TODO(#33372): Fill in column description
+    is_pii: True
+  - name: last_rfrl_dt
+    description: |-
+      TODO(#33372): Fill in column description
+    field_type: datetime
+  - name: legal_stat_cd
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: legal_status
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: curr_stat_beg_dt_tm
+    description: |-
+      TODO(#33372): Fill in column description
+    field_type: datetime
+  - name: last_prsn_admit_dt
+    description: |-
+      TODO(#33372): Fill in column description
+    field_type: datetime
+  - name: need_spr_agnt_flg
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: last_app_sprvsn_beg_dt
+    description: |-
+      TODO(#33372): Fill in column description
+    field_type: datetime
+  - name: ctry_cd
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: ctry_desc
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: citizen
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: race
+    description: |-
+      TODO(#33372): Fill in column description
+    is_pii: True
+  - name: primary_lang
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: intrptr_reqd
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: std_of_sprvsn
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: classification
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: pml
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: agnt_id
+    description: |-
+      TODO(#33372): This is a staff_external_id but there are duplicates
+    is_pii: True
+  - name: agent
+    description: |-
+      TODO(#33372): Fill in column description
+    is_pii: True
+  - name: agent_email_addr
+    description: |-
+      TODO(#33372): Fill in column description
+    is_pii: True
+  - name: supr_id
+    description: |-
+      TODO(#33372): Fill in column description
+    is_pii: True
+  - name: supr_name
+    description: |-
+      TODO(#33372): Fill in column description
+    is_pii: True
+  - name: supr_email_addr
+    description: |-
+      TODO(#33372): Fill in column description
+    is_pii: True
+  - name: case_manager_id
+    description: |-
+      TODO(#33372): This is a staff_external_id but there are duplicates
+    is_pii: True
+  - name: case_manager
+    description: |-
+      TODO(#33372): Fill in column description
+    is_pii: True
+  - name: case_manager_email_addr
+    description: |-
+      TODO(#33372): Fill in column description
+    is_pii: True
+  - name: next_hearing_dt
+    description: |-
+      TODO(#33372): Fill in column description
+    field_type: datetime
+  - name: hearing_location
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: hearing_typ
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: calendar_flg_id
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: calendar_flg_desc
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: rlse_dt
+    description: |-
+      TODO(#33372): Fill in column description
+    field_type: datetime
+  - name: sched_expire_dt
+    description: |-
+      TODO(#33372): Fill in column description
+    field_type: datetime
+  - name: sched_trmn_dt
+    description: |-
+      TODO(#33372): Fill in column description
+    field_type: datetime
+  - name: pet_dt
+    description: |-
+      TODO(#33372): Fill in column description
+    field_type: datetime
+  - name: lwop
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: expire_life_sent
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: expire_life_sent_dcsn_dt
+    description: |-
+      TODO(#33372): Fill in column description
+    field_type: datetime
+  - name: body_loc_cd
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: location
+    description: |-
+      TODO(#33372): Fill in column description
+    is_pii: True
+  - name: loc_typ_cd
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: loc_typ_desc
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: loc_assgn_dt_tm
+    description: |-
+      TODO(#33372): Fill in column description
+    field_type: datetime
+  - name: physical_location
+    description: |-
+      TODO(#33372): Fill in column description
+    is_pii: True
+  - name: bed_id
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: bed_assignment
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: prsn_dvsn_id
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: prsn_dvsn_name
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: prsn_cmplx_id
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: prsn_cmplx_name
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: prsn_fclty_id
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: prsn_fclty_name
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: prsn_unit_id
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: prsn_unit_name
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: prsn_unit_title
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: mdcl_ptnt_id
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: acuity_strt_dt_tm
+    description: |-
+      TODO(#33372): Fill in column description
+    field_type: datetime
+  - name: medical_acuity
+    description: |-
+      TODO(#33372): Fill in column description
+    is_pii: True
+  - name: mdcl_housing_cd
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: mdcl_housing
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: mdcl_trtmnt_cd
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: mdcl_trtmnt
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: mdcl_mh_lvl_cd
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: mdcl_mh_lvl
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: rh_lvl_title
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: gender
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: sex_ofndr
+    description: |-
+      TODO(#33372): Fill in column description
+    is_pii: True
+  - name: sex_ofndr_beg_dt
+    description: |-
+      TODO(#33372): Fill in column description
+    field_type: datetime
+  - name: sid
+    description: |-
+      TODO(#33372): Fill in column description
+    is_pii: True
+  - name: ice_dtnr
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: ice_dtnr_rcvd_dt
+    description: |-
+      TODO(#33372): Fill in column description
+    field_type: datetime
+  - name: risk_lvl
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: risk_eval_dt
+    description: |-
+      TODO(#33372): Fill in column description
+    field_type: datetime
+  - name: intr_case_num
+    description: |-
+      TODO(#33372): Fill in column description
+    is_pii: True
+  - name: crime_degree_cd
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: crime_degree_desc
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: ofnse_viol_cd
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: ofnse_viol_desc
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: ofnse_typ_cd
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: ofnse_typ_desc
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: atmpt_flg
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: weirdo
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: sprvsn_guidln_init_rnr_id
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: sprvsn_guidln_curr_rnr_id
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: stg_name
+    description: |-
+      TODO(#33372): Fill in column description
+    is_pii: True
+  - name: stg_typ
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: stg_clsfctn
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: stg_moniker
+    description: |-
+      TODO(#33372): Fill in column description
+    is_pii: True
+  - name: stg_apprvd_dt
+    description: |-
+      TODO(#33372): Fill in column description
+    field_type: datetime
+  - name: asam_lvl
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: eval_dt
+    description: |-
+      TODO(#33372): Fill in column description
+    field_type: datetime
+  - name: rfrl_retain_meds
+    description: |-
+      TODO(#33372): Fill in column description

@@ -1,0 +1,35 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: assess_det
+file_description: |-
+  Assessment Details
+data_classification: source
+primary_key_cols:
+  - assess_itm_cd
+  - score_id
+  - assess_id
+  - rsk_need_sctn_cd
+  - rsk_need_typ_cd
+columns:
+  - name: assess_itm_cd
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: score_id
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: assess_id
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: rsk_need_sctn_cd
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: rsk_need_typ_cd
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: updt_usr_id
+    description: |-
+      ID of user who most recently updated this record
+    is_pii: True
+  - name: updt_dt
+    description: |-
+      Timestamp of when this record was most recently updated
+    field_type: datetime

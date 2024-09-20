@@ -1,0 +1,32 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: prsn_sent_len_cd
+file_description: |-
+  Prison Sent Len Code
+data_classification: source
+primary_key_cols:
+  - sent_len_cd
+columns:
+  - name: sent_len_cd
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: crime_degree_cd
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: sent_len_desc
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: min_days
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: max_days
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: reqd_min_days
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: sent_len_typ_id
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: vld_flg
+    description: |-
+      TODO(#33372): Fill in column description

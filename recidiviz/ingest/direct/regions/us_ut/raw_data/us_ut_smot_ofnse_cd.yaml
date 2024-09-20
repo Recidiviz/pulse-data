@@ -1,0 +1,126 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: smot_ofnse_cd
+file_description: |-
+  Smot Offense Code
+data_classification: source
+primary_key_cols:
+  - offense_id
+columns:
+  - name: offense_id
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: violation_code
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: gov_code
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: start_date
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: repeal_date
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: short_desc
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: long_desc
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: category
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: ncic_code
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: aamva_code
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: dl_reportable
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: bci_reportable
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: fta_flag
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: warrant_flag
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: mand_appear_flag
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: spec_process_attr
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: default_severity
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: non_moving_traffic
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: suggested_bail
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: compliance_credit
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: jc_security_srchg
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: statute_code
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: insert_date
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: insert_by
+    description: |-
+      TODO(#33372): Fill in column description
+    is_pii: True
+  - name: pim_id
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: charge_type
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: dna_req
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: offs_violation_code
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: last_modified_date
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: last_modified_user
+    description: |-
+      TODO(#33372): Fill in column description
+    is_pii: True
+  - name: last_modified_agency
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: last_modified_reason
+    description: |-
+      TODO(#33372): Fill in column description
+    is_pii: True
+  - name: charging_language
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: udc_off_type_code
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: full_termination_flag
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: full_termination_eff_dt
+    description: |-
+      TODO(#33372): Fill in column description
+    field_type: datetime
+  - name: odna_collect_at_arrest
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: odna_collect_at_conviction
+    description: |-
+      TODO(#33372): Fill in column description

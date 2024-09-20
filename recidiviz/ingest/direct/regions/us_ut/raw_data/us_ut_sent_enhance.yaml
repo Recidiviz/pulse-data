@@ -1,0 +1,36 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: sent_enhance
+file_description: |-
+  Sent Enhance
+data_classification: source
+primary_key_cols:
+  - ofnse_id
+  - enhance_typ_cd
+columns:
+  - name: ofnse_id
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: enhance_typ_cd
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: enhance_yrs
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: enhance_mos
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: enhance_days
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: cmt
+    description: |-
+      TODO(#33372): Fill in column description
+    is_pii: True
+  - name: updt_usr_id
+    description: |-
+      ID of user who most recently updated this record
+    is_pii: True
+  - name: updt_dt
+    description: |-
+      Timestamp of when this record was most recently updated
+    field_type: datetime

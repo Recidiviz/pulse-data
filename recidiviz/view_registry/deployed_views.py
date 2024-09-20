@@ -239,6 +239,8 @@ DEPLOYED_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED: Set[str] = {
     "us_az_raw_data_up_to_date_views_secondary",
     "us_tx_raw_data_up_to_date_views",
     "us_tx_raw_data_up_to_date_views_secondary",
+    "us_ut_raw_data_up_to_date_views",
+    "us_ut_raw_data_up_to_date_views_secondary",
     "us_co_validation",
     "us_ix_validation",
     "us_ma_validation",

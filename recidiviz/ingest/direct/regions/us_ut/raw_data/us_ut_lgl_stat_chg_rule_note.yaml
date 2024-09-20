@@ -1,0 +1,26 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: lgl_stat_chg_rule_note
+file_description: |-
+  Legal Stat Chg Rule Note
+data_classification: source
+primary_key_cols:
+  - prev_lgl_stat_cd
+  - lgl_stat_cd
+  - lgl_stat_chg_cd
+columns:
+  - name: prev_lgl_stat_cd
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: lgl_stat_cd
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: lgl_stat_chg_cd
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: chg_rule_use_flg
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: chg_rule_note
+    description: |-
+      TODO(#33372): Fill in column description
+    is_pii: True

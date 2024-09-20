@@ -1,0 +1,49 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: pr_crt_sent_match
+file_description: |-
+  Planning/Research - Court Sentence Match
+data_classification: source
+primary_key_cols:
+  - crt_loc_id
+  - crt_case_num
+  - udc_otn
+  - ofndr_num
+  - crt_otn
+  - status
+columns:
+  - name: crt_loc_id
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: crt_case_num
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: udc_otn
+    description: |-
+      TODO(#33372): Fill in column description
+    is_pii: True
+  - name: ofndr_num
+    description: |-
+      TODO(#33372): Fill in column description
+    field_type: person_external_id
+    external_id_type: US_UT_DOC
+    is_pii: True
+  - name: udc_last_name
+    description: |-
+      TODO(#33372): Fill in column description
+    is_pii: True
+  - name: crt_otn
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: status
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: months
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: sent_units
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: crt_last_name
+    description: |-
+      TODO(#33372): Fill in column description
+    is_pii: True
