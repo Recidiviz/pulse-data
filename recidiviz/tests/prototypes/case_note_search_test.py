@@ -195,7 +195,7 @@ class TestCaseNoteFunctions(IsolatedAsyncioTestCase):
             "note_body": "Full case note content.",
         }
         case_note_data_extracted1: Dict[str, Any] = {
-            "document_id": "129",
+            "document_id": "US_ME_1234_129",
             "date": "2024-03-29 11:27:00",
             "contact_mode": "Phone",
             "note_type": "Supervision",
@@ -216,7 +216,7 @@ class TestCaseNoteFunctions(IsolatedAsyncioTestCase):
             "note_body": "Full case note content.",
         }
         case_note_data_extracted2: Dict[str, Any] = {
-            "document_id": "130",
+            "document_id": "US_ME_1234_130",
             "date": "2024-03-30 11:27:00",
             "contact_mode": "Phone",
             "note_type": "Supervision",
@@ -237,7 +237,7 @@ class TestCaseNoteFunctions(IsolatedAsyncioTestCase):
             "note_body": "Full case note content.",
         }
         case_note_data_extracted3: Dict[str, Any] = {
-            "document_id": "131",
+            "document_id": "US_ME_1234_131",
             "date": "2024-03-31 11:27:00",
             "contact_mode": "Phone",
             "note_type": "Supervision",
@@ -310,7 +310,7 @@ class TestCaseNoteFunctions(IsolatedAsyncioTestCase):
             "note_title": None,
         }
         exact_match_extracted1: Dict[str, Any] = {
-            "document_id": "126",
+            "document_id": "US_ME_1234_126",
             "date": "2024-03-26 11:27:00",
             "contact_mode": "Phone",
             "note_type": "Supervision",
@@ -331,7 +331,7 @@ class TestCaseNoteFunctions(IsolatedAsyncioTestCase):
             "note_title": None,
         }
         exact_match_extracted2: Dict[str, Any] = {
-            "document_id": "127",
+            "document_id": "US_ME_1234_127",
             "date": "2024-03-27 11:27:00",
             "contact_mode": "Phone",
             "note_type": "Supervision",
@@ -352,7 +352,7 @@ class TestCaseNoteFunctions(IsolatedAsyncioTestCase):
             "note_title": None,
         }
         exact_match_extracted3: Dict[str, Any] = {
-            "document_id": "128",
+            "document_id": "US_ME_1234_128",
             "date": "2024-03-28 11:27:00",
             "contact_mode": "Phone",
             "note_type": "Supervision",
@@ -373,7 +373,7 @@ class TestCaseNoteFunctions(IsolatedAsyncioTestCase):
             "note_title": None,
         }
         exact_match_extracted4: Dict[str, Any] = {
-            "document_id": "129",
+            "document_id": "US_ME_1234_129",
             "date": "2024-03-29 11:27:00",
             "contact_mode": "Phone",
             "note_type": "Supervision",
@@ -384,7 +384,7 @@ class TestCaseNoteFunctions(IsolatedAsyncioTestCase):
             "case_note": "Full case note content.",
         }
         non_exact_match1: Dict[str, Any] = {
-            "document_id": "130",
+            "document_id": "US_ME_1234_130",
             "date": "2024-03-30 11:27:00",
             "contact_mode": "Phone",
             "note_type": "Supervision",
@@ -395,7 +395,7 @@ class TestCaseNoteFunctions(IsolatedAsyncioTestCase):
             "case_note": "Full case note content.",
         }
         non_exact_match2: Dict[str, Any] = {
-            "document_id": "131",
+            "document_id": "US_ME_1234_131",
             "date": "2024-03-31 11:27:00",
             "contact_mode": "Phone",
             "note_type": "Supervision",
