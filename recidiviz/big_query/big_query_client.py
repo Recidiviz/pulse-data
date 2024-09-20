@@ -40,6 +40,7 @@ from typing import (
 )
 
 import __main__
+import google
 import pandas as pd
 import pytz
 import requests
@@ -117,7 +118,19 @@ def client(project_id: str, region: str) -> bigquery.Client:
                 credentials=AnonymousCredentials(),
             )
         else:
-            new_client = bigquery.Client(project=project_id, location=region)
+            credentials, _default_project = google.auth.default(
+                scopes=[
+                    # This is the default scope for the bigquery.Client
+                    "https://www.googleapis.com/auth/cloud-platform",
+                    # Give access to Google Drive so we can read from tables backed by
+                    # a Google Sheet.
+                    "https://www.googleapis.com/auth/drive",
+                ]
+            )
+
+            new_client = bigquery.Client(
+                project=project_id, location=region, credentials=credentials
+            )
 
         # Update the number of allowed connections to allow for more parallel BQ
         # requests to the same Client. See:
