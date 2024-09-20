@@ -19,10 +19,14 @@
 from typing import List
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
-from recidiviz.calculator.query.state.views.sessions.sentence_to_consecutive_parent_sentence import (
+from recidiviz.calculator.query.state.views.sentence_sessions.sentence_to_consecutive_parent_sentence import (
     CONSECUTIVE_SENTENCES_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.sentence_sessions.sentences_and_charges import (
+    SENTENCES_AND_CHARGES_VIEW_BUILDER,
 )
 
 SENTENCE_SESSIONS_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     CONSECUTIVE_SENTENCES_VIEW_BUILDER,
+    SENTENCES_AND_CHARGES_VIEW_BUILDER,
 ]

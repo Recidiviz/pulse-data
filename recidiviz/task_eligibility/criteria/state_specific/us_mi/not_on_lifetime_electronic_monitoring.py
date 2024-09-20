@@ -23,10 +23,7 @@ from recidiviz.calculator.query.sessions_query_fragments import (
     aggregate_adjacent_spans,
     create_sub_sessions_with_attributes,
 )
-from recidiviz.calculator.query.state.dataset_config import (
-    NORMALIZED_STATE_DATASET,
-    SESSIONS_DATASET,
-)
+from recidiviz.calculator.query.state.dataset_config import NORMALIZED_STATE_DATASET
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.dataset_config import raw_latest_views_dataset_for_region
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
@@ -50,17 +47,17 @@ WITH lifetime_em_sentences AS (
         sp.state_code,
         sp.person_id,
     --find the earliest sentence date w/ lifetime gps flag for each person 
-        MIN(date_imposed) AS start_date,
+        MIN(imposed_date) AS start_date,
         CAST(NULL AS DATE) AS end_date,
         TRUE as is_electronic_monitoring
-    FROM `{{project_id}}.{{sessions_dataset}}.sentences_preprocessed_materialized` sp
+    FROM `{{project_id}}.sentence_sessions.sentences_and_charges_materialized` sp
     INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
         ON pei.state_code = 'US_MI'
         AND pei.state_code = sp.state_code
         AND pei.person_id = sp.person_id 
         AND pei.id_type = "US_MI_DOC_BOOK"
     INNER JOIN `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.ADH_OFFENDER_SENTENCE_latest` s
-        ON sp.external_id = s.offender_sentence_id
+        ON sp.sentence_external_id = s.offender_sentence_id
         AND pei.external_id = s.offender_booking_id
     WHERE lifetime_gps_flag = '1'
     GROUP BY sp.state_code, sp.person_id
@@ -125,7 +122,6 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = StateSpecificTaskCr
     ),
     meets_criteria_default=True,
     normalized_state_dataset=NORMALIZED_STATE_DATASET,
-    sessions_dataset=SESSIONS_DATASET,
     reasons_fields=[
         ReasonsField(
             name="lifetime_em_date",

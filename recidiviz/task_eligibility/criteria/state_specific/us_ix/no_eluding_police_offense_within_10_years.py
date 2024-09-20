@@ -20,7 +20,6 @@ police offense within the last 10 years.
 """
 from google.cloud import bigquery
 
-from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
@@ -47,14 +46,14 @@ _INELIGIBLE_STATUTES = [
 ]
 _WHERE_CLAUSE = "AND state_code = 'US_IX'"
 
-_QUERY_TEMPLATE = f"""WITH {x_time_from_ineligible_offense(statutes_list = _INELIGIBLE_STATUTES,
-                                                              date_part='YEAR',
-                                                              date_interval=10,
-                                                              additional_where_clause = _WHERE_CLAUSE,
-                                                              start_date_column='date_imposed',
-                                                              statute_date_name="most_recent_eluding_police_date"
-                                                           )}
-"""
+_QUERY_TEMPLATE = x_time_from_ineligible_offense(
+    statutes_list=_INELIGIBLE_STATUTES,
+    date_part="YEAR",
+    date_interval=10,
+    additional_where_clause=_WHERE_CLAUSE,
+    start_date_column="imposed_date",
+    statute_date_name="most_recent_eluding_police_date",
+)
 
 VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
     StateSpecificTaskCriteriaBigQueryViewBuilder(
@@ -62,7 +61,6 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
         criteria_name=_CRITERIA_NAME,
         criteria_spans_query_template=_QUERY_TEMPLATE,
         description=_DESCRIPTION,
-        sessions_dataset=SESSIONS_DATASET,
         meets_criteria_default=True,
         reasons_fields=[
             ReasonsField(

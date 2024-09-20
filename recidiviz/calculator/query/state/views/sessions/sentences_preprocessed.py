@@ -36,6 +36,7 @@ SENTENCES_PREPROCESSED_VIEW_NAME = "sentences_preprocessed"
 SENTENCES_PREPROCESSED_VIEW_DESCRIPTION = """Processed Sentencing Data"""
 
 # TODO(#13746): Investigate whether completion_date in state agnostic sentences preprocessed should allow for a date in the future
+# TODO(#33402): deprecate `sentences_preprocessed` once all states are migrated to v2 infra
 SENTENCES_PREPROCESSED_QUERY_TEMPLATE = f"""
     WITH
     sentences_cte AS

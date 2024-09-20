@@ -40,22 +40,22 @@ WITH sessions_to_sentences AS (
         ses.session_id,
         ses.compartment_level_1,
         ses.start_date AS session_start_date,
-        sen.date_imposed AS sentence_date_imposed,
+        sen.imposed_date AS sentence_date_imposed,
         COALESCE(
-            DATE_DIFF(ses.start_date, sen.date_imposed, DAY),
+            DATE_DIFF(ses.start_date, sen.imposed_date, DAY),
             9999
         ) AS sentence_to_session_offset_days,
     FROM `{project_id}.{sessions_dataset}.compartment_sessions_materialized` ses
-    LEFT JOIN `{project_id}.{sessions_dataset}.sentences_preprocessed_materialized` sen
+    LEFT JOIN `{project_id}.sentence_sessions.sentences_and_charges_materialized` sen
         ON ses.state_code = sen.state_code
         AND ses.person_id = sen.person_id
         -- Only join sentences that were imposed before the session ended
-        AND sen.date_imposed < COALESCE(DATE_ADD(ses.end_date, INTERVAL 1 DAY), CURRENT_DATE('US/Eastern'))
+        AND sen.imposed_date < COALESCE(DATE_ADD(ses.end_date, INTERVAL 1 DAY), CURRENT_DATE('US/Eastern'))
     WHERE inflow_from_level_1 IN ("LIBERTY", "INVESTIGATION")
         AND compartment_level_1 IN ("SUPERVISION", "INCARCERATION")
     -- Pick the closest sentence imposed for each session start
     QUALIFY ROW_NUMBER() OVER (PARTITION BY region_code, person_id, start_date
-            ORDER BY ABS(DATE_DIFF(ses.start_date, sen.date_imposed, DAY)) ASC) = 1
+            ORDER BY ABS(DATE_DIFF(ses.start_date, sen.imposed_date, DAY)) ASC) = 1
 )
 SELECT
     region_code,

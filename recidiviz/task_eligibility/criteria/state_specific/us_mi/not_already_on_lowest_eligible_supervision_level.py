@@ -45,12 +45,12 @@ _QUERY_TEMPLATE = f"""
         state_code,
         person_id,
     --find the earliest sex offense sentence date for each person 
-        MIN(date_imposed) AS start_date,
+        MIN(imposed_date) AS start_date,
         CAST("9999-12-31" AS DATE) AS end_date,
         TRUE AS requires_so_registration,
         NULL AS on_lowest_level,
         NULL AS supervision_level,
-    FROM `{{project_id}}.{{sessions_dataset}}.sentences_preprocessed_materialized` sent
+    FROM `{{project_id}}.sentence_sessions.sentences_and_charges_materialized` sent
     WHERE state_code = "US_MI" 
     AND sent.statute IN (SELECT statute_code FROM `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.RECIDIVIZ_REFERENCE_offense_exclusion_list_latest`
             WHERE CAST(requires_so_registration AS BOOL))   

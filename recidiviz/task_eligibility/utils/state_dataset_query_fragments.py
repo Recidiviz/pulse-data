@@ -179,7 +179,7 @@ def x_time_from_ineligible_offense(
 
     statutes_string = "('" + "', '".join(statutes_list) + "')"
 
-    return f"""ineligible_sentences AS (
+    return f"""WITH ineligible_sentences AS (
     SELECT 
         state_code,
         person_id, 
@@ -188,7 +188,7 @@ def x_time_from_ineligible_offense(
         statute,
         {start_date_column},
         description
-    FROM `{{project_id}}.{{sessions_dataset}}.sentences_preprocessed_materialized` 
+    FROM `{{project_id}}.sentence_sessions.sentences_and_charges_materialized`
     WHERE statute IS NOT NULL
         AND statute IN {statutes_string}
         AND {start_date_column} IS NOT NULL
