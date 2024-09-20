@@ -31,7 +31,7 @@ from recidiviz.ingest.direct.types.errors import (
 
 _INGEST_FILE_PREFIX_REGEX_PATTERN = (
     r"(?P<processed_state>unprocessed|processed)_"  # processed_state
-    r"(?P<timestamp>\d{4}-\d{2}-\d{2}T\d{2}[:_]\d{2}[:_]\d{2}[:_]\d{6})_"  # timestamp
+    r"(?P<timestamp>\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}:\d{6})_"  # timestamp
     r"raw_"  # file_type
 )
 _INGEST_FILE_SUFFIX_REGEX_PATTERN = (
