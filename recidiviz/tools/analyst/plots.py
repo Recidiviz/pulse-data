@@ -21,7 +21,7 @@ from __future__ import annotations
 import math
 
 # imports for notebooks
-from typing import Any, List, Optional, Union
+from typing import Any, Callable, List, Optional, Union
 
 import matplotlib
 import matplotlib.pyplot as plt
@@ -321,6 +321,7 @@ def group_into_other(
     col_name: str,
     vals_to_keep: Union[int, list[str]] = 3,
     other_group_name: str = "OTHER",
+    verbose: bool = True,
 ) -> None:
     """
     Adds a column in the specified dataframe called col_name + _other, which renames everything except the specified values as 'OTHER' for plotting purposes
@@ -339,6 +340,9 @@ def group_into_other(
 
     other_group_name : str
         string that any value in the "other" group will be replaced with, 'OTHER' by default
+
+    verbose: bool
+        if True, this prints out the values that were grouped into other and the new column name
     """
 
     if isinstance(vals_to_keep, list):
@@ -350,6 +354,14 @@ def group_into_other(
         lambda x: x if x in vals_to_keep_list else other_group_name
     )
 
+    all_vals = list(df[col_name].unique())
+    other_vals = [x for x in all_vals if x not in vals_to_keep_list]
+
+    if verbose:
+        print("New column created: " + col_name + "_other")
+        print("Values grouped into other:", end=" ")
+        print(other_vals)
+
 
 # create labels next to lines in a line plot, rather than creating a legend
 # modified version of line_labels fxn in matplotx library: https://github.com/nschloe/matplotx/tree/main
@@ -359,6 +371,7 @@ def line_labels(
     horizontal_distance: float = 0.98,
     color: str = "auto",
     weight: int = 551,
+    label_formatter: Callable = lambda s: s.title().replace("_", " ").replace("-", " "),
     **text_kwargs: Optional[Any],
 ) -> None:
     """
@@ -377,6 +390,9 @@ def line_labels(
     weight: int
         specifies label weight. 400 is normal font, 700 is bold
         default is 551, which is an arbitrary number chosen to look a little bit heavier due to the use of light colors
+    label_formatter: lambda
+        specifies the string formatting of the line labels (e.g. line_labels(label_formatter = lambda s: s.lower()))
+        by default, converts labels to title case and replaces hyphens and underscores with spaces
     **text_kwargs
         the user can specify any other matplotlib text arguments (font, size, etc.)
         see https://matplotlib.org/stable/api/text_api.html for all options
@@ -455,10 +471,11 @@ def line_labels(
     xpos = axis_to_data.transform([horizontal_distance, 1.0])[0]
 
     for label, ypos, col in zip(labels, moved_targets_t, colors):
+        label_string = label_formatter(str(label))
         ax.text(
             xpos,
             ypos,
-            str(label).title(),
+            label_string,
             verticalalignment="center",
             color=col,
             weight=weight,
