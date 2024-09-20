@@ -150,32 +150,39 @@ class RootEntityUpdateMerger:
                 {e.__class__ for e in old_children + new_or_updated_children}
             )
 
-            if not new_or_updated_children:
-                all_children = old_children
-            elif issubclass(child_cls, HasExternalIdEntity):
-                all_children = self._merge_has_external_id_entity_children(
-                    old_children, new_or_updated_children
-                )
-            else:
-                key_fn: Callable[[Any], str]
-                if issubclass(child_cls, EnumEntity):
-
-                    def _enum_entity_key(entity: EnumEntity) -> str:
-                        return enum_entity_key(entity)
-
-                    key_fn = _enum_entity_key
-                elif issubclass(child_cls, ExternalIdEntity):
-                    key_fn = external_id_key
-                elif issubclass(child_cls, StatePersonAlias):
-                    key_fn = state_person_alias_key
-                elif issubclass(child_cls, LedgerEntityMixin):
-                    key_fn = ledger_entity_key
+            try:
+                if not new_or_updated_children:
+                    all_children = old_children
+                elif issubclass(child_cls, HasExternalIdEntity):
+                    all_children = self._merge_has_external_id_entity_children(
+                        old_children, new_or_updated_children
+                    )
                 else:
-                    raise ValueError(f"Unexpected leaf node class [{child_cls}]")
+                    key_fn: Callable[[Any], str]
+                    if issubclass(child_cls, EnumEntity):
 
-                all_children = self._merge_leaf_node_children_based_on_key(
-                    old_children, new_or_updated_children, key_fn
-                )
+                        def _enum_entity_key(entity: EnumEntity) -> str:
+                            return enum_entity_key(entity)
+
+                        key_fn = _enum_entity_key
+                    elif issubclass(child_cls, ExternalIdEntity):
+                        key_fn = external_id_key
+                    elif issubclass(child_cls, StatePersonAlias):
+                        key_fn = state_person_alias_key
+                    elif issubclass(child_cls, LedgerEntityMixin):
+                        key_fn = ledger_entity_key
+                    else:
+                        raise ValueError(f"Unexpected leaf node class [{child_cls}]")
+
+                    all_children = self._merge_leaf_node_children_based_on_key(
+                        old_children, new_or_updated_children, key_fn
+                    )
+            except Exception as e:
+                raise ValueError(
+                    f"Error merging children of type [{child_cls.__name__}] from "
+                    f"entity [{new_or_updated_entity.limited_pii_repr()}] onto entity "
+                    f"[{new_or_updated_entity.limited_pii_repr()}]"
+                ) from e
 
             old_entity.set_field(child_field, all_children)
 
