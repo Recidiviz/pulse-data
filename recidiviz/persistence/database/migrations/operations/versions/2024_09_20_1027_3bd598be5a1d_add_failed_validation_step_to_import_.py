@@ -1,19 +1,20 @@
 # pylint: skip-file
-"""Update import status enum
+"""Add FAILED_VALIDATION_STEP to import status enum
 
-Revision ID: 39506bc45302
-Revises: f64925b297f3
-Create Date: 2024-08-23 10:47:10.210562
+Revision ID: 3bd598be5a1d
+Revises: b6e6f5227628
+Create Date: 2024-09-20 10:27:27.622995
 
 """
 import sqlalchemy as sa
 from alembic import op
 
 # revision identifiers, used by Alembic.
-revision = "39506bc45302"
-down_revision = "f64925b297f3"
+revision = "3bd598be5a1d"
+down_revision = "b6e6f5227628"
 branch_labels = None
 depends_on = None
+
 
 old_values = [
     "STARTED",
