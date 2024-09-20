@@ -889,6 +889,7 @@ class _ExtractAssociationValues(_ExtractValuesFromEntityBase):
 
     def __init__(
         self,
+        *,
         project_id: str,
         entities_dataset: str,
         entity_class: Type[Entity],

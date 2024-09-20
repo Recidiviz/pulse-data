@@ -159,6 +159,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
 
     def _test_find_supervision_events(
         self,
+        *,
         identifier: SupervisionIdentifier,
         supervision_sentences: List[NormalizedStateSupervisionSentence],
         incarceration_sentences: List[NormalizedStateIncarcerationSentence],
@@ -304,14 +305,14 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         )
 
         supervision_events = self._test_find_supervision_events(
-            self.identifier,
-            supervision_sentences,
-            incarceration_sentences,
-            supervision_periods,
-            incarceration_periods,
-            assessments,
-            violation_responses,
-            supervision_contacts,
+            identifier=self.identifier,
+            supervision_sentences=supervision_sentences,
+            incarceration_sentences=incarceration_sentences,
+            supervision_periods=supervision_periods,
+            incarceration_periods=incarceration_periods,
+            assessments=assessments,
+            violation_responses=violation_responses,
+            supervision_contacts=supervision_contacts,
         )
 
         self.assertCountEqual(expected_events, supervision_events)
@@ -394,14 +395,14 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         ]
 
         supervision_events = self._test_find_supervision_events(
-            self.identifier,
-            supervision_sentences,
-            incarceration_sentences,
-            supervision_periods,
-            incarceration_periods,
-            assessments,
-            violation_responses,
-            supervision_contacts,
+            identifier=self.identifier,
+            supervision_sentences=supervision_sentences,
+            incarceration_sentences=incarceration_sentences,
+            supervision_periods=supervision_periods,
+            incarceration_periods=incarceration_periods,
+            assessments=assessments,
+            violation_responses=violation_responses,
+            supervision_contacts=supervision_contacts,
             included_result_classes={
                 SupervisionStartEvent,
                 ProjectedSupervisionCompletionEvent,
@@ -470,14 +471,14 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         )
 
         supervision_events = self._test_find_supervision_events(
-            self.identifier,
-            supervision_sentences,
-            incarceration_sentences,
-            supervision_periods,
-            incarceration_periods,
-            assessments,
-            violation_responses,
-            supervision_contacts,
+            identifier=self.identifier,
+            supervision_sentences=supervision_sentences,
+            incarceration_sentences=incarceration_sentences,
+            supervision_periods=supervision_periods,
+            incarceration_periods=incarceration_periods,
+            assessments=assessments,
+            violation_responses=violation_responses,
+            supervision_contacts=supervision_contacts,
         )
 
         self.assertCountEqual(expected_events, supervision_events)
@@ -572,14 +573,14 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         )
 
         supervision_events = self._test_find_supervision_events(
-            self.identifier,
-            supervision_sentences,
-            incarceration_sentences,
-            supervision_periods,
-            incarceration_periods,
-            assessments,
-            violation_responses,
-            supervision_contacts,
+            identifier=self.identifier,
+            supervision_sentences=supervision_sentences,
+            incarceration_sentences=incarceration_sentences,
+            supervision_periods=supervision_periods,
+            incarceration_periods=incarceration_periods,
+            assessments=assessments,
+            violation_responses=violation_responses,
+            supervision_contacts=supervision_contacts,
         )
 
         self.assertCountEqual(expected_events, supervision_events)
@@ -676,14 +677,14 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         )
 
         supervision_events = self._test_find_supervision_events(
-            self.identifier,
-            supervision_sentences,
-            incarceration_sentences,
-            supervision_periods,
-            incarceration_periods,
-            assessments,
-            violation_responses,
-            supervision_contacts,
+            identifier=self.identifier,
+            supervision_sentences=supervision_sentences,
+            incarceration_sentences=incarceration_sentences,
+            supervision_periods=supervision_periods,
+            incarceration_periods=incarceration_periods,
+            assessments=assessments,
+            violation_responses=violation_responses,
+            supervision_contacts=supervision_contacts,
         )
 
         self.assertCountEqual(expected_events, supervision_events)
@@ -784,14 +785,14 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         )
 
         supervision_events = self._test_find_supervision_events(
-            self.identifier,
-            supervision_sentences,
-            incarceration_sentences,
-            supervision_periods,
-            incarceration_periods,
-            assessments,
-            violation_responses,
-            supervision_contacts,
+            identifier=self.identifier,
+            supervision_sentences=supervision_sentences,
+            incarceration_sentences=incarceration_sentences,
+            supervision_periods=supervision_periods,
+            incarceration_periods=incarceration_periods,
+            assessments=assessments,
+            violation_responses=violation_responses,
+            supervision_contacts=supervision_contacts,
         )
 
         self.assertCountEqual(expected_events, supervision_events)
@@ -913,14 +914,14 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         )
 
         supervision_events = self._test_find_supervision_events(
-            self.identifier,
-            supervision_sentences,
-            incarceration_sentences,
-            supervision_periods,
-            incarceration_periods,
-            assessments,
-            violation_responses,
-            supervision_contacts,
+            identifier=self.identifier,
+            supervision_sentences=supervision_sentences,
+            incarceration_sentences=incarceration_sentences,
+            supervision_periods=supervision_periods,
+            incarceration_periods=incarceration_periods,
+            assessments=assessments,
+            violation_responses=violation_responses,
+            supervision_contacts=supervision_contacts,
         )
 
         self.assertCountEqual(expected_events, supervision_events)
@@ -1009,14 +1010,14 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         )
 
         supervision_events = self._test_find_supervision_events(
-            self.identifier,
-            supervision_sentences,
-            incarceration_sentences,
-            supervision_periods,
-            incarceration_periods,
-            assessments,
-            violation_responses,
-            supervision_contacts,
+            identifier=self.identifier,
+            supervision_sentences=supervision_sentences,
+            incarceration_sentences=incarceration_sentences,
+            supervision_periods=supervision_periods,
+            incarceration_periods=incarceration_periods,
+            assessments=assessments,
+            violation_responses=violation_responses,
+            supervision_contacts=supervision_contacts,
         )
 
         self.assertCountEqual(expected_events, supervision_events)
@@ -1104,7 +1105,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             expected_population_events(
                 first_supervision_period,
                 first_supervision_type,
-                incarceration_period.admission_date,
+                end_date=incarceration_period.admission_date,
                 case_compliances=_generate_case_compliances(
                     person=self.person,
                     start_date=first_supervision_period.start_date,
@@ -1133,14 +1134,14 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         )
 
         supervision_events = self._test_find_supervision_events(
-            self.identifier,
-            supervision_sentences,
-            incarceration_sentences,
-            supervision_periods,
-            incarceration_periods,
-            assessments,
-            violation_responses,
-            supervision_contacts,
+            identifier=self.identifier,
+            supervision_sentences=supervision_sentences,
+            incarceration_sentences=incarceration_sentences,
+            supervision_periods=supervision_periods,
+            incarceration_periods=incarceration_periods,
+            assessments=assessments,
+            violation_responses=violation_responses,
+            supervision_contacts=supervision_contacts,
         )
 
         self.assertCountEqual(expected_events, supervision_events)
@@ -1245,14 +1246,14 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         )
 
         supervision_events = self._test_find_supervision_events(
-            self.identifier,
-            supervision_sentences,
-            incarceration_sentences,
-            supervision_periods,
-            incarceration_periods,
-            assessments,
-            violation_responses,
-            supervision_contacts,
+            identifier=self.identifier,
+            supervision_sentences=supervision_sentences,
+            incarceration_sentences=incarceration_sentences,
+            supervision_periods=supervision_periods,
+            incarceration_periods=incarceration_periods,
+            assessments=assessments,
+            violation_responses=violation_responses,
+            supervision_contacts=supervision_contacts,
         )
 
         self.assertCountEqual(expected_events, supervision_events)
@@ -1346,14 +1347,14 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         )
 
         supervision_events = self._test_find_supervision_events(
-            self.identifier,
-            supervision_sentences,
-            incarceration_sentences,
-            supervision_periods,
-            incarceration_periods,
-            assessments,
-            violation_responses,
-            supervision_contacts,
+            identifier=self.identifier,
+            supervision_sentences=supervision_sentences,
+            incarceration_sentences=incarceration_sentences,
+            supervision_periods=supervision_periods,
+            incarceration_periods=incarceration_periods,
+            assessments=assessments,
+            violation_responses=violation_responses,
+            supervision_contacts=supervision_contacts,
         )
 
         self.assertCountEqual(expected_events, supervision_events)
@@ -1434,14 +1435,14 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         )
 
         supervision_events = self._test_find_supervision_events(
-            self.identifier,
-            supervision_sentences,
-            incarceration_sentences,
-            supervision_periods,
-            incarceration_periods,
-            assessments,
-            violation_responses,
-            supervision_contacts,
+            identifier=self.identifier,
+            supervision_sentences=supervision_sentences,
+            incarceration_sentences=incarceration_sentences,
+            supervision_periods=supervision_periods,
+            incarceration_periods=incarceration_periods,
+            assessments=assessments,
+            violation_responses=violation_responses,
+            supervision_contacts=supervision_contacts,
         )
 
         self.assertCountEqual(expected_events, supervision_events)
@@ -1526,7 +1527,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             expected_population_events(
                 supervision_period,
                 supervision_type,
-                first_incarceration_period.admission_date,
+                end_date=first_incarceration_period.admission_date,
                 case_compliances=_generate_case_compliances(
                     person=self.person,
                     start_date=supervision_period.start_date,
@@ -1545,7 +1546,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                     ),
                 ),
                 supervision_type,
-                second_incarceration_period.admission_date,
+                end_date=second_incarceration_period.admission_date,
                 case_compliances=_generate_case_compliances(
                     person=self.person,
                     start_date=supervision_period.start_date,
@@ -1572,14 +1573,14 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         )
 
         supervision_events = self._test_find_supervision_events(
-            self.identifier,
-            supervision_sentences,
-            incarceration_sentences,
-            supervision_periods,
-            incarceration_periods,
-            assessments,
-            violation_responses,
-            supervision_contacts,
+            identifier=self.identifier,
+            supervision_sentences=supervision_sentences,
+            incarceration_sentences=incarceration_sentences,
+            supervision_periods=supervision_periods,
+            incarceration_periods=incarceration_periods,
+            assessments=assessments,
+            violation_responses=violation_responses,
+            supervision_contacts=supervision_contacts,
         )
 
         self.assertCountEqual(expected_events, supervision_events)
@@ -1693,7 +1694,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             expected_population_events(
                 first_supervision_period,
                 first_supervision_type,
-                first_incarceration_period.admission_date,
+                end_date=first_incarceration_period.admission_date,
                 case_compliances=_generate_case_compliances(
                     person=self.person,
                     start_date=first_supervision_period.start_date,
@@ -1711,7 +1712,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                     ),
                 ),
                 first_supervision_type,
-                second_incarceration_period.admission_date,
+                end_date=second_incarceration_period.admission_date,
                 case_compliances=_generate_case_compliances(
                     person=self.person,
                     start_date=assert_type(
@@ -1754,14 +1755,14 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         )
 
         supervision_events = self._test_find_supervision_events(
-            self.identifier,
-            supervision_sentences,
-            incarceration_sentences,
-            supervision_periods,
-            incarceration_periods,
-            assessments,
-            violation_responses,
-            supervision_contacts,
+            identifier=self.identifier,
+            supervision_sentences=supervision_sentences,
+            incarceration_sentences=incarceration_sentences,
+            supervision_periods=supervision_periods,
+            incarceration_periods=incarceration_periods,
+            assessments=assessments,
+            violation_responses=violation_responses,
+            supervision_contacts=supervision_contacts,
         )
 
         self.assertCountEqual(expected_events, supervision_events)
@@ -1853,14 +1854,14 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         )
 
         supervision_events = self._test_find_supervision_events(
-            self.identifier,
-            supervision_sentences,
-            incarceration_sentences,
-            supervision_periods,
-            incarceration_periods,
-            assessments,
-            violation_responses,
-            supervision_contacts,
+            identifier=self.identifier,
+            supervision_sentences=supervision_sentences,
+            incarceration_sentences=incarceration_sentences,
+            supervision_periods=supervision_periods,
+            incarceration_periods=incarceration_periods,
+            assessments=assessments,
+            violation_responses=violation_responses,
+            supervision_contacts=supervision_contacts,
         )
 
         self.assertCountEqual(expected_events, supervision_events)
@@ -1972,14 +1973,14 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         )
 
         supervision_events = self._test_find_supervision_events(
-            self.identifier,
-            supervision_sentences,
-            incarceration_sentences,
-            supervision_periods,
-            incarceration_periods,
-            assessments,
-            violation_responses,
-            supervision_contacts,
+            identifier=self.identifier,
+            supervision_sentences=supervision_sentences,
+            incarceration_sentences=incarceration_sentences,
+            supervision_periods=supervision_periods,
+            incarceration_periods=incarceration_periods,
+            assessments=assessments,
+            violation_responses=violation_responses,
+            supervision_contacts=supervision_contacts,
         )
 
         self.assertCountEqual(expected_events, supervision_events)
@@ -2052,14 +2053,14 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         )
 
         supervision_events = self._test_find_supervision_events(
-            self.identifier,
-            supervision_sentences,
-            incarceration_sentences,
-            supervision_periods,
-            incarceration_periods,
-            assessments,
-            violation_responses,
-            supervision_contacts,
+            identifier=self.identifier,
+            supervision_sentences=supervision_sentences,
+            incarceration_sentences=incarceration_sentences,
+            supervision_periods=supervision_periods,
+            incarceration_periods=incarceration_periods,
+            assessments=assessments,
+            violation_responses=violation_responses,
+            supervision_contacts=supervision_contacts,
         )
 
         self.assertCountEqual(expected_events, supervision_events)
@@ -2167,14 +2168,14 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         )
 
         supervision_events = self._test_find_supervision_events(
-            SupervisionIdentifier(StateCode.US_IX),
-            supervision_sentences,
-            incarceration_sentences,
-            supervision_periods,
-            incarceration_periods,
-            assessments,
-            violation_responses,
-            supervision_contacts,
+            identifier=SupervisionIdentifier(StateCode.US_IX),
+            supervision_sentences=supervision_sentences,
+            incarceration_sentences=incarceration_sentences,
+            supervision_periods=supervision_periods,
+            incarceration_periods=incarceration_periods,
+            assessments=assessments,
+            violation_responses=violation_responses,
+            supervision_contacts=supervision_contacts,
         )
 
         self.assertCountEqual(expected_events, supervision_events)
@@ -2227,14 +2228,14 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         incarceration_sentences: List[NormalizedStateIncarcerationSentence] = []
 
         supervision_events = self._test_find_supervision_events(
-            SupervisionIdentifier(StateCode.US_PA),
-            supervision_sentences,
-            incarceration_sentences,
-            supervision_periods,
-            incarceration_periods,
-            assessments,
-            violation_responses,
-            supervision_contacts,
+            identifier=SupervisionIdentifier(StateCode.US_PA),
+            supervision_sentences=supervision_sentences,
+            incarceration_sentences=incarceration_sentences,
+            supervision_periods=supervision_periods,
+            incarceration_periods=incarceration_periods,
+            assessments=assessments,
+            violation_responses=violation_responses,
+            supervision_contacts=supervision_contacts,
         )
 
         expected_events = [
@@ -2333,14 +2334,14 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             incarceration_sentence
         ]
         supervision_events = self._test_find_supervision_events(
-            SupervisionIdentifier(StateCode.US_MO),
-            supervision_sentences,
-            incarceration_sentences,
-            supervision_periods,
-            incarceration_periods,
-            assessments,
-            violation_responses,
-            supervision_contacts,
+            identifier=SupervisionIdentifier(StateCode.US_MO),
+            supervision_sentences=supervision_sentences,
+            incarceration_sentences=incarceration_sentences,
+            supervision_periods=supervision_periods,
+            incarceration_periods=incarceration_periods,
+            assessments=assessments,
+            violation_responses=violation_responses,
+            supervision_contacts=supervision_contacts,
         )
         for event in supervision_events:
             if isinstance(event, SupervisionPopulationEvent):
@@ -2421,14 +2422,14 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         )
 
         supervision_events = self._test_find_supervision_events(
-            SupervisionIdentifier(StateCode.US_IX),
-            supervision_sentences,
-            incarceration_sentences,
-            supervision_periods,
-            incarceration_periods,
-            assessments,
-            violation_responses,
-            supervision_contacts,
+            identifier=SupervisionIdentifier(StateCode.US_IX),
+            supervision_sentences=supervision_sentences,
+            incarceration_sentences=incarceration_sentences,
+            supervision_periods=supervision_periods,
+            incarceration_periods=incarceration_periods,
+            assessments=assessments,
+            violation_responses=violation_responses,
+            supervision_contacts=supervision_contacts,
         )
 
         self.assertCountEqual(expected_events, supervision_events)
@@ -2486,7 +2487,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             expected_population_events(
                 supervision_period,
                 StateSupervisionPeriodSupervisionType.PROBATION,
-                date.today(),
+                end_date=date.today(),
                 case_compliances=_generate_case_compliances(
                     person=self.person,
                     start_date=supervision_period.start_date,
@@ -2497,14 +2498,14 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         )
 
         supervision_events = self._test_find_supervision_events(
-            self.identifier,
-            supervision_sentences,
-            incarceration_sentences,
-            supervision_periods,
-            incarceration_periods,
-            assessments,
-            violation_responses,
-            supervision_contacts,
+            identifier=self.identifier,
+            supervision_sentences=supervision_sentences,
+            incarceration_sentences=incarceration_sentences,
+            supervision_periods=supervision_periods,
+            incarceration_periods=incarceration_periods,
+            assessments=assessments,
+            violation_responses=violation_responses,
+            supervision_contacts=supervision_contacts,
         )
 
         self.assertCountEqual(expected_events, supervision_events)
@@ -2575,7 +2576,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             expected_population_events(
                 supervision_period,
                 supervision_type,
-                first_incarceration_period.admission_date,
+                end_date=first_incarceration_period.admission_date,
                 case_compliances=_generate_case_compliances(
                     person=self.person,
                     start_date=supervision_period.start_date,
@@ -2585,14 +2586,17 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         )
 
         supervision_events = self._test_find_supervision_events(
-            self.identifier,
-            [],
-            [incarceration_sentence],
-            [supervision_period],
-            [first_incarceration_period, second_incarceration_period],
-            assessments,
-            violation_reports,
-            supervision_contacts,
+            identifier=self.identifier,
+            supervision_sentences=[],
+            incarceration_sentences=[incarceration_sentence],
+            supervision_periods=[supervision_period],
+            incarceration_periods=[
+                first_incarceration_period,
+                second_incarceration_period,
+            ],
+            assessments=assessments,
+            violation_responses=violation_reports,
+            supervision_contacts=supervision_contacts,
         )
 
         self.assertCountEqual(expected_events, supervision_events)
@@ -2769,14 +2773,14 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         )
 
         supervision_events = self._test_find_supervision_events(
-            self.identifier,
-            [supervision_sentence],
-            [],
-            [supervision_period],
-            [],
-            [],
-            violation_reports,
-            supervision_contacts,
+            identifier=self.identifier,
+            supervision_sentences=[supervision_sentence],
+            incarceration_sentences=[],
+            supervision_periods=[supervision_period],
+            incarceration_periods=[],
+            assessments=[],
+            violation_responses=violation_reports,
+            supervision_contacts=supervision_contacts,
         )
 
         self.assertCountEqual(expected_events, supervision_events)
@@ -2863,7 +2867,7 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
             expected_population_events(
                 supervision_period,
                 supervision_type,
-                incarceration_period.admission_date,
+                end_date=incarceration_period.admission_date,
                 case_compliances=_generate_case_compliances(
                     person=self.person,
                     start_date=supervision_period.start_date,
@@ -2919,7 +2923,7 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
         expected_events = expected_population_events(
             supervision_period,
             supervision_type,
-            incarceration_period.admission_date,
+            end_date=incarceration_period.admission_date,
             case_compliances=_generate_case_compliances(
                 person=self.person,
                 start_date=supervision_period.start_date,
@@ -2996,7 +3000,7 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
         expected_events = expected_population_events(
             supervision_period,
             supervision_type,
-            incarceration_period.admission_date,
+            end_date=incarceration_period.admission_date,
             case_compliances=_generate_case_compliances(
                 person=self.person,
                 start_date=supervision_period.start_date,
@@ -3083,7 +3087,7 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
         expected_events = expected_population_events(
             supervision_period,
             supervision_type,
-            incarceration_period.admission_date,
+            end_date=incarceration_period.admission_date,
             case_compliances=_generate_case_compliances(
                 person=self.person,
                 start_date=supervision_period.start_date,
@@ -3153,7 +3157,7 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
         expected_events = expected_population_events(
             supervision_period,
             supervision_type,
-            incarceration_period.admission_date,
+            end_date=incarceration_period.admission_date,
             case_compliances=_generate_case_compliances(
                 person=self.person,
                 start_date=supervision_period.start_date,
@@ -5855,6 +5859,7 @@ class TestConvertEventsToDual(unittest.TestCase):
 def expected_population_events(
     supervision_period: NormalizedStateSupervisionPeriod,
     supervision_type: StateSupervisionPeriodSupervisionType,
+    *,
     end_date: Optional[date] = None,
     case_type: Optional[StateSupervisionCaseType] = StateSupervisionCaseType.GENERAL,
     assessment_score: Optional[int] = None,
@@ -6439,6 +6444,7 @@ def create_projected_completion_event_from_period(
 
 
 def _generate_case_compliances(
+    *,
     person: NormalizedStatePerson,
     start_date: date,
     supervision_period: NormalizedStateSupervisionPeriod,

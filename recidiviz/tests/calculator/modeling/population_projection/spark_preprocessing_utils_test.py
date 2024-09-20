@@ -67,16 +67,16 @@ class TestSparkPreprocessingUtils(unittest.TestCase):
 
         # get function output df
         df = transitions_lognorm(
-            "from",
-            "to",
-            mean,
-            std,
-            x_months,
-            p_x_months,
-            periods,
-            5,
-            "x",
-            False,
+            c_from="from",
+            c_to="to",
+            mean=mean,
+            std=std,
+            x_months=x_months,
+            p_x_months=p_x_months,
+            last_month=periods,
+            round_digits=5,
+            simulation_group="x",
+            plot=False,
         )
 
         # correct population output

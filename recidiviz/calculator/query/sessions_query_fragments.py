@@ -331,6 +331,7 @@ def join_sentence_spans_to_compartment_sessions(
 
 
 def create_intersection_spans(
+    *,
     table_1_name: str,
     table_2_name: str,
     index_columns: List[str],

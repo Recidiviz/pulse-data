@@ -92,6 +92,7 @@ class RawDataFixturesGenerator:
 
     def __init__(
         self,
+        *,
         project_id: str,
         region_code: str,
         ingest_view_tag: str,

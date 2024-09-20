@@ -35,6 +35,7 @@ class PowerCalc:
 
     def __init__(
         self,
+        *,
         mde: Optional[float] = None,
         n_clusters: Optional[int] = None,
         n_per_cluster: int = 1,

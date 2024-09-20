@@ -106,6 +106,7 @@ class RawDataConfigWriter:
 
     def output_to_file(
         self,
+        *,
         raw_file_config: DirectIngestRawFileConfig,
         output_path: str,
         default_encoding: str,

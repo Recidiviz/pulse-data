@@ -100,6 +100,7 @@ def add_time_unit_to_date(
 
 # function to plot "seaweed" style survival curves using date cohorts on a timeline
 def plot_timeline_cohort_survival_curves(
+    *,
     data: pd.DataFrame,
     duration_var: str,
     date_cohort_var: str,
@@ -304,6 +305,7 @@ def plot_timeline_cohort_survival_curves(
 
 
 def gen_cohort_status_df(
+    *,
     cohort_df: pd.DataFrame,
     status_df: pd.DataFrame,
     cohort_date_field: str,
@@ -682,6 +684,7 @@ def gen_cohort_time_to_first_event(
 
 def gen_aggregated_cohort_event_df(
     df: pd.DataFrame,
+    *,
     cohort_date_field: str,
     event_date_field: str,
     time_index: Iterable[int] = (0, 6, 12, 18, 24, 36),
@@ -861,6 +864,7 @@ def gen_aggregated_cohort_event_df(
 
 def plot_event_curves(
     df: pd.DataFrame,
+    *,
     x_var: str,
     event_var: str = "event",
     group_by: Optional[Union[str, List[str]]] = None,

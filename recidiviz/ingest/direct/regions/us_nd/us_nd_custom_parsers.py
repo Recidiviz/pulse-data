@@ -193,6 +193,7 @@ def normalize_judicial_district_code(judicial_district_code_text: str) -> Option
 
 
 def get_score_sum(
+    *,
     d1: str,
     d2: str,
     d3: str,
@@ -204,6 +205,7 @@ def get_score_sum(
     d9: str,
     d10: str,
 ) -> str:
+    """Given a set of scores |d1-d10|, returns the sum of all scores as a string."""
     score_sum = 0
     scores = [
         d1,

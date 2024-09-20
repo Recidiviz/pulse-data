@@ -88,6 +88,7 @@ class StateSupervisionCaseComplianceManager:
     def __init__(
         self,
         person: NormalizedStatePerson,
+        *,
         supervision_period: NormalizedStateSupervisionPeriod,
         case_type: StateSupervisionCaseType,
         start_of_supervision: date,

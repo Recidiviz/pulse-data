@@ -291,6 +291,7 @@ USING
 
 def get_custom_aggregated_metrics(
     metrics: List[AggregatedMetric],
+    *,
     unit_of_analysis_type: MetricUnitOfAnalysisType,
     population_type: MetricPopulationType,
     time_interval_unit: MetricTimePeriod,
@@ -334,6 +335,7 @@ def get_event_attrs(ea: str, e: str) -> str:
 
 
 def get_person_events(
+    *,
     state_code: str,
     metrics: list[str],
     project_id: str = "recidiviz-staging",

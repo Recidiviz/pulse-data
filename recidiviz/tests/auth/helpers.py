@@ -82,6 +82,7 @@ def generate_fake_default_permissions(
 
 
 def generate_fake_user_overrides(
+    *,
     email: str,
     region_code: str,
     external_id: Optional[str] = None,

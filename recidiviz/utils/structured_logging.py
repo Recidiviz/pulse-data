@@ -53,6 +53,7 @@ class ContextualLogRecord(logging.LogRecord):
     context.
     """
 
+    # pylint: disable=too-many-positional-arguments
     def __init__(
         self,
         name: str,

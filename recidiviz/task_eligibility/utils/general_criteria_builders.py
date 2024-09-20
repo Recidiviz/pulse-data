@@ -491,6 +491,7 @@ def num_events_within_time_interval_spans(
 
 
 def violations_within_time_interval_criteria_builder(
+    *,
     criteria_name: str,
     description: str,
     violation_type: str = "",
@@ -610,6 +611,7 @@ def violations_within_time_interval_criteria_builder(
 
 
 def incarceration_violations_within_time_interval_criteria_builder(
+    *,
     criteria_name: str,
     description: str,
     incident_type: str = "",

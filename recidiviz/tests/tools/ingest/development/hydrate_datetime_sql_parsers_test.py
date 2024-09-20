@@ -187,5 +187,14 @@ class HydrateDatetimeSqlParsersTest(unittest.TestCase):
             ],
         )
         fake_region_config_writer.output_to_file.assert_called_with(
-            updated_config, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY
+            raw_file_config=updated_config,
+            output_path=ANY,
+            default_encoding=ANY,
+            default_separator=ANY,
+            default_ignore_quotes=ANY,
+            default_always_historical_export=ANY,
+            default_no_valid_primary_keys=ANY,
+            default_line_terminator=ANY,
+            default_update_cadence=ANY,
+            default_import_blocking_validation_exemptions=ANY,
         )

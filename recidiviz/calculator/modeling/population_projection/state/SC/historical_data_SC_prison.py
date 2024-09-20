@@ -61,7 +61,16 @@ transitions_data_prison_to_parole = pd.DataFrame()
 prison_to_parole_transitions = pd.concat(
     [
         transitions_data_prison_to_parole,
-        transitions_lognorm("prison", "parole", 0.85, 19.5, 48, 0.48, 330, 100),
+        transitions_lognorm(
+            c_from="prison",
+            c_to="parole",
+            mean=0.85,
+            std=19.5,
+            x_months=48,
+            p_x_months=0.48,
+            last_month=330,
+            round_digits=100,
+        ),
     ]
 )
 

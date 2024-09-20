@@ -270,6 +270,7 @@ class WorkflowsQuerier:
     def add_config(
         self,
         opportunity_type: str,
+        *,
         created_by: str,
         created_at: datetime.datetime,
         description: str,

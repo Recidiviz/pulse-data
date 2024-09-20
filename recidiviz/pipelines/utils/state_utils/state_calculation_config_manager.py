@@ -980,26 +980,26 @@ def get_state_specific_case_compliance_manager(
     if state_code == StateCode.US_IX.value:
         return UsIxSupervisionCaseCompliance(
             person,
-            supervision_period,
-            case_type,
-            start_of_supervision,
-            assessments_by_date,
-            supervision_contacts_by_date,
-            violation_responses,
-            incarceration_period_index,
-            supervision_delegate,
+            supervision_period=supervision_period,
+            case_type=case_type,
+            start_of_supervision=start_of_supervision,
+            assessments_by_date=assessments_by_date,
+            supervision_contacts_by_date=supervision_contacts_by_date,
+            violation_responses=violation_responses,
+            incarceration_period_index=incarceration_period_index,
+            supervision_delegate=supervision_delegate,
         )
     if state_code == StateCode.US_ND.value:
         return UsNdSupervisionCaseCompliance(
             person,
-            supervision_period,
-            case_type,
-            start_of_supervision,
-            assessments_by_date,
-            supervision_contacts_by_date,
-            violation_responses,
-            incarceration_period_index,
-            supervision_delegate,
+            supervision_period=supervision_period,
+            case_type=case_type,
+            start_of_supervision=start_of_supervision,
+            assessments_by_date=assessments_by_date,
+            supervision_contacts_by_date=supervision_contacts_by_date,
+            violation_responses=violation_responses,
+            incarceration_period_index=incarceration_period_index,
+            supervision_delegate=supervision_delegate,
         )
 
     return None

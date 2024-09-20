@@ -308,6 +308,7 @@ def get_lognorm_params(
 
 
 def transitions_lognorm(
+    *,
     c_from: str,
     c_to: str,
     mean: float,

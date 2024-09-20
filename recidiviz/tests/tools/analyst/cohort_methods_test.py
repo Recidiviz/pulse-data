@@ -53,8 +53,8 @@ class TestGenCohortStatusDf(unittest.TestCase):
         # individuals start on 2020-01-01, full observability occurs on 2020-03-01
         with self.assertWarns(UserWarning):
             gen_cohort_status_df(
-                cohort_df,
-                status_df,
+                cohort_df=cohort_df,
+                status_df=status_df,
                 status_start_date_field="start_date",
                 status_end_date_field="end_date_exclusive",
                 cohort_date_field="cohort_date",
@@ -66,8 +66,8 @@ class TestGenCohortStatusDf(unittest.TestCase):
         # setting suppress_full_observability_warning suppresses the warning
         with warnings.catch_warnings(record=True) as warnings_log:
             gen_cohort_status_df(
-                cohort_df,
-                status_df,
+                cohort_df=cohort_df,
+                status_df=status_df,
                 status_start_date_field="start_date",
                 status_end_date_field="end_date_exclusive",
                 cohort_date_field="cohort_date",
@@ -82,8 +82,8 @@ class TestGenCohortStatusDf(unittest.TestCase):
         # no warning raised on 3/1 with full_observability = True
         with warnings.catch_warnings(record=True) as warnings_log:
             gen_cohort_status_df(
-                cohort_df,
-                status_df,
+                cohort_df=cohort_df,
+                status_df=status_df,
                 status_start_date_field="start_date",
                 status_end_date_field="end_date_exclusive",
                 cohort_date_field="cohort_date",
@@ -97,8 +97,8 @@ class TestGenCohortStatusDf(unittest.TestCase):
         # no warning raised on 3/1 with full_observability = False
         with warnings.catch_warnings(record=True) as warnings_log:
             gen_cohort_status_df(
-                cohort_df,
-                status_df,
+                cohort_df=cohort_df,
+                status_df=status_df,
                 status_start_date_field="start_date",
                 status_end_date_field="end_date_exclusive",
                 cohort_date_field="cohort_date",
@@ -113,8 +113,8 @@ class TestGenCohortStatusDf(unittest.TestCase):
         with self.assertRaises(ValueError):
             with self.assertWarns(UserWarning):
                 gen_cohort_status_df(
-                    cohort_df,
-                    status_df,
+                    cohort_df=cohort_df,
+                    status_df=status_df,
                     status_start_date_field="start_date",
                     status_end_date_field="end_date_exclusive",
                     cohort_date_field="cohort_date",
@@ -132,8 +132,8 @@ class TestGenCohortStatusDf(unittest.TestCase):
         )
         with self.assertWarns(UserWarning):
             output_df = gen_cohort_status_df(
-                cohort_df,
-                status_df,
+                cohort_df=cohort_df,
+                status_df=status_df,
                 status_start_date_field="start_date",
                 status_end_date_field="end_date_exclusive",
                 cohort_date_field="cohort_date",

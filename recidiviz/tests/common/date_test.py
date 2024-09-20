@@ -515,26 +515,48 @@ class TestConvertCriticalDatesToTimeSpans(unittest.TestCase):
 @attr.define(kw_only=True)
 class _SimpleDurationObject(DurationMixin):
     id: str
-    start_date_inclusive: datetime.date
-    end_date_exclusive: Optional[datetime.date]
+    attr_start_date_inclusive: datetime.date
+    attr_end_date_exclusive: Optional[datetime.date]
+
+    @property
+    def start_date_inclusive(self) -> Optional[datetime.date]:
+        """The object's duration start date, if set."""
+        return self.attr_start_date_inclusive
+
+    @property
+    def end_date_exclusive(self) -> Optional[datetime.date]:
+        """The object's duration end date, if set."""
+        return self.attr_end_date_exclusive
 
     @property
     def duration(self) -> DateRange:
         return DateRange.from_maybe_open_range(
-            self.start_date_inclusive, self.end_date_exclusive
+            self.attr_start_date_inclusive, self.attr_end_date_exclusive
         )
 
 
 @attr.define(kw_only=True)
 class _SimpleDurationObjectAnother(DurationMixin):
     another_id: str
-    start_date_inclusive: datetime.date
-    end_date_exclusive: Optional[datetime.date]
+    # for whatever reason, pylint was unhappy that the abstract property start_date_inclusive
+    # was not implemented when these vars were not prefixed with _
+    attr_start_date_inclusive: datetime.date
+    attr_end_date_exclusive: Optional[datetime.date]
+
+    @property
+    def start_date_inclusive(self) -> Optional[datetime.date]:
+        """The object's duration start date, if set."""
+        return self.attr_start_date_inclusive
+
+    @property
+    def end_date_exclusive(self) -> Optional[datetime.date]:
+        """The object's duration end date, if set."""
+        return self.attr_end_date_exclusive
 
     @property
     def duration(self) -> DateRange:
         return DateRange.from_maybe_open_range(
-            self.start_date_inclusive, self.end_date_exclusive
+            self.attr_start_date_inclusive, self.attr_end_date_exclusive
         )
 
 
@@ -553,8 +575,8 @@ class TestCriticalRangesBuilder(unittest.TestCase):
     def test_single_zero_day_range(self) -> None:
         obj_a = _SimpleDurationObject(
             id="A",
-            start_date_inclusive=self.DATE_1,
-            end_date_exclusive=self.DATE_1,
+            attr_start_date_inclusive=self.DATE_1,
+            attr_end_date_exclusive=self.DATE_1,
         )
         ranges_builder = CriticalRangesBuilder([obj_a])
 
@@ -566,14 +588,14 @@ class TestCriticalRangesBuilder(unittest.TestCase):
     def test_zero_day_range_fully_overlapped(self) -> None:
         obj_a = _SimpleDurationObject(
             id="A",
-            start_date_inclusive=self.DATE_1,
-            end_date_exclusive=self.DATE_3,
+            attr_start_date_inclusive=self.DATE_1,
+            attr_end_date_exclusive=self.DATE_3,
         )
         # Zero-day span
         obj_b = _SimpleDurationObject(
             id="B",
-            start_date_inclusive=self.DATE_2,
-            end_date_exclusive=self.DATE_2,
+            attr_start_date_inclusive=self.DATE_2,
+            attr_end_date_exclusive=self.DATE_2,
         )
         ranges_builder = CriticalRangesBuilder([obj_a, obj_b])
 
@@ -607,19 +629,19 @@ class TestCriticalRangesBuilder(unittest.TestCase):
     def test_zero_day_range_adjacent_to_others(self) -> None:
         obj_a = _SimpleDurationObject(
             id="A",
-            start_date_inclusive=self.DATE_1,
-            end_date_exclusive=self.DATE_2,
+            attr_start_date_inclusive=self.DATE_1,
+            attr_end_date_exclusive=self.DATE_2,
         )
         # Zero-day span
         obj_b = _SimpleDurationObject(
             id="B",
-            start_date_inclusive=self.DATE_2,
-            end_date_exclusive=self.DATE_2,
+            attr_start_date_inclusive=self.DATE_2,
+            attr_end_date_exclusive=self.DATE_2,
         )
         obj_c = _SimpleDurationObject(
             id="B",
-            start_date_inclusive=self.DATE_2,
-            end_date_exclusive=self.DATE_3,
+            attr_start_date_inclusive=self.DATE_2,
+            attr_end_date_exclusive=self.DATE_3,
         )
         ranges_builder = CriticalRangesBuilder([obj_c, obj_a, obj_b])
 
@@ -653,8 +675,8 @@ class TestCriticalRangesBuilder(unittest.TestCase):
     def test_single_open_range(self) -> None:
         obj_a = _SimpleDurationObject(
             id="A",
-            start_date_inclusive=self.DATE_1,
-            end_date_exclusive=None,
+            attr_start_date_inclusive=self.DATE_1,
+            attr_end_date_exclusive=None,
         )
         ranges_builder = CriticalRangesBuilder([obj_a])
 
@@ -695,8 +717,8 @@ class TestCriticalRangesBuilder(unittest.TestCase):
     def test_single_closed_range(self) -> None:
         obj_a = _SimpleDurationObject(
             id="A",
-            start_date_inclusive=self.DATE_1,
-            end_date_exclusive=self.DATE_2,
+            attr_start_date_inclusive=self.DATE_1,
+            attr_end_date_exclusive=self.DATE_2,
         )
         ranges_builder = CriticalRangesBuilder([obj_a])
 
@@ -737,24 +759,24 @@ class TestCriticalRangesBuilder(unittest.TestCase):
     def test_several_contiguous(self) -> None:
         obj_a = _SimpleDurationObject(
             id="A",
-            start_date_inclusive=self.DATE_1,
-            end_date_exclusive=self.DATE_2,
+            attr_start_date_inclusive=self.DATE_1,
+            attr_end_date_exclusive=self.DATE_2,
         )
         obj_b = _SimpleDurationObject(
             id="B",
-            start_date_inclusive=self.DATE_2,
-            end_date_exclusive=self.DATE_3,
+            attr_start_date_inclusive=self.DATE_2,
+            attr_end_date_exclusive=self.DATE_3,
         )
         obj_c = _SimpleDurationObject(
             id="C",
-            start_date_inclusive=self.DATE_3,
-            end_date_exclusive=None,
+            attr_start_date_inclusive=self.DATE_3,
+            attr_end_date_exclusive=None,
         )
         # This overlaps with first two objects
         obj_d = _SimpleDurationObject(
             id="D",
-            start_date_inclusive=self.DATE_1,
-            end_date_exclusive=self.DATE_3,
+            attr_start_date_inclusive=self.DATE_1,
+            attr_end_date_exclusive=self.DATE_3,
         )
         ranges_builder = CriticalRangesBuilder([obj_a, obj_b, obj_c, obj_d])
 
@@ -855,18 +877,18 @@ class TestCriticalRangesBuilder(unittest.TestCase):
     def test_several_with_gap(self) -> None:
         obj_a = _SimpleDurationObject(
             id="A",
-            start_date_inclusive=self.DATE_1,
-            end_date_exclusive=self.DATE_2,
+            attr_start_date_inclusive=self.DATE_1,
+            attr_end_date_exclusive=self.DATE_2,
         )
         obj_b = _SimpleDurationObject(
             id="B",
-            start_date_inclusive=self.DATE_3,
-            end_date_exclusive=self.DATE_4,
+            attr_start_date_inclusive=self.DATE_3,
+            attr_end_date_exclusive=self.DATE_4,
         )
         obj_c = _SimpleDurationObject(
             id="C",
-            start_date_inclusive=self.DATE_4,
-            end_date_exclusive=None,
+            attr_start_date_inclusive=self.DATE_4,
+            attr_end_date_exclusive=None,
         )
         ranges_builder = CriticalRangesBuilder([obj_c, obj_b, obj_a])
 
@@ -934,24 +956,24 @@ class TestCriticalRangesBuilder(unittest.TestCase):
     def test_multiple_open_ranges(self) -> None:
         obj_a = _SimpleDurationObject(
             id="A",
-            start_date_inclusive=self.DATE_1,
-            end_date_exclusive=self.DATE_2,
+            attr_start_date_inclusive=self.DATE_1,
+            attr_end_date_exclusive=self.DATE_2,
         )
         obj_b = _SimpleDurationObject(
             id="B",
-            start_date_inclusive=self.DATE_3,
-            end_date_exclusive=self.DATE_4,
+            attr_start_date_inclusive=self.DATE_3,
+            attr_end_date_exclusive=self.DATE_4,
         )
         obj_c = _SimpleDurationObject(
             id="C",
-            start_date_inclusive=self.DATE_2,
-            end_date_exclusive=None,
+            attr_start_date_inclusive=self.DATE_2,
+            attr_end_date_exclusive=None,
         )
         # This overlaps with first two objects
         obj_d = _SimpleDurationObject(
             id="D",
-            start_date_inclusive=self.DATE_3,
-            end_date_exclusive=None,
+            attr_start_date_inclusive=self.DATE_3,
+            attr_end_date_exclusive=None,
         )
         ranges_builder = CriticalRangesBuilder([obj_d, obj_b, obj_c, obj_a])
 
@@ -1056,13 +1078,13 @@ class TestCriticalRangesBuilder(unittest.TestCase):
     def test_mixed_types(self) -> None:
         obj_a = _SimpleDurationObject(
             id="A",
-            start_date_inclusive=self.DATE_1,
-            end_date_exclusive=self.DATE_3,
+            attr_start_date_inclusive=self.DATE_1,
+            attr_end_date_exclusive=self.DATE_3,
         )
         obj_b = _SimpleDurationObjectAnother(
             another_id="B",
-            start_date_inclusive=self.DATE_2,
-            end_date_exclusive=self.DATE_4,
+            attr_start_date_inclusive=self.DATE_2,
+            attr_end_date_exclusive=self.DATE_4,
         )
         ranges_builder = CriticalRangesBuilder([obj_a, obj_b])
 
