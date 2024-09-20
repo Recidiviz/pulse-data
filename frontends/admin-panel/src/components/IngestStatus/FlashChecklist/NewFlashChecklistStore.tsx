@@ -30,9 +30,9 @@ import {
   DirectIngestInstance,
   IngestRawFileProcessingStatus,
 } from "../constants";
+import { RegionResourceLockStatus } from "../RegionResourceLockStatus";
 import { getValueIfResolved } from "./FlashUtils";
 import { NewCurrentRawFileProcessingStatus } from "./NewCurrentRawFileProcessingStatus";
-import { RegionResourceLockStatus } from "./ResourceLockStatus";
 import { StaleSecondaryStatus } from "./StaleSecondaryStatus";
 
 export enum NewFlashingChecklistType {

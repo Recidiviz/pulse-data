@@ -661,7 +661,7 @@ class IngestOpsEndpointTests(TestCase):
                 lock_resource=DirectIngestRawDataResourceLockResource.BUCKET,
                 region_code="US_XX",
                 raw_data_source_instance=DirectIngestInstance.PRIMARY,
-                lock_acquisition_time=datetime.now(),
+                lock_acquisition_time=datetime(2022, 8, 29, tzinfo=pytz.UTC),
                 released=False,
                 lock_description="testing!",
                 lock_ttl_seconds=123,
@@ -679,6 +679,9 @@ class IngestOpsEndpointTests(TestCase):
             [
                 {
                     "lockId": 1,
+                    "rawDataInstance": "PRIMARY",
+                    "lockAcquisitionTime": "2022-08-29T00:00:00+00:00",
+                    "ttlSeconds": 123,
                     "description": "testing!",
                     "actor": "ADHOC",
                     "resource": "BUCKET",

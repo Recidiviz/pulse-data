@@ -33,6 +33,7 @@ import {
   INGEST_DATAFLOW_INGEST_QUEUES_ROUTE,
   INGEST_DATAFLOW_INSTANCE_ROUTE,
   INGEST_DATAFLOW_PRIMARY_ROUTE,
+  INGEST_DATAFLOW_RAW_DATA_RESOURCE_LOCKS,
   INGEST_DATAFLOW_SECONDARY_ROUTE,
   INGEST_DATAFLOW_WITH_STATE_CODE_ROUTE,
 } from "../../navigation/IngestOperations";
@@ -46,6 +47,7 @@ import {
 } from "./constants";
 import IngestDataflowStateSpecificInstanceMetadata from "./IngestDataflowStateSpecificInstanceMetadata";
 import RawDataFileTagDetail from "./RawDataFileTagDetailCard";
+import RawDataResourceLockDetail from "./RawDataResourceLockDetail";
 import StateSpecificIngestQueues from "./StateSpecificIngestIngestQueues";
 
 type MenuItem = Required<MenuProps>["items"][number];
@@ -68,6 +70,7 @@ function getItem(
 
 const items: MenuProps["items"] = [
   getItem("Raw Data Queues", INGEST_DATAFLOW_INGEST_QUEUES_ROUTE),
+  getItem("Raw Data Resource Locks", INGEST_DATAFLOW_RAW_DATA_RESOURCE_LOCKS),
   getItem("Primary Instance", INGEST_DATAFLOW_PRIMARY_ROUTE, null, [
     getItem(
       "Latest Job",
@@ -140,6 +143,10 @@ const IngestDataflowStateSpecificMetadata = (): JSX.Element => {
               <Route
                 path={INGEST_DATAFLOW_INGEST_QUEUES_ROUTE}
                 component={StateSpecificIngestQueues}
+              />
+              <Route
+                path={INGEST_DATAFLOW_RAW_DATA_RESOURCE_LOCKS}
+                component={RawDataResourceLockDetail}
               />
               <Route
                 path={INGEST_DATAFLOW_FILE_TAG_ROUTE}

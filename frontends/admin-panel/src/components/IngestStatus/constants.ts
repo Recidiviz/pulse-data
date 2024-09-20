@@ -165,6 +165,7 @@ export type RawFileConfigSummary = {
 };
 
 // --- raw data resource lock related constants ----------------------------------------
+
 export enum RawDataResourceLockResource {
   BUCKET = "BUCKET",
   OPERATIONS_DATABASE = "OPERATIONS_DATABASE",
@@ -176,12 +177,28 @@ export enum RawDataResourceLockActor {
   PROCESS = "PROCESS",
 }
 
+export type ResourceLockMetadata = {
+  actors: ResourceLocActorDescription;
+  resources: ResourceLockResourceDescription;
+};
+
+export type ResourceLockResourceDescription = {
+  [resource in RawDataResourceLockResource]: string;
+};
+
+export type ResourceLocActorDescription = {
+  [resource in RawDataResourceLockActor]: string;
+};
+
 export type ResourceLockStatus = {
   lockId: number;
+  rawDataInstance: DirectIngestInstance;
+  lockAcquisitionTime: string;
+  ttlSeconds: number;
   description: string;
-  resource: string;
+  resource: RawDataResourceLockResource;
   released: boolean;
-  actor: string;
+  actor: RawDataResourceLockActor;
 };
 
 export type RawDataResourceLockStatuses = {
