@@ -59,6 +59,9 @@ def normalize_filename(cloud_event: CloudEvent) -> None:
     If the file is a zip file, it will invoke another cloud function to handle the unzipping
     in order to allocate more memory to the process.
 
+    If the existing file name is already prefixed by "unprocessed" or "processed", the function will return without
+    doing anything. Otherwise, it will rename the file to format "unprocessed_{ISO_FORMATTED_DATETIME}_raw_{EXISTING_FILENAME}"
+
     If we encounter any error with base class ValueError, including GCSBlobDoesNotExistError,
     we will log the error and return without raising an exception, so if a file is moved or
     deleted or renamed by another process while we are executing we won't retry the operation.

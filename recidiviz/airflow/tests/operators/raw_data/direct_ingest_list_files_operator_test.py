@@ -57,13 +57,14 @@ class DirectIngestListNormalizedFileOperatorTest(TestCase):
 
     def test_valid_paths(self) -> None:
         valid_paths = [
-            "unprocessed_2024-01-25T16_35_33_617135_raw_test_file_tag.csv",
-            "processed_2024-01-25T16_35_33_617135_raw_test_file_tag_with_suffix-1.csv",
-            "subdirs_get_processed_too/unprocessed_2024-01-25T16_35_33_617135_raw_test_file_tag.csv",
+            "unprocessed_2024-01-25T16:35:33:617135_raw_test_file_tag.csv",
+            "processed_2024-01-25T16:35:33:617135_raw_test_file_tag_with_suffix-1.csv",
+            "subdirs_get_processed_too/unprocessed_2024-01-25T16:35:33:617135_raw_test_file_tag.csv",
         ]
         invalid_paths = [
-            "unprocessed_2024-01-25T16_35_33_617135_invalid_test_file_tag.csv",
-            "unprocessed_2024-01-25T16_35_33_617135_raw_invalid_test_file_tag_with_suffix-1-1-1-1.csv",
+            "unprocessed_2024-01-25T16:35:33:617135_invalid_test_file_tag.csv",
+            "unprocessed_2024-01-25T16_35_33_617135_raw_test_file_tag.csv",
+            "unprocessed_2024-01-25T16:35:33:617135_raw_invalid_test_file_tag_with_suffix-1-1-1-1.csv",
         ]
         self.gcs_operator_mock.return_value = [*valid_paths, *invalid_paths]
         mock_context = create_autospec(Context)

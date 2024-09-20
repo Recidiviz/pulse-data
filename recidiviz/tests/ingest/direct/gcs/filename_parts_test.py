@@ -21,7 +21,10 @@ from unittest import TestCase
 import pytz
 
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
-from recidiviz.ingest.direct.gcs.filename_parts import filename_parts_from_path
+from recidiviz.ingest.direct.gcs.filename_parts import (
+    filename_parts_from_path,
+    is_path_normalized,
+)
 from recidiviz.ingest.direct.types.errors import DirectIngestError
 
 
@@ -128,3 +131,12 @@ class TestFilenamePartsFromPath(TestCase):
             datetime.datetime(2022, 3, 24, 6, 2, 28, 607028, tzinfo=pytz.UTC),
         )
         self.assertEqual(parts.date_str, "2022-03-24")
+
+    def test_shouldnt_parse_timestamp_with_underscores(self) -> None:
+        path = GcsfsFilePath.from_absolute_path(
+            "bucket-us-tn/unprocessed_2024-09-13T17_19_55_995516_raw_ContactNoteType.csv"
+        )
+        with self.assertRaisesRegex(DirectIngestError, "Could not parse"):
+            filename_parts_from_path(path)
+
+        self.assertFalse(is_path_normalized(path))
