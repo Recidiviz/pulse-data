@@ -128,7 +128,7 @@ class TestStableHistoricalRawDataCountsTableValidation(BigQueryEmulatorTestCase)
         If no data is provided, it will use the default data attributes of the class.
         """
         operations_dataset = "operations"
-        file_import_table = "direct_ingest_raw_data_file_import"
+        file_import_table = "direct_ingest_raw_file_import"
         bq_metadata_table = "direct_ingest_raw_big_query_file_metadata"
         temp_table = "test_table"
 
