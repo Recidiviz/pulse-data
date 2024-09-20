@@ -89,7 +89,6 @@ export const ChecklistSection = ({
     <div style={{ display: "flex" }}>
       <Card style={{ float: "left", width: "30%" }}>
         <Steps
-          progressDot
           current={currentStepsSection}
           direction="vertical"
           size="small"

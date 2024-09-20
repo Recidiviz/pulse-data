@@ -27,6 +27,7 @@ import NewStateCancelReimportChecklist, {
   NewCancelReimportChecklistStepSection,
 } from "./NewCancelReimportChecklist";
 import { NewFlashingChecklistType } from "./NewFlashChecklistStore";
+import NewProceedWithFlashChecklist from "./NewProceedWithFlashChecklist";
 
 const NewFlashDatabaseChecklistActiveComponent = (): JSX.Element => {
   // store for data that is used by child components
@@ -67,8 +68,7 @@ const NewFlashDatabaseChecklistActiveComponent = (): JSX.Element => {
     flashStore.activeChecklist ===
     NewFlashingChecklistType.FLASH_SECONDARY_TO_PRIMARY
   ) {
-    // TODO(#33150) build the new flashing checklist here
-    return <div> flashing checklist!! </div>;
+    return <NewProceedWithFlashChecklist />;
   }
 
   if (flashStore.activeChecklist === NewFlashingChecklistType.CANCEL_REIMPORT) {
