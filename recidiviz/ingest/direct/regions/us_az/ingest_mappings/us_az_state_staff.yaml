@@ -4,23 +4,14 @@
 manifest_language: 1.0.0
 input_columns:
   - FIRST_NAME
-  - MIDDLE_NAME
   - SURNAME
-  - id_list
+  - PERSON_IDS
 unused_columns: []
 output:
   StateStaff:
     external_ids:
-      - StateStaffExternalId:
-          external_id:
-            $concat:
-              $values:
-                - FIRST_NAME
-                - MIDDLE_NAME
-                - SURNAME
-          id_type: $literal("US_AZ_STAFF_NAME")
       - $foreach:
-          $iterable: id_list
+          $iterable: PERSON_IDS
           $result:
             $conditional:
               - $if:
@@ -32,5 +23,4 @@ output:
     full_name:
       $person_name:
         $given_names: FIRST_NAME
-        $middle_names: MIDDLE_NAME
         $surname: SURNAME

@@ -1,0 +1,49 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: RECIDIVIZ_REFERENCE_staff_id_override
+file_description: |-
+  A reference file maintained by Recidiviz based on feedback from Arizona about users
+  we are conflating as a result of grouping USERID values by full name. The data in this
+  sheet will allow us to differentiate between users with the same full name. Each user
+  that shares a full name with another user will appear in this sheet with a distinct OVERRIDE_ID. 
+  In the state_staff view, we can then group by full name and OVERRIDE_ID to differentiate
+  between those two individuals. Each individual listed in this sheet should have exactly one
+  OVERRIDE_ID value so that all of their USERIDs can be properly aggregated.
+
+  For example, if we see these rows in the PERSON table:
+  | FIRST_NAME | SURNAME | PERSON_ID |
+  |-|-|-|
+  |John|Doe|1|
+  |John|Doe|2|
+  |John|Doe|3|
+
+  We would assume that there is exactly one John Doe, and they have been assigned each of
+  the PERSON_IDs 1, 2, and 3 at some point. If we then get feedback from AZ that there
+  are actually two employees named John Doe, we would clarify which IDs belong to which
+  John Doe, and input the following into this reference data: 
+
+  | FIRST_NAME | SURNAME | PERSON_ID | OVERRIDE_ID |
+  |-|-|-|-|
+  |John|Doe|1|1|
+  |John|Doe|2|2|
+  |John|Doe|3|1|
+
+  This would allow us to differentiate between the two John Does: One who has had PERSON_IDs
+  1 and 3, and one who has had PERSON_ID 2.
+data_classification: source
+primary_key_cols:
+  - PERSON_ID
+columns:
+  - name: FIRST_NAME
+    description: Staff member's first name
+    is_pii: True
+  - name: SURNAME
+    description: Staff member's surname
+    is_pii: True
+  - name: PERSON_ID
+    description: The PERSON_ID that needs to be differentiated
+    is_pii: True
+  - name: OVERRIDE_ID
+    description: |-
+      Recidiviz-generated reference ID that will be used to group IDs that all belong to 
+      the same user. If a user appears multiple times in this sheet with multiple IDs, 
+      they will have the same FIRST_NAME, SURNAME, and OVERRIDE_ID.

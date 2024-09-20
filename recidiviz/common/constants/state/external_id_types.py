@@ -154,8 +154,6 @@ US_OZ_LDS = "US_OZ_LDS"
 US_AZ_PERSON_ID = "US_AZ_PERSON_ID"
 # AZ ADC Number - only residents and clients, used by AZ internally
 US_AZ_ADC_NUMBER = "US_AZ_ADC_NUMBER"
-# Full names of AZ DOC staff members, used because there is no more stable Staff ID
-US_AZ_STAFF_NAME = "US_AZ_STAFF_NAME"
 
 # TX person TDCJ number, could be assigned many to a single person
 US_TX_TDCJ = "US_TX_TDCJ"
