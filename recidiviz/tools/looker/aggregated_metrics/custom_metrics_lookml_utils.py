@@ -1224,34 +1224,34 @@ def generate_assignments_with_attributes_and_time_periods_view(
     FROM (
         SELECT
             "{{% parameter {view_name}.period_param %}}" AS period,
-            start_date,
+            end_date,
             -- exclusive end date
             {{% if {view_name}.period_param._parameter_value == "NONE" %}}
-            DATE({{% parameter {view_name}.population_end_date %}}) AS end_date,
+            DATE({{% parameter {view_name}.population_start_date %}}) AS start_date,
             {{% else %}}
-            DATE_ADD(
-                start_date, 
+            DATE_SUB(
+                end_date, 
                 INTERVAL {{% parameter {view_name}.period_duration %}} {{% parameter {view_name}.period_param %}}
-            ) AS end_date,
+            ) AS start_date,
             {{% endif %}}
     FROM
         UNNEST(GENERATE_DATE_ARRAY(
-            DATE({{% parameter {view_name}.population_start_date %}}),
+            DATE({{% parameter {view_name}.population_end_date %}}),
             {{% if {view_name}.period_param._parameter_value == "NONE" %}}
-            DATE({{% parameter {view_name}.population_start_date %}})
+            DATE({{% parameter {view_name}.population_end_date %}})
             {{% else %}}
-            DATE(DATE_SUB({{% parameter {view_name}.population_end_date %}}, INTERVAL 1 DAY)),
+            DATE(DATE_ADD({{% parameter {view_name}.population_start_date %}}, INTERVAL 1 DAY)),
 
             # If period interval is NONE, use the length of the analysis period as the interval.
             # Otherwise, use the specified period interval
             {{% if {view_name}.period_interval_param._parameter_value == "NONE" %}}
-            INTERVAL {{% parameter {view_name}.period_duration %}} {{% parameter {view_name}.period_param %}}
+            INTERVAL -{{% parameter {view_name}.period_duration %}} {{% parameter {view_name}.period_param %}}
             {{% else %}}
-            INTERVAL {{% parameter {view_name}.period_interval_duration %}} {{% parameter {view_name}.period_interval_param %}}
+            INTERVAL -{{% parameter {view_name}.period_interval_duration %}} {{% parameter {view_name}.period_interval_param %}}
             {{% endif %}}
 
             {{% endif %}}
-        )) AS start_date
+        )) AS end_date
     ) time_period
 
     -- join assignments/attributes
