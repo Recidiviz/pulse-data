@@ -15,6 +15,8 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
+import { Tooltip } from "antd";
+
 import { RawDataResourceLockActor, ResourceLockStatus } from "../constants";
 
 const ResourceLockStatusComponent = ({
@@ -28,8 +30,8 @@ const ResourceLockStatusComponent = ({
   } else {
     lockStatusDescription =
       lock.actor === RawDataResourceLockActor.ADHOC
-        ? `HELD BY MANUAL PROCESS: ${lock.description}`
-        : `HELD BY AUTOMATIC PLATFORM PROCESS: ${lock.description}`;
+        ? "HELD BY MANUAL PROCESS"
+        : "HELD BY AUTOMATIC PLATFORM PROCESS";
   }
 
   return (
@@ -44,7 +46,7 @@ const ResourceLockStatusComponent = ({
               : "green",
         }}
       >
-        {lockStatusDescription}
+        <Tooltip title={lock.description}>{lockStatusDescription}</Tooltip>
       </span>
     </div>
   );
@@ -66,20 +68,15 @@ export class RegionResourceLockStatus {
     this.secondaryLocks = secondaryLocks;
   }
 
-  lockSecondaryHeaderDescription() {
-    return (
-      <ul>
-        {this.secondaryLocks.length === 0
-          ? "NO LOCKS"
-          : this.secondaryLocks.map((lock: ResourceLockStatus) => (
-              <ResourceLockStatusComponent lock={lock} />
-            ))}
-      </ul>
+  private static allLocksFree(locks: ResourceLockStatus[]) {
+    return locks.reduce(
+      (acc: boolean, lock: ResourceLockStatus) => acc && lock.released,
+      true
     );
   }
 
-  allSecondaryLocksHeldByAdHoc() {
-    return this.secondaryLocks.reduce(
+  private static allHeldByAdHoc(locks: ResourceLockStatus[]) {
+    return locks.reduce(
       (acc: boolean, lock: ResourceLockStatus) =>
         acc ||
         (lock.actor === RawDataResourceLockActor.ADHOC && !lock.released),
@@ -87,10 +84,45 @@ export class RegionResourceLockStatus {
     );
   }
 
-  allSecondaryLocksFree() {
-    return this.secondaryLocks.reduce(
-      (acc: boolean, lock: ResourceLockStatus) => acc && lock.released,
-      true
+  private static lockHeaderDescription(locks: ResourceLockStatus[]) {
+    return (
+      <ul>
+        {locks.length === 0
+          ? "NO LOCKS"
+          : locks.map((lock: ResourceLockStatus) => (
+              <ResourceLockStatusComponent lock={lock} />
+            ))}
+      </ul>
     );
+  }
+
+  secondaryHeaderDescription() {
+    return RegionResourceLockStatus.lockHeaderDescription(this.secondaryLocks);
+  }
+
+  primaryHeaderDescription() {
+    return RegionResourceLockStatus.lockHeaderDescription(this.primaryLocks);
+  }
+
+  allSecondaryLocksHeldByAdHoc() {
+    return RegionResourceLockStatus.allHeldByAdHoc(this.secondaryLocks);
+  }
+
+  allPrimaryLocksHeldByAdHoc() {
+    return RegionResourceLockStatus.allHeldByAdHoc(this.primaryLocks);
+  }
+
+  allLocksHeldByAdHoc() {
+    return (
+      this.allPrimaryLocksHeldByAdHoc() && this.allSecondaryLocksHeldByAdHoc()
+    );
+  }
+
+  allSecondaryLocksFree() {
+    return RegionResourceLockStatus.allLocksFree(this.secondaryLocks);
+  }
+
+  allPrimaryLocksFree() {
+    return RegionResourceLockStatus.allLocksFree(this.primaryLocks);
   }
 }

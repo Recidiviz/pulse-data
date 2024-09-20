@@ -559,6 +559,41 @@ class IngestOpsEndpointTests(TestCase):
         self.assertEqual(response.json, False)
 
     @patch(
+        "recidiviz.admin_panel.routes.ingest_ops.DirectIngestRawDataFlashStatusManager"
+    )
+    def test_set_flash_status(self, manager_mock: mock.MagicMock) -> None:
+        # Act
+        response = self.client.post(
+            "/api/ingest_operations/is_flashing_in_progress/update",
+            headers={"X-Appengine-Inbound-Appid": "recidiviz-456"},
+            json={
+                "stateCode": "US_XX",
+                "isFlashing": True,
+            },
+        )
+
+        # Assert
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json, None)
+        manager_mock().set_flashing_started.assert_called_once()
+        manager_mock().set_flashing_finished.assert_not_called()
+
+        response = self.client.post(
+            "/api/ingest_operations/is_flashing_in_progress/update",
+            headers={"X-Appengine-Inbound-Appid": "recidiviz-456"},
+            json={
+                "stateCode": "US_XX",
+                "isFlashing": False,
+            },
+        )
+
+        # Assert
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json, None)
+        manager_mock().set_flashing_started.assert_called_once()
+        manager_mock().set_flashing_finished.assert_called_once()
+
+    @patch(
         "recidiviz.admin_panel.routes.ingest_ops.DirectIngestRawFileMetadataManagerV2"
     )
     def test_get_stale_secondary(self, manager_mock: mock.MagicMock) -> None:
@@ -672,3 +707,31 @@ class IngestOpsEndpointTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json, None)
         manager_mock().mark_instance_data_invalidated.assert_has_calls([call()])
+
+    @patch("recidiviz.admin_panel.routes.ingest_ops.SessionFactory")
+    @patch("recidiviz.admin_panel.routes.ingest_ops.DirectIngestRawFileImportManager")
+    @patch(
+        "recidiviz.admin_panel.routes.ingest_ops.DirectIngestRawFileMetadataManagerV2"
+    )
+    def test_transfer_raw_data_v2_metadata_to_new_instance(
+        self,
+        file_manager_mock: mock.MagicMock,
+        import_manager_mock: mock.MagicMock,
+        _session_mock: mock.MagicMock,
+    ) -> None:
+        # Arrange
+        response = self.client.post(
+            "/api/ingest_operations/flash_primary_db/transfer_raw_data_v2_metadata_to_new_instance",
+            json={
+                "stateCode": "US_XX",
+                "destIngestInstance": "SECONDARY",
+                "srcIngestInstance": "PRIMARY",
+            },
+            headers={"X-Appengine-Inbound-Appid": "recidiviz-456"},
+        )
+
+        # Assert
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json, None)
+        file_manager_mock().transfer_metadata_to_new_instance.assert_called_once()
+        import_manager_mock().transfer_metadata_to_new_instance.assert_called_once()

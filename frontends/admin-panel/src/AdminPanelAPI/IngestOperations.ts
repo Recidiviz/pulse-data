@@ -401,6 +401,20 @@ export const getIsFlashingInProgress = async (
   );
 };
 
+// Update current flash status row
+export const updateIsFlashingInProgress = async (
+  stateCode: string,
+  isFlashing: boolean
+): Promise<Response> => {
+  return postWithURLAndBody(
+    `/api/ingest_operations/is_flashing_in_progress/update`,
+    {
+      stateCode,
+      isFlashing,
+    }
+  );
+};
+
 // Get info about whether secondary is stale
 export const getStaleSecondaryRawData = async (
   stateCode: string
@@ -408,7 +422,7 @@ export const getStaleSecondaryRawData = async (
   return getResource(`/api/ingest_operations/stale_secondary/${stateCode}`);
 };
 
-// Acquire all resource locks for state + instance pair
+// Acquire all resource locks for state + raw data instance pair
 export const acquireResourceLocksForStateAndInstance = async (
   stateCode: string,
   rawDataInstance: DirectIngestInstance,
@@ -462,6 +476,22 @@ export const markInstanceRawDataV2Invalidated = async (
     {
       stateCode,
       rawDataInstance,
+    }
+  );
+};
+
+// Transfer raw data metadata to new instance
+export const transferRawDataV2MetadataToNewInstance = async (
+  stateCode: string,
+  srcIngestInstance: DirectIngestInstance,
+  destIngestInstance: DirectIngestInstance
+): Promise<Response> => {
+  return postWithURLAndBody(
+    "/api/ingest_operations/flash_primary_db/transfer_raw_data_v2_metadata_to_new_instance",
+    {
+      stateCode,
+      srcIngestInstance,
+      destIngestInstance,
     }
   );
 };

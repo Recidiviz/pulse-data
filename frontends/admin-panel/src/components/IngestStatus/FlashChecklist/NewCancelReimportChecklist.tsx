@@ -286,7 +286,7 @@ const NewCancelReimportChecklist = (): JSX.Element => {
       </h3>
       <h3>
         <em>SECONDARY Lock Status</em>:{" "}
-        {currentLockStatus.lockSecondaryHeaderDescription()}
+        {currentLockStatus.secondaryHeaderDescription()}
       </h3>
       <ChecklistSection
         currentStep={currentStep}

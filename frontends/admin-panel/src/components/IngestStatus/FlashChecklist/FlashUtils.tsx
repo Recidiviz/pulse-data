@@ -37,4 +37,6 @@ export const runAndCheckStatus = async (
 
 export const cancelReimportLockDescription =
   "Acquiring locks for canceling a secondary reimport from the admin panel";
+export const flashSecondaryLockDescription =
+  "Acquiring locks to flash SECONDARY to PRIMARY from the admin panel";
 export const flashingLockSecondsTtl = 60 * 60 * 24; // 24 hours

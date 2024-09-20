@@ -70,6 +70,7 @@ from recidiviz.ingest.flash_database_tools import (
     delete_contents_of_raw_data_tables,
     delete_tables_in_pruning_datasets,
 )
+from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.errors import (
     DirectIngestRawDataResourceLockAlreadyReleasedError,
     DirectIngestRawDataResourceLockHeldError,
@@ -513,8 +514,6 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
             logging.exception(error)
             return f"{error}", HTTPStatus.INTERNAL_SERVER_ERROR
 
-    # TODO(#29133) update to use DirectIngestRawFileMetadataManagerV2
-    # TODO(#29133) add call to DirectIngestRawFileImportRunManager.transfer_metadata_to_new_instance
     @bp.route(
         "/api/ingest_operations/flash_primary_db/transfer_raw_data_metadata_to_new_instance",
         methods=["POST"],
@@ -833,6 +832,27 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
             HTTPStatus.OK,
         )
 
+    @bp.route("/api/ingest_operations/is_flashing_in_progress/update", methods=["POST"])
+    def _set_flash_status() -> Tuple[str, HTTPStatus]:
+        try:
+            request_json = assert_type(request.json, dict)
+            state_code = StateCode(request_json["stateCode"])
+            is_flashing = assert_type(request_json["isFlashing"], bool)
+        except ValueError:
+            return "Invalid input data", HTTPStatus.BAD_REQUEST
+
+        manager = DirectIngestRawDataFlashStatusManager(state_code.value)
+
+        if is_flashing:
+            manager.set_flashing_started()
+        else:
+            manager.set_flashing_finished()
+
+        return (
+            "",
+            HTTPStatus.OK,
+        )
+
     @bp.route("/api/ingest_operations/stale_secondary/<state_code_str>")
     def _get_stale_secondary(
         state_code_str: str,
@@ -878,7 +898,10 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
             HTTPStatus.OK,
         )
 
-    @bp.route("/api/ingest_operations/resource_locks/acquire_all", methods=["POST"])
+    @bp.route(
+        "/api/ingest_operations/resource_locks/acquire_all",
+        methods=["POST"],
+    )
     def _acquire_all_locks_for_state_and_instance() -> (
         Tuple[Union[str, Response], HTTPStatus]
     ):
@@ -965,6 +988,68 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
                 HTTPStatus.OK,
             )
 
+        except ValueError as error:
+            logging.exception(error)
+            return f"{error}", HTTPStatus.INTERNAL_SERVER_ERROR
+
+    @bp.route(
+        "/api/ingest_operations/flash_primary_db/transfer_raw_data_v2_metadata_to_new_instance",
+        methods=["POST"],
+    )
+    def _transfer_raw_data_v2_metadata_to_new_instance() -> Tuple[str, HTTPStatus]:
+        try:
+            request_json = assert_type(request.json, dict)
+            state_code = StateCode(request_json["stateCode"])
+            src_ingest_instance = DirectIngestInstance(
+                request_json["srcIngestInstance"].upper()
+            )
+            dest_ingest_instance = DirectIngestInstance(
+                request_json["destIngestInstance"].upper()
+            )
+        except ValueError:
+            return "Invalid input data", HTTPStatus.BAD_REQUEST
+
+        try:
+
+            import_run_manager = DirectIngestRawFileImportManager(
+                region_code=state_code.value,
+                raw_data_instance=src_ingest_instance,
+            )
+            new_import_run_manager = DirectIngestRawFileImportManager(
+                region_code=state_code.value,
+                raw_data_instance=dest_ingest_instance,
+            )
+
+            raw_data_manager = DirectIngestRawFileMetadataManagerV2(
+                region_code=state_code.value,
+                raw_data_instance=src_ingest_instance,
+            )
+
+            new_instance_manager = DirectIngestRawFileMetadataManagerV2(
+                region_code=state_code.value,
+                raw_data_instance=dest_ingest_instance,
+            )
+
+            # wrap w/in a single db transaction so everything is rolled back
+            with SessionFactory.using_database(
+                import_run_manager.database_key
+            ) as session:
+
+                # first import runs, as it uses is_invalidated to make sure all import
+                # runs with associated metadata have been properly invalidated
+                import_run_manager.transfer_metadata_to_new_instance(
+                    new_instance_manager=new_import_run_manager, session=session
+                )
+
+                # then the two metadata db
+                raw_data_manager.transfer_metadata_to_new_instance(
+                    new_instance_manager=new_instance_manager, session=session
+                )
+
+            return (
+                "",
+                HTTPStatus.OK,
+            )
         except ValueError as error:
             logging.exception(error)
             return f"{error}", HTTPStatus.INTERNAL_SERVER_ERROR
