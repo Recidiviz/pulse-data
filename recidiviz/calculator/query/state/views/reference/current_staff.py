@@ -64,11 +64,6 @@ CURRENT_STAFF_QUERY_TEMPLATE = f"""
                     WHEN "DISTRICT 6" THEN "DISTRICT OFFICE 6, POCATELLO"
                     WHEN "DISTRICT 7" THEN "DISTRICT OFFICE 7, IDAHO FALLS"
                 END
-            -- Transform MI district IDs from "10 - CENTRAL" --> "10" and "4A" --> "4a" so they
-            -- match the districts in the current staff record / admin panel, which makes it easier
-            -- to compare the change adding this to what currently exists.
-            -- TODO(#25398) Remove this transformation
-            WHEN attrs.state_code="US_MI" THEN SPLIT(LOWER(attrs.supervision_district_id), " ")[SAFE_OFFSET(0)]
             WHEN attrs.state_code IN ("US_CA", "US_ND") THEN
                 COALESCE(attrs.supervision_office_name, attrs.supervision_office_name_inferred)
             -- ME users don't have ingested location periods yet, so use inferred districts for them
