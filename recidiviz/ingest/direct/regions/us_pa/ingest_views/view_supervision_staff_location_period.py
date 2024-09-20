@@ -45,6 +45,7 @@ contacts_data AS (
     SELECT 
         EmployeeID,
         Org_Name,
+        DO_Orgcode,
         CAST(update_datetime AS DATETIME) AS update_datetime,
         MAX(CAST(update_datetime AS DATETIME)) OVER (PARTITION BY TRUE) AS last_file_update_datetime,
         MAX(CAST(update_datetime AS DATETIME)) OVER (PARTITION BY EmployeeID) AS last_appearance_datetime,
@@ -70,7 +71,9 @@ cleaned_data AS (
   UNION ALL 
 
   SELECT DISTINCT
-    *
+    roster_data.* EXCEPT(DO_Orgcode),
+    location_external_ids.Org_Name,
+    COALESCE(Org_cd, DO_Orgcode) as Org_cd
   FROM roster_data
   LEFT JOIN location_external_ids 
   ON (UPPER(location_external_ids.ORG_NAME) = UPPER(roster_data.Org_name))

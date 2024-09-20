@@ -76,4 +76,5 @@ output:
                         - REENTRY
                         - TASK FORCE AGENT
                         - FIELD TRAINING AGENT
+                        - K9
               - $else: $literal_enum(StateStaffCaseloadType.GENERAL)
