@@ -26,6 +26,9 @@ from recidiviz.ingest.views.non_enum_counter import (
     StateTableNonEnumCounterBigQueryViewCollector,
 )
 from recidiviz.ingest.views.state_person_counter import StatePersonBigQueryViewCollector
+from recidiviz.ingest.views.unioned_normalized_state_views import (
+    create_unioned_normalized_state_dataset_view_builders,
+)
 from recidiviz.ingest.views.unioned_state_views import (
     create_unioned_state_dataset_view_builders,
 )
@@ -47,4 +50,5 @@ def get_view_builders_for_views_to_update() -> Sequence[BigQueryViewBuilder]:
     return [
         *collect_ingest_metadata_view_builders(),
         *create_unioned_state_dataset_view_builders(),
+        *create_unioned_normalized_state_dataset_view_builders(),
     ]

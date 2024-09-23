@@ -36,9 +36,6 @@ from recidiviz.pipelines.ingest.dataset_config import (
 from recidiviz.source_tables.ingest_pipeline_output_table_collector import (
     build_ingest_pipeline_output_source_table_collections,
 )
-from recidiviz.source_tables.union_tables_output_table_collector import (
-    build_unioned_normalized_state_source_table_collection,
-)
 from recidiviz.tests.persistence.entity import fake_entities
 
 
@@ -182,16 +179,6 @@ class TestGetBqSchemaForEntitiesModule(unittest.TestCase):
         )
         expected_table_to_schema = {
             t.address.table_id: t.schema_fields for t in state_collection.source_tables
-        }
-
-        table_to_schema = get_bq_schema_for_entities_module(normalized_state_entities)
-
-        self._compare_schemas(expected_table_to_schema, table_to_schema)
-
-    def test_parity_with_source_table_collection_normalized_state(self) -> None:
-        expected_table_to_schema = {
-            t.address.table_id: t.schema_fields
-            for t in build_unioned_normalized_state_source_table_collection().source_tables
         }
 
         table_to_schema = get_bq_schema_for_entities_module(normalized_state_entities)

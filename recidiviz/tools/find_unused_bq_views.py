@@ -39,6 +39,7 @@ from recidiviz.calculator.query.externally_shared_views.dataset_config import (
 from recidiviz.calculator.query.state.dataset_config import (
     DATAFLOW_METRICS_MATERIALIZED_DATASET,
     IMPACT_REPORTS_DATASET_ID,
+    NORMALIZED_STATE_VIEWS_DATASET,
     POPULATION_PROJECTION_DATASET,
     SPARK_OUTPUT_DATASET_MOST_RECENT,
     STATE_BASE_VIEWS_DATASET,
@@ -194,6 +195,13 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
         )
         for table_id in get_bq_schema_for_entities_module(state_entities)
     },
+    BigQueryAddress(
+        dataset_id=NORMALIZED_STATE_VIEWS_DATASET,
+        table_id="state_sentence_inferred_group_view",
+    ): (
+        "This is a new table in the normalized_state schema which will soon be used in "
+        "a sessions view (Anna Geiduschek, 2024-09-19)"
+    ),
     CONSECUTIVE_SENTENCES_VIEW_BUILDER.address: (
         "This is going to be used in revamped sessions views that referenced the sentencing v2 schema "
         "(Nick Tallant, 2024-09-11)"

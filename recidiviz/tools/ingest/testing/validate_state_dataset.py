@@ -84,12 +84,10 @@ from recidiviz.persistence.entity.state.normalized_entities import (
     NormalizedStateStaff,
 )
 from recidiviz.source_tables.ingest_pipeline_output_table_collector import (
+    build_normalized_state_output_source_table_collection,
     build_state_output_source_table_collection,
 )
 from recidiviz.source_tables.source_table_config import SourceTableCollection
-from recidiviz.source_tables.union_tables_output_table_collector import (
-    build_unioned_normalized_state_source_table_collection,
-)
 from recidiviz.tools.calculator.compare_views import compare_table_or_view
 from recidiviz.tools.calculator.create_or_update_dataflow_sandbox import (
     TEMP_DATAFLOW_DATASET_DEFAULT_TABLE_EXPIRATION_MS,
@@ -248,7 +246,7 @@ class StateDatasetValidator:
         if schema_type == "state":
             return build_state_output_source_table_collection(state_code)
         if schema_type == "normalized_state":
-            return build_unioned_normalized_state_source_table_collection()
+            return build_normalized_state_output_source_table_collection(state_code)
         raise ValueError(f"Unexpected schema_type: {schema_type}")
 
     def _is_enum_entity(self, table_name: str) -> bool:

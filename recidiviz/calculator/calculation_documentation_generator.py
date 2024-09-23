@@ -29,6 +29,7 @@ from typing import Any, Dict, List, Optional, Set, Type
 
 import attr
 from google.cloud import bigquery
+from more_itertools import one
 from pytablewriter import MarkdownTableWriter
 
 import recidiviz
@@ -39,6 +40,8 @@ from recidiviz.big_query.big_query_view_dag_walker import BigQueryViewDagWalker
 from recidiviz.calculator.query.state.dataset_config import (
     DATAFLOW_METRICS_DATASET,
     DATAFLOW_METRICS_MATERIALIZED_DATASET,
+    NORMALIZED_STATE_DATASET,
+    NORMALIZED_STATE_VIEWS_DATASET,
 )
 from recidiviz.calculator.query.state.views.dataflow_metrics_materialized.most_recent_dataflow_metrics import (
     generate_metric_view_names,
@@ -67,6 +70,9 @@ from recidiviz.pipelines.dataflow_config import (
     DATAFLOW_METRICS_TO_TABLES,
     DATAFLOW_TABLES_TO_METRIC_TYPES,
 )
+from recidiviz.pipelines.ingest.dataset_config import (
+    normalized_state_dataset_for_state_code,
+)
 from recidiviz.pipelines.metrics.incarceration.metrics import IncarcerationMetric
 from recidiviz.pipelines.metrics.population_spans.metrics import PopulationSpanMetric
 from recidiviz.pipelines.metrics.program.metrics import ProgramMetric
@@ -89,6 +95,7 @@ from recidiviz.tools.docs.utils import persist_file_contents
 from recidiviz.utils.environment import GCP_PROJECT_STAGING, GCPEnvironment
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.utils.string import StrictStringFormatter
+from recidiviz.utils.types import assert_type
 from recidiviz.utils.yaml_dict import YAMLDict
 from recidiviz.view_registry.deployed_views import all_deployed_view_builders
 
@@ -106,6 +113,15 @@ LATEST_VIEW_DATASETS = {
     raw_latest_views_dataset_for_region(
         state_code=state_code,
         instance=instance,
+        sandbox_dataset_prefix=None,
+    )
+    for instance in DirectIngestInstance
+    for state_code in StateCode
+}
+
+STATE_SPECIFIC_NORMALIZED_STATE_DATASETS = {
+    normalized_state_dataset_for_state_code(
+        state_code=state_code,
         sandbox_dataset_prefix=None,
     )
     for instance in DirectIngestInstance
@@ -507,10 +523,27 @@ class CalculationDocumentationGenerator:
         Given a set of BigQueryAddresses, returns a str list of
         those addresses, organized by dataset.
         """
-        datasets_to_descriptions = get_all_source_table_datasets_to_descriptions()
+        datasets_to_descriptions = {
+            **get_all_source_table_datasets_to_descriptions(),
+            NORMALIZED_STATE_DATASET: (
+                "Contains normalized versions of the entities in the state dataset "
+                "produced by the ingest pipeline."
+            ),
+        }
         datasets_to_addresses = self._get_addresses_by_dataset(addresses)
         views_str = ""
-        for dataset, address_list in datasets_to_addresses.items():
+        for address_list in datasets_to_addresses.values():
+            address_list = [
+                assert_type(
+                    self.dag_walker.nodes_by_address[a].view.materialized_address,
+                    BigQueryAddress,
+                )
+                if a.dataset_id == NORMALIZED_STATE_VIEWS_DATASET
+                else a
+                for a in address_list
+            ]
+            dataset = one({a.dataset_id for a in address_list})
+
             views_str += f"#### {dataset}\n"
             views_str += (
                 f"_{datasets_to_descriptions[dataset]}_\n"
@@ -524,7 +557,7 @@ class CalculationDocumentationGenerator:
                             address=address, products_section=True
                         )
                         + " <br/>"
-                        for address in address_list
+                        for address in sorted(address_list)
                     ],
                     escape_underscores=False,
                 )
@@ -673,14 +706,26 @@ class CalculationDocumentationGenerator:
 
         documentation += self._get_shipped_states_str(product)
 
-        all_parent_addresses = self._get_all_parent_addresses_for_product(product)
+        all_parent_addresses = {
+            address
+            for address in self._get_all_parent_addresses_for_product(product)
+            # Ignore all state-specific ingest output addresses - these will get
+            # surfaced instead as being a source table in the normalized_state dataset.
+            if address.dataset_id not in STATE_SPECIFIC_NORMALIZED_STATE_DATASETS
+        }
 
         source_table_addresses = {
             address
             for address in all_parent_addresses
-            # Metric info will be included in the metric-specific section
             if address.dataset_id
-            in get_all_source_table_datasets() - {DATAFLOW_METRICS_DATASET}
+            in get_all_source_table_datasets()
+            - {
+                # Metric info will be included in the metric-specific section
+                DATAFLOW_METRICS_DATASET,
+            }
+            # Even though they aren't technically source tables, parent addresses
+            # in the normalized_state_views dataset should be treated as source tables.
+            or address.dataset_id == NORMALIZED_STATE_VIEWS_DATASET
         }
 
         metric_view_addresses = {
@@ -871,7 +916,15 @@ class CalculationDocumentationGenerator:
         products_section: bool,
     ) -> str:
         """Gitbook-specific formatting for the generated dependency tree."""
-        is_source_table = address.dataset_id in get_all_source_table_datasets()
+        is_source_table = address.dataset_id in get_all_source_table_datasets() or (
+            address.dataset_id
+            in {
+                # Tables in this dataset are not technically source tables because they
+                # are generated by materializing views in the normalized_state_views
+                # dataset, however, we want to format these like source tables.
+                NORMALIZED_STATE_DATASET,
+            }
+        )
         is_raw_data_table = address.dataset_id in RAW_TABLE_DATASETS
         is_raw_data_view = address.dataset_id in LATEST_VIEW_DATASETS
         is_metric = address.dataset_id in DATAFLOW_METRICS_DATASET
@@ -940,6 +993,15 @@ class CalculationDocumentationGenerator:
             address: BigQueryAddress, is_pruned_at_address: bool
         ) -> str:
             suffix = " <br/>"
+
+            # We want to display the unioned normalized state views as being in the
+            #  normalized_state dataset, not normalized_state_views.
+            if address.dataset_id == NORMALIZED_STATE_VIEWS_DATASET:
+                address = assert_type(
+                    self.dag_walker.nodes_by_address[address].view.materialized_address,
+                    BigQueryAddress,
+                )
+
             if is_pruned_at_address:
                 suffix = " (...)" + suffix
 
@@ -950,17 +1012,21 @@ class CalculationDocumentationGenerator:
                 + suffix
             )
 
+        datasets_to_skip = set(RAW_TABLE_DATASETS)
+        if view.dataset_id != NORMALIZED_STATE_VIEWS_DATASET:
+            datasets_to_skip |= STATE_SPECIFIC_NORMALIZED_STATE_DATASETS
+
         if descendants:
             tree_str = self.dag_walker.descendants_dfs_tree_str(
                 view,
                 custom_node_formatter=_custom_formatter,
-                datasets_to_skip=RAW_TABLE_DATASETS,
+                datasets_to_skip=datasets_to_skip,
             )
         else:
             tree_str = self.dag_walker.ancestors_dfs_tree_str(
                 view,
                 custom_node_formatter=_custom_formatter,
-                datasets_to_skip=RAW_TABLE_DATASETS,
+                datasets_to_skip=datasets_to_skip,
             )
         num_lines = len(tree_str.rstrip().split("\n"))
         if num_lines == 1:
