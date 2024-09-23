@@ -219,6 +219,9 @@ from recidiviz.calculator.query.state.views.sessions.supervision_unit_supervisor
 from recidiviz.calculator.query.state.views.sessions.system_sessions import (
     SYSTEM_SESSIONS_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.sessions.us_az.us_az_incarceration_staff_assignment_sessions_preprocessed import (
+    US_AZ_INCARCERATION_STAFF_ASSIGNMENT_SESSIONS_PREPROCESSED_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.sessions.us_co.us_co_incarceration_population_metrics_preprocessed import (
     US_CO_INCARCERATION_POPULATION_METRICS_PREPROCESSED_VIEW_BUILDER,
 )
@@ -416,4 +419,5 @@ SESSIONS_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     LOCATION_TYPE_SESSIONS_VIEW_BUILDER,
     HOUSING_UNIT_TYPE_NON_PROTECTIVE_CUSTODY_SOLITARY_SESSIONS_VIEW_BUILDER,
     CUSTODIAL_AUTHORITY_SESSIONS_VIEW_BUILDER,
+    US_AZ_INCARCERATION_STAFF_ASSIGNMENT_SESSIONS_PREPROCESSED_VIEW_BUILDER,
 ]
