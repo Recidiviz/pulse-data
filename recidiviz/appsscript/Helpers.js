@@ -16,6 +16,14 @@
 // =============================================================================
 /* Helper file used by CreateReport.gs. */
 
+const REGIONS_AND_FACILITIES_TO_FILTER_OUT = [
+  "NOT_APPLICABLE",
+  "EXTERNAL_UNKNOWN",
+  "UNKNOWN",
+  "NULL",
+  "UNKNOWN LOCATION",
+];
+
 /**
  * Run Query
  * Given a query string, runs the query against the BigQuery database (synchronously)
@@ -65,6 +73,7 @@ function runQuery(queryString) {
   return data;
 }
 
+
 /**
  * Create column chart
  * Builds and populates a new column chart.
@@ -73,12 +82,26 @@ function runQuery(queryString) {
  * @param {string} title The title of the chart
  * @param {string} xAxis The x-axis lable of the chart
  * @param {string} yAxis The y-axis lable of the chart
- * @returns {Chart} The built/populated column chart
+ * @returns {Chart} The built/populated column chart or null if there is no data to display (all 0 values)
  */
 function createColumnChart(data, chartData, title, xAxis, yAxis) {
-  data.forEach((newRow) => {
+  const enCollator = new Intl.Collator('en', {"numeric": true});
+  let buildChart = false;
+  data.sort(enCollator.compare).forEach((newRow) => {
+    if (
+      REGIONS_AND_FACILITIES_TO_FILTER_OUT.includes(newRow[0]) ||
+      parseInt(newRow[1]) === 0
+    ) {
+      return;
+    }
     chartData.addRow(newRow);
+    buildChart = true;
   });
+
+  if (buildChart === false) {
+    return null;
+  }
+
   chartData.build();
 
   const chart = Charts.newColumnChart()
