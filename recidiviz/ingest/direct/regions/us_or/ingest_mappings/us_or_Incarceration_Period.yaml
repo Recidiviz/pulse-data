@@ -147,6 +147,7 @@ output:
                   - ESLV # Escape from Leave
                   - FRCW # Forest Crew
                   - LODG # Lodged out of Institution
+                  - DOCC # TODO(#33572): Remap once we know definition
                 StateIncarcerationPeriodAdmissionReason.EXTERNAL_UNKNOWN:
                   - MED # (only 2 instances)
                   - OTC # (only 1 instance)
@@ -294,6 +295,7 @@ output:
                   - OPMD # Central Placement Decision
                   - PC # Parole Consideration
                   - LODG # Lodged out of Institution
+                  - DOCC # TODO(#33572): Remap once we know definition
                 StateIncarcerationPeriodReleaseReason.VACATED:
                   - VARE # Sentences Vacated & Remanded to Court (only 1 instance)
                   - DISM # Conviction/Sentence Dismissed
