@@ -202,6 +202,7 @@ def coalesce_results_and_errors(
     region_code: str,
     raw_data_instance: DirectIngestInstance,
     serialized_bq_metadata: List[str],
+    serialized_header_verification_errors: List[str],
     serialized_divide_files_into_chunks: List[str],
     serialized_pre_import_normalization_result: str,
     serialized_load_prep_results: List[str],
@@ -228,6 +229,7 @@ def coalesce_results_and_errors(
         import_errors,
     ) = _deserialize_coalesce_results_and_errors_inputs(
         serialized_bq_metadata,
+        serialized_header_verification_errors,
         serialized_divide_files_into_chunks,
         serialized_pre_import_normalization_result,
         serialized_load_prep_results,
@@ -448,6 +450,7 @@ def _build_file_imports_for_results(
 
 def _deserialize_coalesce_results_and_errors_inputs(
     serialized_bq_metadata: Optional[List[str]],
+    serialized_header_verification_errors: Optional[List[str]],
     serialized_divide_files_into_chunks: Optional[List[str]],
     serialized_pre_import_normalization_result: Optional[str],
     serialized_load_prep_results: Optional[List[str]],
@@ -476,6 +479,15 @@ def _deserialize_coalesce_results_and_errors_inputs(
         RawBigQueryFileMetadata.deserialize(serialized_bq_metadata)
         for serialized_bq_metadata in serialized_bq_metadata
     ]
+
+    header_verification_errors = (
+        [
+            RawFileProcessingError.deserialize(serialized_error)
+            for serialized_error in serialized_header_verification_errors
+        ]
+        if serialized_header_verification_errors
+        else []
+    )
 
     divide_files_step_output = MappedBatchedTaskOutput.deserialize(
         serialized_divide_files_into_chunks or [],
@@ -534,6 +546,7 @@ def _deserialize_coalesce_results_and_errors_inputs(
         ),
         (
             [
+                *header_verification_errors,
                 *divide_files_step_output.flatten_errors(),
                 *pre_import_normalization_step_errors,
             ],
