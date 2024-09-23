@@ -20,6 +20,7 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 
 from google.cloud import bigquery
 
+from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_utils import (
     BigQueryDateInterval,
     schema_field_for_type,
@@ -228,6 +229,26 @@ class TestSingleTaskEligibilitySpansBigQueryViewBuilder(BigQueryEmulatorTestCase
         self._load_data_for_completion_event_view(
             completion_event_view_builder=TEST_COMPLETION_EVENT_BUILDER,
             task_completion_data=[],
+        )
+
+    def test_materialized_table_for_task_name(self) -> None:
+        self.assertEqual(
+            BigQueryAddress(
+                dataset_id="task_eligibility_spans_us_xx",
+                table_id="my_task_name_materialized",
+            ),
+            SingleTaskEligibilitySpansBigQueryViewBuilder.materialized_table_for_task_name(
+                task_name=TES_QUERY_BUILDER.task_name,
+                state_code=TES_QUERY_BUILDER.state_code,
+            ),
+        )
+
+        self.assertEqual(
+            TES_QUERY_BUILDER.materialized_address,
+            SingleTaskEligibilitySpansBigQueryViewBuilder.materialized_table_for_task_name(
+                task_name=TES_QUERY_BUILDER.task_name,
+                state_code=TES_QUERY_BUILDER.state_code,
+            ),
         )
 
     def test_simple_tes_query(self) -> None:
