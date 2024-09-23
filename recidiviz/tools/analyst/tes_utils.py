@@ -18,10 +18,15 @@
 
 import datetime
 import json
-from typing import List, Union, Dict, Optional, Tuple
+from typing import Dict, List, Optional, Tuple, Union
 
 import numpy as np
 import pandas as pd
+
+from recidiviz.common.constants.states import StateCode
+from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
+    SingleTaskEligibilitySpansBigQueryViewBuilder,
+)
 
 
 def get_eligible_clients_over_time(
@@ -32,8 +37,7 @@ def get_eligible_clients_over_time(
     table_starts_at: str = "2015-01-01",
 ) -> pd.DataFrame:
     """
-    Gets the number of eligible clients over time for a given task from the
-    'task_eligibility.all_tasks_materialized' table in BigQuery
+    Gets the number of eligible clients over time for a given task.
 
     Args:
         task_name (str): The name of the task. E.g., 'TRANSFER_TO_XCRC_REQUEST'.
@@ -46,19 +50,24 @@ def get_eligible_clients_over_time(
         DataFrame: A DataFrame with columns 'date' and 'eligible_folks', representing
             the number of eligible people in prison for each {date_part_interval} (e.g. 'MONTH').
     """
+
+    task_table_address = (
+        SingleTaskEligibilitySpansBigQueryViewBuilder.materialized_table_for_task_name(
+            task_name=task_name, state_code=StateCode(state_code.upper())
+        )
+    )
+
     # Define the SQL query
     query = f"""
     SELECT 
         date,
         COUNT(*) AS eligible_folks,
-    FROM `{project_id}.task_eligibility.all_tasks_materialized` s,
+    FROM `{project_id}.{task_table_address.to_str()}` s,
     UNNEST(GENERATE_DATE_ARRAY( CAST('{table_starts_at}' AS DATE), 
            CURRENT_DATE('US/Eastern'), 
            INTERVAL 1 {date_part_interval})) AS date
     WHERE date BETWEEN s.start_date AND COALESCE(s.end_date, CURRENT_DATE('US/Eastern'))
         AND is_eligible
-        AND state_code = '{state_code}'
-        AND task_name = '{task_name}'
     GROUP BY date
     ORDER BY 1
     """
@@ -86,9 +95,8 @@ def get_task_query(
     age: bool = False,
 ) -> pd.DataFrame:
     """
-    Gets the data for a given task from the 'task_eligibility.all_tasks_materialized'
-    table in BigQuery. It also converts the 'start_date' and 'end_date' columns to
-    datetime and sets NULL end_dates to the current date.
+    Gets the data for a given task from BigQuery. It also converts the 'start_date' and
+    'end_date' columns to datetime and sets NULL end_dates to the current date.
 
     Args:
         task_name (str): The name of the task. E.g., 'TRANSFER_TO_XCRC_REQUEST'.
@@ -101,6 +109,12 @@ def get_task_query(
     Returns:
         pd.DataFrame: DataFrame containing modified task eligibility data.
     """
+    tes_address = (
+        SingleTaskEligibilitySpansBigQueryViewBuilder.materialized_table_for_task_name(
+            task_name=task_name, state_code=StateCode(state_code.upper())
+        )
+    )
+
     # Define the SQL query
     # Join demographics if user calls any of them
     if race or gender or age:
@@ -112,12 +126,12 @@ def get_task_query(
             d.gender AS gender,
             IF(s.start_date > '3000-01-01', CURRENT_DATE("US/Eastern"), s.start_date) AS start_date,
             IF(s.end_date > '3000-01-01', CURRENT_DATE("US/Eastern"), s.end_date) AS end_date
-        FROM `{project_id}.task_eligibility.all_tasks_materialized` s
-        LEFT JOIN `{project_id}.sessions.person_demographics_materialized` d
-            ON s.person_id = d.person_id
-            AND s.state_code = d.state_code
-        WHERE s.state_code = '{state_code}'
-            AND s.task_name = '{task_name}'
+        FROM `{project_id}.{tes_address.to_str()}` s
+        LEFT JOIN (
+            SELECT * FROM `{project_id}.sessions.person_demographics_materialized`
+            WHERE s.state_code = '{state_code}'
+        ) d
+        ON s.person_id = d.person_id
         ORDER BY 1,2,3
         """
     else:
@@ -126,9 +140,7 @@ def get_task_query(
             s.* EXCEPT (end_date, start_date, end_reason, task_name, task_eligibility_span_id),
             IF(s.start_date > '3000-01-01', CURRENT_DATE("US/Eastern"), s.start_date) AS start_date,
             IF(s.end_date > '3000-01-01', CURRENT_DATE("US/Eastern"), s.end_date) AS end_date
-        FROM `{project_id}.task_eligibility.all_tasks_materialized` s
-        WHERE s.state_code = '{state_code}'
-            AND s.task_name = '{task_name}'
+        FROM `{project_id}.{tes_address.to_str()}` s
         ORDER BY 1,2,3
         """
 

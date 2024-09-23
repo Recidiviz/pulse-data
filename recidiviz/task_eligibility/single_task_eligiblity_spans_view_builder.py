@@ -21,6 +21,7 @@ from collections import defaultdict
 from textwrap import indent
 from typing import Dict, List, Optional, Sequence, Union
 
+from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.bq_utils import (
     nonnull_end_date_clause,
@@ -62,6 +63,7 @@ from recidiviz.task_eligibility.utils.state_dataset_query_fragments import (
     extract_object_from_json,
 )
 from recidiviz.utils.string import StrictStringFormatter
+from recidiviz.utils.types import assert_type
 
 # Query fragment that can be formatted with criteria-specific naming. Once formatted,
 # the string will look like a standard view query template string:
@@ -351,6 +353,7 @@ class SingleTaskEligibilitySpansBigQueryViewBuilder(SimpleBigQueryViewBuilder):
 
     def __init__(
         self,
+        *,
         state_code: StateCode,
         task_name: str,
         description: str,
@@ -371,16 +374,18 @@ class SingleTaskEligibilitySpansBigQueryViewBuilder(SimpleBigQueryViewBuilder):
             criteria_spans_view_builders,
         )
         view_query_template = self._build_query_template(
-            state_code,
-            task_name,
-            candidate_population_view_builder,
-            criteria_spans_view_builders,
-            completion_event_builder,
-            almost_eligible_condition,
+            state_code=state_code,
+            task_name=task_name,
+            candidate_population_view_builder=candidate_population_view_builder,
+            criteria_spans_view_builders=criteria_spans_view_builders,
+            completion_event_builder=completion_event_builder,
+            almost_eligible_criteria_condition=almost_eligible_condition,
         )
+        view_address = self._view_address_for_task_name(state_code, task_name)
+
         super().__init__(
-            dataset_id=task_eligibility_spans_state_specific_dataset(state_code),
-            view_id=task_name.lower(),
+            dataset_id=view_address.dataset_id,
+            view_id=view_address.table_id,
             description=description,
             view_query_template=view_query_template,
             should_materialize=True,
@@ -398,7 +403,35 @@ class SingleTaskEligibilitySpansBigQueryViewBuilder(SimpleBigQueryViewBuilder):
         self.almost_eligible_condition = almost_eligible_condition
 
     @staticmethod
+    def _view_address_for_task_name(
+        state_code: StateCode, task_name: str
+    ) -> BigQueryAddress:
+        return BigQueryAddress(
+            dataset_id=task_eligibility_spans_state_specific_dataset(state_code),
+            table_id=task_name.lower(),
+        )
+
+    @classmethod
+    def materialized_table_for_task_name(
+        cls, *, state_code: StateCode, task_name: str
+    ) -> BigQueryAddress:
+        """Returns the table that you should query to get task eligibility spans for the
+        given state's task.
+        """
+        view_address = cls._view_address_for_task_name(state_code, task_name)
+        return assert_type(
+            cls._build_materialized_address(
+                dataset_id=view_address.dataset_id,
+                view_id=view_address.table_id,
+                should_materialize=True,
+                materialized_address_override=None,
+            ),
+            BigQueryAddress,
+        )
+
+    @staticmethod
     def _build_query_template(
+        *,
         state_code: StateCode,
         task_name: str,
         candidate_population_view_builder: TaskCandidatePopulationBigQueryViewBuilder,
