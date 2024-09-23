@@ -36,19 +36,23 @@ in Arizona and attaches it to the relevant incarceration period."""
 
 US_AZ_HOME_PLAN_PREPROCESSED_QUERY_TEMPLATE = """
 WITH base AS (
-SELECT DISTINCT
-  DOC_ID,
-  HOME_PLAN_ID, 
-  HOME_PLAN_DETAIL_ID,
-  IS_HOMELESS_REQUEST, 
-  lookups.DESCRIPTION AS APPROVAL_STATUS, 
-  det.CREATE_DTM,
-FROM `{project_id}.{raw_data_up_to_date_views_dataset}.AZ_DOC_HOME_PLAN_latest` hp
-LEFT JOIN `{project_id}.{raw_data_up_to_date_views_dataset}.AZ_DOC_HOME_PLAN_DETAIL_latest` det
-USING(HOME_PLAN_ID)
-LEFT JOIN `{project_id}.{raw_data_up_to_date_views_dataset}.LOOKUPS_latest` lookups
-ON(det.APPROVAL_STATUS_ID = lookups.LOOKUP_ID)
-AND hp.active_flag = 'Y'
+SELECT * FROM (
+    SELECT DISTINCT
+        DOC_ID,
+        HOME_PLAN_ID, 
+        HOME_PLAN_DETAIL_ID,
+        MAX(HOME_PLAN_DETAIL_ID) OVER (PARTITION BY DOC_ID) AS MAX_HOME_PLAN_DETAIL_ID,
+        IS_HOMELESS_REQUEST, 
+        lookups.DESCRIPTION AS APPROVAL_STATUS, 
+        det.CREATE_DTM,
+    FROM `{project_id}.{raw_data_up_to_date_views_dataset}.AZ_DOC_HOME_PLAN_latest` hp
+    LEFT JOIN `{project_id}.{raw_data_up_to_date_views_dataset}.AZ_DOC_HOME_PLAN_DETAIL_latest` det
+    USING(HOME_PLAN_ID)
+    LEFT JOIN `{project_id}.{raw_data_up_to_date_views_dataset}.LOOKUPS_latest` lookups
+    ON(det.APPROVAL_STATUS_ID = lookups.LOOKUP_ID)
+    AND hp.active_flag = 'Y'
+    )
+WHERE HOME_PLAN_DETAIL_ID = MAX_HOME_PLAN_DETAIL_ID
 ), 
 base_with_dates AS (
 SELECT DISTINCT
