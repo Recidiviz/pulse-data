@@ -130,6 +130,62 @@ case_notes_cte AS (
             AND peid.id_type = 'US_ND_ELITE_BOOKING'
     WHERE ALERT_STATUS = 'ACTIVE'
     AND ALERT_CODE IN ('SEXOF', 'SEX', 'VICTIM', 'VIC', 'CHILD', 'VIOLENT','NOCONT', 'OAC')
+
+    UNION ALL
+
+    -- Parole Board Reviews
+    SELECT 
+        peid.external_id,
+        "Parole Board Reviews" AS criteria,
+        "" AS note_title, 
+        parole_board_notes AS note_body,
+        event_date,
+    FROM (
+        --- Gather all parole review notes
+        SELECT 
+            peid.person_id,
+            peid.state_code,
+            ma.SCREEN_SEQ,
+            STRING_AGG(
+            CONCAT(
+                -- Category description
+                CASE 
+                WHEN ma.QUESTION_SEQ = '0' THEN 'Parole Review Date'
+                WHEN ma.QUESTION_SEQ = '1' THEN 'Action Taken'
+                WHEN ma.QUESTION_SEQ = '2' THEN 'Parole Start Date'
+                WHEN ma.QUESTION_SEQ = '8' THEN 'Notes'
+                END,
+                ": ",
+                -- Category answer
+                ma.COMMENT_TEXT
+            ),
+            ' - ' ORDER BY ma.QUESTION_SEQ
+            ) AS parole_board_notes,
+            MAX(PARSE_DATE('%m/%d/%Y', IFNULL(ma.MODIFY_DATETIME, ma.CREATE_DATETIME))) AS event_date,
+        FROM `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.elite_offender_medical_screenings_6i_latest` ms
+        INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` peid
+            ON peid.external_id = REPLACE(REPLACE(ms.OFFENDER_BOOK_ID,',',''), '.00', '')
+            AND peid.id_type = 'US_ND_ELITE_BOOKING'
+            AND peid.state_code = 'US_ND'
+            AND ms.MEDICAL_QUESTIONAIRE_CODE = 'PAR'
+        LEFT JOIN `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.recidiviz_elite_offender_medical_answers_6i_latest` ma
+            ON ma.OFFENDER_BOOK_ID = peid.external_id
+            AND REPLACE(ms.SCREEN_SEQ, '.00', '') = ma.SCREEN_SEQ
+        WHERE QUESTION_SEQ IN ('0', '1', '2', '8')
+        GROUP BY 1,2,3
+    ) prn
+    -- Get the ELITE external_id
+    INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` peid
+        ON prn.person_id = peid.person_id
+        AND peid.state_code = 'US_ND'
+        AND peid.id_type = 'US_ND_ELITE'
+    -- Only surface notes from current incarceration
+    INNER JOIN `{{project_id}}.{{sessions_dataset}}.incarceration_super_sessions_materialized` iss
+        ON prn.state_code = iss.state_code
+        AND prn.person_id = iss.person_id
+        AND prn.event_date BETWEEN iss.start_date AND IFNULL(DATE_SUB(iss.end_date, INTERVAL 1 DAY), "9999-12-31")
+        AND CURRENT_DATE("US/Pacific") BETWEEN iss.start_date AND IFNULL(DATE_SUB(iss.end_date, INTERVAL 1 DAY), "9999-12-31")
+    WHERE parole_board_notes IS NOT NULL
 ),
 
 array_case_notes_cte AS (
