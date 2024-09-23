@@ -5,12 +5,9 @@ input_columns:
   - COMMITMENT_ID
   - DOC_ID
   - PERSON_ID
-  - status
-  - prev_status
-  - updt_dtm
-  - SENTENCE_BEGIN_DTM
-  - SENTENCE_END_DTM
-unused_columns: [prev_status, SENTENCE_BEGIN_DTM, SENTENCE_END_DTM]
+  - status_raw_text
+  - status_update_datetime
+unused_columns: []
 output:
   StatePerson:
     external_ids:
@@ -36,12 +33,13 @@ output:
             - StateSentenceStatusSnapshot:
                 status:
                   $enum_mapping:
-                    $raw_text: status
+                    $raw_text: status_raw_text
                     $mappings:
                       StateSentenceStatus.SERVING:
                         - Imposed
                         - Paroled to Consecutive
                         - Paroled
+                        - Recidiviz Marked Started
                       StateSentenceStatus.COMMUTED:
                         - Commuted
                       StateSentenceStatus.AMENDED:
@@ -53,4 +51,4 @@ output:
                       StateSentenceStatus.INTERNAL_UNKNOWN:
                         - Set-Aside
                         - Expungement
-                status_update_datetime: updt_dtm
+                status_update_datetime: status_update_datetime

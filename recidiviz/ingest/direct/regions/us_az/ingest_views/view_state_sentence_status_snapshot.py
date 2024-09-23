@@ -51,7 +51,7 @@ sentence_critical_dates AS (
 -- Get the key identifiers for each person & sentence, including statuses over time and
 -- all relevant dates.
 sentences_base as (
-  SELECT 
+  SELECT DISTINCT
     sc_off.OFFENSE_ID, 
     sc_off.COMMITMENT_ID, 
     sc_ep.DOC_ID, 
@@ -77,75 +77,49 @@ USING(OFFENSE_ID)
 -- TODO(#33341): Figure out how to incorporate vacated sentences.
 WHERE UPPER(status.description) NOT LIKE "%VACATE%"
 ),
--- When a sentence started and ended prior to the ACIS system migration, rows associated
--- with it all have UPDT_DTM and CREATE_DTM values no earlier than 2019-11-30. Those
--- fields are unreliable for pre-migration sentences, so this CTE updates the updt_dtm
--- values for sentence impositions to be the same as the date the sentence began.
--- It does not change anything about sentences that have an end date after 2019-11-30.
-update_imposed_dates_for_past_sentences AS (
-    SELECT 
-        * EXCEPT (updt_dtm),
-        CASE WHEN 
-            SENTENCE_END_DTM < CAST('2019-11-30' AS DATE)
-            AND status = 'Imposed'
-            -- There are a handful of entries with an end date but no begin date.
-            -- TODO(#33487): Confirm that these rows are still valid data, and find out
-            -- why they are missing sentence_begin_dtm values.
-            THEN COALESCE(sentence_begin_dtm, sentence_end_dtm)
-            ELSE updt_dtm
-        END AS updt_dtm
-    FROM sentences_base
-),
--- Since there are no standard sentence completion statuses included in this data, we 
--- add a row with a completed status for every sentence that has a populated SENTENCE_END_DTM
--- that is in the past. The updt_dtm of the status is the SENTENCE_END_DTM.
-add_completed_status AS (
-  SELECT 
-    *, 
-    LAG(status) OVER (PARTITION BY OFFENSE_ID ORDER BY updt_dtm) AS prev_status 
-  FROM (
-    SELECT DISTINCT
-      * EXCEPT (STATUS, updt_dtm),
-      -- Add a row with a "Completed" status
-      CASE 
-        WHEN UPPER(STATUS) = 'IMPOSED' 
-          AND sentence_end_dtm < current_datetime() 
-          -- We only want to update the most recent status when a case is closed
-          -- to avoid prematurely marking it as completed.
-          AND LEAD(STATUS) OVER (PARTITION BY OFFENSE_ID ORDER BY updt_dtm) IS NULL
-        THEN 'Recidiviz Marked Completed'
-        ELSE status
-      END AS status,
-      -- Use the SENTENCE_END_DTM as the update datetime for the created "Completed" status
-        CASE 
-        WHEN UPPER(STATUS) = 'IMPOSED' 
-          AND sentence_end_dtm < current_datetime() 
-          -- We only want to update the most recent status when a case is closed
-          -- to avoid prematurely marking it as completed.
-          AND LEAD(STATUS) OVER (PARTITION BY OFFENSE_ID ORDER BY updt_dtm) IS NULL
-        THEN sentence_end_dtm
-        ELSE updt_dtm
-      END AS updt_dtm
-    FROM update_imposed_dates_for_past_sentences
-  )
-), 
--- For some reason, there are regularly updates made to offense information for sentences
--- that ended years ago. These updates create new rows suggesting the sentence was just 
--- imposed each time they are created. This CTE protects this view from producing a new "Imposed"
--- row on sentences that have already been marked as complete whenever the UPDT_DTM in
--- raw data has a more recent value.
-ignore_trailing_updates AS (
-    SELECT * FROM add_completed_status
-    WHERE (prev_status != 'Completed' OR prev_status IS NULL)
-    AND (updt_dtm <= SENTENCE_END_DTM OR SENTENCE_END_DTM IS NULL)
-)
+-- Since the UPDT_DTM and CREATE_DTM values were mostly all overwritten by the system migration 
+-- date 2019-11-30, we have to handle sentences that began before the migration differently.
+-- We use the SENTENCE_BEGIN_DTM and SENTENCE_END_DTM fields to anchor status updates
+-- in time rather than the UPDT_DTM or CREATE_DTM values of rows in the raw data.
+-- This CTE does not create "Recidiviz Marked Completed" statuses for sentences that
+-- began pre-migration but have not yet ended.
+pre_migration_sentences AS (
 SELECT DISTINCT
-  *,
-FROM ignore_trailing_updates
---  Only keep rows where the status of a particular OFFENSE_ID changed.
-WHERE (status != prev_status
-OR (status IS NULL AND prev_status IS NOT NULL)
-OR (prev_status IS NULL AND status IS NOT NULL))
+  PERSON_ID, 
+  DOC_ID,
+  COMMITMENT_ID,
+  OFFENSE_ID,
+  sentence_begin_dtm AS status_update_datetime,
+  'Recidiviz Marked Started' AS status_raw_text
+FROM
+  sentences_base
+WHERE
+  -- sentence started pre-migration, so does not have a useful value in AZ_DOC_SC_OFFENSE.UPDT_DTM
+  sentence_begin_dtm < CAST('2019-11-30' AS DATE)
+
+UNION ALL
+
+SELECT DISTINCT
+  PERSON_ID, 
+  DOC_ID,
+  COMMITMENT_ID,
+  OFFENSE_ID,
+  CASE
+    WHEN sentence_end_dtm = sentence_begin_dtm
+    THEN updt_dtm
+    ELSE sentence_end_dtm
+  END AS status_update_datetime,
+  'Recidiviz Marked Completed' AS status_raw_text
+FROM
+  sentences_base
+WHERE
+  sentence_begin_dtm < CAST('2019-11-30' AS DATE)
+AND
+  -- sentence is completed
+  sentence_end_dtm < current_datetime()
+)
+
+SELECT * FROM pre_migration_sentences
 """
 
 VIEW_BUILDER = DirectIngestViewQueryBuilder(
