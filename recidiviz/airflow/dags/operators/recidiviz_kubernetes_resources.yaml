@@ -75,12 +75,6 @@ MetricExportTimelinessEntrypoint:
       cpu: 500m
       memory: 500Mi
 
-UpdateNormalizedStateEntrypoint:
-  default_resources:
-    limits:
-      cpu: 250m
-      memory: 1Gi
-
 IngestPipelineShouldRunInDagEntrypoint:
   default_resources:
     limits:

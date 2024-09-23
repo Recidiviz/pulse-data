@@ -35,6 +35,7 @@ from recidiviz.big_query.union_all_big_query_view_builder import (
 from recidiviz.calculator.query.operations.dataset_config import OPERATIONS_BASE_DATASET
 from recidiviz.calculator.query.state.dataset_config import (
     ANALYST_VIEWS_DATASET,
+    NORMALIZED_STATE_VIEWS_DATASET,
     STATE_BASE_DATASET,
 )
 from recidiviz.calculator.query.state.views.analyst_data.all_task_eligibility_spans import (
@@ -344,6 +345,13 @@ class ViewDagInvariantTests(unittest.TestCase):
             for child_address in node.child_node_addresses:
                 if parent_address not in union_all_view_addresses:
                     continue
+                if parent_address.dataset_id in {
+                    # Views in this dataset produce the `normalized_state` dataset which
+                    # we do expect downstream views to query from
+                    NORMALIZED_STATE_VIEWS_DATASET,
+                }:
+                    continue
+
                 if child_address in union_all_view_addresses:
                     # Views that further union the results of a UNION ALL view are
                     # allowed.

@@ -43,7 +43,6 @@ from recidiviz.airflow.dags.calculation.dataflow.supplemental_pipeline_task_grou
 from recidiviz.airflow.dags.calculation.initialize_calculation_dag_group import (
     INGEST_INSTANCE_JINJA_ARG,
     SANDBOX_PREFIX_JINJA_ARG,
-    STATE_CODE_FILTER_JINJA_ARG,
     initialize_calculation_dag_group,
 )
 from recidiviz.airflow.dags.monitoring.dag_registry import get_calculation_dag_id
@@ -128,19 +127,6 @@ def refresh_bq_dataset_operator(
             INGEST_INSTANCE_JINJA_ARG,
             SANDBOX_PREFIX_JINJA_ARG,
         ],
-    )
-
-
-def execute_update_normalized_state() -> RecidivizKubernetesPodOperator:
-    return build_kubernetes_pod_task(
-        task_id="update_normalized_state",
-        container_name="update_normalized_state",
-        arguments=[
-            "--entrypoint=UpdateNormalizedStateEntrypoint",
-            SANDBOX_PREFIX_JINJA_ARG,
-            STATE_CODE_FILTER_JINJA_ARG,
-        ],
-        trigger_rule=TriggerRule.ALL_SUCCESS,
     )
 
 
@@ -353,18 +339,6 @@ def create_calculation_dag() -> None:
         >> dataflow_pipelines_completed
     )
 
-    # If the schema updates successfully, update the normalized_state dataset
-    # after ingest pipelines complete.
-    # We keep the schema update as a dependency. If a single state ingest fails, we do not
-    # want to block the rest of the DAG. However, if the schema update fails, the ingest
-    # tasks go into 'upstream failed'. We do not want to continue in that case.
-    update_normalized_state_dataset = execute_update_normalized_state()
-
-    [
-        update_big_query_table_schemata,
-        dataflow_pipelines_completed,
-    ] >> update_normalized_state_dataset
-
     # --- step 3: managed views -----------------------------------
     # When ingest, supplemental and metrics pipelines are finished,
     # we want to update all managed views with the updated data.
@@ -372,7 +346,6 @@ def create_calculation_dag() -> None:
     update_all_views = update_managed_views_operator()
     [
         update_big_query_table_schemata,
-        update_normalized_state_dataset,
         bq_refresh_completed,
         dataflow_pipelines_completed,
     ] >> update_all_views
