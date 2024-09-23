@@ -45,10 +45,7 @@ def normalized_state_dataset_for_state_code(
     """Where the output of state-specific ingest pipeline normalized entities output is
     stored.
     """
-    # TODO(#31741): Rename this back to `us_xx_normalized_state` once we're only reading
-    #  from this dataset for all states and have deleted the legacy
-    #  `us_xx_normalized_state` source table collections.
-    base_dataset = f"{state_code.value.lower()}_normalized_state_new"
+    base_dataset = f"{state_code.value.lower()}_normalized_state"
     if not sandbox_dataset_prefix:
         return base_dataset
     return BigQueryAddressOverrides.format_sandbox_dataset(

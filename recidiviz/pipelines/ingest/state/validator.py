@@ -461,7 +461,7 @@ def _get_normalized_state_person_specific_errors(
     error_messages: list[str] = []
     error_messages.extend(_legacy_sentencing_entities_checks(root_entity))
 
-    # TODO(#29517): Add validation logic for NormalizedStatePerson.
+    # TODO(#26136): Add validation logic for normalized sentence entities here
     return error_messages
 
 

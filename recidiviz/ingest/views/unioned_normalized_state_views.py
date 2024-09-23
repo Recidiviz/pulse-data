@@ -60,7 +60,7 @@ def _view_builder_for_table(
         view_id=f"{table_id}_view",
         description=(
             f"Output for {table_id} unioned from state-specific Dataflow "
-            f"ingest pipeline us_xx_normalized_state_new output datasets."
+            f"ingest pipeline us_xx_normalized_state output datasets."
         ),
         parents=state_specific_addresses,
         custom_select_statement=f"SELECT {', '.join(column_names)}\n",

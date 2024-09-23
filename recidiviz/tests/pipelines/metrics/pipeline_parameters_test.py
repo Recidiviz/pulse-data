@@ -56,9 +56,7 @@ class TestMetricsPipelineParameters(unittest.TestCase):
         self.assertEqual(pipeline_parameters.region, "us-west1")
         self.assertEqual(pipeline_parameters.job_name, "us-oz-supervision-metrics-36")
 
-        self.assertEqual(
-            "us_oz_normalized_state_new", pipeline_parameters.normalized_input
-        )
+        self.assertEqual("us_oz_normalized_state", pipeline_parameters.normalized_input)
         self.assertEqual(DATAFLOW_METRICS_DATASET, pipeline_parameters.output)
         self.assertFalse(pipeline_parameters.is_sandbox_pipeline)
 
@@ -85,9 +83,7 @@ class TestMetricsPipelineParameters(unittest.TestCase):
             pipeline_parameters.job_name, "full-us-oz-population-span-metrics"
         )
 
-        self.assertEqual(
-            "us_oz_normalized_state_new", pipeline_parameters.normalized_input
-        )
+        self.assertEqual("us_oz_normalized_state", pipeline_parameters.normalized_input)
         self.assertEqual(DATAFLOW_METRICS_DATASET, pipeline_parameters.output)
         self.assertFalse(pipeline_parameters.is_sandbox_pipeline)
 
@@ -108,7 +104,7 @@ class TestMetricsPipelineParameters(unittest.TestCase):
 
     def test_creation_with_sandbox_prefix(self) -> None:
         input_dataset_overrides_json = json.dumps(
-            {"us_oz_normalized_state_new": "some_completely_different_dataset"}
+            {"us_oz_normalized_state": "some_completely_different_dataset"}
         )
         pipeline_parameters = MetricsPipelineParameters(
             project="recidiviz-456",
@@ -152,7 +148,7 @@ class TestMetricsPipelineParameters(unittest.TestCase):
     )
     def test_check_for_valid_input_dataset_overrides(self) -> None:
         input_dataset_overrides_json = json.dumps(
-            # The normalization pipelines read from us_xx_normalized_state_new, not
+            # The normalization pipelines read from us_xx_normalized_state, not
             # normalized_state
             {NORMALIZED_STATE_DATASET: "some_completely_different_dataset"}
         )
@@ -172,7 +168,7 @@ class TestMetricsPipelineParameters(unittest.TestCase):
             ValueError,
             r"Found original dataset \[normalized_state\] in overrides which is "
             r"not a dataset this pipeline reads from. Datasets you can override: "
-            r"\['us_xx_normalized_state_new'\].",
+            r"\['us_xx_normalized_state'\].",
         ):
             pipeline_parameters.check_for_valid_input_dataset_overrides(
                 get_all_reference_query_input_datasets_for_pipeline(

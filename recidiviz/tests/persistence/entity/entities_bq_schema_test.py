@@ -162,7 +162,7 @@ class TestGetBqSchemaForEntitiesModule(unittest.TestCase):
 
         self._compare_schemas(expected_table_to_schema, table_to_schema)
 
-    def test_parity_with_source_table_collection_us_xx_normalized_state_new(
+    def test_parity_with_source_table_collection_us_xx_normalized_state(
         self,
     ) -> None:
         """Tests that get_bq_schema_for_entities_module() creates a schema that
