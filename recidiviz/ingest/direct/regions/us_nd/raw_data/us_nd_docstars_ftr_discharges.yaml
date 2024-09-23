@@ -25,9 +25,11 @@ columns:
     description: |-
       Free text notes about the community support available to this person.
   - name: DISCHARGE_DATE
-    field_type: datetime
     description: |-
       When the person was discharged from this episode.
+    field_type: datetime
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y', {col_name})"
   - name: EMPLOYMENT
     description: |-
       Upon discharge, whether this person has active employment.
@@ -53,9 +55,11 @@ columns:
     description: |-
       Whether their discharge has been approved or not.
   - name: STATUS_DATE
-    field_type: datetime
     description: |-
       When the status most recently changed.
+    field_type: datetime
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y', {col_name})"
   - name: OUTCOME1
     description: |-
       Boolean YES/NO flag of debatable meaning.

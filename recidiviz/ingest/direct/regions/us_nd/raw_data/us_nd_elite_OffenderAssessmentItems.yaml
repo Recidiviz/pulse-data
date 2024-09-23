@@ -14,7 +14,8 @@ columns:
     description: |-
       TODO(#18645): Fill in with answer from ND
   - name: ASSESSMENT_ID
-    description: The ID of the assessment.
+    description: |-
+      The ID of the assessment.
   - name: ASSESSMENT_SEQ
     description: |-
       TODO(#18645): Fill in with answer from ND
@@ -27,13 +28,13 @@ columns:
       Date the record was created.
     field_type: datetime
     datetime_sql_parsers:
-      - "SAFE.PARSE_DATETIME('%m/%d/%Y  %H:%M:%S %p', {col_name})"
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y  %I:%M:%S%p', {col_name})"
   - name: CREATE_DATETIME
     description: |-
       Date and time the record was created.
-    datetime_sql_parsers:
-      - "SAFE.PARSE_DATETIME('%m/%d/%Y  %H:%M:%S %p', {col_name})"
     field_type: datetime
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y  %I:%M:%S%p', {col_name})"
   - name: CREATE_USER_ID
     description: |-
       ID of the staff member who created the record.
@@ -44,9 +45,9 @@ columns:
   - name: MODIFY_DATETIME
     description: |-
       Date and time the record was last modified.
-    datetime_sql_parsers:
-      - "SAFE.PARSE_DATETIME('%m/%d/%Y  %H:%M:%S %p', {col_name})"
     field_type: datetime
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y  %I:%M:%S%p', {col_name})"
   - name: MODIFY_USER_ID
     description: |-
       ID of the staff member who last modified the record.
@@ -54,8 +55,8 @@ columns:
   - name: OFFENDER_BOOK_ID
     description: |-
       ID of the person who the assessment is related to.
-    is_pii: True
     field_type: person_external_id
+    is_pii: True
   - name: PARENT_ASSESSMENT_ID
     description: |-
       ID of the assessment a question or sub-item belongs to, if the entry does not correspond to the assessment as a whole.
@@ -68,4 +69,3 @@ columns:
   - name: SEAL_FLAG
     description: |-
       TODO(#18645): Fill in with answer from ND
-always_historical_export: False

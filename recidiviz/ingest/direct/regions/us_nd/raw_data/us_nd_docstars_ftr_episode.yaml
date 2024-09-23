@@ -51,9 +51,11 @@ columns:
     description: |-
       Current status of this FTR episode.
   - name: STATUS_DATE
-    field_type: datetime
     description: |-
       When the current status became true for this FTR episode, i.e. when the status most recently changed.
+    field_type: datetime
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y  %I:%M:%S%p', {col_name})"
   - name: STRENGTHS
     description: |-
       Assessed strengths of this person, written as free text notes.
@@ -61,13 +63,17 @@ columns:
     description: |-
       Assessed needs of this person, written as free text notes.
   - name: SN_LAST_UPDATED_DATE
-    field_type: datetime
     description: |-
       When this record was most recently updated.
-  - name: SUBMITTED
     field_type: datetime
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y  %I:%M:%S%p', {col_name})"
+  - name: SUBMITTED
     description: |-
       When the record of this FTR episode was submitted to Docstars.
+    field_type: datetime
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y  %I:%M:%S%p', {col_name})"
   - name: SUBMITTED_BY
     description: |-
       ID of the person who submitted the record of this FTR episode to Docstars.
@@ -75,9 +81,11 @@ columns:
     description: |-
       Name of the person who submitted the record of this FTR episode to Docstars.
   - name: ADMITTED_DATE
-    field_type: datetime
     description: |-
       When the person was admitted to this episode.
+    field_type: datetime
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y', {col_name})"
   - name: ALLOW_VIEWING
     description: |-
       Whether this record can be viewed by users with read access. Always yes.

@@ -15,10 +15,10 @@ columns:
   - name: OFFENDER_BOOK_ID
     description: |-
       External ID of a booking for a particular person, i.e. a new series of interactions with the justice system due to a new offense.
-    is_pii: True
     field_type: person_external_id
     external_id_type: US_ND_ELITE_BOOKING
     is_primary_for_external_id_type: True
+    is_pii: True
   - name: ROOT_OFFENDER_ID
     description: |-
       External id for a unique person from the Elite system.
@@ -47,21 +47,29 @@ columns:
     description: |-
       Type of booking. Always institution commitment (INST), which is implied.
   - name: BOOKING_BEGIN_DATE
-    field_type: datetime
     description: |-
       When the booking began, i.e. when the series of interactions first began. Self-reported as unreliable.
-  - name: BOOKING_END_DATE
     field_type: datetime
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y  %I:%M:%S%p', {col_name})"
+  - name: BOOKING_END_DATE
     description: |-
       When the booking ended, i.e. when the series of interactions was finally closed. Self-reported as unreliable.
-  - name: CREATE_DATETIME
     field_type: datetime
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y  %I:%M:%S%p', {col_name})"
+  - name: CREATE_DATETIME
     description: |-
       When this record was first created in the source system.
-  - name: MODIFY_DATETIME
     field_type: datetime
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y  %I:%M:%S%p', {col_name})"
+  - name: MODIFY_DATETIME
     description: |-
       When this record was most recently modified in the source system.
+    field_type: datetime
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y  %I:%M:%S%p', {col_name})"
 table_relationships:
   - foreign_table: elite_bedassignmenthistory
     join_logic:

@@ -10,10 +10,10 @@ columns:
   - name: ROOT_OFFENDER_ID
     description: |-
       External id for a unique person from the Elite system.
-    is_pii: True
     field_type: person_external_id
     external_id_type: US_ND_ELITE
     is_primary_for_external_id_type: True
+    is_pii: True
   - name: LAST_NAME
     description: |-
       Surname of the person.
@@ -21,9 +21,11 @@ columns:
     description: |-
       First/given name of the person.
   - name: BIRTH_DATE
-    field_type: datetime
     description: |-
       Date of birth of the person.
+    field_type: datetime
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y  %I:%M:%S%p', {col_name})"
   - name: SEX_CODE
     description: |-
       Sex of the person.
@@ -34,17 +36,21 @@ columns:
     description: |-
       Race or ethnicity of the person.
   - name: CREATE_DATETIME
-    field_type: datetime
     description: |-
       When this record was first created in the source system.
-  - name: MODIFY_DATETIME
     field_type: datetime
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y  %I:%M:%S%p', {col_name})"
+  - name: MODIFY_DATETIME
     description: |-
       When this record was most recently modified in the source system.
-  - name: ModifyDate
     field_type: datetime
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y  %I:%M:%S%p', {col_name})"
+  - name: ModifyDate
     description: |-
       Row modify date.
+    field_type: datetime
 table_relationships:
   - foreign_table: elite_alias
     join_logic:
