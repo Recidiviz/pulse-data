@@ -1,9 +1,3 @@
-# This file should include reasons why you had to use the given raw data table in a BQ view outside of ingest.
-# Please do your best to include the reason why you could not reference ingested data in the normalized_state
-# dataset instead. Possible reasons might include:
-# 1) No way to represent the information we need in the normalized_state schema
-# 2) Not enough time to ingest the data needed and we should refactor to use ingested data soon
-# 3) Other? Please elaborate.
 US_AR:
   ADDRESS:
     reference_views.us_ar_location_metadata: |-
@@ -63,6 +57,9 @@ US_AZ:
     analyst_data.us_az_action_queue: |-
       Needed a way to cleanly view raw data from a specific screen in ACIS. No place
       for this exists in our schema, and there isn't a good reason to make one.
+  AZ_CM_INMATE_ASSIGNMENT:
+    sessions.us_az_incarceration_staff_assignment_sessions_preprocessed: |-
+      Get CM staff assignments to residents.
   AZ_DOC_HOME_PLAN:
     analyst_data.us_az_home_plan_preprocessed: |-
       There is no place to store "Home Plan" reentry planning information in our schema,
@@ -131,6 +128,8 @@ US_AZ:
     us_az_validation.supervision_population_person_level: |-
       This table is used to convert ADC_NUMBER identifiers available in external data
       into PERSON_ID identifiers used internally in the external comparison validation view.
+    workflows_views.incarceration_staff_record: |-
+      Get CM staff assignments to residents.
   validation_daily_count_sheet_by_custody_level:
     us_az_validation.incarceration_population_by_custody_level: |-
       This is a raw data table containing external comparison validation data, being

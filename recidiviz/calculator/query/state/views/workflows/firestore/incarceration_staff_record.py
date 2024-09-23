@@ -19,6 +19,9 @@ from recidiviz.big_query.selected_columns_big_query_view import (
     SelectedColumnsBigQueryViewBuilder,
 )
 from recidiviz.calculator.query.state import dataset_config
+from recidiviz.calculator.query.state.views.workflows.us_az.incarceration_staff_template import (
+    US_AZ_INCARCERATION_STAFF_TEMPLATE,
+)
 from recidiviz.calculator.query.state.views.workflows.us_me.incarceration_staff_template import (
     US_ME_INCARCERATION_STAFF_TEMPLATE,
 )
@@ -40,11 +43,13 @@ INCARCERATION_STAFF_RECORD_DESCRIPTION = """
 INCARCERATION_STAFF_RECORD_QUERY_TEMPLATE = f"""
     WITH 
         me_staff AS ({US_ME_INCARCERATION_STAFF_TEMPLATE}),
-        nd_staff AS ({US_ND_INCARCERATION_STAFF_TEMPLATE})
+        nd_staff AS ({US_ND_INCARCERATION_STAFF_TEMPLATE}),
+        az_staff AS ({US_AZ_INCARCERATION_STAFF_TEMPLATE})
     SELECT {{columns}} FROM me_staff    
     UNION ALL
-    
     SELECT {{columns}} FROM nd_staff
+    UNION ALL
+    SELECT {{columns}} FROM az_staff
 """
 
 INCARCERATION_STAFF_RECORD_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
@@ -68,6 +73,9 @@ INCARCERATION_STAFF_RECORD_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
     ),
     us_nd_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
         state_code=StateCode.US_ND, instance=DirectIngestInstance.PRIMARY
+    ),
+    us_az_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
+        state_code=StateCode.US_AZ, instance=DirectIngestInstance.PRIMARY
     ),
     should_materialize=True,
 )
