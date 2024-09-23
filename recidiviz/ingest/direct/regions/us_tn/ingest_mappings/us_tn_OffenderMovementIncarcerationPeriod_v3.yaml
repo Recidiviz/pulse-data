@@ -109,7 +109,7 @@ output:
                   - PRFA-WKEND # Probation to facility - serving weekend
                   - CCFA-WKEND # Serving weekend
                 StateSpecializedPurposeForIncarceration.GENERAL:
-                  - CUSTCHANGEFH-CUST CHANGE # Recidiviz made code to track Custody Changes
+                  - CUSTCHANGEFH-CUST_CHANGE # Recidiviz made code to track Custody Changes
                   #- UNITMOVEMENTFH-UNIT # Recidiviz made code to track unit changes
                   - UNITMOVEMENTFH-UNIT_MOVEMENT
                   - BOFA-BONDR # Bond to Facility - Bond return
@@ -227,7 +227,7 @@ output:
                   - PRFA-WKEND # Probation to facility - serving weekend
                   - CCFA-WKEND # Serving weekend
                 StateIncarcerationPeriodAdmissionReason.STATUS_CHANGE:
-                  - CUSTCHANGEFH-CUST CHANGE # Recidiviz made code to track Custody Changes
+                  - CUSTCHANGEFH-CUST_CHANGE # Recidiviz made code to track Custody Changes
 
                 StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION:
                   - CTFA-NEWAD # Court to Facility - new admission
@@ -555,7 +555,7 @@ output:
                         - DVCT-PRVOK # Revocation
 
                       StateIncarcerationPeriodReleaseReason.STATUS_CHANGE:
-                        - CUSTCHANGEFH-CUST CHANGE # Recidiviz made code to track Custody Changes
+                        - CUSTCHANGEFH-CUST_CHANGE # Recidiviz made code to track Custody Changes
 
                       StateIncarcerationPeriodReleaseReason.RELEASE_FROM_WEEKEND_CONFINEMENT:
                         - CCFA-WKEND

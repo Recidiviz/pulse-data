@@ -119,7 +119,7 @@ WITH
             OffenderId, 	
             CAST(ClassificationDate AS DATETIME) AS MovementDateTime,	
             'CUSTCHANGEFH' as MovementType, # Generated so last two are FH and query handles correctly	
-            'CUST CHANGE' AS MovementReason, 	
+            'CUST_CHANGE' AS MovementReason, 	
             null AS FromLocationID, 	
             null AS ToLocationID,	
             RecommendedCustody,
@@ -332,7 +332,7 @@ cleaning_extra_movements AS (
             'release', 
             'stay'
         ) AS last_movement,
-        IF(StartMovementReason ='UNIT_MOVEMENT' AND EndDatetime IS NULL, 'yes', 'no') as open_with_unit_change
+        IF((StartMovementReason ='UNIT_MOVEMENT' OR StartMovementReason ='CUST_CHANGE')  AND EndDatetime IS NULL, 'yes', 'no') as open_with_unit_or_custody_change
     FROM hydrate_all_values
 )
 SELECT
@@ -357,7 +357,7 @@ FROM cleaning_extra_movements
 -- We use this final join to null out any HousingUnit assignments that are not updated once someone is is a different facility in OffenderMovement
 LEFT JOIN confirm_housing_unit_in_actual_facility ON SiteUnit = HousingUnit AND confirm_housing_unit_in_actual_facility.Site = cleaning_extra_movements.Site
 -- filtering out when last open period start movement is unit change after a period ending with discharge codes 
-WHERE last_movement != 'release' OR open_with_unit_change != 'yes'
+WHERE last_movement != 'release' OR open_with_unit_or_custody_change != 'yes'
 """
 
 VIEW_BUILDER = DirectIngestViewQueryBuilder(
