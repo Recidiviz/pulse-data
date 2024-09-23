@@ -149,10 +149,13 @@ def parse_staff_caseload_type(
         return StateStaffCaseloadType.ALCOHOL_AND_DRUG
     if "COURT" in raw_text:
         return StateStaffCaseloadType.OTHER_COURT
-    if "ADMIN" in raw_text:
+    if any(keyword in raw_text for keyword in ["ADMIN", "ABSCONDER"]):
+        return StateStaffCaseloadType.TRANSITIONAL
+    if (
+        any(keyword in raw_text for keyword in ["COMPLIANT", "TELEPHONE"])
+        or raw_text == "IOT"
+    ):
         return StateStaffCaseloadType.ADMINISTRATIVE_SUPERVISION
-    if any(keyword in raw_text for keyword in ["COMPLIANT", "TELEPHONE"]):
-        return StateStaffCaseloadType.ELECTRONIC_MONITORING
     if any(
         keyword in raw_text
         for keyword in [
@@ -170,7 +173,7 @@ def parse_staff_caseload_type(
             "PPM",  # Probation/Parole Manager - not typically caseload carrier but sometimes take them on
             "ICOT",  # compact cases managed same as other general cases
             "ISC",
-            "IOT",
+            "INTRA-STATE",
         ]
     ):
         return StateStaffCaseloadType.GENERAL
