@@ -177,8 +177,16 @@ export enum RawDataResourceLockActor {
   PROCESS = "PROCESS",
 }
 
+export enum ResourceLockState {
+  ADHOC_HELD = "ADHOC_HELD",
+  PROCESS_HELD = "PROCESS_HELD",
+  FREE = "FREE",
+  MIXED = "MIXED",
+  UNKNOWN = "UNKNOWN",
+}
+
 export type ResourceLockMetadata = {
-  actors: ResourceLocActorDescription;
+  actors: ResourceLockActorDescription;
   resources: ResourceLockResourceDescription;
 };
 
@@ -186,8 +194,8 @@ export type ResourceLockResourceDescription = {
   [resource in RawDataResourceLockResource]: string;
 };
 
-export type ResourceLocActorDescription = {
-  [resource in RawDataResourceLockActor]: string;
+export type ResourceLockActorDescription = {
+  [actor in RawDataResourceLockActor]: string;
 };
 
 export type ResourceLockStatus = {

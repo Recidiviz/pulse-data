@@ -312,12 +312,17 @@ tr.metadata-table-row > td.ant-table-cell > div {
   border-radius: 15px;
 }
 
-.resource-locks-blocking{
+.resource-locks-held, .resource-locks-mixed{
   color: #ffffff;
   background-color: #f5222d;
 }
 
-.resource-locks-not-blocking{
+.resource-locks-free{
   color: #ffffff;
   background-color: #389e0d;
+}
+
+.resource-locks-unknown{
+  color: #ffffff;
+  background-color: #444444;
 }
