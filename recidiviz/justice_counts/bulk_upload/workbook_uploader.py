@@ -21,8 +21,6 @@ import logging
 from itertools import groupby
 from typing import Any, Dict, List, Optional, Set, Tuple
 
-import pandas as pd
-
 from recidiviz.justice_counts.bulk_upload.bulk_upload_metadata import BulkUploadMetadata
 from recidiviz.justice_counts.bulk_upload.spreadsheet_uploader import (
     SpreadsheetUploader,
@@ -60,7 +58,9 @@ class WorkbookUploader:
         """
 
         workbook_standardizer = WorkbookStandardizer(metadata=self.metadata)
-        xls = workbook_standardizer.standardize_workbook(file=file, file_name=file_name)
+        sheet_name_to_sheet_df = workbook_standardizer.standardize_workbook(
+            file=file, file_name=file_name
+        )
         # 1. Fetch existing reports and datapoints for this agency, so that
         # we know what objects to update vs. what new objects to create.
         agency_ids = [
@@ -108,16 +108,15 @@ class WorkbookUploader:
         # Note that the regular sorting will work for this case, since
         # foobar will always come before foobar_by_xxx alphabetically.
 
-        sorted_sheet_names = sorted(xls.sheet_names)
+        sorted_sheet_names = sorted(sheet_name_to_sheet_df.keys())
 
         # 3. Now run through all sheets and process each in turn.
-        sheet_name_to_df = pd.read_excel(xls, sheet_name=None)
         inserts: List[schema.Datapoint] = []
         updates: List[schema.Datapoint] = []
         histories: List[schema.DatapointHistory] = []
         for sheet_name in sorted_sheet_names:
             logging.info("Uploading %s", sheet_name)
-            df = sheet_name_to_df[sheet_name]
+            df = sheet_name_to_sheet_df[sheet_name]
             rows = df.to_dict("records")
             if len(rows) == 0:
                 continue

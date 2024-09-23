@@ -159,8 +159,6 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         self.fs_patcher.stop()
         self.client_patcher.stop()
         self.secrets_patcher.stop()
-        if os.path.exists(self.law_enforcement_excel_file_name):
-            os.remove(self.law_enforcement_excel_file_name)
 
     def get_engine(self) -> Engine:
         return self.session.get_bind()
@@ -870,7 +868,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             metrics[2]["disaggregations"][0]["dimensions"][5]["datapoints"], None
         )
 
-    def check_agency_metric_datapoint(
+    def check_agency_metric_datapoint(  # pylint: disable=too-many-positional-arguments
         self,
         datapoint: schema.Datapoint,
         value: float,
@@ -2188,7 +2186,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             ]
             self.assertEqual(len(arrests_metric), 1)
             self.assertEqual(len(arrests_metric[0]["metric_errors"]), 0)
-        os.remove("arrests.xlsx")
+            os.remove("arrests.xlsx")
 
     def test_upload_and_ingest_spreadsheet(self) -> None:
         self.session.add_all(
@@ -2279,7 +2277,6 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             self.assertIsNotNone(response_dict.get("updated_reports"))
             self.assertIsNotNone(response_dict.get("new_reports"))
             self.assertIsNotNone(response_dict.get("unchanged_reports"))
-            os.remove(file_name)
 
     def test_get_spreadsheets(self) -> None:
         user_agency = self.test_schema_objects.test_agency_E
@@ -3394,7 +3391,6 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             self.assertEqual(len(staff_errors), 0)
             grievances_errors = response_dict["metrics"][8]["metric_errors"]
             self.assertEqual(len(grievances_errors), 0)
-        os.remove(file_name)
 
     def test_get_child_agencies_for_superagency(self) -> None:
         user = self.test_schema_objects.test_user_A

@@ -118,7 +118,7 @@ class WorkbookStandardizer:
 
     def _convert_file_to_pandas_excel_file(
         self, file: Any, file_name: str
-    ) -> Tuple[pd.ExcelFile, str]:
+    ) -> pd.ExcelFile:
         """
         Converts a file to an Excel file if necessary, and validates the file name.
 
@@ -133,15 +133,14 @@ class WorkbookStandardizer:
         # Determine the file type from the file name suffix
         file_type = self.get_file_type_from_file_name(file_name=file_name)
 
+        if file_type != BulkUploadFileType.CSV:
+            # If file is already in Excel format, return it
+            return pd.ExcelFile(file)
+
         # Create new file name for the converted Excel file
         new_file_name, sheet_name = self.get_new_file_name_and_sheet_name(
             file_name=file_name
         )
-
-        if file_type != BulkUploadFileType.CSV:
-            # If file is already in Excel format, return it
-            xls = pd.ExcelFile(file)
-            return xls, new_file_name
 
         # Convert bytes to string if necessary
         self.is_csv_upload = True
@@ -161,8 +160,7 @@ class WorkbookStandardizer:
             sheet_name = sheet_name[0:MAXIMUM_CSV_FILE_NAME_LENGTH]
 
         csv_df.to_excel(new_file_name, sheet_name=sheet_name, index=False)
-        xls = pd.ExcelFile(new_file_name)
-        return xls, new_file_name
+        return pd.ExcelFile(new_file_name)
 
     def _add_unexpected_column_errors(
         self,
@@ -693,7 +691,7 @@ class WorkbookStandardizer:
 
         return BulkUploadMessageType.ERROR not in error_messages
 
-    def _add_row_value_error(
+    def _add_row_value_error(  # pylint: disable=too-many-positional-arguments
         self,
         column_name: str,
         value: Any,
@@ -1022,7 +1020,9 @@ class WorkbookStandardizer:
 
         return True, sheet_df
 
-    def standardize_workbook(self, file: Any, file_name: str) -> pd.ExcelFile:
+    def standardize_workbook(
+        self, file: Any, file_name: str
+    ) -> dict[str, pd.DataFrame]:
         """
         Standardizes the sheet names, column headers, and cell values in the given Excel workbook.
 
@@ -1034,64 +1034,56 @@ class WorkbookStandardizer:
         Tuple[pd.ExcelFile, str]: A tuple containing the Excel file and
         the new file name
         """
-        excel_file, standardized_file_name = self._convert_file_to_pandas_excel_file(
+
+        standardized_workbook_df: dict[str, pd.DataFrame] = {}
+        excel_file = self._convert_file_to_pandas_excel_file(
             file=file, file_name=file_name
         )
 
-        # Create a copy of the Excel file that can be updated
-        with pd.ExcelWriter(  # pylint: disable=abstract-class-instantiated
-            standardized_file_name
-        ) as writer:
-            workbook_df = pd.read_excel(excel_file, sheet_name=None)
-            can_workbook_be_ingested = True
-            if len(excel_file.sheet_names) == 1:
-                sheet_df = workbook_df[excel_file.sheet_names[0]]
-                if "metric" in sheet_df.columns:
-                    self.is_single_page_upload = True
-                    (
-                        can_workbook_be_ingested,
-                        standardized_sheet_df,
-                    ) = self.standardize_sheet(sheet_df=sheet_df)
+        workbook_df = pd.read_excel(excel_file, sheet_name=None)
+        can_workbook_be_ingested = True
+        if len(excel_file.sheet_names) == 1:
+            sheet_df = workbook_df[excel_file.sheet_names[0]]
+            if "metric" in sheet_df.columns:
+                self.is_single_page_upload = True
+                (
+                    can_workbook_be_ingested,
+                    standardized_sheet_df,
+                ) = self.standardize_sheet(sheet_df=sheet_df)
 
-                    workbook_df = self._transform_combined_metric_file_upload(
-                        df=standardized_sheet_df
-                    )
+                workbook_df = self._transform_combined_metric_file_upload(
+                    df=standardized_sheet_df
+                )
 
-            if can_workbook_be_ingested is True:
-                for sheet_name in workbook_df:
-                    sheet_df = workbook_df[sheet_name]
-                    standardized_sheet_name = self._standardize_string(sheet_name)
-                    metric_file = get_metricfile_by_sheet_name(
-                        sheet_name=standardized_sheet_name, system=self.metadata.system
-                    )
-                    if metric_file is None:
-                        # 1) Don't write sheet with invalid sheet name to new excel object
-                        # 2) Add sheet name to invalid sheet names
-                        self.invalid_sheet_names.add(sheet_name)
-                        continue
+        if can_workbook_be_ingested is True:
+            for sheet_name in workbook_df:
+                sheet_df = workbook_df[sheet_name]
+                standardized_sheet_name = self._standardize_string(sheet_name)
+                metric_file = get_metricfile_by_sheet_name(
+                    sheet_name=standardized_sheet_name, system=self.metadata.system
+                )
+                if metric_file is None:
+                    # 1) Don't write sheet with invalid sheet name to new excel object
+                    # 2) Add sheet name to invalid sheet names
+                    self.invalid_sheet_names.add(sheet_name)
+                    continue
 
-                    (
-                        can_sheet_be_ingested,
-                        standardized_sheet_df,
-                    ) = self.standardize_sheet(
-                        sheet_df=sheet_df,
-                        metric_file=metric_file,
-                        sheet_name=sheet_name,
-                    )
+                (
+                    can_sheet_be_ingested,
+                    standardized_sheet_df,
+                ) = self.standardize_sheet(
+                    sheet_df=sheet_df,
+                    metric_file=metric_file,
+                    sheet_name=sheet_name,
+                )
 
-                    if can_sheet_be_ingested is False:
-                        continue
-
-                    standardized_sheet_df.to_excel(
-                        writer,
-                        sheet_name=standardized_sheet_name,
-                        index=False,
-                    )
+                if can_sheet_be_ingested is True:
+                    standardized_workbook_df[sheet_name] = standardized_sheet_df
 
         if len(self.invalid_sheet_names) > 0:
             self._add_invalid_name_error()
 
-        return pd.ExcelFile(standardized_file_name)
+        return standardized_workbook_df
 
     def _add_invalid_name_error(self) -> None:
         """
@@ -1155,7 +1147,7 @@ class WorkbookStandardizer:
         )
         return
 
-    def fuzzy_match_against_options(
+    def fuzzy_match_against_options(  # pylint: disable=too-many-positional-arguments
         self,
         text: Any,
         column_name: str,
