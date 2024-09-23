@@ -21,6 +21,9 @@ from unittest.mock import Mock, patch
 
 from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
 from recidiviz.big_query.big_query_address import BigQueryAddress
+from recidiviz.big_query.big_query_view_sandbox_context import (
+    BigQueryViewSandboxContext,
+)
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.task_candidate_population_big_query_view_builder import (
     StateAgnosticTaskCandidatePopulationBigQueryViewBuilder,
@@ -77,7 +80,11 @@ class TestStateSpecificTaskCandidatePopulationBigQueryViewBuilder(unittest.TestC
             .register_sandbox_override_for_entire_dataset(self.us_xx_population_dataset)
             .build()
         )
-        view = builder.build(address_overrides=address_overrides)
+        sandbox_context = BigQueryViewSandboxContext(
+            parent_address_overrides=address_overrides,
+            output_sandbox_dataset_prefix="my_prefix",
+        )
+        view = builder.build(sandbox_context=sandbox_context)
 
         self.assertEqual(StateCode.US_XX, builder.state_code)
         self.assertEqual("US_XX_SIMPLE_POPULATION", builder.population_name)
@@ -193,7 +200,11 @@ class TestStateAgnosticTaskCandidatePopulationBigQueryViewBuilder(unittest.TestC
             )
             .build()
         )
-        view = builder.build(address_overrides=address_overrides)
+        sandbox_context = BigQueryViewSandboxContext(
+            parent_address_overrides=address_overrides,
+            output_sandbox_dataset_prefix="my_prefix",
+        )
+        view = builder.build(sandbox_context=sandbox_context)
 
         self.assertEqual("SIMPLE_POPULATION", builder.population_name)
         self.assertEqual(

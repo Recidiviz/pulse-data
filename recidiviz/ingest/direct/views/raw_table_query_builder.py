@@ -123,7 +123,7 @@ class RawTableQueryBuilder:
     def build_query(
         self,
         raw_file_config: DirectIngestRawFileConfig,
-        address_overrides: Optional[BigQueryAddressOverrides],
+        parent_address_overrides: Optional[BigQueryAddressOverrides],
         normalized_column_values: bool,
         raw_data_datetime_upper_bound: Optional[datetime.datetime],
         filter_to_latest: bool,
@@ -133,7 +133,7 @@ class RawTableQueryBuilder:
 
         Args:
             raw_file_config: The config for the raw table to query
-            address_overrides: If provided, tables in the query will be replaced with
+            parent_address_overrides: If provided, tables in the query will be replaced with
                 these overrides, if applicable.
             normalized_column_values: If true, columns values will be normalized
                 according to their config specification (e.g. datetime columns
@@ -209,7 +209,9 @@ class RawTableQueryBuilder:
             "columns_clause": columns_clause,
             "filtered_rows_cte": filtered_rows_cte,
         }
-        return BigQueryQueryBuilder(address_overrides=address_overrides).build_query(
+        return BigQueryQueryBuilder(
+            parent_address_overrides=parent_address_overrides
+        ).build_query(
             project_id=self.project_id,
             query_template=RAW_DATA_VIEW_TEMPLATE,
             query_format_kwargs=query_kwargs,

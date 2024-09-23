@@ -80,7 +80,7 @@ def find_direct_raw_data_references(
         + collect_stable_historical_raw_data_counts_view_builders()
     )
     views = [
-        builder.build(address_overrides=None)
+        builder.build(sandbox_context=None)
         for builder in view_builders
         if builder.address not in raw_data_validation_views
     ]

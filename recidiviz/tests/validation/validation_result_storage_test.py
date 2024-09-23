@@ -27,6 +27,9 @@ from mock import MagicMock, patch
 
 from recidiviz.big_query import big_query_client
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+from recidiviz.big_query.big_query_view_sandbox_context import (
+    BigQueryViewSandboxContext,
+)
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.validation.checks.sameness_check import (
     ResultRow,
@@ -89,7 +92,10 @@ class TestValidationResultStorage(unittest.TestCase):
                     region_configs={},
                 ),
                 ingest_instance=DirectIngestInstance.PRIMARY,
-                sandbox_dataset_prefix="test_prefix",
+                sandbox_context=BigQueryViewSandboxContext(
+                    output_sandbox_dataset_prefix="test_prefix",
+                    parent_address_overrides=None,
+                ),
             ),
             result_details=SamenessPerRowValidationResultDetails(
                 failed_rows=[],

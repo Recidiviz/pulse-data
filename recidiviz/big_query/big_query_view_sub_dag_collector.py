@@ -21,10 +21,10 @@ up only a part of a full DAG of BigQuery views.
 from typing import List, Sequence, Set
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
-from recidiviz.big_query.big_query_utils import build_views_to_update
 from recidiviz.big_query.big_query_view import BigQueryView, BigQueryViewBuilder
 from recidiviz.big_query.big_query_view_collector import BigQueryViewCollector
 from recidiviz.big_query.big_query_view_dag_walker import BigQueryViewDagWalker
+from recidiviz.big_query.build_views_to_update import build_views_to_update
 from recidiviz.source_tables.collect_all_source_table_configs import (
     get_all_source_table_datasets,
 )
@@ -68,7 +68,7 @@ class BigQueryViewSubDagCollector(BigQueryViewCollector[BigQueryViewBuilder]):
         views_to_builders = build_views_to_update(
             view_source_table_datasets=get_all_source_table_datasets(),
             candidate_view_builders=self.view_builders_in_full_dag,
-            address_overrides=None,
+            sandbox_context=None,
         )
         full_dag_walker = BigQueryViewDagWalker(views_to_builders)
         root_views_in_sub_dag = self._get_root_views_in_sub_dag(

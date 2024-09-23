@@ -17,9 +17,11 @@
 """Defines a BigQueryView that enforces that the output has the required columns."""
 from typing import List, Optional, Set
 
-from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_view import BigQueryView, BigQueryViewBuilder
+from recidiviz.big_query.big_query_view_sandbox_context import (
+    BigQueryViewSandboxContext,
+)
 
 
 class SelectedColumnsBigQueryView(BigQueryView):
@@ -39,7 +41,7 @@ class SelectedColumnsBigQueryView(BigQueryView):
         columns: List[str],
         description: Optional[str],
         materialized_address: Optional[BigQueryAddress],
-        address_overrides: Optional[BigQueryAddressOverrides],
+        sandbox_context: BigQueryViewSandboxContext | None,
         clustering_fields: Optional[List[str]] = None,
         **query_format_kwargs: str,
     ):
@@ -55,7 +57,7 @@ class SelectedColumnsBigQueryView(BigQueryView):
             bq_description=full_description,
             view_query_template=view_query_template,
             materialized_address=materialized_address,
-            address_overrides=address_overrides,
+            sandbox_context=sandbox_context,
             clustering_fields=clustering_fields,
             should_deploy_predicate=None,
             **query_format_kwargs,
@@ -109,7 +111,7 @@ class SelectedColumnsBigQueryViewBuilder(
         self.query_format_kwargs = query_format_kwargs
 
     def _build(
-        self, *, address_overrides: Optional[BigQueryAddressOverrides] = None
+        self, *, sandbox_context: BigQueryViewSandboxContext | None
     ) -> SelectedColumnsBigQueryView:
         return SelectedColumnsBigQueryView(
             dataset_id=self.dataset_id,
@@ -119,6 +121,6 @@ class SelectedColumnsBigQueryViewBuilder(
             description=self.description,
             materialized_address=self.materialized_address,
             clustering_fields=self.clustering_fields,
-            address_overrides=address_overrides,
+            sandbox_context=sandbox_context,
             **self.query_format_kwargs,
         )

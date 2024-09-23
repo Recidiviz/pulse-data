@@ -139,7 +139,7 @@ class DirectIngestRawDataTableLatestViewBuilderTest(unittest.TestCase):
             raw_data_source_instance=DirectIngestInstance.PRIMARY,
             raw_file_config=self.raw_file_config,
             regions_module=fake_regions,
-        ).build(address_overrides=None)
+        ).build(sandbox_context=None)
 
         self.assertEqual(self.project_id, view.project)
         self.assertEqual("us_xx_raw_data_up_to_date_views", view.dataset_id)
@@ -162,7 +162,7 @@ class DirectIngestRawDataTableLatestViewBuilderTest(unittest.TestCase):
             raw_data_source_instance=DirectIngestInstance.PRIMARY,
             raw_file_config=raw_file_config,
             regions_module=fake_regions,
-        ).build(address_overrides=None)
+        ).build(sandbox_context=None)
 
         self.assertEqual(self.project_id, view.project)
         self.assertEqual("us_xx_raw_data_up_to_date_views", view.dataset_id)
@@ -196,7 +196,7 @@ class DirectIngestRawDataTableLatestViewBuilderTest(unittest.TestCase):
                 raw_data_source_instance=DirectIngestInstance.PRIMARY,
                 raw_file_config=raw_file_config,
                 regions_module=fake_regions,
-            ).build(address_overrides=None)
+            ).build(sandbox_context=None)
 
     def test_build_primary_keys_nonempty_no_throw(self) -> None:
         raw_file_config = attr.evolve(
@@ -210,7 +210,7 @@ class DirectIngestRawDataTableLatestViewBuilderTest(unittest.TestCase):
             raw_data_source_instance=DirectIngestInstance.PRIMARY,
             raw_file_config=raw_file_config,
             regions_module=fake_regions,
-        ).build(address_overrides=None)
+        ).build(sandbox_context=None)
 
     def test_build_primary_keys_throw(self) -> None:
         with self.assertRaisesRegex(
@@ -253,7 +253,7 @@ class DirectIngestRawDataTableLatestViewBuilderTest(unittest.TestCase):
                 raw_data_source_instance=DirectIngestInstance.PRIMARY,
                 raw_file_config=raw_file_config,
                 regions_module=fake_regions,
-            ).build(address_overrides=None)
+            ).build(sandbox_context=None)
 
     def test_build_no_columns_throws(self) -> None:
         # Config with no columns
@@ -272,7 +272,7 @@ class DirectIngestRawDataTableLatestViewBuilderTest(unittest.TestCase):
                 raw_data_source_instance=DirectIngestInstance.PRIMARY,
                 raw_file_config=raw_file_config,
                 regions_module=fake_regions,
-            ).build(address_overrides=None)
+            ).build(sandbox_context=None)
 
 
 class DirectIngestRawDataTableLatestViewCollectorTest(unittest.TestCase):

@@ -214,7 +214,7 @@ class RawDataFixturesGenerator:
 
         latest_query_template = self.query_builder.build_query(
             raw_file_config=raw_table_dependency_config.raw_file_config,
-            address_overrides=None,
+            parent_address_overrides=None,
             normalized_column_values=False,
             raw_data_datetime_upper_bound=None,
             filter_to_latest=raw_table_dependency_config.filter_to_latest,

@@ -33,7 +33,7 @@ class BigQueryQueryBuilderTest(unittest.TestCase):
 
     def setUp(self) -> None:
         self.project_id = "recidiviz-456"
-        self.builder_no_overrides = BigQueryQueryBuilder(address_overrides=None)
+        self.builder_no_overrides = BigQueryQueryBuilder(parent_address_overrides=None)
 
         address_overrides = (
             BigQueryAddressOverrides.Builder(sandbox_prefix="my_prefix")
@@ -46,7 +46,7 @@ class BigQueryQueryBuilderTest(unittest.TestCase):
             .build()
         )
         self.builder_with_overrides = BigQueryQueryBuilder(
-            address_overrides=address_overrides
+            parent_address_overrides=address_overrides
         )
 
     def test_build_no_table_no_args(self) -> None:

@@ -16,11 +16,13 @@
 # =============================================================================
 """Collector and Builder for the DirectIngestRawDataTableLatestView class"""
 from types import ModuleType
-from typing import List, Optional
+from typing import List
 
-from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
 from recidiviz.big_query.big_query_view import BigQueryView, BigQueryViewBuilder
 from recidiviz.big_query.big_query_view_collector import BigQueryViewCollector
+from recidiviz.big_query.big_query_view_sandbox_context import (
+    BigQueryViewSandboxContext,
+)
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct import direct_ingest_regions, regions
 from recidiviz.ingest.direct.dataset_config import raw_latest_views_dataset_for_region
@@ -70,7 +72,7 @@ class DirectIngestRawDataTableLatestViewBuilder(BigQueryViewBuilder):
         )
 
     def _build(
-        self, *, address_overrides: Optional[BigQueryAddressOverrides] = None
+        self, *, sandbox_context: BigQueryViewSandboxContext | None
     ) -> BigQueryView:
         project_id = metadata.project_id()
         query = (
@@ -80,7 +82,11 @@ class DirectIngestRawDataTableLatestViewBuilder(BigQueryViewBuilder):
                 raw_data_source_instance=self.raw_data_source_instance,
             ).build_query(
                 raw_file_config=self.raw_file_config,
-                address_overrides=address_overrides,
+                parent_address_overrides=(
+                    sandbox_context.parent_address_overrides
+                    if sandbox_context
+                    else None
+                ),
                 normalized_column_values=True,
                 raw_data_datetime_upper_bound=None,
                 filter_to_latest=True,
@@ -98,7 +104,7 @@ class DirectIngestRawDataTableLatestViewBuilder(BigQueryViewBuilder):
             view_query_template=query,
             bq_description=self.description,
             description=self.description,
-            address_overrides=address_overrides,
+            sandbox_context=sandbox_context,
         )
 
 

@@ -18,13 +18,13 @@
 tables.
 """
 
-from typing import Optional
-
 from sqlalchemy import Table
 
-from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_view import BigQueryView, BigQueryViewBuilder
+from recidiviz.big_query.big_query_view_sandbox_context import (
+    BigQueryViewSandboxContext,
+)
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.utils.string import StrictStringFormatter
@@ -63,7 +63,7 @@ class FederatedCloudSQLTableBigQueryView(BigQueryView):
         cloud_sql_query: str,
         database_key: SQLAlchemyDatabaseKey,
         materialized_address: BigQueryAddress,
-        address_overrides: Optional[BigQueryAddressOverrides] = None,
+        sandbox_context: BigQueryViewSandboxContext | None,
     ):
         description = StrictStringFormatter().format(
             DESCRIPTION_TEMPLATE,
@@ -78,7 +78,7 @@ class FederatedCloudSQLTableBigQueryView(BigQueryView):
             bq_description=description,
             description=description,
             materialized_address=materialized_address,
-            address_overrides=address_overrides,
+            sandbox_context=sandbox_context,
             view_query_template=TABLE_QUERY_TEMPLATE,
             # View query template args
             connection_region=connection_region,
@@ -129,7 +129,9 @@ class FederatedCloudSQLTableBigQueryViewBuilder(
         )
 
     def _build(
-        self, *, address_overrides: Optional[BigQueryAddressOverrides] = None
+        self,
+        *,
+        sandbox_context: BigQueryViewSandboxContext | None,
     ) -> FederatedCloudSQLTableBigQueryView:
         if self.materialized_address is None:
             raise ValueError("The materialized_address field cannot be None.")
@@ -142,5 +144,5 @@ class FederatedCloudSQLTableBigQueryViewBuilder(
             cloud_sql_query=self.cloud_sql_query,
             database_key=self.database_key,
             materialized_address=self.materialized_address,
-            address_overrides=address_overrides,
+            sandbox_context=sandbox_context,
         )

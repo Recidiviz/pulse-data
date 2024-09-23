@@ -34,9 +34,9 @@ from pytablewriter import MarkdownTableWriter
 
 import recidiviz
 from recidiviz.big_query.big_query_address import BigQueryAddress
-from recidiviz.big_query.big_query_utils import build_views_to_update
 from recidiviz.big_query.big_query_view import BigQueryView
 from recidiviz.big_query.big_query_view_dag_walker import BigQueryViewDagWalker
+from recidiviz.big_query.build_views_to_update import build_views_to_update
 from recidiviz.calculator.query.state.dataset_config import (
     DATAFLOW_METRICS_DATASET,
     DATAFLOW_METRICS_MATERIALIZED_DATASET,
@@ -246,7 +246,7 @@ class CalculationDocumentationGenerator:
         views_to_update = build_views_to_update(
             view_source_table_datasets=get_all_source_table_datasets(),
             candidate_view_builders=all_view_builders,
-            address_overrides=None,
+            sandbox_context=None,
         )
         self.dag_walker = BigQueryViewDagWalker(views_to_update)
         self.dag_walker.populate_ancestor_sub_dags()

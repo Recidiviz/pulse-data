@@ -24,6 +24,9 @@ import pytz
 from sqlalchemy import Table
 
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
+from recidiviz.big_query.big_query_view_sandbox_context import (
+    BigQueryViewSandboxContext,
+)
 from recidiviz.big_query.constants import TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS
 from recidiviz.big_query.view_update_manager import (
     create_managed_dataset_and_deploy_views_for_view_builders,
@@ -130,17 +133,20 @@ def _federated_bq_regional_dataset_refresh(
         ]
     )
 
-    address_overrides = None
+    sandbox_context = None
     if dataset_override_prefix:
-        address_overrides = address_overrides_for_view_builders(
-            view_dataset_override_prefix=dataset_override_prefix,
-            view_builders=view_builders,
+        sandbox_context = BigQueryViewSandboxContext(
+            parent_address_overrides=address_overrides_for_view_builders(
+                view_dataset_override_prefix=dataset_override_prefix,
+                view_builders=view_builders,
+            ),
+            output_sandbox_dataset_prefix=dataset_override_prefix,
         )
 
     create_managed_dataset_and_deploy_views_for_view_builders(
         view_source_table_datasets=set(),
         view_builders_to_update=view_builders,
-        address_overrides=address_overrides,
+        sandbox_context=sandbox_context,
         bq_region_override=bq_region_override,
         force_materialize=True,
         historically_managed_datasets_to_clean=historically_managed_datasets_for_schema,

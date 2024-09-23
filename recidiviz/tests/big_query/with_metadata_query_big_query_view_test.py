@@ -21,6 +21,9 @@ from mock import patch
 
 from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+from recidiviz.big_query.big_query_view_sandbox_context import (
+    BigQueryViewSandboxContext,
+)
 from recidiviz.big_query.with_metadata_query_big_query_view import (
     WithMetadataQueryBigQueryViewBuilder,
 )
@@ -62,13 +65,17 @@ class WithMetadataBigQueryViewTest(unittest.TestCase):
             .register_sandbox_override_for_entire_dataset("dataset")
             .build()
         )
+        sandbox_context = BigQueryViewSandboxContext(
+            parent_address_overrides=address_overrides,
+            output_sandbox_dataset_prefix="my_override",
+        )
 
         view = WithMetadataQueryBigQueryViewBuilder(
             delegate=self.view_delegate,
             metadata_query="SELECT value from `{project_id}.{view_dataset}.table`, {state_code} as state_code",
             state_code="US_XX",
             view_dataset="dataset",
-        ).build(address_overrides=address_overrides)
+        ).build(sandbox_context=sandbox_context)
 
         self.assertEqual(
             view.metadata_query,

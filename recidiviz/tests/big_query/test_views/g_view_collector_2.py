@@ -34,7 +34,7 @@ with local_project_id_override("my-project-id"):
             dataset_id="fake_metrics_dataset", table_id="fake_metric_view_materialized"
         ),
         dimensions=("dimension_col",),
-        address_overrides=None,
+        sandbox_context=None,
     )
     GOOD_VIEW_6 = MetricBigQueryView(
         dataset_id="fake_metrics_dataset",
@@ -45,7 +45,7 @@ with local_project_id_override("my-project-id"):
             dataset_id="fake_metrics_dataset", table_id="fake_metric_view_materialized"
         ),
         dimensions=("dimension_col",),
-        address_overrides=None,
+        sandbox_context=None,
     )
 
 

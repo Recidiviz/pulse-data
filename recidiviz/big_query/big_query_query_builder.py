@@ -43,9 +43,9 @@ class BigQueryQueryBuilder:
     """
 
     def __init__(
-        self, *, address_overrides: Optional[BigQueryAddressOverrides]
+        self, *, parent_address_overrides: Optional[BigQueryAddressOverrides]
     ) -> None:
-        self.address_overrides = address_overrides
+        self._parent_address_overrides = parent_address_overrides
 
     def build_query(
         self,
@@ -63,11 +63,11 @@ class BigQueryQueryBuilder:
             query_template,
             query_format_kwargs,
         )
-        if not self.address_overrides:
+        if not self._parent_address_overrides:
             return query_no_overrides
 
         return self._apply_overrides_to_query(
-            project_id, query_no_overrides, self.address_overrides
+            project_id, query_no_overrides, self._parent_address_overrides
         )
 
     @classmethod
@@ -113,7 +113,7 @@ class BigQueryQueryBuilder:
     def _apply_overrides_to_query(
         project_id: str,
         query: str,
-        address_overrides: BigQueryAddressOverrides,
+        parent_address_overrides: BigQueryAddressOverrides,
     ) -> str:
         """Takes the given query string, parses out the table references, and returns
         the same query string, but with overrides applied to all relevant addresses.
@@ -129,7 +129,9 @@ class BigQueryQueryBuilder:
             if project_id != ref_project_id:
                 continue
             parent_table = BigQueryAddress(dataset_id=dataset_id, table_id=table_id)
-            if override := address_overrides.get_sandbox_address(address=parent_table):
+            if override := parent_address_overrides.get_sandbox_address(
+                address=parent_table
+            ):
                 query_with_overrides = query_with_overrides.replace(
                     f"`{ref_project_id}.{dataset_id}.{table_id}`",
                     f"`{ref_project_id}.{override.dataset_id}.{override.table_id}`",

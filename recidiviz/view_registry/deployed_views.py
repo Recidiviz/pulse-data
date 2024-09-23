@@ -24,9 +24,9 @@ from typing import Dict, List, Set
 from recidiviz.aggregated_metrics.view_config import (
     get_aggregated_metrics_view_builders,
 )
-from recidiviz.big_query.big_query_utils import build_views_to_update
 from recidiviz.big_query.big_query_view import BigQueryViewBuilder
 from recidiviz.big_query.big_query_view_dag_walker import BigQueryViewDagWalker
+from recidiviz.big_query.build_views_to_update import build_views_to_update
 from recidiviz.calculator.query.experiments.view_config import (
     VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE as EXPERIMENTS_VIEW_BUILDERS,
 )
@@ -104,7 +104,7 @@ def build_all_deployed_views_dag_walker() -> BigQueryViewDagWalker:
         build_views_to_update(
             view_source_table_datasets=get_all_source_table_datasets(),
             candidate_view_builders=all_deployed_view_builders(),
-            address_overrides=None,
+            sandbox_context=None,
         )
     )
 

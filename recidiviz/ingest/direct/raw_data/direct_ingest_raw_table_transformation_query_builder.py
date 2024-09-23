@@ -46,11 +46,13 @@ class DirectIngestTempRawTablePreMigrationTransformationQueryBuilder:
         self,
         region_raw_file_config: DirectIngestRegionRawFileConfig,
         raw_data_instance: DirectIngestInstance,
-        address_overrides: Optional[BigQueryAddressOverrides] = None,
+        parent_address_overrides: Optional[BigQueryAddressOverrides] = None,
     ) -> None:
         self._region_raw_file_config = region_raw_file_config
         self._raw_data_instance = raw_data_instance
-        self._query_builder = BigQueryQueryBuilder(address_overrides=address_overrides)
+        self._query_builder = BigQueryQueryBuilder(
+            parent_address_overrides=parent_address_overrides
+        )
 
     def build_pre_migration_transformations_query(
         self,

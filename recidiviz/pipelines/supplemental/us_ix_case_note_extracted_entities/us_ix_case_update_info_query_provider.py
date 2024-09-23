@@ -72,7 +72,7 @@ def get_us_ix_case_update_info_query_provider(
     project_id: str,
     address_overrides: BigQueryAddressOverrides | None,
 ) -> BigQueryQueryProvider:
-    query_builder = BigQueryQueryBuilder(address_overrides=address_overrides)
+    query_builder = BigQueryQueryBuilder(parent_address_overrides=address_overrides)
 
     formatted_query = query_builder.build_query(
         project_id=project_id,
