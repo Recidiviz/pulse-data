@@ -1164,6 +1164,8 @@ US_ND:
       Usage reason unknown. Grandfathered in 04/18/2024.
     workflows_views.us_nd_resident_metadata: |-
       Parole Review Dates are flagged as resident metadata.
+    workflows_views.us_nd_transfer_to_atp_form_record: |-
+      Parole Review Date notes were needed for the side panel.
   elite_offender_offences:
     task_eligibility_criteria_us_nd.no_detainers_or_warrants: |-
       We don't have a place to ingest detainers or warrants.
@@ -1203,6 +1205,9 @@ US_ND:
       Alerts are not ingested.
     workflows_views.us_nd_transfer_to_atp_form_record: |-
       Alerts are not ingested.
+  recidiviz_elite_offender_medical_answers_6i:
+    workflows_views.us_nd_transfer_to_atp_form_record: |-
+      Parole Review Date notes were needed for the side panel.
   recidiviz_elite_staff_members:
     sessions.us_nd_incarceration_staff_assignment_sessions_preprocessed: |-
       Get CM staff assignments to residents.
