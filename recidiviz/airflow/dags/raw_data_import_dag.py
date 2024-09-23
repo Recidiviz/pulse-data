@@ -212,6 +212,10 @@ def create_single_state_code_ingest_instance_raw_data_import_branch(
             serialized_bq_metadata=get_all_unprocessed_bq_file_metadata.output,
         )
 
+        header_errors = raise_header_verification_errors(
+            header_verification_errors=file_headers[HEADER_VERIFICATION_ERRORS]
+        )
+
         files_to_process = split_by_pre_import_normalization_type(
             region_code=state_code.value,
             serialized_bq_metadata=get_all_unprocessed_bq_file_metadata.output,
@@ -224,10 +228,10 @@ def create_single_state_code_ingest_instance_raw_data_import_branch(
             >> get_all_unprocessed_bq_file_metadata
             >> write_import_start
             >> file_headers
-            >> raise_header_verification_errors(
-                header_verification_errors=file_headers[HEADER_VERIFICATION_ERRORS]
-            )
-            >> files_to_process
+            >> [
+                header_errors,
+                files_to_process,
+            ]
         )
 
         # ------------------------------------------------------------------------------
@@ -289,7 +293,7 @@ def create_single_state_code_ingest_instance_raw_data_import_branch(
             pre_import_normalization_result,
         )
 
-        with TaskGroup("biq_query_load") as big_query_load:
+        with TaskGroup("big_query_load") as big_query_load:
             # load paths into temp table
             load_and_prep_results = load_and_prep_paths_for_batch.partial(
                 raw_data_instance=raw_data_instance, region_code=state_code.value
@@ -377,7 +381,10 @@ def create_single_state_code_ingest_instance_raw_data_import_branch(
 
             write_import_completions >> write_file_processed_times
 
-        big_query_load >> cleanup_and_storage
+        [
+            big_query_load,
+            header_errors,
+        ] >> cleanup_and_storage
 
         ensure_release_resource_locks_release_if_acquired = EmptyOperator(
             task_id="ensure_release_resource_locks_release_if_acquired",
