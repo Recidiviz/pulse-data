@@ -281,10 +281,22 @@ function copyAndPopulateOpportunityGrants(
     totalSupervisionOpportunitiesGranted.toLocaleString();
   totalFacilitiesOpportunitiesGranted =
     totalFacilitiesOpportunitiesGranted.toLocaleString();
-  const totalSupervisionMAU = calculateActiveUsersPercent(totalSupervisionMonthlyActiveUsers, totalSupervisionMonthlyRegisteredUsers);
-  const totalFacilitiesMAU = calculateActiveUsersPercent(totalFacilitiesMonthlyActiveUsers, totalFacilitiesMonthlyRegisteredUsers);
-  const totalSupervisionWAU = calculateActiveUsersPercent(totalSupervisionWeeklyActiveUsers, totalSupervisionWeeklyRegisteredUsers);
-  const totalFacilitiesWAU = calculateActiveUsersPercent(totalFacilitiesWeeklyActiveUsers, totalFacilitiesWeeklyRegisteredUsers);
+  const totalSupervisionMAU = calculateActiveUsersPercent(
+    totalSupervisionMonthlyActiveUsers,
+    totalSupervisionMonthlyRegisteredUsers
+  );
+  const totalFacilitiesMAU = calculateActiveUsersPercent(
+    totalFacilitiesMonthlyActiveUsers,
+    totalFacilitiesMonthlyRegisteredUsers
+  );
+  const totalSupervisionWAU = calculateActiveUsersPercent(
+    totalSupervisionWeeklyActiveUsers,
+    totalSupervisionWeeklyRegisteredUsers
+  );
+  const totalFacilitiesWAU = calculateActiveUsersPercent(
+    totalFacilitiesWeeklyActiveUsers,
+    totalFacilitiesWeeklyRegisteredUsers
+  );
 
   Logger.log(
     "totalSupervisionOpportunitiesGranted: %s",
@@ -373,11 +385,17 @@ function copyAndPopulateOpportunityGrants(
       );
       mauTextCopy.replaceText(
         "{{mau}}",
-        calculateActiveUsersPercent(opportunityGrantedAndMauAndWau.distinctMonthlyActiveUsers, opportunityGrantedAndMauAndWau.distinctMonthlyRegisteredUsers)
+        calculateActiveUsersPercent(
+          opportunityGrantedAndMauAndWau.distinctMonthlyActiveUsers,
+          opportunityGrantedAndMauAndWau.distinctMonthlyRegisteredUsers
+        )
       );
       wauTextCopy.replaceText(
         "{{wau}}",
-        calculateActiveUsersPercent(opportunityGrantedAndMauAndWau.distinctWeeklyActiveUsers, opportunityGrantedAndMauAndWau.distinctWeeklyRegisteredUsers)
+        calculateActiveUsersPercent(
+          opportunityGrantedAndMauAndWau.distinctWeeklyActiveUsers,
+          opportunityGrantedAndMauAndWau.distinctWeeklyRegisteredUsers
+        )
       );
 
       nameCell.appendParagraph(nameTextCopy);
@@ -452,7 +470,11 @@ function copyAndPopulateWorkflowSection(
         const altTitle = elementCopyChild.getAltTitle();
         if (altTitle === "Impact Column Chart") {
           // Replace with generated chart
-          body.appendImage(workflowToDistrictOrFacilitiesColumnChart[workflow]);
+          if (workflowToDistrictOrFacilitiesColumnChart[workflow]) {
+            body.appendImage(
+              workflowToDistrictOrFacilitiesColumnChart[workflow]
+            );
+          }
         } else {
           // Put back original image
           body.appendImage(elementCopyChild);
