@@ -104,7 +104,8 @@ RESIDENT_RECORD_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     ),
     level_2_state_codes=WORKFLOWS_LEVEL_2_INCARCERATION_LOCATION_QUERY_STRING,
     workflows_incarceration_states=list_to_query_string(
-        ["US_AR", "US_ME", "US_MO", "US_TN", "US_IX", "US_MI", "US_ND"], quoted=True
+        ["US_AR", "US_ME", "US_MO", "US_TN", "US_IX", "US_MI", "US_ND", "US_AZ"],
+        quoted=True,
     ),
 )
 
