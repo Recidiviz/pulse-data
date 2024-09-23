@@ -24,7 +24,9 @@ columns:
       The location of the agency providing the program.
     known_values:
       - value: "864"
-        description: Seems erroneous. Always associated with WEST CENTRAL HUMAN SERVICES value in COMMENT_TEXT field, where other location names are provided.
+        description:
+          Seems erroneous. Always associated with WEST CENTRAL HUMAN SERVICES
+          value in COMMENT_TEXT field, where other location names are provided.
       - value: MRCC
         description: MISSOURI RIVER CORRECTIONAL CENTER
       - value: BTC
@@ -113,7 +115,7 @@ columns:
       The date the record was created.
     field_type: datetime
     datetime_sql_parsers:
-      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y  %I:%M:%S%p', {col_name})"
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y  %I:%M:%S %p', {col_name})"
   - name: CREATE_USER_ID
     description: |-
       The user who created the record.
@@ -131,7 +133,7 @@ columns:
       TODO(#18645): Clarify with ND.
     field_type: datetime
     datetime_sql_parsers:
-      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y  %I:%M:%S%p', {col_name})"
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y  %I:%M:%S %p', {col_name})"
   - name: HOLIDAY_FLAG
     description: |-
       TODO(#18645): Clarify with ND.
@@ -150,7 +152,7 @@ columns:
       The last time this record was modified.
     field_type: datetime
     datetime_sql_parsers:
-      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y  %I:%M:%S%p', {col_name})"
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y  %I:%M:%S %p', {col_name})"
   - name: MODIFY_USER_ID
     description: |-
       The person who last modified this record.
@@ -195,7 +197,7 @@ columns:
       When this program is expected to end.
     field_type: datetime
     datetime_sql_parsers:
-      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y  %I:%M:%S%p', {col_name})"
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y  %I:%M:%S %p', {col_name})"
   - name: SCHEDULE_NOTES
     description: |-
       Notes on scheduling of this program. Currently always blank.
@@ -204,7 +206,7 @@ columns:
       When this program is expected to start.
     field_type: datetime
     datetime_sql_parsers:
-      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y  %I:%M:%S%p', {col_name})"
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y  %I:%M:%S %p', {col_name})"
   - name: SEAL_FLAG
     description: |-
       Unclear. Always "N" or blank.

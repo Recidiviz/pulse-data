@@ -39,24 +39,30 @@ columns:
     description: |-
       ID of the sentence that this charge is associated with.
   - name: LAST_UPDATE
-    field_type: datetime
     description: |-
       When this record was most recently updated in the source system.
+    field_type: datetime
   - name: COUNTS
     description: |-
       Number of counts of this particular offense that the person is being charged with.
   - name: INACTIVEDATE
-    field_type: datetime
     description: |-
       When this offense became inactive, if applicable.
-  - name: OFFENSEDATE
     field_type: datetime
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y  %I:%M:%S%p', {col_name})"
+  - name: OFFENSEDATE
     description: |-
       When this offense occurred.
-  - name: RecDate
     field_type: datetime
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y  %I:%M:%S%p', {col_name})"
+  - name: RecDate
     description: |-
       When this record was first created in the source system.
+    field_type: datetime
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y  %I:%M:%S%p', {col_name})"
   - name: YEAR
     description: |-
       Year when this offense occurred.

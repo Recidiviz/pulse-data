@@ -31,9 +31,11 @@ columns:
     description: |-
       Dollar amount of the transaction entered into the trust.
   - name: TXN_ENTRY_DATE
-    field_type: datetime
     description: |-
       When the transaction was entered into the trust.
+    field_type: datetime
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y', {col_name})"
   - name: OFFENDER_WORK_ID
     description: |-
       ID of the kind of work being done by the person which led to the financial transaction.
@@ -41,13 +43,17 @@ columns:
     description: |-
       ID of the particular work assignment for the person which led to the financial transaction.
   - name: PAY_START_DATE
-    field_type: datetime
     description: |-
       When the payment occurred, or first started if durational.
-  - name: PAY_END_DATE
     field_type: datetime
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y', {col_name})"
+  - name: PAY_END_DATE
     description: |-
       When the payments ended, if durational.
+    field_type: datetime
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y', {col_name})"
   - name: PAY_RANGE_CODE
     description: |-
       Code describing the range of pay.
@@ -85,6 +91,8 @@ columns:
     description: |-
       Type of deduction taken from the transaction, if applicable.
   - name: MODIFY_DATETIME
-    field_type: datetime
     description: |-
       When this record was most recently modified in the source system.
+    field_type: datetime
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y', {col_name})"

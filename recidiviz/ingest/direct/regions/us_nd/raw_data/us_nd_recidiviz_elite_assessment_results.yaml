@@ -9,9 +9,11 @@ primary_key_cols:
   - ASSESSMENT_ID
 columns:
   - name: ACTIVE_FLAG
-    description: Whether this assessment is still used.
+    description: |-
+      Whether this assessment is still used.
   - name: ASSESSMENT_ID
-    description: The ID of the assessment.
+    description: |-
+      The ID of the assessment.
   - name: CELL_SHARING_ALERT_FLAG
     description: |-
       TODO(#18645): Fill in with answer from ND
@@ -19,6 +21,8 @@ columns:
     description: |-
       The date and time this record was created.
     field_type: datetime
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S %p', {col_name})"
   - name: CREATE_USER_ID
     description: |-
       The user ID of the user who created this record.
@@ -27,6 +31,8 @@ columns:
     description: |-
       The date this assessment result expires.
     field_type: datetime
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S %p', {col_name})"
   - name: LIST_SEQ
     description: |-
       Unclear. Likely the sequence order in which this assessment was performed relative to other assessments for the same individual.
@@ -34,6 +40,8 @@ columns:
     description: |-
       The last time this record was modified.
     field_type: datetime
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S %p', {col_name})"
   - name: MODIFY_USER_ID
     description: |-
       The last user to modify this record.
@@ -47,5 +55,4 @@ columns:
   - name: UPDATE_ALLOWED_FLAG
     description: |-
       Whether or not this record can be updated over time.
-always_historical_export: False
 update_cadence: IRREGULAR

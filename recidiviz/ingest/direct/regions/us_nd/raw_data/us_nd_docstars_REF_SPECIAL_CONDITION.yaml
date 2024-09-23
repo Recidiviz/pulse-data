@@ -7,7 +7,6 @@ file_description: |-
 data_classification: source
 primary_key_cols:
   - RECID
-update_cadence: IRREGULAR
 columns:
   - name: RECID
   - name: ACTIVE
@@ -18,3 +17,6 @@ columns:
   - name: SORT_ORDER
   - name: RECDATE
     field_type: datetime
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y  %I:%M:%S%p', {col_name})"
+update_cadence: IRREGULAR

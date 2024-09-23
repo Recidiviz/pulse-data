@@ -1,39 +1,56 @@
 # yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: elite_offender_sent_adj
-file_description: A file that contains the adjustments to the sentences of offenders
+file_description: |-
+  A file that contains the adjustments to the sentences of offenders
 data_classification: source
-primary_key_cols: [TERM_ADJUST_ID]
+primary_key_cols:
+  - TERM_ADJUST_ID
 columns:
   - name: ADJUST_DATE
-    description: The date adjustment was given
+    description: |-
+      The date adjustment was given
     field_type: datetime
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y  %I:%M:%S%p', {col_name})"
   - name: ADJUST_DAYS
-    description: The adjustment in days
+    description: |-
+      The adjustment in days
   - name: ADJUST_STATUS
-    description: Whether an adjustment was approved or not
+    description: |-
+      Whether an adjustment was approved or not
   - name: COMMENT_TEXT
-    description: Text for the adjustment notes
+    description: |-
+      Text for the adjustment notes
     is_pii: True
   - name: CREATE_DATETIME
-    description: Datetime created
+    description: |-
+      Datetime created
     field_type: datetime
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y  %I:%M:%S%p', {col_name})"
   - name: CREATE_USER_ID
-    description: ID of user who created row
+    description: |-
+      ID of user who created row
     is_pii: True
   - name: EIGHTYFIVE_PERC_DAYS
     description: |-
       TODO(#18645): Fill in with answer from ND
   - name: MODIFY_DATETIME
-    description: Datetime row was modified
+    description: |-
+      Datetime row was modified
     field_type: datetime
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y  %I:%M:%S%p', {col_name})"
   - name: MODIFY_USER_ID
-    description: User who modified row
+    description: |-
+      User who modified row
     is_pii: True
   - name: OFFENDER_ADJUST_ID
     is_pii: True
   - name: OFFENDER_BOOK_ID
+    description: |-
+      External ID of a booking for a particular person, i.e. a new series of interactions with the justice system due to a new offense.
     is_pii: True
-    description: External ID of a booking for a particular person, i.e. a new series of interactions with the justice system due to a new offense.
   - name: SEAL_FLAG
     description: |-
       TODO(#18645): Fill in with answer from ND

@@ -38,7 +38,11 @@ columns:
       The date this assessment took place.
     field_type: datetime
     datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S%p', {col_name})"
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y  %I:%M:%S%p', {col_name})"
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y  %I:%M:%S %p', {col_name})"
       - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S %p', {col_name})"
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S', {col_name})"
   - name: ASSESSMENT_SEQ
     description: |-
       TODO(#18645): Fill in with answer from ND
@@ -174,13 +178,17 @@ always_historical_export: False
 table_relationships:
   - foreign_table: recidiviz_elite_assessment_results
     join_logic:
-      - recidiviz_elite_OffenderAssessments.ASSESSMENT_TYPE_ID = recidiviz_elite_assessment_results.ASSESSMENT_ID
+      - recidiviz_elite_OffenderAssessments.ASSESSMENT_TYPE_ID =
+        recidiviz_elite_assessment_results.ASSESSMENT_ID
   - foreign_table: recidiviz_elite_AssessmentSupervisors
     join_logic:
-      - recidiviz_elite_OffenderAssessments.ASSESSMENT_TYPE_ID = recidiviz_elite_AssessmentSupervisors.ASSESSMENT_ID
+      - recidiviz_elite_OffenderAssessments.ASSESSMENT_TYPE_ID =
+        recidiviz_elite_AssessmentSupervisors.ASSESSMENT_ID
   - foreign_table: elite_OffenderAssessmentItems
     join_logic:
-      - recidiviz_elite_OffenderAssessments.ASSESSMENT_TYPE_ID = elite_OffenderAssessmentItems.ASSESSMENT_ID
+      - recidiviz_elite_OffenderAssessments.ASSESSMENT_TYPE_ID =
+        elite_OffenderAssessmentItems.ASSESSMENT_ID
   - foreign_table: recidiviz_elite_Assessments
     join_logic:
-      - recidiviz_elite_OffenderAssessments.ASSESSMENT_TYPE_ID = recidiviz_elite_Assessments.ASSESSMENT_ID
+      - recidiviz_elite_OffenderAssessments.ASSESSMENT_TYPE_ID =
+        recidiviz_elite_Assessments.ASSESSMENT_ID

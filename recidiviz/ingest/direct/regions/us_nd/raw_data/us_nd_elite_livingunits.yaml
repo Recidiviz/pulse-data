@@ -29,9 +29,11 @@ columns:
     description: |-
       Sub-code describing the jurisdiction controlling the living unit/location.
   - name: DEACTIVATE_DATE
-    field_type: datetime
     description: |-
       When this living unit/location was deactivated, if no longer active.
+    field_type: datetime
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y  %I:%M:%S%p', {col_name})"
   - name: ACTIVE_FLAG
     description: |-
       Whether this living unit/location is still in active use.

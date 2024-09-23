@@ -119,13 +119,15 @@ columns:
       The name of the supervision officer associated with this contact.
     is_pii: True
   - name: CONTACT_DATE
-    field_type: datetime
     description: |-
       When this contact occurred.
-  - name: RecDate
     field_type: datetime
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y  %I:%M:%S%p', {col_name})"
+  - name: RecDate
     description: |-
       When this record was first created in the source system.
+    field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S', {col_name})"
       - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y  %H:%M:%S %p', {col_name})"

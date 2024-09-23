@@ -25,7 +25,9 @@ columns:
       The location of the agency providing the program.
     known_values:
       - value: "864"
-        description: Seems erroneous. Always associated with WEST CENTRAL HUMAN SERVICES value in COMMENT_TEXT field, where other location names are provided.
+        description:
+          Seems erroneous. Always associated with WEST CENTRAL HUMAN SERVICES
+          value in COMMENT_TEXT field, where other location names are provided.
       - value: MRCC
         description: MISSOURI RIVER CORRECTIONAL CENTER
       - value: BTC
@@ -66,7 +68,9 @@ columns:
       Date the record was created.
     field_type: datetime
     datetime_sql_parsers:
-      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y  %I:%M:%S%p', {col_name})"
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y  %I:%M:%S %p', {col_name})"
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S %p', {col_name})"
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S', {col_name})"
   - name: CREATE_USER_ID
     description: |-
       ID of the user who created the record.
@@ -94,7 +98,9 @@ columns:
       Last time the record was modified.
     field_type: datetime
     datetime_sql_parsers:
-      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y  %I:%M:%S%p', {col_name})"
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y  %I:%M:%S %p', {col_name})"
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S %p', {col_name})"
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S', {col_name})"
   - name: MODIFY_USER_ID
     description: |-
       ID of the person who last modified the record.
@@ -116,7 +122,9 @@ columns:
       The date a person finished a program or course.
     field_type: datetime
     datetime_sql_parsers:
-      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y  %I:%M:%S%p', {col_name})"
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y  %I:%M:%S %p', {col_name})"
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S %p', {col_name})"
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S', {col_name})"
   - name: OFFENDER_END_DATE_1
     description: |-
       Misnamed field. Signifies if a person completed a course/program or not.
@@ -162,6 +170,8 @@ columns:
     field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S %p', {col_name})"
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y  %I:%M:%S %p', {col_name})"
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S %p', {col_name})"
   - name: PARAMETER_1
     description: |-
       TODO(#18645): Fill in with answer from ND
@@ -189,6 +199,8 @@ columns:
     field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S %p', {col_name})"
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y  %I:%M:%S %p', {col_name})"
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S %p', {col_name})"
   - name: REFERRAL_PRIORITY
     description: |-
       The priority of a person's referral into a given course or program. There seem to be
@@ -212,6 +224,8 @@ columns:
     field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S %p', {col_name})"
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S', {col_name})"
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y  %I:%M:%S %p', {col_name})"
   - name: REJECT_REASON_CODE
     description: |-
       The reason a person was rejected from participating in a course/program.
@@ -251,9 +265,11 @@ always_historical_export: False
 table_relationships:
   - foreign_table: elite_ProgramServices
     join_logic:
-      - elite_ProgramServices.PROGRAM_ID = elite_OffenderProgramProfiles.PROGRAM_ID
+      - elite_ProgramServices.PROGRAM_ID =
+        elite_OffenderProgramProfiles.PROGRAM_ID
     cardinality: ONE_TO_MANY
   - foreign_table: recidiviz_elite_CourseActivities
     join_logic:
-      - recidiviz_elite_CourseActivities.CRS_ACTY_ID = elite_OffenderProgramProfiles.CRS_ACTY_ID
+      - recidiviz_elite_CourseActivities.CRS_ACTY_ID =
+        elite_OffenderProgramProfiles.CRS_ACTY_ID
     cardinality: ONE_TO_MANY

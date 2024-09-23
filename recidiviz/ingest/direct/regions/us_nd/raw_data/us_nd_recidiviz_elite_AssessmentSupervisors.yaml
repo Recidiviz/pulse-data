@@ -8,16 +8,19 @@ data_classification: source
 primary_key_cols:
   - ASSESSMENT_ID
   - SUPERVISION_LEVEL_TYPE
-update_cadence: IRREGULAR
 columns:
   - name: ACTIVE_FLAG
-    description: whether this assessment is still used.
+    description: |-
+      whether this assessment is still used.
   - name: ASSESSMENT_ID
-    description: The ID of the assessment.
+    description: |-
+      The ID of the assessment.
   - name: CREATE_DATETIME
     description: |-
       The date and time this record was created.
     field_type: datetime
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S %p', {col_name})"
   - name: CREATE_USER_ID
     description: |-
       The user ID of the user who created this record.
@@ -26,10 +29,14 @@ columns:
     description: |-
       TODO(#18645): Fill in with answer from ND
     field_type: datetime
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S %p', {col_name})"
   - name: EXPIRY_DATE
     description: |-
       TODO(#18645): Fill in with answer from ND
     field_type: datetime
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S %p', {col_name})"
   - name: LIST_SEQ
     description: |-
       TODO(#18645): Fill in with answer from ND
@@ -43,6 +50,8 @@ columns:
     description: |-
       The last time this record was modified.
     field_type: datetime
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S %p', {col_name})"
   - name: MODIFY_USER_ID
     description: |-
       The last user to modify this record.
@@ -56,4 +65,4 @@ columns:
   - name: UPDATE_ALLOWED_FLAG
     description: |-
       Whether or not this record can be updated over time.
-always_historical_export: False
+update_cadence: IRREGULAR

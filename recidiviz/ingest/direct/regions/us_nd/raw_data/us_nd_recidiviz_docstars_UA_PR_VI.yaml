@@ -14,6 +14,8 @@ columns:
   - name: SID
   - name: CONTACT_DATE
     field_type: datetime
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y  %I:%M:%S%p', {col_name})"
   - name: CONTACT_CODE
   - name: C2
   - name: C3
@@ -40,3 +42,5 @@ columns:
   - name: OTHER_NEG
   - name: RecDate
     field_type: datetime
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y  %I:%M:%S%p', {col_name})"

@@ -15,3 +15,5 @@ columns:
     is_pii: True
   - name: COMPLETION_DATE
     field_type: datetime
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y  %I:%M:%S%p', {col_name})"

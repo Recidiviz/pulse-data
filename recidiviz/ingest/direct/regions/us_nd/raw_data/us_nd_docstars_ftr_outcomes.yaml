@@ -29,6 +29,8 @@ columns:
   - name: PAY_STATUS
   - name: SUBMITTED_DATE
     field_type: datetime
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y  %I:%M:%S%p', {col_name})"
   - name: SUBMITTED_BY
     is_pii: True
   - name: SUBMITTED_BY_NAME
