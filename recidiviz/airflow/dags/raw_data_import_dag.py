@@ -329,6 +329,7 @@ def create_single_state_code_ingest_instance_raw_data_import_branch(
                 state_code.value,
                 raw_data_instance,
                 get_all_unprocessed_bq_file_metadata.output,
+                file_headers[HEADER_VERIFICATION_ERRORS],
                 divide_files_into_chunks.output,
                 pre_import_normalization_result,
                 load_and_prep_results,

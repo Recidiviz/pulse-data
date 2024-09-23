@@ -389,6 +389,7 @@ class CoalesceResultsAndErrorsTest(TestCase):
             DirectIngestInstance.PRIMARY,
             [],
             [],
+            [],
             serialized_empty_batched_task_instance,
             [],
             {SKIPPED_FILE_ERRORS: [], APPEND_READY_FILE_BATCHES: []},
@@ -408,6 +409,7 @@ class CoalesceResultsAndErrorsTest(TestCase):
             coalesce_results_and_errors.function(
                 "US_XX",
                 DirectIngestInstance.PRIMARY,
+                None,
                 None,
                 None,
                 None,
@@ -1012,6 +1014,7 @@ class CoalesceResultsAndErrorsTest(TestCase):
             "US_XX",
             DirectIngestInstance.PRIMARY,
             [m.serialize() for m in bq_metadata],
+            [],
             [],
             BatchedTaskInstanceOutput(results=[], errors=processing_errors).serialize(),
             [],
