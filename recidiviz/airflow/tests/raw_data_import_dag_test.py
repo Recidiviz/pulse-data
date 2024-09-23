@@ -2246,12 +2246,12 @@ class RawDataImportDagBigQueryLoadIntegrationTest(AirflowIntegrationTest):
         return self._create_dag().partial_subset(
             task_ids_or_regex=[
                 "raw_data_branching.us_xx_primary_import_branch.coalesce_import_ready_files",
-                "raw_data_branching.us_xx_primary_import_branch.biq_query_load.load_and_prep_paths_for_batch",
-                "raw_data_branching.us_xx_primary_import_branch.biq_query_load.raise_load_prep_errors",
-                "raw_data_branching.us_xx_primary_import_branch.biq_query_load.generate_append_batches",
-                "raw_data_branching.us_xx_primary_import_branch.biq_query_load.append_ready_file_batches_from_generate_append_batches",
-                "raw_data_branching.us_xx_primary_import_branch.biq_query_load.append_to_raw_data_table_for_batch",
-                "raw_data_branching.us_xx_primary_import_branch.biq_query_load.raise_append_errors",
+                "raw_data_branching.us_xx_primary_import_branch.big_query_load.load_and_prep_paths_for_batch",
+                "raw_data_branching.us_xx_primary_import_branch.big_query_load.raise_load_prep_errors",
+                "raw_data_branching.us_xx_primary_import_branch.big_query_load.generate_append_batches",
+                "raw_data_branching.us_xx_primary_import_branch.big_query_load.append_ready_file_batches_from_generate_append_batches",
+                "raw_data_branching.us_xx_primary_import_branch.big_query_load.append_to_raw_data_table_for_batch",
+                "raw_data_branching.us_xx_primary_import_branch.big_query_load.raise_append_errors",
             ],
             include_upstream=False,
             include_downstream=False,
@@ -2353,7 +2353,7 @@ class RawDataImportDagBigQueryLoadIntegrationTest(AirflowIntegrationTest):
             # validate xcom ---
 
             load_and_prep_jsonb = self.get_xcom_for_task_id(
-                "raw_data_branching.us_xx_primary_import_branch.biq_query_load.load_and_prep_paths_for_batch",
+                "raw_data_branching.us_xx_primary_import_branch.big_query_load.load_and_prep_paths_for_batch",
                 session=session,
                 key="return_value",
                 is_mapped=True,
@@ -2392,7 +2392,7 @@ class RawDataImportDagBigQueryLoadIntegrationTest(AirflowIntegrationTest):
             ]
 
             append_result_jsonb = self.get_xcom_for_task_id(
-                "raw_data_branching.us_xx_primary_import_branch.biq_query_load.append_to_raw_data_table_for_batch",
+                "raw_data_branching.us_xx_primary_import_branch.big_query_load.append_to_raw_data_table_for_batch",
                 session=session,
                 key="return_value",
                 is_mapped=True,
@@ -2628,7 +2628,7 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
                 ],
                 expected_skipped_task_id_regexes=[
                     r".*_primary_import_branch\.coalesce_import_ready_files",
-                    r".*_primary_import_branch\.biq_query_load\..*",
+                    r".*_primary_import_branch\.big_query_load\..*",
                     r".*_primary_import_branch\.cleanup_and_storage\..*",
                     # non-primary branches
                     "_secondary_import_branch_start",
@@ -2673,7 +2673,7 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
                 ],
                 expected_skipped_task_id_regexes=[
                     r".*_primary_import_branch\.coalesce_import_ready_files",
-                    r".*_primary_import_branch\.biq_query_load\..*",
+                    r".*_primary_import_branch\.big_query_load\..*",
                     r".*_primary_import_branch\.cleanup_and_storage.*",
                     "_secondary_import_branch_start",
                     r".*_secondary_import_branch\.(?!ensure_release_resource_locks_release_if_acquired)",
@@ -3129,7 +3129,7 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
                     r".*_secondary_import_branch\.(?!ensure_release_resource_locks_release_if_acquired)",
                     # us_ll primary had no files
                     r"raw_data_branching\.us_ll_primary_import_branch\.pre_import_normalization\.(?!generate_file_chunking_pod_arguments)",
-                    r"raw_data_branching\.us_ll_primary_import_branch\.biq_query_load\..*",
+                    r"raw_data_branching\.us_ll_primary_import_branch\.big_query_load\..*",
                     r"raw_data_branching\.us_ll_primary_import_branch\.cleanup_and_storage\.write_import_completions",
                     r"raw_data_branching\.us_ll_primary_import_branch\.cleanup_and_storage\.write_file_processed_time",
                 ],
@@ -3467,7 +3467,7 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
                     "raw_data_branching.us_xx_primary_import_branch.pre_import_normalization.raw_data_chunk_normalization",
                     "raw_data_branching.us_xx_primary_import_branch.pre_import_normalization.regroup_and_verify_file_chunks",
                     "raw_data_branching.us_xx_primary_import_branch.pre_import_normalization.raise_chunk_normalization_errors",
-                    r"raw_data_branching\.us_xx_primary_import_branch.biq_query_load\..*",
+                    r"raw_data_branching\.us_xx_primary_import_branch.big_query_load\..*",
                 ],
             )
             self.assertEqual(DagRunState.SUCCESS, result_two.dag_run_state)
@@ -3800,7 +3800,7 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
                     "us_ll_primary_import_branch_start",
                     r".us_ll_primary_import_branch\.(?!ensure_release_resource_locks_release_if_acquired)",
                     # skipped since no files to import after failed chunking step!
-                    r"raw_data_branching\.us_xx_primary_import_branch.biq_query_load\..*",
+                    r"raw_data_branching\.us_xx_primary_import_branch.big_query_load\..*",
                 ],
             )
             self.assertEqual(DagRunState.SUCCESS, result_two.dag_run_state)
@@ -4024,7 +4024,7 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
                 session=session,
                 run_conf={"ingest_instance": "PRIMARY", "state_code_filter": "US_XX"},
                 expected_failure_task_id_regexes=[
-                    "raw_data_branching.us_xx_primary_import_branch.biq_query_load.raise_load_prep_errors"
+                    "raw_data_branching.us_xx_primary_import_branch.big_query_load.raise_load_prep_errors"
                 ],
                 expected_skipped_task_id_regexes=[
                     # branches that did not run
@@ -4123,7 +4123,7 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
                 session=session,
                 run_conf={"ingest_instance": "PRIMARY", "state_code_filter": "US_XX"},
                 expected_failure_task_id_regexes=[
-                    "raw_data_branching.us_xx_primary_import_branch.biq_query_load.raise_load_prep_errors"
+                    "raw_data_branching.us_xx_primary_import_branch.big_query_load.raise_load_prep_errors"
                 ],
                 expected_skipped_task_id_regexes=[
                     # branches that did not run
@@ -4132,8 +4132,8 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
                     "us_ll_primary_import_branch_start",
                     r".us_ll_primary_import_branch\.(?!ensure_release_resource_locks_release_if_acquired)",
                     # skipped since no files to import after no load prep!
-                    "raw_data_branching.us_xx_primary_import_branch.biq_query_load.raise_append_errors",
-                    "raw_data_branching.us_xx_primary_import_branch.biq_query_load.append_to_raw_data_table_for_batch",
+                    "raw_data_branching.us_xx_primary_import_branch.big_query_load.raise_append_errors",
+                    "raw_data_branching.us_xx_primary_import_branch.big_query_load.append_to_raw_data_table_for_batch",
                 ],
             )
             self.assertEqual(DagRunState.SUCCESS, result_two.dag_run_state)
@@ -4362,7 +4362,7 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
                 session=session,
                 run_conf={"ingest_instance": "PRIMARY", "state_code_filter": "US_XX"},
                 expected_failure_task_id_regexes=[
-                    "raw_data_branching.us_xx_primary_import_branch.biq_query_load.raise_append_errors"
+                    "raw_data_branching.us_xx_primary_import_branch.big_query_load.raise_append_errors"
                 ],
                 expected_skipped_task_id_regexes=[
                     # branches that did not run
@@ -4462,7 +4462,7 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
                 session=session,
                 run_conf={"ingest_instance": "PRIMARY", "state_code_filter": "US_XX"},
                 expected_failure_task_id_regexes=[
-                    "raw_data_branching.us_xx_primary_import_branch.biq_query_load.raise_append_errors"
+                    "raw_data_branching.us_xx_primary_import_branch.big_query_load.raise_append_errors"
                 ],
                 expected_skipped_task_id_regexes=[
                     # branches that did not run
