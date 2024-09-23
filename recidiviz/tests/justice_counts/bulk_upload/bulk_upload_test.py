@@ -16,7 +16,6 @@
 # =============================================================================
 """Implements tests for Justice Counts Control Panel bulk upload functionality."""
 
-import os
 from typing import Dict, List
 
 import pandas as pd
@@ -153,11 +152,10 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             )
             self.assertEqual(
                 (
-                    "The sum of all values (0) in the cases_disposed_by_type sheet for 01/01/2021-02/01/2021 does not equal the total value provided in the aggregate sheet (10)."
+                    "The sum of all values (0.0) in the cases_disposed_by_type sheet for 01/01/2021-02/01/2021 does not equal the total value provided in the aggregate sheet (10.0)."
                 ),
                 cases_disposed_by_type_sum_error.description,
             )
-            os.remove(file_name)
 
     def test_prison(self) -> None:
         """Bulk upload prison metrics into an empty database."""
@@ -212,7 +210,6 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                 0,
             )
             self.assertEqual(metrics[1].value, 20)
-            os.remove(file_name)
 
     def test_prison_csv(self) -> None:
         """Bulk upload prison metrics into an empty database."""
@@ -257,18 +254,17 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
 
             self.assertEqual(len(reports), 6)
             self.assertEqual(reports[0].instance, "02 2023 Metrics")
-            self.assertEqual(reports[0].datapoints[0].value, "30")
+            self.assertEqual(reports[0].datapoints[0].value, "30.0")
             self.assertEqual(reports[1].instance, "01 2023 Metrics")
-            self.assertEqual(reports[1].datapoints[0].value, "30")
+            self.assertEqual(reports[1].datapoints[0].value, "30.0")
             self.assertEqual(reports[2].instance, "02 2022 Metrics")
-            self.assertEqual(reports[2].datapoints[0].value, "20")
+            self.assertEqual(reports[2].datapoints[0].value, "20.0")
             self.assertEqual(reports[3].instance, "01 2022 Metrics")
-            self.assertEqual(reports[3].datapoints[0].value, "20")
+            self.assertEqual(reports[3].datapoints[0].value, "20.0")
             self.assertEqual(reports[4].instance, "02 2021 Metrics")
-            self.assertEqual(reports[4].datapoints[0].value, "10")
+            self.assertEqual(reports[4].datapoints[0].value, "10.0")
             self.assertEqual(reports[5].instance, "01 2021 Metrics")
-            self.assertEqual(reports[5].datapoints[0].value, "10")
-            os.remove(excel_file_name)
+            self.assertEqual(reports[5].datapoints[0].value, "10.0")
 
     def test_prosecution(self) -> None:
         """Bulk upload prosecution metrics from excel spreadsheet."""
@@ -304,7 +300,6 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             )
             reports_by_instance = {report.instance: report for report in reports}
             self._test_prosecution(reports_by_instance=reports_by_instance)
-            os.remove(file_name)
 
     def test_law_enforcement(self) -> None:
         """Bulk upload law_enforcement metrics from excel spreadsheet."""
@@ -340,7 +335,6 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             )
             reports_by_instance = {report.instance: report for report in reports}
             self._test_law_enforcement(reports_by_instance=reports_by_instance)
-            os.remove(file_name)
 
     def test_supervision(self) -> None:
         """Bulk upload supervision metrics from excel spreadsheet."""
@@ -376,7 +370,6 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
 
             reports_by_instance = {report.instance: report for report in reports}
             self._test_supervision(reports_by_instance=reports_by_instance)
-            os.remove(file_name)
 
     def _test_prosecution(self, reports_by_instance: Dict[str, schema.Report]) -> None:
         """Spot check an annual and monthly report."""
@@ -673,7 +666,6 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                         )
                     )
                     self.assertEqual(sum(inferred_value), 30)
-            os.remove(file_name)
 
     def test_no_missing_breakdown_sheet_warnings_for_csv(
         self,
@@ -723,7 +715,6 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
 
             # No Missing Breakdown Sheet warnings.
             self.assertEqual(len(metadata.metric_key_to_errors), 0)
-            os.remove(excel_file_name)
 
     def test_no_missing_total_sheet_warnings_for_csv(
         self,
@@ -773,7 +764,6 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
 
             # No Missing Total Sheet warnings.
             self.assertEqual(len(metadata.metric_key_to_errors), 0)
-            os.remove(excel_file_name)
 
     def test_missing_metrics_disabled_metrics(
         self,
@@ -821,7 +811,6 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             # There should be no errors because calls for service metric is missing
             # but it is disabled.
             self.assertEqual(len(metadata.metric_key_to_errors), 0)
-            os.remove(file_name)
 
     def test_metrics_disaggregated_by_supervision(
         self,
@@ -900,7 +889,6 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                     for d in metadata.metric_key_to_datapoint_jsons["PROBATION_FUNDING"]
                 )
             )
-            os.remove(file_name)
 
     def test_unexpected_column_name(
         self,
@@ -951,7 +939,6 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             self.assertEqual(
                 len(metadata.metric_key_to_errors[prisons.daily_population.key]), 1
             )
-            os.remove(file_name)
 
     def test_breakdown_sum_warning(
         self,
@@ -1027,7 +1014,6 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             )
             # total_staff (annual) x staff_by_type = 2
             self.assertEqual(len(metadata.metric_key_to_errors[prisons.staff.key]), 2)
-            os.remove(file_name)
 
     def test_update_report_status(
         self,
@@ -1208,7 +1194,6 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             self.assertEqual(reports[0].status.value, "DRAFT")
             self.assertEqual(reports[3].status.value, "DRAFT")
             self.assertEqual(reports[6].status.value, "DRAFT")
-            os.remove(file_name)
 
     def test_update_existing_report_and_creating_new_report(self) -> None:
         """
@@ -1319,7 +1304,6 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             }
             # Since only 2 out of 9 reports were updated, we should expect the other 7 reports to be in the `unchanged_reports` set
             self.assertEqual(len(unchanged_reports), 7)
-            os.remove(file_name)
 
     def test_ingest_super_agency(self) -> None:
         """
@@ -1369,7 +1353,6 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                 session, agency_id=child_agencies[1].id
             )
             self.assertEqual(len(affiliate_agency_B_reports), 9)
-            os.remove(file_name)
 
     def test_single_page_multiple_metrics(self) -> None:
         """Bulk upload single page file that contains data for mulitple metrics."""
@@ -1448,4 +1431,3 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                 ].dimension_to_value[ProsecutionStaffType.LEGAL_STAFF],
                 10,
             )
-        os.remove(file_name)

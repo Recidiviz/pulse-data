@@ -75,11 +75,11 @@ class TestJusticeCountsWorkbookStandardizer(JusticeCountsDatabaseTestCase):
                 system=schema.System.PRISONS, agency=prison_agency, session=session
             )
             workbook_standardizer = WorkbookStandardizer(metadata=metadata)
-            file_name = "test_prison_csv"
+            file_name = "test_prison_csv.csv"
             file_path = create_csv_file(
                 system=schema.System.PRISONS,
                 metric="admissions",
-                file_name=file_name + ".csv",
+                file_name=file_name,
             )
 
             with open(
@@ -87,7 +87,7 @@ class TestJusticeCountsWorkbookStandardizer(JusticeCountsDatabaseTestCase):
                 mode="rb",
             ) as file:
                 workbook_standardizer.standardize_workbook(
-                    file=file.read(), file_name=file_name + ".csv"
+                    file=file.read(), file_name=file_name
                 )
             self.assertEqual(len(metadata.metric_key_to_errors), 1)
             self.assertEqual(len(metadata.metric_key_to_errors[None]), 1)
@@ -95,7 +95,7 @@ class TestJusticeCountsWorkbookStandardizer(JusticeCountsDatabaseTestCase):
                 metadata.metric_key_to_errors[None][0].title,
                 "Invalid File Name for CSV",
             )
-            os.remove(file_name + ".xlsx")
+            os.remove("test_prison_csv.xlsx")
 
     def test_invalid_sheet_names(self) -> None:
         """Bulk upload prison metrics into an empty database."""
@@ -127,7 +127,6 @@ class TestJusticeCountsWorkbookStandardizer(JusticeCountsDatabaseTestCase):
                 metadata.metric_key_to_errors[None][0].title,
                 "Invalid Sheet Name",
             )
-            os.remove(file_name)
 
     def test_should_sheet_have_month_column(self) -> None:
         """Tests if 'month' column is required when a specific metric key is provided."""
