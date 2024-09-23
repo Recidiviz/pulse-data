@@ -20,6 +20,9 @@ import unittest
 from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+from recidiviz.big_query.big_query_view_sandbox_context import (
+    BigQueryViewSandboxContext,
+)
 from recidiviz.big_query.union_all_big_query_view_builder import (
     UnionAllBigQueryViewBuilder,
 )
@@ -224,8 +227,13 @@ SELECT * FROM `recidiviz-789.parent_dataset_3.parent_table_3_materialized`"""
             .register_sandbox_override_for_entire_dataset("parent_dataset_1")
             .build()
         )
+        sandbox_context = BigQueryViewSandboxContext(
+            parent_address_overrides=address_overrides,
+            output_sandbox_dataset_prefix="my_prefix",
+        )
+
         with local_project_id_override("recidiviz-456"):
-            view = builder.build(address_overrides=address_overrides)
+            view = builder.build(sandbox_context=sandbox_context)
 
         expected_view_query = """SELECT * FROM `recidiviz-456.my_prefix_parent_dataset_1.parent_table_1_materialized`
 UNION ALL
@@ -236,7 +244,7 @@ SELECT * FROM `recidiviz-456.parent_dataset_2.parent_table_2_materialized`"""
         )
         self.assertEqual(
             BigQueryAddress(
-                dataset_id="my_union_dataset", table_id="my_union_all_view"
+                dataset_id="my_prefix_my_union_dataset", table_id="my_union_all_view"
             ),
             view.address,
         )
@@ -256,8 +264,14 @@ SELECT * FROM `recidiviz-456.parent_dataset_2.parent_table_2_materialized`"""
             .register_sandbox_override_for_entire_dataset("my_union_dataset")
             .build()
         )
+
+        sandbox_context = BigQueryViewSandboxContext(
+            parent_address_overrides=address_overrides,
+            output_sandbox_dataset_prefix="my_prefix",
+        )
+
         with local_project_id_override("recidiviz-456"):
-            view = builder.build(address_overrides=address_overrides)
+            view = builder.build(sandbox_context=sandbox_context)
 
         expected_view_query = """SELECT * FROM `recidiviz-456.my_prefix_parent_dataset_1.parent_table_1_materialized`
 UNION ALL
@@ -291,8 +305,13 @@ SELECT * FROM `recidiviz-456.parent_dataset_2.parent_table_2_materialized`"""
             .register_sandbox_override_for_entire_dataset("parent_dataset_1")
             .build()
         )
+        sandbox_context = BigQueryViewSandboxContext(
+            parent_address_overrides=address_overrides,
+            output_sandbox_dataset_prefix="my_prefix",
+        )
+
         with local_project_id_override("recidiviz-456"):
-            view = builder.build(address_overrides=address_overrides)
+            view = builder.build(sandbox_context=sandbox_context)
 
         expected_view_query = """SELECT * FROM `recidiviz-456.my_prefix_parent_dataset_1.parent_table_1_materialized`"""
         self.assertEqual(
@@ -319,8 +338,13 @@ SELECT * FROM `recidiviz-456.parent_dataset_2.parent_table_2_materialized`"""
             .register_sandbox_override_for_entire_dataset("parent_dataset_1")
             .build()
         )
+        sandbox_context = BigQueryViewSandboxContext(
+            parent_address_overrides=address_overrides,
+            output_sandbox_dataset_prefix="my_prefix",
+        )
+
         with local_project_id_override("recidiviz-456"):
-            view = builder.build(address_overrides=address_overrides)
+            view = builder.build(sandbox_context=sandbox_context)
 
         # If the filter does not overlap with any of the queried views, we default to
         # querying all views.

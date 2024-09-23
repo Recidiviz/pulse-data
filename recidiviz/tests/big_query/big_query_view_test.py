@@ -27,6 +27,9 @@ from recidiviz.big_query.big_query_view import (
     BigQueryView,
     SimpleBigQueryViewBuilder,
 )
+from recidiviz.big_query.big_query_view_sandbox_context import (
+    BigQueryViewSandboxContext,
+)
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 
 
@@ -241,14 +244,16 @@ class BigQueryViewTest(unittest.TestCase):
         )
 
     def test_materialized_address_overrides(self) -> None:
-        address_overrides_builder = BigQueryAddressOverrides.Builder(
-            sandbox_prefix="my_override"
+        address_overrides = (
+            BigQueryAddressOverrides.Builder(sandbox_prefix="my_override")
+            .register_sandbox_override_for_entire_dataset("other_dataset")
+            .build()
         )
-        for dataset in ["view_dataset", "other_dataset"]:
-            address_overrides_builder.register_sandbox_override_for_entire_dataset(
-                dataset
-            )
-        address_overrides = address_overrides_builder.build()
+
+        sandbox_context = BigQueryViewSandboxContext(
+            parent_address_overrides=address_overrides,
+            output_sandbox_dataset_prefix="my_override",
+        )
 
         view_materialized_no_override = SimpleBigQueryViewBuilder(
             dataset_id="view_dataset",
@@ -257,7 +262,7 @@ class BigQueryViewTest(unittest.TestCase):
             should_materialize=True,
             view_query_template="SELECT * FROM `{project_id}.{some_dataset}.table`",
             some_dataset="a_dataset",
-        ).build(address_overrides=address_overrides)
+        ).build(sandbox_context=sandbox_context)
 
         self.assertEqual(
             BigQueryAddress(
@@ -283,7 +288,7 @@ class BigQueryViewTest(unittest.TestCase):
             ),
             view_query_template="SELECT * FROM `{project_id}.{some_dataset}.table`",
             some_dataset="a_dataset",
-        ).build(address_overrides=address_overrides)
+        ).build(sandbox_context=sandbox_context)
 
         self.assertEqual(
             BigQueryAddress(
@@ -303,7 +308,7 @@ class BigQueryViewTest(unittest.TestCase):
             view_id="my_view",
             description="my_view description",
             bq_description="my_view description",
-            address_overrides=address_overrides,
+            sandbox_context=sandbox_context,
             view_query_template="SELECT * FROM `{project_id}.{some_dataset}.table`",
             some_dataset="a_dataset",
         )
@@ -311,6 +316,101 @@ class BigQueryViewTest(unittest.TestCase):
         self.assertIsNone(view_not_materialized.materialized_address)
         self.assertEqual(
             BigQueryAddress(dataset_id="my_override_view_dataset", table_id="my_view"),
+            view_not_materialized.table_for_query,
+        )
+
+    def test_materialized_address_overrides_different_input_and_output_sandbox(
+        self,
+    ) -> None:
+        address_overrides = (
+            BigQueryAddressOverrides.Builder(sandbox_prefix="my_inputs_prefix")
+            .register_sandbox_override_for_entire_dataset("a_dataset")
+            .build()
+        )
+
+        sandbox_context = BigQueryViewSandboxContext(
+            parent_address_overrides=address_overrides,
+            output_sandbox_dataset_prefix="my_outputs_prefix",
+        )
+
+        view_materialized_no_parent_override = SimpleBigQueryViewBuilder(
+            dataset_id="view_dataset",
+            view_id="my_view",
+            description="my_view description",
+            should_materialize=True,
+            view_query_template="SELECT * FROM `{project_id}.{some_dataset}.table`",
+            some_dataset="a_dataset",
+        ).build(sandbox_context=sandbox_context)
+
+        self.assertEqual(
+            "SELECT * FROM `recidiviz-project-id.my_inputs_prefix_a_dataset.table`",
+            view_materialized_no_parent_override.view_query,
+        )
+        self.assertEqual(
+            BigQueryAddress(
+                dataset_id="my_outputs_prefix_view_dataset",
+                table_id="my_view_materialized",
+            ),
+            view_materialized_no_parent_override.materialized_address,
+        )
+        self.assertEqual(
+            BigQueryAddress(
+                dataset_id="my_outputs_prefix_view_dataset",
+                table_id="my_view_materialized",
+            ),
+            view_materialized_no_parent_override.table_for_query,
+        )
+
+        view_with_override = SimpleBigQueryViewBuilder(
+            dataset_id="view_dataset",
+            view_id="my_view",
+            description="my_view description",
+            should_materialize=True,
+            materialized_address_override=BigQueryAddress(
+                dataset_id="other_dataset",
+                table_id="my_view_table",
+            ),
+            view_query_template="SELECT * FROM `{project_id}.{some_dataset}.table`",
+            some_dataset="not_in_sandbox_dataset",
+        ).build(sandbox_context=sandbox_context)
+
+        self.assertEqual(
+            "SELECT * FROM `recidiviz-project-id.not_in_sandbox_dataset.table`",
+            view_with_override.view_query,
+        )
+        self.assertEqual(
+            BigQueryAddress(
+                dataset_id="my_outputs_prefix_other_dataset", table_id="my_view_table"
+            ),
+            view_with_override.materialized_address,
+        )
+        self.assertEqual(
+            BigQueryAddress(
+                dataset_id="my_outputs_prefix_other_dataset", table_id="my_view_table"
+            ),
+            view_with_override.table_for_query,
+        )
+
+        view_not_materialized = BigQueryView(
+            dataset_id="view_dataset",
+            view_id="my_view",
+            description="my_view description",
+            bq_description="my_view description",
+            sandbox_context=sandbox_context,
+            view_query_template="SELECT * FROM `{project_id}.{some_dataset}.table`",
+            some_dataset="a_dataset",
+        )
+
+        self.assertEqual(
+            "SELECT * FROM `recidiviz-project-id.my_inputs_prefix_a_dataset.table`",
+            view_not_materialized.view_query,
+        )
+
+        self.assertIsNone(view_not_materialized.materialized_address)
+        self.assertEqual(
+            BigQueryAddress(
+                dataset_id="my_outputs_prefix_view_dataset", table_id="my_view"
+            ),
             view_not_materialized.table_for_query,
         )
 

@@ -19,8 +19,10 @@ from typing import Any, Dict, List, Optional, Sequence
 
 import attr
 
-from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
 from recidiviz.big_query.big_query_view import BigQueryViewBuilder
+from recidiviz.big_query.big_query_view_sandbox_context import (
+    BigQueryViewSandboxContext,
+)
 from recidiviz.big_query.export.export_query_config import (
     ExportBigQueryViewConfig,
     ExportOutputFormatType,
@@ -105,11 +107,19 @@ class ExportViewCollectionConfig:
     def export_configs_for_views_to_export(
         self,
         state_code_filter: Optional[str] = None,
-        address_overrides: Optional[BigQueryAddressOverrides] = None,
+        view_sandbox_context: BigQueryViewSandboxContext | None = None,
         gcs_output_sandbox_subdir: Optional[str] = None,
     ) -> Sequence[ExportBigQueryViewConfig]:
         """Builds a list of ExportBigQueryViewConfig that define how all views in
         view_builders_to_export should be exported to Google Cloud Storage."""
+
+        if view_sandbox_context and not gcs_output_sandbox_subdir:
+            raise ValueError(
+                "Cannot set view_sandbox_context without gcs_output_sandbox_subdir. "
+                "If we're reading from views that are part of a sandbox, we must also "
+                "output to a sandbox location."
+            )
+
         view_filter_clause = (
             f" WHERE state_code = '{state_code_filter}'" if state_code_filter else None
         )
@@ -145,7 +155,7 @@ class ExportViewCollectionConfig:
 
         configs = []
         for vb in self.view_builders_to_export:
-            view = vb.build(address_overrides=address_overrides)
+            view = vb.build(sandbox_context=view_sandbox_context)
 
             optional_args = {}
             if self.export_output_formats_and_validations is not None:

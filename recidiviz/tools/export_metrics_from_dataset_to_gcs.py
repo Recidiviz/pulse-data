@@ -32,6 +32,9 @@ import logging
 import sys
 from typing import List, Optional, Tuple
 
+from recidiviz.big_query.big_query_view_sandbox_context import (
+    BigQueryViewSandboxContext,
+)
 from recidiviz.common.constants import states
 from recidiviz.metrics.export.export_config import VIEW_COLLECTION_EXPORT_INDEX
 from recidiviz.metrics.export.products.product_configs import (
@@ -52,10 +55,14 @@ def export_metrics_from_dataset_to_gcs(
     export_name: str, state_code: Optional[str], sandbox_dataset_prefix: Optional[str]
 ) -> None:
     """Exports metric files into a sandbox GCS bucket."""
-    sandbox_address_overrides = None
+    view_sandbox_context = None
     if sandbox_dataset_prefix:
         sandbox_address_overrides = address_overrides_for_deployed_view_datasets(
             view_dataset_override_prefix=sandbox_dataset_prefix
+        )
+        view_sandbox_context = BigQueryViewSandboxContext(
+            parent_address_overrides=sandbox_address_overrides,
+            output_sandbox_dataset_prefix=sandbox_dataset_prefix,
         )
 
     product_configs = ProductConfigs.from_file(path=PRODUCTS_CONFIG_PATH)
@@ -67,7 +74,7 @@ def export_metrics_from_dataset_to_gcs(
         export_job_name=export_name,
         state_code=state_code,
         gcs_output_sandbox_subdir=sandbox_dataset_prefix,
-        address_overrides=sandbox_address_overrides,
+        view_sandbox_context=view_sandbox_context,
     )
 
     logging.info(

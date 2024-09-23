@@ -26,9 +26,9 @@ import sqlglot
 from parameterized import parameterized
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
-from recidiviz.big_query.big_query_utils import build_views_to_update
 from recidiviz.big_query.big_query_view import BigQueryView, BigQueryViewBuilder
 from recidiviz.big_query.big_query_view_dag_walker import BigQueryViewDagWalker
+from recidiviz.big_query.build_views_to_update import build_views_to_update
 from recidiviz.big_query.union_all_big_query_view_builder import (
     UnionAllBigQueryViewBuilder,
 )
@@ -245,7 +245,7 @@ class DeployedViewsTest(unittest.TestCase):
                 views = build_views_to_update(
                     view_source_table_datasets=get_all_source_table_datasets(),
                     candidate_view_builders=candidate_view_builders,
-                    address_overrides=None,
+                    sandbox_context=None,
                 )
             view_addresses = set()
             for view in views:
@@ -279,7 +279,7 @@ class DeployedViewsTest(unittest.TestCase):
         views = build_views_to_update(
             view_source_table_datasets=get_all_source_table_datasets(),
             candidate_view_builders=deployed_view_builders(),
-            address_overrides=None,
+            sandbox_context=None,
         )
         for view in views:
             view_query = view.view_query
@@ -307,7 +307,7 @@ class ViewDagInvariantTests(unittest.TestCase):
             views = build_views_to_update(
                 view_source_table_datasets=get_all_source_table_datasets(),
                 candidate_view_builders=view_builders,
-                address_overrides=None,
+                sandbox_context=None,
             )
             cls.dag_walker = BigQueryViewDagWalker(views)
 

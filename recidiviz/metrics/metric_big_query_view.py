@@ -19,9 +19,11 @@
 
 from typing import List, Optional, Tuple
 
-from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_view import BigQueryView, BigQueryViewBuilder
+from recidiviz.big_query.big_query_view_sandbox_context import (
+    BigQueryViewSandboxContext,
+)
 from recidiviz.utils.types import assert_type
 
 
@@ -37,7 +39,7 @@ class MetricBigQueryView(BigQueryView):
         view_query_template: str,
         dimensions: Tuple[str, ...],
         materialized_address: BigQueryAddress,
-        address_overrides: Optional[BigQueryAddressOverrides],
+        sandbox_context: BigQueryViewSandboxContext | None,
         clustering_fields: Optional[List[str]] = None,
         **query_format_kwargs: str,
     ):
@@ -48,7 +50,7 @@ class MetricBigQueryView(BigQueryView):
             bq_description=description,
             view_query_template=view_query_template,
             materialized_address=materialized_address,
-            address_overrides=address_overrides,
+            sandbox_context=sandbox_context,
             clustering_fields=clustering_fields,
             should_deploy_predicate=None,
             **query_format_kwargs,
@@ -102,7 +104,9 @@ class MetricBigQueryViewBuilder(BigQueryViewBuilder[MetricBigQueryView]):
         self.query_format_kwargs = query_format_kwargs
 
     def _build(
-        self, *, address_overrides: Optional[BigQueryAddressOverrides] = None
+        self,
+        *,
+        sandbox_context: BigQueryViewSandboxContext | None,
     ) -> MetricBigQueryView:
         return MetricBigQueryView(
             dataset_id=self.dataset_id,
@@ -112,6 +116,6 @@ class MetricBigQueryViewBuilder(BigQueryViewBuilder[MetricBigQueryView]):
             dimensions=self.dimensions,
             materialized_address=self.materialized_address,
             clustering_fields=self.clustering_fields,
-            address_overrides=address_overrides,
+            sandbox_context=sandbox_context,
             **self.query_format_kwargs,
         )

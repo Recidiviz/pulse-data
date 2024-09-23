@@ -16,10 +16,11 @@
 # =============================================================================
 """A test-only implementation of the BigQueryViewBuilder that just accepts an already built view as a constructor arg.
 """
-from typing import Optional
 
-from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
 from recidiviz.big_query.big_query_view import BigQueryViewBuilder, BigQueryViewType
+from recidiviz.big_query.big_query_view_sandbox_context import (
+    BigQueryViewSandboxContext,
+)
 
 
 class FakeBigQueryViewBuilder(BigQueryViewBuilder[BigQueryViewType]):
@@ -30,7 +31,7 @@ class FakeBigQueryViewBuilder(BigQueryViewBuilder[BigQueryViewType]):
         self.view_id = view.address.table_id
 
     def _build(
-        self, *, address_overrides: Optional[BigQueryAddressOverrides] = None
+        self, *, sandbox_context: BigQueryViewSandboxContext | None
     ) -> BigQueryViewType:
         return self.view
 

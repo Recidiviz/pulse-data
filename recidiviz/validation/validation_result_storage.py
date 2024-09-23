@@ -112,7 +112,11 @@ class ValidationResultForStorage:
             result_details_type=result.result_details.__class__.__name__,
             result_details=result.result_details,
             validation_category=result.validation_job.validation.validation_category,
-            sandbox_dataset_prefix=result.validation_job.sandbox_dataset_prefix,
+            sandbox_dataset_prefix=(
+                (result.validation_job.sandbox_context.output_sandbox_dataset_prefix)
+                if result.validation_job.sandbox_context
+                else None
+            ),
             ingest_instance=result.validation_job.ingest_instance,
             runtime_seconds=runtime_seconds,
             exception_log=None,
@@ -140,7 +144,11 @@ class ValidationResultForStorage:
             result_details_type=None,
             result_details=None,
             validation_category=job.validation.validation_category,
-            sandbox_dataset_prefix=job.sandbox_dataset_prefix,
+            sandbox_dataset_prefix=(
+                job.sandbox_context.output_sandbox_dataset_prefix
+                if job.sandbox_context
+                else None
+            ),
             ingest_instance=job.ingest_instance,
             runtime_seconds=None,
             exception_log=exception_log,

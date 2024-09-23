@@ -93,13 +93,16 @@ from google.api_core import exceptions
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
-from recidiviz.big_query.big_query_utils import build_views_to_update
 from recidiviz.big_query.big_query_view import BigQueryView, BigQueryViewBuilder
 from recidiviz.big_query.big_query_view_collector import BigQueryViewCollector
 from recidiviz.big_query.big_query_view_dag_walker import BigQueryViewDagWalker
+from recidiviz.big_query.big_query_view_sandbox_context import (
+    BigQueryViewSandboxContext,
+)
 from recidiviz.big_query.big_query_view_sub_dag_collector import (
     BigQueryViewSubDagCollector,
 )
+from recidiviz.big_query.build_views_to_update import build_views_to_update
 from recidiviz.big_query.union_all_big_query_view_builder import (
     UnionAllBigQueryViewBuilder,
 )
@@ -508,7 +511,7 @@ def _load_views_changed_on_branch_to_sandbox(
     all_views = build_views_to_update(
         view_source_table_datasets=get_all_source_table_datasets(),
         candidate_view_builders=view_builders_in_full_dag,
-        address_overrides=None,
+        sandbox_context=None,
     )
     logging.info("Constructing DAG with all known views...")
     full_dag_walker = BigQueryViewDagWalker(all_views)
@@ -604,16 +607,19 @@ def _load_collected_views_to_sandbox(
 
     logging.info("Updating %s views...", len(collected_builders))
 
-    sandbox_address_overrides = address_overrides_for_view_builders(
-        view_dataset_override_prefix=sandbox_dataset_prefix,
-        view_builders=collected_builders,
-        dataflow_dataset_override=dataflow_dataset_override,
+    sandbox_context = BigQueryViewSandboxContext(
+        parent_address_overrides=address_overrides_for_view_builders(
+            view_dataset_override_prefix=sandbox_dataset_prefix,
+            view_builders=collected_builders,
+            dataflow_dataset_override=dataflow_dataset_override,
+        ),
+        output_sandbox_dataset_prefix=sandbox_dataset_prefix,
     )
 
     create_managed_dataset_and_deploy_views_for_view_builders(
         view_source_table_datasets=get_all_source_table_datasets(),
         view_builders_to_update=collected_builders,
-        address_overrides=sandbox_address_overrides,
+        sandbox_context=sandbox_context,
         # Don't clean up datasets when running a sandbox script
         historically_managed_datasets_to_clean=None,
         allow_slow_views=allow_slow_views,

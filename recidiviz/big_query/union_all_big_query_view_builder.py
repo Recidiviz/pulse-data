@@ -20,12 +20,14 @@ tables together.
 import logging
 from typing import Callable, Dict, Optional, Sequence, Set
 
-from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_view import (
     BigQueryView,
     BigQueryViewBuilder,
     BigQueryViewBuilderType,
+)
+from recidiviz.big_query.big_query_view_sandbox_context import (
+    BigQueryViewSandboxContext,
 )
 from recidiviz.utils import metadata
 
@@ -112,7 +114,7 @@ class UnionAllBigQueryViewBuilder(BigQueryViewBuilder[BigQueryView]):
         return parent.table_for_query
 
     def _build(
-        self, *, address_overrides: Optional[BigQueryAddressOverrides] = None
+        self, *, sandbox_context: BigQueryViewSandboxContext | None
     ) -> BigQueryView:
         """
         Builds a view that unions the results from a list of parent views together.
@@ -120,7 +122,7 @@ class UnionAllBigQueryViewBuilder(BigQueryViewBuilder[BigQueryView]):
         the resulting view will only union results from the tables in that filter set.
         """
 
-        if self.parent_address_filter and not address_overrides:
+        if self.parent_address_filter and not sandbox_context:
             raise ValueError(
                 "Cannot set a UNION ALL query filter unless loading views into a "
                 "sandbox."
@@ -192,7 +194,7 @@ class UnionAllBigQueryViewBuilder(BigQueryViewBuilder[BigQueryView]):
             view_query_template=view_query_template,
             materialized_address=self.materialized_address,
             clustering_fields=None,
-            address_overrides=address_overrides,
+            sandbox_context=sandbox_context,
             should_deploy_predicate=None,
             **query_format_args,
         )

@@ -22,6 +22,9 @@ from google.cloud import bigquery
 
 from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
 from recidiviz.big_query.big_query_address import BigQueryAddress
+from recidiviz.big_query.big_query_view_sandbox_context import (
+    BigQueryViewSandboxContext,
+)
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
@@ -98,7 +101,11 @@ FROM
             .register_sandbox_override_for_entire_dataset(self.us_xx_criteria_dataset)
             .build()
         )
-        view = builder.build(address_overrides=address_overrides)
+        sandbox_context = BigQueryViewSandboxContext(
+            parent_address_overrides=address_overrides,
+            output_sandbox_dataset_prefix="my_prefix",
+        )
+        view = builder.build(sandbox_context=sandbox_context)
 
         self.assertEqual(StateCode.US_XX, builder.state_code)
         self.assertEqual("US_XX_SIMPLE_CRITERIA", builder.criteria_name)
@@ -244,7 +251,11 @@ FROM
             .register_sandbox_override_for_entire_dataset(self.general_criteria_dataset)
             .build()
         )
-        view = builder.build(address_overrides=address_overrides)
+        sandbox_context = BigQueryViewSandboxContext(
+            parent_address_overrides=address_overrides,
+            output_sandbox_dataset_prefix="my_prefix",
+        )
+        view = builder.build(sandbox_context=sandbox_context)
 
         self.assertEqual("SIMPLE_CRITERIA", builder.criteria_name)
         self.assertEqual(

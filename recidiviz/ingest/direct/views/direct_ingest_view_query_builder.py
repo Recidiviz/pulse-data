@@ -273,7 +273,7 @@ class DirectIngestViewQueryBuilder:
         self._raw_table_dependency_configs: Optional[
             List[DirectIngestViewRawFileDependency]
         ] = None
-        self._query_builder = BigQueryQueryBuilder(address_overrides=None)
+        self._query_builder = BigQueryQueryBuilder(parent_address_overrides=None)
         self.ingest_view_name = ingest_view_name
 
         self._view_query_template = view_query_template
@@ -555,7 +555,7 @@ class DirectIngestViewQueryBuilder:
             raw_data_source_instance=config.raw_data_source_instance,
         ).build_query(
             raw_file_config=raw_table_dependency_config.raw_file_config,
-            address_overrides=None,
+            parent_address_overrides=None,
             normalized_column_values=True,
             raw_data_datetime_upper_bound=config.raw_data_datetime_upper_bound,
             filter_to_latest=raw_table_dependency_config.filter_to_latest,

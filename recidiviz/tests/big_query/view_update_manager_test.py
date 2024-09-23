@@ -27,6 +27,9 @@ from recidiviz.big_query import view_update_manager
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_table_checker import BigQueryTableChecker
 from recidiviz.big_query.big_query_view import BigQueryView, SimpleBigQueryViewBuilder
+from recidiviz.big_query.big_query_view_sandbox_context import (
+    BigQueryViewSandboxContext,
+)
 from recidiviz.big_query.constants import TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS
 from recidiviz.big_query.view_update_manager import execute_update_all_managed_views
 from recidiviz.source_tables.collect_all_source_table_configs import (
@@ -480,11 +483,15 @@ class ViewManagerTest(unittest.TestCase):
         address_overrides = address_overrides_for_view_builders(
             view_dataset_override_prefix="test_prefix", view_builders=mock_view_builders
         )
+        sandbox_context = BigQueryViewSandboxContext(
+            parent_address_overrides=address_overrides,
+            output_sandbox_dataset_prefix="test_prefix",
+        )
 
         view_update_manager.create_managed_dataset_and_deploy_views_for_view_builders(
             view_source_table_datasets=self.view_source_table_datasets,
             view_builders_to_update=mock_view_builders,
-            address_overrides=address_overrides,
+            sandbox_context=sandbox_context,
             historically_managed_datasets_to_clean=None,
         )
 
@@ -502,7 +509,7 @@ class ViewManagerTest(unittest.TestCase):
         self.mock_client.create_or_update_view.assert_has_calls(
             [
                 mock.call(
-                    view_builder.build(address_overrides=address_overrides),
+                    view_builder.build(sandbox_context=sandbox_context),
                     might_exist=True,
                 )
                 for view_builder in mock_view_builders
@@ -513,7 +520,7 @@ class ViewManagerTest(unittest.TestCase):
             [
                 mock.call(
                     view=materialized_view_builder.build(
-                        address_overrides=address_overrides
+                        sandbox_context=sandbox_context
                     ),
                     use_query_cache=True,
                 )
@@ -569,13 +576,14 @@ class ViewManagerTest(unittest.TestCase):
         mock_views = [
             BigQueryView(
                 dataset_id=_DATASET_NAME,
+                view_id=view["view_id"],
                 description=f"{view['view_id']} description",
+                view_query_template=view["view_query_template"],
                 bq_description=f"{view['view_id']} description",
                 materialized_address=None,
                 clustering_fields=None,
-                address_overrides=None,
+                sandbox_context=None,
                 should_deploy_predicate=None,
-                **view,
             )
             for view in sample_views
         ]

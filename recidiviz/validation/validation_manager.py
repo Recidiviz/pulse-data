@@ -26,8 +26,10 @@ from typing import Any, Dict, List, Optional, Pattern, Tuple
 
 import pytz
 
-from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
 from recidiviz.big_query.big_query_client import BQ_CLIENT_MAX_POOL_SIZE
+from recidiviz.big_query.big_query_view_sandbox_context import (
+    BigQueryViewSandboxContext,
+)
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.monitoring import trace
@@ -246,18 +248,20 @@ def _get_validations_jobs(
 ) -> List[DataValidationJob]:
     view_builders = deployed_view_builders()
 
-    sandbox_address_overrides = None
+    sandbox_context = None
     if sandbox_dataset_prefix:
-        sandbox_address_overrides = address_overrides_for_view_builders(
-            sandbox_dataset_prefix, view_builders
+        sandbox_context = BigQueryViewSandboxContext(
+            parent_address_overrides=address_overrides_for_view_builders(
+                sandbox_dataset_prefix, view_builders
+            ),
+            output_sandbox_dataset_prefix=sandbox_dataset_prefix,
         )
 
     # Fetch collection of validation jobs to perform
     return _fetch_validation_jobs_to_perform(
         region_code=region_code,
         validation_name_filter=validation_name_filter,
-        address_overrides=sandbox_address_overrides,
-        sandbox_dataset_prefix=sandbox_dataset_prefix,
+        sandbox_context=sandbox_context,
         ingest_instance=ingest_instance,
     )
 
@@ -308,8 +312,7 @@ def _fetch_validation_jobs_to_perform(
     region_code: str,
     ingest_instance: DirectIngestInstance,
     validation_name_filter: Optional[Pattern] = None,
-    sandbox_dataset_prefix: Optional[str] = None,
-    address_overrides: Optional[BigQueryAddressOverrides] = None,
+    sandbox_context: BigQueryViewSandboxContext | None = None,
 ) -> List[DataValidationJob]:
     """
     Creates and returns validation jobs for all validations meeting the name filter,
@@ -335,8 +338,7 @@ def _fetch_validation_jobs_to_perform(
                 DataValidationJob(
                     validation=updated_check,
                     region_code=region_code,
-                    address_overrides=address_overrides,
-                    sandbox_dataset_prefix=sandbox_dataset_prefix,
+                    sandbox_context=sandbox_context,
                     ingest_instance=ingest_instance,
                 )
             )

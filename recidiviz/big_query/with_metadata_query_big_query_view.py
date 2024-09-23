@@ -17,13 +17,15 @@
 """Defines a BigQueryView that delegates to a separate BigQueryView and contains an additional
 metadata query."""
 
-from typing import Generic, Optional
+from typing import Generic
 
-from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
 from recidiviz.big_query.big_query_view import (
     BigQueryView,
     BigQueryViewBuilder,
     BigQueryViewBuilderType,
+)
+from recidiviz.big_query.big_query_view_sandbox_context import (
+    BigQueryViewSandboxContext,
 )
 
 
@@ -38,7 +40,7 @@ class WithMetadataQueryBigQueryView(BigQueryView):
         *,
         metadata_query: str,
         delegate: BigQueryView,
-        address_overrides: Optional[BigQueryAddressOverrides],
+        sandbox_context: BigQueryViewSandboxContext | None,
         **metadata_query_format_kwargs: str,
     ):
         super().__init__(
@@ -48,7 +50,7 @@ class WithMetadataQueryBigQueryView(BigQueryView):
             bq_description=delegate.bq_description,
             view_query_template=delegate.view_query_template,
             materialized_address=delegate.materialized_address,
-            address_overrides=address_overrides,
+            sandbox_context=sandbox_context,
             clustering_fields=delegate.clustering_fields,
             should_deploy_predicate=None,
             **delegate.query_format_kwargs,
@@ -97,11 +99,11 @@ class WithMetadataQueryBigQueryViewBuilder(
         self.materialized_address = delegate.materialized_address
 
     def _build(
-        self, *, address_overrides: Optional[BigQueryAddressOverrides] = None
+        self, *, sandbox_context: BigQueryViewSandboxContext | None
     ) -> WithMetadataQueryBigQueryView:
         return WithMetadataQueryBigQueryView(
             metadata_query=self.metadata_query,
             delegate=self.delegate.build(),
-            address_overrides=address_overrides,
+            sandbox_context=sandbox_context,
             **self.metadata_query_format_kwargs,
         )

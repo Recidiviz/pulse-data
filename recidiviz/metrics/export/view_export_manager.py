@@ -19,8 +19,10 @@ import datetime
 import logging
 from typing import Dict, List, Optional, Sequence
 
-from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
+from recidiviz.big_query.big_query_view_sandbox_context import (
+    BigQueryViewSandboxContext,
+)
 from recidiviz.big_query.export.big_query_view_export_validator import (
     BigQueryViewExportValidator,
     ExistsBigQueryViewExportValidator,
@@ -102,15 +104,21 @@ def execute_metric_view_data_export(
                 f"No export configs matching export name: [{export_job_name.upper()}]"
             )
 
-        export_view_data_to_cloud_storage(
-            export_job_name=export_job_name,
-            state_code=state_code.value if state_code else None,
-            address_overrides=address_overrides_for_view_builders(
+        view_sandbox_context = None
+        if sandbox_prefix:
+            address_overrides = address_overrides_for_view_builders(
                 view_dataset_override_prefix=sandbox_prefix,
                 view_builders=relevant_export_collection.view_builders_to_export,
             )
-            if sandbox_prefix
-            else None,
+            view_sandbox_context = BigQueryViewSandboxContext(
+                parent_address_overrides=address_overrides,
+                output_sandbox_dataset_prefix=sandbox_prefix,
+            )
+
+        export_view_data_to_cloud_storage(
+            export_job_name=export_job_name,
+            state_code=state_code.value if state_code else None,
+            view_sandbox_context=view_sandbox_context,
             gcs_output_sandbox_subdir=sandbox_prefix,
         )
 
@@ -133,10 +141,17 @@ def get_configs_for_export_name(
     export_name: str,
     state_code: Optional[str] = None,
     gcs_output_sandbox_subdir: Optional[str] = None,
-    address_overrides: Optional[BigQueryAddressOverrides] = None,
+    view_sandbox_context: BigQueryViewSandboxContext | None = None,
 ) -> Sequence[ExportBigQueryViewConfig]:
     """Checks the export index for a matching export and if one exists, returns the
     export name paired with a sequence of export view configs."""
+
+    if view_sandbox_context and not gcs_output_sandbox_subdir:
+        raise ValueError(
+            "Cannot set view_sandbox_context without gcs_output_sandbox_subdir. If "
+            "we're reading from views that are part of a sandbox, we must also "
+            "output to a sandbox location."
+        )
 
     relevant_export_collection = export_config.VIEW_COLLECTION_EXPORT_INDEX.get(
         export_name.upper()
@@ -149,7 +164,7 @@ def get_configs_for_export_name(
 
     return relevant_export_collection.export_configs_for_views_to_export(
         state_code_filter=state_code.upper() if state_code else None,
-        address_overrides=address_overrides,
+        view_sandbox_context=view_sandbox_context,
         gcs_output_sandbox_subdir=gcs_output_sandbox_subdir,
     )
 
@@ -159,7 +174,7 @@ def export_view_data_to_cloud_storage(
     state_code: Optional[str] = None,
     override_view_exporter: Optional[BigQueryViewExporter] = None,
     gcs_output_sandbox_subdir: Optional[str] = None,
-    address_overrides: Optional[BigQueryAddressOverrides] = None,
+    view_sandbox_context: BigQueryViewSandboxContext | None = None,
 ) -> None:
     """Exports data in BigQuery metric views to cloud storage buckets.
 
@@ -168,11 +183,18 @@ def export_view_data_to_cloud_storage(
     OptimizedMetricBigQueryViewExporter.
     """
 
+    if view_sandbox_context and not gcs_output_sandbox_subdir:
+        raise ValueError(
+            "Cannot set view_sandbox_context without gcs_output_sandbox_subdir. If "
+            "we're reading from views that are part of a sandbox, we must also "
+            "output to a sandbox location."
+        )
+
     export_configs_for_filter = get_configs_for_export_name(
         export_name=export_job_name,
         state_code=state_code,
         gcs_output_sandbox_subdir=gcs_output_sandbox_subdir,
-        address_overrides=address_overrides,
+        view_sandbox_context=view_sandbox_context,
     )
 
     do_metric_export_for_configs(

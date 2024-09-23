@@ -208,10 +208,8 @@ def main() -> int:
         valid_prefixes = {
             "recidiviz.big_query.address_overrides",
             "recidiviz.big_query.big_query_address",
-            "recidiviz.big_query.big_query_query_builder",
             "recidiviz.big_query.big_query_query_provider",
             "recidiviz.big_query.big_query_utils",
-            "recidiviz.big_query.big_query_view",
             "recidiviz.big_query.constants",
             "recidiviz.pipelines",
             "recidiviz.cloud_storage",
@@ -229,9 +227,7 @@ def main() -> int:
             valid_prefixes = valid_prefixes.union(
                 {
                     "recidiviz.big_query.big_query_address",
-                    "recidiviz.big_query.big_query_query_builder",
                     "recidiviz.big_query.big_query_utils",
-                    "recidiviz.big_query.big_query_view",
                     "recidiviz.big_query.constants",
                     # TODO(#8118): Remove this dependency once IP pre-processing no
                     #  longer relies on ingest mappings
@@ -243,6 +239,7 @@ def main() -> int:
         if "us_ix_case_note" in pipeline.__name__:
             valid_prefixes = valid_prefixes.union(
                 {
+                    "recidiviz.big_query.big_query_query_builder",
                     "recidiviz.ingest.direct.types.direct_ingest_instance",
                     "recidiviz.ingest.direct.dataset_config",
                     "recidiviz.persistence",
@@ -251,7 +248,10 @@ def main() -> int:
         if "ingest" in pipeline.__name__:
             valid_prefixes = valid_prefixes.union(
                 {
+                    "recidiviz.big_query.big_query_query_builder",
+                    "recidiviz.big_query.big_query_view",
                     "recidiviz.big_query.big_query_view_collector",
+                    "recidiviz.big_query.big_query_view_sandbox_context",
                     "recidiviz.ingest",
                     "recidiviz.persistence",
                 }
@@ -316,6 +316,7 @@ def main() -> int:
         "recidiviz.big_query.big_query_query_provider",
         "recidiviz.big_query.big_query_utils",
         "recidiviz.big_query.big_query_view",
+        "recidiviz.big_query.big_query_view_sandbox_context",
         "recidiviz.big_query.constants",
         "recidiviz.big_query.export.export_query_config",
         "recidiviz.cloud_storage.gcs_file_system",

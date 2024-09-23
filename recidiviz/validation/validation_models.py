@@ -22,10 +22,14 @@ from typing import Generic, List, Optional, Set, TypeVar
 
 import attr
 
-from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
-from recidiviz.big_query.big_query_view import BigQueryView, SimpleBigQueryViewBuilder
+from recidiviz.big_query.big_query_address import BigQueryAddress
+from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+from recidiviz.big_query.big_query_view_sandbox_context import (
+    BigQueryViewSandboxContext,
+)
 from recidiviz.common.attr_mixins import BuildableAttr
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.utils import metadata
 from recidiviz.utils.types import ClsT
 from recidiviz.validation.validation_config import ValidationRegionConfig
 
@@ -113,8 +117,15 @@ class DataValidationCheck(BuildableAttr):
 DataValidationType = TypeVar("DataValidationType", bound=DataValidationCheck)
 
 
-def _query_str_for_region_code(view: BigQueryView, region_code: str) -> str:
-    return f"{view.select_query} WHERE region_code = '{region_code}'"
+def _query_str_for_region_code(
+    address_to_query: BigQueryAddress, region_code: str
+) -> str:
+    project_specific_address = address_to_query.to_project_specific_address(
+        metadata.project_id()
+    )
+    return (
+        f"{project_specific_address.select_query()} WHERE region_code = '{region_code}'"
+    )
 
 
 @attr.s(frozen=True)
@@ -127,11 +138,9 @@ class DataValidationJob(Generic[DataValidationType], BuildableAttr):
     # The region we're going to validate (who we're going to check)
     region_code: str = attr.ib()
 
-    # Optional dataset overrides to change which datasets will be used for query
-    address_overrides: Optional[BigQueryAddressOverrides] = attr.ib(default=None)
-
-    # Optional prefix for which sandbox prefix was used for the validation when running against secondary instance data
-    sandbox_dataset_prefix: Optional[str] = attr.ib(default=None)
+    # If set, indicates that the validation job should read from views in a sandbox
+    # rather than the standard views.
+    sandbox_context: BigQueryViewSandboxContext | None = attr.ib(default=None)
 
     # Optional prefix for which ingest instance was used for the validation
     ingest_instance: Optional[DirectIngestInstance] = attr.ib(default=None)
@@ -139,23 +148,34 @@ class DataValidationJob(Generic[DataValidationType], BuildableAttr):
     def __attrs_post_init__(self) -> None:
         if (
             self.ingest_instance == DirectIngestInstance.SECONDARY
-            and not self.sandbox_dataset_prefix
+            and not self.sandbox_context
         ):
             raise ValueError(
-                "Must specify sandbox_dataset_prefix when using SECONDARY ingest instance"
+                "Must specify sandbox_context when using SECONDARY ingest instance"
             )
 
     def original_builder_query_str(self) -> str:
-        view = self.validation.view_builder.build(
-            address_overrides=self.address_overrides
+        original_table_for_query = self.validation.view_builder.table_for_query
+
+        view_address_to_query = original_table_for_query
+        if self.sandbox_context and (
+            parent_overrides := self.sandbox_context.parent_address_overrides
+        ):
+            if sandbox_address := parent_overrides.get_sandbox_address(
+                original_table_for_query
+            ):
+                view_address_to_query = sandbox_address
+        return _query_str_for_region_code(
+            address_to_query=view_address_to_query, region_code=self.region_code
         )
-        return _query_str_for_region_code(view=view, region_code=self.region_code)
 
     def error_builder_query_str(self) -> str:
         view = self.validation.error_view_builder.build(
-            address_overrides=self.address_overrides
+            sandbox_context=self.sandbox_context
         )
-        return _query_str_for_region_code(view=view, region_code=self.region_code)
+        return _query_str_for_region_code(
+            address_to_query=view.table_for_query, region_code=self.region_code
+        )
 
 
 def validate_result_status(

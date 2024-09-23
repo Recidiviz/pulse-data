@@ -20,10 +20,12 @@ from typing import Any, Callable, Generic, List, Optional, Set, TypeVar
 
 from google.cloud import bigquery
 
-from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_query_builder import BigQueryQueryBuilder
 from recidiviz.big_query.big_query_query_provider import BigQueryQueryProvider
+from recidiviz.big_query.big_query_view_sandbox_context import (
+    BigQueryViewSandboxContext,
+)
 from recidiviz.utils import metadata
 
 _DEFAULT_MATERIALIZED_SUFFIX = "_materialized"
@@ -46,27 +48,23 @@ class BigQueryView(bigquery.TableReference, BigQueryQueryProvider):
         # Address this table will be materialized to, if this is a view that is
         # materialized.
         materialized_address: Optional[BigQueryAddress] = None,
-        address_overrides: Optional[BigQueryAddressOverrides] = None,
+        sandbox_context: BigQueryViewSandboxContext | None = None,
         clustering_fields: Optional[List[str]] = None,
         should_deploy_predicate: Optional[Callable[[], bool]] = None,
         **query_format_kwargs: Any,
     ) -> None:
-        if address_overrides:
-            original_address = BigQueryAddress(dataset_id=dataset_id, table_id=view_id)
-            sandbox_address = address_overrides.get_sandbox_address(original_address)
-            if sandbox_address:
-                dataset_id = sandbox_address.dataset_id
-
-                if materialized_address:
-                    sandbox_materialized_address = (
-                        address_overrides.get_sandbox_address(materialized_address)
-                    )
-                    if not sandbox_materialized_address:
-                        raise ValueError(
-                            f"Found override set for [{original_address}] but no override"
-                            f"set for the materialized address [{materialized_address}]"
-                        )
-                    materialized_address = sandbox_materialized_address
+        if sandbox_context:
+            sandbox_view_address = sandbox_context.sandbox_view_address(
+                original_view_address=BigQueryAddress(
+                    dataset_id=dataset_id, table_id=view_id
+                )
+            )
+            sandbox_materialized_address = sandbox_context.sandbox_materialized_address(
+                original_materialized_address=materialized_address
+            )
+            dataset_id = sandbox_view_address.dataset_id
+            view_id = sandbox_view_address.table_id
+            materialized_address = sandbox_materialized_address
 
         if project_id is None:
             project_id = metadata.project_id()
@@ -81,7 +79,11 @@ class BigQueryView(bigquery.TableReference, BigQueryQueryProvider):
         )
         super().__init__(dataset_ref, view_id)
         self.query_format_kwargs = query_format_kwargs
-        self.query_builder = BigQueryQueryBuilder(address_overrides=address_overrides)
+        self.query_builder = BigQueryQueryBuilder(
+            parent_address_overrides=(
+                sandbox_context.parent_address_overrides if sandbox_context else None
+            )
+        )
 
         self._bq_description = bq_description
         self._description = description
@@ -267,16 +269,14 @@ class BigQueryViewBuilder(Generic[BigQueryViewType]):
         return self.address
 
     def build(
-        self,
-        *,
-        address_overrides: Optional[BigQueryAddressOverrides] = None,
+        self, *, sandbox_context: BigQueryViewSandboxContext | None = None
     ) -> BigQueryViewType:
         """Builds and returns the view object."""
-        return self._build(address_overrides=address_overrides)
+        return self._build(sandbox_context=sandbox_context)
 
     @abc.abstractmethod
     def _build(
-        self, *, address_overrides: Optional[BigQueryAddressOverrides] = None
+        self, *, sandbox_context: BigQueryViewSandboxContext | None
     ) -> BigQueryViewType:
         """Should be implemented by subclasses to build the view."""
 
@@ -360,7 +360,7 @@ class SimpleBigQueryViewBuilder(BigQueryViewBuilder[BigQueryView]):
         )
 
     def _build(
-        self, *, address_overrides: Optional[BigQueryAddressOverrides] = None
+        self, *, sandbox_context: BigQueryViewSandboxContext | None
     ) -> BigQueryView:
         return BigQueryView(
             dataset_id=self.dataset_id,
@@ -370,7 +370,7 @@ class SimpleBigQueryViewBuilder(BigQueryViewBuilder[BigQueryView]):
             view_query_template=self.view_query_template,
             materialized_address=self.materialized_address,
             clustering_fields=self.clustering_fields,
-            address_overrides=address_overrides,
+            sandbox_context=sandbox_context,
             should_deploy_predicate=self.should_deploy_predicate,
             **self.query_format_kwargs,
         )

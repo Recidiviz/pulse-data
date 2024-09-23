@@ -28,6 +28,9 @@ from mock import MagicMock, patch
 
 from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+from recidiviz.big_query.big_query_view_sandbox_context import (
+    BigQueryViewSandboxContext,
+)
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.tests.utils.matchers import UnorderedCollection
@@ -1052,14 +1055,6 @@ class TestFetchValidations(TestCase):
             view_query_template="select * from literally_anything",
         )
 
-        address_overrides_builder = BigQueryAddressOverrides.Builder(
-            sandbox_prefix="prefix"
-        )
-        address_overrides_builder.register_custom_dataset_override(
-            "my_dataset", "my_dataset_override"
-        )
-        address_overrides = address_overrides_builder.build()
-
         existence_check_job = DataValidationJob(
             validation=ExistenceDataValidationCheck(
                 view_builder=builder, validation_category=ValidationCategory.INVARIANT
@@ -1072,12 +1067,31 @@ class TestFetchValidations(TestCase):
             existence_check_job.original_builder_query_str(),
         )
 
+    def test_validation_job_returns_correct_query_sandbox(self) -> None:
+        builder = SimpleBigQueryViewBuilder(
+            dataset_id="my_dataset",
+            view_id="test_2",
+            description="test_2 description",
+            view_query_template="select * from literally_anything",
+        )
+
+        address_overrides_builder = BigQueryAddressOverrides.Builder(
+            sandbox_prefix="prefix"
+        )
+        address_overrides_builder.register_custom_dataset_override(
+            "my_dataset", "my_dataset_override"
+        )
+        parent_address_overrides = address_overrides_builder.build()
+
         existence_check_job = DataValidationJob(
             validation=ExistenceDataValidationCheck(
                 view_builder=builder, validation_category=ValidationCategory.INVARIANT
             ),
             region_code="US_XX",
-            address_overrides=address_overrides,
+            sandbox_context=BigQueryViewSandboxContext(
+                parent_address_overrides=parent_address_overrides,
+                output_sandbox_dataset_prefix="prefix",
+            ),
         )
 
         self.assertEqual(

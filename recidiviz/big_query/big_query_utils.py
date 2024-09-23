@@ -20,7 +20,7 @@ import enum
 import logging
 import string
 from enum import Enum
-from typing import Any, Dict, List, Optional, Sequence, Set, Type
+from typing import Any, Dict, List, Optional, Type
 
 import attr
 import sqlalchemy
@@ -28,8 +28,6 @@ from google.cloud import bigquery
 from sqlalchemy import Column
 from sqlalchemy.dialects import postgresql
 
-from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
-from recidiviz.big_query.big_query_view import BigQueryView, BigQueryViewBuilder
 from recidiviz.big_query.constants import BQ_TABLE_COLUMN_DESCRIPTION_MAX_LENGTH
 from recidiviz.common.attr_utils import (
     is_bool,
@@ -256,37 +254,6 @@ def transform_dict_to_bigquery_row(data_point: Dict[str, Any]) -> bigquery.table
 def datetime_clause(dt: datetime.datetime) -> str:
     """Returns a datetime formatted as a BigQuery DATETIME() function."""
     return f'DATETIME "{dt.isoformat()}"'
-
-
-def build_views_to_update(
-    view_source_table_datasets: Set[str],
-    candidate_view_builders: Sequence[BigQueryViewBuilder],
-    address_overrides: Optional[BigQueryAddressOverrides],
-) -> Dict[BigQueryView, BigQueryViewBuilder]:
-    """
-    Returns a map associating view builders to the views that should be updated,
-    built from builders in the |candidate_view_builders| list.
-    """
-
-    logging.info("Building [%s] views...", len(candidate_view_builders))
-    views_to_builders = {}
-    for view_builder in candidate_view_builders:
-        if view_builder.dataset_id in view_source_table_datasets:
-            raise ValueError(
-                f"Found view [{view_builder.view_id}] in source-table-only dataset [{view_builder.dataset_id}]"
-            )
-
-        try:
-            view = view_builder.build(
-                address_overrides=address_overrides,
-            )
-        except Exception as e:
-            raise ValueError(
-                f"Unable to build view at address [{view_builder.address}]"
-            ) from e
-
-        views_to_builders[view] = view_builder
-    return views_to_builders
 
 
 def is_big_query_valid_encoding(encoding: str) -> bool:
