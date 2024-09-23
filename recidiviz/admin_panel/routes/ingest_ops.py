@@ -928,7 +928,7 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
             state_code = StateCode(request_json["stateCode"])
             raw_data_instance = DirectIngestInstance(request_json["rawDataInstance"])
             description = assert_type(request_json["description"], str)
-            ttl_seconds = assert_type(request_json["ttlSeconds"], int)
+            ttl_seconds = request_json["ttlSeconds"]
         except ValueError:
             return "Invalid input data", HTTPStatus.BAD_REQUEST
 

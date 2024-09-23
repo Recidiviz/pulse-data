@@ -32,6 +32,8 @@ import {
   RawDataImportRunStatusInfo,
   RawDataResourceLockActor,
   RawDataResourceLockStatuses,
+  ResourceLockState,
+  ResourceLockStatus,
 } from "./constants";
 
 export interface DirectIngestCellFormattingInfo {
@@ -426,12 +428,12 @@ const rawDataResourceLockColorStatusDict: {
 } = {
   BLOCKING: {
     status: "RAW DATA IMPORT BLOCKED BY MANUAL PROCESS",
-    color: "resource-locks-blocking",
+    color: "resource-locks-held",
     sortRank: 1,
   },
   NOT_BLOCKING: {
     status: "No manual holds",
-    color: "resource-locks-not-blocking",
+    color: "resource-locks-free",
     sortRank: 2,
   },
 };
@@ -483,6 +485,61 @@ export const renderRawDataResourceLockStatusesCell = (
     </div>
   );
 };
+
+const ResourceLockStatusColorDict: {
+  [color: string]: DirectIngestCellFormattingInfo;
+} = {
+  ADHOC_HELD: {
+    color: "resource-locks-held",
+    sortRank: 1,
+  },
+  PROCESS_HELD: {
+    color: "resource-locks-held",
+    sortRank: 1,
+  },
+  MIXED: {
+    color: "resource-locks-mixed",
+    sortRank: 2,
+  },
+  UNKNOWN: {
+    color: "resource-locks-unknown",
+    sortRank: 3,
+  },
+  FREE: {
+    color: "resource-locks-free",
+    sortRank: 4,
+  },
+};
+
+export function getResourceLockColor(state: string) {
+  return ResourceLockStatusColorDict[state].color;
+}
+
+export function getResourceLockAdHocCumulativeState(
+  lockStatuses: ResourceLockStatus[]
+): ResourceLockState {
+  return lockStatuses
+    .map((lockStatus: ResourceLockStatus) => {
+      if (lockStatus.released) return ResourceLockState.FREE;
+      switch (lockStatus.actor) {
+        case RawDataResourceLockActor.ADHOC:
+          return ResourceLockState.ADHOC_HELD;
+        case RawDataResourceLockActor.PROCESS:
+          return ResourceLockState.PROCESS_HELD;
+        default:
+          throw new Error("Unrecognized actor");
+      }
+    })
+    .reduce((acc: ResourceLockState, lockState: ResourceLockState) => {
+      if (acc === ResourceLockState.UNKNOWN) {
+        return lockState;
+      }
+      if (acc === lockState) {
+        return acc;
+      }
+      return ResourceLockState.MIXED;
+    }, ResourceLockState.UNKNOWN);
+}
 
 // --- misc status utils ---------------------------------------------------------------
 

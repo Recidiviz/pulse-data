@@ -65,9 +65,9 @@ _DIRECT_INGEST_LOCK_RESOURCE_VALUE_DESCRIPTIONS: Dict[OperationsEnum, str] = {
     DirectIngestRawDataResourceLockResource.BUCKET: (
         "The BUCKET resource refers to the raw data GCS bucket associated with the "
         "region_code and ingest_instance of the lock."
-        "n.b.: while data platform infrasturcture should acquire this "
+        "n.b.: while data platform infrastructure should acquire this "
         "resource lock before accessing it, states will transfer data directly to this "
-        "bucket without acquiring the lock so this lock does not necessarily guarentee "
+        "bucket without acquiring the lock so this lock does not necessarily guarantee "
         "the bucket state will remain constant throughout the duration of the lock."
     ),
     DirectIngestRawDataResourceLockResource.OPERATIONS_DATABASE: (
@@ -88,7 +88,7 @@ _DIRECT_INGEST_LOCK_ACTOR_VALUE_DESCRIPTIONS: Dict[OperationsEnum, str] = {
         "from the admin panel and no lock_ttl is required to be set for this actor type."
     ),
     DirectIngestRawDataLockActor.PROCESS: (
-        "A programatic acquisiton of a raw data resource lock. A lock_ttl is required "
+        "A programmatic acquisition of a raw data resource lock. A lock_ttl is required "
         "to be set for this actor type."
     ),
 }

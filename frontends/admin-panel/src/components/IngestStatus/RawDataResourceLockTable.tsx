@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
-import { Badge, Divider, Table, Tooltip } from "antd";
+import { Badge, Table, Tooltip } from "antd";
 import { ColumnsType } from "antd/lib/table";
 import moment from "moment";
 import * as React from "react";
@@ -116,18 +116,15 @@ const RawDataResourceLockTable: React.FC<RawDataResourceLockTableProps> = ({
   return (
     <div>
       {regionResourceLockStatus ? (
-        <>
-          <Divider orientation="left">{rawDataInstance} Locks</Divider>
-          <Table
-            columns={columns}
-            dataSource={regionResourceLockStatus.locksForInstance(
-              rawDataInstance
-            )}
-            pagination={false}
-            loading={loading}
-            rowKey="lockId"
-          />
-        </>
+        <Table
+          columns={columns}
+          dataSource={regionResourceLockStatus.locksForInstance(
+            rawDataInstance
+          )}
+          pagination={false}
+          loading={loading}
+          rowKey="lockId"
+        />
       ) : null}
     </div>
   );

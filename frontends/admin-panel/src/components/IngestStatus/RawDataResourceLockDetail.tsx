@@ -15,6 +15,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
+import { PageHeader } from "antd";
 import { useCallback, useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 
@@ -23,6 +24,7 @@ import {
   getRawDataResourceLockMetadata,
 } from "../../AdminPanelAPI/IngestOperations";
 import { DirectIngestInstance, ResourceLockMetadata } from "./constants";
+import RawDataResourceLockActionTableHeader from "./RawDataResourceLockActionTableHeader";
 import RawDataResourceLockTable from "./RawDataResourceLockTable";
 import { RegionResourceLockStatus } from "./RegionResourceLockStatus";
 
@@ -36,9 +38,10 @@ export function getValueIfResolved<Value>(
 }
 const RawDataResourceLockDetail = (): JSX.Element => {
   const { stateCode } = useParams<{ stateCode: string }>();
-  const [regionResourceLocks, setRegionResourceLocks] = useState<
-    RegionResourceLockStatus | undefined
-  >(undefined);
+  const [regionResourceLocks, setRegionResourceLocks] =
+    useState<RegionResourceLockStatus>(
+      new RegionResourceLockStatus({ primaryLocks: [], secondaryLocks: [] })
+    );
   const [resourceLockMetadata, setResourceLockMetadata] = useState<
     ResourceLockMetadata | undefined
   >(undefined);
@@ -70,11 +73,27 @@ const RawDataResourceLockDetail = (): JSX.Element => {
       style={{ height: "90%" }}
       className="main-content content-side-padding"
     >
+      <PageHeader
+        title="Raw Data Resource Locks"
+        subTitle="Information about processes that have been granted sole access to read/write from certain platform infrastructure"
+      />
+      <RawDataResourceLockActionTableHeader
+        stateCode={stateCode}
+        rawDataInstance={DirectIngestInstance.PRIMARY}
+        lockStatus={regionResourceLocks.primaryLocks}
+        onRefreshResourceLockData={getData}
+      />
       <RawDataResourceLockTable
         rawDataInstance={DirectIngestInstance.PRIMARY}
         regionResourceLockStatus={regionResourceLocks}
         resourceLockMetadata={resourceLockMetadata}
         loading={loading}
+      />
+      <RawDataResourceLockActionTableHeader
+        stateCode={stateCode}
+        rawDataInstance={DirectIngestInstance.SECONDARY}
+        lockStatus={regionResourceLocks.secondaryLocks}
+        onRefreshResourceLockData={getData}
       />
       <RawDataResourceLockTable
         rawDataInstance={DirectIngestInstance.SECONDARY}

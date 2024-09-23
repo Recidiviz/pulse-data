@@ -427,7 +427,7 @@ export const acquireResourceLocksForStateAndInstance = async (
   stateCode: string,
   rawDataInstance: DirectIngestInstance,
   description: string,
-  ttlSeconds: number
+  ttlSeconds: number | null
 ): Promise<Response> => {
   return postWithURLAndBody(
     `/api/ingest_operations/resource_locks/acquire_all`,
@@ -459,7 +459,7 @@ export const releaseResourceLocksForStateById = async (
 // Get latest raw data lock statuses
 export const getRawDataInstanceLockStatuses = async (
   stateCode: string,
-  rawDataInstance: string
+  rawDataInstance: DirectIngestInstance
 ): Promise<Response> => {
   return getResource(
     `/api/ingest_operations/resource_locks/list_all/${stateCode}/${rawDataInstance}`
