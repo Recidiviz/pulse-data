@@ -34,7 +34,7 @@ class TestUsIxCaseUpdateInfoQueryProvider(unittest.TestCase):
 
         expected_parent_tables = {
             BigQueryAddress(
-                dataset_id="us_ix_normalized_state_new",
+                dataset_id="us_ix_normalized_state",
                 table_id="state_person_external_id",
             ),
             BigQueryAddress(
@@ -58,7 +58,7 @@ class TestUsIxCaseUpdateInfoQueryProvider(unittest.TestCase):
             .register_sandbox_override_for_entire_dataset(
                 "us_ix_raw_data_up_to_date_views"
             )
-            .register_sandbox_override_for_entire_dataset("us_ix_normalized_state_new")
+            .register_sandbox_override_for_entire_dataset("us_ix_normalized_state")
             .build()
         )
         query_provider = get_us_ix_case_update_info_query_provider(
@@ -67,7 +67,7 @@ class TestUsIxCaseUpdateInfoQueryProvider(unittest.TestCase):
 
         expected_parent_tables = {
             BigQueryAddress(
-                dataset_id="my_prefix_us_ix_normalized_state_new",
+                dataset_id="my_prefix_us_ix_normalized_state",
                 table_id="state_person_external_id",
             ),
             BigQueryAddress(
@@ -104,7 +104,7 @@ class TestUsIxCaseUpdateInfoQueryProvider(unittest.TestCase):
 
         expected_parent_tables = {
             BigQueryAddress(
-                dataset_id="us_ix_normalized_state_new",
+                dataset_id="us_ix_normalized_state",
                 table_id="state_person_external_id",
             ),
             # This is the only address that should be impacted

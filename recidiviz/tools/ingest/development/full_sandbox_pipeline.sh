@@ -203,7 +203,7 @@ function confirm_cmd {
 # Some more variables
 STATE_CODE_LOWERCASE=${STATE_CODE,,} # convert to lowercase
 
-SANDBOX_STATE_SPECIFIC_NORMALIZED_DATASET="${SANDBOX_PREFIX}_${STATE_CODE_LOWERCASE}_normalized_state_new"
+SANDBOX_STATE_SPECIFIC_NORMALIZED_DATASET="${SANDBOX_PREFIX}_${STATE_CODE_LOWERCASE}_normalized_state"
 STANDARD_NORMALIZED_STATE_DATASET="normalized_state"
 
 # Create datasets
