@@ -145,6 +145,7 @@ output:
               $mappings:
                 StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE:
                   - Release to Parole
+                  - Granted Early Discharge - Parole
                 StateIncarcerationPeriodReleaseReason.DEATH:
                   - Death - Natural
                   - Death - Unnatural
