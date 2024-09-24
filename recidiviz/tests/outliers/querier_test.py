@@ -77,6 +77,7 @@ TEST_METRIC_1 = OutliersMetricConfig.build_from_metric(
 
 <br />
 Incarceration rate denominator description""",
+    list_table_text="""Clients will appear on this list multiple times if they have been incarcerated more than once under this officer in the time period.""",
 )
 
 TEST_METRIC_2 = OutliersMetricConfig.build_from_metric(
@@ -96,6 +97,7 @@ TEST_METRIC_3 = OutliersMetricConfig.build_from_metric(
     event_name_singular="absconsion",
     event_name_past_tense="absconded",
     is_absconsion_metric=True,
+    list_table_text="""Clients will appear on this list multiple times if they have had more than one absconsion under this officer in the time period.""",
 )
 
 TEST_CLIENT_EVENT_1 = OutliersClientEventConfig.build(
