@@ -22,12 +22,6 @@ from recidiviz.common.constants.state.state_assessment import (
     StateAssessmentLevel,
     StateAssessmentType,
 )
-from recidiviz.common.constants.state.state_supervision_period import (
-    StateSupervisionPeriodAdmissionReason,
-)
-from recidiviz.persistence.entity.state.normalized_entities import (
-    NormalizedStateSupervisionPeriod,
-)
 from recidiviz.pipelines.utils.state_utils.state_specific_supervision_delegate import (
     StateSpecificSupervisionDelegate,
 )
@@ -55,18 +49,6 @@ class UsPaSupervisionDelegate(StateSpecificSupervisionDelegate):
         return (
             level_1_supervision_location or None,
             level_2_supervision_location or None,
-        )
-
-    # pylint: disable=unused-argument
-    def supervision_period_in_supervision_population_in_non_excluded_date_range(
-        self,
-        supervision_period: NormalizedStateSupervisionPeriod,
-    ) -> bool:
-        """In US_PA, a supervision period only counts towards the supervision population
-        if it is not a period indicating absconsion."""
-        return (
-            supervision_period.admission_reason
-            != StateSupervisionPeriodAdmissionReason.ABSCONSION
         )
 
     def assessment_types_to_include_for_class(

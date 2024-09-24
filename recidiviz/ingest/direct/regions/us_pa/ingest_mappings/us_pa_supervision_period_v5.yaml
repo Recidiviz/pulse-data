@@ -41,6 +41,15 @@ output:
           supervision_type:
             $conditional:
               - $if:
+                  $or:
+                    - $equal:
+                        - district_office
+                        - $literal("FAST")
+                    - $equal:
+                        - district_sub_office_id
+                        - $literal("FAST")
+                $then: $literal_enum(StateSupervisionPeriodSupervisionType.ABSCONSION)
+              - $else_if:
                   $in:
                     $value: status_code
                     $options:
