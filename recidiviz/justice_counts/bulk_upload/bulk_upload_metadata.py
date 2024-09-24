@@ -57,7 +57,6 @@ class BulkUploadMetadata:
         self.session = session
         self.user_account = user_account
         self.upload_method = UploadMethod.BULK_UPLOAD
-        self.user_account = user_account
         self.metric_files = SYSTEM_TO_METRICFILES[system]
         self.agency_id_to_time_range_to_reports: Dict[
             int, Dict[Tuple[Any, Any], List[schema.Report]]
