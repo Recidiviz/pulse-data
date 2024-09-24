@@ -17,6 +17,7 @@
 """Tests for raw_data_import_types.py"""
 import datetime
 import unittest
+from collections import defaultdict
 from typing import Any, Type
 
 import attr
@@ -37,6 +38,10 @@ from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRawFileConfig,
     RawDataClassification,
     RawDataFileUpdateCadence,
+    get_region_raw_file_config,
+)
+from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
+    get_direct_ingest_states_existing_in_env,
 )
 from recidiviz.ingest.direct.types.raw_data_import_types import (
     AppendReadyFile,
@@ -57,6 +62,8 @@ from recidiviz.ingest.direct.types.raw_data_import_types import (
     RequiresPreImportNormalizationFileChunk,
 )
 from recidiviz.utils.airflow_types import BatchedTaskInstanceOutput
+from recidiviz.utils.environment import GCP_PROJECT_STAGING
+from recidiviz.utils.metadata import local_project_id_override
 
 
 class PreImportNormalizationTypeTest(unittest.TestCase):
@@ -484,3 +491,32 @@ class TestSerialization(unittest.TestCase):
         deserialized = obj_type.deserialize(serialized)
 
         self.assertEqual(obj, deserialized)
+
+
+class TestConfigConstraints(unittest.TestCase):
+    """A set of tests that make sure that we are able to process all raw data configs"""
+
+    def test_pre_import_normalization_is_always_quoted(self) -> None:
+        with local_project_id_override(GCP_PROJECT_STAGING):
+            errors = defaultdict(list)
+            for state in get_direct_ingest_states_existing_in_env():
+                region_config = get_region_raw_file_config(state.value)
+                for tag, config in region_config.raw_file_configs.items():
+                    preimport_normalization_type_for_config = PreImportNormalizationType.required_pre_import_normalization_type(
+                        config
+                    )
+                    if (
+                        preimport_normalization_type_for_config
+                        == PreImportNormalizationType.ENCODING_DELIMITER_AND_TERMINATOR_UPDATE
+                        and config.ignore_quotes is False
+                    ):
+                        errors[state].append(tag)
+
+            if errors:
+                raise ValueError(
+                    f"We currently do not support pre-import normalization for files "
+                    f"that have ignore_quotes: False. The following raw file configs "
+                    f"have the following configuration and will need to be changed to "
+                    f"ignore_quotes: True or ReadOnlyCsvNormalizingStream will need to "
+                    f"be updated to allow quoted cell values: {dict(errors)}"
+                )
