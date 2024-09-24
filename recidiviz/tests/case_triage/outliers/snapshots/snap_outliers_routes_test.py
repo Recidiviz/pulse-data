@@ -323,7 +323,7 @@ snapshots["TestOutliersRoutes.TestOutliersRoutes test_get_officers_for_superviso
             "avgDailyPopulation": 10.0,
             "caseloadCategory": "ALL",
             "district": "Hogwarts",
-            "earliestPersonAssignmentDate": None,
+            "earliestPersonAssignmentDate": "Mon, 01 Jan 2024 00:00:00 GMT",
             "externalId": "123",
             "fullName": {
                 "givenNames": "Harry",
@@ -351,7 +351,7 @@ snapshots["TestOutliersRoutes.TestOutliersRoutes test_get_officers_for_superviso
             "avgDailyPopulation": 10.0,
             "caseloadCategory": "ALL",
             "district": "Hogwarts",
-            "earliestPersonAssignmentDate": None,
+            "earliestPersonAssignmentDate": "Mon, 01 Jan 2024 00:00:00 GMT",
             "externalId": "456",
             "fullName": {
                 "givenNames": "Ron",
