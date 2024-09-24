@@ -71,6 +71,7 @@ _OUTLIERS_BACKEND_CONFIGS_BY_STATE: Dict[StateCode, OutliersBackendConfig] = {
 
 <br />
 The denominator is the average daily caseload for the officer over the given time period. Clients on Unsupervised/Court Probation or clients who are supervised out of state with respect to an Interstate Compact are excluded from an officer's active caseload.""",
+                list_table_text="""Clients will appear on this list multiple times if they have been incarcerated more than once under this officer in the time period.""",
             ),
             OutliersMetricConfig.build_from_metric(
                 metric=VIOLATIONS_ABSCONSION,
@@ -84,6 +85,7 @@ The denominator is the average daily caseload for the officer over the given tim
 
 <br />
 The denominator is the average daily caseload for the officer over the given time period. Clients on Unsupervised/Court Probation or clients who are supervised out of state with respect to an Interstate Compact are excluded from an officer's active caseload.""",
+                list_table_text="""Clients will appear on this list multiple times if they have had more than one absconsion under this officer in the time period.""",
             ),
         ],
         supervision_officer_metric_exclusions="""
@@ -151,6 +153,7 @@ The denominator is the average daily caseload for the officer over the given tim
 
 <br />
 Denominator is the average daily caseload for the agent over the given time period, including people on both active and admin supervision levels.""",
+                list_table_text="""Clients will appear on this list multiple times if they have been incarcerated more than once under this agent in the time period.""",
             ),
             OutliersMetricConfig.build_from_metric(
                 metric=ABSCONSIONS_BENCH_WARRANTS,
@@ -164,6 +167,7 @@ Denominator is the average daily caseload for the agent over the given time peri
 
 <br />
 Denominator is the average daily caseload for the agent over the given time period, including people on both active and admin supervision levels.""",
+                list_table_text="""Clients will appear on this list multiple times if they have had more than one absconder warrant under this agent in the time period.""",
             ),
         ],
         client_events=[

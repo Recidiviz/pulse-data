@@ -171,6 +171,9 @@ class OutliersMetricConfig:
     # Identifies if this is an absconsion related metric
     is_absconsion_metric: bool = attr.ib(default=False)
 
+    # Helper text to display with list of metric events
+    list_table_text: str | None = attr.ib(default=None)
+
     @classmethod
     def build_from_metric(
         cls,
@@ -185,6 +188,7 @@ class OutliersMetricConfig:
         description_markdown: str = "",
         top_x_pct: int | None = None,
         is_absconsion_metric: bool = False,
+        list_table_text: str | None = None,
     ) -> "OutliersMetricConfig":
         return cls(
             metric.name,
@@ -198,6 +202,7 @@ class OutliersMetricConfig:
             metric.metric_event_conditions_string,
             top_x_pct,
             is_absconsion_metric,
+            list_table_text,
         )
 
 
