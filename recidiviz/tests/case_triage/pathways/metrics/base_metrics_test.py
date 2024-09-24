@@ -139,7 +139,7 @@ class TestPathwaysMetricFetcher(TestCase):
         cls.temp_db_dir = local_postgres_helpers.start_on_disk_postgresql_database()
 
     def setUp(self) -> None:
-        self.database_key = SQLAlchemyDatabaseKey(SchemaType.PATHWAYS, db_name="us_co")
+        self.database_key = SQLAlchemyDatabaseKey(SchemaType.PATHWAYS, db_name="us_tn")
         self.engine = local_persistence_helpers.use_on_disk_postgresql_database(
             self.database_key,
             create_tables=False,
@@ -157,11 +157,11 @@ class TestPathwaysMetricFetcher(TestCase):
         )
 
     def test_enabled_metric_without_table(self) -> None:
-        metric_fetcher = PathwaysMetricFetcher(state_code=StateCode.US_CO)
+        metric_fetcher = PathwaysMetricFetcher(state_code=StateCode.US_TN)
 
         with self.assertRaises(MetricNotEnabledError):
             metric_fetcher.fetch(
-                ENABLED_METRICS_BY_STATE_BY_NAME[StateCode.US_CO][
+                ENABLED_METRICS_BY_STATE_BY_NAME[StateCode.US_TN][
                     "LibertyToPrisonTransitionsOverTime"
                 ],
                 FetchMetricParams(),

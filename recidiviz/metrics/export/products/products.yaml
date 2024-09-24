@@ -73,8 +73,6 @@ products:
         environment: production
       - state_code: US_TN
         environment: production
-      - state_code: US_ME
-        environment: production
       - state_code: US_MO
         environment: production
       - state_code: US_IX
@@ -86,18 +84,7 @@ products:
     states:
       - state_code: US_ND
         environment: production
-      - state_code: US_ME
-        environment: production
       - state_code: US_MO
-        environment: production
-  - name: Pathways Prison Module
-    description: Prison populations over time which can be drilled down by geographic region, demographic categories, time period, etc.
-    exports:
-      - PATHWAYS_PRISON_EVENT_LEVEL
-    states:
-      - state_code: US_MI
-        environment: production
-      - state_code: US_CO
         environment: production
   # TODO(#16465): Turn this back on in production
   # TODO(#17733): Turn this back on (and remove US_IX from PATHWAYS) once projection has been run for US_IX

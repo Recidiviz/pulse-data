@@ -38,7 +38,6 @@ PATHWAYS_SUPERVISION_LOCATION_NAME_MAP_QUERY_TEMPLATE = """
         CASE state_code
             WHEN "US_ID" THEN level_2_supervision_location_name
             WHEN "US_IX" THEN level_2_supervision_location_name
-            WHEN "US_ME" THEN level_2_supervision_location_name
             WHEN "US_ND" THEN INITCAP(level_1_supervision_location_name)
             WHEN "US_MO" THEN level_2_supervision_location_name
             WHEN "US_TN" THEN 
