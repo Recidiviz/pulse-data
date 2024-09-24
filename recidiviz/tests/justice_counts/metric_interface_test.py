@@ -1058,7 +1058,7 @@ class TestMetricInterface(TestCase):
                     },
                 ],
                 "unit": "CALLS",
-                "category": "Operations and Dynamics",
+                "category": "Populations",
                 "label": "Calls for Service",
                 "enabled": False,
                 "frequency": "MONTHLY",
@@ -1312,7 +1312,7 @@ class TestMetricInterface(TestCase):
                     },
                 ],
                 "unit": "CALLS",
-                "category": "Operations and Dynamics",
+                "category": "Populations",
                 "label": "Calls for Service",
                 "enabled": True,
                 "frequency": "MONTHLY",
@@ -1566,7 +1566,7 @@ class TestMetricInterface(TestCase):
                     },
                 ],
                 "unit": "CALLS",
-                "category": "Operations and Dynamics",
+                "category": "Populations",
                 "label": "Calls for Service",
                 "enabled": True,
                 "frequency": "MONTHLY",
@@ -2208,7 +2208,7 @@ class TestMetricInterface(TestCase):
                     }
                 ],
                 "unit": "CALLS",
-                "category": "Operations and Dynamics",
+                "category": "Populations",
                 "label": "Calls for Service",
                 "enabled": False,
                 "frequency": "MONTHLY",
@@ -3614,7 +3614,7 @@ class TestMetricInterface(TestCase):
                 entry_point=DatapointGetRequestEntryPoint.METRICS_TAB, is_v2=True
             ),
             {
-                "category": "Populations",
+                "category": "Operations and Dynamics",
                 "contexts": [
                     {
                         "display_name": "If the listed categories do not adequately describe your metric, please describe additional data elements included in your agency’s definition.",
