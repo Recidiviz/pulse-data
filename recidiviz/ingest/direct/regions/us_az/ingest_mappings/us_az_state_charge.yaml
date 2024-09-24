@@ -7,9 +7,6 @@ input_columns:
   - COUNTY
   - COUNTY_ID
   - JUDGE_ID
-  - COURT_FIRST_NAME
-  - COURT_MIDDLE_NAME
-  - COURT_LAST_NAME
   - ARS_ID
   - sentence_external_id
   - OFFENSE_ID
@@ -66,9 +63,4 @@ output:
                 charge_notes: TRNSTN_PGM_RLS_INELIG_FLAG
                 is_controlling: $variable(controlling_bool)
                 judge_external_id: JUDGE_ID
-                judge_full_name:
-                  $json_dict:
-                    given_names: COURT_FIRST_NAME
-                    middle_name: COURT_MIDDLE_NAME
-                    surname: COURT_LAST_NAME
                 status: $literal_enum(StateChargeV2Status.PRESENT_WITHOUT_INFO)

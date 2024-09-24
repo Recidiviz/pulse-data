@@ -105,8 +105,12 @@ SELECT DISTINCT
   COMMITMENT_ID,
   OFFENSE_ID,
   CASE
-    WHEN sentence_end_dtm = sentence_begin_dtm
-    THEN updt_dtm
+    WHEN sentence_end_dtm = sentence_begin_dtm 
+    --  173 sentence end dtm values appear prior to the sentence begin dtm, sometimes by hundreds of years. This is likely due to a migration problem.
+    OR sentence_end_dtm < sentence_begin_dtm
+    -- There are sometimes multiple identical updates made to a single sentence, so choose
+    -- the most recent update datetime to use as the closure date. 
+    THEN MAX(updt_dtm) OVER (PARTITION BY OFFENSE_ID, COMMITMENT_ID, DOC_ID)
     ELSE sentence_end_dtm
   END AS status_update_datetime,
   'Recidiviz Marked Completed' AS status_raw_text

@@ -32,9 +32,6 @@ commitments AS (
     episode.PERSON_ID,
     commitment.COUNTY_ID,
     NULLIF(commitment.JUDGE_ID,'NULL') AS JUDGE_ID,
-    episode.COURT_FIRST_NAME, 
-    episode.COURT_MIDDLE_NAME, 
-    episode.COURT_LAST_NAME, 
     NULLIF(offense.ARS_ID,'NULL') AS ARS_ID,
     CAST(NULLIF(offense.OFFENSE_DTM, 'NULL') AS DATETIME) AS OFFENSE_DTM,
     NULLIF(offense.SUBSECTION_CODE,'NULL') AS SUBSECTION_CODE,
@@ -84,8 +81,6 @@ FROM charges
 -- of NULL PERSON_ID values in these results that need to be excluded.
 -- TODO(#28796): Find out in what circumstances this would be the case.
 WHERE PERSON_ID IS NOT NULL
--- There are a small number of rows in AZ_DOC_SC_OFFENSE that do not have a populated ARS_ID field.
-AND ARS_ID IS NOT NULL
 """
 
 VIEW_BUILDER = DirectIngestViewQueryBuilder(
