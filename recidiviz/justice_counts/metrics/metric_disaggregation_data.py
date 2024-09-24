@@ -18,7 +18,7 @@
 
 import enum
 from collections import defaultdict
-from typing import Any, DefaultDict, Dict, List, Optional, Type, TypeVar, cast
+from typing import Any, DefaultDict, Dict, List, Optional, Tuple, Type, TypeVar, cast
 
 import attr
 
@@ -293,8 +293,102 @@ class MetricAggregatedDimensionData:
             response["helper_text"] = dimension_definition.helper_text
             response["required"] = dimension_definition.required
             response["should_sum_to_total"] = dimension_definition.should_sum_to_total
+        elif (
+            dimension_definition.dimension_identifier()
+            == RaceAndEthnicity.dimension_identifier()
+        ):
+            response[
+                "consolidated_race_ethnicity"
+            ] = self._get_consolidated_race_ethnicity_dict(  # type: ignore[assignment]
+                dimension_member_to_datapoints_json=dimension_member_to_datapoints_json
+            )
 
         return response
+
+    def _get_consolidated_race_ethnicity_dict(
+        self,
+        dimension_member_to_datapoints_json: Optional[
+            DefaultDict[str, List[DatapointJson]]
+        ] = None,
+    ) -> Dict[str, Dict[str, int]]:
+        """
+        Aggregates and groups datapoints by consolidated race/ethnicity into a JSON-compatible dictionary.
+
+        Args:
+            dimension_member_to_datapoints_json (Optional[DefaultDict[str, List[DatapointJson]]], optional):
+                A dictionary mapping dimension members to lists of datapoints in JSON format.
+                Each datapoint contains time range and value data. Defaults to None.
+
+        Returns:
+            Dict[str, Dict[str, int]]: A dictionary mapping each consolidated race/ethnicity to a time range,
+            with the corresponding aggregated total value for each time range.
+
+        Notes:
+            - Consolidates race and ethnicity based on the `RaceAndEthnicity` dimension:
+                - If the dimension member's ethnicity is "Hispanic or Latino", it is grouped as such.
+                - Otherwise, it is grouped by race.
+            - Aggregates datapoints within each race/ethnicity group over specified time ranges.
+            - The time ranges are represented as strings in the format "start_date - end_date".
+
+            - Transforms `dimension_member_to_datapoints_json` with the format:
+                `HISPANIC_WHITE`: [DatapointJson, DatapointJson...],
+                `HISPANIC_BLACK`: [DatapointJson, DatapointJson...],
+                `NOT_HISPANIC_WHITE`: [DatapointJson, DatapointJson...],
+                `NOT_HISPANIC_BLACK`: [DatapointJson, DatapointJson...]
+
+            into `consolidated_race_ethnicity_json` in this format:
+                `HISPANIC`: {June 1 datetime - July 1 datetime: <total for hispanic ethnicity over time frame>, ...},
+                `WHITE`: {June 1 datetime - July 1 datetime: <total for white, not/unknown hispanic ethnicity over time frame>, ...},
+                `BLACK`: {June 1 datetime - July 1 datetime: <total for black, not/unknown hispanic ethnicity over time frame>, ...}
+        """
+        consolidated_race_ethnicity_json: Dict[str, Dict[str, int]] = {}
+
+        if dimension_member_to_datapoints_json is None:
+            return consolidated_race_ethnicity_json
+
+        # 1) Re-group datapoints by consolidate race/ethnicity
+        consolidated_race_ethnicity_to_time_range_to_aggregate_total: DefaultDict[
+            str, DefaultDict[Tuple[str, str], int]
+        ] = defaultdict(lambda: defaultdict(int))
+        for (
+            dimension_member,
+            datapoint_json_list,
+        ) in dimension_member_to_datapoints_json.items():
+            dimension = RaceAndEthnicity[dimension_member]
+            consolidated_race_ethnicity = (
+                dimension.ethnicity
+                if dimension.ethnicity == "Hispanic or Latino"
+                else dimension.race
+            )
+            for datapoint_json in datapoint_json_list:
+                if datapoint_json["value"] is not None:
+                    consolidated_race_ethnicity_to_time_range_to_aggregate_total[
+                        consolidated_race_ethnicity
+                    ][
+                        (
+                            datapoint_json["start_date"],
+                            datapoint_json["end_date"],
+                        )
+                    ] += datapoint_json[
+                        "value"
+                    ]
+        # 2) Format consolidated race/ethnicity into a JSON response
+        for (
+            consolidated_race_ethnicity,
+            time_range_to_aggregate_total,
+        ) in consolidated_race_ethnicity_to_time_range_to_aggregate_total.items():
+            for (
+                time_range,
+                aggregate_total,
+            ) in time_range_to_aggregate_total.items():
+                if consolidated_race_ethnicity not in consolidated_race_ethnicity_json:
+                    consolidated_race_ethnicity_json[consolidated_race_ethnicity] = {}
+
+                consolidated_race_ethnicity_json[consolidated_race_ethnicity][
+                    f"{time_range[0]} - {time_range[1]}"
+                ] = aggregate_total
+
+        return consolidated_race_ethnicity_json
 
     @classmethod
     def from_json(

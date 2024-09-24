@@ -3454,6 +3454,26 @@ class TestMetricInterface(TestCase):
         )
 
     def test_race_and_ethnicity_json(self) -> None:
+        dimension_member_to_datapoints_json: DefaultDict[
+            str, List[DatapointJson]
+        ] = defaultdict(list)
+        for dimension_member in RaceAndEthnicity:
+            dimension_member_to_datapoints_json[dimension_member.name] = [
+                {
+                    "dimension_display_name": dimension_member.name,
+                    "disaggregation_display_name": "Race / Ethnicities",
+                    "end_date": "Tue, 01 Nov 2022 00:00:00 GMT",
+                    "frequency": "MONTHLY",
+                    "id": 14891,
+                    "is_published": True,
+                    "old_value": None,
+                    "report_id": 314,
+                    "start_date": "Sat, 01 Oct 2022 00:00:00 GMT",
+                    "value": 10,
+                    "agency_name": None,
+                }
+            ]
+
         aggregated_dimension = MetricAggregatedDimensionData(
             dimension_to_value={dim: 10 for dim in RaceAndEthnicity},
             dimension_to_enabled_status={dim: True for dim in RaceAndEthnicity},
@@ -3463,14 +3483,25 @@ class TestMetricInterface(TestCase):
         disaggregation_json = {
             "key": "global/race_and_ethnicity",
             "display_name": "Race / Ethnicities",
-            "required": True,
-            "should_sum_to_total": False,
-            "helper_text": None,
             "is_breakdown_configured": None,
             "enabled": True,
             "dimensions": [
                 {
-                    "datapoints": None,
+                    "datapoints": [
+                        {
+                            "dimension_display_name": dim.name,
+                            "disaggregation_display_name": "Race / Ethnicities",
+                            "end_date": "Tue, 01 Nov 2022 00:00:00 GMT",
+                            "frequency": "MONTHLY",
+                            "id": 14891,
+                            "is_published": True,
+                            "old_value": None,
+                            "report_id": 314,
+                            "start_date": "Sat, 01 Oct 2022 00:00:00 GMT",
+                            "value": 10,
+                            "agency_name": None,
+                        }
+                    ],
                     "enabled": True,
                     "ethnicity": dim.ethnicity,
                     "key": dim.value,
@@ -3481,20 +3512,52 @@ class TestMetricInterface(TestCase):
                     "contexts": [
                         {
                             "key": "INCLUDES_EXCLUDES_DESCRIPTION",
-                            "label": "If the listed categories do not adequately describe your breakdown, please describe additional data elements included in your agency’s definition.",
+                            "display_name": "If the listed categories do not adequately describe your breakdown, please describe additional data elements included in your agency’s definition.",
                             "value": None,
                         }
                     ],
                 }
                 for dim in RaceAndEthnicity
             ],
+            "consolidated_race_ethnicity": {
+                "Hispanic or Latino": {
+                    "Sat, 01 Oct 2022 00:00:00 GMT - Tue, 01 Nov 2022 00:00:00 GMT": 80
+                },
+                "American Indian or Alaska Native": {
+                    "Sat, 01 Oct 2022 00:00:00 GMT - Tue, 01 Nov 2022 00:00:00 GMT": 20
+                },
+                "Asian": {
+                    "Sat, 01 Oct 2022 00:00:00 GMT - Tue, 01 Nov 2022 00:00:00 GMT": 20
+                },
+                "Black": {
+                    "Sat, 01 Oct 2022 00:00:00 GMT - Tue, 01 Nov 2022 00:00:00 GMT": 20
+                },
+                "More than one race": {
+                    "Sat, 01 Oct 2022 00:00:00 GMT - Tue, 01 Nov 2022 00:00:00 GMT": 20
+                },
+                "Native Hawaiian or Pacific Islander": {
+                    "Sat, 01 Oct 2022 00:00:00 GMT - Tue, 01 Nov 2022 00:00:00 GMT": 20
+                },
+                "White": {
+                    "Sat, 01 Oct 2022 00:00:00 GMT - Tue, 01 Nov 2022 00:00:00 GMT": 20
+                },
+                "Other": {
+                    "Sat, 01 Oct 2022 00:00:00 GMT - Tue, 01 Nov 2022 00:00:00 GMT": 20
+                },
+                "Unknown": {
+                    "Sat, 01 Oct 2022 00:00:00 GMT - Tue, 01 Nov 2022 00:00:00 GMT": 20
+                },
+            },
         }
+
         self.assertEqual(
             aggregated_dimension.to_json(
                 entry_point=DatapointGetRequestEntryPoint.REPORT_PAGE,
                 dimension_definition=AggregatedDimension(
                     dimension=RaceAndEthnicity, required=True
                 ),
+                dimension_member_to_datapoints_json=dimension_member_to_datapoints_json,
+                is_v2=True,
             ),
             disaggregation_json,
         )
