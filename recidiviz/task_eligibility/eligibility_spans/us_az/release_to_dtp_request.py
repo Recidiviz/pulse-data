@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Shows the eligibility spans for residents in AZ who are eligible for a TPR release.
+"""Shows the eligibility spans for residents in AZ who are eligible for a DTP release.
 """
 
 from recidiviz.common.constants.states import StateCode
@@ -30,14 +30,16 @@ from recidiviz.task_eligibility.criteria.general import (
     not_serving_for_violent_offense,
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_az import (
-    at_least_24_months_since_last_csed,
+    enrolled_in_functional_literacy,
     is_us_citizen_or_legal_permanent_resident,
     meets_functional_literacy,
     no_active_felony_detainers,
     no_major_violent_violation_during_incarceration,
     no_unsatisfactory_program_ratings_within_3_months,
     not_serving_for_dangerous_crimes_against_children,
-    serving_assault_or_aggravated_assault_or_robbery,
+    not_serving_for_domestic_violence,
+    not_serving_for_drug_offense,
+    not_serving_for_sexual_exploitation_of_children,
     time_90_days_before_release,
 )
 from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
@@ -50,35 +52,37 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 _DESCRIPTION = """Shows the eligibility spans for residents in AZ
- who are eligible for a TPR release.
+ who are eligible for a DTP release.
 """
 
 VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     state_code=StateCode.US_AZ,
-    task_name="RELEASE_TO_TPR_REQUEST",
+    task_name="RELEASE_TO_DTP_REQUEST",
     description=_DESCRIPTION,
     candidate_population_view_builder=general_incarceration_population.VIEW_BUILDER,
     criteria_spans_view_builders=[
+        not_serving_for_drug_offense.VIEW_BUILDER,
         time_90_days_before_release.VIEW_BUILDER,
         not_serving_for_sexual_offense.VIEW_BUILDER,
         not_serving_for_arson_offense.VIEW_BUILDER,
-        OrTaskCriteriaGroup(
-            criteria_name="US_AZ_SERVING_NONVIOLENT_OFFENSE_WITH_B1B_EXCEPTIONS",
-            sub_criteria_list=[
-                not_serving_for_violent_offense.VIEW_BUILDER,
-                serving_assault_or_aggravated_assault_or_robbery.VIEW_BUILDER,
-            ],
-            allowed_duplicate_reasons_keys=[],
-        ),
+        not_serving_for_domestic_violence.VIEW_BUILDER,
+        not_serving_for_sexual_exploitation_of_children.VIEW_BUILDER,
+        not_serving_for_violent_offense.VIEW_BUILDER,
         no_active_felony_detainers.VIEW_BUILDER,
         custody_level_is_minimum_or_medium.VIEW_BUILDER,
         no_nonviolent_incarceration_violation_within_6_months.VIEW_BUILDER,
         no_major_violent_violation_during_incarceration.VIEW_BUILDER,
-        at_least_24_months_since_last_csed.VIEW_BUILDER,
         is_us_citizen_or_legal_permanent_resident.VIEW_BUILDER,
         no_unsatisfactory_program_ratings_within_3_months.VIEW_BUILDER,
         not_serving_for_dangerous_crimes_against_children.VIEW_BUILDER,
-        meets_functional_literacy.VIEW_BUILDER,
+        OrTaskCriteriaGroup(
+            criteria_name="US_AZ_ENROLLED_OR_MEETS_MANDATORY_LITERACY",
+            sub_criteria_list=[
+                meets_functional_literacy.VIEW_BUILDER,
+                enrolled_in_functional_literacy.VIEW_BUILDER,
+            ],
+            allowed_duplicate_reasons_keys=[],
+        ),
     ],
     completion_event_builder=early_discharge.VIEW_BUILDER,
 )
