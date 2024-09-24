@@ -66,15 +66,6 @@ class DirectIngestRawFilePreImportNormalizer:
         )
         self._read_chunk_size = read_chunk_size
 
-    def _get_output_path(self, file_tag: str, chunk_num: int) -> GcsfsFilePath:
-        """Given a |file_tag| and a |chunk_num|, return the output file path in
-        a Google Cloud Storage bucket.
-        """
-        filename = f"temp_{file_tag}_{chunk_num}.csv"
-        return GcsfsFilePath.from_directory_and_file_name(
-            self._temp_output_dir, filename
-        )
-
     @staticmethod
     def _requires_prepended_headers(
         chunk_num: int, infer_columns_from_config: bool
@@ -89,9 +80,11 @@ class DirectIngestRawFilePreImportNormalizer:
         self, chunk: RequiresPreImportNormalizationFileChunk
     ) -> GcsfsFilePath:
         """Returns the intended output path for the provided |chunk|"""
-        return self._get_output_path(
-            filename_parts_from_path(chunk.path).file_tag,
-            chunk.chunk_boundary.chunk_num,
+        file_name = (
+            f"temp_{chunk.path.base_file_name}_{chunk.chunk_boundary.chunk_num}.csv"
+        )
+        return GcsfsFilePath.from_directory_and_file_name(
+            self._temp_output_dir, file_name
         )
 
     def normalize_chunk_for_import(
@@ -109,9 +102,7 @@ class DirectIngestRawFilePreImportNormalizer:
 
         path_parts = filename_parts_from_path(chunk.path)
         config = self._region_config.raw_file_configs[path_parts.file_tag]
-        output_path = self._get_output_path(
-            path_parts.file_tag, chunk.chunk_boundary.chunk_num
-        )
+        output_path = self.output_path_for_chunk(chunk)
 
         # then, execute the actual normalization step
         with self._fs.open(
