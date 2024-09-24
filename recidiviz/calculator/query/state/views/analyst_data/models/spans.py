@@ -387,6 +387,13 @@ FROM
     launches.first_access_date IS NOT NULL AS task_type_is_live,
     IFNULL(launches.is_fully_launched, FALSE) AS task_type_is_fully_launched,
     ARRAY_TO_STRING(ineligible_criteria, ",") AS ineligible_criteria,
+    -- Used for pulling in custody level from relevant criteria to create custom metric of downgrades from a given level
+    -- TODO(#27010): Remove this addition of custody level when custom unit of analysis is supported
+    ARRAY(
+        SELECT JSON_VALUE(criteria_reason, '$.reason.custody_level')
+        FROM UNNEST(JSON_QUERY_ARRAY(reasons_v2)) AS criteria_reason
+        WHERE JSON_VALUE(criteria_reason, '$.criteria_name') = 'CUSTODY_LEVEL_HIGHER_THAN_RECOMMENDED' 
+    )[SAFE_OFFSET(0)] AS custody_level,
 FROM
     `{project_id}.task_eligibility.all_tasks_materialized`
 INNER JOIN
@@ -410,6 +417,7 @@ USING
             "is_eligible",
             "ineligible_criteria",
             "is_almost_eligible",
+            "custody_level",
         ],
         span_start_date_col="start_date",
         span_end_date_col="end_date",
