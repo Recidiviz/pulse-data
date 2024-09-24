@@ -1044,6 +1044,7 @@ class OutliersQuerier:
                     SupervisionOfficer.supervisor_external_ids,
                     SupervisionOfficer.supervision_district,
                     SupervisionOfficerOutlierStatus.metric_id,
+                    SupervisionOfficer.earliest_person_assignment_date,
                     avgs_subquery.c.avg_daily_population,
                 )
                 .with_entities(
@@ -1054,6 +1055,7 @@ class OutliersQuerier:
                     SupervisionOfficer.supervisor_external_ids,
                     SupervisionOfficer.supervision_district,
                     SupervisionOfficerOutlierStatus.metric_id,
+                    SupervisionOfficer.earliest_person_assignment_date,
                     # Get an array of JSON objects for the officer's rates and statuses in the selected periods
                     func.array_agg(
                         aggregate_order_by(
@@ -1179,6 +1181,7 @@ class OutliersQuerier:
                         supervisor_external_id=record.supervisor_external_id,
                         supervisor_external_ids=record.supervisor_external_ids,
                         district=record.supervision_district,
+                        earliest_person_assignment_date=record.earliest_person_assignment_date,
                         caseload_category=latest_period_caseload_category,
                         avg_daily_population=record.avg_daily_population,
                         outlier_metrics=(

@@ -360,6 +360,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                         }
                     ],
                     avg_daily_population=10.0,
+                    earliest_person_assignment_date=date(2024, 1, 1),
                 ),
                 SupervisionOfficerEntity(
                     full_name=PersonName(
@@ -374,6 +375,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                     outlier_metrics=[],
                     top_x_pct_metrics=[],
                     avg_daily_population=10.0,
+                    earliest_person_assignment_date=date(2024, 1, 1),
                 ),
             ]
 
