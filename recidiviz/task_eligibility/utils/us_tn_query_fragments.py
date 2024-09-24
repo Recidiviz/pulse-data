@@ -179,17 +179,17 @@ def us_tn_classification_forms(
             person_id,
             state_code,
             incident_date AS event_date,
-            incident_type_raw_text,
+            COALESCE(infraction_type_raw_text, incident_type_raw_text) AS incident_type,
             CASE WHEN injury_level != "" 
-                 THEN CONCAT(incident_type_raw_text, "- Injury:", injury_level)
-                 ELSE incident_type_raw_text
+                 THEN CONCAT(COALESCE(infraction_type_raw_text, incident_type_raw_text), "- Injury:", injury_level)
+                 ELSE COALESCE(infraction_type_raw_text, incident_type_raw_text)
                  END AS note_title,
             injury_level,
             incident_class,
             CONCAT('Class ', 
                     incident_class,
                     ' Incident Code:',
-                    incident_type_raw_text,
+                    COALESCE(infraction_type_raw_text, incident_type_raw_text),
                     '  Incident Details:',
                     incident_details) AS note_body,
             disposition,
