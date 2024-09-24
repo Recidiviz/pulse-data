@@ -119,12 +119,17 @@ class TestDirectIngestTempRawTablePreMigrationTransformation(BigQueryEmulatorTes
         source_table, expected_output = self.load_raw_data_for_directory(
             test_name, file_tag
         )
+        update_datetime = (
+            datetime.datetime(2024, 1, 1, 1, 1, 1, 1111, tzinfo=datetime.UTC)
+            if test_name == "update_datetime_microseconds"
+            else datetime.datetime(2024, 1, 1, 1, 1, 1, tzinfo=datetime.UTC)
+        )
         query = self.query_builder.build_pre_migration_transformations_query(
             project_id=self.project_id,
             file_tag=file_tag,
             source_table=source_table,
             file_id=1,
-            update_datetime=datetime.datetime(2024, 1, 1, 1, 1, 1, tzinfo=datetime.UTC),
+            update_datetime=update_datetime,
             is_deleted=False,
         )
 
@@ -143,3 +148,6 @@ class TestDirectIngestTempRawTablePreMigrationTransformation(BigQueryEmulatorTes
 
     def test_trim_and_nulls(self) -> None:
         self.run_test("trim_and_nulls", "singlePrimaryKey")
+
+    def test_update_datetime_microseconds(self) -> None:
+        self.run_test("update_datetime_microseconds", "singlePrimaryKey")
