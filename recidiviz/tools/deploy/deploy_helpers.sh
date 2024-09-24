@@ -153,7 +153,7 @@ function pre_deploy_configure_infrastructure {
     echo "Deploying terraform inside Cloud Build"
     verify_hash "$COMMIT_HASH"
     run_cmd pipenv run python -m recidiviz.tools.deploy.cloud_build.deployment_stage_runner \
-      --project-id "${PROJECT_ID}" \
+      --project-id "${PROJECT}" \
       --version-tag "${GIT_VERSION_TAG}" \
       --commit-ref "${COMMIT_HASH}" \
       --stage "CreateTerraformPlan" \
@@ -162,7 +162,7 @@ function pre_deploy_configure_infrastructure {
     verify_hash "$COMMIT_HASH"
     echo "Running migrations using Cloud Build"
     run_cmd pipenv run python -m recidiviz.tools.deploy.cloud_build.deployment_stage_runner \
-      --project-id "${PROJECT_ID}" \
+      --project-id "${PROJECT}" \
       --version-tag "${GIT_VERSION_TAG}" \
       --commit-ref "${COMMIT_HASH}" \
       --stage "RunMigrations"
