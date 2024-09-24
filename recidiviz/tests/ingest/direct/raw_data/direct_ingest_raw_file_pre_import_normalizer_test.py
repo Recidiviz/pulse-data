@@ -297,3 +297,68 @@ class DirectIngestRawFileNormalizationPassTest(unittest.TestCase):
         expected_output = '"col1","col2","col3"\n"á","æ","Ö"\n'
 
         self.run_local_test(WINDOWS_FILE_MULIBYTE_NEWLINES, chunk, expected_output)
+
+    def test_temp_file_naming_multiple_update_datetimes(self) -> None:
+        normalizer = DirectIngestRawFilePreImportNormalizer(self.fs, StateCode.US_XX)
+
+        file_tag = "myFile"
+        older_path = GcsfsFilePath.from_absolute_path(
+            f"gs://my-bucket/unprocessed_2024-01-20T16:35:33:617135_raw_{file_tag}.csv"
+        )
+        older_chunk = RequiresPreImportNormalizationFileChunk(
+            path=older_path,
+            pre_import_normalization_type=PreImportNormalizationType.ENCODING_DELIMITER_AND_TERMINATOR_UPDATE,
+            chunk_boundary=CsvChunkBoundary(
+                start_inclusive=0, end_exclusive=100, chunk_num=0
+            ),
+            headers=['"col1"', '"col2"', '"col3"'],
+        )
+        newer_path = GcsfsFilePath.from_absolute_path(
+            f"gs://my-bucket/unprocessed_2024-01-21T16:35:33:617135_raw_{file_tag}.csv"
+        )
+        newer_chunk = RequiresPreImportNormalizationFileChunk(
+            path=newer_path,
+            pre_import_normalization_type=PreImportNormalizationType.ENCODING_DELIMITER_AND_TERMINATOR_UPDATE,
+            chunk_boundary=CsvChunkBoundary(
+                start_inclusive=0, end_exclusive=100, chunk_num=0
+            ),
+            headers=['"col1"', '"col2"', '"col3"'],
+        )
+
+        self.assertNotEqual(
+            normalizer.output_path_for_chunk(older_chunk),
+            normalizer.output_path_for_chunk(newer_chunk),
+        )
+
+    def test_temp_file_naming_chunked_file(self) -> None:
+        normalizer = DirectIngestRawFilePreImportNormalizer(self.fs, StateCode.US_XX)
+
+        file_tag = "myFile"
+        update_datetime = "2024-01-20T16:35:33:617135"
+        chunked_file_1_path = GcsfsFilePath.from_absolute_path(
+            f"gs://my-bucket/unprocessed_{update_datetime}_raw_{file_tag}-1.csv"
+        )
+        chunk1 = RequiresPreImportNormalizationFileChunk(
+            path=chunked_file_1_path,
+            pre_import_normalization_type=PreImportNormalizationType.ENCODING_DELIMITER_AND_TERMINATOR_UPDATE,
+            chunk_boundary=CsvChunkBoundary(
+                start_inclusive=0, end_exclusive=100, chunk_num=0
+            ),
+            headers=['"col1"', '"col2"', '"col3"'],
+        )
+        chunked_file_2_path = GcsfsFilePath.from_absolute_path(
+            f"gs://my-bucket/unprocessed_{update_datetime}_raw_{file_tag}-2.csv"
+        )
+        chunk2 = RequiresPreImportNormalizationFileChunk(
+            path=chunked_file_2_path,
+            pre_import_normalization_type=PreImportNormalizationType.ENCODING_DELIMITER_AND_TERMINATOR_UPDATE,
+            chunk_boundary=CsvChunkBoundary(
+                start_inclusive=0, end_exclusive=100, chunk_num=0
+            ),
+            headers=['"col1"', '"col2"', '"col3"'],
+        )
+
+        self.assertNotEqual(
+            normalizer.output_path_for_chunk(chunk1),
+            normalizer.output_path_for_chunk(chunk2),
+        )

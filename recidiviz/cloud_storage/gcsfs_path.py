@@ -194,6 +194,11 @@ class GcsfsFilePath(GcsfsPath):
         return ext.lstrip(".")
 
     @property
+    def base_file_name(self) -> str:
+        base_file_name, _extension = os.path.splitext(self.file_name)
+        return base_file_name
+
+    @property
     def has_zip_extension(self) -> bool:
         return self.extension == ZIP_FILE_EXTENSION
 
