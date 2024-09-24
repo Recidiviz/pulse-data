@@ -8,6 +8,8 @@ input_columns:
   - status_raw_text
   - status_update_datetime
 unused_columns: []
+launch_env:
+  $env: is_local
 output:
   StatePerson:
     external_ids:

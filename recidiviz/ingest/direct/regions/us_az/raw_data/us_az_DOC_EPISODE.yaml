@@ -124,27 +124,27 @@ columns:
       - "SAFE.PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%S', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
   - name: COURT_TITLE
     description: |-
-      No description available in AZ data dictionary as of 10/31/23.
+      Client's title as it appears on court records
     is_pii: True
   - name: COURT_FIRST_NAME
     description: |-
-      No description available in AZ data dictionary as of 10/31/23.
+      Client's first name as it appears on court records
     is_pii: True
   - name: COURT_MIDDLE_NAME
     description: |-
-      No description available in AZ data dictionary as of 10/31/23.
+      Client's middle name as it appears on court records
     is_pii: True
   - name: COURT_LAST_NAME
     description: |-
-      No description available in AZ data dictionary as of 10/31/23.
+      Client's surname as it appears on court records
     is_pii: True
   - name: COURT_SUFFIX
     description: |-
-      No description available in AZ data dictionary as of 10/31/23.
+      Client's name suffix as it appears on court records
     is_pii: True
   - name: COURT_DATE_OF_BIRTH
     description: |-
-      No description available in AZ data dictionary as of 10/31/23.
+      Client's date of birth as it appears on court records
     field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S %p', {col_name})"
