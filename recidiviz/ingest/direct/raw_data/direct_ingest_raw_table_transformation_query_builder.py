@@ -64,6 +64,10 @@ class DirectIngestTempRawTablePreMigrationTransformationQueryBuilder:
         update_datetime: datetime.datetime,
         is_deleted: bool,
     ) -> str:
+        """Builds a SQL query that trims whitespace from all columns, removes all NULL rows,
+        and adds file_id, update_datetime, and is_deleted metadata columns to a raw data
+        table that has been newly loaded from a CSV.
+        """
 
         raw_table_config = self._region_raw_file_config.raw_file_configs[file_tag]
 
@@ -75,7 +79,14 @@ class DirectIngestTempRawTablePreMigrationTransformationQueryBuilder:
             f"{col.name} IS NOT NULL" for col in raw_table_config.columns
         )
 
-        recidiviz_metadata_columns = f"{file_id} as file_id, PARSE_DATETIME('%FT%T', '{update_datetime.strftime('%Y-%m-%dT%H:%M:%S')}') as update_datetime, {is_deleted} as is_deleted"
+        # TODO(#30325) we are only including microseconds if they are non-zero to match legacy ingest
+        # but we should migrate all existing update_datetime values the same format
+        update_datetime_str = update_datetime.replace(tzinfo=None).isoformat(
+            timespec="microseconds" if update_datetime.microsecond else "seconds"
+        )
+        parse_datetime_str = f"PARSE_DATETIME('%FT%H:%M:%E*S', '{update_datetime_str}')"
+
+        recidiviz_metadata_columns = f"{file_id} as file_id, {parse_datetime_str} as update_datetime, {is_deleted} as is_deleted"
 
         return self._query_builder.build_query(
             project_id=project_id,

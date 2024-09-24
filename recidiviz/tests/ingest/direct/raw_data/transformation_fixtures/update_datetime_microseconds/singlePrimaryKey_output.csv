@@ -1,0 +1,3 @@
+primary_key,value,file_id,update_datetime,is_deleted
+hello there,no w h i t e s p a c e to trim,1,2024-01-01 01:01:01.001111,False
+no seriously,there's no spaces to trim here i promise,1,2024-01-01 01:01:01.001111,False
