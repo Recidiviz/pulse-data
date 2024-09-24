@@ -44,6 +44,7 @@ from recidiviz.justice_counts.jobs.pull_agencies_with_published_data import (
     calculate_columns_helper,
     get_reported_metrics_and_dashboard_helper,
 )
+from recidiviz.justice_counts.metrics.metric_interface import MetricInterface
 from recidiviz.justice_counts.metrics.metric_registry import METRICS_BY_SYSTEM
 from recidiviz.justice_counts.utils.constants import (
     AGENCIES_TO_EXCLUDE,
@@ -125,6 +126,8 @@ def create_parser() -> argparse.ArgumentParser:
 
 def summarize(
     datapoints: List[schema.Datapoint],
+    metric_settings: List[schema.MetricSetting],
+    metric_setting_histories_last_week: List[schema.MetricSettingHistory],
     today: datetime.datetime,
     datapoint_id_to_first_update: Dict[int, datetime.datetime],
 ) -> Dict[str, Any]:
@@ -144,9 +147,7 @@ def summarize(
     # 1 report datapoint (does not consider agency datapoints). We do not consider null
     # values
     data_shared_this_week = False
-    # last_metric_config_update is the most recent date in which a metric was either
-    # enabled or disabled
-    last_metric_config_update = datetime.datetime(1970, 1, 1)
+    a_long_time_ago = datetime.datetime(1970, 1, 1)
     metric_configured_this_week = False
 
     # We default both initial_metric_config_date and initial_data_entry_date to tomorrow
@@ -181,48 +182,12 @@ def summarize(
                 initial_data_entry_date = min(
                     initial_data_entry_date, datapoint_last_update
                 )
-        elif (
-            # The following filters to agency datapoints that contain information about whether
-            # the top-level metric is turned on or off
-            not datapoint["dimension_identifier_to_member"]
-            and not datapoint["context_key"]
-            and not datapoint["includes_excludes_key"]
-            and datapoint["enabled"] is not None
-        ):
-            # initial_metric_config_date involves a timestamp and agency datapoints
-            if datapoint_first_update is not None:
-                initial_metric_config_date = min(
-                    initial_metric_config_date, datapoint_first_update
-                )
-            elif datapoint["created_at"] is not None:
-                initial_metric_config_date = min(
-                    initial_metric_config_date, datapoint["created_at"]
-                )
-            elif datapoint_last_update is not None:
-                initial_metric_config_date = min(
-                    initial_metric_config_date, datapoint_last_update
-                )
         if datapoint_last_update is not None:
             # last_update involves a timestamp and report and agency datapoints
             last_update = max(last_update, datapoint_last_update)
             if datapoint["is_report_datapoint"] is True:
                 # data_shared_this_week involves a timestamp and report datapoints
                 data_shared_this_week = last_update.replace(
-                    tzinfo=datetime.timezone.utc
-                ) > (today + datetime.timedelta(days=-7))
-            elif (
-                # The following filters to agency datapoints that contain information about whether
-                # the top-level metric is turned on or off
-                not datapoint["dimension_identifier_to_member"]
-                and not datapoint["context_key"]
-                and not datapoint["includes_excludes_key"]
-                and datapoint["enabled"] is not None
-            ):
-                # metric_configured_this_week involves a timestamp and agency datapoints
-                last_metric_config_update = max(
-                    last_metric_config_update, datapoint_last_update
-                )
-                metric_configured_this_week = last_metric_config_update.replace(
                     tzinfo=datetime.timezone.utc
                 ) > (today + datetime.timedelta(days=-7))
         elif datapoint["created_at"] is not None:
@@ -239,22 +204,82 @@ def summarize(
             metric_key_to_datapoints[datapoint["metric_definition_key"]].append(
                 datapoint
             )
-        # Process agency datapoints (i.e. those that contain info about metric configuration)
-        elif (
-            not datapoint["is_report_datapoint"]
-            # The following filters to non-report datapoints that contain information about whether
-            # the top-level metric is turned on or off
-            and not datapoint["dimension_identifier_to_member"]
-            and not datapoint["context_key"]
-            and not datapoint["includes_excludes_key"]
-            and datapoint["enabled"] is not None
+
+    for metric_setting in metric_settings:
+        # Update last_update.
+        last_update = max(
+            last_update,
+            metric_setting.created_at
+            if metric_setting.created_at is not None
+            else a_long_time_ago,
+            metric_setting.last_updated
+            if metric_setting.last_updated is not None
+            else a_long_time_ago,
+        )
+
+        # Update initial_metric_config_date. We use both created_at and last_updated
+        # since the last_updated column was introduced before created_at existed.
+        initial_metric_config_date = min(
+            initial_metric_config_date,
+            metric_setting.created_at
+            if metric_setting.created_at is not None
+            else tomorrow,
+            metric_setting.last_updated
+            if metric_setting.last_updated is not None
+            else tomorrow,
+        )
+
+        # Update metrics_configured, metrics_available, and metrics_unavailable.
+        metric_interface = MetricInterface.from_storage_json(
+            metric_setting.metric_interface
+        )
+
+        def is_supervision_subsystems_metric(metric_key: str) -> bool:
+            """Returns true if the metric belongs to a supervision subsystem."""
+            for subsystem in schema.System.supervision_subsystems():
+                if metric_key.startswith(subsystem.value):
+                    return True
+            return False
+
+        def is_supervision_metric(metric_key: str) -> bool:
+            """Returns true if the metric is a supervision metric."""
+            return metric_key.startswith("SUPERVISION")
+
+        # Skip metrics if they are subsystems and the metric is not disaggregated by
+        # subsystems. We don't want to count these metrics as
+        # enabled/disabled/configured.
+        if (
+            is_supervision_subsystems_metric(metric_interface.key)
+            and metric_interface.disaggregated_by_supervision_subsystems is not True
         ):
-            # We consider a metric configured if it is either turned on or off
-            metrics_configured.add(datapoint["metric_definition_key"])
-            if datapoint["enabled"] is True:
-                metrics_available.add(datapoint["metric_definition_key"])
-            elif datapoint["enabled"] is False:
-                metrics_unavailable.add(datapoint["metric_definition_key"])
+            continue
+
+        # Skip metrics if they are supervision metrics and the metric is disaggregated
+        # by subsystems. We don't want to count these metrics as
+        # enabled/disabled/configured.
+        if (
+            metric_interface.disaggregated_by_supervision_subsystems is True
+            and is_supervision_metric(metric_interface.key)
+        ):
+            continue
+
+        # We consider a metric configured if it is either turned on or off. An
+        # 'is_metric_enabled' value of None means that the metric is not yet configured.
+        if metric_interface.is_metric_enabled is not None:
+            metrics_configured.add(metric_interface.key)
+        if metric_interface.is_metric_enabled is True:
+            metrics_available.add(metric_interface.key)
+        if metric_interface.is_metric_enabled is False:
+            metrics_unavailable.add(metric_interface.key)
+
+    for metric_setting_history_last_week in metric_setting_histories_last_week:
+        # Filter out metric setting histories where enabled/disabled was not changed.
+        metric_interface_updates = MetricInterface.from_storage_json(
+            metric_setting_history_last_week.updates
+        )
+        if metric_interface_updates.is_metric_enabled is not None:
+            metric_configured_this_week = True
+            break
 
     return {
         LAST_UPDATE: (
@@ -289,6 +314,8 @@ def get_all_data(
     List[Any],
     List[Any],
     List[Any],
+    List[Any],
+    List[Any],
     Dict[int, datetime.datetime],
 ]:
     """Retrieve agency, user, agency_user_account_association, and datapoint data from both
@@ -310,6 +337,10 @@ def get_all_data(
     ).all()
     users = session.execute("select * from user_account").all()
     datapoints = session.execute("select * from datapoint").all()
+    metric_settings = session.execute("select * from metric_setting").all()
+    metric_setting_histories_last_week = session.execute(
+        "select * from metric_setting_history where timestamp >= NOW() - INTERVAL '7 days'"
+    ).all()
     spreadsheets = session.execute("select * from spreadsheet").all()
     datapoint_id_to_first_update = dict(
         session.execute(
@@ -327,6 +358,8 @@ def get_all_data(
         agency_user_account_associations,
         users,
         datapoints,
+        metric_settings,
+        metric_setting_histories_last_week,
         spreadsheets,
         datapoint_id_to_first_update,
     )
@@ -545,6 +578,8 @@ def generate_agency_summary_csv(
         agency_user_account_associations,
         users,
         datapoints,
+        metric_settings,
+        metric_setting_histories_last_week,
         spreadsheets,
         datapoint_id_to_first_update,
     ) = get_all_data(session=session)
@@ -611,12 +646,32 @@ def generate_agency_summary_csv(
     )
     agency_id_to_datapoints = {k: list(v) for k, v in agency_id_to_datapoints_groupby}
 
+    agency_id_to_metric_settings_groupby = groupby(
+        sorted(metric_settings, key=lambda x: x["agency_id"]),
+        key=lambda x: x["agency_id"],
+    )
+    agency_id_to_metric_settings = {
+        k: list(v) for k, v in agency_id_to_metric_settings_groupby
+    }
+
+    agency_id_to_metric_setting_histories_last_week_groupby = groupby(
+        sorted(metric_setting_histories_last_week, key=lambda x: x["agency_id"]),
+        key=lambda x: x["agency_id"],
+    )
+    agency_id_to_metric_setting_histories_last_week = {
+        k: list(v) for k, v in agency_id_to_metric_setting_histories_last_week_groupby
+    }
+
     for agency_id, datapoints in agency_id_to_datapoints.items():
         if agency_id not in agency_id_to_agency:
             continue
 
         data = summarize(
             datapoints=datapoints,
+            metric_settings=agency_id_to_metric_settings.get(agency_id, []),
+            metric_setting_histories_last_week=agency_id_to_metric_setting_histories_last_week.get(
+                agency_id, []
+            ),
             today=today,
             datapoint_id_to_first_update=datapoint_id_to_first_update,
         )
