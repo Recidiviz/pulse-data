@@ -48,8 +48,7 @@ US_PA_SUPERVISION_POPULATION_METRICS_PREPROCESSED_QUERY_TEMPLATE = rf"""
         metric_type AS metric_source,
         state_code,
         IF(included_in_state_population, 'SUPERVISION', 'SUPERVISION_OUT_OF_STATE') AS compartment_level_1,
-        -- Recategorize supervision periods with FAST district as absconsion
-        IF(level_2_supervision_location_external_id = "FAST", "ABSCONSION", supervision_type) as compartment_level_2,
+        supervision_type as compartment_level_2,
         CONCAT(COALESCE(level_1_supervision_location_external_id,'EXTERNAL_UNKNOWN'),'|', COALESCE(level_2_supervision_location_external_id,'EXTERNAL_UNKNOWN')) AS compartment_location,
         CAST(NULL AS STRING) AS facility,
         COALESCE(level_1_supervision_location_external_id,'EXTERNAL_UNKNOWN') AS supervision_office,
