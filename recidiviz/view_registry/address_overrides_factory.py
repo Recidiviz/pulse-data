@@ -22,52 +22,10 @@ from typing import Optional, Sequence
 
 from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
 from recidiviz.big_query.big_query_view import BigQueryAddress, BigQueryViewBuilder
-from recidiviz.calculator.query.state.dataset_config import (
-    DATAFLOW_METRICS_DATASET,
-    DATAFLOW_METRICS_MATERIALIZED_DATASET,
-)
+from recidiviz.calculator.query.state.dataset_config import DATAFLOW_METRICS_DATASET
 from recidiviz.source_tables.collect_all_source_table_configs import (
     get_all_source_table_datasets,
 )
-from recidiviz.view_registry.deployed_views import deployed_view_builders
-
-
-def address_overrides_for_deployed_view_datasets(
-    view_dataset_override_prefix: str, dataflow_dataset_override: Optional[str] = None
-) -> BigQueryAddressOverrides:
-    """Returns a class that provides a mapping of table/view addresses to the address
-    they should be replaced with for all views that are regularly deployed by our
-    standard deploy process. The mapping contains mappings for the view datasets and
-    also the datasets of their corresponding materialized locations (if different).
-
-    Overridden datasets all take the form of "<override prefix>_<original dataset_id>".
-
-    If a |dataflow_dataset_override| is provided, will also override the address of all
-    views in the DATAFLOW_METRICS_DATASET with that dataset value.
-    """
-
-    all_view_builders = []
-    for builder in deployed_view_builders():
-        if (
-            builder.dataset_id == DATAFLOW_METRICS_MATERIALIZED_DATASET
-            and dataflow_dataset_override is None
-        ):
-            # The DATAFLOW_METRICS_MATERIALIZED_DATASET dataset is a super expensive
-            # dataset to reproduce and materialize, since it queries from all of the
-            # DATAFLOW_METRICS_DATASET tables. We have this special case to avoid
-            # making a sandbox version of this dataset unless the user is explicitly
-            # testing a change where the views should read from a dataflow metrics
-            # dataset that's different than usual (aka if
-            # `dataflow_dataset_override` is not None).
-            continue
-
-        all_view_builders.append(builder)
-
-    return address_overrides_for_view_builders(
-        view_dataset_override_prefix,
-        all_view_builders,
-        dataflow_dataset_override=dataflow_dataset_override,
-    )
 
 
 def address_overrides_for_view_builders(

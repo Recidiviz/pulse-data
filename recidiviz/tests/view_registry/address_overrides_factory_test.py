@@ -25,17 +25,10 @@ from recidiviz.big_query.big_query_view import (
     BigQueryViewBuilder,
     SimpleBigQueryViewBuilder,
 )
-from recidiviz.calculator.query.state.dataset_config import (
-    DATAFLOW_METRICS_DATASET,
-    DATAFLOW_METRICS_MATERIALIZED_DATASET,
-)
-from recidiviz.utils.environment import GCP_PROJECT_STAGING
-from recidiviz.utils.metadata import local_project_id_override
+from recidiviz.calculator.query.state.dataset_config import DATAFLOW_METRICS_DATASET
 from recidiviz.view_registry.address_overrides_factory import (
-    address_overrides_for_deployed_view_datasets,
     address_overrides_for_view_builders,
 )
-from recidiviz.view_registry.deployed_views import deployed_view_builders
 
 
 class TestAddressOverrides(unittest.TestCase):
@@ -135,48 +128,6 @@ class TestAddressOverrides(unittest.TestCase):
                 dataset_id=dataflow_dataset_override, table_id="some_random_table"
             ),
         )
-
-    def test_address_overrides_for_deployed_view_datasets(self) -> None:
-        prefix = "my_prefix"
-        with local_project_id_override(GCP_PROJECT_STAGING):
-            overrides = address_overrides_for_deployed_view_datasets(prefix)
-
-            self.assert_has_overrides_for_all_builders(
-                overrides,
-                deployed_view_builders(),
-                prefix,
-                expected_skipped_datasets={DATAFLOW_METRICS_MATERIALIZED_DATASET},
-            )
-
-    def test_address_overrides_for_deployed_view_datasets_dataflow_override(
-        self,
-    ) -> None:
-        prefix = "my_prefix"
-        dataflow_dataset_override = "test_dataflow"
-        with local_project_id_override(GCP_PROJECT_STAGING):
-            overrides = address_overrides_for_deployed_view_datasets(
-                prefix, dataflow_dataset_override
-            )
-
-            self.assert_has_overrides_for_all_builders(
-                overrides,
-                deployed_view_builders(),
-                prefix,
-                expected_skipped_datasets=set(),
-            )
-
-            override = overrides.get_sandbox_address(
-                BigQueryAddress(
-                    dataset_id=DATAFLOW_METRICS_DATASET, table_id="some_random_table"
-                )
-            )
-
-            self.assertEqual(
-                override,
-                BigQueryAddress(
-                    dataset_id=dataflow_dataset_override, table_id="some_random_table"
-                ),
-            )
 
     def assert_has_overrides_for_all_builders(
         self,
