@@ -549,6 +549,58 @@ def get_api_blueprint(
         except Exception as e:
             raise _get_error(error=e) from e
 
+    @api_blueprint.route("/agency/<agency_id>", methods=["GET"])
+    @auth_decorator
+    def get_agency(agency_id: int) -> Response:
+        """
+        Returns the agency data of the requested agency, and the superagency for that
+        agency if one exists and the user has permissions for it.
+
+        We include the superagency because Publisher assumes that a child agency's
+        superagency is also loaded into the userStore.
+        """
+        try:
+            request_json = assert_type(request.values, dict)
+            user = UserAccountInterface.get_user_by_auth0_user_id(
+                session=current_session,
+                auth0_user_id=get_auth0_user_id(request_dict=request_json),
+            )
+            raise_if_user_is_not_in_agency(user=user, agency_id=agency_id)
+
+            agencies = []
+            agency = AgencyInterface.get_agency_by_id(
+                session=current_session,
+                agency_id=agency_id,
+                with_users=True,
+                with_settings=True,
+            )
+            agencies.append(agency)
+            agency_assocs_ids = [a.agency_id for a in user.agency_assocs]
+            # If the agency has a superagency and the user has access to that
+            # superagency, also return the superagency and its data.
+            if agency.super_agency_id and agency.super_agency_id in agency_assocs_ids:
+                superagency = AgencyInterface.get_agency_by_id(
+                    session=current_session,
+                    agency_id=agency.super_agency_id,
+                    with_users=True,
+                    with_settings=True,
+                )
+                agencies.append(superagency)
+
+            # Store these as local variables before we commit the current session.
+            user_id = user.id
+            agency_jsons = [a.to_json() for a in agencies]
+
+            current_session.commit()
+            return jsonify(
+                {
+                    "id": user_id,
+                    "agencies": agency_jsons,
+                }
+            )
+        except Exception as e:
+            raise _get_error(error=e) from e
+
     @api_blueprint.route("/users", methods=["PUT"])
     @auth_decorator
     def create_user_if_necessary() -> Response:
